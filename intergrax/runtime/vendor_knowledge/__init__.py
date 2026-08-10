@@ -26,6 +26,13 @@ from intergrax.runtime.vendor_knowledge.contribution import (
     VendorKnowledgeIndexedMaterializerContribution,
     VendorKnowledgeProviderContribution,
 )
+from intergrax.runtime.vendor_knowledge.contribution_catalog import (
+    VENDOR_KNOWLEDGE_PROVIDER_ENTRY_POINT_GROUP,
+    VendorKnowledgeContributionCatalog,
+    VendorKnowledgePluginConflict,
+    VendorKnowledgePluginLoadError,
+    build_default_vendor_knowledge_contribution_catalog,
+)
 from intergrax.runtime.vendor_knowledge.contracts import (
     VendorIntegrationResolver,
     VendorKnowledgeAdapter,
@@ -399,6 +406,7 @@ __all__ = [
     "VendorIntegrationResolver",
     "VendorKnowledgeAdapter",
     "VendorKnowledgeConnectionFactoryContribution",
+    "VendorKnowledgeContributionCatalog",
     "VendorKnowledgeContributionError",
     "VendorKnowledgeDiscoveryContribution",
     "VendorKnowledgeError",
@@ -414,6 +422,8 @@ __all__ = [
     "VendorKnowledgeSourcePluginNotFound",
     "VendorKnowledgeSourcePluginRegistry",
     "VendorKnowledgeProviderContribution",
+    "VendorKnowledgePluginConflict",
+    "VendorKnowledgePluginLoadError",
     "VendorKnowledgeSyncCoordinator",
     "VendorKnowledgeSyncDispatcher",
     "VendorKnowledgeSyncExecutableRegistration",
@@ -423,6 +433,8 @@ __all__ = [
     "VendorKnowledgeSyncScheduler",
     "VendorKnowledgeSyncWorkerOutput",
     "VENDOR_KNOWLEDGE_PROVIDER_CONTRIBUTION_CONTRACT_VERSION",
+    "VENDOR_KNOWLEDGE_PROVIDER_ENTRY_POINT_GROUP",
+    "build_default_vendor_knowledge_contribution_catalog",
     "build_vendor_knowledge_sync_runtime",
     "canonical_indexed_source_ref",
     "canonical_prepared_state_mutations_fingerprint",

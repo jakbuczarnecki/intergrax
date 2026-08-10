@@ -159,6 +159,7 @@ def build_connected_source_host_bundle(
     tenant_connection_factory_registry: TenantConnectionIntegrationFactory | None = None,
     msgraph_mailbox_user_id: str | None = None,
     msgraph_teams_channel_team_id: str | None = None,
+    discover_vendor_knowledge_entry_points: bool = False,
 ) -> ConnectedSourceHostBundle:
     registry = KnowledgeConnectionRegistry()
     connection_repository = DocumentStoreTenantConnectionRepository(repository.document_store)
@@ -166,16 +167,22 @@ def build_connected_source_host_bundle(
     live_capability_catalog = TenantLiveCapabilityCatalog(
         connection_port=connection_port,
     )
-    build_vendor_knowledge_live_registration_registry().publish_to_tenant_catalog(
+    build_vendor_knowledge_live_registration_registry(
+        discover_entry_points=discover_vendor_knowledge_entry_points,
+    ).publish_to_tenant_catalog(
         live_capability_catalog,
     )
     source_catalog = TenantVendorKnowledgeSourceCatalog(
         connection_port=connection_port,
-        plugin_registry=build_default_vendor_knowledge_source_plugin_registry(),
+        plugin_registry=build_default_vendor_knowledge_source_plugin_registry(
+            discover_entry_points=discover_vendor_knowledge_entry_points,
+        ),
     )
     factory_registry = (
         tenant_connection_factory_registry
-        or build_default_vendor_knowledge_connection_factory_registry()
+        or build_default_vendor_knowledge_connection_factory_registry(
+            discover_entry_points=discover_vendor_knowledge_entry_points,
+        )
     )
     legacy_local_integration = legacy_local_integration or slack_integration
     legacy_local_bootstrap = legacy_local_bootstrap or _bootstrap_from_legacy_integration(
@@ -356,6 +363,7 @@ def build_connected_source_host_bundle(
         sync_runtime=sync_runtime,
         msgraph_mailbox_user_id=msgraph_mailbox_user_id,
         msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
+        discover_vendor_knowledge_entry_points=discover_vendor_knowledge_entry_points,
     )
     if not rehydrated:
         legacy_local_bootstrap = legacy_local_bootstrap or _bootstrap_from_legacy_integration(

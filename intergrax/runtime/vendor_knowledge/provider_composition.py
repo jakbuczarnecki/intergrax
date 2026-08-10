@@ -58,6 +58,13 @@ from intergrax.integrations.providers.wiki_knowledge.confluence.tenant_connectio
 from intergrax.runtime.vendor_knowledge.tenant_connection_factory_registry import (
     TenantConnectionIntegrationFactoryRegistry,
 )
+from intergrax.runtime.vendor_knowledge.contribution import (
+    VendorKnowledgeConnectionFactoryContribution,
+)
+from intergrax.runtime.vendor_knowledge.contribution_catalog import (
+    build_default_vendor_knowledge_contribution_catalog,
+    build_vendor_knowledge_connection_factory_registry,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,52 +93,78 @@ def build_default_vendor_knowledge_connection_factory_registry(
     jira_http_client_factory: Callable[[JiraIntegrationConfig], Any] | None = None,
     confluence_http_client_factory: Callable[[ConfluenceIntegrationConfig], Any] | None = None,
     databricks_connection_factory: Callable[[], Any] | None = None,
+    discover_entry_points: bool = False,
 ) -> TenantConnectionIntegrationFactoryRegistry:
-    """Compose provider-owned connection factories behind a generic registry."""
-    registry = TenantConnectionIntegrationFactoryRegistry()
-    registry.register(
-        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
-        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
-        factory=Ms365GraphTenantConnectionIntegrationFactory(
-            runtime_builder=msgraph_runtime_builder,
+    """Compose provider-owned factories through the contribution catalog."""
+    overrides = {
+        (
+            MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+        ): VendorKnowledgeConnectionFactoryContribution(
+            provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            integration_category=IntegrationCategory.COLLABORATION_SUITE,
+            factory=Ms365GraphTenantConnectionIntegrationFactory(
+                runtime_builder=msgraph_runtime_builder,
+            ),
         ),
-    )
-    registry.register(
-        provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
-        integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
-        factory=SlackTenantConnectionIntegrationFactory(
-            runtime_builder=slack_runtime_builder,
+        (
+            SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+            IntegrationCategory.CONVERSATION_CHANNEL,
+        ): VendorKnowledgeConnectionFactoryContribution(
+            provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+            integration_category=IntegrationCategory.CONVERSATION_CHANNEL,
+            factory=SlackTenantConnectionIntegrationFactory(
+                runtime_builder=slack_runtime_builder,
+            ),
         ),
-    )
-    registry.register(
-        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
-        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
-        factory=GoogleWorkspaceTenantConnectionIntegrationFactory(
-            client_factory=google_client_factory or _UnavailableGoogleWorkspaceClientFactory(),
+        (
+            GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+        ): VendorKnowledgeConnectionFactoryContribution(
+            provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            integration_category=IntegrationCategory.COLLABORATION_SUITE,
+            factory=GoogleWorkspaceTenantConnectionIntegrationFactory(
+                client_factory=google_client_factory
+                or _UnavailableGoogleWorkspaceClientFactory(),
+            ),
         ),
-    )
-    registry.register(
-        provider_id=JIRA_ISSUE_TRACKER_PROVIDER_ID,
-        integration_kind=IntegrationCategory.ISSUE_TRACKER,
-        factory=JiraTenantConnectionIntegrationFactory(
-            http_client_factory=jira_http_client_factory,
+        (
+            JIRA_ISSUE_TRACKER_PROVIDER_ID,
+            IntegrationCategory.ISSUE_TRACKER,
+        ): VendorKnowledgeConnectionFactoryContribution(
+            provider_id=JIRA_ISSUE_TRACKER_PROVIDER_ID,
+            integration_category=IntegrationCategory.ISSUE_TRACKER,
+            factory=JiraTenantConnectionIntegrationFactory(
+                http_client_factory=jira_http_client_factory,
+            ),
         ),
-    )
-    registry.register(
-        provider_id=CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
-        integration_kind=IntegrationCategory.WIKI_KNOWLEDGE,
-        factory=ConfluenceTenantConnectionIntegrationFactory(
-            http_client_factory=confluence_http_client_factory,
+        (
+            CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+            IntegrationCategory.WIKI_KNOWLEDGE,
+        ): VendorKnowledgeConnectionFactoryContribution(
+            provider_id=CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+            integration_category=IntegrationCategory.WIKI_KNOWLEDGE,
+            factory=ConfluenceTenantConnectionIntegrationFactory(
+                http_client_factory=confluence_http_client_factory,
+            ),
         ),
-    )
-    registry.register(
-        provider_id=DATABRICKS_RELATIONAL_STORE_PROVIDER_ID,
-        integration_kind=IntegrationCategory.RELATIONAL_STORE,
-        factory=DatabricksTenantConnectionIntegrationFactory(
-            connection_factory=databricks_connection_factory,
+        (
+            DATABRICKS_RELATIONAL_STORE_PROVIDER_ID,
+            IntegrationCategory.RELATIONAL_STORE,
+        ): VendorKnowledgeConnectionFactoryContribution(
+            provider_id=DATABRICKS_RELATIONAL_STORE_PROVIDER_ID,
+            integration_category=IntegrationCategory.RELATIONAL_STORE,
+            factory=DatabricksTenantConnectionIntegrationFactory(
+                connection_factory=databricks_connection_factory,
+            ),
         ),
+    }
+    catalog = build_default_vendor_knowledge_contribution_catalog(
+        discover_entry_points=discover_entry_points,
     )
-    return registry
+    return build_vendor_knowledge_connection_factory_registry(
+        catalog.with_connection_factory_overrides(overrides)
+    )
 
 
 def build_default_vendor_knowledge_legacy_local_bootstrap(

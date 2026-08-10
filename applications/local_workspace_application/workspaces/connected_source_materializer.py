@@ -57,9 +57,25 @@ from intergrax.runtime.vendor_knowledge.plugin import (
     VendorKnowledgeSourceIdentity,
     VendorKnowledgeSourcePluginRegistry,
 )
-from intergrax.runtime.vendor_knowledge.plugin_composition import (
-    build_default_vendor_knowledge_source_plugin_registry,
+from intergrax.runtime.vendor_knowledge.contribution_catalog import (
+    build_vendor_knowledge_source_plugin_registry,
 )
+
+__all__ = [
+    "ConfluencePageRichTextMaterializer",
+    "ConnectedSourceContentMaterializer",
+    "ConnectedSourceContentMaterializerRegistry",
+    "GoogleCalendarStructuredRecordMaterializer",
+    "GoogleDocsStructuredRecordMaterializer",
+    "GoogleSheetsStructuredRecordMaterializer",
+    "JiraIssueStructuredRecordMaterializer",
+    "MsGraphCalendarStructuredRecordMaterializer",
+    "MsGraphMailStructuredRecordMaterializer",
+    "MsGraphTeamsChannelStructuredRecordMaterializer",
+    "MsGraphTeamsChatStructuredRecordMaterializer",
+    "SlackConversationStructuredRecordMaterializer",
+    "default_connected_source_materializer_registry",
+]
 
 _SLACK_CONVERSATION_MESSAGE_SCHEMA = "slack.conversation.message.knowledge.v1"
 _MSGRAPH_TEAMS_CHAT_MESSAGE_SCHEMA = "msgraph.teams-chat.message.knowledge.v1"
@@ -356,7 +372,13 @@ def _build_materialized_document(
 
 
 def _default_plugin_registry() -> VendorKnowledgeSourcePluginRegistry:
-    return build_default_vendor_knowledge_source_plugin_registry()
+    from intergrax.runtime.vendor_knowledge.contribution_catalog import (
+        build_default_vendor_knowledge_contribution_catalog,
+    )
+
+    return build_vendor_knowledge_source_plugin_registry(
+        build_default_vendor_knowledge_contribution_catalog()
+    )
 
 
 def _safe_conversation_label(record: _SlackConversationMessageKnowledgeRecord) -> str:
@@ -427,20 +449,25 @@ def _render_slack_message_markdown(
     return "\n".join(lines)
 
 
-def default_connected_source_materializer_registry() -> ConnectedSourceContentMaterializerRegistry:
+def default_connected_source_materializer_registry(
+    *,
+    discover_entry_points: bool = False,
+) -> ConnectedSourceContentMaterializerRegistry:
+    from local_workspace_application.workspaces.vendor_knowledge_extension_composition import (
+        build_default_vendor_knowledge_application_contribution_catalog,
+    )
+
+    catalog = build_default_vendor_knowledge_application_contribution_catalog(
+        discover_entry_points=discover_entry_points,
+    )
+    materializers = tuple(
+        hook.factory()
+        for contribution in catalog.list_contributions()
+        for hook in contribution.indexed_materializers
+    )
     return ConnectedSourceContentMaterializerRegistry(
-        materializers=(
-            ConfluencePageRichTextMaterializer(),
-            SlackConversationStructuredRecordMaterializer(),
-            MsGraphTeamsChatStructuredRecordMaterializer(),
-            MsGraphMailStructuredRecordMaterializer(),
-            MsGraphTeamsChannelStructuredRecordMaterializer(),
-            MsGraphCalendarStructuredRecordMaterializer(),
-            GoogleCalendarStructuredRecordMaterializer(),
-            GoogleDocsStructuredRecordMaterializer(),
-            GoogleSheetsStructuredRecordMaterializer(),
-            JiraIssueStructuredRecordMaterializer(),
-        )
+        materializers=materializers,
+        plugin_registry=build_vendor_knowledge_source_plugin_registry(catalog),
     )
 
 

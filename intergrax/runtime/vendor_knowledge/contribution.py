@@ -365,16 +365,7 @@ class VendorKnowledgeProviderContribution:
         object.__setattr__(
             self,
             "adapters",
-            tuple(
-                sorted(
-                    adapters,
-                    key=lambda item: (
-                        item.provider_id,
-                        item.integration_kind.value,
-                        item.source_kind,
-                    ),
-                )
-            ),
+            tuple(adapters),
         )
         object.__setattr__(
             self,

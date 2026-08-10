@@ -1,39 +1,25 @@
-"""Default provider composition root for Vendor Knowledge Live."""
+"""Contribution-driven composition root for Vendor Knowledge Live."""
 
 from __future__ import annotations
 
-from intergrax.runtime.vendor_knowledge.live.ms365_graph.registration import (
-    build_msgraph_calendar_vendor_knowledge_source_plugin,
-    build_msgraph_drive_vendor_knowledge_source_plugin,
-    build_msgraph_live_registration_bundles,
-    build_msgraph_mail_vendor_knowledge_source_plugin,
-    build_msgraph_teams_channel_vendor_knowledge_source_plugin,
-    build_msgraph_teams_chat_vendor_knowledge_source_plugin,
+from intergrax.runtime.vendor_knowledge.contribution_catalog import (
+    build_default_vendor_knowledge_contribution_catalog,
+    build_vendor_knowledge_live_registration_registry as compose_live_registry,
 )
 from intergrax.runtime.vendor_knowledge.live.registration import (
     VendorKnowledgeLiveRegistrationRegistry,
 )
-from intergrax.runtime.vendor_knowledge.live.slack.registration import (
-    build_slack_live_registration_bundles,
-    build_slack_vendor_knowledge_source_plugin,
-)
 
 
 def build_vendor_knowledge_live_registration_registry(
+    *,
+    discover_entry_points: bool = False,
 ) -> VendorKnowledgeLiveRegistrationRegistry:
-    """Build the provider-neutral Live registry from provider contributions."""
-    registry = VendorKnowledgeLiveRegistrationRegistry()
-    registry.register(build_msgraph_live_registration_bundles())
-    registry.register(build_slack_live_registration_bundles())
-    registry.register_plugin(build_slack_vendor_knowledge_source_plugin())
-    registry.register_plugin(build_msgraph_drive_vendor_knowledge_source_plugin())
-    registry.register_plugin(build_msgraph_mail_vendor_knowledge_source_plugin())
-    registry.register_plugin(
-        build_msgraph_teams_channel_vendor_knowledge_source_plugin()
+    """Build the provider-neutral Live registry from the contribution catalog."""
+    catalog = build_default_vendor_knowledge_contribution_catalog(
+        discover_entry_points=discover_entry_points,
     )
-    registry.register_plugin(build_msgraph_teams_chat_vendor_knowledge_source_plugin())
-    registry.register_plugin(build_msgraph_calendar_vendor_knowledge_source_plugin())
-    return registry
+    return compose_live_registry(catalog)
 
 
 __all__ = ["build_vendor_knowledge_live_registration_registry"]

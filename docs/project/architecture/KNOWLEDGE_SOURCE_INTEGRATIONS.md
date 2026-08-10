@@ -1749,3 +1749,22 @@ injected durable sink
 ```
 
 > Vendor integrations provide the low-level provider capabilities and shared read primitives. The durable path normalizes and materializes provider data through Vendor Knowledge adapters and the sync runtime. The live path executes bounded read-only capabilities at request time. Applications consume either or both paths without duplicating vendor clients, SDKs or integration categories. Exactly three consumption modes apply: indexed RAG, durable materialization without RAG and bounded live access. Synchronization is a lifecycle mechanism of the durable modes, not a separate fourth consumption mode.
+
+---
+
+## 19. Vendor Knowledge contribution composition
+
+`VendorKnowledgeProviderContribution` is the extension ABI for Vendor
+Knowledge. Provider-owned builders publish adapters, source plugins,
+connection factories and supported Live registrations into one
+`VendorKnowledgeContributionCatalog`. Built-in contributions are deterministic;
+optional external contributions use the explicit
+`intergrax.vendor_knowledge.providers` entry-point group and are loaded only
+when discovery is enabled.
+
+The catalog is the single source for runtime registries. Application-owned
+discovery and indexed materializer hooks are added through the typed host
+extension context, then consumed generically by LKW composition. Provider
+business cases are not repeated in the adapter, source-plugin, factory, Live
+or materializer registry builders. Full external provider authoring guidance is
+deferred to VK-EXT-4.

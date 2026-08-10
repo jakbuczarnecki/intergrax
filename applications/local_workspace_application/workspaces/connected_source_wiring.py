@@ -11,24 +11,12 @@ from local_workspace_application.host.settings import LocalWorkspaceBackendSetti
 from local_workspace_application.workspaces.connected_source_discovery import (
     WorkspaceRemoteResourceDiscoveryService,
 )
-from local_workspace_application.workspaces.connected_source_discovery_msgraph import (
-    MsGraphCalendarDiscoveryStrategy,
-    MsGraphMailFolderDiscoveryStrategy,
-    MsGraphTeamsChannelDiscoveryStrategy,
-    MsGraphTeamsChatDiscoveryStrategy,
-)
 from local_workspace_application.workspaces.connected_source_discovery_google_workspace import (
     GoogleWorkspaceKnownResourceCatalog,
-    GoogleWorkspaceKnownResourceDiscoveryStrategy,
 )
 from local_workspace_application.workspaces.connected_source_discovery_atlassian import (
     ConfluenceKnownSpaceCatalog,
-    ConfluenceSpaceDiscoveryStrategy,
     JiraKnownProjectCatalog,
-    JiraProjectDiscoveryStrategy,
-)
-from local_workspace_application.workspaces.connected_source_discovery_slack import (
-    SlackRemoteResourceDiscoveryStrategy,
 )
 from local_workspace_application.workspaces.connected_source_discovery_strategy import (
     RemoteResourceDiscoveryStrategyRegistry,
@@ -48,7 +36,6 @@ from local_workspace_application.workspaces.connected_source_tenant_binding impo
     SlackConnectedSourceCandidateAdapter,
     WorkspaceConnectedSourceTenantBindingService,
 )
-from local_workspace_application.workspaces.connected_source_models import RemoteResourceTypeV1
 from local_workspace_application.workspaces.document_indexing import (
     WorkspaceDocumentIndexingService,
 )
@@ -78,9 +65,11 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.integratio
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
 )
-from intergrax.runtime.vendor_knowledge.adapter_composition import (
-    build_default_vendor_knowledge_adapter_registry,
+from intergrax.runtime.vendor_knowledge.contribution_catalog import (
+    VendorKnowledgeContributionCatalog,
+    build_vendor_knowledge_adapter_registry,
 )
+# Compatibility boundary retained for callers of build_default_vendor_knowledge_adapter_registry.
 from intergrax.runtime.vendor_knowledge.binding_document_store import (
     DocumentStoreKnowledgeSourceBindingRepository,
 )
@@ -90,6 +79,10 @@ from intergrax.runtime.vendor_knowledge.bindings import (
 )
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
+from local_workspace_application.workspaces.vendor_knowledge_extension_composition import (
+    VendorKnowledgeApplicationExtensionContext,
+    build_default_vendor_knowledge_application_contribution_catalog,
+)
 
 
 class _ConnectionAwareResolver:
@@ -148,68 +141,29 @@ def build_default_remote_resource_discovery_registry(
     confluence_known_space_catalog: ConfluenceKnownSpaceCatalog,
     msgraph_mailbox_user_id: str | None,
     msgraph_teams_channel_team_id: str | None = None,
+    contribution_catalog: VendorKnowledgeContributionCatalog | None = None,
+    discover_entry_points: bool = False,
 ) -> RemoteResourceDiscoveryStrategyRegistry:
-    """Compose provider-owned discovery strategies at the application boundary."""
-
-    return RemoteResourceDiscoveryStrategyRegistry(
-        (
-            SlackRemoteResourceDiscoveryStrategy(
-                connection_registry=connection_registry,
-                opaque_ref_codec=opaque_ref_codec,
-            ),
-            MsGraphTeamsChatDiscoveryStrategy(
-                connection_registry=connection_registry,
-                opaque_ref_codec=opaque_ref_codec,
-                mailbox_user_id=msgraph_mailbox_user_id,
-            ),
-            MsGraphMailFolderDiscoveryStrategy(
-                connection_registry=connection_registry,
-                opaque_ref_codec=opaque_ref_codec,
-                mailbox_user_id=msgraph_mailbox_user_id,
-            ),
-            MsGraphTeamsChannelDiscoveryStrategy(
-                connection_registry=connection_registry,
-                opaque_ref_codec=opaque_ref_codec,
-                team_remote_id=msgraph_teams_channel_team_id,
-            ),
-            MsGraphCalendarDiscoveryStrategy(
-                connection_registry=connection_registry,
-                opaque_ref_codec=opaque_ref_codec,
-                mailbox_user_id=msgraph_mailbox_user_id,
-            ),
-            GoogleWorkspaceKnownResourceDiscoveryStrategy(
-                connection_registry=connection_registry,
-                opaque_ref_codec=opaque_ref_codec,
-                known_resources=google_known_resource_catalog,
-                resource_type=RemoteResourceTypeV1.GOOGLE_WORKSPACE_CALENDAR,
-                safe_description="Google Workspace Calendar",
-            ),
-            GoogleWorkspaceKnownResourceDiscoveryStrategy(
-                connection_registry=connection_registry,
-                opaque_ref_codec=opaque_ref_codec,
-                known_resources=google_known_resource_catalog,
-                resource_type=RemoteResourceTypeV1.GOOGLE_WORKSPACE_DOCS,
-                safe_description="Google Workspace known document",
-            ),
-            GoogleWorkspaceKnownResourceDiscoveryStrategy(
-                connection_registry=connection_registry,
-                opaque_ref_codec=opaque_ref_codec,
-                known_resources=google_known_resource_catalog,
-                resource_type=RemoteResourceTypeV1.GOOGLE_WORKSPACE_SHEETS,
-                safe_description="Google Workspace known spreadsheet",
-            ),
-            JiraProjectDiscoveryStrategy(
-                connection_registry=connection_registry,
-                opaque_ref_codec=opaque_ref_codec,
-                known_projects=jira_known_project_catalog,
-            ),
-            ConfluenceSpaceDiscoveryStrategy(
-                connection_registry=connection_registry,
-                opaque_ref_codec=opaque_ref_codec,
-                known_spaces=confluence_known_space_catalog,
-            ),
-        )
+    """Compose discovery strategies from application-owned contribution hooks."""
+    context = VendorKnowledgeApplicationExtensionContext(
+        connection_registry=connection_registry,
+        opaque_ref_codec=opaque_ref_codec,
+        google_known_resource_catalog=google_known_resource_catalog,
+        jira_known_project_catalog=jira_known_project_catalog,
+        confluence_known_space_catalog=confluence_known_space_catalog,
+        msgraph_mailbox_user_id=msgraph_mailbox_user_id,
+        msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
     )
+    catalog = contribution_catalog or build_default_vendor_knowledge_application_contribution_catalog(
+        context,
+        discover_entry_points=discover_entry_points,
+    )
+    strategies = tuple(
+        hook.factory(context)
+        for contribution in catalog.list_contributions()
+        for hook in contribution.discovery_contributions
+    )
+    return RemoteResourceDiscoveryStrategyRegistry(strategies)
 
 
 def build_connected_source_wiring(
@@ -229,12 +183,26 @@ def build_connected_source_wiring(
     confluence_known_space_catalog: ConfluenceKnownSpaceCatalog | None = None,
     msgraph_mailbox_user_id: str | None = None,
     msgraph_teams_channel_team_id: str | None = None,
+    discover_vendor_knowledge_entry_points: bool = False,
 ) -> ConnectedSourceWiring:
     registry = connection_registry or KnowledgeConnectionRegistry()
     codec = opaque_ref_codec or build_connected_source_opaque_ref_codec(settings)
     google_resources = google_known_resource_catalog or GoogleWorkspaceKnownResourceCatalog()
     jira_projects = jira_known_project_catalog or JiraKnownProjectCatalog()
     confluence_spaces = confluence_known_space_catalog or ConfluenceKnownSpaceCatalog()
+    contribution_context = VendorKnowledgeApplicationExtensionContext(
+        connection_registry=registry,
+        opaque_ref_codec=codec,
+        google_known_resource_catalog=google_resources,
+        jira_known_project_catalog=jira_projects,
+        confluence_known_space_catalog=confluence_spaces,
+        msgraph_mailbox_user_id=msgraph_mailbox_user_id,
+        msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
+    )
+    contribution_catalog = build_default_vendor_knowledge_application_contribution_catalog(
+        contribution_context,
+        discover_entry_points=discover_vendor_knowledge_entry_points,
+    )
     discovery_strategy_registry = build_default_remote_resource_discovery_registry(
         connection_registry=registry,
         opaque_ref_codec=codec,
@@ -243,6 +211,8 @@ def build_connected_source_wiring(
         confluence_known_space_catalog=confluence_spaces,
         msgraph_mailbox_user_id=msgraph_mailbox_user_id,
         msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
+        contribution_catalog=contribution_catalog,
+        discover_entry_points=discover_vendor_knowledge_entry_points,
     )
     discovery = WorkspaceRemoteResourceDiscoveryService(
         workspace_lookup=workspace_service,
@@ -259,7 +229,7 @@ def build_connected_source_wiring(
         codec=codec,
         discovery_service=discovery,
     )
-    adapter_registry = build_default_vendor_knowledge_adapter_registry()
+    adapter_registry = build_vendor_knowledge_adapter_registry(contribution_catalog)
     binding_repo = DocumentStoreKnowledgeSourceBindingRepository(repository.document_store)
     resolver = _ConnectionAwareResolver(registry)
 
