@@ -1,8 +1,8 @@
 # RAG-PROD-13 — Production Qualification Record
 
-**Qualification date:** 2026-08-10  
-**Status:** `READY_FOR_REVIEW`  
-**Global status:** `PRODUCTION_QUALIFIED_WITH_LIMITATIONS`  
+**Qualification date:** 2026-08-10<br>
+**Status:** `READY_FOR_REVIEW`<br>
+**Global status:** `PRODUCTION_QUALIFIED_WITH_LIMITATIONS`<br>
 **RAG-PROD-14:** `READY` (declaration only; not started)
 
 This is an evidence record, not a marketing or universal performance claim.
@@ -278,4 +278,3 @@ store. No live Neo4j qualification was claimed.
 - Push: reported in the final task handoff
 - `HEAD == origin/development`: checked before the evidence commit
 - Concurrent/unrelated modifications: preserved, not staged or restored.
-
