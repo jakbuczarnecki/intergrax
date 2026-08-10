@@ -12,6 +12,11 @@ from numpy.typing import NDArray
 
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.knowledge.contracts.validation import require_non_empty_str
+from intergrax.distributed.source_operation import (
+    RagSourceOperationKey,
+    SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
+    SourceOperationCoordinator,
+)
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
@@ -49,6 +54,7 @@ class VectorstoreManager(BaseVectorstoreManager):
         self._access_policy = access_policy
         self._collection_name = collection_name
         self._bound_scope = scope
+        self._source_coordinator: SourceOperationCoordinator | None = None
         provider_tenant = getattr(store, "_tenant_id", None)
         if isinstance(provider_tenant, str) and provider_tenant.strip():
             provider_tenant = provider_tenant.strip()
@@ -68,6 +74,12 @@ class VectorstoreManager(BaseVectorstoreManager):
     @property
     def bound_scope(self) -> VectorStoreScope | None:
         return self._bound_scope
+
+    def set_source_operation_coordinator(
+        self,
+        coordinator: SourceOperationCoordinator,
+    ) -> None:
+        self._source_coordinator = coordinator
 
     def _resolve_scope(self, scope: VectorStoreScope | None) -> VectorStoreScope:
         if scope is not None and not isinstance(scope, VectorStoreScope):
@@ -216,15 +228,16 @@ class VectorstoreManager(BaseVectorstoreManager):
         provider_hits = self._store.query(
             query_embedding=vector.tolist(),
             scope=resolved_scope,
-            top_k=limit,
+            top_k=self._publication_query_limit(limit, resolved_scope),
             metadata_filter=provider_filter,
             include_embeddings=include_embeddings,
         )
-        return self._normalize_hits(
+        normalized = self._normalize_hits(
             provider_hits,
             scope=resolved_scope,
             include_embeddings=include_embeddings,
         )
+        return self._filter_visible_publication_hits(normalized, resolved_scope)[:limit]
 
     def _normalize_hits(
         self,
@@ -292,7 +305,7 @@ class VectorstoreManager(BaseVectorstoreManager):
                 vector.tolist(),
                 query_text,
                 scope=resolved_scope,
-                top_k=limit,
+                top_k=self._publication_query_limit(limit, resolved_scope),
                 metadata_filter=provider_filter,
                 include_embeddings=include_embeddings,
                 alpha=alpha,
@@ -301,15 +314,66 @@ class VectorstoreManager(BaseVectorstoreManager):
             provider_hits = self._store.query(
                 query_embedding=vector.tolist(),
                 scope=resolved_scope,
-                top_k=limit,
+                top_k=self._publication_query_limit(limit, resolved_scope),
                 metadata_filter=provider_filter,
                 include_embeddings=include_embeddings,
             )
-        return self._normalize_hits(
+        normalized = self._normalize_hits(
             provider_hits,
             scope=resolved_scope,
             include_embeddings=include_embeddings,
         )
+        return self._filter_visible_publication_hits(normalized, resolved_scope)[:limit]
+
+    def _publication_query_limit(
+        self,
+        limit: int,
+        scope: VectorStoreScope,
+    ) -> int:
+        if self._source_coordinator is None:
+            return limit
+        try:
+            return max(limit, int(self._store.count(scope=scope)))
+        except (AttributeError, TypeError, ValueError):
+            return limit
+
+    def _filter_visible_publication_hits(
+        self,
+        hits: Sequence[VectorStoreHit],
+        scope: VectorStoreScope,
+    ) -> list[VectorStoreHit]:
+        if self._source_coordinator is None:
+            return list(hits)
+        visible: list[VectorStoreHit] = []
+        for hit in hits:
+            source_id = str(hit.document.provenance.source_id)
+            key = RagSourceOperationKey(
+                tenant_id=scope.tenant_id,
+                namespace=scope.namespace,
+                workspace_id=scope.workspace_id,
+                source_id=source_id,
+            )
+            active_generation = self._source_coordinator.active_publication_generation(
+                key=key
+            )
+            record_generation = hit.document.metadata.get(
+                SOURCE_PUBLICATION_GENERATION_METADATA_KEY
+            )
+            if active_generation is None:
+                if record_generation is not None:
+                    continue
+            elif record_generation != active_generation:
+                continue
+            visible.append(
+                VectorStoreHit(
+                    vector_id=hit.vector_id,
+                    document=hit.document,
+                    similarity_score=hit.similarity_score,
+                    rank=len(visible),
+                    embedding=hit.embedding,
+                )
+            )
+        return visible
 
     def delete(
         self,

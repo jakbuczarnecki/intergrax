@@ -99,9 +99,17 @@ Explicit limitations:
   returns `source_ingest_conflict` and cannot independently snapshot,
   publish, or clean up;
 - the default coordinator is thread-safe and process-local; production
-  composition can inject the durable `ConditionalDocumentStore` coordinator,
-  whose CAS lease token and expiry fencing prevent a stale owner from
-  releasing a newer owner or continuing destructive cleanup;
+  composition can inject the durable `ConditionalDocumentStore` coordinator.
+  The lease token and expiry fence only govern operation ownership, release,
+  and cleanup; a CAS lease alone does not fence a backend write that has
+  already started;
+- every source replacement receives a monotonic publication generation. Vector
+  and TOC records, plus the chunk IDs used by GraphRAG publication, carry that
+  generation. After all writes are prepared, the coordinator CAS-promotes one
+  active generation; retrieval exposes only records matching that active
+  generation, including graph-resolved chunk evidence. A stale in-flight write
+  therefore remains non-active and reclaimable after takeover, while the same
+  generation governs vector, TOC and GraphRAG replacement;
 - different source IDs, workspaces, namespaces, and tenants use independent
   keys; this is live-operation serialization, not cross-store transaction
   atomicity or exactly-once ingestion. Partial vector/TOC/GraphRAG

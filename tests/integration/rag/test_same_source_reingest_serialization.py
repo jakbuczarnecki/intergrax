@@ -16,6 +16,7 @@ from intergrax.distributed.source_operation import (
     InProcessSourceOperationCoordinator,
     RagSourceOperationKey,
     SourceOperationLease,
+    SourceOperationCoordinator,
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.knowledge.contracts import KnowledgeDocument
@@ -114,6 +115,19 @@ class _SnapshotRaceVectorstore(VectorstoreManager):
         super().__init__(InMemoryVectorStore(tenant_id=TENANT_ID), scope=SCOPE)
 
 
+class _BlockingPublicationVectorstore(_SnapshotRaceVectorstore):
+    def __init__(self) -> None:
+        super().__init__()
+        self.write_started = threading.Event()
+        self.allow_t1_write = threading.Event()
+
+    def add_records(self, records, *, scope=None):
+        if threading.current_thread().name == "T1":
+            self.write_started.set()
+            assert self.allow_t1_write.wait(timeout=5)
+        return super().add_records(records, scope=scope)
+
+
 class _ControlledCoordinator:
     def __init__(self) -> None:
         self._delegate = InProcessSourceOperationCoordinator()
@@ -136,10 +150,19 @@ class _ControlledCoordinator:
     def is_owned(self, *, lease: SourceOperationLease) -> bool:
         return self._delegate.is_owned(lease=lease)
 
+    def publication_generation(self, *, lease: SourceOperationLease) -> str:
+        return self._delegate.publication_generation(lease=lease)
+
+    def active_publication_generation(self, *, key: RagSourceOperationKey) -> str | None:
+        return self._delegate.active_publication_generation(key=key)
+
+    def promote_publication(self, *, lease: SourceOperationLease) -> bool:
+        return self._delegate.promote_publication(lease=lease)
+
 
 def _pipeline(
     vectorstore: VectorstoreManager,
-    coordinator: _ControlledCoordinator | None = None,
+    coordinator: SourceOperationCoordinator | None = None,
 ) -> IngestPipeline:
     return IngestPipeline(
         loader=_ThreadVersionLoader(),
@@ -222,6 +245,97 @@ def test_same_source_concurrent_reingest_serializes_to_one_version(
     assert {record.document.content for record in records} in (
         {"T1-content"},
         {"T2-content"},
+    )
+
+
+def test_stale_inflight_publication_cannot_become_active_after_takeover(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "same-source.txt"
+    source.write_text("unused", encoding="utf-8")
+    vectorstore = _BlockingPublicationVectorstore()
+    document_store = InMemoryDocumentStore()
+    clock = {"now": 100.0}
+    key = RagSourceOperationKey(
+        tenant_id=TENANT_ID,
+        namespace=NAMESPACE,
+        workspace_id=WORKSPACE_ID,
+        source_id=SOURCE_ID,
+    )
+    first_coordinator = DocumentStoreSourceOperationCoordinator(
+        document_store,
+        owner_id="worker-1",
+        ttl_seconds=5,
+        clock=lambda: clock["now"],
+        token_factory=lambda: "generation-1-token",
+        version_factory=lambda: "lease-version-1",
+    )
+    second_coordinator = DocumentStoreSourceOperationCoordinator(
+        document_store,
+        owner_id="worker-2",
+        ttl_seconds=5,
+        clock=lambda: clock["now"],
+        token_factory=lambda: "generation-2-token",
+        version_factory=lambda: "lease-version-2",
+    )
+    first_pipeline = _pipeline(vectorstore, first_coordinator)
+    second_pipeline = _pipeline(vectorstore, second_coordinator)
+    results: dict[str, object] = {}
+
+    def _run(name: str, pipeline: IngestPipeline) -> None:
+        try:
+            results[name] = pipeline.run(
+                IngestRequest(
+                    source_path=str(source),
+                    base_metadata={
+                        "tenant_id": TENANT_ID,
+                        "namespace": NAMESPACE,
+                    },
+                    workspace_id=WORKSPACE_ID,
+                )
+            )
+        except BaseException as exc:
+            results[name] = exc
+
+    first_thread = threading.Thread(
+        target=_run,
+        args=("T1", first_pipeline),
+        name="T1",
+    )
+    first_thread.start()
+    assert vectorstore.write_started.wait(timeout=5)
+
+    clock["now"] = 106.0
+    second_thread = threading.Thread(
+        target=_run,
+        args=("T2", second_pipeline),
+        name="T2",
+    )
+    second_thread.start()
+    second_thread.join(timeout=10)
+    assert not second_thread.is_alive()
+    assert getattr(results["T2"], "reason", None) == "ok"
+
+    vectorstore.allow_t1_write.set()
+    first_thread.join(timeout=10)
+    assert not first_thread.is_alive()
+    assert isinstance(results["T1"], RuntimeError)
+    assert str(results["T1"]) == "source_ingest_conflict"
+
+    hits = vectorstore.query(
+        [0.70710677, 0.70710677],
+        scope=SCOPE,
+        top_k=10,
+    )
+    source_hits = [
+        hit for hit in hits if str(hit.document.provenance.source_id) == SOURCE_ID
+    ]
+    assert [hit.document.content for hit in source_hits] == ["T2-content"]
+    assert (
+        second_coordinator.active_publication_generation(key=key)
+        == source_hits[0].document.metadata[
+            "__intergrax_source_publication_generation"
+        ]
     )
 
 

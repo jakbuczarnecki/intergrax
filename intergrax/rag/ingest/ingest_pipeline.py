@@ -13,6 +13,7 @@ from typing import Any
 from intergrax.distributed.source_operation import (
     InProcessSourceOperationCoordinator,
     RagSourceOperationKey,
+    SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
     SourceOperationCoordinator,
     SourceOperationLease,
 )
@@ -139,6 +140,14 @@ class IngestPipeline:
         self._source_coordinator = (
             source_coordinator or InProcessSourceOperationCoordinator()
         )
+        for publication_store in (self._vectorstore, self._toc_vectorstore):
+            configure = getattr(
+                publication_store,
+                "set_source_operation_coordinator",
+                None,
+            )
+            if callable(configure):
+                configure(self._source_coordinator)
 
     def run(self, request: IngestRequest) -> IngestResult:
         path = Path(request.source_path)
@@ -329,6 +338,20 @@ class IngestPipeline:
             native_chunks = [
                 add_native_metadata(chunk, base_metadata) for chunk in native_chunks
             ]
+            publication_generation = self._source_coordinator.publication_generation(
+                lease=lease
+            )
+            native_chunks = [
+                add_native_metadata(
+                    chunk,
+                    {
+                        SOURCE_PUBLICATION_GENERATION_METADATA_KEY: (
+                            publication_generation
+                        )
+                    },
+                )
+                for chunk in native_chunks
+            ]
             if any(
                 VectorStoreScope.from_document(chunk) != source_scope
                 or str(chunk.provenance.source_id) != source_id
@@ -431,6 +454,9 @@ class IngestPipeline:
                         raise RuntimeError(
                             "source_reingest_graph_stale_unlink_failed"
                         ) from exc
+
+            if not self._source_coordinator.promote_publication(lease=lease):
+                raise RuntimeError("source_ingest_conflict")
 
             self._ensure_source_lease(lease)
             stale_main_ids = old_main_ids - new_main_ids
