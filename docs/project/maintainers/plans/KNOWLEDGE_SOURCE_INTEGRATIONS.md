@@ -552,9 +552,12 @@ Google Workspace `docs`, `sheets` and `calendar` each declare `DURABLE` and
 `UNSUPPORTED`. Google Workspace `drive` declares `DURABLE` only, with Durable
 `ACCEPTED`, Indexed and readiness `FOUNDATION_ONLY`, and Live `UNSUPPORTED`.
 Its blocker is `REQUIRES_GENERIC_BINARY_CONTENT_EXTRACTION_CAPABILITY`.
-Jira and Confluence remain Durable `FOUNDATION_ONLY` with Indexed foundation
-only and Live `UNSUPPORTED` until separately proven. Atlan and Power BI have
-no Vendor Knowledge implementation. Databricks has only a relational
+Jira `issues` and Confluence `pages` are **`LKW_READY`** with Durable and
+Indexed both `ACCEPTED`; Live remains `UNSUPPORTED`. They retain separate
+canonical provider connections (`jira` / `ISSUE_TRACKER` and `confluence` /
+`WIKI_KNOWLEDGE`) and use bounded project/space discovery, provider-owned
+materialization and the generic application Search/Ask path. Atlan and Power BI
+have no Vendor Knowledge implementation. Databricks has only a relational
 integration and no selected Vendor Knowledge source kind.
 
 The exact new-provider requirements are intentionally small:
