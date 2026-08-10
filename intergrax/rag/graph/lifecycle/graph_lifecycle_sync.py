@@ -7,16 +7,21 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
-from intergrax.rag.graph.contracts.graph_store import GraphStore
+from intergrax.rag.graph.contracts.graph_store import GraphScope, GraphStore
 
 
 def sync_graph_delete_documents(
     graph_store: Optional[GraphStore],
     document_ids: Sequence[str],
+    *,
+    source_id: str | None = None,
+    scope: GraphScope | None = None,
 ) -> int:
-    """Unlink chunk ids from graph and prune orphan entities. Returns affected count."""
+    """Unlink exact source evidence, or legacy chunk ids when no source is known."""
     if graph_store is None:
         return 0
+    if source_id is not None:
+        return graph_store.unlink_source(source_id, scope=scope)
     ids = [item.strip() for item in document_ids if item.strip()]
     if not ids:
         return 0

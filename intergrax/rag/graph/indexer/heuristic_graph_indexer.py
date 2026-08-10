@@ -12,7 +12,12 @@ from intergrax.distributed.source_operation import (
     SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
 )
 from intergrax.knowledge.contracts import KnowledgeDocument
-from intergrax.rag.graph.contracts.graph_store import GraphEdge, GraphNode, GraphStore
+from intergrax.rag.graph.contracts.graph_store import (
+    GraphEdge,
+    GraphNode,
+    GraphScope,
+    GraphStore,
+)
 from intergrax.rag.graph.indexer.validation import validate_graph_index_batch
 
 _ENTITY_RE = re.compile(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})\b")
@@ -37,6 +42,7 @@ class HeuristicGraphIndexer:
         return count
 
     def _index_one(self, doc: KnowledgeDocument, chunk_id: str) -> int:
+        self._store.bind_scope(GraphScope.from_object(doc.scope))
         text = doc.content
         entities = _ENTITY_RE.findall(text)[:12]
         if len(entities) < 2:
@@ -70,14 +76,14 @@ class HeuristicGraphIndexer:
 
     @staticmethod
     def _publication_metadata(doc: KnowledgeDocument) -> dict[str, object]:
-        if SOURCE_PUBLICATION_GENERATION_METADATA_KEY not in doc.metadata:
-            return {}
-        return {
-            SOURCE_PUBLICATION_GENERATION_METADATA_KEY: doc.metadata.get(
-                SOURCE_PUBLICATION_GENERATION_METADATA_KEY
-            ),
+        metadata = {
             "tenant_id": doc.scope.tenant_id,
             "namespace": doc.scope.namespace,
             "workspace_id": doc.scope.workspace_id,
             "source_id": str(doc.provenance.source_id),
         }
+        if SOURCE_PUBLICATION_GENERATION_METADATA_KEY in doc.metadata:
+            metadata[SOURCE_PUBLICATION_GENERATION_METADATA_KEY] = doc.metadata.get(
+                SOURCE_PUBLICATION_GENERATION_METADATA_KEY
+            )
+        return metadata

@@ -37,7 +37,7 @@ from intergrax.rag.embedding.contracts.base_embedding_manager import (
 from intergrax.rag.governance.embedding_version_policy import (
     evaluate_ingest_embedding_version,
 )
-from intergrax.rag.graph.contracts.graph_store import GraphStore
+from intergrax.rag.graph.contracts.graph_store import GraphScope, GraphStore
 from intergrax.rag.graph.indexer.graph_indexer_factory import resolve_graph_indexer
 from intergrax.rag.graph.lifecycle.graph_lifecycle_sync import (
     sync_graph_delete_documents,
@@ -505,6 +505,7 @@ class IngestPipeline:
                         sync_graph_delete_documents(
                             self._graph_store,
                             sorted(stale_graph_ids),
+                            scope=GraphScope.from_object(source_scope),
                         )
                     except Exception as exc:
                         raise RuntimeError(

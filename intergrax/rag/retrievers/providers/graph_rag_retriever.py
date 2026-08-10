@@ -12,7 +12,7 @@ from intergrax.distributed.source_operation import SourceOperationCoordinator
 from intergrax.rag.embedding.contracts.base_embedding_manager import (
     BaseEmbeddingManager,
 )
-from intergrax.rag.graph.contracts.graph_store import GraphNode, GraphStore
+from intergrax.rag.graph.contracts.graph_store import GraphNode, GraphScope, GraphStore
 from intergrax.rag.retrieval.graph_channel_fusion import (
     GraphChannelHit,
     build_keyword_hits,
@@ -82,6 +82,10 @@ class GraphRagRetriever(BaseRetriever):
         self._last_trace = None
         if not query.query_text:
             return ()
+        if query.scope is not None:
+            bind_scope = getattr(self._graph, "bind_scope", None)
+            if callable(bind_scope):
+                bind_scope(GraphScope.from_object(query.scope))
 
         q_vec = (
             query.query_embedding

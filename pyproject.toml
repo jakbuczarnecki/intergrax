@@ -147,6 +147,9 @@ intergrax = "intergrax.cli.main:main"
 builtin = "intergrax.context.providers.builtin:BuiltinContextPlugin"
 
 [project.optional-dependencies]
+integrations-neo4j = [
+  "neo4j>=5.26,<6",
+]
 vector-chroma = [
   "chromadb==1.4.1",
 ]

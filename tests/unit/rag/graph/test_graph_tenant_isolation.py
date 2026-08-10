@@ -3,6 +3,7 @@
 import pytest
 
 from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
+from intergrax.rag.graph.contracts.graph_store import GraphEdge, GraphNode, GraphScope
 from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
 from intergrax.rag.graph.tenant.graph_isolation_contract import (
     run_graph_isolation_contract,
@@ -73,3 +74,40 @@ def test_tenant_metadata_is_not_an_authoritative_graph_scope() -> None:
     assert document.scope.tenant_id == "tenant-a"
     assert document.scope.workspace_id == "workspace-a"
     assert store.node_ids_for_chunks({"chunk-scope"})
+
+
+def test_source_unlink_preserves_shared_support_and_prunes_last_support() -> None:
+    scope = GraphScope("tenant-a", namespace="ns-a", workspace_id="workspace-a")
+    store = InMemoryGraphStore()
+    for source_id, chunk_id in (
+        ("source-a", "basename.txt"),
+        ("source-b", "basename.txt"),
+    ):
+        metadata = {
+            "tenant_id": scope.tenant_id,
+            "namespace": scope.namespace,
+            "workspace_id": scope.workspace_id,
+            "source_id": source_id,
+            "chunk_ids": [chunk_id],
+        }
+        for node_id in ("ent:shared", f"ent:{source_id}"):
+            store.upsert_node(GraphNode(node_id, node_id, metadata=metadata))
+            store.link_chunk(node_id, chunk_id)
+        store.upsert_edge(
+            GraphEdge(
+                "ent:shared",
+                f"ent:{source_id}",
+                "supports",
+                metadata=metadata,
+            )
+        )
+
+    store.unlink_source("source-a", scope=scope)
+    assert store.node_ids_for_chunks({"basename.txt"}) == {
+        "ent:shared",
+        "ent:source-b",
+    }
+    assert any(node.id == "ent:source-b" for node in store.neighbors("ent:shared"))
+
+    store.unlink_source("source-b", scope=scope)
+    assert store.find_nodes(label_contains="ent:shared") == []

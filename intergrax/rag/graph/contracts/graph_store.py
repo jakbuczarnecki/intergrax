@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+import hashlib
 from typing import TYPE_CHECKING, Dict, List, Sequence, Set
 
 if TYPE_CHECKING:
@@ -30,6 +31,52 @@ class GraphEdge:
     metadata: Dict[str, object] = field(default_factory=dict)
 
 
+@dataclass(frozen=True, slots=True)
+class GraphScope:
+    """Authoritative graph scope; empty values are canonicalized."""
+
+    tenant_id: str
+    namespace: str | None = None
+    workspace_id: str | None = None
+
+    def __post_init__(self) -> None:
+        tenant_id = self.tenant_id.strip()
+        if not tenant_id:
+            raise ValueError("graph scope requires tenant_id")
+        object.__setattr__(self, "tenant_id", tenant_id)
+        object.__setattr__(self, "namespace", _clean_optional(self.namespace))
+        object.__setattr__(self, "workspace_id", _clean_optional(self.workspace_id))
+
+    @property
+    def key(self) -> str:
+        value = "\x1f".join(
+            (self.tenant_id, self.namespace or "", self.workspace_id or "")
+        )
+        return hashlib.sha256(value.encode("utf-8")).hexdigest()[:32]
+
+    @classmethod
+    def from_object(cls, value: object) -> "GraphScope":
+        if isinstance(value, cls):
+            return value
+        tenant_id = getattr(value, "tenant_id", None)
+        namespace = getattr(value, "namespace", None)
+        workspace_id = getattr(value, "workspace_id", None)
+        if not isinstance(tenant_id, str):
+            raise TypeError("scope must expose tenant_id")
+        return cls(
+            tenant_id=tenant_id,
+            namespace=namespace if isinstance(namespace, str) else None,
+            workspace_id=workspace_id if isinstance(workspace_id, str) else None,
+        )
+
+
+def _clean_optional(value: str | None) -> str | None:
+    if value is None:
+        return None
+    value = value.strip()
+    return value or None
+
+
 class GraphStore(ABC):
     def set_source_operation_coordinator(
         self,
@@ -46,6 +93,16 @@ class GraphStore(ABC):
     def tenant_id(self) -> str | None:
         """Optional tenant namespace for graph isolation (M-RAG.41)."""
         return None
+
+    @property
+    def scope(self) -> GraphScope | None:
+        """Currently bound full scope, when one has been established."""
+        return None
+
+    def bind_scope(self, scope: GraphScope) -> None:
+        """Bind the store to one authoritative scope for writes and reads."""
+        del scope
+        raise NotImplementedError
 
     @abstractmethod
     def upsert_node(self, node: GraphNode) -> None:
@@ -81,6 +138,11 @@ class GraphStore(ABC):
     @abstractmethod
     def unlink_chunks(self, chunk_ids: Sequence[str]) -> int:
         """Remove HAS_CHUNK links for chunk ids and prune orphan entities (M-RAG.40)."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def unlink_source(self, source_id: str, *, scope: GraphScope | None = None) -> int:
+        """Remove only evidence owned by one exact source and scope."""
         raise NotImplementedError
 
     @abstractmethod
