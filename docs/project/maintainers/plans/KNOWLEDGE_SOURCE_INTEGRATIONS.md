@@ -92,6 +92,29 @@ Confluence source identities coexist behind provider-neutral application
 discovery, binding, Search and Ask paths. Databricks remains a connection
 foundation only; it has no Vendor Knowledge source contract or plugin.
 
+### VENDOR KNOWLEDGE EXTENSION READINESS
+
+Extension readiness is a separate follow-up track from the closed provider
+productionization track above. Its canonical roadmap/status is:
+
+```text
+VK-EXT-1  Unified Vendor Plugin Contribution Contract   ACCEPTED / CLOSED
+VK-EXT-2  Plugin Discovery / Composition                READY_FOR_FINAL_CLOSEOUT
+VK-EXT-3  Reference External Provider Proof             PLANNED
+VK-EXT-4  Vendor Knowledge Plugin Author Guide          PLANNED
+VK-EXT-5  Extension Readiness Closeout                  PLANNED
+```
+
+The `VendorKnowledgeProviderContribution` is the canonical extension ABI:
+built-ins and optional entry-point providers feed the
+`VendorKnowledgeContributionCatalog`, which feeds generic runtime and
+application registries. Generic composition contains no provider-specific
+business branches, and application-owned discovery/materializer hooks are
+contribution-driven. Full external provider qualification remains VK-EXT-3;
+the complete authoring guide remains VK-EXT-4. See
+[`Vendor Knowledge contribution composition`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md#19-vendor-knowledge-contribution-composition)
+for the detailed architecture boundary.
+
 Partial capabilities remain partial: Graph Drive remains
 `FOUNDATION_ONLY` with the exact
 `REQUIRES_GENERIC_BINARY_CONTENT_EXTRACTION_CAPABILITY` boundary, and Google

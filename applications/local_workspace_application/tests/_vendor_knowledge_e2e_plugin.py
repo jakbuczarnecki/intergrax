@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Shared pytest fixtures for local-workspace application E2Es."""
+"""Reusable pytest plugin for local-workspace Vendor Knowledge E2Es."""
 
 from __future__ import annotations
 
@@ -61,18 +61,18 @@ from intergrax.runtime.vendor_knowledge.tenant_connections import (
     TenantConnectionService,
 )
 
-from .rag_e2e_support import (
+from .workspaces.rag_e2e_support import (
     _CONNECTION,
     _GRAPH_MAILBOX,
     _GRAPH_TEAM_ID,
     _MARKER_ROOT,
-    _NOW,
     _SIGNING_KEY,
     _TENANT,
     _WORKSPACE,
     _RecordingFakeLLM,
     _RecordingSecretsStore,
     _SlackFakeBackend,
+    _NOW,
 )
 
 

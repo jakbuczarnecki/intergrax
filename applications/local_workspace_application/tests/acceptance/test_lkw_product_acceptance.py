@@ -50,17 +50,13 @@ from applications.local_workspace_application.tests.workspaces.test_hybrid_ask_s
     _command,
     _service,
 )
-from applications.local_workspace_application.tests.workspaces.test_slack_connected_source_end_to_end import (
+from applications.local_workspace_application.tests.workspaces.rag_e2e_support import (
     _LATEST,
     _MARKER_ROOT,
     _OLDEST,
     _PREFIX,
     _TENANT,
     _WORKSPACE,
-)
-
-pytest_plugins = (
-    "applications.local_workspace_application.tests.workspaces.test_slack_connected_source_end_to_end",
 )
 pytestmark = pytest.mark.integration
 
