@@ -72,7 +72,7 @@ traceability, but any future sequencing that conflicts with this section is
 `VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1` — `ACCEPTED / CLOSED`
 
 **NEXT:**
-`NONE — VENDOR KNOWLEDGE ARCHITECTURE ROADMAP COMPLETE`
+`PROVIDER-PROD-6-CROSS-PROVIDER-APPLICATION-CLOSEOUT`
 
 VK-8 is closed by the focused product-level proof for Slack
 `slack_conversation` and Microsoft Graph `teams_chat` coexisting in the same
@@ -320,6 +320,37 @@ Power BI
   provider selection: DEFERRED
   external research:  DEFERRED; required before reopening
 ```
+
+#### PROVIDER-PROD-5D — Additional Providers closeout
+
+`PROVIDER-PROD-5D-ADDITIONAL-PROVIDERS-CLOSEOUT` is **`ACCEPTED / CLOSED`**.
+This closes the Additional Providers track without claiming that all three
+providers are productionized:
+
+```text
+Databricks
+  connection foundation: ACCEPTED
+  VK source contract:    DEFERRED
+  readiness:              FOUNDATION_ONLY
+
+Atlan
+  implementation:         NOT IMPLEMENTED
+  selection:              DEFERRED
+  external research:      DEFERRED
+
+Power BI
+  implementation:         NOT IMPLEMENTED
+  selection:              DEFERRED
+  external research:      DEFERRED
+
+PROVIDER-PROD-5: ACCEPTED / CLOSED
+NEXT: PROVIDER-PROD-6-CROSS-PROVIDER-APPLICATION-CLOSEOUT
+```
+
+The Atlan and Power BI research deferral means that no repository-proven
+provider source contract exists yet; it does not claim either provider is
+impossible or permanently unsupported. The Databricks connection factory
+registry is a connection foundation, not a Vendor Knowledge plugin registry.
 
 ### VK-4 indexed bridge acceptance proof
 

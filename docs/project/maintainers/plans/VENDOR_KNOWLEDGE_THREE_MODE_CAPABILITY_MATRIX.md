@@ -215,6 +215,25 @@ Both sources retain the same no-tombstone and unproven item-ACL boundaries.
 | Power BI | no Vendor Knowledge adapter, plugin or runtime | none | UNSUPPORTED / NOT IMPLEMENTED |
 | Databricks | relational-store integration and restart-safe TenantConnection factory foundation exist; no Vendor Knowledge adapter and no source kind is selected | none | FOUNDATION_ONLY / NOT IMPLEMENTED |
 
+### Additional-provider track closeout
+
+`PROVIDER-PROD-5D-ADDITIONAL-PROVIDERS-CLOSEOUT` is **`ACCEPTED / CLOSED`**.
+The accepted current-state matrix is:
+
+```text
+PROVIDER    ADAPTER           DURABLE                         INDEXED      LIVE         READINESS
+Databricks  NOT_IMPLEMENTED   FOUNDATION_ONLY / NOT IMPLEMENTED UNSUPPORTED UNSUPPORTED FOUNDATION_ONLY
+Atlan       NOT_IMPLEMENTED   NOT IMPLEMENTED                UNSUPPORTED  UNSUPPORTED  NOT IMPLEMENTED
+Power BI    NOT_IMPLEMENTED   NOT IMPLEMENTED                UNSUPPORTED  UNSUPPORTED  NOT IMPLEMENTED
+```
+
+Databricks has an accepted `databricks` / `RELATIONAL_STORE` connection
+foundation through the default TenantConnection factory registry and restart
+rehydration. This does not create a Vendor Knowledge source contract or plugin.
+Atlan and Power BI remain intentionally unimplemented and deferred because no
+repository-proven source contract exists; external provider-contract research
+remains deferred until deliberate reopening.
+
 `VK1-GAP-07` is **CLOSED**: provider coverage is now deterministic, truthful and
 aligned with the accepted platform boundaries. Frontend neutrality remains
 VK-7 and complete cross-provider product E2E remains VK-8.
