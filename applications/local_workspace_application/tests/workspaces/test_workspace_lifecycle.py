@@ -174,6 +174,14 @@ def test_delete_cleans_sources_docs_ops_ask_vectors_and_preserves_files(
     ask_repo = WorkspaceAskRepository(store)
     vector_store = InMemoryVectorStore(tenant_id="t-life")
     manager = VectorstoreManager(vector_store)
+    delete_scopes: list[VectorStoreScope] = []
+    native_delete = vector_store.delete
+
+    def record_scoped_delete(ids, *, scope: VectorStoreScope) -> None:
+        delete_scopes.append(scope)
+        native_delete(ids, scope=scope)
+
+    vector_store.delete = record_scoped_delete  # type: ignore[method-assign]
     service = ManagedWorkspaceService(
         repo,
         allowlist_roots=frozenset({str(workspace_root.resolve())}),
@@ -311,6 +319,9 @@ def test_delete_cleans_sources_docs_ops_ask_vectors_and_preserves_files(
         tenant_id="t-life",
         workspace_id=target.workspace_id,
     )
+    assert delete_scopes == [
+        VectorStoreScope(tenant_id="t-life", workspace_id=target.workspace_id)
+    ]
     assert service.get_workspace(tenant_id="t-life", workspace_id=target.workspace_id) is None
     assert repo.list_sources(tenant_id="t-life", workspace_id=target.workspace_id) == []
     assert repo.list_document_refs(tenant_id="t-life", workspace_id=target.workspace_id) == []
