@@ -99,11 +99,14 @@ productionization track above. Its canonical roadmap/status is:
 
 ```text
 VK-EXT-1  Unified Vendor Plugin Contribution Contract   ACCEPTED / CLOSED
-VK-EXT-2  Plugin Discovery / Composition                READY_FOR_FINAL_CLOSEOUT
+VK-EXT-2  Plugin Discovery / Composition                ACCEPTED / CLOSED
 VK-EXT-3  Reference External Provider Proof             PLANNED
 VK-EXT-4  Vendor Knowledge Plugin Author Guide          PLANNED
 VK-EXT-5  Extension Readiness Closeout                  PLANNED
 ```
+
+NEXT:
+  VK-EXT-3  Reference External Provider Proof
 
 The `VendorKnowledgeProviderContribution` is the canonical extension ABI:
 built-ins and optional entry-point providers feed the
