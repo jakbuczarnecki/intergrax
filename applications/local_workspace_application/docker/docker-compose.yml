@@ -89,6 +89,8 @@ services:
       INTERGRAX_QDRANT_URL: http://qdrant:6333
       INTERGRAX_QDRANT_COLLECTION: local_workspace
       OLLAMA_HOST: http://ollama:11434
+      INTERGRAX_RAG_EMBEDDING_PROVIDER: ollama
+      INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL: nomic-embed-text
       LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT: http://otel-collector:4318/v1/logs
     volumes:
       - lkw_application_data:/var/lib/intergrax/lkw

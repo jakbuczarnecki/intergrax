@@ -3,6 +3,8 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+
+import os
 from typing import Optional
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
@@ -103,7 +105,8 @@ def create_default_embedding_pipeline(
         registry = create_default_registry()
 
     if provider_id is None:
-        provider_id = registry.default_provider()
+        env_provider = os.getenv("INTERGRAX_RAG_EMBEDDING_PROVIDER", "").strip()
+        provider_id = env_provider or registry.default_provider()
 
     engine = create_default_embedding_engine(registry=registry)
 

@@ -50,3 +50,6 @@ applications/local_workspace_application/.file_watcher_e2e_state/
 applications/local_workspace_application/docker/sentry-proof/generated.env
 applications/local_workspace_application/docker/sentry-proof/.bootstrapped
 applications/local_workspace_application/docker/lkw-platform-proof-startup.log
+
+# LKW live regression logs belong under applications/local_workspace_application/, not repo root
+/.lkw-live*.log

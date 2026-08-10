@@ -129,6 +129,8 @@ def test_lkw_selects_slack_and_related_extras() -> None:
         "integrations-sentry",
         "integrations-kafka",
         "llm-ollama",
+        "vector-qdrant",
+        "rag-langchain-embeddings",
     ):
         assert extra in joined
 
@@ -154,6 +156,52 @@ def test_lkw_runtime_graph_includes_ollama_client(tmp_path: Path) -> None:
     )
     lock_text = (out / "uv.lock").read_text(encoding="utf-8")
     assert 'name = "ollama"' in lock_text
+
+
+@pytest.mark.gate
+def test_lkw_runtime_graph_includes_qdrant_client(tmp_path: Path) -> None:
+    from intergrax.applications._shared.application_build_context import (
+        materialize_application_build_context,
+    )
+    from intergrax.applications._shared.application_runtime_graph import (
+        load_application_runtime_graph,
+    )
+
+    graph = load_application_runtime_graph(REPO, LKW)
+    assert "vector-qdrant" in graph.platform_extras
+
+    out = tmp_path / "ctx"
+    materialize_application_build_context(
+        repo_root=REPO,
+        application=LKW,
+        output=out,
+        pkg_port=8020,
+    )
+    lock_text = (out / "uv.lock").read_text(encoding="utf-8")
+    assert 'name = "qdrant-client"' in lock_text
+
+
+@pytest.mark.gate
+def test_lkw_runtime_graph_includes_langchain_ollama_embeddings(tmp_path: Path) -> None:
+    from intergrax.applications._shared.application_build_context import (
+        materialize_application_build_context,
+    )
+    from intergrax.applications._shared.application_runtime_graph import (
+        load_application_runtime_graph,
+    )
+
+    graph = load_application_runtime_graph(REPO, LKW)
+    assert "rag-langchain-embeddings" in graph.platform_extras
+
+    out = tmp_path / "ctx"
+    materialize_application_build_context(
+        repo_root=REPO,
+        application=LKW,
+        output=out,
+        pkg_port=8020,
+    )
+    lock_text = (out / "uv.lock").read_text(encoding="utf-8")
+    assert 'name = "langchain-ollama"' in lock_text
 
 
 @pytest.mark.gate
