@@ -52,9 +52,12 @@ from intergrax.integrations.providers.conversation_channel.slack.integration imp
     SlackConversationChannelIntegration,
 )
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
+    DEFAULT_MESSAGE_MAX_CHARS,
     SlackConversationInventoryPage,
     SlackConversationKind,
+    SlackConversationMessagePage,
     SlackConversationSummary,
+    SlackConversationSourceWindow,
 )
 
 pytestmark = pytest.mark.unit
@@ -83,6 +86,18 @@ class _FakeBackend:
         )
 
     async def read_conversation_history_page(self, **kwargs):
+        raise NotImplementedError
+
+    async def read_recent_conversation_messages_page(
+        self,
+        *,
+        conversation_id: str,
+        conversation_kind: SlackConversationKind,
+        window: SlackConversationSourceWindow,
+        limit: int,
+        max_chars_per_message: int = DEFAULT_MESSAGE_MAX_CHARS,
+        cursor: str | None = None,
+    ) -> SlackConversationMessagePage:
         raise NotImplementedError
 
     async def read_thread_replies_page(self, **kwargs):
@@ -478,8 +493,8 @@ def test_post_lifecycle_error_mappings(
 
         monkeypatch.setattr(
             wiring.tenant_binding_service,
-            "create_or_get_equivalent_for_slack_conversation",
-            lambda request: _WrongBinding(),
+            "create_or_get_equivalent",
+            lambda binding: _WrongBinding(),
         )
     candidate = _candidate_ref(client)
     response = client.post(
@@ -563,8 +578,8 @@ def test_post_tenant_binding_unavailable_returns_409(api_client, monkeypatch) ->
 
     monkeypatch.setattr(
         wiring.tenant_binding_service,
-        "create_or_get_equivalent_for_slack_conversation",
-        lambda request: (_ for _ in ()).throw(
+        "create_or_get_equivalent",
+        lambda binding: (_ for _ in ()).throw(
             ConnectedSourceBindingError("knowledge_source_binding_unavailable")
         ),
     )

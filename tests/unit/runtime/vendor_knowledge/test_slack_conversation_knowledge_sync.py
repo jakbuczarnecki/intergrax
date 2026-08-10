@@ -23,11 +23,13 @@ from intergrax.integrations.providers.conversation_channel.slack.integration imp
     SlackConversationChannelIntegration,
 )
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
+    DEFAULT_MESSAGE_MAX_CHARS,
     SLACK_CONVERSATION_SOURCE_KIND,
     SlackConversationExactMessageResult,
     SlackConversationKind,
     SlackConversationMessage,
     SlackConversationMessagePage,
+    SlackConversationSourceWindow,
     compute_slack_conversation_message_revision,
 )
 from intergrax.integrations.providers.conversation_channel.slack.mapping import (
@@ -160,6 +162,18 @@ class _SlackFakeIntegration:
         for item in page.items:
             self._content[item.message_ts] = item
         return page
+
+    async def read_recent_conversation_messages_page(
+        self,
+        *,
+        conversation_id: str,
+        conversation_kind: SlackConversationKind,
+        window: SlackConversationSourceWindow,
+        limit: int,
+        max_chars_per_message: int = DEFAULT_MESSAGE_MAX_CHARS,
+        cursor: str | None = None,
+    ) -> SlackConversationMessagePage:
+        raise NotImplementedError
 
     async def read_thread_replies_page(
         self, **kwargs: Any
