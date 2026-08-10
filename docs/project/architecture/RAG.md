@@ -22,6 +22,7 @@ the linked qualification artifacts.
 | **LIVE QUALIFICATION** | [`../maintainers/qualification/RAG_CHROMA_LIVE_QUALIFICATION.md`](../maintainers/qualification/RAG_CHROMA_LIVE_QUALIFICATION.md) | RAG-LIVE-15B-R2 Chroma live evidence |
 | **LIVE QUALIFICATION** | [`../maintainers/qualification/RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md`](../maintainers/qualification/RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md) | RAG-LIVE-15C-R2 Neo4j GraphRAG baseline |
 | **LIVE QUALIFICATION** | [`../maintainers/qualification/RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md`](../maintainers/qualification/RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md) | RAG-LIVE-15D-R2 Neo4j generation fencing |
+| **LIVE CLOSEOUT** | [`../maintainers/qualification/RAG_LIVE_BACKEND_CLOSEOUT.md`](../maintainers/qualification/RAG_LIVE_BACKEND_CLOSEOUT.md) | RAG-LIVE-15E multi-backend live qualification closeout |
 | **FINAL HANDOFF** | [`../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md`](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md) | RAG-PROD-14 final production decision and deployment contract |
 | **SATELLITE** | [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | Pipeline/module detail; current status points here |
 | **SATELLITE** | [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | `KnowledgeDocument` ABI |
@@ -285,11 +286,11 @@ The current evidence still does **not** claim:
 - multi-process coordinator durability without a durable coordinator.
 
 The global status remains **PRODUCTION_QUALIFIED_WITH_LIMITATIONS**.
-RAG-PROD-13 evidence, the closed RAG-PROD-14 handoff and the append-only
+RAG-PROD-13 evidence, the closed RAG-PROD-14 handoff, the append-only
 RAG-LIVE-15A-R2 PgVector, RAG-LIVE-15B-R2 Chroma, RAG-LIVE-15C-R2 Neo4j
-baseline and RAG-LIVE-15D-R2 Neo4j generation-fencing evidence are recorded in
-the linked qualification artifacts. Final global closeout remains with
-RAG-LIVE-15E.
+baseline and RAG-LIVE-15D-R2 Neo4j generation-fencing evidence, and the
+RAG-LIVE-15E closeout are recorded in the linked qualification artifacts.
+The **RAG-LIVE track is CLOSED**; there is no next RAG-LIVE task.
 
 ## 9. LangChain boundary
 
@@ -307,4 +308,4 @@ from RAG-FINAL-10A–10D, the executable RAG-PROD-13 record and the
 RAG-LIVE-15A-R2 PgVector, RAG-LIVE-15B-R2 Chroma and RAG-LIVE-15C-R2 Neo4j
 live records linked above.
 This document records what the system does, what is qualified, what is
-offline-only, what is beta, and what remains on the RAG-LIVE roadmap.
+offline-only, what is beta, and the closed RAG-LIVE qualification boundary.

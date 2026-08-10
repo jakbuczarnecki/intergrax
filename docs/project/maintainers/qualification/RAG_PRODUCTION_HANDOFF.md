@@ -40,6 +40,11 @@ against the same repository-owned Neo4j service. This is an append-only live
 evidence update; it does not rewrite the historical PROD-13 or 15C baseline
 records.
 
+RAG-LIVE-15E subsequently closed the multi-backend live qualification track.
+Post-15D commit `b4e068c84b62be28a310b99eefe82f0664bafe74` was reviewed as
+category A (integrations unused-import cleanup only); no canonical RAG semantic
+drift was found.
+
 ## Approved production surface
 
 The following native surface is approved under the evidence levels stated in
@@ -232,11 +237,13 @@ optional implementation behind native contracts.
   RAG-LIVE-15C-R2 Neo4j GraphRAG live baseline evidence.
 6. [`RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md`](RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md) —
   RAG-LIVE-15D-R2 Neo4j generation fencing live evidence.
-7. [`RAG_EXTENSION_GUIDE.md`](../../technical/guides/RAG_EXTENSION_GUIDE.md) —
+7. [`RAG_LIVE_BACKEND_CLOSEOUT.md`](RAG_LIVE_BACKEND_CLOSEOUT.md) —
+  RAG-LIVE-15E multi-backend live qualification closeout.
+8. [`RAG_EXTENSION_GUIDE.md`](../../technical/guides/RAG_EXTENSION_GUIDE.md) —
    extension and plugin contracts.
-8. [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
+9. [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
    — `KnowledgeDocument` ABI detail.
-9. [`RAG.md` historical plan](../plans/RAG.md) — implementation history only.
+10. [`RAG.md` historical plan](../plans/RAG.md) — implementation history only.
 
 Accepted PROD-13 evidence commits are
 `a93c68c138fea4a8758df9e3aca43fd454f521c0` and
@@ -252,13 +259,16 @@ Reopen RAG production qualification when any of the following changes:
 - logical-ID invariants;
 - source-ownership contract;
 - replacement lifecycle;
-- generation or lease semantics;
+- publication generation visibility semantics;
+- GraphScope / `RagEvidence` ownership model;
 - promotion of a new stable vector backend;
-- material Qdrant adapter behavior;
-- durable coordinator behavior;
-- GraphRAG generation model;
-- live Neo4j qualification is added;
+- material Qdrant, PgVector, Chroma HTTP or Neo4j GraphRAG adapter behavior;
+- `SourceOperationCoordinator` semantics or introduction of durable coordinator with new guarantees;
+- backend/server version changes requiring refreshed qualification evidence;
 - a new public RAG plugin ABI is introduced.
+
+The consolidated live-track reopening list is in
+[`RAG_LIVE_BACKEND_CLOSEOUT.md`](RAG_LIVE_BACKEND_CLOSEOUT.md) §9.
 
 Documentation-only edits, application-level consumers using unchanged
 contracts and unrelated vendor/session work do not automatically reopen
@@ -266,8 +276,9 @@ qualification.
 
 ## Closure
 
-**Roadmap:** `RAG-PROD-14 CLOSED`
-**Current live qualification:** `RAG-LIVE-15A-R2, RAG-LIVE-15B-R2,
-RAG-LIVE-15C-R2 and RAG-LIVE-15D-R2 COMPLETE`
-**Global status remains:** `PRODUCTION_QUALIFIED_WITH_LIMITATIONS`
-**Next:** `RAG-LIVE-15E NOT STARTED`
+**Roadmap:** `RAG-PROD-14 CLOSED` · `RAG-LIVE TRACK CLOSED`
+**Live qualification:** `RAG-LIVE-15A-R2, RAG-LIVE-15B-R2, RAG-LIVE-15C-R2,
+RAG-LIVE-15D-R2 and RAG-LIVE-15E COMPLETE`
+**Global status:** `PRODUCTION_QUALIFIED_WITH_LIMITATIONS`
+**Deployment:** `APPROVED WITH EXPLICIT LIMITATIONS`
+**Next RAG-LIVE task:** none
