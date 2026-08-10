@@ -7,8 +7,9 @@
 **Next roadmap items:** RAG-DEV-12, RAG-PROD-13, RAG-PROD-14
 
 This document is the current source of truth for RAG architecture, provider
-taxonomy, qualification status and failure boundaries. It does not grant a
-full production decision: live qualification remains owned by RAG-PROD-13/14.
+taxonomy, qualification status and failure boundaries. The accepted RAG-PROD-13
+result is recorded here and in the linked qualification artifact; RAG-PROD-14
+remains ready and not started.
 
 ## Navigation and documentation inventory
 
@@ -16,6 +17,7 @@ full production decision: live qualification remains owned by RAG-PROD-13/14.
 |---|---|---|
 | **CANONICAL** | `docs/project/architecture/RAG.md` | Current RAG architecture and qualification |
 | **DEVELOPER GUIDE** | [`../technical/guides/RAG_EXTENSION_GUIDE.md`](../technical/guides/RAG_EXTENSION_GUIDE.md) | RAG extension topology and authoring contracts |
+| **QUALIFICATION RECORD** | [`../maintainers/qualification/RAG_PRODUCTION_QUALIFICATION.md`](../maintainers/qualification/RAG_PRODUCTION_QUALIFICATION.md) | RAG-PROD-13 executable production evidence |
 | **SATELLITE** | [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | Pipeline/module detail; current status points here |
 | **SATELLITE** | [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | `KnowledgeDocument` ABI |
 | **HISTORICAL / PLAN** | [`../maintainers/plans/RAG.md`](../maintainers/plans/RAG.md) | Implementation history and roadmap; not runtime truth |
@@ -215,9 +217,9 @@ live service proof.
 
 | Provider | Catalog status | Source replacement | Evidence |
 |---|---|---|---|
-| Qdrant | **STABLE** | supported by native contract | **QUALIFIED_OFFLINE_CONTRACT** |
-| PgVector | **STABLE** | supported by native contract | **QUALIFIED_OFFLINE_CONTRACT** |
-| Chroma | **STABLE** | supported by native contract | **QUALIFIED_OFFLINE_CONTRACT** |
+| Qdrant | **STABLE** | supported by native contract | **QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED** |
+| PgVector | **STABLE** | supported by native contract | **QUALIFIED_OFFLINE_CONTRACT + BLOCKED_ENVIRONMENT** |
+| Chroma | **STABLE** | supported by native contract | **QUALIFIED_OFFLINE_CONTRACT + BLOCKED_ENVIRONMENT** |
 | Weaviate | **BETA** | **UNSUPPORTED_FOR_SOURCE_REPLACEMENT** | no live claim |
 | LanceDB | **BETA** | **UNSUPPORTED_FOR_SOURCE_REPLACEMENT** | no live claim |
 | Typesense | **BETA** | **UNSUPPORTED_FOR_SOURCE_REPLACEMENT** | no live claim |
@@ -228,8 +230,12 @@ live service proof.
 
 `QUALIFIED_OFFLINE_CONTRACT` means that native records, scope, logical IDs
 and exact ownership behavior are covered by offline/fake-provider contract
-evidence. `LIVE_QUALIFIED` means accepted live service evidence; **none of
-the providers above is LIVE_QUALIFIED after RAG-FINAL-10D**.
+evidence. `LIVE_QUALIFIED` means accepted live service evidence. RAG-PROD-13
+qualified Qdrant against a real local service for tenant, namespace, workspace
+and combined scope isolation, exact ownership lookup, logical-ID parity,
+replacement, scoped delete, foreign-scope preservation and bounded soak.
+PgVector and Chroma remain `QUALIFIED_OFFLINE_CONTRACT +
+BLOCKED_ENVIRONMENT` because their live environments were not available.
 
 `BETA` means the catalog supports an adapter or capability under qualification
 limits; it does not promote the provider to stable or prove source
@@ -251,25 +257,29 @@ behavior for changed sources, not append behavior.
 | Same-source serialization | Qualified with limitations | source-key coordinator | default coordinator is process-local |
 | Publication generation fencing | Qualified with limitations | vector/TOC + graph harness | stale physical records need reclamation |
 | Source ownership | Qualified | exact scoped enumeration | providers without lookup fail closed |
-| Stable vector providers | Offline contract only | Qdrant/PgVector/Chroma | no LIVE_QUALIFIED provider |
-| Namespace/workspace isolation | Contract-qualified | native scope/harness and offline Qdrant proof | live Qdrant isolation not claimed |
+| Stable vector providers | Qdrant live-qualified; PgVector/Chroma offline contract + blocked environment | RAG-PROD-13 live Qdrant plus native contracts | PgVector/Chroma live environments unavailable |
+| Namespace/workspace isolation | Contract-qualified; Qdrant live-qualified | native scope/harness and RAG-PROD-13 Qdrant gate | other stable providers remain offline-only |
 | Plugins | Qualified extension surface | native registry/plugin gate | authoring guide is RAG-DEV-12 |
 | LangChain optionality | Qualified architecture | native ABI and boundary docs | optional compatibility paths remain |
 
+Live Neo4j remains `BLOCKED_ENVIRONMENT`; live GraphRAG generation fencing is
+`NOT_QUALIFIED`. Canonical harness qualification does not imply live Neo4j
+generation evidence.
+
 ## 8. Live-claim boundary and roadmap
 
-DOCS-11 explicitly does **not** claim:
+The current evidence still does **not** claim:
 
-- live Qdrant tenant/namespace/workspace isolation;
-- a live stable-provider source-replacement lifecycle;
+- live PgVector or Chroma tenant/namespace/workspace isolation;
+- live PgVector or Chroma source-replacement lifecycle;
 - live Neo4j GraphRAG publication fencing or reingest qualification;
 - a live GraphRAG backend qualification;
 - transactional or exactly-once source replacement.
 
 The global status remains **PRODUCTION_QUALIFIED_WITH_LIMITATIONS**.
-RAG-PROD-13/14 decide whether any live or full-production claim can be
-raised. RAG-DEV-12 owns the future plugin/developer guide. No DOCS-11 text
-starts that work.
+RAG-PROD-13 evidence is recorded in the linked qualification artifact;
+RAG-PROD-14 remains ready and not started. RAG-DEV-12 owns the future
+plugin/developer guide. No DOCS-11 text starts that work.
 
 ## 9. LangChain boundary
 
@@ -282,7 +292,7 @@ contracts and the canonical native path do not require it.
 
 ## 10. Qualification evidence boundary
 
-The accepted evidence is offline/contract and canonical-harness evidence from
-RAG-FINAL-10A–10D. Runtime suites are not repeated by this documentation-only
-task. This document records what the system does, what is qualified, what is
-offline-only, what is beta, and what remains for PROD-13/14.
+The accepted evidence includes offline/contract and canonical-harness evidence
+from RAG-FINAL-10A–10D plus the executable RAG-PROD-13 record linked above.
+This document records what the system does, what is qualified, what is
+offline-only, what is beta, and what remains for PROD-14.
