@@ -9,7 +9,7 @@ version = "0.1.0"
 description = "Local Knowledge Workspace (LKW) Tier-3 application"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-  "Intergrax-ai[integrations-slack,integrations-mongodb,integrations-sentry,integrations-kafka]",
+  "Intergrax-ai[integrations-slack,integrations-mongodb,integrations-sentry,integrations-kafka,llm-ollama]",
   "intergrax-local-indexer-agent",
   "intergrax-local-search-agent",
   "intergrax-local-synthesizer-agent",
