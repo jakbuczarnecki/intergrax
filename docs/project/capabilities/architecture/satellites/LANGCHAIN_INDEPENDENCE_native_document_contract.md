@@ -1,16 +1,18 @@
 <!--
-© Artur Czarnecki. All rights reserved.
-Intergrax framework – proprietary and confidential.
+Â© Artur Czarnecki. All rights reserved.
+Intergrax framework â€“ proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# Native Knowledge Document Contract — LCI-1A
+# Native Knowledge Document Contract â€” LCI-1A
 
-**Status:** LCI-1A architecture: **APPROVED**; LCI-1B implementation: **APPROVED**; LCI-1C bridge: **APPROVED**; LCI-1D conformance gate: **READY_FOR_REVIEW**
-**Owner:** RAG (functional) · Tier-0 `intergrax/knowledge` (neutral shared core)
+**Status:** KnowledgeDocument ABI: **APPROVED**; LCI-1B–LCI-1D implementation and conformance: **APPROVED**
+**Owner:** RAG (functional) Â· Tier-0 `intergrax/knowledge` (neutral shared core)
 **Feature hub:** [`../LANGCHAIN_INDEPENDENCE.md`](../LANGCHAIN_INDEPENDENCE.md)
 **Feature plan:** [`../../plan/LANGCHAIN_INDEPENDENCE.md`](../../plan/LANGCHAIN_INDEPENDENCE.md)
 **Anchor domain architecture:** [`../../../architecture/RAG.md`](../../../architecture/RAG.md)
+
+**Current-status authority:** The parent RAG architecture owns qualification and provider status. This satellite owns only the detailed KnowledgeDocument ABI.
 
 ---
 
@@ -21,7 +23,7 @@ This satellite is the **source of truth** for the canonical Intergrax knowledge 
 - RAG ingest, chunking, embedding, indexing, retrieval, reranking
 - Memory knowledge surfaces
 - Modality text normalization outputs
-- Integration fetch → RAG-ready normalization
+- Integration fetch â†’ RAG-ready normalization
 
 **In scope (LCI-1A):** architecture, field contract, invariants, mappings, acceptance checklist.
 **Out of scope:** Python implementation (`LCI-1B`), LangChain bridge (`LCI-1C`), conformance CI (`LCI-1D`), consumer migration (`LCI-2A` onward).
@@ -34,7 +36,7 @@ This satellite is the **source of truth** for the canonical Intergrax knowledge 
 provider parser -> ParsedDocumentFragment -> scoped loader/handler -> KnowledgeDocument
 `
 
-ParsedDocumentFragment is a short-lived extraction-stage result. Parser load(source) receives only a source URI — no authoritative tenant, namespace, or document scope — so parser-stage code must not construct KnowledgeDocument or invent a default tenant.
+ParsedDocumentFragment is a short-lived extraction-stage result. Parser load(source) receives only a source URI â€” no authoritative tenant, namespace, or document scope â€” so parser-stage code must not construct KnowledgeDocument or invent a default tenant.
 
 ### End-to-end native ingest boundary (LCI-2F)
 
@@ -61,7 +63,7 @@ Chunk lineage remains the native contract: chunk identity and parent/root relati
 | **Canonical type** | `KnowledgeDocument` |
 | **Target module (LCI-1B)** | `intergrax/knowledge/contracts/document.py` |
 | **Public import** | `from intergrax.knowledge.contracts import KnowledgeDocument` |
-| **Package tier** | Tier-0 shared core — neutral, not under `intergrax/rag` |
+| **Package tier** | Tier-0 shared core â€” neutral, not under `intergrax/rag` |
 | **Functional owner** | RAG domain owns contract semantics and evolution |
 | **Shared consumers** | Memory, modality, integrations import from `intergrax.knowledge.contracts`; they must not define parallel document types |
 
@@ -96,16 +98,16 @@ From `intergrax/runtime/vendor_knowledge/models.py`:
 |-------|--------|
 | `KnowledgeSourceRef` | Integration-layer connection/scope descriptor; not RAG-ready document |
 | `KnowledgeItemDescriptor` | Inventory/fetch stage aggregate |
-| `KnowledgeContent` | Holds binary/rich_text/structured_record — pre-normalization |
-| `IntegrationCategory` | Integration taxonomy; would couple shared core → runtime/integrations |
+| `KnowledgeContent` | Holds binary/rich_text/structured_record â€” pre-normalization |
+| `IntegrationCategory` | Integration taxonomy; would couple shared core â†’ runtime/integrations |
 
 **Decision:** Vendor Knowledge models represent the **external source item** stage. `KnowledgeDocument` represents the **RAG-ready normalized text** stage. They are adjacent pipeline stages, not duplicates.
 
-### 3.4 Vendor Knowledge → KnowledgeDocument mapping (future)
+### 3.4 Vendor Knowledge â†’ KnowledgeDocument mapping (future)
 
 ```text
 KnowledgeItemDescriptor + KnowledgeContent
-        ↓ adapter normalizes content to str, maps identity/provenance
+        â†“ adapter normalizes content to str, maps identity/provenance
 KnowledgeDocument
 ```
 
@@ -141,7 +143,7 @@ Normalization adapter implementation is **out of scope** for LCI-1A; belongs to 
 
 ---
 
-## LCI-4C-A1 — Canonical workspace scope ABI
+## LCI-4C-A1 â€” Canonical workspace scope ABI
 
 Status: **READY_FOR_REVIEW**
 
@@ -162,37 +164,37 @@ Implementation target (LCI-1B): Pydantic v2 `BaseModel` with `ConfigDict(extra="
 
 ```text
 KnowledgeDocument
-├── schema_version: int
-├── identity: KnowledgeDocumentIdentity
-├── scope: KnowledgeDocumentScope
-├── content: str
-├── metadata: Mapping[str, JsonValue]  # in-memory read-only; serialized as dict[str, JsonValue]
-└── provenance: KnowledgeDocumentProvenance
+â”śâ”€â”€ schema_version: int
+â”śâ”€â”€ identity: KnowledgeDocumentIdentity
+â”śâ”€â”€ scope: KnowledgeDocumentScope
+â”śâ”€â”€ content: str
+â”śâ”€â”€ metadata: Mapping[str, JsonValue]  # in-memory read-only; serialized as dict[str, JsonValue]
+â””â”€â”€ provenance: KnowledgeDocumentProvenance
 
 KnowledgeDocumentIdentity
-├── document_id: str
-├── root_document_id: str
-└── parent_document_id: str | None
+â”śâ”€â”€ document_id: str
+â”śâ”€â”€ root_document_id: str
+â””â”€â”€ parent_document_id: str | None
 
 KnowledgeDocumentScope
-├── tenant_id: str
-└── namespace: str | None
+â”śâ”€â”€ tenant_id: str
+â””â”€â”€ namespace: str | None
     workspace_id: str | None
 
 KnowledgeDocumentProvenance
-├── source_kind: str
-├── source_id: str
-├── source_parent_id: str | None
-├── provider_id: str | None
-├── source_revision: str | None
-├── source_uri: str | None
-└── content_hash: str | None
+â”śâ”€â”€ source_kind: str
+â”śâ”€â”€ source_id: str
+â”śâ”€â”€ source_parent_id: str | None
+â”śâ”€â”€ provider_id: str | None
+â”śâ”€â”€ source_revision: str | None
+â”śâ”€â”€ source_uri: str | None
+â””â”€â”€ content_hash: str | None
 ```
 
 Illustrative target signatures (LCI-1B):
 
 ```python
-# intergrax/knowledge/contracts/document.py — implementation in LCI-1B only
+# intergrax/knowledge/contracts/document.py â€” implementation in LCI-1B only
 class KnowledgeDocumentIdentity(BaseModel): ...
 class KnowledgeDocumentScope(BaseModel): ...
 class KnowledgeDocumentProvenance(BaseModel): ...
@@ -245,13 +247,13 @@ class KnowledgeDocument(BaseModel): ...
 ## 5. Invariants
 
 1. All models are immutable (`frozen=True`) and reject unknown fields (`extra="forbid"`).
-2. `content` is always a `str` ready for RAG processing — never bytes, media handles, or provider objects.
+2. `content` is always a `str` ready for RAG processing â€” never bytes, media handles, or provider objects.
 3. `tenant_id` is always required; missing tenant context is a validation error.
 4. Identity fields are caller-supplied; the contract never mints IDs.
-5. Lineage invariants enforced by LCI-1B validators (see §6).
+5. Lineage invariants enforced by LCI-1B validators (see Â§6).
 6. Reserved keys are never valid inside native `KnowledgeDocument.metadata`, regardless of whether their values equal typed fields.
-7. Typed field vs `metadata` conflict → validation error (fail-closed); duplicate reserved key with identical value is also rejected.
-8. `schema_version` mismatch on deserialize → error (no silent migration).
+7. Typed field vs `metadata` conflict â†’ validation error (fail-closed); duplicate reserved key with identical value is also rejected.
+8. `schema_version` mismatch on deserialize â†’ error (no silent migration).
 
 ---
 
@@ -287,7 +289,7 @@ Source document (file.pdf)
   parent_document_id = None
 
 Chunk 3 of source
-  document_id = "file:abc123:chunk:3"    ← deterministic per chunker contract
+  document_id = "file:abc123:chunk:3"    â† deterministic per chunker contract
   root_document_id = "file:abc123"
   parent_document_id = "file:abc123"
 
@@ -333,8 +335,8 @@ The local model blocks self-reference (`parent_document_id == document_id`). Ful
 | Tenant required | `tenant_id` must be explicit non-empty string |
 | No default tenant | `tenant_id="default"` is forbidden as implicit fallback |
 | Safe URI | `source_uri` must not embed username, password, or secret query parameters |
-| Metadata secrets | Keys matching token/password/secret/api_key/authorization patterns → validation error |
-| No silent coercion | Non-JSON-compatible metadata values → error, not `str()` conversion |
+| Metadata secrets | Keys matching token/password/secret/api_key/authorization patterns â†’ validation error |
+| No silent coercion | Non-JSON-compatible metadata values â†’ error, not `str()` conversion |
 | No provider leakage | Provider SDK objects cannot pass through the contract |
 | URL in metadata | String values that look like URLs are validated credential-free (same policy as Vendor Knowledge) |
 
@@ -344,7 +346,7 @@ The local model blocks self-reference (`parent_document_id == document_id`). Ful
 
 ### 8.1 Allowed value types
 
-`str`, `int`, `float`, `bool`, `null`, `list`, `dict` with string keys — recursively JSON-compatible. `float` values must be finite; `NaN`, `Infinity`, and `-Infinity` are forbidden.
+`str`, `int`, `float`, `bool`, `null`, `list`, `dict` with string keys â€” recursively JSON-compatible. `float` values must be finite; `NaN`, `Infinity`, and `-Infinity` are forbidden.
 
 ### 8.2 Forbidden in metadata
 
@@ -375,7 +377,7 @@ content_hash
 
 Reserved keys are never valid inside native `KnowledgeDocument.metadata`, regardless of whether their values equal typed fields.
 
-- Native constructor: reserved key present → `ValidationError` (no duplicate allowed even with an identical value).
+- Native constructor: reserved key present â†’ `ValidationError` (no duplicate allowed even with an identical value).
 - LangChain transport representation: canonical reserved keys are allowed only as controlled transport fields in `LangChain Document.metadata`; the bridge reads them, checks conflicts, removes them from remaining metadata, and maps them to typed `KnowledgeDocument` fields. They must not be interpreted as ordinary native metadata.
 - LangChain bridge (LCI-1C):
   1. Read known typed fields from input metadata.
@@ -417,10 +419,10 @@ Reserved keys are never valid inside native `KnowledgeDocument.metadata`, regard
 | `schema_version` | `1` (integer) |
 | Dump format | Deterministic JSON-compatible dict (UTF-8, sorted keys, stable separators, `allow_nan=False` or equivalent pre-dump validation) |
 | JSON numbers | `float` values must be finite; `NaN`, `Infinity`, and `-Infinity` forbidden in metadata and serialized output |
-| Round-trip | Deserialize → serialize preserves all fields and exact `content` |
+| Round-trip | Deserialize â†’ serialize preserves all fields and exact `content` |
 | Unknown fields | Rejected on input (`extra="forbid"`) |
 | Unknown `schema_version` | Rejected; no automatic migration |
-| Semantic change | Existing field meaning change → new `schema_version` |
+| Semantic change | Existing field meaning change â†’ new `schema_version` |
 | Optional field addition | Requires explicit backward-compatibility review |
 
 Serializers and deserializers are **LCI-1B** deliverables. This document defines requirements only.
@@ -437,20 +439,20 @@ Bridge implementation: **LCI-1C** (`intergrax/compat/langchain`). Conversion rul
 |----------------------|---------------------|------|
 | `page_content` | `content` | Exact value preserved |
 | `id` | `identity.document_id` | One carrier required among `Document.id`, explicit `document_id`, or metadata `document_id`; multiple carriers forbidden even when values match |
-| metadata `root_document_id` | `identity.root_document_id` | Absent for source → defaults to `document_id` |
+| metadata `root_document_id` | `identity.root_document_id` | Absent for source â†’ defaults to `document_id` |
 | metadata `parent_document_id` | `identity.parent_document_id` | Optional; `None` for source |
-| metadata `tenant_id` | `scope.tenant_id` | Required; missing → error |
+| metadata `tenant_id` | `scope.tenant_id` | Required; missing â†’ error |
 | metadata `namespace` | `scope.namespace` | Optional |
 | metadata `workspace_id` | `scope.workspace_id` | Optional; `None` is distinct from a concrete workspace |
 | metadata `source_kind` | `provenance.source_kind` | Required |
-| metadata `source_id` or legacy `source` | `provenance.source_id` | Both present with different values → error |
+| metadata `source_id` or legacy `source` | `provenance.source_id` | Both present with different values â†’ error |
 | metadata `provider_id` | `provenance.provider_id` | Optional |
 | metadata `source_revision` | `provenance.source_revision` | Optional |
 | metadata `source_uri` | `provenance.source_uri` | Optional; validated credential-free |
 | metadata `content_hash` | `provenance.content_hash` | Optional |
 | metadata `source_parent_id` | `provenance.source_parent_id` | Optional |
 | Remaining JSON-safe metadata | `metadata` | Preserved without loss; reserved keys excluded |
-| — | `schema_version` | Set to `1` on conversion to native |
+| â€” | `schema_version` | Set to `1` on conversion to native |
 
 ### 12.2 Bridge error policy
 
@@ -476,11 +478,11 @@ Bridge implementation: **LCI-1C** (`intergrax/compat/langchain`). Conversion rul
 
 All validation is **fail-closed**:
 
-- Missing required identity, scope, or provenance fields → `ValidationError`
-- Security violations (secrets in metadata/URI) → `ValidationError`
-- Identity inconsistency (lineage invariants in §6.4, including `parent == self`) → `ValidationError`
-- Reserved key in native `metadata` → `ValidationError`
-- Schema version unsupported → `ValidationError`
+- Missing required identity, scope, or provenance fields â†’ `ValidationError`
+- Security violations (secrets in metadata/URI) â†’ `ValidationError`
+- Identity inconsistency (lineage invariants in Â§6.4, including `parent == self`) â†’ `ValidationError`
+- Reserved key in native `metadata` â†’ `ValidationError`
+- Schema version unsupported â†’ `ValidationError`
 - LangChain bridge (LCI-1C) uses same rules; no silent data loss or default tenant
 
 ---
@@ -500,7 +502,7 @@ All validation is **fail-closed**:
 
 ## 15. Migration impact (inventory confirmation)
 
-Per [`LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](LANGCHAIN_INDEPENDENCE_dependency_inventory.md) §D, **16 contract files** currently expose `langchain_core.documents.Document` as `CORE_CONTRACT_LEAK`. Native `KnowledgeDocument` is the declared replacement target across RAG, integrations, memory, and modality consumer migrations (`LCI-2A`–`LCI-4D`). Inventory rows are unchanged in LCI-1A.
+Per [`LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](LANGCHAIN_INDEPENDENCE_dependency_inventory.md) Â§D, **16 contract files** currently expose `langchain_core.documents.Document` as `CORE_CONTRACT_LEAK`. Native `KnowledgeDocument` is the declared replacement target across RAG, integrations, memory, and modality consumer migrations (`LCI-2A`â€“`LCI-4D`). Inventory rows are unchanged in LCI-1A.
 
 ---
 
@@ -574,10 +576,10 @@ Native ingestion path:
 
 `	ext
 ParsedDocumentFragment
-→ scoped BaseDocumentHandler
-→ KnowledgeDocument
-→ DocumentsLoader
-→ KnowledgeDocument
+â†’ scoped BaseDocumentHandler
+â†’ KnowledgeDocument
+â†’ DocumentsLoader
+â†’ KnowledgeDocument
 `
 
 - Parser fragments do not carry tenant scope; the handler receives typed KnowledgeDocumentScope.
@@ -585,7 +587,7 @@ ParsedDocumentFragment
 - Parser
 ative_handle is **RAG-local**, **private**, **non-ABI**, **non-serialized**, **temporary** runtime state carried on a loader-local KnowledgeDocument subclass via Pydantic PrivateAttr; it is not written to public metadata, model_dump, or dump_knowledge_document.
 - Legacy chunkers receive
-ative_handle only through 	o_legacy_rag_document() under DocumentMetadataKey.DOCLING_DOCUMENT_META immediately before splitting (removed in **LCI-2D — native chunking migration**).
+ative_handle only through 	o_legacy_rag_document() under DocumentMetadataKey.DOCLING_DOCUMENT_META immediately before splitting (removed in **LCI-2D â€” native chunking migration**).
 - DocumentsLoader applies a temporary normalization/metadata LangChain bridge (removed in LCI-2C).
 
 ## LCI-2C native ingest boundary
@@ -594,10 +596,10 @@ Native loader path after scoped handler construction:
 
 ```text
 ParsedDocumentFragment
-→ scoped KnowledgeDocument
-→ native normalization
-→ native metadata enrichment
-→ KnowledgeDocument
+â†’ scoped KnowledgeDocument
+â†’ native normalization
+â†’ native metadata enrichment
+â†’ KnowledgeDocument
 ```
 
 | Rule | Policy |
@@ -613,19 +615,19 @@ ParsedDocumentFragment
 
 ```text
 KnowledgeDocument source
-→ native chunking
-→ derivative KnowledgeDocument chunks
-→ native contextual enrichment
-→ native embedding/indexing boundaries
+â†’ native chunking
+â†’ derivative KnowledgeDocument chunks
+â†’ native contextual enrichment
+â†’ native embedding/indexing boundaries
 ```
 
 Derivative chunk lineage:
 
-- `chunk.document_id` — deterministyczne ID chunka
-- `chunk.root_document_id` — root dokumentu źródłowego
-- `chunk.parent_document_id` — dokument bezpośrednio dzielony
-- `chunk.scope` — niezmieniony
-- `chunk.provenance` — zachowane źródło, nowy `content_hash`
+- `chunk.document_id` â€” deterministyczne ID chunka
+- `chunk.root_document_id` â€” root dokumentu ĹşrĂłdĹ‚owego
+- `chunk.parent_document_id` â€” dokument bezpoĹ›rednio dzielony
+- `chunk.scope` â€” niezmieniony
+- `chunk.provenance` â€” zachowane ĹşrĂłdĹ‚o, nowy `content_hash`
 
 Docling private parser `native_handle` is consumed by the native Docling splitter, is not copied into chunk metadata, and does not appear in serialized output. Native recursive chunking is the default and core-safe path. LangChain recursive chunking is an optional provider behind the `rag-langchain-splitters` extra, registered explicitly through the existing registry/plugin boundary; missing the extra is a stable configuration error.
 
@@ -634,10 +636,10 @@ Docling private parser `native_handle` is consumed by the native Docling splitte
 
 ```text
 KnowledgeDocument sequence
-→ document.content sequence
-→ EmbeddingEngine
-→ readonly float32 embedding matrix
-→ EmbeddingResult(documents, embeddings)
+â†’ document.content sequence
+â†’ EmbeddingEngine
+â†’ readonly float32 embedding matrix
+â†’ EmbeddingResult(documents, embeddings)
 ```
 
 Document and vector cardinality must be identical, and input order is significant. Embedding does not change document identity, scope, metadata, or provenance; the vector is never part of native document metadata.
@@ -647,10 +649,10 @@ Document and vector cardinality must be identical, and input order is significan
 
 ```text
 KnowledgeDocument chunks
-→ IndexingManager validation
-→ native IndexStrategy
-→ native EmbeddingResult
-→ legacy vector-store adapter
+â†’ IndexingManager validation
+â†’ native IndexStrategy
+â†’ native EmbeddingResult
+â†’ legacy vector-store adapter
 ```
 
 The manager materializes the input, requires `KnowledgeDocument`, and performs full public-field revalidation. Pipeline and strategies preserve order and do not mutate documents. `SingleIndexStrategy` and `DualIndexStrategy` call `embed_documents`; conversion through `to_legacy_rag_document()` occurs only inside the private `VectorstoreManager` provider adapter.
@@ -659,9 +661,9 @@ Dual TOC lineage follows the first canonical section chunk:
 
 ```text
 first canonical section chunk
-→ deterministic native TOC derivative
-→ native embedding
-→ legacy vector-store adapter
+â†’ deterministic native TOC derivative
+â†’ native embedding
+â†’ legacy vector-store adapter
 ```
 
 TOC grouping is tenant-, namespace-, root-, and section-safe. The derivative preserves scope, source provenance, root identity, and parent identity; its content is the section name, its content hash is canonical, and its metadata contains only safe section and parent-chunk fields.
@@ -670,38 +672,38 @@ TOC grouping is tenant-, namespace-, root-, and section-safe. The derivative pre
 
 ```text
 KnowledgeDocument + vector
-� VectorStoreRecord
-� explicit VectorStoreScope validation
-� VectorstoreManager
-� private legacy provider adapter
+ďż˝ VectorStoreRecord
+ďż˝ explicit VectorStoreScope validation
+ďż˝ VectorstoreManager
+ďż˝ private legacy provider adapter
 ```
 
 Native reads follow the inverse boundary:
 
 ```text
 query vector + explicit scope
-� legacy provider
-� native KnowledgeDocument reconstruction
-� scope validation
-� VectorStoreHit
+ďż˝ legacy provider
+ďż˝ native KnowledgeDocument reconstruction
+ďż˝ scope validation
+ďż˝ VectorStoreHit
 ```
 
 Tenant and namespace are authoritative routing fields. User metadata and filters cannot override them; delete and count fail closed unless tenant isolation is proven.
 
-## LCI-3D — Native vector-store provider transport
+## LCI-3D â€” Native vector-store provider transport
 
 The vector-store boundary is native and does not construct LangChain Document values.
 
 ```text
 VectorStoreRecord
-→ provider-native payload
-→ SDK upsert
+â†’ provider-native payload
+â†’ SDK upsert
 ```
 
 ```text
 SDK search result
-→ provider-native KnowledgeDocument reconstruction
-→ VectorStoreHit
+â†’ provider-native KnowledgeDocument reconstruction
+â†’ VectorStoreHit
 ```
 
 Identity, scope and provenance are system-owned transport metadata; user metadata cannot overwrite routing keys.
@@ -713,13 +715,13 @@ GraphStore backends remain tenant-bound where applicable. Namespace and workspac
 
 The active graph retrieval boundary returns the existing native RetrievalHit containing the KnowledgeDocument, score, rank, channel and optional vector ID. No parallel graph document or retrieval result type is introduced. GraphStore backend internals remain unchanged.
 
-LCI-3D — APPROVED. LCI-4A — APPROVED. LCI-4B — APPROVED. LCI-4C — READY_FOR_REVIEW. LCI-4D — PLANNED / NEXT AFTER ACCEPTANCE.
+LCI-3D â€” APPROVED. LCI-4A â€” APPROVED. LCI-4B â€” APPROVED. LCI-4C â€” READY_FOR_REVIEW. LCI-4D â€” PLANNED / NEXT AFTER ACCEPTANCE.
 
 ## LCI-4A retrieval result contract decision
 
 Retrieval uses a native immutable hit/result contract containing `KnowledgeDocument`, score and rank. Active retrievers and RAG tools do not expose LangChain `Document`. `VectorStoreHit` remains the provider/vector-store result and is mapped at the retriever boundary. Reranking remains a separate LCI-4B boundary; graph retrieval remains LCI-4C.
 
-Roadmap state: LCI-3D — APPROVED; LCI-4A — APPROVED; LCI-4B — APPROVED; LCI-4C — READY_FOR_REVIEW; LCI-4D — PLANNED / NEXT AFTER ACCEPTANCE.
+Roadmap state: LCI-3D â€” APPROVED; LCI-4A â€” APPROVED; LCI-4B â€” APPROVED; LCI-4C â€” READY_FOR_REVIEW; LCI-4D â€” PLANNED / NEXT AFTER ACCEPTANCE.
 
 ## LCI-4D consumer closeout
 

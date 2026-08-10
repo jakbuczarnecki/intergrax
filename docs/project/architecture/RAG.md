@@ -1,277 +1,286 @@
 # RAG and Retrieval
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
-**Plan (1:1):** [`plan/RAG.md`](../maintainers/plans/RAG.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Audit layer:** 14 (RAG and Retrieval)  
-**Audit instruction:** [`audit/RAG.md`](../maintainers/audit/RAG.md)
-**Related:** [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) (vector_store, document_parser, rerank_provider slugs) · [`architecture/MEMORY.md`](MEMORY.md) (Knowledge store vs LTM) · [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix K §K.5
+**Status:** Canonical architecture · **PRODUCTION_QUALIFIED_WITH_LIMITATIONS**
+**Scope:** native Intergrax RAG architecture and qualification boundary after RAG-FINAL-10A–10D
 **Implementation:** `intergrax/rag`
-**Last architecture audit:** 2026-06-17 — **Full Harness LC** (re-validates M-RAG-ITERATION-III); **Architecturally Mature** · 2026-06-13 (iteration II Frozen) · 2026-06-12 (GraphRAG G1–G5)
+**Plan/history:** [`../maintainers/plans/RAG.md`](../maintainers/plans/RAG.md)
+**Next roadmap items:** RAG-DEV-12, RAG-PROD-13, RAG-PROD-14
 
----
+This document is the current source of truth for RAG architecture, provider
+taxonomy, qualification status and failure boundaries. It does not grant a
+full production decision: live qualification remains owned by RAG-PROD-13/14.
 
-## Cursor read scope (token budget)
+## Navigation and documentation inventory
 
-**Do not read this entire file in one session** (RAG canon).
+| Classification | File | Ownership |
+|---|---|---|
+| **CANONICAL** | `docs/project/architecture/RAG.md` | Current RAG architecture and qualification |
+| **SATELLITE** | [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | Pipeline/module detail; current status points here |
+| **SATELLITE** | [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | `KnowledgeDocument` ABI |
+| **HISTORICAL / PLAN** | [`../maintainers/plans/RAG.md`](../maintainers/plans/RAG.md) | Implementation history and roadmap; not runtime truth |
+| **HISTORICAL / PLAN** | `../maintainers/plans/satellites/RAG_audit_history.md` | Detailed historical audit register |
+| **RELATED OWNER** | `../capabilities/architecture/LANGCHAIN_INDEPENDENCE.md` | LangChain boundary and optionality |
+| **RELATED PLAN** | `../capabilities/plan/LANGCHAIN_INDEPENDENCE.md` | LangChain migration history |
+| **CATALOG OWNER** | [`INTEGRATIONS.md`](INTEGRATIONS.md) | Provider catalog taxonomy, not RAG qualification |
+| **NAVIGATION ONLY** | [`../technical/guides/audit_slices/RAG.md`](../technical/guides/audit_slices/RAG.md) | Read-scope and audit entry point |
 
-- **Implement / audit default:** retrieval pipeline + index lifecycle (hub). Pipelines detail: [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md).
-- **Use** table of contents below — `Read` with offset/limit per §.
-- **Plan hub:** [`plan/RAG.md`](../maintainers/plans/RAG.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/RAG.md`](../technical/guides/audit_slices/RAG.md).
-- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+Older current-state passages in the architecture hub and pipeline satellite
+were superseded by RAG-FINAL-10A–10D and are not retained as competing truth.
+Historical evidence remains in the plan and audit-history documents.
 
----
+## 1. Canonical contracts and identity
 
+### KnowledgeDocument ABI
 
-## Architecture satellites (read on demand)
+`KnowledgeDocument` is the canonical portable document ABI. RAG owns its
+semantics; the neutral Tier-0 implementation is
+`intergrax/knowledge/contracts/document.py`, imported as:
 
-Large § blocks moved out of the architecture hub to reduce Cursor context use.
-Load **only** the satellite matching your task or cited §.
+```python
+from intergrax.knowledge.contracts import KnowledgeDocument
+```
 
-| Satellite | Contents |
-|-----------|----------|
-| [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | pipelines detail |
-| [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | **Native Knowledge Document Contract** (`KnowledgeDocument`) — LCI-1A source of truth |
+The document carries immutable identity, scope, content, metadata and
+provenance. `tenant_id`, `namespace` and `workspace_id` are system-owned
+scope fields. `provenance.source_id` is the authoritative source identity;
+same basenames, paths or display names do not establish ownership.
+The full field and lineage contract is the linked `KnowledgeDocument` satellite.
 
-## RAG-CLOSE-5 production qualification (2026-08-09)
+### VectorStoreScope and native vector ABI
 
-**Final status:** **PRODUCTION_QUALIFIED_WITH_LIMITATIONS**
+`VectorStoreScope` is the explicit routing boundary:
 
-The canonical native path is qualified for offline production-gate behavior:
-recursive native chunking, deterministic file-ingest E2E retrieval, dense
-vector similarity, built-in in-memory hybrid retrieval, graph indexing and
-retrieval in the harness graph store, graph unlink/delete lifecycle, tenant
-isolation, same-filename identity isolation, and opt-in external chunker,
-retriever, and reranker runtime wiring. The plugin closeout gate also proves
-an entry-point chunker can run through `IngestPipeline`, embedding, vector
-storage, and `RetrievalService` without changing RAG core.
+```text
+tenant_id + namespace + workspace_id
+```
 
-Hierarchical retrieval is qualified by RAG-HIER-6 for the explicit
-parent-child path. `ParentChildChunkingStrategy` defines the parent as its
-synthetic parent-group identifier; child chunks carry that value in
-`PARENT_CHUNK_ID`, and `DualIndexStrategy` copies the same value into the
-section-name TOC record. The TOC is a section index, not a full parent
-document. `HierarchicalRetriever` returns child chunks; an expanded child is
-ranked with `max(child dense similarity, TOC section similarity)`. This
-propagates the real section-relevance signal without fabricating provider
-similarity, and no parent-content reconstruction is promised.
+The native vector ABI uses `VectorStoreRecord`, `VectorStoreHit` and the
+provider boundary for add, query, ownership enumeration and delete. Scope is
+validated before provider calls; user metadata cannot override it.
 
-Explicit limitations:
+The frozen portable ID invariant is:
 
-- the portable vector ABI uses the logical persisted ID from
-  `VectorStoreRecord.vector_id` for add results, query hits, ownership
-  enumeration, and delete input; backend-native IDs remain provider internals;
-- canonical single-index source reingest is qualified by
-  RAG-REINGEST-7B: ownership is selected by
-  `VectorStoreScope(tenant_id, namespace, workspace_id)` plus
-  `KnowledgeDocument.provenance.source_id`; the lifecycle snapshots old
-  persisted IDs, publishes the prepared version, uses the returned persisted
-  IDs, and deletes only `old_ids - new_ids` in the same scope;
-- same-content reingest is idempotent for deterministic/provider-upsert IDs,
-  changed same-count content removes old records, changed fewer-count content
-  removes stale tail records, and same-basename sources remain isolated;
-- preparation or embedding failure before publication preserves the old
-  version; publication followed by stale-delete failure is reported as a
-  failed replacement rather than claimed successful;
-- dual-index source reingest is qualified by RAG-FINAL-10A: the lifecycle
-  snapshots main and TOC ownership, publishes main then TOC, enumerates both
-  stores after publication, and deletes only the source-scoped stale IDs;
-- dual-index publication is non-atomic: if TOC publication or post-publication
-  ownership enumeration/cleanup fails, stale deletion is not claimed
-  transactional and a partial new publication may remain for retry/recovery;
-- canonical harness GraphRAG source-scoped reingest is qualified: graph chunk
-  ownership uses the same logical IDs as `VectorStoreRecord.vector_id` and
-  `IngestResult.vector_ids`; the new graph version is published before stale
-  chunk unlink; existing unlink/pruning removes stale ownership and orphan
-  graph state while preserving shared evidence from another source;
-- GraphRAG/vector publication and cleanup are separate, non-atomic operations:
-  preparation failure preserves the old version, graph publication failure
-  does not remove old graph ownership, and cleanup failures are explicit and
-  recoverable by retry; live Neo4j reingest is not claimed;
-- source providers without ownership lookup may perform a fresh ingest only
-  when the target scope is empty; otherwise the operation fails with
-  `source_reingest_not_supported` rather than appending a changed source;
-- canonical source replacement is serialized by the exact
-  `tenant_id`, `namespace`, `workspace_id`, and
-  `provenance.source_id` ownership key; an active same-source operation
-  returns `source_ingest_conflict` and cannot independently snapshot,
-  publish, or clean up;
-- the default coordinator is thread-safe and process-local; production
-  composition can inject the durable `ConditionalDocumentStore` coordinator.
-  Lease ownership is the owner/token/expiry decision for publish, release and
-  cleanup; a CAS lease alone does not fence a backend write that has already
-  started;
-- every source replacement receives a monotonic publication generation from
-  that same coordinator. Publication generation is distinct from lease
-  ownership: after preparation, the coordinator CAS-promotes one active
-  generation;
-- vector and TOC visibility is filtered by the exact active generation for
-  each source. Their logical vector IDs remain unchanged, and stale physical
-  records remain reclaimable;
-- GraphRAG graph nodes, edges and chunk ownership carry source publication
-  evidence. Canonical harness traversal resolves each evidence record through
-  the same coordinator and ignores inactive or unresolved versioned evidence;
-  shared nodes/edges remain visible when another active generation supports
-  them. Unversioned legacy graph evidence retains its prior behavior. This
-  generation-aware graph evidence fence is qualified for the harness
-  `InMemoryGraphStore`; live Neo4j reingest and live provider fencing are not
-  claimed;
-- different source IDs, workspaces, namespaces, and tenants use independent
-  keys; this is live-operation serialization, not cross-store transaction
-  atomicity or exactly-once ingestion. Partial vector/TOC/GraphRAG
-  publication remains governed by the existing retry and recovery semantics;
-- tenant, namespace, and workspace isolation are qualified for canonical vector
-  retrieval; the InMemory executable negative gate proves that higher-scoring
-  records outside the requested scope are excluded before results are exposed,
-  while Qdrant has an offline filter-construction and fake-provider execution
-  proof; live Qdrant isolation is not claimed;
-- the Qdrant provider contract, logical/physical ID mapping, and offline
-  source-scoped delete proof are covered by tests; live tenant-isolation is
-  not claimed; historical points without the reserved logical-ID payload fail
-  closed for ownership/result enumeration rather than falling back to a
-  physical ID; the broader backend
-  lifecycle suite is **TEST_ASSUMPTION_DEFECT** because its integration
-  wrapper calls methods outside the provider contract; live production graph
-  services are likewise not claimed here;
-- LangChain recursive chunking remains optional and is not required by core;
-  the optional splitter dependency is present in this environment but is not
-  used by the canonical native gate.
+```text
+VectorStoreRecord.vector_id
+  == logical portable persisted vector ID
+  == ADD result IDs
+  == QUERY.vector_id
+  == OWNERSHIP IDs
+  == DELETE input IDs
+```
 
-### Stable vector backend lifecycle matrix (RAG-FINAL-10D)
+Provider physical IDs are internal implementation details. They are never
+ownership IDs, delete inputs or a fallback when the logical ID is absent.
 
-The matrix describes the native ABI, not live service qualification.
+## 2. Canonical architecture
 
-| Provider | Stability | Core native ABI | Exact scope | Logical ID parity | Ownership lookup | Source replacement | Evidence |
-|---|---|---|---|---|---|---|---|
-| Qdrant | STABLE | full | yes | yes | exact server-side scroll | supported | QUALIFIED_OFFLINE_CONTRACT |
-| PgVector | STABLE | full | yes | yes | exact SQL predicate | supported | QUALIFIED_OFFLINE_CONTRACT |
-| Chroma | STABLE | full | yes | yes | exact metadata `get` | supported | QUALIFIED_OFFLINE_CONTRACT |
-| Weaviate | BETA | incomplete scoped delete | partial | not qualified | unavailable | UNSUPPORTED_FOR_SOURCE_REPLACEMENT | reclassified; no live claim |
-| LanceDB | BETA | adapter contract only | partial | not qualified | unavailable | UNSUPPORTED_FOR_SOURCE_REPLACEMENT | reclassified; no live claim |
-| Typesense | BETA | scoped delete/count unavailable | partial | not qualified | unavailable | UNSUPPORTED_FOR_SOURCE_REPLACEMENT | reclassified; no live claim |
+The native path is:
 
-`QUALIFIED_OFFLINE_CONTRACT`: native records, scope, logical IDs and exact
-ownership behavior are covered by offline provider/fake tests.
-`LIVE_QUALIFIED`: none in RAG-FINAL-10D. `OPTIONAL_CAPABILITY_LIMITATION`
-applies only when a provider remains stable for core retrieval while an
-optional lifecycle capability is explicitly unsupported; no such provider is
-currently in the stable matrix. Reclassified providers must fail closed for
-source replacement rather than append a changed source.
+```text
+source
+  → parser/loader
+  → KnowledgeDocument normalization and provenance
+  → native chunking
+  → embedding provider
+  → VectorStoreRecord / vector backend
+  → RetrievalService
+  → optional reranker and graph channel
+```
 
-Evidence commands:
-`uv run pytest tests/unit/rag/document_splitters/test_native_strategies.py -q -k recursive`,
-`uv run pytest tests/e2e/rag/test_native_rag_retrieval_qualification.py -q`,
-`uv run pytest tests/integration/rag/test_hierarchical_retrieval_qualification.py -q`,
-`uv run pytest tests/integration/rag/test_dual_index_reingest_qualification.py -q`,
-`uv run pytest tests/unit/rag/evaluation/test_golden_retrieval_gate.py tests/unit/rag/graph/test_hybrid_retrieval_graph_channel.py tests/unit/rag/graph/test_graph_rag_retriever_hardening.py tests/unit/rag/graph/test_graph_provenance_retrieval_trace.py tests/unit/rag/profiles/test_production_graph_rag_profile.py -q`,
-and `uv run pytest tests/unit/rag/test_rag_plugin_discovery.py -q`.
+- **Chunking:** native recursive chunking is the core baseline. Semantic,
+  parent-child and provider/plugin strategies are selectable. Hierarchical
+  retrieval uses child chunks plus a section/TOC index; it does not promise
+  reconstruction of a parent document.
+- **Embeddings:** a provider-neutral embedding contract returns vectors in
+  input order and preserves document identity, scope and provenance.
+- **Vector retrieval:** dense similarity is the native base. Hybrid retrieval
+  may combine dense and lexical/sparse channels; fusion and reranking are
+  optional strategy layers.
+- **Hierarchical retrieval:** `DualIndexStrategy` maintains the main chunk
+  index and a TOC/section index. The TOC is a section index, not a second
+  full-document copy.
+- **GraphRAG:** graph indexing links entities, relationships and chunk
+  evidence to canonical vector IDs. Retrieval seeds from vector results,
+  traverses graph relations and fuses graph evidence with retrieval channels.
+- **Profiles and routing:** `RagProfile`, registries and `RetrievalService`
+  compose the path. Tier routing is cost/latency routing, not autonomous
+  MIME-based algorithm selection.
+- **Extensibility:** supported surfaces are parser/loader, metadata enricher,
+  chunker, embedding provider, vector backend, retriever, reranker and graph
+  indexer where the selected graph path supports it. Detailed authoring is
+  deferred to RAG-DEV-12.
 
-## Native Knowledge Document Contract
+The pipeline satellite contains module-level flow and extension detail; it
+does not own current qualification.
 
-RAG is the **functional owner** of the platform knowledge document ABI. The canonical type is **`KnowledgeDocument`**, implemented in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (LCI-1B), public import: `from intergrax.knowledge.contracts import KnowledgeDocument`.
+## 3. Source ownership and replacement
 
-**Source of truth:** [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
+The canonical ownership selector is:
 
-**Policy:** No new local document models in RAG contracts, memory, modality, or integrations — all shared pipelines consume `KnowledgeDocument`. Replaces `langchain_core.documents.Document` in public contracts per LangChain Independence inventory.
+```text
+tenant_id + namespace + workspace_id + provenance.source_id
+```
 
-> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
-## Maturity score (audit map L0–L4)
+`list_source_record_ids(source_id, scope)` means exact persisted ownership
+enumeration inside the supplied `VectorStoreScope`. It is not semantic
+search, top-k retrieval or basename lookup. Equal basenames do not imply
+equal source ownership.
 
-| Dimension | Score | Notes |
-|-----------|-------|-------|
-| Control-plane architecture (single path, typed contracts) | **L3** | `RetrievalService`, `RagProfile`, runtime bridges, 12 `rag.*` catalog tools |
-| Retrieval mode breadth | **L3** | hybrid, fusion, agentic, graph_rag **stable**; hierarchical + dual-index **qualified** via profile (RAG-HIER-6) |
-| GraphRAG platform (build / maintain / retrieve) | **L3** | Backend registry, lifecycle sync, tenant isolation, stable retriever, maintenance jobs (M-RAG-GRAPH G1–G3) |
-| Strategy selection (autonomous) | **L1.5** | Tier/cost routing only; MIME/size/retriever auto-pick deferred to Tier-3 + AHI |
-| Ingest — short / medium documents | **L3** | Parser catalog, 5 chunking strategies, optional contextual enrich |
-| Ingest — very large corpora | **L2–L2.5** | Sync path size-guarded; `rag.schedule_ingest_job` triggers orchestrator with idempotent contract (M-RAG.26); shard/stream execution in workflow worker |
-| Resilience (retry, fallback, circuit breaker) | **L2.5** | Retriever retry=2 aligned with embedding; fallback `fusion`→`hybrid`→`vector_similarity`; optional vector circuit breaker |
-| Observability | **L3** | `RetrievalTrace`, parser trace, OTel spans default-on; metrics default-on when OTel spine enabled (M-RAG.57) |
-| Security (poisoning) | **L3** | Nexus `rag.retrieve` (catalog) + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
-| Citations | **L3** | Formal `Citation` on `RetrievalResult` + `RagRetrieveOutput.citations` (M-RAG.29) |
-| Vector backends (prod SLO) | **L3** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`; **beta:** `weaviate`, `lancedb`, `typesense`, `pinecone`, `milvus`, `vespa`, `inmemory`; soak gates M-RAG.30/56 |
-| Multi-tenant isolation | **L3** | Cross-backend contract tests vector (`inmemory`, `pgvector`, `weaviate`, `qdrant`, `chroma`, `lancedb`, `typesense` — M-RAG.62) + graph (M-RAG.35, M-RAG.41) |
-| Evaluation depth | **L3** | Golden harness + `run_retrieval_load_soak` CI gate (M-RAG.36) |
+### Single-index replacement
 
-**Overall engine posture:** **L3 implementation / L3 control plane** — **Frozen** harness layer (2026-06-13). L4 adaptive retriever selection → [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md).
+The qualified lifecycle is:
 
----
+```text
+old ownership snapshot
+  → prepare
+  → publish current version
+  → determine current ownership
+  → stale = old - current
+  → cleanup stale
+```
 
-## Engine depth audit register (2026-06-10)
+There is no delete-before-publish step. Preparation/embedding failure before
+publication preserves the old visible version. A post-publication cleanup
+failure is a failed/incomplete replacement requiring retry or recovery, not a
+successful transaction.
 
-Full findings from architecture + implementation review. **Category:** `gap` = missing capability · `incomplete_wiring` = implemented but incomplete · `below_prod_bar` = works but below prod bar · `prod_blocker` = blocks prod class · `design_boundary` = intentional design boundary.
+### Dual-index replacement
 
-| ID | Category | Finding | Severity | Plan | AUDIT-IDEAL |
-|----|----------|---------|----------|------|-------------|
-| GAP-RAG-01 | incomplete_wiring | ~~`RagProfile.query_expansion` / `INTERGRAX_RAG_QUERY_EXPANSION` not wired~~ — **closed M-RAG.23**: `query_expander_from_profile()` in bootstrap; deep tier → `multiquery` when `query_expansion != off` | **P0** | M-RAG.23 **Done** | 14.3 |
-| GAP-RAG-02 | incomplete_wiring | ~~`toc_vector_store` not passed in default bootstrap~~ — **closed M-RAG.24**: `hierarchical_bootstrap` + `RagStack.toc_vectorstore_manager` + retriever bootstrap | **P1** | M-RAG.24 **Done** | 14.4 |
-| GAP-RAG-03 | incomplete_wiring | ~~`IngestPipeline` bypasses `DualIndexStrategy`~~ — **closed M-RAG.24**: `IndexingManager` + `DualIndexStrategy` when `hierarchical_index_enabled` or `hierarchical` retriever | **P1** | M-RAG.24 **Done** | 14.4 |
-| GAP-RAG-04 | prod_blocker | ~~Catalog `perform_rag_retrieve` had no poisoning filter~~ — **closed M-RAG.25**: mirrors `rag_step` when `security_profile.retrieval_poisoning_defense_enabled` | **P1** | M-RAG.25 **Done** | 14.5 |
-| GAP-RAG-05 | prod_blocker | ~~Sync ingest loads full document into RAM with no size guard~~ — **closed M-RAG.26**: `sync_ingest_max_bytes` rejects oversized sync path; stream shard ingest remains workflow worker | **P1** | M-RAG.26 **Done** | 14.6 |
-| GAP-RAG-06 | prod_blocker | ~~No Tier-0 async ingest job contract~~ — **closed M-RAG.26**: `rag.schedule_ingest_job` + idempotent `workflow_orchestrator` trigger | **P1** | M-RAG.26 **Done** | 14.6 |
-| GAP-RAG-07 | incomplete_wiring | ~~No soak gate or ops runbook~~ — **closed M-RAG.30**: `prod_slo.py` soak contract; gate unit tests; integration soak `-m vectorstore_soak`; INTEGRATIONS runbook; `pinecone`/`milvus`/`vespa` remain **beta** until ops soak passes | **P1** | M-RAG.30 **Done** | — |
-| GAP-RAG-08 | incomplete_wiring | ~~No OpenTelemetry spans on retrieve/ingest hot path~~ — **closed M-RAG.27**: `rag_spans.py` + `check_rag_otel_span_registry.py` | **P2** | M-RAG.27 **Done** | 14.7 |
-| GAP-RAG-09 | below_prod_bar | ~~RAG aggregated metrics opt-in~~ — **closed M-RAG.57**: metrics default follows OTel spine when env unset; explicit `INTERGRAX_RAG_METRICS_ENABLED=false` still disables | **P2** | M-RAG.57 **Done** | 14.7 |
-| GAP-RAG-10 | incomplete_wiring | ~~No retriever fallback chain~~ — **closed M-RAG.28**: `retriever_fallback_chain()` in `RetrieverEngine` | **P2** | M-RAG.28 **Done** | — |
-| GAP-RAG-11 | below_prod_bar | ~~No structured retrieval errors~~ — **closed M-RAG.28**: `RetrievalError` taxonomy + optional `RetrieverVectorCircuitBreaker` | **P2** | M-RAG.28 **Done** | — |
-| GAP-RAG-12 | below_prod_bar | ~~Asymmetric retry~~ — **closed M-RAG.28**: `RetrieverEngine.DEFAULT_MAX_RETRIES=2` | **P2** | M-RAG.28 **Done** | — |
-| GAP-RAG-13 | incomplete_wiring | ~~No formal `Citation` on engine output~~ — **closed M-RAG.29**: `retrieval/citation.py` + `RagCitationResult` | **P2** | M-RAG.29 **Done** | — |
-| GAP-RAG-14 | incomplete_wiring | ~~No embedding version policy~~ — **closed M-RAG.31**: warn on ingest, optional retrieve filter, reindex queue hook | **P2** | M-RAG.31 **Done** | — |
-| GAP-RAG-15 | design_boundary | No autonomous MIME/size-based chunking or retriever selection — **Frozen** (M-RAG.58); owner: [`AHI-MAINT-04`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md#61av-harness-implementation-queue--adaptive-harness-intelligence-audit-maintenance-planned) | **P4** | M-RAG.58 **Frozen** | — |
-| GAP-RAG-16 | below_prod_bar | ~~Heuristic-only tier routing~~ — **closed M-RAG.32**: optional `llm_route_enabled` + `llm_tier_classifier.py` with heuristic fallback | **P2** | M-RAG.32 **Done** | — |
-| GAP-RAG-17 | incomplete_wiring | ~~`multiquery` not activated by `query_expansion`~~ — **closed M-RAG.23**: `effective_retriever(deep)` returns `multiquery` when expansion enabled | **P0** | M-RAG.23 **Done** | 14.3 |
-| GAP-RAG-18 | prod_blocker | ~~No Tier-3 GraphRAG prod preset~~ — **closed M-RAG.33**: `production_graph_rag_profile()` requires `neo4j`; `production_rag_profile()` documented harness-only (in-memory graph) | **P1** | M-RAG.33 **Done** | — |
-| GAP-RAG-19 | incomplete_wiring | ~~No inter-iteration retriever switch or latency budget trace~~ — **closed M-RAG.34**: `agentic_iteration_retriever_ids`, `agentic_max_total_latency_ms`, per-iteration trace fields | **P2** | M-RAG.34 **Done** | — |
-| GAP-RAG-20 | prod_blocker | ~~No cross-backend tenant isolation contract~~ — **closed M-RAG.35**: `tenant_isolation_contract.py` + gate tests per backend; live qdrant probe in integration soak | **P1** | M-RAG.35 **Done** | — |
-| GAP-RAG-21 | prod_blocker | ~~No RAG load/soak gate~~ — **closed M-RAG.36**: `evaluation/load_soak.py` concurrent retrieve SLO + CI `rag-guard.yml` | **P2** | M-RAG.36 **Done** | — |
-| GAP-RAG-22 | below_prod_bar | ~~No semantic chunking ingest size guard~~ — **closed M-RAG.37**: `semantic_chunking_max_chars` + `semantic_chunking_size_exceeded` before chunk | **P2** | M-RAG.37 **Done** | — |
-| GAP-RAG-23 | below_prod_bar | ~~M-RAG.6 query expansion **Partial**~~ — **closed M-RAG.23**: M-RAG.6 **Done** | **P0** | M-RAG.23 **Done** | 14.3 |
-| GAP-RAG-24 | incomplete_wiring | ~~`create_rag_graph_store` hardcodes backends~~ — **closed M-RAG.38**: `RagGraphStoreBackend` registry in `graph/bootstrap/backend_registry.py` | **P0** | M-RAG.38 **Done** | — |
-| GAP-RAG-25 | incomplete_wiring | ~~memgraph/falkordb not wired~~ — **closed M-RAG.39**: `CypherRagGraphStore` + registry factories | **P1** | M-RAG.39 **Done** | — |
-| GAP-RAG-26 | prod_blocker | ~~No graph lifecycle sync~~ — **closed M-RAG.40**: `unlink_chunks` / `purge_graph` + catalog delete/purge hooks | **P1** | M-RAG.40 **Done** | — |
-| GAP-RAG-27 | prod_blocker | ~~No graph tenant isolation~~ — **closed M-RAG.41**: `graph/tenant/graph_isolation_contract.py` + tenant scope on stores | **P1** | M-RAG.41 **Done** | — |
-| GAP-RAG-28 | below_prod_bar | ~~`graph_rag` retriever beta~~ — **closed M-RAG.42**: metadata/chunk-linked entity seeds; **stable** | **P1** | M-RAG.42 **Done** | — |
-| GAP-RAG-29 | incomplete_wiring | ~~hybrid channel not fused~~ — **closed M-RAG.53**: vector+keyword+graph fusion via `graph_channel_fusion.py`; `channel_contributions` on trace | **P1** | M-RAG.53 **Done** | — |
-| GAP-RAG-30 | incomplete_wiring | ~~graph provenance not on trace~~ — **closed M-RAG.54**: `graph_provenance_records` + summary on `RetrievalTrace` | **P1** | M-RAG.54 **Done** | — |
-| GAP-RAG-31 | prod_blocker | ~~No graph maintenance job~~ — **closed M-RAG.45**: `rag.schedule_graph_maintenance_job` + workflow contract | **P2** | M-RAG.45 **Done** | — |
-| GAP-RAG-32 | incomplete_wiring | ~~No GraphIndexer plugin registry~~ — **closed M-RAG.46**: `register_graph_indexer_plugin()` | **P2** | M-RAG.46 **Done** | — |
-| GAP-RAG-33 | gap | ~~`graph_store` catalog lacks Neptune, OrientDB, ArangoDB~~ — **closed M-RAG.49–51** (TigerGraph/JanusGraph out of scope) | **P3** | M-RAG.49–51 **Done** | — |
-| GAP-RAG-34 | design_boundary | No Microsoft GraphRAG vendoring — optional harness-native `community_report` indexer (M-RAG.47 **Done**, default off) | — | M-RAG.47 **Done** | — |
-| GAP-RAG-35 | incomplete_wiring | ~~prod slug list neo4j-only~~ — **closed M-RAG.48/55**: `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` (`neo4j`, `memgraph`, `falkordb`) | **P2** | M-RAG.48/55 **Done** | — |
-| GAP-RAG-35b | incomplete_wiring | ~~`falkordb` absent from prod slug list~~ — **closed M-RAG.55**: graph soak gate + `falkordb` in `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` | **P2** | M-RAG.55 **Done** | — |
-| GAP-RAG-09b | below_prod_bar | ~~RAG metrics opt-in vs OTel default-on~~ — **closed M-RAG.57**: metrics default follows `INTERGRAX_RAG_OTEL_SPANS_ENABLED` when unset | **P2** | M-RAG.57 **Done** | 14.7 |
-| GAP-RAG-07b | incomplete_wiring | ~~Beta vector slugs lack harness soak gate~~ — **closed M-RAG.56**: `run_beta_adapter_soak` + gate for pinecone/milvus/vespa | **P2** | M-RAG.56 **Done** | — |
-| GAP-RAG-39 | incomplete_wiring | ~~`rag.retrieve` diagnostics omit graph trace fields~~ — **closed M-RAG.60**: `channel_contributions`, `graph_provenance_records` on tool diagnostics | **P2** | M-RAG.60 **Done** | — |
-| GAP-RAG-40 | incomplete_wiring | ~~`STABLE_PROD_SLO_SLUGS` omits `lancedb`/`typesense`~~ — **superseded RAG-FINAL-10D**: tuple now contains only ABI-qualified stable manifests; `weaviate`, `lancedb` and `typesense` are explicitly reclassified | **P3** | RAG-FINAL-10D **Done** | — |
+Main-index and TOC ownership are snapshotted and handled coherently. Main
+publication precedes TOC publication; after publication both stores are
+enumerated and only source-scoped stale IDs are removed from each store.
+TOC publication and cleanup are not distributed atomic operations.
 
-**Traceability rule:** no open GAP-RAG row without a **Planned** M-RAG.\* deliverable in [`plan/RAG.md`](../maintainers/plans/RAG.md). **GAP-RAG-15** and **GAP-RAG-34** are explicit architectural boundaries, not harness defects.
+### GraphRAG replacement
 
----
+For the canonical harness, the new graph publication occurs before stale
+graph chunk unlink. Shared entities and relationships remain when valid
+active evidence from another source supports them. Stale-only evidence is
+removed or made inactive before it can influence canonical retrieval.
 
-## Materialized knowledge visibility
+## 4. Failure and atomicity semantics
 
-Physical storage or vector indexing is not query visibility. Workspace documents now carry
-immutable `KnowledgeMaterializationOwnershipV1` metadata and an explicit visibility authority.
-Legacy local-file and web records use `LEGACY_IMMEDIATE`; connected-source records require the
-exact tenant, workspace, source, indexed binding, binding reference, delivery and remote identity.
+The lifecycle is deliberately **not called transactional**. It does not
+guarantee:
 
-Connected-source retrieval is visible only when the durable delivery receipt is `COMPLETED`,
-has `completed_at`, has zero failed items, and matches every ownership identity. A durable active
-materialization pointer selects the current committed version for each remote item. A prepared
-delivery leaves that pointer unchanged; a committed newer version replaces it; an aborted or
-malformed version cannot replace the current version. Missing, malformed, cross-scope or
-incompatible authority fails closed.
+- a distributed transaction across vector, TOC and graph stores;
+- exactly-once ingestion;
+- automatic rollback of every partial publication; or
+- a cross-store atomic commit.
 
-Filtering occurs in the shared search-evidence mapping boundary before Ask evidence, citations or
-context assembly. Current vector backends use bounded candidate post-filtering rather than a
-backend-specific predicate; hidden candidates are never substituted and the requested result
-limit remains deterministic. The ownership keys also preserve tenant/workspace/source/binding/
-delivery dimensions for later binding-scoped purge.
+Partial vector, TOC or GraphRAG publication can remain after failure and
+requires explicit retry/recovery. A provider without exact ownership lookup
+must fail closed for changed-source replacement rather than append blindly.
 
-Historical records without the new metadata remain parseable only through explicit legacy
-compatibility. A connected source cannot use that compatibility path and remains hidden until
-authoritative ownership is repaired. Recovery relies on durable receipt and pointer state, not
-in-memory state. The next task is fenced atomic materialization commit; the later lifecycle task
-will implement binding-scoped purge orchestration.
+## 5. Concurrency, generations and visibility
+
+### Three distinct controls
+
+1. **Source operation lease** controls which operation owns the replacement
+   lifecycle.
+2. **Publication generation** controls which prepared version is active.
+3. **Retrieval visibility** filters inactive or unresolved generations before
+   results are exposed.
+
+The canonical source operation key is exactly:
+
+```text
+tenant_id + namespace + workspace_id + source_id
+```
+
+The default coordinator is process-local and thread-safe. It does not provide
+multi-worker or multi-process safety. Production composition uses a durable
+`ConditionalDocumentStore` CAS-backed lease/coordinator.
+
+A lease records owner/token/expiry for publish, release and cleanup. A lease
+alone cannot fence a backend write that was already in flight when the lease
+expired. Therefore every replacement receives a publication generation; a
+newer generation can supersede an older one. Vector and TOC reads filter by
+the exact active generation. Stale physical records may exist temporarily,
+but remain inactive/non-queryable and reclaimable.
+
+The same generation-aware evidence rule applies to canonical harness GraphRAG
+nodes, edges and chunk evidence. Traversal ignores inactive or unresolved
+versioned evidence and retains shared graph facts supported by another active
+generation. This graph evidence fence is qualified for
+`InMemoryGraphStore`; live Neo4j publication fencing and live backend
+reingest remain outside DOCS-11.
+
+## 6. Provider capability and qualification
+
+The matrix follows the catalog taxonomy and describes the native ABI, not
+live service proof.
+
+| Provider | Catalog status | Source replacement | Evidence |
+|---|---|---|---|
+| Qdrant | **STABLE** | supported by native contract | **QUALIFIED_OFFLINE_CONTRACT** |
+| PgVector | **STABLE** | supported by native contract | **QUALIFIED_OFFLINE_CONTRACT** |
+| Chroma | **STABLE** | supported by native contract | **QUALIFIED_OFFLINE_CONTRACT** |
+| Weaviate | **BETA** | **UNSUPPORTED_FOR_SOURCE_REPLACEMENT** | no live claim |
+| LanceDB | **BETA** | **UNSUPPORTED_FOR_SOURCE_REPLACEMENT** | no live claim |
+| Typesense | **BETA** | **UNSUPPORTED_FOR_SOURCE_REPLACEMENT** | no live claim |
+| Pinecone | **BETA** | **UNSUPPORTED_FOR_SOURCE_REPLACEMENT** | no live claim |
+| Milvus | **BETA** | **UNSUPPORTED_FOR_SOURCE_REPLACEMENT** | no live claim |
+| Vespa | **BETA** | **UNSUPPORTED_FOR_SOURCE_REPLACEMENT** | no live claim |
+| InMemory | **BETA** (catalog taxonomy) | harness use only | canonical test harness |
+
+`QUALIFIED_OFFLINE_CONTRACT` means that native records, scope, logical IDs
+and exact ownership behavior are covered by offline/fake-provider contract
+evidence. `LIVE_QUALIFIED` means accepted live service evidence; **none of
+the providers above is LIVE_QUALIFIED after RAG-FINAL-10D**.
+
+`BETA` means the catalog supports an adapter or capability under qualification
+limits; it does not promote the provider to stable or prove source
+replacement. `UNSUPPORTED_FOR_SOURCE_REPLACEMENT` requires fail-closed
+behavior for changed sources, not append behavior.
+
+## 7. Canonical current-state qualification matrix
+
+| Capability | Status | Evidence level | Remaining limitation |
+|---|---|---|---|
+| Native recursive chunking | Qualified | native harness | provider-specific strategies remain optional |
+| Native E2E ingest → retrieval | Qualified | native offline gate | not a live provider qualification |
+| Dense retrieval | Qualified | native contract/harness | provider SLOs remain outside this gate |
+| Hybrid retrieval | Qualified | native in-memory/harness | backend-specific live parity is not claimed |
+| Hierarchical retrieval | Qualified | explicit parent-child + TOC gate | no parent-content reconstruction promise |
+| Dual-index reingest | Qualified with limitations | RAG-FINAL-10A | non-atomic TOC/vector publication |
+| GraphRAG canonical harness | Qualified with limitations | canonical harness | `InMemoryGraphStore` scope |
+| GraphRAG source replacement | Qualified with limitations | generation-aware harness | live Neo4j reingest/fencing not qualified |
+| Same-source serialization | Qualified with limitations | source-key coordinator | default coordinator is process-local |
+| Publication generation fencing | Qualified with limitations | vector/TOC + graph harness | stale physical records need reclamation |
+| Source ownership | Qualified | exact scoped enumeration | providers without lookup fail closed |
+| Stable vector providers | Offline contract only | Qdrant/PgVector/Chroma | no LIVE_QUALIFIED provider |
+| Namespace/workspace isolation | Contract-qualified | native scope/harness and offline Qdrant proof | live Qdrant isolation not claimed |
+| Plugins | Qualified extension surface | native registry/plugin gate | authoring guide is RAG-DEV-12 |
+| LangChain optionality | Qualified architecture | native ABI and boundary docs | optional compatibility paths remain |
+
+## 8. Live-claim boundary and roadmap
+
+DOCS-11 explicitly does **not** claim:
+
+- live Qdrant tenant/namespace/workspace isolation;
+- a live stable-provider source-replacement lifecycle;
+- live Neo4j GraphRAG publication fencing or reingest qualification;
+- a live GraphRAG backend qualification;
+- transactional or exactly-once source replacement.
+
+The global status remains **PRODUCTION_QUALIFIED_WITH_LIMITATIONS**.
+RAG-PROD-13/14 decide whether any live or full-production claim can be
+raised. RAG-DEV-12 owns the future plugin/developer guide. No DOCS-11 text
+starts that work.
+
+## 9. LangChain boundary
+
+The canonical core RAG ABI and native path are Intergrax-native and do not
+require LangChain. LangChain may remain as an optional provider,
+compatibility implementation, or specific loader/splitter/embedding adapter
+behind explicit plugin/compatibility boundaries. The correct claim is not
+that Intergrax contains no LangChain code; the correct claim is that core RAG
+contracts and the canonical native path do not require it.
+
+## 10. Qualification evidence boundary
+
+The accepted evidence is offline/contract and canonical-harness evidence from
+RAG-FINAL-10A–10D. Runtime suites are not repeated by this documentation-only
+task. This document records what the system does, what is qualified, what is
+offline-only, what is beta, and what remains for PROD-13/14.

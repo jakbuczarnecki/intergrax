@@ -4,6 +4,12 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
+> **HISTORICAL / PLAN DOCUMENT — NOT CURRENT RUNTIME TRUTH.** This file
+> preserves implementation history and roadmap decisions. Status values in
+> historical rows describe the state at the time of that phase. The current
+> architecture, qualification boundary and provider taxonomy are owned only
+> by [`architecture/RAG.md`](../../architecture/RAG.md).
+
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
 ---
@@ -12,7 +18,7 @@
 
 **Do not read this entire file in one session** (RAG plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/RAG_audit_history.md`](plan/satellites/RAG_audit_history.md) · [`plan/satellites/RAG_embedded_detail.md`](plan/satellites/RAG_embedded_detail.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`satellites`](satellites) satellites on demand. **On demand (one max):** [`satellites/RAG_audit_history.md`](satellites/RAG_audit_history.md) · [`satellites/RAG_embedded_detail.md`](satellites/RAG_embedded_detail.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/RAG.md`](../../architecture/RAG.md) read-scope block only.
@@ -28,15 +34,37 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/satellites/RAG_audit_history.md`](plan/satellites/RAG_audit_history.md) | audit history |
-| [`plan/satellites/RAG_embedded_detail.md`](plan/satellites/RAG_embedded_detail.md) | embedded detail |
+| [`satellites/RAG_audit_history.md`](satellites/RAG_audit_history.md) | audit history |
+| [`satellites/RAG_embedded_detail.md`](satellites/RAG_embedded_detail.md) | embedded detail |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---
 
+## Current roadmap pointer — RAG-DOCS-11
+
+Completed roadmap phases: **RAG-FINAL-9**, **RAG-FINAL-10A**,
+**RAG-FINAL-10B**, **RAG-FINAL-10C** and **RAG-FINAL-10D**.
+
+Current global status is **PRODUCTION_QUALIFIED_WITH_LIMITATIONS**. The
+canonical source of truth is `docs/project/architecture/RAG.md`; this plan
+must not be used to infer live provider qualification or a full-production
+decision.
+
+Next roadmap items are **RAG-DEV-12**, **RAG-PROD-13** and **RAG-PROD-14**.
+RAG-DEV-12 is a future developer/plugin guide and is not started by DOCS-11.
+
+The detailed historical audit register remains in
+[`satellites/RAG_audit_history.md`](satellites/RAG_audit_history.md).
+It is retained as evidence, not as a second current-state matrix.
+
+---
+
 ## Phase AUDIT-IDEAL — RAG gap register (layer 14)
+
+> Historical phase register. Do not interpret row statuses as current
+> qualification; consult the canonical architecture hub above.
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6, §7.7
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
@@ -60,7 +88,11 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Active cross-feature work — LangChain Independence
+## Historical cross-feature work — LangChain Independence
+
+> This is the historical RAG-side record of the LangChain Independence
+> program. Current LangChain architecture and optionality are owned by the
+> linked feature architecture, not by this plan.
 
 | Task | Priority | Status | Deliverable | Next |
 |------|----------|--------|-------------|------|
