@@ -1711,3 +1711,154 @@ def test_indexing_failure_marks_managed_object_error(tmp_path: Path) -> None:
     durable = str(op.error) + str(op.error_code) + str(mf.error_code)
     assert "parser_boom_detail" not in durable
     assert "WorkspaceDocumentIndexingError" not in durable
+
+
+class _StructuredIndexExecutor:
+    def __init__(
+        self,
+        *,
+        used: bool,
+        reason: str = "ingest_complete",
+        num_chunks: int = 1,
+    ) -> None:
+        self.used = used
+        self.reason = reason
+        self.num_chunks = num_chunks
+        self.calls = 0
+
+    async def execute(self, task: object) -> object:
+        _ = task
+        self.calls += 1
+        from intergrax.contracts.agent_execution_result import (
+            AgentExecutionResult,
+            AgentExecutionStatus,
+        )
+
+        execution = AgentExecutionResult(
+            agent_id="local_indexer",
+            run_id="run-index",
+            status=AgentExecutionStatus.COMPLETED,
+            summary="local_indexer: index job",
+            structured_data={
+                "ingest_summary": {
+                    "used": self.used,
+                    "reason": self.reason,
+                    "num_chunks": self.num_chunks,
+                }
+            },
+        )
+        return type(
+            "TaskResultStub",
+            (),
+            {
+                "metadata": {},
+                "execution_result": execution,
+                "answer": execution.summary,
+            },
+        )()
+
+
+@pytest.mark.asyncio
+async def test_in_progress_index_receipt_resumes_without_manual_cleanup(
+    tmp_path: Path,
+) -> None:
+    from local_workspace_application.workspaces.document_indexing import (
+        WorkspaceDocumentIndexingService,
+        extract_ingest_summary,
+    )
+
+    repo, _, _, _, _, _, _ = _build_intake()
+    physical = tmp_path / "contract.pdf"
+    physical.write_bytes(b"%PDF-1.4 indexed")
+    logical = "managed/src-a/contract.pdf"
+    content_hash = "sha256:abc"
+    fail_executor = _StructuredIndexExecutor(used=False, reason="ingest_failed")
+    fail_service = WorkspaceDocumentIndexingService(repo, fail_executor)  # type: ignore[arg-type]
+    with pytest.raises(WorkspaceDocumentIndexingError, match="ingest_failed"):
+        await fail_service.index_one(
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            source_id="src-a",
+            operation_id="op-fail",
+            physical_path=physical,
+            logical_source_path=logical,
+            safe_file_name="contract.pdf",
+            content_hash=content_hash,
+        )
+
+    success_executor = _StructuredIndexExecutor(used=True, num_chunks=2)
+    success_service = WorkspaceDocumentIndexingService(repo, success_executor)  # type: ignore[arg-type]
+    result = await success_service.index_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        source_id="src-a",
+        operation_id="op-retry",
+        physical_path=physical,
+        logical_source_path=logical,
+        safe_file_name="contract.pdf",
+        content_hash=content_hash,
+    )
+
+    assert result.indexed is True
+    assert result.num_chunks == 2
+    assert success_executor.calls == 1
+    receipt = success_service._get_index_receipt(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        source_id="src-a",
+        logical_source_path=logical,
+        content_hash=content_hash,
+        materialization_scope=None,
+        materialization_ownership=None,
+    )
+    assert receipt is not None
+    assert receipt[1].status == "completed"
+
+
+def test_extract_ingest_summary_reads_structured_data_contract() -> None:
+    from intergrax.contracts.agent_execution_result import (
+        AgentExecutionResult,
+        AgentExecutionStatus,
+    )
+    from local_workspace_application.workspaces.document_indexing import extract_ingest_summary
+
+    execution = AgentExecutionResult(
+        agent_id="local_indexer",
+        run_id="run-1",
+        status=AgentExecutionStatus.COMPLETED,
+        summary="local_indexer: index job",
+        structured_data={
+            "ingest_summary": {
+                "used": True,
+                "reason": "ingest_complete",
+                "num_chunks": 3,
+            }
+        },
+    )
+    result = type(
+        "TaskResultStub",
+        (),
+        {
+            "metadata": {},
+            "execution_result": execution,
+            "answer": execution.summary,
+        },
+    )()
+    summary = extract_ingest_summary(result)
+    assert summary["used"] is True
+    assert summary["reason"] == "ingest_complete"
+    assert summary["num_chunks"] == 3
+
+    failed = extract_ingest_summary(
+        type(
+            "TaskResultStub",
+            (),
+            {
+                "metadata": {},
+                "execution_result": None,
+                "answer": "local_indexer: index job — ingested=0, chunks=0",
+            },
+        )()
+    )
+    assert failed["used"] is False
+    assert failed["reason"] == "no_paths_ingested"

@@ -324,6 +324,104 @@ class WorkspaceDocumentIndexingService:
                 raise WorkspaceDocumentIndexingError(str(exc)) from exc
         return completed
 
+    async def _execute_workspace_index_task(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        operation_id: str,
+        physical_path: Path,
+        logical_source_path: str,
+        safe_file_name: str,
+        content_hash: str,
+        document_id: str,
+        materialization_scope: str | None,
+        materialization_ownership: KnowledgeMaterializationOwnershipV1,
+        receipt: _WorkspaceDocumentIndexReceipt,
+    ) -> WorkspaceDocumentIndexingResult:
+        task = Task(
+            task_id=document_id,
+            tenant_id=tenant_id,
+            user_id="lkw.managed_workspace",
+            message=f"Index managed workspace source file {safe_file_name}",
+            context=TaskContext(capability="local.workspace.index"),
+            metadata={
+                "tenant_id": tenant_id,
+                "workspace_id": workspace_id,
+                "source_id": source_id,
+                "collection_id": workspace_id,
+                "document_id": document_id,
+                "source_paths": [str(physical_path)],
+                "chunking_strategy_id": "recursive",
+                "logical_source_path": logical_source_path,
+                "display_file_name": safe_file_name,
+                "content_hash": content_hash,
+                "operation_id": operation_id,
+                "requested_by": "lkw.managed_workspace.index",
+                **(
+                    {"materialization_scope": materialization_scope}
+                    if materialization_scope is not None
+                    else {}
+                ),
+            },
+        )
+        result = await self._task_executor.execute(task)
+        ingest_summary = extract_ingest_summary(result)
+        if not ingest_summary.get("used"):
+            reason = str(ingest_summary.get("reason") or "ingest_failed")
+            raise WorkspaceDocumentIndexingError(reason)
+
+        completed_record = self._get_index_receipt(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            logical_source_path=logical_source_path,
+            content_hash=content_hash,
+            materialization_scope=materialization_scope,
+            materialization_ownership=materialization_ownership,
+        )
+        if completed_record is None:
+            raise WorkspaceDocumentIndexingError("index_receipt_missing")
+        completed_receipt = self._complete_index_receipt(
+            record=completed_record[0],
+            receipt=receipt,
+            num_chunks=int(ingest_summary.get("num_chunks") or 0),
+        )
+        self._repository.put_document_ref(
+            WorkspaceDocumentReference(
+                document_id=document_id,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                source_path=logical_source_path,
+                file_name=safe_file_name,
+                content_hash=content_hash,
+                indexed_at=completed_receipt.completed_at or completed_receipt.created_at,
+                materialization_ownership=materialization_ownership,
+                visibility_authority_type=(
+                    KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_MANIFEST
+                    if materialization_ownership.ownership_mode
+                    is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                    else KnowledgeMaterializationVisibilityAuthorityTypeV1.LEGACY_IMMEDIATE
+                ),
+                visibility_authority_ref=(
+                    materialization_ownership.delivery_id
+                    if materialization_ownership.ownership_mode
+                    is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                    else None
+                ),
+            )
+        )
+        return WorkspaceDocumentIndexingResult(
+            indexed=True,
+            unchanged=False,
+            document_id=document_id,
+            documents_indexed=1,
+            num_chunks=completed_receipt.num_chunks,
+            reason=str(ingest_summary.get("reason") or "ingest_complete"),
+        )
+
     async def index_one(
         self,
         *,
@@ -431,7 +529,20 @@ class WorkspaceDocumentIndexingService:
             if receipt.document_id != document_id:
                 raise WorkspaceDocumentIndexingError("index_receipt_identity_conflict")
             if receipt.status == "in_progress":
-                raise WorkspaceDocumentIndexingError("index_recovery_required")
+                return await self._execute_workspace_index_task(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    source_id=source_id,
+                    operation_id=operation_id,
+                    physical_path=physical_path,
+                    logical_source_path=logical_source_path,
+                    safe_file_name=safe_file_name,
+                    content_hash=content_hash,
+                    document_id=document_id,
+                    materialization_scope=materialization_scope,
+                    materialization_ownership=materialization_ownership,
+                    receipt=receipt,
+                )
             self._repository.put_document_ref(
                 WorkspaceDocumentReference(
                     document_id=receipt.document_id,
@@ -538,6 +649,21 @@ class WorkspaceDocumentIndexingService:
             if reloaded is None:
                 raise WorkspaceDocumentIndexingError("index_receipt_conflict")
             _, existing_receipt = reloaded
+            if existing_receipt.status == "in_progress":
+                return await self._execute_workspace_index_task(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    source_id=source_id,
+                    operation_id=operation_id,
+                    physical_path=physical_path,
+                    logical_source_path=logical_source_path,
+                    safe_file_name=safe_file_name,
+                    content_hash=content_hash,
+                    document_id=document_id,
+                    materialization_scope=materialization_scope,
+                    materialization_ownership=materialization_ownership,
+                    receipt=existing_receipt,
+                )
             if existing_receipt.status != "completed":
                 raise WorkspaceDocumentIndexingError("index_recovery_required")
             return await self._index_one(
@@ -553,84 +679,17 @@ class WorkspaceDocumentIndexingService:
                 document_id=document_id,
             )
 
-        task = Task(
-            task_id=document_id,
-            tenant_id=tenant_id,
-            user_id="lkw.managed_workspace",
-            message=f"Index managed workspace source file {safe_file_name}",
-            context=TaskContext(capability="local.workspace.index"),
-            metadata={
-                "tenant_id": tenant_id,
-                "workspace_id": workspace_id,
-                "source_id": source_id,
-                "collection_id": workspace_id,
-                "document_id": document_id,
-                "source_paths": [str(physical_path)],
-                "chunking_strategy_id": "recursive",
-                "logical_source_path": logical_source_path,
-                "display_file_name": safe_file_name,
-                "content_hash": content_hash,
-                "operation_id": operation_id,
-                "requested_by": "lkw.managed_workspace.index",
-                **(
-                    {"materialization_scope": materialization_scope}
-                    if materialization_scope is not None
-                    else {}
-                ),
-            },
-        )
-        result = await self._task_executor.execute(task)
-        ingest_summary = extract_ingest_summary(result)
-        if not ingest_summary.get("used"):
-            reason = str(ingest_summary.get("reason") or "ingest_failed")
-            raise WorkspaceDocumentIndexingError(reason)
-
-        completed_record = self._get_index_receipt(
+        return await self._execute_workspace_index_task(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             source_id=source_id,
+            operation_id=operation_id,
+            physical_path=physical_path,
             logical_source_path=logical_source_path,
+            safe_file_name=safe_file_name,
             content_hash=content_hash,
+            document_id=document_id,
             materialization_scope=materialization_scope,
             materialization_ownership=materialization_ownership,
-        )
-        if completed_record is None:
-            raise WorkspaceDocumentIndexingError("index_receipt_missing")
-        completed_receipt = self._complete_index_receipt(
-            record=completed_record[0],
             receipt=receipt,
-            num_chunks=int(ingest_summary.get("num_chunks") or 0),
-        )
-        self._repository.put_document_ref(
-            WorkspaceDocumentReference(
-                document_id=document_id,
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                source_id=source_id,
-                source_path=logical_source_path,
-                file_name=safe_file_name,
-                content_hash=content_hash,
-                indexed_at=completed_receipt.completed_at or completed_receipt.created_at,
-                materialization_ownership=materialization_ownership,
-                visibility_authority_type=(
-                    KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_MANIFEST
-                    if materialization_ownership.ownership_mode
-                    is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
-                    else KnowledgeMaterializationVisibilityAuthorityTypeV1.LEGACY_IMMEDIATE
-                ),
-                visibility_authority_ref=(
-                    materialization_ownership.delivery_id
-                    if materialization_ownership.ownership_mode
-                    is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
-                    else None
-                ),
-            )
-        )
-        return WorkspaceDocumentIndexingResult(
-            indexed=True,
-            unchanged=False,
-            document_id=document_id,
-            documents_indexed=1,
-            num_chunks=completed_receipt.num_chunks,
-            reason=str(ingest_summary.get("reason") or "ingest_complete"),
         )
