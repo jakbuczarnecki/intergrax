@@ -15,6 +15,7 @@ full production decision: live qualification remains owned by RAG-PROD-13/14.
 | Classification | File | Ownership |
 |---|---|---|
 | **CANONICAL** | `docs/project/architecture/RAG.md` | Current RAG architecture and qualification |
+| **DEVELOPER GUIDE** | [`../technical/guides/RAG_EXTENSION_GUIDE.md`](../technical/guides/RAG_EXTENSION_GUIDE.md) | RAG extension topology and authoring contracts |
 | **SATELLITE** | [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | Pipeline/module detail; current status points here |
 | **SATELLITE** | [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | `KnowledgeDocument` ABI |
 | **HISTORICAL / PLAN** | [`../maintainers/plans/RAG.md`](../maintainers/plans/RAG.md) | Implementation history and roadmap; not runtime truth |
@@ -107,8 +108,9 @@ source
   MIME-based algorithm selection.
 - **Extensibility:** supported surfaces are parser/loader, metadata enricher,
   chunker, embedding provider, vector backend, retriever, reranker and graph
-  indexer where the selected graph path supports it. Detailed authoring is
-  deferred to RAG-DEV-12.
+  indexer where the selected graph path supports it. Authoring topology and
+  dependency semantics are documented in the
+  [`RAG extension guide`](../technical/guides/RAG_EXTENSION_GUIDE.md).
 
 The pipeline satellite contains module-level flow and extension detail; it
 does not own current qualification.
