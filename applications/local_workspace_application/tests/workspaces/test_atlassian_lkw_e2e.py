@@ -55,9 +55,6 @@ from intergrax.runtime.vendor_knowledge.tenant_connections import (
     TenantConnectionService,
 )
 
-pytest_plugins = (
-    "applications.local_workspace_application.tests.workspaces.test_slack_connected_source_end_to_end",
-)
 pytestmark = pytest.mark.unit
 
 _NOW = datetime(2026, 8, 10, 8, 0, tzinfo=UTC)

@@ -13,7 +13,7 @@ from urllib.parse import quote
 import pytest
 from fastapi.testclient import TestClient
 
-from applications.local_workspace_application.tests.workspaces.test_slack_connected_source_end_to_end import (
+from applications.local_workspace_application.tests.workspaces.rag_e2e_support import (
     _CONNECTION,
     _NOW,
     _TENANT,
@@ -128,9 +128,6 @@ from tests.unit.runtime.vendor_knowledge.test_msgraph_calendar_knowledge_sync im
     _snapshot_page as _calendar_snapshot_page,
 )
 
-pytest_plugins = (
-    "applications.local_workspace_application.tests.workspaces.test_slack_connected_source_end_to_end",
-)
 pytestmark = pytest.mark.unit
 
 _GRAPH_CONNECTION = "conn.msgraph"

@@ -13,7 +13,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from applications.local_workspace_application.tests.workspaces.test_slack_connected_source_end_to_end import (
+from applications.local_workspace_application.tests.workspaces.rag_e2e_support import (
     _NOW,
     _TENANT,
     _WORKSPACE,
@@ -86,9 +86,6 @@ from tests.unit.integrations.providers.collaboration_suite.google_workspace.test
     _minimal_payload as _sheets_payload,
 )
 
-pytest_plugins = (
-    "applications.local_workspace_application.tests.workspaces.test_slack_connected_source_end_to_end",
-)
 pytestmark = pytest.mark.unit
 
 _GOOGLE_CONNECTION = "conn.google"
