@@ -101,12 +101,12 @@ productionization track above. Its canonical roadmap/status is:
 VK-EXT-1  Unified Vendor Plugin Contribution Contract   ACCEPTED / CLOSED
 VK-EXT-2  Plugin Discovery / Composition                ACCEPTED / CLOSED
 VK-EXT-3  Reference External Provider Proof             ACCEPTED / CLOSED
-VK-EXT-4  Vendor Knowledge Plugin Author Guide          PLANNED
+VK-EXT-4  Vendor Knowledge Plugin Author Guide          ACCEPTED / CLOSED
 VK-EXT-5  Extension Readiness Closeout                  PLANNED
 ```
 
 NEXT:
-  VK-EXT-4  Vendor Knowledge Plugin Author Guide
+  VK-EXT-5  Extension Readiness Closeout
 
 VK-EXT-3 is accepted via the `acme_reference` external qualification plugin at
 `tests/reference_plugins/vendor_knowledge/acme_reference/`. The proof exercises
@@ -120,8 +120,10 @@ built-ins and optional entry-point providers feed the
 `VendorKnowledgeContributionCatalog`, which feeds generic runtime and
 application registries. Generic composition contains no provider-specific
 business branches, and application-owned discovery/materializer hooks are
-contribution-driven. Full external provider qualification remains VK-EXT-3;
-the complete authoring guide remains VK-EXT-4. See
+contribution-driven. Full external provider qualification: VK-EXT-3; authoring
+guide: VK-EXT-4
+[`VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md`](../../technical/guides/VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md).
+See
 [`Vendor Knowledge contribution composition`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md#19-vendor-knowledge-contribution-composition)
 for the detailed architecture boundary.
 

@@ -1766,5 +1766,6 @@ The catalog is the single source for runtime registries. Application-owned
 discovery and indexed materializer hooks are added through the typed host
 extension context, then consumed generically by LKW composition. Provider
 business cases are not repeated in the adapter, source-plugin, factory, Live
-or materializer registry builders. Full external provider authoring guidance is
-deferred to VK-EXT-4.
+or materializer registry builders. External provider authoring guidance:
+[`VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md)
+(VK-EXT-4).
