@@ -102,11 +102,22 @@ VK-EXT-1  Unified Vendor Plugin Contribution Contract   ACCEPTED / CLOSED
 VK-EXT-2  Plugin Discovery / Composition                ACCEPTED / CLOSED
 VK-EXT-3  Reference External Provider Proof             ACCEPTED / CLOSED
 VK-EXT-4  Vendor Knowledge Plugin Author Guide          ACCEPTED / CLOSED
-VK-EXT-5  Extension Readiness Closeout                  PLANNED
+VK-EXT-5  Extension Readiness Closeout                  ACCEPTED / CLOSED
 ```
 
-NEXT:
-  VK-EXT-5  Extension Readiness Closeout
+```text
+VENDOR KNOWLEDGE EXTENSION READINESS
+✅ ACCEPTED / CLOSED
+```
+
+New Vendor Knowledge providers may be delivered through the supported
+`VendorKnowledgeProviderContribution` + Python entry-point model without
+provider-specific changes to generic Vendor Knowledge composition.
+
+Application discovery/binding for generic external scoped sources uses the
+qualified `VENDOR_KNOWLEDGE_SCOPED_SOURCE` seam.
+
+External providers must independently qualify the capabilities they claim.
 
 VK-EXT-3 is accepted via the `acme_reference` external qualification plugin at
 `tests/reference_plugins/vendor_knowledge/acme_reference/`. The proof exercises
