@@ -10,12 +10,18 @@ from typing import Any, Dict, List, Sequence, Set
 
 from intergrax.distributed.source_operation import (
     SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
+    SourceOperationCoordinator,
 )
 from intergrax.rag.graph.contracts.graph_store import (
     GraphEdge,
     GraphNode,
     GraphScope,
     GraphStore,
+)
+from intergrax.rag.graph.generation_visibility import (
+    cypher_evidence_visible,
+    cypher_node_visible,
+    visibility_query_params,
 )
 
 _ENTITY_LABEL = "RagEntity"
@@ -37,6 +43,7 @@ class CypherRagGraphStore(GraphStore):
         self._tenant_id = tenant_id.strip() if tenant_id else None
         self._bound_scope: GraphScope | None = None
         self._node_metadata_cache: Dict[tuple[str, str], Dict[str, Any]] = {}
+        self._source_coordinator: SourceOperationCoordinator | None = None
         if namespace is not None or workspace_id is not None:
             if self._tenant_id is None:
                 raise ValueError("namespace/workspace require tenant_id")
@@ -59,6 +66,11 @@ class CypherRagGraphStore(GraphStore):
         if self._bound_scope is not None and self._bound_scope != normalized:
             raise ValueError("graph scope cannot change after binding")
         self._bound_scope = normalized
+
+    def set_source_operation_coordinator(
+        self, coordinator: SourceOperationCoordinator | None
+    ) -> None:
+        self._source_coordinator = coordinator
 
     def _run(self, statement: str, parameters: Dict[str, Any]) -> List[Dict[str, Any]]:
         result = self._store.run_query(statement, parameters=parameters)
@@ -115,6 +127,40 @@ class CypherRagGraphStore(GraphStore):
             }
         )
         return result
+
+    def _publication_generation(self, metadata: Dict[str, Any]) -> str | None:
+        generation = metadata.get(SOURCE_PUBLICATION_GENERATION_METADATA_KEY)
+        return generation if isinstance(generation, str) and generation.strip() else None
+
+    @staticmethod
+    def _evidence_identity_prefix(
+        *,
+        scope: GraphScope,
+        source_id: str,
+        generation: str | None,
+        kind: str,
+        identity: str,
+    ) -> str:
+        if generation:
+            return f"{scope.key}|{kind}|{source_id}|{generation}|{identity}|"
+        return f"{scope.key}|{kind}|{source_id}|{identity}|"
+
+    def _scope_source_ids(self, scope: GraphScope) -> List[str]:
+        rows = self._run(
+            """
+            MATCH (e:RagEvidence {scope_key: $scope_key})
+            RETURN DISTINCT e.source_id AS source_id
+            """,
+            {"scope_key": scope.key},
+        )
+        return [str(row["source_id"]) for row in rows if row.get("source_id")]
+
+    def _visibility_params(self, scope: GraphScope) -> Dict[str, Any]:
+        return visibility_query_params(
+            scope=scope,
+            coordinator=self._source_coordinator,
+            source_ids=self._scope_source_ids(scope),
+        )
 
     def upsert_node(self, node: GraphNode) -> None:
         scope = self._scope_for_metadata(node.metadata)
@@ -175,6 +221,7 @@ class CypherRagGraphStore(GraphStore):
             else [""]
         )
         source_id = str(metadata.get("source_id") or "__legacy__")
+        generation = self._publication_generation(metadata)
         self._run(
             f"""
             MATCH (a:{_ENTITY_LABEL} {{scope_key: $scope_key, id: $entity_source_id}})
@@ -199,10 +246,14 @@ class CypherRagGraphStore(GraphStore):
                 "entity_source_id": edge.source_id,
                 "source_id": source_id,
                 "chunk_ids": chunk_ids,
-                "evidence_prefix": (
-                    f"{scope.key}|edge|{source_id}|{edge_key}|"
+                "evidence_prefix": self._evidence_identity_prefix(
+                    scope=scope,
+                    source_id=source_id,
+                    generation=generation,
+                    kind="edge",
+                    identity=edge_key,
                 ),
-                "generation": metadata.get(SOURCE_PUBLICATION_GENERATION_METADATA_KEY),
+                "generation": generation,
             },
         )
 
@@ -233,6 +284,7 @@ class CypherRagGraphStore(GraphStore):
             if not isinstance(metadata, dict):
                 raise RuntimeError("graph node metadata is malformed")
         source_id = str(metadata.get("source_id") or "__legacy__")
+        generation = self._publication_generation(metadata)
         self._run(
             f"""
             MATCH (n:{_ENTITY_LABEL} {{scope_key: $scope_key, id: $node_id}})
@@ -253,9 +305,20 @@ class CypherRagGraphStore(GraphStore):
                 "chunk_id": normalized_chunk_id,
                 "source_id": source_id,
                 "evidence_key": (
-                    f"{scope.key}|node|{source_id}|{node_id}|{normalized_chunk_id}"
+                    self._evidence_identity_prefix(
+                        scope=scope,
+                        source_id=source_id,
+                        generation=generation,
+                        kind="node",
+                        identity=node_id,
+                    )
+                    + normalized_chunk_id
+                    if generation
+                    else (
+                        f"{scope.key}|node|{source_id}|{node_id}|{normalized_chunk_id}"
+                    )
                 ),
-                "generation": metadata.get(SOURCE_PUBLICATION_GENERATION_METADATA_KEY),
+                "generation": generation,
                 **self._scope_values(scope),
             },
         )
@@ -266,35 +329,50 @@ class CypherRagGraphStore(GraphStore):
     def neighbors(self, node_id: str, *, max_hops: int = 1) -> List[GraphNode]:
         scope = self._read_scope()
         hops = max(1, int(max_hops))
+        evidence_visible = cypher_evidence_visible(alias="e")
+        node_visible = cypher_node_visible(node_alias="n")
+        neighbor_visible = cypher_node_visible(node_alias="m")
+        params = {
+            **self._visibility_params(scope),
+            "node_id": node_id,
+        }
         rows = self._run(
             f"""
             MATCH (n:{_ENTITY_LABEL} {{scope_key: $scope_key, id: $node_id}})
+            WHERE {node_visible}
             MATCH p=(n)-[:RAG_REL*1..{hops}]-(m:{_ENTITY_LABEL} {{scope_key: $scope_key}})
             WHERE m.id <> $node_id
+              AND {neighbor_visible}
               AND ALL(rel IN relationships(p) WHERE EXISTS {{
                   MATCH (e:RagEvidence {{scope_key: $scope_key}})
-                        -[:SUPPORTS_FROM]->(a:{_ENTITY_LABEL})
-                  MATCH (e)-[:SUPPORTS_TO]->(b:{_ENTITY_LABEL})
                   WHERE e.edge_key = rel.edge_key
+                    AND {evidence_visible}
               }})
             RETURN DISTINCT m.id AS id, m.label AS label,
                    m.node_type AS node_type, m.metadata_json AS metadata_json
             """,
-            {"scope_key": scope.key, "node_id": node_id},
+            params,
         )
         return [_row_to_node(row) for row in rows]
 
     def find_nodes(self, *, label_contains: str, limit: int = 20) -> List[GraphNode]:
         scope = self._read_scope()
+        node_visible = cypher_node_visible(node_alias="n")
+        params = {
+            **self._visibility_params(scope),
+            "needle": label_contains or "",
+            "limit": int(limit),
+        }
         rows = self._run(
             f"""
             MATCH (n:{_ENTITY_LABEL} {{scope_key: $scope_key}})
             WHERE toLower(n.label) CONTAINS toLower($needle)
+              AND {node_visible}
             RETURN n.id AS id, n.label AS label, n.node_type AS node_type,
                    n.metadata_json AS metadata_json
             LIMIT $limit
             """,
-            {"needle": label_contains or "", "limit": int(limit), "scope_key": scope.key},
+            params,
         )
         return [_row_to_node(row) for row in rows]
 
@@ -302,14 +380,20 @@ class CypherRagGraphStore(GraphStore):
         if not node_ids:
             return []
         scope = self._read_scope()
+        evidence_visible = cypher_evidence_visible(alias="e")
+        params = {
+            **self._visibility_params(scope),
+            "node_ids": sorted(node_ids),
+        }
         rows = self._run(
             f"""
             MATCH (e:RagEvidence {{scope_key: $scope_key}})-[:EVIDENCES_NODE]->(n:{_ENTITY_LABEL})
             MATCH (e)-[:EVIDENCES_CHUNK]->(c:{_CHUNK_LABEL})
             WHERE n.id IN $node_ids
+              AND {evidence_visible}
             RETURN DISTINCT c.id AS chunk_id
             """,
-            {"node_ids": sorted(node_ids), "scope_key": scope.key},
+            params,
         )
         return [str(row["chunk_id"]) for row in rows if row.get("chunk_id")]
 
@@ -318,14 +402,20 @@ class CypherRagGraphStore(GraphStore):
         if not ids:
             return set()
         scope = self._read_scope()
+        evidence_visible = cypher_evidence_visible(alias="e")
+        params = {
+            **self._visibility_params(scope),
+            "chunk_ids": ids,
+        }
         rows = self._run(
             f"""
             MATCH (e:RagEvidence {{scope_key: $scope_key}})-[:EVIDENCES_NODE]->(n:{_ENTITY_LABEL})
             MATCH (e)-[:EVIDENCES_CHUNK]->(c:{_CHUNK_LABEL})
             WHERE c.id IN $chunk_ids
+              AND {evidence_visible}
             RETURN DISTINCT n.id AS node_id
             """,
-            {"chunk_ids": ids, "scope_key": scope.key},
+            params,
         )
         return {str(row["node_id"]) for row in rows if row.get("node_id")}
 
@@ -357,6 +447,36 @@ class CypherRagGraphStore(GraphStore):
             RETURN count(e) AS removed
             """,
             {"scope_key": resolved.key, "source_id": source_id},
+        )
+        return self._cleanup(resolved, _counter(rows, "removed"))
+
+    def unlink_source_generation(
+        self,
+        source_id: str,
+        generation: str,
+        *,
+        scope: GraphScope | None = None,
+    ) -> int:
+        source_id = source_id.strip()
+        generation = generation.strip()
+        if not source_id or not generation:
+            return 0
+        resolved = self._scope_for_metadata(scope=scope)
+        rows = self._run(
+            """
+            MATCH (e:RagEvidence {
+                scope_key: $scope_key,
+                source_id: $source_id,
+                generation: $generation
+            })
+            DETACH DELETE e
+            RETURN count(e) AS removed
+            """,
+            {
+                "scope_key": resolved.key,
+                "source_id": source_id,
+                "generation": generation,
+            },
         )
         return self._cleanup(resolved, _counter(rows, "removed"))
 

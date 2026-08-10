@@ -145,6 +145,19 @@ class GraphStore(ABC):
         """Remove only evidence owned by one exact source and scope."""
         raise NotImplementedError
 
+    def unlink_source_generation(
+        self,
+        source_id: str,
+        generation: str,
+        *,
+        scope: GraphScope | None = None,
+    ) -> int:
+        """Remove only evidence for one source publication generation and scope."""
+        del source_id, generation, scope
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support generation-specific unlink"
+        )
+
     @abstractmethod
     def purge_graph(self, *, tenant_id: str | None = None) -> int:
         """Remove all RAG graph artifacts, optionally scoped to a tenant (M-RAG.40)."""

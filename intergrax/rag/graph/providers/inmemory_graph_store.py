@@ -17,6 +17,7 @@ from intergrax.rag.graph.contracts.graph_store import (
     GraphScope,
     GraphStore,
 )
+from intergrax.rag.graph.generation_visibility import graph_evidence_visible
 
 
 @dataclass(frozen=True, slots=True)
@@ -265,6 +266,26 @@ class InMemoryGraphStore(GraphStore):
         )
         return removed + self._prune(resolved.key)
 
+    def unlink_source_generation(
+        self,
+        source_id: str,
+        generation: str,
+        *,
+        scope: GraphScope | None = None,
+    ) -> int:
+        source_id = source_id.strip()
+        generation = generation.strip()
+        if not source_id or not generation:
+            return 0
+        resolved = self._scope_for_metadata(scope=scope)
+        removed = self._remove_evidence(
+            resolved.key,
+            lambda evidence: (
+                evidence.source_id == source_id and evidence.generation == generation
+            ),
+        )
+        return removed + self._prune(resolved.key)
+
     def _remove_evidence(self, scope_key: str, predicate) -> int:
         removed = 0
         for evidence_map in (self._node_evidence, self._edge_evidence):
@@ -335,21 +356,12 @@ class InMemoryGraphStore(GraphStore):
         )
 
     def _evidence_visible(self, evidence: _GraphEvidence) -> bool:
-        if not evidence.versioned:
-            return True
-        if (
-            evidence.generation is None
-            or evidence.source_key is None
-            or self._source_coordinator is None
-        ):
-            return False
-        try:
-            active = self._source_coordinator.active_publication_generation(
-                key=evidence.source_key
-            )
-        except Exception:
-            return False
-        return active == evidence.generation
+        return graph_evidence_visible(
+            versioned=evidence.versioned,
+            generation=evidence.generation,
+            source_key=evidence.source_key,
+            coordinator=self._source_coordinator,
+        )
 
     def _node_visible(self, key: tuple[str, str]) -> bool:
         evidence = self._node_evidence.get(key)
