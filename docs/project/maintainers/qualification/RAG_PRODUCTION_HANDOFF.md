@@ -5,7 +5,7 @@
 **Canonical runtime defect:** `NONE OPEN FROM PROD-13`
 **Qualification date:** 2026-08-10
 **Evidence owner:** RAG-PROD-13 and append-only RAG-LIVE-15A-R2,
-RAG-LIVE-15B-R2 and RAG-LIVE-15C-R2 records
+RAG-LIVE-15B-R2, RAG-LIVE-15C-R2 and RAG-LIVE-15D-R2 records
 
 This is the final RAG-PROD-14 handoff. It closes the qualification decision; it
 does not promote the platform to unrestricted `PRODUCTION_QUALIFIED`.
@@ -34,6 +34,11 @@ RAG-LIVE-15C-R2 subsequently qualified the accepted Neo4j GraphRAG baseline
 against the repository-owned Neo4j 5.26 Community Docker service. This is an
 append-only live evidence update; it does not qualify publication-generation
 fencing or rewrite the historical PROD-13 record.
+
+RAG-LIVE-15D-R2 subsequently qualified Neo4j publication-generation fencing
+against the same repository-owned Neo4j service. This is an append-only live
+evidence update; it does not rewrite the historical PROD-13 or 15C baseline
+records.
 
 ## Approved production surface
 
@@ -94,9 +99,9 @@ failure behavior and a bounded 50-record/5-round soak. See the
   repository-owned qualification environment.
 - **Chroma:** `QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED` for the
   repository-owned qualification environment.
-- **Canonical GraphRAG:** `CANONICAL_HARNESS_QUALIFIED`.
+- **Canonical GraphRAG:** `CANONICAL_HARNESS_QUALIFIED + LIVE_NEO4J_BASELINE + LIVE_NEO4J_GENERATION_FENCING`.
 - **Neo4j GraphRAG baseline:** `LIVE_QUALIFIED_BASELINE`.
-- **Neo4j publication-generation fencing:** `NOT LIVE_QUALIFIED`.
+- **Neo4j publication-generation fencing:** `LIVE_QUALIFIED`.
 
 `NOT LIVE_QUALIFIED` is an evidence boundary, not a runtime defect.
 
@@ -146,7 +151,7 @@ Production operators must:
 | Automatic rollback of every partial publication | Recovery is an operator/application responsibility |
 | Zero stale physical records | Reclamation may be required |
 | Universal live PgVector or Chroma behavior | Qualification is environment-specific; no universal backend claim |
-| Live Neo4j generation fencing | No live evidence |
+| Live Neo4j generation fencing | Live-qualified in the repository-owned environment by RAG-LIVE-15D-R2 |
 | Universal Qdrant performance | No universal capacity or SLO claim |
 | Multi-process safety with the default coordinator | Durable coordination is required |
 | Safety or sandboxing of arbitrary Python plugin code | Plugins are trusted installed code |
@@ -161,6 +166,7 @@ See [`RAG.md`](../../architecture/RAG.md) for the detailed capability matrix.
 | PgVector | `STABLE` | Qualified | Live-qualified by RAG-LIVE-15A-R2 in the repository-owned environment |
 | Chroma | `STABLE` | Qualified | Live-qualified by RAG-LIVE-15B-R2 in the repository-owned environment |
 | Neo4j GraphRAG baseline | `STABLE` | Canonical harness qualified | `LIVE_QUALIFIED_BASELINE` by RAG-LIVE-15C-R2 in the repository-owned environment |
+| Neo4j generation fencing | `STABLE` | Canonical harness + offline contract | `LIVE_QUALIFIED` by RAG-LIVE-15D-R2 in the repository-owned environment |
 | Weaviate / LanceDB / Typesense | `BETA` | — | Source replacement unsupported |
 | Pinecone / Milvus / Vespa | `BETA` | — | No live qualification claim |
 | InMemory | Harness/test taxonomy | Canonical harness use | Use for harness/tests according to current taxonomy |
@@ -176,11 +182,14 @@ Approved at canonical-harness level:
 - shared evidence preservation.
 
 Evidence combines the canonical `InMemoryGraphStore` harness with the
-RAG-LIVE-15C-R2 live Neo4j baseline. The live gate covered scoped indexing,
-exact source ownership, shared evidence, source replacement, safe unlink,
-canonical traversal, failure semantics and cleanup. It did not qualify
-publication-generation fencing, concurrent generation takeover or visibility
-handoff. Neo4j limitations do not block the native RAG platform as a whole.
+RAG-LIVE-15C-R2 live Neo4j baseline and the RAG-LIVE-15D-R2 live generation
+fencing gate. The 15C baseline gate covered scoped indexing, exact source
+ownership, shared evidence, source replacement, safe unlink, canonical
+traversal, failure semantics and cleanup. The 15D-R2 gate covered coordinator
+authority, G1/G2 takeover, stale writers, reverse completion, reduced topology,
+generation-specific cleanup, shared support, scope isolation, server-side
+`active_pairs` filtering, partial publication, idempotency, coordinator
+failure, InMemory parity, bounded contention and cleanup.
 
 ## Extension handoff
 
@@ -221,11 +230,13 @@ optional implementation behind native contracts.
    RAG-LIVE-15B-R2 Chroma live evidence.
 5. [`RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md`](RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md) —
   RAG-LIVE-15C-R2 Neo4j GraphRAG live baseline evidence.
-6. [`RAG_EXTENSION_GUIDE.md`](../../technical/guides/RAG_EXTENSION_GUIDE.md) —
+6. [`RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md`](RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md) —
+  RAG-LIVE-15D-R2 Neo4j generation fencing live evidence.
+7. [`RAG_EXTENSION_GUIDE.md`](../../technical/guides/RAG_EXTENSION_GUIDE.md) —
    extension and plugin contracts.
-7. [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
+8. [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
    — `KnowledgeDocument` ABI detail.
-8. [`RAG.md` historical plan](../plans/RAG.md) — implementation history only.
+9. [`RAG.md` historical plan](../plans/RAG.md) — implementation history only.
 
 Accepted PROD-13 evidence commits are
 `a93c68c138fea4a8758df9e3aca43fd454f521c0` and
@@ -256,7 +267,7 @@ qualification.
 ## Closure
 
 **Roadmap:** `RAG-PROD-14 CLOSED`
-**Current live qualification:** `RAG-LIVE-15A-R2, RAG-LIVE-15B-R2 and
-RAG-LIVE-15C-R2 COMPLETE`
+**Current live qualification:** `RAG-LIVE-15A-R2, RAG-LIVE-15B-R2,
+RAG-LIVE-15C-R2 and RAG-LIVE-15D-R2 COMPLETE`
 **Global status remains:** `PRODUCTION_QUALIFIED_WITH_LIMITATIONS`
-**Next:** `RAG-LIVE-15D NOT STARTED`
+**Next:** `RAG-LIVE-15E NOT STARTED`

@@ -100,13 +100,20 @@ productionization track above. Its canonical roadmap/status is:
 ```text
 VK-EXT-1  Unified Vendor Plugin Contribution Contract   ACCEPTED / CLOSED
 VK-EXT-2  Plugin Discovery / Composition                ACCEPTED / CLOSED
-VK-EXT-3  Reference External Provider Proof             PLANNED
+VK-EXT-3  Reference External Provider Proof             ACCEPTED / CLOSED
 VK-EXT-4  Vendor Knowledge Plugin Author Guide          PLANNED
 VK-EXT-5  Extension Readiness Closeout                  PLANNED
 ```
 
 NEXT:
-  VK-EXT-3  Reference External Provider Proof
+  VK-EXT-4  Vendor Knowledge Plugin Author Guide
+
+VK-EXT-3 is accepted via the `acme_reference` external qualification plugin at
+`tests/reference_plugins/vendor_knowledge/acme_reference/`. The proof exercises
+entry-point discovery, connection factory rehydration, generic scoped-source
+discovery/binding, Durable sync, Indexed materialization, Search and Ask without
+any `acme_reference` identifier in generic Vendor Knowledge core, application
+composition, or existing provider packages.
 
 The `VendorKnowledgeProviderContribution` is the canonical extension ABI:
 built-ins and optional entry-point providers feed the

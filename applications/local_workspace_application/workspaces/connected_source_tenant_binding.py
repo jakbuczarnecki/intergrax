@@ -27,6 +27,7 @@ from local_workspace_application.workspaces.connected_source_opaque_ref_codec im
     GoogleWorkspaceCandidatePayload,
     JiraProjectCandidatePayload,
     RemoteResourceOpaqueRefCodec,
+    VendorKnowledgeScopedSourceCandidatePayload,
 )
 
 from intergrax.integrations.contracts.base import IntegrationCategory
@@ -227,6 +228,17 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
     ) -> ConfluenceSpaceCandidatePayload | None:
         try:
             return self._codec.decode_confluence_space_candidate(opaque_candidate_ref)
+        except ConnectedSourceDiscoveryError:
+            return None
+
+    def _vendor_knowledge_scoped_payload(
+        self,
+        opaque_candidate_ref: str,
+    ) -> VendorKnowledgeScopedSourceCandidatePayload | None:
+        try:
+            return self._codec.decode_vendor_knowledge_scoped_source_candidate(
+                opaque_candidate_ref
+            )
         except ConnectedSourceDiscoveryError:
             return None
 
@@ -490,6 +502,31 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
                 safe_display_name=safe_display_name,
             )
 
+        scoped = self._vendor_knowledge_scoped_payload(opaque_candidate_ref)
+        if scoped is not None:
+            _validate_candidate_scope_values(
+                scoped.tenant_id,
+                scoped.workspace_id,
+                scoped.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            try:
+                integration_kind = IntegrationCategory(scoped.integration_kind)
+            except ValueError:
+                raise ConnectedSourceBindingError("candidate_inaccessible") from None
+            return _scoped_vendor_binding(
+                tenant_id=tenant_id,
+                connection_ref=connection_ref,
+                provider_id=scoped.provider_id,
+                integration_kind=integration_kind,
+                source_kind=scoped.source_kind,
+                scope_type=scoped.scope_type,
+                scope_id=scoped.scope_id,
+                safe_display_name=safe_display_name or scoped.safe_display_label,
+            )
+
         return self._slack.build_binding(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -631,6 +668,24 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
                 workspace_id=workspace_id,
                 connection_ref=connection_ref,
                 resource_type=google.resource_type,
+                opaque_candidate_ref=opaque_candidate_ref,
+            )
+
+        scoped = self._vendor_knowledge_scoped_payload(opaque_candidate_ref)
+        if scoped is not None:
+            _validate_candidate_scope_values(
+                scoped.tenant_id,
+                scoped.workspace_id,
+                scoped.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            return await self._discovery.revalidate_candidate_label(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+                resource_type=RemoteResourceTypeV1.VENDOR_KNOWLEDGE_SCOPED_SOURCE,
                 opaque_candidate_ref=opaque_candidate_ref,
             )
 

@@ -267,6 +267,16 @@ def build_connected_source_wiring(
         continuation = _SyncRuntimeContinuation(sync_runtime)
         sync_enqueue_context = sync_runtime.wiring_context
 
+    resolved_materializer_registry = materializer_registry
+    if resolved_materializer_registry is None:
+        from local_workspace_application.workspaces.connected_source_materializer import (
+            default_connected_source_materializer_registry,
+        )
+
+        resolved_materializer_registry = default_connected_source_materializer_registry(
+            discover_entry_points=discover_vendor_knowledge_entry_points,
+        )
+
     connected_sync = ManagedWorkspaceConnectedSourceSyncService(
         repository=repository,
         indexing_service=indexing_service,
@@ -275,7 +285,7 @@ def build_connected_source_wiring(
         dependencies_factory=dependencies_factory,
         continuation=continuation,
         sync_enqueue_context=sync_enqueue_context,
-        materializer_registry=materializer_registry,
+        materializer_registry=resolved_materializer_registry,
     )
     knowledge_access = WorkspaceKnowledgeAccessService(
         discovery_service=discovery,

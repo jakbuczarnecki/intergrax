@@ -29,6 +29,9 @@ _MSGRAPH_CALENDAR_CANDIDATE_PAYLOAD_SCHEMA = "lkw.msgraph_calendar_candidate.v1"
 _GOOGLE_WORKSPACE_CANDIDATE_PAYLOAD_SCHEMA = "lkw.google_workspace_candidate.v1"
 _JIRA_PROJECT_CANDIDATE_PAYLOAD_SCHEMA = "lkw.jira_project_candidate.v1"
 _CONFLUENCE_SPACE_CANDIDATE_PAYLOAD_SCHEMA = "lkw.confluence_space_candidate.v1"
+_VENDOR_KNOWLEDGE_SCOPED_SOURCE_CANDIDATE_PAYLOAD_SCHEMA = (
+    "lkw.vendor_knowledge_scoped_source_candidate.v1"
+)
 _PAGINATION_PAYLOAD_SCHEMA = "lkw.remote_resource_pagination.v1"
 _MAX_TOKEN_LEN = 1024
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -147,6 +150,26 @@ class ConfluenceSpaceCandidatePayload(BaseModel):
     connection_ref: str = Field(..., min_length=1, max_length=128)
     resource_type: RemoteResourceTypeV1
     space_id: str = Field(..., min_length=1, max_length=64)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class VendorKnowledgeScopedSourceCandidatePayload(BaseModel):
+    """Provider-neutral opaque candidate for contribution-owned VK scoped sources."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(
+        default=_VENDOR_KNOWLEDGE_SCOPED_SOURCE_CANDIDATE_PAYLOAD_SCHEMA
+    )
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    provider_id: str = Field(..., min_length=1, max_length=128)
+    integration_kind: str = Field(..., min_length=1, max_length=64)
+    source_kind: str = Field(..., min_length=1, max_length=128)
+    scope_id: str = Field(..., min_length=1, max_length=256)
+    scope_type: str = Field(..., min_length=1, max_length=128)
     safe_display_label: str = Field(..., min_length=1, max_length=256)
 
 
@@ -527,6 +550,51 @@ class RemoteResourceOpaqueRefCodec:
         except (ValueError, RemoteResourceOpaqueRefCodecError):
             raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
         if payload.schema_version != _CONFLUENCE_SPACE_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_vendor_knowledge_scoped_source_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: str,
+        source_kind: str,
+        scope_id: str,
+        scope_type: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = VendorKnowledgeScopedSourceCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.VENDOR_KNOWLEDGE_SCOPED_SOURCE,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            source_kind=source_kind,
+            scope_id=scope_id,
+            scope_type=scope_type,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_vendor_knowledge_scoped_source_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> VendorKnowledgeScopedSourceCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = VendorKnowledgeScopedSourceCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if (
+            payload.schema_version
+            != _VENDOR_KNOWLEDGE_SCOPED_SOURCE_CANDIDATE_PAYLOAD_SCHEMA
+        ):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        if payload.resource_type is not RemoteResourceTypeV1.VENDOR_KNOWLEDGE_SCOPED_SOURCE:
             raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
         return payload
 

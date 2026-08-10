@@ -21,6 +21,7 @@ the linked qualification artifacts.
 | **LIVE QUALIFICATION** | [`../maintainers/qualification/RAG_PGVECTOR_LIVE_QUALIFICATION.md`](../maintainers/qualification/RAG_PGVECTOR_LIVE_QUALIFICATION.md) | RAG-LIVE-15A-R2 PgVector live evidence |
 | **LIVE QUALIFICATION** | [`../maintainers/qualification/RAG_CHROMA_LIVE_QUALIFICATION.md`](../maintainers/qualification/RAG_CHROMA_LIVE_QUALIFICATION.md) | RAG-LIVE-15B-R2 Chroma live evidence |
 | **LIVE QUALIFICATION** | [`../maintainers/qualification/RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md`](../maintainers/qualification/RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md) | RAG-LIVE-15C-R2 Neo4j GraphRAG baseline |
+| **LIVE QUALIFICATION** | [`../maintainers/qualification/RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md`](../maintainers/qualification/RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md) | RAG-LIVE-15D-R2 Neo4j generation fencing |
 | **FINAL HANDOFF** | [`../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md`](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md) | RAG-PROD-14 final production decision and deployment contract |
 | **SATELLITE** | [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | Pipeline/module detail; current status points here |
 | **SATELLITE** | [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | `KnowledgeDocument` ABI |
@@ -259,32 +260,36 @@ behavior for changed sources, not append behavior.
 | Hierarchical retrieval | Qualified | explicit parent-child + TOC gate | no parent-content reconstruction promise |
 | Dual-index reingest | Qualified with limitations | RAG-FINAL-10A | non-atomic TOC/vector publication |
 | GraphRAG canonical harness | Qualified with limitations | canonical harness | `InMemoryGraphStore` scope |
-| GraphRAG source replacement | Qualified with limitations | generation-aware harness + RAG-LIVE-15C-R2 baseline | live generation fencing not qualified |
-| Neo4j GraphRAG baseline | `LIVE_QUALIFIED_BASELINE` | RAG-LIVE-15C-R2 live baseline | publication-generation fencing remains outside R2 |
+| GraphRAG source replacement | Qualified with limitations | generation-aware harness + RAG-LIVE-15C-R2 baseline + RAG-LIVE-15D-R2 fencing | stale physical records need reclamation |
+| Neo4j GraphRAG baseline | `LIVE_QUALIFIED_BASELINE` | RAG-LIVE-15C-R2 live baseline | baseline does not claim universal backend SLO |
+| Neo4j publication-generation fencing | `LIVE_QUALIFIED` | RAG-LIVE-15D-R2 live gate | stale physical records need reclamation |
 | Same-source serialization | Qualified with limitations | source-key coordinator | default coordinator is process-local |
-| Publication generation fencing | Qualified with limitations | vector/TOC + graph harness | stale physical records need reclamation |
+| Publication generation fencing | Qualified with limitations | vector/TOC + graph harness + RAG-LIVE-15D-R2 Neo4j live evidence | stale physical records need reclamation |
 | Source ownership | Qualified | exact scoped enumeration | providers without lookup fail closed |
 | Stable vector providers | Qdrant, PgVector and Chroma live-qualified | RAG-PROD-13 Qdrant gate, RAG-LIVE-15A-R2 PgVector gate, RAG-LIVE-15B-R2 Chroma gate and native contracts | qualification is environment-specific; no universal backend SLO claim |
 | Namespace/workspace isolation | Contract-qualified; Qdrant, PgVector and Chroma live-qualified | native scope/harness, RAG-PROD-13, RAG-LIVE-15A-R2 and RAG-LIVE-15B-R2 gates | qualification is environment-specific |
 | Plugins | Qualified extension surface | native registry/plugin gate | [`RAG_EXTENSION_GUIDE.md`](../technical/guides/RAG_EXTENSION_GUIDE.md) |
 | LangChain optionality | Qualified architecture | native ABI and boundary docs | optional compatibility paths remain |
 
-Live Neo4j GraphRAG baseline is `LIVE_QUALIFIED_BASELINE`; live GraphRAG
-generation fencing is `NOT LIVE_QUALIFIED`. Canonical harness qualification
-plus this baseline does not imply live publication-generation evidence.
+Live Neo4j GraphRAG baseline is `LIVE_QUALIFIED_BASELINE`; live Neo4j
+publication-generation fencing is `LIVE_QUALIFIED` by RAG-LIVE-15D-R2.
+Canonical harness qualification plus these live gates does not imply universal
+backend SLO or distributed-transaction claims.
 
 ## 8. Live-claim boundary and roadmap
 
 The current evidence still does **not** claim:
 
-- live Neo4j GraphRAG publication fencing;
-- transactional or exactly-once source replacement.
+- transactional or exactly-once source replacement;
+- zero stale physical graph records;
+- multi-process coordinator durability without a durable coordinator.
 
 The global status remains **PRODUCTION_QUALIFIED_WITH_LIMITATIONS**.
 RAG-PROD-13 evidence, the closed RAG-PROD-14 handoff and the append-only
-RAG-LIVE-15A-R2 PgVector, RAG-LIVE-15B-R2 Chroma and RAG-LIVE-15C-R2 Neo4j
-evidence are recorded in the linked qualification artifacts. Neo4j
-publication-generation fencing remains unresolved.
+RAG-LIVE-15A-R2 PgVector, RAG-LIVE-15B-R2 Chroma, RAG-LIVE-15C-R2 Neo4j
+baseline and RAG-LIVE-15D-R2 Neo4j generation-fencing evidence are recorded in
+the linked qualification artifacts. Final global closeout remains with
+RAG-LIVE-15E.
 
 ## 9. LangChain boundary
 

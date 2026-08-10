@@ -1,0 +1,16 @@
+[project]
+name = "acme-reference-vk-plugin"
+version = "0.0.1"
+description = "Reference external Vendor Knowledge provider for VK-EXT-3 qualification."
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.entry-points."intergrax.vendor_knowledge.providers"]
+acme_reference = "acme_reference_vk_plugin.contribution:build_acme_reference_contribution"

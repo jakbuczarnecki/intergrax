@@ -19,6 +19,9 @@ _FIXTURE_PKG = _REPO_ROOT / "tests" / "fixtures" / "plugin_packages" / "intergra
 _SECURITY_DEFENSE_FIXTURE_PKG = (
     _REPO_ROOT / "tests" / "fixtures" / "plugin_packages" / "intergrax_security_defense_fixture"
 )
+_ACME_REFERENCE_VK_PLUGIN_PKG = (
+    _REPO_ROOT / "tests" / "reference_plugins" / "vendor_knowledge" / "acme_reference"
+)
 
 
 def _install_editable_package(package_dir: Path, module_name: str) -> None:
@@ -48,6 +51,10 @@ def _install_security_defense_fixture_package() -> None:
     _install_editable_package(_SECURITY_DEFENSE_FIXTURE_PKG, "intergrax_security_defense_fixture")
 
 
+def _install_acme_reference_vk_plugin_package() -> None:
+    _install_editable_package(_ACME_REFERENCE_VK_PLUGIN_PKG, "acme_reference_vk_plugin")
+
+
 @pytest.fixture(scope="session")
 def catalog_fixture_installed() -> None:
     """Install catalog entry-point fixture package for pytest (Phase P-Ext.0.5)."""
@@ -58,6 +65,12 @@ def catalog_fixture_installed() -> None:
 def security_defense_fixture_installed() -> None:
     """Install security defense EP fixture package for pytest (Phase SEC-EVOL-2)."""
     _install_security_defense_fixture_package()
+
+
+@pytest.fixture(scope="session")
+def acme_reference_vk_plugin_installed() -> None:
+    """Install VK-EXT-3 reference external provider entry-point package."""
+    _install_acme_reference_vk_plugin_package()
 
 
 @pytest.fixture(scope="session", autouse=True)
