@@ -32,6 +32,52 @@ justify default-core ownership. Later DEP tasks must move such dependencies
 behind the provider's explicit selection/import boundary and preserve a
 controlled missing-dependency error.
 
+## DEP-4 version policy
+
+Direct runtime dependencies use one of three visible policies:
+
+- `EXACT_PIN` — reserved for reproducibility-sensitive packages such as the
+  pinned NumPy baseline and Chroma provider.
+- `BOUNDED_MAJOR` — a supported lower bound plus an upper boundary before the
+  next incompatible major family.
+- `UNBOUNDED_MAJOR` — permitted only for packages outside the designated
+  high-risk runtime/optional policy set.
+
+FastAPI, Starlette, Uvicorn and HTTPX are bounded below major `1` as one
+compatibility family. Pydantic is bounded below major `3`; it must not enter
+the resolver unqualified. FastMCP is qualified on major `3` and bounded below
+major `4`; its `mcp` dependency remains transitive and is not declared
+directly.
+
+## Core allowlist and optional capability principle
+
+The default dependency list is an explicit reviewed allowlist in
+`scripts/maintenance/check_dependency_ownership.py`. Every core entry must
+have a `CORE_FOUNDATION` or `CORE_SERVER` owner. Capability packages such as
+provider SDKs, vector clients, local ML, parsers, media, UI, FastMCP and
+LangChain/LangGraph belong in a named extra unless a documented temporary
+core owner is approved.
+
+Intentional shared declarations (`openai`, `boto3`, `tiktoken` and the Harness
+authoring server set) remain allowed because their core owner is independently
+qualified. `pandas` is owned by `parsing-office`; `chardet` remains core for
+the canonical native text-loader fallback.
+
+## Governance gate and change procedure
+
+The offline gate at
+`scripts/maintenance/check_dependency_ownership.py` parses `pyproject.toml`
+and rejects unapproved core entries, forbidden optional-family reintroduction,
+LangChain/LangGraph in core or `llm-all`, direct `mcp`, accidental core/extra
+duplicate ownership, and unbounded high-risk declarations. It runs in the
+lightweight governance smoke job in `.github/workflows/unit-tests.yml`.
+
+A dependency change must update its owner/extra and version bound together,
+then pass the checker, targeted declaration tests, `uv lock --check`, and the
+relevant fresh resolver matrix. Adding a new core owner requires an explicit
+change to the allowlist and qualification evidence; the checker has no
+baseline-update or global-ignore mode.
+
 ## DEP-2 decisions
 
 DEP-2 makes the native LLM extras and `rag-local-embeddings` actual selection

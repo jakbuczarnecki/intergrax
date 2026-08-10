@@ -41,7 +41,7 @@ def test_ollama_extras_separate_native_and_compatibility_dependencies() -> None:
         not package_name(dependency).startswith(("langchain", "langgraph"))
         for dependency in project["dependencies"]
     )
-    assert optional["llm-ollama"] == ["ollama>=0.1", "tiktoken>=0.7"]
+    assert optional["llm-ollama"] == ["ollama>=0.1,<1", "tiktoken>=0.7,<1"]
     assert set(optional["llm-langchain-ollama"]) == {
         "langchain-core>=0.3,<2.0",
         "langchain-ollama>=0.2,<2.0",
@@ -49,7 +49,7 @@ def test_ollama_extras_separate_native_and_compatibility_dependencies() -> None:
     assert optional["rag-langchain-loaders"] == ["langchain-community>=0.3,<0.5"]
     assert optional["rag-langchain-embeddings"] == ["langchain-ollama>=0.2,<2.0"]
     assert optional["rag-langchain-splitters"] == ["langchain-text-splitters>=0.3,<2.0"]
-    assert optional["langgraph-legacy"] == ["langgraph>=0.0.40"]
+    assert optional["langgraph-legacy"] == ["langgraph>=0.0.40,<2"]
     assert all(
         not dependency.startswith("langchain-ollama")
         for dependency in optional["llm-all"]

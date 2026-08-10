@@ -51,23 +51,24 @@ def test_dep3_capabilities_are_not_core_dependencies() -> None:
         assert not any(dependency.lower().startswith(package.lower()) for dependency in core)
 
     assert extras["vector-chroma"] == ["chromadb==1.4.1"]
-    assert extras["vector-qdrant"] == ["qdrant-client>=1.9"]
-    assert extras["vector-pinecone"] == ["pinecone>=3.0"]
-    assert "beautifulsoup4>=4.12" in extras["parsing-web"]
-    assert "trafilatura>=1.8" in extras["parsing-web"]
+    assert extras["vector-qdrant"] == ["qdrant-client>=1.9,<2"]
+    assert extras["vector-pinecone"] == ["pinecone>=3.0,<9"]
+    assert "beautifulsoup4>=4.12,<5" in extras["parsing-web"]
+    assert "trafilatura>=1.8,<3" in extras["parsing-web"]
     assert set(extras["parsing-office"]) == {
-        "python-docx>=1.1",
-        "openpyxl>=3.1",
-        "xlrd>=2.0",
-        "docx2txt>=0.8",
+        "pandas>=2.1.4,<3",
+        "python-docx>=1.1,<2",
+        "openpyxl>=3.1,<4",
+        "xlrd>=2.0,<3",
+        "docx2txt>=0.8,<1",
         "langchain-community>=0.3,<0.5",
     }
-    assert extras["parsing-pdf"] == ["PyMuPDF>=1.23", "langchain-community>=0.3,<0.5"]
-    assert set(extras["parsing-ocr"]) == {"pytesseract>=0.3", "pillow>=11.0"}
-    assert extras["media-youtube"] == ["yt-dlp>=2024.0"]
+    assert extras["parsing-pdf"] == ["PyMuPDF>=1.23,<2", "langchain-community>=0.3,<0.5"]
+    assert set(extras["parsing-ocr"]) == {"pytesseract>=0.3,<1", "pillow>=11.0,<13"}
+    assert extras["media-youtube"] == ["yt-dlp>=2024.0,<2027"]
     assert "opencv-python-headless==4.9.0.80" in extras["media-video"]
-    assert "streamlit>=1.39" in extras["ui-streamlit"]
-    assert extras["mcp"] == ["fastmcp>=3.3.1"]
+    assert "streamlit>=1.39,<2" in extras["ui-streamlit"]
+    assert extras["mcp"] == ["fastmcp>=3.3.1,<4"]
     assert not any(dependency.lower().startswith("requests-cache") for dependency in core)
 
 

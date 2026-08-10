@@ -153,7 +153,7 @@ def test_whisper_is_owned_by_media_extra() -> None:
     assert not any(dependency.startswith("openai-whisper") for dependency in project["dependencies"])
     whisper_extra = project["optional-dependencies"]["media-whisper"]
     assert "openai-whisper>=20240930,<20250626" in whisper_extra
-    assert "webvtt-py>=0.4" in whisper_extra
+    assert "webvtt-py>=0.4,<1" in whisper_extra
 
 
 def test_whisper_opens_import_is_lazy() -> None:
