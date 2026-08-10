@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from types import SimpleNamespace
 from typing import Any, Dict, List, Sequence
 
 import pytest
@@ -33,14 +34,39 @@ class _FakeQdrantPoint:
 class _FakeQdrantClient:
     def __init__(self) -> None:
         self._collections: Dict[str, List[_FakeQdrantPoint]] = {}
+        self._collection_dims: Dict[str, int] = {}
         self.last_upsert_points: List[Any] = []
+        self.deleted_collections: list[str] = []
 
-    def get_collection(self, collection_name: str) -> dict[str, str]:
-        if collection_name not in self._collections:
+    def get_collection(self, collection_name: str) -> Any:
+        if collection_name not in self._collection_dims:
             raise RuntimeError("collection_not_found")
-        return {"name": collection_name}
+        size = self._collection_dims[collection_name]
+        return SimpleNamespace(
+            config=SimpleNamespace(
+                params=SimpleNamespace(vectors=SimpleNamespace(size=size))
+            )
+        )
 
-    def create_collection(self, *, collection_name: str, vectors_config: Any = None, **_: Any) -> None:
+    def delete_collection(self, collection_name: str) -> None:
+        self.deleted_collections.append(collection_name)
+        self._collection_dims.pop(collection_name, None)
+        self._collections.pop(collection_name, None)
+
+    def create_collection(
+        self,
+        *,
+        collection_name: str,
+        vectors_config: Any = None,
+        **_: Any,
+    ) -> None:
+        if hasattr(vectors_config, "size"):
+            dim = int(vectors_config.size)
+        elif isinstance(vectors_config, dict):
+            dim = int(next(iter(vectors_config.values())).size)
+        else:
+            dim = 3
+        self._collection_dims[collection_name] = dim
         self._collections.setdefault(collection_name, [])
 
     def upsert(self, *, collection_name: str, points: Sequence[Any]) -> None:
@@ -127,6 +153,36 @@ def test_upsert_valid_uuid_id_remains_valid() -> None:
     point = client.last_upsert_points[0]
     assert str(point.id) == logical_id
     assert point.payload[_LOGICAL_ID_METADATA_KEY] == logical_id
+
+
+def test_add_records_recreates_collection_on_embedding_dimension_mismatch() -> None:
+    store, client = _store_with_fake_client()
+    collection_name = store.collection_name
+    client._collection_dims[collection_name] = 384
+    client._collections[collection_name] = []
+    store._dim = 768  # type: ignore[attr-defined]
+
+    record = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": "doc-768", "root_document_id": "doc-768"},
+            "scope": {"tenant_id": "t1"},
+            "content": "dim mismatch",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": "doc-768"},
+        }
+    )
+    vector = VectorStoreRecord(
+        document=record,
+        embedding=[0.1] * 768,
+        vector_id="doc-768",
+    )
+
+    store.add_records([vector], scope=VectorStoreScope(tenant_id="t1"))
+
+    assert collection_name in client.deleted_collections
+    assert client._collection_dims[collection_name] == 768
+    assert len(client.last_upsert_points) == 1
 
 
 def test_add_records_requires_explicit_vector_id() -> None:

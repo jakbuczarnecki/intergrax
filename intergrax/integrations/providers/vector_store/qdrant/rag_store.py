@@ -139,6 +139,24 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
 
         self._init_qdrant()
 
+    @staticmethod
+    def _collection_vector_size(collection_info: Any) -> int | None:
+        try:
+            vectors = collection_info.config.params.vectors
+        except Exception:
+            return None
+        if vectors is None:
+            return None
+        if isinstance(vectors, dict):
+            dense = vectors.get(_DENSE_VECTOR_NAME)
+            if dense is not None:
+                return int(dense.size)
+            if len(vectors) == 1:
+                only = next(iter(vectors.values()))
+                return int(only.size)
+            return None
+        return int(vectors.size)
+
     def _init_qdrant(self) -> None:
         if QdrantClient is None:
             raise ImportError("qdrant-client is not installed. `pip install qdrant-client`")
@@ -160,8 +178,15 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         assert self._client is not None
 
         try:
-            self._client.get_collection(self.collection_name)
-            return
+            info = self._client.get_collection(self.collection_name)
+            if self._dim is not None:
+                existing_dim = self._collection_vector_size(info)
+                if existing_dim is not None and existing_dim != self._dim:
+                    self._client.delete_collection(self.collection_name)
+                else:
+                    return
+            else:
+                return
         except Exception:
             pass
 
