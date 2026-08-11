@@ -227,20 +227,27 @@ def evaluate_package_production_admission(
             reason="production admission helper requires package-level subject",
         )
 
-    if (
-        result.subject.delivery_source is PluginDeliverySource.EXTERNAL_PACKAGE
-        and compatibility is not None
-        and not compatibility.compatible
-    ):
-        return PackageProductionAdmission(
-            admitted=False,
-            result=result,
-            compatibility=compatibility,
-            reason=(
-                "external package platform compatibility failed; "
-                f"{compatibility.reason.value}"
-            ),
-        )
+    if result.subject.delivery_source is PluginDeliverySource.EXTERNAL_PACKAGE:
+        if compatibility is None:
+            return PackageProductionAdmission(
+                admitted=False,
+                result=result,
+                compatibility=None,
+                reason=(
+                    "external package production admission requires "
+                    "platform compatibility evidence"
+                ),
+            )
+        if not compatibility.compatible:
+            return PackageProductionAdmission(
+                admitted=False,
+                result=result,
+                compatibility=compatibility,
+                reason=(
+                    "external package platform compatibility failed; "
+                    f"{compatibility.reason.value}"
+                ),
+            )
 
     if not result.production_allowed:
         return PackageProductionAdmission(

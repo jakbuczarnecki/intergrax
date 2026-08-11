@@ -262,6 +262,35 @@ def test_evidence_result_immutable_and_explicit() -> None:
     assert "secret" not in result.reason.lower()
 
 
+def test_external_package_missing_compatibility_blocks_production_admission() -> None:
+    result = build_qualification_result(
+        subject=_package_subject(),
+        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        evidence=(),
+        reason="production-qualified without compatibility evidence",
+    )
+    admission = evaluate_package_production_admission(result, compatibility=None)
+    assert admission.admitted is False
+    assert admission.compatibility is None
+    assert "compatibility" in admission.reason.lower()
+
+
+def test_compatible_external_package_admitted_when_production_qualified() -> None:
+    compatibility = check_platform_compatibility(
+        PlatformCompatibility(intergrax_version=">=1"),
+        "1.0.0",
+    )
+    result = build_qualification_result(
+        subject=_package_subject(),
+        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        evidence=(compatibility_evidence(compatibility),),
+        reason="production-qualified with compatible platform metadata",
+    )
+    admission = evaluate_package_production_admission(result, compatibility=compatibility)
+    assert admission.admitted is True
+    assert admission.compatibility is compatibility
+
+
 def test_incompatible_external_package_blocks_package_production_admission() -> None:
     compatibility = check_platform_compatibility(
         PlatformCompatibility(intergrax_version=">=2"),
