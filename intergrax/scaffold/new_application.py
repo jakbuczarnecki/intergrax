@@ -24,6 +24,11 @@ from intergrax.scaffold.application_layout import (
     write_application_journal_scaffold,
     write_sample_docs_scaffold,
 )
+from intergrax.scaffold.application_extension_templates import (
+    extensions_readme,
+    local_prefix_echo_plugin_py,
+    tool_wiring_local_extension_block,
+)
 from intergrax.scaffold.application_names import (
     ScaffoldApplicationNames,
     app_slug,
@@ -236,6 +241,7 @@ def _environment_profile_py(names: ScaffoldApplicationNames) -> str:
 def _tool_wiring_py(names: ScaffoldApplicationNames) -> str:
     pkg = names.pkg
     short = names.short
+    local_block = tool_wiring_local_extension_block(names)
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -248,17 +254,25 @@ def _tool_wiring_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.integrations.registry.profile import IntegrationProfile
         from intergrax.tools.registry.profile import ToolProfile
 
+        {local_block}
 
         def wire_{short}_tools(
             *,
             integration_profile: IntegrationProfile | None = None,
         ) -> ApplicationToolWiring:
             profile = ToolProfile(
-                enabled=["rag.retrieve", "websearch.query", "websearch.read_url", "sandbox.exec"],
+                enabled=[
+                    "rag.retrieve",
+                    "websearch.query",
+                    "websearch.read_url",
+                    "sandbox.exec",
+                    "local_prefix_echo.ping",
+                ],
             )
             return build_application_tool_wiring(
                 profile,
                 integration_profile=integration_profile,
+                extras={{"echo_prefix": "{short}"}},
             )
         '''
     )
@@ -1008,6 +1022,13 @@ def _create_lab_application(
     _write(target / "host" / "wiring.py", _wiring_py(names), force=force)
     _write(target / "host" / "environment_profile.py", _environment_profile_py(names), force=force)
     _write(target / "host" / "policy" / "rules" / ".gitkeep", "", force=force)
+    _write(target / "extensions" / "__init__.py", "", force=force)
+    _write(target / "extensions" / "README.md", extensions_readme(names), force=force)
+    _write(
+        target / "extensions" / "local_prefix_echo_plugin.py",
+        local_prefix_echo_plugin_py(names),
+        force=force,
+    )
     if full_scaffold:
         _write(target / "host" / "integration_wiring.py", _integration_wiring_py(names), force=force)
         _write(target / "host" / "tool_wiring.py", _tool_wiring_py(names), force=force)
@@ -1148,6 +1169,13 @@ def _create_product_application(
     _write(target / "host" / "wiring.py", product_tpl.wiring_py(names), force=force)
     _write(target / "host" / "environment_profile.py", product_tpl.environment_profile_py(names), force=force)
     _write(target / "host" / "policy" / "rules" / ".gitkeep", "", force=force)
+    _write(target / "extensions" / "__init__.py", "", force=force)
+    _write(target / "extensions" / "README.md", extensions_readme(names), force=force)
+    _write(
+        target / "extensions" / "local_prefix_echo_plugin.py",
+        local_prefix_echo_plugin_py(names),
+        force=force,
+    )
     _write(target / "host" / "integration_wiring.py", product_tpl.integration_wiring_py(names), force=force)
     _write(target / "host" / "tool_wiring.py", product_tpl.tool_wiring_py(names), force=force)
     _write(target / "host" / "factory.py", product_tpl.factory_py(names), force=force)

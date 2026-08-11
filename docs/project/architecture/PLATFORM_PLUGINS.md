@@ -670,6 +670,44 @@ Platform Plugin program adds **documentation and optional metadata hooks** in PL
 
 **Rule:** Public contracts require **explicit compatibility ownership** in domain or platform program stages. Undocumented `register()` calls are not public API.
 
+### 20.3 Public extension author matrix (PLUGIN-8)
+
+Author-facing summary of all canonical setuptools entry-point surfaces (§20.1). **Tools** is the executable dual-mode reference (external wheel + host-embedded). Local explicit-registration paths are documented only where repository evidence exists today — gaps are recorded for PLUGIN-9.
+
+| Extension surface | Public contract | External EP group | Local explicit registration | Domain doc | Config / DI | Reference example |
+|-------------------|-----------------|-------------------|----------------------------|------------|-------------|-------------------|
+| Integrations | `IntegrationPlugin` | `intergrax.integrations` | `register_integration_plugin()` from host composition | INTEGRATIONS | `IntegrationProfile` + `IntegrationManifest.env_prefix` | `intergrax/integrations/examples/custom_memory_kv/` |
+| **Tools** | **`ToolPlugin`** | **`intergrax.tools`** | **`register_tool_plugin()`** — scaffold `extensions/` + `host/tool_wiring.py` | TOOLS | **`ToolWiringContext`** | **External:** `examples/platform_plugins/intergrax_reference_tool_plugin/` · **Local:** `examples/platform_plugins/local_embedded_tool_extension/` |
+| Skills | `SkillPlugin` | `intergrax.skills` | `register_skill_plugin()` from host composition | SKILLS | `SkillProfile`; runtime deps via tools | `intergrax/skills/examples/custom_pack/` |
+| Context | `ContextPlugin` | `intergrax.context` | `ContextPluginRegistry` registration from host — **local path not yet documented in scaffold** | CONTEXT_ENGINEERING | `ContextProfile` | EP contract in domain code; no PLUGIN-8 reference package |
+| Memory stores | `UserProfileStorePlugin` / `SessionStoragePlugin` factories | `intergrax.memory_stores` | Host invokes factory callables — **no documented local-plugin helper** | MEMORY | Factory kwargs from host | Test fixtures under `tests/fixtures/plugin_packages/` |
+| RAG chunkers | Chunker plugin protocol | `intergrax.rag.chunkers` | RAG bootstrap/registry — **local explicit-registration path not yet documented** | RAG | `RagProfile` + bootstrap kwargs | Domain providers under `intergrax/rag/` |
+| RAG retrievers | Retriever plugin protocol | `intergrax.rag.retrievers` | Same as chunkers | RAG | `RagProfile` + vector store bindings | Domain providers under `intergrax/rag/` |
+| RAG rerankers | Reranker plugin protocol | `intergrax.rag.rerankers` | Same as chunkers | RAG | `RagProfile` + bootstrap kwargs | Domain providers under `intergrax/rag/` |
+| Vendor Knowledge | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition — **not Tier-0 catalog registration** | Vendor Knowledge guides | `KnowledgeSourceBinding` + tenant scope | `tests/reference_plugins/vendor_knowledge/acme_reference/` |
+| Security defenses | `SecurityDefensePlugin` | `intergrax.security_defenses` | `bootstrap_security_providers()` + profile ids — **no separate local register helper documented** | UNIFIED_EXECUTION_RUNTIME / security | `ApplicationSecurityProfile` | `tests/fixtures/plugin_packages/intergrax_security_defense_fixture/` |
+| Policy rules | `PolicyRuleHandler` | `intergrax.policy_rules` | Loaded via policy bundle bootstrap — **local explicit-registration path not yet documented** | Policy domain | `PolicyRulesProfile` / YAML bundle | Domain policy loaders |
+| Tool invocation patterns | `ToolInvocationPattern` | `intergrax.tool_invocation_patterns` | Mode selection via runtime config — **local explicit-registration path not yet documented** | Nexus tools | `ToolInvocationMode` | `intergrax/runtime/nexus/tools/tool_invocation_pattern.py` |
+
+**PLUGIN-8 convergence evidence:** both delivery modes for Tools use the same `ToolPlugin` contract, `register_tool_plugin` / `bootstrap_catalogs` catalog materialization, `ToolWiringContext`, and `RuntimeToolInvoker` execution path. No parallel local-plugin framework was introduced.
+
+### 20.4 PLUGIN-8 executable evidence
+
+| Artifact | Path |
+|----------|------|
+| External reference package (outside `intergrax/`) | `examples/platform_plugins/intergrax_reference_tool_plugin/` |
+| Distribution name / version | `intergrax-reference-tool-plugin` / `0.1.0` |
+| Entry point | `intergrax.tools:reference_prefix_echo` |
+| Host-embedded example | `examples/platform_plugins/local_embedded_tool_extension/` |
+| Application scaffold hook | `extensions/` + explicit `register_tool_plugin` in generated `host/tool_wiring.py` |
+| Executable E2E proof | `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` |
+| Wheel build | `uv build --wheel` on reference package (no new build dependency) |
+| Isolated install | `uv pip install <wheel> --target <tmpdir> --no-deps` |
+| Discovery | `iter_entry_point_specs` / `load_entry_point_plugins` + `bootstrap_catalogs(discover_entry_points=True)` |
+| Qualification | `evaluate_package_production_admission` + `require_production_qualification` |
+| Platform version for compatibility | Explicit host input (`0.1.0` in E2E) — no global runtime version authority |
+| Known gaps | Local explicit-registration documented for Tools/Integrations/Skills only; other surfaces remain external-EP-first until PLUGIN-9 |
+
 ---
 
 ## 21. Multi-capability package model
@@ -775,7 +813,7 @@ Testable statements for audits and PLATFORM-PLUGIN-9 closeout:
 | **PLUGIN-5** | **Done** — §12.3 cross-surface config/secrets/DI matrix; §12.4 canonical flow; author guide §14; domain DI preserved; no global container |
 | **PLUGIN-6** | **Done** — `platform_semantics.py`: explicit-version compatibility check API; `PlatformPluginLifecycleState` vocabulary; `PlatformPluginConflictKind` vocabulary; `package_identities_conflict` helper; EP conflict classification on `PluginConflictError`; **no** global lifecycle engine, conflict policy, or qualification gates |
 | **PLUGIN-7** | **Done** — `platform_qualification.py`: trust model (`PlatformPluginTrustModel`); qualification level/status/evidence/subject/result contracts; delivery source (`external_package`, `host_embedded_extension`); pure production gates (`require_production_qualification`, `evaluate_package_production_admission`); PLUGIN-6 compatibility consumed as evidence; no sandbox/signing claims; no global registry or persistence |
-| **PLUGIN-8** | Author scaffolds; **third-party reference package** (genuine external wheel); executable E2E proof: install → discovery → config → DI → runtime → cleanup **without core changes** |
+| **PLUGIN-8** | **Done** — reference external wheel (`examples/platform_plugins/intergrax_reference_tool_plugin/`); host-embedded example (`examples/platform_plugins/local_embedded_tool_extension/`); application scaffold `extensions/` hook; executable E2E (`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`); §20.3 public extension matrix; author guide §16 |
 | **PLUGIN-9** | Contract tests; CI gates; deprecation execution; final platform closeout audit per roadmap |
 
 **Explicitly not authorized before architecture amendment:** monolithic `PlatformPlugin` runtime type, mandatory global manifest replacing EPs, merging VK catalog into Tier-0 integration catalog, AgentRegistry setuptools discovery, sandbox claims without isolation implementation.
@@ -800,7 +838,10 @@ Testable statements for audits and PLATFORM-PLUGIN-9 closeout:
 |----------|------|
 | [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](../maintainers/plans/PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md) | Inventory, taxonomy proposal, DO-NOT-UNIFY evidence |
 | [`PLATFORM_PLUGINS.md`](../maintainers/plans/PLATFORM_PLUGINS.md) | Program roadmap |
-| [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) | Current author-facing EP index |
+| [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) | Current author-facing EP index + PLUGIN-8 dual-mode quickstarts (§16) |
+| `examples/platform_plugins/intergrax_reference_tool_plugin/` | PLUGIN-8 external wheel reference package |
+| `examples/platform_plugins/local_embedded_tool_extension/` | PLUGIN-8 host-embedded Tools example |
+| `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` | PLUGIN-8 executable dual-mode E2E proof |
 | `intergrax/core/plugins/discovery.py` | Unified EP loader (partial adoption) |
 | `intergrax/core/plugin_env.py` | `INTERGRAX_DISCOVER_PLUGINS` |
 | `tests/fixtures/plugin_packages/intergrax_catalog_fixture/` | Multi-capability package evidence |

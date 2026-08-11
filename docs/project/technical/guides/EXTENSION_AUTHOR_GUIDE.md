@@ -599,3 +599,42 @@ from intergrax.core.plugins import (
 ```
 
 Evidence records are immutable and safe to log — never include secrets or raw credential-bearing payloads.
+
+---
+
+## 16. Dual-mode developer quickstarts (PLATFORM-PLUGIN-8)
+
+**Canon:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) §20.3–§20.4 · executable proof: [`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`](../../../../tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py)
+
+Both delivery modes converge on the same domain contract and runtime (`ToolPlugin` → catalog → `ToolWiringContext` → `RuntimeToolInvoker`). Choose **external package** when distributing a reusable installable plugin; choose **host-embedded** when the code lives in your application tree.
+
+### 16.1 External package quickstart (Tools)
+
+Working reference: [`examples/platform_plugins/intergrax_reference_tool_plugin/`](../../../../examples/platform_plugins/intergrax_reference_tool_plugin/)
+
+1. **Create package** — own `pyproject.toml`, Python namespace under `src/`, outside the Intergrax repository.
+2. **Implement `ToolPlugin`** — `tool_bundle_manifest()` + `register_tools(registry, ctx: ToolWiringContext)`.
+3. **Declare entry point** — `[project.entry-points."intergrax.tools"]` mapping to your plugin class.
+4. **Optional Platform Plugin metadata** — `[tool.intergrax.plugin]` with package identity, `intergrax_version`, and capability descriptors (must match `[project].name` / `version`).
+5. **Build wheel** — `uv build --wheel` (or equivalent setuptools build) in your package directory.
+6. **Install wheel** — `uv pip install ./dist/*.whl` (or host deployment mechanism); isolated tests use `uv pip install --target <dir> --no-deps`.
+7. **Enable discovery** — host calls `bootstrap_catalogs(discover_entry_points=True)` or sets `INTERGRAX_DISCOVER_PLUGINS=true` where the application wiring supports it.
+8. **Configure host / DI** — build `ToolWiringContext` (integrations, managers, `extras`) before `build_registry_from_profile`.
+9. **Qualification** — collect PLUGIN-6 compatibility evidence (`check_platform_compatibility` with explicit host platform version) and PLUGIN-7 production gates (`evaluate_package_production_admission`, `require_production_qualification`) before production activation.
+10. **Run** — enable bundle/tool ids on `ToolProfile`; invoke tools via `RuntimeToolInvoker`.
+
+### 16.2 Local application extension quickstart (Tools)
+
+Working reference: [`examples/platform_plugins/local_embedded_tool_extension/`](../../../../examples/platform_plugins/local_embedded_tool_extension/) · scaffold emits `extensions/` automatically.
+
+1. **Create application** — `python -m intergrax.scaffold new-application <name>`.
+2. **Add local module** — implement the same `ToolPlugin` contract under `<app_pkg>/extensions/` (see generated `extensions/README.md`).
+3. **Explicit registration** — in `host/tool_wiring.py`, call `register_tool_plugin(YourToolPlugin)` before `build_application_tool_wiring`.
+4. **Provide DI** — pass host values via `ToolWiringContext.extras` (reference plugins use `echo_prefix`).
+5. **Enable tools** — add your `tool_id` or bundle id to `ToolProfile.enabled` / `enabled_bundles`.
+6. **Qualification** — use `PluginDeliverySource.HOST_EMBEDDED_EXTENSION` via `build_host_embedded_capability_subject`; capability/domain production qualification still required (`require_production_qualification`). No package manifest or PLUGIN-6 package compatibility required.
+7. **No wheel / entry point** — local modules are imported directly; do not fabricate setuptools entry points for host-only code.
+
+### 16.3 Public extension matrix
+
+See architecture hub §20.3 for all twelve canonical entry-point surfaces, local-registration availability, and documented gaps.

@@ -386,8 +386,11 @@ def environment_profile_py(names: ScaffoldApplicationNames) -> str:
 
 
 def tool_wiring_py(names: ScaffoldApplicationNames) -> str:
+    from intergrax.scaffold.application_extension_templates import tool_wiring_local_extension_block
+
     pkg = names.pkg
     short = names.short
+    local_block = tool_wiring_local_extension_block(names)
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -400,6 +403,7 @@ def tool_wiring_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.integrations.registry.profile import IntegrationProfile
         from intergrax.tools.registry.profile import ToolProfile
 
+        {local_block}
 
         def wire_{short}_tools(
             *,
@@ -413,11 +417,13 @@ def tool_wiring_py(names: ScaffoldApplicationNames) -> str:
                     "websearch.query",
                     "websearch.read_url",
                     "websearch.fetch_batch",
+                    "local_prefix_echo.ping",
                 ],
             )
             return build_application_tool_wiring(
                 profile,
                 integration_profile=integration_profile or IntegrationProfile(),
+                extras={{"echo_prefix": "{short}"}},
             )
         '''
     )
