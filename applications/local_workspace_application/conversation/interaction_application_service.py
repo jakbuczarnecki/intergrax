@@ -45,6 +45,7 @@ from local_workspace_application.conversation.interaction_models import (
     ConversationPlanningTurn,
     ConversationPlanningWorkspace,
     KnowledgeAddAttachmentsPlannedAction,
+    WorkspaceAskPlannedAction,
 )
 from local_workspace_application.conversation.interaction_planner import (
     ConversationInteractionPlanner,
@@ -285,18 +286,6 @@ class ConversationInteractionApplicationService:
                 code="conversation_planning_failed",
             )
 
-        gated = self._maybe_gate_question_with_snapshot(
-            command=command,
-            execution_context=execution_context,
-        )
-        if gated is not None:
-            return self._finish_text_response(
-                command=command,
-                receipt=receipt,
-                execution_id=execution_id,
-                response_text=gated,
-            )
-
         try:
             plan = await _maybe_await(
                 self._planner.plan(planning_request, run_id=execution_id)
@@ -322,6 +311,28 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 code="conversation_planning_failed",
+            )
+
+        setup_snapshot = (
+            self._derive_setup_snapshot(
+                tenant_id=command.tenant_id,
+                workspace_id=execution_context.workspace_id,
+            )
+            if any(isinstance(action, WorkspaceAskPlannedAction) for action in plan.actions)
+            else None
+        )
+        if (
+            setup_snapshot is not None
+            and self._should_gate_planned_ask(
+                plan=plan,
+                snapshot=setup_snapshot,
+            )
+        ):
+            return self._finish_text_response(
+                command=command,
+                receipt=receipt,
+                execution_id=execution_id,
+                response_text=self._setup_onboarding.render_ask_blocked(setup_snapshot),
             )
 
         registry = {}
@@ -541,25 +552,17 @@ class ConversationInteractionApplicationService:
             "Welcome to LKW. Create or select a workspace to start adding knowledge."
         )
 
-    def _maybe_gate_question_with_snapshot(
+    def _should_gate_planned_ask(
         self,
         *,
-        command: ConversationInteractionApplicationCommand,
-        execution_context: ConversationExecutionContextV1,
-    ) -> str | None:
-        if command.attachments or not command.message_text.strip():
-            return None
-        if self._setup_snapshot is None or self._setup_onboarding is None:
-            return None
-        snapshot = self._derive_setup_snapshot(
-            tenant_id=command.tenant_id,
-            workspace_id=execution_context.workspace_id,
-        )
-        if snapshot is None:
-            return None
-        if not self._setup_onboarding.should_gate_question(snapshot):
-            return None
-        return self._setup_onboarding.render_ask_blocked(snapshot)
+        plan: ConversationInteractionPlan,
+        snapshot: WorkspaceSetupSnapshotV1,
+    ) -> bool:
+        if self._setup_onboarding is None:
+            return False
+        return any(
+            isinstance(action, WorkspaceAskPlannedAction) for action in plan.actions
+        ) and self._setup_onboarding.should_gate_question(snapshot)
 
     def _derive_setup_snapshot(
         self,

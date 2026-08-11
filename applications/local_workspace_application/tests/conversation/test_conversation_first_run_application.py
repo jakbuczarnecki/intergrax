@@ -8,6 +8,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from intergrax.integrations.contracts.conversation_channel import (
+    ConversationAttachmentReference,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from local_workspace_application.conversation.conversation_ingress_bootstrap import (
     ConversationIngressBootstrapService,
@@ -29,6 +32,17 @@ from local_workspace_application.conversation.interaction_execution_models impor
     ConversationInteractionExecutionResult,
     ConversationInteractionOverallStatus,
 )
+from local_workspace_application.conversation.interaction_models import (
+    ConversationInteractionPlan,
+    KnowledgeAddAttachmentsPlannedAction,
+    SourceCandidateAttachPlannedAction,
+    WorkspaceActivatePlannedAction,
+    WorkspaceAskPlannedAction,
+    WorkspaceCreatePlannedAction,
+    WorkspaceListPlannedAction,
+    WorkspaceReference,
+    WorkspaceReferenceKind,
+)
 from local_workspace_application.conversation.interaction_response_renderer import (
     ConversationInteractionResponseRenderer,
 )
@@ -40,6 +54,7 @@ from local_workspace_application.workspaces.conversation_context_models import (
     ConversationAudienceMode,
     ConversationExecutionContextV1,
     ConversationProductCapability,
+    ResolvedConversationWorkspaceContextV1,
     ConversationThreadContextPolicy,
 )
 from local_workspace_application.workspaces.conversation_context_resolution import (
@@ -75,13 +90,30 @@ class _WorkspaceService:
 
 
 class _Planner:
+    def __init__(self, plan: ConversationInteractionPlan | None = None) -> None:
+        self.plan_result = plan
+        self.calls = 0
+
     async def plan(self, request, **_: object):
-        raise AssertionError("planner should not run")
+        self.calls += 1
+        if self.plan_result is None:
+            raise AssertionError("planner should not run")
+        return self.plan_result
 
 
 class _Executor:
+    def __init__(
+        self,
+        result: ConversationInteractionExecutionResult | None = None,
+    ) -> None:
+        self.result = result
+        self.calls = []
+
     async def execute(self, command):
-        raise AssertionError("executor should not run")
+        self.calls.append(command)
+        if self.result is None:
+            raise AssertionError("executor result not configured")
+        return self.result
 
 
 def _ingress() -> ConversationIngressContextV1:
@@ -101,12 +133,14 @@ def _service(
     resolver: _Resolver,
     setup_snapshot: MagicMock | None = None,
     bootstrap: ConversationIngressBootstrapService | None = None,
+    planner: _Planner | None = None,
+    executor: _Executor | None = None,
 ) -> ConversationInteractionApplicationService:
     store = InMemoryDocumentStore()
     return ConversationInteractionApplicationService(
         context_resolver=resolver,  # type: ignore[arg-type]
-        planner=_Planner(),  # type: ignore[arg-type]
-        executor=_Executor(),  # type: ignore[arg-type]
+        planner=planner or _Planner(),  # type: ignore[arg-type]
+        executor=executor or _Executor(),  # type: ignore[arg-type]
         renderer=ConversationInteractionResponseRenderer(),
         receipt_repository=ConversationInteractionEventReceiptRepository(store),
         workspace_service=_WorkspaceService(),
@@ -118,26 +152,114 @@ def _service(
     )
 
 
-def _snapshot_ready() -> WorkspaceSetupSnapshotV1:
+def _snapshot(
+    *,
+    phase: SetupPhaseV1,
+    can_ask: bool,
+    next_action: SetupNextActionV1,
+    sync_in_progress: bool = False,
+    attention_required: bool = False,
+) -> WorkspaceSetupSnapshotV1:
+    is_ready = phase is SetupPhaseV1.READY
     return WorkspaceSetupSnapshotV1(
         workspace_id="ws-1",
         host_ready=True,
-        phase=SetupPhaseV1.NO_KNOWLEDGE,
-        can_ask=False,
-        has_usable_knowledge=False,
-        sync_in_progress=False,
-        attention_required=False,
+        phase=phase,
+        can_ask=can_ask,
+        has_usable_knowledge=is_ready,
+        sync_in_progress=sync_in_progress,
+        attention_required=attention_required,
         knowledge_summary=SetupKnowledgeSummaryV1(
-            total=0,
-            indexed=0,
-            live=0,
-            active=0,
+            total=1 if phase is not SetupPhaseV1.NO_KNOWLEDGE else 0,
+            indexed=1 if phase is not SetupPhaseV1.NO_KNOWLEDGE else 0,
+            live=1 if is_ready else 0,
+            active=1 if is_ready else 0,
             disabled=0,
-            attention_required=0,
-            usable=0,
+            attention_required=1 if attention_required else 0,
+            usable=1 if is_ready else 0,
         ),
-        next_action=SetupNextActionV1.ADD_SOURCE,
+        next_action=next_action,
         updated_at=_NOW,
+    )
+
+
+def _resolved_context() -> ResolvedConversationWorkspaceContextV1:
+    return ResolvedConversationWorkspaceContextV1(
+        tenant_id="tenant-a",
+        conversation_context_binding_id="binding-1",
+        audience_mode=ConversationAudienceMode.PERSONAL,
+        workspace_id="ws-1",
+        principal_ref="U1",
+        canonical_thread_ref="thread-1",
+        activation_policy=ConversationActivationPolicy.ALWAYS,
+        thread_context_policy=ConversationThreadContextPolicy.CURRENT_THREAD_BOUNDED,
+    )
+
+
+def _plan(*actions: object) -> ConversationInteractionPlan:
+    return ConversationInteractionPlan(
+        plan_version="2",
+        actions=tuple(actions),
+        response_mode="aggregate",
+    )
+
+
+def _active_workspace() -> WorkspaceReference:
+    return WorkspaceReference(kind=WorkspaceReferenceKind.active)
+
+
+def _execution_result(action_type: str) -> ConversationInteractionExecutionResult:
+    now = _NOW
+    return ConversationInteractionExecutionResult(
+        execution_id="exec-1",
+        tenant_id="tenant-a",
+        plan_version="2",
+        started_at=now,
+        completed_at=now,
+        status=ConversationInteractionOverallStatus.COMPLETED,
+        action_results=(
+            ConversationActionExecutionResult(
+                action_id="action-1",
+                action_type=action_type,
+                status=ConversationActionExecutionStatus.COMPLETED,
+                artifact=ConversationExecutionArtifact(
+                    artifact_type=action_type,
+                    data={"workspace_id": "ws-1"},
+                ),
+                started_at=now,
+                completed_at=now,
+            ),
+        ),
+    )
+
+
+def _active_service(
+    *,
+    plan: ConversationInteractionPlan,
+    snapshot: WorkspaceSetupSnapshotV1,
+    action_type: str,
+) -> tuple[
+    ConversationInteractionApplicationService,
+    MagicMock,
+    _Planner,
+    _Executor,
+]:
+    snapshot_service = MagicMock()
+    snapshot_service.derive_snapshot.return_value = snapshot
+    resolver = _Resolver()
+    resolver.resolve = MagicMock(return_value=_resolved_context())
+    planner = _Planner(plan)
+    executor = _Executor(_execution_result(action_type))
+    return (
+        _service(
+            resolver=resolver,
+            setup_snapshot=snapshot_service,
+            planner=planner,
+            executor=executor,
+        ),
+        snapshot_service,
+        planner,
+        executor,
     )
 
 
@@ -157,43 +279,29 @@ async def test_first_dm_without_workspace_selection_shows_welcome() -> None:
 
 @pytest.mark.asyncio
 async def test_question_gated_when_snapshot_not_ready_for_ask() -> None:
-    from local_workspace_application.workspaces.conversation_context_models import (
-        ConversationAudienceMode,
-        ConversationProductCapability,
-        ConversationThreadContextPolicy,
-        ResolvedConversationWorkspaceContextV1,
-    )
-
     snapshot_service = MagicMock()
-    snapshot_service.derive_snapshot.return_value = _snapshot_ready()
+    snapshot_service.derive_snapshot.return_value = _snapshot(
+        phase=SetupPhaseV1.NO_KNOWLEDGE,
+        can_ask=False,
+        next_action=SetupNextActionV1.ADD_SOURCE,
+    )
     resolver = _Resolver()
-    resolver.resolve = MagicMock(
-        return_value=ResolvedConversationWorkspaceContextV1(
-            tenant_id="tenant-a",
-            conversation_context_binding_id="binding-1",
-            audience_mode=ConversationAudienceMode.PERSONAL,
-            workspace_id="ws-1",
-            principal_ref="U1",
-            canonical_thread_ref="thread-1",
-            activation_policy=ConversationActivationPolicy.ALWAYS,
-            thread_context_policy=ConversationThreadContextPolicy.CURRENT_THREAD_BOUNDED,
+    resolver.resolve = MagicMock(return_value=_resolved_context())
+    plan = _plan(
+        WorkspaceAskPlannedAction(
+            action_id="ask-1",
+            action_type="workspace.ask",
+            workspace=_active_workspace(),
+            question="What is our leave policy?",
         )
     )
-
-    service = ConversationInteractionApplicationService(
-        context_resolver=resolver,  # type: ignore[arg-type]
-        planner=_Planner(),  # type: ignore[arg-type]
-        executor=_Executor(),  # type: ignore[arg-type]
-        renderer=ConversationInteractionResponseRenderer(),
-        receipt_repository=ConversationInteractionEventReceiptRepository(
-            InMemoryDocumentStore()
-        ),
-        workspace_service=_WorkspaceService(),
-        personal_allowed_capabilities=frozenset(ConversationProductCapability),
-        ingress_bootstrap_service=None,
-        setup_snapshot_service=snapshot_service,
-        setup_onboarding_presenter=ConversationSetupOnboardingPresenter(),
-        clock=lambda: _NOW,
+    planner = _Planner(plan)
+    executor = _Executor()
+    service = _service(
+        resolver=resolver,
+        setup_snapshot=snapshot_service,
+        planner=planner,
+        executor=executor,
     )
 
     command = ConversationInteractionApplicationCommand(
@@ -204,7 +312,296 @@ async def test_question_gated_when_snapshot_not_ready_for_ask() -> None:
     result = await service.handle(command)
     assert result.should_send
     assert "cannot answer that yet" in result.response_text.casefold()
-    snapshot_service.derive_snapshot.assert_called()
+    assert planner.calls == 1
+    assert executor.calls == []
+    snapshot_service.derive_snapshot.assert_called_once_with(
+        tenant_id="tenant-a",
+        workspace_id="ws-1",
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("phase", "next_action", "sync_in_progress", "attention_required"),
+    (
+        (
+            SetupPhaseV1.SYNCING,
+            SetupNextActionV1.WAIT_FOR_SYNC,
+            True,
+            False,
+        ),
+        (
+            SetupPhaseV1.ATTENTION_REQUIRED,
+            SetupNextActionV1.RETRY_OR_FIX_SOURCE,
+            False,
+            True,
+        ),
+    ),
+)
+async def test_question_is_gated_for_syncing_or_attention_snapshot(
+    phase: SetupPhaseV1,
+    next_action: SetupNextActionV1,
+    sync_in_progress: bool,
+    attention_required: bool,
+) -> None:
+    plan = _plan(
+        WorkspaceAskPlannedAction(
+            action_id="ask-1",
+            action_type="workspace.ask",
+            workspace=_active_workspace(),
+            question="What is our leave policy?",
+        )
+    )
+    service, _, planner, executor = _active_service(
+        plan=plan,
+        snapshot=_snapshot(
+            phase=phase,
+            can_ask=False,
+            next_action=next_action,
+            sync_in_progress=sync_in_progress,
+            attention_required=attention_required,
+        ),
+        action_type="workspace.ask",
+    )
+
+    result = await service.handle(
+        ConversationInteractionApplicationCommand(
+            tenant_id="tenant-a",
+            ingress=_ingress(),
+            message_text="What is our leave policy?",
+        )
+    )
+
+    assert result.should_send
+    assert "cannot answer that yet" in result.response_text.casefold()
+    assert planner.calls == 1
+    assert executor.calls == []
+
+
+@pytest.mark.asyncio
+async def test_ready_question_is_planned_and_executed() -> None:
+    plan = _plan(
+        WorkspaceAskPlannedAction(
+            action_id="ask-1",
+            action_type="workspace.ask",
+            workspace=_active_workspace(),
+            question="What is our leave policy?",
+        )
+    )
+    service, snapshot_service, planner, executor = _active_service(
+        plan=plan,
+        snapshot=_snapshot(
+            phase=SetupPhaseV1.READY,
+            can_ask=True,
+            next_action=SetupNextActionV1.ASK_QUESTION,
+        ),
+        action_type="workspace.ask",
+    )
+
+    result = await service.handle(
+        ConversationInteractionApplicationCommand(
+            tenant_id="tenant-a",
+            ingress=_ingress(),
+            message_text="What is our leave policy?",
+        )
+    )
+
+    assert result.should_send
+    assert planner.calls == 1
+    assert len(executor.calls) == 1
+    assert snapshot_service.derive_snapshot.call_count == 2
+    snapshot_service.derive_snapshot.assert_any_call(
+        tenant_id="tenant-a",
+        workspace_id="ws-1",
+    )
+
+
+@pytest.mark.asyncio
+async def test_workspace_switch_is_executed_when_snapshot_is_not_ready() -> None:
+    plan = _plan(
+        WorkspaceActivatePlannedAction(
+            action_id="switch-1",
+            action_type="workspace.activate",
+            workspace=WorkspaceReference(
+                kind=WorkspaceReferenceKind.name,
+                value="Beta",
+            ),
+        )
+    )
+    service, _, planner, executor = _active_service(
+        plan=plan,
+        snapshot=_snapshot(
+            phase=SetupPhaseV1.NO_KNOWLEDGE,
+            can_ask=False,
+            next_action=SetupNextActionV1.ADD_SOURCE,
+        ),
+        action_type="workspace.activate",
+    )
+
+    await service.handle(
+        ConversationInteractionApplicationCommand(
+            tenant_id="tenant-a",
+            ingress=_ingress(),
+            message_text="switch to Beta",
+        )
+    )
+
+    assert planner.calls == 1
+    assert len(executor.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "action",
+    (
+        WorkspaceListPlannedAction(
+            action_id="list-1",
+            action_type="workspace.list",
+        ),
+        WorkspaceCreatePlannedAction(
+            action_id="create-1",
+            action_type="workspace.create",
+            name="Beta",
+        ),
+    ),
+)
+async def test_workspace_list_or_create_is_executed_when_snapshot_is_not_ready(
+    action: object,
+) -> None:
+    service, _, planner, executor = _active_service(
+        plan=_plan(action),
+        snapshot=_snapshot(
+            phase=SetupPhaseV1.NO_KNOWLEDGE,
+            can_ask=False,
+            next_action=SetupNextActionV1.ADD_SOURCE,
+        ),
+        action_type=action.action_type,  # type: ignore[attr-defined]
+    )
+
+    await service.handle(
+        ConversationInteractionApplicationCommand(
+            tenant_id="tenant-a",
+            ingress=_ingress(),
+            message_text="manage workspaces",
+        )
+    )
+
+    assert planner.calls == 1
+    assert len(executor.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_recovery_action_reaches_executor_when_attention_is_required() -> None:
+    plan = _plan(
+        SourceCandidateAttachPlannedAction(
+            action_id="retry-1",
+            action_type="source_candidate.attach",
+            workspace=_active_workspace(),
+            candidate_reference_kind="name",
+            candidate_reference="Docs",
+        )
+    )
+    service, _, planner, executor = _active_service(
+        plan=plan,
+        snapshot=_snapshot(
+            phase=SetupPhaseV1.ATTENTION_REQUIRED,
+            can_ask=False,
+            next_action=SetupNextActionV1.RETRY_OR_FIX_SOURCE,
+            attention_required=True,
+        ),
+        action_type="source_candidate.attach",
+    )
+
+    await service.handle(
+        ConversationInteractionApplicationCommand(
+            tenant_id="tenant-a",
+            ingress=_ingress(),
+            message_text="retry Docs",
+        )
+    )
+
+    assert planner.calls == 1
+    assert len(executor.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_attachment_intake_is_executed_when_snapshot_is_not_ready() -> None:
+    attachment = ConversationAttachmentReference(
+        attachment_id="att-1",
+        file_name="notes.pdf",
+        content_type="application/pdf",
+        size_bytes=10,
+    )
+    plan = _plan(
+        KnowledgeAddAttachmentsPlannedAction(
+            action_id="attach-1",
+            action_type="knowledge.add_attachments",
+            workspace=_active_workspace(),
+            attachment_ids=("att-1",),
+        )
+    )
+    service, _, planner, executor = _active_service(
+        plan=plan,
+        snapshot=_snapshot(
+            phase=SetupPhaseV1.NO_KNOWLEDGE,
+            can_ask=False,
+            next_action=SetupNextActionV1.ADD_SOURCE,
+        ),
+        action_type="knowledge.add_attachments",
+    )
+
+    await service.handle(
+        ConversationInteractionApplicationCommand(
+            tenant_id="tenant-a",
+            ingress=_ingress(),
+            message_text="add this file",
+            attachments=(attachment,),
+        )
+    )
+
+    assert planner.calls == 1
+    assert len(executor.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_mixed_ask_plan_is_fail_closed_when_snapshot_is_not_ready() -> None:
+    plan = _plan(
+        WorkspaceAskPlannedAction(
+            action_id="ask-1",
+            action_type="workspace.ask",
+            workspace=_active_workspace(),
+            question="What is our leave policy?",
+        ),
+        WorkspaceActivatePlannedAction(
+            action_id="switch-1",
+            action_type="workspace.activate",
+            workspace=WorkspaceReference(
+                kind=WorkspaceReferenceKind.name,
+                value="Beta",
+            ),
+        ),
+    )
+    service, _, planner, executor = _active_service(
+        plan=plan,
+        snapshot=_snapshot(
+            phase=SetupPhaseV1.NO_KNOWLEDGE,
+            can_ask=False,
+            next_action=SetupNextActionV1.ADD_SOURCE,
+        ),
+        action_type="workspace.ask",
+    )
+
+    result = await service.handle(
+        ConversationInteractionApplicationCommand(
+            tenant_id="tenant-a",
+            ingress=_ingress(),
+            message_text="answer and switch",
+        )
+    )
+
+    assert "cannot answer that yet" in result.response_text.casefold()
+    assert planner.calls == 1
+    assert executor.calls == []
 
 
 @pytest.mark.asyncio
