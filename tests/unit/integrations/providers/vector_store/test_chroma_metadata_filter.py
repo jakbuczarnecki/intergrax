@@ -13,6 +13,7 @@ from intergrax.integrations.providers.vector_store.chroma.rag_store import (
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
     MetadataMembershipCondition,
+    VectorStoreContractError,
     VectorStoreScope,
 )
 
@@ -20,7 +21,9 @@ pytestmark = pytest.mark.unit
 
 
 def _store() -> ChromaVectorStore:
-    return ChromaVectorStore(ChromaConfig(collection_name="coll", tenant_id="t1"), client=MagicMock())
+    return ChromaVectorStore(
+        ChromaConfig(collection_name="coll", tenant_id="t1"), client=MagicMock()
+    )
 
 
 def _scope() -> VectorStoreScope:
@@ -53,7 +56,13 @@ def test_chroma_equality_preserved() -> None:
     )
     where = store._chroma_where_from_metadata(scoped)
     assert where is not None
-    assert {"$and": [{"session_id": {"$eq": "s1"}}, {"tenant_id": {"$eq": "t1"}}, {"namespace": {"$eq": "rag"}}]} == where
+    assert {
+        "$and": [
+            {"session_id": {"$eq": "s1"}},
+            {"tenant_id": {"$eq": "t1"}},
+            {"namespace": {"$eq": "rag"}},
+        ]
+    } == where
 
 
 def test_chroma_combined_predicates_use_and() -> None:
@@ -63,7 +72,9 @@ def test_chroma_combined_predicates_use_and() -> None:
         MetadataFilter(
             conditions={"session_id": "s1"},
             membership=(
-                MetadataMembershipCondition(field="source_id", allowed_values=("src-a",)),
+                MetadataMembershipCondition(
+                    field="source_id", allowed_values=("src-a",)
+                ),
             ),
         ),
     )
@@ -104,3 +115,27 @@ def test_chroma_query_supplies_where_before_n_results() -> None:
 def test_chroma_empty_membership_rejected_at_contract_layer() -> None:
     with pytest.raises(Exception):
         MetadataMembershipCondition(field="source_id", allowed_values=())
+
+
+def test_chroma_membership_maps_string_and_int_scalars() -> None:
+    store = _store()
+    for field, allowed, expected in (
+        ("source_id", ("src-a", "src-b"), ["src-a", "src-b"]),
+        ("chunk_index", (1, 2), [1, 2]),
+    ):
+        scoped = MetadataFilter.for_scope(
+            _scope(),
+            MetadataFilter(
+                membership=(
+                    MetadataMembershipCondition(field=field, allowed_values=allowed),
+                )
+            ),
+        )
+        where = store._chroma_where_from_metadata(scoped)
+        assert where is not None
+        assert {field: {"$in": expected}} in where["$and"]
+
+
+def test_chroma_structured_membership_rejected_before_adapter() -> None:
+    with pytest.raises(VectorStoreContractError):
+        MetadataMembershipCondition(field="source_id", allowed_values=(["src-a"],))

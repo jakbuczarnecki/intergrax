@@ -22,24 +22,33 @@ from intergrax.knowledge.contracts.validation import (
     assert_safe_mapping,
     freeze_knowledge_metadata,
     require_non_empty_str,
-    validate_json_value,
 )
 
 _ROUTING_KEYS = frozenset({"tenant_id", "namespace", "workspace_id"})
+MembershipScalarValue = str | int
 
 
-def _membership_value_key(value: JsonValue) -> str:
-    """Stable deduplication key for membership allowed values."""
+def _membership_value_key(value: MembershipScalarValue) -> str:
+    """Stable deduplication key preserving exact scalar type semantics."""
+    return f"{type(value).__name__}:{value}"
+
+
+def _validate_membership_scalar(
+    value: object,
+    *,
+    field_name: str,
+    path: str,
+) -> MembershipScalarValue:
     if isinstance(value, bool):
-        return f"bool:{value}"
-    if value is None:
-        return "null"
-    if isinstance(value, (int, float, str)):
-        return f"{type(value).__name__}:{value}"
-    if isinstance(value, list):
-        return "list:" + ",".join(_membership_value_key(item) for item in value)
-    return "dict:" + ",".join(
-        f"{key}={_membership_value_key(child)}" for key, child in sorted(value.items())
+        raise VectorStoreContractError(
+            f"{field_name} must contain membership scalar values at '{path}'"
+        )
+    if isinstance(value, str):
+        return value
+    if isinstance(value, int):
+        return value
+    raise VectorStoreContractError(
+        f"{field_name} must contain membership scalar values at '{path}'"
     )
 
 
@@ -47,18 +56,21 @@ def _normalize_membership_values(
     values: Sequence[object],
     *,
     field_name: str,
-) -> tuple[JsonValue, ...]:
+) -> tuple[MembershipScalarValue, ...]:
     if not values:
         raise VectorStoreContractError(f"{field_name} must be non-empty")
-    normalized: list[JsonValue] = []
+    normalized: list[MembershipScalarValue] = []
     seen: set[str] = set()
+    scalar_type: type[MembershipScalarValue] | None = None
     for index, raw in enumerate(values):
-        try:
-            value = validate_json_value(raw, field_name=field_name, path=f"[{index}].")
-        except (TypeError, ValueError) as exc:
+        path = f"[{index}]"
+        value = _validate_membership_scalar(raw, field_name=field_name, path=path)
+        if scalar_type is None:
+            scalar_type = type(value)
+        elif type(value) is not scalar_type:
             raise VectorStoreContractError(
-                f"{field_name} must contain JSON-compatible values"
-            ) from exc
+                f"{field_name} must contain values of a single scalar type"
+            )
         key = _membership_value_key(value)
         if key in seen:
             continue
@@ -86,7 +98,9 @@ def _copy_vector(value: object, *, field_name: str) -> NDArray[np.float32]:
     try:
         vector = np.array(value, dtype=np.float32, copy=True)
     except (TypeError, ValueError) as exc:
-        raise VectorStoreContractError(f"{field_name} must be a numeric vector") from exc
+        raise VectorStoreContractError(
+            f"{field_name} must be a numeric vector"
+        ) from exc
     if vector.ndim != 1:
         raise VectorStoreContractError(f"{field_name} must be exactly 1D")
     if vector.size == 0:
@@ -102,7 +116,9 @@ def _validate_score(value: object) -> float:
         raise VectorStoreContractError("similarity_score must be a finite number")
     score = float(value)
     if not math.isfinite(score) or not 0.0 <= score <= 1.0:
-        raise VectorStoreContractError("similarity_score must be finite and in [0.0, 1.0]")
+        raise VectorStoreContractError(
+            "similarity_score must be finite and in [0.0, 1.0]"
+        )
     return score
 
 
@@ -167,7 +183,7 @@ class MetadataMembershipCondition:
     """Immutable provider-neutral ``field IN allowed_values`` membership."""
 
     field: str
-    allowed_values: tuple[JsonValue, ...]
+    allowed_values: tuple[MembershipScalarValue, ...]
 
     def __post_init__(self) -> None:
         try:
@@ -199,13 +215,17 @@ class MetadataFilter:
 
     conditions: Mapping[str, JsonValue] = field(default_factory=dict)
     membership: tuple[MetadataMembershipCondition, ...] = ()
-    _allow_routing_keys: bool = field(default=False, init=False, repr=False, compare=False)
+    _allow_routing_keys: bool = field(
+        default=False, init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         try:
             normalized = assert_safe_mapping(self.conditions, field_name="conditions")
         except (TypeError, ValueError) as exc:
-            raise VectorStoreContractError("conditions must be JSON-compatible") from exc
+            raise VectorStoreContractError(
+                "conditions must be JSON-compatible"
+            ) from exc
         if not self._allow_routing_keys:
             reserved = _ROUTING_KEYS.intersection(normalized)
             if reserved:
@@ -217,7 +237,9 @@ class MetadataFilter:
         seen_fields: set[str] = set()
         for condition in membership:
             if not isinstance(condition, MetadataMembershipCondition):
-                raise TypeError("membership must contain MetadataMembershipCondition values")
+                raise TypeError(
+                    "membership must contain MetadataMembershipCondition values"
+                )
             if condition.field in seen_fields:
                 raise VectorStoreContractError(
                     f"membership must not duplicate field '{condition.field}'"
@@ -257,7 +279,9 @@ class MetadataFilter:
             conditions["workspace_id"] = scope.workspace_id
         normalized = assert_safe_mapping(conditions, field_name="conditions")
         instance = object.__new__(cls)
-        object.__setattr__(instance, "conditions", freeze_knowledge_metadata(normalized))
+        object.__setattr__(
+            instance, "conditions", freeze_knowledge_metadata(normalized)
+        )
         object.__setattr__(instance, "membership", membership)
         object.__setattr__(instance, "_allow_routing_keys", True)
         return instance

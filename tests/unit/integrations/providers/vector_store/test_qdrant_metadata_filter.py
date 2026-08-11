@@ -14,6 +14,7 @@ from intergrax.integrations.providers.vector_store.qdrant.rag_store import (
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
     MetadataMembershipCondition,
+    VectorStoreContractError,
     VectorStoreScope,
 )
 
@@ -101,9 +102,35 @@ def test_qdrant_query_passes_filter_before_limit() -> None:
         item["key"] == "source_id" and item["match"]["any"] == ["src-a"]
         for item in must
     )
-    assert any(item["key"] == "tenant_id" and item["match"]["value"] == "t1" for item in must)
+    assert any(
+        item["key"] == "tenant_id" and item["match"]["value"] == "t1" for item in must
+    )
 
 
 def test_qdrant_malformed_membership_rejected_at_contract_layer() -> None:
     with pytest.raises(Exception):
         MetadataMembershipCondition(field="source_id", allowed_values=())
+
+
+def test_qdrant_membership_maps_string_and_int_scalars() -> None:
+    store = _store()
+    for field, allowed, expected in (
+        ("source_id", ("src-a", "src-b"), ["src-a", "src-b"]),
+        ("chunk_index", (1, 2), [1, 2]),
+    ):
+        metadata_filter = MetadataFilter(
+            membership=(
+                MetadataMembershipCondition(field=field, allowed_values=allowed),
+            )
+        )
+        scoped = MetadataFilter.for_scope(_scope(), metadata_filter)
+        qfilter = store._qdrant_filter_from_metadata(scoped)
+        assert qfilter is not None
+        must = qfilter.model_dump()["must"]
+        membership = next(item for item in must if item["key"] == field)
+        assert membership["match"]["any"] == expected
+
+
+def test_qdrant_structured_membership_rejected_before_adapter() -> None:
+    with pytest.raises(VectorStoreContractError):
+        MetadataMembershipCondition(field="source_id", allowed_values=(["src-a"],))

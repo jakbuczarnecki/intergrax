@@ -65,7 +65,9 @@ def _scope(
 def test_record_revalidates_and_defensively_copies_document_and_vector() -> None:
     document = _document(metadata={"nested": {"value": 1}})
     vector = np.array([1.0, 2.0], dtype=np.float64)
-    record = VectorStoreRecord(document=document, embedding=vector, vector_id="external-1")
+    record = VectorStoreRecord(
+        document=document, embedding=vector, vector_id="external-1"
+    )
 
     assert record.document is not document
     assert record.document.metadata == {"nested": {"value": 1}}
@@ -169,6 +171,59 @@ def test_metadata_membership_deduplicates_values_deterministically() -> None:
         allowed_values=("src-a", "src-b", "src-a", "src-b"),
     )
     assert condition.allowed_values == ("src-a", "src-b")
+
+
+def test_metadata_membership_accepts_string_and_int_scalars() -> None:
+    string_condition = MetadataMembershipCondition(
+        field="source_id",
+        allowed_values=("src-a",),
+    )
+    int_condition = MetadataMembershipCondition(
+        field="chunk_index",
+        allowed_values=(1, 2, 3),
+    )
+    assert string_condition.allowed_values == ("src-a",)
+    assert int_condition.allowed_values == (1, 2, 3)
+
+
+def test_metadata_membership_rejects_structured_and_unsupported_scalars() -> None:
+    with pytest.raises(VectorStoreContractError, match="membership scalar"):
+        MetadataMembershipCondition(field="source_id", allowed_values=(["src-a"],))
+    with pytest.raises(VectorStoreContractError, match="membership scalar"):
+        MetadataMembershipCondition(
+            field="source_id", allowed_values=({"id": "src-a"},)
+        )
+    with pytest.raises(VectorStoreContractError, match="membership scalar"):
+        MetadataMembershipCondition(field="source_id", allowed_values=((1, 2),))
+    with pytest.raises(VectorStoreContractError, match="membership scalar"):
+        MetadataMembershipCondition(field="source_id", allowed_values=(1.5,))
+    with pytest.raises(VectorStoreContractError, match="membership scalar"):
+        MetadataMembershipCondition(field="source_id", allowed_values=(True,))
+
+
+def test_metadata_membership_preserves_exact_bool_int_distinction() -> None:
+    with pytest.raises(VectorStoreContractError, match="membership scalar"):
+        MetadataMembershipCondition(field="flag", allowed_values=(True,))
+    with pytest.raises(VectorStoreContractError, match="membership scalar"):
+        MetadataMembershipCondition(field="flag", allowed_values=(False,))
+    int_condition = MetadataMembershipCondition(field="flag", allowed_values=(1, 0))
+    assert int_condition.allowed_values == (1, 0)
+
+
+def test_metadata_membership_rejects_mixed_scalar_types() -> None:
+    with pytest.raises(VectorStoreContractError, match="single scalar type"):
+        MetadataMembershipCondition(field="source_id", allowed_values=("src-a", 1))
+
+
+def test_metadata_membership_int_matches_payload() -> None:
+    metadata_filter = MetadataFilter(
+        membership=(
+            MetadataMembershipCondition(field="chunk_index", allowed_values=(1, 2)),
+        )
+    )
+    assert metadata_filter.matches_payload({"chunk_index": 1})
+    assert metadata_filter.matches_payload({"chunk_index": 2})
+    assert not metadata_filter.matches_payload({"chunk_index": 3})
 
 
 def test_metadata_filter_scope_composes_membership_and_routing() -> None:
@@ -491,8 +546,12 @@ def test_namespace_query_isolation() -> None:
         ],
         scope=namespace_b,
     )
-    assert [hit.vector_id for hit in manager.query([1.0], scope=namespace_a, top_k=5)] == ["a"]
-    assert [hit.vector_id for hit in manager.query([1.0], scope=namespace_b, top_k=5)] == ["b"]
+    assert [
+        hit.vector_id for hit in manager.query([1.0], scope=namespace_a, top_k=5)
+    ] == ["a"]
+    assert [
+        hit.vector_id for hit in manager.query([1.0], scope=namespace_b, top_k=5)
+    ] == ["b"]
 
 
 def test_count_exact_workspace_scope_does_not_masquerade_as_tenant_only() -> None:
