@@ -67,7 +67,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | DB models, repositories, APIs, HTTP routes, membership/delegation services, LKW changes, tests for runtime code, MP-2+ rows |
 | **Acceptance** | Contracts frozen; effective authority intersection documented; membership explicit; delegation non-amplifying; execution contracts not duplicated |
 | **Proof requirements** | `tests/unit/contracts/test_collaborative_work.py` — contract, isolation, fail-closed, delegation validation |
-| **Next step** | COLLAB-WORK-1A review acceptance → COLLAB-WORK-1B (persistence slice; not started) |
+| **Next step** | COLLAB-WORK-1A review acceptance → next MP-1 implementation row (persistence slice; not yet planned) |
 
 ---
 
