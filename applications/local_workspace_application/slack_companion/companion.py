@@ -41,6 +41,9 @@ from local_workspace_application.slack_companion.selection_store import (
 from local_workspace_application.slack_companion.pending_deletion_store import (
     InMemorySlackPendingDeletionStore,
 )
+from local_workspace_application.workspaces.destructive_action_confirmation import (
+    HmacDestructiveActionConfirmationCodec,
+)
 from local_workspace_application.slack_companion.workflow import SlackAskWorkflow
 from local_workspace_application.conversation.conversation_ingress_bootstrap import (
     ConversationIngressBootstrapService,
@@ -490,6 +493,21 @@ def _build_conversation_interaction_application_service(
         ask_repository=WorkspaceAskRepository(store),
         clock=clock,
     )
+    knowledge_inspection_service = getattr(
+        app.state,
+        "lkw_knowledge_inspection_service",
+        None,
+    )
+    knowledge_operations_service = getattr(
+        app.state,
+        "lkw_knowledge_operations_service",
+        None,
+    )
+    destructive_confirmation_codec = getattr(
+        app.state,
+        "lkw_destructive_confirmation_codec",
+        None,
+    )
     executor = ConversationInteractionExecutor(
         workspace_service=workspace_service,
         workspace_selection_service=selection_service,
@@ -513,6 +531,9 @@ def _build_conversation_interaction_application_service(
         ),
         citation_context_service=citation_context_service,
         knowledge_plugin_configuration_service=knowledge_plugin_configuration,
+        knowledge_inspection_service=knowledge_inspection_service,
+        knowledge_operations_service=knowledge_operations_service,
+        destructive_confirmation_codec=destructive_confirmation_codec,
     )
     memory_adapter = SessionHistorySnapshotConversationThreadMemoryAdapter(
         port=DocumentStoreThreadMemoryLifecyclePort(store),

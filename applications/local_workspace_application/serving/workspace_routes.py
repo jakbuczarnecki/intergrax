@@ -128,6 +128,9 @@ from local_workspace_application.workspaces.knowledge_administration_service imp
     KnowledgeAdministrationService,
     Sha256KnowledgeAdministrationIdempotencyKeyFactory,
 )
+from local_workspace_application.workspaces.destructive_action_confirmation import (
+    HmacDestructiveActionConfirmationCodec,
+)
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     AttachConnectionMutationHandler,
     CreateIndexedSourceMutationHandler,
@@ -798,6 +801,11 @@ def mount_managed_workspace_routes(
     document_inspect_service = DocumentInspectService(repository=repository)
     knowledge_administration_service: KnowledgeAdministrationService | None = None
     confirmation_secret = settings.knowledge_admin_confirmation_secret.strip()
+    destructive_confirmation_codec: HmacDestructiveActionConfirmationCodec | None = None
+    if confirmation_secret:
+        destructive_confirmation_codec = HmacDestructiveActionConfirmationCodec(
+            secret=confirmation_secret.encode("utf-8")
+        )
     if confirmation_secret:
         knowledge_administration_service = KnowledgeAdministrationService(
             inspection_service=knowledge_inspection_service,
@@ -987,6 +995,7 @@ def mount_managed_workspace_routes(
     app.state.lkw_workspace_setup_snapshot_service = setup_snapshot_service
     app.state.lkw_document_inspect_service = document_inspect_service
     app.state.lkw_knowledge_administration_service = knowledge_administration_service
+    app.state.lkw_destructive_confirmation_codec = destructive_confirmation_codec
     app.state.lkw_managed_file_intake_service = managed_file_intake_service
     app.state.lkw_knowledge_intake_service = knowledge_intake_service
     app.state.lkw_knowledge_ingestion_service = knowledge_ingestion_service

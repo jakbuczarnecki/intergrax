@@ -7,6 +7,7 @@ from __future__ import annotations
 import inspect
 import uuid
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Protocol, cast
 
@@ -37,10 +38,17 @@ from local_workspace_application.conversation.interaction_models import (
     WorkspaceActivatePlannedAction,
     WorkspaceAskPlannedAction,
     CitationInspectPlannedAction,
+    DestructiveActionConfirmPlannedAction,
+    KnowledgeInventoryFilter,
+    KnowledgeInventoryListPlannedAction,
+    KnowledgeOperationExecutePlannedAction,
+    KnowledgeOperationKind,
+    KnowledgeTargetReferenceKind,
     WorkspaceCreatePlannedAction,
     WorkspaceDeletePlannedAction,
     WorkspaceListPlannedAction,
     WorkspaceReference,
+    WorkspaceReferenceKind,
 )
 from local_workspace_application.conversation.interaction_planner import (
     PlanRequestValidationError,
@@ -72,6 +80,29 @@ from local_workspace_application.workspaces.knowledge_plugin_configuration_servi
     KnowledgeConnectionSummaryV1,
     KnowledgeRemoteResourcePageV1,
     KnowledgePluginConfigurationService,
+)
+from local_workspace_application.workspaces.knowledge_inspection_operations_service import (
+    KnowledgeAccessModeV1,
+    KnowledgeInspectionService,
+    KnowledgeInventoryError,
+    KnowledgeInventoryItemV1,
+    KnowledgeInventorySummaryV1,
+    KnowledgeInventoryV1,
+    KnowledgeOperationCommandV1,
+    KnowledgeOperationError,
+    KnowledgeOperationV1,
+    KnowledgeOperationsService,
+)
+from local_workspace_application.workspaces.knowledge_administration_service import (
+    Sha256KnowledgeAdministrationIdempotencyKeyFactory,
+)
+from local_workspace_application.workspaces.destructive_action_confirmation import (
+    DestructiveActionConfirmationError,
+    DestructiveActionConfirmationV1,
+    DestructiveActionKindV1,
+    HmacDestructiveActionConfirmationCodec,
+    knowledge_detach_action_kind,
+    knowledge_operation_action_kind,
 )
 from local_workspace_application.workspaces.source_candidates import (
     SourceCandidateIntakeService,
@@ -143,6 +174,9 @@ _ACTION_CAPABILITIES: dict[str, ConversationProductCapability] = {
     "knowledge.connections.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
     "knowledge.resources.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
     "knowledge.capabilities.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
+    "knowledge.inventory.list": ConversationProductCapability.SOURCE_DISCOVERY,
+    "knowledge.operation.execute": ConversationProductCapability.WORKSPACE_ADMINISTRATION,
+    "destructive.confirm": ConversationProductCapability.WORKSPACE_ADMINISTRATION,
 }
 
 _SAFE_ERROR_CODES = frozenset(
@@ -188,6 +222,15 @@ _SAFE_ERROR_CODES = frozenset(
         "document_not_found",
         "document_forbidden",
         "document_inspect_unavailable",
+        "destructive_confirmation_invalid",
+        "destructive_confirmation_expired",
+        "destructive_confirmation_stale",
+        "destructive_confirmation_required",
+        "knowledge_inventory_unavailable",
+        "knowledge_target_not_found",
+        "knowledge_target_ambiguous",
+        "knowledge_operation_not_available",
+        "knowledge_operation_conflict",
     }
 )
 
@@ -226,6 +269,9 @@ class ConversationInteractionExecutor:
         document_inspect_service: DocumentInspectService | None = None,
         citation_context_service: ConversationCitationContextService | None = None,
         knowledge_plugin_configuration_service: KnowledgePluginConfigurationService | None = None,
+        knowledge_inspection_service: KnowledgeInspectionService | None = None,
+        knowledge_operations_service: KnowledgeOperationsService | None = None,
+        destructive_confirmation_codec: HmacDestructiveActionConfirmationCodec | None = None,
         execution_id_factory: Callable[[], str] | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
@@ -240,6 +286,10 @@ class ConversationInteractionExecutor:
         self._document_inspect_service = document_inspect_service
         self._citation_context_service = citation_context_service
         self._knowledge_plugin_configuration = knowledge_plugin_configuration_service
+        self._knowledge_inspection = knowledge_inspection_service
+        self._knowledge_operations = knowledge_operations_service
+        self._destructive_confirmation = destructive_confirmation_codec
+        self._knowledge_idempotency = Sha256KnowledgeAdministrationIdempotencyKeyFactory()
         self._execution_id_factory = execution_id_factory or (lambda: str(uuid.uuid4()))
         self._clock = clock or (lambda: datetime.now(UTC))
 
@@ -646,17 +696,83 @@ class ConversationInteractionExecutor:
                 created_workspace_ids=created_workspace_ids,
                 resolved_workspace_ids=resolved_workspace_ids,
             )
-            deleted = self._workspace_service.delete_workspace(
+            workspace = self._workspace_service.get_workspace(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
             )
-            if not deleted:
+            if workspace is None:
                 raise ConversationReferenceResolutionError("workspace_not_found")
-            if resolver.current_active_workspace_id == workspace_id:
-                resolver.clear_active_workspace()
+            codec = self._require_destructive_confirmation_codec()
+            token = codec.issue(
+                DestructiveActionConfirmationV1(
+                    token="",
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    action_kind=DestructiveActionKindV1.WORKSPACE_DELETE,
+                    target_id=workspace_id,
+                    expected_state_version=workspace.workspace_revision,
+                    expires_at=self._utc_now() + codec.ttl,
+                )
+            )
             return ConversationExecutionArtifact(
                 artifact_type=action.action_type,
-                data={"workspace_id": workspace_id, "deleted": True},
+                data={
+                    "workspace_id": workspace_id,
+                    "name": str(workspace.name),
+                    "status": "confirmation_required",
+                    "action_kind": DestructiveActionKindV1.WORKSPACE_DELETE,
+                    "confirmation_token": token,
+                },
+            )
+        if isinstance(action, DestructiveActionConfirmPlannedAction):
+            return await self._execute_destructive_confirm(
+                action=action,
+                tenant_id=tenant_id,
+                resolver=resolver,
+                execution_id=execution_id,
+            )
+        if isinstance(action, KnowledgeInventoryListPlannedAction):
+            workspace_id = self._resolve_workspace_id(
+                action_id=action.action_id,
+                reference=action.workspace,
+                resolver=resolver,
+                created_workspace_ids=created_workspace_ids,
+                resolved_workspace_ids=resolved_workspace_ids,
+            )
+            inventory = self._list_knowledge_inventory(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            filtered = _filter_knowledge_inventory(inventory, action.inventory_filter)
+            workspace_name = _safe_workspace_name(
+                self._workspace_service.get_workspace(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                ),
+            )
+            return ConversationExecutionArtifact(
+                artifact_type=action.action_type,
+                data={
+                    "workspace_id": workspace_id,
+                    "workspace_name": workspace_name,
+                    "inventory_filter": action.inventory_filter.value,
+                    "items": [_safe_inventory_item(item) for item in filtered.items],
+                    "summary": filtered.summary.model_dump(mode="json"),
+                },
+            )
+        if isinstance(action, KnowledgeOperationExecutePlannedAction):
+            workspace_id = self._resolve_workspace_id(
+                action_id=action.action_id,
+                reference=action.workspace,
+                resolver=resolver,
+                created_workspace_ids=created_workspace_ids,
+                resolved_workspace_ids=resolved_workspace_ids,
+            )
+            return await self._execute_knowledge_operation(
+                action=action,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                execution_id=execution_id,
             )
         if isinstance(action, SourceListPlannedAction):
             workspace_id = self._resolve_workspace_id(
@@ -993,6 +1109,248 @@ class ConversationInteractionExecutor:
             raise RuntimeError("knowledge_plugin_configuration_unavailable")
         return self._knowledge_plugin_configuration
 
+    def _require_knowledge_inspection(self) -> KnowledgeInspectionService:
+        if self._knowledge_inspection is None:
+            raise RuntimeError("knowledge_inventory_unavailable")
+        return self._knowledge_inspection
+
+    def _require_knowledge_operations(self) -> KnowledgeOperationsService:
+        if self._knowledge_operations is None:
+            raise RuntimeError("knowledge_inventory_unavailable")
+        return self._knowledge_operations
+
+    def _require_destructive_confirmation_codec(
+        self,
+    ) -> HmacDestructiveActionConfirmationCodec:
+        if self._destructive_confirmation is None:
+            raise RuntimeError("destructive_confirmation_required")
+        return self._destructive_confirmation
+
+    def _list_knowledge_inventory(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> KnowledgeInventoryV1:
+        try:
+            return self._require_knowledge_inspection().list_items(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+        except KnowledgeInventoryError as exc:
+            raise RuntimeError(exc.error_code) from exc
+
+    async def _execute_knowledge_operation(
+        self,
+        *,
+        action: KnowledgeOperationExecutePlannedAction,
+        tenant_id: str,
+        workspace_id: str,
+        execution_id: str,
+    ) -> ConversationExecutionArtifact:
+        inventory = self._list_knowledge_inventory(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        resolution = _resolve_knowledge_target(
+            inventory.items,
+            reference_kind=action.target_reference_kind,
+            target_reference=action.target_reference,
+        )
+        if resolution.ambiguous:
+            raise RuntimeError("knowledge_target_ambiguous")
+        if resolution.item is None:
+            raise RuntimeError("knowledge_target_not_found")
+        item = resolution.item
+        operation = _map_operation_kind(action.operation)
+        if operation not in item.available_actions:
+            raise RuntimeError("knowledge_operation_not_available")
+
+        supplied_token = action.confirmation_token
+        confirmation: DestructiveActionConfirmationV1 | None = None
+        if supplied_token is not None:
+            confirmation = self._verify_destructive_confirmation(
+                token=supplied_token,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                action_kind=knowledge_operation_action_kind(operation),
+                target_id=item.knowledge_item_id,
+            )
+            item = self._require_knowledge_inspection().get_item(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                knowledge_item_id=item.knowledge_item_id,
+            )
+            if item.revision != confirmation.expected_state_version:
+                raise RuntimeError("destructive_confirmation_stale")
+            if operation not in item.available_actions:
+                raise RuntimeError("knowledge_operation_not_available")
+        elif operation is KnowledgeOperationV1.DETACH:
+            codec = self._require_destructive_confirmation_codec()
+            token = codec.issue(
+                DestructiveActionConfirmationV1(
+                    token="",
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    action_kind=knowledge_detach_action_kind(),
+                    target_id=item.knowledge_item_id,
+                    expected_state_version=item.revision,
+                    expires_at=self._utc_now() + codec.ttl,
+                )
+            )
+            return ConversationExecutionArtifact(
+                artifact_type=action.action_type,
+                data={
+                    "status": "confirmation_required",
+                    "action_kind": knowledge_detach_action_kind(),
+                    "operation": operation.value,
+                    "knowledge_item_id": item.knowledge_item_id,
+                    "display_label": item.display_label,
+                    "confirmation_token": token,
+                },
+            )
+
+        command = KnowledgeOperationCommandV1(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            knowledge_item_id=item.knowledge_item_id,
+            operation=operation,
+            expected_revision=(
+                confirmation.expected_state_version
+                if confirmation is not None
+                else item.revision
+            ),
+            idempotency_key_hash=self._knowledge_idempotency.create(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                knowledge_item_id=item.knowledge_item_id,
+                operation=operation,
+                request_id=execution_id,
+            ),
+        )
+        try:
+            result = await self._require_knowledge_operations().execute(command)
+        except KnowledgeOperationError as exc:
+            if exc.error_code == "knowledge_operation_conflict":
+                raise RuntimeError("knowledge_operation_conflict") from exc
+            if exc.error_code == "knowledge_item_not_found":
+                raise RuntimeError("knowledge_target_not_found") from exc
+            raise RuntimeError("knowledge_inventory_unavailable") from exc
+        return ConversationExecutionArtifact(
+            artifact_type=action.action_type,
+            data={
+                "status": "completed",
+                "operation": operation.value,
+                "item": _safe_inventory_item(result.item),
+            },
+        )
+
+    async def _execute_destructive_confirm(
+        self,
+        *,
+        action: DestructiveActionConfirmPlannedAction,
+        tenant_id: str,
+        resolver: ConversationInteractionReferenceResolver,
+        execution_id: str,
+    ) -> ConversationExecutionArtifact:
+        codec = self._require_destructive_confirmation_codec()
+        try:
+            confirmation = codec.verify(action.confirmation_token)
+        except DestructiveActionConfirmationError as exc:
+            raise RuntimeError(exc.error_code) from exc
+
+        if confirmation.action_kind == DestructiveActionKindV1.WORKSPACE_DELETE:
+            workspace = self._workspace_service.get_workspace(
+                tenant_id=tenant_id,
+                workspace_id=confirmation.target_id,
+            )
+            if workspace is None:
+                raise RuntimeError("workspace_not_found")
+            if (
+                confirmation.tenant_id != tenant_id
+                or confirmation.workspace_id != confirmation.target_id
+                or confirmation.workspace_id != workspace.workspace_id
+                or workspace.workspace_revision != confirmation.expected_state_version
+            ):
+                raise RuntimeError("destructive_confirmation_invalid")
+            deleted = self._workspace_service.delete_workspace(
+                tenant_id=tenant_id,
+                workspace_id=confirmation.target_id,
+            )
+            if not deleted:
+                raise RuntimeError("workspace_not_found")
+            if resolver.current_active_workspace_id == confirmation.target_id:
+                resolver.clear_active_workspace()
+            return ConversationExecutionArtifact(
+                artifact_type=action.action_type,
+                data={
+                    "status": "completed",
+                    "action_kind": confirmation.action_kind,
+                    "workspace_id": confirmation.target_id,
+                    "name": str(workspace.name),
+                    "deleted": True,
+                },
+            )
+
+        if confirmation.action_kind == knowledge_detach_action_kind():
+            inventory = self._list_knowledge_inventory(
+                tenant_id=tenant_id,
+                workspace_id=confirmation.workspace_id,
+            )
+            item = next(
+                (
+                    candidate
+                    for candidate in inventory.items
+                    if candidate.knowledge_item_id == confirmation.target_id
+                ),
+                None,
+            )
+            if item is None:
+                raise RuntimeError("knowledge_target_not_found")
+            operation_action = KnowledgeOperationExecutePlannedAction(
+                action_id=action.action_id,
+                action_type="knowledge.operation.execute",
+                workspace=WorkspaceReference(
+                    kind=WorkspaceReferenceKind.active,
+                    value=None,
+                ),
+                operation=KnowledgeOperationKind.detach,
+                target_reference_kind=KnowledgeTargetReferenceKind.knowledge_item_id,
+                target_reference=confirmation.target_id,
+                confirmation_token=action.confirmation_token,
+            )
+            return await self._execute_knowledge_operation(
+                action=operation_action,
+                tenant_id=tenant_id,
+                workspace_id=confirmation.workspace_id,
+                execution_id=execution_id,
+            )
+
+        raise RuntimeError("destructive_confirmation_invalid")
+
+    def _verify_destructive_confirmation(
+        self,
+        *,
+        token: str,
+        tenant_id: str,
+        workspace_id: str,
+        action_kind: str,
+        target_id: str,
+    ) -> DestructiveActionConfirmationV1:
+        codec = self._require_destructive_confirmation_codec()
+        try:
+            confirmation = codec.verify(token)
+        except DestructiveActionConfirmationError as exc:
+            raise RuntimeError(exc.error_code) from exc
+        if (
+            confirmation.tenant_id != tenant_id
+            or confirmation.workspace_id != workspace_id
+            or confirmation.action_kind != action_kind
+            or confirmation.target_id != target_id
+        ):
+            raise RuntimeError("destructive_confirmation_invalid")
+        return confirmation
+
     def _utc_now(self) -> datetime:
         value = self._clock()
         if not isinstance(value, datetime):
@@ -1077,6 +1435,142 @@ class ConversationInteractionExecutor:
             ),
             error=ConversationExecutionError(code=code),
         )
+
+
+@dataclass(frozen=True)
+class _KnowledgeTargetResolution:
+    item: KnowledgeInventoryItemV1 | None
+    ambiguous: bool = False
+
+
+def _normalize_knowledge_label(value: str) -> str:
+    return " ".join(value.split()).casefold()
+
+
+def _resolve_knowledge_target(
+    items: Sequence[KnowledgeInventoryItemV1],
+    *,
+    reference_kind: KnowledgeTargetReferenceKind,
+    target_reference: str,
+) -> _KnowledgeTargetResolution:
+    if reference_kind is KnowledgeTargetReferenceKind.knowledge_item_id:
+        matches = tuple(
+            item for item in items if item.knowledge_item_id == target_reference.strip()
+        )
+        if len(matches) > 1:
+            return _KnowledgeTargetResolution(item=None, ambiguous=True)
+        if len(matches) == 1:
+            return _KnowledgeTargetResolution(item=matches[0])
+        return _KnowledgeTargetResolution(item=None)
+    if reference_kind is KnowledgeTargetReferenceKind.ordinal:
+        if not target_reference.isdigit():
+            return _KnowledgeTargetResolution(item=None)
+        index = int(target_reference) - 1
+        if index < 0 or index >= len(items):
+            return _KnowledgeTargetResolution(item=None)
+        return _KnowledgeTargetResolution(item=items[index])
+    normalized = _normalize_knowledge_label(target_reference)
+    matches = tuple(
+        item
+        for item in items
+        if item.display_label is not None
+        and _normalize_knowledge_label(item.display_label) == normalized
+    )
+    if len(matches) > 1:
+        return _KnowledgeTargetResolution(item=None, ambiguous=True)
+    if len(matches) == 1:
+        return _KnowledgeTargetResolution(item=matches[0])
+    return _KnowledgeTargetResolution(item=None)
+
+
+def _filter_knowledge_inventory(
+    inventory: KnowledgeInventoryV1,
+    inventory_filter: KnowledgeInventoryFilter,
+) -> KnowledgeInventoryV1:
+    items = inventory.items
+    if inventory_filter is KnowledgeInventoryFilter.all:
+        filtered = items
+    elif inventory_filter is KnowledgeInventoryFilter.indexed:
+        filtered = tuple(item for item in items if item.mode is KnowledgeAccessModeV1.INDEXED)
+    elif inventory_filter is KnowledgeInventoryFilter.live:
+        filtered = tuple(item for item in items if item.mode is KnowledgeAccessModeV1.LIVE)
+    elif inventory_filter is KnowledgeInventoryFilter.active:
+        filtered = tuple(item for item in items if item.lifecycle_state == "active")
+    elif inventory_filter is KnowledgeInventoryFilter.disabled:
+        filtered = tuple(item for item in items if item.lifecycle_state == "disabled")
+    else:
+        filtered = tuple(
+            item
+            for item in items
+            if item.lifecycle_state in {"error", "detach_blocked"}
+            or (
+                item.runtime_available is False
+                and item.enabled
+                and not item.detached
+            )
+        )
+    summary = KnowledgeInventorySummaryV1(
+        total=len(filtered),
+        indexed=sum(item.mode is KnowledgeAccessModeV1.INDEXED for item in filtered),
+        live=sum(item.mode is KnowledgeAccessModeV1.LIVE for item in filtered),
+        active=sum(item.lifecycle_state == "active" for item in filtered),
+        disabled=sum(item.lifecycle_state == "disabled" for item in filtered),
+        attention_required=sum(
+            item.lifecycle_state in {"error", "detach_blocked"}
+            or (
+                item.runtime_available is False
+                and item.enabled
+                and not item.detached
+            )
+            for item in filtered
+        ),
+    )
+    return KnowledgeInventoryV1(
+        tenant_id=inventory.tenant_id,
+        workspace_id=inventory.workspace_id,
+        items=filtered,
+        summary=summary,
+        updated_at=inventory.updated_at,
+    )
+
+
+def _safe_inventory_item(item: KnowledgeInventoryItemV1) -> dict[str, object]:
+    needs_attention = (
+        item.lifecycle_state in {"error", "detach_blocked"}
+        or (
+            item.runtime_available is False
+            and item.enabled
+            and not item.detached
+        )
+    )
+    last_sync = item.last_successful_sync_at
+    return {
+        "display_label": item.display_label,
+        "mode": item.mode.value,
+        "lifecycle_state": item.lifecycle_state,
+        "enabled": item.enabled,
+        "detached": item.detached,
+        "runtime_available": item.runtime_available,
+        "sync_state": item.sync_state,
+        "last_successful_sync_at": (
+            last_sync.isoformat() if last_sync is not None else None
+        ),
+        "needs_attention": needs_attention,
+        "available_actions": [action.value for action in item.available_actions],
+    }
+
+
+def _safe_workspace_name(workspace: object | None) -> str:
+    if workspace is None:
+        return "Workspace"
+    name = getattr(workspace, "name", None)
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+    return "Workspace"
+
+
+def _map_operation_kind(kind: KnowledgeOperationKind) -> KnowledgeOperationV1:
+    return KnowledgeOperationV1(kind.value)
 
 
 def _safe_exception_code(exc: Exception) -> str:

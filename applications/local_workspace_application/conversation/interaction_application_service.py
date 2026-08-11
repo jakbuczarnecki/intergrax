@@ -691,6 +691,8 @@ class ConversationInteractionApplicationService:
             )
         if snapshot is None:
             return response_text
+        if not self._setup_onboarding.should_append_snapshot_guidance(snapshot):
+            return response_text
         guidance = self._setup_onboarding.render_snapshot_guidance(snapshot)
         if not guidance:
             return response_text

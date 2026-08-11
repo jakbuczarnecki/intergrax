@@ -4,11 +4,14 @@
 
 from __future__ import annotations
 
-import base64
-import binascii
 import hashlib
 import hmac
-import json
+
+from local_workspace_application.workspaces.destructive_action_confirmation import (
+    DestructiveActionConfirmationError,
+    _sign_payload,
+    _verify_signed_payload,
+)
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import ClassVar, Protocol
@@ -211,34 +214,24 @@ class HmacKnowledgeAdministrationConfirmationCodec:
             "expected_revision": confirmation.expected_revision,
             "expires_at": int(confirmation.expires_at.timestamp()),
         }
-        encoded_payload = _urlsafe_encode(
-            json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
-        )
-        signature = hmac.new(
-            self._secret,
-            encoded_payload.encode("ascii"),
-            hashlib.sha256,
-        ).digest()
-        return f"{encoded_payload}.{_urlsafe_encode(signature)}"
+        return _sign_payload(self._secret, payload)
 
     def verify(self, token: str) -> KnowledgeAdministrationConfirmationV1:
         try:
-            encoded_payload, encoded_signature = token.split(".", maxsplit=1)
-            expected_signature = hmac.new(
+            payload = _verify_signed_payload(
                 self._secret,
-                encoded_payload.encode("ascii"),
-                hashlib.sha256,
-            ).digest()
-            actual_signature = _urlsafe_decode(encoded_signature)
-            if not hmac.compare_digest(actual_signature, expected_signature):
+                token,
+                expected_version=self._VERSION,
+            )
+        except DestructiveActionConfirmationError as exc:
+            if exc.error_code == "destructive_confirmation_expired":
                 raise KnowledgeAdministrationConfirmationError(
-                    "knowledge_admin_confirmation_invalid"
-                )
-            payload = json.loads(_urlsafe_decode(encoded_payload))
-            if payload.get("v") != self._VERSION:
-                raise KnowledgeAdministrationConfirmationError(
-                    "knowledge_admin_confirmation_invalid"
-                )
+                    "knowledge_admin_confirmation_expired"
+                ) from exc
+            raise KnowledgeAdministrationConfirmationError(
+                "knowledge_admin_confirmation_invalid"
+            ) from exc
+        try:
             expires_at = datetime.fromtimestamp(int(payload["expires_at"]), tz=UTC)
             if expires_at <= datetime.now(UTC):
                 raise KnowledgeAdministrationConfirmationError(
@@ -246,24 +239,16 @@ class HmacKnowledgeAdministrationConfirmationCodec:
                 )
             return KnowledgeAdministrationConfirmationV1(
                 token=token,
-                tenant_id=payload["tenant_id"],
-                workspace_id=payload["workspace_id"],
-                knowledge_item_id=payload["knowledge_item_id"],
+                tenant_id=str(payload["tenant_id"]),
+                workspace_id=str(payload["workspace_id"]),
+                knowledge_item_id=str(payload["knowledge_item_id"]),
                 operation=payload["operation"],
-                expected_revision=payload["expected_revision"],
+                expected_revision=int(payload["expected_revision"]),
                 expires_at=expires_at,
             )
         except KnowledgeAdministrationConfirmationError:
             raise
-        except (
-            binascii.Error,
-            KeyError,
-            TypeError,
-            ValueError,
-            OverflowError,
-            UnicodeDecodeError,
-            json.JSONDecodeError,
-        ) as exc:
+        except (KeyError, TypeError, ValueError, OverflowError) as exc:
             raise KnowledgeAdministrationConfirmationError(
                 "knowledge_admin_confirmation_invalid"
             ) from exc
@@ -881,11 +866,3 @@ def _inventory_with_items(
         summary=summary,
         updated_at=inventory.updated_at,
     )
-
-
-def _urlsafe_encode(value: bytes) -> str:
-    return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
-
-
-def _urlsafe_decode(value: str) -> bytes:
-    return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))

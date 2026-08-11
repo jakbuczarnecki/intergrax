@@ -140,6 +140,10 @@ class ConversationSetupOnboardingPresenter:
             return False
         return True
 
+    def should_append_snapshot_guidance(self, snapshot: WorkspaceSetupSnapshotV1) -> bool:
+        """READY workspaces should not repeat first-run guidance on daily turns."""
+        return snapshot.phase is not SetupPhaseV1.READY
+
     def render_ask_blocked(self, snapshot: WorkspaceSetupSnapshotV1) -> str:
         guidance = self.render_snapshot_guidance(snapshot)
         header = "I cannot answer that yet."

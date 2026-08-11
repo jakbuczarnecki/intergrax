@@ -294,6 +294,18 @@ class ManagedWorkspaceRepository:
         )
         return workspace
 
+    def replace_workspace_if_match(
+        self,
+        expected: Workspace,
+        replacement: Workspace,
+    ) -> bool:
+        return self._replace_if_match(
+            expected=expected,
+            replacement=replacement,
+            partition_key=_partition(expected.tenant_id, _ENTITY_WORKSPACE),
+            row_key=expected.workspace_id,
+        )
+
     def get_workspace(self, *, tenant_id: str, workspace_id: str) -> Workspace | None:
         return self._get(
             _partition(tenant_id, _ENTITY_WORKSPACE),

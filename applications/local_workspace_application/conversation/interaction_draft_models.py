@@ -308,6 +308,39 @@ class CitationInspectDraftAction(_DraftActionBase):
         return self
 
 
+class KnowledgeInventoryListDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.inventory.list"]
+    workspace: DraftWorkspaceReference
+    inventory_filter: Literal[
+        "all",
+        "indexed",
+        "live",
+        "active",
+        "disabled",
+        "attention_required",
+    ] = "all"
+
+
+class KnowledgeOperationExecuteDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.operation.execute"]
+    workspace: DraftWorkspaceReference
+    operation: Literal["sync", "retry_sync", "disable", "enable", "detach"]
+    target_reference_kind: Literal["ordinal", "display_label", "knowledge_item_id"]
+    target_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+    @model_validator(mode="after")
+    def _validate_target_reference(self) -> Self:
+        if self.target_reference_kind == "ordinal":
+            if not self.target_reference.isdigit() or int(self.target_reference) < 1:
+                raise ValueError("ordinal target_reference must be a positive integer string")
+        return self
+
+
+class DestructiveActionConfirmDraftAction(_DraftActionBase):
+    action_type: Literal["destructive.confirm"]
+    confirmation_token: RequiredSafeText = Field(max_length=4096)
+
+
 DraftPlannedAction = Annotated[
     WorkspaceListDraftAction
     | WorkspaceCreateDraftAction
@@ -322,7 +355,10 @@ DraftPlannedAction = Annotated[
     | KnowledgeResourcesListDraftAction
     | KnowledgeCapabilitiesListDraftAction
     | WorkspaceAskDraftAction
-    | CitationInspectDraftAction,
+    | CitationInspectDraftAction
+    | KnowledgeInventoryListDraftAction
+    | KnowledgeOperationExecuteDraftAction
+    | DestructiveActionConfirmDraftAction,
     Field(discriminator="action_type"),
 ]
 

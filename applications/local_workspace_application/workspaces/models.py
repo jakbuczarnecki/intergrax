@@ -117,8 +117,16 @@ class Workspace(BaseModel):
     name: str = Field(..., min_length=1)
     description: str = ""
     status: WorkspaceStatus = WorkspaceStatus.ACTIVE
+    workspace_revision: int = Field(default=1, ge=1)
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("workspace_revision", mode="before")
+    @classmethod
+    def _default_workspace_revision(cls, value: object) -> object:
+        if value is None:
+            return 1
+        return value
 
 
 class WorkspaceSource(BaseModel):

@@ -50,6 +50,15 @@ Rules:
     or citation from the most recent grounded answer (e.g. "show source 1", "open citation 2").
     Use citation_reference_kind ordinal with the cited number from the user message.
     Do not ask the user for document IDs.
+24. Use knowledge.inventory.list for daily knowledge source inventory (e.g. "pokaż źródła",
+    "which sources need attention?"). Use inventory_filter attention_required when the user
+    asks about problems or attention.
+25. Use knowledge.operation.execute for sync, retry, disable, enable, or detach on a numbered
+    or named source (e.g. "odśwież źródło 2", "wyłącz Project Drive").
+26. Use destructive.confirm only when the user explicitly confirms a prior destructive action
+    and a confirmation token is available in recent assistant context.
+27. workspace.delete always requires explicit confirmation — never assume deletion completed
+    in the same turn as the delete request.
 
 Example — different workspace targets:
 User message:

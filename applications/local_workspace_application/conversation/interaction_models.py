@@ -412,6 +412,56 @@ class CitationInspectPlannedAction(_PlannedActionBase):
     citation_ordinal: int = Field(ge=1, le=50)
 
 
+class KnowledgeInventoryFilter(str, Enum):
+    all = "all"
+    indexed = "indexed"
+    live = "live"
+    active = "active"
+    disabled = "disabled"
+    attention_required = "attention_required"
+
+
+class KnowledgeInventoryListPlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.inventory.list"]
+    workspace: WorkspaceReference
+    inventory_filter: KnowledgeInventoryFilter = KnowledgeInventoryFilter.all
+
+
+class KnowledgeOperationKind(str, Enum):
+    sync = "sync"
+    retry_sync = "retry_sync"
+    disable = "disable"
+    enable = "enable"
+    detach = "detach"
+
+
+class KnowledgeTargetReferenceKind(str, Enum):
+    ordinal = "ordinal"
+    display_label = "display_label"
+    knowledge_item_id = "knowledge_item_id"
+
+
+class KnowledgeOperationExecutePlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.operation.execute"]
+    workspace: WorkspaceReference
+    operation: KnowledgeOperationKind
+    target_reference_kind: KnowledgeTargetReferenceKind
+    target_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+    confirmation_token: OptionalSafeText = Field(default=None, max_length=4096)
+
+    @model_validator(mode="after")
+    def _validate_target_reference(self) -> Self:
+        if self.target_reference_kind == KnowledgeTargetReferenceKind.ordinal:
+            if not self.target_reference.isdigit() or int(self.target_reference) < 1:
+                raise ValueError("ordinal target_reference must be a positive integer string")
+        return self
+
+
+class DestructiveActionConfirmPlannedAction(_PlannedActionBase):
+    action_type: Literal["destructive.confirm"]
+    confirmation_token: RequiredSafeText = Field(max_length=4096)
+
+
 PlannedAction = Annotated[
     WorkspaceListPlannedAction
     | WorkspaceCreatePlannedAction
@@ -426,7 +476,10 @@ PlannedAction = Annotated[
     | KnowledgeResourcesListPlannedAction
     | KnowledgeCapabilitiesListPlannedAction
     | WorkspaceAskPlannedAction
-    | CitationInspectPlannedAction,
+    | CitationInspectPlannedAction
+    | KnowledgeInventoryListPlannedAction
+    | KnowledgeOperationExecutePlannedAction
+    | DestructiveActionConfirmPlannedAction,
     Field(discriminator="action_type"),
 ]
 

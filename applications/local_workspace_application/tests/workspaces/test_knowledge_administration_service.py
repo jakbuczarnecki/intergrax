@@ -504,16 +504,14 @@ def test_administration_module_imports_only_the_public_inspection_operations_fac
     }
     assert imported_modules <= {
         "__future__",
+        "local_workspace_application.workspaces.destructive_action_confirmation",
         "local_workspace_application.workspaces.knowledge_inspection_operations_service",
         "pydantic",
         "typing",
         "enum",
         "datetime",
-        "json",
         "hashlib",
         "hmac",
-        "base64",
-        "binascii",
     }
 
 

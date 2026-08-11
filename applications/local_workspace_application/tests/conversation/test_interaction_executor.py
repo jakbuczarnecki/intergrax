@@ -40,6 +40,9 @@ from local_workspace_application.conversation.interaction_models import (
     WorkspaceReference,
     WorkspaceReferenceKind,
 )
+from local_workspace_application.workspaces.destructive_action_confirmation import (
+    HmacDestructiveActionConfirmationCodec,
+)
 from local_workspace_application.workspaces.conversation_context_models import (
     ConversationActivationPolicy,
     ConversationAudienceMode,
@@ -49,11 +52,14 @@ from local_workspace_application.workspaces.conversation_context_models import (
 )
 
 
+_CONFIRM_SECRET = b"test-confirmation-secret"
+_CONFIRM_CODEC = HmacDestructiveActionConfirmationCodec(secret=_CONFIRM_SECRET)
+
 class WorkspaceServiceFake:
     def __init__(self) -> None:
         self.workspaces = {
-            "w1": SimpleNamespace(workspace_id="w1", name="old"),
-            "w2": SimpleNamespace(workspace_id="w2", name="current"),
+            "w1": SimpleNamespace(workspace_id="w1", name="old", workspace_revision=1),
+            "w2": SimpleNamespace(workspace_id="w2", name="current", workspace_revision=1),
         }
         self.calls: list[str] = []
 
@@ -67,7 +73,7 @@ class WorkspaceServiceFake:
 
     def create_workspace(self, *, tenant_id: str, name: str) -> object:
         self.calls.append(f"create:{tenant_id}:{name}")
-        workspace = SimpleNamespace(workspace_id="w3", name=name)
+        workspace = SimpleNamespace(workspace_id="w3", name=name, workspace_revision=1)
         self.workspaces["w3"] = workspace
         return workspace
 
@@ -341,6 +347,7 @@ async def test_executor_maps_all_ten_actions_to_injected_services() -> None:
         web_url_intake_service=web_service,
         local_reference_intake_service=local_service,
         ask_service=ask_service,  # type: ignore[arg-type]
+        destructive_confirmation_codec=_CONFIRM_CODEC,
         execution_id_factory=lambda: "execution-1",
         clock=clock,
     )
@@ -390,7 +397,7 @@ async def test_executor_maps_all_ten_actions_to_injected_services() -> None:
         "w3",
     ]
     assert all(item.completed_at >= item.started_at for item in result.action_results)
-    assert len(clock_calls) == 22
+    assert len(clock_calls) == 23
     assert result.started_at == clock_calls[0]
     assert result.completed_at == clock_calls[-1]
 

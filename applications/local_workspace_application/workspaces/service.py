@@ -93,6 +93,13 @@ class ManagedWorkspaceService:
         """Return workspace for tenant or None (fail-closed 404 semantics)."""
         return self.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
 
+    def replace_workspace_if_match(
+        self,
+        expected: Workspace,
+        replacement: Workspace,
+    ) -> bool:
+        return self._repository.replace_workspace_if_match(expected, replacement)
+
     def delete_workspace(self, *, tenant_id: str, workspace_id: str) -> bool:
         """
         Delete all LKW-owned state for one tenant/workspace.

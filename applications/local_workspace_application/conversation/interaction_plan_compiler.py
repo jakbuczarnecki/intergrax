@@ -34,6 +34,9 @@ from local_workspace_application.conversation.interaction_draft_models import (
     WorkspaceCreateDraftAction,
     WorkspaceDeleteDraftAction,
     WorkspaceListDraftAction,
+    KnowledgeInventoryListDraftAction,
+    KnowledgeOperationExecuteDraftAction,
+    DestructiveActionConfirmDraftAction,
 )
 from local_workspace_application.conversation.interaction_models import (
     ConversationClarification,
@@ -60,6 +63,12 @@ from local_workspace_application.conversation.interaction_models import (
     WorkspaceListPlannedAction,
     WorkspaceReference,
     WorkspaceReferenceKind,
+    KnowledgeInventoryFilter,
+    KnowledgeInventoryListPlannedAction,
+    KnowledgeOperationExecutePlannedAction,
+    KnowledgeOperationKind,
+    KnowledgeTargetReferenceKind,
+    DestructiveActionConfirmPlannedAction,
 )
 
 
@@ -465,6 +474,30 @@ def _compile_action(
             action_type="citation.inspect",
             workspace=workspace,
             citation_ordinal=int(action.citation_reference),
+            **common,
+        )
+    if isinstance(action, KnowledgeInventoryListDraftAction):
+        assert workspace is not None
+        return KnowledgeInventoryListPlannedAction(
+            action_type="knowledge.inventory.list",
+            workspace=workspace,
+            inventory_filter=KnowledgeInventoryFilter(action.inventory_filter),
+            **common,
+        )
+    if isinstance(action, KnowledgeOperationExecuteDraftAction):
+        assert workspace is not None
+        return KnowledgeOperationExecutePlannedAction(
+            action_type="knowledge.operation.execute",
+            workspace=workspace,
+            operation=KnowledgeOperationKind(action.operation),
+            target_reference_kind=KnowledgeTargetReferenceKind(action.target_reference_kind),
+            target_reference=action.target_reference,
+            **common,
+        )
+    if isinstance(action, DestructiveActionConfirmDraftAction):
+        return DestructiveActionConfirmPlannedAction(
+            action_type="destructive.confirm",
+            confirmation_token=action.confirmation_token,
             **common,
         )
     raise TypeError("unsupported draft action type")

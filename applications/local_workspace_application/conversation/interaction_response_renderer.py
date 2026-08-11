@@ -58,6 +58,15 @@ _ERROR_MESSAGES = {
     "ask_unavailable": "Asking questions is temporarily unavailable.",
     "host_unavailable": "The workspace service is temporarily unavailable.",
     "insufficient_evidence": "I could not find enough verified information to answer reliably.",
+    "destructive_confirmation_invalid": "That confirmation is not valid. Please request the action again.",
+    "destructive_confirmation_expired": "That confirmation has expired. Please request the action again.",
+    "destructive_confirmation_stale": "The target changed before confirmation. Please request the action again.",
+    "destructive_confirmation_required": "Confirmation is required before this action can run.",
+    "knowledge_inventory_unavailable": "Knowledge inventory is temporarily unavailable.",
+    "knowledge_target_not_found": "The requested knowledge source was not found.",
+    "knowledge_target_ambiguous": "The knowledge source reference is ambiguous.",
+    "knowledge_operation_not_available": "That operation is not available for this source right now.",
+    "knowledge_operation_conflict": "The source changed before the operation could finish. Please try again.",
 }
 
 
@@ -158,8 +167,15 @@ class ConversationInteractionResponseRenderer:
             return [f"Workspace created: {name}"] if name else ["Workspace created."]
         if action_type == "workspace.list":
             workspaces = data.get("workspaces")
-            count = len(workspaces) if isinstance(workspaces, list) else 0
-            return [f"Workspaces: {count}"]
+            if not isinstance(workspaces, list) or not workspaces:
+                return ["No workspaces found."]
+            lines: list[str] = []
+            for index, item in enumerate(workspaces, start=1):
+                workspace = _mapping(item)
+                name = _safe_text(workspace.get("name"), limit=200) or "Workspace"
+                active_marker = " (active)" if bool(workspace.get("is_active")) else ""
+                lines.append(f"{index}. {name}{active_marker}")
+            return lines
         if action_type == "source.list":
             sources = data.get("sources")
             count = len(sources) if isinstance(sources, list) else 0
@@ -262,6 +278,72 @@ class ConversationInteractionResponseRenderer:
                     for index, label in enumerate(labels[:5], start=1):
                         lines.append(f"[{index}] {label}")
             return lines
+        if action_type == "workspace.delete":
+            status = _safe_text(data.get("status"), limit=40).casefold()
+            name = _safe_text(data.get("name"), limit=200)
+            if status == "confirmation_required":
+                target = name or "this workspace"
+                return [
+                    f"Deleting workspace {target} is irreversible.",
+                    "Reply with explicit confirmation to proceed.",
+                ]
+            if bool(data.get("deleted")):
+                return [f"Workspace deleted: {name}" if name else "Workspace deleted."]
+            return ["Workspace delete requested."]
+        if action_type == "knowledge.inventory.list":
+            workspace_name = _safe_text(data.get("workspace_name"), limit=200)
+            header = f"Knowledge sources in {workspace_name}:" if workspace_name else "Knowledge sources:"
+            items = data.get("items")
+            if not isinstance(items, list) or not items:
+                return [header, "No knowledge sources found."]
+            lines = [header]
+            for index, item in enumerate(items, start=1):
+                entry = _mapping(item)
+                label = _safe_text(entry.get("display_label"), limit=120) or f"Source {index}"
+                mode = _safe_text(entry.get("mode"), limit=20)
+                state = _safe_text(entry.get("lifecycle_state"), limit=40)
+                parts = [f"{index}. {label} — {mode} — {state}"]
+                if bool(entry.get("needs_attention")):
+                    parts.append("needs attention")
+                runtime = entry.get("runtime_available")
+                if runtime is False:
+                    parts.append("unavailable")
+                last_sync = entry.get("last_successful_sync_at")
+                if isinstance(last_sync, str) and last_sync.strip():
+                    parts.append(f"last sync: {_safe_text(last_sync, limit=80)}")
+                elif entry.get("mode") == "indexed" and last_sync is None:
+                    parts.append("last sync: unknown")
+                lines.append(" — ".join(parts))
+            return lines
+        if action_type == "knowledge.operation.execute":
+            status = _safe_text(data.get("status"), limit=40).casefold()
+            label = _safe_text(data.get("display_label"), limit=200)
+            operation = _safe_text(data.get("operation"), limit=40)
+            if status == "confirmation_required":
+                target = label or "this source"
+                return [
+                    f"Detaching {target} is irreversible.",
+                    "Reply with explicit confirmation to proceed.",
+                ]
+            item = _mapping(data.get("item"))
+            item_label = _safe_text(item.get("display_label"), limit=200) or label
+            op_text = operation.replace("_", " ") if operation else "operation"
+            state = _safe_text(item.get("lifecycle_state"), limit=40)
+            lines = [f"{op_text} accepted for {item_label}."]
+            if state:
+                lines.append(f"Current state: {state}.")
+            return lines
+        if action_type == "destructive.confirm":
+            status = _safe_text(data.get("status"), limit=40).casefold()
+            action_kind = _safe_text(data.get("action_kind"), limit=80)
+            name = _safe_text(data.get("name"), limit=200)
+            if status == "completed" and action_kind == "workspace.delete":
+                return [f"Workspace deleted: {name}" if name else "Workspace deleted."]
+            item = _mapping(data.get("item"))
+            label = _safe_text(item.get("display_label"), limit=200)
+            if label:
+                return [f"Source detached: {label}."]
+            return ["Destructive action completed."]
         if action_type == "citation.inspect":
             display_name = _safe_text(data.get("display_name"), limit=200)
             lines = []
