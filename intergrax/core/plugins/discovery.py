@@ -101,9 +101,6 @@ def load_entry_point_value(value: str) -> object:
     Semantics match ``importlib.metadata.EntryPoint.load()``: classes, functions,
     and callable objects are returned without instantiation or execution.
     """
-    module_path, _, attr = value.partition(":")
-    if not module_path or not attr:
-        raise PluginLoadError(f"Invalid entry point target {value!r}; expected 'module:attr'")
     try:
         from importlib.metadata import EntryPoint
     except ImportError as exc:  # pragma: no cover

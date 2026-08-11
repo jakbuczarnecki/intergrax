@@ -88,6 +88,13 @@ def test_load_entry_point_value_callable_object_not_invoked() -> None:
     assert _CALLABLE_OBJECT_PROBE.called is False
 
 
+def test_load_entry_point_value_module_only_delegates_to_entry_point_load() -> None:
+    import tests.unit.core.plugins.test_plugin_discovery as this_module
+
+    target = load_entry_point_value(__name__)
+    assert target is this_module
+
+
 def test_load_entry_point_plugins_supports_callable_factory_returning_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -113,7 +120,7 @@ def test_load_plugin_types_explicit_only() -> None:
 
 
 def test_load_entry_point_value_invalid_target_raises() -> None:
-    with pytest.raises(PluginLoadError, match="Invalid entry point target"):
+    with pytest.raises(PluginLoadError, match="Failed to load entry point target"):
         load_entry_point_value("not-a-valid-target")
 
 
@@ -211,7 +218,7 @@ def test_load_entry_point_plugins_invalid_target_raises_canonical_error(
     )
     monkeypatch.setattr(importlib.metadata, "entry_points", lambda: entries)
 
-    with pytest.raises(PluginLoadError, match="Invalid entry point target"):
+    with pytest.raises(PluginLoadError, match="Failed to load entry point target"):
         load_entry_point_plugins("intergrax.rag.chunkers")
 
 
