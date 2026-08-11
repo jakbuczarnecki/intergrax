@@ -150,7 +150,11 @@ def _suggested_question(items: tuple[KnowledgeInventoryItemV1, ...]) -> str | No
     return "What are the key points in my connected knowledge?"
 
 
-def _next_action_for_phase(phase: SetupPhaseV1) -> SetupNextActionV1:
+def _next_action_for_phase(
+    phase: SetupPhaseV1,
+    *,
+    can_ask: bool,
+) -> SetupNextActionV1:
     if phase is SetupPhaseV1.NO_KNOWLEDGE:
         return SetupNextActionV1.ADD_SOURCE
     if phase is SetupPhaseV1.SYNCING:
@@ -158,7 +162,7 @@ def _next_action_for_phase(phase: SetupPhaseV1) -> SetupNextActionV1:
     if phase is SetupPhaseV1.ATTENTION_REQUIRED:
         return SetupNextActionV1.RETRY_OR_FIX_SOURCE
     if phase is SetupPhaseV1.READY:
-        return SetupNextActionV1.ASK_QUESTION
+        return SetupNextActionV1.ASK_QUESTION if can_ask else SetupNextActionV1.NONE
     if phase is SetupPhaseV1.CONFIGURING:
         return SetupNextActionV1.WAIT_FOR_SYNC
     return SetupNextActionV1.NONE
@@ -263,7 +267,7 @@ class WorkspaceSetupSnapshotService:
             phase = SetupPhaseV1.CONFIGURING
 
         can_ask = host_ready and has_usable_knowledge
-        next_action = _next_action_for_phase(phase)
+        next_action = _next_action_for_phase(phase, can_ask=can_ask)
         suggested_question = (
             _suggested_question(items) if phase is SetupPhaseV1.READY else None
         )

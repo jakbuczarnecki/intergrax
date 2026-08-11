@@ -351,6 +351,8 @@ def test_ready_but_host_not_ready_blocks_ask(api_bundle) -> None:
     assert body["phase"] == SetupPhaseV1.READY
     assert body["host_ready"] is False
     assert body["can_ask"] is False
+    assert body["next_action"] == SetupNextActionV1.NONE
+    assert body["suggested_question"] == "What information is available in Indexed Docs?"
 
 
 def test_multiple_items_summary_is_deterministic(api_bundle) -> None:
@@ -474,6 +476,23 @@ def test_attention_precedence_over_ready(api_bundle) -> None:
     body = response.json()
     assert body["phase"] == SetupPhaseV1.ATTENTION_REQUIRED
     assert body["has_usable_knowledge"] is True
+
+
+def test_next_action_never_asks_when_can_ask_false(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    scenarios = (
+        _inventory(items=()),
+        _inventory(items=(_indexed_item(lifecycle_state="ready", sync_state="never_synced"),)),
+        _inventory(items=(_indexed_item(lifecycle_state="syncing", sync_state="running"),)),
+        _inventory(items=(_indexed_item(error=True),)),
+        _inventory(items=(_indexed_item(),)),
+    )
+    for inventory in scenarios:
+        _mount_inspection(app, inventory)
+        _mount_readiness(app, accepts_new_work=False)
+        body = client.get(_snapshot_path(workspace_id), headers=_headers()).json()
+        if body["can_ask"] is False:
+            assert body["next_action"] != SetupNextActionV1.ASK_QUESTION
 
 
 def test_derivation_service_does_not_write_repository_state(
