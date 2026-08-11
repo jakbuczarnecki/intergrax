@@ -2,7 +2,7 @@
 
 > **Application dependencies:** each Tier-3 host owns applications/<app>/pyproject.toml (Intergrax workspace package + selected extras). Sync with uv sync --project applications/<app>. Canon: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
-**Last updated:** 2026-08-11 · PLATFORM-PLUGIN-5
+**Last updated:** 2026-08-09 · RAG-PLUGIN-4 · Phase P-Ext · **H-APP** · §10 policy rules · §11 runtime signals (OBS-EVOL-9)
 
 Intergrax exposes four **core plugin catalogs** plus opt-in RAG component entry points. Shipped providers and third-party pip packages register through the same discovery protocol.
 
@@ -485,70 +485,3 @@ manifest = build_platform_plugin_manifest(
 ```
 
 Parsing and validation are side-effect free — they do not scan installed packages or register plugins.
-
----
-
-## 14. Configuration, credentials and dependency injection (PLATFORM-PLUGIN-5)
-
-**Canon:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) §12–§13 · cross-surface matrix §12.3.
-
-Platform Plugin packages **declare** capabilities; the **host/application** selects and resolves deployment settings; **domain profiles and wiring contexts** materialize runtime objects. Capability code should consume **resolved** configuration — not read arbitrary process globals as the primary path.
-
-### 14.1 Author rules (all PEP surfaces)
-
-| Do | Do not |
-|----|--------|
-| Put non-secret coordination metadata in optional `[tool.intergrax.plugin]` | Put secrets, API keys, tokens, or connection strings in `[tool.intergrax.plugin]` |
-| Use setuptools entry points to identify your plugin class | Put credentials or runtime config in entry-point values |
-| Use the domain profile / wiring API for your surface (see §14.2) | Assume access to all application services or secrets |
-| Accept explicit constructor/factory parameters from host wiring | Rely on module-level global registries or `get_service(...)` patterns |
-| Let the host choose which capabilities are enabled | Treat `installed` or `discovered` as `enabled` |
-
-**Logging:** never log secret values; do not serialize resolved credentials into manifests, metadata, or discovery output.
-
-### 14.2 Domain-specific configuration and DI
-
-Use the **domain-owned** primitive for your surface — the platform does not provide one universal config object.
-
-| Surface | Enablement / config | Credentials | Materialization |
-|---------|---------------------|-------------|-----------------|
-| Integration | `IntegrationProfile` + `ApplicationEnvironmentProfile` | Host resolves; optional `IntegrationManifest.env_prefix` (domain contract) | `profile.resolve(IntegrationCategory.…)` |
-| Tool | `ToolProfile` | `ToolWiringContext` integration slots | `register_tools(registry, ctx)` |
-| Skill | `SkillProfile` | Via tools at invoke time | `register_skills(registry)` |
-| Context | `ContextProfile` | Typically none at plugin boundary | `register(registry)` |
-| RAG component | `RagProfile` + bootstrap kwargs | Via integrations passed into bootstrap | `BaseRetrieverPlugin.create(…)` / registry bootstrap |
-| Memory store | `MemoryProfile` | Host `**kwargs` to factory | `create_user_profile_store(**kwargs)` |
-| Security defense | Host security profile | `HookContext` only | Middleware wraps plugin at host |
-| Policy rule | `PolicyRulesProfile` / YAML | None in EP | `evaluate(rule, context=…)` |
-| Tool invocation pattern | `ToolInvocationMode` | None | `execute(state, invoker, …)` |
-| Vendor Knowledge | Host builder + bindings | Scoped `credential_ref` per binding | See VK author guide — not Tier-0 catalog |
-
-### 14.3 Integration `env_prefix` (documented exception)
-
-Integrations may declare `env_prefix` on `IntegrationManifest`. The host/profile selects the provider; the integration factory may read environment variables under that prefix. This is **domain-owned** behavior — not a portable pattern for tools, skills, or other surfaces.
-
-```python
-# Host resolves provider; integration may read INTERGRAX_MY_KV_* when env_prefix is set.
-from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.contracts.base import IntegrationCategory
-
-profile = IntegrationProfile(key_value_cache=MyIntegrationPlugin)
-cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
-```
-
-### 14.4 Tool wiring example
-
-```python
-from intergrax.tools.registry.wiring import ToolWiringContext
-
-class MyHandler:
-    def __init__(self, ctx: ToolWiringContext) -> None:
-        self._cache = ctx.key_value_cache  # host-injected; do not call os.environ here
-
-class MyToolPlugin:
-    @classmethod
-    def register_tools(cls, registry, ctx: ToolWiringContext) -> None:
-        registry.register(my_contract(), MyHandler(ctx))
-```
-
-Configuration parsing (`parse_platform_plugin_pyproject_toml`, profile models) is **side-effect free** — it does not discover or register plugins.
