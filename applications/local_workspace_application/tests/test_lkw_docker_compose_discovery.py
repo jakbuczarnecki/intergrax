@@ -301,6 +301,8 @@ def test_kafka_overlay_configures_real_background_task_stack() -> None:
     assert "../.proof_docs:/data/user_docs:rw" in text
     assert "PLAINTEXT_HOST://127.0.0.1:9094" in text
     assert '"9094:9094"' in text
+    assert 'INTERGRAX_RAG_EMBEDDING_PROVIDER: ollama' in text
+    assert 'INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL: nomic-embed-text' in text
 
 
 def test_background_task_proof_helper_implements_reviewer_contract() -> None:

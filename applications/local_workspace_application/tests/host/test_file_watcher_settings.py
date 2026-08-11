@@ -15,7 +15,10 @@ from local_workspace_application.file_watcher.sidecar import (
     FileWatcherSidecarConfigurationError,
     build_file_watcher_sidecar_config,
 )
-from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.host.settings import (
+    LocalWorkspaceBackendSettings,
+    _data_home_path,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -172,6 +175,26 @@ def test_config_builder_rejects_blank_identity(field_name: str, value: str) -> N
         match="file_watcher_identity_not_configured",
     ):
         build_file_watcher_sidecar_config(settings)
+
+
+def test_config_builder_ignores_missing_auto_staging_roots(tmp_path: Path) -> None:
+    user_root = tmp_path / "docs"
+    user_root.mkdir()
+    data_home = str(tmp_path / "home")
+    settings = _enabled_settings(
+        data_home=data_home,
+        allowed_read_roots=frozenset(
+            {
+                str(user_root),
+                _data_home_path(data_home, "run", "managed_upload_staging"),
+                _data_home_path(data_home, "run", "web_url_staging"),
+            }
+        ),
+    )
+    config = build_file_watcher_sidecar_config(settings)
+    assert config.runtime_config.allowed_roots == frozenset(
+        {str(user_root.resolve(strict=False))}
+    )
 
 
 def test_config_builder_rejects_empty_roots() -> None:

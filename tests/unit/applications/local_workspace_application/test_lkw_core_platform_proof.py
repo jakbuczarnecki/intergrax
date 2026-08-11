@@ -727,6 +727,28 @@ def test_search_retrieve_ready_accepts_zero_hit_complete(core: ModuleType) -> No
     assert core.search_retrieve_ready(not_ready) is False
 
 
+def test_latest_persistence_proof_marker_reads_proof_docs(
+    core: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    proof_docs = tmp_path / "proof_docs"
+    proof_docs.mkdir()
+    (proof_docs / "lkw_persistence_proof_old.txt").write_text(
+        "Unique marker: OLD_MARKER\n",
+        encoding="utf-8",
+    )
+    latest = proof_docs / "lkw_persistence_proof_new.txt"
+    latest.write_text("Unique marker: NEW_MARKER\n", encoding="utf-8")
+    monkeypatch.setattr(core, "_PROOF_DOCS_DIR", proof_docs)
+    assert core._latest_persistence_proof_marker() == "NEW_MARKER"
+
+
+def test_file_watcher_retrieve_warmup_probes_persistence_collection(core: ModuleType) -> None:
+    assert core._PERSISTENCE_PROOF_SCOPE_ID == "lkw-persistence-proof"
+    assert core._PERSISTENCE_PROOF_SCOPE_ID != core._FILE_WATCHER_SCOPE_ID
+
+
 def test_safe_failure_reason(core: ModuleType) -> None:
     assert (
         core.safe_failure_reason(

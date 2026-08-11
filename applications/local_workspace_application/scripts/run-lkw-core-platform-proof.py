@@ -62,6 +62,7 @@ _KV_LINE = re.compile(r"^([A-Za-z0-9_.-]+)=(.*)$")
 _FILE_WATCHER_SCOPE_ID = "lkw-file-watcher-e2e"
 _FILE_WATCHER_USER_ID = "lkw.file_watcher"
 _FILE_WATCHER_SEED_NAME = "lkw_core_proof_embed_seed.txt"
+_PERSISTENCE_PROOF_SCOPE_ID = "lkw-persistence-proof"
 
 ALL_PHASE_ORDER: tuple[str, ...] = (
     "startup",
@@ -798,58 +799,49 @@ def safe_failure_reason(output: Mapping[str, str], *, fallback: str) -> str:
     return fallback
 
 
-def ensure_file_watcher_retrieve_ready(config: ProofConfig) -> None:
-    """Seed the watcher collection after volume reset so embedding warm-up can pass.
+def _latest_persistence_proof_marker() -> str:
+    if not _PROOF_DOCS_DIR.is_dir():
+        raise CoreProofError("persistence_proof_marker_missing")
+    candidates = sorted(
+        _PROOF_DOCS_DIR.glob("lkw_persistence_proof_*.txt"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    if not candidates:
+        raise CoreProofError("persistence_proof_marker_missing")
+    for line in candidates[0].read_text(encoding="utf-8").splitlines():
+        if line.startswith("Unique marker:"):
+            marker = line.split(":", 1)[1].strip()
+            if marker:
+                return marker
+    raise CoreProofError("persistence_proof_marker_missing")
 
-    After ``compose down -v``, the watcher collection is empty. Platform retrieve
-    currently maps empty results to ``used=false`` / ``retrieve_failed`` /
-    ``no_hits``, which makes the accepted file-watcher warm-up fail closed.
-    Indexing one seed document restores a working retrieve path for warm-up.
+
+def ensure_file_watcher_retrieve_ready(config: ProofConfig) -> None:
+    """Verify retrieve readiness without seeding the watcher proof collection.
+
+    Indexing a warm-up document into the watcher collection blocks the first
+    watcher-triggered proof document when vector source lookup is unavailable
+    on a non-empty collection. Probe retrieve against the persistence proof
+    collection instead (already populated earlier in the same run).
     """
-    _PROOF_DOCS_DIR.mkdir(parents=True, exist_ok=True)
-    seed_path = _PROOF_DOCS_DIR / _FILE_WATCHER_SEED_NAME
-    seed_path.write_text(
-        (
-            "Intergrax LKW core proof embedding seed document.\n"
-            "Pre-warms the file-watcher collection after a clean volume reset.\n"
-        ),
-        encoding="utf-8",
-    )
-    container_path = f"/data/user_docs/{_FILE_WATCHER_SEED_NAME}"
+    marker = _latest_persistence_proof_marker()
     run_url = f"{config.base_url.rstrip('/')}/v1/local_workspace/run"
-    index_response = http_post_json(
-        run_url,
-        {
-            "tenant_id": _FILE_WATCHER_SCOPE_ID,
-            "workspace_id": _FILE_WATCHER_SCOPE_ID,
-            "user_id": _FILE_WATCHER_USER_ID,
-            "message": "index core proof embedding seed",
-            "capability": "local.workspace.index",
-            "metadata": {
-                "source_paths": [container_path],
-                "collection_id": _FILE_WATCHER_SCOPE_ID,
-            },
-        },
-        timeout=300.0,
-    )
-    require_positive_ingest(index_response)
     deadline = time.monotonic() + min(300, config.phase_timeout_seconds)
     while time.monotonic() < deadline:
         try:
             probe = http_post_json(
                 run_url,
                 {
-                    "tenant_id": _FILE_WATCHER_SCOPE_ID,
-                    "workspace_id": _FILE_WATCHER_SCOPE_ID,
-                    "user_id": _FILE_WATCHER_USER_ID,
-                    "message": "core proof retrieve readiness probe",
+                    "tenant_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                    "workspace_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                    "message": marker,
                     "capability": "local.workspace.search",
                     "metadata": {
-                        "tenant_id": _FILE_WATCHER_SCOPE_ID,
-                        "user_id": _FILE_WATCHER_USER_ID,
-                        "workspace_id": _FILE_WATCHER_SCOPE_ID,
-                        "collection_id": _FILE_WATCHER_SCOPE_ID,
-                        "query": "core proof embedding seed",
+                        "tenant_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                        "workspace_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                        "collection_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                        "query": marker,
                         "top_k": 1,
                         "proof_phase": "embedding_warmup",
                     },
