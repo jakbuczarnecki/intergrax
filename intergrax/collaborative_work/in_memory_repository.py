@@ -32,9 +32,15 @@ IdempotencyKey: TypeAlias = tuple[str, str, str]
 
 
 @dataclass(frozen=True, slots=True)
-class _IdempotencyEntry:
+class _MembershipIdempotencyEntry:
     fingerprint: str
-    record_key: MembershipKey | DelegationKey
+    original_result: WorkspaceMembership
+
+
+@dataclass(frozen=True, slots=True)
+class _DelegationIdempotencyEntry:
+    fingerprint: str
+    original_result: AuthorityDelegation
 
 
 class InMemoryWorkspaceMembershipRepository:
@@ -43,7 +49,7 @@ class InMemoryWorkspaceMembershipRepository:
     def __init__(self) -> None:
         self._lock = threading.RLock()
         self._records: dict[MembershipKey, WorkspaceMembership] = {}
-        self._idempotency: dict[IdempotencyKey, _IdempotencyEntry] = {}
+        self._idempotency: dict[IdempotencyKey, _MembershipIdempotencyEntry] = {}
 
     @property
     def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
@@ -78,7 +84,7 @@ class InMemoryWorkspaceMembershipRepository:
                 revision=INITIAL_RECORD_REVISION,
             )
             self._records[key] = record
-            self._store_membership_idempotency(command, key)
+            self._store_membership_idempotency(command, record)
             return record
 
     def get(
@@ -140,21 +146,21 @@ class InMemoryWorkspaceMembershipRepository:
             raise WorkspaceMembershipIdempotencyConflict(
                 "workspace membership idempotency key conflict"
             )
-        record = self._records.get(entry.record_key)  # type: ignore[arg-type]
-        if record is None:
-            raise WorkspaceMembershipNotFound("workspace membership was not found")
-        return record
+        return entry.original_result
 
     def _store_membership_idempotency(
         self,
         command: CreateWorkspaceMembershipCommand,
-        key: MembershipKey,
+        record: WorkspaceMembership,
     ) -> None:
         if command.idempotency_key is None:
             return
         self._idempotency[
             self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
-        ] = _IdempotencyEntry(fingerprint=command.semantic_fingerprint(), record_key=key)
+        ] = _MembershipIdempotencyEntry(
+            fingerprint=command.semantic_fingerprint(),
+            original_result=record,
+        )
 
     @staticmethod
     def _membership_key(tenant_id: str, workspace_id: str, membership_id: str) -> MembershipKey:
@@ -180,7 +186,7 @@ class InMemoryAuthorityDelegationRepository:
     def __init__(self) -> None:
         self._lock = threading.RLock()
         self._records: dict[DelegationKey, AuthorityDelegation] = {}
-        self._idempotency: dict[IdempotencyKey, _IdempotencyEntry] = {}
+        self._idempotency: dict[IdempotencyKey, _DelegationIdempotencyEntry] = {}
 
     @property
     def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
@@ -219,7 +225,7 @@ class InMemoryAuthorityDelegationRepository:
                 revision=INITIAL_RECORD_REVISION,
             )
             self._records[key] = record
-            self._store_delegation_idempotency(command, key)
+            self._store_delegation_idempotency(command, record)
             return record
 
     def get(
@@ -285,21 +291,21 @@ class InMemoryAuthorityDelegationRepository:
             raise AuthorityDelegationIdempotencyConflict(
                 "authority delegation idempotency key conflict"
             )
-        record = self._records.get(entry.record_key)  # type: ignore[arg-type]
-        if record is None:
-            raise AuthorityDelegationNotFound("authority delegation was not found")
-        return record
+        return entry.original_result
 
     def _store_delegation_idempotency(
         self,
         command: CreateAuthorityDelegationCommand,
-        key: DelegationKey,
+        record: AuthorityDelegation,
     ) -> None:
         if command.idempotency_key is None:
             return
         self._idempotency[
             self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
-        ] = _IdempotencyEntry(fingerprint=command.semantic_fingerprint(), record_key=key)
+        ] = _DelegationIdempotencyEntry(
+            fingerprint=command.semantic_fingerprint(),
+            original_result=record,
+        )
 
     @staticmethod
     def _delegation_key(tenant_id: str, workspace_id: str, delegation_id: str) -> DelegationKey:

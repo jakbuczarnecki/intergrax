@@ -224,6 +224,44 @@ def test_membership_idempotency_replay_and_conflict() -> None:
         )
 
 
+def test_membership_idempotency_replay_after_update_returns_original_create() -> None:
+    repo = _membership_repo()
+    command = _create_membership_command(idempotency_key="idem-delayed")
+    created = repo.create(command)
+    assert created.role is WorkspaceMembershipRole.MEMBER
+    assert created.revision == INITIAL_RECORD_REVISION
+
+    updated = repo.update(
+        UpdateWorkspaceMembershipCommand(
+            scope=WorkspaceMembershipScopeKey(
+                tenant_id=_TENANT_A,
+                workspace_id=_WORKSPACE_A,
+                membership_id="membership-1",
+            ),
+            expected_revision=created.revision,
+            role=WorkspaceMembershipRole.ADMIN,
+            status=MembershipStatus.ACTIVE,
+        )
+    )
+    assert updated.revision == created.revision + 1
+    assert updated.role is WorkspaceMembershipRole.ADMIN
+
+    replayed = repo.create(command)
+    assert replayed == created
+    assert replayed.role is WorkspaceMembershipRole.MEMBER
+    assert replayed.revision == INITIAL_RECORD_REVISION
+
+    current = repo.get(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        membership_id="membership-1",
+    )
+    assert current == updated
+    assert current is not None
+    assert current.role is WorkspaceMembershipRole.ADMIN
+    assert current.revision == updated.revision
+
+
 def test_delegation_create_and_get() -> None:
     repo = _delegation_repo()
     created = repo.create(_create_delegation_command())
@@ -366,6 +404,49 @@ def test_delegation_idempotency_replay_and_conflict() -> None:
                 authority_scopes=("workspace.admin",),
             )
         )
+
+
+def test_delegation_idempotency_replay_after_update_returns_original_create() -> None:
+    repo = _delegation_repo()
+    command = _create_delegation_command(idempotency_key="delegation-idem-delayed")
+    created = repo.create(command)
+    assert created.authority_scopes == ("workspace.read",)
+    assert created.revision == INITIAL_RECORD_REVISION
+
+    updated = repo.update(
+        UpdateAuthorityDelegationCommand(
+            scope=AuthorityDelegationScopeKey(
+                tenant_id=_TENANT_A,
+                workspace_id=_WORKSPACE_A,
+                delegation_id="delegation-1",
+            ),
+            expected_revision=created.revision,
+            authority_scopes=("workspace.write",),
+            resource_scope="resource-1",
+            valid_from=_VALID_FROM,
+            valid_until=_VALID_UNTIL,
+            status=DelegationStatus.REVOKED,
+        )
+    )
+    assert updated.revision == created.revision + 1
+    assert updated.authority_scopes == ("workspace.write",)
+    assert updated.status is DelegationStatus.REVOKED
+
+    replayed = repo.create(command)
+    assert replayed == created
+    assert replayed.authority_scopes == ("workspace.read",)
+    assert replayed.revision == INITIAL_RECORD_REVISION
+
+    current = repo.get(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        delegation_id="delegation-1",
+    )
+    assert current == updated
+    assert current is not None
+    assert current.authority_scopes == ("workspace.write",)
+    assert current.status is DelegationStatus.REVOKED
+    assert current.revision == updated.revision
 
 
 def test_record_id_without_scope_does_not_authorize_access() -> None:
