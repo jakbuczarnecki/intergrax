@@ -26,6 +26,7 @@ from intergrax.contracts.collaborative_work import (
     PolicyCompositionInput,
     PolicyCompositionLayer,
     PolicyCompositionResult,
+    PolicyLayerApplicability,
     WorkspaceMembership,
     WorkspaceMembershipRole,
 )
@@ -71,9 +72,17 @@ def _modify(rule_id: str = "test.modify") -> PolicyDecision:
 
 def _all_mandatory_applicability() -> PolicyCompositionApplicability:
     return PolicyCompositionApplicability(
-        workspace_policy=True,
-        resource_policy=True,
-        runtime_policy=True,
+        workspace_policy=PolicyLayerApplicability.REQUIRED,
+        resource_policy=PolicyLayerApplicability.REQUIRED,
+        runtime_policy=PolicyLayerApplicability.REQUIRED,
+    )
+
+
+def _not_applicable_applicability() -> PolicyCompositionApplicability:
+    return PolicyCompositionApplicability(
+        workspace_policy=PolicyLayerApplicability.NOT_APPLICABLE,
+        resource_policy=PolicyLayerApplicability.NOT_APPLICABLE,
+        runtime_policy=PolicyLayerApplicability.NOT_APPLICABLE,
     )
 
 
@@ -234,14 +243,64 @@ def test_not_applicable_layers_skipped() -> None:
     result = compose_policy_decisions(
         PolicyCompositionInput(
             collaborative_authority=_allow(),
-            applicability=PolicyCompositionApplicability(
-                workspace_policy=False,
-                resource_policy=False,
-                runtime_policy=False,
-            ),
+            applicability=_not_applicable_applicability(),
         )
     )
     assert result.decision.action is PolicyAction.ALLOW
+
+
+def test_default_applicability_fails_closed() -> None:
+    result = compose_policy_decisions(
+        PolicyCompositionInput(collaborative_authority=_allow()),
+    )
+    assert result.decision.action is PolicyAction.DENY
+    assert result.determining_layer is PolicyCompositionLayer.WORKSPACE_POLICY
+    assert (
+        result.decision.policy_rule_id
+        == "collaborative_work.policy_composition.applicability_unresolved.workspace_policy"
+    )
+
+
+@pytest.mark.parametrize(
+    ("layer_field", "determining_layer"),
+    [
+        ("workspace_policy", PolicyCompositionLayer.WORKSPACE_POLICY),
+        ("resource_policy", PolicyCompositionLayer.RESOURCE_POLICY),
+        ("runtime_policy", PolicyCompositionLayer.RUNTIME_POLICY),
+    ],
+)
+def test_unknown_applicability_fails_closed(
+    layer_field: str,
+    determining_layer: PolicyCompositionLayer,
+) -> None:
+    applicability = _all_mandatory_applicability().model_copy(
+        update={layer_field: PolicyLayerApplicability.UNKNOWN},
+    )
+    result = _compose(
+        collaborative=_allow(),
+        workspace=_allow(),
+        resource=_allow(),
+        runtime=_allow(),
+        applicability=applicability,
+    )
+    assert result.decision.action is PolicyAction.DENY
+    assert result.determining_layer is determining_layer
+    assert (
+        result.decision.policy_rule_id
+        == f"collaborative_work.policy_composition.applicability_unresolved.{determining_layer.value}"
+    )
+
+
+def test_unresolved_applicability_audit_provenance() -> None:
+    result = compose_policy_decisions(
+        PolicyCompositionInput(collaborative_authority=_allow()),
+    )
+    assert result.decision.audit_payload["determining_layer"] == "workspace_policy"
+    assert (
+        result.decision.audit_payload["determining_layer_audit"]["cause"]
+        == "applicability_unresolved"
+    )
+    assert "workspace_policy" in result.decision.audit_payload["non_allow_layers"]
 
 
 def test_audit_provenance_retained() -> None:

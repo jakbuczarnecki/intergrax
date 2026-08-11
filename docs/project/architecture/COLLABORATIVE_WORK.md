@@ -122,6 +122,7 @@ Collaborative Work owns the neutral composition boundary that combines pre-evalu
 
 - Runtime/tool meaningful-side-effect evaluation remains owned by Runtime Policy (`RuntimePolicyEngine` / `PolicyEngine`).
 - Workspace and resource policy evaluators are not fabricated in this slice; absent canonical evaluators, composition reports missing mandatory decisions as DENY.
+- Layer applicability uses typed `PolicyLayerApplicability` (`REQUIRED`, `NOT_APPLICABLE`, `UNKNOWN`); default `UNKNOWN` fails closed. Only trusted `NOT_APPLICABLE` from future operation classification may skip a layer.
 - `compose_policy_decisions` retains contributing layer provenance in `audit_payload` for auditability.
 
 ---

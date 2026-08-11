@@ -15,12 +15,16 @@ from intergrax.contracts.collaborative_work import (
     PolicyCompositionInput,
     PolicyCompositionLayer,
     PolicyCompositionResult,
+    PolicyLayerApplicability,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 
 _POLICY_RULE_COMPOSITION_ALLOW = "collaborative_work.policy_composition.allow"
 _POLICY_RULE_UNSUPPORTED_MODIFY = "collaborative_work.policy_composition.unsupported_modify"
 _POLICY_RULE_MISSING_PREFIX = "collaborative_work.policy_composition.missing"
+_POLICY_RULE_APPLICABILITY_UNRESOLVED_PREFIX = (
+    "collaborative_work.policy_composition.applicability_unresolved"
+)
 
 _LAYER_ORDER: tuple[PolicyCompositionLayer, ...] = (
     PolicyCompositionLayer.COLLABORATIVE_AUTHORITY,
@@ -53,6 +57,18 @@ def _missing_mandatory_decision(layer: PolicyCompositionLayer) -> PolicyDecision
         audit_payload={
             "layer": layer.value,
             "cause": "missing_mandatory_decision",
+        },
+    )
+
+
+def _unresolved_applicability_decision(layer: PolicyCompositionLayer) -> PolicyDecision:
+    return PolicyDecision(
+        action=PolicyAction.DENY,
+        reason=f"{layer.value} applicability unresolved",
+        policy_rule_id=f"{_POLICY_RULE_APPLICABILITY_UNRESOLVED_PREFIX}.{layer.value}",
+        audit_payload={
+            "layer": layer.value,
+            "cause": "applicability_unresolved",
         },
     )
 
@@ -100,7 +116,7 @@ def _layer_entries(
         ),
     ]
     optional_layers: tuple[
-        tuple[PolicyCompositionLayer, PolicyDecision | None, bool],
+        tuple[PolicyCompositionLayer, PolicyDecision | None, PolicyLayerApplicability],
         ...,
     ] = (
         (
@@ -119,8 +135,11 @@ def _layer_entries(
             applicability.runtime_policy,
         ),
     )
-    for layer, decision, applicable in optional_layers:
-        if not applicable:
+    for layer, decision, layer_applicability in optional_layers:
+        if layer_applicability is PolicyLayerApplicability.NOT_APPLICABLE:
+            continue
+        if layer_applicability is PolicyLayerApplicability.UNKNOWN:
+            entries.append((layer, _unresolved_applicability_decision(layer)))
             continue
         if decision is None:
             entries.append((layer, _missing_mandatory_decision(layer)))

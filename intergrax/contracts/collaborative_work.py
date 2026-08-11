@@ -363,12 +363,25 @@ class PolicyCompositionLayer(StrEnum):
     RUNTIME_POLICY = "runtime_policy"
 
 
+class PolicyLayerApplicability(StrEnum):
+    """Trusted applicability state for an optional policy layer.
+
+    Only ``NOT_APPLICABLE`` may skip a layer. ``UNKNOWN`` fails closed until future
+    operation-classification code supplies a trusted determination.
+    """
+
+    REQUIRED = "required"
+    NOT_APPLICABLE = "not_applicable"
+    UNKNOWN = "unknown"
+
+
 class PolicyCompositionApplicability(BaseModel):
     """Trusted operation context — which policy layers are mandatory for composition.
 
-    Callers must derive applicability from operation classification, not untrusted
-  skip flags. When a layer is applicable but its decision is absent, composition
-  fails closed.
+    Future operation-classification code is responsible for producing trusted
+    ``NOT_APPLICABLE`` values. Absence, default, or ``UNKNOWN`` applicability fails
+    closed; only explicit ``NOT_APPLICABLE`` skips a layer. When a layer is
+    ``REQUIRED`` but its decision is absent, composition fails closed.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -376,9 +389,9 @@ class PolicyCompositionApplicability(BaseModel):
     schema_version: Literal["policy_composition_applicability.v1"] = (
         SCHEMA_POLICY_COMPOSITION_APPLICABILITY_V1
     )
-    workspace_policy: bool = False
-    resource_policy: bool = False
-    runtime_policy: bool = False
+    workspace_policy: PolicyLayerApplicability = PolicyLayerApplicability.UNKNOWN
+    resource_policy: PolicyLayerApplicability = PolicyLayerApplicability.UNKNOWN
+    runtime_policy: PolicyLayerApplicability = PolicyLayerApplicability.UNKNOWN
 
 
 class PolicyCompositionInput(BaseModel):
