@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI — Multi-layer Feature Architecture
 
-**Status:** **MP-0** — canonical architecture and implementation roadmap (documentation only)
+**Status:** **MP-0 — READY_FOR_REVIEW** — canonical architecture and implementation roadmap (documentation only)
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain (provisional):** `OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`
 **Related domains (provisional):** `PLATFORM_FOUNDATION`, `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
@@ -149,6 +149,150 @@ The following mappings are **explicitly forbidden** in roadmap, architecture, an
 
 ---
 
+## Canonical architecture rules
+
+These rules are the normative Multiplayer contract. They freeze semantics and
+boundaries without prematurely choosing concrete enums, storage, database,
+API, or runtime implementations.
+
+### Principal and effective authority
+
+Conceptual Principal kinds include `HUMAN`, `AGENT`, `SERVICE`, and future
+`EXTERNAL_AGENT`. The kind is a semantic contract, not a frozen enum or class
+design.
+
+The following concepts are distinct:
+
+```text
+Principal != AgentDefinition
+Principal != AgentAssignment
+Principal != AgentRun
+```
+
+Effective authority is the intersection of all applicable constraints:
+
+```text
+Principal authority
+  ∩ WorkspaceMembership
+  ∩ Delegation where applicable
+  ∩ Workspace policy
+  ∩ Resource policy
+  ∩ Runtime/tool policy
+```
+
+- Delegation MUST NEVER amplify authority beyond the delegator.
+- Agent authority MUST NOT silently equal human authority.
+- `tenant_id` is an ownership/admin scope, not authorization proof.
+- `workspace_id` is a resource scope, not authorization proof.
+- Privileged or meaningful side effects fail closed when effective authority
+  cannot be proven.
+- No concrete RBAC storage is chosen by MP-0.
+
+### Workspace and tenant boundary
+
+`Tenant != User`. Tenant remains the higher ownership/admin boundary.
+Workspace is the collaborative shared-work boundary. Every durable
+workspace-owned Multiplayer aggregate carries `tenant_id + workspace_id`
+where applicable. Membership is explicit and is never inferred merely from
+tenant or workspace identifiers.
+
+Cross-tenant federation is out of scope for the initial Multiplayer
+foundation. The current LKW Workspace implementation is not moved by MP-0-R1.
+Workspace platformization remains an explicit future architecture decision.
+
+### Collaborative work versus execution
+
+```text
+WorkItem != Nexus Task
+WorkItemState != TaskState
+```
+
+A WorkItem is durable collaborative work: it may outlive a task or run,
+contain multiple Nexus Tasks/runs, involve humans and agents, and produce
+multiple artifacts and decisions. A Nexus Task remains an execution unit.
+Nexus remains the execution/orchestration plane and does not own
+collaborative membership or WorkItem lifecycle. Real `task_id` and `run_id`
+remain execution identities; collaborative identity does not replace them.
+
+### Artifacts and decisions
+
+```text
+WorkArtifact != UCL OptimizationArtifact
+Decision != HITL
+```
+
+`WorkArtifactVersion` is the authoritative versioned collaborative output.
+WorkArtifacts may outlive Nexus executions. A Decision may exist without an
+active Nexus task. When execution must pause for that decision, it may bridge
+to existing HITL; MP-0 creates no second approval or pause runtime.
+
+### Memory and principal-scoped context
+
+Memory is not the source of truth for `WorkspaceMembership`, `Delegation`,
+`WorkItem`, `Assignment`, `WorkArtifact`, or `Decision`. No
+`MultiplayerMemory` is created. Private user memory does not automatically
+become shared workspace memory; promotion from private to shared state
+requires explicit action or governed policy.
+
+Context is principal-specific. Shared workspace state is not automatically
+visible model context. External agents receive only the minimum required
+context, resources, and delegated authority; they do not receive
+uncontrolled workspace or organization context. UCL remains the canonical
+context lifecycle.
+
+### Activity, trace, and projections
+
+`Collaborative Activity != Runtime Trace`. Activity is a user/product-facing
+collaborative projection. Runtime Trace/Evidence remains execution and audit
+truth for runtime behavior. Activity feeds, search indexes, and derived
+projections are never authoritative sources for permissions, decisions,
+artifacts, or lifecycle state.
+
+### Concurrency and idempotency
+
+Mutable authoritative Multiplayer state uses optimistic concurrency through
+`revision`, `expected_revision`, or equivalent explicit compare-and-set
+semantics. A stale mutation fails with an explicit conflict; authoritative
+shared state never silently uses last-write-wins. This direction applies at
+least to WorkspaceMembership, mutable Delegation, WorkItem, the current
+WorkArtifact version pointer, Decision, and collaborative policy/configuration.
+MP-0 does not choose the database implementation.
+
+Meaningful side-effecting Multiplayer commands require idempotency semantics,
+including membership/invite and delegation mutations, retryable WorkItem
+creation, assignment, artifact publication, decision response, and external
+delegation. Storage implementation remains open.
+
+### Agent directory and interoperability
+
+`AgentDirectory != Nexus AgentRegistry`. AgentRegistry remains an execution
+and routability concern. AgentDirectory represents collaborative/external
+agent identity, capabilities, trust, and discovery direction. A2A and other
+protocols are adapters/transports; provider or transport types do not enter
+canonical Multiplayer domain contracts.
+
+### Evidence and provenance
+
+The target conceptual lineage is:
+
+```text
+Principal
+  → Delegation
+  → Assignment / WorkItem
+  → Nexus Task
+  → Run
+  → agent/tool/model/provider execution
+  → WorkArtifactVersion
+  → Decision
+  → responding/approving Principal
+```
+
+Existing execution evidence supplies the runtime portion of this chain.
+Multiplayer extends it with collaborative identity and work lineage; it does
+not replace existing Evidence.
+
+---
+
 ## Phase architecture summaries
 
 ### MP-0 — Canonical architecture and implementation roadmap
@@ -157,7 +301,7 @@ The following mappings are **explicitly forbidden** in roadmap, architecture, an
 
 **Out of scope:** Domain plan edits, satellites (unless genuinely required), code, tests, MP-1+ implementation.
 
-**Acceptance:** Reviewable MP-0 docs; roadmap MP-0…MP-9 preserved; no incorrect row substitution; ownership marked provisional where unproven.
+**Acceptance:** Reviewable MP-0 docs; roadmap MP-0…MP-9 preserved; canonical rules and invariants are present; no incorrect row substitution; ownership marked provisional where unproven.
 
 ---
 
@@ -269,17 +413,60 @@ The following mappings are **explicitly forbidden** in roadmap, architecture, an
 
 ---
 
-## Cross-cutting invariants
+## Canonical invariants
+
+The following numbered invariants are normative for Multiplayer architecture
+and implementation planning.
 
 | ID | Invariant |
 |----|-----------|
-| **MP-INV-01** | Multiplayer primitives are platform-owned unless explicitly classified as Tier-3 product-only UX in MP-9. |
-| **MP-INV-02** | No channel adapter (Slack, conversation channel, notification channel) owns WorkItem, WorkArtifact, or Decision semantics. |
-| **MP-INV-03** | HITL pauses execution; Decision records collaborative intent and outcomes; bridge is explicit, not implicit. |
-| **MP-INV-04** | ContextView composes UCL/CE/Memory/Knowledge; TOKEN and UCL plan rows keep their native IDs. |
-| **MP-INV-05** | LKW is a reference consumer; it does not define the Multiplayer public ABI. |
-| **MP-INV-06** | Before MP-1+ code: bounded ownership check → domain architecture/plan sync → then implementation. |
-| **MP-INV-07** | `REUSED EXISTING CAPABILITY` ≠ `NEW CAPABILITY REQUIRED`; substitution is forbidden. |
+| **MP-INV-01** | Every meaningful collaborative mutation has an effective Principal. |
+| **MP-INV-02** | Agent Principal remains distinct from the delegating human Principal. |
+| **MP-INV-03** | Delegation never amplifies authority. |
+| **MP-INV-04** | Tenant/workspace identifiers are not authorization proof. |
+| **MP-INV-05** | Explicit workspace membership is required where policy requires membership. |
+| **MP-INV-06** | Durable workspace-owned Multiplayer state carries `tenant_id + workspace_id` where applicable. |
+| **MP-INV-07** | WorkItem != Nexus Task. |
+| **MP-INV-08** | WorkItemState != TaskState. |
+| **MP-INV-09** | Decision != HITL. |
+| **MP-INV-10** | WorkArtifact != UCL OptimizationArtifact. |
+| **MP-INV-11** | Principal != AgentDefinition / AgentRun. |
+| **MP-INV-12** | AgentDirectory != AgentRegistry. |
+| **MP-INV-13** | Nexus does not own membership. |
+| **MP-INV-14** | Nexus does not own collaborative WorkItem lifecycle. |
+| **MP-INV-15** | Memory is not collaborative source of truth. |
+| **MP-INV-16** | Private user memory is never automatically shared. |
+| **MP-INV-17** | Context is principal-specific. |
+| **MP-INV-18** | External agents receive least context and least delegated authority. |
+| **MP-INV-19** | Shared mutable authoritative state uses explicit concurrency control. |
+| **MP-INV-20** | Stale writes never silently win. |
+| **MP-INV-21** | Meaningful side-effecting commands are idempotent. |
+| **MP-INV-22** | Meaningful external side effects remain policy-gated. |
+| **MP-INV-23** | Approval/evidence does not itself authorize execution. |
+| **MP-INV-24** | `task_id`/`run_id` remain real execution identities. |
+| **MP-INV-25** | Collaborative Activity != Runtime Trace. |
+| **MP-INV-26** | Projections/indexes/activity feeds never become authority sources. |
+| **MP-INV-27** | A2A/provider transports do not leak into canonical Multiplayer contracts. |
+| **MP-INV-28** | Existing reusable Intergrax mechanisms must be reused before new mechanisms are introduced. |
+| **MP-INV-29** | Missing reusable capability requires explicit architecture decision, never silent local workaround. |
+| **MP-INV-30** | LKW remains consumer, not owner, of platform Multiplayer primitives. |
+
+### Required ADR decision register
+
+Each decision is required before the relevant implementation:
+
+| ADR | Decision |
+|-----|----------|
+| **ADR-MP-001** | Collaborative Work Plane ownership |
+| **ADR-MP-002** | Principal / Membership / Delegation |
+| **ADR-MP-003** | WorkItem vs Nexus Task |
+| **ADR-MP-004** | WorkArtifact / Decision ownership |
+| **ADR-MP-005** | Workspace platformization / LKW migration |
+| **ADR-MP-006** | Principal-scoped ContextView |
+| **ADR-MP-007** | AgentDirectory / external interoperability boundary |
+
+**Status:** REQUIRED BEFORE RELEVANT IMPLEMENTATION. No ADR files are created
+by MP-0-R1.
 
 ---
 
