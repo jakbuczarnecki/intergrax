@@ -6,7 +6,31 @@
 
 **Status:** target onboarding narrative for the final LKW experience  
 **Scope:** from GitHub discovery to first useful local workspace run  
+**Primary daily-use interface (LKW 1.0):** **Slack** — conversational UX for
+workspace selection, Ask, citations, source state, sync, and recovery.
+**Installation / evaluation paths:** quickstart scripts, curl/API proof, Docker
+bootstrap — prove infrastructure and backend capability; they are **not** the
+primary daily-use client.
 **Related:** [`../../technical/applications/local_workspace_application/README.md`](../../../../applications/local_workspace_application/README.md) · [`../../technical/applications/local_workspace_application/ARCHITECTURE.md`](../../technical/applications/local_workspace_application/ARCHITECTURE.md) · [`../../technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) · [`../../technical/applications/local_workspace_application/KNOWLEDGE_INTAKE_DISCOVERY.md`](../../technical/applications/local_workspace_application/KNOWLEDGE_INTAKE_DISCOVERY.md) · [`../../technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md`](../../technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md)
+
+---
+
+## 0. Primary daily-use vs installation/evaluation
+
+| Path | Role | LKW 1.0 status |
+|------|------|----------------|
+| **Slack conversational UX** | Primary/reference daily-use product experience | **Frozen contract** — PRODUCT-3D (first-run) and PRODUCT-4 (daily-use) |
+| **Quickstart / GitHub scripts** | Installation and zero-to-value proof | **PRODUCT-2 CLOSED** — proves install infrastructure; not the primary client |
+| **curl / HTTP API proof** | Technical/API evaluation and advanced developer path | Valid; not primary daily-use UX |
+| **Docker bootstrap** | Installation/evaluation | Valid; not primary daily-use UX |
+| **Future web / mobile / Teams / CLI** | Interchangeable thin clients over same API boundaries | Not primary LKW 1.0 UX |
+| **MCP** | Independent technical/client surface | Not primary daily-use UX |
+
+Accepted reusable backend capabilities consumed by Slack and future clients:
+
+- **PRODUCT-3B CLOSED** — knowledge inventory and operations HTTP projection.
+- **PRODUCT-3C CLOSED** — setup snapshot and derivation-only orchestration
+  contract (`GET …/setup-snapshot`).
 
 ---
 
@@ -22,7 +46,8 @@ LKW gives the user a private-by-default **Hybrid Knowledge Workspace**:
 
 - indexed knowledge (uploads, folders, Web URLs, synchronized vendor content);
 - controlled live read-only access to external systems (planned);
-- deployment-neutral operation with provider-neutral frontends (Slack, HTTP, MCP);
+- deployment-neutral operation with provider-neutral frontends (Slack primary for
+  LKW 1.0 daily-use; HTTP/API as reusable backend boundary; MCP independent);
 - interchangeable Ollama/vLLM conversation runtime through configuration (portability proof planned);
 - it writes generated drafts only into a shadow workspace;
 - it exposes what happened through trace/evidence inspection;
@@ -86,23 +111,31 @@ Full journey reference: [`../../technical/applications/local_workspace_applicati
 
 ## 2. Target user paths
 
-LKW should support three entry paths.
+LKW should support multiple entry paths. **Only Slack defines the primary
+daily-use product experience for LKW 1.0.**
 
 | User type | Goal | Entry path |
 |-----------|------|------------|
-| Product evaluator | See that LKW solves a real local knowledge problem | README → [Try LKW](../../../../applications/README.md#try-lkw) → managed sample upload → indexed Ask → grounded answer and citation → persisted Ask-run verification |
+| **Daily LKW user** | Ask grounded questions, inspect sources, manage knowledge daily | **Slack** — conversational UX (PRODUCT-3D first-run → PRODUCT-4 daily-use) |
+| Product evaluator | Verify install and indexed Ask proof without Slack | README → [Try LKW](../../../../applications/README.md#try-lkw) → managed sample upload → indexed Ask → grounded answer and citation → persisted Ask-run verification |
 | Platform evaluator | See that Intergrax can produce repeatable agent applications | README -> LKW platform proof loop -> scaffold/build/deploy docs |
 | Developer contributor | Extend or improve LKW / Intergrax | architecture -> implementation plan -> one wave -> tests -> platform propagation |
 
-The first user path is the most important. The supported product quickstart ([QUICKSTART.md](QUICKSTART.md)) is **implemented and ready for review** — one OS command, managed sample upload, indexed Ask, citation, and persisted Ask-run verification.
+The supported product quickstart ([QUICKSTART.md](QUICKSTART.md)) is
+**implemented and PRODUCT-2 CLOSED** — one OS command, managed sample upload,
+indexed Ask, citation, and persisted Ask-run verification. It proves
+installation/zero-to-value infrastructure; it does **not** redefine the primary
+daily-use client.
 
-The longer manual index/search/synthesize developer journey remains an **advanced path** (see §4 and host/API documentation).
+The longer manual index/search/synthesize developer journey remains an
+**advanced technical path** (see §4 and host/API documentation).
 
 ---
 
-## 3. Final GitHub discovery flow
+## 3. Final GitHub discovery flow (installation / evaluation)
 
-When a new user opens GitHub, the intended flow is:
+When a new user opens GitHub for **installation or technical evaluation**, the
+intended flow is:
 
 ```text
 1. Open repository README.
@@ -122,7 +155,11 @@ When a new user opens GitHub, the intended flow is:
 
 ---
 
-## 4. Step-by-step final local run
+## 4. Step-by-step local run (developer / API evaluation — not primary daily-use UX)
+
+The following documents a **technical evaluation and advanced developer path**
+via HTTP/curl. It is **not** the primary LKW 1.0 daily-use experience. Daily
+use is Slack-first (§0, §2).
 
 ### Step 1 — Clone the repository
 
@@ -444,9 +481,11 @@ If Docker requires special dependency workarounds, copied files, or modified uv 
 
 ---
 
-## 6. Final packaged local daemon path
+## 6. Final packaged local daemon path (future — not primary LKW 1.0 UX)
 
-For an end-user oriented release, the target flow becomes:
+For a future end-user oriented release, a packaged daemon path may include tray
+or web surfaces. **LKW 1.0 does not require a web frontend** for daily use;
+Slack remains the primary/reference conversational interface.
 
 ```text
 1. Download/install LKW package.
@@ -493,9 +532,10 @@ The final GitHub/project experience should make these points obvious:
 
 ---
 
-## 8. First-run success criteria
+## 8. First-run success criteria (installation / API evaluation)
 
-A new technical user should be successful when they can complete this sequence:
+For **installation and technical proof**, a new technical user should be able
+to complete this sequence:
 
 ```text
 clone repository
@@ -511,7 +551,9 @@ clone repository
   -> inspect trace/evidence
 ```
 
-This is the minimum LKW product proof.
+This is the minimum LKW **installation/API proof**. Slack first-run success
+(PRODUCT-3D) is defined separately in the product contract
+([`PRODUCT_CONTRACT.md`](PRODUCT_CONTRACT.md)).
 
 ---
 
@@ -532,8 +574,8 @@ If these are not true, then LKW works, but the platform proof is incomplete.
 
 ---
 
-## 10. Final user story
+## 10. Final user story (installation / evaluation narrative)
 
-A final user should be able to say:
+A technical evaluator should be able to say:
 
 > I found Intergrax on GitHub. I understood that LKW is the first local knowledge product built on the platform. I cloned the repo, started the LKW backend, allowed a folder or passed a document path, indexed my files, asked questions, generated a draft into a safe shadow workspace, and inspected the trace showing which agent and tools were used. I can also see that the same patterns are part of the platform and scaffold, so the next Intergrax application should not have to reinvent this setup.

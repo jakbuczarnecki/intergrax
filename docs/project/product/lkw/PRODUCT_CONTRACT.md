@@ -29,6 +29,76 @@ The user value is knowledge access and trustworthy understanding. RAG, agents,
 Mongo, Qdrant, Nexus, and Intergrax internals are implementation means, not
 the primary product proposition.
 
+## Canonical interface decisions (LKW 1.0)
+
+**Slack is the primary and reference daily-use conversational interface for
+LKW 1.0.** This is frozen product contract, not an implementation preference.
+
+HTTP and application APIs remain the canonical reusable backend/application
+boundary. They are **not** the primary end-user surface. Slack is a thin
+client over reusable LKW capabilities.
+
+Future clients — Teams, web, mobile, CLI — may reuse the same application/API
+boundaries but are **not** the current primary LKW 1.0 user experience. MCP
+remains an independent technical/client surface.
+
+### Slack dual role
+
+Slack has two separate responsibilities that must not be conflated:
+
+1. **Slack as user interface to LKW** — conversational daily-use UX:
+   workspace selection, Ask, citations, source state, sync, and recovery.
+2. **Slack as knowledge source / vendor content** — connected-source
+   architecture for indexed Slack conversation content.
+
+Productization of Slack conversational UX is separate from Slack connected-source
+/vendor architecture.
+
+### Thin-client invariant
+
+Slack and all other clients must **not** own independent:
+
+- Ask business logic;
+- knowledge lifecycle;
+- onboarding truth;
+- source lifecycle;
+- configuration truth;
+- authorization semantics.
+
+Clients consume reusable application/API/service boundaries. No Slack-only (or
+client-only) lifecycle mutation is permitted where a canonical reusable backend
+capability exists.
+
+### First-run state
+
+First-run onboarding state is derived from durable backend state. The accepted
+`WorkspaceSetupSnapshotService` and
+`GET /v1/local_workspace/workspaces/{workspace_id}/setup-snapshot` remain
+canonical reusable capabilities consumed by Slack PRODUCT-3D.
+
+There is **no** persisted `onboarding_step`, `wizard_state`, or
+`onboarding_complete` truth.
+
+### Citation inspect / open (resolved)
+
+The citation inspect/open architecture decision is **resolved**, not open.
+
+Chosen architecture: **host-mediated provider-neutral document inspect/open
+boundary**. Conceptual endpoint:
+`GET /.../documents/{document_id}` (exact final route may be established during
+PRODUCT-3E).
+
+Safe contract concept includes: document/source identity, display name, source
+type, source label, logical source location, provenance, page/location, bounded
+preview/metadata, and optional `external_url`/provider deep-link target where
+capability exists.
+
+**Forbidden:** UI/Slack direct Qdrant reads; arbitrary host filesystem exposure;
+arbitrary raw local path exposure; vendor-specific citation routing in Slack;
+creation of a separate document subsystem solely for citation opening.
+
+PRODUCT-3E will implement/prove this already-chosen architecture.
+
 ## Primary users
 
 LKW 1.0 is bounded to these first-public-product personas:
@@ -95,7 +165,8 @@ assistance from the project author.
 
 ## Minimum daily-use UX
 
-The product must expose capability-level paths for:
+LKW 1.0 daily-use UX is **Slack-first**. The product must expose
+capability-level paths for:
 
 - workspace selection and management;
 - knowledge sources and connections;
@@ -106,10 +177,14 @@ The product must expose capability-level paths for:
 - activity and problems requiring attention;
 - basic settings.
 
-UI, bot, CLI, and future mobile clients are thin interfaces over the same
-reusable application/API boundaries. No UI-only lifecycle or mutation path is
-permitted. Product controls must preserve user-controlled access and must not
-silently modify original source content.
+Slack, future Teams/web/mobile/CLI surfaces, and MCP are thin interfaces over
+the same reusable application/API boundaries. No client-only lifecycle or
+mutation path is permitted. Product controls must preserve user-controlled
+access and must not silently modify original source content.
+
+Installation/evaluation paths (quickstart scripts, curl/API proof, Docker
+bootstrap) prove infrastructure and backend capability. They do **not** define
+the primary daily-use client.
 
 ## Product architecture invariants
 
@@ -193,16 +268,73 @@ this contract as production-readiness claims.
 
 ## Roadmap implications: PRODUCT-2…PRODUCT-12
 
-Future product tasks must prove the contract in this canonical order:
+From the current Slack-first contract correction point, the near-term sequence
+is frozen as:
 
-- **PRODUCT-2 — ZERO-TO-VALUE INSTALLATION:** User can install/start LKW and
-  reach a working application without Intergrax internal knowledge.
-- **PRODUCT-3 — FIRST-RUN ONBOARDING:** Guide the user from first launch
-  through workspace creation, connecting/providing own data, synchronization
-  and first useful grounded answer.
-- **PRODUCT-4 — REAL PRODUCT UI:** Provide the real daily-use interface for
-  workspaces, knowledge/sources, connections/state, Ask, activity/problems and
-  settings using existing reusable backend/API contracts.
+1. **SLACK-FIRST CONTRACT CORRECTION** — restore canonical product contract
+   (this document and aligned product docs).
+2. **LKW-PRODUCT-3D — SLACK FIRST-RUN PRODUCT EXPERIENCE** — Slack
+   conversational first-run over accepted backend capabilities; no web frontend;
+   no new onboarding persistence.
+3. **LKW-PRODUCT-3E — CITATION INSPECT/OPEN + ERROR/RESUME ACCEPTANCE** —
+   implement/prove host-mediated document inspect/open; bounded user-facing
+   error behavior; restart/resume acceptance; first-run end-to-end acceptance.
+4. **PRODUCT-3 FINAL CLOSEOUT** — first-run milestone complete.
+5. **LKW-PRODUCT-4 — SLACK DAILY-USE PRODUCT EXPERIENCE** — daily Slack UX for
+   workspace selection, knowledge inventory, source state, sync/refresh,
+   disable/enable/detach, Ask, citations/open-source, freshness,
+   attention/problems, and basic settings/configuration using shared backend
+   capabilities. Does **not** require a web frontend for LKW 1.0.
+
+Do not expand the roadmap beyond PRODUCT-4 in current planning.
+
+### Closed / accepted milestones (do not reopen)
+
+- **PRODUCT-2 — ZERO-TO-VALUE INSTALLATION:** **CLOSED.** Proves
+  installation/zero-to-value infrastructure; does not redefine the primary
+  daily-use client.
+- **PRODUCT-3B — KNOWLEDGE SURFACE HTTP PROJECTION:** **CLOSED.** Accepted
+  reusable backend projection (`GET /knowledge/inventory`, knowledge operations
+  execute, operation list, `error_code` projection).
+- **PRODUCT-3C — SETUP SNAPSHOT & FIRST-RUN ORCHESTRATION CONTRACT:** **CLOSED.**
+  Accepted reusable setup orchestration capability (`setup-snapshot` endpoint;
+  derivation-only orchestration contract).
+
+The previously issued **LKW-PRODUCT-3D — FIRST-RUN PRODUCT UI AND WELCOME FLOW**
+(web-first) is **CANCELLED / INVALID**. It produced no implementation and must
+not be represented as an executed PRODUCT-3D task.
+
+### PRODUCT-3D — SLACK FIRST-RUN PRODUCT EXPERIENCE (next)
+
+Conceptual journey (Slack conversational UX, not web):
+
+```text
+user contacts LKW in Slack
+→ LKW identifies/resolves workspace state
+→ welcome / workspace selection or creation
+→ add/provide first knowledge using supported Slack-compatible path
+→ snapshot-driven preparation/sync state
+→ attention/recovery where needed
+→ READY
+→ suggested first question
+→ Ask
+→ grounded response + citation display
+```
+
+Consumes `WorkspaceSetupSnapshotService` and existing workspace/intake/ask
+boundaries. No web frontend. No new onboarding persistence.
+
+### Remaining PRODUCT-2…PRODUCT-12 context
+
+Future product tasks beyond PRODUCT-4 must still prove the contract in this
+canonical order:
+
+- **PRODUCT-2 — ZERO-TO-VALUE INSTALLATION:** **CLOSED** (see above).
+- **PRODUCT-3 — FIRST-RUN ONBOARDING:** Slack-first first-run via PRODUCT-3D
+  and PRODUCT-3E closeout; backend foundations from PRODUCT-3B/3C accepted.
+- **PRODUCT-4 — SLACK DAILY-USE PRODUCT EXPERIENCE:** Daily Slack UX using
+  shared backend capabilities (see frozen definition above). **Not** generic
+  “real product UI” and **not** a web-frontend requirement for LKW 1.0.
 - **PRODUCT-5 — REAL VENDOR EXPERIENCE:** Verify and productize Slack, Google
   Workspace and Microsoft 365 end to end before claiming public support.
 - **PRODUCT-6 — DAILY KNOWLEDGE EXPERIENCE:** Prove the core daily Ask

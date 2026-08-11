@@ -6,7 +6,7 @@
 **Task:** LKW-PRODUCT-3A — FIRST-RUN ONBOARDING UX/API GAP AUDIT  
 **Mode:** discovery / gap analysis only — no production code changed
 
-**Overall first-run readiness:** Backend and application-service foundations from PRODUCT-1/PRODUCT-2 are sufficient for a thin-client first-run journey over existing durable workspace, intake, sync, and Ask boundaries. The product-facing gap is not missing core lifecycle logic but missing **HTTP projection**, **orchestration contract**, and **UI** for the daily-use path.
+**Overall first-run readiness:** Backend and application-service foundations from PRODUCT-1/PRODUCT-2 are sufficient for a **Slack-first** thin-client first-run journey over existing durable workspace, intake, sync, and Ask boundaries. The product-facing gap is not missing core lifecycle logic but missing **Slack conversational UX** orchestration over accepted HTTP projection and setup-snapshot capabilities.
 
 | Classification | Count (15 journey steps) |
 |---|---|
@@ -15,11 +15,13 @@
 | **MISSING** | 1 |
 | **OUT_OF_SCOPE_PRODUCT_3** | 0 |
 
-**Verdict:** Implement PRODUCT-3 as thin clients over existing services. Do **not** add a dedicated onboarding state machine or first-run database mutations. Derive setup phase from workspace list, source inventory, knowledge configuration projection, and operation status. Expose existing `KnowledgeInspectionService` / `KnowledgeOperationsService` on HTTP where a unified indexed/live surface is required.
+**Verdict:** Implement PRODUCT-3D as Slack thin client over existing services and accepted PRODUCT-3B/3C capabilities. Do **not** add a dedicated onboarding state machine or first-run database mutations. Derive setup phase from workspace list, source inventory, knowledge configuration projection, operation status, and `setup-snapshot`.
 
-**Architecture decision required:** **yes** — one bounded decision on the **document inspect/open** product boundary (see §9). No new subsystem required.
+**Architecture decision required:** **no** — citation inspect/open is **resolved** (host-mediated provider-neutral document boundary; see §8). PRODUCT-3E implements/proves the chosen architecture.
 
-**Git context:** branch `development`; required ancestor `66e9df07bf8f86555033f9a6bbb5279ea6e1321d` present at audit HEAD; unrelated dirty work not present at commit time.
+**Accepted milestones (do not reopen):** PRODUCT-2 **CLOSED**; PRODUCT-3B **CLOSED** (HTTP projection); PRODUCT-3C **CLOSED** (setup snapshot). The cancelled web-first **LKW-PRODUCT-3D — FIRST-RUN PRODUCT UI AND WELCOME FLOW** produced no implementation and must not be represented as executed.
+
+**Git context:** branch `development`; required ancestor `607083e728ab718ddf10ef97aa8f3a37425797a3` at contract-correction base; unrelated dirty work preserved outside this task.
 
 ---
 
@@ -41,12 +43,13 @@
 | Ask (indexed, v1) | `WorkspaceAskService` | `POST …/workspaces/{id}/ask`, `GET …/asks/{run_id}` | `WorkspaceAskRepository` | Ask runs durable | Yes — primary PRODUCT-3 first-run Ask path |
 | Ask (hybrid, v2) | `WorkspaceAskServiceV2` | `POST /v2/local_workspace/workspaces/{id}/ask` | Hybrid ask run store | Durable | Yes — later milestone; needs query policy |
 | Citations | `WorkspaceAskResponseV1` / assembler | Embedded in Ask response | In ask run record | Durable with run | Yes |
-| Knowledge inventory (service only) | `KnowledgeInspectionService` | **No HTTP route** — `app.state.lkw_knowledge_inspection_service` | Derived from configuration + lifecycle | Durable underlying state | **No** — must be projected |
-| Knowledge operations (service only) | `KnowledgeOperationsService` | **No HTTP route** — `app.state.lkw_knowledge_operations_service` | Lifecycle-owned mutations | Durable | **No** — must be projected |
+| Knowledge inventory (service only) | `KnowledgeInspectionService` | `GET …/knowledge/inventory` projecting `KnowledgeInventoryV1` | Derived from configuration + lifecycle | Durable underlying state | **Yes** — **PRODUCT-3B CLOSED** |
+| Knowledge operations (service only) | `KnowledgeOperationsService` | Knowledge operation execute + workspace operation list HTTP | Lifecycle-owned mutations | Durable | **Yes** — **PRODUCT-3B CLOSED** |
+| Setup snapshot | `WorkspaceSetupSnapshotService` | `GET …/workspaces/{id}/setup-snapshot` | Derivation-only composition | Durable underlying state | **Yes** — **PRODUCT-3C CLOSED** |
 | NL administration (service only) | `KnowledgeAdministrationService` | **No HTTP route** — Slack/companion wiring | Uses inspection + operations | Conversation-bound | Bot-only today |
 | Conversation workspace selection | `ConversationWorkspaceSelectionService` | **No generic HTTP** — Slack/conversation layer | `ConversationContextRepository` | Durable per conversation binding | Slack/bot only — not general HTTP “current workspace” |
 
-**PRODUCT-2 closure:** Windows zero-to-value quickstart (`run-lkw-product-quickstart-*`) already exercises create workspace → managed-file intake → poll operation → Ask v1 → citation → persisted run readback. That path is **script-orchestrated**, not a reusable product onboarding contract.
+**PRODUCT-2 closure:** Windows zero-to-value quickstart (`run-lkw-product-quickstart-*`) already exercises create workspace → managed-file intake → poll operation → Ask v1 → citation → persisted run readback. That path is **script-orchestrated installation proof**, not the primary daily-use client and not a reusable Slack first-run contract.
 
 ---
 
@@ -54,19 +57,19 @@
 
 | Step | Journey step | Class | Existing capability | Gap |
 |---|---|---|---|---|
-| 1 | User launches LKW | **READY** | OS quickstart scripts; Docker bootstrap; `GET /v1/local_workspace/readiness` | Product UI launcher not in LKW app (scripts/Docker only) |
-| 2 | Clear first-run / welcome state | **MISSING** | None at product/API layer | No welcome/onboarding contract; no LKW frontend |
-| 3 | Create or select workspace | **PARTIAL** | `POST/GET /workspaces` | No server-side “current workspace” for generic HTTP clients; selection is client-held `workspace_id` or conversation-bound |
-| 4 | Prompted to add first knowledge source | **PARTIAL** | Multiple intake APIs + source candidates | No product orchestration API/UI guiding first source choice |
-| 5 | Understand Indexed vs Live | **PARTIAL** | `GET /knowledge-configuration` separates indexed bindings vs live-access bindings; inventory service has `mode` | Unified provider-neutral inventory not on HTTP; `GET /sources` is legacy-oriented list |
-| 6 | Configure / authenticate source | **PARTIAL** | Managed upload (no auth); local folder path policy; connection attach + connected discovery | Provider auth lives behind connection capabilities; no single first-run setup wizard contract |
+| 1 | User launches LKW | **READY** | OS quickstart scripts; Docker bootstrap; `GET /v1/local_workspace/readiness` | Slack app install/connect is separate vendor surface; host readiness gate sufficient for backend |
+| 2 | Clear first-run / welcome state | **MISSING** | None at Slack conversational UX layer | No Slack welcome/onboarding conversational contract; backend derivation exists via setup-snapshot |
+| 3 | Create or select workspace | **PARTIAL** | `POST/GET /workspaces`; Slack `ConversationWorkspaceSelectionService` | Slack first-run workspace selection UX not productized; HTTP clients use client-held `workspace_id` |
+| 4 | Prompted to add first knowledge source | **PARTIAL** | Multiple intake APIs + source candidates; Slack attachments | No Slack conversational orchestration guiding first source choice |
+| 5 | Understand Indexed vs Live | **PARTIAL** | `GET /knowledge-configuration`; `GET …/knowledge/inventory` with `mode` (**PRODUCT-3B CLOSED**) | Slack conversational explanation of indexed vs live not productized |
+| 6 | Configure / authenticate source | **PARTIAL** | Managed upload (no auth); local folder path policy; connection attach + connected discovery; Slack attachments | Provider auth lives behind connection capabilities; no Slack first-run setup conversational contract |
 | 7 | Start or confirm sync/indexing | **READY** | Intake auto-enqueues ingestion; `POST …/sync` for folder/connected sources | `register_local_folder_source` does **not** auto-sync — extra step |
-| 8 | See progress / state | **PARTIAL** | `GET /operations/{id}` with counters | No workspace-scoped operation list HTTP; `error_code` not exposed in `OperationResponseV1` |
-| 9 | Clear READY state | **PARTIAL** | `WorkspaceSourceStatus.READY`, operation `completed`, inventory `summary.active` (service) | No workspace-level “setup complete / can Ask” product contract on HTTP |
-| 10 | Suggested example question | **PARTIAL** | Source labels/descriptions in candidates, configuration projections, `safe_source_label` | No deterministic suggestion helper; adequate metadata for client-side generic template |
+| 8 | See progress / state | **PARTIAL** | `GET /operations/{id}`; workspace operation list + `error_code` (**PRODUCT-3B CLOSED**); `GET …/setup-snapshot` (**PRODUCT-3C CLOSED**) | Slack progress/attention UX not productized (**PRODUCT-3D**) |
+| 9 | Clear READY state | **PARTIAL** | `WorkspaceSourceStatus.READY`, operation `completed`, inventory `summary.active`, setup-snapshot phase (**PRODUCT-3C CLOSED**) | Slack READY-state conversational UX not productized (**PRODUCT-3D**) |
+| 10 | Suggested example question | **PARTIAL** | Source labels/descriptions in candidates, configuration projections, `safe_source_label` | No Slack suggested-first-question UX (**PRODUCT-3D**); adequate metadata for client-side template |
 | 11 | User asks question | **READY** | `POST …/workspaces/{id}/ask` (v1) | v2 hybrid requires query policy configuration |
 | 12 | Grounded answer with citation | **READY** | `WorkspaceAskResponseV1` with `citations[]` | `insufficient_evidence` is valid outcome when no usable evidence |
-| 13 | Inspect / open cited source | **PARTIAL** | Citation includes `document_id`, `source_id`, `file_name`, `source_path`, excerpt | No `GET document` / open-original HTTP action; path usefulness varies by source type |
+| 13 | Inspect / open cited source | **PARTIAL** | Citation includes `document_id`, `source_id`, `file_name`, `source_path`, excerpt | Host-mediated `GET …/documents/{document_id}` not implemented — **PRODUCT-3E**; architecture **RESOLVED** |
 | 14 | Later launch — no incorrect onboarding restart | **PARTIAL** | All setup state durable in repository | Clients must derive phase from APIs; must not use client-only onboarding flags |
 | 15 | Incomplete setup resumes correctly | **PARTIAL** | Durable workspace, sources, operations, configuration | No explicit resume pointer; client re-derives from same signals as step 14 |
 
@@ -91,13 +94,12 @@
 
 ### Explicit onboarding state machine required?
 
-**No.** Derivation is sufficient if PRODUCT-3 exposes:
+**No.** Derivation is sufficient. **PRODUCT-3B** and **PRODUCT-3C** are **CLOSED**:
 
-1. Existing list/get endpoints (already present), and  
-2. HTTP projection of `KnowledgeInventoryV1` (service exists), and  
-3. Optional **setup snapshot** endpoint that composes the above without new persistence (implementation choice in PRODUCT-3B).
+1. HTTP projection of `KnowledgeInventoryV1` and knowledge operations (**PRODUCT-3B**).
+2. Read-only **setup snapshot** endpoint composing workspace/inventory/readiness signals (**PRODUCT-3C**).
 
-Rationale: workspace, source, configuration revision, and operation records already form a durable, restart-safe product state. Onboarding is a **view** over that state, not a separate lifecycle.
+**PRODUCT-3D** implements Slack conversational UX over these capabilities without new persistence.
 
 ---
 
@@ -142,8 +144,8 @@ Rationale: workspace, source, configuration revision, and operation records alre
 
 | Gap | Classification | Minimal contract | Owner | Backend work? |
 |---|---|---|---|---|
-| Unified knowledge inventory on HTTP | **PARTIAL** | `GET …/knowledge/inventory` projecting `KnowledgeInventoryV1` | Application serving | Yes — HTTP projection only |
-| Knowledge operations on HTTP | **PARTIAL** | `POST …/knowledge/items/{id}/operations` projecting `KnowledgeOperationsService` | Application serving | Yes — HTTP projection only |
+| Unified knowledge inventory on HTTP | **READY** | `GET …/knowledge/inventory` projecting `KnowledgeInventoryV1` | Application serving | **No** — **PRODUCT-3B CLOSED** |
+| Knowledge operations on HTTP | **READY** | Knowledge operation execute + workspace operation list | Application serving | **No** — **PRODUCT-3B CLOSED** |
 | NL administration on HTTP | **PARTIAL** | Optional; Slack bot already uses service | Conversation / bot | No for HTTP PRODUCT-3 |
 | Provider-specific onboarding in shared orchestration | **N/A** | Forbidden by vendor rule | — | No |
 
@@ -165,9 +167,9 @@ Rationale: workspace, source, configuration revision, and operation records alre
 
 | Gap | Classification | Minimal contract | Owner | Backend work? |
 |---|---|---|---|---|
-| List operations for workspace | **PARTIAL** | `GET …/workspaces/{id}/operations` or filter on inventory item | Application serving | Yes — thin list over repository |
-| `error_code` in HTTP operation response | **PARTIAL** | Add `error_code` to `OperationResponseV1` (model already has field) | Application serving | Yes — schema projection |
-| User-actionable retry from HTTP | **PARTIAL** | Expose inventory `available_actions` + operations execute | Application serving | Yes — with inventory HTTP |
+| List operations for workspace | **READY** | Workspace-scoped operation list HTTP | Application serving | **No** — **PRODUCT-3B CLOSED** |
+| `error_code` in HTTP operation response | **READY** | `error_code` in `OperationResponseV1` | Application serving | **No** — **PRODUCT-3B CLOSED** |
+| User-actionable retry from HTTP | **READY** | Inventory `available_actions` + operations execute | Application serving | **No** — **PRODUCT-3B CLOSED** |
 | Percent / ETA progress | **OUT_OF_SCOPE** | Not in current operation model | — | No for PRODUCT-3 |
 
 ---
@@ -186,9 +188,9 @@ Rationale: workspace, source, configuration revision, and operation records alre
 | Stale / unavailable | `source.status == error`; inventory `attention_required`; `runtime_available == false` |
 | No usable evidence | Ask returns `status: insufficient_evidence` |
 
-**Insufficient for polished UX without HTTP inventory:** unified `attention_required` and `available_actions` live only in `KnowledgeInspectionService`.
+**Insufficient for polished Slack UX without conversational orchestration:** unified `attention_required` and `available_actions` are on HTTP inventory (**PRODUCT-3B CLOSED**) but not yet surfaced in Slack first-run UX (**PRODUCT-3D**).
 
-**Architecture note:** Prefer derivation + inventory HTTP over a new `workspace_readiness` subsystem. If PRODUCT-3C needs a single poll endpoint, implement a **composed setup snapshot** (read-only) in the application layer.
+**Architecture note:** Derivation + inventory HTTP + setup snapshot (**PRODUCT-3C CLOSED**) — no new `workspace_readiness` subsystem.
 
 ### Citations
 
@@ -198,18 +200,20 @@ Rationale: workspace, source, configuration revision, and operation records alre
 
 | Gap | Classification | Minimal contract | Owner | Backend work? |
 |---|---|---|---|---|
-| Open / inspect original source | **PARTIAL** | **ARCHITECTURE_DECISION_REQUIRED** — see below | Application + product | Depends on decision |
+| Open / inspect original source | **PARTIAL** | Host-mediated provider-neutral `GET …/documents/{document_id}` — **RESOLVED** architecture; **PRODUCT-3E** implementation | Application + product | Yes — PRODUCT-3E |
 | Hybrid Ask v1 first-run default | **READY** (indexed) | v1 Ask works without query policy | Ask service | No |
-| Suggested question API | **PARTIAL** | Client template: e.g. “What does {label} contain?” from source candidate `label` / `description` | Product UI | No — deterministic client sufficient |
+| Suggested question API | **PARTIAL** | Slack/client template: e.g. “What does {label} contain?” from source candidate `label` / `description` | Slack PRODUCT-3D | No — deterministic client sufficient |
 
-### ARCHITECTURE_DECISION_REQUIRED — document inspect / open
+### RESOLVED — document inspect / open (PRODUCT-3E implements)
 
 | Item | Detail |
 |---|---|
-| Missing capability | User-actionable “open cited source” across managed upload, local folder, web URL, connected sources |
-| Why existing boundaries are insufficient | Ask citations carry `source_path`/`file_name` but no authenticated HTTP retrieval; paths may be host-internal for managed uploads; connected sources need provider-neutral open semantics |
-| Minimal decision | Choose one: (A) host-mediated `GET …/documents/{document_id}` with safe display payload + optional external URL; (B) citation-only display without open for managed/connected in PRODUCT-3; (C) defer open to provider-specific deep links behind inventory metadata |
-| Do not invent | Separate document subsystem or direct vector-store reads from UI |
+| Decision status | **RESOLVED** — not `ARCHITECTURE_DECISION_REQUIRED` |
+| Chosen architecture | **Host-mediated provider-neutral document inspect/open boundary** |
+| Conceptual endpoint | `GET /.../documents/{document_id}` (exact final route may be established in PRODUCT-3E) |
+| Safe contract concept | document/source identity, display name, source type, source label, logical source location, provenance, page/location, bounded preview/metadata, optional `external_url`/provider deep-link where capability exists |
+| Forbidden | UI/Slack direct Qdrant reads; arbitrary host filesystem exposure; arbitrary raw local path exposure; vendor-specific citation routing in Slack; separate document subsystem solely for citation opening |
+| Why citations alone are insufficient | Ask citations carry `source_path`/`file_name` but no authenticated HTTP retrieval; paths may be host-internal for managed uploads; connected sources need provider-neutral open semantics |
 
 ---
 
@@ -227,26 +231,36 @@ Technical `detail` strings returned today that block onboarding without user-act
 | `sync_enqueue_failed` / `enqueue_failed` | Sync / intake | Blocks indexing with generic 502 |
 | `search_evidence_incomplete` / `ask_persistence_failed` | Ask | Blocks success path |
 | Raw `ValueError` / `run_error: {ExceptionName}` | Legacy routes | Non-actionable |
-| Operation `error` string without `error_code` in HTTP | `GET /operations/{id}` | Hard to map to “retry” / “fix connection” |
+| Operation `error` string without `error_code` in HTTP | `GET /operations/{id}` | Hard to map to “retry” / “fix connection” in Slack UX (**PRODUCT-3E**) |
 
 Not PRODUCT-3 scope: full PRODUCT-8 error catalog redesign.
 
 ---
 
-## 10. Minimal implementation plan
+## 10. Minimal implementation plan (remaining PRODUCT-3 work)
 
-1. **HTTP projection layer** — expose `KnowledgeInventoryV1` and `KnowledgeOperationsService.execute` on managed workspace routes (no new domain logic).
-2. **Setup snapshot (optional, read-only)** — compose workspace list + inventory summary + host readiness for one first-run poll (derivation only).
-3. **Operation response hardening** — surface `error_code`; add workspace operation list if inventory alone is insufficient for progress UX.
-4. **First-run UI / orchestration** — thin client (web or shell) implementing welcome → workspace → source picker → progress → Ask; no backend onboarding state.
-5. **Document open decision** — implement chosen boundary from architecture decision before promising step 13 in UI.
-6. **Suggested question** — deterministic client template from existing labels; no LLM suggestion service.
+1. **LKW-PRODUCT-3D — SLACK FIRST-RUN PRODUCT EXPERIENCE** — Slack conversational
+   UX: welcome → workspace selection/creation → first knowledge via
+   Slack-compatible path → snapshot-driven sync state → attention/recovery →
+   READY → suggested first question → Ask → grounded response + citation
+   display. Consumes **PRODUCT-3B** and **PRODUCT-3C** capabilities. No web
+   frontend. No new onboarding persistence.
+2. **LKW-PRODUCT-3E — CITATION INSPECT/OPEN + ERROR/RESUME ACCEPTANCE** —
+   implement/prove host-mediated `GET …/documents/{document_id}`; bounded
+   user-facing error behavior in Slack; restart/resume acceptance; first-run
+   end-to-end acceptance.
+3. **Suggested question** — deterministic Slack/client template from existing
+   labels; no LLM suggestion service.
+
+**Already delivered (do not reopen):** PRODUCT-3B HTTP projection; PRODUCT-3C
+setup snapshot.
 
 ---
 
 ## 11. Explicit non-goals
 
-- Implementing onboarding UI in this audit task
+- Implementing Slack PRODUCT-3D in this audit task
+- Web-first first-run UI or welcome flow (cancelled invalid PRODUCT-3D)
 - New `onboarding_step` persistence or first-run DB mutations
 - Provider-specific (Slack/Google/MS) logic in shared first-run orchestration
 - Full Hybrid Ask v2 as default first-run path
@@ -259,14 +273,18 @@ Not PRODUCT-3 scope: full PRODUCT-8 error catalog redesign.
 
 ## 12. PRODUCT-3 proposed task breakdown
 
-| Task | Purpose |
-|---|---|
-| **PRODUCT-3B — Knowledge surface HTTP projection** | Add `GET /knowledge/inventory`, knowledge operation execute route, and operation list/`error_code` projection over existing inspection/operations services and repository. Unblocks indexed/live unified view and retry without duplicating lifecycle logic. |
-| **PRODUCT-3C — Setup snapshot & first-run orchestration contract** | Optional read-only setup snapshot endpoint (derivation-only) plus documented client orchestration sequence (workspace → intake → poll → Ask). No new persistence. |
-| **PRODUCT-3D — First-run product UI / welcome flow** | Provider-neutral welcome and step UX as thin HTTP client over 3B + existing workspace/intake/ask routes. Includes workspace create/select (client-held `workspace_id`). |
-| **PRODUCT-3E — Citation inspect/open + acceptance** | Implement architecture decision for document open; harden first-run error mapping; live acceptance proving resume after restart and no false onboarding restart. |
+| Task | Status | Purpose |
+|---|---|---|
+| **PRODUCT-3B — Knowledge surface HTTP projection** | **CLOSED** | `GET /knowledge/inventory`, knowledge operation execute, operation list, and `error_code` projection over existing inspection/operations services. |
+| **PRODUCT-3C — Setup snapshot & first-run orchestration contract** | **CLOSED** | Read-only `setup-snapshot` endpoint (derivation-only) plus documented client orchestration sequence. No new persistence. |
+| **LKW-PRODUCT-3D — SLACK FIRST-RUN PRODUCT EXPERIENCE** | **NEXT** | Slack conversational first-run over 3B + 3C + existing workspace/intake/ask routes. Journey: contact LKW in Slack → workspace state → welcome/selection → first knowledge → snapshot-driven sync → attention → READY → suggested question → Ask → citations. No web frontend. |
+| **LKW-PRODUCT-3E — Citation inspect/open + error/resume acceptance** | **PLANNED** | Implement/prove host-mediated document inspect/open (**RESOLVED** architecture); bounded Slack error behavior; restart/resume acceptance; first-run E2E acceptance. |
+| **PRODUCT-3 FINAL CLOSEOUT** | **PLANNED** | First-run milestone complete after 3D + 3E. |
+| **LKW-PRODUCT-4 — SLACK DAILY-USE PRODUCT EXPERIENCE** | **PLANNED** | Daily Slack UX for workspace selection, inventory, source state, sync, disable/enable/detach, Ask, citations/open, freshness, attention, basic settings — using shared backend capabilities. Not generic “real product UI”; no web frontend required for LKW 1.0. |
 
-**Dependency order:** 3B → 3C (if snapshot needed) → 3D → 3E.
+**Dependency order:** 3B (**CLOSED**) → 3C (**CLOSED**) → 3D → 3E → PRODUCT-3 closeout → PRODUCT-4.
+
+**Cancelled / invalid:** **LKW-PRODUCT-3D — FIRST-RUN PRODUCT UI AND WELCOME FLOW** (web-first) — no implementation; must not be represented as executed.
 
 ---
 
@@ -292,4 +310,4 @@ Not PRODUCT-3 scope: full PRODUCT-8 error catalog redesign.
 
 **Targeted discovery only:** `grep` / `glob` on `applications/local_workspace_application/` for routes, symbols, and onboarding keywords — not repo-wide semantic search.
 
-**Files changed:** `docs/project/product/lkw/PRODUCT_3_FIRST_RUN_GAP_AUDIT.md` (this file only).
+**Files changed:** `docs/project/product/lkw/PRODUCT_3_FIRST_RUN_GAP_AUDIT.md` (this file); aligned with Slack-first contract correction in `PRODUCT_CONTRACT.md` and `USER_JOURNEY.md`.
