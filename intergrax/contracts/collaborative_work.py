@@ -1,0 +1,265 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Collaborative Work identity and authority contracts (MP-1 / COLLAB-WORK-1A).
+
+Semantic source of truth for collaborative principals, explicit workspace
+membership, authority delegation, and the effective-authority evaluation
+boundary. Distinct from:
+
+- ``RequestIdentity`` / ``PrincipalType`` — run-scoped execution intake only.
+- ``DelegationSpec`` — Nexus graph child-run execution delegation only.
+- ``PolicyEngine`` — enforcement of resolved authority at runtime boundaries.
+
+Effective authority intersection (resolver implementation is out of scope):
+
+    principal authority
+      ∩ WorkspaceMembership
+      ∩ Delegation where applicable
+      ∩ workspace policy
+      ∩ resource policy
+      ∩ runtime/tool policy
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+from enum import StrEnum
+from typing import Final, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+
+SCHEMA_COLLABORATIVE_PRINCIPAL_V1: Final = "collaborative_principal.v1"
+SCHEMA_WORKSPACE_MEMBERSHIP_V1: Final = "workspace_membership.v1"
+SCHEMA_AUTHORITY_DELEGATION_V1: Final = "authority_delegation.v1"
+SCHEMA_EFFECTIVE_AUTHORITY_REQUEST_V1: Final = "effective_authority_request.v1"
+SCHEMA_EFFECTIVE_AUTHORITY_DECISION_V1: Final = "effective_authority_decision.v1"
+
+_NON_EMPTY = Field(min_length=1)
+
+
+class PrincipalKind(StrEnum):
+    """Collaborative principal semantic kind — not execution intake typing."""
+
+    HUMAN = "human"
+    AGENT = "agent"
+    SERVICE = "service"
+    EXTERNAL_AGENT = "external_agent"
+
+
+class WorkspaceMembershipRole(StrEnum):
+    """Conservative membership role placeholder until RBAC taxonomy is frozen."""
+
+    MEMBER = "member"
+    ADMIN = "admin"
+    OBSERVER = "observer"
+
+
+class MembershipStatus(StrEnum):
+    ACTIVE = "active"
+    REVOKED = "revoked"
+    SUSPENDED = "suspended"
+
+
+class DelegationStatus(StrEnum):
+    ACTIVE = "active"
+    REVOKED = "revoked"
+    EXPIRED = "expired"
+
+
+class EffectiveAuthorityDenialReason(StrEnum):
+    """Fail-closed denial codes for the effective-authority boundary."""
+
+    MISSING_ACTING_PRINCIPAL = "missing_acting_principal"
+    MISSING_MEMBERSHIP = "missing_membership"
+    MISSING_DELEGATION = "missing_delegation"
+    INSUFFICIENT_DELEGATION_SCOPE = "insufficient_delegation_scope"
+    MEMBERSHIP_NOT_ACTIVE = "membership_not_active"
+    DELEGATION_NOT_ACTIVE = "delegation_not_active"
+    SCOPE_ONLY_INSUFFICIENT = "scope_only_insufficient"
+
+
+class CollaborativePrincipal(BaseModel):
+    """Stable collaborative identity — independent of a specific execution."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["collaborative_principal.v1"] = SCHEMA_COLLABORATIVE_PRINCIPAL_V1
+    principal_id: str = _NON_EMPTY
+    principal_kind: PrincipalKind
+    tenant_id: str = _NON_EMPTY
+
+    @field_validator("principal_id", "tenant_id")
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
+class WorkspaceMembership(BaseModel):
+    """Explicit workspace membership — never inferred from tenant/workspace IDs."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["workspace_membership.v1"] = SCHEMA_WORKSPACE_MEMBERSHIP_V1
+    membership_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    principal_id: str = _NON_EMPTY
+    role: WorkspaceMembershipRole
+    status: MembershipStatus = MembershipStatus.ACTIVE
+    revision: int = Field(ge=0)
+
+    @field_validator(
+        "membership_id",
+        "tenant_id",
+        "workspace_id",
+        "principal_id",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
+class AuthorityDelegation(BaseModel):
+    """Authority delegation between collaborative principals — not Nexus execution."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["authority_delegation.v1"] = SCHEMA_AUTHORITY_DELEGATION_V1
+    delegation_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    delegator_principal_id: str = _NON_EMPTY
+    delegate_principal_id: str = _NON_EMPTY
+    authority_scopes: tuple[str, ...] = Field(min_length=1)
+    resource_scope: str | None = None
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
+    status: DelegationStatus = DelegationStatus.ACTIVE
+    revision: int = Field(ge=0)
+
+    @field_validator(
+        "delegation_id",
+        "tenant_id",
+        "workspace_id",
+        "delegator_principal_id",
+        "delegate_principal_id",
+        "resource_scope",
+    )
+    @classmethod
+    def _strip_required_or_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @field_validator("authority_scopes")
+    @classmethod
+    def _normalize_authority_scopes(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        normalized = tuple(scope.strip() for scope in value)
+        if not normalized or any(not scope for scope in normalized):
+            raise ValueError("authority_scopes must contain non-empty scope values")
+        return normalized
+
+    @field_validator("valid_from", "valid_until")
+    @classmethod
+    def _timezone_aware(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("validity timestamps must be timezone-aware")
+        return value
+
+    @model_validator(mode="after")
+    def _reject_self_delegation(self) -> AuthorityDelegation:
+        if self.delegator_principal_id == self.delegate_principal_id:
+            raise ValueError("delegator_principal_id must differ from delegate_principal_id")
+        return self
+
+    @model_validator(mode="after")
+    def _reject_invalid_validity_window(self) -> AuthorityDelegation:
+        if (
+            self.valid_from is not None
+            and self.valid_until is not None
+            and self.valid_until <= self.valid_from
+        ):
+            raise ValueError("valid_until must be after valid_from")
+        return self
+
+
+class EffectiveAuthorityRequest(BaseModel):
+    """Typed input for future effective-authority resolution."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["effective_authority_request.v1"] = (
+        SCHEMA_EFFECTIVE_AUTHORITY_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    acting_principal_id: str = _NON_EMPTY
+    requested_authority_scopes: tuple[str, ...] = Field(min_length=1)
+    delegator_principal_id: str | None = None
+    resource_scope: str | None = None
+    membership: WorkspaceMembership | None = None
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator("tenant_id", "workspace_id", "acting_principal_id", "delegator_principal_id")
+    @classmethod
+    def _strip_required_or_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @field_validator("requested_authority_scopes")
+    @classmethod
+    def _normalize_requested_scopes(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        normalized = tuple(scope.strip() for scope in value)
+        if not normalized or any(not scope for scope in normalized):
+            raise ValueError("requested_authority_scopes must contain non-empty scope values")
+        return normalized
+
+
+class EffectiveAuthorityDecision(BaseModel):
+    """Typed result for effective-authority evaluation — reuses ``PolicyDecision``."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["effective_authority_decision.v1"] = (
+        SCHEMA_EFFECTIVE_AUTHORITY_DECISION_V1
+    )
+    decision: PolicyDecision
+    denial_reason: EffectiveAuthorityDenialReason | None = None
+
+    @model_validator(mode="after")
+    def _align_denial_reason_with_action(self) -> EffectiveAuthorityDecision:
+        if self.decision.action is PolicyAction.ALLOW and self.denial_reason is not None:
+            raise ValueError("denial_reason must be omitted when decision.action is allow")
+        return self
+
+
+def fail_closed_effective_authority_decision(
+    *,
+    reason: str,
+    denial_reason: EffectiveAuthorityDenialReason,
+    policy_rule_id: str = "collaborative_work.effective_authority.fail_closed",
+) -> EffectiveAuthorityDecision:
+    """Construct a mandatory fail-closed deny decision for the authority boundary."""
+    return EffectiveAuthorityDecision(
+        decision=PolicyDecision(
+            action=PolicyAction.DENY,
+            reason=reason,
+            policy_rule_id=policy_rule_id,
+        ),
+        denial_reason=denial_reason,
+    )

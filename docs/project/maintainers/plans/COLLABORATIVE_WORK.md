@@ -58,16 +58,16 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-1A |
 | **Priority** | P0 |
-| **Status** | **PLANNED / NOT STARTED** |
+| **Status** | **READY_FOR_REVIEW** |
 | **Purpose** | Principal, WorkspaceMembership, Delegation, and effective-authority contract slice |
 | **Dependencies** | MP-0 accepted; ADR-MP-001 and ADR-MP-002 accepted |
-| **Exact scope** | Semantic contracts in `intergrax/contracts/`; effective-authority resolution boundary; fail-closed enforcement hook design |
-| **REUSED** | `MeaningfulSideEffectRequest` policy enforcement; `RequestIdentity` as execution-intake bridge only |
-| **NEW** | Collaborative Principal, WorkspaceMembership, Delegation authority contracts |
+| **Exact scope** | Semantic contracts in `intergrax/contracts/collaborative_work.py`; effective-authority resolution boundary; fail-closed enforcement hook design |
+| **REUSED** | `MeaningfulSideEffectRequest` policy enforcement; `RequestIdentity` as execution-intake bridge only; `PolicyDecision` / `PolicyAction` for authority outcomes |
+| **NEW** | `CollaborativePrincipal`, `WorkspaceMembership`, `AuthorityDelegation`, `EffectiveAuthorityRequest`, `EffectiveAuthorityDecision` |
 | **Explicit out of scope** | DB models, repositories, APIs, HTTP routes, membership/delegation services, LKW changes, tests for runtime code, MP-2+ rows |
 | **Acceptance** | Contracts frozen; effective authority intersection documented; membership explicit; delegation non-amplifying; execution contracts not duplicated |
-| **Proof requirements** | Contract tests; isolation/authorization tests; fail-closed tests; delegation non-amplification tests (at implementation gate) |
-| **Next step** | MP-1 review acceptance → COLLAB-WORK-1A implementation |
+| **Proof requirements** | `tests/unit/contracts/test_collaborative_work.py` — contract, isolation, fail-closed, delegation validation |
+| **Next step** | COLLAB-WORK-1A review acceptance → COLLAB-WORK-1B (persistence slice; not started) |
 
 ---
 
