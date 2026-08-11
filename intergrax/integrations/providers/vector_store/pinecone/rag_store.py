@@ -18,6 +18,7 @@ from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStor
 from intergrax.rag.vectorstore.providers.native_provider_boundary import (
     native_hit,
     provider_metadata,
+    require_membership_support,
     validate_query,
     validate_records,
     validate_scope,
@@ -165,9 +166,9 @@ class PineconeVectorStore(BaseVectorStore):
     ) -> List[VectorStoreHit]:
         vector, limit = validate_query(query_embedding, top_k=top_k)
         validate_scope(scope, tenant_id=self.cfg.tenant_id)
-        effective_where = dict(
-            MetadataFilter.for_scope(scope, metadata_filter).conditions
-        )
+        effective_filter = MetadataFilter.for_scope(scope, metadata_filter)
+        require_membership_support(effective_filter, provider="pinecone")
+        effective_where = dict(effective_filter.conditions)
 
         self._ensure_pinecone_index()
 

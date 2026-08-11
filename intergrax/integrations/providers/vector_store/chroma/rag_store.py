@@ -144,14 +144,11 @@ class ChromaVectorStore(BaseVectorStore):
         if include_embeddings:
             include.append("embeddings")
 
-        effective_where = dict(
-            MetadataFilter.for_scope(scope, metadata_filter).conditions
-        )
-
+        effective_filter = MetadataFilter.for_scope(scope, metadata_filter)
         res = self._collection.query(
             query_embeddings=Q,
             n_results=limit,
-            where=self._normalize_chroma_where(effective_where),
+            where=self._chroma_where_from_metadata(effective_filter),
             include=include,
         )
 
@@ -194,6 +191,21 @@ class ChromaVectorStore(BaseVectorStore):
             )
 
         return hits
+
+    def _chroma_where_from_metadata(
+        self,
+        metadata_filter: MetadataFilter,
+    ) -> dict[str, Any] | None:
+        terms: list[dict[str, Any]] = []
+        for key, value in metadata_filter.conditions.items():
+            terms.append({str(key): {"$eq": value}})
+        for condition in metadata_filter.membership:
+            terms.append({condition.field: {"$in": list(condition.allowed_values)}})
+        if not terms:
+            return None
+        if len(terms) == 1:
+            return terms[0]
+        return {"$and": terms}
 
     def _normalize_chroma_where(
         self, where: dict[str, Any] | None

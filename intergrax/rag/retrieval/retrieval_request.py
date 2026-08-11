@@ -5,7 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreScope,
+)
 
 
 @dataclass(frozen=True)
@@ -17,7 +20,7 @@ class RetrievalRequest:
     """Deprecated alias for ``final_top_k`` — kept for backward compatibility."""
     final_top_k: Optional[int] = None
     prefetch_k: Optional[int] = None
-    metadata_filter: Any = None
+    metadata_filter: MetadataFilter | None = None
     scope: VectorStoreScope | None = None
     score_threshold: Optional[float] = None
     retriever_id: Optional[str] = None

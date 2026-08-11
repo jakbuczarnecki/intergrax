@@ -85,9 +85,7 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
 
         vector, limit = validate_query(query_embedding, top_k=top_k)
         validate_scope(scope, tenant_id=self._tenant_id)
-        effective_where = dict(
-            MetadataFilter.for_scope(scope, metadata_filter).conditions
-        )
+        effective_filter = MetadataFilter.for_scope(scope, metadata_filter)
 
         candidates: List[tuple[str, float]] = []
 
@@ -95,14 +93,7 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
 
             payload = self._payloads[id_]
 
-            # metadata filtering
-            match = True
-            for k, v in effective_where.items():
-                if payload.get(k) != v:
-                    match = False
-                    break
-
-            if not match:
+            if not effective_filter.matches_payload(payload):
                 continue
 
             score = self._cosine_similarity(vector, emb)

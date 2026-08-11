@@ -12,6 +12,7 @@ from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
 )
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
+    MetadataMembershipCondition,
     VectorStoreContractError,
     VectorStoreHit,
     VectorStoreRecord,
@@ -133,6 +134,89 @@ def test_metadata_filter_copies_nested_json_and_rejects_routing_keys() -> None:
         MetadataFilter(conditions={"items": (1, 2)})  # type: ignore[dict-item]
     with pytest.raises(TypeError):
         metadata_filter.conditions["new"] = "value"  # type: ignore[index]
+
+
+def test_metadata_membership_single_and_multi_value() -> None:
+    single = MetadataFilter(
+        membership=(
+            MetadataMembershipCondition(field="source_id", allowed_values=("src-a",)),
+        )
+    )
+    multi = MetadataFilter(
+        membership=(
+            MetadataMembershipCondition(
+                field="source_id",
+                allowed_values=("src-a", "src-b", "src-c"),
+            ),
+        )
+    )
+    assert single.membership[0].allowed_values == ("src-a",)
+    assert multi.membership[0].allowed_values == ("src-a", "src-b", "src-c")
+
+
+def test_metadata_membership_rejects_empty_and_routing_keys() -> None:
+    with pytest.raises(VectorStoreContractError, match="non-empty"):
+        MetadataMembershipCondition(field="source_id", allowed_values=())
+    with pytest.raises(VectorStoreContractError, match="routing"):
+        MetadataMembershipCondition(field="tenant_id", allowed_values=("t1",))
+    with pytest.raises(VectorStoreContractError, match="routing"):
+        MetadataFilter(conditions={"tenant_id": "spoofed"})
+
+
+def test_metadata_membership_deduplicates_values_deterministically() -> None:
+    condition = MetadataMembershipCondition(
+        field="source_id",
+        allowed_values=("src-a", "src-b", "src-a", "src-b"),
+    )
+    assert condition.allowed_values == ("src-a", "src-b")
+
+
+def test_metadata_filter_scope_composes_membership_and_routing() -> None:
+    scope = _scope(workspace_id="workspace-a")
+    user_filter = MetadataFilter(
+        membership=(
+            MetadataMembershipCondition(
+                field="source_id",
+                allowed_values=("src-a", "src-b"),
+            ),
+        )
+    )
+    scoped = MetadataFilter.for_scope(scope, user_filter)
+    assert scoped.conditions["tenant_id"] == "tenant-a"
+    assert scoped.conditions["namespace"] == "namespace-a"
+    assert scoped.conditions["workspace_id"] == "workspace-a"
+    assert scoped.membership == user_filter.membership
+
+
+def test_metadata_filter_equality_and_membership_compose_with_and() -> None:
+    metadata_filter = MetadataFilter(
+        conditions={"source_id": "src-a"},
+        membership=(
+            MetadataMembershipCondition(
+                field="source_id",
+                allowed_values=("src-a", "src-b"),
+            ),
+        ),
+    )
+    assert metadata_filter.matches_payload({"source_id": "src-a"})
+    assert not metadata_filter.matches_payload({"source_id": "src-b"})
+    assert not metadata_filter.matches_payload({"source_id": "src-c"})
+
+
+def test_metadata_filter_rejects_duplicate_membership_fields() -> None:
+    with pytest.raises(VectorStoreContractError, match="duplicate"):
+        MetadataFilter(
+            membership=(
+                MetadataMembershipCondition(field="source_id", allowed_values=("a",)),
+                MetadataMembershipCondition(field="source_id", allowed_values=("b",)),
+            )
+        )
+
+
+def test_metadata_filter_matches_payload_without_membership_is_unchanged() -> None:
+    metadata_filter = MetadataFilter(conditions={"session_id": "s1"})
+    assert metadata_filter.matches_payload({"session_id": "s1"})
+    assert not metadata_filter.matches_payload({"session_id": "s2"})
 
 
 def test_hit_is_native_and_validates_score_rank_and_embedding() -> None:

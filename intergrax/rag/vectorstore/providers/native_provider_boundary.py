@@ -105,6 +105,17 @@ def effective_filter(
     return MetadataFilter.for_scope(scope, metadata_filter)
 
 
+def require_membership_support(
+    metadata_filter: MetadataFilter,
+    *,
+    provider: str,
+) -> None:
+    if metadata_filter.membership:
+        raise VectorStoreContractError(
+            f"{provider} does not support metadata membership filtering"
+        )
+
+
 def provider_metadata(
     document: KnowledgeDocument,
     *,

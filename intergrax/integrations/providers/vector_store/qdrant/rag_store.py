@@ -258,13 +258,32 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         self._create_qdrant_collection()
 
     def _qdrant_filter(self, where: Optional[Dict[str, Any]]) -> Optional[QFilter]:  # type: ignore
-        """Lightweight helper: simple dict -> Filter(must=[FieldCondition(...)])."""
+        """Equality-only helper for scroll/search paths that use plain dicts."""
         if not where or QFilter is None:
             return None
         must: List[Dict[str, Any]] = []
         for k, v in where.items():
-            # simple equality
             must.append({"key": k, "match": {"value": v}})
+        return QFilter(**{"must": must})
+
+    def _qdrant_filter_from_metadata(
+        self,
+        metadata_filter: MetadataFilter,
+    ) -> Optional[QFilter]:  # type: ignore
+        if QFilter is None:
+            return None
+        must: List[Dict[str, Any]] = []
+        for key, value in metadata_filter.conditions.items():
+            must.append({"key": key, "match": {"value": value}})
+        for condition in metadata_filter.membership:
+            must.append(
+                {
+                    "key": condition.field,
+                    "match": {"any": list(condition.allowed_values)},
+                }
+            )
+        if not must:
+            return None
         return QFilter(**{"must": must})
     
 
@@ -357,11 +376,8 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
 
         vector, limit = validate_query(query_embedding, top_k=top_k)
         validate_scope(scope, tenant_id=self.cfg.tenant_id)
-        effective_where = dict(
-            MetadataFilter.for_scope(scope, metadata_filter).conditions
-        )
-
-        qfilter = self._qdrant_filter(effective_where)
+        effective_filter = MetadataFilter.for_scope(scope, metadata_filter)
+        qfilter = self._qdrant_filter_from_metadata(effective_filter)
         using = _DENSE_VECTOR_NAME if self._sparse_enabled else None
         try:
             results = self._client.query_points(
@@ -456,10 +472,8 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         validate_scope(scope, tenant_id=self.cfg.tenant_id)
         sparse = self._sparse_encoder.encode(query_text)
 
-        effective_where = dict(
-            MetadataFilter.for_scope(scope, metadata_filter).conditions
-        )
-        qfilter = self._qdrant_filter(effective_where)
+        effective_filter = MetadataFilter.for_scope(scope, metadata_filter)
+        qfilter = self._qdrant_filter_from_metadata(effective_filter)
 
         prefetch_k = max(limit * 3, limit)
         try:

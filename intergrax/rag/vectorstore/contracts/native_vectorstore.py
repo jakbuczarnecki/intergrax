@@ -10,7 +10,7 @@ do not import LangChain.
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -22,9 +22,51 @@ from intergrax.knowledge.contracts.validation import (
     assert_safe_mapping,
     freeze_knowledge_metadata,
     require_non_empty_str,
+    validate_json_value,
 )
 
 _ROUTING_KEYS = frozenset({"tenant_id", "namespace", "workspace_id"})
+
+
+def _membership_value_key(value: JsonValue) -> str:
+    """Stable deduplication key for membership allowed values."""
+    if isinstance(value, bool):
+        return f"bool:{value}"
+    if value is None:
+        return "null"
+    if isinstance(value, (int, float, str)):
+        return f"{type(value).__name__}:{value}"
+    if isinstance(value, list):
+        return "list:" + ",".join(_membership_value_key(item) for item in value)
+    return "dict:" + ",".join(
+        f"{key}={_membership_value_key(child)}" for key, child in sorted(value.items())
+    )
+
+
+def _normalize_membership_values(
+    values: Sequence[object],
+    *,
+    field_name: str,
+) -> tuple[JsonValue, ...]:
+    if not values:
+        raise VectorStoreContractError(f"{field_name} must be non-empty")
+    normalized: list[JsonValue] = []
+    seen: set[str] = set()
+    for index, raw in enumerate(values):
+        try:
+            value = validate_json_value(raw, field_name=field_name, path=f"[{index}].")
+        except (TypeError, ValueError) as exc:
+            raise VectorStoreContractError(
+                f"{field_name} must contain JSON-compatible values"
+            ) from exc
+        key = _membership_value_key(value)
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(value)
+    if not normalized:
+        raise VectorStoreContractError(f"{field_name} must be non-empty")
+    return tuple(normalized)
 
 
 class VectorStoreContractError(ValueError):
@@ -121,14 +163,42 @@ class VectorStoreScope:
 
 
 @dataclass(frozen=True)
+class MetadataMembershipCondition:
+    """Immutable provider-neutral ``field IN allowed_values`` membership."""
+
+    field: str
+    allowed_values: tuple[JsonValue, ...]
+
+    def __post_init__(self) -> None:
+        try:
+            field = require_non_empty_str(self.field, field_name="field")
+        except (TypeError, ValueError) as exc:
+            raise VectorStoreContractError("field must be a non-empty string") from exc
+        if field in _ROUTING_KEYS:
+            raise VectorStoreContractError(
+                f"membership must not target reserved routing key '{field}'"
+            )
+        allowed_values = _normalize_membership_values(
+            self.allowed_values,
+            field_name="allowed_values",
+        )
+        object.__setattr__(self, "field", field)
+        object.__setattr__(self, "allowed_values", allowed_values)
+
+
+@dataclass(frozen=True)
 class MetadataFilter:
-    """Immutable provider-neutral equality conditions.
+    """Immutable provider-neutral metadata filter.
+
+    Equality conditions use exact ``field == value`` semantics. Membership
+    conditions use explicit ``field IN allowed_values`` semantics.
 
     Routing keys are created only by :meth:`for_scope`; callers cannot provide
-    them as ordinary user conditions.
+    them as ordinary user conditions or membership targets.
     """
 
-    conditions: Mapping[str, JsonValue]
+    conditions: Mapping[str, JsonValue] = field(default_factory=dict)
+    membership: tuple[MetadataMembershipCondition, ...] = ()
     _allow_routing_keys: bool = field(default=False, init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
@@ -143,7 +213,27 @@ class MetadataFilter:
                 raise VectorStoreContractError(
                     f"conditions must not contain reserved routing key '{key}'"
                 )
+        membership = tuple(self.membership)
+        seen_fields: set[str] = set()
+        for condition in membership:
+            if not isinstance(condition, MetadataMembershipCondition):
+                raise TypeError("membership must contain MetadataMembershipCondition values")
+            if condition.field in seen_fields:
+                raise VectorStoreContractError(
+                    f"membership must not duplicate field '{condition.field}'"
+                )
+            seen_fields.add(condition.field)
         object.__setattr__(self, "conditions", freeze_knowledge_metadata(normalized))
+        object.__setattr__(self, "membership", membership)
+
+    def matches_payload(self, payload: Mapping[str, object]) -> bool:
+        for key, expected in self.conditions.items():
+            if payload.get(key) != expected:
+                return False
+        for condition in self.membership:
+            if payload.get(condition.field) not in condition.allowed_values:
+                return False
+        return True
 
     @classmethod
     def for_scope(
@@ -154,10 +244,12 @@ class MetadataFilter:
         if not isinstance(scope, VectorStoreScope):
             raise TypeError("scope must be a VectorStoreScope")
         conditions: dict[str, JsonValue] = {}
+        membership: tuple[MetadataMembershipCondition, ...] = ()
         if user_filter is not None:
             if not isinstance(user_filter, MetadataFilter):
                 raise TypeError("metadata_filter must be a MetadataFilter")
             conditions.update(user_filter.conditions)
+            membership = user_filter.membership
         conditions["tenant_id"] = scope.tenant_id
         if scope.namespace is not None:
             conditions["namespace"] = scope.namespace
@@ -166,6 +258,7 @@ class MetadataFilter:
         normalized = assert_safe_mapping(conditions, field_name="conditions")
         instance = object.__new__(cls)
         object.__setattr__(instance, "conditions", freeze_knowledge_metadata(normalized))
+        object.__setattr__(instance, "membership", membership)
         object.__setattr__(instance, "_allow_routing_keys", True)
         return instance
 

@@ -26,6 +26,7 @@ from intergrax.rag.vectorstore.providers.native_provider_boundary import (
     effective_filter,
     native_hit,
     provider_metadata,
+    require_membership_support,
     validate_query,
     validate_records,
     validate_scope,
@@ -452,6 +453,7 @@ class PgVectorRagStore(VectorStore, IntegrationHealthProbe):
         metadata_filter: MetadataFilter | None,
     ) -> tuple[str, list[Any]]:
         effective = effective_filter(scope, metadata_filter)
+        require_membership_support(effective, provider="pgvector")
         clauses = [
             "tenant_id = %s",
             "namespace IS NOT DISTINCT FROM %s",
