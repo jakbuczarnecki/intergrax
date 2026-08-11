@@ -39,6 +39,16 @@ SCHEMA_EFFECTIVE_AUTHORITY_DECISION_V1: Final = "effective_authority_decision.v1
 SCHEMA_POLICY_COMPOSITION_APPLICABILITY_V1: Final = "policy_composition_applicability.v1"
 SCHEMA_POLICY_COMPOSITION_INPUT_V1: Final = "policy_composition_input.v1"
 SCHEMA_POLICY_COMPOSITION_RESULT_V1: Final = "policy_composition_result.v1"
+SCHEMA_COLLABORATIVE_POLICY_RULE_V1: Final = "collaborative_policy_rule.v1"
+
+_SUPPORTED_COLLABORATIVE_POLICY_ACTIONS: Final = frozenset(
+    {
+        PolicyAction.ALLOW,
+        PolicyAction.DENY,
+        PolicyAction.REQUIRE_HUMAN,
+        PolicyAction.ESCALATE,
+    }
+)
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -421,3 +431,67 @@ class PolicyCompositionResult(BaseModel):
     resource_policy: PolicyDecision | None = None
     runtime_policy: PolicyDecision | None = None
     determining_layer: PolicyCompositionLayer | None = None
+
+
+class CollaborativePolicyRuleStatus(StrEnum):
+    """Lifecycle for authoritative collaborative workspace/resource policy rules."""
+
+    ACTIVE = "active"
+    DISABLED = "disabled"
+
+
+class CollaborativePolicyRule(BaseModel):
+    """Authoritative workspace or resource policy rule for collaborative authorization.
+
+    Exact policy key uniqueness (enforced by repository):
+
+    - ``WORKSPACE_POLICY``: ``tenant_id`` + ``workspace_id`` + ``authority_scope``
+    - ``RESOURCE_POLICY``: ``tenant_id`` + ``workspace_id`` + ``resource_scope`` + ``authority_scope``
+
+    Policy management authorization is out of scope; this contract models persistence
+    and evaluation semantics only.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["collaborative_policy_rule.v1"] = SCHEMA_COLLABORATIVE_POLICY_RULE_V1
+    policy_rule_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    layer: PolicyCompositionLayer
+    authority_scope: str = _NON_EMPTY
+    action: PolicyAction
+    resource_scope: str | None = None
+    status: CollaborativePolicyRuleStatus = CollaborativePolicyRuleStatus.ACTIVE
+    revision: int = Field(ge=0)
+
+    @field_validator("policy_rule_id", "tenant_id", "workspace_id", "authority_scope", "resource_scope")
+    @classmethod
+    def _strip_required_or_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @field_validator("action")
+    @classmethod
+    def _reject_unsupported_actions(cls, value: PolicyAction) -> PolicyAction:
+        if value is PolicyAction.MODIFY:
+            raise ValueError("MODIFY is not supported for collaborative policy rules")
+        if value not in _SUPPORTED_COLLABORATIVE_POLICY_ACTIONS:
+            raise ValueError("unsupported collaborative policy action")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_layer_and_resource_scope(self) -> CollaborativePolicyRule:
+        if self.layer is PolicyCompositionLayer.WORKSPACE_POLICY:
+            if self.resource_scope is not None:
+                raise ValueError("WORKSPACE_POLICY rules must not include resource_scope")
+        elif self.layer is PolicyCompositionLayer.RESOURCE_POLICY:
+            if self.resource_scope is None:
+                raise ValueError("RESOURCE_POLICY rules require resource_scope")
+        else:
+            raise ValueError("layer must be WORKSPACE_POLICY or RESOURCE_POLICY")
+        return self

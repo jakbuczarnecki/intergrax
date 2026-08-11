@@ -13,8 +13,13 @@ from intergrax.collaborative_work.repository import (
     AuthorityDelegationIdempotencyConflict,
     AuthorityDelegationNotFound,
     AuthorityDelegationRevisionConflict,
+    CollaborativePolicyRuleAlreadyExists,
+    CollaborativePolicyRuleIdempotencyConflict,
+    CollaborativePolicyRuleNotFound,
+    CollaborativePolicyRuleRevisionConflict,
     CollaborativeWorkRepositoryCapabilities,
     CreateAuthorityDelegationCommand,
+    CreateCollaborativePolicyRuleCommand,
     CreatePrincipalAuthorityGrantCommand,
     CreateWorkspaceMembershipCommand,
     INITIAL_RECORD_REVISION,
@@ -23,6 +28,7 @@ from intergrax.collaborative_work.repository import (
     PrincipalAuthorityGrantNotFound,
     PrincipalAuthorityGrantRevisionConflict,
     UpdateAuthorityDelegationCommand,
+    UpdateCollaborativePolicyRuleCommand,
     UpdatePrincipalAuthorityGrantCommand,
     UpdateWorkspaceMembershipCommand,
     WorkspaceMembershipAlreadyExists,
@@ -32,6 +38,8 @@ from intergrax.collaborative_work.repository import (
 )
 from intergrax.contracts.collaborative_work import (
     AuthorityDelegation,
+    CollaborativePolicyRule,
+    PolicyCompositionLayer,
     PrincipalAuthorityGrant,
     WorkspaceMembership,
 )
@@ -40,6 +48,8 @@ MembershipKey: TypeAlias = tuple[str, str, str]
 DelegationKey: TypeAlias = tuple[str, str, str]
 AuthorityGrantKey: TypeAlias = tuple[str, str, str]
 PrincipalKey: TypeAlias = tuple[str, str, str]
+PolicyRuleKey: TypeAlias = tuple[str, str, str]
+PolicyExactKey: TypeAlias = tuple[str, str, str, str, str]
 IdempotencyKey: TypeAlias = tuple[str, str, str]
 
 
@@ -59,6 +69,12 @@ class _DelegationIdempotencyEntry:
 class _AuthorityGrantIdempotencyEntry:
     fingerprint: str
     original_result: PrincipalAuthorityGrant
+
+
+@dataclass(frozen=True, slots=True)
+class _PolicyRuleIdempotencyEntry:
+    fingerprint: str
+    original_result: CollaborativePolicyRule
 
 
 class InMemoryWorkspaceMembershipRepository:
@@ -515,6 +531,207 @@ class InMemoryAuthorityDelegationRepository:
     @staticmethod
     def _scope_matches(
         record: AuthorityDelegation,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> bool:
+        return record.tenant_id == tenant_id.strip() and record.workspace_id == workspace_id.strip()
+
+
+class InMemoryCollaborativePolicyRepository:
+    """Process-local reference repository for workspace and resource policy rules."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._records: dict[PolicyRuleKey, CollaborativePolicyRule] = {}
+        self._policy_key_index: dict[PolicyExactKey, PolicyRuleKey] = {}
+        self._idempotency: dict[IdempotencyKey, _PolicyRuleIdempotencyEntry] = {}
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return CollaborativeWorkRepositoryCapabilities(
+            backend_id="collaborative_work.policy.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def create(self, command: CreateCollaborativePolicyRuleCommand) -> CollaborativePolicyRule:
+        rule_key = self._policy_rule_key(
+            command.tenant_id,
+            command.workspace_id,
+            command.policy_rule_id,
+        )
+        exact_key = self._exact_policy_key(
+            tenant_id=command.tenant_id,
+            workspace_id=command.workspace_id,
+            layer=command.layer,
+            authority_scope=command.authority_scope,
+            resource_scope=command.resource_scope,
+        )
+        with self._lock:
+            if command.idempotency_key is not None:
+                replay = self._replay_policy_rule_create(command)
+                if replay is not None:
+                    return replay
+
+            if rule_key in self._records:
+                raise CollaborativePolicyRuleAlreadyExists("collaborative policy rule already exists")
+            if exact_key in self._policy_key_index:
+                raise CollaborativePolicyRuleAlreadyExists(
+                    "exact collaborative policy key already exists"
+                )
+
+            record = CollaborativePolicyRule(
+                policy_rule_id=command.policy_rule_id,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                layer=command.layer,
+                authority_scope=command.authority_scope,
+                action=command.action,
+                resource_scope=command.resource_scope,
+                status=command.status,
+                revision=INITIAL_RECORD_REVISION,
+            )
+            self._records[rule_key] = record
+            self._policy_key_index[exact_key] = rule_key
+            self._store_policy_rule_idempotency(command, record)
+            return record
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        policy_rule_id: str,
+    ) -> CollaborativePolicyRule | None:
+        key = self._policy_rule_key(tenant_id, workspace_id, policy_rule_id)
+        with self._lock:
+            record = self._records.get(key)
+            if record is None:
+                return None
+            if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
+                return None
+            return record
+
+    def get_effective_rule(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        layer: PolicyCompositionLayer,
+        authority_scope: str,
+        resource_scope: str | None = None,
+    ) -> CollaborativePolicyRule | None:
+        exact_key = self._exact_policy_key(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            layer=layer,
+            authority_scope=authority_scope,
+            resource_scope=resource_scope,
+        )
+        with self._lock:
+            rule_key = self._policy_key_index.get(exact_key)
+            if rule_key is None:
+                return None
+            record = self._records.get(rule_key)
+            if record is None:
+                return None
+            if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
+                return None
+            return record
+
+    def update(self, command: UpdateCollaborativePolicyRuleCommand) -> CollaborativePolicyRule:
+        key = self._policy_rule_key(
+            command.scope.tenant_id,
+            command.scope.workspace_id,
+            command.scope.policy_rule_id,
+        )
+        with self._lock:
+            current = self._records.get(key)
+            if current is None or not self._scope_matches(
+                current,
+                tenant_id=command.scope.tenant_id,
+                workspace_id=command.scope.workspace_id,
+            ):
+                raise CollaborativePolicyRuleNotFound("collaborative policy rule was not found")
+            if current.revision != command.expected_revision:
+                raise CollaborativePolicyRuleRevisionConflict(
+                    "collaborative policy rule revision conflict"
+                )
+
+            replacement = CollaborativePolicyRule(
+                policy_rule_id=current.policy_rule_id,
+                tenant_id=current.tenant_id,
+                workspace_id=current.workspace_id,
+                layer=current.layer,
+                authority_scope=current.authority_scope,
+                action=command.action,
+                resource_scope=current.resource_scope,
+                status=command.status,
+                revision=current.revision + 1,
+            )
+            self._records[key] = replacement
+            return replacement
+
+    def _replay_policy_rule_create(
+        self,
+        command: CreateCollaborativePolicyRuleCommand,
+    ) -> CollaborativePolicyRule | None:
+        assert command.idempotency_key is not None
+        entry = self._idempotency.get(
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
+        )
+        if entry is None:
+            return None
+        if entry.fingerprint != command.semantic_fingerprint():
+            raise CollaborativePolicyRuleIdempotencyConflict(
+                "collaborative policy rule idempotency key conflict"
+            )
+        return entry.original_result
+
+    def _store_policy_rule_idempotency(
+        self,
+        command: CreateCollaborativePolicyRuleCommand,
+        record: CollaborativePolicyRule,
+    ) -> None:
+        if command.idempotency_key is None:
+            return
+        self._idempotency[
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
+        ] = _PolicyRuleIdempotencyEntry(
+            fingerprint=command.semantic_fingerprint(),
+            original_result=record,
+        )
+
+    @staticmethod
+    def _policy_rule_key(tenant_id: str, workspace_id: str, policy_rule_id: str) -> PolicyRuleKey:
+        return (tenant_id.strip(), workspace_id.strip(), policy_rule_id.strip())
+
+    @staticmethod
+    def _exact_policy_key(
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        layer: PolicyCompositionLayer,
+        authority_scope: str,
+        resource_scope: str | None,
+    ) -> PolicyExactKey:
+        normalized_resource = "" if resource_scope is None else resource_scope.strip()
+        return (
+            tenant_id.strip(),
+            workspace_id.strip(),
+            layer.value,
+            authority_scope.strip(),
+            normalized_resource,
+        )
+
+    @staticmethod
+    def _idempotency_key(tenant_id: str, workspace_id: str, idempotency_key: str) -> IdempotencyKey:
+        return (tenant_id.strip(), workspace_id.strip(), idempotency_key.strip())
+
+    @staticmethod
+    def _scope_matches(
+        record: CollaborativePolicyRule,
         *,
         tenant_id: str,
         workspace_id: str,

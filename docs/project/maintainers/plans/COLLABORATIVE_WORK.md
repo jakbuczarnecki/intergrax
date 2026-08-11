@@ -118,7 +118,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-1E |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Fail-closed composition of collaborative authority, workspace, resource, and runtime/tool policy decisions into one final enforcement decision |
 | **Dependencies** | COLLAB-WORK-1D approved; `CollaborativeWorkAuthorityResolver`; `RuntimePolicyEngine.evaluate_meaningful_side_effect`; `PolicyDecision` / `PolicyAction` |
 | **Exact scope** | `compose_policy_decisions` composition boundary; `PolicyCompositionInput` / `PolicyCompositionResult` contracts; mandatory/applicable layer semantics; audit provenance |
@@ -127,7 +127,22 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Workspace/resource policy evaluators; second PolicyEngine; side-effect execution; widespread runtime rewiring; MP-2+ rows |
 | **Acceptance** | Collaborative ALLOW alone does not authorize execution; missing mandatory layer fails closed; DENY/REQUIRE_HUMAN/ESCALATE/MODIFY never weakened; contributing decisions auditable |
 | **Proof requirements** | `tests/unit/collaborative_work/test_policy_composition.py`; resolver regression if integration requires |
-| **Next step** | Workspace/resource policy-source gate or MP-1 adoption/enforcement wiring |
+| **Next step** | COLLAB-WORK-1F — authoritative workspace and resource policy source |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1F |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | Authoritative workspace and resource policy source returning real ``PolicyDecision`` values for composition |
+| **Dependencies** | COLLAB-WORK-1E approved; `compose_policy_decisions`; `PolicyDecision` / `PolicyAction` |
+| **Exact scope** | `CollaborativePolicyRule` contract; `CollaborativePolicyRepository` port; in-memory adapter; `CollaborativePolicyEvaluator`; exact-key lookup; fail-closed evaluation |
+| **REUSED** | `PolicyDecision`, `PolicyAction`, `PolicyCompositionLayer`; COLLAB-WORK-1B repository revision/idempotency semantics |
+| **NEW** | `intergrax/collaborative_work/policy_source.py`; policy repository extensions; `tests/unit/collaborative_work/test_collaborative_policy_source.py` |
+| **Explicit out of scope** | Policy DSL; second PolicyEngine; operation applicability classifier; enforcement wiring; policy-management authorization/API; wildcard/inheritance; MP-2+ rows |
+| **Acceptance** | Workspace/resource evaluators return authoritative ``PolicyDecision``; missing/inactive rules DENY; exact scope matching only; outputs compose with 1E; policy administration authorization unsolved |
+| **Proof requirements** | `tests/unit/collaborative_work/test_collaborative_policy_source.py`; `tests/unit/collaborative_work/test_policy_composition.py` regressions |
+| **Next step** | Trusted operation classification + final enforcement/adoption wiring |
 
 ---
 

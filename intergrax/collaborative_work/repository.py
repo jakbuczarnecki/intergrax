@@ -36,12 +36,16 @@ from typing import Protocol, runtime_checkable
 from intergrax.contracts.collaborative_work import (
     AuthorityDelegation,
     AuthorityGrantStatus,
+    CollaborativePolicyRule,
+    CollaborativePolicyRuleStatus,
     DelegationStatus,
     MembershipStatus,
+    PolicyCompositionLayer,
     PrincipalAuthorityGrant,
     WorkspaceMembership,
     WorkspaceMembershipRole,
 )
+from intergrax.contracts.runtime_policy import PolicyAction
 
 INITIAL_RECORD_REVISION: int = 0
 
@@ -553,3 +557,171 @@ class PrincipalAuthorityRepository(Protocol):
 
     def update(self, command: UpdatePrincipalAuthorityGrantCommand) -> PrincipalAuthorityGrant:
         """Replace authority grant semantics under optimistic concurrency."""
+
+
+class CollaborativePolicyRuleNotFound(Exception):
+    """Policy rule was not found for the requested tenant/workspace scope."""
+
+
+class CollaborativePolicyRuleAlreadyExists(Exception):
+    """Policy rule or exact policy key already exists in workspace scope."""
+
+
+class CollaborativePolicyRuleRevisionConflict(Exception):
+    """Optimistic revision conflict for collaborative policy rule."""
+
+
+class CollaborativePolicyRuleIdempotencyConflict(Exception):
+    """Idempotency key replayed with a different semantic command."""
+
+
+@dataclass(frozen=True, slots=True)
+class CollaborativePolicyRuleScopeKey:
+    tenant_id: str
+    workspace_id: str
+    policy_rule_id: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "tenant_id",
+            _require_non_empty(self.tenant_id, field_name="tenant_id"),
+        )
+        object.__setattr__(
+            self,
+            "workspace_id",
+            _require_non_empty(self.workspace_id, field_name="workspace_id"),
+        )
+        object.__setattr__(
+            self,
+            "policy_rule_id",
+            _require_non_empty(self.policy_rule_id, field_name="policy_rule_id"),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CreateCollaborativePolicyRuleCommand:
+    tenant_id: str
+    workspace_id: str
+    policy_rule_id: str
+    layer: PolicyCompositionLayer
+    authority_scope: str
+    action: PolicyAction
+    resource_scope: str | None = None
+    status: CollaborativePolicyRuleStatus = CollaborativePolicyRuleStatus.ACTIVE
+    idempotency_key: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "tenant_id",
+            _require_non_empty(self.tenant_id, field_name="tenant_id"),
+        )
+        object.__setattr__(
+            self,
+            "workspace_id",
+            _require_non_empty(self.workspace_id, field_name="workspace_id"),
+        )
+        object.__setattr__(
+            self,
+            "policy_rule_id",
+            _require_non_empty(self.policy_rule_id, field_name="policy_rule_id"),
+        )
+        object.__setattr__(
+            self,
+            "authority_scope",
+            _require_non_empty(self.authority_scope, field_name="authority_scope"),
+        )
+        if self.resource_scope is not None:
+            object.__setattr__(
+                self,
+                "resource_scope",
+                _require_non_empty(self.resource_scope, field_name="resource_scope"),
+            )
+        if self.idempotency_key is not None:
+            object.__setattr__(
+                self,
+                "idempotency_key",
+                _require_non_empty(self.idempotency_key, field_name="idempotency_key"),
+            )
+        if self.layer not in (
+            PolicyCompositionLayer.WORKSPACE_POLICY,
+            PolicyCompositionLayer.RESOURCE_POLICY,
+        ):
+            raise ValueError("layer must be WORKSPACE_POLICY or RESOURCE_POLICY")
+        if self.layer is PolicyCompositionLayer.WORKSPACE_POLICY and self.resource_scope is not None:
+            raise ValueError("WORKSPACE_POLICY rules must not include resource_scope")
+        if self.layer is PolicyCompositionLayer.RESOURCE_POLICY and self.resource_scope is None:
+            raise ValueError("RESOURCE_POLICY rules require resource_scope")
+
+    def semantic_fingerprint(self) -> str:
+        payload = {
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "policy_rule_id": self.policy_rule_id,
+            "layer": self.layer.value,
+            "authority_scope": self.authority_scope,
+            "action": self.action.value,
+            "resource_scope": self.resource_scope,
+            "status": self.status.value,
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class UpdateCollaborativePolicyRuleCommand:
+    scope: CollaborativePolicyRuleScopeKey
+    expected_revision: int
+    action: PolicyAction
+    status: CollaborativePolicyRuleStatus
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "scope",
+            _require_scope_key(self.scope, CollaborativePolicyRuleScopeKey),
+        )
+        object.__setattr__(
+            self,
+            "expected_revision",
+            _require_non_negative_int(self.expected_revision, field_name="expected_revision"),
+        )
+
+
+@runtime_checkable
+class CollaborativePolicyRepository(Protocol):
+    """Authoritative persistence port for workspace and resource policy rules."""
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+
+    def create(self, command: CreateCollaborativePolicyRuleCommand) -> CollaborativePolicyRule:
+        """Create a policy rule at ``INITIAL_RECORD_REVISION``."""
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        policy_rule_id: str,
+    ) -> CollaborativePolicyRule | None:
+        """Return policy rule for the scoped identity or ``None``."""
+
+    def get_effective_rule(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        layer: PolicyCompositionLayer,
+        authority_scope: str,
+        resource_scope: str | None = None,
+    ) -> CollaborativePolicyRule | None:
+        """Return the canonical rule for an exact policy key or ``None``.
+
+        Does not filter by status; evaluators interpret ``ACTIVE`` vs ``DISABLED``.
+        """
+
+    def update(self, command: UpdateCollaborativePolicyRuleCommand) -> CollaborativePolicyRule:
+        """Replace policy rule semantics under optimistic concurrency."""

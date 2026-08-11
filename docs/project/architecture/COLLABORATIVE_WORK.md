@@ -125,6 +125,23 @@ Collaborative Work owns the neutral composition boundary that combines pre-evalu
 - Layer applicability uses typed `PolicyLayerApplicability` (`REQUIRED`, `NOT_APPLICABLE`, `UNKNOWN`); default `UNKNOWN` fails closed. Only trusted `NOT_APPLICABLE` from future operation classification may skip a layer.
 - `compose_policy_decisions` retains contributing layer provenance in `audit_payload` for auditability.
 
+### Workspace and resource policy source (COLLAB-WORK-1F)
+
+Collaborative Work owns authoritative workspace and resource policy persistence and evaluation:
+
+    exact policy key → ``CollaborativePolicyRule`` → ``PolicyDecision``
+
+- **Exact policy keys** (at most one canonical rule each):
+  - workspace: `tenant_id + workspace_id + authority_scope`
+  - resource: `tenant_id + workspace_id + resource_scope + authority_scope`
+- **Matching:** exact normalized strings only — no wildcards, inheritance, or hierarchy.
+- **Fail closed:** missing or inactive (`DISABLED`) rules yield DENY; no implicit ALLOW.
+- **Resource evaluator** does not fall back to workspace rules; composition combines layers.
+- **Output:** existing ``PolicyDecision`` consumable by ``compose_policy_decisions``; no fabricated bundle attestation.
+- **Runtime Policy ownership unchanged** — runtime/tool evaluation remains in ``RuntimePolicyEngine`` / ``PolicyEngine``.
+- **Applicability classification remains separate** — evaluators answer only when explicitly asked; they do not emit ``NOT_APPLICABLE``.
+- **Policy management authorization is out of scope** — creating/updating rules is highly privileged and must itself be authority/policy gated in future administration.
+
 ---
 
 ## MP-1 contract direction
