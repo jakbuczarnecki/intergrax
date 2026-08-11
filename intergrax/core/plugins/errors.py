@@ -17,10 +17,18 @@ class PluginLoadError(PluginError):
 class PluginConflictError(PluginError):
     """Duplicate catalog identity when registering plugins."""
 
-    def __init__(self, message: str, *, plugin_name: str = "", group: str = "") -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        plugin_name: str = "",
+        group: str = "",
+        conflict_kind: object | None = None,
+    ) -> None:
         super().__init__(message)
         self.plugin_name = plugin_name
         self.group = group
+        self.conflict_kind = conflict_kind
 
 
 class PlatformPluginContractError(PluginError):
@@ -29,3 +37,15 @@ class PlatformPluginContractError(PluginError):
 
 class PlatformPluginManifestValidationError(PlatformPluginContractError):
     """Platform Plugin manifest or package metadata failed validation."""
+
+
+class InvalidPlatformVersionError(PlatformPluginContractError):
+    """Platform version string is not a valid PEP 440 version."""
+
+
+class PlatformIncompatibilityError(PlatformPluginContractError):
+    """Declared platform compatibility range does not include the tested version."""
+
+    def __init__(self, message: str, *, result: object | None = None) -> None:
+        super().__init__(message)
+        self.result = result

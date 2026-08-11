@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Callable, Literal, Sequence, TypeVar
 
 from intergrax.core.plugins.errors import PluginConflictError, PluginLoadError
+from intergrax.core.plugins.platform_semantics import PlatformPluginConflictKind
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +141,7 @@ def load_entry_point_targets(
                     f"Duplicate entry point {spec.name!r} in group {group!r}",
                     plugin_name=spec.name,
                     group=group,
+                    conflict_kind=PlatformPluginConflictKind.ENTRY_POINT_NAME,
                 )
         known.add(spec.name)
         try:

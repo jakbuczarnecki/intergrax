@@ -111,7 +111,7 @@ class PluginPackageIdentity(BaseModel):
 
 
 class PlatformCompatibility(BaseModel):
-    """Declared Intergrax platform compatibility metadata (not enforced until PLUGIN-6)."""
+    """Declared Intergrax platform compatibility metadata (checked via PLATFORM-PLUGIN-6 API)."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 

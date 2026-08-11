@@ -501,7 +501,7 @@ plugin capability (consumes explicit bindings only)
 
 `RuntimePlugin` retains its **domain-specific** `on_shutdown` lifecycle (HCE). Tier-0 catalogs remain predominantly **process-scoped register without unload**.
 
----
+**CURRENT STATE (PLUGIN-6):** Shared enum `PlatformPluginLifecycleState` in `intergrax/core/plugins/platform_semantics.py` — values `discovered`, `validated`, `enabled`, `materialized`, `active`, `stopping`, `stopped`, `failed`. Vocabulary only; **no** global lifecycle manager or transition engine. Qualification states (`qualified`, `production-qualified`, `live-qualified`) and `installed` remain **outside** this enum (§18).
 
 ## 15. Compatibility and versioning
 
@@ -516,11 +516,12 @@ plugin capability (consumes explicit bindings only)
 
 ### 15.2 Rules
 
-- Platform compatibility metadata is **advisory until** PLATFORM-PLUGIN-6 implements enforcement tooling.
+- Platform compatibility metadata is **checked** by PLUGIN-6 tooling (`check_platform_compatibility`, `require_platform_compatibility`) using standard Python `packaging` specifier semantics.
+- **Compatible ≠ qualified** — compatibility check does not imply trust or production qualification (§18, PLUGIN-7).
 - Domain contracts keep **their own** version fields and breaking-change policy.
 - **No** single global semver for all extension surfaces.
 
-**CURRENT STATE:** Ad hoc — `compatible_runtime` on `RuntimePlugin`; otherwise domain-local.
+**CURRENT STATE (PLUGIN-6):** `intergrax/core/plugins/platform_semantics.py` exposes deterministic, explicit-version compatibility checking against `PlatformCompatibility.intergrax_version`. Returns immutable `PlatformCompatibilityResult` (`declared_specifier`, `tested_platform_version`, `compatible`, `reason`). Invalid platform version → `InvalidPlatformVersionError` (via `require_platform_compatibility`) or `reason=invalid_platform_version` (via `check_platform_compatibility`). **Activation blocking** at host boundaries is deferred to PLUGIN-8 reference host — callers must pass platform version explicitly; no authoritative runtime Intergrax distribution version helper exists yet (`importlib.metadata` distribution name not standardized for gating).
 
 ---
 
@@ -560,7 +561,7 @@ Future isolated execution (subprocess, WASM, remote worker) would be a **separat
 
 **TARGET:** Shared **conceptual** conflict vocabulary across domains. **Unified default policy across all surfaces is rejected** — security override semantics and VK publication conflicts must remain domain-owned.
 
-**CURRENT STATE:** `ConflictPolicy` for Tier-0 catalogs; security always `override=True`; VK raises `VendorKnowledgePluginConflict`.
+**CURRENT STATE (PLUGIN-6):** Shared enum `PlatformPluginConflictKind` (`package_identity`, `entry_point_name`, `capability_identity`, `domain_resource_id`) in `platform_semantics.py`. Tier-0 duplicate entry-point errors attach `conflict_kind=entry_point_name` to `PluginConflictError` without changing `ConflictPolicy` behavior (`error` / `skip` / `override` / `warn_override`). Package identity conflict helper `package_identities_conflict` available; capability and domain-resource conflicts remain domain-owned.
 
 ---
 
@@ -754,7 +755,7 @@ Testable statements for audits and PLATFORM-PLUGIN-9 closeout:
 | **PLUGIN-3** | Author contract docs; optional package manifest schema; capability descriptor format; packaging rules for multi-capability wheels; **no** new runtime wrapper class |
 | **PLUGIN-4** | Shared discovery utility adoption; additive discovery flags; per-EP import isolation improvements; **no** global catalog merge |
 | **PLUGIN-5** | **Done** — §12.3 cross-surface config/secrets/DI matrix; §12.4 canonical flow; author guide §14; domain DI preserved; no global container |
-| **PLUGIN-6** | Compatibility metadata enforcement tooling; shared conflict vocabulary helpers; **domain policies remain** |
+| **PLUGIN-6** | **Done** — `platform_semantics.py`: explicit-version compatibility check API; `PlatformPluginLifecycleState` vocabulary; `PlatformPluginConflictKind` vocabulary; `package_identities_conflict` helper; EP conflict classification on `PluginConflictError`; **no** global lifecycle engine, conflict policy, or qualification gates |
 | **PLUGIN-7** | Qualification gates; trust labeling; production vs discoverable separation in CI/host |
 | **PLUGIN-8** | Author scaffolds; **third-party reference package** (genuine external wheel); executable E2E proof: install → discovery → config → DI → runtime → cleanup **without core changes** |
 | **PLUGIN-9** | Contract tests; CI gates; deprecation execution; final platform closeout audit per roadmap |

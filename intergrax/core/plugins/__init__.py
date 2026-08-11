@@ -21,6 +21,8 @@ from intergrax.core.plugins.discovery import (
     register_plugins,
 )
 from intergrax.core.plugins.errors import (
+    InvalidPlatformVersionError,
+    PlatformIncompatibilityError,
     PlatformPluginContractError,
     PlatformPluginManifestValidationError,
     PluginConflictError,
@@ -41,6 +43,18 @@ from intergrax.core.plugins.package_contract import (
     build_platform_plugin_manifest,
 )
 
+from intergrax.core.plugins.platform_semantics import (
+    PlatformCompatibilityReason,
+    PlatformCompatibilityResult,
+    PlatformPluginConflictKind,
+    PlatformPluginLifecycleState,
+    check_manifest_platform_compatibility,
+    check_platform_compatibility,
+    normalize_platform_version,
+    package_identities_conflict,
+    require_platform_compatibility,
+)
+
 __all__ = [
     "CapabilityDescriptor",
     "ConflictPolicy",
@@ -52,11 +66,17 @@ __all__ = [
     "EP_SKILLS",
     "EP_TOOL_INVOCATION_PATTERNS",
     "EP_TOOLS",
+    "InvalidPlatformVersionError",
     "LoadedPlugin",
     "LoadIsolation",
     "MANIFEST_SCHEMA_VERSION",
     "PlatformCompatibility",
+    "PlatformCompatibilityReason",
+    "PlatformCompatibilityResult",
+    "PlatformIncompatibilityError",
+    "PlatformPluginConflictKind",
     "PlatformPluginContractError",
+    "PlatformPluginLifecycleState",
     "PlatformPluginManifest",
     "PlatformPluginManifestValidationError",
     "PluginConflictError",
@@ -64,14 +84,19 @@ __all__ = [
     "PluginLoadError",
     "PluginPackageIdentity",
     "build_platform_plugin_manifest",
+    "check_manifest_platform_compatibility",
+    "check_platform_compatibility",
     "instantiate_entry_point_target",
     "iter_entry_point_specs",
     "load_entry_point_plugins",
     "load_entry_point_targets",
     "load_entry_point_value",
     "load_plugin_types",
+    "normalize_platform_version",
+    "package_identities_conflict",
     "parse_platform_plugin_manifest_data",
     "parse_platform_plugin_pyproject",
     "parse_platform_plugin_pyproject_toml",
     "register_plugins",
+    "require_platform_compatibility",
 ]

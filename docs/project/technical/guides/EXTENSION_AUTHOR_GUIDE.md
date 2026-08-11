@@ -420,7 +420,7 @@ A **Platform Plugin** is a **package-level coordination contract** — not a uni
 
 For a real `pyproject.toml`, `[project].name` and `[project].version` are **authoritative** distribution identity. Platform Plugin manifest identity fields must match them after Python packaging normalization — contradictory manifest metadata is rejected.
 
-**Important:** manifest-valid ≠ discovered ≠ enabled ≠ qualified ≠ production-qualified. Compatibility metadata is **declared** in PLUGIN-3; enforcement belongs to PLATFORM-PLUGIN-6. Secrets must **never** appear in Platform Plugin manifests.
+**Important:** manifest-valid ≠ discovered ≠ enabled ≠ qualified ≠ production-qualified. Declare `intergrax_version` using Python packaging version specifiers (e.g. `>=1.0,<2`); PLUGIN-6 checks compatibility via `check_platform_compatibility` — **compatible does not mean qualified**. Incompatible metadata must block activation once an approved host gate invokes the checker (PLUGIN-8 reference host). Installation alone does not prove platform compatibility. Secrets must **never** appear in Platform Plugin manifests.
 
 ### 13.1 Multi-capability external package example
 
