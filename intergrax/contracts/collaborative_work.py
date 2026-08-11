@@ -211,7 +211,13 @@ class EffectiveAuthorityRequest(BaseModel):
     membership: WorkspaceMembership | None = None
     delegation: AuthorityDelegation | None = None
 
-    @field_validator("tenant_id", "workspace_id", "acting_principal_id", "delegator_principal_id")
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "acting_principal_id",
+        "delegator_principal_id",
+        "resource_scope",
+    )
     @classmethod
     def _strip_required_or_optional(cls, value: str | None) -> str | None:
         if value is None:
@@ -228,6 +234,35 @@ class EffectiveAuthorityRequest(BaseModel):
         if not normalized or any(not scope for scope in normalized):
             raise ValueError("requested_authority_scopes must contain non-empty scope values")
         return normalized
+
+    @model_validator(mode="after")
+    def _validate_embedded_evidence_consistency(self) -> EffectiveAuthorityRequest:
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id"
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id"
+                )
+
+        return self
 
 
 class EffectiveAuthorityDecision(BaseModel):

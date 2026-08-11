@@ -58,6 +58,17 @@ def _membership(**overrides: object) -> WorkspaceMembership:
     return WorkspaceMembership.model_validate(payload)
 
 
+def _effective_authority_request(**overrides: object) -> EffectiveAuthorityRequest:
+    payload = {
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1",
+        "acting_principal_id": "principal-agent",
+        "requested_authority_scopes": ("workspace.write",),
+    }
+    payload.update(overrides)
+    return EffectiveAuthorityRequest.model_validate(payload)
+
+
 def _delegation(**overrides: object) -> AuthorityDelegation:
     payload = {
         "delegation_id": "delegation-1",
@@ -210,7 +221,7 @@ def test_effective_authority_request_and_decision_invariants() -> None:
         acting_principal_id="principal-agent",
         requested_authority_scopes=("workspace.write",),
         delegator_principal_id="principal-human",
-        membership=_membership(),
+        membership=_membership(principal_id="principal-agent"),
         delegation=_delegation(),
     )
     assert request.schema_version == SCHEMA_EFFECTIVE_AUTHORITY_REQUEST_V1
@@ -239,6 +250,86 @@ def test_fail_closed_decision_uses_policy_deny() -> None:
     )
     assert decision.decision.action is PolicyAction.DENY
     assert decision.denial_reason is EffectiveAuthorityDenialReason.MISSING_MEMBERSHIP
+
+
+@pytest.mark.unit
+def test_effective_authority_request_accepts_consistent_membership_and_delegation() -> None:
+    request = _effective_authority_request(
+        delegator_principal_id="principal-human",
+        membership=_membership(principal_id="principal-agent"),
+        delegation=_delegation(),
+    )
+    assert request.membership is not None
+    assert request.delegation is not None
+    assert request.membership.principal_id == request.acting_principal_id
+    assert request.delegation.delegate_principal_id == request.acting_principal_id
+
+
+@pytest.mark.unit
+def test_effective_authority_request_rejects_membership_tenant_mismatch() -> None:
+    with pytest.raises(ValidationError, match="membership tenant_id must match"):
+        _effective_authority_request(
+            membership=_membership(tenant_id="tenant-other", principal_id="principal-agent"),
+        )
+
+
+@pytest.mark.unit
+def test_effective_authority_request_rejects_membership_workspace_mismatch() -> None:
+    with pytest.raises(ValidationError, match="membership workspace_id must match"):
+        _effective_authority_request(
+            membership=_membership(
+                workspace_id="workspace-other",
+                principal_id="principal-agent",
+            ),
+        )
+
+
+@pytest.mark.unit
+def test_effective_authority_request_rejects_membership_principal_mismatch() -> None:
+    with pytest.raises(ValidationError, match="membership principal_id must match"):
+        _effective_authority_request(
+            membership=_membership(principal_id="principal-other"),
+        )
+
+
+@pytest.mark.unit
+def test_effective_authority_request_rejects_delegation_tenant_mismatch() -> None:
+    with pytest.raises(ValidationError, match="delegation tenant_id must match"):
+        _effective_authority_request(
+            delegation=_delegation(tenant_id="tenant-other"),
+        )
+
+
+@pytest.mark.unit
+def test_effective_authority_request_rejects_delegation_workspace_mismatch() -> None:
+    with pytest.raises(ValidationError, match="delegation workspace_id must match"):
+        _effective_authority_request(
+            delegation=_delegation(workspace_id="workspace-other"),
+        )
+
+
+@pytest.mark.unit
+def test_effective_authority_request_rejects_delegation_delegate_principal_mismatch() -> None:
+    with pytest.raises(ValidationError, match="delegation delegate_principal_id must match"):
+        _effective_authority_request(
+            delegation=_delegation(delegate_principal_id="principal-other"),
+        )
+
+
+@pytest.mark.unit
+def test_effective_authority_request_rejects_delegation_delegator_mismatch() -> None:
+    with pytest.raises(ValidationError, match="delegation delegator_principal_id must match"):
+        _effective_authority_request(
+            delegator_principal_id="principal-human",
+            delegation=_delegation(delegator_principal_id="principal-other"),
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("resource_scope", ["", "   "])
+def test_effective_authority_request_rejects_blank_resource_scope(resource_scope: str) -> None:
+    with pytest.raises(ValidationError, match="must be non-empty when provided"):
+        _effective_authority_request(resource_scope=resource_scope)
 
 
 @pytest.mark.unit
