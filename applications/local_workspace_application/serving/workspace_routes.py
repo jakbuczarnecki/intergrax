@@ -68,6 +68,8 @@ from local_workspace_application.serving.workspace_schemas import (
     WorkspaceResponseV1,
     WorkspaceSearchRequestV1,
     WorkspaceSearchResponseV1,
+    DocumentInspectLocationResponseV1,
+    DocumentInspectResponseV1,
 )
 from local_workspace_application.workspaces.ask_models import WorkspaceAskRun
 from local_workspace_application.workspaces.ask_repository import (
@@ -85,6 +87,10 @@ from local_workspace_application.workspaces.connected_source_wiring import (
 )
 from local_workspace_application.workspaces.document_indexing import (
     WorkspaceDocumentIndexingService,
+)
+from local_workspace_application.workspaces.document_inspect_service import (
+    DocumentInspectError,
+    DocumentInspectService,
 )
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_managed_workspace_document_store,
@@ -789,6 +795,7 @@ def mount_managed_workspace_routes(
         inspection_service=knowledge_inspection_service,
         readiness_provider=host_bundle.readiness,
     )
+    document_inspect_service = DocumentInspectService(repository=repository)
     knowledge_administration_service: KnowledgeAdministrationService | None = None
     confirmation_secret = settings.knowledge_admin_confirmation_secret.strip()
     if confirmation_secret:
@@ -978,6 +985,7 @@ def mount_managed_workspace_routes(
     app.state.lkw_knowledge_inspection_service = knowledge_inspection_service
     app.state.lkw_knowledge_operations_service = knowledge_operations_service
     app.state.lkw_workspace_setup_snapshot_service = setup_snapshot_service
+    app.state.lkw_document_inspect_service = document_inspect_service
     app.state.lkw_knowledge_administration_service = knowledge_administration_service
     app.state.lkw_managed_file_intake_service = managed_file_intake_service
     app.state.lkw_knowledge_intake_service = knowledge_intake_service
@@ -1490,6 +1498,55 @@ def mount_managed_workspace_routes(
             )
         except KnowledgeInventoryError as exc:
             raise _knowledge_inventory_http_exception(exc) from exc
+
+    @router.get(
+        "/workspaces/{workspace_id}/documents/{document_id}",
+        response_model=DocumentInspectResponseV1,
+    )
+    async def inspect_workspace_document(
+        request: Request,
+        workspace_id: str,
+        document_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> DocumentInspectResponseV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        if service.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+        inspect_service: DocumentInspectService = getattr(
+            request.app.state,
+            "lkw_document_inspect_service",
+            document_inspect_service,
+        )
+        try:
+            view = inspect_service.inspect(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                document_id=document_id,
+            )
+        except DocumentInspectError as exc:
+            if exc.error_code == "document_forbidden":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="document_forbidden",
+                ) from exc
+            raise _not_found() from exc
+        location = None
+        if view.location is not None:
+            location = DocumentInspectLocationResponseV1(
+                page=view.location.page,
+                logical_location=view.location.logical_location,
+            )
+        return DocumentInspectResponseV1(
+            document_id=view.document_id,
+            source_id=view.source_id,
+            display_name=view.display_name,
+            source_type=view.source_type,
+            source_label=view.source_label,
+            logical_location=view.logical_location,
+            location=location,
+            preview=view.preview,
+            external_url=view.external_url,
+        )
 
     @router.post(
         "/workspaces/{workspace_id}/knowledge/items/{item_id}/operations",

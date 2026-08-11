@@ -83,6 +83,10 @@ from local_workspace_application.workspaces.conversation_context_resolution impo
 from local_workspace_application.workspaces.conversation_workspace_selection_service import (
     ConversationWorkspaceSelectionService,
 )
+from local_workspace_application.workspaces.conversation_citation_context_service import (
+    ConversationCitationContextService,
+)
+from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_managed_workspace_document_store,
 )
@@ -477,6 +481,15 @@ def _build_conversation_interaction_application_service(
     )
     planner = ConversationInteractionPlanner(ask_service.llm_adapter)
     bridge = _AttachmentResolverBridge()
+
+    def clock() -> datetime:
+        return datetime.now(UTC)
+
+    citation_context_service = ConversationCitationContextService(
+        context_repository=context_repository,
+        ask_repository=WorkspaceAskRepository(store),
+        clock=clock,
+    )
     executor = ConversationInteractionExecutor(
         workspace_service=workspace_service,
         workspace_selection_service=selection_service,
@@ -493,10 +506,14 @@ def _build_conversation_interaction_application_service(
         trusted_attachment_resolver=bridge.resolve,
         web_url_intake_service=getattr(app.state, "lkw_web_url_intake_service", None),
         ask_service=ask_service,
+        document_inspect_service=getattr(
+            app.state,
+            "lkw_document_inspect_service",
+            None,
+        ),
+        citation_context_service=citation_context_service,
         knowledge_plugin_configuration_service=knowledge_plugin_configuration,
     )
-    def clock() -> datetime:
-        return datetime.now(UTC)
     memory_adapter = SessionHistorySnapshotConversationThreadMemoryAdapter(
         port=DocumentStoreThreadMemoryLifecyclePort(store),
     )
@@ -544,6 +561,7 @@ def _build_conversation_interaction_application_service(
             if setup_snapshot_service is not None
             else None
         ),
+        citation_context_service=citation_context_service,
     )
     bridge.service = interaction_service
     return interaction_service

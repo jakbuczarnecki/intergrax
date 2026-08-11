@@ -36,6 +36,7 @@ from local_workspace_application.conversation.interaction_models import (
     WebUrlExtractedObject,
     WorkspaceActivatePlannedAction,
     WorkspaceAskPlannedAction,
+    CitationInspectPlannedAction,
     WorkspaceCreatePlannedAction,
     WorkspaceDeletePlannedAction,
     WorkspaceListPlannedAction,
@@ -50,6 +51,14 @@ from local_workspace_application.conversation.interaction_reference_resolver imp
     ConversationReferenceResolutionError,
 )
 from local_workspace_application.workspaces.ask_service import WorkspaceAskService
+from local_workspace_application.workspaces.conversation_citation_context_service import (
+    ConversationCitationContextError,
+    ConversationCitationContextService,
+)
+from local_workspace_application.workspaces.document_inspect_service import (
+    DocumentInspectError,
+    DocumentInspectService,
+)
 from local_workspace_application.workspaces.conversation_context_models import (
     ConversationProductCapability,
 )
@@ -130,6 +139,7 @@ _ACTION_CAPABILITIES: dict[str, ConversationProductCapability] = {
     "knowledge.add_attachments": ConversationProductCapability.ATTACHMENT_INTAKE,
     "knowledge.add_sources": ConversationProductCapability.SOURCE_INTAKE,
     "workspace.ask": ConversationProductCapability.READ_ONLY_ASK,
+    "citation.inspect": ConversationProductCapability.READ_ONLY_ASK,
     "knowledge.connections.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
     "knowledge.resources.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
     "knowledge.capabilities.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
@@ -172,6 +182,12 @@ _SAFE_ERROR_CODES = frozenset(
         "knowledge_capability_not_bindable",
         "knowledge_configuration_snapshot_stale",
         "knowledge_plugin_configuration_unavailable",
+        "citation_context_not_found",
+        "citation_ordinal_invalid",
+        "citation_not_available",
+        "document_not_found",
+        "document_forbidden",
+        "document_inspect_unavailable",
     }
 )
 
@@ -207,6 +223,8 @@ class ConversationInteractionExecutor:
         web_url_intake_service: WebUrlIntakeServiceProtocol | None = None,
         local_reference_intake_service: LocalReferenceIntakeService | None = None,
         ask_service: WorkspaceAskService | None = None,
+        document_inspect_service: DocumentInspectService | None = None,
+        citation_context_service: ConversationCitationContextService | None = None,
         knowledge_plugin_configuration_service: KnowledgePluginConfigurationService | None = None,
         execution_id_factory: Callable[[], str] | None = None,
         clock: Callable[[], datetime] | None = None,
@@ -219,6 +237,8 @@ class ConversationInteractionExecutor:
         self._web_url_intake_service = web_url_intake_service
         self._local_reference_intake_service = local_reference_intake_service
         self._ask_service = ask_service
+        self._document_inspect_service = document_inspect_service
+        self._citation_context_service = citation_context_service
         self._knowledge_plugin_configuration = knowledge_plugin_configuration_service
         self._execution_id_factory = execution_id_factory or (lambda: str(uuid.uuid4()))
         self._clock = clock or (lambda: datetime.now(UTC))
@@ -799,6 +819,66 @@ class ConversationInteractionExecutor:
                     "status": _safe_attr(run, "status"),
                     "answer": getattr(run, "answer", None),
                     "citations": _safe_json(getattr(run, "citations", [])),
+                },
+            )
+        if isinstance(action, CitationInspectPlannedAction):
+            workspace_id = self._resolve_workspace_id(
+                action_id=action.action_id,
+                reference=action.workspace,
+                resolver=resolver,
+                created_workspace_ids=created_workspace_ids,
+                resolved_workspace_ids=resolved_workspace_ids,
+            )
+            if (
+                self._citation_context_service is None
+                or self._document_inspect_service is None
+            ):
+                raise RuntimeError("document_inspect_unavailable")
+            try:
+                resolved = self._citation_context_service.resolve_citation(
+                    context=command.execution_context,
+                    workspace_id=workspace_id,
+                    citation_ordinal=action.citation_ordinal,
+                )
+            except ConversationCitationContextError as exc:
+                raise RuntimeError(exc.error_code) from exc
+            page = (
+                resolved.citation.location.page
+                if resolved.citation.location is not None
+                else None
+            )
+            try:
+                inspected = self._document_inspect_service.inspect(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    document_id=resolved.citation.document_id,
+                    preview_hint=resolved.citation.excerpt or None,
+                    page=page,
+                    logical_location_hint=resolved.citation.file_name,
+                )
+            except DocumentInspectError as exc:
+                raise RuntimeError(exc.error_code) from exc
+            return ConversationExecutionArtifact(
+                artifact_type=action.action_type,
+                data={
+                    "workspace_id": workspace_id,
+                    "citation_ordinal": action.citation_ordinal,
+                    "run_id": resolved.run_id,
+                    "document_id": inspected.document_id,
+                    "display_name": inspected.display_name,
+                    "source_type": inspected.source_type,
+                    "source_label": inspected.source_label,
+                    "logical_location": inspected.logical_location,
+                    "location": (
+                        {
+                            "page": inspected.location.page,
+                            "logical_location": inspected.location.logical_location,
+                        }
+                        if inspected.location is not None
+                        else None
+                    ),
+                    "preview": inspected.preview,
+                    "external_url": inspected.external_url,
                 },
             )
         raise RuntimeError("interaction_action_unsupported")

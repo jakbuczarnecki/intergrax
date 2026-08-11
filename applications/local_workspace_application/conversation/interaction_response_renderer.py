@@ -45,11 +45,25 @@ _ERROR_MESSAGES = {
     "knowledge_resource_discovery_unavailable": "Remote resources are temporarily unavailable.",
     "knowledge_resource_not_found": "The requested remote resource is not available.",
     "knowledge_plugin_configuration_unavailable": "Knowledge integrations are temporarily unavailable.",
+    "citation_context_not_found": "I do not have a recent grounded answer with citations to inspect.",
+    "citation_ordinal_invalid": "That citation reference is not available.",
+    "citation_not_available": "That citation is no longer available.",
+    "document_not_found": "That source document is no longer available.",
+    "document_forbidden": "You do not have access to that source document.",
+    "document_inspect_unavailable": "Source inspection is temporarily unavailable.",
+    "attachment_too_large": "One or more attachments are too large.",
+    "attachment_unsupported": "One or more attachments are not supported.",
+    "intake_rejected": "The knowledge intake request could not be accepted.",
+    "ingestion_failed": "Knowledge preparation failed. Please try again.",
+    "ask_unavailable": "Asking questions is temporarily unavailable.",
+    "host_unavailable": "The workspace service is temporarily unavailable.",
+    "insufficient_evidence": "I could not find enough verified information to answer reliably.",
 }
 
 
 def _safe_text(value: object, *, limit: int = 500) -> str:
     text = _CONTROL_RE.sub(" ", str(value or ""))
+    text = text.replace("<", " ").replace(">", " ")
     text = " ".join(text.split()).strip()
     if len(text) > limit:
         return text[: limit - 1] + "…"
@@ -248,6 +262,28 @@ class ConversationInteractionResponseRenderer:
                     for index, label in enumerate(labels[:5], start=1):
                         lines.append(f"[{index}] {label}")
             return lines
+        if action_type == "citation.inspect":
+            display_name = _safe_text(data.get("display_name"), limit=200)
+            lines = []
+            if display_name:
+                lines.append(f"Source: {display_name}")
+            location = _mapping(data.get("location"))
+            page = location.get("page")
+            logical_location = _safe_text(
+                location.get("logical_location") or data.get("logical_location"),
+                limit=200,
+            )
+            if isinstance(page, int) and page > 0:
+                lines.append(f"Location: page {page}")
+            elif logical_location:
+                lines.append(f"Location: {logical_location}")
+            preview = _safe_text(data.get("preview"), limit=1200)
+            if preview:
+                lines.append(f"Preview: {preview}")
+            external_url = _safe_text(data.get("external_url"), limit=500)
+            if external_url:
+                lines.append(f"Open original: {external_url}")
+            return lines or ["Source details are not available."]
         return [f"Completed: {_safe_text(action_type, limit=100)}"]
 
 

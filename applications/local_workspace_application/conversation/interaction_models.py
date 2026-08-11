@@ -406,6 +406,12 @@ class WorkspaceAskPlannedAction(_PlannedActionBase):
     question: str = Field(min_length=1, max_length=_MAX_MESSAGE_TEXT_LEN)
 
 
+class CitationInspectPlannedAction(_PlannedActionBase):
+    action_type: Literal["citation.inspect"]
+    workspace: WorkspaceReference
+    citation_ordinal: int = Field(ge=1, le=50)
+
+
 PlannedAction = Annotated[
     WorkspaceListPlannedAction
     | WorkspaceCreatePlannedAction
@@ -419,7 +425,8 @@ PlannedAction = Annotated[
     | KnowledgeConnectionsListPlannedAction
     | KnowledgeResourcesListPlannedAction
     | KnowledgeCapabilitiesListPlannedAction
-    | WorkspaceAskPlannedAction,
+    | WorkspaceAskPlannedAction
+    | CitationInspectPlannedAction,
     Field(discriminator="action_type"),
 ]
 

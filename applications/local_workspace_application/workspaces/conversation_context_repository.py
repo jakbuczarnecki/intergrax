@@ -12,6 +12,7 @@ from intergrax.integrations.contracts.document_store import (
     DocumentStore,
 )
 from local_workspace_application.workspaces.conversation_context_models import (
+    ConversationCitationContextV1,
     ConversationContextBindingV1,
     PersonalConversationStateV1,
     WorkspaceConversationAudiencePolicyV1,
@@ -20,6 +21,7 @@ from local_workspace_application.workspaces.conversation_context_models import (
 _ENTITY_BINDING = "conversation_context_binding"
 _ENTITY_WORKSPACE_AUDIENCE = "conversation_context_workspace_audience"
 _ENTITY_PERSONAL_STATE = "conversation_context_personal_state"
+_ENTITY_CITATION_CONTEXT = "conversation_citation_context"
 _SEMANTIC_IDENTITY_SEPARATOR = "\x1e"
 _BINDING_SCAN_LIMIT = 100
 
@@ -416,3 +418,57 @@ class ConversationContextRepository:
             owner_principal_ref=owner_principal_ref,
         )
         self._store.delete(partition_key, row_key)
+
+    def _parse_citation_context(self, data: object) -> ConversationCitationContextV1:
+        model = self._parse_model(ConversationCitationContextV1, data)
+        if not isinstance(model, ConversationCitationContextV1):
+            raise ConversationContextRepositoryError("conversation_context_malformed_record")
+        return model
+
+    def put_citation_context_if_absent(
+        self,
+        context: ConversationCitationContextV1,
+    ) -> bool:
+        partition_key = _partition(context.tenant_id, _ENTITY_CITATION_CONTEXT)
+        row_key = context.conversation_context_binding_id
+        return self._put_if_absent(
+            context,
+            partition_key=partition_key,
+            row_key=row_key,
+        )
+
+    def get_citation_context(
+        self,
+        *,
+        tenant_id: str,
+        conversation_context_binding_id: str,
+    ) -> ConversationCitationContextV1 | None:
+        partition_key = _partition(tenant_id, _ENTITY_CITATION_CONTEXT)
+        record = self._store.get(partition_key, conversation_context_binding_id)
+        if record is None:
+            return None
+        context = self._parse_citation_context(dict(record.data))
+        if (
+            context.tenant_id != tenant_id
+            or context.conversation_context_binding_id != conversation_context_binding_id
+        ):
+            raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+        return context
+
+    def replace_citation_context_if_match(
+        self,
+        *,
+        expected: ConversationCitationContextV1,
+        replacement: ConversationCitationContextV1,
+    ) -> bool:
+        if expected.tenant_id != replacement.tenant_id:
+            raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+        if expected.conversation_context_binding_id != replacement.conversation_context_binding_id:
+            raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+        partition_key = _partition(expected.tenant_id, _ENTITY_CITATION_CONTEXT)
+        return self._replace_if_match(
+            expected=expected,
+            replacement=replacement,
+            partition_key=partition_key,
+            row_key=expected.conversation_context_binding_id,
+        )

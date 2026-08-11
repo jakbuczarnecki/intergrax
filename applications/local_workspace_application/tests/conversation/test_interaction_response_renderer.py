@@ -287,3 +287,48 @@ def test_bounded_prefix_regression_and_ellipsis_stay_within_limit() -> None:
     assert 0 < len(text) <= MAX_RESPONSE_CHARS
     assert text.startswith("Clarification needed:")
     assert text.endswith("…")
+
+
+def test_renderer_maps_first_run_errors_without_internal_leakage() -> None:
+    renderer = ConversationInteractionResponseRenderer()
+    for code, fragment in (
+        ("citation_not_available", "no longer available"),
+        ("document_forbidden", "do not have access"),
+        ("ask_unavailable", "temporarily unavailable"),
+        ("Traceback (most recent call last)", "could not complete"),
+    ):
+        if code.startswith("Traceback"):
+            text = renderer.render(
+                _result(
+                    status=ConversationInteractionOverallStatus.FAILED,
+                    actions=(
+                        _action(
+                            action_id="a1",
+                            action_type="workspace.ask",
+                            status=ConversationActionExecutionStatus.FAILED,
+                            error=ConversationExecutionError(
+                                code="action_execution_failed",
+                                action_id="a1",
+                            ),
+                        ),
+                    ),
+                )
+            )
+            assert "Traceback" not in text
+            continue
+        text = renderer.render(
+            _result(
+                status=ConversationInteractionOverallStatus.FAILED,
+                actions=(
+                    _action(
+                        action_id="a1",
+                        action_type="citation.inspect",
+                        status=ConversationActionExecutionStatus.FAILED,
+                        error=ConversationExecutionError(code=code, action_id="a1"),
+                    ),
+                ),
+            )
+        )
+        assert fragment.casefold() in text.casefold()
+        assert "C:\\" not in text
+        assert "Traceback" not in text

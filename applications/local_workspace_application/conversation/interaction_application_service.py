@@ -80,6 +80,10 @@ from local_workspace_application.workspaces.workspace_setup_snapshot_service imp
     WorkspaceSetupSnapshotService,
     WorkspaceSetupSnapshotV1,
 )
+from local_workspace_application.workspaces.conversation_citation_context_service import (
+    ConversationCitationContextError,
+    ConversationCitationContextService,
+)
 from local_workspace_application.workspaces.knowledge_plugin_configuration_service import (
     KnowledgePluginConfigurationService,
 )
@@ -165,6 +169,7 @@ class ConversationInteractionApplicationService:
         ingress_bootstrap_service: ConversationIngressBootstrapService | None = None,
         setup_snapshot_service: WorkspaceSetupSnapshotService | None = None,
         setup_onboarding_presenter: ConversationSetupOnboardingPresenter | None = None,
+        citation_context_service: ConversationCitationContextService | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         if not personal_allowed_capabilities:
@@ -187,6 +192,7 @@ class ConversationInteractionApplicationService:
             if setup_snapshot_service is not None
             else None
         )
+        self._citation_context = citation_context_service
         self._clock = clock or (lambda: datetime.now(UTC))
         self._configured_personal_capabilities = personal_allowed_capabilities
         self._attachment_registry: contextvars.ContextVar[dict[str, object]] = (
@@ -636,6 +642,38 @@ class ConversationInteractionApplicationService:
                 workspace_id=workspace_id,
             )
 
+    def _record_citation_context_from_execution(
+        self,
+        *,
+        execution_context: ConversationExecutionContextV1,
+        execution_result: ConversationInteractionExecutionResult,
+    ) -> None:
+        if self._citation_context is None:
+            return
+        workspace_id = (
+            execution_result.active_workspace_id or execution_context.workspace_id
+        ).strip()
+        if not workspace_id:
+            return
+        for item in execution_result.action_results:
+            if item.action_type != "workspace.ask":
+                continue
+            if item.status is not ConversationActionExecutionStatus.COMPLETED:
+                continue
+            if item.artifact is None or not isinstance(item.artifact.data, dict):
+                continue
+            run_id = str(item.artifact.data.get("run_id", "")).strip()
+            if not run_id:
+                continue
+            try:
+                self._citation_context.record_ask_run(
+                    context=execution_context,
+                    run_id=run_id,
+                    workspace_id=workspace_id,
+                )
+            except ConversationCitationContextError:
+                logger.warning("conversation citation context update failed")
+
     def _append_setup_guidance(
         self,
         *,
@@ -857,6 +895,11 @@ class ConversationInteractionApplicationService:
                 tenant_id=command.tenant_id,
                 workspace_id=execution_context.workspace_id,
                 snapshot=setup_snapshot,
+            )
+        if command is not None and execution_context is not None:
+            self._record_citation_context_from_execution(
+                execution_context=execution_context,
+                execution_result=execution_result,
             )
         try:
             pending = self._receipts.mark_response_pending(

@@ -295,6 +295,19 @@ class WorkspaceAskDraftAction(_DraftActionBase):
     question: str = Field(min_length=1, max_length=_MAX_MESSAGE_TEXT_LEN)
 
 
+class CitationInspectDraftAction(_DraftActionBase):
+    action_type: Literal["citation.inspect"]
+    workspace: DraftWorkspaceReference
+    citation_reference_kind: Literal["ordinal"]
+    citation_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+    @model_validator(mode="after")
+    def _validate_citation_reference(self) -> Self:
+        if not self.citation_reference.isdigit() or int(self.citation_reference) < 1:
+            raise ValueError("ordinal citation_reference must be a positive integer string")
+        return self
+
+
 DraftPlannedAction = Annotated[
     WorkspaceListDraftAction
     | WorkspaceCreateDraftAction
@@ -308,7 +321,8 @@ DraftPlannedAction = Annotated[
     | KnowledgeConnectionsListDraftAction
     | KnowledgeResourcesListDraftAction
     | KnowledgeCapabilitiesListDraftAction
-    | WorkspaceAskDraftAction,
+    | WorkspaceAskDraftAction
+    | CitationInspectDraftAction,
     Field(discriminator="action_type"),
 ]
 

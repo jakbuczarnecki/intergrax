@@ -30,6 +30,7 @@ from local_workspace_application.conversation.interaction_draft_models import (
     SourceListDraftAction,
     WorkspaceActivateDraftAction,
     WorkspaceAskDraftAction,
+    CitationInspectDraftAction,
     WorkspaceCreateDraftAction,
     WorkspaceDeleteDraftAction,
     WorkspaceListDraftAction,
@@ -53,6 +54,7 @@ from local_workspace_application.conversation.interaction_models import (
     WebUrlExtractedObject,
     WorkspaceActivatePlannedAction,
     WorkspaceAskPlannedAction,
+    CitationInspectPlannedAction,
     WorkspaceCreatePlannedAction,
     WorkspaceDeletePlannedAction,
     WorkspaceListPlannedAction,
@@ -455,6 +457,14 @@ def _compile_action(
             action_type="workspace.ask",
             workspace=workspace,
             question=action.question,
+            **common,
+        )
+    if isinstance(action, CitationInspectDraftAction):
+        assert workspace is not None
+        return CitationInspectPlannedAction(
+            action_type="citation.inspect",
+            workspace=workspace,
+            citation_ordinal=int(action.citation_reference),
             **common,
         )
     raise TypeError("unsupported draft action type")

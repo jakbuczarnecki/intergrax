@@ -292,3 +292,24 @@ class WebUrlAcceptedV1(BaseModel):
         "failed",
     ]
     safe_display_url: str
+
+
+class DocumentInspectLocationResponseV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    page: int | None = None
+    logical_location: str | None = None
+
+
+class DocumentInspectResponseV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    document_id: str
+    source_id: str
+    display_name: str
+    source_type: str
+    source_label: str
+    logical_location: str | None = None
+    location: DocumentInspectLocationResponseV1 | None = None
+    preview: str | None = None
+    external_url: str | None = None

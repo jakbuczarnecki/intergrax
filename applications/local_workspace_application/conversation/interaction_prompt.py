@@ -46,6 +46,10 @@ Rules:
 22. Use knowledge.connections.list for configured connections,
     knowledge.resources.list for a registered discovery selector, and
     knowledge.capabilities.list for a registered connection/resource scope.
+23. Use citation.inspect when the user asks to inspect, show, or open a numbered source
+    or citation from the most recent grounded answer (e.g. "show source 1", "open citation 2").
+    Use citation_reference_kind ordinal with the cited number from the user message.
+    Do not ask the user for document IDs.
 
 Example — different workspace targets:
 User message:
