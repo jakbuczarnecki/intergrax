@@ -58,13 +58,26 @@ services:
       start_period: 20s
     restart: unless-stopped
 
+  otel-collector-data-init:
+    image: alpine:3.21
+    user: "0:0"
+    volumes:
+      - lkw_otel_data:/var/lib/otelcol
+    command: ["chown", "10001:10001", "/var/lib/otelcol"]
+    restart: "no"
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    user: "10001:10001"
     volumes:
       - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+      - lkw_otel_data:/var/lib/otelcol
     ports:
       - "4318:4318"
+    depends_on:
+      otel-collector-data-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   local_workspace:
@@ -110,3 +123,4 @@ volumes:
   qdrant_data:
   ollama_data:
   lkw_application_data:
+  lkw_otel_data:
