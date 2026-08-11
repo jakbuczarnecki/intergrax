@@ -165,6 +165,25 @@ def test_qdrant_opens_imports_client_and_builds_rag_store() -> None:
     assert result.rag_store is mock_rag_store
 
 
+def test_qdrant_integration_delegates_list_source_record_ids() -> None:
+    inner = MagicMock()
+    inner.list_source_record_ids.return_value = ("chunk-a", "chunk-b")
+    integration = QdrantVectorStoreIntegration.from_store(
+        QdrantIntegrationConfig(url="http://localhost:6333", collection_name="coll"),
+        inner,
+    )
+    scope = VectorStoreScope(tenant_id="tenant-a", namespace=None, workspace_id="ws-a")
+    ids = integration.list_source_record_ids(
+        source_id="/data/user_docs/proof.txt",
+        scope=scope,
+    )
+    inner.list_source_record_ids.assert_called_once_with(
+        source_id="/data/user_docs/proof.txt",
+        scope=scope,
+    )
+    assert ids == ("chunk-a", "chunk-b")
+
+
 def test_chroma_opens_imports_chromadb_and_builds_rag_store() -> None:
     config = ChromaIntegrationConfig(collection_name="coll", tenant_id="t1")
     mock_rag_store = MagicMock()

@@ -270,9 +270,17 @@ def test_sentry_conf_secret_key_not_empty_literal() -> None:
 
 
 def test_docs_mention_canonical_all_in_one_startup() -> None:
-    sentry_doc = (_DOCS_DIR / "SENTRY_OBSERVABILITY.md").read_text(encoding="utf-8")
+    sentry_doc = (
+        _PROJECT_ROOT
+        / "docs"
+        / "project"
+        / "technical"
+        / "applications"
+        / "local_workspace_application"
+        / "SENTRY_OBSERVABILITY.md"
+    ).read_text(encoding="utf-8")
     platform_proof = (
-        _PROJECT_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
+        _PROJECT_ROOT / "docs" / "project" / "proofs" / "LKW_PLATFORM_PROOF.md"
     ).read_text(encoding="utf-8")
     win_cmd = "applications\\local_workspace_application\\scripts\\run-local-docker-all.bat"
     posix_cmd = "applications/local_workspace_application/scripts/run-local-docker-all.sh"

@@ -1337,6 +1337,9 @@ def main(argv: list[str] | None = None) -> int:
     ):
         fields: dict[str, object] = {
             "expected_source_path": document.container_source_path,
+            "observed_source_refs": (
+                list(diagnostics.source_refs) if diagnostics is not None else []
+            ),
             "observed_source_ref_count": (
                 len(diagnostics.source_refs) if diagnostics is not None else 0
             ),

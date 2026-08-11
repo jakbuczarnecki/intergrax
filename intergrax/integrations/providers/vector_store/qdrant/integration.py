@@ -126,6 +126,18 @@ class QdrantVectorStoreIntegration(VectorStoreIntegrationContract):
     def count(self, *, scope: VectorStoreScope) -> int:
         return self._require_inner().count(scope=scope)
 
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        inner = self._require_inner()
+        lookup = getattr(inner, "list_source_record_ids", None)
+        if not callable(lookup):
+            raise RuntimeError("vectorstore_source_record_lookup_not_supported")
+        return lookup(source_id=source_id, scope=scope)
+
     def health(self) -> HealthStatus | bool:
         inner = self._inner
         if inner is None:

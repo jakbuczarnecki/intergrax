@@ -553,7 +553,7 @@ def test_plan_status_documents_agree_lkw7_closed() -> None:
     plan = _read(_IMPLEMENTATION_PLAN)
     runtime = _read(_RUNTIME_ARCH)
 
-    for text in (architecture, plan, runtime):
+    for text in (architecture, runtime):
         assert _table_status_for_milestone(text, "LKW.7") == "Closed", (
             "LKW.7 Closed missing"
         )
@@ -562,6 +562,12 @@ def test_plan_status_documents_agree_lkw7_closed() -> None:
         assert "LKW.7C In progress" not in text
         assert "LKW.7 — **In progress**" not in text
         assert "LKW.7 | File watcher + incremental index | **In progress**" not in text
+
+    # Product-first implementation plan defers LKW.7 milestone status to ARCHITECTURE.md.
+    assert "archive/IMPLEMENTATION_PLAN_2026-07-22.md" in plan
+    assert "LKW-PLUGIN-CAPABILITY-CONFIGURATION-1" in plan
+    assert "LKW.7 — **In progress**" not in plan
+    assert "LKW.7 | File watcher + incremental index | **In progress**" not in plan
 
     # Detailed LKW.7C* status lives in architecture + runtime roadmap tables.
     for text in (architecture, runtime):
