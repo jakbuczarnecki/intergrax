@@ -552,3 +552,50 @@ class MyToolPlugin:
 ```
 
 Configuration parsing (`parse_platform_plugin_pyproject_toml`, profile models) is **side-effect free** — it does not discover or register plugins.
+
+---
+
+## 15. Trust, qualification and production gates (PLATFORM-PLUGIN-7)
+
+**Canon:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) §16, §18.
+
+Qualification is **evidence that a subject meets domain/program thresholds** — not installation, discovery, compatibility, or lifecycle enablement.
+
+| State | Meaning |
+|-------|---------|
+| installed / discovered / loadable / contract-valid / enabled | Prerequisite/runtime states (§14) — **not** qualification |
+| qualified | Domain/program evidence threshold met |
+| production-qualified | Approved for production host profiles |
+| live-qualified | Optional domain-specific label (e.g. VK, RAG live backends) |
+
+### 15.1 External package author
+
+- Wheel + setuptools entry points make capabilities **discoverable** — discoverable ≠ qualified.
+- Optional `[tool.intergrax.plugin]` manifest supports package-level coordination only.
+- `check_platform_compatibility` (PLUGIN-6) produces compatibility evidence; **compatible ≠ qualified**.
+- Host/domain collects capability/domain evidence and sets qualification status.
+- Production host profiles must require **production-qualified** evidence via `require_production_qualification` (PLUGIN-8 reference host will invoke before activation).
+
+### 15.2 Application developer — host-embedded extension
+
+Local modules (e.g. `applications/my_app/extensions/my_tool.py`) may implement domain contracts (`ToolPlugin`, `IntegrationPlugin`, …) and enter via **explicit host registration** (`register_tool_plugin`, `register_integration_plugin`, …).
+
+- Packaging as a wheel is **not required** for qualification.
+- Entry-point discovery is **not required** when the host registers the class directly.
+- The same capability/domain qualification model applies; use `PluginDeliverySource.HOST_EMBEDDED_EXTENSION` subject identity with `host_registration_path`.
+- Production use still requires production-qualified evidence and host/domain gates — same as external packages.
+
+### 15.3 Python contract API
+
+```python
+from intergrax.core.plugins import (
+    PluginQualificationLevel,
+    PluginQualificationStatus,
+    build_external_package_subject,
+    build_host_embedded_capability_subject,
+    build_qualification_result,
+    require_production_qualification,
+)
+```
+
+Evidence records are immutable and safe to log — never include secrets or raw credential-bearing payloads.

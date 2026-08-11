@@ -49,3 +49,11 @@ class PlatformIncompatibilityError(PlatformPluginContractError):
     def __init__(self, message: str, *, result: object | None = None) -> None:
         super().__init__(message)
         self.result = result
+
+
+class ProductionQualificationRequiredError(PlatformPluginContractError):
+    """Production host profile requires production-qualified evidence."""
+
+    def __init__(self, message: str, *, result: object | None = None) -> None:
+        super().__init__(message)
+        self.result = result

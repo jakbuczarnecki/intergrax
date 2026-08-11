@@ -535,6 +535,8 @@ plugin capability (consumes explicit bindings only)
 - **Discovery is not qualification.**
 - **Qualification is not sandboxing.**
 
+**CURRENT STATE (PLUGIN-7):** Shared enum `PlatformPluginTrustModel` (`trusted_in_process` only) in `intergrax/core/plugins/platform_qualification.py`. Optional audit distinction `PluginTrustOrigin` (`host_local_code`, `installed_third_party_package`). No verified/signed/sandboxed claims.
+
 | Topic | Decision |
 |-------|----------|
 | Code signing | Not required by platform architecture (future product decision) |
@@ -595,7 +597,23 @@ installed → discovered → loadable → contract-valid → enabled → qualifi
 
 A package may be installed but carry **mixed** qualification across capabilities.
 
----
+**CURRENT STATE (PLUGIN-7):** Shared contracts in `intergrax/core/plugins/platform_qualification.py`:
+
+- `PluginQualificationLevel` — `package`, `capability`, `domain`
+- `PluginQualificationStatus` — `not_qualified`, `qualified`, `production_qualified`, `rejected` (distinct from lifecycle states in §14)
+- `PluginQualificationSubject` + `PluginQualificationResult` + `PluginQualificationEvidence` — immutable audit records; no persistence or global registry
+- `PluginDeliverySource` — `external_package` vs `host_embedded_extension` (both converge on domain qualification; wheel/entry-point not required for host-embedded path)
+- `require_production_qualification` / `evaluate_package_production_admission` — pure production gates; compatible/enabled alone insufficient
+- `live-qualified` — optional domain label via `domain_qualification_label` / evidence kind `live_qualification`; not a mandatory platform state
+
+**Delivery modes (FROZEN):**
+
+| Mode | Entry | Package metadata | Qualification path |
+|------|-------|------------------|-------------------|
+| **A. External package** | setuptools entry point → discovery | `[project]` + optional `[tool.intergrax.plugin]` | Package + capability + domain evidence; PLUGIN-6 compatibility applies at package boundary |
+| **B. Host-embedded extension** | explicit `register_*_plugin()` / host wiring | Not required | Same capability/domain qualification model; `host_registration_path` identity; compatibility N/A at package boundary |
+
+PLUGIN-8 proves executable E2E for both modes. PLUGIN-7 does not wire gates into every host bootstrap.
 
 ## 19. Observability expectations
 
@@ -756,7 +774,7 @@ Testable statements for audits and PLATFORM-PLUGIN-9 closeout:
 | **PLUGIN-4** | Shared discovery utility adoption; additive discovery flags; per-EP import isolation improvements; **no** global catalog merge |
 | **PLUGIN-5** | **Done** — §12.3 cross-surface config/secrets/DI matrix; §12.4 canonical flow; author guide §14; domain DI preserved; no global container |
 | **PLUGIN-6** | **Done** — `platform_semantics.py`: explicit-version compatibility check API; `PlatformPluginLifecycleState` vocabulary; `PlatformPluginConflictKind` vocabulary; `package_identities_conflict` helper; EP conflict classification on `PluginConflictError`; **no** global lifecycle engine, conflict policy, or qualification gates |
-| **PLUGIN-7** | Qualification gates; trust labeling; production vs discoverable separation in CI/host |
+| **PLUGIN-7** | **Done** — `platform_qualification.py`: trust model (`PlatformPluginTrustModel`); qualification level/status/evidence/subject/result contracts; delivery source (`external_package`, `host_embedded_extension`); pure production gates (`require_production_qualification`, `evaluate_package_production_admission`); PLUGIN-6 compatibility consumed as evidence; no sandbox/signing claims; no global registry or persistence |
 | **PLUGIN-8** | Author scaffolds; **third-party reference package** (genuine external wheel); executable E2E proof: install → discovery → config → DI → runtime → cleanup **without core changes** |
 | **PLUGIN-9** | Contract tests; CI gates; deprecation execution; final platform closeout audit per roadmap |
 
