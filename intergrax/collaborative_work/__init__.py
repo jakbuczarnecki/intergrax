@@ -3,9 +3,11 @@
 """Collaborative Work platform domain — membership, delegation, and authority resolution."""
 
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
+from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
 from intergrax.collaborative_work.policy_composition import compose_policy_decisions
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
+    InMemoryCollaborativeOperationPolicyProfileRepository,
     InMemoryCollaborativePolicyRepository,
     InMemoryPrincipalAuthorityRepository,
     InMemoryWorkspaceMembershipRepository,
@@ -19,6 +21,12 @@ from intergrax.collaborative_work.repository import (
     AuthorityDelegationRevisionConflict,
     AuthorityDelegationScopeKey,
     CollaborativePolicyRepository,
+    CollaborativeOperationPolicyProfileAlreadyExists,
+    CollaborativeOperationPolicyProfileIdempotencyConflict,
+    CollaborativeOperationPolicyProfileNotFound,
+    CollaborativeOperationPolicyProfileRepository,
+    CollaborativeOperationPolicyProfileRevisionConflict,
+    CollaborativeOperationPolicyProfileScopeKey,
     CollaborativePolicyRuleAlreadyExists,
     CollaborativePolicyRuleIdempotencyConflict,
     CollaborativePolicyRuleNotFound,
@@ -26,6 +34,7 @@ from intergrax.collaborative_work.repository import (
     CollaborativePolicyRuleScopeKey,
     CollaborativeWorkRepositoryCapabilities,
     CreateAuthorityDelegationCommand,
+    CreateCollaborativeOperationPolicyProfileCommand,
     CreateCollaborativePolicyRuleCommand,
     CreatePrincipalAuthorityGrantCommand,
     CreateWorkspaceMembershipCommand,
@@ -37,6 +46,7 @@ from intergrax.collaborative_work.repository import (
     PrincipalAuthorityGrantRevisionConflict,
     PrincipalAuthorityGrantScopeKey,
     UpdateAuthorityDelegationCommand,
+    UpdateCollaborativeOperationPolicyProfileCommand,
     UpdateCollaborativePolicyRuleCommand,
     UpdatePrincipalAuthorityGrantCommand,
     UpdateWorkspaceMembershipCommand,
@@ -50,6 +60,7 @@ from intergrax.collaborative_work.repository import (
 
 __all__ = [
     "CollaborativeWorkAuthorityResolver",
+    "CollaborativeWorkEnforcementGate",
     "CollaborativePolicyEvaluator",
     "compose_policy_decisions",
     "INITIAL_RECORD_REVISION",
@@ -59,6 +70,12 @@ __all__ = [
     "AuthorityDelegationRepository",
     "AuthorityDelegationRevisionConflict",
     "AuthorityDelegationScopeKey",
+    "CollaborativeOperationPolicyProfileAlreadyExists",
+    "CollaborativeOperationPolicyProfileIdempotencyConflict",
+    "CollaborativeOperationPolicyProfileNotFound",
+    "CollaborativeOperationPolicyProfileRepository",
+    "CollaborativeOperationPolicyProfileRevisionConflict",
+    "CollaborativeOperationPolicyProfileScopeKey",
     "CollaborativePolicyRepository",
     "CollaborativePolicyRuleAlreadyExists",
     "CollaborativePolicyRuleIdempotencyConflict",
@@ -67,10 +84,12 @@ __all__ = [
     "CollaborativePolicyRuleScopeKey",
     "CollaborativeWorkRepositoryCapabilities",
     "CreateAuthorityDelegationCommand",
+    "CreateCollaborativeOperationPolicyProfileCommand",
     "CreateCollaborativePolicyRuleCommand",
     "CreatePrincipalAuthorityGrantCommand",
     "CreateWorkspaceMembershipCommand",
     "InMemoryAuthorityDelegationRepository",
+    "InMemoryCollaborativeOperationPolicyProfileRepository",
     "InMemoryCollaborativePolicyRepository",
     "InMemoryPrincipalAuthorityRepository",
     "InMemoryWorkspaceMembershipRepository",
@@ -81,6 +100,7 @@ __all__ = [
     "PrincipalAuthorityGrantRevisionConflict",
     "PrincipalAuthorityGrantScopeKey",
     "UpdateAuthorityDelegationCommand",
+    "UpdateCollaborativeOperationPolicyProfileCommand",
     "UpdateCollaborativePolicyRuleCommand",
     "UpdatePrincipalAuthorityGrantCommand",
     "UpdateWorkspaceMembershipCommand",

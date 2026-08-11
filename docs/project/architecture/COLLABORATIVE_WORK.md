@@ -142,6 +142,18 @@ Collaborative Work owns authoritative workspace and resource policy persistence 
 - **Applicability classification remains separate** — evaluators answer only when explicitly asked; they do not emit ``NOT_APPLICABLE``.
 - **Policy management authorization is out of scope** — creating/updating rules is highly privileged and must itself be authority/policy gated in future administration.
 
+### Trusted operation classification and enforcement gate (COLLAB-WORK-1G)
+
+Collaborative Work owns authoritative operation → policy-layer classification and the reusable final enforcement gate:
+
+    operation_id → ``CollaborativeOperationPolicyProfile`` → authority + workspace + resource + runtime evaluation → ``compose_policy_decisions``
+
+- **Applicability source is authoritative** — operation profiles declare ``REQUIRED`` / ``NOT_APPLICABLE`` per layer; callers must not supply ``PolicyCompositionApplicability`` or skip flags.
+- **Profile binds authority scope** — enforcement uses profile-owned ``authority_scope``; caller cannot substitute a weaker scope.
+- **Meaningful side-effect requirement forces runtime policy** — contradictory profiles are rejected at contract validation.
+- **Gate orchestrates existing owners** — ``CollaborativeWorkAuthorityResolver``, ``CollaborativePolicyEvaluator``, and ``RuntimePolicyEngine`` / ``PolicyEngine`` meaningful-side-effect path; no duplicated composition or runtime evaluator.
+- **Missing or inactive profile fails closed** — classification unresolved yields DENY; no operation executes inside the gate.
+
 ---
 
 ## MP-1 contract direction

@@ -17,8 +17,13 @@ from intergrax.collaborative_work.repository import (
     CollaborativePolicyRuleIdempotencyConflict,
     CollaborativePolicyRuleNotFound,
     CollaborativePolicyRuleRevisionConflict,
+    CollaborativeOperationPolicyProfileAlreadyExists,
+    CollaborativeOperationPolicyProfileIdempotencyConflict,
+    CollaborativeOperationPolicyProfileNotFound,
+    CollaborativeOperationPolicyProfileRevisionConflict,
     CollaborativeWorkRepositoryCapabilities,
     CreateAuthorityDelegationCommand,
+    CreateCollaborativeOperationPolicyProfileCommand,
     CreateCollaborativePolicyRuleCommand,
     CreatePrincipalAuthorityGrantCommand,
     CreateWorkspaceMembershipCommand,
@@ -28,6 +33,7 @@ from intergrax.collaborative_work.repository import (
     PrincipalAuthorityGrantNotFound,
     PrincipalAuthorityGrantRevisionConflict,
     UpdateAuthorityDelegationCommand,
+    UpdateCollaborativeOperationPolicyProfileCommand,
     UpdateCollaborativePolicyRuleCommand,
     UpdatePrincipalAuthorityGrantCommand,
     UpdateWorkspaceMembershipCommand,
@@ -38,6 +44,7 @@ from intergrax.collaborative_work.repository import (
 )
 from intergrax.contracts.collaborative_work import (
     AuthorityDelegation,
+    CollaborativeOperationPolicyProfile,
     CollaborativePolicyRule,
     PolicyCompositionLayer,
     PrincipalAuthorityGrant,
@@ -50,6 +57,7 @@ AuthorityGrantKey: TypeAlias = tuple[str, str, str]
 PrincipalKey: TypeAlias = tuple[str, str, str]
 PolicyRuleKey: TypeAlias = tuple[str, str, str]
 PolicyExactKey: TypeAlias = tuple[str, str, str, str, str]
+OperationProfileKey: TypeAlias = tuple[str, str, str]
 IdempotencyKey: TypeAlias = tuple[str, str, str]
 
 
@@ -75,6 +83,12 @@ class _AuthorityGrantIdempotencyEntry:
 class _PolicyRuleIdempotencyEntry:
     fingerprint: str
     original_result: CollaborativePolicyRule
+
+
+@dataclass(frozen=True, slots=True)
+class _OperationProfileIdempotencyEntry:
+    fingerprint: str
+    original_result: CollaborativeOperationPolicyProfile
 
 
 class InMemoryWorkspaceMembershipRepository:
@@ -732,6 +746,163 @@ class InMemoryCollaborativePolicyRepository:
     @staticmethod
     def _scope_matches(
         record: CollaborativePolicyRule,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> bool:
+        return record.tenant_id == tenant_id.strip() and record.workspace_id == workspace_id.strip()
+
+
+class InMemoryCollaborativeOperationPolicyProfileRepository:
+    """Process-local reference repository for operation policy profiles."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._records: dict[OperationProfileKey, CollaborativeOperationPolicyProfile] = {}
+        self._idempotency: dict[IdempotencyKey, _OperationProfileIdempotencyEntry] = {}
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return CollaborativeWorkRepositoryCapabilities(
+            backend_id="collaborative_work.operation_profile.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def create(
+        self,
+        command: CreateCollaborativeOperationPolicyProfileCommand,
+    ) -> CollaborativeOperationPolicyProfile:
+        key = self._operation_key(
+            command.tenant_id,
+            command.workspace_id,
+            command.operation_id,
+        )
+        with self._lock:
+            if command.idempotency_key is not None:
+                replay = self._replay_profile_create(command)
+                if replay is not None:
+                    return replay
+
+            if key in self._records:
+                raise CollaborativeOperationPolicyProfileAlreadyExists(
+                    "operation policy profile already exists"
+                )
+
+            record = CollaborativeOperationPolicyProfile(
+                operation_id=command.operation_id,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                authority_scope=command.authority_scope,
+                workspace_policy_applicability=command.workspace_policy_applicability,
+                resource_policy_applicability=command.resource_policy_applicability,
+                runtime_policy_applicability=command.runtime_policy_applicability,
+                resource_requirement=command.resource_requirement,
+                meaningful_side_effect_requirement=command.meaningful_side_effect_requirement,
+                status=command.status,
+                revision=INITIAL_RECORD_REVISION,
+            )
+            self._records[key] = record
+            self._store_profile_idempotency(command, record)
+            return record
+
+    def get_for_operation(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        operation_id: str,
+    ) -> CollaborativeOperationPolicyProfile | None:
+        key = self._operation_key(tenant_id, workspace_id, operation_id)
+        with self._lock:
+            record = self._records.get(key)
+            if record is None:
+                return None
+            if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
+                return None
+            return record
+
+    def update(
+        self,
+        command: UpdateCollaborativeOperationPolicyProfileCommand,
+    ) -> CollaborativeOperationPolicyProfile:
+        key = self._operation_key(
+            command.scope.tenant_id,
+            command.scope.workspace_id,
+            command.scope.operation_id,
+        )
+        with self._lock:
+            current = self._records.get(key)
+            if current is None or not self._scope_matches(
+                current,
+                tenant_id=command.scope.tenant_id,
+                workspace_id=command.scope.workspace_id,
+            ):
+                raise CollaborativeOperationPolicyProfileNotFound(
+                    "operation policy profile was not found"
+                )
+            if current.revision != command.expected_revision:
+                raise CollaborativeOperationPolicyProfileRevisionConflict(
+                    "operation policy profile revision conflict"
+                )
+
+            replacement = CollaborativeOperationPolicyProfile(
+                operation_id=current.operation_id,
+                tenant_id=current.tenant_id,
+                workspace_id=current.workspace_id,
+                authority_scope=command.authority_scope,
+                workspace_policy_applicability=command.workspace_policy_applicability,
+                resource_policy_applicability=command.resource_policy_applicability,
+                runtime_policy_applicability=command.runtime_policy_applicability,
+                resource_requirement=command.resource_requirement,
+                meaningful_side_effect_requirement=command.meaningful_side_effect_requirement,
+                status=command.status,
+                revision=current.revision + 1,
+            )
+            self._records[key] = replacement
+            return replacement
+
+    def _replay_profile_create(
+        self,
+        command: CreateCollaborativeOperationPolicyProfileCommand,
+    ) -> CollaborativeOperationPolicyProfile | None:
+        assert command.idempotency_key is not None
+        entry = self._idempotency.get(
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
+        )
+        if entry is None:
+            return None
+        if entry.fingerprint != command.semantic_fingerprint():
+            raise CollaborativeOperationPolicyProfileIdempotencyConflict(
+                "operation policy profile idempotency key conflict"
+            )
+        return entry.original_result
+
+    def _store_profile_idempotency(
+        self,
+        command: CreateCollaborativeOperationPolicyProfileCommand,
+        record: CollaborativeOperationPolicyProfile,
+    ) -> None:
+        if command.idempotency_key is None:
+            return
+        self._idempotency[
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
+        ] = _OperationProfileIdempotencyEntry(
+            fingerprint=command.semantic_fingerprint(),
+            original_result=record,
+        )
+
+    @staticmethod
+    def _operation_key(tenant_id: str, workspace_id: str, operation_id: str) -> OperationProfileKey:
+        return (tenant_id.strip(), workspace_id.strip(), operation_id.strip())
+
+    @staticmethod
+    def _idempotency_key(tenant_id: str, workspace_id: str, idempotency_key: str) -> IdempotencyKey:
+        return (tenant_id.strip(), workspace_id.strip(), idempotency_key.strip())
+
+    @staticmethod
+    def _scope_matches(
+        record: CollaborativeOperationPolicyProfile,
         *,
         tenant_id: str,
         workspace_id: str,

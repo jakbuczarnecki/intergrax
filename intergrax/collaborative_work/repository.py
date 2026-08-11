@@ -36,11 +36,15 @@ from typing import Protocol, runtime_checkable
 from intergrax.contracts.collaborative_work import (
     AuthorityDelegation,
     AuthorityGrantStatus,
+    CollaborativeOperationPolicyProfile,
+    CollaborativeOperationPolicyProfileStatus,
     CollaborativePolicyRule,
     CollaborativePolicyRuleStatus,
     DelegationStatus,
     MembershipStatus,
+    OperationPolicyRequirement,
     PolicyCompositionLayer,
+    PolicyLayerApplicability,
     PrincipalAuthorityGrant,
     WorkspaceMembership,
     WorkspaceMembershipRole,
@@ -725,3 +729,162 @@ class CollaborativePolicyRepository(Protocol):
 
     def update(self, command: UpdateCollaborativePolicyRuleCommand) -> CollaborativePolicyRule:
         """Replace policy rule semantics under optimistic concurrency."""
+
+
+class CollaborativeOperationPolicyProfileNotFound(Exception):
+    """Operation policy profile was not found for the requested tenant/workspace scope."""
+
+
+class CollaborativeOperationPolicyProfileAlreadyExists(Exception):
+    """Operation policy profile already exists for the requested scoped identity."""
+
+
+class CollaborativeOperationPolicyProfileRevisionConflict(Exception):
+    """Optimistic revision conflict for operation policy profile."""
+
+
+class CollaborativeOperationPolicyProfileIdempotencyConflict(Exception):
+    """Idempotency key replayed with a different semantic command."""
+
+
+@dataclass(frozen=True, slots=True)
+class CollaborativeOperationPolicyProfileScopeKey:
+    tenant_id: str
+    workspace_id: str
+    operation_id: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "tenant_id",
+            _require_non_empty(self.tenant_id, field_name="tenant_id"),
+        )
+        object.__setattr__(
+            self,
+            "workspace_id",
+            _require_non_empty(self.workspace_id, field_name="workspace_id"),
+        )
+        object.__setattr__(
+            self,
+            "operation_id",
+            _require_non_empty(self.operation_id, field_name="operation_id"),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CreateCollaborativeOperationPolicyProfileCommand:
+    tenant_id: str
+    workspace_id: str
+    operation_id: str
+    authority_scope: str
+    workspace_policy_applicability: PolicyLayerApplicability
+    resource_policy_applicability: PolicyLayerApplicability
+    runtime_policy_applicability: PolicyLayerApplicability
+    resource_requirement: OperationPolicyRequirement
+    meaningful_side_effect_requirement: OperationPolicyRequirement
+    status: CollaborativeOperationPolicyProfileStatus = CollaborativeOperationPolicyProfileStatus.ACTIVE
+    idempotency_key: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "tenant_id",
+            _require_non_empty(self.tenant_id, field_name="tenant_id"),
+        )
+        object.__setattr__(
+            self,
+            "workspace_id",
+            _require_non_empty(self.workspace_id, field_name="workspace_id"),
+        )
+        object.__setattr__(
+            self,
+            "operation_id",
+            _require_non_empty(self.operation_id, field_name="operation_id"),
+        )
+        object.__setattr__(
+            self,
+            "authority_scope",
+            _require_non_empty(self.authority_scope, field_name="authority_scope"),
+        )
+        if self.idempotency_key is not None:
+            object.__setattr__(
+                self,
+                "idempotency_key",
+                _require_non_empty(self.idempotency_key, field_name="idempotency_key"),
+            )
+
+    def semantic_fingerprint(self) -> str:
+        payload = {
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "operation_id": self.operation_id,
+            "authority_scope": self.authority_scope,
+            "workspace_policy_applicability": self.workspace_policy_applicability.value,
+            "resource_policy_applicability": self.resource_policy_applicability.value,
+            "runtime_policy_applicability": self.runtime_policy_applicability.value,
+            "resource_requirement": self.resource_requirement.value,
+            "meaningful_side_effect_requirement": self.meaningful_side_effect_requirement.value,
+            "status": self.status.value,
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class UpdateCollaborativeOperationPolicyProfileCommand:
+    scope: CollaborativeOperationPolicyProfileScopeKey
+    expected_revision: int
+    authority_scope: str
+    workspace_policy_applicability: PolicyLayerApplicability
+    resource_policy_applicability: PolicyLayerApplicability
+    runtime_policy_applicability: PolicyLayerApplicability
+    resource_requirement: OperationPolicyRequirement
+    meaningful_side_effect_requirement: OperationPolicyRequirement
+    status: CollaborativeOperationPolicyProfileStatus
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "scope",
+            _require_scope_key(self.scope, CollaborativeOperationPolicyProfileScopeKey),
+        )
+        object.__setattr__(
+            self,
+            "expected_revision",
+            _require_non_negative_int(self.expected_revision, field_name="expected_revision"),
+        )
+        object.__setattr__(
+            self,
+            "authority_scope",
+            _require_non_empty(self.authority_scope, field_name="authority_scope"),
+        )
+
+
+@runtime_checkable
+class CollaborativeOperationPolicyProfileRepository(Protocol):
+    """Authoritative persistence port for operation policy profiles."""
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+
+    def create(
+        self,
+        command: CreateCollaborativeOperationPolicyProfileCommand,
+    ) -> CollaborativeOperationPolicyProfile:
+        """Create an operation profile at ``INITIAL_RECORD_REVISION``."""
+
+    def get_for_operation(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        operation_id: str,
+    ) -> CollaborativeOperationPolicyProfile | None:
+        """Return profile for the scoped operation identity or ``None``."""
+
+    def update(
+        self,
+        command: UpdateCollaborativeOperationPolicyProfileCommand,
+    ) -> CollaborativeOperationPolicyProfile:
+        """Replace profile semantics under optimistic concurrency."""

@@ -133,7 +133,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-1F |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Authoritative workspace and resource policy source returning real ``PolicyDecision`` values for composition |
 | **Dependencies** | COLLAB-WORK-1E approved; `compose_policy_decisions`; `PolicyDecision` / `PolicyAction` |
 | **Exact scope** | `CollaborativePolicyRule` contract; `CollaborativePolicyRepository` port; in-memory adapter; `CollaborativePolicyEvaluator`; exact-key lookup; fail-closed evaluation |
@@ -142,7 +142,22 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Policy DSL; second PolicyEngine; operation applicability classifier; enforcement wiring; policy-management authorization/API; wildcard/inheritance; MP-2+ rows |
 | **Acceptance** | Workspace/resource evaluators return authoritative ``PolicyDecision``; missing/inactive rules DENY; exact scope matching only; outputs compose with 1E; policy administration authorization unsolved |
 | **Proof requirements** | `tests/unit/collaborative_work/test_collaborative_policy_source.py`; `tests/unit/collaborative_work/test_policy_composition.py` regressions |
-| **Next step** | Trusted operation classification + final enforcement/adoption wiring |
+| **Next step** | COLLAB-WORK-1G — trusted operation classification and final enforcement gate |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1G |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | Authoritative operation policy classification and reusable final enforcement gate orchestrating authority, workspace/resource/runtime policy, and composition |
+| **Dependencies** | COLLAB-WORK-1E approved; COLLAB-WORK-1F approved; `compose_policy_decisions`; `CollaborativeWorkAuthorityResolver`; `CollaborativePolicyEvaluator`; `RuntimePolicyEngine.evaluate_meaningful_side_effect` |
+| **Exact scope** | `CollaborativeOperationPolicyProfile` contract; profile repository port; in-memory adapter; `CollaborativeWorkEnforcementGate`; runtime identity validation; fail-closed classification |
+| **REUSED** | `PolicyCompositionApplicability`; `compose_policy_decisions`; authority resolver; workspace/resource evaluators; `RuntimePolicyEngine` / `PolicyEngine` meaningful-side-effect path; COLLAB-WORK-1B revision semantics |
+| **NEW** | `intergrax/collaborative_work/enforcement_gate.py`; operation profile contracts; profile repository; `tests/unit/collaborative_work/test_enforcement_gate.py`; `tests/unit/collaborative_work/test_operation_policy_profile_repository.py` |
+| **Explicit out of scope** | Broad application adoption; LKW operation catalog; policy management APIs; durable SQL adapter; MP-2+ rows |
+| **Acceptance** | Caller cannot control applicability or authority scope; active profile classifies layers; missing/disabled profile DENY; required resource/runtime validated; final ALLOW only when all required layers ALLOW; no operation execution in gate |
+| **Proof requirements** | `tests/unit/collaborative_work/test_enforcement_gate.py`; `tests/unit/collaborative_work/test_operation_policy_profile_repository.py`; policy composition and policy source regressions |
+| **Next step** | Production adoption wiring / durable backend gate |
 
 ---
 

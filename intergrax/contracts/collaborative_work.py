@@ -28,6 +28,7 @@ from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 
 SCHEMA_COLLABORATIVE_PRINCIPAL_V1: Final = "collaborative_principal.v1"
@@ -40,6 +41,15 @@ SCHEMA_POLICY_COMPOSITION_APPLICABILITY_V1: Final = "policy_composition_applicab
 SCHEMA_POLICY_COMPOSITION_INPUT_V1: Final = "policy_composition_input.v1"
 SCHEMA_POLICY_COMPOSITION_RESULT_V1: Final = "policy_composition_result.v1"
 SCHEMA_COLLABORATIVE_POLICY_RULE_V1: Final = "collaborative_policy_rule.v1"
+SCHEMA_COLLABORATIVE_OPERATION_POLICY_PROFILE_V1: Final = (
+    "collaborative_operation_policy_profile.v1"
+)
+SCHEMA_COLLABORATIVE_WORK_ENFORCEMENT_REQUEST_V1: Final = (
+    "collaborative_work_enforcement_request.v1"
+)
+SCHEMA_COLLABORATIVE_WORK_ENFORCEMENT_RESULT_V1: Final = (
+    "collaborative_work_enforcement_result.v1"
+)
 
 _SUPPORTED_COLLABORATIVE_POLICY_ACTIONS: Final = frozenset(
     {
@@ -495,3 +505,187 @@ class CollaborativePolicyRule(BaseModel):
         else:
             raise ValueError("layer must be WORKSPACE_POLICY or RESOURCE_POLICY")
         return self
+
+
+class OperationPolicyRequirement(StrEnum):
+    """Whether an operation requires a concrete resource or meaningful side-effect evaluation."""
+
+    REQUIRED = "required"
+    NOT_APPLICABLE = "not_applicable"
+
+
+class CollaborativeOperationPolicyProfileStatus(StrEnum):
+    """Lifecycle for authoritative operation policy profiles."""
+
+    ACTIVE = "active"
+    DISABLED = "disabled"
+
+
+_AUTHORITATIVE_PROFILE_APPLICABILITY: Final = frozenset(
+    {
+        PolicyLayerApplicability.REQUIRED,
+        PolicyLayerApplicability.NOT_APPLICABLE,
+    }
+)
+
+
+class CollaborativeOperationPolicyProfile(BaseModel):
+    """Authoritative operation → policy-layer classification for enforcement gating.
+
+    Profiles classify which policy layers are required; evaluators produce decisions.
+    ``UNKNOWN`` applicability is a resolution failure state and must not be authored.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["collaborative_operation_policy_profile.v1"] = (
+        SCHEMA_COLLABORATIVE_OPERATION_POLICY_PROFILE_V1
+    )
+    operation_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    authority_scope: str = _NON_EMPTY
+    workspace_policy_applicability: PolicyLayerApplicability
+    resource_policy_applicability: PolicyLayerApplicability
+    runtime_policy_applicability: PolicyLayerApplicability
+    resource_requirement: OperationPolicyRequirement
+    meaningful_side_effect_requirement: OperationPolicyRequirement
+    status: CollaborativeOperationPolicyProfileStatus = CollaborativeOperationPolicyProfileStatus.ACTIVE
+    revision: int = Field(ge=0)
+
+    @field_validator(
+        "operation_id",
+        "tenant_id",
+        "workspace_id",
+        "authority_scope",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @field_validator(
+        "workspace_policy_applicability",
+        "resource_policy_applicability",
+        "runtime_policy_applicability",
+    )
+    @classmethod
+    def _reject_unknown_applicability(cls, value: PolicyLayerApplicability) -> PolicyLayerApplicability:
+        if value is PolicyLayerApplicability.UNKNOWN:
+            raise ValueError("UNKNOWN applicability cannot be authored in operation profiles")
+        if value not in _AUTHORITATIVE_PROFILE_APPLICABILITY:
+            raise ValueError("unsupported profile applicability value")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_internal_consistency(self) -> CollaborativeOperationPolicyProfile:
+        if self.meaningful_side_effect_requirement is OperationPolicyRequirement.REQUIRED:
+            if self.runtime_policy_applicability is not PolicyLayerApplicability.REQUIRED:
+                raise ValueError(
+                    "meaningful side-effect requirement requires runtime policy REQUIRED"
+                )
+        if self.resource_requirement is OperationPolicyRequirement.REQUIRED:
+            if self.resource_policy_applicability is not PolicyLayerApplicability.REQUIRED:
+                raise ValueError("resource requirement requires resource policy REQUIRED")
+        return self
+
+
+class CollaborativeWorkEnforcementRequest(BaseModel):
+    """Minimal trusted input for the final enforcement gate.
+
+    Callers identify the operation and supply locator context for authority resolution.
+    They must not supply policy applicability or pre-evaluated policy decisions.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["collaborative_work_enforcement_request.v1"] = (
+        SCHEMA_COLLABORATIVE_WORK_ENFORCEMENT_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    operation_id: str = _NON_EMPTY
+    acting_principal_id: str = _NON_EMPTY
+    delegator_principal_id: str | None = None
+    resource_scope: str | None = None
+    membership: WorkspaceMembership | None = None
+    delegation: AuthorityDelegation | None = None
+    meaningful_side_effect_request: MeaningfulSideEffectRequest | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "operation_id",
+        "acting_principal_id",
+        "delegator_principal_id",
+        "resource_scope",
+    )
+    @classmethod
+    def _strip_required_or_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_embedded_locators(self) -> CollaborativeWorkEnforcementRequest:
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id"
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id"
+                )
+
+        return self
+
+
+class CollaborativeWorkEnforcementResult(BaseModel):
+    """Auditable enforcement gate output with profile identity and composed decision."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["collaborative_work_enforcement_result.v1"] = (
+        SCHEMA_COLLABORATIVE_WORK_ENFORCEMENT_RESULT_V1
+    )
+    operation_id: str = _NON_EMPTY
+    profile_revision: int | None = Field(default=None, ge=0)
+    authority_scope: str | None = None
+    composition: PolicyCompositionResult
+
+    @field_validator("operation_id")
+    @classmethod
+    def _strip_operation_id(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @field_validator("authority_scope")
+    @classmethod
+    def _strip_optional_scope(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
