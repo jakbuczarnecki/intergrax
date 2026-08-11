@@ -278,6 +278,126 @@ def test_claim_blocks_subsequent_active_revision_update() -> None:
     assert service.replace_workspace_if_match(current, stale_update) is False
 
 
+def test_deleting_workspace_sealed_against_current_record_mutation() -> None:
+    service, repository, _ = _service()
+    created = service.create_workspace(tenant_id=_TENANT, name="Alpha")
+    current = repository.get_workspace(tenant_id=_TENANT, workspace_id=created.workspace_id)
+    assert current is not None
+    assert repository.claim_workspace_deletion_if_match(current, claimed_at=_NOW)
+
+    deleting = repository.get_workspace(tenant_id=_TENANT, workspace_id=created.workspace_id)
+    assert deleting is not None
+    renamed = deleting.model_copy(
+        update={"name": "Renamed", "workspace_revision": 3, "updated_at": _NOW + timedelta(seconds=1)}
+    )
+    assert service.replace_workspace_if_match(deleting, renamed) is False
+
+    reloaded = repository.get_workspace(tenant_id=_TENANT, workspace_id=created.workspace_id)
+    assert reloaded is not None
+    assert reloaded.status is WorkspaceStatus.DELETING
+    assert reloaded.name == "Alpha"
+    assert reloaded.workspace_revision == 2
+
+
+def test_deleting_cannot_reactivate_to_active() -> None:
+    service, repository, _ = _service()
+    created = service.create_workspace(tenant_id=_TENANT, name="Alpha")
+    current = repository.get_workspace(tenant_id=_TENANT, workspace_id=created.workspace_id)
+    assert current is not None
+    assert repository.claim_workspace_deletion_if_match(current, claimed_at=_NOW)
+
+    deleting = repository.get_workspace(tenant_id=_TENANT, workspace_id=created.workspace_id)
+    assert deleting is not None
+    reactivated = deleting.model_copy(
+        update={
+            "status": WorkspaceStatus.ACTIVE,
+            "workspace_revision": 3,
+            "updated_at": _NOW + timedelta(seconds=1),
+        }
+    )
+    assert service.replace_workspace_if_match(deleting, reactivated) is False
+
+    reloaded = repository.get_workspace(tenant_id=_TENANT, workspace_id=created.workspace_id)
+    assert reloaded is not None
+    assert reloaded.status is WorkspaceStatus.DELETING
+
+
+def test_normal_active_mutation_succeeds_with_monotonic_revision() -> None:
+    service, repository, _ = _service()
+    created = service.create_workspace(tenant_id=_TENANT, name="Alpha")
+    bumped = created.model_copy(
+        update={"workspace_revision": 2, "updated_at": _NOW + timedelta(seconds=1)}
+    )
+    assert service.replace_workspace_if_match(created, bumped)
+
+    reloaded = repository.get_workspace(tenant_id=_TENANT, workspace_id=created.workspace_id)
+    assert reloaded is not None
+    assert reloaded.workspace_revision == 2
+    assert reloaded.status is WorkspaceStatus.ACTIVE
+
+
+def test_ordinary_mutation_rejects_invalid_revision_progression() -> None:
+    service, repository, _ = _service()
+    created = service.create_workspace(tenant_id=_TENANT, name="Alpha")
+
+    skipped = created.model_copy(
+        update={"workspace_revision": 3, "updated_at": _NOW + timedelta(seconds=1)}
+    )
+    assert service.replace_workspace_if_match(created, skipped) is False
+
+    same_revision = created.model_copy(
+        update={"name": "Renamed", "updated_at": _NOW + timedelta(seconds=1)}
+    )
+    assert service.replace_workspace_if_match(created, same_revision) is False
+
+    reloaded = repository.get_workspace(tenant_id=_TENANT, workspace_id=created.workspace_id)
+    assert reloaded is not None
+    assert reloaded.workspace_revision == 1
+    assert reloaded.name == "Alpha"
+
+
+def test_deletion_claim_still_transitions_active_to_deleting() -> None:
+    service, repository, _ = _service()
+    created = service.create_workspace(tenant_id=_TENANT, name="Alpha")
+    current = repository.get_workspace(tenant_id=_TENANT, workspace_id=created.workspace_id)
+    assert current is not None
+
+    assert repository.claim_workspace_deletion_if_match(current, claimed_at=_NOW)
+
+    deleting = repository.get_workspace(tenant_id=_TENANT, workspace_id=created.workspace_id)
+    assert deleting is not None
+    assert deleting.status is WorkspaceStatus.DELETING
+    assert deleting.workspace_revision == current.workspace_revision + 1
+
+
+def test_deletion_resume_and_finalize_after_claim() -> None:
+    tracking = _TrackingVectorCleanup()
+    service, repository, _ = _service(
+        vector_cleanup=tracking,
+        managed_file_cleanup=_FailingManagedFileCleanup(),
+    )
+    created = service.create_workspace(tenant_id=_TENANT, name="Alpha")
+
+    with pytest.raises(OSError, match="managed_file_cleanup_failed"):
+        service.delete_workspace_with_revision_claim(
+            tenant_id=_TENANT,
+            workspace_id=created.workspace_id,
+            expected_revision=created.workspace_revision,
+        )
+
+    service._managed_file_cleanup = None  # type: ignore[method-assign]
+    outcome, name = service.delete_workspace_with_revision_claim(
+        tenant_id=_TENANT,
+        workspace_id=created.workspace_id,
+        expected_revision=created.workspace_revision,
+    )
+
+    assert outcome == "deleted"
+    assert name == "Alpha"
+    assert len(tracking.calls) == 2
+    assert repository.get_workspace(tenant_id=_TENANT, workspace_id=created.workspace_id) is None
+
+
 @pytest.mark.asyncio
 async def test_cross_tenant_token_fails_without_cleanup() -> None:
     tracking = _TrackingVectorCleanup()

@@ -1,6 +1,6 @@
 # Platform Plugins
 
-**Status:** Canonical architecture (PLATFORM-PLUGIN-2 frozen)
+**Status:** Canonical architecture (PLATFORM-PLUGIN-2 frozen) · PLUGIN-5 config/secrets/DI conventions **Done**
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Program roadmap:** [`plan/PLATFORM_PLUGINS.md`](../maintainers/plans/PLATFORM_PLUGINS.md)
 **Audit evidence:** [`plan/PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](../maintainers/plans/PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md)
@@ -34,6 +34,8 @@
 10. [Registration and composition architecture](#10-registration-and-composition-architecture)
 11. [Manifest and metadata model](#11-manifest-and-metadata-model)
 12. [Configuration and secrets](#12-configuration-and-secrets)
+    - [12.3 Cross-surface configuration, secrets and DI matrix](#123-cross-surface-configuration-secrets-and-di-matrix)
+    - [12.4 Canonical configuration flow](#124-canonical-configuration-flow)
 13. [Dependency injection](#13-dependency-injection)
 14. [Lifecycle model](#14-lifecycle-model)
 15. [Compatibility and versioning](#15-compatibility-and-versioning)
@@ -390,35 +392,87 @@ It **must not** duplicate full domain contract payloads (tool schemas, integrati
 | **Domain capability** | Domain contract + profile | `IntegrationManifest.env_prefix`, tool/skill bundle config, RAG profile sections |
 | **Application** | Tier-3 host | `ApplicationEnvironmentProfile`, `.env`, feature flags, which capabilities enabled |
 
-**TARGET principle:** Capability implementations should receive **resolved configuration** from host/domain mechanisms (profile, wiring context, injected config objects). Direct `os.environ` reads are **discouraged** as the primary configuration path except where a domain contract explicitly standardizes env prefixes (integrations today).
+**FROZEN principle (PLUGIN-5):** Capability implementations should receive **resolved configuration** from host/domain mechanisms (profile, wiring context, injected config objects). Direct `os.environ` reads are **discouraged** as the primary configuration path except where a domain contract explicitly standardizes env prefixes (integrations today). See §12.3 matrix and §12.4 flow.
 
 **Optional dependencies:** Declared in package metadata; domains define graceful absence behavior. Platform does not force a global optional-deps resolver.
 
 ### 12.2 Credentials and secrets
 
-| | CURRENT STATE | TARGET ARCHITECTURE |
+| | CURRENT STATE (PLUGIN-5) | TARGET ARCHITECTURE |
 |---|---------------|---------------------|
-| Secret storage | Integration `env_prefix`; host secret stores; ad hoc per domain | Unchanged storage diversity, clarified ownership |
+| Secret storage | Integration `env_prefix`; host secret stores; ad hoc per domain | Unchanged storage diversity, clarified ownership (§12.3) |
 | Plugin access | Full process privileges; no platform sandbox | **Capabilities receive only required credentials/bindings** resolved by host/domain |
-| Metadata | Secrets must not appear in manifests or EP targets | **Frozen** |
+| Metadata | Secrets must not appear in manifests or EP targets; `reject_secret_like_keys` enforces Platform Plugin manifest | **Frozen** |
 | Default | No unrestricted global secret API for plugins | **Frozen** |
 
 Installation of a plugin package is a **trust decision** (§16). Secret scope limiting is a **host/domain responsibility**, not something plugin metadata can safely enforce alone.
+
+### 12.3 Cross-surface configuration, secrets and DI matrix
+
+**PLATFORM-PLUGIN-5 outcome:** Representative public PEP surfaces already expose **domain-owned** configuration and injection shapes. No universal runtime configuration object or global Platform Plugin DI container is required. The matrix below is the canonical reference for PLUGIN-8 author docs and PLUGIN-9 closeout.
+
+| Domain surface | PLUGIN-5 class | Configuration owner | Credentials / secrets owner | DI / materialization | Direct `os.environ` in capability code | Host resolves before materialization | Reusable primitive | PLUGIN-5 action |
+|----------------|----------------|---------------------|-----------------------------|----------------------|----------------------------------------|--------------------------------------|--------------------|-----------------|
+| **Integrations** (`IntegrationPlugin`) | **B** — document convention | Application host + `IntegrationProfile`; domain `IntegrationManifest` | Host / `IntegrationProfile` + integration `env_prefix` (domain contract) | `IntegrationProfile.resolve(category)` → `create_integration(**kwargs)` | **Allowed** when manifest declares `env_prefix` (domain-owned compatibility) | Yes — profile selects provider before factory | `IntegrationProfile`, `IntegrationManifest.env_prefix` | Document `env_prefix` as integration exception; no migration |
+| **Tools** (`ToolPlugin`) | **A** — already aligned | Application host + `ToolProfile` | Host via `ToolWiringContext` integration slots (`secrets_store`, …) | `register_tools(registry, ctx: ToolWiringContext)` | Discouraged for portable plugins | Yes | `ToolWiringContext` | Document only |
+| **Skills** (`SkillPlugin`) | **B** — document convention | Application host + `SkillProfile` (enablement) | Runtime credentials stay with tools/host | `register_skills(SkillRegistry)` — declarative manifests | Not applicable (declarative) | Yes — profile gates bundles | `SkillProfile` | Document only; runtime deps via tools |
+| **Context** (`ContextPlugin`) | **B** — document convention | Host / `ContextProfile` in `ApplicationEnvironmentProfile` | Typically none at plugin boundary | `register(registry: ContextPluginRegistry)` | Discouraged for portable plugins | Yes | `ContextPluginRegistry` | Document only |
+| **RAG components** (chunkers / retrievers / rerankers) | **A** — already aligned | Host + `RagProfile`; bootstrap kwargs | Via integration bindings passed into bootstrap | `BaseRetrieverPlugin.create(vector_store=…, profile=…)` etc. | `RagProfile` may use domain env helpers when host passes profile from env | Yes — bootstrap receives resolved managers | `RagProfile`, per-component bootstrap | Document only; no generic RAG context |
+| **Memory stores** (`intergrax.memory_stores`) | **B** — document convention | Host + `MemoryProfile` | Host passes kwargs / integration refs to factories | `create_user_profile_store(**kwargs)` / `create_session_storage(**kwargs)` | Discouraged unless kwargs explicitly document env ownership | Yes — host invokes factories | `UserProfileStorePlugin` / `SessionStoragePlugin` | Document factory kwargs ownership |
+| **Security defenses** (`SecurityDefensePlugin`) | **A** — already aligned | Host security wiring / `ApplicationSecurityProfile` | None via entry point; inspect `HookContext` only | `PluginSecurityDefenseMiddleware(plugin, event_bus=…)` | Discouraged | Yes | `HookContext`, `SecurityFailMode` | Document only |
+| **Policy rules** (`PolicyRuleHandler`) | **A** — already aligned | Host + `PolicyRulesProfile` / YAML bundle | None in handler EP | `evaluate(rule, context=dict[str, str])` via `PolicyRuleRegistry` | Discouraged | Yes | `PolicyRuleRegistry` | Document only |
+| **Tool invocation patterns** (`ToolInvocationPattern`) | **A** — already aligned | Nexus runtime config (`ToolInvocationMode`) | None | `execute(state, invoker, planner, …)` | Not applicable (stateless orchestration) | Yes — mode selects pattern | `ToolInvocationMode` → pattern | Document only |
+| **Vendor Knowledge** (`VendorKnowledgeProviderContribution`) | **D** — defer (DO-NOT-UNIFY) | Host builder + `KnowledgeSourceBinding` | `credential_ref` scoped per binding | Instance-local contribution catalog / builders | Not a portable EP config surface | Yes — tenant-scoped composition | VK builders, `KnowledgeSourceBinding` | Document host/domain boundary only |
+
+**Classification key:** **A** = already aligned · **B** = documentation/convention only · **C** = small additive wiring contract (none required in PLUGIN-5) · **D** = defer — domain architecture must not change under Platform Plugin banner.
+
+**Rejected in PLUGIN-5:** global Platform Plugin DI container, global secrets store, universal plugin configuration schema, service locator, global `get_secret()` API, new application configuration framework.
+
+### 12.4 Canonical configuration flow
+
+Cross-cutting invariant (all PEP surfaces):
+
+```text
+application config / environment / secret source
+        ↓
+host / domain resolver (profile, wiring, enablement)
+        ↓
+typed profile / resolved config / wiring context
+        ↓
+domain materializer (registry, bootstrap, factory)
+        ↓
+plugin capability (consumes explicit bindings only)
+```
+
+| Layer | Configuration responsibility | Secret responsibility |
+|-------|------------------------------|----------------------|
+| **Platform Plugin package manifest** (`[tool.intergrax.plugin]`) | Coordination metadata only — package id, compatibility, capability pointers | **Prohibited** — validated by `reject_secret_like_keys` (PLUGIN-3) |
+| **Setuptools entry points** | Identify import target only | **Prohibited** in EP values |
+| **Domain manifests** (`IntegrationManifest`, tool/skill bundles, …) | Domain-specific non-secret fields (e.g. `env_prefix` name, not value) | **Prohibited** as manifest field values |
+| **Application / host** | Selects capabilities, environment/profile, feature flags | Resolves credentials into domain bindings |
+| **Domain profile / wiring** | Validates and materializes domain config shape | Scopes credentials to least privilege for the capability |
+| **Capability implementation** | Consumes resolved config objects / constructor parameters | Receives only explicitly passed credential bindings |
+
+**Environment access rule:** Direct `os.environ` reads are **not** a portable Platform Plugin author contract. They remain **supported** where a domain contract explicitly owns env-prefix semantics (integrations `env_prefix` today). New portable plugin code should prefer host-resolved profiles and wiring contexts.
+
+**Configuration resolution rule:** Parsing profiles, manifests, or Platform Plugin metadata **must not** register plugins or mutate global catalogs as a side effect. Discovery and configuration resolution are separate phases (§9.3).
 
 ---
 
 ## 13. Dependency injection
 
-**Host-owned DI principles (TARGET):**
+**Host-owned DI principles (FROZEN — PLUGIN-5):**
 
 1. Plugin package **declares** capability via entry point / domain plugin type.
 2. Host/domain **decides** runtime dependencies (integrations, vector stores, event bus, policy engine, wiring contexts).
 3. Capability implementation **must not** invent hidden global bindings where injection is available for that domain.
-4. Domain-specific injection shapes remain **domain-owned** (e.g. RAG retriever receives vector store + embedding manager; tools receive `ToolWiringContext`).
+4. Domain-specific injection shapes remain **domain-owned** (e.g. RAG retriever receives vector store + embedding manager; tools receive `ToolWiringContext`; integrations receive profile-resolved factories).
+5. **Least-credential rule:** a capability receives only the credential bindings required for its domain operation — not an application-wide secret dictionary.
+6. **No hidden service locator:** plugin implementations must not depend on module-level mutable global dependency registries, generic `get_service(...)`, global platform secret accessors, or implicit application singletons where explicit domain wiring exists.
 
-**Explicit non-goal:** A new global Platform Plugin DI container. Reuse existing wiring contexts and profile builders.
+**Explicit non-goal:** A new global Platform Plugin DI container. Reuse existing wiring contexts and profile builders (see §12.3 matrix).
 
-**CURRENT STATE:** Some globals exist (catalog snapshots, shipped bootstrap). New work should not expand implicit globals.
+**CURRENT STATE (PLUGIN-5):** Domain-owned injection shapes are authoritative across inspected PEP surfaces. Optional `[tool.intergrax.plugin]` parsing and profile construction are side-effect free. Some process-scoped globals remain (catalog snapshots, shipped bootstrap); new work must not expand implicit globals or introduce cross-domain service locators.
 
 ---
 
@@ -687,8 +741,9 @@ Testable statements for audits and PLATFORM-PLUGIN-9 closeout:
 9. **Public contracts require explicit compatibility ownership** (§20).
 10. **Future harmonization preserves supported packages** through additive compatibility and deprecation strategy.
 11. **No single global entry-point group** replaces domain groups.
-12. **Secrets are not plugin metadata** and are resolved by host/domain.
+12. **Secrets are not plugin metadata** and are resolved by host/domain (§12.3–§12.4).
 13. **Multi-capability packages are allowed**; capabilities are separately discoverable.
+14. **No global Platform Plugin DI container or global secret API** — domain wiring contexts and profiles remain authoritative (§13).
 
 ---
 
@@ -698,7 +753,7 @@ Testable statements for audits and PLATFORM-PLUGIN-9 closeout:
 |-------|-------------------------------------------|
 | **PLUGIN-3** | Author contract docs; optional package manifest schema; capability descriptor format; packaging rules for multi-capability wheels; **no** new runtime wrapper class |
 | **PLUGIN-4** | Shared discovery utility adoption; additive discovery flags; per-EP import isolation improvements; **no** global catalog merge |
-| **PLUGIN-5** | Config/secrets matrix implementation; wiring conventions; discourage raw env access in scaffolds |
+| **PLUGIN-5** | **Done** — §12.3 cross-surface config/secrets/DI matrix; §12.4 canonical flow; author guide §14; domain DI preserved; no global container |
 | **PLUGIN-6** | Compatibility metadata enforcement tooling; shared conflict vocabulary helpers; **domain policies remain** |
 | **PLUGIN-7** | Qualification gates; trust labeling; production vs discoverable separation in CI/host |
 | **PLUGIN-8** | Author scaffolds; **third-party reference package** (genuine external wheel); executable E2E proof: install → discovery → config → DI → runtime → cleanup **without core changes** |

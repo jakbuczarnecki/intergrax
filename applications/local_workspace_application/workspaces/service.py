@@ -36,9 +36,34 @@ from local_workspace_application.workspaces.vector_cleanup import (
 
 logger = logging.getLogger(__name__)
 
+_ORDINARY_MUTABLE_WORKSPACE_STATUSES = frozenset(
+    {
+        WorkspaceStatus.ACTIVE,
+        WorkspaceStatus.ARCHIVED,
+    }
+)
+
 
 def _utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+def _validate_ordinary_workspace_mutation(
+    expected: Workspace,
+    replacement: Workspace,
+) -> bool:
+    if expected.status is WorkspaceStatus.DELETING:
+        return False
+    if replacement.status is WorkspaceStatus.DELETING:
+        return False
+    if expected.status not in _ORDINARY_MUTABLE_WORKSPACE_STATUSES:
+        return False
+    if (
+        replacement.tenant_id != expected.tenant_id
+        or replacement.workspace_id != expected.workspace_id
+    ):
+        return False
+    return replacement.workspace_revision == expected.workspace_revision + 1
 
 
 WorkspaceDeletionClaimOutcome = Literal["deleted", "not_found", "stale"]
@@ -102,6 +127,8 @@ class ManagedWorkspaceService:
         expected: Workspace,
         replacement: Workspace,
     ) -> bool:
+        if not _validate_ordinary_workspace_mutation(expected, replacement):
+            return False
         return self._repository.replace_workspace_if_match(expected, replacement)
 
     def delete_workspace_with_revision_claim(
