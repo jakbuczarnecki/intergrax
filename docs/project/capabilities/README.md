@@ -59,6 +59,7 @@ Do **not** create `docs/project/capabilities/satellites` at the features root. S
 |---------|-------|--------------|------|--------|
 | `TOKEN_OPTIMIZATION` | [`token_optimization/README.md`](token_optimization/README.md) | [`architecture/TOKEN_OPTIMIZATION.md`](architecture/TOKEN_OPTIMIZATION.md) | [`plan/TOKEN_OPTIMIZATION.md`](plan/TOKEN_OPTIMIZATION.md) | Implemented foundation; TOKEN-10 cache-aware runtime and proof planned |
 | `LANGCHAIN_INDEPENDENCE` | — | [`architecture/LANGCHAIN_INDEPENDENCE.md`](architecture/LANGCHAIN_INDEPENDENCE.md) | [`plan/LANGCHAIN_INDEPENDENCE.md`](plan/LANGCHAIN_INDEPENDENCE.md) | Architecture and migration roadmap awaiting review; implementation not started |
+| `MULTIPLAYER_AI` | — | [`architecture/MULTIPLAYER_AI.md`](architecture/MULTIPLAYER_AI.md) | [`plan/MULTIPLAYER_AI.md`](plan/MULTIPLAYER_AI.md) | **MP-0** — canonical architecture and roadmap (documentation only); MP-1…MP-9 planned, not started |
 
 **Satellites (on demand):**
 
