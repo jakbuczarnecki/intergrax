@@ -273,14 +273,7 @@ is frozen as:
 
 1. **SLACK-FIRST CONTRACT CORRECTION** — restore canonical product contract
    (this document and aligned product docs).
-2. **LKW-PRODUCT-3D — SLACK FIRST-RUN PRODUCT EXPERIENCE** — Slack
-   conversational first-run over accepted backend capabilities; no web frontend;
-   no new onboarding persistence.
-3. **LKW-PRODUCT-3E — CITATION INSPECT/OPEN + ERROR/RESUME ACCEPTANCE** —
-   implement/prove host-mediated document inspect/open; bounded user-facing
-   error behavior; restart/resume acceptance; first-run end-to-end acceptance.
-4. **PRODUCT-3 FINAL CLOSEOUT** — first-run milestone complete.
-5. **LKW-PRODUCT-4 — SLACK DAILY-USE PRODUCT EXPERIENCE** — daily Slack UX for
+2. **LKW-PRODUCT-4 — SLACK DAILY-USE PRODUCT EXPERIENCE** — daily Slack UX for
    workspace selection, knowledge inventory, source state, sync/refresh,
    disable/enable/detach, Ask, citations/open-source, freshness,
    attention/problems, and basic settings/configuration using shared backend
@@ -299,12 +292,23 @@ Do not expand the roadmap beyond PRODUCT-4 in current planning.
 - **PRODUCT-3C — SETUP SNAPSHOT & FIRST-RUN ORCHESTRATION CONTRACT:** **CLOSED.**
   Accepted reusable setup orchestration capability (`setup-snapshot` endpoint;
   derivation-only orchestration contract).
+- **PRODUCT-3D — SLACK FIRST-RUN PRODUCT EXPERIENCE:** **CLOSED.** Slack
+  conversational first-run over accepted backend capabilities; no web frontend;
+  no new onboarding persistence.
+- **PRODUCT-3E — CITATION INSPECT/OPEN + ERROR/RESUME ACCEPTANCE:** **CLOSED.**
+  Host-mediated document inspect/open; bounded Slack error behavior;
+  restart/resume acceptance.
+- **PRODUCT-3 — FIRST-RUN ONBOARDING:** **CLOSED** (accepted closing commit
+  `41ec991713a0445bc2e4302f2bfb8e1fefb5c27f`; required ancestor
+  `580015167baa62868ed08623aed8d6d68f39001e`). Acceptance matrix recorded in
+  `PRODUCT_3_FIRST_RUN_GAP_AUDIT.md` §13. Live Slack proof deferred to
+  PRODUCT-11 (clean-machine gate).
 
 The previously issued **LKW-PRODUCT-3D — FIRST-RUN PRODUCT UI AND WELCOME FLOW**
 (web-first) is **CANCELLED / INVALID**. It produced no implementation and must
 not be represented as an executed PRODUCT-3D task.
 
-### PRODUCT-3D — SLACK FIRST-RUN PRODUCT EXPERIENCE (next)
+### PRODUCT-3D — SLACK FIRST-RUN PRODUCT EXPERIENCE (closed)
 
 Conceptual journey (Slack conversational UX, not web):
 
@@ -330,8 +334,7 @@ Future product tasks beyond PRODUCT-4 must still prove the contract in this
 canonical order:
 
 - **PRODUCT-2 — ZERO-TO-VALUE INSTALLATION:** **CLOSED** (see above).
-- **PRODUCT-3 — FIRST-RUN ONBOARDING:** Slack-first first-run via PRODUCT-3D
-  and PRODUCT-3E closeout; backend foundations from PRODUCT-3B/3C accepted.
+- **PRODUCT-3 — FIRST-RUN ONBOARDING:** **CLOSED** (see closed milestones).
 - **PRODUCT-4 — SLACK DAILY-USE PRODUCT EXPERIENCE:** Daily Slack UX using
   shared backend capabilities (see frozen definition above). **Not** generic
   “real product UI” and **not** a web-frontend requirement for LKW 1.0.

@@ -2,9 +2,9 @@
 
 ## 1. Executive verdict
 
-**Status:** READY_FOR_REVIEW  
-**Task:** LKW-PRODUCT-3A — FIRST-RUN ONBOARDING UX/API GAP AUDIT  
-**Mode:** discovery / gap analysis only — no production code changed
+**Status:** CLOSED  
+**Task:** LKW-PRODUCT-3A — FIRST-RUN ONBOARDING UX/API GAP AUDIT (superseded by PRODUCT-3 final closeout §13)  
+**Mode:** discovery / gap analysis — no production code changed in 3A; PRODUCT-3 closed at `41ec991713a0445bc2e4302f2bfb8e1fefb5c27f`
 
 **Overall first-run readiness:** Backend and application-service foundations from PRODUCT-1/PRODUCT-2 are sufficient for a **Slack-first** thin-client first-run journey over existing durable workspace, intake, sync, and Ask boundaries. The product-facing gap is not missing core lifecycle logic but missing **Slack conversational UX** orchestration over accepted HTTP projection and setup-snapshot capabilities.
 
@@ -277,12 +277,12 @@ setup snapshot.
 |---|---|---|
 | **PRODUCT-3B — Knowledge surface HTTP projection** | **CLOSED** | `GET /knowledge/inventory`, knowledge operation execute, operation list, and `error_code` projection over existing inspection/operations services. |
 | **PRODUCT-3C — Setup snapshot & first-run orchestration contract** | **CLOSED** | Read-only `setup-snapshot` endpoint (derivation-only) plus documented client orchestration sequence. No new persistence. |
-| **LKW-PRODUCT-3D — SLACK FIRST-RUN PRODUCT EXPERIENCE** | **NEXT** | Slack conversational first-run over 3B + 3C + existing workspace/intake/ask routes. Journey: contact LKW in Slack → workspace state → welcome/selection → first knowledge → snapshot-driven sync → attention → READY → suggested question → Ask → citations. No web frontend. |
-| **LKW-PRODUCT-3E — Citation inspect/open + error/resume acceptance** | **PLANNED** | Implement/prove host-mediated document inspect/open (**RESOLVED** architecture); bounded Slack error behavior; restart/resume acceptance; first-run E2E acceptance. |
-| **PRODUCT-3 FINAL CLOSEOUT** | **PLANNED** | First-run milestone complete after 3D + 3E. |
-| **LKW-PRODUCT-4 — SLACK DAILY-USE PRODUCT EXPERIENCE** | **PLANNED** | Daily Slack UX for workspace selection, inventory, source state, sync, disable/enable/detach, Ask, citations/open, freshness, attention, basic settings — using shared backend capabilities. Not generic “real product UI”; no web frontend required for LKW 1.0. |
+| **LKW-PRODUCT-3D — SLACK FIRST-RUN PRODUCT EXPERIENCE** | **CLOSED** | Slack conversational first-run over 3B + 3C + existing workspace/intake/ask routes. |
+| **LKW-PRODUCT-3E — Citation inspect/open + error/resume acceptance** | **CLOSED** | Host-mediated document inspect/open; bounded Slack error behavior; restart/resume acceptance. |
+| **PRODUCT-3 FINAL CLOSEOUT** | **CLOSED** | Accepted at `41ec991713a0445bc2e4302f2bfb8e1fefb5c27f`; matrix §13. |
+| **LKW-PRODUCT-4 — SLACK DAILY-USE PRODUCT EXPERIENCE** | **NEXT** | Daily Slack UX for workspace selection, inventory, source state, sync, disable/enable/detach, Ask, citations/open, freshness, attention, basic settings — using shared backend capabilities. Not generic “real product UI”; no web frontend required for LKW 1.0. |
 
-**Dependency order:** 3B (**CLOSED**) → 3C (**CLOSED**) → 3D → 3E → PRODUCT-3 closeout → PRODUCT-4.
+**Dependency order:** 3B (**CLOSED**) → 3C (**CLOSED**) → 3D (**CLOSED**) → 3E (**CLOSED**) → PRODUCT-3 closeout (**CLOSED**) → PRODUCT-4.
 
 **Cancelled / invalid:** **LKW-PRODUCT-3D — FIRST-RUN PRODUCT UI AND WELCOME FLOW** (web-first) — no implementation; must not be represented as executed.
 
@@ -311,3 +311,43 @@ setup snapshot.
 **Targeted discovery only:** `grep` / `glob` on `applications/local_workspace_application/` for routes, symbols, and onboarding keywords — not repo-wide semantic search.
 
 **Files changed:** `docs/project/product/lkw/PRODUCT_3_FIRST_RUN_GAP_AUDIT.md` (this file); aligned with Slack-first contract correction in `PRODUCT_CONTRACT.md` and `USER_JOURNEY.md`.
+
+---
+
+## 13. PRODUCT-3 final closeout (LKW-PRODUCT-3-FINAL-CLOSEOUT)
+
+**Final status:** **CLOSED**  
+**Accepted closing commit:** `41ec991713a0445bc2e4302f2bfb8e1fefb5c27f`  
+**Required ancestor:** `580015167baa62868ed08623aed8d6d68f39001e`  
+**Live Slack acceptance:** **NOT_RUN_ENVIRONMENT** (no canonical local Slack stack/credentials in this audit session; automated/integration evidence accepted).  
+**Bounded test suite:** 105 passed (`test_conversation_first_run_application`, `test_interaction_application_service`, `test_workspace_setup_snapshot`, `test_document_inspect_service`, `test_conversation_citation_inspect`, `test_interaction_response_renderer`, `test_conversation_setup_onboarding`, `test_conversation_workspace_selection_service`).
+
+### 15-step acceptance matrix
+
+| Step | Journey | Status | Evidence | User-visible behavior | Later owner |
+|---|---|---|---|---|---|
+| 1 | Launch / availability | **READY** | PRODUCT-2 **CLOSED**; `GET /v1/local_workspace/readiness` | User reaches running LKW via accepted install path | PRODUCT-11 (multi-OS clean machine) |
+| 2 | First contact / welcome | **READY** | `test_first_dm_without_workspace_selection_shows_welcome`; `test_welcome_first_dm_no_workspace` | Welcome + create/select guidance; no IDs/jargon; attachments blocked pre-workspace | — |
+| 3 | Create / select workspace | **READY** | `ConversationWorkspaceSelectionService` + `ConversationContextRepository`; `test_conversation_workspace_selection_service` | List/create/select/switch via Slack DM; durable conversation context (not `InMemorySlackWorkspaceSelectionStore` on wired companion path) | — |
+| 4 | Add first knowledge | **READY** | `test_attachment_intake_is_executed_when_snapshot_is_not_ready` | Slack file attachment → Knowledge Intake → async preparation | — |
+| 5 | Indexed vs Live understanding | **READY_WITH_LATER_BOUNDARY** | `test_no_knowledge_guidance`; setup snapshot phases | Managed-file first-run is indexed-only; no false “all knowledge is live” claim | PRODUCT-4/6 |
+| 6 | Configure / authenticate source | **READY_WITH_LATER_BOUNDARY** | Managed upload requires no vendor auth | Sufficient for PRODUCT-3 first-run | PRODUCT-5 |
+| 7 | Start preparation / sync | **READY** | `test_finish_success_appends_snapshot_guidance_after_action` | Attachment triggers canonical preparation/indexing | — |
+| 8 | Progress / state | **READY** | `test_syncing_preparation_state`; `test_workspace_setup_snapshot` | Honest snapshot-derived preparation state; no fake %/ETA | PRODUCT-7 (background notifications) |
+| 9 | READY state | **READY** | `test_ready_can_ask_suggested_question`; `test_ready_cannot_ask_blocks_question` | READY from snapshot; Ask CTA only when `can_ask=true` | — |
+| 10 | Suggested question | **READY** | `test_generic_suggested_question_without_label`; setup snapshot | Deterministic suggested first question from snapshot | — |
+| 11 | Ask | **READY** | `test_ready_question_is_planned_and_executed`; plan-aware gating tests | Planner → `WorkspaceAsk` → shared `WorkspaceAskService`; non-Ask admin actions still executable | — |
+| 12 | Grounded answer + citations | **READY** | `test_renderer_includes_safe_ask_citation`; Ask insufficient-evidence paths | Answer + citation labels; insufficient evidence is normal | — |
+| 13 | Inspect / open citation | **READY** | `test_conversation_citation_inspect`; `test_document_inspect_service` | “show source 1” / “open citation 2”; safe name, location, preview, optional URL; inspect-only when no safe open target | — |
+| 14 | Restart does not restart onboarding | **READY** | `test_creates_selection_and_reconstructs_from_same_store`; `test_restart_reconstructs_recent_turns_before_planning`; `test_citation_inspect_survives_service_recreation`; `test_repeated_snapshot_has_no_persisted_onboarding_state` | Workspace selection, READY, citation context survive service recreation; no `onboarding_step` persistence | — |
+| 15 | Incomplete setup resumes | **READY** | Snapshot phase tests (`NO_KNOWLEDGE`, `SYNCING`, `ATTENTION_REQUIRED`); `test_question_gated_when_snapshot_not_ready_for_ask` | Correct next state/action after recreation; no wizard reset | — |
+
+### Later boundaries (explicitly not blocking PRODUCT-3)
+
+| Area | Owner |
+|---|---|
+| Vendor OAuth and polished provider configuration | PRODUCT-5 |
+| Full daily knowledge UX (inventory, scoping, freshness polish) | PRODUCT-4 / PRODUCT-6 |
+| Background sync notifications | PRODUCT-7 |
+| General failure catalog / recovery redesign | PRODUCT-8 |
+| Clean-machine unfamiliar-user live proof | PRODUCT-11 |
