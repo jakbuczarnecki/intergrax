@@ -1,9 +1,9 @@
 # Platform Plugins — Maintainer Roadmap
 
 **Program:** Platform Plugin architecture  
-**Status:** PLATFORM-PLUGIN-1 **Done** (audit/evidence) · architecture **not frozen** until PLATFORM-PLUGIN-2  
+**Status:** PLATFORM-PLUGIN-1 **Done** · PLATFORM-PLUGIN-2 **Done** (canonical architecture frozen)
 **Audit evidence:** [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md)  
-**Future architecture (PLATFORM-PLUGIN-2):** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) — **does not exist yet**
+**Canonical architecture:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
 
 **Last updated:** 2026-08-11
 
@@ -59,7 +59,7 @@ See audit document for inventory, taxonomy proposal, gaps, and evidence matrix.
 | **Observability** | Extension SDK for payload schemas; not a plugin loader |
 | **Agents** | `AgentRegistry` — host registration only; no setuptools discovery |
 
-**Principle:** Platform Plugin program **coordinates** cross-cutting discovery, trust, lifecycle, and author experience. It must **not** replace domain contracts (integration category contracts, tool contracts, VK contributions, etc.) without PLATFORM-PLUGIN-2 architecture decision.
+**Principle (frozen in PLATFORM-PLUGIN-2):** Platform Plugin program **coordinates** cross-cutting discovery, trust, lifecycle, and author experience at the **package boundary**. It **must not** replace domain contracts (integration category contracts, tool contracts, VK contributions, etc.). See [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) §6–§7.
 
 ---
 
@@ -68,26 +68,30 @@ See audit document for inventory, taxonomy proposal, gaps, and evidence matrix.
 | Stage | Name | Status | Depends on | Exit criteria (summary) |
 |-------|------|--------|------------|-------------------------|
 | **PLATFORM-PLUGIN-1** | Global extension surface inventory & architecture audit | **Done** | — | Audit/evidence doc; this roadmap; no production code changes |
-| **PLATFORM-PLUGIN-2** | Architecture decision & canonical domain doc | **Planned** | PLUGIN-1 | Create/finalize `architecture/PLATFORM_PLUGINS.md`; taxonomy decision; unify/do-not-unify boundaries |
-| **PLATFORM-PLUGIN-3** | Author contract & packaging model | **Planned** | PLUGIN-2 | Single external package / multi-capability rules; manifest vs EP decision |
-| **PLATFORM-PLUGIN-4** | Discovery & registration harmonization (where approved) | **Planned** | PLUGIN-2, PLUGIN-3 | Implement only approved unifications; preserve domain-specific loaders where rejected |
-| **PLATFORM-PLUGIN-5** | Configuration, secrets & DI conventions | **Planned** | PLUGIN-2 | Cross-surface config matrix; host injection rules |
-| **PLATFORM-PLUGIN-6** | Lifecycle, compatibility & conflict policy | **Planned** | PLUGIN-2 | Version/compatibility engine scope; duplicate-ID semantics |
-| **PLATFORM-PLUGIN-7** | Trust, qualification & production gates | **Planned** | PLUGIN-2, PLUGIN-6 | discoverable vs production-qualified separation; security boundary doc |
-| **PLATFORM-PLUGIN-8** | Third-party developer experience & executable E2E proof | **Planned** | PLUGIN-3, PLUGIN-7 | Scaffold and guides; **third-party reference package** (genuine external Python wheel, structurally representative of an external author package — multi-capability if PLUGIN-2/PLUGIN-3 approve multi-capability packaging; exact layout **not frozen** before PLUGIN-2); **executable E2E proof** covering pip install → entry-point / approved discovery → plugin/capability discovery → configuration → host dependency injection → runtime invocation → cleanup/shutdown **without modifying Intergrax core** |
-| **PLATFORM-PLUGIN-9** | Qualification, rollout, deprecation & program closeout | **Planned** | PLUGIN-4–8 | Contract tests, CI gates, legacy-path deprecation plan; **final platform-level closeout audit** (see § Program closeout criteria) |
+| **PLATFORM-PLUGIN-2** | Architecture decision & canonical domain doc | **Done** | PLUGIN-1 | [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) — taxonomy, platform/domain boundary, DO-NOT-UNIFY, contract scope |
+| **PLATFORM-PLUGIN-3** | Author contract & packaging model | **Planned** | PLUGIN-2 | Implement **package-level** Platform Plugin coordination contract (metadata only); multi-capability packaging rules (**allowed**); **optional** sidecar/`pyproject` manifest; entry points remain required for discovery |
+| **PLATFORM-PLUGIN-4** | Discovery & registration harmonization (where approved) | **Planned** | PLUGIN-2, PLUGIN-3 | Adopt `core/plugins/discovery.py` as shared EP scan/load utility where approved; **retain domain EP groups**; no global catalog merge |
+| **PLATFORM-PLUGIN-5** | Configuration, secrets & DI conventions | **Planned** | PLUGIN-2 | Cross-surface config matrix; host-resolved config and credential bindings; discourage raw env as primary path |
+| **PLATFORM-PLUGIN-6** | Lifecycle, compatibility & conflict policy | **Planned** | PLUGIN-2 | Shared lifecycle vocabulary enforcement in tooling; platform compatibility metadata; shared conflict vocabulary — **domain policies remain** |
+| **PLATFORM-PLUGIN-7** | Trust, qualification & production gates | **Planned** | PLUGIN-2, PLUGIN-6 | Installed/discoverable/qualified separation; package- and capability-level qualification; explicit in-process trust statement |
+| **PLATFORM-PLUGIN-8** | Third-party developer experience & executable E2E proof | **Planned** | PLUGIN-3, PLUGIN-7 | Scaffold and guides; **third-party reference package** (genuine external Python wheel, structurally representative of an external author package — **multi-capability allowed** per architecture §21; exact layout defined in PLUGIN-3); **executable E2E proof** covering pip install → entry-point / approved discovery → plugin/capability discovery → configuration → host dependency injection → runtime invocation → cleanup/shutdown **without modifying Intergrax core** |
+| **PLATFORM-PLUGIN-9** | Qualification, rollout, deprecation & program closeout | **Planned** | PLUGIN-4–8 | Contract tests, CI gates, additive deprecation plan for legacy paths; **final platform-level closeout audit** (see § Program closeout criteria) |
 
-### PLATFORM-PLUGIN-2 expected output
+### PLATFORM-PLUGIN-2 output (complete)
 
-**PROPOSAL:** PLATFORM-PLUGIN-2 creates the canonical architecture hub:
+Canonical architecture hub: [`docs/project/architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
 
-`docs/project/architecture/PLATFORM_PLUGINS.md`
+**Frozen decisions (summary):**
 
-equivalent to `RAG.md`, `TOOLS.md`, `SKILLS.md`, `INTEGRATIONS.md`, etc.
+- Taxonomy: PEP, IP, HCE, IEP, NE — unchanged from audit.
+- Platform Plugin = **package-level coordination** + shared vocabulary — **not** a universal runtime wrapper.
+- **Canonical Platform Plugin Contract:** **yes** — package metadata scope only; domain contracts unchanged.
+- Multi-capability packages: **allowed**; capabilities separately discoverable via domain EP groups.
+- Discovery: shared `discovery.py` utility **yes**; single global EP group **no**; domain groups retained.
+- Manifest: **optional** coordination layer; domain manifests + entry points remain authoritative.
+- DO-NOT-UNIFY list: frozen in architecture §23.
 
-That document will freeze (for implementation) taxonomy, unification boundaries, and whether a **canonical Platform Plugin Contract** exists.
-
-**Until PLATFORM-PLUGIN-2 completes, no architecture in this roadmap or audit should be treated as final.**
+Implementation stages PLUGIN-3..9 must conform to this document.
 
 ---
 

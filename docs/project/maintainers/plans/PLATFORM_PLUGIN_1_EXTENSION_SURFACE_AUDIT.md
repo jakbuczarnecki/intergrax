@@ -4,7 +4,7 @@
 **Status:** `READY_FOR_REVIEW`  
 **Branch:** `development`  
 **Canonical roadmap:** [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md)  
-**Architecture hub:** **none** (intentionally deferred to PLATFORM-PLUGIN-2)
+**Architecture hub:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) (frozen in PLATFORM-PLUGIN-2)
 
 **Legend:** **FACT** = repository evidence · **INFERENCE** = interpretation · **PROPOSAL** = future design (not current capability)
 
