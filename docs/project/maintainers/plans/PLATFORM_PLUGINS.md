@@ -5,7 +5,7 @@
 **Audit evidence:** [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md)  
 **Future architecture (PLATFORM-PLUGIN-2):** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) — **does not exist yet**
 
-**Last updated:** 2026-08-10
+**Last updated:** 2026-08-11
 
 ---
 
@@ -74,8 +74,8 @@ See audit document for inventory, taxonomy proposal, gaps, and evidence matrix.
 | **PLATFORM-PLUGIN-5** | Configuration, secrets & DI conventions | **Planned** | PLUGIN-2 | Cross-surface config matrix; host injection rules |
 | **PLATFORM-PLUGIN-6** | Lifecycle, compatibility & conflict policy | **Planned** | PLUGIN-2 | Version/compatibility engine scope; duplicate-ID semantics |
 | **PLATFORM-PLUGIN-7** | Trust, qualification & production gates | **Planned** | PLUGIN-2, PLUGIN-6 | discoverable vs production-qualified separation; security boundary doc |
-| **PLATFORM-PLUGIN-8** | Third-party developer experience | **Planned** | PLUGIN-3, PLUGIN-7 | Scaffold, guides, reference plugin packaging (if justified) |
-| **PLATFORM-PLUGIN-9** | Qualification, rollout & deprecation | **Planned** | PLUGIN-4–8 | Contract tests, CI gates, legacy path deprecation plan |
+| **PLATFORM-PLUGIN-8** | Third-party developer experience & executable E2E proof | **Planned** | PLUGIN-3, PLUGIN-7 | Scaffold and guides; **third-party reference package** (genuine external Python wheel, structurally representative of an external author package — multi-capability if PLUGIN-2/PLUGIN-3 approve multi-capability packaging; exact layout **not frozen** before PLUGIN-2); **executable E2E proof** covering pip install → entry-point / approved discovery → plugin/capability discovery → configuration → host dependency injection → runtime invocation → cleanup/shutdown **without modifying Intergrax core** |
+| **PLATFORM-PLUGIN-9** | Qualification, rollout, deprecation & program closeout | **Planned** | PLUGIN-4–8 | Contract tests, CI gates, legacy-path deprecation plan; **final platform-level closeout audit** (see § Program closeout criteria) |
 
 ### PLATFORM-PLUGIN-2 expected output
 
@@ -109,6 +109,28 @@ PLUGIN-4 is intentionally **after** architecture decision: harmonization without
 
 ---
 
+## Audit evidence placement
+
+**FACT:** [`docs/audit_results/`](../../audit_results/README.md) exists on `development`. It stores **dated outputs from orchestrated harness architecture audits** ([`ORCHESTRATOR.md`](../../audit/ORCHESTRATOR.md)): `YYYY-MM-DD/` folders with `progress.json`, `RUN_SUMMARY.md`, and per-domain `<DOMAIN>.md` results, initialized and validated via `scripts/audit/` tooling.
+
+**FACT:** PLATFORM-PLUGIN-1 evidence lives in [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md) under `maintainers/plans/` — **retained here** because it is **program-specific** extension-surface inventory and architecture audit evidence, not an orchestrated per-domain run in the harness audit workflow. Domain programs persist Mode A2 results under `docs/audit_results/`; the Platform Plugin program coordinates cross-cutting extension architecture and keeps its audit alongside this roadmap.
+
+---
+
+## Program closeout criteria (PLATFORM-PLUGIN-9)
+
+Before the Platform Plugin program can be marked **CLOSED**, a final audit must confirm:
+
+1. Canonical [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) matches implementation.
+2. Maintainer and author documentation matches executable behavior.
+3. The **third-party reference package** (PLATFORM-PLUGIN-8) installs, discovers, and runs successfully.
+4. The full **install → discovery → configuration → DI → runtime → cleanup** extension path works without core changes.
+5. Trust, compatibility, and conflict rules are represented correctly in docs and runtime.
+6. No accidental competing plugin architectures were introduced.
+7. Approved **DO-NOT-UNIFY** boundaries from PLATFORM-PLUGIN-1 remain preserved.
+
+---
+
 ## Changes discovered during PLATFORM-PLUGIN-1
 
 1. **Unified discovery loader is partial** — `core/plugins/discovery.py` covers Tier-0 groups; VK, security, policy, tool-invocation patterns use separate loaders.
@@ -116,7 +138,7 @@ PLUGIN-4 is intentionally **after** architecture decision: harmonization without
 3. **Context entry points exist in code** — `EXTENSION_AUTHOR_GUIDE` still lists Context as "Planned"; doc drift recorded in audit.
 4. **Token optimization plugin descriptor** — contract exists; no setuptools loader or production registration path found.
 5. **Integration registry v2** — additive metadata registry; not an extension surface for third parties.
-6. **No `docs/audit_results/` tree on current `development`** — audit evidence placed alongside domain audits under `maintainers/plans/`.
+6. **`docs/audit_results/` exists** for orchestrated harness domain audits — PLATFORM-PLUGIN-1 program evidence correctly placed under `maintainers/plans/` (see § Audit evidence placement).
 
 ---
 
