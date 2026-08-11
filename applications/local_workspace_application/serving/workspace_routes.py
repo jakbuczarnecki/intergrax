@@ -160,6 +160,10 @@ from local_workspace_application.workspaces.knowledge_inspection_operations_serv
     KnowledgeOperationsService,
     KnowledgeOperationV1,
 )
+from local_workspace_application.workspaces.workspace_setup_snapshot_service import (
+    WorkspaceSetupSnapshotService,
+    WorkspaceSetupSnapshotV1,
+)
 from local_workspace_application.workspaces.knowledge_intake import (
     KnowledgeInputSourceResolverRouter,
     KnowledgeIntakeDispatchError,
@@ -780,6 +784,11 @@ def mount_managed_workspace_routes(
             else None
         ),
     )
+    setup_snapshot_service = WorkspaceSetupSnapshotService(
+        workspace_service=service,
+        inspection_service=knowledge_inspection_service,
+        readiness_provider=host_bundle.readiness,
+    )
     knowledge_administration_service: KnowledgeAdministrationService | None = None
     confirmation_secret = settings.knowledge_admin_confirmation_secret.strip()
     if confirmation_secret:
@@ -968,6 +977,7 @@ def mount_managed_workspace_routes(
     app.state.lkw_ask_service_v2 = ask_service_v2
     app.state.lkw_knowledge_inspection_service = knowledge_inspection_service
     app.state.lkw_knowledge_operations_service = knowledge_operations_service
+    app.state.lkw_workspace_setup_snapshot_service = setup_snapshot_service
     app.state.lkw_knowledge_administration_service = knowledge_administration_service
     app.state.lkw_managed_file_intake_service = managed_file_intake_service
     app.state.lkw_knowledge_intake_service = knowledge_intake_service
@@ -1453,6 +1463,31 @@ def mount_managed_workspace_routes(
         )
         try:
             return inspection.list_items(tenant_id=tenant_id, workspace_id=workspace_id)
+        except KnowledgeInventoryError as exc:
+            raise _knowledge_inventory_http_exception(exc) from exc
+
+    @router.get(
+        "/workspaces/{workspace_id}/setup-snapshot",
+        response_model=WorkspaceSetupSnapshotV1,
+    )
+    async def get_workspace_setup_snapshot(
+        request: Request,
+        workspace_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> WorkspaceSetupSnapshotV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        if service.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+        snapshot_service: WorkspaceSetupSnapshotService = getattr(
+            request.app.state,
+            "lkw_workspace_setup_snapshot_service",
+            setup_snapshot_service,
+        )
+        try:
+            return snapshot_service.derive_snapshot(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
         except KnowledgeInventoryError as exc:
             raise _knowledge_inventory_http_exception(exc) from exc
 
