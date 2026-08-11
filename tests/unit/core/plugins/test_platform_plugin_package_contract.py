@@ -218,6 +218,116 @@ def test_parse_platform_plugin_pyproject_toml_malformed() -> None:
         parse_platform_plugin_pyproject_toml("[tool.intergrax.plugin\nname = broken")
 
 
+def test_pyproject_normalized_project_name_matches_manifest() -> None:
+    manifest = parse_platform_plugin_pyproject_toml(
+        """
+        [project]
+        name = "Acme-Intergrax"
+        version = "1.0.0"
+
+        [tool.intergrax.plugin]
+        name = "acme-intergrax"
+        version = "1.0.0"
+        intergrax_version = ">=1.0,<2"
+        """
+    )
+    assert manifest.package.name == "acme-intergrax"
+    assert manifest.package.version == "1.0.0"
+
+
+def test_pyproject_name_conflicts_with_manifest() -> None:
+    with pytest.raises(
+        PlatformPluginManifestValidationError,
+        match="manifest package name conflicts with \\[project\\].name",
+    ):
+        parse_platform_plugin_pyproject_toml(
+            """
+            [project]
+            name = "acme-intergrax"
+            version = "1.0.0"
+
+            [tool.intergrax.plugin]
+            name = "other-plugin"
+            version = "1.0.0"
+            intergrax_version = ">=1"
+            """
+        )
+
+
+def test_pyproject_version_conflicts_with_manifest() -> None:
+    with pytest.raises(
+        PlatformPluginManifestValidationError,
+        match="manifest package version conflicts with \\[project\\].version",
+    ):
+        parse_platform_plugin_pyproject_toml(
+            """
+            [project]
+            name = "acme-intergrax"
+            version = "1.0.0"
+
+            [tool.intergrax.plugin]
+            name = "acme-intergrax"
+            version = "9.0.0"
+            intergrax_version = ">=1"
+            """
+        )
+
+
+def test_flat_and_nested_package_identity_identical() -> None:
+    manifest = parse_platform_plugin_manifest_data(
+        {
+            "name": "acme-intergrax",
+            "version": "1.0.0",
+            "package": {"name": "Acme-Intergrax", "version": "1.0.0"},
+            "intergrax_version": ">=1.0,<2",
+        }
+    )
+    assert manifest.package.name == "acme-intergrax"
+    assert manifest.package.version == "1.0.0"
+
+
+def test_flat_and_nested_package_identity_contradictory() -> None:
+    with pytest.raises(
+        PlatformPluginManifestValidationError,
+        match="conflicting manifest package name",
+    ):
+        parse_platform_plugin_manifest_data(
+            {
+                "name": "acme-intergrax",
+                "version": "1.0.0",
+                "package": {"name": "other-plugin", "version": "1.0.0"},
+                "intergrax_version": ">=1.0,<2",
+            }
+        )
+
+
+def test_flat_and_nested_compatibility_identical() -> None:
+    manifest = parse_platform_plugin_manifest_data(
+        {
+            "name": "acme-intergrax",
+            "version": "1.0.0",
+            "intergrax_version": ">=1.0,<2",
+            "platform_compatibility": {"intergrax_version": "<2,>=1.0"},
+        }
+    )
+    assert manifest.platform_compatibility.intergrax_version == "<2,>=1.0"
+
+
+def test_flat_and_nested_compatibility_contradictory() -> None:
+    with pytest.raises(
+        PlatformPluginManifestValidationError,
+        match="conflicting manifest intergrax_version",
+    ):
+        parse_platform_plugin_manifest_data(
+            {
+                "name": "acme-intergrax",
+                "version": "1.0.0",
+                "intergrax_version": ">=1.0,<2",
+                "platform_compatibility": {"intergrax_version": ">=2.0"},
+            }
+        )
+
+
 def test_unsupported_schema_version_rejected() -> None:
     with pytest.raises(PlatformPluginManifestValidationError, match="unsupported manifest schema_version"):
         parse_platform_plugin_manifest_data(
