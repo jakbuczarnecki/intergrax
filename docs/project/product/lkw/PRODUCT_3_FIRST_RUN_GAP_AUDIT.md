@@ -4,7 +4,7 @@
 
 **Status:** CLOSED  
 **Task:** LKW-PRODUCT-3A — FIRST-RUN ONBOARDING UX/API GAP AUDIT (superseded by PRODUCT-3 final closeout §13)  
-**Mode:** discovery / gap analysis — no production code changed in 3A; PRODUCT-3 closed at `41ec991713a0445bc2e4302f2bfb8e1fefb5c27f`
+**Mode:** discovery / gap analysis — no production code changed in 3A; PRODUCT-3 closed at `b35de405354c582d0f93847e29993c15887d3ad3`
 
 **Overall first-run readiness:** Backend and application-service foundations from PRODUCT-1/PRODUCT-2 are sufficient for a **Slack-first** thin-client first-run journey over existing durable workspace, intake, sync, and Ask boundaries. The product-facing gap is not missing core lifecycle logic but missing **Slack conversational UX** orchestration over accepted HTTP projection and setup-snapshot capabilities.
 
@@ -279,7 +279,7 @@ setup snapshot.
 | **PRODUCT-3C — Setup snapshot & first-run orchestration contract** | **CLOSED** | Read-only `setup-snapshot` endpoint (derivation-only) plus documented client orchestration sequence. No new persistence. |
 | **LKW-PRODUCT-3D — SLACK FIRST-RUN PRODUCT EXPERIENCE** | **CLOSED** | Slack conversational first-run over 3B + 3C + existing workspace/intake/ask routes. |
 | **LKW-PRODUCT-3E — Citation inspect/open + error/resume acceptance** | **CLOSED** | Host-mediated document inspect/open; bounded Slack error behavior; restart/resume acceptance. |
-| **PRODUCT-3 FINAL CLOSEOUT** | **CLOSED** | Accepted at `41ec991713a0445bc2e4302f2bfb8e1fefb5c27f`; matrix §13. |
+| **PRODUCT-3 FINAL CLOSEOUT** | **CLOSED** | Accepted at `b35de405354c582d0f93847e29993c15887d3ad3`; matrix §13. |
 | **LKW-PRODUCT-4 — SLACK DAILY-USE PRODUCT EXPERIENCE** | **NEXT** | Daily Slack UX for workspace selection, inventory, source state, sync, disable/enable/detach, Ask, citations/open, freshness, attention, basic settings — using shared backend capabilities. Not generic “real product UI”; no web frontend required for LKW 1.0. |
 
 **Dependency order:** 3B (**CLOSED**) → 3C (**CLOSED**) → 3D (**CLOSED**) → 3E (**CLOSED**) → PRODUCT-3 closeout (**CLOSED**) → PRODUCT-4.
@@ -317,7 +317,7 @@ setup snapshot.
 ## 13. PRODUCT-3 final closeout (LKW-PRODUCT-3-FINAL-CLOSEOUT)
 
 **Final status:** **CLOSED**  
-**Accepted closing commit:** `41ec991713a0445bc2e4302f2bfb8e1fefb5c27f`  
+**Accepted closing commit:** `b35de405354c582d0f93847e29993c15887d3ad3`
 **Required ancestor:** `580015167baa62868ed08623aed8d6d68f39001e`  
 **Live Slack acceptance:** **NOT_RUN_ENVIRONMENT** (no canonical local Slack stack/credentials in this audit session; automated/integration evidence accepted).  
 **Bounded test suite:** 105 passed (`test_conversation_first_run_application`, `test_interaction_application_service`, `test_workspace_setup_snapshot`, `test_document_inspect_service`, `test_conversation_citation_inspect`, `test_interaction_response_renderer`, `test_conversation_setup_onboarding`, `test_conversation_workspace_selection_service`).

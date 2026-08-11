@@ -299,7 +299,7 @@ Do not expand the roadmap beyond PRODUCT-4 in current planning.
   Host-mediated document inspect/open; bounded Slack error behavior;
   restart/resume acceptance.
 - **PRODUCT-3 — FIRST-RUN ONBOARDING:** **CLOSED** (accepted closing commit
-  `41ec991713a0445bc2e4302f2bfb8e1fefb5c27f`; required ancestor
+  `b35de405354c582d0f93847e29993c15887d3ad3`; required ancestor
   `580015167baa62868ed08623aed8d6d68f39001e`). Acceptance matrix recorded in
   `PRODUCT_3_FIRST_RUN_GAP_AUDIT.md` §13. Live Slack proof deferred to
   PRODUCT-11 (clean-machine gate).
