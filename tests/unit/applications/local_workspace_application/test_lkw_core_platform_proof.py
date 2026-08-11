@@ -7,6 +7,7 @@ import io
 import json
 import shutil
 import sys
+import time
 from contextlib import redirect_stdout
 from pathlib import Path
 from types import ModuleType
@@ -473,6 +474,22 @@ def test_positive_ingest_and_missing_evidence(core: ModuleType) -> None:
         }
     }
     assert core.require_positive_ingest(ok) == 2
+    accepted_only = {
+        "metadata": {
+            "lkw_evidence.v1": {
+                "diagnostics": {
+                    "lkw.index_summary.v1": {
+                        "accepted_count": 1,
+                        "ingested_count": 0,
+                        "chunk_count": 0,
+                    },
+                }
+            }
+        }
+    }
+    with pytest.raises(core.CoreProofError) as accepted_exc:
+        core.require_positive_ingest(accepted_only)
+    assert accepted_exc.value.reason == "index_not_ingested"
     with pytest.raises(core.CoreProofError) as exc:
         core.require_positive_ingest({"metadata": {}})
     assert exc.value.reason == "index_not_ingested"
@@ -484,6 +501,7 @@ def _search_response(
     reason: Any = "retrieve_complete",
     evidence_count: Any = 3,
     num_results: Any = None,
+    source_refs: Any = None,
     include_reason: bool = True,
     include_used: bool = True,
     include_evidence_count: bool = True,
@@ -498,6 +516,8 @@ def _search_response(
         summary["evidence_count"] = evidence_count
     if include_num_results:
         summary["num_results"] = num_results
+    if source_refs is not None:
+        summary["source_refs"] = source_refs
     return {
         "metadata": {
             "lkw_evidence.v1": {
@@ -652,10 +672,15 @@ def test_persistence_fails_closed_when_search_missing_reason(
             }
         }
     }
-    good_search = _search_response(evidence_count=2)
-    bad_search = _search_response(include_reason=False, evidence_count=2)
+    bad_search = _search_response(
+        include_reason=False,
+        evidence_count=0,
+        num_results=0,
+        include_num_results=True,
+    )
     search_calls = {"n": 0}
     index_bodies: list[Mapping[str, Any]] = []
+    restarted = {"value": False}
 
     def fake_http_post_json(
         _url: str, body: Mapping[str, Any], **_kwargs: Any
@@ -666,17 +691,24 @@ def test_persistence_fails_closed_when_search_missing_reason(
             return index_response
         if capability == "local.workspace.search":
             search_calls["n"] += 1
-            if bad_position == "before" and search_calls["n"] == 1:
+            if bad_position == "before" and not restarted["value"]:
                 return bad_search
-            if bad_position == "after" and search_calls["n"] == 2:
+            if bad_position == "after" and restarted["value"]:
                 return bad_search
-            return good_search
+            proof_files = sorted(tmp_path.glob("lkw_persistence_proof_*.txt"))
+            expected = f"/data/user_docs/{proof_files[0].name}"
+            return _search_response(evidence_count=2, source_refs=[expected])
         raise AssertionError(f"unexpected capability: {capability!r}")
 
     monkeypatch.setattr(core, "discover_compose_files", lambda: [])
     monkeypatch.setattr(core, "wait_for_lkw_health", lambda *_a, **_k: None)
     monkeypatch.setattr(core, "http_post_json", fake_http_post_json)
-    monkeypatch.setattr(core, "compose_restart", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "_PERSISTENCE_SEARCH_RETRY_SLEEP_SECONDS", 0.01)
+
+    def fake_compose_restart(*_a: Any, **_k: Any) -> None:
+        restarted["value"] = True
+
+    monkeypatch.setattr(core, "compose_restart", fake_compose_restart)
     compose_up_calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
 
     def fake_compose_up(*args: Any, **kwargs: Any) -> None:
@@ -684,14 +716,19 @@ def test_persistence_fails_closed_when_search_missing_reason(
 
     monkeypatch.setattr(core, "compose_up", fake_compose_up)
     monkeypatch.setattr(core, "_SAMPLE_DOCS_DIR", tmp_path)
+    monkeypatch.setattr(
+        core,
+        "prepare_ollama_embedding_model",
+        lambda *_a, **_k: "nomic-embed-text",
+    )
 
     with pytest.raises(core.CoreProofError) as exc:
-        core.phase_persistence(_config(core))
+        core.phase_persistence(_config(core, phase_timeout_seconds=1))
     assert exc.value.reason == "search_results_missing"
-    assert search_calls["n"] == (1 if bad_position == "before" else 2)
+    assert search_calls["n"] >= 1
     assert index_bodies[0]["metadata"]["chunking_strategy_id"] == "recursive"
     assert len(compose_up_calls) == 1
-    assert compose_up_calls[0][0][1] == ["local_workspace"]
+    assert compose_up_calls[0][0][1] == ["local_workspace", "qdrant", "ollama"]
     assert compose_up_calls[0][1]["build"] is False
 
 
@@ -797,6 +834,167 @@ def test_search_after_restart_helpers(core: ModuleType) -> None:
     assert core.extract_search_result_count(after) == 2
 
 
+def test_extract_search_diagnostics_reads_typed_summary(core: ModuleType) -> None:
+    response = _search_response(
+        evidence_count=2,
+        num_results=1,
+        include_num_results=True,
+        source_refs=["/data/user_docs/a.txt", "/data/user_docs/b.txt"],
+    )
+    summary = response["metadata"]["lkw_evidence.v1"]["diagnostics"][
+        "lkw.search_summary.v1"
+    ]
+    summary["raw_tool_reason"] = "retrieve_complete"
+    diagnostics = core.extract_search_diagnostics(response)
+    assert diagnostics is not None
+    assert diagnostics.used is True
+    assert diagnostics.reason == "retrieve_complete"
+    assert diagnostics.raw_tool_reason == "retrieve_complete"
+    assert diagnostics.num_results == 1
+    assert diagnostics.evidence_count == 2
+    assert diagnostics.source_refs == (
+        "/data/user_docs/a.txt",
+        "/data/user_docs/b.txt",
+    )
+
+
+def test_persistence_search_requires_exact_source_ref(core: ModuleType) -> None:
+    expected = "/data/user_docs/lkw_persistence_proof_20260101120000.txt"
+    diagnostics = core.SearchDiagnostics(
+        num_results=1,
+        evidence_count=1,
+        source_refs=(expected,),
+        raw_tool_reason=None,
+        used=True,
+        reason="retrieve_complete",
+    )
+    assert core.persistence_search_succeeded(
+        diagnostics, expected_source_ref=expected
+    )
+    assert not core.persistence_search_succeeded(
+        diagnostics,
+        expected_source_ref="/data/user_docs/other.txt",
+    )
+
+
+def test_poll_persistence_search_stops_when_source_ref_found(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected = "/data/user_docs/proof.txt"
+    calls = {"n": 0}
+
+    def fake_http_post_json(
+        _url: str, _body: Mapping[str, Any], **_kwargs: Any
+    ) -> dict[str, Any]:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return _search_response(evidence_count=1, source_refs=["/data/other.txt"])
+        return _search_response(evidence_count=1, source_refs=[expected])
+
+    monkeypatch.setattr(core, "http_post_json", fake_http_post_json)
+    monkeypatch.setattr(core, "_PERSISTENCE_SEARCH_RETRY_SLEEP_SECONDS", 0.01)
+    diagnostics, count = core.poll_persistence_search(
+        _config(core, phase_timeout_seconds=5),
+        tenant_id="t",
+        workspace_id="w",
+        collection_id="c",
+        marker="MARKER",
+        expected_source_ref=expected,
+        deadline=time.monotonic() + 1.0,
+    )
+    assert calls["n"] == 2
+    assert count == 1
+    assert diagnostics is not None
+    assert expected in diagnostics.source_refs
+
+
+def test_poll_persistence_search_timeout_reports_last_diagnostics(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        core,
+        "http_post_json",
+        lambda *_a, **_k: _search_response(
+            reason="retrieve_pending",
+            evidence_count=0,
+            include_evidence_count=True,
+        ),
+    )
+    monkeypatch.setattr(core, "_PERSISTENCE_SEARCH_RETRY_SLEEP_SECONDS", 0.01)
+    diagnostics, count = core.poll_persistence_search(
+        _config(core, phase_timeout_seconds=1),
+        tenant_id="t",
+        workspace_id="w",
+        collection_id="c",
+        marker="MARKER",
+        expected_source_ref="/data/user_docs/missing.txt",
+        deadline=time.monotonic() + 0.05,
+    )
+    assert count == 0
+    assert diagnostics is not None
+    assert diagnostics.reason == "retrieve_pending"
+
+
+def test_persistence_phase_polls_until_exact_source_ref(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    search_calls = {"n": 0}
+    restarted = {"value": False}
+    index_response = {
+        "metadata": {
+            "lkw_evidence.v1": {
+                "diagnostics": {
+                    "lkw.index_summary.v1": {"ingested_count": 1},
+                }
+            }
+        }
+    }
+
+    def fake_http_post_json(
+        _url: str, body: Mapping[str, Any], **_kwargs: Any
+    ) -> dict[str, Any]:
+        capability = body.get("capability")
+        if capability == "local.workspace.index":
+            return index_response
+        if capability == "local.workspace.search":
+            search_calls["n"] += 1
+            proof_files = sorted(tmp_path.glob("lkw_persistence_proof_*.txt"))
+            expected = f"/data/user_docs/{proof_files[0].name}"
+            if not restarted["value"] and search_calls["n"] == 1:
+                return _search_response(
+                    evidence_count=1, source_refs=["/data/other.txt"]
+                )
+            return _search_response(evidence_count=1, source_refs=[expected])
+        raise AssertionError(f"unexpected capability: {capability!r}")
+
+    monkeypatch.setattr(core, "discover_compose_files", lambda: [])
+    monkeypatch.setattr(core, "wait_for_lkw_health", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "http_post_json", fake_http_post_json)
+    monkeypatch.setattr(core, "_PERSISTENCE_SEARCH_RETRY_SLEEP_SECONDS", 0.01)
+
+    def fake_compose_restart(*_a: Any, **_k: Any) -> None:
+        restarted["value"] = True
+
+    monkeypatch.setattr(core, "compose_restart", fake_compose_restart)
+    monkeypatch.setattr(core, "compose_up", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "_SAMPLE_DOCS_DIR", tmp_path)
+    monkeypatch.setattr(
+        core,
+        "prepare_ollama_embedding_model",
+        lambda *_a, **_k: "nomic-embed-text",
+    )
+
+    outcome = core.phase_persistence(_config(core, phase_timeout_seconds=5))
+    assert outcome.ok is True
+    assert search_calls["n"] == 3
+    assert outcome.details["source_ref_found_before_restart"] == "true"
+    assert outcome.details["source_ref_found_after_restart"] == "true"
+
+
 @pytest.mark.parametrize(
     ("validator_name", "good", "mutations"),
     [
@@ -877,3 +1075,137 @@ def test_child_output_validators_fail_closed(
         bad.update(mutation)
         with pytest.raises(core.CoreProofError):
             validator(bad)
+
+
+_BOOTSTRAP_SCRIPT = (
+    _REPO_ROOT
+    / "applications/local_workspace_application/scripts/"
+    / "lkw_ollama_embedding_bootstrap.py"
+)
+
+
+def _load_bootstrap_module() -> ModuleType:
+    module_name = "lkw_ollama_embedding_bootstrap"
+    spec = importlib.util.spec_from_file_location(module_name, _BOOTSTRAP_SCRIPT)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.fixture(scope="module")
+def bootstrap() -> ModuleType:
+    return _load_bootstrap_module()
+
+
+def test_prepare_ollama_embedding_model_resolves_and_pulls(
+    core: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_command(args: list[str], **_kwargs: Any) -> Any:
+        calls.append(list(args))
+        if "local_workspace" in args:
+            return type(
+                "CP", (), {"returncode": 0, "stdout": "nomic-embed-text\n", "stderr": ""}
+            )()
+        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(core, "run_command", fake_run_command)
+    model_name = core.prepare_ollama_embedding_model(
+        [],
+        cwd=core._REPO_ROOT,
+        timeout_seconds=10,
+    )
+    assert model_name == "nomic-embed-text"
+    pull_command = " ".join(calls[1])
+    assert "ollama" in pull_command
+    assert calls[1][-1] == "nomic-embed-text"
+
+
+@pytest.mark.parametrize("output", ["one\ntwo\n", "\n", "x" * 257, "bad\x01model\n"])
+def test_prepare_ollama_embedding_model_rejects_invalid_resolution(
+    core: ModuleType, monkeypatch: pytest.MonkeyPatch, output: str
+) -> None:
+    monkeypatch.setattr(
+        core,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP", (), {"returncode": 0, "stdout": output, "stderr": ""}
+        )(),
+    )
+    with pytest.raises(core.CoreProofError) as exc:
+        core.prepare_ollama_embedding_model(
+            [],
+            cwd=core._REPO_ROOT,
+            timeout_seconds=10,
+        )
+    assert exc.value.reason == "embedding_model_resolution_failed"
+
+
+def test_prepare_ollama_embedding_model_pull_failure_fails_closed(
+    core: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fake_run_command(args: list[str], **_kwargs: Any) -> Any:
+        if "local_workspace" in args:
+            return type(
+                "CP", (), {"returncode": 0, "stdout": "nomic-embed-text\n", "stderr": ""}
+            )()
+        return type("CP", (), {"returncode": 1, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(core, "run_command", fake_run_command)
+    with pytest.raises(core.CoreProofError) as exc:
+        core.prepare_ollama_embedding_model(
+            [],
+            cwd=core._REPO_ROOT,
+            timeout_seconds=10,
+        )
+    assert exc.value.reason == "embedding_model_pull_failed"
+
+
+def test_persistence_phase_waits_for_embedding_model_before_index(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    order: list[str] = []
+    index_response = {
+        "metadata": {
+            "lkw_evidence.v1": {
+                "diagnostics": {
+                    "lkw.index_summary.v1": {"ingested_count": 1},
+                }
+            }
+        }
+    }
+
+    def fake_prepare(*_a: Any, **_k: Any) -> str:
+        order.append("embedding_ready")
+        return "nomic-embed-text"
+
+    def fake_http_post_json(
+        _url: str, body: Mapping[str, Any], **_kwargs: Any
+    ) -> dict[str, Any]:
+        capability = body.get("capability")
+        if capability == "local.workspace.index":
+            order.append("index")
+            return index_response
+        if capability == "local.workspace.search":
+            proof_files = sorted(tmp_path.glob("lkw_persistence_proof_*.txt"))
+            expected = f"/data/user_docs/{proof_files[0].name}"
+            return _search_response(evidence_count=1, source_refs=[expected])
+        raise AssertionError(f"unexpected capability: {capability!r}")
+
+    monkeypatch.setattr(core, "discover_compose_files", lambda: [])
+    monkeypatch.setattr(core, "wait_for_lkw_health", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "http_post_json", fake_http_post_json)
+    monkeypatch.setattr(core, "compose_up", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "compose_restart", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "_PERSISTENCE_SEARCH_RETRY_SLEEP_SECONDS", 0.01)
+    monkeypatch.setattr(core, "_SAMPLE_DOCS_DIR", tmp_path)
+    monkeypatch.setattr(core, "prepare_ollama_embedding_model", fake_prepare)
+
+    core.phase_persistence(_config(core, phase_timeout_seconds=5))
+    assert order[:2] == ["embedding_ready", "index"]

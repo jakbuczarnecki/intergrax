@@ -27,6 +27,13 @@ from typing import Any, Callable, Mapping, Sequence
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _APP_DIR = _SCRIPT_DIR.parent
 _REPO_ROOT = _APP_DIR.parent.parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+from lkw_ollama_embedding_bootstrap import (
+    OllamaEmbeddingBootstrapError,
+    ensure_ollama_embedding_model as _ensure_ollama_embedding_model,
+    resolve_ollama_embedding_model as _resolve_ollama_embedding_model,
+)
 _DOCKER_DIR = _APP_DIR / "docker"
 _BASE_COMPOSE = _DOCKER_DIR / "docker-compose.yml"
 _ES_COMPOSE = _DOCKER_DIR / "docker-compose.elasticsearch.yml"
@@ -57,6 +64,7 @@ _DEFAULT_ES_INDEX = "intergrax-lkw-observability"
 _DEFAULT_PHASE_TIMEOUT = 600
 
 _SEARCH_REASON_RETRIEVE_COMPLETE = "retrieve_complete"
+_PERSISTENCE_SEARCH_RETRY_SLEEP_SECONDS = 2.0
 _SAFE_REASON = re.compile(r"^[A-Za-z0-9_.-]+$")
 _KV_LINE = re.compile(r"^([A-Za-z0-9_.-]+)=(.*)$")
 _FILE_WATCHER_SCOPE_ID = "lkw-file-watcher-e2e"
@@ -133,6 +141,16 @@ class PhaseOutcome:
     ok: bool
     receipt_id: str | None = None
     details: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class SearchDiagnostics:
+    num_results: int
+    evidence_count: int
+    source_refs: tuple[str, ...]
+    raw_tool_reason: str | None
+    used: bool | None = None
+    reason: str | None = None
 
 
 def detect_os_family(system_name: str | None = None) -> OsFamily:
@@ -345,6 +363,46 @@ def compose_args(compose_files: Sequence[Path]) -> list[str]:
     for path in compose_files:
         args.extend(["-f", str(path)])
     return args
+
+
+def compose_exec_args(
+    compose_files: Sequence[Path],
+    *compose_command: str,
+) -> list[str]:
+    return [*compose_args(compose_files), *compose_command]
+
+
+def prepare_ollama_embedding_model(
+    compose_files: Sequence[Path],
+    *,
+    cwd: Path,
+    timeout_seconds: int,
+) -> str:
+    def _compose_exec(*compose_command: str) -> list[str]:
+        return compose_exec_args(compose_files, *compose_command)
+
+    try:
+        model_name = _resolve_ollama_embedding_model(
+            compose_exec_args=_compose_exec,
+            run_command=run_command,
+            cwd=cwd,
+            timeout_seconds=timeout_seconds,
+        )
+    except OllamaEmbeddingBootstrapError as exc:
+        raise CoreProofError(exc.reason) from exc
+    _print_kv("embedding_model_resolved", model_name)
+    try:
+        _ensure_ollama_embedding_model(
+            model_name,
+            compose_exec_args=_compose_exec,
+            run_command=run_command,
+            cwd=cwd,
+            timeout_seconds=timeout_seconds,
+        )
+    except OllamaEmbeddingBootstrapError as exc:
+        raise CoreProofError(exc.reason) from exc
+    _print_kv("embedding_model_ready", "true")
+    return model_name
 
 
 def compose_config(compose_files: Sequence[Path], *, cwd: Path) -> None:
@@ -726,7 +784,7 @@ def extract_index_signal_count(response: Mapping[str, Any]) -> int:
     evidence = _as_mapping(response.get("metadata")).get("lkw_evidence.v1")
     diagnostics = _as_mapping(_as_mapping(evidence).get("diagnostics"))
     index_summary = _as_mapping(diagnostics.get("lkw.index_summary.v1"))
-    for field_name in ("ingested_count", "chunk_count", "accepted_count"):
+    for field_name in ("ingested_count", "chunk_count"):
         raw = index_summary.get(field_name)
         if raw is None:
             continue
@@ -790,6 +848,166 @@ def search_retrieve_ready(response: Mapping[str, Any]) -> bool:
     return (
         isinstance(reason, str) and reason.strip() == _SEARCH_REASON_RETRIEVE_COMPLETE
     )
+
+
+def extract_search_diagnostics(response: Mapping[str, Any]) -> SearchDiagnostics | None:
+    evidence = _as_mapping(response.get("metadata")).get("lkw_evidence.v1")
+    diagnostics = _as_mapping(_as_mapping(evidence).get("diagnostics"))
+    search_summary = _as_mapping(diagnostics.get("lkw.search_summary.v1"))
+    if not search_summary:
+        return None
+
+    num_results = 0
+    raw_num_results = search_summary.get("num_results", 0)
+    if isinstance(raw_num_results, int):
+        num_results = raw_num_results
+
+    evidence_count = 0
+    raw_evidence_count = search_summary.get("evidence_count", 0)
+    if isinstance(raw_evidence_count, int):
+        evidence_count = raw_evidence_count
+
+    source_refs_raw = search_summary.get("source_refs")
+    if isinstance(source_refs_raw, list):
+        source_refs = tuple(str(item) for item in source_refs_raw)
+    else:
+        source_refs = ()
+
+    raw_tool_reason_value = search_summary.get("raw_tool_reason")
+    raw_tool_reason = (
+        str(raw_tool_reason_value) if raw_tool_reason_value is not None else None
+    )
+    used_value = search_summary.get("used")
+    used = used_value if isinstance(used_value, bool) else None
+    reason_value = search_summary.get("reason")
+    reason = str(reason_value).strip() if isinstance(reason_value, str) else None
+    return SearchDiagnostics(
+        num_results=num_results,
+        evidence_count=evidence_count,
+        source_refs=source_refs,
+        raw_tool_reason=raw_tool_reason,
+        used=used,
+        reason=reason,
+    )
+
+
+def persistence_search_succeeded(
+    diagnostics: SearchDiagnostics | None,
+    *,
+    expected_source_ref: str,
+) -> bool:
+    if diagnostics is None:
+        return False
+    if diagnostics.used is not True:
+        return False
+    if diagnostics.reason != _SEARCH_REASON_RETRIEVE_COMPLETE:
+        return False
+    if diagnostics.num_results <= 0 and diagnostics.evidence_count <= 0:
+        return False
+    return expected_source_ref in diagnostics.source_refs
+
+
+def _emit_search_diagnostics_kv(diagnostics: SearchDiagnostics | None) -> None:
+    if diagnostics is None:
+        return
+    if diagnostics.used is not None:
+        _print_kv("search_used", diagnostics.used)
+    if diagnostics.reason and _SAFE_REASON.fullmatch(diagnostics.reason):
+        _print_kv("search_reason", diagnostics.reason)
+    if diagnostics.raw_tool_reason is not None:
+        _print_kv(
+            "search_raw_tool_reason",
+            json.dumps(diagnostics.raw_tool_reason),
+        )
+    _print_kv("search_num_results", diagnostics.num_results)
+    _print_kv("search_evidence_count", diagnostics.evidence_count)
+    if diagnostics.source_refs:
+        _print_kv("search_source_refs", json.dumps(list(diagnostics.source_refs)))
+
+
+def _raise_persistence_search_failure(
+    *,
+    when: str,
+    diagnostics: SearchDiagnostics | None,
+    expected_source_ref: str,
+    source_ref_found: bool,
+) -> None:
+    _print_kv("persistence_search_when", when)
+    _print_kv("expected_source_ref", expected_source_ref)
+    _print_kv(f"source_ref_found_{when}", "true" if source_ref_found else "false")
+    _emit_search_diagnostics_kv(diagnostics)
+    if diagnostics is None or (
+        diagnostics.num_results <= 0 and diagnostics.evidence_count <= 0
+    ):
+        raise CoreProofError("search_results_missing")
+    if not source_ref_found:
+        raise CoreProofError("expected_source_ref_missing")
+    raise CoreProofError("search_results_missing")
+
+
+def _build_persistence_search_body(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    collection_id: str,
+    marker: str,
+) -> dict[str, Any]:
+    return {
+        "tenant_id": tenant_id,
+        "workspace_id": workspace_id,
+        "message": marker,
+        "capability": "local.workspace.search",
+        "metadata": {
+            "tenant_id": tenant_id,
+            "workspace_id": workspace_id,
+            "collection_id": collection_id,
+            "query": marker,
+            "top_k": 5,
+        },
+    }
+
+
+def poll_persistence_search(
+    config: ProofConfig,
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    collection_id: str,
+    marker: str,
+    expected_source_ref: str,
+    deadline: float,
+) -> tuple[SearchDiagnostics | None, int]:
+    last_diagnostics: SearchDiagnostics | None = None
+    run_url = f"{config.base_url.rstrip('/')}/v1/local_workspace/run"
+    request_body = _build_persistence_search_body(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        collection_id=collection_id,
+        marker=marker,
+    )
+    while time.monotonic() < deadline:
+        try:
+            response = http_post_json(run_url, request_body, timeout=180.0)
+            last_diagnostics = extract_search_diagnostics(response)
+            if persistence_search_succeeded(
+                last_diagnostics,
+                expected_source_ref=expected_source_ref,
+            ):
+                assert last_diagnostics is not None
+                return last_diagnostics, max(
+                    last_diagnostics.num_results,
+                    last_diagnostics.evidence_count,
+                )
+        except (
+            CoreProofError,
+            urllib.error.URLError,
+            TimeoutError,
+            OSError,
+            json.JSONDecodeError,
+        ):
+            pass
+        time.sleep(_PERSISTENCE_SEARCH_RETRY_SLEEP_SECONDS)
+    return last_diagnostics, 0
 
 
 def safe_failure_reason(output: Mapping[str, str], *, fallback: str) -> str:
@@ -1037,8 +1255,18 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
         ),
         encoding="utf-8",
     )
-    compose_up(compose_files, ["local_workspace"], cwd=_REPO_ROOT, build=False)
+    compose_up(
+        compose_files,
+        ["local_workspace", "qdrant", "ollama"],
+        cwd=_REPO_ROOT,
+        build=False,
+    )
     wait_for_lkw_health(config.base_url, timeout_seconds=config.phase_timeout_seconds)
+    prepare_ollama_embedding_model(
+        compose_files,
+        cwd=_REPO_ROOT,
+        timeout_seconds=config.phase_timeout_seconds,
+    )
     index_response = http_post_json(
         f"{config.base_url.rstrip('/')}/v1/local_workspace/run",
         {
@@ -1047,6 +1275,8 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
             "message": "index persistence proof document",
             "capability": "local.workspace.index",
             "metadata": {
+                "tenant_id": tenant_id,
+                "workspace_id": workspace_id,
                 "source_paths": [container_source_path],
                 "collection_id": collection_id,
                 "chunking_strategy_id": "recursive",
@@ -1057,25 +1287,34 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
     index_signal = require_positive_ingest(index_response)
     _print_kv("index_signal_count", index_signal)
 
-    def _search() -> dict[str, Any]:
-        return http_post_json(
-            f"{config.base_url.rstrip('/')}/v1/local_workspace/run",
-            {
-                "tenant_id": tenant_id,
-                "workspace_id": workspace_id,
-                "message": marker,
-                "capability": "local.workspace.search",
-                "metadata": {
-                    "collection_id": collection_id,
-                    "query": marker,
-                    "top_k": 5,
-                },
-            },
-            timeout=180.0,
+    poll_budget_seconds = min(300, config.phase_timeout_seconds)
+    before_deadline = time.monotonic() + poll_budget_seconds
+    before_diagnostics, before_count = poll_persistence_search(
+        config,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        collection_id=collection_id,
+        marker=marker,
+        expected_source_ref=container_source_path,
+        deadline=before_deadline,
+    )
+    source_ref_found_before_restart = (
+        before_diagnostics is not None
+        and container_source_path in before_diagnostics.source_refs
+    )
+    if not persistence_search_succeeded(
+        before_diagnostics,
+        expected_source_ref=container_source_path,
+    ):
+        _raise_persistence_search_failure(
+            when="before_restart",
+            diagnostics=before_diagnostics,
+            expected_source_ref=container_source_path,
+            source_ref_found=source_ref_found_before_restart,
         )
-
-    before_count = require_positive_search(_search())
     _print_kv("before_restart_results", before_count)
+    _print_kv("expected_source_ref", container_source_path)
+    _print_kv("source_ref_found_before_restart", "true")
     compose_restart(
         compose_files,
         ["local_workspace", "qdrant"],
@@ -1084,8 +1323,32 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
     _print_kv("restart_mode", "non_destructive")
     _print_kv("volumes_removed", "false")
     wait_for_lkw_health(config.base_url, timeout_seconds=config.phase_timeout_seconds)
-    after_count = require_positive_search(_search())
+    after_deadline = time.monotonic() + poll_budget_seconds
+    after_diagnostics, after_count = poll_persistence_search(
+        config,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        collection_id=collection_id,
+        marker=marker,
+        expected_source_ref=container_source_path,
+        deadline=after_deadline,
+    )
+    source_ref_found_after_restart = (
+        after_diagnostics is not None
+        and container_source_path in after_diagnostics.source_refs
+    )
+    if not persistence_search_succeeded(
+        after_diagnostics,
+        expected_source_ref=container_source_path,
+    ):
+        _raise_persistence_search_failure(
+            when="after_restart",
+            diagnostics=after_diagnostics,
+            expected_source_ref=container_source_path,
+            source_ref_found=source_ref_found_after_restart,
+        )
     _print_kv("after_restart_results", after_count)
+    _print_kv("source_ref_found_after_restart", "true")
     _print_kv("proof_kind", "persistent_vector_storage")
     _print_kv("reindexed_after_restart", "false")
     return PhaseOutcome(
@@ -1094,6 +1357,9 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
         details={
             "before_restart_results": str(before_count),
             "after_restart_results": str(after_count),
+            "expected_source_ref": container_source_path,
+            "source_ref_found_before_restart": "true",
+            "source_ref_found_after_restart": "true",
         },
     )
 

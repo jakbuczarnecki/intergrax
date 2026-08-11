@@ -250,9 +250,12 @@ class _FakeQdrantClient:
         self.query_calls = 0
         self.allow_query = False
         self.fail_scroll = False
+        self.missing_collection = False
 
     def get_collection(self, collection_name: str) -> dict[str, str]:
         del collection_name
+        if self.missing_collection:
+            raise RuntimeError("collection not found")
         return {"name": "fake"}
 
     def upsert(self, *, collection_name: str, points: list[Any]) -> None:
@@ -335,6 +338,20 @@ def _qdrant_store() -> tuple[QdrantVectorStore, _FakeQdrantClient]:
     client = _FakeQdrantClient()
     store._client = client  # type: ignore[attr-defined]
     return store, client
+
+
+def test_qdrant_source_lookup_returns_empty_when_collection_missing() -> None:
+    store, client = _qdrant_store()
+    client.missing_collection = True
+
+    assert (
+        store.list_source_record_ids(
+            source_id="C:/docs/a/report.md",
+            scope=_scope(),
+        )
+        == []
+    )
+    assert client.scroll_calls == []
 
 
 def test_qdrant_source_lookup_scrolls_complete_native_ids_with_scope_filter() -> None:

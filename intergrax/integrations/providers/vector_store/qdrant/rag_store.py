@@ -221,6 +221,16 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                 vectors_config=VectorParams(size=self._dim, distance=dist),
             )
 
+    def _collection_exists(self) -> bool:
+        assert self._client is not None
+        try:
+            self._client.get_collection(self.collection_name)
+            return True
+        except VectorStoreContractError:
+            raise
+        except Exception:
+            return False
+
     def _ensure_qdrant_collection(self) -> None:
         assert self._client is not None
 
@@ -539,6 +549,8 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
     ) -> Sequence[str]:
         canonical_source_id = require_non_empty_str(source_id, field_name="source_id")
         validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        if not self._collection_exists():
+            return []
         self._ensure_qdrant_collection()
         if QFilter is None:
             raise RuntimeError("qdrant source record lookup is unavailable")

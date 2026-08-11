@@ -59,14 +59,19 @@ _ENV_KEYS = frozenset(
         "LKW_MONGODB_HOST_PORT",
     }
 )
-_MODEL_RESOLUTION_CODE = (
-    "import os; "
-    "from intergrax.rag.embedding.providers.ollama_embedding_provider "
-    "import OllamaEmbeddingProvider; "
-    "print(os.getenv(OllamaEmbeddingProvider.ENV_MODEL) "
-    "or OllamaEmbeddingProvider.DEFAULT_MODEL)"
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+from lkw_ollama_embedding_bootstrap import (
+    MAX_EMBEDDING_MODEL_LENGTH,
+    MODEL_RESOLUTION_CODE,
+    OllamaEmbeddingBootstrapError,
+    ensure_ollama_embedding_model as _ensure_ollama_embedding_model,
+    resolve_ollama_embedding_model as _resolve_ollama_embedding_model,
+    validate_resolved_embedding_model,
 )
-_MAX_EMBEDDING_MODEL_LENGTH = 256
+
+_MODEL_RESOLUTION_CODE = MODEL_RESOLUTION_CODE
+_MAX_EMBEDDING_MODEL_LENGTH = MAX_EMBEDDING_MODEL_LENGTH
 
 _DEFAULT_BASE_URL = "http://127.0.0.1:8020"
 _DEFAULT_TIMEOUT = 600
@@ -767,57 +772,24 @@ def _stack_failure_reason() -> str:
     return "stack_start_failed"
 
 
-def _validate_resolved_embedding_model(output: str) -> str:
-    if not isinstance(output, str):
-        raise QuickstartError(
-            "embedding_model_resolution_failed",
-            stage="stack_start",
-        )
-    non_empty_lines = [line.strip() for line in output.splitlines() if line.strip()]
-    if len(non_empty_lines) != 1:
-        raise QuickstartError(
-            "embedding_model_resolution_failed",
-            stage="stack_start",
-        )
-    model_name = non_empty_lines[0]
-    if (
-        not model_name
-        or len(model_name) > _MAX_EMBEDDING_MODEL_LENGTH
-        or any(ord(character) < 32 or ord(character) == 127 for character in model_name)
-        or any(character.isspace() for character in model_name)
-    ):
-        raise QuickstartError(
-            "embedding_model_resolution_failed",
-            stage="stack_start",
-        )
-    return model_name
-
-
 def resolve_ollama_embedding_model(
     *,
     timeout_seconds: int,
     progress: ProgressReporter | None = None,
 ) -> str:
-    completed = run_command(
-        compose_exec_args(
-            "exec",
-            "-T",
-            "local_workspace",
-            "python",
-            "-c",
-            _MODEL_RESOLUTION_CODE,
-        ),
-        cwd=_APP_DIR,
-        timeout=timeout_seconds,
-        stage="stack_start",
-        progress=progress,
-    )
-    if completed.returncode != 0:
-        raise QuickstartError(
-            "embedding_model_resolution_failed",
-            stage="stack_start",
+    try:
+        return _resolve_ollama_embedding_model(
+            compose_exec_args=compose_exec_args,
+            run_command=run_command,
+            cwd=_APP_DIR,
+            timeout_seconds=timeout_seconds,
+            run_command_kwargs={
+                "stage": "stack_start",
+                "progress": progress,
+            },
         )
-    return _validate_resolved_embedding_model(completed.stdout)
+    except OllamaEmbeddingBootstrapError as exc:
+        raise QuickstartError(exc.reason, stage="stack_start") from exc
 
 
 def ensure_ollama_embedding_model(
@@ -826,22 +798,20 @@ def ensure_ollama_embedding_model(
     timeout_seconds: int,
     progress: ProgressReporter | None = None,
 ) -> None:
-    completed = run_command(
-        compose_exec_args(
-            "exec",
-            "-T",
-            "ollama",
-            "ollama",
-            "pull",
+    try:
+        _ensure_ollama_embedding_model(
             model_name,
-        ),
-        cwd=_APP_DIR,
-        timeout=timeout_seconds,
-        stage="stack_start",
-        progress=progress,
-    )
-    if completed.returncode != 0:
-        raise QuickstartError("embedding_model_pull_failed", stage="stack_start")
+            compose_exec_args=compose_exec_args,
+            run_command=run_command,
+            cwd=_APP_DIR,
+            timeout_seconds=timeout_seconds,
+            run_command_kwargs={
+                "stage": "stack_start",
+                "progress": progress,
+            },
+        )
+    except OllamaEmbeddingBootstrapError as exc:
+        raise QuickstartError(exc.reason, stage="stack_start") from exc
 
 
 def _decode_json_object(raw: bytes, *, stage: str) -> dict[str, Any]:
