@@ -45,6 +45,17 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+def _authoritative_clock_result(raw_now: object) -> datetime | None:
+    """Return a timezone-aware datetime with usable offset, or None when invalid."""
+    if not isinstance(raw_now, datetime):
+        return None
+    if raw_now.tzinfo is None:
+        return None
+    if raw_now.tzinfo.utcoffset(raw_now) is None:
+        return None
+    return raw_now
+
+
 class CollaborativeWorkAuthorityResolver:
     """Resolve collaborative authority state from authoritative repository records.
 
@@ -163,7 +174,15 @@ class CollaborativeWorkAuthorityResolver:
                 denial_reason=EffectiveAuthorityDenialReason.DELEGATION_NOT_ACTIVE,
             )
 
-        now = self._clock()
+        now = _authoritative_clock_result(self._clock())
+        if now is None:
+            return fail_closed_effective_authority_decision(
+                reason=(
+                    "authority cannot be safely established because authoritative "
+                    "temporal context is unavailable or invalid"
+                ),
+                denial_reason=EffectiveAuthorityDenialReason.AUTHORITY_TEMPORAL_CONTEXT_UNAVAILABLE,
+            )
         if authoritative.valid_from is not None and now < authoritative.valid_from:
             return fail_closed_effective_authority_decision(
                 reason="authority delegation is not yet valid",

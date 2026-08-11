@@ -52,11 +52,13 @@ def _resolver(
     membership_repo: InMemoryWorkspaceMembershipRepository | None = None,
     delegation_repo: InMemoryAuthorityDelegationRepository | None = None,
     now: datetime = _NOW,
+    clock: object | None = None,
 ) -> CollaborativeWorkAuthorityResolver:
+    clock_fn = clock if clock is not None else (lambda: now)
     return CollaborativeWorkAuthorityResolver(
         membership_repository=membership_repo or _membership_repo(),
         delegation_repository=delegation_repo or _delegation_repo(),
-        clock=lambda: now,
+        clock=clock_fn,
     )
 
 
@@ -472,3 +474,80 @@ def test_resolver_does_not_require_policy_engine() -> None:
     assert "PolicyEngine" not in authority_module.__dict__
     decision = _resolver().resolve(_request())
     assert decision.decision.action is PolicyAction.DENY
+
+
+def test_naive_clock_result_fail_closed_without_type_error() -> None:
+    membership_repo = _membership_repo()
+    delegation_repo = _delegation_repo()
+    membership = _seed_membership(membership_repo)
+    delegation = _seed_delegation(
+        delegation_repo,
+        valid_from=_NOW - timedelta(days=1),
+        valid_until=_NOW + timedelta(days=1),
+    )
+
+    naive_now = datetime(2026, 6, 15, 12, 0)
+    resolver = _resolver(
+        membership_repo=membership_repo,
+        delegation_repo=delegation_repo,
+        clock=lambda: naive_now,
+    )
+    decision = resolver.resolve(
+        _request(
+            delegator_principal_id=_DELEGATOR,
+            membership=_membership_locator(),
+            delegation=_delegation_locator(
+                valid_from=_NOW - timedelta(days=1),
+                valid_until=_NOW + timedelta(days=1),
+            ),
+        )
+    )
+
+    assert decision.decision.action is PolicyAction.DENY
+    assert (
+        decision.denial_reason
+        is EffectiveAuthorityDenialReason.AUTHORITY_TEMPORAL_CONTEXT_UNAVAILABLE
+    )
+    assert membership_repo.get(
+        tenant_id=membership.tenant_id,
+        workspace_id=membership.workspace_id,
+        membership_id=membership.membership_id,
+    ) == membership
+    assert delegation_repo.get(
+        tenant_id=delegation.tenant_id,
+        workspace_id=delegation.workspace_id,
+        delegation_id=delegation.delegation_id,
+    ) == delegation
+
+
+def test_non_datetime_clock_result_fail_closed() -> None:
+    membership_repo = _membership_repo()
+    delegation_repo = _delegation_repo()
+    _seed_membership(membership_repo)
+    _seed_delegation(
+        delegation_repo,
+        valid_from=_NOW - timedelta(days=1),
+        valid_until=_NOW + timedelta(days=1),
+    )
+
+    resolver = _resolver(
+        membership_repo=membership_repo,
+        delegation_repo=delegation_repo,
+        clock=lambda: "not-a-datetime",  # type: ignore[return-value]
+    )
+    decision = resolver.resolve(
+        _request(
+            delegator_principal_id=_DELEGATOR,
+            membership=_membership_locator(),
+            delegation=_delegation_locator(
+                valid_from=_NOW - timedelta(days=1),
+                valid_until=_NOW + timedelta(days=1),
+            ),
+        )
+    )
+
+    assert decision.decision.action is PolicyAction.DENY
+    assert (
+        decision.denial_reason
+        is EffectiveAuthorityDenialReason.AUTHORITY_TEMPORAL_CONTEXT_UNAVAILABLE
+    )
