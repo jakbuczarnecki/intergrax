@@ -10,6 +10,7 @@ import pytest
 
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
+    InMemoryPrincipalAuthorityRepository,
     InMemoryWorkspaceMembershipRepository,
 )
 from intergrax.collaborative_work.repository import (
@@ -20,9 +21,17 @@ from intergrax.collaborative_work.repository import (
     AuthorityDelegationRevisionConflict,
     AuthorityDelegationScopeKey,
     CreateAuthorityDelegationCommand,
+    CreatePrincipalAuthorityGrantCommand,
     CreateWorkspaceMembershipCommand,
     INITIAL_RECORD_REVISION,
+    PrincipalAuthorityGrantAlreadyExists,
+    PrincipalAuthorityGrantIdempotencyConflict,
+    PrincipalAuthorityGrantNotFound,
+    PrincipalAuthorityRepository,
+    PrincipalAuthorityGrantRevisionConflict,
+    PrincipalAuthorityGrantScopeKey,
     UpdateAuthorityDelegationCommand,
+    UpdatePrincipalAuthorityGrantCommand,
     UpdateWorkspaceMembershipCommand,
     WorkspaceMembershipAlreadyExists,
     WorkspaceMembershipIdempotencyConflict,
@@ -32,6 +41,7 @@ from intergrax.collaborative_work.repository import (
     WorkspaceMembershipScopeKey,
 )
 from intergrax.contracts.collaborative_work import (
+    AuthorityGrantStatus,
     DelegationStatus,
     MembershipStatus,
     WorkspaceMembershipRole,
@@ -53,6 +63,10 @@ def _membership_repo() -> InMemoryWorkspaceMembershipRepository:
 
 def _delegation_repo() -> InMemoryAuthorityDelegationRepository:
     return InMemoryAuthorityDelegationRepository()
+
+
+def _authority_repo() -> InMemoryPrincipalAuthorityRepository:
+    return InMemoryPrincipalAuthorityRepository()
 
 
 def _create_membership_command(**overrides: object) -> CreateWorkspaceMembershipCommand:
@@ -82,14 +96,29 @@ def _create_delegation_command(**overrides: object) -> CreateAuthorityDelegation
     return CreateAuthorityDelegationCommand(**payload)
 
 
+def _create_authority_grant_command(**overrides: object) -> CreatePrincipalAuthorityGrantCommand:
+    payload = {
+        "tenant_id": _TENANT_A,
+        "workspace_id": _WORKSPACE_A,
+        "authority_grant_id": "authority-grant-1",
+        "principal_id": "principal-1",
+        "authority_scopes": ("workspace.read", "workspace.write"),
+        "status": AuthorityGrantStatus.ACTIVE,
+    }
+    payload.update(overrides)
+    return CreatePrincipalAuthorityGrantCommand(**payload)
+
+
 @pytest.mark.parametrize(
     "repo_factory",
-    [_membership_repo, _delegation_repo],
+    [_membership_repo, _delegation_repo, _authority_repo],
 )
 def test_repository_protocol_is_satisfied(repo_factory: object) -> None:
     repo = repo_factory()
     if isinstance(repo, InMemoryWorkspaceMembershipRepository):
         assert isinstance(repo, WorkspaceMembershipRepository)
+    elif isinstance(repo, InMemoryPrincipalAuthorityRepository):
+        assert isinstance(repo, PrincipalAuthorityRepository)
     else:
         assert isinstance(repo, AuthorityDelegationRepository)
 
@@ -470,3 +499,176 @@ def test_record_id_without_scope_does_not_authorize_access() -> None:
         )
         is None
     )
+
+
+def test_authority_grant_create_and_get() -> None:
+    repo = _authority_repo()
+    created = repo.create(_create_authority_grant_command())
+    assert created.revision == INITIAL_RECORD_REVISION
+    loaded = repo.get(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        authority_grant_id="authority-grant-1",
+    )
+    assert loaded == created
+
+
+def test_authority_grant_get_for_principal() -> None:
+    repo = _authority_repo()
+    created = repo.create(_create_authority_grant_command())
+    loaded = repo.get_for_principal(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        principal_id="principal-1",
+    )
+    assert loaded == created
+
+
+def test_authority_grant_duplicate_create_raises() -> None:
+    repo = _authority_repo()
+    repo.create(_create_authority_grant_command())
+    with pytest.raises(PrincipalAuthorityGrantAlreadyExists):
+        repo.create(_create_authority_grant_command())
+
+
+def test_authority_grant_duplicate_principal_raises() -> None:
+    repo = _authority_repo()
+    repo.create(_create_authority_grant_command())
+    with pytest.raises(PrincipalAuthorityGrantAlreadyExists):
+        repo.create(
+            _create_authority_grant_command(
+                authority_grant_id="authority-grant-2",
+            )
+        )
+
+
+def test_authority_grant_scoped_isolation_read() -> None:
+    repo = _authority_repo()
+    repo.create(_create_authority_grant_command())
+    assert (
+        repo.get(
+            tenant_id=_TENANT_B,
+            workspace_id=_WORKSPACE_B,
+            authority_grant_id="authority-grant-1",
+        )
+        is None
+    )
+    assert (
+        repo.get_for_principal(
+            tenant_id=_TENANT_B,
+            workspace_id=_WORKSPACE_B,
+            principal_id="principal-1",
+        )
+        is None
+    )
+
+
+def test_authority_grant_update_increments_revision() -> None:
+    repo = _authority_repo()
+    created = repo.create(_create_authority_grant_command())
+    updated = repo.update(
+        UpdatePrincipalAuthorityGrantCommand(
+            scope=PrincipalAuthorityGrantScopeKey(
+                tenant_id=_TENANT_A,
+                workspace_id=_WORKSPACE_A,
+                authority_grant_id="authority-grant-1",
+            ),
+            expected_revision=created.revision,
+            authority_scopes=("workspace.admin",),
+            status=AuthorityGrantStatus.REVOKED,
+        )
+    )
+    assert updated.revision == created.revision + 1
+    assert updated.authority_scopes == ("workspace.admin",)
+    assert updated.status is AuthorityGrantStatus.REVOKED
+
+
+def test_authority_grant_stale_revision_conflict_preserves_state() -> None:
+    repo = _authority_repo()
+    created = repo.create(_create_authority_grant_command())
+    with pytest.raises(PrincipalAuthorityGrantRevisionConflict):
+        repo.update(
+            UpdatePrincipalAuthorityGrantCommand(
+                scope=PrincipalAuthorityGrantScopeKey(
+                    tenant_id=_TENANT_A,
+                    workspace_id=_WORKSPACE_A,
+                    authority_grant_id="authority-grant-1",
+                ),
+                expected_revision=created.revision + 1,
+                authority_scopes=("workspace.admin",),
+                status=AuthorityGrantStatus.REVOKED,
+            )
+        )
+    current = repo.get(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        authority_grant_id="authority-grant-1",
+    )
+    assert current == created
+
+
+def test_authority_grant_cross_scope_update_is_not_found() -> None:
+    repo = _authority_repo()
+    created = repo.create(_create_authority_grant_command())
+    with pytest.raises(PrincipalAuthorityGrantNotFound):
+        repo.update(
+            UpdatePrincipalAuthorityGrantCommand(
+                scope=PrincipalAuthorityGrantScopeKey(
+                    tenant_id=_TENANT_A,
+                    workspace_id=_WORKSPACE_B,
+                    authority_grant_id="authority-grant-1",
+                ),
+                expected_revision=created.revision,
+                authority_scopes=("workspace.read",),
+                status=AuthorityGrantStatus.REVOKED,
+            )
+        )
+
+
+def test_authority_grant_idempotency_replay_and_conflict() -> None:
+    repo = _authority_repo()
+    command = _create_authority_grant_command(idempotency_key="authority-idem")
+    first = repo.create(command)
+    second = repo.create(command)
+    assert second == first
+    with pytest.raises(PrincipalAuthorityGrantIdempotencyConflict):
+        repo.create(
+            _create_authority_grant_command(
+                idempotency_key="authority-idem",
+                authority_scopes=("workspace.admin",),
+            )
+        )
+
+
+def test_authority_grant_idempotency_replay_after_update_returns_original_create() -> None:
+    repo = _authority_repo()
+    command = _create_authority_grant_command(idempotency_key="authority-idem-delayed")
+    created = repo.create(command)
+    assert created.authority_scopes == ("workspace.read", "workspace.write")
+    assert created.revision == INITIAL_RECORD_REVISION
+
+    updated = repo.update(
+        UpdatePrincipalAuthorityGrantCommand(
+            scope=PrincipalAuthorityGrantScopeKey(
+                tenant_id=_TENANT_A,
+                workspace_id=_WORKSPACE_A,
+                authority_grant_id="authority-grant-1",
+            ),
+            expected_revision=created.revision,
+            authority_scopes=("workspace.admin",),
+            status=AuthorityGrantStatus.REVOKED,
+        )
+    )
+    assert updated.revision == created.revision + 1
+
+    replayed = repo.create(command)
+    assert replayed == created
+    assert replayed.authority_scopes == ("workspace.read", "workspace.write")
+    assert replayed.revision == INITIAL_RECORD_REVISION
+
+    current = repo.get(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        authority_grant_id="authority-grant-1",
+    )
+    assert current == updated

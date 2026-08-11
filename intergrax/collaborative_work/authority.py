@@ -1,18 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Authoritative effective-authority state resolver (COLLAB-WORK-1C).
+"""Authoritative effective-authority state resolver (COLLAB-WORK-1C / 1D).
 
-Resolves only the Collaborative Work portion of effective authority:
+Resolves the Collaborative Work portion of effective authority:
 
-    acting principal
+    base principal authority
       ∩ authoritative active WorkspaceMembership
       ∩ authoritative active/valid AuthorityDelegation when acting for another principal
-      ∩ requested collaborative authority scopes (structural delegation subset checks)
+      ∩ requested collaborative authority scopes
 
-Workspace policy, resource policy, runtime/tool policy, principal base authority, and
-membership role→capability mapping are **out of scope** for this slice. When structural
-collaborative evidence is valid but final authority cannot be proven, the resolver fails
-closed with ``SCOPE_ONLY_INSUFFICIENT``.
+Workspace policy, resource policy, and runtime/tool policy are **out of scope**.
+An ALLOW from this resolver means only that the Collaborative Work authority slice
+is satisfied — not global execution authorization.
 """
 
 from __future__ import annotations
@@ -22,22 +21,25 @@ from datetime import UTC, datetime
 
 from intergrax.collaborative_work.repository import (
     AuthorityDelegationRepository,
+    PrincipalAuthorityRepository,
     WorkspaceMembershipRepository,
 )
 from intergrax.contracts.collaborative_work import (
     AuthorityDelegation,
+    AuthorityGrantStatus,
     DelegationStatus,
     EffectiveAuthorityDecision,
     EffectiveAuthorityDenialReason,
     EffectiveAuthorityRequest,
     MembershipStatus,
+    PrincipalAuthorityGrant,
     WorkspaceMembership,
     fail_closed_effective_authority_decision,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 
-_POLICY_RULE_SCOPE_ONLY_INSUFFICIENT = (
-    "collaborative_work.effective_authority.scope_only_insufficient"
+_POLICY_RULE_COLLABORATIVE_SLICE_ALLOW = (
+    "collaborative_work.effective_authority.collaborative_slice_allow"
 )
 
 
@@ -61,7 +63,8 @@ class CollaborativeWorkAuthorityResolver:
 
     Caller-supplied embedded ``WorkspaceMembership`` and ``AuthorityDelegation`` objects
     are locator hints only; authority-bearing fields are always reloaded from repository
-    ports and never trusted from the request payload.
+    ports and never trusted from the request payload. Base authority is loaded exclusively
+    from ``PrincipalAuthorityRepository`` — never from request fields or delegation claims.
     """
 
     def __init__(
@@ -69,10 +72,12 @@ class CollaborativeWorkAuthorityResolver:
         *,
         membership_repository: WorkspaceMembershipRepository,
         delegation_repository: AuthorityDelegationRepository,
+        principal_authority_repository: PrincipalAuthorityRepository,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         self._membership_repository = membership_repository
         self._delegation_repository = delegation_repository
+        self._principal_authority_repository = principal_authority_repository
         self._clock = clock or _utc_now
 
     def resolve(self, request: EffectiveAuthorityRequest) -> EffectiveAuthorityDecision:
@@ -90,8 +95,11 @@ class CollaborativeWorkAuthorityResolver:
             delegation_denial = self._resolve_delegation(request)
             if delegation_denial is not None:
                 return delegation_denial
+            authority_principal_id = request.delegator_principal_id
+        else:
+            authority_principal_id = request.acting_principal_id
 
-        return self._deny_unresolved_authority_source()
+        return self._resolve_base_authority(request, authority_principal_id)
 
     def _resolve_membership(
         self,
@@ -241,16 +249,65 @@ class CollaborativeWorkAuthorityResolver:
             )
         return None
 
+    def _resolve_base_authority(
+        self,
+        request: EffectiveAuthorityRequest,
+        authority_principal_id: str,
+    ) -> EffectiveAuthorityDecision:
+        grant = self._principal_authority_repository.get_for_principal(
+            tenant_id=request.tenant_id,
+            workspace_id=request.workspace_id,
+            principal_id=authority_principal_id,
+        )
+        if grant is None:
+            return fail_closed_effective_authority_decision(
+                reason="authoritative principal base authority not found",
+                denial_reason=EffectiveAuthorityDenialReason.MISSING_BASE_AUTHORITY,
+            )
+
+        if not self._base_authority_matches_request(request, grant, authority_principal_id):
+            return fail_closed_effective_authority_decision(
+                reason="authoritative base authority does not match request scope",
+                denial_reason=EffectiveAuthorityDenialReason.MISSING_BASE_AUTHORITY,
+            )
+
+        if grant.status is not AuthorityGrantStatus.ACTIVE:
+            return fail_closed_effective_authority_decision(
+                reason="principal base authority is not active",
+                denial_reason=EffectiveAuthorityDenialReason.BASE_AUTHORITY_NOT_ACTIVE,
+            )
+
+        base_scopes = set(grant.authority_scopes)
+        for scope in request.requested_authority_scopes:
+            if scope not in base_scopes:
+                return fail_closed_effective_authority_decision(
+                    reason="requested authority scope exceeds principal base authority",
+                    denial_reason=EffectiveAuthorityDenialReason.INSUFFICIENT_BASE_AUTHORITY,
+                )
+
+        return self._allow_collaborative_slice()
+
     @staticmethod
-    def _deny_unresolved_authority_source() -> EffectiveAuthorityDecision:
+    def _base_authority_matches_request(
+        request: EffectiveAuthorityRequest,
+        grant: PrincipalAuthorityGrant,
+        authority_principal_id: str,
+    ) -> bool:
+        return (
+            grant.tenant_id == request.tenant_id
+            and grant.workspace_id == request.workspace_id
+            and grant.principal_id == authority_principal_id
+        )
+
+    @staticmethod
+    def _allow_collaborative_slice() -> EffectiveAuthorityDecision:
         return EffectiveAuthorityDecision(
             decision=PolicyDecision(
-                action=PolicyAction.DENY,
+                action=PolicyAction.ALLOW,
                 reason=(
-                    "collaborative membership and delegation evidence validated; "
-                    "principal base authority and policy composition are not yet resolved"
+                    "collaborative membership, delegation, and base authority satisfied; "
+                    "workspace, resource, and runtime/tool policy were not evaluated"
                 ),
-                policy_rule_id=_POLICY_RULE_SCOPE_ONLY_INSUFFICIENT,
+                policy_rule_id=_POLICY_RULE_COLLABORATIVE_SLICE_ALLOW,
             ),
-            denial_reason=EffectiveAuthorityDenialReason.SCOPE_ONLY_INSUFFICIENT,
         )

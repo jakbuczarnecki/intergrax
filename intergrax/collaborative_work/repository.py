@@ -35,8 +35,10 @@ from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.collaborative_work import (
     AuthorityDelegation,
+    AuthorityGrantStatus,
     DelegationStatus,
     MembershipStatus,
+    PrincipalAuthorityGrant,
     WorkspaceMembership,
     WorkspaceMembershipRole,
 )
@@ -73,6 +75,22 @@ class AuthorityDelegationRevisionConflict(Exception):
 
 
 class AuthorityDelegationIdempotencyConflict(Exception):
+    """Idempotency key replayed with a different semantic command."""
+
+
+class PrincipalAuthorityGrantNotFound(Exception):
+    """Authority grant was not found for the requested tenant/workspace scope."""
+
+
+class PrincipalAuthorityGrantAlreadyExists(Exception):
+    """Authority grant already exists for the requested scoped identity."""
+
+
+class PrincipalAuthorityGrantRevisionConflict(Exception):
+    """Optimistic revision conflict for principal authority grant."""
+
+
+class PrincipalAuthorityGrantIdempotencyConflict(Exception):
     """Idempotency key replayed with a different semantic command."""
 
 
@@ -160,6 +178,30 @@ class AuthorityDelegationScopeKey:
 
 
 @dataclass(frozen=True, slots=True)
+class PrincipalAuthorityGrantScopeKey:
+    tenant_id: str
+    workspace_id: str
+    authority_grant_id: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "tenant_id",
+            _require_non_empty(self.tenant_id, field_name="tenant_id"),
+        )
+        object.__setattr__(
+            self,
+            "workspace_id",
+            _require_non_empty(self.workspace_id, field_name="workspace_id"),
+        )
+        object.__setattr__(
+            self,
+            "authority_grant_id",
+            _require_non_empty(self.authority_grant_id, field_name="authority_grant_id"),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class CreateWorkspaceMembershipCommand:
     tenant_id: str
     workspace_id: str
@@ -208,6 +250,97 @@ class CreateWorkspaceMembershipCommand:
         }
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class CreatePrincipalAuthorityGrantCommand:
+    tenant_id: str
+    workspace_id: str
+    authority_grant_id: str
+    principal_id: str
+    authority_scopes: tuple[str, ...]
+    status: AuthorityGrantStatus = AuthorityGrantStatus.ACTIVE
+    idempotency_key: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "tenant_id",
+            _require_non_empty(self.tenant_id, field_name="tenant_id"),
+        )
+        object.__setattr__(
+            self,
+            "workspace_id",
+            _require_non_empty(self.workspace_id, field_name="workspace_id"),
+        )
+        object.__setattr__(
+            self,
+            "authority_grant_id",
+            _require_non_empty(self.authority_grant_id, field_name="authority_grant_id"),
+        )
+        object.__setattr__(
+            self,
+            "principal_id",
+            _require_non_empty(self.principal_id, field_name="principal_id"),
+        )
+        if not self.authority_scopes:
+            raise ValueError("authority_scopes must be non-empty")
+        object.__setattr__(
+            self,
+            "authority_scopes",
+            tuple(
+                _require_non_empty(scope, field_name="authority_scopes")
+                for scope in self.authority_scopes
+            ),
+        )
+        if self.idempotency_key is not None:
+            object.__setattr__(
+                self,
+                "idempotency_key",
+                _require_non_empty(self.idempotency_key, field_name="idempotency_key"),
+            )
+
+    def semantic_fingerprint(self) -> str:
+        payload = {
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "authority_grant_id": self.authority_grant_id,
+            "principal_id": self.principal_id,
+            "authority_scopes": list(self.authority_scopes),
+            "status": self.status.value,
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class UpdatePrincipalAuthorityGrantCommand:
+    scope: PrincipalAuthorityGrantScopeKey
+    expected_revision: int
+    authority_scopes: tuple[str, ...]
+    status: AuthorityGrantStatus
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "scope",
+            _require_scope_key(self.scope, PrincipalAuthorityGrantScopeKey),
+        )
+        object.__setattr__(
+            self,
+            "expected_revision",
+            _require_non_negative_int(self.expected_revision, field_name="expected_revision"),
+        )
+        if not self.authority_scopes:
+            raise ValueError("authority_scopes must be non-empty")
+        object.__setattr__(
+            self,
+            "authority_scopes",
+            tuple(
+                _require_non_empty(scope, field_name="authority_scopes")
+                for scope in self.authority_scopes
+            ),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -387,3 +520,36 @@ class AuthorityDelegationRepository(Protocol):
 
     def update(self, command: UpdateAuthorityDelegationCommand) -> AuthorityDelegation:
         """Replace delegation semantics under optimistic concurrency."""
+
+
+@runtime_checkable
+class PrincipalAuthorityRepository(Protocol):
+    """Authoritative persistence port for principal base-authority grant records."""
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+
+    def create(self, command: CreatePrincipalAuthorityGrantCommand) -> PrincipalAuthorityGrant:
+        """Create an authority grant at ``INITIAL_RECORD_REVISION``."""
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        authority_grant_id: str,
+    ) -> PrincipalAuthorityGrant | None:
+        """Return authority grant for the scoped identity or ``None``."""
+
+    def get_for_principal(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        principal_id: str,
+    ) -> PrincipalAuthorityGrant | None:
+        """Return the authoritative grant for a principal in workspace scope or ``None``."""
+
+    def update(self, command: UpdatePrincipalAuthorityGrantCommand) -> PrincipalAuthorityGrant:
+        """Replace authority grant semantics under optimistic concurrency."""

@@ -99,7 +99,7 @@ It does not answer:
 
 - **CW-INV-01:** Every reusable collaborative identity primitive is platform-owned under this domain.
 - **CW-INV-02:** Membership is explicit; `tenant_id` and `workspace_id` alone do not authorize.
-- **CW-INV-03:** Delegation never amplifies delegator authority.
+- **CW-INV-03:** Delegation never amplifies delegator base authority.
 - **CW-INV-04:** Agent collaborative Principal remains distinct from delegating human Principal.
 - **CW-INV-05:** `Principal != AgentDefinition != AgentRun != RequestIdentity`.
 - **CW-INV-06:** `WorkItem != Nexus Task`; collaborative work plane != execution plane.
@@ -108,6 +108,8 @@ It does not answer:
 - **CW-INV-09:** Policy evaluates effective authority; this domain owns the semantic source of truth.
 - **CW-INV-10:** Fail closed when required authority cannot be proven for privileged mutations.
 - **CW-INV-11:** LKW and other applications consume contracts; no `LkwPrincipal`, `LkwWorkspaceMember`, or `LkwDelegation` ownership.
+- **CW-INV-12:** `WorkspaceMembershipRole` is collaborative classification; explicit `PrincipalAuthorityGrant.authority_scopes` own base authority.
+- **CW-INV-13:** Collaborative Work ALLOW satisfies only the collaborative authority slice; workspace, resource, and runtime/tool policy remain required for execution authorization.
 
 ---
 
@@ -118,9 +120,10 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 | Contract | Direction |
 |----------|-----------|
 | **Principal** | `HUMAN`, `AGENT`, `SERVICE`, future `EXTERNAL_AGENT` — semantic kinds; implementation enum location remains open until justified |
-| **WorkspaceMembership** | explicit membership in `tenant_id + workspace_id` scope; role/capability direction; not inferred |
-| **Delegation** | delegator + delegate principals; scoped authority; optional resource/time bounds; never amplifies |
-| **Effective authority** | principal ∩ membership ∩ delegation ∩ workspace policy ∩ resource policy ∩ runtime/tool policy |
+| **WorkspaceMembership** | explicit membership in `tenant_id + workspace_id` scope; role is collaborative classification only — not an authority source |
+| **PrincipalAuthorityGrant** | explicit authoritative base-authority scopes per principal in workspace scope; one grant per principal per workspace |
+| **Delegation** | delegator + delegate principals; scoped authority; optional resource/time bounds; never amplifies delegator base authority |
+| **Effective authority** | base principal authority ∩ membership ∩ delegation ∩ workspace policy ∩ resource policy ∩ runtime/tool policy |
 
 Persistence, APIs, repositories, and enforcement implementation remain **out of scope** until the MP-1 implementation gate opens.
 

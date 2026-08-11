@@ -15,8 +15,10 @@ from intergrax.contracts.collaborative_work import (
     SCHEMA_COLLABORATIVE_PRINCIPAL_V1,
     SCHEMA_EFFECTIVE_AUTHORITY_DECISION_V1,
     SCHEMA_EFFECTIVE_AUTHORITY_REQUEST_V1,
+    SCHEMA_PRINCIPAL_AUTHORITY_GRANT_V1,
     SCHEMA_WORKSPACE_MEMBERSHIP_V1,
     AuthorityDelegation,
+    AuthorityGrantStatus,
     CollaborativePrincipal,
     DelegationStatus,
     EffectiveAuthorityDenialReason,
@@ -24,6 +26,7 @@ from intergrax.contracts.collaborative_work import (
     EffectiveAuthorityRequest,
     MembershipStatus,
     PrincipalKind,
+    PrincipalAuthorityGrant,
     WorkspaceMembership,
     WorkspaceMembershipRole,
     fail_closed_effective_authority_decision,
@@ -56,6 +59,20 @@ def _membership(**overrides: object) -> WorkspaceMembership:
     }
     payload.update(overrides)
     return WorkspaceMembership.model_validate(payload)
+
+
+def _authority_grant(**overrides: object) -> PrincipalAuthorityGrant:
+    payload = {
+        "authority_grant_id": "authority-grant-1",
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1",
+        "principal_id": "principal-1",
+        "authority_scopes": ("workspace.read", "workspace.write"),
+        "status": AuthorityGrantStatus.ACTIVE,
+        "revision": 0,
+    }
+    payload.update(overrides)
+    return PrincipalAuthorityGrant.model_validate(payload)
 
 
 def _effective_authority_request(**overrides: object) -> EffectiveAuthorityRequest:
@@ -330,6 +347,33 @@ def test_effective_authority_request_rejects_delegation_delegator_mismatch() -> 
 def test_effective_authority_request_rejects_blank_resource_scope(resource_scope: str) -> None:
     with pytest.raises(ValidationError, match="must be non-empty when provided"):
         _effective_authority_request(resource_scope=resource_scope)
+
+
+@pytest.mark.unit
+def test_principal_authority_grant_contract_shape() -> None:
+    grant = _authority_grant()
+    assert grant.schema_version == SCHEMA_PRINCIPAL_AUTHORITY_GRANT_V1
+    assert grant.authority_scopes == ("workspace.read", "workspace.write")
+
+
+@pytest.mark.unit
+def test_principal_authority_grant_requires_non_empty_authority_scopes() -> None:
+    with pytest.raises(ValidationError):
+        _authority_grant(authority_scopes=())
+    with pytest.raises(ValidationError):
+        _authority_grant(authority_scopes=("  ",))
+
+
+@pytest.mark.unit
+def test_principal_authority_grant_revision_and_immutability() -> None:
+    grant = _authority_grant(revision=2)
+    assert grant.revision == 2
+    with pytest.raises(ValidationError):
+        _authority_grant(revision=-1)
+    with pytest.raises(ValidationError):
+        grant.revision = 3
+    with pytest.raises(ValidationError):
+        _authority_grant(extra_field="nope")
 
 
 @pytest.mark.unit

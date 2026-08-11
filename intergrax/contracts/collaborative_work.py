@@ -33,6 +33,7 @@ from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 SCHEMA_COLLABORATIVE_PRINCIPAL_V1: Final = "collaborative_principal.v1"
 SCHEMA_WORKSPACE_MEMBERSHIP_V1: Final = "workspace_membership.v1"
 SCHEMA_AUTHORITY_DELEGATION_V1: Final = "authority_delegation.v1"
+SCHEMA_PRINCIPAL_AUTHORITY_GRANT_V1: Final = "principal_authority_grant.v1"
 SCHEMA_EFFECTIVE_AUTHORITY_REQUEST_V1: Final = "effective_authority_request.v1"
 SCHEMA_EFFECTIVE_AUTHORITY_DECISION_V1: Final = "effective_authority_decision.v1"
 
@@ -68,6 +69,12 @@ class DelegationStatus(StrEnum):
     EXPIRED = "expired"
 
 
+class AuthorityGrantStatus(StrEnum):
+    ACTIVE = "active"
+    REVOKED = "revoked"
+    SUSPENDED = "suspended"
+
+
 class EffectiveAuthorityDenialReason(StrEnum):
     """Fail-closed denial codes for the effective-authority boundary."""
 
@@ -79,6 +86,9 @@ class EffectiveAuthorityDenialReason(StrEnum):
     DELEGATION_NOT_ACTIVE = "delegation_not_active"
     AUTHORITY_TEMPORAL_CONTEXT_UNAVAILABLE = "authority_temporal_context_unavailable"
     SCOPE_ONLY_INSUFFICIENT = "scope_only_insufficient"
+    MISSING_BASE_AUTHORITY = "missing_base_authority"
+    INSUFFICIENT_BASE_AUTHORITY = "insufficient_base_authority"
+    BASE_AUTHORITY_NOT_ACTIVE = "base_authority_not_active"
 
 
 class CollaborativePrincipal(BaseModel):
@@ -193,6 +203,46 @@ class AuthorityDelegation(BaseModel):
         ):
             raise ValueError("valid_until must be after valid_from")
         return self
+
+
+class PrincipalAuthorityGrant(BaseModel):
+    """Authoritative collaborative authority scopes owned by a principal in workspace scope.
+
+    ``WorkspaceMembershipRole`` is collaborative classification only; explicit
+    ``authority_scopes`` on this record are the authoritative base-authority source.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["principal_authority_grant.v1"] = SCHEMA_PRINCIPAL_AUTHORITY_GRANT_V1
+    authority_grant_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    principal_id: str = _NON_EMPTY
+    authority_scopes: tuple[str, ...] = Field(min_length=1)
+    status: AuthorityGrantStatus = AuthorityGrantStatus.ACTIVE
+    revision: int = Field(ge=0)
+
+    @field_validator(
+        "authority_grant_id",
+        "tenant_id",
+        "workspace_id",
+        "principal_id",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @field_validator("authority_scopes")
+    @classmethod
+    def _normalize_authority_scopes(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        normalized = tuple(scope.strip() for scope in value)
+        if not normalized or any(not scope for scope in normalized):
+            raise ValueError("authority_scopes must contain non-empty scope values")
+        return normalized
 
 
 class EffectiveAuthorityRequest(BaseModel):

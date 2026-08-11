@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""COLLAB-WORK-1C — authoritative effective-authority resolver tests."""
+"""COLLAB-WORK-1C / 1D — authoritative effective-authority resolver tests."""
 
 from __future__ import annotations
 
@@ -11,16 +11,19 @@ import pytest
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
+    InMemoryPrincipalAuthorityRepository,
     InMemoryWorkspaceMembershipRepository,
 )
 from intergrax.collaborative_work.repository import (
     CreateAuthorityDelegationCommand,
+    CreatePrincipalAuthorityGrantCommand,
     CreateWorkspaceMembershipCommand,
     UpdateWorkspaceMembershipCommand,
     WorkspaceMembershipScopeKey,
 )
 from intergrax.contracts.collaborative_work import (
     AuthorityDelegation,
+    AuthorityGrantStatus,
     DelegationStatus,
     EffectiveAuthorityDenialReason,
     EffectiveAuthorityRequest,
@@ -47,10 +50,15 @@ def _delegation_repo() -> InMemoryAuthorityDelegationRepository:
     return InMemoryAuthorityDelegationRepository()
 
 
+def _authority_repo() -> InMemoryPrincipalAuthorityRepository:
+    return InMemoryPrincipalAuthorityRepository()
+
+
 def _resolver(
     *,
     membership_repo: InMemoryWorkspaceMembershipRepository | None = None,
     delegation_repo: InMemoryAuthorityDelegationRepository | None = None,
+    authority_repo: InMemoryPrincipalAuthorityRepository | None = None,
     now: datetime = _NOW,
     clock: object | None = None,
 ) -> CollaborativeWorkAuthorityResolver:
@@ -58,6 +66,7 @@ def _resolver(
     return CollaborativeWorkAuthorityResolver(
         membership_repository=membership_repo or _membership_repo(),
         delegation_repository=delegation_repo or _delegation_repo(),
+        principal_authority_repository=authority_repo or _authority_repo(),
         clock=clock_fn,
     )
 
@@ -95,6 +104,25 @@ def _seed_delegation(
     }
     payload.update(overrides)
     return repo.create(CreateAuthorityDelegationCommand(**payload))
+
+
+def _seed_authority(
+    repo: InMemoryPrincipalAuthorityRepository,
+    *,
+    principal_id: str = _ACTING,
+    authority_scopes: tuple[str, ...] = ("workspace.read", "workspace.write"),
+    status: AuthorityGrantStatus = AuthorityGrantStatus.ACTIVE,
+) -> object:
+    return repo.create(
+        CreatePrincipalAuthorityGrantCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            authority_grant_id="authority-grant-1",
+            principal_id=principal_id,
+            authority_scopes=authority_scopes,
+            status=status,
+        )
+    )
 
 
 def _membership_locator(**overrides: object) -> WorkspaceMembership:
@@ -152,7 +180,7 @@ def test_membership_repository_state_overrides_embedded_request_state() -> None:
     )
 
     assert decision.decision.action is PolicyAction.DENY
-    assert decision.denial_reason is EffectiveAuthorityDenialReason.SCOPE_ONLY_INSUFFICIENT
+    assert decision.denial_reason is EffectiveAuthorityDenialReason.MISSING_BASE_AUTHORITY
 
 
 def test_membership_revoked_in_repository_denies_despite_stale_active_embed() -> None:
@@ -405,9 +433,10 @@ def test_resource_limited_delegation_requires_request_resource_scope() -> None:
     assert decision.denial_reason is EffectiveAuthorityDenialReason.INSUFFICIENT_DELEGATION_SCOPE
 
 
-def test_valid_delegated_evidence_reaches_maximum_safe_result() -> None:
+def test_valid_delegated_evidence_reaches_collaborative_slice_allow() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
+    authority_repo = _authority_repo()
     _seed_membership(membership_repo)
     _seed_delegation(
         delegation_repo,
@@ -415,8 +444,13 @@ def test_valid_delegated_evidence_reaches_maximum_safe_result() -> None:
         valid_from=_NOW - timedelta(days=1),
         valid_until=_NOW + timedelta(days=1),
     )
+    _seed_authority(authority_repo, principal_id=_DELEGATOR)
 
-    decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
+    decision = _resolver(
+        membership_repo=membership_repo,
+        delegation_repo=delegation_repo,
+        authority_repo=authority_repo,
+    ).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
             resource_scope="artifact-a",
@@ -429,15 +463,16 @@ def test_valid_delegated_evidence_reaches_maximum_safe_result() -> None:
         )
     )
 
-    assert decision.decision.action is PolicyAction.DENY
-    assert decision.denial_reason is EffectiveAuthorityDenialReason.SCOPE_ONLY_INSUFFICIENT
+    assert decision.decision.action is PolicyAction.ALLOW
+    assert decision.denial_reason is None
     assert (
         decision.decision.policy_rule_id
-        == "collaborative_work.effective_authority.scope_only_insufficient"
+        == "collaborative_work.effective_authority.collaborative_slice_allow"
     )
+    assert "workspace, resource, and runtime/tool policy were not evaluated" in decision.decision.reason
 
 
-def test_direct_acting_active_membership_still_scope_only_insufficient() -> None:
+def test_direct_acting_active_membership_missing_base_authority_denies() -> None:
     membership_repo = _membership_repo()
     _seed_membership(membership_repo)
 
@@ -446,7 +481,74 @@ def test_direct_acting_active_membership_still_scope_only_insufficient() -> None
     )
 
     assert decision.decision.action is PolicyAction.DENY
-    assert decision.denial_reason is EffectiveAuthorityDenialReason.SCOPE_ONLY_INSUFFICIENT
+    assert decision.denial_reason is EffectiveAuthorityDenialReason.MISSING_BASE_AUTHORITY
+
+
+def test_direct_acting_active_membership_with_base_authority_allows() -> None:
+    membership_repo = _membership_repo()
+    authority_repo = _authority_repo()
+    _seed_membership(membership_repo)
+    _seed_authority(authority_repo)
+
+    decision = _resolver(membership_repo=membership_repo, authority_repo=authority_repo).resolve(
+        _request(membership=_membership_locator())
+    )
+
+    assert decision.decision.action is PolicyAction.ALLOW
+    assert decision.denial_reason is None
+
+
+def test_direct_acting_insufficient_base_scope_denies() -> None:
+    membership_repo = _membership_repo()
+    authority_repo = _authority_repo()
+    _seed_membership(membership_repo)
+    _seed_authority(authority_repo, authority_scopes=("workspace.read",))
+
+    decision = _resolver(membership_repo=membership_repo, authority_repo=authority_repo).resolve(
+        _request(
+            requested_authority_scopes=("workspace.write",),
+            membership=_membership_locator(),
+        )
+    )
+
+    assert decision.decision.action is PolicyAction.DENY
+    assert decision.denial_reason is EffectiveAuthorityDenialReason.INSUFFICIENT_BASE_AUTHORITY
+
+
+def test_inactive_base_authority_denies() -> None:
+    membership_repo = _membership_repo()
+    authority_repo = _authority_repo()
+    _seed_membership(membership_repo)
+    _seed_authority(authority_repo, status=AuthorityGrantStatus.REVOKED)
+
+    decision = _resolver(membership_repo=membership_repo, authority_repo=authority_repo).resolve(
+        _request(membership=_membership_locator())
+    )
+
+    assert decision.denial_reason is EffectiveAuthorityDenialReason.BASE_AUTHORITY_NOT_ACTIVE
+
+
+def test_admin_membership_without_base_authority_does_not_authorize() -> None:
+    membership_repo = _membership_repo()
+    membership_repo.create(
+        CreateWorkspaceMembershipCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            membership_id="membership-1",
+            principal_id=_ACTING,
+            role=WorkspaceMembershipRole.ADMIN,
+            status=MembershipStatus.ACTIVE,
+        )
+    )
+
+    decision = _resolver(membership_repo=membership_repo).resolve(
+        _request(
+            membership=_membership_locator(role=WorkspaceMembershipRole.ADMIN),
+        )
+    )
+
+    assert decision.decision.action is PolicyAction.DENY
+    assert decision.denial_reason is EffectiveAuthorityDenialReason.MISSING_BASE_AUTHORITY
 
 
 def test_delegation_scopes_alone_do_not_manufacture_delegator_authority() -> None:
@@ -465,7 +567,103 @@ def test_delegation_scopes_alone_do_not_manufacture_delegator_authority() -> Non
     )
 
     assert decision.decision.action is PolicyAction.DENY
-    assert decision.denial_reason is EffectiveAuthorityDenialReason.SCOPE_ONLY_INSUFFICIENT
+    assert decision.denial_reason is EffectiveAuthorityDenialReason.MISSING_BASE_AUTHORITY
+
+
+def test_delegation_scope_exceeds_delegator_base_authority_denies() -> None:
+    membership_repo = _membership_repo()
+    delegation_repo = _delegation_repo()
+    authority_repo = _authority_repo()
+    _seed_membership(membership_repo)
+    _seed_delegation(delegation_repo, authority_scopes=("workspace.read", "workspace.write"))
+    _seed_authority(authority_repo, principal_id=_DELEGATOR, authority_scopes=("workspace.read",))
+
+    decision = _resolver(
+        membership_repo=membership_repo,
+        delegation_repo=delegation_repo,
+        authority_repo=authority_repo,
+    ).resolve(
+        _request(
+            delegator_principal_id=_DELEGATOR,
+            requested_authority_scopes=("workspace.write",),
+            membership=_membership_locator(),
+            delegation=_delegation_locator(authority_scopes=("workspace.read", "workspace.write")),
+        )
+    )
+
+    assert decision.decision.action is PolicyAction.DENY
+    assert decision.denial_reason is EffectiveAuthorityDenialReason.INSUFFICIENT_BASE_AUTHORITY
+
+
+def test_delegator_base_authority_without_delegation_scope_denies() -> None:
+    membership_repo = _membership_repo()
+    delegation_repo = _delegation_repo()
+    authority_repo = _authority_repo()
+    _seed_membership(membership_repo)
+    _seed_delegation(delegation_repo, authority_scopes=("workspace.read",))
+    _seed_authority(
+        authority_repo,
+        principal_id=_DELEGATOR,
+        authority_scopes=("workspace.read", "workspace.write"),
+    )
+
+    decision = _resolver(
+        membership_repo=membership_repo,
+        delegation_repo=delegation_repo,
+        authority_repo=authority_repo,
+    ).resolve(
+        _request(
+            delegator_principal_id=_DELEGATOR,
+            requested_authority_scopes=("workspace.write",),
+            membership=_membership_locator(),
+            delegation=_delegation_locator(authority_scopes=("workspace.read",)),
+        )
+    )
+
+    assert decision.decision.action is PolicyAction.DENY
+    assert decision.denial_reason is EffectiveAuthorityDenialReason.INSUFFICIENT_DELEGATION_SCOPE
+
+
+def test_missing_delegator_base_authority_denies() -> None:
+    membership_repo = _membership_repo()
+    delegation_repo = _delegation_repo()
+    _seed_membership(membership_repo)
+    _seed_delegation(delegation_repo)
+
+    decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
+        _request(
+            delegator_principal_id=_DELEGATOR,
+            membership=_membership_locator(),
+            delegation=_delegation_locator(),
+        )
+    )
+
+    assert decision.denial_reason is EffectiveAuthorityDenialReason.MISSING_BASE_AUTHORITY
+
+
+def test_delegate_own_base_authority_cannot_substitute_delegator_authority() -> None:
+    membership_repo = _membership_repo()
+    delegation_repo = _delegation_repo()
+    authority_repo = _authority_repo()
+    _seed_membership(membership_repo)
+    _seed_delegation(delegation_repo, authority_scopes=("workspace.admin",))
+    _seed_authority(authority_repo, principal_id=_ACTING, authority_scopes=("workspace.admin",))
+
+    decision = _resolver(
+        membership_repo=membership_repo,
+        delegation_repo=delegation_repo,
+        authority_repo=authority_repo,
+    ).resolve(
+        _request(
+            delegator_principal_id=_DELEGATOR,
+            requested_authority_scopes=("workspace.admin",),
+            membership=_membership_locator(),
+            delegation=_delegation_locator(authority_scopes=("workspace.admin",)),
+        )
+    )
+
+    assert decision.decision.action is PolicyAction.DENY
+    assert decision.denial_reason is EffectiveAuthorityDenialReason.MISSING_BASE_AUTHORITY
 
 
 def test_resolver_does_not_require_policy_engine() -> None:
