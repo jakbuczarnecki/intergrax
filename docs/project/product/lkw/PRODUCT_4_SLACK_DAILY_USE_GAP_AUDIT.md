@@ -11,7 +11,7 @@
 | Classification | Count (29 audited capabilities) |
 |---|---|
 | **READY** | 6 |
-| **WIRING_GAP** | 16 |
+| **WIRING_GAP** | 14 |
 | **UX_GAP** | 5 |
 | **REUSABLE_CAPABILITY_GAP** | 2 |
 | **LATER_PRODUCT_BOUNDARY** | 2 |
