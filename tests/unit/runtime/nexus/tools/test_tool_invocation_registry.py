@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
+import importlib.metadata
 from collections.abc import Sequence
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -21,6 +21,21 @@ from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProto
 from intergrax.tools.core.tool_plan import ToolCallPlan
 
 pytestmark = pytest.mark.unit
+
+
+class _EntryPoint:
+    def __init__(self, name: str, value: str, group: str) -> None:
+        self.name = name
+        self.value = value
+        self.group = group
+
+
+class _EntryPoints:
+    def __init__(self, entries: list[_EntryPoint]) -> None:
+        self._entries = entries
+
+    def select(self, *, group: str) -> list[_EntryPoint]:
+        return [entry for entry in self._entries if entry.group == group]
 
 
 class _CustomPattern:
@@ -43,33 +58,28 @@ class _CustomPattern:
         return ToolInvocationResult(pattern_id="custom_pattern", stop_reason="empty_tool_calls")
 
 
-def test_entry_point_pattern_load(monkeypatch: pytest.MonkeyPatch) -> None:
-    class _Ep:
-        name = "custom_pattern"
-
-        def load(self):
-            return _CustomPattern
-
-    monkeypatch.setattr(
-        "intergrax.runtime.nexus.tools.tool_invocation_registry.entry_points",
-        lambda group=None: [_Ep()],
+def _patch_entry_points(monkeypatch: pytest.MonkeyPatch) -> None:
+    entries = _EntryPoints(
+        [
+            _EntryPoint(
+                "custom_pattern",
+                f"{__name__}:_CustomPattern",
+                "intergrax.tool_invocation_patterns",
+            )
+        ]
     )
+    monkeypatch.setattr(importlib.metadata, "entry_points", lambda: entries)
+
+
+def test_entry_point_pattern_load(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_entry_points(monkeypatch)
     loaded = load_tool_invocation_pattern("custom_pattern")
     assert loaded is not None
     assert loaded.pattern_id == "custom_pattern"
 
 
 def test_resolve_invocation_pattern_prefers_entry_point(monkeypatch: pytest.MonkeyPatch) -> None:
-    class _Ep:
-        name = "custom_pattern"
-
-        def load(self):
-            return _CustomPattern
-
-    monkeypatch.setattr(
-        "intergrax.runtime.nexus.tools.tool_invocation_registry.entry_points",
-        lambda group=None: [_Ep()],
-    )
+    _patch_entry_points(monkeypatch)
     resolved = resolve_invocation_pattern(
         mode=ToolInvocationMode.SINGLE_PASS,
         max_iterations=1,

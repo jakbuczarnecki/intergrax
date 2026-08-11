@@ -307,7 +307,10 @@ A single plugin package **may** expose zero, one, or many capabilities across on
 
 - Tier-0 catalogs currently using `discovery.py` (integrations, tools, skills, context, memory stores).
 - RAG component bootstraps (chunkers, retrievers, rerankers) — load via shared helper, register into RAG registries.
-- Future harmonization of bespoke loaders **if** they only need setuptools scan + import — security, policy, tool-invocation loaders are candidates for **shared scan only** (PLATFORM-PLUGIN-4).
+- Security defense loader (`intergrax.security_defenses`) — shared scan/load primitives; domain registration and override policy unchanged.
+- Policy rule handler loader (`intergrax.policy_rules`) — shared scan/load primitives; YAML + EP merge remains domain-owned.
+- Tool invocation pattern loader (`intergrax.tool_invocation_patterns`) — shared scan/load primitives; lazy lookup by `pattern_id` unchanged.
+- Future harmonization of bespoke loaders **if** they only need setuptools scan + import — remaining candidates are Vendor Knowledge (composition model retained).
 
 **MUST remain separate** (orchestration, not just scan):
 

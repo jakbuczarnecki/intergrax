@@ -4,24 +4,25 @@
 
 from __future__ import annotations
 
-from importlib.metadata import entry_points
-
+from intergrax.core.plugins.discovery import (
+    EP_POLICY_RULES,
+    instantiate_entry_point_target,
+    iter_entry_point_specs,
+    load_entry_point_value,
+)
 from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry, PolicyRuleHandler
 
 
 def load_policy_rule_plugins(registry: PolicyRuleRegistry) -> int:
     """Register handlers from ``intergrax.policy_rules`` entry points."""
-    try:
-        eps = entry_points(group="intergrax.policy_rules")
-    except TypeError:  # pragma: no cover — Python 3.11
-        eps = entry_points().select(group="intergrax.policy_rules")
     count = 0
-    for ep in eps:
-        handler = ep.load()
-        if isinstance(handler, type):
-            instance: PolicyRuleHandler = handler()
-        else:
-            instance = handler
+    for spec in iter_entry_point_specs(EP_POLICY_RULES):
+        loaded = load_entry_point_value(spec.value)
+        instance = instantiate_entry_point_target(loaded)
+        if not isinstance(instance, PolicyRuleHandler):
+            raise TypeError(
+                f"Policy rule entry point {spec.name!r} must return PolicyRuleHandler"
+            )
         registry.register(instance)
         count += 1
     return count

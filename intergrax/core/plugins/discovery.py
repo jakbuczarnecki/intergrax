@@ -16,6 +16,7 @@ from intergrax.core.plugins.errors import PluginConflictError, PluginLoadError
 logger = logging.getLogger(__name__)
 
 ConflictPolicy = Literal["error", "skip", "override", "warn_override"]
+LoadIsolation = Literal["fail_fast", "isolate"]
 
 EP_INTEGRATIONS = "intergrax.integrations"
 EP_TOOLS = "intergrax.tools"
@@ -25,8 +26,21 @@ EP_CONTEXT = "intergrax.context"
 EP_RAG_CHUNKERS = "intergrax.rag.chunkers"
 EP_RAG_RETRIEVERS = "intergrax.rag.retrievers"
 EP_RAG_RERANKERS = "intergrax.rag.rerankers"
+EP_SECURITY_DEFENSES = "intergrax.security_defenses"
+EP_POLICY_RULES = "intergrax.policy_rules"
+EP_TOOL_INVOCATION_PATTERNS = "intergrax.tool_invocation_patterns"
 
 T = TypeVar("T")
+
+
+@dataclass(frozen=True, slots=True)
+class EntryPointSpec:
+    """One setuptools entry point in ``group`` without loading its target."""
+
+    name: str
+    group: str
+    value: str
+    distribution: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,37 +52,119 @@ class LoadedPlugin:
     plugin_type: type
 
 
-def _iter_entry_point_specs(group: str) -> list[tuple[str, str]]:
+@dataclass(frozen=True, slots=True)
+class EntryPointLoadResult:
+    """Loaded entry-point target or isolated load failure."""
+
+    spec: EntryPointSpec
+    target: object | None = None
+    error: BaseException | None = None
+
+
+def iter_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
+    """Enumerate entry points for ``group`` in deterministic order (scan only)."""
     try:
         from importlib.metadata import entry_points
     except ImportError as exc:  # pragma: no cover
         raise PluginLoadError("importlib.metadata unavailable") from exc
 
     eps = entry_points()
-    selected = eps.select(group=group) if hasattr(eps, "select") else eps.get(group, [])
-    specs: list[tuple[str, str]] = []
+    if hasattr(eps, "select"):
+        selected = eps.select(group=group)
+    else:
+        selected = eps.get(group, [])  # type: ignore[union-attr]
+    specs: list[EntryPointSpec] = []
     for ep in selected:
-        name = attribute_access.optional(ep, "name", "")
-        value = attribute_access.optional(ep, "value", "")
-        if name and value:
-            specs.append((name, value))
-    return specs
+        name = str(attribute_access.optional(ep, "name", ""))
+        value = str(attribute_access.optional(ep, "value", ""))
+        if not name or not value:
+            continue
+        dist = attribute_access.optional(ep, "dist", None)
+        distribution: str | None = None
+        if dist is not None:
+            raw_name = attribute_access.optional(dist, "name", None)
+            if isinstance(raw_name, str):
+                distribution = raw_name
+        specs.append(
+            EntryPointSpec(
+                name=name,
+                group=group,
+                value=value,
+                distribution=distribution,
+            )
+        )
+    return tuple(sorted(specs, key=lambda item: (item.name, item.value)))
 
 
-def _load_target(value: str) -> type:
+def load_entry_point_value(value: str) -> object:
+    """Load an entry-point ``module:attr`` target without domain registration."""
     module_path, _, attr = value.partition(":")
     if not module_path or not attr:
         raise PluginLoadError(f"Invalid entry point target {value!r}; expected 'module:attr'")
-    module = importlib.import_module(module_path)
-    target = attribute_access.optional(module, attr)
+    try:
+        module = importlib.import_module(module_path)
+        target = attribute_access.optional(module, attr)
+    except Exception as exc:
+        raise PluginLoadError(f"Failed to load entry point target {value!r}: {exc}") from exc
     if isinstance(target, type):
         return target
     if callable(target):
-        loaded = target()
-        if not isinstance(loaded, type):
-            raise PluginLoadError(f"Factory {value!r} must return a plugin class")
-        return loaded
+        try:
+            return target()
+        except Exception as exc:
+            raise PluginLoadError(f"Failed to call entry point factory {value!r}: {exc}") from exc
     raise PluginLoadError(f"Entry point {value!r} is not a class or factory")
+
+
+def instantiate_entry_point_target(target: object) -> object:
+    """Instantiate ``target`` when it is a class; return instances unchanged."""
+    if isinstance(target, type):
+        return target()
+    return target
+
+
+def load_entry_point_targets(
+    group: str,
+    *,
+    on_conflict: ConflictPolicy = "error",
+    on_load_failure: LoadIsolation = "fail_fast",
+    seen: set[str] | None = None,
+) -> list[EntryPointLoadResult]:
+    """Load entry-point targets for ``group`` without domain registration."""
+    known = seen if seen is not None else set()
+    loaded: list[EntryPointLoadResult] = []
+    for spec in iter_entry_point_specs(group):
+        if spec.name in known:
+            if on_conflict == "skip":
+                logger.warning("Skipping duplicate entry point %s in group %s", spec.name, group)
+                continue
+            if on_conflict in ("override", "warn_override"):
+                logger.warning("Overriding duplicate entry point %s in group %s", spec.name, group)
+            else:
+                raise PluginConflictError(
+                    f"Duplicate entry point {spec.name!r} in group {group!r}",
+                    plugin_name=spec.name,
+                    group=group,
+                )
+        known.add(spec.name)
+        try:
+            target = load_entry_point_value(spec.value)
+        except PluginLoadError as exc:
+            if on_load_failure == "isolate":
+                loaded.append(EntryPointLoadResult(spec=spec, error=exc))
+                continue
+            raise PluginLoadError(
+                f"Failed to load {group}:{spec.name} ({spec.value}): {exc}"
+            ) from exc
+        loaded.append(EntryPointLoadResult(spec=spec, target=target))
+    return loaded
+
+
+def _load_target(value: str) -> type:
+    loaded = load_entry_point_value(value)
+    if not isinstance(loaded, type):
+        raise PluginLoadError(f"Factory {value!r} must return a plugin class")
+    return loaded
 
 
 def load_entry_point_plugins(
@@ -82,27 +178,26 @@ def load_entry_point_plugins(
 
     ``on_conflict`` applies to duplicate entry point ``name`` values only.
     """
-    known = seen if seen is not None else set()
     loaded: list[LoadedPlugin] = []
-    for name, value in _iter_entry_point_specs(group):
-        if name in known:
-            if on_conflict == "skip":
-                logger.warning("Skipping duplicate entry point %s in group %s", name, group)
-                continue
-            if on_conflict in ("override", "warn_override"):
-                logger.warning("Overriding duplicate entry point %s in group %s", name, group)
-            else:
-                raise PluginConflictError(
-                    f"Duplicate entry point {name!r} in group {group!r}",
-                    plugin_name=name,
-                    group=group,
-                )
-        known.add(name)
-        try:
-            plugin_type = _load_target(value)
-        except Exception as exc:
-            raise PluginLoadError(f"Failed to load {group}:{name} ({value}): {exc}") from exc
-        loaded.append(LoadedPlugin(name=name, group=group, plugin_type=plugin_type))
+    for result in load_entry_point_targets(
+        group,
+        on_conflict=on_conflict,
+        seen=seen,
+    ):
+        if result.error is not None:
+            raise result.error
+        plugin_type = result.target
+        if not isinstance(plugin_type, type):
+            raise PluginLoadError(
+                f"Entry point {result.spec.value!r} must resolve to a plugin class"
+            )
+        loaded.append(
+            LoadedPlugin(
+                name=result.spec.name,
+                group=group,
+                plugin_type=plugin_type,
+            )
+        )
     return loaded
 
 
