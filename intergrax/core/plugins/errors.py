@@ -21,3 +21,11 @@ class PluginConflictError(PluginError):
         super().__init__(message)
         self.plugin_name = plugin_name
         self.group = group
+
+
+class PlatformPluginContractError(PluginError):
+    """Base error for package-level Platform Plugin contract handling."""
+
+
+class PlatformPluginManifestValidationError(PlatformPluginContractError):
+    """Platform Plugin manifest or package metadata failed validation."""

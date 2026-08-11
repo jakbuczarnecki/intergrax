@@ -402,3 +402,84 @@ Bootstrap: `intergrax.core.security_bootstrap.bootstrap_security_providers(disco
 **Lab fixture:** `tests/fixtures/plugin_packages/intergrax_security_defense_fixture` — reference EP package for CI discovery tests.
 
 **Author map:** [Appendix H §H.3.1](guides/AGENT_CREATION_GUIDE.md#h31-security--trust-planes-operator-index) · canon [§42.45](architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance) · [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md).
+
+---
+
+## 13. Platform Plugin package manifest (PLATFORM-PLUGIN-3)
+
+**Canon:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
+
+A **Platform Plugin** is a **package-level coordination contract** — not a universal runtime wrapper. One installable Python distribution (plugin package) may expose zero or more **capabilities** across domains. Each capability remains governed by its domain contract (`IntegrationPlugin`, `ToolPlugin`, `SkillPlugin`, …).
+
+| Layer | Authoritative for |
+|-------|-------------------|
+| `pyproject.toml` `[project]` | Distribution identity, dependencies, setuptools entry points |
+| Setuptools entry points | Machine discovery (`intergrax.integrations`, `intergrax.tools`, …) |
+| Domain manifests | Runtime capability semantics (`IntegrationManifest`, tool/skill bundles, …) |
+| **Optional** `[tool.intergrax.plugin]` | Package coordination metadata only (identity, compatibility, capability pointers) |
+
+**Important:** manifest-valid ≠ discovered ≠ enabled ≠ qualified ≠ production-qualified. Compatibility metadata is **declared** in PLUGIN-3; enforcement belongs to PLATFORM-PLUGIN-6. Secrets must **never** appear in Platform Plugin manifests.
+
+### 13.1 Multi-capability external package example
+
+One distribution `acme-intergrax` may register multiple domain entry points and optionally declare coordination metadata:
+
+```toml
+[project]
+name = "acme-intergrax"
+version = "1.0.0"
+dependencies = ["Intergrax-ai"]
+
+[project.entry-points."intergrax.integrations"]
+acme_foo = "acme_intergrax.integration:AcmeFooIntegrationPlugin"
+
+[project.entry-points."intergrax.tools"]
+acme_tool = "acme_intergrax.tool:AcmeToolPlugin"
+
+[project.entry-points."intergrax.skills"]
+acme_skill = "acme_intergrax.skill:AcmeSkillPlugin"
+
+[tool.intergrax.plugin]
+name = "acme-intergrax"
+version = "1.0.0"
+intergrax_version = ">=1.0,<2"
+author = "Acme Corp"
+documentation_uri = "https://docs.example.com/acme-intergrax"
+
+[[tool.intergrax.plugin.capabilities]]
+domain = "integrations"
+entry_point_group = "intergrax.integrations"
+entry_point_name = "acme_foo"
+capability_ids = ["acme_foo"]
+
+[[tool.intergrax.plugin.capabilities]]
+domain = "tools"
+entry_point_group = "intergrax.tools"
+entry_point_name = "acme_tool"
+
+[[tool.intergrax.plugin.capabilities]]
+domain = "skills"
+entry_point_group = "intergrax.skills"
+entry_point_name = "acme_skill"
+```
+
+Domain manifests and plugin classes remain separate and authoritative. The Platform Plugin manifest only lists capability **pointers**.
+
+### 13.2 Python contract API
+
+```python
+from intergrax.core.plugins import (
+    build_platform_plugin_manifest,
+    parse_platform_plugin_pyproject_toml,
+)
+
+manifest = parse_platform_plugin_pyproject_toml(pyproject_text)
+# or construct programmatically:
+manifest = build_platform_plugin_manifest(
+    name="acme-intergrax",
+    version="1.0.0",
+    intergrax_version=">=1.0,<2",
+)
+```
+
+Parsing and validation are side-effect free — they do not scan installed packages or register plugins.
