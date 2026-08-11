@@ -6,7 +6,6 @@
 from __future__ import annotations
 from intergrax.utils import attribute_access
 
-import importlib
 import logging
 from dataclasses import dataclass
 from typing import Callable, Literal, Sequence, TypeVar
@@ -97,23 +96,22 @@ def iter_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
 
 
 def load_entry_point_value(value: str) -> object:
-    """Load an entry-point ``module:attr`` target without domain registration."""
+    """Load an entry-point target without domain registration or factory invocation.
+
+    Semantics match ``importlib.metadata.EntryPoint.load()``: classes, functions,
+    and callable objects are returned without instantiation or execution.
+    """
     module_path, _, attr = value.partition(":")
     if not module_path or not attr:
         raise PluginLoadError(f"Invalid entry point target {value!r}; expected 'module:attr'")
     try:
-        module = importlib.import_module(module_path)
-        target = attribute_access.optional(module, attr)
+        from importlib.metadata import EntryPoint
+    except ImportError as exc:  # pragma: no cover
+        raise PluginLoadError("importlib.metadata unavailable") from exc
+    try:
+        return EntryPoint(name="", group="", value=value).load()
     except Exception as exc:
         raise PluginLoadError(f"Failed to load entry point target {value!r}: {exc}") from exc
-    if isinstance(target, type):
-        return target
-    if callable(target):
-        try:
-            return target()
-        except Exception as exc:
-            raise PluginLoadError(f"Failed to call entry point factory {value!r}: {exc}") from exc
-    raise PluginLoadError(f"Entry point {value!r} is not a class or factory")
 
 
 def instantiate_entry_point_target(target: object) -> object:
@@ -160,11 +158,23 @@ def load_entry_point_targets(
     return loaded
 
 
+def _resolve_tier0_plugin_type(target: object, value: str) -> type:
+    """Resolve a Tier-0 plugin class, invoking callable factories when needed."""
+    if isinstance(target, type):
+        return target
+    if callable(target):
+        try:
+            loaded = target()
+        except Exception as exc:
+            raise PluginLoadError(f"Failed to call entry point factory {value!r}: {exc}") from exc
+        if not isinstance(loaded, type):
+            raise PluginLoadError(f"Factory {value!r} must return a plugin class")
+        return loaded
+    raise PluginLoadError(f"Entry point {value!r} is not a class or factory")
+
+
 def _load_target(value: str) -> type:
-    loaded = load_entry_point_value(value)
-    if not isinstance(loaded, type):
-        raise PluginLoadError(f"Factory {value!r} must return a plugin class")
-    return loaded
+    return _resolve_tier0_plugin_type(load_entry_point_value(value), value)
 
 
 def load_entry_point_plugins(
@@ -186,11 +196,7 @@ def load_entry_point_plugins(
     ):
         if result.error is not None:
             raise result.error
-        plugin_type = result.target
-        if not isinstance(plugin_type, type):
-            raise PluginLoadError(
-                f"Entry point {result.spec.value!r} must resolve to a plugin class"
-            )
+        plugin_type = _resolve_tier0_plugin_type(result.target, result.spec.value)
         loaded.append(
             LoadedPlugin(
                 name=result.spec.name,

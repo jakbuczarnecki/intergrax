@@ -16,7 +16,10 @@ from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
     ToolInvocationResult,
     resolve_invocation_pattern,
 )
-from intergrax.runtime.nexus.tools.tool_invocation_registry import load_tool_invocation_pattern
+from intergrax.runtime.nexus.tools.tool_invocation_registry import (
+    list_tool_invocation_pattern_ids,
+    load_tool_invocation_pattern,
+)
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.tools.core.tool_plan import ToolCallPlan
 
@@ -86,3 +89,42 @@ def test_resolve_invocation_pattern_prefers_entry_point(monkeypatch: pytest.Monk
         entry_point_pattern_id="custom_pattern",
     )
     assert resolved.pattern_id == "custom_pattern"
+
+
+def test_load_tool_invocation_pattern_lazy_lookup_skips_unrelated_entry_points(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entries = _EntryPoints(
+        [
+            _EntryPoint(
+                "a_pattern",
+                f"{__name__}:_CustomPattern",
+                "intergrax.tool_invocation_patterns",
+            ),
+            _EntryPoint(
+                "z_pattern",
+                f"{__name__}:_CustomPattern",
+                "intergrax.tool_invocation_patterns",
+            ),
+        ]
+    )
+    monkeypatch.setattr(importlib.metadata, "entry_points", lambda: entries)
+    load_calls: list[str] = []
+
+    def _tracking_load(value: str) -> object:
+        from intergrax.core.plugins.discovery import load_entry_point_value
+
+        load_calls.append(value)
+        return load_entry_point_value(value)
+
+    monkeypatch.setattr(
+        "intergrax.runtime.nexus.tools.tool_invocation_registry.load_entry_point_value",
+        _tracking_load,
+    )
+
+    loaded = load_tool_invocation_pattern("z_pattern")
+
+    assert loaded is not None
+    assert loaded.pattern_id == "custom_pattern"
+    assert load_calls == [f"{__name__}:_CustomPattern"]
+    assert list_tool_invocation_pattern_ids() == ("a_pattern", "z_pattern")

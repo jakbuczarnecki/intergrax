@@ -16,6 +16,12 @@ from intergrax.core.plugins.discovery import (
 )
 from intergrax.core.plugins.errors import PluginConflictError, PluginLoadError
 from intergrax.integrations.examples.custom_memory_kv import CustomMemoryKvPlugin
+from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.policy.rules.plugin_loader import load_policy_rule_plugins
+from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
+from intergrax.runtime.security.defense_plugin import SecurityFailMode, SecurityInspectionResult
+from intergrax.runtime.security.defense_plugin_loader import load_security_defense_plugins
+from intergrax.runtime.security.defense_registry import get_security_defense_plugin
 
 pytestmark = pytest.mark.unit
 
@@ -37,6 +43,64 @@ class _EntryPoints:
 
 class _DiscoveredPlugin:
     pass
+
+
+class _CallableObject:
+    def __init__(self) -> None:
+        self.called = False
+
+    def __call__(self) -> None:
+        self.called = True
+
+
+def _plugin_factory() -> type:
+    return _DiscoveredPlugin
+
+
+def _factory_invocation_probe() -> type:
+    global _FACTORY_WAS_INVOKED
+    _FACTORY_WAS_INVOKED = True
+    return _DiscoveredPlugin
+
+
+_FACTORY_WAS_INVOKED = False
+_CALLABLE_OBJECT_PROBE = _CallableObject()
+
+
+def test_load_entry_point_value_class_returns_class_not_instance() -> None:
+    target = load_entry_point_value(f"{__name__}:_DiscoveredPlugin")
+    assert target is _DiscoveredPlugin
+    assert not isinstance(target, _DiscoveredPlugin)
+
+
+def test_load_entry_point_value_function_not_invoked() -> None:
+    global _FACTORY_WAS_INVOKED
+    _FACTORY_WAS_INVOKED = False
+    target = load_entry_point_value(f"{__name__}:_factory_invocation_probe")
+    assert callable(target)
+    assert target is _factory_invocation_probe
+    assert _FACTORY_WAS_INVOKED is False
+
+
+def test_load_entry_point_value_callable_object_not_invoked() -> None:
+    target = load_entry_point_value(f"{__name__}:_CALLABLE_OBJECT_PROBE")
+    assert target is _CALLABLE_OBJECT_PROBE
+    assert _CALLABLE_OBJECT_PROBE.called is False
+
+
+def test_load_entry_point_plugins_supports_callable_factory_returning_class(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entries = _EntryPoints(
+        [_EntryPoint("factory", f"{__name__}:_plugin_factory", "intergrax.rag.chunkers")]
+    )
+    monkeypatch.setattr(importlib.metadata, "entry_points", lambda: entries)
+    loaded = load_entry_point_plugins("intergrax.rag.chunkers")
+    assert loaded[0].plugin_type is _DiscoveredPlugin
+
+
+def test_instantiate_entry_point_target_returns_non_class_callable_unchanged() -> None:
+    assert instantiate_entry_point_target(_factory_invocation_probe) is _factory_invocation_probe
 
 
 def test_load_plugin_types_explicit_only() -> None:
@@ -164,3 +228,120 @@ def test_load_entry_point_plugins_rejects_duplicate_external_names(
 
     with pytest.raises(PluginConflictError, match="Duplicate entry point"):
         load_entry_point_plugins("intergrax.rag.chunkers")
+
+
+class _NestedPluginHolder:
+    plugin = _DiscoveredPlugin
+
+
+_NESTED_PLUGIN_HOLDER = _NestedPluginHolder()
+
+
+class _SecurityDefenseClassPlugin:
+    plugin_id = "class-defense"
+    version = "1"
+    hook_points = frozenset()
+    priority = 0
+    fail_mode = SecurityFailMode.FAIL_CLOSED
+
+    def inspect(self, point: HookPoint, ctx: object) -> SecurityInspectionResult:
+        return SecurityInspectionResult(plugin_id=self.plugin_id, hook_point=str(point))
+
+
+class _SecurityDefenseInstancePlugin:
+    plugin_id = "instance-defense"
+    version = "1"
+    hook_points = frozenset()
+    priority = 0
+    fail_mode = SecurityFailMode.FAIL_CLOSED
+
+    def inspect(self, point: HookPoint, ctx: object) -> SecurityInspectionResult:
+        return SecurityInspectionResult(plugin_id=self.plugin_id, hook_point=str(point))
+
+
+_SECURITY_DEFENSE_INSTANCE = _SecurityDefenseInstancePlugin()
+
+
+class _PolicyRuleClassHandler:
+    rule_id = "class-rule"
+
+    def evaluate(self, rule: object, *, context: dict[str, str]) -> object:
+        from intergrax.runtime.policy.rules.schema import PolicyRuleAction
+
+        return PolicyRuleAction.ALLOW
+
+
+class _PolicyRuleInstanceHandler:
+    rule_id = "instance-rule"
+
+    def evaluate(self, rule: object, *, context: dict[str, str]) -> object:
+        from intergrax.runtime.policy.rules.schema import PolicyRuleAction
+
+        return PolicyRuleAction.ALLOW
+
+
+_POLICY_RULE_INSTANCE = _PolicyRuleInstanceHandler()
+
+
+def test_load_entry_point_value_supports_dotted_attribute_targets() -> None:
+    target = load_entry_point_value(f"{__name__}:_NESTED_PLUGIN_HOLDER.plugin")
+    assert target is _DiscoveredPlugin
+
+
+def test_security_loader_instantiates_class_targets_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entries = _EntryPoints(
+        [
+            _EntryPoint(
+                "class-defense",
+                f"{__name__}:_SecurityDefenseClassPlugin",
+                "intergrax.security_defenses",
+            ),
+            _EntryPoint(
+                "instance-defense",
+                f"{__name__}:_SECURITY_DEFENSE_INSTANCE",
+                "intergrax.security_defenses",
+            ),
+        ]
+    )
+    monkeypatch.setattr(importlib.metadata, "entry_points", lambda: entries)
+
+    count = load_security_defense_plugins(discover_entry_points=True)
+
+    assert count == 2
+    class_plugin = get_security_defense_plugin("class-defense")
+    instance_plugin = get_security_defense_plugin("instance-defense")
+    assert class_plugin is not None
+    assert instance_plugin is not None
+    assert isinstance(class_plugin, _SecurityDefenseClassPlugin)
+    assert instance_plugin is _SECURITY_DEFENSE_INSTANCE
+
+
+def test_policy_loader_preserves_class_and_instance_semantics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entries = _EntryPoints(
+        [
+            _EntryPoint(
+                "class-rule",
+                f"{__name__}:_PolicyRuleClassHandler",
+                "intergrax.policy_rules",
+            ),
+            _EntryPoint(
+                "instance-rule",
+                f"{__name__}:_POLICY_RULE_INSTANCE",
+                "intergrax.policy_rules",
+            ),
+        ]
+    )
+    monkeypatch.setattr(importlib.metadata, "entry_points", lambda: entries)
+    registry = PolicyRuleRegistry()
+
+    count = load_policy_rule_plugins(registry)
+
+    assert count == 2
+    class_handler = registry._handlers["class-rule"]
+    instance_handler = registry._handlers["instance-rule"]
+    assert isinstance(class_handler, _PolicyRuleClassHandler)
+    assert instance_handler is _POLICY_RULE_INSTANCE
