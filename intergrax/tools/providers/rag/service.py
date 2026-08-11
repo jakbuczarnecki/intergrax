@@ -14,7 +14,10 @@ from intergrax.rag.retrieval.resolve import resolve_retrieval_service
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
-from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataMembershipCondition,
+    VectorStoreScope,
+)
 from intergrax.rag.retrieval.citation import Citation
 from intergrax.tools.providers.rag.contracts import (
     RagChunkResult,
@@ -127,8 +130,7 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
         if tenant_id is not None
         else None
     )
-    where = _build_metadata_scope(params)
-    metadata_filter = MetadataFilter(conditions=where) if where else None
+    metadata_filter = _build_metadata_filter(params)
 
     result = service.retrieve(
         RetrievalRequest(
@@ -283,6 +285,21 @@ def _build_metadata_scope(params: RagRetrieveInput) -> dict[str, Any]:
     if params.user_id is not None:
         where["user_id"] = params.user_id
     return where
+
+
+def _build_metadata_filter(params: RagRetrieveInput) -> MetadataFilter | None:
+    where = _build_metadata_scope(params)
+    membership: tuple[MetadataMembershipCondition, ...] = ()
+    if params.allowed_source_ids:
+        membership = (
+            MetadataMembershipCondition(
+                field="source_id",
+                allowed_values=tuple(params.allowed_source_ids),
+            ),
+        )
+    if not where and not membership:
+        return None
+    return MetadataFilter(conditions=where, membership=membership)
 
 
 def format_rag_context_text(

@@ -28,6 +28,17 @@ from local_workspace_application.workspaces.ask_models import (
     WorkspaceAskRun,
 )
 from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
+from local_workspace_application.workspaces.knowledge_ask_scope_models import (
+    KnowledgeAskScopeError,
+    KnowledgeAskScopeV1,
+    KnowledgeRetrievalScopeV1,
+)
+from local_workspace_application.workspaces.knowledge_ask_scope_resolver import (
+    KnowledgeAskScopeResolver,
+)
+from local_workspace_application.workspaces.knowledge_inspection_operations_service import (
+    KnowledgeInspectionService,
+)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.search_evidence import (
     SearchEvidenceIncompleteError,
@@ -66,6 +77,8 @@ class WorkspaceAskService:
         task_executor: LocalWorkspaceTaskExecutor,
         llm_adapter: LLMAdapter | None = None,
         llm_adapter_factory: Callable[[], LLMAdapter] | None = None,
+        knowledge_inspection_service: KnowledgeInspectionService | None = None,
+        scope_resolver: KnowledgeAskScopeResolver | None = None,
     ) -> None:
         self._workspaces = workspace_service
         self._workspace_repo = workspace_repository
@@ -73,6 +86,9 @@ class WorkspaceAskService:
         self._executor = task_executor
         self._llm = llm_adapter
         self._llm_factory = llm_adapter_factory
+        self._scope_resolver = scope_resolver
+        if self._scope_resolver is None and knowledge_inspection_service is not None:
+            self._scope_resolver = KnowledgeAskScopeResolver(knowledge_inspection_service)
 
     @property
     def llm_adapter(self) -> LLMAdapter:
@@ -113,6 +129,7 @@ class WorkspaceAskService:
         workspace_id: str,
         question: str,
         limit: int = 10,
+        knowledge_scope: KnowledgeAskScopeV1 | None = None,
     ) -> WorkspaceAskRun:
         workspace = self._workspaces.get_workspace(
             tenant_id=tenant_id,
@@ -133,6 +150,9 @@ class WorkspaceAskService:
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             question=question,
+            knowledge_item_ids=(
+                knowledge_scope.knowledge_item_ids if knowledge_scope is not None else None
+            ),
             status=AskRunStatus.FAILED,
             evidence=[],
             answer=None,
@@ -143,12 +163,36 @@ class WorkspaceAskService:
         )
         self._persist(run)
 
+        retrieval_scope: KnowledgeRetrievalScopeV1 | None = None
+        if knowledge_scope is not None:
+            if self._scope_resolver is None:
+                return self._finalize_failed(
+                    run,
+                    code="knowledge_ask_scope_invalid",
+                    message="scoped ask is unavailable",
+                )
+            try:
+                retrieval_scope = self._scope_resolver.resolve(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    scope=knowledge_scope,
+                )
+            except KnowledgeAskScopeError as exc:
+                return self._finalize_failed(
+                    run,
+                    code=exc.error_code,
+                    message=exc.message,
+                )
+
         try:
             evidence = await self._retrieve_verified_evidence(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 question=question,
                 limit=limit,
+                allowed_source_ids=(
+                    retrieval_scope.allowed_source_ids if retrieval_scope is not None else None
+                ),
             )
         except SearchEvidenceIncompleteError:
             self._finalize_failed(
@@ -165,6 +209,19 @@ class WorkspaceAskService:
                 cause=exc,
             )
             raise
+
+        if retrieval_scope is not None:
+            try:
+                self._validate_scoped_evidence(
+                    evidence,
+                    allowed_source_ids=retrieval_scope.allowed_source_ids,
+                )
+            except KnowledgeAskScopeError as exc:
+                return self._finalize_failed(
+                    run,
+                    code=exc.error_code,
+                    message=exc.message,
+                )
 
         run = run.model_copy(update={"evidence": evidence})
 
@@ -246,21 +303,25 @@ class WorkspaceAskService:
         workspace_id: str,
         question: str,
         limit: int,
+        allowed_source_ids: tuple[str, ...] | None = None,
     ) -> list[WorkspaceSearchHitV1]:
+        metadata: dict[str, Any] = {
+            "tenant_id": tenant_id,
+            "workspace_id": workspace_id,
+            "collection_id": workspace_id,
+            "query": question,
+            "top_k": max(limit, 10),
+            "requested_by": "lkw.managed_workspace.ask",
+        }
+        if allowed_source_ids:
+            metadata["allowed_source_ids"] = list(allowed_source_ids)
         task = Task(
             task_id=new_run_id(),
             tenant_id=tenant_id,
             user_id="lkw.managed_workspace",
             message=question,
             context=TaskContext(capability="local.workspace.search"),
-            metadata={
-                "tenant_id": tenant_id,
-                "workspace_id": workspace_id,
-                "collection_id": workspace_id,
-                "query": question,
-                "top_k": max(limit, 10),
-                "requested_by": "lkw.managed_workspace.ask",
-            },
+            metadata=metadata,
         )
         result = await self._executor.execute(task)
         result_metadata = dict(getattr(result, "metadata", None) or {})
@@ -346,3 +407,18 @@ class WorkspaceAskService:
         if any((item.workspace_id or "").strip() == wanted for item in listed):
             return "repository_inconsistency"
         return "workspace_lookup_failed"
+
+    @staticmethod
+    def _validate_scoped_evidence(
+        evidence: list[WorkspaceSearchHitV1],
+        *,
+        allowed_source_ids: tuple[str, ...],
+    ) -> None:
+        allowed = frozenset(allowed_source_ids)
+        for item in evidence:
+            source_id = str(item.source_id or "").strip()
+            if source_id not in allowed:
+                raise KnowledgeAskScopeError(
+                    "knowledge_ask_scope_integrity_failed",
+                    "scoped evidence integrity check failed",
+                )

@@ -59,6 +59,12 @@ Rules:
     and a confirmation token is available in recent assistant context.
 27. workspace.delete always requires explicit confirmation — never assume deletion completed
     in the same turn as the delete request.
+28. When the user asks a question scoped to one or more named or numbered knowledge sources
+    (e.g. "only in Project Drive", "ask source 2", "from HR Drive and Handbook"),
+    include knowledge_targets on workspace.ask using ordinal, display_label, or knowledge_item_id
+    references from inventory context. Multiple targets are allowed. No explicit source means
+    normal whole-workspace Ask without knowledge_targets. Never invent source IDs or raw source_id
+    values.
 
 Example — different workspace targets:
 User message:

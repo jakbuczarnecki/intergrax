@@ -289,10 +289,31 @@ class KnowledgeCapabilitiesListDraftAction(_DraftActionBase):
         return self
 
 
+class KnowledgeAskTargetDraftReference(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    target_reference_kind: Literal["ordinal", "display_label", "knowledge_item_id"]
+    target_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+    @model_validator(mode="after")
+    def _validate_target_reference(self) -> Self:
+        if self.target_reference_kind == "ordinal":
+            if not self.target_reference.isdigit() or int(self.target_reference) < 1:
+                raise ValueError("ordinal target_reference must be a positive integer string")
+        return self
+
+
 class WorkspaceAskDraftAction(_DraftActionBase):
     action_type: Literal["workspace.ask"]
     workspace: DraftWorkspaceReference
     question: str = Field(min_length=1, max_length=_MAX_MESSAGE_TEXT_LEN)
+    knowledge_targets: tuple[KnowledgeAskTargetDraftReference, ...] | None = None
+
+    @model_validator(mode="after")
+    def _validate_knowledge_targets(self) -> Self:
+        if self.knowledge_targets is not None and not self.knowledge_targets:
+            raise ValueError("knowledge_targets must not be empty when provided")
+        return self
 
 
 class CitationInspectDraftAction(_DraftActionBase):

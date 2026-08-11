@@ -26,6 +26,7 @@ _LKW_SEARCH_METADATA_KEYS = frozenset(
         "tenant_id",
         "user_id",
         "workspace_id",
+        "allowed_source_ids",
     }
 )
 
@@ -264,6 +265,15 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
         tool_input["user_id"] = scope["user_id"]
     if workspace_id:
         tool_input["workspace_id"] = workspace_id
+    allowed_source_ids = metadata.get("allowed_source_ids")
+    if isinstance(allowed_source_ids, (list, tuple)):
+        normalized = tuple(
+            str(item).strip()
+            for item in allowed_source_ids
+            if item is not None and str(item).strip()
+        )
+        if normalized:
+            tool_input["allowed_source_ids"] = normalized
 
     entry = await invoke_catalog_tool(
         exec_ctx,

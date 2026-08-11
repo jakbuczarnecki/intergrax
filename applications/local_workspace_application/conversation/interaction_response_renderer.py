@@ -256,9 +256,26 @@ class ConversationInteractionResponseRenderer:
         if action_type == "workspace.ask":
             answer = _safe_text(data.get("answer"), limit=3_000)
             status = _safe_text(data.get("status"), limit=80).casefold()
+            scope_labels = data.get("scope_labels")
+            prefix: list[str] = []
+            if isinstance(scope_labels, list):
+                labels = [
+                    _safe_text(label, limit=120)
+                    for label in scope_labels
+                    if _safe_text(label, limit=120)
+                ]
+                if labels:
+                    if len(labels) == 1:
+                        prefix.append(f"Using {labels[0]}")
+                    else:
+                        joined = ", ".join(labels[:-1]) + f" and {labels[-1]}"
+                        prefix.append(f"Using {joined}")
             if status == "insufficient_evidence" or not answer:
-                return ["I could not find enough verified information to answer reliably."]
-            lines = [answer]
+                lines = prefix + [
+                    "I could not find enough verified information to answer reliably."
+                ]
+                return lines
+            lines = prefix + [answer] if prefix else [answer]
             citations = data.get("citations")
             if isinstance(citations, list):
                 labels: list[str] = []

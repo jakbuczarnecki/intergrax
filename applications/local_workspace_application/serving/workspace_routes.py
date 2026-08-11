@@ -159,6 +159,7 @@ from local_workspace_application.workspaces.knowledge_ingestion import (
     KnowledgeIngestionProcessorRouter,
     KnowledgeIngestionService,
 )
+from local_workspace_application.workspaces.knowledge_ask_scope_models import KnowledgeAskScopeV1
 from local_workspace_application.workspaces.knowledge_inspection_operations_service import (
     KnowledgeInspectionService,
     KnowledgeInventoryError,
@@ -947,6 +948,7 @@ def mount_managed_workspace_routes(
             task_executor=task_executor,
             llm_adapter=llm_adapter,
             llm_adapter_factory=(None if llm_adapter is not None else (lambda: resolve_llm_adapter(None))),
+            knowledge_inspection_service=knowledge_inspection_service,
         )
 
     if ask_service_v2 is None:
@@ -1785,12 +1787,16 @@ def mount_managed_workspace_routes(
             request.app.state, "lkw_managed_workspace_repository", None
         )
         current_ask.use_workspace_authority(managed_service, managed_repository)
+        knowledge_scope = None
+        if body.knowledge_item_ids is not None:
+            knowledge_scope = KnowledgeAskScopeV1(knowledge_item_ids=body.knowledge_item_ids)
         try:
             run = await current_ask.ask(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 question=body.question,
                 limit=body.limit,
+                knowledge_scope=knowledge_scope,
             )
         except WorkspaceAskLookupError as exc:
             reason = exc.reason

@@ -146,12 +146,23 @@ class WorkspaceAskRequestV1(BaseModel):
 
     question: str = Field(..., min_length=1)
     limit: int = Field(default=10, ge=1, le=100)
+    knowledge_item_ids: tuple[str, ...] | None = None
 
     @field_validator("question")
     @classmethod
     def question_must_not_be_whitespace(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("question must not be blank")
+        return value
+
+    @field_validator("knowledge_item_ids")
+    @classmethod
+    def knowledge_item_ids_must_not_be_empty(
+        cls,
+        value: tuple[str, ...] | None,
+    ) -> tuple[str, ...] | None:
+        if value is not None and not value:
+            raise ValueError("knowledge_item_ids must not be empty when provided")
         return value
 
 

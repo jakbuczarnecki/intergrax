@@ -7,7 +7,6 @@ from __future__ import annotations
 import inspect
 import uuid
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Protocol, cast
 
@@ -59,6 +58,10 @@ from local_workspace_application.conversation.interaction_reference_resolver imp
     ConversationReferenceResolutionError,
 )
 from local_workspace_application.workspaces.ask_service import WorkspaceAskService
+from local_workspace_application.workspaces.knowledge_ask_scope_models import KnowledgeAskScopeV1
+from local_workspace_application.workspaces.knowledge_target_resolution import (
+    resolve_knowledge_target,
+)
 from local_workspace_application.workspaces.conversation_citation_context_service import (
     ConversationCitationContextError,
     ConversationCitationContextService,
@@ -923,19 +926,47 @@ class ConversationInteractionExecutor:
             )
             if self._ask_service is None:
                 raise RuntimeError("action_execution_failed")
+            knowledge_scope = None
+            scope_labels: list[str] = []
+            if action.knowledge_targets is not None:
+                inventory = self._list_knowledge_inventory(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                )
+                knowledge_item_ids: list[str] = []
+                for target in action.knowledge_targets:
+                    resolution = resolve_knowledge_target(
+                        inventory.items,
+                        reference_kind=target.target_reference_kind.value,
+                        target_reference=target.target_reference,
+                    )
+                    if resolution.ambiguous:
+                        raise RuntimeError("knowledge_target_ambiguous")
+                    if resolution.item is None:
+                        raise RuntimeError("knowledge_target_not_found")
+                    knowledge_item_ids.append(resolution.item.knowledge_item_id)
+                    if resolution.item.display_label:
+                        scope_labels.append(resolution.item.display_label)
+                knowledge_scope = KnowledgeAskScopeV1(
+                    knowledge_item_ids=tuple(knowledge_item_ids)
+                )
             run = await self._ask_service.ask(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 question=action.question,
+                knowledge_scope=knowledge_scope,
             )
+            artifact_data: dict[str, object] = {
+                "run_id": _safe_attr(run, "run_id"),
+                "status": _safe_attr(run, "status"),
+                "answer": getattr(run, "answer", None),
+                "citations": _safe_json(getattr(run, "citations", [])),
+            }
+            if scope_labels:
+                artifact_data["scope_labels"] = scope_labels
             return ConversationExecutionArtifact(
                 artifact_type=action.action_type,
-                data={
-                    "run_id": _safe_attr(run, "run_id"),
-                    "status": _safe_attr(run, "status"),
-                    "answer": getattr(run, "answer", None),
-                    "citations": _safe_json(getattr(run, "citations", [])),
-                },
+                data=artifact_data,
             )
         if isinstance(action, CitationInspectPlannedAction):
             workspace_id = self._resolve_workspace_id(
@@ -1152,9 +1183,9 @@ class ConversationInteractionExecutor:
             tenant_id=tenant_id,
             workspace_id=workspace_id,
         )
-        resolution = _resolve_knowledge_target(
+        resolution = resolve_knowledge_target(
             inventory.items,
-            reference_kind=action.target_reference_kind,
+            reference_kind=action.target_reference_kind.value,
             target_reference=action.target_reference,
         )
         if resolution.ambiguous:
@@ -1430,52 +1461,6 @@ class ConversationInteractionExecutor:
             ),
             error=ConversationExecutionError(code=code),
         )
-
-
-@dataclass(frozen=True)
-class _KnowledgeTargetResolution:
-    item: KnowledgeInventoryItemV1 | None
-    ambiguous: bool = False
-
-
-def _normalize_knowledge_label(value: str) -> str:
-    return " ".join(value.split()).casefold()
-
-
-def _resolve_knowledge_target(
-    items: Sequence[KnowledgeInventoryItemV1],
-    *,
-    reference_kind: KnowledgeTargetReferenceKind,
-    target_reference: str,
-) -> _KnowledgeTargetResolution:
-    if reference_kind is KnowledgeTargetReferenceKind.knowledge_item_id:
-        matches = tuple(
-            item for item in items if item.knowledge_item_id == target_reference.strip()
-        )
-        if len(matches) > 1:
-            return _KnowledgeTargetResolution(item=None, ambiguous=True)
-        if len(matches) == 1:
-            return _KnowledgeTargetResolution(item=matches[0])
-        return _KnowledgeTargetResolution(item=None)
-    if reference_kind is KnowledgeTargetReferenceKind.ordinal:
-        if not target_reference.isdigit():
-            return _KnowledgeTargetResolution(item=None)
-        index = int(target_reference) - 1
-        if index < 0 or index >= len(items):
-            return _KnowledgeTargetResolution(item=None)
-        return _KnowledgeTargetResolution(item=items[index])
-    normalized = _normalize_knowledge_label(target_reference)
-    matches = tuple(
-        item
-        for item in items
-        if item.display_label is not None
-        and _normalize_knowledge_label(item.display_label) == normalized
-    )
-    if len(matches) > 1:
-        return _KnowledgeTargetResolution(item=None, ambiguous=True)
-    if len(matches) == 1:
-        return _KnowledgeTargetResolution(item=matches[0])
-    return _KnowledgeTargetResolution(item=None)
 
 
 def _filter_knowledge_inventory(

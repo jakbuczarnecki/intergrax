@@ -45,6 +45,7 @@ from local_workspace_application.conversation.interaction_models import (
     ExtractedObject,
     KnowledgeAddAttachmentsPlannedAction,
     KnowledgeAddSourcesPlannedAction,
+    KnowledgeAskTargetReference,
     KnowledgeCapabilitiesListPlannedAction,
     KnowledgeConnectionsListPlannedAction,
     KnowledgeResourcesListPlannedAction,
@@ -462,10 +463,22 @@ def _compile_action(
         )
     if isinstance(action, WorkspaceAskDraftAction):
         assert workspace is not None
+        knowledge_targets = None
+        if action.knowledge_targets is not None:
+            knowledge_targets = tuple(
+                KnowledgeAskTargetReference(
+                    target_reference_kind=KnowledgeTargetReferenceKind(
+                        target.target_reference_kind
+                    ),
+                    target_reference=target.target_reference,
+                )
+                for target in action.knowledge_targets
+            )
         return WorkspaceAskPlannedAction(
             action_type="workspace.ask",
             workspace=workspace,
             question=action.question,
+            knowledge_targets=knowledge_targets,
             **common,
         )
     if isinstance(action, CitationInspectDraftAction):

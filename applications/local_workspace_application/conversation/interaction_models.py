@@ -400,10 +400,37 @@ class KnowledgeCapabilitiesListPlannedAction(_PlannedActionBase):
         return self
 
 
+class KnowledgeTargetReferenceKind(str, Enum):
+    ordinal = "ordinal"
+    display_label = "display_label"
+    knowledge_item_id = "knowledge_item_id"
+
+
+class KnowledgeAskTargetReference(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    target_reference_kind: KnowledgeTargetReferenceKind
+    target_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+    @model_validator(mode="after")
+    def _validate_target_reference(self) -> Self:
+        if self.target_reference_kind == KnowledgeTargetReferenceKind.ordinal:
+            if not self.target_reference.isdigit() or int(self.target_reference) < 1:
+                raise ValueError("ordinal target_reference must be a positive integer string")
+        return self
+
+
 class WorkspaceAskPlannedAction(_PlannedActionBase):
     action_type: Literal["workspace.ask"]
     workspace: WorkspaceReference
     question: str = Field(min_length=1, max_length=_MAX_MESSAGE_TEXT_LEN)
+    knowledge_targets: tuple[KnowledgeAskTargetReference, ...] | None = None
+
+    @model_validator(mode="after")
+    def _validate_knowledge_targets(self) -> Self:
+        if self.knowledge_targets is not None and not self.knowledge_targets:
+            raise ValueError("knowledge_targets must not be empty when provided")
+        return self
 
 
 class CitationInspectPlannedAction(_PlannedActionBase):
@@ -433,12 +460,6 @@ class KnowledgeOperationKind(str, Enum):
     disable = "disable"
     enable = "enable"
     detach = "detach"
-
-
-class KnowledgeTargetReferenceKind(str, Enum):
-    ordinal = "ordinal"
-    display_label = "display_label"
-    knowledge_item_id = "knowledge_item_id"
 
 
 class KnowledgeOperationExecutePlannedAction(_PlannedActionBase):
