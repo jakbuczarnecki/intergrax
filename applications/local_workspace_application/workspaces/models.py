@@ -64,6 +64,7 @@ def _contains_sensitive_token_sequence(tokens: tuple[str, ...]) -> bool:
 class WorkspaceStatus(StrEnum):
     ACTIVE = "active"
     ARCHIVED = "archived"
+    DELETING = "deleting"
 
 
 class WorkspaceSourceType(StrEnum):

@@ -182,6 +182,7 @@ class WorkspaceServiceFake:
     def __init__(self, workspace: Workspace) -> None:
         self._workspace = workspace
         self.deleted = False
+        self.cleanup_calls = 0
 
     def list_workspaces(self, *, tenant_id: str) -> list[Workspace]:
         return [self._workspace]
@@ -196,6 +197,36 @@ class WorkspaceServiceFake:
             return False
         self.deleted = True
         return True
+
+    def delete_workspace_with_revision_claim(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        expected_revision: int,
+    ) -> tuple[str, str | None]:
+        if tenant_id != _TENANT or workspace_id != self._workspace.workspace_id:
+            return ("not_found", None)
+        if self._workspace.status is WorkspaceStatus.DELETING:
+            if self._workspace.workspace_revision == expected_revision + 1:
+                self.cleanup_calls += 1
+                self.deleted = True
+                return ("deleted", self._workspace.name)
+            return ("stale", None)
+        if (
+            self._workspace.status is not WorkspaceStatus.ACTIVE
+            or self._workspace.workspace_revision != expected_revision
+        ):
+            return ("stale", None)
+        self._workspace = self._workspace.model_copy(
+            update={
+                "status": WorkspaceStatus.DELETING,
+                "workspace_revision": self._workspace.workspace_revision + 1,
+            }
+        )
+        self.cleanup_calls += 1
+        self.deleted = True
+        return ("deleted", self._workspace.name)
 
 
 def _executor(

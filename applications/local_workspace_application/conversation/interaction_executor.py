@@ -1260,25 +1260,20 @@ class ConversationInteractionExecutor:
             raise RuntimeError(exc.error_code) from exc
 
         if confirmation.action_kind == DestructiveActionKindV1.WORKSPACE_DELETE:
-            workspace = self._workspace_service.get_workspace(
-                tenant_id=tenant_id,
-                workspace_id=confirmation.target_id,
-            )
-            if workspace is None:
-                raise RuntimeError("workspace_not_found")
             if (
                 confirmation.tenant_id != tenant_id
                 or confirmation.workspace_id != confirmation.target_id
-                or confirmation.workspace_id != workspace.workspace_id
-                or workspace.workspace_revision != confirmation.expected_state_version
             ):
                 raise RuntimeError("destructive_confirmation_invalid")
-            deleted = self._workspace_service.delete_workspace(
+            outcome, workspace_name = self._workspace_service.delete_workspace_with_revision_claim(
                 tenant_id=tenant_id,
                 workspace_id=confirmation.target_id,
+                expected_revision=confirmation.expected_state_version,
             )
-            if not deleted:
+            if outcome == "not_found":
                 raise RuntimeError("workspace_not_found")
+            if outcome == "stale":
+                raise RuntimeError("destructive_confirmation_stale")
             if resolver.current_active_workspace_id == confirmation.target_id:
                 resolver.clear_active_workspace()
             return ConversationExecutionArtifact(
@@ -1287,7 +1282,7 @@ class ConversationInteractionExecutor:
                     "status": "completed",
                     "action_kind": confirmation.action_kind,
                     "workspace_id": confirmation.target_id,
-                    "name": str(workspace.name),
+                    "name": str(workspace_name),
                     "deleted": True,
                 },
             )

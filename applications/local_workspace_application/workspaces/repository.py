@@ -77,6 +77,7 @@ from local_workspace_application.workspaces.models import (
     WorkspaceOperationStatus,
     WorkspaceOperationType,
     WorkspaceSource,
+    WorkspaceStatus,
 )
 from pydantic import BaseModel, ValidationError
 
@@ -305,6 +306,23 @@ class ManagedWorkspaceRepository:
             partition_key=_partition(expected.tenant_id, _ENTITY_WORKSPACE),
             row_key=expected.workspace_id,
         )
+
+    def claim_workspace_deletion_if_match(
+        self,
+        expected: Workspace,
+        *,
+        claimed_at: datetime,
+    ) -> bool:
+        if expected.status is not WorkspaceStatus.ACTIVE:
+            return False
+        claimed = expected.model_copy(
+            update={
+                "status": WorkspaceStatus.DELETING,
+                "workspace_revision": expected.workspace_revision + 1,
+                "updated_at": claimed_at,
+            }
+        )
+        return self.replace_workspace_if_match(expected, claimed)
 
     def get_workspace(self, *, tenant_id: str, workspace_id: str) -> Workspace | None:
         return self._get(
