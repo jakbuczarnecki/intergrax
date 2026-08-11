@@ -289,6 +289,29 @@ class ManagedWorkspaceService:
     def get_operation(self, *, tenant_id: str, operation_id: str) -> WorkspaceOperation | None:
         return self._repository.get_operation(tenant_id=tenant_id, operation_id=operation_id)
 
+    def list_workspace_operations(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        limit: int = 50,
+    ) -> list[WorkspaceOperation]:
+        bounded_limit = max(1, min(limit, 100))
+        items = [
+            operation
+            for operation in self._repository.list_operations(tenant_id=tenant_id)
+            if operation.workspace_id == workspace_id
+        ]
+        ordered = sorted(
+            items,
+            key=lambda item: (
+                item.created_at or datetime.min.replace(tzinfo=UTC),
+                item.operation_id,
+            ),
+            reverse=True,
+        )
+        return ordered[:bounded_limit]
+
     def recover_running_operations_for_tenant(
         self,
         *,

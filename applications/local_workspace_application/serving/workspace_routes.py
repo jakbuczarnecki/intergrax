@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import (
@@ -32,14 +33,20 @@ from local_workspace_application.serving.knowledge_live_access_routes import (
 from local_workspace_application.serving.knowledge_query_policy_routes import (
     mount_knowledge_query_policy_routes,
 )
+from local_workspace_application.serving.knowledge_configuration_http import (
+    hash_knowledge_configuration_idempotency_key,
+    require_knowledge_configuration_idempotency_key,
+)
 from local_workspace_application.serving.run_metadata import (
     attach_lkw_evidence_metadata,
 )
 from local_workspace_application.serving.source_projection import safe_source_label
 from local_workspace_application.serving.workspace_schemas import (
     CreateWorkspaceRequestV1,
+    KnowledgeItemOperationRequestV1,
     ManagedFileBatchAcceptedV1,
     ManagedFileBatchItemAcceptedV1,
+    OperationListResponseV1,
     OperationResponseV1,
     RegisterSourceRequestV1,
     SourceCandidateAcceptedV1,
@@ -110,6 +117,8 @@ from local_workspace_application.workspaces.ingestion_recovery import (
 from local_workspace_application.workspaces.knowledge_administration_service import (
     DeterministicKnowledgeAdministrationIntentInterpreter,
     HmacKnowledgeAdministrationConfirmationCodec,
+    KnowledgeAdministrationConfirmationError,
+    KnowledgeAdministrationConfirmationV1,
     KnowledgeAdministrationService,
     Sha256KnowledgeAdministrationIdempotencyKeyFactory,
 )
@@ -143,7 +152,13 @@ from local_workspace_application.workspaces.knowledge_ingestion import (
 )
 from local_workspace_application.workspaces.knowledge_inspection_operations_service import (
     KnowledgeInspectionService,
+    KnowledgeInventoryError,
+    KnowledgeInventoryV1,
+    KnowledgeOperationCommandV1,
+    KnowledgeOperationError,
+    KnowledgeOperationResultV1,
     KnowledgeOperationsService,
+    KnowledgeOperationV1,
 )
 from local_workspace_application.workspaces.knowledge_intake import (
     KnowledgeInputSourceResolverRouter,
@@ -311,7 +326,65 @@ def _operation_response(operation: WorkspaceOperation) -> OperationResponseV1:
         started_at=operation.started_at,
         completed_at=operation.completed_at,
         error=operation.error,
+        error_code=operation.error_code,
     )
+
+
+def _knowledge_inventory_http_exception(exc: KnowledgeInventoryError) -> HTTPException:
+    code = exc.error_code
+    if code == "knowledge_item_not_found":
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=code)
+    if code == "knowledge_operation_conflict":
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=code)
+    if code in {
+        "knowledge_inventory_unavailable",
+        "indexed_source_unavailable",
+        "live_access_unavailable",
+    }:
+        return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=code)
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=code)
+
+
+def _knowledge_operation_http_exception(exc: KnowledgeOperationError) -> HTTPException:
+    code = exc.error_code
+    if code == "knowledge_item_not_found":
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=code)
+    if code in {
+        "knowledge_operation_conflict",
+        "knowledge_operation_invalid_state",
+    }:
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=code)
+    if code in {
+        "knowledge_operation_not_supported",
+        "knowledge_operation_retry_target_required",
+    }:
+        return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=code)
+    if code in {
+        "indexed_source_unavailable",
+        "live_access_unavailable",
+        "knowledge_operation_unavailable",
+    }:
+        return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=code)
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=code)
+
+
+def _knowledge_confirmation_codec(
+    settings: LocalWorkspaceBackendSettings,
+) -> HmacKnowledgeAdministrationConfirmationCodec | None:
+    secret = settings.knowledge_admin_confirmation_secret.strip()
+    if not secret:
+        return None
+    return HmacKnowledgeAdministrationConfirmationCodec(secret=secret.encode("utf-8"))
+
+
+def _parse_knowledge_operation(value: str) -> KnowledgeOperationV1:
+    try:
+        return KnowledgeOperationV1(value)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="knowledge_operation_not_supported",
+        ) from exc
 
 
 def resolve_tenant_id(
@@ -1359,6 +1432,151 @@ def mount_managed_workspace_routes(
             workspace_id=operation.workspace_id,
             source_id=operation.source_id,
             status=operation.status.value,
+        )
+
+    @router.get(
+        "/workspaces/{workspace_id}/knowledge/inventory",
+        response_model=KnowledgeInventoryV1,
+    )
+    async def get_knowledge_inventory(
+        request: Request,
+        workspace_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> KnowledgeInventoryV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        if service.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+        inspection: KnowledgeInspectionService = getattr(
+            request.app.state,
+            "lkw_knowledge_inspection_service",
+            knowledge_inspection_service,
+        )
+        try:
+            return inspection.list_items(tenant_id=tenant_id, workspace_id=workspace_id)
+        except KnowledgeInventoryError as exc:
+            raise _knowledge_inventory_http_exception(exc) from exc
+
+    @router.post(
+        "/workspaces/{workspace_id}/knowledge/items/{item_id}/operations",
+        response_model=KnowledgeOperationResultV1,
+    )
+    async def execute_knowledge_item_operation(
+        request: Request,
+        workspace_id: str,
+        item_id: str,
+        body: KnowledgeItemOperationRequestV1,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ) -> KnowledgeOperationResultV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        if service.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+        operation = _parse_knowledge_operation(body.operation)
+        idempotency = require_knowledge_configuration_idempotency_key(idempotency_key)
+        inspection: KnowledgeInspectionService = getattr(
+            request.app.state,
+            "lkw_knowledge_inspection_service",
+            knowledge_inspection_service,
+        )
+        operations: KnowledgeOperationsService = getattr(
+            request.app.state,
+            "lkw_knowledge_operations_service",
+            knowledge_operations_service,
+        )
+        expected_revision = body.expected_revision
+        if operation is KnowledgeOperationV1.DETACH:
+            codec = _knowledge_confirmation_codec(settings)
+            if codec is None:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="knowledge_confirmation_unavailable",
+                )
+            if not body.confirmation_token:
+                try:
+                    item = inspection.get_item(
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        knowledge_item_id=item_id,
+                    )
+                except KnowledgeInventoryError as exc:
+                    raise _knowledge_inventory_http_exception(exc) from exc
+                token = codec.issue(
+                    KnowledgeAdministrationConfirmationV1(
+                        token="",
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        knowledge_item_id=item_id,
+                        operation=operation,
+                        expected_revision=item.revision,
+                        expires_at=datetime.now(UTC) + timedelta(minutes=5),
+                    )
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error_code": "knowledge_admin_confirmation_required",
+                        "confirmation_token": token,
+                    },
+                )
+            try:
+                confirmation = codec.verify(body.confirmation_token)
+            except KnowledgeAdministrationConfirmationError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=exc.error_code,
+                ) from exc
+            if (
+                confirmation.tenant_id != tenant_id
+                or confirmation.workspace_id != workspace_id
+                or confirmation.knowledge_item_id != item_id
+                or confirmation.operation is not operation
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="knowledge_admin_confirmation_invalid",
+                )
+            expected_revision = confirmation.expected_revision
+
+        command = KnowledgeOperationCommandV1(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            knowledge_item_id=item_id,
+            operation=operation,
+            expected_revision=expected_revision,
+            idempotency_key_hash=hash_knowledge_configuration_idempotency_key(
+                idempotency
+            ),
+            operation_id=body.operation_id,
+        )
+        try:
+            return await operations.execute(command)
+        except KnowledgeOperationError as exc:
+            raise _knowledge_operation_http_exception(exc) from exc
+
+    @router.get(
+        "/workspaces/{workspace_id}/operations",
+        response_model=OperationListResponseV1,
+    )
+    async def list_workspace_operations(
+        request: Request,
+        workspace_id: str,
+        limit: int = 50,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> OperationListResponseV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        current: ManagedWorkspaceService = getattr(
+            request.app.state, "lkw_managed_workspace_service", service
+        )
+        if current.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+        operations = current.list_workspace_operations(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            limit=limit,
+        )
+        return OperationListResponseV1(
+            workspace_id=workspace_id,
+            operations=[_operation_response(item) for item in operations],
         )
 
     @router.get("/operations/{operation_id}", response_model=OperationResponseV1)

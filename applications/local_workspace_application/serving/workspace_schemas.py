@@ -98,6 +98,23 @@ class OperationResponseV1(BaseModel):
     started_at: datetime | None = None
     completed_at: datetime | None = None
     error: str | None = None
+    error_code: str | None = None
+
+
+class OperationListResponseV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    operations: list[OperationResponseV1]
+
+
+class KnowledgeItemOperationRequestV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    operation: str = Field(..., min_length=1)
+    expected_revision: int = Field(..., ge=0)
+    operation_id: str | None = None
+    confirmation_token: str | None = None
 
 
 class WorkspaceSearchRequestV1(BaseModel):

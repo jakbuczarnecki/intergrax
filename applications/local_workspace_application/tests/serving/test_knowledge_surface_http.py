@@ -1,0 +1,546 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""HTTP tests for knowledge inventory, operations, and workspace operation list."""
+
+from __future__ import annotations
+
+import hashlib
+import uuid
+from dataclasses import replace
+from datetime import UTC, datetime
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.serving.workspace_routes import mount_managed_workspace_routes
+from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_service import (
+    IndexedSourceLifecycleStateV1,
+    IndexedSourceSyncStateV1,
+)
+from local_workspace_application.workspaces.knowledge_inspection_operations_service import (
+    KnowledgeAccessModeV1,
+    KnowledgeInventoryError,
+    KnowledgeInventoryItemV1,
+    KnowledgeInventorySummaryV1,
+    KnowledgeInventoryV1,
+    KnowledgeOperationCommandV1,
+    KnowledgeOperationError,
+    KnowledgeOperationResultV1,
+    KnowledgeOperationV1,
+    KnowledgeRevisionKindV1,
+    indexed_knowledge_item_id,
+    live_knowledge_item_id,
+)
+from local_workspace_application.workspaces.knowledge_live_access_service import (
+    LiveAccessLifecycleStateV1,
+)
+from local_workspace_application.workspaces.models import (
+    WorkspaceOperation,
+    WorkspaceOperationStatus,
+    WorkspaceOperationType,
+)
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.sync_runtime import build_managed_workspace_sync_runtime
+from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
+
+pytestmark = pytest.mark.unit
+
+_PREFIX = "/v1/local_workspace"
+_NOW = datetime(2026, 8, 8, 10, 0, tzinfo=UTC)
+_TENANT = "tenant-a"
+_TENANT_B = "tenant-b"
+_HASH = "a" * 64
+_CONFIRM_SECRET = "confirm-secret"
+
+
+class _FakeExecutor:
+    async def execute(self, task: object) -> object:
+        _ = task
+        return type("R", (), {"metadata": {}})()
+
+
+def _headers(
+    tenant: str = _TENANT,
+    *,
+    idempotency: str | None = "idem-1",
+) -> dict[str, str]:
+    payload = {"X-Tenant-Id": tenant}
+    if idempotency is not None:
+        payload["Idempotency-Key"] = idempotency
+    return payload
+
+
+def _indexed_item(*, error: bool = False) -> KnowledgeInventoryItemV1:
+    return KnowledgeInventoryItemV1(
+        tenant_id=_TENANT,
+        workspace_id="ws-1",
+        knowledge_item_id=indexed_knowledge_item_id("idx-1"),
+        mode=KnowledgeAccessModeV1.INDEXED,
+        source_id="source-1",
+        indexed_source_binding_id="idx-1",
+        display_label="Indexed",
+        lifecycle_state="error" if error else "active",
+        enabled=True,
+        detached=False,
+        sync_state="failed" if error else "succeeded",
+        last_error_code="sync_failed" if error else None,
+        revision=3,
+        revision_kind=KnowledgeRevisionKindV1.LIFECYCLE,
+        available_actions=(
+            KnowledgeOperationV1.SYNC,
+            KnowledgeOperationV1.RETRY_SYNC,
+            KnowledgeOperationV1.DISABLE,
+            KnowledgeOperationV1.DETACH,
+        )
+        if error
+        else (
+            KnowledgeOperationV1.SYNC,
+            KnowledgeOperationV1.DISABLE,
+            KnowledgeOperationV1.DETACH,
+        ),
+        updated_at=_NOW,
+    )
+
+
+def _live_item(*, unavailable: bool = False) -> KnowledgeInventoryItemV1:
+    return KnowledgeInventoryItemV1(
+        tenant_id=_TENANT,
+        workspace_id="ws-1",
+        knowledge_item_id=live_knowledge_item_id("live-1"),
+        mode=KnowledgeAccessModeV1.LIVE,
+        live_access_binding_id="live-1",
+        connection_ref="conn-1",
+        display_label="Live",
+        provider_id="provider-1",
+        source_kind="wiki",
+        capability_ids=("cap.read",),
+        lifecycle_state="active",
+        enabled=True,
+        detached=False,
+        runtime_available=not unavailable,
+        last_error_code="connection_unavailable" if unavailable else None,
+        revision=4,
+        revision_kind=KnowledgeRevisionKindV1.CONFIGURATION,
+        available_actions=(KnowledgeOperationV1.DISABLE, KnowledgeOperationV1.DETACH),
+        updated_at=_NOW,
+    )
+
+
+def _inventory(*, items: tuple[KnowledgeInventoryItemV1, ...]) -> KnowledgeInventoryV1:
+    return KnowledgeInventoryV1(
+        tenant_id=_TENANT,
+        workspace_id="ws-1",
+        items=items,
+        summary=KnowledgeInventorySummaryV1(
+            total=len(items),
+            indexed=sum(item.mode is KnowledgeAccessModeV1.INDEXED for item in items),
+            live=sum(item.mode is KnowledgeAccessModeV1.LIVE for item in items),
+            active=sum(item.lifecycle_state == "active" for item in items),
+            disabled=sum(item.lifecycle_state == "disabled" for item in items),
+            attention_required=sum(
+                item.lifecycle_state in {"error", "detach_blocked"}
+                or (
+                    item.runtime_available is False
+                    and item.enabled
+                    and not item.detached
+                )
+                for item in items
+            ),
+        ),
+        updated_at=_NOW,
+    )
+
+
+@pytest.fixture
+def api_bundle(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    data_home = tmp_path / "data"
+    data_home.mkdir()
+    monkeypatch.setenv("DATA_HOME", str(data_home))
+    monkeypatch.setenv("INTERGRAX_ALLOWED_READ_ROOTS", str(tmp_path / "docs"))
+    (tmp_path / "docs").mkdir()
+    settings = replace(
+        LocalWorkspaceBackendSettings.from_env(),
+        data_home=str(data_home),
+        knowledge_admin_confirmation_secret=_CONFIRM_SECRET,
+    )
+    executor = _FakeExecutor()
+    sync = ManagedWorkspaceSyncService(repo, executor)  # type: ignore[arg-type]
+    runtime = build_managed_workspace_sync_runtime(
+        document_store=store,
+        sync_service=sync,
+        repository=repo,
+    )
+    app = FastAPI()
+    service = mount_managed_workspace_routes(
+        app,
+        task_executor=executor,  # type: ignore[arg-type]
+        settings=settings,
+        repository=repo,
+        sync_runtime=runtime,
+    )
+    workspace = service.create_workspace(tenant_id=_TENANT, name="Docs")
+    with TestClient(app) as client:
+        yield client, repo, service, workspace.workspace_id, app
+
+
+def _inventory_path(workspace_id: str) -> str:
+    return f"{_PREFIX}/workspaces/{workspace_id}/knowledge/inventory"
+
+
+def _operation_path(workspace_id: str, item_id: str) -> str:
+    return f"{_PREFIX}/workspaces/{workspace_id}/knowledge/items/{item_id}/operations"
+
+
+def _operations_list_path(workspace_id: str) -> str:
+    return f"{_PREFIX}/workspaces/{workspace_id}/operations"
+
+
+def test_empty_workspace_inventory(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    inspection = MagicMock()
+    inspection.list_items.return_value = _inventory(items=())
+    app.state.lkw_knowledge_inspection_service = inspection
+
+    response = client.get(_inventory_path(workspace_id), headers=_headers())
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["items"] == []
+    assert body["summary"]["total"] == 0
+
+
+def test_indexed_item_projection(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    item = _indexed_item()
+    inspection = MagicMock()
+    inspection.list_items.return_value = _inventory(items=(item,))
+    app.state.lkw_knowledge_inspection_service = inspection
+
+    response = client.get(_inventory_path(workspace_id), headers=_headers())
+
+    assert response.status_code == 200
+    projected = response.json()["items"][0]
+    assert projected["mode"] == "indexed"
+    assert projected["indexed_source_binding_id"] == "idx-1"
+    assert projected["sync_state"] == "succeeded"
+    assert "token" not in str(projected).casefold()
+
+
+def test_live_item_projection(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    item = _live_item()
+    inspection = MagicMock()
+    inspection.list_items.return_value = _inventory(items=(item,))
+    app.state.lkw_knowledge_inspection_service = inspection
+
+    response = client.get(_inventory_path(workspace_id), headers=_headers())
+
+    assert response.status_code == 200
+    projected = response.json()["items"][0]
+    assert projected["mode"] == "live"
+    assert projected["runtime_available"] is True
+    assert projected["provider_id"] == "provider-1"
+
+
+def test_attention_required_projection(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    items = (_indexed_item(error=True), _live_item(unavailable=True))
+    inspection = MagicMock()
+    inspection.list_items.return_value = _inventory(items=items)
+    app.state.lkw_knowledge_inspection_service = inspection
+
+    response = client.get(_inventory_path(workspace_id), headers=_headers())
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["summary"]["attention_required"] == 2
+    assert body["items"][0]["last_error_code"] == "sync_failed"
+    assert body["items"][1]["last_error_code"] == "connection_unavailable"
+
+
+def test_available_actions_projection(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    item = _indexed_item(error=True)
+    inspection = MagicMock()
+    inspection.list_items.return_value = _inventory(items=(item,))
+    app.state.lkw_knowledge_inspection_service = inspection
+
+    response = client.get(_inventory_path(workspace_id), headers=_headers())
+
+    assert response.status_code == 200
+    actions = response.json()["items"][0]["available_actions"]
+    assert "retry_sync" in actions
+    assert "sync" in actions
+
+
+def test_inventory_tenant_workspace_isolation(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    inspection = MagicMock()
+    inspection.list_items.side_effect = KnowledgeInventoryError("knowledge_item_not_found")
+    app.state.lkw_knowledge_inspection_service = inspection
+
+    foreign = client.get(_inventory_path(workspace_id), headers=_headers(_TENANT_B))
+    assert foreign.status_code == 404
+
+    missing = client.get(f"{_PREFIX}/workspaces/missing/knowledge/inventory", headers=_headers())
+    assert missing.status_code == 404
+
+
+def test_allowed_operation_delegates_to_service(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    item = _indexed_item()
+    result = KnowledgeOperationResultV1(
+        item=item,
+        operation=KnowledgeOperationV1.SYNC,
+        operation_id="op-sync",
+        mutation_id="mut-sync",
+    )
+    operations = MagicMock()
+    operations.execute = AsyncMock(return_value=result)
+    app.state.lkw_knowledge_operations_service = operations
+
+    response = client.post(
+        _operation_path(workspace_id, item.knowledge_item_id),
+        headers=_headers(),
+        json={"operation": "sync", "expected_revision": 3},
+    )
+
+    assert response.status_code == 200, response.text
+    operations.execute.assert_awaited_once()
+    command = operations.execute.await_args.args[0]
+    assert isinstance(command, KnowledgeOperationCommandV1)
+    assert command.operation is KnowledgeOperationV1.SYNC
+
+
+def test_unsupported_operation_rejected(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    operations = MagicMock()
+    operations.execute = AsyncMock(
+        side_effect=KnowledgeOperationError("knowledge_operation_not_supported")
+    )
+    app.state.lkw_knowledge_operations_service = operations
+
+    response = client.post(
+        _operation_path(workspace_id, indexed_knowledge_item_id("idx-1")),
+        headers=_headers(),
+        json={"operation": "resume_detach", "expected_revision": 1},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "knowledge_operation_not_supported"
+
+
+def test_destructive_operation_requires_confirmation(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    item = _indexed_item()
+    inspection = MagicMock()
+    inspection.get_item.return_value = item
+    operations = MagicMock()
+    operations.execute = AsyncMock()
+    app.state.lkw_knowledge_inspection_service = inspection
+    app.state.lkw_knowledge_operations_service = operations
+
+    first = client.post(
+        _operation_path(workspace_id, item.knowledge_item_id),
+        headers=_headers(),
+        json={"operation": "detach", "expected_revision": 3},
+    )
+
+    assert first.status_code == 409
+    detail = first.json()["detail"]
+    assert detail["error_code"] == "knowledge_admin_confirmation_required"
+    assert detail["confirmation_token"]
+    operations.execute.assert_not_called()
+
+
+def test_revision_precondition_failure_preserved(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    operations = MagicMock()
+    operations.execute = AsyncMock(
+        side_effect=KnowledgeOperationError("knowledge_operation_conflict")
+    )
+    app.state.lkw_knowledge_operations_service = operations
+
+    response = client.post(
+        _operation_path(workspace_id, indexed_knowledge_item_id("idx-1")),
+        headers=_headers(),
+        json={"operation": "sync", "expected_revision": 99},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "knowledge_operation_conflict"
+
+
+def test_route_does_not_mutate_lifecycle_directly(api_bundle) -> None:
+    client, _, _, workspace_id, app = api_bundle
+    indexed_lifecycle = MagicMock()
+    app.state.lkw_connected_source_wiring = SimpleNamespace(
+        indexed_source_lifecycle_service=indexed_lifecycle
+    )
+    item = _indexed_item()
+    result = KnowledgeOperationResultV1(
+        item=item,
+        operation=KnowledgeOperationV1.SYNC,
+        operation_id="op-sync",
+        mutation_id=None,
+    )
+    operations = MagicMock()
+    operations.execute = AsyncMock(return_value=result)
+    app.state.lkw_knowledge_operations_service = operations
+
+    response = client.post(
+        _operation_path(workspace_id, item.knowledge_item_id),
+        headers=_headers(),
+        json={"operation": "sync", "expected_revision": 3},
+    )
+
+    assert response.status_code == 200
+    indexed_lifecycle.request_sync.assert_not_called()
+    indexed_lifecycle.disable.assert_not_called()
+
+
+def test_workspace_operations_list_scoped_and_ordered(api_bundle) -> None:
+    client, repo, service, workspace_id, _ = api_bundle
+    other = service.create_workspace(tenant_id=_TENANT, name="Other")
+    older = datetime(2026, 8, 7, 10, 0, tzinfo=UTC)
+    newer = datetime(2026, 8, 8, 11, 0, tzinfo=UTC)
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-old",
+            tenant_id=_TENANT,
+            workspace_id=workspace_id,
+            source_id="source-1",
+            operation_type=WorkspaceOperationType.SOURCE_SYNC,
+            status=WorkspaceOperationStatus.COMPLETED,
+            created_at=older,
+            error_code="sync_timeout",
+        )
+    )
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-new",
+            tenant_id=_TENANT,
+            workspace_id=workspace_id,
+            source_id="source-1",
+            operation_type=WorkspaceOperationType.KNOWLEDGE_INGESTION,
+            status=WorkspaceOperationStatus.FAILED,
+            created_at=newer,
+            error_code="ingestion_failed",
+        )
+    )
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-other",
+            tenant_id=_TENANT,
+            workspace_id=other.workspace_id,
+            source_id="source-2",
+            operation_type=WorkspaceOperationType.SOURCE_SYNC,
+            status=WorkspaceOperationStatus.COMPLETED,
+            created_at=newer,
+        )
+    )
+
+    response = client.get(
+        _operations_list_path(workspace_id),
+        headers=_headers(),
+        params={"limit": 1},
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["workspace_id"] == workspace_id
+    assert len(body["operations"]) == 1
+    assert body["operations"][0]["operation_id"] == "op-new"
+    assert body["operations"][0]["error_code"] == "ingestion_failed"
+
+
+def test_workspace_operations_tenant_isolation(api_bundle) -> None:
+    client, repo, _, workspace_id, _ = api_bundle
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-tenant-a",
+            tenant_id=_TENANT,
+            workspace_id=workspace_id,
+            source_id="source-1",
+            operation_type=WorkspaceOperationType.SOURCE_SYNC,
+            status=WorkspaceOperationStatus.COMPLETED,
+            created_at=_NOW,
+        )
+    )
+
+    foreign = client.get(
+        _operations_list_path(workspace_id),
+        headers=_headers(_TENANT_B),
+    )
+    assert foreign.status_code == 404
+
+
+def test_workspace_operations_empty_list(api_bundle) -> None:
+    client, _, _, workspace_id, _ = api_bundle
+
+    response = client.get(_operations_list_path(workspace_id), headers=_headers())
+
+    assert response.status_code == 200
+    assert response.json()["operations"] == []
+
+
+def test_get_operation_projects_error_code(api_bundle) -> None:
+    client, repo, _, workspace_id, _ = api_bundle
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-failed",
+            tenant_id=_TENANT,
+            workspace_id=workspace_id,
+            source_id="source-1",
+            operation_type=WorkspaceOperationType.SOURCE_SYNC,
+            status=WorkspaceOperationStatus.FAILED,
+            created_at=_NOW,
+            error="sync failed",
+            error_code="sync_failed",
+        )
+    )
+
+    response = client.get(f"{_PREFIX}/operations/op-failed", headers=_headers())
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["error_code"] == "sync_failed"
+    assert body["status"] == "failed"
+    assert body["operation_id"] == "op-failed"
+
+
+def test_get_operation_backward_compatible_without_error_code(api_bundle) -> None:
+    client, repo, _, workspace_id, _ = api_bundle
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-legacy",
+            tenant_id=_TENANT,
+            workspace_id=workspace_id,
+            source_id="source-1",
+            operation_type=WorkspaceOperationType.SOURCE_SYNC,
+            status=WorkspaceOperationStatus.COMPLETED,
+            created_at=_NOW,
+        )
+    )
+
+    response = client.get(f"{_PREFIX}/operations/op-legacy", headers=_headers())
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["error_code"] is None
+    assert set(body) >= {
+        "operation_id",
+        "operation_type",
+        "status",
+        "workspace_id",
+        "source_id",
+        "files_discovered",
+        "documents_indexed",
+    }
