@@ -38,6 +38,8 @@ what you want to understand, try, inspect, build, or review.
 ## Explore the platform
 
 - [Capabilities](capabilities/README.md) — reusable platform capability areas.
+- [Multiplayer AI](capabilities/architecture/MULTIPLAYER_AI.md) — strategic
+  architecture for governed multi-principal collaboration.
 - [Integrations](integrations/README.md) — canonical integration documentation.
 - [Products](product/lkw/LKW_PRODUCT_TOUR.md) — begin with the documented LKW product
   route.

@@ -139,6 +139,7 @@ platform.
 | --- | --- | --- |
 | **LKW** | Primary Product Proof | **PARTIAL — Backend Product Alpha / MVP** |
 | **Token Optimization** | Featured platform-capability proof | **PARTIAL — bounded** |
+| **Multiplayer AI** | Strategic platform capability | **Architecture / roadmap stage** — runtime proof not yet established |
 | **Other reusable foundations** | Supporting evidence | Varies by capability; inspect [PROOFS](docs/project/proofs/PROOFS.md) |
 
 ## Token Optimization
@@ -151,6 +152,23 @@ Its current status is **PARTIAL**. Live provider-wide proof, production rollout,
 final cross-provider proof, universal savings, and **production-proven savings**
 are **not established**. Details belong to the [Token Optimization guide](docs/project/capabilities/token_optimization/README.md)
 and its [claim guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
+
+## Multiplayer AI
+
+Intergrax is extending governed execution toward governed multi-principal
+collaboration among humans, agents, services, and eventually external agents.
+The architectural direction covers identity and membership, delegation of
+effective authority, shared work, durable collaborative artifacts, explicit
+decisions, principal-scoped context, activity and provenance, and
+external-agent interoperability.
+
+Multiplayer AI is broader than one agent calling another. It governs who
+participates, what authority is effective, what shared work exists, which
+artifact version is authoritative, what decision was made, what context each
+principal may see, and what evidence remains.
+
+Current status is **architecture / roadmap stage**. Runtime implementation and
+proof are **not yet established**. See the [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md).
 
 ## Choose your path
 

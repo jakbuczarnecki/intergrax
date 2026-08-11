@@ -95,6 +95,28 @@ Token Optimization is a **Featured platform-capability proof** with **PARTIAL** 
 
 Details belong in the owning [Token Optimization guide](../capabilities/token_optimization/README.md) and its [claim guardrails](../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
 
+## Multiplayer AI as a strategic platform direction
+
+Multiplayer AI extends the operating model from a single governed request and execution path toward governed collaboration among multiple principals — humans, agents, services, and eventually external agents. This is architectural direction; today's runtime does not yet complete that evolution.
+
+The planned Multiplayer layer coordinates platform primitives for Principal, Membership, Delegation, Shared Work, Artifacts, Decisions, ContextView, Activity, and AgentDirectory. It reuses existing UCL, Context Engineering, Memory, Knowledge/RAG, Token Optimization, HITL, execution/runtime, and evidence/provenance mechanisms without relabeling them as Multiplayer.
+
+```mermaid
+flowchart TB
+    PRINCIPALS[Human / Agent / Service / External Agent]
+    MP[Multiplayer layer<br/>identity · authority · shared work<br/>artifacts · decisions · context views]
+    GOV[Governed Intergrax execution]
+    RES[knowledge · tools · models · evidence]
+
+    PRINCIPALS --> MP
+    MP --> GOV
+    GOV --> RES
+```
+
+*Conceptual strategic architecture — not an implemented runtime topology.*
+
+Details belong in the [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_AI.md).
+
 ## Architect review path
 
 1. Understand this Architecture Overview as the project-level mental model.

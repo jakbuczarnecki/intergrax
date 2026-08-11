@@ -24,6 +24,10 @@ BUILD_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILD_WITH_INTERGRAX
 BUILDER_QUICKSTART_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILDER_QUICKSTART.md"
 PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "project" / "community" / "PUBLIC_DOCUMENTATION_MAP.md"
 PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
+MULTIPLAYER_ARCH_PATH = (
+    REPO_ROOT / "docs" / "project" / "capabilities" / "architecture" / "MULTIPLAYER_AI.md"
+)
+ROADMAP_PATH = REPO_ROOT / "docs" / "project" / "overview" / "ROADMAP.md"
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
 CATEGORY_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-category-map-light.svg"
@@ -485,6 +489,7 @@ def test_readme_routing(readme_text: str) -> None:
         "DOCUMENTATION_MAP.md",
         "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
         "docs/project/README.md",
+        "docs/project/capabilities/architecture/MULTIPLAYER_AI.md",
     ):
         assert link in readme_text, f"README missing link: {link}"
     assert "Local Knowledge Workspace" in readme_text
@@ -493,6 +498,53 @@ def test_readme_routing(readme_text: str) -> None:
     assert "Primary Product Proof" in readme_text
     assert "Backend Product Alpha /" in readme_text
     assert "Featured platform-capability proof" in readme_text
+
+
+def test_readme_multiplayer_positioning(readme_text: str) -> None:
+    normalized = " ".join(_normalize(readme_text).split())
+    for phrase in (
+        "strategic platform capability",
+        "architecture / roadmap stage",
+        "runtime proof not yet established",
+        "governed multi-principal collaboration",
+        "not yet established",
+    ):
+        assert phrase in normalized, f"README missing Multiplayer marker: {phrase}"
+    assert "multiplayer ai" in normalized
+    assert "featured platform-capability proof" in normalized
+    assert "primary product proof" in normalized
+    forbidden_positive = (
+        "production multiplayer",
+        "complete multi-agent collaboration",
+        "proven a2a",
+        "industry-leading multiplayer",
+    )
+    for phrase in forbidden_positive:
+        assert phrase not in normalized, f"README contains hype claim: {phrase}"
+
+
+def test_multiplayer_public_projection_links() -> None:
+    assert MULTIPLAYER_ARCH_PATH.is_file()
+    readme_text = _read(README_PATH)
+    arch_text = _read(ARCHITECTURE_OVERVIEW_PATH)
+    roadmap_text = _read(ROADMAP_PATH)
+    hub_text = _read(HUB_PATH)
+
+    assert "docs/project/capabilities/architecture/MULTIPLAYER_AI.md" in readme_text
+    assert "../capabilities/architecture/MULTIPLAYER_AI.md" in arch_text
+    assert "../capabilities/architecture/MULTIPLAYER_AI.md" in roadmap_text
+    assert "capabilities/architecture/MULTIPLAYER_AI.md" in hub_text
+
+    for doc_path, target in (
+        (README_PATH, "docs/project/capabilities/architecture/MULTIPLAYER_AI.md"),
+        (ARCHITECTURE_OVERVIEW_PATH, "../capabilities/architecture/MULTIPLAYER_AI.md"),
+        (ROADMAP_PATH, "../capabilities/architecture/MULTIPLAYER_AI.md"),
+        (HUB_PATH, "capabilities/architecture/MULTIPLAYER_AI.md"),
+    ):
+        resolved = (doc_path.parent / target.split("#", 1)[0]).resolve()
+        assert resolved == MULTIPLAYER_ARCH_PATH.resolve(), (
+            f"{doc_path.name} Multiplayer link does not resolve to canonical architecture"
+        )
 
 
 def test_readme_architecture_is_responsibility_model(readme_text: str) -> None:

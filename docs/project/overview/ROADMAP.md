@@ -125,6 +125,10 @@ Product need drives platform work. **Token Optimization** remains a **Featured p
 
 See the [Token Optimization guide](../capabilities/token_optimization/README.md) for its bounded proof and limitations.
 
+**Multiplayer AI** is a separate **strategic platform capability** at **architecture / roadmap stage**. A canonical architecture and implementation roadmap exists; runtime proof is **not yet established**. The capability is intended to support governed multi-principal collaboration — shared work, durable artifacts, decisions, delegated authority, principal-scoped context, and provenance — among humans, agents, services, and eventually external agents. Future promotion into public proof follows accepted implementation and evidence, not architecture alone.
+
+See the [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_AI.md) for the strategic direction and current boundaries.
+
 ## Decision principles
 
 - **Application first** — product workflow drives platform work.
