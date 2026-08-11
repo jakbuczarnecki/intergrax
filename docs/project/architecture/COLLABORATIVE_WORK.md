@@ -110,6 +110,19 @@ It does not answer:
 - **CW-INV-11:** LKW and other applications consume contracts; no `LkwPrincipal`, `LkwWorkspaceMember`, or `LkwDelegation` ownership.
 - **CW-INV-12:** `WorkspaceMembershipRole` is collaborative classification; explicit `PrincipalAuthorityGrant.authority_scopes` own base authority.
 - **CW-INV-13:** Collaborative Work ALLOW satisfies only the collaborative authority slice; workspace, resource, and runtime/tool policy remain required for execution authorization.
+- **CW-INV-14:** Final execution ALLOW requires every applicable mandatory policy layer to return ALLOW; composition is fail closed and never weakens a restrictive decision.
+- **CW-INV-15:** Missing or unavailable mandatory policy evaluation is DENY — never implicit ALLOW.
+
+### Policy composition boundary (COLLAB-WORK-1E)
+
+Collaborative Work owns the neutral composition boundary that combines pre-evaluated layer decisions:
+
+    collaborative authority ∩ workspace policy ∩ resource policy ∩ runtime/tool policy
+    → final ``PolicyDecision``
+
+- Runtime/tool meaningful-side-effect evaluation remains owned by Runtime Policy (`RuntimePolicyEngine` / `PolicyEngine`).
+- Workspace and resource policy evaluators are not fabricated in this slice; absent canonical evaluators, composition reports missing mandatory decisions as DENY.
+- `compose_policy_decisions` retains contributing layer provenance in `audit_payload` for auditability.
 
 ---
 

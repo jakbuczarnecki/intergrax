@@ -103,7 +103,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-1D |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Authoritative principal base-authority source and first security-correct Collaborative Work ALLOW (`base authority ∩ membership ∩ delegation ∩ requested scope`) |
 | **Dependencies** | COLLAB-WORK-1C approved; `CollaborativeWorkAuthorityResolver`; COLLAB-WORK-1B repository semantics |
 | **Exact scope** | `PrincipalAuthorityGrant` contract; `PrincipalAuthorityRepository` port and in-memory adapter; resolver composition with delegator non-amplification; new denial reasons; collaborative-slice ALLOW only |
@@ -112,7 +112,22 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Workspace/resource/runtime policy composition; role→permission RBAC; wildcard semantics; PolicyEngine changes; execution enforcement; MP-2+ rows |
 | **Acceptance** | Base authority authoritative not caller-evidence; delegator base authority required for delegated acting; delegation cannot amplify; ALLOW scoped to collaborative slice only; membership role does not substitute base authority |
 | **Proof requirements** | `tests/unit/collaborative_work/test_effective_authority.py`; `tests/unit/collaborative_work/test_in_memory_repository.py`; contract regressions |
-| **Next step** | Workspace/resource/runtime policy composition and enforcement |
+| **Next step** | COLLAB-WORK-1E — policy composition and final enforcement decision boundary |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1E |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | Fail-closed composition of collaborative authority, workspace, resource, and runtime/tool policy decisions into one final enforcement decision |
+| **Dependencies** | COLLAB-WORK-1D approved; `CollaborativeWorkAuthorityResolver`; `RuntimePolicyEngine.evaluate_meaningful_side_effect`; `PolicyDecision` / `PolicyAction` |
+| **Exact scope** | `compose_policy_decisions` composition boundary; `PolicyCompositionInput` / `PolicyCompositionResult` contracts; mandatory/applicable layer semantics; audit provenance |
+| **REUSED** | `PolicyDecision`, `PolicyAction`, `EffectiveAuthorityDecision`; `MeaningfulSideEffectRequest`; `RuntimePolicyEngine` / `PolicyEngine` meaningful-side-effect path |
+| **NEW** | `intergrax/collaborative_work/policy_composition.py`; composition contracts; `tests/unit/collaborative_work/test_policy_composition.py` |
+| **Explicit out of scope** | Workspace/resource policy evaluators; second PolicyEngine; side-effect execution; widespread runtime rewiring; MP-2+ rows |
+| **Acceptance** | Collaborative ALLOW alone does not authorize execution; missing mandatory layer fails closed; DENY/REQUIRE_HUMAN/ESCALATE/MODIFY never weakened; contributing decisions auditable |
+| **Proof requirements** | `tests/unit/collaborative_work/test_policy_composition.py`; resolver regression if integration requires |
+| **Next step** | Workspace/resource policy-source gate or MP-1 adoption/enforcement wiring |
 
 ---
 

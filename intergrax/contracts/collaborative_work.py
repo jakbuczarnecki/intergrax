@@ -36,6 +36,9 @@ SCHEMA_AUTHORITY_DELEGATION_V1: Final = "authority_delegation.v1"
 SCHEMA_PRINCIPAL_AUTHORITY_GRANT_V1: Final = "principal_authority_grant.v1"
 SCHEMA_EFFECTIVE_AUTHORITY_REQUEST_V1: Final = "effective_authority_request.v1"
 SCHEMA_EFFECTIVE_AUTHORITY_DECISION_V1: Final = "effective_authority_decision.v1"
+SCHEMA_POLICY_COMPOSITION_APPLICABILITY_V1: Final = "policy_composition_applicability.v1"
+SCHEMA_POLICY_COMPOSITION_INPUT_V1: Final = "policy_composition_input.v1"
+SCHEMA_POLICY_COMPOSITION_RESULT_V1: Final = "policy_composition_result.v1"
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -349,3 +352,59 @@ def fail_closed_effective_authority_decision(
         ),
         denial_reason=denial_reason,
     )
+
+
+class PolicyCompositionLayer(StrEnum):
+    """Contributing policy layer identifiers for fail-closed composition."""
+
+    COLLABORATIVE_AUTHORITY = "collaborative_authority"
+    WORKSPACE_POLICY = "workspace_policy"
+    RESOURCE_POLICY = "resource_policy"
+    RUNTIME_POLICY = "runtime_policy"
+
+
+class PolicyCompositionApplicability(BaseModel):
+    """Trusted operation context — which policy layers are mandatory for composition.
+
+    Callers must derive applicability from operation classification, not untrusted
+  skip flags. When a layer is applicable but its decision is absent, composition
+  fails closed.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["policy_composition_applicability.v1"] = (
+        SCHEMA_POLICY_COMPOSITION_APPLICABILITY_V1
+    )
+    workspace_policy: bool = False
+    resource_policy: bool = False
+    runtime_policy: bool = False
+
+
+class PolicyCompositionInput(BaseModel):
+    """Pre-evaluated policy decisions for fail-closed composition."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["policy_composition_input.v1"] = SCHEMA_POLICY_COMPOSITION_INPUT_V1
+    collaborative_authority: PolicyDecision
+    workspace_policy: PolicyDecision | None = None
+    resource_policy: PolicyDecision | None = None
+    runtime_policy: PolicyDecision | None = None
+    applicability: PolicyCompositionApplicability = Field(
+        default_factory=PolicyCompositionApplicability,
+    )
+
+
+class PolicyCompositionResult(BaseModel):
+    """Final enforcement decision with typed contributing layer provenance."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["policy_composition_result.v1"] = SCHEMA_POLICY_COMPOSITION_RESULT_V1
+    decision: PolicyDecision
+    collaborative_authority: PolicyDecision
+    workspace_policy: PolicyDecision | None = None
+    resource_policy: PolicyDecision | None = None
+    runtime_policy: PolicyDecision | None = None
+    determining_layer: PolicyCompositionLayer | None = None

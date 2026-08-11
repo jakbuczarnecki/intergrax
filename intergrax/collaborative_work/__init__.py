@@ -3,6 +3,7 @@
 """Collaborative Work platform domain — membership, delegation, and authority resolution."""
 
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
+from intergrax.collaborative_work.policy_composition import compose_policy_decisions
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
     InMemoryPrincipalAuthorityRepository,
@@ -39,6 +40,7 @@ from intergrax.collaborative_work.repository import (
 
 __all__ = [
     "CollaborativeWorkAuthorityResolver",
+    "compose_policy_decisions",
     "INITIAL_RECORD_REVISION",
     "AuthorityDelegationAlreadyExists",
     "AuthorityDelegationIdempotencyConflict",
