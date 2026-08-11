@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Literal, Self
 
@@ -492,3 +492,31 @@ class ActiveKnowledgeIngestionLocator(BaseModel):
     tenant_id: str = Field(..., min_length=1)
     workspace_id: str = Field(..., min_length=1)
     created_at: datetime
+
+
+_WORKSPACE_OPERATION_INDEX_MAX_MICROS = 999_999_999_999_999_999
+
+
+def _workspace_operation_index_utc_micros(value: datetime) -> int:
+    if value.tzinfo is None:
+        normalized = value.replace(tzinfo=UTC)
+    else:
+        normalized = value.astimezone(UTC)
+    return int(normalized.timestamp() * 1_000_000)
+
+
+class WorkspaceOperationIndexEntryV1(BaseModel):
+    """Immutable workspace-scoped locator for a primary WorkspaceOperation record."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str = Field(..., min_length=1)
+    workspace_id: str = Field(..., min_length=1)
+    operation_id: str = Field(..., min_length=1)
+    created_at: datetime
+
+    def index_row_key(self) -> str:
+        reverse_micros = _WORKSPACE_OPERATION_INDEX_MAX_MICROS - _workspace_operation_index_utc_micros(
+            self.created_at
+        )
+        return f"{self.workspace_id}:{reverse_micros:020d}:{self.operation_id}"

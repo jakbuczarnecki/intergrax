@@ -73,6 +73,7 @@ from local_workspace_application.workspaces.models import (
     Workspace,
     WorkspaceDocumentReference,
     WorkspaceOperation,
+    WorkspaceOperationIndexEntryV1,
     WorkspaceOperationStatus,
     WorkspaceOperationType,
     WorkspaceSource,
@@ -129,6 +130,7 @@ class ActiveKnowledgeIngestionLocatorScan:
 _ENTITY_WORKSPACE = "workspace"
 _ENTITY_SOURCE = "source"
 _ENTITY_OPERATION = "operation"
+_ENTITY_WORKSPACE_OPERATION_INDEX = "workspace_operation_index"
 _ENTITY_SOURCE_SYNC_OPERATION_INDEX = "source_sync_operation_index"
 _ENTITY_DOCUMENT = "document"
 _ENTITY_DOCUMENT_OWNERSHIP_INDEX = "document_ownership_index"
@@ -1423,7 +1425,91 @@ class ManagedWorkspaceRepository:
             operation.operation_id,
             operation,
         )
+        self._put_workspace_operation_index(operation)
         return operation
+
+    def _resolve_operation_created_at(self, operation: WorkspaceOperation) -> datetime:
+        if operation.created_at is not None:
+            timestamp = operation.created_at
+            if timestamp.tzinfo is None:
+                return timestamp.replace(tzinfo=UTC)
+            return timestamp.astimezone(UTC)
+        existing = self.get_operation(
+            tenant_id=operation.tenant_id,
+            operation_id=operation.operation_id,
+        )
+        if existing is not None and existing.created_at is not None:
+            timestamp = existing.created_at
+            if timestamp.tzinfo is None:
+                return timestamp.replace(tzinfo=UTC)
+            return timestamp.astimezone(UTC)
+        return datetime.now(UTC)
+
+    def _put_workspace_operation_index(self, operation: WorkspaceOperation) -> None:
+        created_at = self._resolve_operation_created_at(operation)
+        entry = WorkspaceOperationIndexEntryV1(
+            tenant_id=operation.tenant_id,
+            workspace_id=operation.workspace_id,
+            operation_id=operation.operation_id,
+            created_at=created_at,
+        )
+        partition_key = _partition(operation.tenant_id, _ENTITY_WORKSPACE_OPERATION_INDEX)
+        row_key = entry.index_row_key()
+        record = _to_document_record(entry, partition_key=partition_key, row_key=row_key)
+        if isinstance(self._store, ConditionalDocumentStore):
+            if self._store.put_if_absent(record):
+                return
+        else:
+            existing_record = self._store.get(partition_key, row_key)
+            if existing_record is None:
+                self._store.put(record)
+                return
+        existing_record = self._store.get(partition_key, row_key)
+        if existing_record is None:
+            raise RuntimeError("workspace_operation_index_write_conflict")
+        existing_entry = WorkspaceOperationIndexEntryV1.model_validate(
+            dict(existing_record.data),
+            strict=False,
+        )
+        if existing_entry != entry:
+            raise RuntimeError("workspace_operation_index_identity_conflict")
+
+    def list_operations_for_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        limit: int = 50,
+    ) -> list[WorkspaceOperation]:
+        validate_document_query_limit(limit)
+        partition_key = _partition(tenant_id, _ENTITY_WORKSPACE_OPERATION_INDEX)
+        page = self._store.query(
+            partition_key,
+            limit=limit,
+            row_key_prefix=f"{workspace_id}:",
+        )
+        operations: list[WorkspaceOperation] = []
+        for record in page.documents:
+            entry = WorkspaceOperationIndexEntryV1.model_validate(
+                dict(record.data),
+                strict=False,
+            )
+            if entry.tenant_id != tenant_id or entry.workspace_id != workspace_id:
+                raise RuntimeError("workspace_operation_index_scope_mismatch")
+            primary = self.get_operation(
+                tenant_id=tenant_id,
+                operation_id=entry.operation_id,
+            )
+            if primary is None:
+                continue
+            if (
+                primary.tenant_id != tenant_id
+                or primary.workspace_id != workspace_id
+                or primary.operation_id != entry.operation_id
+            ):
+                raise RuntimeError("workspace_operation_index_primary_mismatch")
+            operations.append(primary)
+        return operations
 
     @staticmethod
     def _source_sync_operation_sort_key(operation: WorkspaceOperation) -> tuple[str, str]:
@@ -1570,8 +1656,39 @@ class ManagedWorkspaceRepository:
 
     def delete_operations_for_workspace(self, *, tenant_id: str, workspace_id: str) -> int:
         deleted = 0
+        deleted_ids: set[str] = set()
+        partition_index = _partition(tenant_id, _ENTITY_WORKSPACE_OPERATION_INDEX)
+        prefix = f"{workspace_id}:"
+        cursor: str | None = None
+        while True:
+            page = self._store.query(
+                partition_index,
+                limit=200,
+                row_key_prefix=prefix,
+                cursor=cursor,
+            )
+            if not page.documents:
+                break
+            for record in page.documents:
+                entry = WorkspaceOperationIndexEntryV1.model_validate(
+                    dict(record.data),
+                    strict=False,
+                )
+                self._store.delete(partition_index, record.row_key)
+                self.delete_operation(
+                    tenant_id=tenant_id,
+                    operation_id=entry.operation_id,
+                )
+                deleted_ids.add(entry.operation_id)
+                deleted += 1
+            if page.next_cursor is None:
+                break
+            cursor = page.next_cursor
+        # Workspace cleanup only: remove historical primaries that predate the index.
         for operation in self.list_operations(tenant_id=tenant_id):
             if operation.workspace_id != workspace_id:
+                continue
+            if operation.operation_id in deleted_ids:
                 continue
             self.delete_operation(tenant_id=tenant_id, operation_id=operation.operation_id)
             deleted += 1

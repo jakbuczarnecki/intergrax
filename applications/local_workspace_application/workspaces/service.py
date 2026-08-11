@@ -297,20 +297,11 @@ class ManagedWorkspaceService:
         limit: int = 50,
     ) -> list[WorkspaceOperation]:
         bounded_limit = max(1, min(limit, 100))
-        items = [
-            operation
-            for operation in self._repository.list_operations(tenant_id=tenant_id)
-            if operation.workspace_id == workspace_id
-        ]
-        ordered = sorted(
-            items,
-            key=lambda item: (
-                item.created_at or datetime.min.replace(tzinfo=UTC),
-                item.operation_id,
-            ),
-            reverse=True,
+        return self._repository.list_operations_for_workspace(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            limit=bounded_limit,
         )
-        return ordered[:bounded_limit]
 
     def recover_running_operations_for_tenant(
         self,

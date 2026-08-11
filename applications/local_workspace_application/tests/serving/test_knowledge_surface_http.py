@@ -16,6 +16,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.contracts.document_store import DocumentRecord
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.serving.workspace_routes import mount_managed_workspace_routes
 from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_service import (
@@ -41,6 +42,7 @@ from local_workspace_application.workspaces.knowledge_live_access_service import
 )
 from local_workspace_application.workspaces.models import (
     WorkspaceOperation,
+    WorkspaceOperationIndexEntryV1,
     WorkspaceOperationStatus,
     WorkspaceOperationType,
 )
@@ -544,3 +546,270 @@ def test_get_operation_backward_compatible_without_error_code(api_bundle) -> Non
         "files_discovered",
         "documents_indexed",
     }
+
+
+def _operation_partition(tenant_id: str = _TENANT) -> str:
+    return f"lkw.managed_workspace:{tenant_id}:operation"
+
+
+def _workspace_operation_index_partition(tenant_id: str = _TENANT) -> str:
+    return f"lkw.managed_workspace:{tenant_id}:workspace_operation_index"
+
+
+def _count_workspace_operation_index_entries(
+    repo: ManagedWorkspaceRepository,
+    *,
+    workspace_id: str,
+    tenant_id: str = _TENANT,
+) -> int:
+    page = repo.document_store.query(
+        _workspace_operation_index_partition(tenant_id),
+        limit=500,
+        row_key_prefix=f"{workspace_id}:",
+    )
+    return len(page.documents)
+
+
+def test_workspace_operations_list_uses_workspace_index_not_tenant_scan(
+    api_bundle,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, repo, service, workspace_id, _ = api_bundle
+    other = service.create_workspace(tenant_id=_TENANT, name="Bulk")
+    for index in range(30):
+        repo.put_operation(
+            WorkspaceOperation(
+                operation_id=f"op-b-{index:02d}",
+                tenant_id=_TENANT,
+                workspace_id=other.workspace_id,
+                source_id="source-b",
+                operation_type=WorkspaceOperationType.SOURCE_SYNC,
+                status=WorkspaceOperationStatus.COMPLETED,
+                created_at=datetime(2026, 8, 1, index % 24, 0, tzinfo=UTC),
+            )
+        )
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-a-only",
+            tenant_id=_TENANT,
+            workspace_id=workspace_id,
+            source_id="source-1",
+            operation_type=WorkspaceOperationType.SOURCE_SYNC,
+            status=WorkspaceOperationStatus.COMPLETED,
+            created_at=_NOW,
+        )
+    )
+
+    list_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+    original_list = repo.list_operations
+
+    def tracked_list(*args: object, **kwargs: object) -> list[WorkspaceOperation]:
+        list_calls.append((args, kwargs))
+        return original_list(*args, **kwargs)
+
+    query_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+    original_query = repo.document_store.query
+
+    def tracked_query(*args: object, **kwargs: object) -> object:
+        query_calls.append((args, kwargs))
+        return original_query(*args, **kwargs)
+
+    monkeypatch.setattr(repo, "list_operations", tracked_list)
+    monkeypatch.setattr(repo.document_store, "query", tracked_query)
+
+    response = client.get(
+        _operations_list_path(workspace_id),
+        headers=_headers(),
+        params={"limit": 10},
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert [item["operation_id"] for item in body["operations"]] == ["op-a-only"]
+    assert list_calls == []
+    assert any(
+        args[0] == _workspace_operation_index_partition()
+        and kwargs.get("row_key_prefix") == f"{workspace_id}:"
+        for args, kwargs in query_calls
+    )
+
+
+def test_workspace_operations_service_limit_caps_at_100(api_bundle) -> None:
+    _, repo, service, workspace_id, _ = api_bundle
+    for index in range(120):
+        repo.put_operation(
+            WorkspaceOperation(
+                operation_id=f"op-cap-{index:03d}",
+                tenant_id=_TENANT,
+                workspace_id=workspace_id,
+                source_id="source-1",
+                operation_type=WorkspaceOperationType.SOURCE_SYNC,
+                status=WorkspaceOperationStatus.COMPLETED,
+                created_at=datetime(2026, 8, 1, 0, index % 60, tzinfo=UTC),
+            )
+        )
+
+    operations = service.list_workspace_operations(
+        tenant_id=_TENANT,
+        workspace_id=workspace_id,
+        limit=200,
+    )
+
+    assert len(operations) == 100
+
+
+def test_workspace_operations_deterministic_tie_ordering(api_bundle) -> None:
+    client, repo, _, workspace_id, _ = api_bundle
+    tied = datetime(2026, 8, 8, 12, 0, tzinfo=UTC)
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-tie-b",
+            tenant_id=_TENANT,
+            workspace_id=workspace_id,
+            source_id="source-1",
+            operation_type=WorkspaceOperationType.SOURCE_SYNC,
+            status=WorkspaceOperationStatus.COMPLETED,
+            created_at=tied,
+        )
+    )
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-tie-a",
+            tenant_id=_TENANT,
+            workspace_id=workspace_id,
+            source_id="source-1",
+            operation_type=WorkspaceOperationType.SOURCE_SYNC,
+            status=WorkspaceOperationStatus.COMPLETED,
+            created_at=tied,
+        )
+    )
+
+    first = client.get(
+        _operations_list_path(workspace_id),
+        headers=_headers(),
+    ).json()["operations"]
+    second = client.get(
+        _operations_list_path(workspace_id),
+        headers=_headers(),
+    ).json()["operations"]
+
+    assert [item["operation_id"] for item in first] == ["op-tie-a", "op-tie-b"]
+    assert first == second
+
+
+def test_workspace_operation_status_update_does_not_duplicate_index(api_bundle) -> None:
+    client, repo, _, workspace_id, _ = api_bundle
+    operation = WorkspaceOperation(
+        operation_id="op-update",
+        tenant_id=_TENANT,
+        workspace_id=workspace_id,
+        source_id="source-1",
+        operation_type=WorkspaceOperationType.KNOWLEDGE_INGESTION,
+        status=WorkspaceOperationStatus.QUEUED,
+        created_at=_NOW,
+    )
+    repo.put_operation(operation)
+    assert _count_workspace_operation_index_entries(repo, workspace_id=workspace_id) == 1
+
+    repo.put_operation(
+        operation.model_copy(
+            update={
+                "status": WorkspaceOperationStatus.FAILED,
+                "error_code": "ingestion_failed",
+            }
+        )
+    )
+    assert _count_workspace_operation_index_entries(repo, workspace_id=workspace_id) == 1
+
+    response = client.get(
+        _operations_list_path(workspace_id),
+        headers=_headers(),
+    )
+    assert response.status_code == 200
+    listed = response.json()["operations"][0]
+    assert listed["operation_id"] == "op-update"
+    assert listed["status"] == "failed"
+    assert listed["error_code"] == "ingestion_failed"
+
+
+def test_workspace_operations_orphan_index_entry_skipped(api_bundle) -> None:
+    client, repo, _, workspace_id, _ = api_bundle
+    orphan = WorkspaceOperationIndexEntryV1(
+        tenant_id=_TENANT,
+        workspace_id=workspace_id,
+        operation_id="op-orphan",
+        created_at=_NOW,
+    )
+    repo.document_store.put(
+        DocumentRecord(
+            partition_key=_workspace_operation_index_partition(),
+            row_key=orphan.index_row_key(),
+            data=orphan.model_dump(mode="json"),
+        )
+    )
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-live",
+            tenant_id=_TENANT,
+            workspace_id=workspace_id,
+            source_id="source-1",
+            operation_type=WorkspaceOperationType.SOURCE_SYNC,
+            status=WorkspaceOperationStatus.COMPLETED,
+            created_at=_NOW,
+        )
+    )
+
+    response = client.get(_operations_list_path(workspace_id), headers=_headers())
+
+    assert response.status_code == 200
+    assert [item["operation_id"] for item in response.json()["operations"]] == ["op-live"]
+
+
+def test_workspace_delete_cleans_operation_index(api_bundle) -> None:
+    _, repo, service, workspace_id, _ = api_bundle
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-delete-me",
+            tenant_id=_TENANT,
+            workspace_id=workspace_id,
+            source_id="source-1",
+            operation_type=WorkspaceOperationType.SOURCE_SYNC,
+            status=WorkspaceOperationStatus.COMPLETED,
+            created_at=_NOW,
+        )
+    )
+    assert _count_workspace_operation_index_entries(repo, workspace_id=workspace_id) == 1
+
+    assert service.delete_workspace(tenant_id=_TENANT, workspace_id=workspace_id) is True
+    assert _count_workspace_operation_index_entries(repo, workspace_id=workspace_id) == 0
+    assert (
+        repo.get_operation(tenant_id=_TENANT, operation_id="op-delete-me") is None
+    )
+
+
+def test_historical_operation_direct_get_without_index(api_bundle) -> None:
+    client, repo, _, workspace_id, _ = api_bundle
+    historical = WorkspaceOperation(
+        operation_id="op-historical",
+        tenant_id=_TENANT,
+        workspace_id=workspace_id,
+        source_id="source-1",
+        operation_type=WorkspaceOperationType.SOURCE_SYNC,
+        status=WorkspaceOperationStatus.COMPLETED,
+        created_at=_NOW,
+    )
+    repo.document_store.put(
+        DocumentRecord(
+            partition_key=_operation_partition(),
+            row_key=historical.operation_id,
+            data=historical.model_dump(mode="json"),
+        )
+    )
+
+    get_response = client.get(f"{_PREFIX}/operations/op-historical", headers=_headers())
+    list_response = client.get(_operations_list_path(workspace_id), headers=_headers())
+
+    assert get_response.status_code == 200
+    assert get_response.json()["operation_id"] == "op-historical"
+    assert list_response.status_code == 200
+    assert list_response.json()["operations"] == []
