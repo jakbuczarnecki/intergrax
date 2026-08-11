@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI — Multi-layer Feature Plan
 
-**Status:** **MP-0 — READY_FOR_REVIEW** — canonical architecture and implementation roadmap (documentation only; no runtime implementation)
+**Status:** **MP-1 — OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** — runtime implementation NOT STARTED
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
-**Primary anchor domain (provisional):** `OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`
-**Related domains (provisional):** `PLATFORM_FOUNDATION`, `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-0**
-**Next task after MP-0 acceptance:** **MP-1** — bounded ownership check, then domain plan synchronization
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen — ADR-MP-001)
+**Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
+**Current active task:** **MP-1** — ownership frozen (MP-1A); awaiting review before runtime implementation
+**Next task after MP-1 review:** **COLLAB-WORK-1A** — MP-1 contract slice implementation
 
 ---
 
@@ -116,16 +116,16 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 (after MP-0) |
-| **Status** | PLANNED / NOT STARTED |
+| **Status** | **OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** — runtime NOT STARTED |
 | **Purpose** | Platform collaborative identity, workspace membership, and delegation with effective authority. |
-| **Likely owning domain plans** | `PLATFORM_FOUNDATION.md`, `APPLICATION_HOSTING.md`, `UNIFIED_EXECUTION_RUNTIME.md` — **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
+| **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) — frozen by ADR-MP-001 / ADR-MP-002 |
 | **Dependencies** | MP-0 accepted |
 | **Exact scope** | Principal semantics; WorkspaceMembership; Delegation; effective-authority evaluation and fail-closed enforcement boundary |
 | **REUSED EXISTING CAPABILITY** | Request-context principal propagation; LKW application principal docs (consumer reference only) |
 | **NEW CAPABILITY REQUIRED** | Principal (collaborative), WorkspaceMembership, Delegation / effective authority |
 | **Explicit out of scope** | Using `LKW-CONVERSATION-CONTEXT-*` or `CONVERSATION-CHANNEL-1` as MP-1 anchor |
-| **Architecture/ADR gate** | Architecture authority and tenant/workspace boundary accepted; ADR-MP-001 and ADR-MP-002 completed |
-| **Pre-implementation domain-sync gate** | Bounded ownership check → domain architecture/plan sync with MP-1 rows |
+| **Architecture/ADR gate** | ADR-MP-001 and ADR-MP-002 **Accepted** (MP-1A); architecture/plan sync **Done** — runtime implementation awaits review |
+| **Pre-implementation domain-sync gate** | **Done** (MP-1A) — see [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) COLLAB-WORK-1A |
 | **User-visible outcome** | Governed multi-principal identity and authority model |
 | **Acceptance criteria** | Meaningful mutations resolve an effective Principal; membership is explicit where required; delegation cannot amplify authority; tenant/workspace identifiers alone cannot authorize; agent authority remains distinct and failures are closed |
 | **Expected proof/evidence** | Contract tests; isolation/authorization tests; fail-closed tests; delegation non-amplification tests; idempotency tests for membership/invite and delegation mutations |

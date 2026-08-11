@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI — Multi-layer Feature Architecture
 
-**Status:** **MP-0 — READY_FOR_REVIEW** — canonical architecture and implementation roadmap (documentation only)
+**Status:** **MP-1 — OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** — runtime implementation NOT STARTED
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
-**Primary anchor domain (provisional):** `OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`
-**Related domains (provisional):** `PLATFORM_FOUNDATION`, `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-0**
-**Next task after MP-0 acceptance:** **MP-1** — bounded ownership check, then domain plan synchronization
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen — ADR-MP-001)
+**Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
+**Current active task:** **MP-1** — ownership frozen (MP-1A); awaiting review before runtime implementation
+**Next task after MP-1 review:** **COLLAB-WORK-1A** — MP-1 contract slice implementation
 
 ---
 
@@ -309,11 +309,11 @@ not replace existing Evidence.
 
 **Intent:** Establish who collaborates, in which workspace, with what roles, and what effective authority applies when one principal acts for another.
 
-**Likely owning domains:** `PLATFORM_FOUNDATION`, `APPLICATION_HOSTING`, `UNIFIED_EXECUTION_RUNTIME` — **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`**
+**Owning domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) — frozen by ADR-MP-001 / ADR-MP-002
 
-**Reused (not owners):** request-context principal propagation where already present; LKW principal documentation in application layer.
+**Reused (not owners):** `RequestIdentity` / run-scoped principal propagation; `MeaningfulSideEffectRequest` policy enforcement; LKW principal documentation in application layer (consumer reference only).
 
-**New required:** collaborative Principal model, WorkspaceMembership, Delegation / effective authority contracts and enforcement hooks.
+**New required:** collaborative Principal model, WorkspaceMembership, Delegation / effective authority contracts and enforcement hooks (semantic contracts frozen; implementation NOT STARTED).
 
 ---
 
@@ -465,8 +465,7 @@ Each decision is required before the relevant implementation:
 | **ADR-MP-006** | Principal-scoped ContextView |
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
 
-**Status:** REQUIRED BEFORE RELEVANT IMPLEMENTATION. No ADR files are created
-by MP-0-R1.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted** (MP-1A — architecture only; runtime NOT STARTED). ADR-MP-003…007 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
 
 ---
 
