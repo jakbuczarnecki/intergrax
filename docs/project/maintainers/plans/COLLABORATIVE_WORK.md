@@ -73,7 +73,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-1B |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Membership / Delegation persistence and concurrency |
 | **Dependencies** | COLLAB-WORK-1A approved; `intergrax/contracts/collaborative_work.py` revision semantics |
 | **Exact scope** | Provider-neutral `WorkspaceMembershipRepository` and `AuthorityDelegationRepository` contracts; optimistic `expected_revision` updates; tenant/workspace scoped keys; create idempotency; in-memory reference adapters |
@@ -82,7 +82,22 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Effective-authority resolution; `CollaborativePrincipal` repository; SQL/Redis/Postgres backends; HTTP/API; LKW adoption; PolicyEngine integration; MP-2+ rows |
 | **Acceptance** | Authoritative create/get/update semantics; no silent last-write-wins; scoped isolation; typed conflict/not-found outcomes; idempotent create replay |
 | **Proof requirements** | `tests/unit/collaborative_work/test_in_memory_repository.py`; contract regression `tests/unit/contracts/test_collaborative_work.py` |
-| **Next step** | Effective-authority resolution slice |
+| **Next step** | COLLAB-WORK-1C — authoritative effective-authority state resolution |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1C |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | Authoritative effective-authority state resolution using reloaded `WorkspaceMembership` and `AuthorityDelegation` repository records — collaborative slice only (`acting principal ∩ active membership ∩ active/valid delegation ∩ requested scope structural checks`) |
+| **Dependencies** | COLLAB-WORK-1B approved; `WorkspaceMembershipRepository` and `AuthorityDelegationRepository` ports |
+| **Exact scope** | `CollaborativeWorkAuthorityResolver` in `intergrax/collaborative_work/authority.py`; authoritative rehydration; fail-closed deny paths; deterministic clock injection for delegation validity |
+| **REUSED** | `EffectiveAuthorityRequest`, `EffectiveAuthorityDecision`, `EffectiveAuthorityDenialReason`, `PolicyDecision` / `PolicyAction`; repository ports from COLLAB-WORK-1B |
+| **NEW** | Authoritative resolver implementation; focused unit tests in `tests/unit/collaborative_work/test_effective_authority.py` |
+| **Explicit out of scope** | Workspace policy, resource policy, runtime/tool policy evaluation; principal base-authority source; membership role→capability RBAC mapping; delegator authority non-amplification proof beyond fail-closed `SCOPE_ONLY_INSUFFICIENT`; PolicyEngine changes; execution enforcement; MP-2+ rows |
+| **Acceptance** | Caller-supplied membership/delegation never trusted for authority semantics; repository reload wins; direct and delegated acting paths fail closed when final authority cannot be proven; stale/tampered embedded evidence cannot authorize |
+| **Proof requirements** | `tests/unit/collaborative_work/test_effective_authority.py`; repository and contract regressions |
+| **Next step** | Policy composition / enforcement gate intersecting collaborative authority with workspace, resource, and runtime policy |
 
 ---
 

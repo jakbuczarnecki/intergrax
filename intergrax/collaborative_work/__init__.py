@@ -1,7 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Collaborative Work platform domain — membership and delegation persistence."""
+"""Collaborative Work platform domain — membership, delegation, and authority resolution."""
 
+from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
     InMemoryWorkspaceMembershipRepository,
@@ -28,6 +29,7 @@ from intergrax.collaborative_work.repository import (
 )
 
 __all__ = [
+    "CollaborativeWorkAuthorityResolver",
     "INITIAL_RECORD_REVISION",
     "AuthorityDelegationAlreadyExists",
     "AuthorityDelegationIdempotencyConflict",
