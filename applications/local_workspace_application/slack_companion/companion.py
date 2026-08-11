@@ -42,6 +42,12 @@ from local_workspace_application.slack_companion.pending_deletion_store import (
     InMemorySlackPendingDeletionStore,
 )
 from local_workspace_application.slack_companion.workflow import SlackAskWorkflow
+from local_workspace_application.conversation.conversation_ingress_bootstrap import (
+    ConversationIngressBootstrapService,
+)
+from local_workspace_application.conversation.conversation_setup_onboarding import (
+    ConversationSetupOnboardingPresenter,
+)
 from local_workspace_application.conversation.interaction_application_service import (
     ConversationInteractionApplicationService,
 )
@@ -499,6 +505,16 @@ def _build_conversation_interaction_application_service(
         limits=runtime.thread_memory_limits,
         clock=clock,
     )
+    ingress_bootstrap = ConversationIngressBootstrapService(
+        context_repository,
+        clock=clock,
+        frontend_provider_id=runtime.conversation_connection_ref,
+    )
+    setup_snapshot_service = getattr(
+        app.state,
+        "lkw_workspace_setup_snapshot_service",
+        None,
+    )
     interaction_service = ConversationInteractionApplicationService(
         context_resolver=resolver,
         planner=planner,
@@ -521,6 +537,13 @@ def _build_conversation_interaction_application_service(
         attachment_max_bytes=runtime.attachment_max_bytes,
         thread_memory_service=thread_memory,
         clock=clock,
+        ingress_bootstrap_service=ingress_bootstrap,
+        setup_snapshot_service=setup_snapshot_service,
+        setup_onboarding_presenter=(
+            ConversationSetupOnboardingPresenter()
+            if setup_snapshot_service is not None
+            else None
+        ),
     )
     bridge.service = interaction_service
     return interaction_service

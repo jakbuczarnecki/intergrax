@@ -139,8 +139,9 @@ def test_renderer_includes_safe_ask_citation_and_is_bounded() -> None:
     )
 
     assert len(text) <= MAX_RESPONSE_CHARS
-    assert "Question answered:" in text
     assert "policy.pdf" in text
+    assert "Sources:" in text
+    assert "[1] policy.pdf" in text
     assert "C:\\secret" not in text
     assert "source-internal" not in text
 

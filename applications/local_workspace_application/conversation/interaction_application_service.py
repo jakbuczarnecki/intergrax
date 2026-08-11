@@ -4,10 +4,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextvars
 import hashlib
 import inspect
 import logging
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from collections.abc import Callable, Sequence
@@ -26,6 +28,7 @@ from local_workspace_application.conversation.interaction_event_receipt import (
     ConversationInteractionEventReceiptRepository,
 )
 from local_workspace_application.conversation.interaction_execution_models import (
+    ConversationActionExecutionStatus,
     ConversationExecutionError,
     ConversationInteractionExecutionCommand,
     ConversationInteractionExecutionResult,
@@ -47,6 +50,13 @@ from local_workspace_application.conversation.interaction_planner import (
     ConversationInteractionPlanner,
     ConversationPlanningError,
 )
+from local_workspace_application.conversation.conversation_ingress_bootstrap import (
+    ConversationIngressBootstrapService,
+    pre_workspace_placeholder_id,
+)
+from local_workspace_application.conversation.conversation_setup_onboarding import (
+    ConversationSetupOnboardingPresenter,
+)
 from local_workspace_application.conversation.interaction_response_renderer import (
     ConversationInteractionResponseRenderer,
 )
@@ -63,6 +73,11 @@ from local_workspace_application.workspaces.conversation_context_models import (
     ConversationIngressContextV1,
     ConversationObservedAudience,
     ConversationProductCapability,
+    ResolvedConversationWorkspaceContextV1,
+)
+from local_workspace_application.workspaces.workspace_setup_snapshot_service import (
+    WorkspaceSetupSnapshotService,
+    WorkspaceSetupSnapshotV1,
 )
 from local_workspace_application.workspaces.knowledge_plugin_configuration_service import (
     KnowledgePluginConfigurationService,
@@ -73,6 +88,13 @@ from local_workspace_application.workspaces.conversation_context_resolution impo
 )
 
 logger = logging.getLogger(__name__)
+
+_WORKSPACE_INTENT_RE = re.compile(
+    r"\b(workspaces?|create|switch|select|list)\b",
+    re.IGNORECASE,
+)
+_SNAPSHOT_POLL_ATTEMPTS = 3
+_SNAPSHOT_POLL_DELAY_SECONDS = 0.4
 
 
 class TrustedAttachmentLoader(Protocol):
@@ -139,6 +161,9 @@ class ConversationInteractionApplicationService:
         attachment_max_bytes: int = 25 * 1024 * 1024,
         thread_memory_service: ConversationThreadMemoryService | None = None,
         knowledge_plugin_configuration_service: KnowledgePluginConfigurationService | None = None,
+        ingress_bootstrap_service: ConversationIngressBootstrapService | None = None,
+        setup_snapshot_service: WorkspaceSetupSnapshotService | None = None,
+        setup_onboarding_presenter: ConversationSetupOnboardingPresenter | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         if not personal_allowed_capabilities:
@@ -154,6 +179,13 @@ class ConversationInteractionApplicationService:
         self._attachment_max_bytes = attachment_max_bytes
         self._thread_memory = thread_memory_service
         self._knowledge_plugin_configuration = knowledge_plugin_configuration_service
+        self._ingress_bootstrap = ingress_bootstrap_service
+        self._setup_snapshot = setup_snapshot_service
+        self._setup_onboarding = setup_onboarding_presenter or (
+            ConversationSetupOnboardingPresenter()
+            if setup_snapshot_service is not None
+            else None
+        )
         self._clock = clock or (lambda: datetime.now(UTC))
         self._configured_personal_capabilities = personal_allowed_capabilities
         self._attachment_registry: contextvars.ContextVar[dict[str, object]] = (
@@ -186,8 +218,32 @@ class ConversationInteractionApplicationService:
             )
 
         receipt = claim.receipt
+        if self._ingress_bootstrap is not None:
+            try:
+                self._ingress_bootstrap.ensure_personal_binding(
+                    tenant_id=command.tenant_id,
+                    ingress=command.ingress,
+                )
+            except Exception:  # noqa: BLE001 - bootstrap must not crash ingress
+                logger.warning("conversation ingress bootstrap failed")
+
         try:
             execution_context = self._resolve_context(command)
+        except ConversationContextResolutionError as exc:
+            if exc.error_code == "PERSONAL_WORKSPACE_SELECTION_MISSING":
+                return await self._handle_missing_workspace_selection(
+                    command=command,
+                    receipt=receipt,
+                    execution_id=execution_id,
+                )
+            return self._finish_failure(
+                command=command,
+                receipt=receipt,
+                execution_id=execution_id,
+                code=_context_error_code(exc.error_code),
+            )
+
+        try:
             recent_turns = ()
             if self._thread_memory is not None:
                 recent_turns = self._thread_memory.load_recent_turns(
@@ -227,6 +283,18 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 code="conversation_planning_failed",
+            )
+
+        gated = self._maybe_gate_question_with_snapshot(
+            command=command,
+            execution_context=execution_context,
+        )
+        if gated is not None:
+            return self._finish_text_response(
+                command=command,
+                receipt=receipt,
+                execution_id=execution_id,
+                response_text=gated,
             )
 
         try:
@@ -289,11 +357,325 @@ class ConversationInteractionApplicationService:
         finally:
             self._attachment_registry.reset(token)
 
+        self._ensure_audience_policies_from_execution(
+            tenant_id=command.tenant_id,
+            execution_result=execution_result,
+        )
+        snapshot = await self._derive_setup_snapshot_after_intake(
+            tenant_id=command.tenant_id,
+            workspace_id=execution_context.workspace_id,
+            execution_result=execution_result,
+        )
+
         return self._finish_success(
             command=command,
             execution_context=execution_context,
             receipt=receipt,
             execution_result=execution_result,
+            setup_snapshot=snapshot,
+        )
+
+    async def _handle_missing_workspace_selection(
+        self,
+        *,
+        command: ConversationInteractionApplicationCommand,
+        receipt: ConversationEventReceipt,
+        execution_id: str,
+    ) -> ConversationInteractionApplicationResult:
+        workspaces = await _maybe_await(
+            self._workspace_service.list_workspaces(tenant_id=command.tenant_id)
+        )
+        workspaces = cast(Sequence[Any], workspaces)
+
+        if command.attachments:
+            welcome = self._render_welcome(workspaces)
+            response = (
+                f"{welcome}\n\nSelect or create a workspace before sending file attachments."
+            )
+            return self._finish_text_response(
+                command=command,
+                receipt=receipt,
+                execution_id=execution_id,
+                response_text=response,
+            )
+
+        message = command.message_text.strip()
+        if not message or not _looks_like_workspace_intent(message):
+            return self._finish_text_response(
+                command=command,
+                receipt=receipt,
+                execution_id=execution_id,
+                response_text=self._render_welcome(workspaces),
+            )
+
+        if self._ingress_bootstrap is None:
+            return self._finish_text_response(
+                command=command,
+                receipt=receipt,
+                execution_id=execution_id,
+                response_text=self._render_welcome(workspaces),
+            )
+
+        binding = self._ingress_bootstrap.ensure_personal_binding(
+            tenant_id=command.tenant_id,
+            ingress=command.ingress,
+        )
+        execution_context = self._build_pre_workspace_execution_context(
+            binding=binding,
+            ingress=command.ingress,
+        )
+        try:
+            planning_request = await self._build_planning_request(
+                command=command,
+                execution_context=execution_context,
+                recent_turns=(),
+            )
+        except Exception:  # noqa: BLE001
+            logger.warning("conversation pre-workspace planning request failed")
+            return self._finish_text_response(
+                command=command,
+                receipt=receipt,
+                execution_id=execution_id,
+                response_text=self._render_welcome(workspaces),
+            )
+
+        try:
+            plan = await _maybe_await(
+                self._planner.plan(planning_request, run_id=execution_id)
+            )
+            if not isinstance(plan, ConversationInteractionPlan):
+                raise TypeError("invalid conversation plan")
+        except Exception:  # noqa: BLE001
+            logger.warning("conversation pre-workspace planner failed")
+            return self._finish_text_response(
+                command=command,
+                receipt=receipt,
+                execution_id=execution_id,
+                response_text=self._render_welcome(workspaces),
+            )
+
+        registry = {}
+        token = self._attachment_registry.set(registry)
+        try:
+            await self._prepare_attachments(command, plan, registry)
+            try:
+                raw_execution_result = await _maybe_await(
+                    self._executor.execute(
+                        ConversationInteractionExecutionCommand(
+                            tenant_id=command.tenant_id,
+                            planning_request=planning_request,
+                            interaction_plan=plan,
+                            execution_context=execution_context,
+                            execution_id=execution_id,
+                        )
+                    )
+                )
+                if not isinstance(
+                    raw_execution_result,
+                    ConversationInteractionExecutionResult,
+                ):
+                    raise TypeError("invalid conversation execution result")
+                execution_result = raw_execution_result
+            except Exception:  # noqa: BLE001
+                logger.warning("conversation pre-workspace executor failed")
+                return self._finish_text_response(
+                    command=command,
+                    receipt=receipt,
+                    execution_id=execution_id,
+                    response_text=self._render_welcome(workspaces),
+                )
+        finally:
+            self._attachment_registry.reset(token)
+
+        self._ensure_audience_policies_from_execution(
+            tenant_id=command.tenant_id,
+            execution_result=execution_result,
+        )
+
+        try:
+            resolved_context = self._resolve_context(command)
+        except ConversationContextResolutionError:
+            resolved_context = execution_context
+            snapshot = None
+        else:
+            snapshot = self._derive_setup_snapshot(
+                tenant_id=command.tenant_id,
+                workspace_id=resolved_context.workspace_id,
+            )
+
+        return self._finish_success(
+            command=command,
+            execution_context=resolved_context,
+            receipt=receipt,
+            execution_result=execution_result,
+            setup_snapshot=snapshot,
+        )
+
+    def _build_pre_workspace_execution_context(
+        self,
+        *,
+        binding: object,
+        ingress: ConversationIngressContextV1,
+    ) -> ConversationExecutionContextV1:
+        resolved = ResolvedConversationWorkspaceContextV1(
+            tenant_id=str(getattr(binding, "tenant_id")),
+            conversation_context_binding_id=str(
+                getattr(binding, "conversation_context_binding_id")
+            ),
+            audience_mode=getattr(binding, "audience_mode"),
+            workspace_id=pre_workspace_placeholder_id(),
+            principal_ref=ingress.actor_principal_ref,
+            canonical_thread_ref=ingress.opaque_thread_ref,
+            activation_policy=getattr(binding, "activation_policy"),
+            thread_context_policy=getattr(binding, "thread_context_policy"),
+        )
+        return build_conversation_execution_context(
+            resolved=resolved,
+            personal_allowed_capabilities=self._personal_allowed_capabilities,
+        )
+
+    def _render_welcome(self, workspaces: Sequence[Any]) -> str:
+        if self._setup_onboarding is not None:
+            return self._setup_onboarding.render_welcome(workspaces)
+        return (
+            "Welcome to LKW. Create or select a workspace to start adding knowledge."
+        )
+
+    def _maybe_gate_question_with_snapshot(
+        self,
+        *,
+        command: ConversationInteractionApplicationCommand,
+        execution_context: ConversationExecutionContextV1,
+    ) -> str | None:
+        if command.attachments or not command.message_text.strip():
+            return None
+        if self._setup_snapshot is None or self._setup_onboarding is None:
+            return None
+        snapshot = self._derive_setup_snapshot(
+            tenant_id=command.tenant_id,
+            workspace_id=execution_context.workspace_id,
+        )
+        if snapshot is None:
+            return None
+        if not self._setup_onboarding.should_gate_question(snapshot):
+            return None
+        return self._setup_onboarding.render_ask_blocked(snapshot)
+
+    def _derive_setup_snapshot(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> WorkspaceSetupSnapshotV1 | None:
+        if self._setup_snapshot is None:
+            return None
+        workspace = (workspace_id or "").strip()
+        if not workspace or workspace == pre_workspace_placeholder_id():
+            return None
+        try:
+            return self._setup_snapshot.derive_snapshot(
+                tenant_id=tenant_id,
+                workspace_id=workspace,
+            )
+        except Exception:  # noqa: BLE001 - snapshot is optional UX boundary
+            logger.warning("conversation setup snapshot unavailable")
+            return None
+
+    async def _derive_setup_snapshot_after_intake(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        execution_result: ConversationInteractionExecutionResult,
+    ) -> WorkspaceSetupSnapshotV1 | None:
+        if not _execution_accepted_attachments(execution_result):
+            return self._derive_setup_snapshot(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+        snapshot = self._derive_setup_snapshot(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        if snapshot is None or not snapshot.sync_in_progress:
+            return snapshot
+        for _ in range(_SNAPSHOT_POLL_ATTEMPTS - 1):
+            await asyncio.sleep(_SNAPSHOT_POLL_DELAY_SECONDS)
+            snapshot = self._derive_setup_snapshot(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            if snapshot is None or not snapshot.sync_in_progress:
+                return snapshot
+        return snapshot
+
+    def _ensure_audience_policies_from_execution(
+        self,
+        *,
+        tenant_id: str,
+        execution_result: ConversationInteractionExecutionResult,
+    ) -> None:
+        if self._ingress_bootstrap is None:
+            return
+        workspace_ids: set[str] = set()
+        for item in execution_result.action_results:
+            if item.artifact is None:
+                continue
+            data = item.artifact.data
+            if not isinstance(data, dict):
+                continue
+            workspace_id = str(data.get("workspace_id", "")).strip()
+            if workspace_id:
+                workspace_ids.add(workspace_id)
+        for workspace_id in sorted(workspace_ids):
+            self._ingress_bootstrap.ensure_workspace_audience_policy(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+
+    def _append_setup_guidance(
+        self,
+        *,
+        response_text: str,
+        tenant_id: str,
+        workspace_id: str,
+        snapshot: WorkspaceSetupSnapshotV1 | None,
+    ) -> str:
+        if self._setup_onboarding is None:
+            return response_text
+        if snapshot is None:
+            snapshot = self._derive_setup_snapshot(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+        if snapshot is None:
+            return response_text
+        guidance = self._setup_onboarding.render_snapshot_guidance(snapshot)
+        if not guidance:
+            return response_text
+        if guidance in response_text:
+            return response_text
+        if response_text.strip():
+            return f"{response_text.strip()}\n\n{guidance}"
+        return guidance
+
+    def _finish_text_response(
+        self,
+        *,
+        command: ConversationInteractionApplicationCommand,
+        receipt: ConversationEventReceipt,
+        execution_id: str,
+        response_text: str,
+    ) -> ConversationInteractionApplicationResult:
+        result = _failure_result(
+            execution_id=execution_id,
+            tenant_id=command.tenant_id,
+            code="conversation_context_not_found",
+        )
+        return self._finish_success(
+            receipt=receipt,
+            execution_result=result,
+            response_text=response_text,
         )
 
     def resolve_attachment(self, attachment_id: str) -> object | None:
@@ -453,12 +835,26 @@ class ConversationInteractionApplicationService:
         execution_context: ConversationExecutionContextV1 | None = None,
         receipt: ConversationEventReceipt,
         execution_result: ConversationInteractionExecutionResult,
+        response_text: str | None = None,
+        setup_snapshot: WorkspaceSetupSnapshotV1 | None = None,
     ) -> ConversationInteractionApplicationResult:
-        try:
-            response_text = self._renderer.render(execution_result)
-        except Exception:  # noqa: BLE001 - safe response boundary
-            logger.warning("conversation response renderer failed")
-            response_text = "I could not prepare a safe response. Please try again."
+        if response_text is None:
+            try:
+                response_text = self._renderer.render(execution_result)
+            except Exception:  # noqa: BLE001 - safe response boundary
+                logger.warning("conversation response renderer failed")
+                response_text = "I could not prepare a safe response. Please try again."
+        if (
+            command is not None
+            and execution_context is not None
+            and self._setup_onboarding is not None
+        ):
+            response_text = self._append_setup_guidance(
+                response_text=response_text,
+                tenant_id=command.tenant_id,
+                workspace_id=execution_context.workspace_id,
+                snapshot=setup_snapshot,
+            )
         try:
             pending = self._receipts.mark_response_pending(
                 receipt=receipt,
@@ -678,6 +1074,21 @@ async def _maybe_await(value: object) -> object:
     if inspect.isawaitable(value):
         return await value
     return value
+
+
+def _looks_like_workspace_intent(message: str) -> bool:
+    return bool(_WORKSPACE_INTENT_RE.search(message))
+
+
+def _execution_accepted_attachments(
+    execution_result: ConversationInteractionExecutionResult,
+) -> bool:
+    for item in execution_result.action_results:
+        if item.action_type != "knowledge.add_attachments":
+            continue
+        if item.status is ConversationActionExecutionStatus.COMPLETED:
+            return True
+    return False
 
 
 __all__ = [

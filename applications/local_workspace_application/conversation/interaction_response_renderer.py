@@ -228,10 +228,10 @@ class ConversationInteractionResponseRenderer:
             status = _safe_text(data.get("status"), limit=80).casefold()
             if status == "insufficient_evidence" or not answer:
                 return ["I could not find enough verified information to answer reliably."]
-            lines = [f"Question answered: {answer}"]
+            lines = [answer]
             citations = data.get("citations")
             if isinstance(citations, list):
-                labels = []
+                labels: list[str] = []
                 for citation in citations:
                     citation_map = _mapping(citation)
                     label = _safe_text(
@@ -243,7 +243,10 @@ class ConversationInteractionResponseRenderer:
                     if label and label not in labels:
                         labels.append(label)
                 if labels:
-                    lines.append("Citations: " + ", ".join(labels[:5]))
+                    lines.append("")
+                    lines.append("Sources:")
+                    for index, label in enumerate(labels[:5], start=1):
+                        lines.append(f"[{index}] {label}")
             return lines
         return [f"Completed: {_safe_text(action_type, limit=100)}"]
 
