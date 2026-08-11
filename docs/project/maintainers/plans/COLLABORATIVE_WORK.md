@@ -58,7 +58,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-1A |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** — ownership frozen; **runtime NOT STARTED** |
+| **Status** | **PLANNED / NOT STARTED** |
 | **Purpose** | Principal, WorkspaceMembership, Delegation, and effective-authority contract slice |
 | **Dependencies** | MP-0 accepted; ADR-MP-001 and ADR-MP-002 accepted |
 | **Exact scope** | Semantic contracts in `intergrax/contracts/`; effective-authority resolution boundary; fail-closed enforcement hook design |
