@@ -27,6 +27,7 @@ PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "pub
 MULTIPLAYER_ARCH_PATH = (
     REPO_ROOT / "docs" / "project" / "capabilities" / "architecture" / "MULTIPLAYER_AI.md"
 )
+PLATFORM_PLUGINS_ARCH_PATH = REPO_ROOT / "docs" / "project" / "architecture" / "PLATFORM_PLUGINS.md"
 ROADMAP_PATH = REPO_ROOT / "docs" / "project" / "overview" / "ROADMAP.md"
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
@@ -490,6 +491,7 @@ def test_readme_routing(readme_text: str) -> None:
         "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
         "docs/project/README.md",
         "docs/project/capabilities/architecture/MULTIPLAYER_AI.md",
+        "docs/project/architecture/PLATFORM_PLUGINS.md",
     ):
         assert link in readme_text, f"README missing link: {link}"
     assert "Local Knowledge Workspace" in readme_text
@@ -545,6 +547,100 @@ def test_multiplayer_public_projection_links() -> None:
         assert resolved == MULTIPLAYER_ARCH_PATH.resolve(), (
             f"{doc_path.name} Multiplayer link does not resolve to canonical architecture"
         )
+
+
+def test_readme_platform_extensibility_positioning(readme_text: str) -> None:
+    normalized = " ".join(_normalize(readme_text).split())
+    for phrase in (
+        "platform extensibility",
+        "strategic platform capability",
+        "canonical architecture frozen",
+        "implementation stages planned",
+        "complete platform-level third-party e2e proof not yet established",
+        "without collapsing those domain contracts into one universal plugin runtime",
+        "extend the platform without modifying its core",
+        "governed capability boundaries",
+        "domain-owned contracts still govern actual runtime behavior",
+    ):
+        assert phrase in normalized, f"README missing Platform Extensibility marker: {phrase}"
+    assert "primary product proof" in normalized
+    assert "featured platform-capability proof" in normalized
+    assert "partial" in normalized
+    forbidden_positive = (
+        "complete plugin ecosystem",
+        "production-ready plugin platform",
+        "fully unified plugin framework",
+        "secure third-party plugins",
+        "production-qualified plugin marketplace",
+        "marketplace ready",
+        "intergrax has no plugin system",
+        "unified platform plugin framework",
+        "already has a unified platform plugin",
+    )
+    for phrase in forbidden_positive:
+        assert phrase not in normalized, f"README contains forbidden plugin claim: {phrase}"
+
+
+def test_platform_extensibility_public_projection_links() -> None:
+    assert PLATFORM_PLUGINS_ARCH_PATH.is_file()
+    readme_text = _read(README_PATH)
+    arch_text = _read(ARCHITECTURE_OVERVIEW_PATH)
+    roadmap_text = _read(ROADMAP_PATH)
+    hub_text = _read(HUB_PATH)
+
+    assert "docs/project/architecture/PLATFORM_PLUGINS.md" in readme_text
+    assert "PLATFORM_PLUGINS.md" in arch_text
+    assert "../architecture/PLATFORM_PLUGINS.md" in roadmap_text
+    assert "architecture/PLATFORM_PLUGINS.md" in hub_text
+
+    for doc_path, target in (
+        (README_PATH, "docs/project/architecture/PLATFORM_PLUGINS.md"),
+        (ARCHITECTURE_OVERVIEW_PATH, "PLATFORM_PLUGINS.md"),
+        (ROADMAP_PATH, "../architecture/PLATFORM_PLUGINS.md"),
+        (HUB_PATH, "architecture/PLATFORM_PLUGINS.md"),
+    ):
+        resolved = (doc_path.parent / target.split("#", 1)[0]).resolve()
+        assert resolved == PLATFORM_PLUGINS_ARCH_PATH.resolve(), (
+            f"{doc_path.name} Platform Plugins link does not resolve to canonical architecture"
+        )
+
+
+def test_architecture_platform_extensibility_section(arch_text: str) -> None:
+    normalized = " ".join(_normalize(arch_text).split())
+    assert "platform extensibility as a strategic platform direction" in normalized
+    for phrase in (
+        "independent plugin package",
+        "platform coordination",
+        "domain capability contract",
+        "host configuration / di",
+        "governed intergrax execution",
+        "not a universal platformplugin.execute",
+        "not proof that every extension surface is already harmonized",
+        "conceptual target architecture",
+        "not proof that the full platform-level plugin lifecycle is implemented",
+    ):
+        assert phrase in normalized, f"ARCHITECTURE missing Platform Extensibility marker: {phrase}"
+    assert "primary product proof" in normalized
+    assert "featured platform-capability proof" in normalized
+    assert "partial" in normalized
+
+
+def test_roadmap_platform_extensibility_supporting_work() -> None:
+    text = _read(ROADMAP_PATH)
+    normalized = " ".join(_normalize(text).split())
+    for phrase in (
+        "platform extensibility / plugins",
+        "strategic platform capability",
+        "canonical cross-cutting architecture is frozen",
+        "implementation stages",
+        "not yet established",
+        "token optimization",
+        "featured platform-capability proof",
+        "partial",
+        "multiplayer ai",
+    ):
+        assert phrase in normalized, f"ROADMAP missing Platform Extensibility marker: {phrase}"
+    assert "platform-plugin-" not in normalized
 
 
 def test_readme_architecture_is_responsibility_model(readme_text: str) -> None:

@@ -117,6 +117,30 @@ flowchart TB
 
 Details belong in the [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_AI.md).
 
+## Platform extensibility as a strategic platform direction
+
+Intergrax already exposes multiple real extension mechanisms across integrations, tools, skills, RAG, Vendor Knowledge, security, policy, host composition, and other domains. Platform Plugins is the canonical architecture for coordinating independently packaged extensions at the package boundary — not a universal runtime wrapper that replaces domain contracts.
+
+```mermaid
+flowchart TB
+    PACKAGE[Independent plugin package]
+    COORD[Platform coordination<br/>identity · discovery · compatibility<br/>trust · qualification]
+    DOMAIN[Domain capability contract]
+    HOST[Host configuration / DI]
+    EXEC[Governed Intergrax execution]
+
+    PACKAGE --> COORD
+    COORD --> DOMAIN
+    DOMAIN --> HOST
+    HOST --> EXEC
+```
+
+*Conceptual target architecture — not proof that the full platform-level plugin lifecycle is implemented.*
+
+Platform Plugin is **not** a universal `PlatformPlugin.execute()`; it does **not** replace IntegrationPlugin, ToolPlugin, SkillPlugin, RAG contracts, Vendor Knowledge contracts, security or policy contracts, RuntimePlugin, or other domain-owned surfaces. It is **not** proof that every extension surface is already harmonized.
+
+Details belong in the [Platform Plugins architecture](PLATFORM_PLUGINS.md).
+
 ## Architect review path
 
 1. Understand this Architecture Overview as the project-level mental model.

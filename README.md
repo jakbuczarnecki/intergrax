@@ -140,6 +140,7 @@ platform.
 | **LKW** | Primary Product Proof | **PARTIAL — Backend Product Alpha / MVP** |
 | **Token Optimization** | Featured platform-capability proof | **PARTIAL — bounded** |
 | **Multiplayer AI** | Strategic platform capability | **Architecture / roadmap stage** — runtime proof not yet established |
+| **Platform Extensibility / Plugins** | Strategic platform capability | **Canonical architecture frozen** — implementation stages planned; complete platform-level third-party E2E proof not yet established |
 | **Other reusable foundations** | Supporting evidence | Varies by capability; inspect [PROOFS](docs/project/proofs/PROOFS.md) |
 
 ## Token Optimization
@@ -169,6 +170,30 @@ principal may see, and what evidence remains.
 
 Current status is **architecture / roadmap stage**. Runtime implementation and
 proof are **not yet established**. See the [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md).
+
+## Platform Extensibility
+
+Intergrax already exposes extension points across integrations, tools, skills,
+RAG, Vendor Knowledge, security, policy, host composition, and other platform
+domains. The [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md)
+architecture defines how independently packaged extensions can participate
+without collapsing those domain contracts into one universal plugin runtime.
+
+The strategic goal is coordinated **package identity**, **discovery**,
+**configuration**, **compatibility**, **trust**, **qualification**,
+**lifecycle**, and **author experience** — while domain-owned contracts still
+govern actual runtime behavior. Extend the platform without modifying its core
+while preserving governed capability boundaries.
+
+A basic plugin system answers how code can be loaded. Platform Extensibility
+also must answer what capability a package contributes, how it is discovered,
+whether it is compatible, how it receives configuration and dependencies, what
+trust or qualification state applies, and which domain contract governs
+execution.
+
+Canonical architecture is **frozen**; platform-wide harmonization is **not
+complete**; a complete third-party install-to-runtime E2E proof is **not yet
+established**.
 
 ## Choose your path
 
