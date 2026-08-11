@@ -1,2 +1,2 @@
-# LKW live proof / regression run logs (local only)
-.lkw-live*.log
+# LKW local proof / regression run logs (local only)
+.run_logs/

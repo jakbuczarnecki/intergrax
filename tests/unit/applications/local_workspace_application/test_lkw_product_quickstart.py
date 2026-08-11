@@ -102,6 +102,36 @@ def test_valid_os_wrapper_pairs(quick: ModuleType) -> None:
     )
 
 
+def test_resolve_run_log_path_uses_application_run_logs_dir(
+    quick: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(quick, "_APP_DIR", tmp_path)
+    monkeypatch.setattr(quick, "_RUN_LOGS_DIR", tmp_path / ".run_logs")
+
+    path = quick.resolve_run_log_path("lkw-live-regression.log")
+
+    assert path == tmp_path / ".run_logs" / "lkw-live-regression.log"
+
+
+def test_resolve_run_log_path_rejects_path_traversal(quick: ModuleType) -> None:
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.resolve_run_log_path("../escape.log")
+    assert exc.value.reason == "invalid_log_file_name"
+
+
+def test_run_quickstart_can_write_log_file_under_run_logs_dir(
+    quick: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(quick, "_APP_DIR", tmp_path)
+    monkeypatch.setattr(quick, "_RUN_LOGS_DIR", tmp_path / ".run_logs")
+    log_file = quick.resolve_run_log_path("lkw-live-regression.log")
+
+    with quick._maybe_tee_stdout(log_file):
+        print("LKW quickstart: PASS")
+
+    assert log_file.read_text(encoding="utf-8") == "LKW quickstart: PASS\n"
+
+
 def test_invalid_os_wrapper_pair_rejected(quick: ModuleType) -> None:
     with pytest.raises(quick.QuickstartError) as exc:
         quick.validate_os_wrapper_pair(

@@ -9,7 +9,9 @@ OS launchers are transport-only. Product orchestration and acceptance live here.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import errno
+import io
 import json
 import os
 import platform
@@ -34,6 +36,7 @@ from typing import Any
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _APP_DIR = _SCRIPT_DIR.parent
 _REPO_ROOT = _APP_DIR.parent.parent
+_RUN_LOGS_DIR = _APP_DIR / ".run_logs"
 _SAMPLE_FILE = _APP_DIR / "sample_docs" / "lkw_product_quickstart.txt"
 _ENV_FILE = _APP_DIR / ".env"
 _ENV_EXAMPLE = _APP_DIR / ".env.example"
@@ -151,6 +154,24 @@ class QuickstartConfig:
     base_url: str
     timeout_seconds: int
     skip_stack_start: bool
+    log_file: Path | None = None
+
+
+class _TeeStdout(io.TextIOBase):
+    def __init__(self, stream: Any, log_file: Any) -> None:
+        self._stream = stream
+        self._log_file = log_file
+
+    def write(self, data: str) -> int:
+        self._stream.write(data)
+        self._log_file.write(data)
+        self._stream.flush()
+        self._log_file.flush()
+        return len(data)
+
+    def flush(self) -> None:
+        self._stream.flush()
+        self._log_file.flush()
 
 
 class ProgressReporter:
@@ -194,6 +215,28 @@ class ProgressReporter:
         self._description = ""
         self._started_at = None
         self._next_heartbeat_at = None
+
+
+def resolve_run_log_path(name: str) -> Path:
+    log_name = Path(name).name
+    if not log_name or log_name != name:
+        raise QuickstartError("invalid_log_file_name", stage="preflight")
+    return _RUN_LOGS_DIR / log_name
+
+
+@contextlib.contextmanager
+def _maybe_tee_stdout(log_file: Path | None):
+    if log_file is None:
+        yield
+        return
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    original_stdout = sys.stdout
+    with log_file.open("w", encoding="utf-8") as handle:
+        sys.stdout = _TeeStdout(original_stdout, handle)
+        try:
+            yield
+        finally:
+            sys.stdout = original_stdout
 
 
 def detect_os_family(system_name: str | None = None) -> OsFamily:
@@ -1163,6 +1206,11 @@ def emit_success(answer: str, workspace_id: str, run_id: str) -> None:
 
 
 def run_quickstart(config: QuickstartConfig) -> int:
+    with _maybe_tee_stdout(config.log_file):
+        return _run_quickstart(config)
+
+
+def _run_quickstart(config: QuickstartConfig) -> int:
     current_stage = "preflight"
     progress = ProgressReporter(total_stages=10)
     try:
@@ -1281,6 +1329,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--base-url", default=_DEFAULT_BASE_URL)
     parser.add_argument("--timeout-seconds", type=int, default=_DEFAULT_TIMEOUT)
     parser.add_argument("--skip-stack-start", action="store_true")
+    parser.add_argument(
+        "--log-file",
+        metavar="NAME",
+        help=(
+            "Write runner output to applications/local_workspace_application/"
+            ".run_logs/NAME (local only)."
+        ),
+    )
     return parser
 
 
@@ -1289,12 +1345,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.timeout_seconds <= 0:
         _emit_failure("preflight", "invalid_timeout")
         return 1
+    log_file = resolve_run_log_path(args.log_file) if args.log_file else None
     config = QuickstartConfig(
         os_family=OsFamily(args.os_family),
         wrapper_id=WrapperId(args.wrapper_id),
         base_url=str(args.base_url),
         timeout_seconds=int(args.timeout_seconds),
         skip_stack_start=bool(args.skip_stack_start),
+        log_file=log_file,
     )
     return run_quickstart(config)
 

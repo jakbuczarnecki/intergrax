@@ -43,6 +43,7 @@ docs/_external/
 applications/local_workspace_application/.observability/
 applications/local_workspace_application/.proof_docs/
 applications/local_workspace_application/.file_watcher_e2e_state/
+applications/local_workspace_application/.run_logs/
 
 .artifacts/
 
@@ -51,5 +52,5 @@ applications/local_workspace_application/docker/sentry-proof/generated.env
 applications/local_workspace_application/docker/sentry-proof/.bootstrapped
 applications/local_workspace_application/docker/lkw-platform-proof-startup.log
 
-# LKW live regression logs belong under applications/local_workspace_application/, not repo root
+# Safety net: never commit ad-hoc LKW live logs dropped in repo root
 /.lkw-live*.log
