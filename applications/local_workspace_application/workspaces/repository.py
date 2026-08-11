@@ -1404,49 +1404,66 @@ class ManagedWorkspaceRepository:
     # --- Operation ---
 
     def put_operation(self, operation: WorkspaceOperation) -> WorkspaceOperation:
-        if operation.operation_type is WorkspaceOperationType.SOURCE_SYNC:
-            # Publish derived source indexes before the canonical write.  A
-            # crash before the canonical write leaves only stale evidence,
-            # which readers validate and ignore.
-            is_new_operation = (
-                self.get_operation(
-                    tenant_id=operation.tenant_id,
-                    operation_id=operation.operation_id,
-                )
-                is None
-            )
-            self._put_source_sync_operation_history_index(operation)
-            self._put_source_sync_operation_index(
-                operation,
-                force_latest=is_new_operation,
-            )
-        self._put(
-            _partition(operation.tenant_id, _ENTITY_OPERATION),
-            operation.operation_id,
-            operation,
-        )
-        self._put_workspace_operation_index(operation)
-        return operation
-
-    def _resolve_operation_created_at(self, operation: WorkspaceOperation) -> datetime:
-        if operation.created_at is not None:
-            timestamp = operation.created_at
-            if timestamp.tzinfo is None:
-                return timestamp.replace(tzinfo=UTC)
-            return timestamp.astimezone(UTC)
         existing = self.get_operation(
             tenant_id=operation.tenant_id,
             operation_id=operation.operation_id,
         )
-        if existing is not None and existing.created_at is not None:
-            timestamp = existing.created_at
-            if timestamp.tzinfo is None:
-                return timestamp.replace(tzinfo=UTC)
-            return timestamp.astimezone(UTC)
+        created_at = self._resolve_canonical_operation_created_at(
+            operation=operation,
+            existing=existing,
+        )
+        canonical = operation.model_copy(update={"created_at": created_at})
+        if operation.operation_type is WorkspaceOperationType.SOURCE_SYNC:
+            # Publish derived source indexes before the canonical write.  A
+            # crash before the canonical write leaves only stale evidence,
+            # which readers validate and ignore.
+            is_new_operation = existing is None
+            self._put_source_sync_operation_history_index(canonical)
+            self._put_source_sync_operation_index(
+                canonical,
+                force_latest=is_new_operation,
+            )
+        self._put(
+            _partition(canonical.tenant_id, _ENTITY_OPERATION),
+            canonical.operation_id,
+            canonical,
+        )
+        self._put_workspace_operation_index(canonical)
+        return canonical
+
+    @staticmethod
+    def _normalize_operation_created_at(timestamp: datetime) -> datetime:
+        if timestamp.tzinfo is None:
+            return timestamp.replace(tzinfo=UTC)
+        return timestamp.astimezone(UTC)
+
+    def _resolve_canonical_operation_created_at(
+        self,
+        *,
+        operation: WorkspaceOperation,
+        existing: WorkspaceOperation | None,
+    ) -> datetime:
+        if existing is not None:
+            if (
+                existing.tenant_id != operation.tenant_id
+                or existing.workspace_id != operation.workspace_id
+            ):
+                raise RuntimeError("workspace_operation_identity_conflict")
+            if existing.created_at is not None:
+                canonical = self._normalize_operation_created_at(existing.created_at)
+                if operation.created_at is not None:
+                    incoming = self._normalize_operation_created_at(operation.created_at)
+                    if incoming != canonical:
+                        raise RuntimeError("workspace_operation_created_at_conflict")
+                return canonical
+        if operation.created_at is not None:
+            return self._normalize_operation_created_at(operation.created_at)
         return datetime.now(UTC)
 
     def _put_workspace_operation_index(self, operation: WorkspaceOperation) -> None:
-        created_at = self._resolve_operation_created_at(operation)
+        if operation.created_at is None:
+            raise RuntimeError("workspace_operation_created_at_required")
+        created_at = self._normalize_operation_created_at(operation.created_at)
         entry = WorkspaceOperationIndexEntryV1(
             tenant_id=operation.tenant_id,
             workspace_id=operation.workspace_id,

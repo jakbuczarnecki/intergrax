@@ -570,6 +570,39 @@ def _count_workspace_operation_index_entries(
     return len(page.documents)
 
 
+def _workspace_operation_index_row_keys(
+    repo: ManagedWorkspaceRepository,
+    *,
+    workspace_id: str,
+    tenant_id: str = _TENANT,
+) -> list[str]:
+    page = repo.document_store.query(
+        _workspace_operation_index_partition(tenant_id),
+        limit=500,
+        row_key_prefix=f"{workspace_id}:",
+    )
+    return [record.row_key for record in page.documents]
+
+
+def _operation_without_created_at(
+    *,
+    operation_id: str,
+    workspace_id: str,
+    source_id: str = "source-1",
+    status: WorkspaceOperationStatus = WorkspaceOperationStatus.QUEUED,
+    operation_type: WorkspaceOperationType = WorkspaceOperationType.KNOWLEDGE_INGESTION,
+) -> WorkspaceOperation:
+    return WorkspaceOperation(
+        operation_id=operation_id,
+        tenant_id=_TENANT,
+        workspace_id=workspace_id,
+        source_id=source_id,
+        operation_type=operation_type,
+        status=status,
+        created_at=None,
+    )
+
+
 def test_workspace_operations_list_uses_workspace_index_not_tenant_scan(
     api_bundle,
     monkeypatch: pytest.MonkeyPatch,
@@ -785,6 +818,176 @@ def test_workspace_delete_cleans_operation_index(api_bundle) -> None:
     assert (
         repo.get_operation(tenant_id=_TENANT, operation_id="op-delete-me") is None
     )
+
+
+def test_workspace_operation_created_at_none_assigns_primary_and_index(api_bundle) -> None:
+    _, repo, _, workspace_id, _ = api_bundle
+    stored = repo.put_operation(
+        _operation_without_created_at(operation_id="op-none-create", workspace_id=workspace_id)
+    )
+
+    assert stored.created_at is not None
+    assert stored.created_at.tzinfo is UTC
+    assert _count_workspace_operation_index_entries(repo, workspace_id=workspace_id) == 1
+
+
+def test_workspace_operation_created_at_none_update_preserves_index_key(api_bundle) -> None:
+    client, repo, _, workspace_id, _ = api_bundle
+    created = repo.put_operation(
+        _operation_without_created_at(operation_id="op-none-update", workspace_id=workspace_id)
+    )
+    index_keys_after_create = _workspace_operation_index_row_keys(
+        repo,
+        workspace_id=workspace_id,
+    )
+
+    updated = repo.put_operation(
+        _operation_without_created_at(
+            operation_id="op-none-update",
+            workspace_id=workspace_id,
+            status=WorkspaceOperationStatus.FAILED,
+        ).model_copy(update={"error_code": "ingestion_failed"})
+    )
+
+    assert updated.created_at == created.created_at
+    assert _count_workspace_operation_index_entries(repo, workspace_id=workspace_id) == 1
+    assert _workspace_operation_index_row_keys(repo, workspace_id=workspace_id) == index_keys_after_create
+
+    listed = client.get(_operations_list_path(workspace_id), headers=_headers()).json()["operations"][0]
+    assert listed["operation_id"] == "op-none-update"
+    assert listed["status"] == "failed"
+    assert listed["error_code"] == "ingestion_failed"
+
+
+def test_workspace_operation_repeated_none_created_at_updates_keep_single_index(api_bundle) -> None:
+    _, repo, _, workspace_id, _ = api_bundle
+    operation_id = "op-none-repeat"
+    first = repo.put_operation(
+        _operation_without_created_at(operation_id=operation_id, workspace_id=workspace_id)
+    )
+    index_keys_after_create = _workspace_operation_index_row_keys(
+        repo,
+        workspace_id=workspace_id,
+    )
+
+    for status in (
+        WorkspaceOperationStatus.RUNNING,
+        WorkspaceOperationStatus.PROCESSING,
+        WorkspaceOperationStatus.COMPLETED,
+    ):
+        stored = repo.put_operation(
+            _operation_without_created_at(
+                operation_id=operation_id,
+                workspace_id=workspace_id,
+                status=status,
+            )
+        )
+        assert stored.created_at == first.created_at
+
+    assert _count_workspace_operation_index_entries(repo, workspace_id=workspace_id) == 1
+    assert _workspace_operation_index_row_keys(repo, workspace_id=workspace_id) == index_keys_after_create
+
+
+def test_workspace_operation_same_created_at_update_accepted(api_bundle) -> None:
+    _, repo, _, workspace_id, _ = api_bundle
+    created_at = datetime(2026, 8, 9, 9, 30, tzinfo=UTC)
+    operation = WorkspaceOperation(
+        operation_id="op-same-created-at",
+        tenant_id=_TENANT,
+        workspace_id=workspace_id,
+        source_id="source-1",
+        operation_type=WorkspaceOperationType.KNOWLEDGE_INGESTION,
+        status=WorkspaceOperationStatus.QUEUED,
+        created_at=created_at,
+    )
+    repo.put_operation(operation)
+    index_keys_after_create = _workspace_operation_index_row_keys(
+        repo,
+        workspace_id=workspace_id,
+    )
+
+    updated = repo.put_operation(
+        operation.model_copy(
+            update={
+                "status": WorkspaceOperationStatus.COMPLETED,
+                "created_at": created_at,
+            }
+        )
+    )
+
+    assert updated.created_at == created_at
+    assert _count_workspace_operation_index_entries(repo, workspace_id=workspace_id) == 1
+    assert _workspace_operation_index_row_keys(repo, workspace_id=workspace_id) == index_keys_after_create
+
+
+def test_workspace_operation_created_at_conflict_is_fail_closed(api_bundle) -> None:
+    _, repo, _, workspace_id, _ = api_bundle
+    created_at = datetime(2026, 8, 9, 9, 30, tzinfo=UTC)
+    operation = WorkspaceOperation(
+        operation_id="op-created-at-conflict",
+        tenant_id=_TENANT,
+        workspace_id=workspace_id,
+        source_id="source-1",
+        operation_type=WorkspaceOperationType.KNOWLEDGE_INGESTION,
+        status=WorkspaceOperationStatus.QUEUED,
+        created_at=created_at,
+    )
+    repo.put_operation(operation)
+    index_keys_after_create = _workspace_operation_index_row_keys(
+        repo,
+        workspace_id=workspace_id,
+    )
+
+    with pytest.raises(RuntimeError, match="workspace_operation_created_at_conflict"):
+        repo.put_operation(
+            operation.model_copy(
+                update={
+                    "status": WorkspaceOperationStatus.FAILED,
+                    "created_at": datetime(2026, 8, 9, 10, 0, tzinfo=UTC),
+                }
+            )
+        )
+
+    stored = repo.get_operation(tenant_id=_TENANT, operation_id="op-created-at-conflict")
+    assert stored is not None
+    assert stored.created_at == created_at
+    assert stored.status is WorkspaceOperationStatus.QUEUED
+    assert _count_workspace_operation_index_entries(repo, workspace_id=workspace_id) == 1
+    assert _workspace_operation_index_row_keys(repo, workspace_id=workspace_id) == index_keys_after_create
+
+
+def test_workspace_operation_identity_conflict_is_fail_closed(api_bundle) -> None:
+    _, repo, service, workspace_id, _ = api_bundle
+    other_workspace = service.create_workspace(tenant_id=_TENANT, name="Other")
+    operation = WorkspaceOperation(
+        operation_id="op-identity-conflict",
+        tenant_id=_TENANT,
+        workspace_id=workspace_id,
+        source_id="source-1",
+        operation_type=WorkspaceOperationType.KNOWLEDGE_INGESTION,
+        status=WorkspaceOperationStatus.QUEUED,
+        created_at=_NOW,
+    )
+    repo.put_operation(operation)
+    index_keys_after_create = _workspace_operation_index_row_keys(
+        repo,
+        workspace_id=workspace_id,
+    )
+
+    with pytest.raises(RuntimeError, match="workspace_operation_identity_conflict"):
+        repo.put_operation(
+            operation.model_copy(update={"workspace_id": other_workspace.workspace_id})
+        )
+
+    stored = repo.get_operation(tenant_id=_TENANT, operation_id="op-identity-conflict")
+    assert stored is not None
+    assert stored.workspace_id == workspace_id
+    assert _count_workspace_operation_index_entries(repo, workspace_id=workspace_id) == 1
+    assert _count_workspace_operation_index_entries(
+        repo,
+        workspace_id=other_workspace.workspace_id,
+    ) == 0
+    assert _workspace_operation_index_row_keys(repo, workspace_id=workspace_id) == index_keys_after_create
 
 
 def test_historical_operation_direct_get_without_index(api_bundle) -> None:
