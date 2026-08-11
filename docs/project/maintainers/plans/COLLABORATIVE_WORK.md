@@ -58,7 +58,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-1A |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Principal, WorkspaceMembership, Delegation, and effective-authority contract slice |
 | **Dependencies** | MP-0 accepted; ADR-MP-001 and ADR-MP-002 accepted |
 | **Exact scope** | Semantic contracts in `intergrax/contracts/collaborative_work.py`; effective-authority resolution boundary; fail-closed enforcement hook design |
@@ -67,7 +67,22 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | DB models, repositories, APIs, HTTP routes, membership/delegation services, LKW changes, tests for runtime code, MP-2+ rows |
 | **Acceptance** | Contracts frozen; effective authority intersection documented; membership explicit; delegation non-amplifying; execution contracts not duplicated |
 | **Proof requirements** | `tests/unit/contracts/test_collaborative_work.py` — contract, isolation, fail-closed, delegation validation |
-| **Next step** | COLLAB-WORK-1A review acceptance → next MP-1 implementation row (persistence slice; not yet planned) |
+| **Next step** | COLLAB-WORK-1B — membership/delegation persistence and concurrency |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1B |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | Membership / Delegation persistence and concurrency |
+| **Dependencies** | COLLAB-WORK-1A approved; `intergrax/contracts/collaborative_work.py` revision semantics |
+| **Exact scope** | Provider-neutral `WorkspaceMembershipRepository` and `AuthorityDelegationRepository` contracts; optimistic `expected_revision` updates; tenant/workspace scoped keys; create idempotency; in-memory reference adapters |
+| **REUSED** | `WorkspaceMembership`, `AuthorityDelegation` contracts; repository/exception patterns from platform binding repositories; `threading.RLock` for in-memory adapter |
+| **NEW** | `intergrax/collaborative_work/repository.py`, `intergrax/collaborative_work/in_memory_repository.py`, focused repository unit tests |
+| **Explicit out of scope** | Effective-authority resolution; `CollaborativePrincipal` repository; SQL/Redis/Postgres backends; HTTP/API; LKW adoption; PolicyEngine integration; MP-2+ rows |
+| **Acceptance** | Authoritative create/get/update semantics; no silent last-write-wins; scoped isolation; typed conflict/not-found outcomes; idempotent create replay |
+| **Proof requirements** | `tests/unit/collaborative_work/test_in_memory_repository.py`; contract regression `tests/unit/contracts/test_collaborative_work.py` |
+| **Next step** | Effective-authority resolution slice |
 
 ---
 
