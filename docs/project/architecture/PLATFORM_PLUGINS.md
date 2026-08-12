@@ -679,12 +679,12 @@ Author-facing summary of all canonical setuptools entry-point surfaces (§20.1).
 | Integrations | `IntegrationPlugin` | `intergrax.integrations` | `register_integration_plugin()` from host composition | [INTEGRATIONS.md](INTEGRATIONS.md) | `IntegrationProfile` + `IntegrationManifest.env_prefix` | [EXTENSION_AUTHOR_GUIDE §2](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#2-external-integration-plugin) · `intergrax/integrations/examples/custom_memory_kv/` |
 | **Tools** | **`ToolPlugin`** | **`intergrax.tools`** | **`register_tool_plugin()`** — scaffold `extensions/` + `host/tool_wiring.py` | [TOOLS.md](TOOLS.md) | **`ToolWiringContext`** | [EXTENSION_AUTHOR_GUIDE §3, §16](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#16-dual-mode-developer-quickstarts-platform-plugin-8) · **External:** `examples/platform_plugins/intergrax_reference_tool_plugin/` · **Local:** `examples/platform_plugins/local_embedded_tool_extension/` |
 | Skills | `SkillPlugin` | `intergrax.skills` | `register_skill_plugin()` from host composition | [SKILLS.md](SKILLS.md) | `SkillProfile`; runtime deps via tools | [EXTENSION_AUTHOR_GUIDE §4](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#4-external-skill-plugin) · `intergrax/skills/examples/custom_pack/` |
-| Context | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` from host — **scaffold hook not yet documented** | [CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) | `ContextProfile` | [EXTENSION_AUTHOR_GUIDE matrix](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#canonical-12-surface-author-matrix) · dedicated author guide planned (DOCS-4) |
+| Context | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` from host — **scaffold hook not yet documented** | [CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) | `ContextProfile` | [CONTEXT_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md) · **External (multi-cap):** `examples/platform_plugins/intergrax_reference_enterprise_plugin/` |
 | Memory stores | `UserProfileStorePlugin` / `SessionStoragePlugin` factories | `intergrax.memory_stores` | Host invokes factory callables — **no documented local-plugin helper** | [MEMORY.md](MEMORY.md) | Factory kwargs from host | [EXTENSION_AUTHOR_GUIDE §9](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#9-memory-store-plugins-phase-mem) · `tests/fixtures/plugin_packages/` |
 | RAG chunkers | `BaseChunkingStrategy` | `intergrax.rag.chunkers` | RAG bootstrap/registry — **local explicit-registration path not yet documented** | [RAG.md](RAG.md) | `RagProfile` + bootstrap kwargs | [RAG_EXTENSION_GUIDE.md](../technical/guides/RAG_EXTENSION_GUIDE.md) |
 | RAG retrievers | `BaseRetriever` | `intergrax.rag.retrievers` | Same as chunkers | [RAG.md](RAG.md) | `RagProfile` + vector store bindings | [RAG_EXTENSION_GUIDE.md](../technical/guides/RAG_EXTENSION_GUIDE.md) |
 | RAG rerankers | `BaseReranker` | `intergrax.rag.rerankers` | Same as chunkers | [RAG.md](RAG.md) | `RagProfile` + bootstrap kwargs | [RAG_EXTENSION_GUIDE.md](../technical/guides/RAG_EXTENSION_GUIDE.md) |
-| Vendor Knowledge | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition — **not Tier-0 catalog registration** | [KNOWLEDGE_SOURCE_INTEGRATIONS.md](KNOWLEDGE_SOURCE_INTEGRATIONS.md) | `KnowledgeSourceBinding` + tenant scope | [VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) · `tests/reference_plugins/vendor_knowledge/acme_reference/` |
+| Vendor Knowledge | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition — **not Tier-0 catalog registration** | [KNOWLEDGE_SOURCE_INTEGRATIONS.md](KNOWLEDGE_SOURCE_INTEGRATIONS.md) | `KnowledgeSourceBinding` + tenant scope | [VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) · **External:** `examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/` |
 | Security defenses | `SecurityDefensePlugin` | `intergrax.security_defenses` | `register_security_defense_plugin()` + profile ids — advanced host composition | [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md) | `ApplicationSecurityProfile` | [SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) · `tests/fixtures/plugin_packages/intergrax_security_defense_fixture/` |
 | Policy rules | `PolicyRuleHandler` | `intergrax.policy_rules` | `PolicyRuleRegistry.register()` + explicit `load_policy_rule_plugins()` | [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md) | `PolicyRulesProfile` / YAML bundle | [POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) |
 | Tool invocation patterns | `ToolInvocationPattern` | `intergrax.tool_invocation_patterns` | `RuntimeConfig.tool_invocation_pattern` instance override | [TOOLS.md](TOOLS.md) | `ToolInvocationMode` | [TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md](../technical/guides/TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) |
@@ -716,7 +716,7 @@ Author-facing summary of all canonical setuptools entry-point surfaces (§20.1).
 
 **Multi-capability packages are ALLOWED.**
 
-One external Python distribution may expose multiple capabilities across domains (evidence: `tests/fixtures/plugin_packages/intergrax_catalog_fixture`).
+One external Python distribution may expose multiple capabilities across domains (evidence: `tests/fixtures/plugin_packages/intergrax_catalog_fixture` and **`examples/platform_plugins/intergrax_reference_enterprise_plugin/`**).
 
 ### 21.2 Rules
 
@@ -777,7 +777,7 @@ FROZEN from PLATFORM-PLUGIN-1 §P:
 3. **No silent activation** — harmonized discovery flags must not enable third-party plugins by default in production hosts.
 4. **Domain contracts stable** — platform coordination changes must not require changes to domain plugin class shapes without domain-owned major versions.
 5. **First-party manifest path preserved** — shipped integration manifests remain for core tree scale.
-6. **Tests as evidence** — `intergrax_catalog_fixture`, external integration EP tests, VK reference plugin remain compatibility witnesses.
+6. **Tests as evidence** — `intergrax_catalog_fixture`, `intergrax_reference_enterprise_plugin`, external integration EP tests, VK reference plugin remain compatibility witnesses.
 
 Migration **code** belongs to PLATFORM-PLUGIN-4 and PLATFORM-PLUGIN-9, not this stage.
 

@@ -1,0 +1,56 @@
+[project]
+name = "intergrax-reference-enterprise-plugin"
+version = "0.1.0"
+description = "Multi-capability Platform Plugin reference — Tool, Skill, Context, Tool invocation pattern."
+requires-python = ">=3.12"
+dependencies = ["Intergrax-ai"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.entry-points."intergrax.tools"]
+reference_enterprise_echo = "intergrax_reference_enterprise_plugin.tool:ReferenceEnterpriseEchoToolPlugin"
+
+[project.entry-points."intergrax.skills"]
+reference_enterprise_pack = "intergrax_reference_enterprise_plugin.skill:ReferenceEnterprisePackSkillPlugin"
+
+[project.entry-points."intergrax.context"]
+reference_enterprise = "intergrax_reference_enterprise_plugin.context:ReferenceEnterpriseContextPlugin"
+
+[project.entry-points."intergrax.tool_invocation_patterns"]
+reference_enterprise_single_pass = "intergrax_reference_enterprise_plugin.invocation_pattern:ReferenceEnterpriseSinglePassPattern"
+
+[tool.intergrax.plugin]
+name = "intergrax-reference-enterprise-plugin"
+version = "0.1.0"
+intergrax_version = ">=0.1,<2"
+author = "Intergrax Platform Plugins (reference)"
+documentation_uri = "https://github.com/jakbuczarnecki/intergrax/tree/development/examples/platform_plugins/intergrax_reference_enterprise_plugin"
+
+[[tool.intergrax.plugin.capabilities]]
+domain = "tools"
+entry_point_group = "intergrax.tools"
+entry_point_name = "reference_enterprise_echo"
+capability_ids = ["reference_enterprise_echo"]
+
+[[tool.intergrax.plugin.capabilities]]
+domain = "skills"
+entry_point_group = "intergrax.skills"
+entry_point_name = "reference_enterprise_pack"
+capability_ids = ["reference_enterprise_pack"]
+
+[[tool.intergrax.plugin.capabilities]]
+domain = "context"
+entry_point_group = "intergrax.context"
+entry_point_name = "reference_enterprise"
+capability_ids = ["reference_enterprise"]
+
+[[tool.intergrax.plugin.capabilities]]
+domain = "tool_invocation_patterns"
+entry_point_group = "intergrax.tool_invocation_patterns"
+entry_point_name = "reference_enterprise_single_pass"
+capability_ids = ["reference_enterprise_single_pass"]

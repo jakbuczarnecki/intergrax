@@ -20,7 +20,13 @@ _SECURITY_DEFENSE_FIXTURE_PKG = (
     _REPO_ROOT / "tests" / "fixtures" / "plugin_packages" / "intergrax_security_defense_fixture"
 )
 _ACME_REFERENCE_VK_PLUGIN_PKG = (
-    _REPO_ROOT / "tests" / "reference_plugins" / "vendor_knowledge" / "acme_reference"
+    _REPO_ROOT
+    / "examples"
+    / "platform_plugins"
+    / "intergrax_reference_vendor_knowledge_plugin"
+)
+_REFERENCE_ENTERPRISE_PLUGIN_PKG = (
+    _REPO_ROOT / "examples" / "platform_plugins" / "intergrax_reference_enterprise_plugin"
 )
 
 
@@ -55,6 +61,10 @@ def _install_acme_reference_vk_plugin_package() -> None:
     _install_editable_package(_ACME_REFERENCE_VK_PLUGIN_PKG, "acme_reference_vk_plugin")
 
 
+def _install_reference_enterprise_plugin_package() -> None:
+    _install_editable_package(_REFERENCE_ENTERPRISE_PLUGIN_PKG, "intergrax_reference_enterprise_plugin")
+
+
 @pytest.fixture(scope="session")
 def catalog_fixture_installed() -> None:
     """Install catalog entry-point fixture package for pytest (Phase P-Ext.0.5)."""
@@ -71,6 +81,12 @@ def security_defense_fixture_installed() -> None:
 def acme_reference_vk_plugin_installed() -> None:
     """Install VK-EXT-3 reference external provider entry-point package."""
     _install_acme_reference_vk_plugin_package()
+
+
+@pytest.fixture(scope="session")
+def reference_enterprise_plugin_installed() -> None:
+    """Install DOCS-6 multi-capability reference package."""
+    _install_reference_enterprise_plugin_package()
 
 
 @pytest.fixture(scope="session", autouse=True)

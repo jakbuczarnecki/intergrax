@@ -120,12 +120,12 @@ All canonical setuptools entry-point surfaces (architecture §20.1). One row per
 | Integration | New backend / provider category | `IntegrationPlugin` | `intergrax.integrations` | `register_integration_plugin()` | `IntegrationProfile` + `IntegrationManifest.env_prefix` | [§2](#2-external-integration-plugin) · [§16.4–§16.5](#164-external-integration-package-quickstart) · [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) |
 | Tool | New LLM-invokable operation | `ToolPlugin` | `intergrax.tools` | `register_tool_plugin()` + scaffold `extensions/` | `ToolWiringContext` | [§3](#3-external-tool-plugin) · [§16](#16-dual-mode-developer-quickstarts-platform-plugin-8) · [`TOOLS.md`](../../architecture/TOOLS.md) |
 | Skill | Reusable agent capability bundle | `SkillPlugin` | `intergrax.skills` | `register_skill_plugin()` | `SkillProfile` | [§4](#4-external-skill-plugin) · [§16.6–§16.7](#166-external-skill-package-quickstart) · [`SKILLS.md`](../../architecture/SKILLS.md) |
-| Context | Custom context / prompt material | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` — **no scaffold hook yet** | `ContextProfile` | [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) · [`CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) |
+| Context | Custom context / prompt material | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` — **no scaffold hook yet** | `ContextProfile` | [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) · multi-capability example: [`intergrax_reference_enterprise_plugin`](../../../../examples/platform_plugins/intergrax_reference_enterprise_plugin/) |
 | Memory store | Swap profile / session / episodic storage | `UserProfileStorePlugin` / `SessionStoragePlugin` / `SessionTurnIndexStorePlugin` | `intergrax.memory_stores` | Host factory / `MemoryPlatformWiring` — **no `register_*` helper** | `MemoryProfile` + host `**kwargs` | [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) · [`MEMORY.md`](../../architecture/MEMORY.md) §5.3 |
 | RAG chunker | Custom chunking strategy | `BaseChunkingStrategy` | `intergrax.rag.chunkers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
 | RAG retriever | Custom retrieval implementation | `BaseRetriever` / `BaseRetrieverPlugin` | `intergrax.rag.retrievers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + vector store bindings | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
 | RAG reranker | Custom reranking | `BaseReranker` / `BaseRerankerPlugin` | `intergrax.rag.rerankers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
-| Vendor Knowledge | External knowledge source contributions | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition — **not Tier-0 catalog registration** | `KnowledgeSourceBinding` + tenant scope | [`VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md`](VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) |
+| Vendor Knowledge | External knowledge source contributions | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition — **not Tier-0 catalog registration** | `KnowledgeSourceBinding` + tenant scope | [`VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md`](VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) · [`intergrax_reference_vendor_knowledge_plugin`](../../../../examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/) |
 | Security defense | Runtime inspection at `HookPoint`s | `SecurityDefensePlugin` | `intergrax.security_defenses` | `register_security_defense_plugin()` + profile ids — advanced host composition | `ApplicationSecurityProfile` | [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) |
 | Policy rule handler | Custom policy evaluation handlers | `PolicyRuleHandler` | `intergrax.policy_rules` | `PolicyRuleRegistry.register()` + explicit `load_policy_rule_plugins()` | `PolicyRulesProfile` / YAML bundle | [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) · [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
 | Tool invocation pattern | Custom tool batch orchestration mode | `ToolInvocationPattern` | `intergrax.tool_invocation_patterns` | `RuntimeConfig.tool_invocation_pattern` instance override | `ToolInvocationMode` | [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) · [`TOOLS.md`](../../architecture/TOOLS.md) |
@@ -1168,3 +1168,20 @@ Executable dual-mode proof: `tests/integration/platform_plugins/test_plugin8_dua
 ### 16.3 Public extension matrix
 
 See [Canonical 12-surface author matrix](#canonical-12-surface-author-matrix) above and architecture hub [§20.3](../../architecture/PLATFORM_PLUGINS.md#203-public-extension-author-matrix-plugin-8) for local-registration availability and documented gaps.
+
+### 16.4 Multi-capability reference package (DOCS-6)
+
+One Python distribution may expose **multiple independent domain surfaces** through separate setuptools entry-point groups — no universal `PlatformPlugin.execute()` wrapper.
+
+Working reference: [`examples/platform_plugins/intergrax_reference_enterprise_plugin/`](../../../../examples/platform_plugins/intergrax_reference_enterprise_plugin/)
+
+| Surface | EP group | EP name |
+|---------|----------|---------|
+| Tool | `intergrax.tools` | `reference_enterprise_echo` |
+| Skill | `intergrax.skills` | `reference_enterprise_pack` |
+| Context | `intergrax.context` | `reference_enterprise` |
+| Tool invocation pattern | `intergrax.tool_invocation_patterns` | `reference_enterprise_single_pass` |
+
+Package manifest: `[tool.intergrax.plugin]` capability descriptors in `pyproject.toml`. Each domain still owns discovery, qualification, and materialization. Offline proof: `tests/unit/platform_plugins/test_reference_enterprise_plugin.py`.
+
+Canon: [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) §21

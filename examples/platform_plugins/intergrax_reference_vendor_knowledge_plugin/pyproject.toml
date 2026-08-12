@@ -1,9 +1,9 @@
 [project]
 name = "acme-reference-vk-plugin"
-version = "0.0.1"
-description = "Reference external Vendor Knowledge provider for VK-EXT-3 qualification."
+version = "0.1.0"
+description = "Installable reference external Vendor Knowledge provider (PLATFORM-PLUGIN-DOCS-6)."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["Intergrax-ai"]
 
 [build-system]
 requires = ["setuptools>=61"]
@@ -14,3 +14,16 @@ where = ["src"]
 
 [project.entry-points."intergrax.vendor_knowledge.providers"]
 acme_reference = "acme_reference_vk_plugin.contribution:build_acme_reference_contribution"
+
+[tool.intergrax.plugin]
+name = "acme-reference-vk-plugin"
+version = "0.1.0"
+intergrax_version = ">=0.1,<2"
+author = "Intergrax Platform Plugins (reference)"
+documentation_uri = "https://github.com/jakbuczarnecki/intergrax/tree/development/examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin"
+
+[[tool.intergrax.plugin.capabilities]]
+domain = "vendor_knowledge"
+entry_point_group = "intergrax.vendor_knowledge.providers"
+entry_point_name = "acme_reference"
+capability_ids = ["acme_reference"]

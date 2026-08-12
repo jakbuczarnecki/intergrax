@@ -83,7 +83,10 @@ pytestmark = pytest.mark.unit
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _ACME_REFERENCE_VK_PLUGIN_PKG = (
-    _REPO_ROOT / "tests" / "reference_plugins" / "vendor_knowledge" / "acme_reference"
+    _REPO_ROOT
+    / "examples"
+    / "platform_plugins"
+    / "intergrax_reference_vendor_knowledge_plugin"
 )
 
 

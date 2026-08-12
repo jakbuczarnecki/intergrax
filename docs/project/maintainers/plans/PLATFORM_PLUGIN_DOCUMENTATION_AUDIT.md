@@ -1028,3 +1028,78 @@ Coherent implementation blocks derived from evidence (not microtasks):
 5. `docs/project/architecture/PLATFORM_PLUGINS.md`
 6. `docs/project/architecture/TOOLS.md`
 7. `docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md` (this section)
+
+---
+
+## 17. DOCS-6 remediation status (PLATFORM-PLUGIN-DOCS-6)
+
+**Date:** 2026-08-12 · **Branch:** `development` · **Scope:** Vendor Knowledge completion, reference example gaps, multi-capability package
+
+### Vendor Knowledge (DOCS-1 → DOCS-6)
+
+| Aspect | Before | After |
+|--------|--------|-------|
+| Overall | **PARTIAL** | **COMPLETE** |
+| External package | Test artifact only (`tests/reference_plugins/...`) | Installable `examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/` |
+| Host builder path | Diagram only | §4.2 explicit builder table |
+| Troubleshooting (D16) | Error codes only | §26 FAQ |
+| Qualification layers | Implicit | §26 + §22 matrix |
+
+**Contract:** `VendorKnowledgeProviderContribution` · **EP:** `intergrax.vendor_knowledge.providers`
+
+### REFERENCE_EXAMPLE_GAPS — decisions
+
+| Gap (from DOCS-4/5) | Decision | Rationale |
+|---------------------|----------|-----------|
+| Context external wheel | **IMPLEMENT_REFERENCE_EXAMPLE** | Closed via `intergrax_reference_enterprise_plugin` Context EP |
+| Memory external wheel | **DOCUMENTATION_FIXTURE_SUFFICIENT** | CAND-001/002 — no Tier-3 EP resolver; misleading production wheel deferred |
+| RAG multi-surface wheel | **DOCUMENTATION_FIXTURE_SUFFICIENT** | `RAG_EXTENSION_GUIDE.md` + `test_rag_plugin_discovery.py`; offline multi-backend wheel not justified |
+| Security defense wheel | **DOCUMENTATION_FIXTURE_SUFFICIENT** | `intergrax_security_defense_fixture` + author guide |
+| Policy rule handler wheel | **DOCUMENTATION_FIXTURE_SUFFICIENT** | CAND-006/007 — runtime PARTIAL; unit-test patterns suffice |
+| Tool invocation pattern wheel | **IMPLEMENT_REFERENCE_EXAMPLE** | Closed via `intergrax_reference_enterprise_plugin` invocation EP |
+| Vendor Knowledge installable example | **IMPLEMENT_REFERENCE_EXAMPLE** | Promoted Acme to `examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/` |
+
+### Examples created
+
+| Package | Path | Surfaces |
+|---------|------|----------|
+| Vendor Knowledge reference | `examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/` | `intergrax.vendor_knowledge.providers:acme_reference` |
+| Multi-capability reference | `examples/platform_plugins/intergrax_reference_enterprise_plugin/` | Tool, Skill, Context, Tool invocation pattern (4 EP groups) |
+
+### RUNTIME_CAPABILITY_GAPS (unchanged — recorded, not implemented)
+
+| Gap | Surfaces |
+|-----|----------|
+| No Tier-3 EP resolver for `UserProfileStorePlugin.create_user_profile_store` | Memory |
+| No Tier-3 EP resolver for `SessionStoragePlugin.create_session_storage` | Memory |
+| `wire_policy_bundle` does not call `load_policy_rule_plugins` | Policy |
+| Declarative `policy_rules` not evaluated at runtime | Policy |
+| Security/policy EP loaders fail-fast | Security, Policy |
+
+### ENTERPRISE_ROADMAP_CANDIDATES
+
+**Carry-forward:** CAND-001 … CAND-009 (CAND-009 remains NO / ordinary hardening).
+
+**New:** None — multi-capability package-level inventory is demonstrated via existing `[tool.intergrax.plugin]` manifest; no new enterprise gap beyond documented CAND items.
+
+### Dynamic wiring audit (task-owned Python)
+
+| Check | Count |
+|-------|-------|
+| New `getattr(` | **0** |
+| New `setattr(` | **0** |
+| New loose method-presence probing | **0** |
+| `NEW_DYNAMIC_ATTRIBUTE_WIRING` | **0** |
+
+### Changed files (DOCS-6 allowlist)
+
+1. `examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/` (relocated from tests)
+2. `examples/platform_plugins/intergrax_reference_enterprise_plugin/` (new)
+3. `tests/reference_plugins/vendor_knowledge/README.md` (relocate pointer)
+4. `tests/conftest.py` (package paths + enterprise fixture)
+5. `tests/unit/platform_plugins/test_reference_enterprise_plugin.py` (new)
+6. `applications/local_workspace_application/tests/workspaces/test_vendor_knowledge_scoped_source_seam_qualification.py` (VK path)
+7. `docs/project/technical/guides/VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md`
+8. `docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md`
+9. `docs/project/architecture/PLATFORM_PLUGINS.md`
+10. `docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md` (this section)

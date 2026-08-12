@@ -1,6 +1,6 @@
 # Vendor Knowledge Plugin Author Guide
 
-**Status:** canonical developer guide · **VK-EXT-4**
+**Status:** canonical developer guide · **VK-EXT-4** · **PLATFORM-PLUGIN-DOCS-6**
 **Architecture owner:** [`docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
 **Integration canon:** [`docs/project/architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md)
 **Maintainer plan:** [`docs/project/maintainers/plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../maintainers/plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
@@ -15,6 +15,31 @@ evidence remains in the reference tests cited in §21.
 **Audience:** senior engineer, staff/principal engineer, external integration
 author, maintainer reviewing a new provider. Assumes Python and integration
 design; does not assume Intergrax internals.
+
+---
+
+## Developer journey (D1–D16)
+
+| D | Topic | Status | Section |
+|---|-------|--------|---------|
+| D1 | Purpose | COMPLETE | §1 |
+| D2 | Public contract | COMPLETE | §2 |
+| D3 | Minimal implementation | COMPLETE | §20 · installable example §4.1 |
+| D4 | External package | COMPLETE | §4.1 · §6 |
+| D5 | Local / host path | COMPLETE | §1 · §4.2 |
+| D6 | Configuration | COMPLETE | §12 `KnowledgeSourceBinding` |
+| D7 | Secrets | COMPLETE | §10 |
+| D8 | DI | COMPLETE | §2 contribution catalog model |
+| D9 | Registration/discovery | COMPLETE | §6 — separate from Tier-0 catalog |
+| D10 | Qualification | COMPLETE | §22 |
+| D11 | Runtime use | COMPLETE | §15 |
+| D12 | Lifecycle | COMPLETE | §17 restart/rehydration |
+| D13 | Failure behavior | COMPLETE | §18 |
+| D14 | Testing | COMPLETE | §21 |
+| D15 | Production checklist | COMPLETE | §19 · §25 |
+| D16 | Troubleshooting | COMPLETE | §26 |
+
+**Overall:** **COMPLETE** for the external-EP and host-builder paths supported today. Vendor Knowledge is **not** the Tier-0 plugin catalog — see §1 and §4.2.
 
 ---
 
@@ -70,10 +95,30 @@ Built-ins and externals feed the **same** catalog and registries. External
 provider installation is **not** built-in provider registration. Do not edit the
 built-in aggregator to register an external vendor.
 
-The Acme reference plugin in `tests/reference_plugins/vendor_knowledge/acme_reference/`
-is a **repository qualification artifact**. A real provider lives in its own
+The Acme reference plugin in
+`examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/`
+is the **installable worked example**. Repository qualification tests install
+the same package from that path. A real provider lives in its own
 installable distribution with the same entry-point contract and qualification
 expectations.
+
+**Vendor Knowledge is not the Tier-0 plugin catalog.** There is no
+`register_vendor_knowledge_plugin()` global catalog registration. Flow:
+
+```text
+Python package (pip install)
+        → VendorKnowledgeProviderContribution (EP factory)
+        → intergrax.vendor_knowledge.providers
+        → discover_vendor_knowledge_contributions() when discover_entry_points=True
+        → VendorKnowledgeContributionCatalog (instance-local snapshot)
+        → generic VK registries (adapters, factories, materializers, Live)
+        → host application composition (LKW discovery/materializer registries)
+        → KnowledgeSourceBinding (tenant/workspace/connection scoped)
+        → runtime knowledge source (Durable / INDEXED / optional LIVE)
+```
+
+Do not unify this into Tool/Skill catalog semantics or a universal Platform
+Plugin runtime wrapper.
 
 ---
 
@@ -307,7 +352,13 @@ my_vendor_plugin/
 Acme reference paths:
 
 ```text
-tests/reference_plugins/vendor_knowledge/acme_reference/
+examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/
+```
+
+Relocated to:
+
+```text
+examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/
   pyproject.toml
   src/acme_reference_vk_plugin/
     constants.py
@@ -386,6 +437,56 @@ Entry-point discovery uses `importlib.metadata.entry_points` only when enabled.
 
 ---
 
+## 4.1 External package quickstart
+
+Install the reference package from this repository:
+
+```bash
+uv pip install ./examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin
+```
+
+Build a wheel:
+
+```bash
+uv build --wheel --project examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin
+```
+
+Enable discovery when building the contribution catalog:
+
+```python
+from intergrax.runtime.vendor_knowledge.contribution_catalog import (
+    build_default_vendor_knowledge_contribution_catalog,
+)
+
+catalog = build_default_vendor_knowledge_contribution_catalog(
+    discover_entry_points=True,
+)
+```
+
+`installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`. Package
+installation alone does not bind tenant connections or qualify the provider for
+production.
+
+---
+
+## 4.2 Host builder path (not Tier-0 catalog)
+
+Hosts compose Vendor Knowledge through **domain-owned builders**, not
+`bootstrap_catalogs()`:
+
+| Step | API | Notes |
+|------|-----|-------|
+| Contribution catalog | `build_default_vendor_knowledge_contribution_catalog(discover_entry_points=…)` | Built-ins + optional EP |
+| Adapter registry | `build_vendor_knowledge_adapter_registry(catalog)` | From catalog snapshot |
+| Factory registry | `build_tenant_connection_integration_factory_registry(catalog)` | Credential resolution at factory invoke |
+| Application augmentation | `build_default_vendor_knowledge_application_contribution_catalog(…)` | LKW discovery/materializer wiring |
+| Tenant binding | `KnowledgeSourceBinding` + `credential_ref` on `TenantConnection` | Host owns secrets |
+
+External providers must not call global `register_*` catalog functions. They
+expose a contribution factory via EP only.
+
+---
+
 ## 7. Contribution factory
 
 Minimal pattern (syntactically aligned with current contracts):
@@ -456,7 +557,7 @@ Evidence: Databricks connection-only contribution
 `connection_factories` — no adapters, source plugins, discovery, or materializers.
 
 Acme reference full contribution:
-`tests/reference_plugins/vendor_knowledge/acme_reference/src/acme_reference_vk_plugin/contribution.py`
+`examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/src/acme_reference_vk_plugin/contribution.py`
 
 **Contract version:** default `vendor-knowledge.provider-contribution.v1`
 (`VENDOR_KNOWLEDGE_PROVIDER_CONTRIBUTION_CONTRACT_VERSION`). Target a supported
@@ -526,7 +627,7 @@ global persistence
 ```
 
 Acme reference adapter:
-`tests/reference_plugins/vendor_knowledge/acme_reference/src/acme_reference_vk_plugin/adapter.py`
+`examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/src/acme_reference_vk_plugin/adapter.py`
 
 Key patterns:
 
@@ -586,7 +687,7 @@ def create_integration(
 ```
 
 Acme factory example:
-`tests/reference_plugins/vendor_knowledge/acme_reference/src/acme_reference_vk_plugin/factory.py`
+`examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/src/acme_reference_vk_plugin/factory.py`
 
 **Restart/rehydration:** `TenantConnectionRehydrator` lists durable connections,
 loads secrets via `SecretsStore`, invokes the **contribution-discovered** factory
@@ -633,7 +734,7 @@ semantics beyond storing them on `KnowledgeSourceScope` — provider adapter
 validates scope on read.
 
 Acme discovery:
-`tests/reference_plugins/vendor_knowledge/acme_reference/src/acme_reference_vk_plugin/discovery.py`
+`examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/src/acme_reference_vk_plugin/discovery.py`
 
 Do not add provider-specific LKW routes. Use the generic scoped-source seam.
 
@@ -721,7 +822,7 @@ No provider-specific indexing pipeline. LKW generic sync invokes materializer
 by `runtime_ref`; vector publication is generic.
 
 Acme materializer:
-`tests/reference_plugins/vendor_knowledge/acme_reference/src/acme_reference_vk_plugin/materializer.py`
+`examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/src/acme_reference_vk_plugin/materializer.py`
 
 ---
 
@@ -952,7 +1053,7 @@ Point readers to:
 
 | Artifact | Path |
 |---|---|
-| Reference package | `tests/reference_plugins/vendor_knowledge/acme_reference/` |
+| Reference package | `examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/` |
 | Unit qualification | `tests/unit/runtime/vendor_knowledge/test_acme_reference_plugin.py` |
 | E2E external proof | `tests/integration/vendor_knowledge/test_acme_reference_external_provider_proof.py` |
 | Scoped-source seam | `applications/local_workspace_application/tests/workspaces/test_vendor_knowledge_scoped_source_seam_qualification.py` |
@@ -1071,6 +1172,23 @@ Short maintainer review list:
 
 ---
 
+## 26. Troubleshooting
+
+| Symptom | Likely cause | What to check |
+|---------|--------------|---------------|
+| Provider missing after `pip install` | EP discovery disabled | `discover_entry_points=True` on catalog bootstrap |
+| `duplicate_entry_point_name` / `conflicting_provider_contribution` | Duplicate EP or provider key | Unique EP names; one `(provider_id, integration_category)` per contribution |
+| Connection create fails | Missing durable `TenantConnection` | `credential_ref` on connection; `SecretsStore` resolves secret at factory invoke |
+| Binding persist fails (ownership fence) | Tenant/workspace/connection mismatch | Scoped candidate `tenant_id`, `workspace_id`, `connection_ref` |
+| Materializer not invoked | `runtime_ref` mismatch | Source plugin INDEXED `runtime_ref` == materializer contribution |
+| Provider in catalog but no indexed content | Source not bound | `KnowledgeSourceBinding` + workspace sync |
+| Qualification withheld | Host semantic admission not granted | `installed` ≠ `production-qualified` |
+| Built-ins affected by external test | Incorrect conflict expectation | External discovery **adds** contributions when keys differ |
+
+**Qualification layers:** (1) package/EP load, (2) provider/domain contract, (3) live connection/source binding where applicable.
+
+---
+
 ## Versioning
 
 Current contribution contract:
@@ -1099,4 +1217,4 @@ version would require explicit platform release notes and migration guidance.
 | [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) | Architecture authority; §19 contribution composition |
 | [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) | Integration category canon |
 | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) | RAG extension (Search/Ask/indexing boundary) |
-| Acme reference package | Worked example implementation |
+| Acme reference package | [`examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/`](../../../../examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/) |
