@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Callable
@@ -65,18 +66,15 @@ class Ms365GraphTenantConnectionIntegrationFactory(
             raise ValueError("credential must be a non-empty string")
 
         config_overrides = _resolve_secret_free_config(secret_free_config)
-        config_overrides.update(
-            tenant_id=tenant_id,
-            client_secret=credential,
-        )
-        try:
-            config = resolve_ms365_graph_config(**config_overrides)
-        except Exception:
-            raise IntegrationConfigurationError(
-                "Microsoft Graph runtime configuration failed (credentials redacted)",
-            ) from None
+        config_overrides.update(tenant_id=tenant_id)
+        delegated_access_token = _parse_delegated_access_token(credential)
         builder = self.runtime_builder or open_ms365_graph_collaboration_suite
         try:
+            if delegated_access_token is not None:
+                config = resolve_ms365_graph_config(**config_overrides)
+                return builder(config, access_token=delegated_access_token)
+            config_overrides["client_secret"] = credential
+            config = resolve_ms365_graph_config(**config_overrides)
             return builder(config)
         except IntegrationConfigurationError:
             raise
@@ -84,6 +82,22 @@ class Ms365GraphTenantConnectionIntegrationFactory(
             raise IntegrationConfigurationError(
                 "Microsoft Graph runtime construction failed (credentials redacted)",
             ) from None
+
+
+def _parse_delegated_access_token(credential: str) -> str | None:
+    stripped = credential.strip()
+    if not stripped.startswith("{") and not stripped.startswith("["):
+        return None
+    try:
+        parsed = json.loads(stripped)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    token = parsed.get("access_token")
+    if isinstance(token, str) and token.strip():
+        return token.strip()
+    return None
 
 
 def _require_nonblank(value: str, *, field_name: str) -> str:

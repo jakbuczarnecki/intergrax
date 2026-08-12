@@ -170,6 +170,20 @@ class KnowledgeConnectionRegistry:
 
         return entry.integration
 
+    def deregister(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+    ) -> bool:
+        """Remove a registered connection from the instance-local registry."""
+        cleaned_tenant = tenant_id.strip()
+        cleaned_ref = connection_ref.strip()
+        if not cleaned_tenant or not cleaned_ref:
+            raise ValueError("tenant_id and connection_ref must be non-empty strings")
+        key: ConnectionRegistryKey = (cleaned_tenant, cleaned_ref)
+        return self._entries.pop(key, None) is not None
+
 
 class ConnectionAwareVendorResolver:
     """Resolve integrations via connection registry, with profile fallback."""

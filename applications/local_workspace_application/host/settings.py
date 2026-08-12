@@ -72,6 +72,17 @@ def _parse_api_key_map(raw: Optional[str]) -> Mapping[str, ApiKeyIdentity]:
     return out
 
 
+def _parse_redirect_allowlist(raw: str) -> tuple[str, ...]:
+    seen: set[str] = set()
+    values: list[str] = []
+    for value in raw.split(","):
+        cleaned = value.strip()
+        if cleaned and cleaned not in seen:
+            seen.add(cleaned)
+            values.append(cleaned)
+    return tuple(values)
+
+
 def _parse_tenant_ids(raw: str) -> tuple[str, ...]:
     seen: set[str] = set()
     tenant_ids: list[str] = []
@@ -153,6 +164,14 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     connected_source_opaque_ref_signing_key: str = ""
     connected_source_slack_connection_ref: str = ""
     tenant_connection_bootstrap_tenant_ids: tuple[str, ...] = ()
+    connection_auth_redirect_allowlist: tuple[str, ...] = ()
+    connection_auth_transaction_ttl_seconds: int = 900
+    connection_auth_completion_claim_ttl_seconds: int = 120
+    google_workspace_oauth_client_id: str = ""
+    google_workspace_oauth_client_secret: str = field(default="", repr=False)
+    ms365_oauth_tenant_id: str = ""
+    ms365_oauth_client_id: str = ""
+    ms365_oauth_client_secret: str = field(default="", repr=False)
     knowledge_admin_confirmation_secret: str = field(default="", repr=False)
     conversation_thread_memory_max_messages: int = 20
     conversation_thread_memory_max_bytes: int = 16 * 1024
@@ -632,6 +651,55 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
                 default="",
             )
         )
+        connection_auth_redirect_allowlist = _parse_redirect_allowlist(
+            env.str(
+                "CONNECTION_AUTH_REDIRECT_ALLOWLIST",
+                default="",
+            )
+        )
+        connection_auth_transaction_ttl_seconds = env.int(
+            "CONNECTION_AUTH_TRANSACTION_TTL_SECONDS",
+            default=cls._field_default("connection_auth_transaction_ttl_seconds"),  # type: ignore[arg-type]
+        )
+        connection_auth_completion_claim_ttl_seconds = env.int(
+            "CONNECTION_AUTH_COMPLETION_CLAIM_TTL_SECONDS",
+            default=cls._field_default("connection_auth_completion_claim_ttl_seconds"),  # type: ignore[arg-type]
+        )
+        google_workspace_oauth_client_id = (
+            env.str(
+                "GOOGLE_WORKSPACE_OAUTH_CLIENT_ID",
+                default=cls._field_default("google_workspace_oauth_client_id"),  # type: ignore[arg-type]
+            ).strip()
+            or os.environ.get("INTERGRAX_GOOGLE_WORKSPACE_OAUTH_CLIENT_ID", "").strip()
+        )
+        google_workspace_oauth_client_secret = (
+            env.str(
+                "GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET",
+                default=cls._field_default("google_workspace_oauth_client_secret"),  # type: ignore[arg-type]
+            ).strip()
+            or os.environ.get("INTERGRAX_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET", "").strip()
+        )
+        ms365_oauth_tenant_id = (
+            env.str(
+                "MS365_OAUTH_TENANT_ID",
+                default=cls._field_default("ms365_oauth_tenant_id"),  # type: ignore[arg-type]
+            ).strip()
+            or os.environ.get("INTERGRAX_MS365_TENANT_ID", "").strip()
+        )
+        ms365_oauth_client_id = (
+            env.str(
+                "MS365_OAUTH_CLIENT_ID",
+                default=cls._field_default("ms365_oauth_client_id"),  # type: ignore[arg-type]
+            ).strip()
+            or os.environ.get("INTERGRAX_MS365_CLIENT_ID", "").strip()
+        )
+        ms365_oauth_client_secret = (
+            env.str(
+                "MS365_OAUTH_CLIENT_SECRET",
+                default=cls._field_default("ms365_oauth_client_secret"),  # type: ignore[arg-type]
+            ).strip()
+            or os.environ.get("INTERGRAX_MS365_CLIENT_SECRET", "").strip()
+        )
         knowledge_admin_confirmation_secret = env.str(
             "KNOWLEDGE_ADMIN_CONFIRMATION_SECRET",
             default=cls._field_default("knowledge_admin_confirmation_secret"),  # type: ignore[arg-type]
@@ -710,5 +778,13 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "connected_source_opaque_ref_signing_key": connected_source_opaque_ref_signing_key,
             "connected_source_slack_connection_ref": connected_source_slack_connection_ref,
             "tenant_connection_bootstrap_tenant_ids": tenant_connection_bootstrap_tenant_ids,
+            "connection_auth_redirect_allowlist": connection_auth_redirect_allowlist,
+            "connection_auth_transaction_ttl_seconds": connection_auth_transaction_ttl_seconds,
+            "connection_auth_completion_claim_ttl_seconds": connection_auth_completion_claim_ttl_seconds,
+            "google_workspace_oauth_client_id": google_workspace_oauth_client_id,
+            "google_workspace_oauth_client_secret": google_workspace_oauth_client_secret,
+            "ms365_oauth_tenant_id": ms365_oauth_tenant_id,
+            "ms365_oauth_client_id": ms365_oauth_client_id,
+            "ms365_oauth_client_secret": ms365_oauth_client_secret,
             "knowledge_admin_confirmation_secret": knowledge_admin_confirmation_secret,
         }

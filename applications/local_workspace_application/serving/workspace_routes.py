@@ -648,6 +648,66 @@ def mount_managed_workspace_routes(
     connection_port_for_routes = (
         tenant_connection_port or host_bundle.tenant_connection_port
     )
+    if tenant_connection_secrets_store is not None:
+        from intergrax.runtime.vendor_knowledge.provider_composition import (
+            build_default_vendor_knowledge_connection_factory_registry,
+        )
+        from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
+            DocumentStoreTenantConnectionRepository,
+        )
+        from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+            TenantConnectionRehydrator,
+        )
+        from local_workspace_application.serving.tenant_connection_routes import (
+            mount_tenant_connection_routes,
+        )
+        from local_workspace_application.workspaces.tenant_connection_auth_composition import (
+            build_tenant_connection_auth_provider_registry,
+        )
+        from local_workspace_application.workspaces.tenant_connection_authorization_transaction import (
+            TenantConnectionAuthorizationTransactionRepository,
+        )
+        from local_workspace_application.workspaces.tenant_connection_product_orchestration import (
+            TenantConnectionProductOrchestrationConfig,
+            TenantConnectionProductOrchestrationFactory,
+        )
+
+        connection_repository = DocumentStoreTenantConnectionRepository(
+            repository.document_store,
+        )
+        transaction_repository = TenantConnectionAuthorizationTransactionRepository(
+            repository.document_store,
+        )
+        auth_registry = build_tenant_connection_auth_provider_registry(settings)
+        factory_registry = (
+            tenant_connection_factory_registry
+            or build_default_vendor_knowledge_connection_factory_registry()
+        )
+        rehydrator = TenantConnectionRehydrator(
+            repository=connection_repository,
+            secrets_store=tenant_connection_secrets_store,
+            integration_factory=factory_registry,
+            connection_registry=host_bundle.hybrid_ask_connection_registry,
+        )
+        orchestration_factory = TenantConnectionProductOrchestrationFactory(
+            connection_repository=connection_repository,
+            transaction_repository=transaction_repository,
+            secrets_store=tenant_connection_secrets_store,
+            auth_provider_registry=auth_registry,
+            rehydrator=rehydrator,
+            connection_registry=host_bundle.hybrid_ask_connection_registry,
+            config=TenantConnectionProductOrchestrationConfig(
+                redirect_allowlist=frozenset(settings.connection_auth_redirect_allowlist),
+                transaction_ttl_seconds=settings.connection_auth_transaction_ttl_seconds,
+                completion_claim_ttl_seconds=settings.connection_auth_completion_claim_ttl_seconds,
+            ),
+        )
+        app.state.lkw_tenant_connection_orchestration_factory = orchestration_factory
+        mount_tenant_connection_routes(
+            app,
+            orchestration_factory=orchestration_factory,
+            prefix=prefix,
+        )
     ask_capability_catalog = (
         tenant_live_capability_catalog or host_bundle.tenant_live_capability_catalog
     )
