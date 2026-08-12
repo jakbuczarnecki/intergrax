@@ -9,6 +9,7 @@ from collections.abc import Sequence
 
 import pytest
 
+from intergrax.core.plugins.discovery import reset_entry_point_spec_cache_for_tests
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
@@ -24,6 +25,13 @@ from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProto
 from intergrax.tools.core.tool_plan import ToolCallPlan
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture(autouse=True)
+def _reset_entry_point_spec_cache() -> None:
+    reset_entry_point_spec_cache_for_tests()
+    yield
+    reset_entry_point_spec_cache_for_tests()
 
 
 class _EntryPoint:
@@ -128,3 +136,43 @@ def test_load_tool_invocation_pattern_lazy_lookup_skips_unrelated_entry_points(
     assert loaded.pattern_id == "custom_pattern"
     assert load_calls == [f"{__name__}:_CustomPattern"]
     assert list_tool_invocation_pattern_ids() == ("a_pattern", "z_pattern")
+
+
+def test_load_tool_invocation_pattern_reuses_cached_entry_point_specs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entries = _EntryPoints(
+        [
+            _EntryPoint(
+                "a_pattern",
+                f"{__name__}:_CustomPattern",
+                "intergrax.tool_invocation_patterns",
+            ),
+            _EntryPoint(
+                "z_pattern",
+                f"{__name__}:_CustomPattern",
+                "intergrax.tool_invocation_patterns",
+            ),
+        ]
+    )
+    scan_calls = 0
+
+    def _entry_points() -> _EntryPoints:
+        nonlocal scan_calls
+        scan_calls += 1
+        return entries
+
+    monkeypatch.setattr(importlib.metadata, "entry_points", _entry_points)
+
+    load_tool_invocation_pattern("a_pattern")
+    load_tool_invocation_pattern("z_pattern")
+    list_tool_invocation_pattern_ids()
+
+    assert scan_calls == 1
+
+
+def test_load_tool_invocation_pattern_unknown_id_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_entry_points(monkeypatch)
+    assert load_tool_invocation_pattern("missing_pattern") is None

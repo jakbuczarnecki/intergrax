@@ -7,12 +7,14 @@ import importlib.metadata
 import pytest
 
 from intergrax.core.plugins.discovery import (
+    get_entry_point_spec,
     instantiate_entry_point_target,
     iter_entry_point_specs,
     load_entry_point_plugins,
     load_entry_point_targets,
     load_entry_point_value,
     load_plugin_types,
+    reset_entry_point_spec_cache_for_tests,
 )
 from intergrax.core.plugins.errors import PluginConflictError, PluginLoadError
 from intergrax.integrations.examples.custom_memory_kv import CustomMemoryKvPlugin
@@ -24,6 +26,13 @@ from intergrax.runtime.security.defense_plugin_loader import load_security_defen
 from intergrax.runtime.security.defense_registry import get_security_defense_plugin
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture(autouse=True)
+def _reset_entry_point_spec_cache() -> None:
+    reset_entry_point_spec_cache_for_tests()
+    yield
+    reset_entry_point_spec_cache_for_tests()
 
 
 class _EntryPoint:
@@ -139,6 +148,78 @@ def test_iter_entry_point_specs_is_deterministic_and_scan_only(
 
     assert [spec.name for spec in specs] == ["a", "b"]
     assert all(spec.group == "intergrax.rag.chunkers" for spec in specs)
+
+
+def test_iter_entry_point_specs_reuses_cache_without_rescanning(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entries = _EntryPoints(
+        [_EntryPoint("chunker", f"{__name__}:_DiscoveredPlugin", "intergrax.rag.chunkers")]
+    )
+    scan_calls = 0
+
+    def _entry_points() -> _EntryPoints:
+        nonlocal scan_calls
+        scan_calls += 1
+        return entries
+
+    monkeypatch.setattr(importlib.metadata, "entry_points", _entry_points)
+
+    first = iter_entry_point_specs("intergrax.rag.chunkers")
+    second = iter_entry_point_specs("intergrax.rag.chunkers")
+
+    assert first == second
+    assert scan_calls == 1
+
+
+def test_reset_entry_point_spec_cache_for_tests_causes_rescan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entries = _EntryPoints(
+        [_EntryPoint("chunker", f"{__name__}:_DiscoveredPlugin", "intergrax.rag.chunkers")]
+    )
+    scan_calls = 0
+
+    def _entry_points() -> _EntryPoints:
+        nonlocal scan_calls
+        scan_calls += 1
+        return entries
+
+    monkeypatch.setattr(importlib.metadata, "entry_points", _entry_points)
+
+    iter_entry_point_specs("intergrax.rag.chunkers")
+    reset_entry_point_spec_cache_for_tests()
+    iter_entry_point_specs("intergrax.rag.chunkers")
+
+    assert scan_calls == 2
+
+
+def test_get_entry_point_spec_uses_cached_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entries = _EntryPoints(
+        [
+            _EntryPoint("a", f"{__name__}:_DiscoveredPlugin", "intergrax.rag.chunkers"),
+            _EntryPoint("b", f"{__name__}:_DiscoveredPlugin", "intergrax.rag.chunkers"),
+        ]
+    )
+    scan_calls = 0
+
+    def _entry_points() -> _EntryPoints:
+        nonlocal scan_calls
+        scan_calls += 1
+        return entries
+
+    monkeypatch.setattr(importlib.metadata, "entry_points", _entry_points)
+
+    spec = get_entry_point_spec("intergrax.rag.chunkers", "b")
+    missing = get_entry_point_spec("intergrax.rag.chunkers", "missing")
+    get_entry_point_spec("intergrax.rag.chunkers", "a")
+
+    assert spec is not None
+    assert spec.name == "b"
+    assert missing is None
+    assert scan_calls == 1
 
 
 def test_load_entry_point_targets_isolates_failures(

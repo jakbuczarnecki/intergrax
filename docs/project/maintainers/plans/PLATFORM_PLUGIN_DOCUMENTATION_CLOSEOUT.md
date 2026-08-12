@@ -247,6 +247,20 @@ EXTENSION_AUTHOR_GUIDE §0 explicitly forbids `getattr`/`setattr` in host wiring
 **Resolved:** none in DOCS-7 scope.
 **No longer relevant:** none identified.
 
+### 12.1 Hardening status (PLATFORM-PLUGIN-HARDENING-1)
+
+| ID | Status | Notes |
+|----|--------|-------|
+| F004 | **ENTERPRISE** | CAND-005 — unchanged |
+| F005 | **ENTERPRISE** | CAND-004 — unchanged |
+| F008 | **RESOLVED** | `iter_entry_point_specs` cache; Memory bootstrap reuses common layer |
+| F009 | **RESOLVED** | `get_entry_point_spec` indexed lookup; lazy target load preserved |
+| F011 | **RESOLVED** | `PluginConflictError.conflict_kind`, compatibility/qualification `result` typed |
+| F013 | **RESOLVED** | Core preset asserts canonical slug set, not stale `MIN_CORE_INTEGRATIONS` |
+| F015 | **RESOLVED** | Per-process EP spec cache + `reset_entry_point_spec_cache_for_tests()` |
+
+Cache semantics: per-process lifetime; explicit test invalidation only; no hot-reload or distributed claim.
+
 ---
 
 ## 13. Enterprise candidate ledger (ENTERPRISE-1 input)
@@ -298,7 +312,7 @@ Docs do **not** imply Tools-level scaffold parity where absent.
 | Track | Items |
 |-------|-------|
 | **ENTERPRISE-1** | CAND-001 … CAND-008 (prioritize CAND-004, CAND-006, CAND-007) |
-| **Hardening** | CAND-009, F008, F011, F013, F015 |
+| **Hardening** | ~~CAND-009, F008, F011, F013, F015~~ **done** (HARDENING-1) |
 | **Documentation maintenance** | Keep EP matrix synced when new surfaces added; link check on author guide edits |
 
 **Do not start:** ENTERPRISE-1 implementation or hardening implementation in documentation closeout tasks.

@@ -7,6 +7,7 @@ from __future__ import annotations
 from intergrax.utils import attribute_access
 
 import logging
+import threading
 from dataclasses import dataclass
 from typing import Callable, Literal, Sequence, TypeVar
 
@@ -31,6 +32,10 @@ EP_POLICY_RULES = "intergrax.policy_rules"
 EP_TOOL_INVOCATION_PATTERNS = "intergrax.tool_invocation_patterns"
 
 T = TypeVar("T")
+
+_EP_SPECS_CACHE: dict[str, tuple[EntryPointSpec, ...]] = {}
+_EP_SPECS_BY_NAME: dict[str, dict[str, EntryPointSpec]] = {}
+_CACHE_LOCK = threading.Lock()
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,8 +66,8 @@ class EntryPointLoadResult:
     error: BaseException | None = None
 
 
-def iter_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
-    """Enumerate entry points for ``group`` in deterministic order (scan only)."""
+def _scan_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
+    """Enumerate entry points for ``group`` without caching (internal)."""
     try:
         from importlib.metadata import entry_points
     except ImportError as exc:  # pragma: no cover
@@ -94,6 +99,36 @@ def iter_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
             )
         )
     return tuple(sorted(specs, key=lambda item: (item.name, item.value)))
+
+
+def iter_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
+    """Enumerate entry points for ``group`` in deterministic order (scan only, cached)."""
+    with _CACHE_LOCK:
+        cached = _EP_SPECS_CACHE.get(group)
+        if cached is not None:
+            return cached
+    specs = _scan_entry_point_specs(group)
+    with _CACHE_LOCK:
+        existing = _EP_SPECS_CACHE.get(group)
+        if existing is not None:
+            return existing
+        _EP_SPECS_CACHE[group] = specs
+        _EP_SPECS_BY_NAME[group] = {spec.name: spec for spec in specs}
+        return specs
+
+
+def get_entry_point_spec(group: str, name: str) -> EntryPointSpec | None:
+    """Return one cached entry-point spec by ``name``, or ``None`` when absent."""
+    iter_entry_point_specs(group)
+    with _CACHE_LOCK:
+        return _EP_SPECS_BY_NAME.get(group, {}).get(name)
+
+
+def reset_entry_point_spec_cache_for_tests() -> None:
+    """Clear the per-process entry-point spec cache (tests and dev bootstrap only)."""
+    with _CACHE_LOCK:
+        _EP_SPECS_CACHE.clear()
+        _EP_SPECS_BY_NAME.clear()
 
 
 def load_entry_point_value(value: str) -> object:

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from intergrax.core.plugins.discovery import (
     EP_TOOL_INVOCATION_PATTERNS,
+    get_entry_point_spec,
     instantiate_entry_point_target,
     iter_entry_point_specs,
     load_entry_point_value,
@@ -21,17 +22,16 @@ def shipped_pattern_ids() -> frozenset[str]:
 
 def load_tool_invocation_pattern(pattern_id: str) -> ToolInvocationPattern | None:
     """Load a pattern by entry-point name from ``intergrax.tool_invocation_patterns``."""
-    for spec in iter_entry_point_specs(EP_TOOL_INVOCATION_PATTERNS):
-        if spec.name != pattern_id:
-            continue
-        loaded = load_entry_point_value(spec.value)
-        instance = instantiate_entry_point_target(loaded)
-        if not isinstance(instance, ToolInvocationPattern):
-            raise TypeError(
-                f"Tool invocation entry point {spec.name!r} must return ToolInvocationPattern"
-            )
-        return instance
-    return None
+    spec = get_entry_point_spec(EP_TOOL_INVOCATION_PATTERNS, pattern_id)
+    if spec is None:
+        return None
+    loaded = load_entry_point_value(spec.value)
+    instance = instantiate_entry_point_target(loaded)
+    if not isinstance(instance, ToolInvocationPattern):
+        raise TypeError(
+            f"Tool invocation entry point {spec.name!r} must return ToolInvocationPattern"
+        )
+    return instance
 
 
 def list_tool_invocation_pattern_ids() -> tuple[str, ...]:

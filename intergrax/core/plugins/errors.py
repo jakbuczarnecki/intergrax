@@ -5,6 +5,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from intergrax.core.plugins.platform_qualification import PluginQualificationResult
+    from intergrax.core.plugins.platform_semantics import (
+        PlatformCompatibilityResult,
+        PlatformPluginConflictKind,
+    )
+
 
 class PluginError(Exception):
     """Base error for catalog plugin loading."""
@@ -23,7 +32,7 @@ class PluginConflictError(PluginError):
         *,
         plugin_name: str = "",
         group: str = "",
-        conflict_kind: object | None = None,
+        conflict_kind: PlatformPluginConflictKind | None = None,
     ) -> None:
         super().__init__(message)
         self.plugin_name = plugin_name
@@ -46,7 +55,7 @@ class InvalidPlatformVersionError(PlatformPluginContractError):
 class PlatformIncompatibilityError(PlatformPluginContractError):
     """Declared platform compatibility range does not include the tested version."""
 
-    def __init__(self, message: str, *, result: object | None = None) -> None:
+    def __init__(self, message: str, *, result: PlatformCompatibilityResult | None = None) -> None:
         super().__init__(message)
         self.result = result
 
@@ -54,6 +63,6 @@ class PlatformIncompatibilityError(PlatformPluginContractError):
 class ProductionQualificationRequiredError(PlatformPluginContractError):
     """Production host profile requires production-qualified evidence."""
 
-    def __init__(self, message: str, *, result: object | None = None) -> None:
+    def __init__(self, message: str, *, result: PluginQualificationResult | None = None) -> None:
         super().__init__(message)
         self.result = result
