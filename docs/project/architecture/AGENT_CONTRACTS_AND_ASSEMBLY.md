@@ -6,8 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 17–20, 31 (+ ACP cognitive patterns §21)  
 **Audit instruction:** [`audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md)
-**ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md) · [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) — ACP · `run()` · `on_next_step` · dual observability  
-**Distribution (execution-adjacent — do not duplicate here):** [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) — catalog · install · binding · runtime lock · activation (AGENT-PLATFORM-2)
+**ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md) — ACP · `run()` · `on_next_step` · dual observability
 
 > **Practical minimal authoring path:** [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../technical/guides/AGENT_AUTHOR_MINIMAL_PATH.md)
 
@@ -280,8 +279,6 @@ The result must be inspectable by Nexus and by humans.
 ---
 
 # 15. Agent Registry
-
-> **Distribution boundary:** installation, binding, effective roster, dependency lock, and activation are owned by [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md). This section covers **Tier-1 execution projection only** — `AgentRegistry` is populated from materialized effective roster at host startup/activation, not from catalog or install stores.
 
 Nexus discovers agents through the Agent Registry.
 
