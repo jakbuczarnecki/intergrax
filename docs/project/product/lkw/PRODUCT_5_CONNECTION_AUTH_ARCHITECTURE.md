@@ -1,10 +1,10 @@
 # LKW PRODUCT-5B-ARCH-1 — Connection & Authorization Architecture
 
-**Task:** LKW-PRODUCT-5B-ARCH-1  
+**Task:** LKW-PRODUCT-5B-ARCH-1 · **R1:** LKW-PRODUCT-5B-ARCH-1-R1 (auth transaction secret material)  
 **Status:** READY_FOR_REVIEW  
 **Mode:** architecture decision only — no production code changed  
 **Authority:** [`PRODUCT_5_REAL_VENDOR_GAP_AUDIT.md`](PRODUCT_5_REAL_VENDOR_GAP_AUDIT.md) (PRODUCT-5A, accepted), [`PRODUCT_CONTRACT.md`](PRODUCT_CONTRACT.md)  
-**Required ancestor:** `2159a54906d45dcc7f845608e0f499d7ee2edf3b`
+**Required ancestor:** `8188c353c10e58408062b671390d7df17868b1dd`
 
 ---
 
@@ -32,7 +32,7 @@
 │  TenantConnectionProductOrchestrationService  [NEW in PRODUCT-5B]           │
 │    · list providers · begin/complete auth · bind manual · reconnect · revoke│
 │    · secrets bind · TenantConnection create/update · trigger rehydrate      │
-│  TenantConnectionAuthorizationTransactionStore  [NEW, durable]              │
+│  TenantConnectionAuthorizationTransactionStore  [NEW, durable metadata]     │
 │  WorkspaceConnectionAttachmentService          [EXISTING — unchanged owner] │
 │  WorkspaceRemoteResourceDiscoveryService       [EXISTING — unchanged owner] │
 │  KnowledgePluginConfigurationService           [EXISTING — safe list/read]  │
@@ -53,8 +53,12 @@
                 │
                 ▼
 ┌───────────────────────────────┐
-│  SecretsStore (credential_ref) │
-│  Document store (connections + auth transactions) │
+│  SecretsStore                  │
+│    · credential_ref (tokens)   │
+│    · verifier_secret_ref (PKCE)│
+│  Document store                │
+│    · TenantConnection          │
+│    · auth transaction metadata │
 └───────────────────────────────┘
 ```
 
@@ -66,8 +70,9 @@
 | 2 | Provider-specific OAuth mechanics | Provider `TenantConnectionAuthProvider` adapters | No OAuth in conversation/planner/renderer |
 | 3 | Durable connection metadata | `TenantConnection` + `DocumentStoreTenantConnectionRepository` | Secret-free config; immutable identity fields |
 | 4 | Secrets/token persistence | `SecretsStore` via `credential_ref` | Tokens never in connection record or product API |
-| 5 | OAuth transient state | `TenantConnectionAuthorizationTransaction` (durable store) | Required for multi-worker / restart survival |
-| 6 | PKCE / state / CSRF verification | Orchestration service validates; adapter generates | Fail closed on mismatch, expiry, replay |
+| 5 | OAuth transient **metadata** | `TenantConnectionAuthorizationTransaction` (document store) | CSRF `state`, correlation refs, CAS completion state — **no secret material** |
+| 5b | OAuth transient **secret material** | `SecretsStore` via `verifier_secret_ref` | PKCE `code_verifier` only; internal ref never in product API |
+| 6 | PKCE / state / CSRF verification | Orchestration service validates; adapter generates challenge | Fail closed on mismatch, expiry, replay; verifier read only after claim |
 | 7 | Callback handling | HTTP route → `complete_connection_authorization` | Single product callback surface per deployment |
 | 8 | Token refresh | Provider adapter + runtime integration on use; reconnect path for hard expiry | Not exposed to product clients |
 | 9 | Reconnect | Orchestration `reconnect_connection` | Re-auth or credential refresh per provider policy |
@@ -105,7 +110,8 @@ All operations are **tenant-bound** (`tenant_id` from request context / executio
 |-----------|-----------|----------|
 | `connection_ref` | Stable tenant-scoped connection identity | Product-safe |
 | `authorization_transaction_ref` | One-time OAuth/manual session correlator | Product-safe; not a secret |
-| `credential_ref` | Secrets store path | **Internal only** — never in API, Slack, or logs |
+| `credential_ref` | Secrets store path for provider credential bundle | **Internal only** — never in API, Slack, or logs |
+| `verifier_secret_ref` | Secrets store path for PKCE `code_verifier` | **Internal only** — never in API, Slack, logs, or authorization URL/state |
 | `connected_principal_ref` | Provider account/principal identity for rehydration and discovery | Product-safe opaque string |
 
 ### Lifecycle states
@@ -141,23 +147,76 @@ Uses existing **`TenantConnectionAdministrativeStatus`**: `ACTIVE`, `DISABLED`, 
 
 ### Idempotency
 
-- **`complete_connection_authorization`:** transaction record is **consume-once**; replay returns `authorization_callback_replay` (not a second connection).
+- **`complete_connection_authorization`:** transaction `completion_state` is **consume-once** via CAS (`completed` terminal); replay returns `authorization_callback_replay` (not a second connection); transient failures may retry within claim lease without burning the authorization `code`.
 - **`revoke_connection`:** idempotent — repeated revoke on `REVOKED` returns same safe view.
 - **Connection create:** duplicate `(tenant_id, provider_id, connected_principal_ref)` policy enforced at orchestration layer (exact uniqueness rule per provider adapter metadata).
 
 ### Authorization-state correlation
 
-Each `begin_connection_authorization` creates a durable **`TenantConnectionAuthorizationTransaction`** containing:
+Each `begin_connection_authorization` creates durable artifacts in **two stores** (metadata vs secret material):
+
+**Document store — `TenantConnectionAuthorizationTransaction` (metadata only):**
 
 - `authorization_transaction_ref` (public opaque ID)
 - `tenant_id`, `provider_id`
-- `state` (CSRF), `pkce_verifier` (when applicable)
+- `state` (CSRF correlation — not secret material)
 - `redirect_uri`, `nonce` (if provider requires)
 - `connection_ref` target (create vs reconnect)
+- `verifier_secret_ref` (when PKCE applies — **internal pointer only**, never product-exposed)
 - `created_at`, `expires_at` (default **15 minutes**)
-- `consumed_at` (null until complete)
+- `completion_state` (`pending` \| `claimed` \| `completed`)
+- `completion_claim_expires_at` (when `claimed`)
+- `consumed_at` (set when `completed`)
+- `version` (monotonic CAS field — same convention as `TenantConnection.configuration_version`)
 
-Callback **`state`** must match stored value; **`authorization_transaction_ref`** may be embedded in state or looked up by state index. Completion atomically: validate → exchange token (adapter) → write secret → create/update `TenantConnection` → rehydrate → mark consumed.
+**SecretsStore — PKCE secret material (when applicable):**
+
+- `code_verifier` at `verifier_secret_ref`
+- Tenant-bound path scoped to `(tenant_id, authorization_transaction_ref)`
+- Written at `begin`; read only after successful completion claim; deleted on success or expiry cleanup
+
+Callback **`state`** must match stored metadata; **`authorization_transaction_ref`** may be embedded in state or looked up by state index. PKCE challenge is derived from verifier by adapter at begin; verifier never appears in authorization URL, callback URL, logs, or product DTOs.
+
+### Completion claim / CAS model
+
+Smallest durable model aligned with existing document-store `replace_if_match` CAS (evidenced: `DocumentStoreTenantConnectionRepository.update`).
+
+| `completion_state` | Meaning |
+|--------------------|---------|
+| `pending` | Awaiting callback; verifier secret present |
+| `claimed` | One worker holds exclusive completion lease |
+| `completed` | Terminal success; verifier secret deleted; audit metadata may remain |
+
+**Claim transition (CAS):** `pending` → `claimed` via `replace_if_match` on full transaction document with `version` increment. Sets `completion_claim_expires_at` (short lease, e.g. **2 minutes**). Only one concurrent callback wins.
+
+**Success path:** after token exchange, credential persist, `TenantConnection` create/update, and rehydrate → `claimed` → `completed` (CAS), set `consumed_at`, **delete verifier secret**.
+
+**Transient downstream failure** (provider token exchange, rehydration, store timeout): if lease still valid, same worker may retry in-place; if lease expired, CAS `claimed` → `pending` (or new claim after expiry) so a valid authorization `code` is **not permanently burned** before exchange.
+
+**Invalid completion** (state/PKCE/tenant/provider mismatch, expired transaction): fail closed; verifier secret not returned; no connection created.
+
+**Replay semantics:**
+
+- Second callback after `completed` → `authorization_callback_replay` (verifier already deleted; cannot recover).
+- Concurrent duplicate callbacks → one wins claim; others retry or receive replay after completion.
+- Same `code` cannot complete twice.
+
+**Safe completion sequence:**
+
+```text
+lookup transaction (tenant-bound)
+  → validate tenant / provider / state / expiry / completion_state == pending|claimed-with-valid-lease
+  → CAS claim: pending → claimed (or continue claimed lease)
+  → read verifier secret (SecretsStore.get_secret(verifier_secret_ref)) — only after claim
+  → exchange authorization code (adapter)
+  → SecretsStore.put_secret(credential_ref)
+  → TenantConnection create/update (configuration_version CAS)
+  → TenantConnectionRehydrator.rehydrate_tenant
+  → CAS: claimed → completed; set consumed_at
+  → SecretsStore.delete_secret(verifier_secret_ref)
+```
+
+On transient failure before `completed`: release or let claim expire so exchange can be retried; **do not** delete verifier until success or transaction expiry cleanup.
 
 ### Expiry semantics
 
@@ -241,21 +300,24 @@ Registry parallels `TenantConnectionIntegrationFactoryRegistry`.
 
 Production **fail-closed** invariants for PRODUCT-5 connection/auth:
 
-1. **OAuth state** — cryptographically random, bound to `authorization_transaction_ref` and `tenant_id`.
-2. **PKCE** — S256 required for Google and M365 delegated OAuth; verifier never leaves server storage.
-3. **CSRF / callback correlation** — callback `state` must match durable transaction; `tenant_id` and `provider_id` must match transaction.
-4. **Callback expiry** — transactions expire (default 15 min); expired completion rejected.
-5. **One-time completion** — `consumed_at` set atomically; replays rejected.
-6. **Replay rejection** — same `code` + transaction cannot complete twice.
-7. **Tenant binding** — all operations enforce `tenant_id`; cross-tenant transaction lookup impossible.
+1. **OAuth state** — cryptographically random, bound to `authorization_transaction_ref` and `tenant_id`; stored as transaction metadata only.
+2. **PKCE** — S256 required for Google and M365 delegated OAuth; `code_verifier` is **secret material** in `SecretsStore` at `verifier_secret_ref`; never in document-store transaction metadata, URLs, logs, or product artifacts.
+3. **CSRF / callback correlation** — callback `state` must match durable transaction metadata; `tenant_id` and `provider_id` must match transaction.
+4. **Callback expiry** — transactions expire (default 15 min); expired completion rejected; verifier secret deleted on expiry cleanup.
+5. **One-time completion** — `completion_state` → `completed` and `consumed_at` set via CAS; replays rejected.
+6. **Replay rejection** — same `code` + transaction cannot complete twice; verifier secret deleted on success so replay cannot recover it.
+7. **Tenant binding** — all operations enforce `tenant_id`; cross-tenant transaction lookup impossible; verifier secret path tenant-scoped.
 8. **Provider binding** — transaction `provider_id` must match adapter and created connection.
 9. **Redirect allowlist** — `redirect_uri` must match deployment-configured allowlist (per client surface).
-10. **Credential secret separation** — secrets only in `SecretsStore`; `TenantConnection` validated secret-free.
-11. **No tokens in URLs/logs/product artifacts** — callbacks use `code` only; logs redact credentials; product DTOs use `SafeTenantConnectionV1`.
-12. **Token refresh ownership** — provider adapters + runtime integration; never returned to clients.
-13. **Revoke behavior** — `REVOKED` is terminal; secrets deleted; runtime deregistered; workspace attachments remain but discovery fails with `connection_not_active` until detach.
-14. **Reconnect semantics** — only for `ACTIVE` or `DISABLED`; creates new authorization transaction; updates same `connection_ref` credential in place with version bump.
-15. **Account/principal identity binding** — `connected_principal_ref` set at completion from provider identity; duplicate active connection per principal rejected.
+10. **Credential secret separation** — provider tokens and PKCE verifier only in `SecretsStore`; `TenantConnection` and authorization transaction metadata validated secret-free.
+11. **No tokens or verifiers in URLs/logs/product artifacts** — callbacks use `code` only; logs redact credentials and verifier material; product DTOs use `SafeTenantConnectionV1`; `verifier_secret_ref` never exposed.
+12. **Verifier read gate** — `code_verifier` read only after tenant/provider/state/expiry validation and successful completion claim.
+13. **Verifier cleanup** — deleted on successful completion and on expired-transaction cleanup; not returned on failed/rejected completion.
+14. **Token refresh ownership** — provider adapters + runtime integration; never returned to clients.
+15. **Revoke behavior** — `REVOKED` is terminal; credential secrets deleted; runtime deregistered; workspace attachments remain but discovery fails with `connection_not_active` until detach.
+16. **Reconnect semantics** — only for `ACTIVE` or `DISABLED`; creates new authorization transaction (+ new verifier secret when PKCE); updates same `connection_ref` credential in place with version bump.
+17. **Account/principal identity binding** — `connected_principal_ref` set at completion from provider identity; duplicate active connection per principal rejected.
+18. **Transient failure tolerance** — completion claim lease prevents permanent burn of valid authorization `code` before token exchange; retry permitted within lease or after lease expiry release.
 
 ---
 
@@ -266,8 +328,9 @@ Production **fail-closed** invariants for PRODUCT-5 connection/auth:
 | Artifact | Store | Purpose |
 |----------|-------|---------|
 | `TenantConnection` | Document store via `DocumentStoreTenantConnectionRepository` | Connection metadata, `credential_ref`, `connected_principal_ref`, status |
-| Credential material | `SecretsStore` at `credential_ref` | Tokens / manual credentials |
-| `TenantConnectionAuthorizationTransaction` | Document store (new collection) | OAuth/manual session state, PKCE verifier, CSRF state |
+| Provider credential material | `SecretsStore` at `credential_ref` | Tokens / manual credentials |
+| `TenantConnectionAuthorizationTransaction` | Document store (new collection) | OAuth/manual session **metadata**, CSRF `state`, completion CAS state — **no verifier plaintext** |
+| PKCE `code_verifier` | `SecretsStore` at `verifier_secret_ref` | Transient OAuth secret; tenant- and transaction-bound |
 | Workspace attachment | `WorkspaceKnowledgeConfigurationV1` | Links workspace → `connection_ref` |
 
 ### Ephemeral
@@ -275,23 +338,37 @@ Production **fail-closed** invariants for PRODUCT-5 connection/auth:
 | Artifact | Rule |
 |----------|------|
 | Browser OAuth redirect session | User agent only |
-| In-memory PKCE/state | **Forbidden** as sole store — must persist in authorization transaction |
+| In-memory PKCE/state as sole store | **Forbidden** — metadata in document store; verifier in SecretsStore |
 
 ### Restart / multi-worker
 
 - Host bootstrap (`connected_source_host_wiring.py`) continues to rehydrate via `TenantConnectionRehydrator` for configured tenant IDs.
-- **Authorization transactions must survive process restart** — document store backed, not process-local dict.
-- Multiple workers: transaction consume uses optimistic locking or atomic compare-and-set on `consumed_at`.
+- **Authorization transaction metadata must survive process restart** — document store backed, not process-local dict.
+- **PKCE verifier must survive restart** — SecretsStore backed at `verifier_secret_ref`.
+- Multiple workers: completion uses `replace_if_match` CAS on transaction `version` + `completion_state` (same pattern as `TenantConnection.configuration_version`).
 
 ### Post-create path
 
 ```text
 complete_authorization
+  → CAS claim transaction (pending → claimed)
+  → SecretsStore.get_secret(verifier_secret_ref)   # PKCE only; after claim
+  → adapter token exchange
   → SecretsStore.put_secret(credential_ref)
-  → TenantConnectionService.create / update
+  → TenantConnectionService.create / update (configuration_version CAS)
   → TenantConnectionRehydrator.rehydrate_tenant (target tenant)
+  → CAS complete transaction (claimed → completed); delete verifier secret
   → connection available to WorkspaceConnectionAttachmentService
 ```
+
+### Secret cleanup
+
+| Event | Verifier secret | Transaction metadata |
+|-------|-----------------|----------------------|
+| Successful completion | `delete_secret(verifier_secret_ref)` | `completed`; `consumed_at` set; audit row may persist per retention policy |
+| Transaction expiry (sweeper/TTL) | `delete_secret(verifier_secret_ref)` | Mark expired or delete per bounded retention |
+| Invalid/rejected completion | Not returned; retained until expiry cleanup | Unchanged or rejected without leaking verifier |
+| Replay after success | Already deleted | `authorization_callback_replay` |
 
 ---
 
@@ -343,16 +420,17 @@ LKW **must not** implement Graph identity resolution, Google Drive traversal, or
 ### PRODUCT-5B implements
 
 1. **`TenantConnectionProductOrchestrationService`** with full contract (§3).
-2. **`TenantConnectionAuthorizationTransaction`** model + document-store repository.
-3. **`TenantConnectionAuthProvider`** protocol + registry.
-4. **Provider auth adapters:**
+2. **`TenantConnectionAuthorizationTransaction`** model + document-store repository (metadata + CAS completion state).
+3. **Verifier secret binding** — `SecretsStore.put_secret` / `get_secret` / `delete_secret` at `verifier_secret_ref` for PKCE flows (reuses existing `SecretsStore` contract in `intergrax/integrations/contracts/secrets_store.py`).
+4. **`TenantConnectionAuthProvider`** protocol + registry.
+5. **Provider auth adapters:**
    - Slack: `manual_credential_binding` (guided app/bot token JSON).
    - Google Workspace: `oauth_delegated` (authorize URL, callback, refresh token storage).
    - M365: `oauth_delegated` (replace app-only secret product path; delegated user token).
-5. **HTTP routes** (§3 HTTP mapping) mounted in workspace serving composition.
-6. **Host wiring** — secrets store, transaction store, orchestration service, callback allowlist settings.
-7. **Unit/HTTP tests** for orchestration, transaction expiry, replay rejection, tenant isolation, safe DTO guarantees.
-8. **On successful complete:** secrets bind → `TenantConnection` create/update → `TenantConnectionRehydrator` for tenant.
+6. **HTTP routes** (§3 HTTP mapping) mounted in workspace serving composition.
+7. **Host wiring** — secrets store, transaction store, orchestration service, callback allowlist settings.
+8. **Unit/HTTP tests** for orchestration, transaction expiry, replay rejection, tenant isolation, safe DTO guarantees, verifier secret lifecycle (no API exposure, cleanup on success/expiry).
+9. **On successful complete:** claim → verifier read → credential secrets bind → `TenantConnection` create/update → `TenantConnectionRehydrator` for tenant → verifier delete.
 
 ### Reuses (no redesign)
 
@@ -405,6 +483,8 @@ applications/local_workspace_application/tests/.../test_tenant_connection_produc
 | Full Google Drive browse in PRODUCT-5 | No LKW backend evidence; CT-2 scope; delays 5B/5E |
 | Keep M365 app-only `client_secret` as product auth | SECURITY_GAP in 5A; incompatible with installation persona delegated consent |
 | Embed Graph/Google identity logic in `WorkspaceRemoteResourceDiscoveryService` | Violates provider integration ownership (CT-3, CT-2) |
+| Store PKCE `code_verifier` in authorization transaction document metadata | Secret material must use `SecretsStore`; violates credential separation invariant |
+| Expose `verifier_secret_ref` in product API or authorization URL/state | Internal-only secret pointer; PKCE verifier never client-visible |
 | LKW conversation executor calls provider SDKs directly | Violates layering; blocks non-Slack clients |
 
 ---
@@ -413,5 +493,5 @@ applications/local_workspace_application/tests/.../test_tenant_connection_produc
 
 | Field | Value |
 |-------|-------|
-| Task | LKW-PRODUCT-5B-ARCH-1 |
+| Task | LKW-PRODUCT-5B-ARCH-1 · R1: LKW-PRODUCT-5B-ARCH-1-R1 |
 | Document only | `docs/project/product/lkw/PRODUCT_5_CONNECTION_AUTH_ARCHITECTURE.md` |
