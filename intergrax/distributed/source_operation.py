@@ -451,3 +451,18 @@ class DocumentStoreSourceOperationCoordinator:
 
 def _publication_identity(generation: int, token: str) -> str:
     return f"{generation}:{token}"
+
+
+def resolve_source_operation_coordinator(
+    document_store: DocumentStore | None,
+    *,
+    owner_id: str = "rag-runtime",
+) -> SourceOperationCoordinator:
+    """Resolve a durable coordinator when a conditional document store is available."""
+    normalized_owner = _require_non_empty(owner_id, field_name="owner_id")
+    if document_store is not None and isinstance(document_store, ConditionalDocumentStore):
+        return DocumentStoreSourceOperationCoordinator(
+            document_store,
+            owner_id=normalized_owner,
+        )
+    return InProcessSourceOperationCoordinator(owner_id=normalized_owner)

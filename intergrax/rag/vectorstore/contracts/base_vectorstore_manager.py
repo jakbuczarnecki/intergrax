@@ -102,3 +102,7 @@ class BaseVectorstoreManager(ABC):
     @abstractmethod
     def count(self, *, scope: VectorStoreScope | None = None) -> int:
         raise NotImplementedError
+
+    def supports_native_hybrid_search(self) -> bool:
+        """Return whether this manager can execute provider-native hybrid search."""
+        return False

@@ -19,7 +19,7 @@ from intergrax.integrations.contracts.vector_store import (
     VectorStoreScope,
 )
 from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
-from intergrax.rag.vectorstore.contracts.hybrid_search import provider_supports_native_hybrid_search
+from intergrax.rag.vectorstore.contracts.hybrid_search import NativeHybridSearchCapability
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.categories.storage import VectorStoreIntegrationContract
 
@@ -143,7 +143,9 @@ class QdrantVectorStoreIntegration(VectorStoreIntegrationContract):
         inner = self._inner
         if inner is None:
             return False
-        return provider_supports_native_hybrid_search(inner)
+        if isinstance(inner, NativeHybridSearchCapability):
+            return inner.supports_native_hybrid_search()
+        return False
 
     def query_hybrid(
         self,

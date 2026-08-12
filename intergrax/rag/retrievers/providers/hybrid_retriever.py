@@ -8,7 +8,6 @@ import re
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
-from intergrax.rag.vectorstore.contracts.hybrid_search import provider_supports_native_hybrid_search
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
     RetrievalHit,
@@ -70,7 +69,7 @@ class HybridRetriever(BaseRetriever):
         top_k = int(query.top_k)
         prefetch_k = max(top_k, top_k * self._prefetch_factor)
 
-        if provider_supports_native_hybrid_search(self._vs) and query.query_text:
+        if self._vs.supports_native_hybrid_search() and query.query_text:
             hits = self._vs.query_hybrid(
                 q_vec,
                 query.query_text,

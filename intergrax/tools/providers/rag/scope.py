@@ -10,6 +10,7 @@ from typing import Any
 from intergrax.rag.vectorstore.bootstrap.integration_vectorstore import create_vectorstore_manager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
+from intergrax.tools.providers.rag.source_operation_wiring import bind_source_operation_coordinator
 from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.utils import attribute_access
 
@@ -73,6 +74,7 @@ def resolve_tenant_scoped_vectorstore(
     if manager is not None:
         wired_tenant = vectorstore_tenant_id(manager)
         if wired_tenant is not None and wired_tenant == tenant_id:
+            bind_source_operation_coordinator(ctx, manager)
             return manager
 
     profile = ctx.integration_profile
@@ -86,8 +88,10 @@ def resolve_tenant_scoped_vectorstore(
 
     cached = cache_obj.get(tenant_id)
     if cached is not None:
+        bind_source_operation_coordinator(ctx, cached)
         return cached
 
     scoped = create_vectorstore_manager(tenant_id=tenant_id, profile=profile)
+    bind_source_operation_coordinator(ctx, scoped)
     cache_obj[tenant_id] = scoped
     return scoped

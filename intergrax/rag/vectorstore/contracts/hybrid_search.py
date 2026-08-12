@@ -29,32 +29,19 @@ class HybridSearchCapable(Protocol):
     ) -> Sequence[VectorStoreHit]: ...
 
 
-def _unwrap_integration_wrapper(store: object) -> object:
-    current = store
-    for _ in range(8):
-        inner = getattr(current, "_inner", None)
-        if inner is None:
-            break
-        current = inner
-    return current
+@runtime_checkable
+class NativeHybridSearchCapability(Protocol):
+    """Explicit durable native hybrid capability — not inferred from query_hybrid."""
+
+    def supports_native_hybrid_search(self) -> bool: ...
 
 
 def provider_supports_native_hybrid_search(store: object) -> bool:
     """
-  Return True when the resolved provider exposes durable native hybrid search.
+    Return True when the store exposes durable native hybrid search explicitly.
 
-  Process-local lexical caches (for example LexicalHybridSupport without sparse
-  vectors) must opt out via ``supports_native_hybrid_search()``.
+    Process-local lexical caches must opt out via ``supports_native_hybrid_search()``.
     """
-    bridge = getattr(store, "supports_native_hybrid_search", None)
-    if callable(bridge):
-        return bool(bridge())
-
-    candidate = _unwrap_integration_wrapper(store)
-    if not isinstance(candidate, HybridSearchCapable):
-        return False
-
-    explicit = getattr(candidate, "supports_native_hybrid_search", None)
-    if callable(explicit):
-        return bool(explicit())
-    return True
+    if isinstance(store, NativeHybridSearchCapability):
+        return store.supports_native_hybrid_search()
+    return False

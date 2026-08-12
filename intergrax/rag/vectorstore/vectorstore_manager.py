@@ -31,6 +31,7 @@ from intergrax.rag.vectorstore.governance.collection_access_policy import (
     CollectionAccessPolicy,
     enforce_collection_access,
 )
+from intergrax.rag.vectorstore.publication_visibility import vector_record_visible
 from intergrax.logging import IntergraxLogging
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
@@ -254,7 +255,7 @@ class VectorstoreManager(BaseVectorstoreManager):
                     raise VectorStoreContractError(
                         "provider returned a non-native vector-store hit"
                     )
-                document = getattr(provider_hit, "document")
+                document = provider_hit.document
                 if not isinstance(document, KnowledgeDocument):
                     raise VectorStoreContractError(
                         "provider hit document is not a KnowledgeDocument"
@@ -264,16 +265,16 @@ class VectorstoreManager(BaseVectorstoreManager):
                         "provider hit document scope does not match query scope"
                     )
                 embedding = (
-                    getattr(provider_hit, "embedding", None)
+                    provider_hit.embedding
                     if include_embeddings
                     else None
                 )
                 normalized.append(
                     VectorStoreHit(
-                        vector_id=getattr(provider_hit, "vector_id"),
+                        vector_id=provider_hit.vector_id,
                         document=document,
-                        similarity_score=getattr(provider_hit, "similarity_score"),
-                        rank=getattr(provider_hit, "rank"),
+                        similarity_score=provider_hit.similarity_score,
+                        rank=provider_hit.rank,
                         embedding=embedding,
                     )
                 )
@@ -336,22 +337,11 @@ class VectorstoreManager(BaseVectorstoreManager):
         except (AttributeError, TypeError, ValueError):
             return limit
 
-    def _coordinator_has_active_publications(self) -> bool:
-        coordinator = self._source_coordinator
-        if coordinator is None:
-            return False
-        active_publications = getattr(coordinator, "_active_publications", None)
-        return isinstance(active_publications, dict) and bool(active_publications)
-
     def _filter_visible_publication_hits(
         self,
         hits: Sequence[VectorStoreHit],
         scope: VectorStoreScope,
     ) -> list[VectorStoreHit]:
-        if self._source_coordinator is None:
-            return list(hits)
-        if not self._coordinator_has_active_publications():
-            return list(hits)
         visible: list[VectorStoreHit] = []
         for hit in hits:
             source_id = str(hit.document.provenance.source_id)
@@ -361,16 +351,19 @@ class VectorstoreManager(BaseVectorstoreManager):
                 workspace_id=scope.workspace_id,
                 source_id=source_id,
             )
-            active_generation = self._source_coordinator.active_publication_generation(
-                key=key
-            )
             record_generation = hit.document.metadata.get(
                 SOURCE_PUBLICATION_GENERATION_METADATA_KEY
             )
-            if active_generation is None:
-                if record_generation is not None:
-                    continue
-            elif record_generation != active_generation:
+            generation_value = (
+                str(record_generation)
+                if record_generation is not None
+                else None
+            )
+            if not vector_record_visible(
+                record_generation=generation_value,
+                source_key=key,
+                coordinator=self._source_coordinator,
+            ):
                 continue
             visible.append(
                 VectorStoreHit(

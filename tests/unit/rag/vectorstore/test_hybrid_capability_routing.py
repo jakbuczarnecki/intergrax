@@ -277,14 +277,13 @@ def test_cold_start_generic_hybrid_ordering_is_stable_without_lexical_cache() ->
     assert before_restart[0].vector_id == "fresh-source"
 
 
-def test_versioned_publication_records_visible_after_coordinator_cold_start() -> None:
+def test_inprocess_empty_coordinator_hides_generation_managed_records() -> None:
     from intergrax.distributed.source_operation import (
         InProcessSourceOperationCoordinator,
         SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
     )
 
     coordinator = InProcessSourceOperationCoordinator()
-    assert coordinator._active_publications == {}
     versioned_document = KnowledgeDocument.model_validate(
         {
             "schema_version": 1,
@@ -322,5 +321,4 @@ def test_versioned_publication_records_visible_after_coordinator_cold_start() ->
 
     hits = manager.query([1.0, 0.0], scope=SCOPE, top_k=5)
 
-    assert len(hits) == 1
-    assert hits[0].vector_id == "fresh-source"
+    assert hits == []
