@@ -61,7 +61,7 @@ screenshot; dynamic workspace and Ask-run IDs are omitted.
 
 LKW is the **Primary Product Proof**, classified as **Backend Product Alpha /
 MVP**, with **PARTIAL** status. Bounded proof exists for indexed knowledge
-workflows. **Hybrid Ask** is the production composition path used by the
+workflows. **Hybrid Ask** is the production code path used by the
 proven indexed branch; the proven scope today is indexed knowledge only.
 Mixed indexed + authorized-live Hybrid Ask in one answer is **not yet proven**.
 
@@ -238,7 +238,9 @@ Canonical architecture is **frozen**; platform-wide harmonization is **not
 complete**; a complete third-party install-to-runtime E2E proof is **not yet
 established**.
 
-## Agent Marketplace — future ecosystem layer
+## Agent Marketplace — future ecosystem concept
+
+**Future product concept — not shipped today.**
 
 **Build once. Govern centrally. Install reusable AI capabilities into any
 Intergrax application.**

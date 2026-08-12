@@ -1,4 +1,4 @@
-# Intergrax Platform Proof — Local Knowledge Workspace
+# Intergrax Core Platform Proof — Local Knowledge Workspace
 
 ## Choose the right route
 

@@ -49,6 +49,8 @@ with Try LKW as the repository’s primary product action.
 | Assess fit as a CTO, product lead or technical buyer | [Use Cases](../overview/USE_CASES.md) |
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
+| Explore multi-agent / collaborative AI direction | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) |
+| Explore platform extensibility / governed plugins | [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) |
 | Explore future ecosystem direction | [Agent Marketplace concept](../product/AGENT_MARKETPLACE.md) |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
