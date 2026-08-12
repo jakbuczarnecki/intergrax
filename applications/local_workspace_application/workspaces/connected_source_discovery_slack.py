@@ -81,6 +81,7 @@ class SlackRemoteResourceDiscoveryStrategy:
                     resource_type=self.resource_type,
                     safe_display_label=summary.safe_name,
                     conversation_kind=kind,
+                    remote_resource_id=summary.conversation_id,
                     is_archived=summary.is_archived,
                     is_private=summary.is_private,
                     safe_description=summary.safe_topic or summary.safe_purpose,

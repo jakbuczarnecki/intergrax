@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Protocol
 
@@ -37,6 +38,27 @@ from intergrax.runtime.vendor_knowledge.tenant_connections import (
 from local_workspace_application.workspaces.conversation_context_models import (
     ConversationAudienceMode,
     ConversationExecutionContextV1,
+)
+from local_workspace_application.workspaces.connected_source_discovery import (
+    WorkspaceRemoteResourceDiscoveryPort,
+)
+from local_workspace_application.workspaces.connected_source_models import (
+    RemoteResourceDiscoveryPageV1 as LkwRemoteResourceDiscoveryPageV1,
+    RemoteResourceTypeV1,
+)
+from local_workspace_application.workspaces.knowledge_access_service import (
+    CreateConnectedIndexedSourceRequest,
+    CreateConnectedIndexedSourceResult,
+    WorkspaceKnowledgeAccessService,
+)
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
+)
+from local_workspace_application.workspaces.knowledge_connection_attachment_service import (
+    AttachWorkspaceConnectionCommand,
+    AttachWorkspaceConnectionResult,
+    WorkspaceConnectionAttachmentError,
+    WorkspaceConnectionAttachmentService,
 )
 
 _MAX_CONNECTIONS = 20
@@ -101,6 +123,22 @@ class KnowledgeCapabilityCatalogFactory(Protocol):
 
 class KnowledgeResourceDiscoveryServiceFactory(Protocol):
     def __call__(self, tenant_id: str) -> TenantRemoteResourceDiscoveryService: ...
+
+
+class KnowledgeConfigurationServiceFactory(Protocol):
+    def __call__(self, tenant_id: str) -> WorkspaceKnowledgeConfigurationService: ...
+
+
+class KnowledgeConnectionAttachmentServiceFactory(Protocol):
+    def __call__(self, tenant_id: str) -> WorkspaceConnectionAttachmentService: ...
+
+
+class KnowledgeAccessServiceFactory(Protocol):
+    def __call__(self, tenant_id: str) -> WorkspaceKnowledgeAccessService: ...
+
+
+class KnowledgeWorkspaceRemoteDiscoveryServiceFactory(Protocol):
+    def __call__(self, tenant_id: str) -> WorkspaceRemoteResourceDiscoveryPort: ...
 
 
 class KnowledgeConnectionSummaryV1(BaseModel):
@@ -213,7 +251,15 @@ class KnowledgePluginConfigurationSnapshotV1(BaseModel):
 
 
 def _enum_value(value: object) -> str:
-    return str(getattr(value, "value", value))
+    if isinstance(value, StrEnum):
+        return value.value
+    return str(value)
+
+
+def _default_slack_message_window() -> tuple[str, str]:
+    latest = datetime.now(UTC)
+    oldest = latest - timedelta(days=90)
+    return f"{oldest.timestamp():.6f}", f"{latest.timestamp():.6f}"
 
 
 def _sorted_modes(modes: set[KnowledgeConfigurationModeV1]) -> tuple[KnowledgeConfigurationModeV1, ...]:
@@ -231,12 +277,20 @@ class KnowledgePluginConfigurationService:
         resource_discovery_service_factory: KnowledgeResourceDiscoveryServiceFactory,
         workspace_authorization: KnowledgeWorkspaceAuthorizationPort,
         source_catalog_factory: KnowledgeSourceCatalogFactory | None = None,
+        configuration_service_factory: KnowledgeConfigurationServiceFactory | None = None,
+        connection_attachment_service_factory: KnowledgeConnectionAttachmentServiceFactory | None = None,
+        knowledge_access_service_factory: KnowledgeAccessServiceFactory | None = None,
+        workspace_remote_discovery_service_factory: KnowledgeWorkspaceRemoteDiscoveryServiceFactory | None = None,
     ) -> None:
         self._connection_service_factory = connection_service_factory
         self._capability_catalog_factory = capability_catalog_factory
         self._resource_discovery_service_factory = resource_discovery_service_factory
         self._workspace_authorization = workspace_authorization
         self._source_catalog_factory = source_catalog_factory
+        self._configuration_service_factory = configuration_service_factory
+        self._connection_attachment_service_factory = connection_attachment_service_factory
+        self._knowledge_access_service_factory = knowledge_access_service_factory
+        self._workspace_remote_discovery_service_factory = workspace_remote_discovery_service_factory
 
     def list_connections(
         self,
@@ -420,6 +474,161 @@ class KnowledgePluginConfigurationService:
             warnings=tuple(sorted(set(warnings))),
         )
 
+    def attach_connection(
+        self,
+        *,
+        tenant_id: str,
+        execution_context: ConversationExecutionContextV1,
+        workspace_id: str,
+        connection_ref: str,
+        idempotency_key_hash: str,
+        requested_safe_display_label: str | None = None,
+    ) -> AttachWorkspaceConnectionResult:
+        self._authorize_workspace(
+            tenant_id=tenant_id,
+            execution_context=execution_context,
+            workspace_id=workspace_id,
+        )
+        attachment_factory = self._connection_attachment_service_factory
+        configuration_factory = self._configuration_service_factory
+        if attachment_factory is None or configuration_factory is None:
+            raise KnowledgePluginConfigurationError("knowledge_plugin_configuration_unavailable")
+        self._active_connection(tenant_id=tenant_id, connection_ref=connection_ref)
+        configuration = configuration_factory(tenant_id).get_configuration(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        expected_revision = 0 if configuration is None else configuration.revision
+        try:
+            return attachment_factory(tenant_id).attach_connection(
+                AttachWorkspaceConnectionCommand(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    connection_ref=connection_ref,
+                    expected_revision=expected_revision,
+                    idempotency_key_hash=idempotency_key_hash,
+                    requested_safe_display_label=requested_safe_display_label,
+                )
+            )
+        except WorkspaceConnectionAttachmentError as exc:
+            raise KnowledgePluginConfigurationError(exc.error_code) from exc
+
+    async def create_indexed_source(
+        self,
+        *,
+        tenant_id: str,
+        execution_context: ConversationExecutionContextV1,
+        workspace_id: str,
+        connection_ref: str,
+        source_kind: str,
+        remote_resource_id: str,
+        idempotency_key_hash: str,
+        root_oldest: str | None = None,
+        root_latest: str | None = None,
+    ) -> CreateConnectedIndexedSourceResult:
+        self._authorize_workspace(
+            tenant_id=tenant_id,
+            execution_context=execution_context,
+            workspace_id=workspace_id,
+        )
+        access_factory = self._knowledge_access_service_factory
+        configuration_factory = self._configuration_service_factory
+        discovery_factory = self._workspace_remote_discovery_service_factory
+        if (
+            access_factory is None
+            or configuration_factory is None
+            or discovery_factory is None
+        ):
+            raise KnowledgePluginConfigurationError("knowledge_plugin_configuration_unavailable")
+        cleaned_source_kind = source_kind.strip()
+        if not cleaned_source_kind:
+            raise KnowledgePluginConfigurationError("knowledge_resource_discovery_unavailable")
+        if cleaned_source_kind not in self._resource_discovery_service_factory(
+            tenant_id
+        ).list_source_kinds(connection_ref=connection_ref):
+            raise KnowledgePluginConfigurationError("knowledge_resource_discovery_unavailable")
+        self._active_connection(tenant_id=tenant_id, connection_ref=connection_ref)
+        cleaned_resource_id = remote_resource_id.strip()
+        if not cleaned_resource_id:
+            raise KnowledgePluginConfigurationError("knowledge_resource_not_found")
+        opaque_candidate_ref = await self._resolve_opaque_candidate_ref(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            remote_resource_id=cleaned_resource_id,
+            discovery_service=discovery_factory(tenant_id),
+        )
+        configuration = configuration_factory(tenant_id).get_configuration(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        expected_revision = 0 if configuration is None else configuration.revision
+        oldest, latest = (
+            (root_oldest.strip(), root_latest.strip())
+            if root_oldest is not None and root_latest is not None
+            else _default_slack_message_window()
+        )
+        try:
+            return await access_factory(tenant_id).create_indexed_source_from_candidate(
+                CreateConnectedIndexedSourceRequest(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    connection_ref=connection_ref,
+                    opaque_candidate_ref=opaque_candidate_ref,
+                    expected_revision=expected_revision,
+                    idempotency_key_hash=idempotency_key_hash,
+                    root_oldest=oldest,
+                    root_latest=latest,
+                    start_sync=True,
+                )
+            )
+        except Exception as exc:
+            if isinstance(exc, KnowledgePluginConfigurationError):
+                raise
+            raise KnowledgePluginConfigurationError(
+                "knowledge_indexed_source_unavailable",
+                retryable=True,
+            ) from exc
+
+    async def _resolve_opaque_candidate_ref(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        remote_resource_id: str,
+        discovery_service: WorkspaceRemoteResourceDiscoveryPort,
+    ) -> str:
+        page = await discovery_service.list_remote_resources(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.SLACK_CONVERSATION,
+            cursor=None,
+            limit=100,
+        )
+        if not isinstance(page, LkwRemoteResourceDiscoveryPageV1):
+            raise KnowledgePluginConfigurationError("knowledge_resource_discovery_unavailable")
+        for item in page.items:
+            if item.remote_resource_id == remote_resource_id:
+                return item.opaque_candidate_ref
+        raise KnowledgePluginConfigurationError("knowledge_resource_not_found")
+
+    def _authorize_workspace(
+        self,
+        *,
+        tenant_id: str,
+        execution_context: ConversationExecutionContextV1,
+        workspace_id: str,
+    ) -> None:
+        self._authorize(tenant_id=tenant_id, execution_context=execution_context)
+        workspace = self._workspace_authorization.get_workspace(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        if workspace is None:
+            raise KnowledgePluginConfigurationError("workspace_not_found")
+
     def _authorize(
         self,
         *,
@@ -434,7 +643,7 @@ class KnowledgePluginConfigurationService:
             tenant_id=tenant_id,
             workspace_id=execution_context.workspace_id,
         )
-        if workspace is None or getattr(workspace, "tenant_id", tenant_id) != tenant_id:
+        if workspace is None:
             raise KnowledgePluginConfigurationError("workspace_not_found")
 
     def _active_connection(

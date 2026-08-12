@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import inspect
 import uuid
 from collections.abc import Callable, Mapping, Sequence
@@ -31,6 +32,8 @@ from local_workspace_application.conversation.interaction_models import (
     KnowledgeAddSourcesPlannedAction,
     KnowledgeCapabilitiesListPlannedAction,
     KnowledgeConnectionsListPlannedAction,
+    KnowledgeConnectionAttachPlannedAction,
+    KnowledgeIndexedSourceCreatePlannedAction,
     KnowledgeResourcesListPlannedAction,
     LocalFileReferenceExtractedObject,
     PlannedAction,
@@ -101,6 +104,7 @@ from local_workspace_application.workspaces.knowledge_plugin_configuration_servi
     KnowledgeConnectionSummaryV1,
     KnowledgeRemoteResourcePageV1,
     KnowledgePluginConfigurationService,
+    KnowledgePluginConfigurationError,
 )
 from local_workspace_application.workspaces.knowledge_inspection_operations_service import (
     KnowledgeAccessModeV1,
@@ -213,6 +217,8 @@ _ACTION_CAPABILITIES: dict[str, ConversationProductCapability] = {
     "citation.inspect": ConversationProductCapability.READ_ONLY_ASK,
     "knowledge.connections.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
     "knowledge.resources.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
+    "knowledge.connection.attach": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
+    "knowledge.indexed_source.create": ConversationProductCapability.WORKSPACE_ADMINISTRATION,
     "knowledge.capabilities.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
     "knowledge.inventory.list": ConversationProductCapability.SOURCE_DISCOVERY,
     "knowledge.operation.execute": ConversationProductCapability.WORKSPACE_ADMINISTRATION,
@@ -718,6 +724,71 @@ class ConversationInteractionExecutor:
                     "next_page_token": page.next_page_token,
                     "snapshot_version": page.snapshot_version,
                 },
+            )
+        if isinstance(action, KnowledgeConnectionAttachPlannedAction):
+            workspace_id = resolver.resolve_workspace_id(action.workspace)
+            service = self._require_knowledge_plugin_configuration()
+            idem_hash = _knowledge_configuration_idempotency_hash(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                operation="attach_connection",
+                request_id=execution_id,
+                connection_ref=action.connection_ref,
+            )
+            try:
+                result = service.attach_connection(
+                    tenant_id=tenant_id,
+                    execution_context=command.execution_context,
+                    workspace_id=workspace_id,
+                    connection_ref=action.connection_ref,
+                    idempotency_key_hash=idem_hash,
+                )
+            except KnowledgePluginConfigurationError as exc:
+                raise RuntimeError(exc.code) from exc
+            return ConversationExecutionArtifact(
+                artifact_type=action.action_type,
+                data={
+                    "connection_ref": result.attachment.connection_ref,
+                    "attachment_id": result.attachment.attachment_id,
+                    "status": result.attachment.status.value,
+                    "configuration_revision": result.configuration_revision,
+                    "disposition": result.disposition.value,
+                },
+            )
+        if isinstance(action, KnowledgeIndexedSourceCreatePlannedAction):
+            workspace_id = resolver.resolve_workspace_id(action.workspace)
+            service = self._require_knowledge_plugin_configuration()
+            idem_hash = _knowledge_configuration_idempotency_hash(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                operation="create_indexed_source",
+                request_id=execution_id,
+                connection_ref=action.connection_ref,
+                remote_resource_id=action.remote_resource_id,
+            )
+            try:
+                result = await service.create_indexed_source(
+                    tenant_id=tenant_id,
+                    execution_context=command.execution_context,
+                    workspace_id=workspace_id,
+                    connection_ref=action.connection_ref,
+                    source_kind=action.source_kind,
+                    remote_resource_id=action.remote_resource_id,
+                    idempotency_key_hash=idem_hash,
+                )
+            except KnowledgePluginConfigurationError as exc:
+                raise RuntimeError(exc.code) from exc
+            payload: dict[str, object] = {
+                "source_id": result.source_id,
+                "indexed_source_binding_id": result.binding_id,
+                "configuration_revision": result.configuration_revision,
+                "created_new_source": result.created_new_source,
+            }
+            if result.sync_operation is not None:
+                payload["sync_operation_id"] = result.sync_operation.operation_id
+            return ConversationExecutionArtifact(
+                artifact_type=action.action_type,
+                data=payload,
             )
         if isinstance(action, KnowledgeCapabilitiesListPlannedAction):
             service = self._require_knowledge_plugin_configuration()
@@ -1930,6 +2001,28 @@ def _safe_workspace_name(workspace: Workspace | None) -> str:
 
 def _map_operation_kind(kind: KnowledgeOperationKind) -> KnowledgeOperationV1:
     return KnowledgeOperationV1(kind.value)
+
+
+def _knowledge_configuration_idempotency_hash(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    operation: str,
+    request_id: str,
+    connection_ref: str,
+    remote_resource_id: str | None = None,
+) -> str:
+    material = "\x1f".join(
+        (
+            tenant_id,
+            workspace_id,
+            operation,
+            request_id,
+            connection_ref,
+            remote_resource_id or "",
+        )
+    )
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 
 def _safe_exception_code(exc: Exception) -> str:

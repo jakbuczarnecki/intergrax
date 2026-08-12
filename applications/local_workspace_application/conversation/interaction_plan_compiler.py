@@ -22,6 +22,8 @@ from local_workspace_application.conversation.interaction_draft_models import (
     KnowledgeAddSourcesDraftAction,
     KnowledgeCapabilitiesListDraftAction,
     KnowledgeConnectionsListDraftAction,
+    KnowledgeConnectionAttachDraftAction,
+    KnowledgeIndexedSourceCreateDraftAction,
     KnowledgeResourcesListDraftAction,
     SourceCandidateAttachDraftAction,
     SourceCandidateListDraftAction,
@@ -56,6 +58,8 @@ from local_workspace_application.conversation.interaction_models import (
     KnowledgeCapabilitiesListPlannedAction,
     KnowledgeConnectionsListPlannedAction,
     KnowledgeResourcesListPlannedAction,
+    KnowledgeConnectionAttachPlannedAction,
+    KnowledgeIndexedSourceCreatePlannedAction,
     LocalFileReferenceExtractedObject,
     MessageTextEvidenceSpan,
     PlannedAction,
@@ -477,6 +481,24 @@ def _compile_action(
             connection_ref=action.connection_ref,
             source_kind=action.source_kind,
             page_token=action.page_token,
+            **common,
+        )
+    if isinstance(action, KnowledgeConnectionAttachDraftAction):
+        assert workspace is not None
+        return KnowledgeConnectionAttachPlannedAction(
+            action_type="knowledge.connection.attach",
+            workspace=workspace,
+            connection_ref=action.connection_ref,
+            **common,
+        )
+    if isinstance(action, KnowledgeIndexedSourceCreateDraftAction):
+        assert workspace is not None
+        return KnowledgeIndexedSourceCreatePlannedAction(
+            action_type="knowledge.indexed_source.create",
+            workspace=workspace,
+            connection_ref=action.connection_ref,
+            source_kind=action.source_kind,
+            remote_resource_id=action.remote_resource_id.strip(),
             **common,
         )
     if isinstance(action, KnowledgeCapabilitiesListDraftAction):

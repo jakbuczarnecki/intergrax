@@ -392,6 +392,26 @@ class KnowledgeResourcesListPlannedAction(_PlannedActionBase):
         return self
 
 
+class KnowledgeConnectionAttachPlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.connection.attach"]
+    workspace: WorkspaceReference
+    connection_ref: OpaqueId = Field(max_length=128)
+
+
+class KnowledgeIndexedSourceCreatePlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.indexed_source.create"]
+    workspace: WorkspaceReference
+    connection_ref: OpaqueId = Field(max_length=128)
+    source_kind: OpaqueId = Field(max_length=64)
+    remote_resource_id: str = Field(min_length=1, max_length=256)
+
+    @model_validator(mode="after")
+    def _validate_remote_resource_id(self) -> Self:
+        if not self.remote_resource_id.strip():
+            raise ValueError("remote_resource_id must not be blank")
+        return self
+
+
 class KnowledgeCapabilitiesListPlannedAction(_PlannedActionBase):
     action_type: Literal["knowledge.capabilities.list"]
     connection_ref: OpaqueId = Field(max_length=128)
@@ -532,6 +552,8 @@ PlannedAction = Annotated[
     | KnowledgeAddSourcesPlannedAction
     | KnowledgeConnectionsListPlannedAction
     | KnowledgeResourcesListPlannedAction
+    | KnowledgeConnectionAttachPlannedAction
+    | KnowledgeIndexedSourceCreatePlannedAction
     | KnowledgeCapabilitiesListPlannedAction
     | WorkspaceAskPlannedAction
     | CitationInspectPlannedAction
