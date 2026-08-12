@@ -54,3 +54,8 @@ applications/local_workspace_application/docker/lkw-platform-proof-startup.log
 
 # Safety net: never commit ad-hoc LKW live logs dropped in repo root
 /.lkw-live*.log
+
+# Ad-hoc proof/live logs in repo root (never commit)
+/.application-hosting-proof*.log
+/.background-task-proof*.log
+/.persistence*.log
