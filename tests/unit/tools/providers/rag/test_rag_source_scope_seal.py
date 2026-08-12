@@ -18,8 +18,11 @@ from intergrax.tools.providers.rag.source_scope_transport import (
     SOURCE_SCOPE_BLANK_ONLY,
     SOURCE_SCOPE_EMPTY,
     SOURCE_SCOPE_MALFORMED,
+    RagRetrievalSourceScopeState,
+    _ScopePresence,
     absent_rag_retrieval_source_scope,
     invalid_rag_retrieval_source_scope,
+    parse_task_metadata_allowed_source_ids,
     rag_retrieval_source_scope,
     validated_rag_retrieval_source_scope,
 )
@@ -165,3 +168,178 @@ def test_absent_internal_scope_does_not_fail_closed() -> None:
     with rag_retrieval_source_scope(absent_rag_retrieval_source_scope()):
         metadata_filter = _build_metadata_filter(RagRetrieveInput(query="hello"))
     assert metadata_filter is None
+
+
+def test_validated_constructor_accepts_one_valid_source() -> None:
+    scope = validated_rag_retrieval_source_scope(("source-a",))
+    assert scope.is_present
+    assert scope.is_invalid is False
+    assert scope.allowed_source_ids == ("source-a",)
+
+
+def test_validated_constructor_accepts_multiple_valid_sources() -> None:
+    scope = validated_rag_retrieval_source_scope(("source-b", "source-a"))
+    assert scope.is_present
+    assert scope.is_invalid is False
+    assert scope.allowed_source_ids == ("source-b", "source-a")
+
+
+def test_validated_constructor_deduplicates_deterministically() -> None:
+    scope = validated_rag_retrieval_source_scope(("source-a", "source-b", "source-a"))
+    assert scope.is_invalid is False
+    assert scope.allowed_source_ids == ("source-a", "source-b")
+
+
+@pytest.mark.parametrize(
+    ("allowed_source_ids", "expected_reason"),
+    [
+        ((), SOURCE_SCOPE_EMPTY),
+        (("",), SOURCE_SCOPE_BLANK_ONLY),
+        (("   ",), SOURCE_SCOPE_BLANK_ONLY),
+        (("source-a", ""), SOURCE_SCOPE_BLANK_ONLY),
+        ((123,), SOURCE_SCOPE_MALFORMED),
+        (("source-a", 456), SOURCE_SCOPE_MALFORMED),
+        (tuple(f"source-{index}" for index in range(21)), SOURCE_SCOPE_MALFORMED),
+        (("x" * 257,), SOURCE_SCOPE_MALFORMED),
+    ],
+)
+def test_validated_constructor_rejects_invalid_present_state(
+    allowed_source_ids: tuple[object, ...],
+    expected_reason: str,
+) -> None:
+    scope = validated_rag_retrieval_source_scope(allowed_source_ids)  # type: ignore[arg-type]
+    assert scope.is_present
+    assert scope.is_invalid
+    assert scope.allowed_source_ids == ()
+    assert scope.error_reason == expected_reason
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        (
+            {
+                "presence": _ScopePresence.ABSENT,
+                "allowed_source_ids": ("source-a",),
+            },
+            "ABSENT scope must not include allowed_source_ids",
+        ),
+        (
+            {
+                "presence": _ScopePresence.ABSENT,
+                "error_reason": SOURCE_SCOPE_EMPTY,
+            },
+            "ABSENT scope must not include error_reason",
+        ),
+        (
+            {
+                "presence": _ScopePresence.PRESENT,
+                "allowed_source_ids": ("source-a",),
+                "error_reason": SOURCE_SCOPE_EMPTY,
+            },
+            "INVALID PRESENT scope must not include allowed_source_ids",
+        ),
+        (
+            {
+                "presence": _ScopePresence.PRESENT,
+                "error_reason": "unknown_reason",
+            },
+            "INVALID PRESENT scope requires a recognized error_reason",
+        ),
+        (
+            {
+                "presence": _ScopePresence.PRESENT,
+                "allowed_source_ids": (),
+            },
+            "PRESENT VALID scope requires non-empty allowed_source_ids",
+        ),
+        (
+            {
+                "presence": _ScopePresence.PRESENT,
+                "allowed_source_ids": ("  ",),
+            },
+            "PRESENT VALID scope requires normalized non-blank source IDs",
+        ),
+    ],
+)
+def test_direct_invalid_state_construction_is_rejected(kwargs: dict[str, object], match: str) -> None:
+    with pytest.raises(ValueError, match=match):
+        RagRetrievalSourceScopeState(**kwargs)  # type: ignore[arg-type]
+
+
+def test_absent_state_invariant_holds() -> None:
+    scope = absent_rag_retrieval_source_scope()
+    assert scope.is_absent
+    assert scope.allowed_source_ids == ()
+    assert scope.error_reason is None
+    assert scope.is_invalid is False
+
+
+def test_present_valid_state_invariant_holds() -> None:
+    scope = validated_rag_retrieval_source_scope(("source-a",))
+    assert scope.is_present
+    assert scope.allowed_source_ids == ("source-a",)
+    assert scope.error_reason is None
+    assert scope.is_invalid is False
+
+
+def test_present_invalid_state_invariant_holds() -> None:
+    scope = invalid_rag_retrieval_source_scope(SOURCE_SCOPE_MALFORMED)
+    assert scope.is_present
+    assert scope.allowed_source_ids == ()
+    assert scope.error_reason == SOURCE_SCOPE_MALFORMED
+    assert scope.is_invalid
+
+
+@pytest.mark.parametrize(
+    "allowed_source_ids",
+    [
+        (),
+        ("",),
+        ("   ",),
+        (123,),  # type: ignore[list-item]
+    ],
+)
+def test_perform_rag_retrieve_never_invokes_retrieval_for_validated_invalid_scope(
+    allowed_source_ids: tuple[object, ...],
+) -> None:
+    store = FakeVectorstoreManager([])
+    scope = validated_rag_retrieval_source_scope(allowed_source_ids)  # type: ignore[arg-type]
+    assert scope.is_invalid
+    with rag_retrieval_source_scope(scope):
+        out = perform_rag_retrieve(_ctx(store), RagRetrieveInput(query="policy", tenant_id="t1"))
+    assert out.used is False
+    assert out.reason == scope.error_reason
+    assert store.query_calls == 0
+
+
+def test_parse_task_metadata_allowed_source_ids_preserves_absent_semantics() -> None:
+    scope = parse_task_metadata_allowed_source_ids({})
+    assert scope.is_absent
+    assert scope.allowed_source_ids == ()
+    assert scope.error_reason is None
+
+
+@pytest.mark.parametrize(
+    ("metadata_value", "expected_reason"),
+    [
+        ([], SOURCE_SCOPE_EMPTY),
+        (["   "], SOURCE_SCOPE_BLANK_ONLY),
+        ([123], SOURCE_SCOPE_MALFORMED),
+    ],
+)
+def test_parse_task_metadata_allowed_source_ids_preserves_invalid_semantics(
+    metadata_value: object,
+    expected_reason: str,
+) -> None:
+    scope = parse_task_metadata_allowed_source_ids({"allowed_source_ids": metadata_value})
+    assert scope.is_invalid
+    assert scope.error_reason == expected_reason
+    assert scope.allowed_source_ids == ()
+
+
+def test_parse_task_metadata_allowed_source_ids_preserves_valid_semantics() -> None:
+    scope = parse_task_metadata_allowed_source_ids({"allowed_source_ids": [" source-a ", "source-b"]})
+    assert scope.is_present
+    assert scope.is_invalid is False
+    assert scope.allowed_source_ids == ("source-a", "source-b")
