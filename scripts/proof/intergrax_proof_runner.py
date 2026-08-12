@@ -7,7 +7,6 @@ from __future__ import annotations
 import json
 import os
 import platform
-import re
 import shutil
 import subprocess
 import uuid
@@ -35,13 +34,6 @@ from scripts.proof.intergrax_proof_manifest import (
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_RECEIPT_DIR = _REPO_ROOT / ".artifacts" / "proof"
-_STDIO_TAIL_BYTES = 4096
-_SECRET_PATTERN = re.compile(
-    r"(xox[baprs]-[A-Za-z0-9-]+|"
-    r"(api[_-]?key|token|password|secret|authorization)\s*[=:]\s*\S+)",
-    re.IGNORECASE,
-)
 
 
 @dataclass(frozen=True)
@@ -169,19 +161,6 @@ def _should_skip_profile(
     return None
 
 
-def _redact_text(value: str) -> str:
-    return _SECRET_PATTERN.sub("[REDACTED]", value)
-
-
-def _tail_text(raw: bytes) -> str:
-    if not raw:
-        return ""
-    text = raw.decode("utf-8", errors="replace")
-    if len(text) > _STDIO_TAIL_BYTES:
-        text = text[-_STDIO_TAIL_BYTES :]
-    return _redact_text(text)
-
-
 def execute_proof(
     entry: ProofManifestEntry,
     *,
@@ -210,21 +189,15 @@ def execute_proof(
             duration_seconds=duration,
             exit_code=exit_code,
             diagnostic_summary=diagnostic,
-            stdout_tail=_tail_text(completed.stdout),
-            stderr_tail=_tail_text(completed.stderr),
         )
-    except subprocess.TimeoutExpired as exc:
+    except subprocess.TimeoutExpired:
         duration = (datetime.now(UTC) - started).total_seconds()
-        stdout = exc.stdout or b""
-        stderr = exc.stderr or b""
         return ProofRunResult(
             proof_id=entry.proof_id,
             status=ProofStatus.FAIL,
             duration_seconds=duration,
             exit_code=None,
             diagnostic_summary="timeout",
-            stdout_tail=_tail_text(stdout),
-            stderr_tail=_tail_text(stderr),
         )
     except FileNotFoundError:
         duration = (datetime.now(UTC) - started).total_seconds()
@@ -244,12 +217,17 @@ def aggregate_overall_status(
     if any(result.status == ProofStatus.FAIL for result in results):
         return SuiteOverallStatus.FAIL
 
-    blocked = [
+    if any(
+        result.status == ProofStatus.BLOCKED_CONFIGURATION for result in results
+    ):
+        return SuiteOverallStatus.FAIL
+
+    blocked_env = [
         result
         for result in results
         if result.status == ProofStatus.BLOCKED_ENVIRONMENT
     ]
-    if blocked:
+    if blocked_env:
         if profile == ProofProfile.LIVE:
             return SuiteOverallStatus.PASS_WITH_BLOCKED
         return SuiteOverallStatus.FAIL

@@ -121,19 +121,86 @@ def test_missing_executable(tmp_path: Path) -> None:
     assert result.diagnostic_summary == "missing_executable"
 
 
-def test_bounded_stdout_stderr(tmp_path: Path) -> None:
-    entry = _entry(
-        "STDIO-TEST",
-        argv=("-c", "print('x' * 10000)"),
-    )
+def test_child_output_not_persisted_in_result(tmp_path: Path) -> None:
+    business_line = "normal business output that must not appear in receipt"
 
     def _runner(command, **kwargs):
-        assert kwargs["shell"] is False
-        return subprocess.run(command, **kwargs)
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=f"{business_line}\n".encode(),
+            stderr=b"stderr diagnostic line\n",
+        )
 
+    entry = _entry("STDIO-TEST", argv=("-c", "print('ok')"))
     result = execute_proof(entry, repo_root=tmp_path, subprocess_runner=_runner)
     assert result.status == ProofStatus.PASS
-    assert len(result.stdout_tail) <= 4096 + 32
+    serialized = json.dumps(result.model_dump(mode="json"))
+    assert business_line not in serialized
+    assert "stderr diagnostic line" not in serialized
+    assert "stdout_tail" not in serialized
+    assert "stderr_tail" not in serialized
+
+
+# Deliberately fake secret-shaped values — not real credentials; avoid live token formats
+# so push protection does not block commits while still proving no child output is persisted.
+_SECRET_CANARY = "SECRET_CANARY_do_not_persist_this_value_7f3a9b"
+_FAKE_XAPP = "FAKE_SLACK_XAPP_TOKEN_NOT_REAL_7f3a9b"
+_FAKE_XOXB = "FAKE_SLACK_XOXB_TOKEN_NOT_REAL_7f3a9b"
+_FAKE_OAUTH = "FAKE_OAUTH_client_secret_NOT_REAL_7f3a9b"
+_FAKE_API_KEY = "FAKE_API_KEY_AKIA_NOT_REAL_7f3a9b"
+_FAKE_JWT = (
+    "FAKE_JWT_HEADER."
+    "FAKE_JWT_PAYLOAD."
+    "FAKE_JWT_SIGNATURE_NOT_REAL_7f3a9b"
+)
+
+
+def test_receipt_serialization_excludes_all_child_secrets(tmp_path: Path) -> None:
+    business_line = "arbitrary child business text must not be persisted"
+
+    def _runner(command, **kwargs):
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=(
+                f"{business_line}\n{_FAKE_XAPP}\n{_FAKE_XOXB}\n".encode()
+            ),
+            stderr=(
+                f"{_FAKE_OAUTH}\n{_FAKE_API_KEY}\n{_FAKE_JWT}\n"
+                f"{_SECRET_CANARY}\n"
+            ).encode(),
+        )
+
+    entry = _entry("SECRET-TEST", argv=("-c", "noop"))
+    result = execute_proof(entry, repo_root=tmp_path, subprocess_runner=_runner)
+    receipt = SuiteReceipt(
+        suite_run_id="secret-test",
+        started_at=datetime(2026, 1, 1, tzinfo=UTC),
+        completed_at=datetime(2026, 1, 1, 0, 1, tzinfo=UTC),
+        git_commit_sha="abc123def456",
+        git_dirty=False,
+        profile=ProofProfile.QUICK,
+        platform="windows",
+        python_version="3.12.0",
+        overall_status=SuiteOverallStatus.PASS,
+        results=(result,),
+        passed_count=1,
+        failed_count=0,
+        blocked_count=0,
+        skipped_count=0,
+    )
+    serialized = json.dumps(receipt.model_dump(mode="json"))
+    for secret in (
+        _SECRET_CANARY,
+        _FAKE_XAPP,
+        _FAKE_XOXB,
+        _FAKE_OAUTH,
+        _FAKE_API_KEY,
+        _FAKE_JWT,
+        business_line,
+    ):
+        assert secret not in serialized, f"secret leaked into receipt: {secret!r}"
 
 
 def test_one_fail_makes_suite_fail() -> None:
@@ -167,6 +234,56 @@ def test_quick_blocked_environment_fails_suite() -> None:
         ),
     )
     assert aggregate_overall_status(ProofProfile.QUICK, results) == SuiteOverallStatus.FAIL
+
+
+@pytest.mark.parametrize("profile", list(ProofProfile))
+def test_blocked_configuration_fails_all_profiles(profile: ProofProfile) -> None:
+    results = (
+        ProofRunResult(
+            proof_id="CFG-BLOCKED",
+            status=ProofStatus.BLOCKED_CONFIGURATION,
+            duration_seconds=0.0,
+            diagnostic_summary="invalid_proof_configuration",
+        ),
+    )
+    assert aggregate_overall_status(profile, results) == SuiteOverallStatus.FAIL
+
+
+def test_live_blocked_environment_plus_fail_is_fail() -> None:
+    results = (
+        ProofRunResult(proof_id="A", status=ProofStatus.PASS, duration_seconds=1.0),
+        ProofRunResult(
+            proof_id="SLACK-CONVERSATION-LIVE",
+            status=ProofStatus.BLOCKED_ENVIRONMENT,
+            duration_seconds=0.0,
+        ),
+        ProofRunResult(proof_id="B", status=ProofStatus.FAIL, duration_seconds=1.0),
+    )
+    assert aggregate_overall_status(ProofProfile.LIVE, results) == SuiteOverallStatus.FAIL
+
+
+def test_full_blocked_environment_fails_suite() -> None:
+    results = (
+        ProofRunResult(
+            proof_id="A",
+            status=ProofStatus.BLOCKED_ENVIRONMENT,
+            duration_seconds=0.0,
+        ),
+    )
+    assert aggregate_overall_status(ProofProfile.FULL, results) == SuiteOverallStatus.FAIL
+
+
+def test_skipped_profile_does_not_fail_suite() -> None:
+    results = (
+        ProofRunResult(
+            proof_id="EXT-MUT",
+            status=ProofStatus.SKIPPED_PROFILE,
+            duration_seconds=0.0,
+            diagnostic_summary="external_mutating_opt_in_required",
+        ),
+        ProofRunResult(proof_id="A", status=ProofStatus.PASS, duration_seconds=1.0),
+    )
+    assert aggregate_overall_status(ProofProfile.LIVE, results) == SuiteOverallStatus.PASS
 
 
 def test_skipped_platform_semantics() -> None:

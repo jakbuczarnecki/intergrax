@@ -149,6 +149,8 @@ class EnvRequirementResult(BaseModel):
 
 
 class ProofRunResult(BaseModel):
+    """Durable-safe per-proof result — no untrusted child process output."""
+
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     proof_id: str
@@ -157,8 +159,6 @@ class ProofRunResult(BaseModel):
     exit_code: int | None = None
     diagnostic_summary: str = ""
     environment_requirements: tuple[EnvRequirementResult, ...] = ()
-    stdout_tail: str = ""
-    stderr_tail: str = ""
 
 
 class SuiteReceipt(BaseModel):
