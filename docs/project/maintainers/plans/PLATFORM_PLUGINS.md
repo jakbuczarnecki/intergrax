@@ -7,6 +7,8 @@
 
 **Last updated:** 2026-08-12
 
+**Post-program production audit:** [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](PLATFORM_PLUGIN_PRODUCTION_AUDIT.md) (`PLATFORM-PLUGIN-AUDIT-1`, verdict `APPROVED_WITH_GAPS`, SHA `f7b6eedf354d43b1459b8077a56f8acd3fdaaa3d`).
+
 ---
 
 ## Purpose
