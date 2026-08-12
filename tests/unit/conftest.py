@@ -9,6 +9,7 @@ import pytest
 # Whole directories: typed contracts only (pure pydantic / schema).
 CI_SMOKE_DIR_PREFIXES: tuple[str, ...] = (
     "tests/unit/contracts/",
+    "tests/contract/core/plugins/",
 )
 
 # High-signal single modules across harness layers (deterministic, no catalog bootstrap).

@@ -2,7 +2,7 @@
 
 > **Application dependencies:** each Tier-3 host owns applications/<app>/pyproject.toml (Intergrax workspace package + selected extras). Sync with uv sync --project applications/<app>. Canon: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
-**Last updated:** 2026-08-11 · PLATFORM-PLUGIN-5
+**Last updated:** 2026-08-12 · PLATFORM-PLUGIN-9
 
 Intergrax exposes four **core plugin catalogs** plus opt-in RAG component entry points. Shipped providers and third-party pip packages register through the same discovery protocol.
 
@@ -11,7 +11,7 @@ Intergrax exposes four **core plugin catalogs** plus opt-in RAG component entry 
 | Integration | `intergrax.integrations` | `IntegrationPlugin` | `register_integration_plugin()` | **Done** |
 | Tool | `intergrax.tools` | `ToolPlugin` | `register_tool_plugin()` | **Done** |
 | Skill | `intergrax.skills` | `SkillPlugin` | `register_skill_plugin()` | **Done** |
-| Context | `intergrax.context` | `ContextPlugin` | `register_context_plugin()` | **Planned** — [CE-2](../../maintainers/plans/CONTEXT_ENGINEERING.md) |
+| Context | `intergrax.context` | `ContextPlugin` | `register_context_plugin()` | **Public EP** — qualification rollout domain-owned ([CE-2](../../maintainers/plans/CONTEXT_ENGINEERING.md)) |
 | RAG chunker | `intergrax.rag.chunkers` | `BaseChunkingStrategy` | RAG bootstrap registry | **Done** |
 | RAG retriever | `intergrax.rag.retrievers` | `BaseRetriever` | RAG bootstrap registry | **Done** |
 | RAG reranker | `intergrax.rag.rerankers` | `BaseReranker` | RAG bootstrap registry | **Done** |

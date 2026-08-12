@@ -1,11 +1,11 @@
 # Platform Plugins — Maintainer Roadmap
 
 **Program:** Platform Plugin architecture  
-**Status:** PLATFORM-PLUGIN-1 **Done** · PLATFORM-PLUGIN-2 **Done** (canonical architecture frozen)
+**Status:** PLATFORM-PLUGIN-1 **Done** · PLATFORM-PLUGIN-2 **Done** · PLATFORM-PLUGIN-3 **Done** · PLATFORM-PLUGIN-4 **Done** · PLATFORM-PLUGIN-5 **Done** · PLATFORM-PLUGIN-6 **Done** · PLATFORM-PLUGIN-7 **Done** · PLATFORM-PLUGIN-8 **Done** · PLATFORM-PLUGIN-9 **Done** — program **CLOSED**
 **Audit evidence:** [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md)  
 **Canonical architecture:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
 
-**Last updated:** 2026-08-11
+**Last updated:** 2026-08-12
 
 ---
 
@@ -75,7 +75,7 @@ See audit document for inventory, taxonomy proposal, gaps, and evidence matrix.
 | **PLATFORM-PLUGIN-6** | Lifecycle, compatibility & conflict policy | **Done** | PLUGIN-2 | `platform_semantics.py`: `check_platform_compatibility` / `PlatformCompatibilityResult`; `PlatformPluginLifecycleState`; `PlatformPluginConflictKind`; EP conflict classification; domain `ConflictPolicy` unchanged |
 | **PLATFORM-PLUGIN-7** | Trust, qualification & production gates | **Done** | PLUGIN-2, PLUGIN-6 | `platform_qualification.py`: qualification contracts + production gates; trust model; external + host-embedded delivery; no sandbox/signing |
 | **PLATFORM-PLUGIN-8** | Third-party developer experience & executable E2E proof | **Done** | PLUGIN-3, PLUGIN-7 | Reference external wheel (`examples/platform_plugins/intergrax_reference_tool_plugin/`); host-embedded example (`examples/platform_plugins/local_embedded_tool_extension/`); scaffold `extensions/` hook; E2E `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`; author guide §16; architecture §20.3–§20.4 |
-| **PLATFORM-PLUGIN-9** | Qualification, rollout, deprecation & program closeout | **Planned** | PLUGIN-4–8 | Contract tests, CI gates, additive deprecation plan for legacy paths; **final platform-level closeout audit** (see § Program closeout criteria) |
+| **PLATFORM-PLUGIN-9** | Qualification, rollout, deprecation & program closeout | **Done** | PLUGIN-4–8 | Contract tests, CI gates, deprecation audit, final closeout evidence — [`PLATFORM_PLUGIN_9_CLOSEOUT.md`](PLATFORM_PLUGIN_9_CLOSEOUT.md) |
 
 ### PLATFORM-PLUGIN-2 output (complete)
 

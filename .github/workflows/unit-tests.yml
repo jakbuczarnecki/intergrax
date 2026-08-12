@@ -85,6 +85,14 @@ jobs:
       - name: CI smoke unit tests
         run: uv run --frozen python scripts/ci/run_ci_smoke_pytest.py
 
+      - name: Platform Plugin program gate (PLUGIN-9)
+        run: >-
+          uv run --frozen pytest
+          tests/contract/core/plugins/test_platform_plugin_contract.py
+          tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py
+          tests/unit/scaffold/test_scaffold_local_extension_qualification.py
+          -q --tb=line
+
       - name: Tier boundary audits (instant)
         env:
           INTERGRAX_CI_TEST_MARKER: ci_smoke

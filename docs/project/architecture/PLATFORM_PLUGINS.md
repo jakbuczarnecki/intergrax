@@ -706,7 +706,7 @@ Author-facing summary of all canonical setuptools entry-point surfaces (§20.1).
 | Discovery | `iter_entry_point_specs` / `load_entry_point_plugins` + `bootstrap_catalogs(discover_entry_points=True)` |
 | Qualification | `evaluate_package_production_admission` + `require_production_qualification` |
 | Platform version for compatibility | Explicit host input (`0.1.0` in E2E) — no global runtime version authority |
-| Known gaps | Local explicit-registration documented for Tools/Integrations/Skills only; other surfaces remain external-EP-first until PLUGIN-9 |
+| Known gaps | Local explicit-registration documented for Tools/Integrations/Skills only; other surfaces remain external-EP-first (acceptable per PLUGIN-9 closeout) |
 
 ---
 
@@ -814,7 +814,7 @@ Testable statements for audits and PLATFORM-PLUGIN-9 closeout:
 | **PLUGIN-6** | **Done** — `platform_semantics.py`: explicit-version compatibility check API; `PlatformPluginLifecycleState` vocabulary; `PlatformPluginConflictKind` vocabulary; `package_identities_conflict` helper; EP conflict classification on `PluginConflictError`; **no** global lifecycle engine, conflict policy, or qualification gates |
 | **PLUGIN-7** | **Done** — `platform_qualification.py`: trust model (`PlatformPluginTrustModel`); qualification level/status/evidence/subject/result contracts; delivery source (`external_package`, `host_embedded_extension`); pure production gates (`require_production_qualification`, `evaluate_package_production_admission`); PLUGIN-6 compatibility consumed as evidence; no sandbox/signing claims; no global registry or persistence |
 | **PLUGIN-8** | **Done** — reference external wheel (`examples/platform_plugins/intergrax_reference_tool_plugin/`); host-embedded example (`examples/platform_plugins/local_embedded_tool_extension/`); application scaffold `extensions/` hook; executable E2E (`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`); §20.3 public extension matrix; author guide §16 |
-| **PLUGIN-9** | Contract tests; CI gates; deprecation execution; final platform closeout audit per roadmap |
+| **PLUGIN-9** | **Done** — cross-stage conformance suite (`tests/contract/core/plugins/test_platform_plugin_contract.py`); CI gate in `.github/workflows/unit-tests.yml`; deprecation audit; [`PLATFORM_PLUGIN_9_CLOSEOUT.md`](../maintainers/plans/PLATFORM_PLUGIN_9_CLOSEOUT.md) |
 
 **Explicitly not authorized before architecture amendment:** monolithic `PlatformPlugin` runtime type, mandatory global manifest replacing EPs, merging VK catalog into Tier-0 integration catalog, AgentRegistry setuptools discovery, sandbox claims without isolation implementation.
 

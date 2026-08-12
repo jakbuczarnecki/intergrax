@@ -49,7 +49,7 @@ from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from testing_support.builder import build_runtime_state_for_tests
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.gate, pytest.mark.ci_smoke]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _REFERENCE_PKG_DIR = _REPO_ROOT / "examples" / "platform_plugins" / "intergrax_reference_tool_plugin"
