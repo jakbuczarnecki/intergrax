@@ -1,13 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Tier-0 Agent Distribution domain contracts and store ports (AP-3)."""
+"""Tier-0 Agent Distribution domain contracts, stores, and services (AP-3/AP-4)."""
 
 from intergrax.agent_distribution.binding import (
     AgentBindingFactoryReference,
     AgentBindingPolicyOverrides,
     ApplicationAgentBinding,
 )
+from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
     AgentCatalogVersionChannelRef,
@@ -32,7 +33,25 @@ from intergrax.agent_distribution.dependency import (
     PolicyDependencyConstraint,
     RepositoryDependencyDeclaration,
 )
-from intergrax.agent_distribution.identity import AgentPackageCandidate, AgentPackageIdentity
+from intergrax.agent_distribution.errors import (
+    AgentDistributionError,
+    AgentDistributionNotFoundError,
+    BindingLifecycleError,
+    BindingRevisionConflict,
+    InstallationLifecycleError,
+    InstallationSlotConflict,
+    RuntimeRevisionConflict,
+    RuntimeRevisionLifecycleError,
+)
+from intergrax.agent_distribution.events import AgentDistributionEvent, TransitionResult
+from intergrax.agent_distribution.in_memory_stores import (
+    AgentDistributionStoreState,
+    InMemoryAgentArtifactMetadataStore,
+    InMemoryAgentInstallationStore,
+    InMemoryApplicationAgentBindingStore,
+    InMemoryRuntimeRevisionStore,
+)
+from intergrax.agent_distribution.installation_service import InstallationService
 from intergrax.agent_distribution.installation import (
     AgentInstallationRecord,
     InstallationState,
@@ -46,11 +65,13 @@ from intergrax.agent_distribution.runtime_graph import (
     RuntimeGraphThirdPartyRef,
     RuntimeGraphTierViolation,
 )
+from intergrax.agent_distribution.identity import AgentPackageCandidate, AgentPackageIdentity
 from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevision,
     RuntimeRevisionState,
 )
+from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.stores import (
     AgentArtifactMetadata,
     AgentArtifactMetadataStore,
@@ -78,6 +99,10 @@ __all__ = [
     "AgentCatalogEntry",
     "AgentCatalogVersionChannelRef",
     "AgentDeliverySource",
+    "AgentDistributionError",
+    "AgentDistributionEvent",
+    "AgentDistributionNotFoundError",
+    "AgentDistributionStoreState",
     "AgentInstallationRecord",
     "AgentInstallationStore",
     "AgentInstallationTrustRecord",
@@ -91,6 +116,9 @@ __all__ = [
     "AgentTrustEvidenceRef",
     "ApplicationAgentBinding",
     "ApplicationAgentBindingStore",
+    "BindingLifecycleError",
+    "BindingRevisionConflict",
+    "BindingService",
     "CandidateApplicationRuntimeGraph",
     "CandidateDependencySpecification",
     "CatalogEntryFilters",
@@ -101,8 +129,15 @@ __all__ = [
     "DependencyResolverInput",
     "EffectiveRoster",
     "EffectiveRosterEntry",
+    "InMemoryAgentArtifactMetadataStore",
+    "InMemoryAgentInstallationStore",
+    "InMemoryApplicationAgentBindingStore",
+    "InMemoryRuntimeRevisionStore",
     "InstalledAgentPackageRequirement",
     "InstalledAgentRequirementSet",
+    "InstallationLifecycleError",
+    "InstallationService",
+    "InstallationSlotConflict",
     "InstallationState",
     "MaterializationInput",
     "MaterializationOutput",
@@ -121,7 +156,11 @@ __all__ = [
     "RuntimeGraphThirdPartyRef",
     "RuntimeGraphTierViolation",
     "RuntimeRevision",
+    "RuntimeRevisionConflict",
+    "RuntimeRevisionLifecycleError",
+    "RuntimeRevisionService",
     "RuntimeRevisionState",
     "RuntimeRevisionStore",
+    "TransitionResult",
     "installation_state_is_installed",
 ]

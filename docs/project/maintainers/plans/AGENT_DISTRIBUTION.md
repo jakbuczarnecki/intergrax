@@ -70,4 +70,23 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 | Focused unit tests + tier-boundary check | done |
 | AP-3-FIX-1 contract hardening | done |
 
-**Next:** AP-4 may begin (store interfaces + transactional domain services).
+**Next:** AP-5 (`AgentPackageTrust` coordinator).
+
+## AGENT-PLATFORM-4 gate
+
+**READY_FOR_REVIEW** (2026-08-12) — transactional domain services and in-memory/durable-backed store implementations under `intergrax/agent_distribution/`.
+
+| Deliverable | Status |
+|-------------|--------|
+| `InstallationService` lifecycle (candidate → verified → active → rollback/revoke/tombstone) | done |
+| `BindingService` lifecycle (create/update/enable/disable/tombstone + slot-anchored upgrade survival) | done |
+| `RuntimeRevisionService` (candidate → validated → active + rollback pointer) | done |
+| `InMemory*Store` + `AgentDistributionStoreState` durable backing | done |
+| Typed conflicts (`InstallationSlotConflict`, `BindingRevisionConflict`, `RuntimeRevisionConflict`) | done |
+| Bounded domain events on `TransitionResult` | done |
+| Focused AP-4 tests (installation, binding, runtime revision, concurrency/atomicity) | done |
+| Tier-boundary check (no `agents/` / `applications/` imports) | done |
+
+**Evidence:** `tests/unit/agent_distribution/test_agent_distribution_services.py`, `test_agent_distribution_runtime_revision_services.py`, `test_agent_distribution_concurrency.py`
+
+**Next:** AP-5 may begin (`AgentPackageTrust` coordinator).
