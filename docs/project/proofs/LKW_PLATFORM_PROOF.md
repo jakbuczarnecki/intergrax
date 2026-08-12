@@ -76,7 +76,7 @@ This flow reflects workflows supported by the existing Core Platform Proof. Opti
 
 ---
 
-## Core platform claims
+## Core Platform Proof
 
 ```text
 1. LKW starts as a real Intergrax application.

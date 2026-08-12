@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from pathlib import Path
 
 import pytest
@@ -12,6 +14,24 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 _LKW_PLATFORM_PROOF = _REPO_ROOT / "docs/project/proofs/LKW_PLATFORM_PROOF.md"
 _SCRIPTS = _REPO_ROOT / "applications/local_workspace_application/scripts"
 _DOCKER = _REPO_ROOT / "applications/local_workspace_application/docker"
+_PROOFS = _REPO_ROOT / "docs/project/proofs/PROOFS.md"
+_MD_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+
+
+def _github_heading_slug(title: str) -> str:
+    normalized = (
+        unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode("ascii")
+    )
+    normalized = re.sub(r"[^\w\s-]", "", normalized.lower().strip())
+    normalized = re.sub(r"[\s_-]+", "-", normalized)
+    return re.sub(r"^-+|-+$", "", normalized)
+
+
+def _lkw_heading_slugs(text: str) -> set[str]:
+    return {
+        _github_heading_slug(match.group(1))
+        for match in re.finditer(r"^#{1,6}\s+(.+)$", text, re.MULTILINE)
+    }
 
 
 def test_lkw_platform_proof_step_4_is_self_contained() -> None:
@@ -244,10 +264,28 @@ def _uses_current_file_watcher_public_numbering(text: str) -> bool:
     return "Steps 12–13" in snippet and "Steps 14–15" not in snippet
 
 
+def test_proofs_doc_core_platform_proof_deep_link_resolves() -> None:
+    proofs_text = _PROOFS.read_text(encoding="utf-8")
+    lkw_text = _proof_text()
+    heading_slugs = _lkw_heading_slugs(lkw_text)
+
+    fragments = [
+        target.split("#", 1)[1]
+        for target in _MD_LINK.findall(proofs_text)
+        if target.startswith("LKW_PLATFORM_PROOF.md#")
+    ]
+    assert fragments, "PROOFS.md must link to anchored LKW Platform Proof sections"
+    assert all(fragment in heading_slugs for fragment in fragments), fragments
+
+    core_platform_heading = lkw_text.split("## Core Platform Proof", 1)[1].split("\n", 1)[0]
+    assert core_platform_heading == ""
+    assert "core-platform-proof" in fragments
+
+
 def test_lkw_platform_proof_core_and_optional_headings() -> None:
     text = _proof_text()
     for heading in (
-        "## Core platform claims",
+        "## Core Platform Proof",
         "## Optional operating-system interaction claims",
         "## Choose your operating system",
         "## Operating-system proof status",
@@ -506,7 +544,7 @@ def test_lkw_platform_proof_core_numbering() -> None:
 def test_lkw_platform_proof_document_ordering() -> None:
     text = _proof_text()
     markers = [
-        "## Core platform claims",
+        "## Core Platform Proof",
         "## Core prerequisites",
         "## Recommended one-command Core Platform Proof",
         "## Step 1 — Start a clean local proof stack",
