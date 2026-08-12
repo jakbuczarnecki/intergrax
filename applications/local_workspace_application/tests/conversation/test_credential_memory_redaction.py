@@ -141,6 +141,16 @@ class _CredentialPlanner:
         )
 
 
+class _FailingCredentialPlanner:
+    async def plan(self, request: ConversationPlanningRequest, **_: object):
+        raise RuntimeError("planner exploded")
+
+
+class _PlanningContextFailureWorkspaceService(_WorkspaceService):
+    def list_workspaces(self, *, tenant_id: str):
+        raise RuntimeError("planning snapshot unavailable")
+
+
 class _OAuthBeginPlanner:
     async def plan(self, request: ConversationPlanningRequest, **_: object):
         return ConversationInteractionPlan(
@@ -200,6 +210,8 @@ def _credential_service(
     memory: _CountingThreadMemory,
     repository: ConversationInteractionEventReceiptRepository,
     seed_pending: bool = True,
+    planner: object | None = None,
+    workspace_service: object | None = None,
 ) -> ConversationInteractionApplicationService:
     auth_context = _auth_context(orchestration)
     if seed_pending:
@@ -211,11 +223,11 @@ def _credential_service(
         )
     return ConversationInteractionApplicationService(
         context_resolver=_Resolver(),  # type: ignore[arg-type]
-        planner=_CredentialPlanner(),  # type: ignore[arg-type]
+        planner=planner or _CredentialPlanner(),  # type: ignore[arg-type]
         executor=_executor(orchestration, auth_context),
         renderer=ConversationInteractionResponseRenderer(),
         receipt_repository=repository,
-        workspace_service=_WorkspaceService(),
+        workspace_service=workspace_service or _WorkspaceService(),
         personal_allowed_capabilities=frozenset(ConversationProductCapability),
         thread_memory_service=memory,  # type: ignore[arg-type]
         connection_auth_context_service=auth_context,
@@ -241,6 +253,46 @@ def _user_turn_text(turns: tuple[object, ...]) -> str:
         if turn.role == "user":  # type: ignore[attr-defined]
             return turn.text  # type: ignore[attr-defined]
     raise AssertionError("user turn not found")
+
+
+@pytest.mark.asyncio
+async def test_application_service_planner_failure_redacts_memory() -> None:
+    store = InMemoryDocumentStore()
+    memory = _CountingThreadMemory(store)
+    orchestration = _OrchestrationStub()
+    service = _credential_service(
+        orchestration=orchestration,
+        memory=memory,
+        repository=ConversationInteractionEventReceiptRepository(store),
+        planner=_FailingCredentialPlanner(),
+    )
+    result = await service.handle(_credential_command(event_ref="credential-planner-fail"))
+    assert result.execution_result.status is ConversationInteractionOverallStatus.FAILED
+    turns = memory.persisted_turns()
+    assert _user_turn_text(turns) == THREAD_MEMORY_CREDENTIAL_REDACTION
+    _assert_no_credential_material(turns)
+    assert result.receipt is not None
+    assert result.receipt.safe_user_memory_text == THREAD_MEMORY_CREDENTIAL_REDACTION
+
+
+@pytest.mark.asyncio
+async def test_application_service_planning_context_failure_redacts_memory() -> None:
+    store = InMemoryDocumentStore()
+    memory = _CountingThreadMemory(store)
+    orchestration = _OrchestrationStub()
+    service = _credential_service(
+        orchestration=orchestration,
+        memory=memory,
+        repository=ConversationInteractionEventReceiptRepository(store),
+        workspace_service=_PlanningContextFailureWorkspaceService(),
+    )
+    result = await service.handle(_credential_command(event_ref="credential-planning-fail"))
+    assert result.execution_result.status is ConversationInteractionOverallStatus.FAILED
+    turns = memory.persisted_turns()
+    assert _user_turn_text(turns) == THREAD_MEMORY_CREDENTIAL_REDACTION
+    _assert_no_credential_material(turns)
+    assert result.receipt is not None
+    assert result.receipt.safe_user_memory_text == THREAD_MEMORY_CREDENTIAL_REDACTION
 
 
 @pytest.mark.asyncio
@@ -415,3 +467,23 @@ def test_receipt_rejects_pending_memory_without_safe_user_memory_text() -> None:
             memory_required=True,
         )
     assert error.value.error_code == "conversation_receipt_memory_text_empty"
+
+
+def test_product_5c_r2_task_owned_production_files_have_zero_dynamic_wiring() -> None:
+    import pathlib
+    import re
+
+    root = pathlib.Path("applications/local_workspace_application/conversation")
+    owned = [
+        root / "interaction_application_service.py",
+        root / "interaction_executor.py",
+        root / "interaction_memory_policy.py",
+        root / "interaction_event_receipt.py",
+    ]
+    pattern = re.compile(r"\b(getattr|setattr|hasattr)\s*\(")
+    offenders: list[str] = []
+    for path in owned:
+        text = path.read_text(encoding="utf-8")
+        if pattern.search(text):
+            offenders.append(str(path))
+    assert offenders == []

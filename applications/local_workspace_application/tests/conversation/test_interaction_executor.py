@@ -43,6 +43,18 @@ from local_workspace_application.conversation.interaction_models import (
 from local_workspace_application.workspaces.destructive_action_confirmation import (
     HmacDestructiveActionConfirmationCodec,
 )
+from local_workspace_application.workspaces.ask_models import AskRunStatus, WorkspaceAskRun
+from local_workspace_application.workspaces.models import (
+    IntakeBatch,
+    IntakeBatchItem,
+    IntakeBatchItemStatus,
+    IntakeBatchStatus,
+)
+from local_workspace_application.workspaces.source_candidates import (
+    SourceCandidateAcceptance,
+    SourceCandidateSummary,
+)
+from local_workspace_application.workspaces.web_url_ingestion import WebUrlAcceptance
 from local_workspace_application.workspaces.conversation_context_models import (
     ConversationActivationPolicy,
     ConversationAudienceMode,
@@ -115,12 +127,13 @@ class CandidateServiceFake:
     def __init__(self) -> None:
         self.calls: list[str] = []
 
-    def list_candidates(self, *, tenant_id: str, workspace_id: str) -> tuple[object, ...]:
+    def list_candidates(self, *, tenant_id: str, workspace_id: str) -> tuple[SourceCandidateSummary, ...]:
         self.calls.append(f"list:{workspace_id}")
         return (
-            SimpleNamespace(
+            SourceCandidateSummary(
                 candidate_id="candidate-1",
                 label="files",
+                description="local files",
                 source_type="local_folder",
                 available=True,
             ),
@@ -133,9 +146,12 @@ class CandidateServiceFake:
         workspace_id: str,
         candidate_id: str,
         idempotency_key: str,
-    ) -> object:
+    ) -> SourceCandidateAcceptance:
         self.calls.append(f"accept:{workspace_id}:{candidate_id}:{idempotency_key}")
-        return SimpleNamespace(
+        return SourceCandidateAcceptance(
+            candidate_id="candidate-1",
+            label="files",
+            workspace_id=workspace_id,
             source_id="source-candidate-1",
             operation_id="operation-1",
             status="queued",
@@ -153,41 +169,83 @@ class AttachmentServiceFake:
         workspace_id: str,
         idempotency_key: str,
         uploads: list[object],
-    ) -> object:
+    ) -> IntakeBatch:
         self.calls.append(tuple(str(item) for item in uploads))
-        return SimpleNamespace(batch_id="batch-1", status="accepted")
+        now = datetime.now(UTC)
+        return IntakeBatch(
+            batch_id="batch-1",
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            idempotency_key=idempotency_key,
+            status=IntakeBatchStatus.ACCEPTED,
+            items=[
+                IntakeBatchItem(
+                    position=0,
+                    item_id="item-1",
+                    item_idempotency_key=f"{idempotency_key}:0",
+                    safe_file_name="a.txt",
+                    status=IntakeBatchItemStatus.ACCEPTED,
+                    request_fingerprint="sha256:" + ("a" * 64),
+                    input_id="input-1",
+                    source_id="source-1",
+                    operation_id="operation-1",
+                )
+            ],
+            created_at=now,
+            updated_at=now,
+        )
 
 
 class WebUrlServiceFake:
     def __init__(self) -> None:
         self.calls: list[str] = []
 
-    async def accept(self, **kwargs: object) -> object:
+    async def accept(self, **kwargs: object) -> WebUrlAcceptance:
         self.calls.append(str(kwargs["raw_url"]))
-        return SimpleNamespace(source_id="web-source", operation_id="web-op", status="queued")
+        return WebUrlAcceptance(
+            input_id="input-web",
+            workspace_id=str(kwargs["workspace_id"]),
+            source_id="web-source",
+            operation_id="web-op",
+            status="queued",
+            safe_display_url="https://example.test/a",
+        )
 
 
 class LocalReferenceServiceFake:
     def __init__(self) -> None:
         self.calls: list[str] = []
 
-    async def accept(self, **kwargs: object) -> object:
+    async def accept(self, **kwargs: object) -> WebUrlAcceptance:
         reference = kwargs["reference"]
         self.calls.append(reference.value)
-        return SimpleNamespace(source_id="local-source", operation_id="local-op", status="queued")
+        return WebUrlAcceptance(
+            input_id="input-local",
+            workspace_id=str(kwargs["workspace_id"]),
+            source_id="local-source",
+            operation_id="local-op",
+            status="queued",
+            safe_display_url="local-folder",
+        )
 
 
 class AskServiceFake:
     def __init__(self) -> None:
         self.calls: list[str] = []
 
-    async def ask(self, **kwargs: object) -> object:
+    async def ask(self, **kwargs: object) -> WorkspaceAskRun:
         self.calls.append(str(kwargs["question"]))
-        return SimpleNamespace(
+        now = datetime.now(UTC)
+        return WorkspaceAskRun(
             run_id="run-1",
-            status=SimpleNamespace(value="completed"),
+            tenant_id=str(kwargs["tenant_id"]),
+            workspace_id=str(kwargs["workspace_id"]),
+            question=str(kwargs["question"]),
+            status=AskRunStatus.COMPLETED,
             answer="grounded answer",
-            citations=[{"source_id": "source-1"}],
+            citations=[],
+            created_at=now,
+            completed_at=now,
         )
 
 

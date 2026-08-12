@@ -8,7 +8,10 @@ import inspect
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
+from enum import Enum
 from typing import Protocol, cast
+
+from pydantic import BaseModel
 
 from local_workspace_application.conversation.interaction_execution_models import (
     ConversationActionExecutionResult,
@@ -22,6 +25,7 @@ from local_workspace_application.conversation.interaction_execution_models impor
 )
 from local_workspace_application.conversation.interaction_models import (
     ConversationInteractionPlan,
+    ConversationPlanningSourceCandidate,
     ExtractedObject,
     KnowledgeAddAttachmentsPlannedAction,
     KnowledgeAddSourcesPlannedAction,
@@ -87,6 +91,10 @@ from local_workspace_application.workspaces.conversation_workspace_selection_ser
     ConversationWorkspaceSelectionError,
     ConversationWorkspaceSelectionService,
 )
+from local_workspace_application.workspaces.models import (
+    IntakeBatch,
+    Workspace,
+)
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
 from local_workspace_application.workspaces.knowledge_plugin_configuration_service import (
     KnowledgeCapabilitySummaryV1,
@@ -132,8 +140,11 @@ from local_workspace_application.workspaces.tenant_connection_product_errors imp
     TenantConnectionProductError,
 )
 from local_workspace_application.workspaces.source_candidates import (
+    SourceCandidateAcceptance,
     SourceCandidateIntakeService,
+    SourceCandidateSummary,
 )
+from local_workspace_application.workspaces.web_url_ingestion import WebUrlAcceptance
 
 
 class TrustedAttachmentResolver(Protocol):
@@ -141,7 +152,9 @@ class TrustedAttachmentResolver(Protocol):
 
 
 class CandidateIntakeService(Protocol):
-    def list_candidates(self, *, tenant_id: str, workspace_id: str) -> Sequence[object]: ...
+    def list_candidates(
+        self, *, tenant_id: str, workspace_id: str
+    ) -> Sequence[SourceCandidateSummary]: ...
 
     def accept(
         self,
@@ -150,7 +163,7 @@ class CandidateIntakeService(Protocol):
         workspace_id: str,
         candidate_id: str,
         idempotency_key: str,
-    ) -> object: ...
+    ) -> SourceCandidateAcceptance: ...
 
 
 class AttachmentIntakeService(Protocol):
@@ -161,29 +174,29 @@ class AttachmentIntakeService(Protocol):
         workspace_id: str,
         idempotency_key: str,
         uploads: Sequence[object],
-    ) -> object: ...
+    ) -> IntakeBatch: ...
 
 
 class WebUrlIntakeServiceProtocol(Protocol):
-    def accept(
+    async def accept(
         self,
         *,
         tenant_id: str,
         workspace_id: str,
         raw_url: str,
         idempotency_key: str,
-    ) -> object: ...
+    ) -> WebUrlAcceptance: ...
 
 
 class LocalReferenceIntakeService(Protocol):
-    def accept(
+    async def accept(
         self,
         *,
         tenant_id: str,
         workspace_id: str,
         reference: LocalFileReferenceExtractedObject,
         idempotency_key: str,
-    ) -> object: ...
+    ) -> WebUrlAcceptance: ...
 
 
 _ACTION_CAPABILITIES: dict[str, ConversationProductCapability] = {
@@ -778,7 +791,12 @@ class ConversationInteractionExecutor:
                 artifact_type=action.action_type,
                 data={
                     "workspace_id": selected_workspace_id,
-                    "name": _safe_attr(selected_workspace, "name"),
+                    "name": (
+                        selected_workspace.name.strip()
+                        if selected_workspace is not None
+                        and selected_workspace.name.strip()
+                        else "Workspace"
+                    ),
                     "previous_workspace_id": selection.previous_workspace_id,
                     "configuration_version": selection.configuration_version,
                     "changed": selection.changed,
@@ -892,8 +910,8 @@ class ConversationInteractionExecutor:
                     "sources": [
                         {
                             "source_id": str(item.source_id),
-                            "source_type": str(getattr(item.source_type, "value", item.source_type)),
-                            "status": str(getattr(item.status, "value", item.status)),
+                            "source_type": item.source_type.value,
+                            "status": item.status.value,
                         }
                         for item in sources
                     ],
@@ -932,8 +950,8 @@ class ConversationInteractionExecutor:
                 action,
             )
             service = self._require_candidate_service()
-            candidate_id = str(_safe_attr(candidate, "candidate_id") or "")
-            candidate_label = str(_safe_attr(candidate, "label") or "")
+            candidate_id = candidate.candidate_id
+            candidate_label = candidate.label
             acceptance = service.accept(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
@@ -946,9 +964,9 @@ class ConversationInteractionExecutor:
                     "workspace_id": workspace_id,
                     "candidate_id": candidate_id,
                     "label": candidate_label,
-                    "source_id": _safe_attr(acceptance, "source_id"),
-                    "operation_id": _safe_attr(acceptance, "operation_id"),
-                    "status": _safe_attr(acceptance, "status"),
+                    "source_id": acceptance.source_id,
+                    "operation_id": acceptance.operation_id,
+                    "status": acceptance.status,
                 },
             )
         if isinstance(action, KnowledgeAddAttachmentsPlannedAction):
@@ -979,8 +997,8 @@ class ConversationInteractionExecutor:
                 artifact_type=action.action_type,
                 data={
                     "workspace_id": workspace_id,
-                    "batch_id": _safe_attr(batch, "batch_id"),
-                    "status": _safe_attr(batch, "status"),
+                    "batch_id": batch.batch_id,
+                    "status": batch.status.value,
                     "attachments": list(action.attachment_ids),
                 },
             )
@@ -1051,10 +1069,10 @@ class ConversationInteractionExecutor:
                 knowledge_scope=knowledge_scope,
             )
             artifact_data: dict[str, object] = {
-                "run_id": _safe_attr(run, "run_id"),
-                "status": _safe_attr(run, "status"),
-                "answer": getattr(run, "answer", None),
-                "citations": _safe_json(getattr(run, "citations", [])),
+                "run_id": run.run_id,
+                "status": run.status.value,
+                "answer": run.answer,
+                "citations": _safe_json(run.citations),
             }
             if scope_labels:
                 artifact_data["scope_labels"] = scope_labels
@@ -1162,9 +1180,9 @@ class ConversationInteractionExecutor:
             )
             return {
                 "object_id": source.object_id,
-                "source_id": _safe_attr(accepted, "source_id"),
-                "operation_id": _safe_attr(accepted, "operation_id"),
-                "status": _safe_attr(accepted, "status"),
+                "source_id": accepted.source_id,
+                "operation_id": accepted.operation_id,
+                "status": accepted.status,
             }
         if isinstance(source, LocalFileReferenceExtractedObject):
             if self._local_reference_intake_service is not None:
@@ -1176,28 +1194,33 @@ class ConversationInteractionExecutor:
                         idempotency_key=idempotency_key,
                     )
                 )
-            elif source.reference_kind == "folder":
-                accepted = self._workspace_service.register_local_folder_source(
+                return {
+                    "object_id": source.object_id,
+                    "source_id": accepted.source_id,
+                    "operation_id": accepted.operation_id,
+                    "status": accepted.status,
+                }
+            if source.reference_kind == "folder":
+                registered = self._workspace_service.register_local_folder_source(
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
                     path=source.value,
                     recursive=True,
                 )
-            else:
-                raise RuntimeError("source_reference_unsupported")
-            return {
-                "object_id": source.object_id,
-                "source_id": _safe_attr(accepted, "source_id"),
-                "operation_id": _safe_attr(accepted, "operation_id"),
-                "status": _safe_attr(accepted, "status"),
-            }
+                return {
+                    "object_id": source.object_id,
+                    "source_id": registered.source_id,
+                    "operation_id": "",
+                    "status": registered.status.value,
+                }
+            raise RuntimeError("source_reference_unsupported")
         raise RuntimeError("source_reference_unsupported")
 
     def _resolve_candidate_snapshot(
         self,
-        candidates: Sequence[object],
+        candidates: Sequence[ConversationPlanningSourceCandidate],
         action: SourceCandidateAttachPlannedAction,
-    ) -> object:
+    ) -> ConversationPlanningSourceCandidate:
         reference = action.candidate_reference.strip().casefold()
         if action.candidate_reference_kind == "ordinal":
             if not reference.isdigit():
@@ -1206,19 +1229,19 @@ class ConversationInteractionExecutor:
             if index < 0 or index >= len(candidates):
                 raise RuntimeError("source_candidate_not_found")
             candidate = candidates[index]
-            if not bool(getattr(candidate, "available", False)):
+            if not candidate.available:
                 raise RuntimeError("source_candidate_unavailable")
             return candidate
         matches = [
             candidate
             for candidate in candidates
-            if str(getattr(candidate, "label", "")).strip().casefold() == reference
+            if candidate.label.strip().casefold() == reference
         ]
         if not matches:
             raise RuntimeError("source_candidate_not_found")
         if len(matches) > 1:
             raise RuntimeError("source_candidate_ambiguous")
-        if not bool(getattr(matches[0], "available", False)):
+        if not matches[0].available:
             raise RuntimeError("source_candidate_unavailable")
         return matches[0]
 
@@ -1896,11 +1919,11 @@ def _safe_inventory_item(item: KnowledgeInventoryItemV1) -> dict[str, object]:
     }
 
 
-def _safe_workspace_name(workspace: object | None) -> str:
+def _safe_workspace_name(workspace: Workspace | None) -> str:
     if workspace is None:
         return "Workspace"
-    name = getattr(workspace, "name", None)
-    if isinstance(name, str) and name.strip():
+    name = workspace.name
+    if name.strip():
         return name.strip()
     return "Workspace"
 
@@ -1915,44 +1938,52 @@ def _safe_exception_code(exc: Exception) -> str:
         "source_candidate_configuration_invalid": "source_candidate_unavailable",
         "source_candidate_configuration_changed": "source_candidate_unavailable",
     }
-    for attribute in ("error_code", "code", "reason"):
-        value = getattr(exc, attribute, None)
-        if isinstance(value, str) and value in _SAFE_ERROR_CODES:
-            return value
-    value = str(exc).strip()
-    if value in normalized_aliases:
-        return normalized_aliases[value]
-    return value if value in _SAFE_ERROR_CODES else "action_execution_failed"
+    code: str
+    if isinstance(exc, _PreflightFailure):
+        code = exc.code
+    elif isinstance(exc, ConversationReferenceResolutionError):
+        code = exc.code
+    elif isinstance(
+        exc,
+        (
+            ConversationConnectionAuthContextError,
+            TenantConnectionProductError,
+            ConversationWorkspaceSelectionError,
+            KnowledgeInventoryError,
+            KnowledgeOperationError,
+            DocumentInspectError,
+            DestructiveActionConfirmationError,
+            ConversationCitationContextError,
+        ),
+    ):
+        code = exc.error_code
+    elif isinstance(exc, RuntimeError):
+        code = str(exc).strip()
+    else:
+        code = str(exc).strip()
+    if code in normalized_aliases:
+        code = normalized_aliases[code]
+    return code if code in _SAFE_ERROR_CODES else "action_execution_failed"
 
 
-def _safe_attr(value: object, name: str) -> object | None:
-    item = getattr(value, name, None)
-    enum_value = getattr(item, "value", None)
-    if enum_value is not None:
-        item = enum_value
-    return item if isinstance(item, (str, int, float, bool)) or item is None else str(item)
-
-
-def _safe_candidate(candidate: object) -> dict[str, object]:
+def _safe_candidate(candidate: SourceCandidateSummary) -> dict[str, object]:
     return {
-        "candidate_id": _safe_attr(candidate, "candidate_id"),
-        "label": _safe_attr(candidate, "label"),
-        "source_type": _safe_attr(candidate, "source_type"),
-        "available": bool(getattr(candidate, "available", False)),
+        "candidate_id": candidate.candidate_id,
+        "label": candidate.label,
+        "source_type": candidate.source_type,
+        "available": candidate.available,
     }
 
 
 def _safe_json(value: object) -> object:
-    model_dump = getattr(value, "model_dump", None)
-    if callable(model_dump):
-        return _safe_json(model_dump(mode="json"))
+    if isinstance(value, BaseModel):
+        return _safe_json(value.model_dump(mode="json"))
+    if isinstance(value, Enum):
+        return value.value
     if isinstance(value, Mapping):
         return {str(key): _safe_json(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_safe_json(item) for item in value]
-    enum_value = getattr(value, "value", None)
-    if enum_value is not None:
-        return _safe_json(enum_value)
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     return str(value)

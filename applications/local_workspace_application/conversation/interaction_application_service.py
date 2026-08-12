@@ -48,7 +48,9 @@ from local_workspace_application.conversation.interaction_models import (
     WorkspaceAskPlannedAction,
 )
 from local_workspace_application.conversation.interaction_memory_policy import (
+    ConversationDurableMemoryPolicyV1,
     resolve_durable_thread_memory_user_text,
+    resolve_interaction_durable_memory_policy,
 )
 from local_workspace_application.conversation.interaction_planner import (
     ConversationInteractionPlanner,
@@ -73,6 +75,7 @@ from local_workspace_application.workspaces.conversation_context_execution impor
     build_conversation_execution_context,
 )
 from local_workspace_application.workspaces.conversation_context_models import (
+    ConversationContextBindingV1,
     ConversationExecutionContextV1,
     ConversationIngressContextV1,
     ConversationObservedAudience,
@@ -258,6 +261,11 @@ class ConversationInteractionApplicationService:
                 code=_context_error_code(exc.error_code),
             )
 
+        memory_policy = resolve_interaction_durable_memory_policy(
+            context=execution_context,
+            connection_auth_context_service=self._connection_auth_context,
+        )
+
         try:
             recent_turns = ()
             if self._thread_memory is not None:
@@ -276,6 +284,8 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 code=_context_error_code(exc.error_code),
+                execution_context=execution_context,
+                memory_policy=memory_policy,
             )
         except ConversationExecutionContextError:
             return self._finish_failure(
@@ -283,6 +293,8 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 code="conversation_context_not_active",
+                execution_context=execution_context,
+                memory_policy=memory_policy,
             )
         except ConversationThreadMemoryServiceError as exc:
             return self._finish_failure(
@@ -290,6 +302,8 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 code=exc.error_code,
+                execution_context=execution_context,
+                memory_policy=memory_policy,
             )
         except Exception:  # noqa: BLE001 - safe planning-context boundary
             logger.warning("conversation planning context construction failed")
@@ -298,6 +312,8 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 code="conversation_planning_failed",
+                execution_context=execution_context,
+                memory_policy=memory_policy,
             )
 
         try:
@@ -317,6 +333,8 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 code=code,
+                execution_context=execution_context,
+                memory_policy=memory_policy,
             )
         except Exception:  # noqa: BLE001 - planner boundary
             logger.warning("conversation planner failed")
@@ -325,6 +343,8 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 code="conversation_planning_failed",
+                execution_context=execution_context,
+                memory_policy=memory_policy,
             )
 
         setup_snapshot = (
@@ -347,6 +367,8 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 response_text=self._setup_onboarding.render_ask_blocked(setup_snapshot),
+                execution_context=execution_context,
+                memory_policy=memory_policy,
             )
 
         registry = {}
@@ -378,6 +400,8 @@ class ConversationInteractionApplicationService:
                     receipt=receipt,
                     execution_id=execution_id,
                     code="conversation_execution_failed",
+                    execution_context=execution_context,
+                    memory_policy=memory_policy,
                 )
         finally:
             self._attachment_registry.reset(token)
@@ -398,7 +422,7 @@ class ConversationInteractionApplicationService:
             receipt=receipt,
             execution_result=execution_result,
             setup_snapshot=snapshot,
-            plan=plan,
+            memory_policy=memory_policy,
         )
 
     async def _handle_missing_workspace_selection(
@@ -450,6 +474,10 @@ class ConversationInteractionApplicationService:
             binding=binding,
             ingress=command.ingress,
         )
+        memory_policy = resolve_interaction_durable_memory_policy(
+            context=execution_context,
+            connection_auth_context_service=self._connection_auth_context,
+        )
         try:
             planning_request = await self._build_planning_request(
                 command=command,
@@ -463,6 +491,8 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 response_text=self._render_welcome(workspaces),
+                execution_context=execution_context,
+                memory_policy=memory_policy,
             )
 
         try:
@@ -478,6 +508,8 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 response_text=self._render_welcome(workspaces),
+                execution_context=execution_context,
+                memory_policy=memory_policy,
             )
 
         registry = {}
@@ -535,25 +567,24 @@ class ConversationInteractionApplicationService:
             receipt=receipt,
             execution_result=execution_result,
             setup_snapshot=snapshot,
+            memory_policy=memory_policy,
         )
 
     def _build_pre_workspace_execution_context(
         self,
         *,
-        binding: object,
+        binding: ConversationContextBindingV1,
         ingress: ConversationIngressContextV1,
     ) -> ConversationExecutionContextV1:
         resolved = ResolvedConversationWorkspaceContextV1(
-            tenant_id=str(getattr(binding, "tenant_id")),
-            conversation_context_binding_id=str(
-                getattr(binding, "conversation_context_binding_id")
-            ),
-            audience_mode=getattr(binding, "audience_mode"),
+            tenant_id=str(binding.tenant_id),
+            conversation_context_binding_id=str(binding.conversation_context_binding_id),
+            audience_mode=binding.audience_mode,
             workspace_id=pre_workspace_placeholder_id(),
             principal_ref=ingress.actor_principal_ref,
             canonical_thread_ref=ingress.opaque_thread_ref,
-            activation_policy=getattr(binding, "activation_policy"),
-            thread_context_policy=getattr(binding, "thread_context_policy"),
+            activation_policy=binding.activation_policy,
+            thread_context_policy=binding.thread_context_policy,
         )
         return build_conversation_execution_context(
             resolved=resolved,
@@ -718,6 +749,8 @@ class ConversationInteractionApplicationService:
         receipt: ConversationEventReceipt,
         execution_id: str,
         response_text: str,
+        execution_context: ConversationExecutionContextV1 | None = None,
+        memory_policy: ConversationDurableMemoryPolicyV1 | None = None,
     ) -> ConversationInteractionApplicationResult:
         result = _failure_result(
             execution_id=execution_id,
@@ -725,9 +758,12 @@ class ConversationInteractionApplicationService:
             code="conversation_context_not_found",
         )
         return self._finish_success(
+            command=command,
+            execution_context=execution_context,
             receipt=receipt,
             execution_result=result,
             response_text=response_text,
+            memory_policy=memory_policy,
         )
 
     def resolve_attachment(self, attachment_id: str) -> object | None:
@@ -897,7 +933,7 @@ class ConversationInteractionApplicationService:
         execution_result: ConversationInteractionExecutionResult,
         response_text: str | None = None,
         setup_snapshot: WorkspaceSetupSnapshotV1 | None = None,
-        plan: ConversationInteractionPlan | None = None,
+        memory_policy: ConversationDurableMemoryPolicyV1 | None = None,
     ) -> ConversationInteractionApplicationResult:
         if response_text is None:
             try:
@@ -929,7 +965,7 @@ class ConversationInteractionApplicationService:
         durable_user_memory_text: str | None = None
         if memory_required and command is not None:
             durable_user_memory_text = resolve_durable_thread_memory_user_text(
-                plan=plan,
+                memory_policy=memory_policy or ConversationDurableMemoryPolicyV1.NORMAL,
                 message_text=command.message_text,
                 execution_result=execution_result,
             )
@@ -955,7 +991,7 @@ class ConversationInteractionApplicationService:
                 assistant_created_at = max(self._clock(), user_created_at)
                 appended = self._thread_memory.append_exchange(
                     context=execution_context,
-                    user_text=durable_user_memory_text or command.message_text.strip(),
+                    user_text=durable_user_memory_text or "",
                     assistant_text=response_text,
                     user_created_at=user_created_at,
                     assistant_created_at=assistant_created_at,
@@ -1013,15 +1049,16 @@ class ConversationInteractionApplicationService:
             ):
                 try:
                     execution_context = self._resolve_context(command)
+                    safe_memory = receipt.safe_user_memory_text
+                    if safe_memory is None or not safe_memory.strip():
+                        raise ConversationThreadMemoryServiceError(
+                            "conversation_thread_memory_text_missing"
+                        )
                     user_created_at = self._clock()
                     assistant_created_at = max(self._clock(), user_created_at)
                     appended = self._thread_memory.append_exchange(
                         context=execution_context,
-                        user_text=(
-                            receipt.safe_user_memory_text
-                            if receipt.safe_user_memory_text is not None
-                            else command.message_text.strip()
-                        ),
+                        user_text=safe_memory.strip(),
                         assistant_text=safe_response,
                         user_created_at=user_created_at,
                         assistant_created_at=assistant_created_at,
@@ -1069,13 +1106,21 @@ class ConversationInteractionApplicationService:
         receipt: ConversationEventReceipt,
         execution_id: str,
         code: str,
+        execution_context: ConversationExecutionContextV1 | None = None,
+        memory_policy: ConversationDurableMemoryPolicyV1 | None = None,
     ) -> ConversationInteractionApplicationResult:
         result = _failure_result(
             execution_id=execution_id,
             tenant_id=command.tenant_id,
             code=code,
         )
-        return self._finish_success(receipt=receipt, execution_result=result)
+        return self._finish_success(
+            command=command,
+            execution_context=execution_context,
+            receipt=receipt,
+            execution_result=result,
+            memory_policy=memory_policy,
+        )
 
     def _failure(
         self,
