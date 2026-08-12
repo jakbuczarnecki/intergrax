@@ -23,11 +23,14 @@ LKW_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "lkw-grou
 _SECTION_HEADINGS_ORDER = (
     "## Local Knowledge Workspace (LKW)",
     "## Try LKW",
+    "## Choose your path",
     "## Why this matters",
     "## Responsibility model",
     "## What exists today",
     "## Token Optimization",
-    "## Choose your path",
+    "## Multiplayer AI",
+    "## Platform Extensibility",
+    "## Agent Marketplace — future ecosystem concept",
     "## License and collaboration",
 )
 

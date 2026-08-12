@@ -94,7 +94,7 @@ Intergrax includes a deterministic, policy-governed Token Optimization Engine wi
 **Future ecosystem direction — product and architecture concept**
 
 The Agent Marketplace describes a governed distribution layer for reusable
-Tier-2 agents — built on Agent Distribution, trust verification, application
+governed agents — built on Agent Distribution, trust verification, application
 binding, immutable materialization, RuntimeRevision activation, AgentRegistry,
 and Nexus capability routing. It is **not** a shipped public marketplace,
 publisher portal, or commercial catalog today.

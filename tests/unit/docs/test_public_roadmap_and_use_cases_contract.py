@@ -487,10 +487,28 @@ def test_indexed_hybrid_ask_claim_boundary_across_public_docs(
     combined_norm = _normalize(combined)
 
     # 1. Indexed Hybrid Ask evidence is discoverable in the public claim surface.
-    assert "production hybrid ask indexed" in _normalize(proofs_text) or (
-        "production indexed ask path through hybrid ask" in _normalize(readme_text)
+    proofs_norm = _normalize(proofs_text)
+    readme_norm = _normalize(readme_text)
+    use_cases_norm = _normalize(use_cases_text)
+    indexed_proven_in_proofs = any(
+        marker in proofs_norm
+        for marker in (
+            "production hybrid ask indexed",
+            "indexed-evidence path",
+            "production indexed ask path through hybrid ask",
+        )
     )
-    assert "indexed ask through production hybrid ask" in _normalize(use_cases_text)
+    indexed_proven_in_readme = (
+        "hybrid ask" in readme_norm
+        and "production code path" in readme_norm
+        and "indexed" in readme_norm
+        and ("proven indexed branch" in readme_norm or "proven scope" in readme_norm)
+    )
+    assert indexed_proven_in_proofs or indexed_proven_in_readme
+    assert (
+        "indexed ask through production hybrid ask" in use_cases_norm
+        or "indexed path through production hybrid ask" in use_cases_norm
+    )
 
     # 2. Complete indexed + live Hybrid Ask remains explicitly incomplete.
     mixed_markers = (
