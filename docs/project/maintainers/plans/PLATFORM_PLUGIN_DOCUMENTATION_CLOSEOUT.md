@@ -311,7 +311,8 @@ Docs do **not** imply Tools-level scaffold parity where absent.
 
 | Track | Items |
 |-------|-------|
-| **ENTERPRISE-1** | CAND-001 … CAND-008 (prioritize CAND-004, CAND-006, CAND-007) |
+| **ENTERPRISE-1** | **Done** — [`PLATFORM_PLUGIN_ENTERPRISE_ROADMAP.md`](PLATFORM_PLUGIN_ENTERPRISE_ROADMAP.md) (architecture + blocks CAND-001…008) |
+| **ENTERPRISE-2+** | Implementation per roadmap blocks (prioritize BLOCK C → A → B) |
 | **Hardening** | ~~CAND-009, F008, F011, F013, F015~~ **done** (HARDENING-1) |
 | **Documentation maintenance** | Keep EP matrix synced when new surfaces added; link check on author guide edits |
 
