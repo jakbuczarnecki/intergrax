@@ -61,16 +61,14 @@ screenshot; dynamic workspace and Ask-run IDs are omitted.
 
 LKW is the **Primary Product Proof**, classified as **Backend Product Alpha /
 MVP**, with **PARTIAL** status. Bounded proof exists for indexed knowledge
-workflows. **Hybrid Ask** is the production code path used by the
+workflows. **Hybrid Ask** is the real application code path used by the
 proven indexed branch; the proven scope today is indexed knowledge only.
-Mixed indexed + authorized-live Hybrid Ask in one answer is **not yet proven**.
+Hybrid Ask combining indexed and authorized live evidence is **not yet proven**.
 
 **Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`
 
-**Not yet proven:** Hybrid Ask combining indexed and authorized live evidence,
-complete live-provider access, finished end-user packaging, **real-user validation**,
-and **commercial validation**. Mixed indexed + authorized live Hybrid Ask is
-**not complete**; complete live-provider access remains incomplete.
+**Not yet proven:** complete live-provider access, finished end-user packaging,
+**real-user validation**, and **commercial validation**.
 
 See the detailed [LKW Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md)
 and the current [PROOFS dashboard](docs/project/proofs/PROOFS.md).

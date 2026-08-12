@@ -500,7 +500,10 @@ def test_indexed_hybrid_ask_claim_boundary_across_public_docs(
     )
     indexed_proven_in_readme = (
         "hybrid ask" in readme_norm
-        and "production code path" in readme_norm
+        and (
+            "production code path" in readme_norm
+            or "real application code path" in readme_norm
+        )
         and "indexed" in readme_norm
         and ("proven indexed branch" in readme_norm or "proven scope" in readme_norm)
     )

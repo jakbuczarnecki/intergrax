@@ -372,6 +372,24 @@ def test_faq_ownership(faq_text: str) -> None:
         assert heading not in faq_text, f"FAQ contains forbidden heading: {heading}"
 
 
+def test_faq_hybrid_ask_reader_route(faq_text: str) -> None:
+    """PX-13: FAQ routes skeptical readers across Quick Start vs Hybrid Ask proof paths."""
+    faq_norm = " ".join(_normalize(faq_text).split())
+    assert "is hybrid ask proven?" in faq_norm
+    for phrase in (
+        "ask v1",
+        "not the hybrid ask certification path",
+        "bounded indexed branch through hybrid ask",
+        "mixed indexed + authorized-live hybrid ask",
+        "not proven",
+        "production readiness",
+        "complete live-provider access",
+        "proofs.md",
+        "lkw platform proof",
+    ):
+        assert phrase in faq_norm, f"FAQ Hybrid Ask route missing marker: {phrase!r}"
+
+
 def test_no_internal_architecture_language(
     partners_text: str, collaboration_text: str, faq_text: str
 ) -> None:

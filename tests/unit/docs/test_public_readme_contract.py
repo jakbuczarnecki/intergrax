@@ -210,7 +210,12 @@ def test_lkw_proof_boundary(readme_text: str) -> None:
     assert "hybrid ask" in lower
     assert "indexed" in lower
     assert "authorized live" in lower or "live evidence" in lower
-    assert "not complete" in lower
+    assert (
+        "not complete" in lower
+        or "not yet proven" in lower
+        or "incomplete" in lower
+    )
+    assert "real application code path" in lower or "production code path" in lower
 
 
 def test_proof_dashboard_route(readme_text: str) -> None:

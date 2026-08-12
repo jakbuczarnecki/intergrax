@@ -42,6 +42,10 @@ Local Knowledge Workspace is the **Primary Product Proof**: **Backend Product Al
 
 Current claim status belongs to [PROOFS](../proofs/PROOFS.md). It separates implemented mechanisms, bounded proof, partial capability, and claims that are not established. It does not claim finished SaaS, production readiness, real-user validation, or commercial validation.
 
+## Is Hybrid Ask proven?
+
+Partly, with boundaries. The [Product Quick Start](../product/lkw/QUICKSTART.md) exercises indexed **Ask V1** — it is not the Hybrid Ask certification path. Separate accepted evidence demonstrates the bounded indexed branch through Hybrid Ask; see [PROOFS](../proofs/PROOFS.md) and [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md). Mixed indexed + authorized-live Hybrid Ask in one answer is **not proven**; this does not imply general production readiness or complete live-provider access.
+
 ## Where should I start?
 
 Use the [LKW Product Tour](../product/lkw/LKW_PRODUCT_TOUR.md) to understand the path, then the [LKW Quick Start](../product/lkw/QUICKSTART.md) to try it. For workflow fit, use [USE_CASES](USE_CASES.md).

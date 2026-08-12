@@ -390,6 +390,17 @@ def test_lkw_quickstart_reader_literals_and_routes() -> None:
         "docker compose -p intergrax_lkw -f docker/docker-compose.yml down" in text
     )
 
+    quickstart_norm = " ".join(_normalize(text).split())
+    for phrase in (
+        "indexed ask v1",
+        "not the separate hybrid ask proof",
+        "mixed indexed + authorized-live hybrid ask",
+        "not proven",
+    ):
+        assert phrase in quickstart_norm, (
+            f"Quick Start missing Hybrid Ask boundary marker: {phrase!r}"
+        )
+
 
 def test_public_terminology(why_text: str, arch_text: str, build_text: str) -> None:
     assert "Primary product proof" in why_text

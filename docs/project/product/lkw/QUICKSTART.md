@@ -42,7 +42,13 @@ start canonical local stack
 → verify persisted Ask run
 ```
 
-This is indexed-only LKW behavior. It is not Hybrid Ask, not a platform certification run, and not a production deployment.
+This Quick Start exercises the indexed **Ask V1** product path — real application
+boundaries, indexed knowledge only. It is **not** the separate Hybrid Ask
+proof/certification path, not a platform certification run, and not a production
+deployment. Accepted public evidence for the bounded indexed Hybrid Ask branch
+lives in [PROOFS](../../proofs/PROOFS.md) and
+[LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md); mixed indexed +
+authorized-live Hybrid Ask in one answer remains **not proven**.
 
 ## After the run
 
@@ -181,7 +187,8 @@ On Windows, from the repository root, run `cd /d applications\local_workspace_ap
 
 ## What this does not prove
 
-- Hybrid Ask
+- the separate Hybrid Ask proof/certification path (see [PROOFS](../../proofs/PROOFS.md))
+- mixed indexed + authorized-live Hybrid Ask in one answer
 - Live-provider access
 - Production readiness or security/compliance certification
 - Commercial validation
