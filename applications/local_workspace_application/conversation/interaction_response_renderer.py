@@ -67,6 +67,26 @@ _ERROR_MESSAGES = {
     "knowledge_target_ambiguous": "The knowledge source reference is ambiguous.",
     "knowledge_operation_not_available": "That operation is not available for this source right now.",
     "knowledge_operation_conflict": "The source changed before the operation could finish. Please try again.",
+    "tenant_connection_unavailable": "Tenant connection management is temporarily unavailable.",
+    "tenant_connection_provider_not_found": "I could not find that integration provider.",
+    "tenant_connection_provider_ambiguous": "That provider reference matches multiple integrations. Please be more specific.",
+    "tenant_connection_not_found": "I could not find that connection.",
+    "tenant_connection_ambiguous": "That connection reference matches multiple connections. Please be more specific.",
+    "tenant_connection_authorization_pending_not_found": "There is no pending connection authorization to complete.",
+    "connection_not_found": "That connection is not available.",
+    "connection_revoked": "That connection has already been revoked.",
+    "connection_not_active": "That connection is not active.",
+    "connection_provider_unsupported": "That integration provider is not supported.",
+    "connection_provider_misconfigured": "That integration provider is not configured.",
+    "authorization_redirect_not_allowed": "Connection authorization cannot be started from this channel right now.",
+    "authorization_transaction_not_found": "The authorization session is no longer available.",
+    "authorization_transaction_expired": "The authorization session has expired. Please start again.",
+    "authorization_already_in_progress": "Authorization is already in progress for this connection.",
+    "authorization_state_invalid": "The authorization request is no longer valid.",
+    "credential_binding_invalid": "The provided credentials are not valid.",
+    "connection_already_exists": "That connection already exists.",
+    "connection_version_conflict": "The connection changed before the operation could finish. Please try again.",
+    "connection_runtime_unavailable": "The connection service is temporarily unavailable.",
 }
 
 
@@ -383,6 +403,83 @@ class ConversationInteractionResponseRenderer:
             if external_url:
                 lines.append(f"Open original: {external_url}")
             return lines or ["Source details are not available."]
+        if action_type == "tenant_connection.providers.list":
+            providers = data.get("providers")
+            if not isinstance(providers, list) or not providers:
+                return ["No connection providers are available right now."]
+            lines = ["Available integrations:"]
+            for item in providers:
+                mapping = _mapping(item)
+                name = _safe_text(mapping.get("safe_display_name"), limit=120)
+                auth_mode = _safe_text(mapping.get("auth_mode"), limit=40).replace("_", " ")
+                qualification = _safe_text(mapping.get("qualification"), limit=40)
+                suffix = f" ({qualification})" if qualification and qualification != "qualified" else ""
+                lines.append(f"- {name}: {auth_mode}{suffix}")
+            return lines
+        if action_type == "tenant_connection.connections.list":
+            connections = data.get("connections")
+            if not isinstance(connections, list) or not connections:
+                return ["You do not have any tenant connections yet."]
+            lines = ["Your connections:"]
+            for item in connections:
+                mapping = _mapping(item)
+                name = _safe_text(mapping.get("safe_display_name"), limit=120)
+                provider = _safe_text(mapping.get("provider_id"), limit=64)
+                status = _safe_text(mapping.get("administrative_status"), limit=40)
+                principal = _safe_text(mapping.get("connected_principal_ref"), limit=120)
+                detail = f"{name} ({provider}) — {status}"
+                if principal:
+                    detail = f"{detail}; principal: {principal}"
+                lines.append(f"- {detail}")
+            return lines
+        if action_type == "tenant_connection.connection.inspect":
+            connection = _mapping(data.get("connection"))
+            name = _safe_text(connection.get("safe_display_name"), limit=120)
+            provider = _safe_text(connection.get("provider_id"), limit=64)
+            status = _safe_text(connection.get("administrative_status"), limit=40)
+            principal = _safe_text(connection.get("connected_principal_ref"), limit=120)
+            lines = [f"Connection: {name}", f"Provider: {provider}", f"Status: {status}"]
+            if principal:
+                lines.append(f"Connected principal: {principal}")
+            return lines
+        if action_type in {
+            "tenant_connection.authorization.begin",
+            "tenant_connection.connection.reconnect",
+        }:
+            required_action = _safe_text(data.get("required_user_action"), limit=64)
+            if required_action == "present_manual_instructions":
+                instructions = _safe_text(data.get("manual_instructions"), limit=1200)
+                return [
+                    "Manual credential binding is required for this integration.",
+                    instructions or "Send the required Slack app and bot tokens as JSON in your next message.",
+                ]
+            authorization_url = _safe_text(data.get("authorization_url"), limit=500)
+            expires_at = _safe_text(data.get("expires_at"), limit=80)
+            lines = [
+                "Open the authorization link below in your browser to continue.",
+            ]
+            if authorization_url:
+                lines.append(f"Authorization URL: {authorization_url}")
+            if expires_at:
+                lines.append(f"Expires: {expires_at}")
+            return lines
+        if action_type == "tenant_connection.authorization.complete_manual":
+            connection = _mapping(data.get("connection"))
+            name = _safe_text(connection.get("safe_display_name"), limit=120)
+            disposition = _safe_text(data.get("disposition"), limit=40)
+            return [f"Connection completed for {name} ({disposition})."]
+        if action_type == "tenant_connection.connection.revoke":
+            status = _safe_text(data.get("status"), limit=40).casefold()
+            if status == "confirmation_required":
+                name = _safe_text(data.get("display_name"), limit=120) or "this connection"
+                return [
+                    f"Revoking {name} is irreversible.",
+                    "Reply with explicit confirmation to proceed.",
+                ]
+            connection = _mapping(data.get("connection"))
+            name = _safe_text(connection.get("safe_display_name"), limit=120)
+            revoked_status = _safe_text(connection.get("administrative_status"), limit=40)
+            return [f"Connection revoked: {name} ({revoked_status})."]
         return [f"Completed: {_safe_text(action_type, limit=100)}"]
 
 

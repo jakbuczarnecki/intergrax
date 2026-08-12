@@ -24,6 +24,13 @@ from local_workspace_application.conversation.interaction_models import (
     KnowledgeCapabilitiesListPlannedAction,
     KnowledgeConnectionsListPlannedAction,
     KnowledgeResourcesListPlannedAction,
+    TenantConnectionBeginAuthorizationPlannedAction,
+    TenantConnectionCompleteManualAuthorizationPlannedAction,
+    TenantConnectionConnectionsListPlannedAction,
+    TenantConnectionInspectPlannedAction,
+    TenantConnectionProvidersListPlannedAction,
+    TenantConnectionReconnectPlannedAction,
+    TenantConnectionRevokePlannedAction,
     WorkspaceReferenceKind,
     collect_user_text_context,
     request_attachment_ids,
@@ -200,6 +207,47 @@ def validate_plan_against_request(
                 for item in configuration.available_remote_resources
             ):
                 raise PlanRequestValidationError("unknown knowledge resource reference")
+
+        tenant_inventory = request.tenant_connection_inventory
+        if isinstance(
+            action,
+            (
+                TenantConnectionProvidersListPlannedAction,
+                TenantConnectionConnectionsListPlannedAction,
+                TenantConnectionInspectPlannedAction,
+                TenantConnectionBeginAuthorizationPlannedAction,
+                TenantConnectionCompleteManualAuthorizationPlannedAction,
+                TenantConnectionReconnectPlannedAction,
+                TenantConnectionRevokePlannedAction,
+            ),
+        ):
+            if tenant_inventory is None:
+                raise PlanRequestValidationError("tenant connection inventory unavailable")
+        if isinstance(action, TenantConnectionBeginAuthorizationPlannedAction):
+            if tenant_inventory is None:
+                raise PlanRequestValidationError("tenant connection inventory unavailable")
+            if not any(
+                item.provider_id == action.provider_id for item in tenant_inventory.providers
+            ):
+                raise PlanRequestValidationError("unknown tenant connection provider reference")
+        if isinstance(
+            action,
+            (
+                TenantConnectionInspectPlannedAction,
+                TenantConnectionReconnectPlannedAction,
+                TenantConnectionRevokePlannedAction,
+            ),
+        ):
+            if tenant_inventory is None:
+                raise PlanRequestValidationError("tenant connection inventory unavailable")
+            if not any(
+                item.connection_ref == action.connection_ref
+                for item in tenant_inventory.connections
+            ):
+                raise PlanRequestValidationError("unknown tenant connection reference")
+        if isinstance(action, TenantConnectionCompleteManualAuthorizationPlannedAction):
+            if tenant_inventory is None or tenant_inventory.pending_manual_authorization is None:
+                raise PlanRequestValidationError("tenant connection manual authorization unavailable")
 
         workspace = getattr(action, "workspace", None)
         if workspace is not None and workspace.kind == WorkspaceReferenceKind.name:

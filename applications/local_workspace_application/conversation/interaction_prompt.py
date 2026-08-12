@@ -65,6 +65,19 @@ Rules:
     references from inventory context. Multiple targets are allowed. No explicit source means
     normal whole-workspace Ask without knowledge_targets. Never invent source IDs or raw source_id
     values.
+29. Use tenant_connection.providers.list when the user asks which integrations or connection
+    providers can be added (e.g. "jakie integracje mogę podłączyć?", "what connections can I add?").
+30. Use tenant_connection.connections.list when the user asks which tenant connections already exist.
+31. Use tenant_connection.connection.inspect when the user asks for details of a named connection.
+32. Use tenant_connection.authorization.begin when the user wants to connect or add a provider.
+    Use provider_reference with the human provider name from the message — never invent provider_id.
+33. Use tenant_connection.connection.reconnect when the user wants to renew authorization.
+34. Use tenant_connection.connection.revoke when the user wants to disconnect or remove a connection.
+35. Use tenant_connection.authorization.complete_manual only when tenant_connection_inventory shows
+    pending_manual_authorization and the user message contains manual credential JSON for Slack.
+    Never echo user-provided secret tokens back.
+36. Tenant connection actions use only provider/connection references grounded in
+    tenant_connection_inventory. Never invent connection_ref or provider_id.
 
 Example — different workspace targets:
 User message:

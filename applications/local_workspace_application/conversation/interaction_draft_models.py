@@ -362,6 +362,38 @@ class DestructiveActionConfirmDraftAction(_DraftActionBase):
     confirmation_token: RequiredSafeText = Field(max_length=4096)
 
 
+class TenantConnectionProvidersListDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.providers.list"]
+
+
+class TenantConnectionConnectionsListDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.connections.list"]
+
+
+class TenantConnectionInspectDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.connection.inspect"]
+    connection_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+
+class TenantConnectionBeginAuthorizationDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.authorization.begin"]
+    provider_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+
+class TenantConnectionCompleteManualAuthorizationDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.authorization.complete_manual"]
+
+
+class TenantConnectionReconnectDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.connection.reconnect"]
+    connection_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+
+class TenantConnectionRevokeDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.connection.revoke"]
+    connection_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+
 DraftPlannedAction = Annotated[
     WorkspaceListDraftAction
     | WorkspaceCreateDraftAction
@@ -379,7 +411,14 @@ DraftPlannedAction = Annotated[
     | CitationInspectDraftAction
     | KnowledgeInventoryListDraftAction
     | KnowledgeOperationExecuteDraftAction
-    | DestructiveActionConfirmDraftAction,
+    | DestructiveActionConfirmDraftAction
+    | TenantConnectionProvidersListDraftAction
+    | TenantConnectionConnectionsListDraftAction
+    | TenantConnectionInspectDraftAction
+    | TenantConnectionBeginAuthorizationDraftAction
+    | TenantConnectionCompleteManualAuthorizationDraftAction
+    | TenantConnectionReconnectDraftAction
+    | TenantConnectionRevokeDraftAction,
     Field(discriminator="action_type"),
 ]
 

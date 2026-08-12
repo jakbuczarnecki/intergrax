@@ -43,6 +43,13 @@ from local_workspace_application.conversation.interaction_models import (
     KnowledgeOperationExecutePlannedAction,
     KnowledgeOperationKind,
     KnowledgeTargetReferenceKind,
+    TenantConnectionProvidersListPlannedAction,
+    TenantConnectionConnectionsListPlannedAction,
+    TenantConnectionInspectPlannedAction,
+    TenantConnectionBeginAuthorizationPlannedAction,
+    TenantConnectionCompleteManualAuthorizationPlannedAction,
+    TenantConnectionReconnectPlannedAction,
+    TenantConnectionRevokePlannedAction,
     WorkspaceCreatePlannedAction,
     WorkspaceDeletePlannedAction,
     WorkspaceListPlannedAction,
@@ -106,6 +113,20 @@ from local_workspace_application.workspaces.destructive_action_confirmation impo
     HmacDestructiveActionConfirmationCodec,
     knowledge_detach_action_kind,
     knowledge_operation_action_kind,
+    tenant_connection_revoke_action_kind,
+)
+from local_workspace_application.workspaces.conversation_connection_auth_context_service import (
+    ConversationConnectionAuthContextError,
+    ConversationConnectionAuthContextService,
+    TenantConnectionConversationConfig,
+    parse_manual_credential_payload,
+    safe_connection_payload,
+)
+from local_workspace_application.workspaces.tenant_connection_conversation_models import (
+    THREAD_MEMORY_CREDENTIAL_REDACTION,
+)
+from local_workspace_application.workspaces.tenant_connection_product_errors import (
+    TenantConnectionProductError,
 )
 from local_workspace_application.workspaces.source_candidates import (
     SourceCandidateIntakeService,
@@ -180,6 +201,15 @@ _ACTION_CAPABILITIES: dict[str, ConversationProductCapability] = {
     "knowledge.inventory.list": ConversationProductCapability.SOURCE_DISCOVERY,
     "knowledge.operation.execute": ConversationProductCapability.WORKSPACE_ADMINISTRATION,
     "destructive.confirm": ConversationProductCapability.WORKSPACE_ADMINISTRATION,
+    "tenant_connection.providers.list": ConversationProductCapability.TENANT_CONNECTION_ADMINISTRATION,
+    "tenant_connection.connections.list": ConversationProductCapability.TENANT_CONNECTION_ADMINISTRATION,
+    "tenant_connection.connection.inspect": ConversationProductCapability.TENANT_CONNECTION_ADMINISTRATION,
+    "tenant_connection.authorization.begin": ConversationProductCapability.TENANT_CONNECTION_ADMINISTRATION,
+    "tenant_connection.authorization.complete_manual": (
+        ConversationProductCapability.TENANT_CONNECTION_ADMINISTRATION
+    ),
+    "tenant_connection.connection.reconnect": ConversationProductCapability.TENANT_CONNECTION_ADMINISTRATION,
+    "tenant_connection.connection.revoke": ConversationProductCapability.TENANT_CONNECTION_ADMINISTRATION,
 }
 
 _SAFE_ERROR_CODES = frozenset(
@@ -234,6 +264,26 @@ _SAFE_ERROR_CODES = frozenset(
         "knowledge_target_ambiguous",
         "knowledge_operation_not_available",
         "knowledge_operation_conflict",
+        "tenant_connection_unavailable",
+        "tenant_connection_provider_not_found",
+        "tenant_connection_provider_ambiguous",
+        "tenant_connection_not_found",
+        "tenant_connection_ambiguous",
+        "tenant_connection_authorization_pending_not_found",
+        "connection_not_found",
+        "connection_revoked",
+        "connection_not_active",
+        "connection_provider_unsupported",
+        "connection_provider_misconfigured",
+        "authorization_redirect_not_allowed",
+        "authorization_transaction_not_found",
+        "authorization_transaction_expired",
+        "authorization_already_in_progress",
+        "authorization_state_invalid",
+        "credential_binding_invalid",
+        "connection_already_exists",
+        "connection_version_conflict",
+        "connection_runtime_unavailable",
     }
 )
 
@@ -275,6 +325,8 @@ class ConversationInteractionExecutor:
         knowledge_inspection_service: KnowledgeInspectionService | None = None,
         knowledge_operations_service: KnowledgeOperationsService | None = None,
         destructive_confirmation_codec: HmacDestructiveActionConfirmationCodec | None = None,
+        connection_auth_context_service: ConversationConnectionAuthContextService | None = None,
+        tenant_connection_config: TenantConnectionConversationConfig | None = None,
         execution_id_factory: Callable[[], str] | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
@@ -292,6 +344,8 @@ class ConversationInteractionExecutor:
         self._knowledge_inspection = knowledge_inspection_service
         self._knowledge_operations = knowledge_operations_service
         self._destructive_confirmation = destructive_confirmation_codec
+        self._connection_auth_context = connection_auth_context_service
+        self._tenant_connection_config = tenant_connection_config or TenantConnectionConversationConfig()
         self._knowledge_idempotency = Sha256KnowledgeAdministrationIdempotencyKeyFactory()
         self._execution_id_factory = execution_id_factory or (lambda: str(uuid.uuid4()))
         self._clock = clock or (lambda: datetime.now(UTC))
@@ -361,6 +415,10 @@ class ConversationInteractionExecutor:
             for action, item in zip(plan.actions, action_results, strict=True)
             if action.action_type == "workspace.ask" and item.artifact is not None
         )
+        thread_memory_user_text = self._thread_memory_user_text(
+            plan=plan,
+            action_results=action_results,
+        )
         completed_at = self._utc_now()
         return ConversationInteractionExecutionResult(
             execution_id=execution_id,
@@ -375,6 +433,7 @@ class ConversationInteractionExecutor:
             created_resources=created_resources,
             ask_runs=ask_runs,
             response_data=artifacts,
+            thread_memory_user_text=thread_memory_user_text,
         )
 
     def _preflight(
@@ -589,6 +648,41 @@ class ConversationInteractionExecutor:
                         item.model_dump(mode="json") for item in connections
                     ]
                 },
+            )
+        if isinstance(action, TenantConnectionProvidersListPlannedAction):
+            return await self._execute_tenant_connection_providers_list(
+                tenant_id=tenant_id,
+            )
+        if isinstance(action, TenantConnectionConnectionsListPlannedAction):
+            return await self._execute_tenant_connection_connections_list(
+                tenant_id=tenant_id,
+            )
+        if isinstance(action, TenantConnectionInspectPlannedAction):
+            return await self._execute_tenant_connection_inspect(
+                tenant_id=tenant_id,
+                connection_ref=action.connection_ref,
+            )
+        if isinstance(action, TenantConnectionBeginAuthorizationPlannedAction):
+            return await self._execute_tenant_connection_begin_authorization(
+                action=action,
+                tenant_id=tenant_id,
+                command=command,
+            )
+        if isinstance(action, TenantConnectionCompleteManualAuthorizationPlannedAction):
+            return await self._execute_tenant_connection_complete_manual_authorization(
+                command=command,
+            )
+        if isinstance(action, TenantConnectionReconnectPlannedAction):
+            return await self._execute_tenant_connection_reconnect(
+                tenant_id=tenant_id,
+                connection_ref=action.connection_ref,
+                command=command,
+            )
+        if isinstance(action, TenantConnectionRevokePlannedAction):
+            return await self._execute_tenant_connection_revoke(
+                action=action,
+                tenant_id=tenant_id,
+                command=command,
             )
         if isinstance(action, KnowledgeResourcesListPlannedAction):
             service = self._require_knowledge_plugin_configuration()
@@ -1128,6 +1222,271 @@ class ConversationInteractionExecutor:
             raise RuntimeError("source_candidate_unavailable")
         return matches[0]
 
+    def _require_connection_auth_context_service(
+        self,
+    ) -> ConversationConnectionAuthContextService:
+        if self._connection_auth_context is None:
+            raise RuntimeError("tenant_connection_unavailable")
+        return self._connection_auth_context
+
+    def _tenant_orchestration(
+        self,
+        tenant_id: str,
+    ):
+        return self._require_connection_auth_context_service().orchestration_for(tenant_id)
+
+    def _oauth_redirect_uri(self) -> str:
+        redirect_uri = self._tenant_connection_config.oauth_redirect_uri
+        if redirect_uri is None or not redirect_uri.strip():
+            raise RuntimeError("authorization_redirect_not_allowed")
+        return redirect_uri.strip()
+
+    async def _execute_tenant_connection_providers_list(
+        self,
+        *,
+        tenant_id: str,
+    ) -> ConversationExecutionArtifact:
+        service = self._tenant_orchestration(tenant_id)
+        providers = service.list_supported_connection_providers()
+        return ConversationExecutionArtifact(
+            artifact_type="tenant_connection.providers.list",
+            data={
+                "providers": [dict(item) for item in providers],
+            },
+        )
+
+    async def _execute_tenant_connection_connections_list(
+        self,
+        *,
+        tenant_id: str,
+    ) -> ConversationExecutionArtifact:
+        service = self._tenant_orchestration(tenant_id)
+        connections = service.list_connections()
+        return ConversationExecutionArtifact(
+            artifact_type="tenant_connection.connections.list",
+            data={
+                "connections": [
+                    safe_connection_payload(connection) for connection in connections
+                ],
+            },
+        )
+
+    async def _execute_tenant_connection_inspect(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+    ) -> ConversationExecutionArtifact:
+        service = self._tenant_orchestration(tenant_id)
+        try:
+            connection = service.get_connection(connection_ref)
+        except TenantConnectionProductError as exc:
+            raise RuntimeError(exc.error_code) from exc
+        return ConversationExecutionArtifact(
+            artifact_type="tenant_connection.connection.inspect",
+            data={"connection": safe_connection_payload(connection)},
+        )
+
+    async def _execute_tenant_connection_begin_authorization(
+        self,
+        *,
+        action: TenantConnectionBeginAuthorizationPlannedAction,
+        tenant_id: str,
+        command: ConversationInteractionExecutionCommand,
+    ) -> ConversationExecutionArtifact:
+        service = self._tenant_orchestration(tenant_id)
+        redirect_uri = self._oauth_redirect_uri()
+        try:
+            result = service.begin_connection_authorization(
+                provider_id=action.provider_id,
+                redirect_uri=redirect_uri,
+            )
+        except TenantConnectionProductError as exc:
+            raise RuntimeError(exc.error_code) from exc
+
+        auth_context = self._require_connection_auth_context_service()
+        auth_context.record_pending_authorization(
+            context=command.execution_context,
+            authorization_transaction_ref=result.authorization_transaction_ref,
+            provider_id=action.provider_id,
+            required_user_action=result.required_user_action,
+        )
+
+        return ConversationExecutionArtifact(
+            artifact_type=action.action_type,
+            data={
+                "provider_id": action.provider_id,
+                "required_user_action": result.required_user_action,
+                "authorization_url": result.authorization_url,
+                "expires_at": result.expires_at.isoformat(),
+                "manual_instructions": result.manual_instructions,
+            },
+        )
+
+    async def _execute_tenant_connection_complete_manual_authorization(
+        self,
+        *,
+        command: ConversationInteractionExecutionCommand,
+    ) -> ConversationExecutionArtifact:
+        auth_context = self._require_connection_auth_context_service()
+        try:
+            pending = auth_context.require_pending_manual_authorization(
+                context=command.execution_context,
+            )
+        except ConversationConnectionAuthContextError as exc:
+            raise RuntimeError(exc.error_code) from exc
+        try:
+            credential_payload = parse_manual_credential_payload(
+                command.planning_request.message_text
+            )
+        except ValueError as exc:
+            raise RuntimeError(str(exc)) from exc
+        service = auth_context.orchestration_for(command.execution_context.tenant_id)
+        try:
+            result = service.complete_connection_authorization(
+                authorization_transaction_ref=pending.authorization_transaction_ref,
+                credential_payload=credential_payload,
+            )
+        except TenantConnectionProductError as exc:
+            raise RuntimeError(exc.error_code) from exc
+        auth_context.clear_pending_authorization(context=command.execution_context)
+        return ConversationExecutionArtifact(
+            artifact_type="tenant_connection.authorization.complete_manual",
+            data={
+                "connection": safe_connection_payload(result.connection),
+                "disposition": result.disposition,
+                "redact_user_message": True,
+            },
+        )
+
+    async def _execute_tenant_connection_reconnect(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        command: ConversationInteractionExecutionCommand,
+    ) -> ConversationExecutionArtifact:
+        service = self._tenant_orchestration(tenant_id)
+        redirect_uri = self._oauth_redirect_uri()
+        try:
+            result = service.reconnect_connection(
+                connection_ref=connection_ref,
+                redirect_uri=redirect_uri,
+            )
+        except TenantConnectionProductError as exc:
+            raise RuntimeError(exc.error_code) from exc
+        connection = service.get_connection(connection_ref)
+        auth_context = self._require_connection_auth_context_service()
+        auth_context.record_pending_authorization(
+            context=command.execution_context,
+            authorization_transaction_ref=result.authorization_transaction_ref,
+            provider_id=connection.provider_id,
+            required_user_action=result.required_user_action,
+        )
+        return ConversationExecutionArtifact(
+            artifact_type="tenant_connection.connection.reconnect",
+            data={
+                "connection_ref": connection_ref,
+                "required_user_action": result.required_user_action,
+                "authorization_url": result.authorization_url,
+                "expires_at": result.expires_at.isoformat(),
+                "manual_instructions": result.manual_instructions,
+            },
+        )
+
+    async def _execute_tenant_connection_revoke(
+        self,
+        *,
+        action: TenantConnectionRevokePlannedAction,
+        tenant_id: str,
+        command: ConversationInteractionExecutionCommand,
+    ) -> ConversationExecutionArtifact:
+        service = self._tenant_orchestration(tenant_id)
+        try:
+            connection = service.get_connection(action.connection_ref)
+        except TenantConnectionProductError as exc:
+            raise RuntimeError(exc.error_code) from exc
+        if action.confirmation_token is not None:
+            return await self._execute_tenant_connection_revoke_confirmed(
+                confirmation=self._verify_destructive_confirmation(
+                    token=action.confirmation_token,
+                    tenant_id=tenant_id,
+                    workspace_id=command.execution_context.workspace_id,
+                    action_kind=tenant_connection_revoke_action_kind(),
+                    target_id=action.connection_ref,
+                ),
+                tenant_id=tenant_id,
+            )
+        codec = self._require_destructive_confirmation_codec()
+        token = codec.issue(
+            DestructiveActionConfirmationV1(
+                token="",
+                tenant_id=tenant_id,
+                workspace_id=command.execution_context.workspace_id,
+                action_kind=tenant_connection_revoke_action_kind(),
+                target_id=connection.connection_ref,
+                expected_state_version=connection.configuration_version,
+                expires_at=self._utc_now() + codec.ttl,
+            )
+        )
+        return ConversationExecutionArtifact(
+            artifact_type=action.action_type,
+            data={
+                "status": "confirmation_required",
+                "action_kind": tenant_connection_revoke_action_kind(),
+                "connection_ref": connection.connection_ref,
+                "display_name": connection.safe_display_name,
+                "confirmation_token": token,
+            },
+        )
+
+    async def _execute_tenant_connection_revoke_confirmed(
+        self,
+        *,
+        confirmation: DestructiveActionConfirmationV1,
+        tenant_id: str,
+    ) -> ConversationExecutionArtifact:
+        if confirmation.tenant_id != tenant_id:
+            raise RuntimeError("destructive_confirmation_invalid")
+        if confirmation.action_kind != tenant_connection_revoke_action_kind():
+            raise RuntimeError("destructive_confirmation_invalid")
+        service = self._tenant_orchestration(tenant_id)
+        try:
+            current = service.get_connection(confirmation.target_id)
+        except TenantConnectionProductError as exc:
+            raise RuntimeError(exc.error_code) from exc
+        if current.configuration_version != confirmation.expected_state_version:
+            raise RuntimeError("destructive_confirmation_stale")
+        try:
+            revoked = service.revoke_connection(connection_ref=confirmation.target_id)
+        except TenantConnectionProductError as exc:
+            raise RuntimeError(exc.error_code) from exc
+        return ConversationExecutionArtifact(
+            artifact_type="tenant_connection.connection.revoke",
+            data={
+                "status": "completed",
+                "connection": safe_connection_payload(revoked),
+            },
+        )
+
+    def _thread_memory_user_text(
+        self,
+        *,
+        plan: ConversationInteractionPlan,
+        action_results: tuple[ConversationActionExecutionResult, ...],
+    ) -> str | None:
+        for action, result in zip(plan.actions, action_results, strict=True):
+            if action.action_type != "tenant_connection.authorization.complete_manual":
+                continue
+            if result.status is not ConversationActionExecutionStatus.COMPLETED:
+                continue
+            artifact = result.artifact
+            if artifact is None:
+                continue
+            if artifact.data.get("redact_user_message") is True:
+                return THREAD_MEMORY_CREDENTIAL_REDACTION
+        return None
+
     def _require_candidate_service(self) -> CandidateIntakeService:
         if self._source_candidate_service is None:
             raise RuntimeError("source_candidate_unavailable")
@@ -1350,6 +1709,12 @@ class ConversationInteractionExecutor:
                 tenant_id=tenant_id,
                 workspace_id=confirmation.workspace_id,
                 execution_id=execution_id,
+            )
+
+        if confirmation.action_kind == tenant_connection_revoke_action_kind():
+            return await self._execute_tenant_connection_revoke_confirmed(
+                confirmation=confirmation,
+                tenant_id=tenant_id,
             )
 
         raise RuntimeError("destructive_confirmation_invalid")

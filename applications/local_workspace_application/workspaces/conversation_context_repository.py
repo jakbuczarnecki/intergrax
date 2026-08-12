@@ -13,6 +13,7 @@ from intergrax.integrations.contracts.document_store import (
 )
 from local_workspace_application.workspaces.conversation_context_models import (
     ConversationCitationContextV1,
+    ConversationConnectionAuthContextV1,
     ConversationContextBindingV1,
     PersonalConversationStateV1,
     WorkspaceConversationAudiencePolicyV1,
@@ -22,6 +23,7 @@ _ENTITY_BINDING = "conversation_context_binding"
 _ENTITY_WORKSPACE_AUDIENCE = "conversation_context_workspace_audience"
 _ENTITY_PERSONAL_STATE = "conversation_context_personal_state"
 _ENTITY_CITATION_CONTEXT = "conversation_citation_context"
+_ENTITY_CONNECTION_AUTH_CONTEXT = "conversation_connection_auth_context"
 _SEMANTIC_IDENTITY_SEPARATOR = "\x1e"
 _BINDING_SCAN_LIMIT = 100
 
@@ -472,3 +474,66 @@ class ConversationContextRepository:
             partition_key=partition_key,
             row_key=expected.conversation_context_binding_id,
         )
+
+    def _parse_connection_auth_context(self, data: object) -> ConversationConnectionAuthContextV1:
+        model = self._parse_model(ConversationConnectionAuthContextV1, data)
+        if not isinstance(model, ConversationConnectionAuthContextV1):
+            raise ConversationContextRepositoryError("conversation_context_malformed_record")
+        return model
+
+    def put_connection_auth_context_if_absent(
+        self,
+        context: ConversationConnectionAuthContextV1,
+    ) -> bool:
+        partition_key = _partition(context.tenant_id, _ENTITY_CONNECTION_AUTH_CONTEXT)
+        row_key = context.conversation_context_binding_id
+        return self._put_if_absent(
+            context,
+            partition_key=partition_key,
+            row_key=row_key,
+        )
+
+    def get_connection_auth_context(
+        self,
+        *,
+        tenant_id: str,
+        conversation_context_binding_id: str,
+    ) -> ConversationConnectionAuthContextV1 | None:
+        partition_key = _partition(tenant_id, _ENTITY_CONNECTION_AUTH_CONTEXT)
+        record = self._store.get(partition_key, conversation_context_binding_id)
+        if record is None:
+            return None
+        context = self._parse_connection_auth_context(dict(record.data))
+        if (
+            context.tenant_id != tenant_id
+            or context.conversation_context_binding_id != conversation_context_binding_id
+        ):
+            raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+        return context
+
+    def replace_connection_auth_context_if_match(
+        self,
+        *,
+        expected: ConversationConnectionAuthContextV1,
+        replacement: ConversationConnectionAuthContextV1,
+    ) -> bool:
+        if expected.tenant_id != replacement.tenant_id:
+            raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+        if expected.conversation_context_binding_id != replacement.conversation_context_binding_id:
+            raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+        partition_key = _partition(expected.tenant_id, _ENTITY_CONNECTION_AUTH_CONTEXT)
+        return self._replace_if_match(
+            expected=expected,
+            replacement=replacement,
+            partition_key=partition_key,
+            row_key=expected.conversation_context_binding_id,
+        )
+
+    def delete_connection_auth_context(
+        self,
+        *,
+        tenant_id: str,
+        conversation_context_binding_id: str,
+    ) -> None:
+        partition_key = _partition(tenant_id, _ENTITY_CONNECTION_AUTH_CONTEXT)
+        self._store.delete(partition_key, conversation_context_binding_id)

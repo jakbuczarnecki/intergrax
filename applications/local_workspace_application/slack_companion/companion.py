@@ -41,9 +41,6 @@ from local_workspace_application.slack_companion.selection_store import (
 from local_workspace_application.slack_companion.pending_deletion_store import (
     InMemorySlackPendingDeletionStore,
 )
-from local_workspace_application.workspaces.destructive_action_confirmation import (
-    HmacDestructiveActionConfirmationCodec,
-)
 from local_workspace_application.slack_companion.workflow import SlackAskWorkflow
 from local_workspace_application.conversation.conversation_ingress_bootstrap import (
     ConversationIngressBootstrapService,
@@ -89,6 +86,13 @@ from local_workspace_application.workspaces.conversation_workspace_selection_ser
 from local_workspace_application.workspaces.conversation_citation_context_service import (
     ConversationCitationContextService,
 )
+from local_workspace_application.workspaces.conversation_connection_auth_context_service import (
+    ConversationConnectionAuthContextService,
+    TenantConnectionConversationConfig,
+)
+from local_workspace_application.workspaces.tenant_connection_product_orchestration import (
+    TenantConnectionProductOrchestrationFactory,
+)
 from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_managed_workspace_document_store,
@@ -130,6 +134,7 @@ class SlackCompanionRuntimeConfig:
     attachment_max_bytes: int
     attachment_max_batch_files: int
     thread_memory_limits: ConversationThreadMemoryLimitsV1
+    connection_auth_redirect_uri: str | None = None
 
 
 def resolve_slack_companion_runtime_config(
@@ -184,6 +189,11 @@ def resolve_slack_companion_runtime_config(
         attachment_max_bytes=attachment_max_bytes,
         attachment_max_batch_files=attachment_max_batch_files,
         thread_memory_limits=thread_memory_limits,
+        connection_auth_redirect_uri=(
+            settings.connection_auth_redirect_allowlist[0].strip()
+            if settings.connection_auth_redirect_allowlist
+            else None
+        ),
     )
 
 
@@ -447,6 +457,18 @@ class _AttachmentResolverBridge:
         return self.service.resolve_attachment(attachment_id)
 
 
+def _resolve_tenant_connection_orchestration_factory(
+    app: FastAPI,
+) -> TenantConnectionProductOrchestrationFactory | None:
+    try:
+        candidate = app.state.lkw_tenant_connection_orchestration_factory
+    except AttributeError:
+        return None
+    if isinstance(candidate, TenantConnectionProductOrchestrationFactory):
+        return candidate
+    return None
+
+
 def _build_conversation_interaction_application_service(
     *,
     app: FastAPI,
@@ -508,6 +530,19 @@ def _build_conversation_interaction_application_service(
         "lkw_destructive_confirmation_codec",
         None,
     )
+    orchestration_factory = _resolve_tenant_connection_orchestration_factory(app)
+    connection_auth_context_service = (
+        ConversationConnectionAuthContextService(
+            context_repository=context_repository,
+            orchestration_factory=orchestration_factory,
+            clock=clock,
+        )
+        if orchestration_factory is not None
+        else None
+    )
+    tenant_connection_config = TenantConnectionConversationConfig(
+        oauth_redirect_uri=runtime.connection_auth_redirect_uri,
+    )
     executor = ConversationInteractionExecutor(
         workspace_service=workspace_service,
         workspace_selection_service=selection_service,
@@ -534,6 +569,8 @@ def _build_conversation_interaction_application_service(
         knowledge_inspection_service=knowledge_inspection_service,
         knowledge_operations_service=knowledge_operations_service,
         destructive_confirmation_codec=destructive_confirmation_codec,
+        connection_auth_context_service=connection_auth_context_service,
+        tenant_connection_config=tenant_connection_config,
     )
     memory_adapter = SessionHistorySnapshotConversationThreadMemoryAdapter(
         port=DocumentStoreThreadMemoryLifecyclePort(store),
@@ -571,6 +608,7 @@ def _build_conversation_interaction_application_service(
             else None
         ),
         knowledge_plugin_configuration_service=knowledge_plugin_configuration,
+        connection_auth_context_service=connection_auth_context_service,
         personal_allowed_capabilities=frozenset(ConversationProductCapability),
         attachment_max_bytes=runtime.attachment_max_bytes,
         thread_memory_service=thread_memory,

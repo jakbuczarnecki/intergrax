@@ -84,6 +84,9 @@ from local_workspace_application.workspaces.conversation_citation_context_servic
     ConversationCitationContextError,
     ConversationCitationContextService,
 )
+from local_workspace_application.workspaces.conversation_connection_auth_context_service import (
+    ConversationConnectionAuthContextService,
+)
 from local_workspace_application.workspaces.knowledge_plugin_configuration_service import (
     KnowledgePluginConfigurationService,
 )
@@ -166,6 +169,7 @@ class ConversationInteractionApplicationService:
         attachment_max_bytes: int = 25 * 1024 * 1024,
         thread_memory_service: ConversationThreadMemoryService | None = None,
         knowledge_plugin_configuration_service: KnowledgePluginConfigurationService | None = None,
+        connection_auth_context_service: ConversationConnectionAuthContextService | None = None,
         ingress_bootstrap_service: ConversationIngressBootstrapService | None = None,
         setup_snapshot_service: WorkspaceSetupSnapshotService | None = None,
         setup_onboarding_presenter: ConversationSetupOnboardingPresenter | None = None,
@@ -185,6 +189,7 @@ class ConversationInteractionApplicationService:
         self._attachment_max_bytes = attachment_max_bytes
         self._thread_memory = thread_memory_service
         self._knowledge_plugin_configuration = knowledge_plugin_configuration_service
+        self._connection_auth_context = connection_auth_context_service
         self._ingress_bootstrap = ingress_bootstrap_service
         self._setup_snapshot = setup_snapshot_service
         self._setup_onboarding = setup_onboarding_presenter or (
@@ -819,6 +824,13 @@ class ConversationInteractionApplicationService:
                 )
             )
 
+        tenant_connection_inventory = None
+        if self._connection_auth_context is not None:
+            tenant_connection_inventory = self._connection_auth_context.build_planning_snapshot(
+                tenant_id=command.tenant_id,
+                context=execution_context,
+            )
+
         return ConversationPlanningRequest(
             message_text=command.message_text.strip(),
             attachments=tuple(
@@ -834,6 +846,7 @@ class ConversationInteractionApplicationService:
             active_workspace_id=execution_context.workspace_id,
             available_source_candidates=candidates,
             knowledge_plugin_configuration=knowledge_plugin_configuration,
+            tenant_connection_inventory=tenant_connection_inventory,
             recent_turns=recent_turns,
         )
 
@@ -928,7 +941,11 @@ class ConversationInteractionApplicationService:
                 assistant_created_at = max(self._clock(), user_created_at)
                 appended = self._thread_memory.append_exchange(
                     context=execution_context,
-                    user_text=command.message_text.strip(),
+                    user_text=(
+                        execution_result.thread_memory_user_text
+                        if execution_result.thread_memory_user_text is not None
+                        else command.message_text.strip()
+                    ),
                     assistant_text=response_text,
                     user_created_at=user_created_at,
                     assistant_created_at=assistant_created_at,

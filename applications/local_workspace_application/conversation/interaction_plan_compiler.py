@@ -37,6 +37,13 @@ from local_workspace_application.conversation.interaction_draft_models import (
     KnowledgeInventoryListDraftAction,
     KnowledgeOperationExecuteDraftAction,
     DestructiveActionConfirmDraftAction,
+    TenantConnectionProvidersListDraftAction,
+    TenantConnectionConnectionsListDraftAction,
+    TenantConnectionInspectDraftAction,
+    TenantConnectionBeginAuthorizationDraftAction,
+    TenantConnectionCompleteManualAuthorizationDraftAction,
+    TenantConnectionReconnectDraftAction,
+    TenantConnectionRevokeDraftAction,
 )
 from local_workspace_application.conversation.interaction_models import (
     ConversationClarification,
@@ -70,6 +77,17 @@ from local_workspace_application.conversation.interaction_models import (
     KnowledgeOperationKind,
     KnowledgeTargetReferenceKind,
     DestructiveActionConfirmPlannedAction,
+    TenantConnectionProvidersListPlannedAction,
+    TenantConnectionConnectionsListPlannedAction,
+    TenantConnectionInspectPlannedAction,
+    TenantConnectionBeginAuthorizationPlannedAction,
+    TenantConnectionCompleteManualAuthorizationPlannedAction,
+    TenantConnectionReconnectPlannedAction,
+    TenantConnectionRevokePlannedAction,
+)
+from local_workspace_application.workspaces.tenant_connection_conversation_resolution import (
+    resolve_connection_reference,
+    resolve_provider_reference,
 )
 
 
@@ -82,6 +100,11 @@ class ConversationDraftCompilationErrorCode(str, Enum):
     invalid_created_workspace_reference = "invalid_created_workspace_reference"
     ambiguous_created_workspace_reference = "ambiguous_created_workspace_reference"
     conflicting_source_declaration = "conflicting_source_declaration"
+    tenant_connection_inventory_unavailable = "tenant_connection_inventory_unavailable"
+    tenant_connection_provider_not_found = "tenant_connection_provider_not_found"
+    tenant_connection_provider_ambiguous = "tenant_connection_provider_ambiguous"
+    tenant_connection_not_found = "tenant_connection_not_found"
+    tenant_connection_ambiguous = "tenant_connection_ambiguous"
 
 
 class ConversationDraftCompilationError(ValueError):
@@ -211,6 +234,7 @@ def compile_interaction_draft(
             depends_on=depends_on,
             workspace=workspace_ref,
             source_object_ids=source_object_ids_by_action[index - 1],
+            request=request,
         )
         compiled_actions.append(compiled)
 
@@ -377,6 +401,7 @@ def _compile_action(
     depends_on: tuple[str, ...],
     workspace: WorkspaceReference | None,
     source_object_ids: tuple[str, ...],
+    request: ConversationPlanningRequest,
 ) -> PlannedAction:
     common = {
         "action_id": action_id,
@@ -513,7 +538,117 @@ def _compile_action(
             confirmation_token=action.confirmation_token,
             **common,
         )
+    if isinstance(action, TenantConnectionProvidersListDraftAction):
+        return TenantConnectionProvidersListPlannedAction(
+            action_type="tenant_connection.providers.list",
+            **common,
+        )
+    if isinstance(action, TenantConnectionConnectionsListDraftAction):
+        return TenantConnectionConnectionsListPlannedAction(
+            action_type="tenant_connection.connections.list",
+            **common,
+        )
+    if isinstance(action, TenantConnectionInspectDraftAction):
+        connection_ref = _resolve_connection_reference_for_compile(
+            request,
+            connection_reference=action.connection_reference,
+        )
+        return TenantConnectionInspectPlannedAction(
+            action_type="tenant_connection.connection.inspect",
+            connection_ref=connection_ref,
+            **common,
+        )
+    if isinstance(action, TenantConnectionBeginAuthorizationDraftAction):
+        provider_id = _resolve_provider_reference_for_compile(
+            request,
+            provider_reference=action.provider_reference,
+        )
+        return TenantConnectionBeginAuthorizationPlannedAction(
+            action_type="tenant_connection.authorization.begin",
+            provider_id=provider_id,
+            **common,
+        )
+    if isinstance(action, TenantConnectionCompleteManualAuthorizationDraftAction):
+        return TenantConnectionCompleteManualAuthorizationPlannedAction(
+            action_type="tenant_connection.authorization.complete_manual",
+            **common,
+        )
+    if isinstance(action, TenantConnectionReconnectDraftAction):
+        connection_ref = _resolve_connection_reference_for_compile(
+            request,
+            connection_reference=action.connection_reference,
+        )
+        return TenantConnectionReconnectPlannedAction(
+            action_type="tenant_connection.connection.reconnect",
+            connection_ref=connection_ref,
+            **common,
+        )
+    if isinstance(action, TenantConnectionRevokeDraftAction):
+        connection_ref = _resolve_connection_reference_for_compile(
+            request,
+            connection_reference=action.connection_reference,
+        )
+        return TenantConnectionRevokePlannedAction(
+            action_type="tenant_connection.connection.revoke",
+            connection_ref=connection_ref,
+            **common,
+        )
     raise TypeError("unsupported draft action type")
+
+
+def _require_tenant_connection_inventory(
+    request: ConversationPlanningRequest,
+):
+    inventory = request.tenant_connection_inventory
+    if inventory is None:
+        raise ConversationDraftCompilationError(
+            ConversationDraftCompilationErrorCode.tenant_connection_inventory_unavailable
+        )
+    return inventory
+
+
+def _resolve_provider_reference_for_compile(
+    request: ConversationPlanningRequest,
+    *,
+    provider_reference: str,
+) -> str:
+    inventory = _require_tenant_connection_inventory(request)
+    resolution = resolve_provider_reference(
+        inventory.providers,
+        provider_reference=provider_reference,
+    )
+    if resolution.ambiguous:
+        raise ConversationDraftCompilationError(
+            ConversationDraftCompilationErrorCode.tenant_connection_provider_ambiguous
+        )
+    if resolution.provider_id is None:
+        raise ConversationDraftCompilationError(
+            ConversationDraftCompilationErrorCode.tenant_connection_provider_not_found
+        )
+    return resolution.provider_id
+
+
+def _resolve_connection_reference_for_compile(
+    request: ConversationPlanningRequest,
+    *,
+    connection_reference: str,
+    provider_id: str | None = None,
+) -> str:
+    inventory = _require_tenant_connection_inventory(request)
+    resolution = resolve_connection_reference(
+        inventory.connections,
+        connection_reference=connection_reference,
+        provider_id=provider_id,
+    )
+    if resolution.ambiguous:
+        raise ConversationDraftCompilationError(
+            ConversationDraftCompilationErrorCode.tenant_connection_ambiguous
+        )
+    if resolution.connection_ref is None:
+        raise ConversationDraftCompilationError(
+            ConversationDraftCompilationErrorCode.tenant_connection_not_found
+        )
+    return resolution.connection_ref
 
 
 def _compile_clarification(

@@ -139,6 +139,7 @@ class ConversationInteractionExecutionResult(BaseModel):
     created_resources: tuple[ConversationExecutionArtifact, ...] = ()
     ask_runs: tuple[ConversationExecutionArtifact, ...] = ()
     response_data: tuple[ConversationExecutionArtifact, ...] = ()
+    thread_memory_user_text: str | None = Field(default=None, max_length=16_000)
     error: ConversationExecutionError | None = None
 
     @field_validator("execution_id", "tenant_id", "plan_version", mode="after")

@@ -21,6 +21,7 @@ _MUTATION_CAPABILITIES = frozenset(
         ConversationProductCapability.SOURCE_DISCOVERY,
         ConversationProductCapability.SOURCE_INTAKE,
         ConversationProductCapability.ATTACHMENT_INTAKE,
+        ConversationProductCapability.TENANT_CONNECTION_ADMINISTRATION,
     }
 )
 

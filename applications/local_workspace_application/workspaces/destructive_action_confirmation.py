@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class DestructiveActionKindV1:
     WORKSPACE_DELETE = "workspace.delete"
     KNOWLEDGE_DETACH = "knowledge.detach"
+    TENANT_CONNECTION_REVOKE = "tenant_connection.revoke"
 
 
 class DestructiveActionConfirmationV1(BaseModel):
@@ -159,6 +160,10 @@ def knowledge_detach_action_kind() -> str:
     return knowledge_operation_action_kind(KnowledgeOperationV1.DETACH)
 
 
+def tenant_connection_revoke_action_kind() -> str:
+    return DestructiveActionKindV1.TENANT_CONNECTION_REVOKE
+
+
 __all__ = [
     "DestructiveActionConfirmationError",
     "DestructiveActionConfirmationV1",
@@ -166,4 +171,5 @@ __all__ = [
     "HmacDestructiveActionConfirmationCodec",
     "knowledge_detach_action_kind",
     "knowledge_operation_action_kind",
+    "tenant_connection_revoke_action_kind",
 ]

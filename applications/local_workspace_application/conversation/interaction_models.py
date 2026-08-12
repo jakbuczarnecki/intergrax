@@ -13,6 +13,9 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, field_valida
 from local_workspace_application.workspaces.knowledge_plugin_configuration_service import (
     KnowledgePluginConfigurationSnapshotV1,
 )
+from local_workspace_application.workspaces.tenant_connection_conversation_models import (
+    TenantConnectionPlanningSnapshotV1,
+)
 
 _MAX_MESSAGE_TEXT_LEN = 16_000
 _MAX_ATTACHMENTS = 50
@@ -183,6 +186,7 @@ class ConversationPlanningRequest(BaseModel):
     active_workspace_id: OpaqueId | None = Field(default=None, max_length=_MAX_ACTION_ID_LEN)
     available_source_candidates: tuple[ConversationPlanningSourceCandidate, ...] = ()
     knowledge_plugin_configuration: KnowledgePluginConfigurationSnapshotV1 | None = None
+    tenant_connection_inventory: TenantConnectionPlanningSnapshotV1 | None = None
     recent_turns: tuple[ConversationPlanningTurn, ...] = ()
 
     @model_validator(mode="after")
@@ -483,6 +487,39 @@ class DestructiveActionConfirmPlannedAction(_PlannedActionBase):
     confirmation_token: RequiredSafeText = Field(max_length=4096)
 
 
+class TenantConnectionProvidersListPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.providers.list"]
+
+
+class TenantConnectionConnectionsListPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.connections.list"]
+
+
+class TenantConnectionInspectPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.connection.inspect"]
+    connection_ref: OpaqueId = Field(max_length=128)
+
+
+class TenantConnectionBeginAuthorizationPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.authorization.begin"]
+    provider_id: OpaqueId = Field(max_length=64)
+
+
+class TenantConnectionCompleteManualAuthorizationPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.authorization.complete_manual"]
+
+
+class TenantConnectionReconnectPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.connection.reconnect"]
+    connection_ref: OpaqueId = Field(max_length=128)
+
+
+class TenantConnectionRevokePlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.connection.revoke"]
+    connection_ref: OpaqueId = Field(max_length=128)
+    confirmation_token: OptionalSafeText = Field(default=None, max_length=4096)
+
+
 PlannedAction = Annotated[
     WorkspaceListPlannedAction
     | WorkspaceCreatePlannedAction
@@ -500,7 +537,14 @@ PlannedAction = Annotated[
     | CitationInspectPlannedAction
     | KnowledgeInventoryListPlannedAction
     | KnowledgeOperationExecutePlannedAction
-    | DestructiveActionConfirmPlannedAction,
+    | DestructiveActionConfirmPlannedAction
+    | TenantConnectionProvidersListPlannedAction
+    | TenantConnectionConnectionsListPlannedAction
+    | TenantConnectionInspectPlannedAction
+    | TenantConnectionBeginAuthorizationPlannedAction
+    | TenantConnectionCompleteManualAuthorizationPlannedAction
+    | TenantConnectionReconnectPlannedAction
+    | TenantConnectionRevokePlannedAction,
     Field(discriminator="action_type"),
 ]
 
