@@ -30,6 +30,10 @@ from intergrax.tools.providers.rag.scope import (
     resolve_tenant_scoped_vectorstore,
     use_wired_retrieval_managers,
 )
+from intergrax.tools.providers.rag.source_scope_transport import (
+    RagRetrievalSourceScopeState,
+    current_rag_retrieval_source_scope,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 RAG_TOOL_ID = "rag.retrieve"
@@ -130,7 +134,11 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
         if tenant_id is not None
         else None
     )
-    metadata_filter = _build_metadata_filter(params)
+    source_scope = current_rag_retrieval_source_scope()
+    if source_scope.is_invalid:
+        return RagRetrieveOutput(used=False, reason=source_scope.error_reason or "source_scope_invalid")
+
+    metadata_filter = _build_metadata_filter(params, source_scope=source_scope)
 
     result = service.retrieve(
         RetrievalRequest(
@@ -287,14 +295,19 @@ def _build_metadata_scope(params: RagRetrieveInput) -> dict[str, Any]:
     return where
 
 
-def _build_metadata_filter(params: RagRetrieveInput) -> MetadataFilter | None:
+def _build_metadata_filter(
+    params: RagRetrieveInput,
+    *,
+    source_scope: RagRetrievalSourceScopeState | None = None,
+) -> MetadataFilter | None:
     where = _build_metadata_scope(params)
     membership: tuple[MetadataMembershipCondition, ...] = ()
-    if params.allowed_source_ids:
+    scope_state = source_scope if source_scope is not None else current_rag_retrieval_source_scope()
+    if scope_state.is_present and not scope_state.is_invalid:
         membership = (
             MetadataMembershipCondition(
                 field="source_id",
-                allowed_values=tuple(params.allowed_source_ids),
+                allowed_values=scope_state.allowed_source_ids,
             ),
         )
     if not where and not membership:

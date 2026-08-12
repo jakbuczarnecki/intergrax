@@ -17,6 +17,7 @@ _SEARCH_SUMMARY_V1 = "lkw.search_summary.v1"
 class SearchSummaryReason(str, Enum):
     QUERY_MISSING = "query_missing"
     TOOL_GATEWAY_NOT_AVAILABLE = "tool_gateway_not_available"
+    SOURCE_SCOPE_INVALID = "source_scope_invalid"
     RETRIEVE_FAILED = "retrieve_failed"
     RETRIEVE_COMPLETE = "retrieve_complete"
 

@@ -25,10 +25,6 @@ class RagRetrieveInput(BaseModel):
         le=1.0,
         description="Minimum similarity score; chunks below are dropped.",
     )
-    allowed_source_ids: tuple[str, ...] | None = Field(
-        default=None,
-        description="Validated indexed source membership scope (internal retrieval boundary).",
-    )
 
 
 class RagChunkResult(BaseModel):

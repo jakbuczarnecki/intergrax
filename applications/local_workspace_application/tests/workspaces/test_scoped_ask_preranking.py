@@ -18,6 +18,10 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
 )
 from intergrax.tools.providers.rag.contracts import RagRetrieveInput
 from intergrax.tools.providers.rag.service import _build_metadata_filter
+from intergrax.tools.providers.rag.source_scope_transport import (
+    rag_retrieval_source_scope,
+    validated_rag_retrieval_source_scope,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -90,12 +94,14 @@ def test_membership_filter_excludes_higher_scoring_source_before_top_k() -> None
 
 
 def test_rag_retrieve_input_builds_source_membership_filter() -> None:
-    metadata_filter = _build_metadata_filter(
-        RagRetrieveInput(
-            query="hello",
-            allowed_source_ids=("source-b", "source-a"),
+    with rag_retrieval_source_scope(
+        validated_rag_retrieval_source_scope(("source-b", "source-a"))
+    ):
+        metadata_filter = _build_metadata_filter(
+            RagRetrieveInput(
+                query="hello",
+            )
         )
-    )
     assert metadata_filter is not None
     assert metadata_filter.membership[0].field == "source_id"
     assert metadata_filter.membership[0].allowed_values == ("source-b", "source-a")
