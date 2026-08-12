@@ -289,7 +289,7 @@ Entry point group: `intergrax.memory_stores`
 
 Bootstrap: `intergrax.core.memory_bootstrap.bootstrap_memory_stores(discover_entry_points=True)`.
 
-**Vector memory:** LTM and session episodic indexes reuse the host integration **vector store** — memory plugins swap index adapters, not vendor SDKs. See [`architecture/MEMORY.md`](architecture/MEMORY.md) §5.3, §11.5.
+**Vector memory:** LTM and session episodic indexes reuse the host integration **vector store** — memory plugins swap index adapters, not vendor SDKs. See [`architecture/MEMORY.md`](../../architecture/MEMORY.md) §5.3.
 
 Reference fixture: `tests/fixtures/plugin_packages/memory_store_plugin`.
 
@@ -311,7 +311,7 @@ Bootstrap: `intergrax.runtime.policy.rules.plugin_loader.register_policy_rule_pl
 
 **Composition:** YAML + EP handlers merge into `RuntimePolicyBundle.domain_fragments["policy_rules"]` via `intergrax/applications/_shared/policy_wiring.py`. They **never** bypass `ToolRuntime` or `ApplicationSecurityProfile` middleware.
 
-**Author map:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) [Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon [§42.11](architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine).
+**Author map:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) [Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon [§42.11](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine).
 
 Lab reference: `applications/lab_application/policy/rules/harness_lab.yaml`.
 
@@ -401,7 +401,7 @@ Bootstrap: `intergrax.core.security_bootstrap.bootstrap_security_providers(disco
 
 **Lab fixture:** `tests/fixtures/plugin_packages/intergrax_security_defense_fixture` — reference EP package for CI discovery tests.
 
-**Author map:** [Appendix H §H.3.1](guides/AGENT_CREATION_GUIDE.md#h31-security--trust-planes-operator-index) · canon [§42.45](architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance) · [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md).
+**Author map:** [Appendix H §H.3.1](AGENT_CREATION_GUIDE.md#h31-security--trust-planes-operator-index) · canon [§42.45](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance) · [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md).
 
 ---
 
