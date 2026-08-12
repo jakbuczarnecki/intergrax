@@ -56,7 +56,7 @@ without copying either roadmap.
 
 | Proof path | Public classification | Current public status | What it demonstrates | Verify | Detailed roadmap |
 |------------|------------------------|----------------------|----------------------|--------|------------------|
-| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [LKW Platform Proof](LKW_PLATFORM_PROOF.md) | [LKW implementation plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) |
+| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [LKW Platform Proof](LKW_PLATFORM_PROOF.md) · [Core Platform Proof](LKW_PLATFORM_PROOF.md#core-platform-claims) | [LKW implementation plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) |
 | **Token Optimization** | Featured platform-capability proof | 🟡 **PARTIAL** | Deterministic optimization pipeline, cache-aware execution, bounded vLLM prefix-cache proof | [Token Optimization guide](../capabilities/token_optimization/README.md) | [Token Optimization plan](../capabilities/plan/TOKEN_OPTIMIZATION.md) |
 
 `Verify` answers **what has been demonstrated?**
@@ -78,7 +78,7 @@ incomplete, and complete live-provider access remains incomplete.
 
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
-| Core application and platform proof | 🧪 **BOUNDED PROOF** | Real application startup, observability, ingest, hosting, persisted execution evidence | Bounded to documented certification profiles; not full live platform proof |
+| **Core Platform Proof** | 🧪 **BOUNDED PROOF** | Real application startup, observability, ingest, hosting, persisted execution evidence (startup, sentry, elasticsearch, persistence, background task, application hosting, file watcher) | Bounded to documented certification profiles; not production readiness, commercial validation, or all-provider certification |
 | Web URL knowledge intake | 🧪 **BOUNDED PROOF** | End-to-end WEB_URL intake, real RAG ingest, exact tenant/workspace vector scope, production indexed Ask path through Hybrid Ask over documented indexed evidence, grounded Ask with citation/evidence | Not live external-website certification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access remains incomplete |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
 
@@ -172,6 +172,7 @@ Real-user and commercial validation remain **incomplete**.
 | Document | Purpose |
 |----------|---------|
 | [LKW Platform Proof](LKW_PLATFORM_PROOF.md) | Guided LKW reviewer proof path |
+| [Core Platform Proof](LKW_PLATFORM_PROOF.md#core-platform-claims) | Bounded platform-level verification (startup, sentry, elasticsearch, persistence, background task, application hosting, file watcher) |
 | [LKW Implementation Plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) | Detailed LKW implementation roadmap |
 | [Token Optimization guide](../capabilities/token_optimization/README.md) | Engine overview and proof catalog |
 | [Token Optimization plan](../capabilities/plan/TOKEN_OPTIMIZATION.md) | Detailed Token Optimization implementation roadmap |

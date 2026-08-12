@@ -4,6 +4,9 @@ Want to understand the product experience before running it? See the [LKW Produc
 
 ## PRODUCT QUICKSTART — supported entry point
 
+**Prerequisite:** Clone or open this repository locally. Commands below assume
+the repository root as the working directory.
+
 Run exactly one command from the repository root:
 
 | Operating system | Command |
@@ -23,6 +26,9 @@ size.
 
 This quickstart is a supported local product-evaluation path. One command starts the canonical local stack (unless you already have it running), uploads a bundled non-sensitive sample document through managed-file Knowledge Intake, waits for indexing, asks a grounded question over indexed knowledge, shows the answer with a source citation, and verifies the persisted Ask run.
 
+The canonical stack includes: `local_workspace`, MongoDB, Qdrant, Ollama, and
+the OTEL collector. Optional proof overlays are not started by this quickstart.
+
 Workflow:
 
 ```text
@@ -38,6 +44,14 @@ start canonical local stack
 
 This is indexed-only LKW behavior. It is not Hybrid Ask, not a platform certification run, and not a production deployment.
 
+## After the run
+
+The quickstart is **script-driven**: one command uploads, asks, cites, and
+verifies the persisted Ask run. There is no polished end-user UI on this path.
+On success the stack stays running for inspection — health check
+(`http://127.0.0.1:8020/health`), Docker logs, and persisted run read. For
+deeper bounded platform verification, see [Core Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md).
+
 ## Prerequisites
 
 - Git
@@ -48,6 +62,8 @@ This is indexed-only LKW behavior. It is not Hybrid Ask, not a platform certific
 First-run duration depends on image downloads, model download, network speed, and machine performance. A 15-minute target is not yet externally validated.
 
 ## What you should see
+
+`AURORA-17` is the expected success marker for this quickstart proof.
 
 <picture>
   <source

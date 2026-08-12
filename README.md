@@ -36,6 +36,9 @@ approved source
 → source / evidence
 ```
 
+`AURORA-17` is the expected success marker used by the canonical LKW
+quick-start proof.
+
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -58,8 +61,9 @@ screenshot; dynamic workspace and Ask-run IDs are omitted.
 
 LKW is the **Primary Product Proof**, classified as **Backend Product Alpha /
 MVP**, with **PARTIAL** status. Bounded proof exists for indexed knowledge
-workflows, including the production indexed Ask path through Hybrid Ask over
-documented indexed evidence.
+workflows. **Hybrid Ask** is the production composition path used by the
+proven indexed branch; the proven scope today is indexed knowledge only.
+Mixed indexed + authorized-live Hybrid Ask in one answer is **not yet proven**.
 
 **Not yet proven:** Hybrid Ask combining indexed and authorized live evidence,
 complete live-provider access, finished end-user packaging, **real-user validation**,
@@ -99,6 +103,45 @@ First run may download Docker images and the configured local model; duration
 depends on your environment and is not externally validated as a fixed target.
 
 <a id="try-lkw"></a>
+
+### LKW routes
+
+| Route | Purpose |
+| --- | --- |
+| [Product Tour](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) | Understand what the product experience looks like |
+| [Quick Start](docs/project/product/lkw/QUICKSTART.md) | Run the canonical product path |
+| [Core Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) | Verify bounded infrastructure/platform behavior |
+
+**Core Platform Proof** is separate from the Product Quick Start: a
+platform-level bounded proof covering startup, sentry, elasticsearch,
+persistence, background task, application hosting, and file watcher. It does
+**not** imply production readiness, commercial validation, or all-provider
+certification.
+
+---
+
+## Choose your path
+
+| You want to… | Start here |
+| --- | --- |
+| Try the product | [LKW Quick Start](docs/project/product/lkw/QUICKSTART.md) |
+| Understand the product first | [LKW Product Tour](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) |
+| Verify bounded platform behavior | [Core Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) |
+| Check whether your workflow fits | [Use Cases](docs/project/overview/USE_CASES.md) |
+| Review current evidence | [PROOFS](docs/project/proofs/PROOFS.md) |
+| Evaluate one claim fairly | [Evaluation Guide](docs/project/builders/EVALUATION_GUIDE.md) |
+| Start building | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
+| Plan deeper application composition | [Build With Intergrax](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
+| Review architecture | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
+| Discuss a pilot or design partnership | [Partners](docs/project/community/PARTNERS.md) |
+| Contribute, give feedback, or ask about permissions | [Collaboration](docs/project/community/COLLABORATION.md) |
+| Perform a deep technical review | [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
+
+Questions? See the [FAQ](docs/project/overview/FAQ.md). For the complete
+public route map, use the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
+The [project documentation hub](docs/project/README.md) is the secondary
+all-docs entry point. The [public roadmap](docs/project/overview/ROADMAP.md)
+describes outcome direction.
 
 ---
 
@@ -194,28 +237,6 @@ execution.
 Canonical architecture is **frozen**; platform-wide harmonization is **not
 complete**; a complete third-party install-to-runtime E2E proof is **not yet
 established**.
-
-## Choose your path
-
-| You want to… | Start here |
-| --- | --- |
-| Try the product | [LKW Quick Start](docs/project/product/lkw/QUICKSTART.md) |
-| Understand the product first | [LKW Product Tour](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) |
-| Check whether your workflow fits | [Use Cases](docs/project/overview/USE_CASES.md) |
-| Review current evidence | [PROOFS](docs/project/proofs/PROOFS.md) |
-| Evaluate one claim fairly | [Evaluation Guide](docs/project/builders/EVALUATION_GUIDE.md) |
-| Start building | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
-| Plan deeper application composition | [Build With Intergrax](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
-| Review architecture | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
-| Discuss a pilot or design partnership | [Partners](docs/project/community/PARTNERS.md) |
-| Contribute, give feedback, or ask about permissions | [Collaboration](docs/project/community/COLLABORATION.md) |
-| Perform a deep technical review | [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
-
-Questions? See the [FAQ](docs/project/overview/FAQ.md). For the complete
-public route map, use the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
-The [project documentation hub](docs/project/README.md) is the secondary
-all-docs entry point. The [public roadmap](docs/project/overview/ROADMAP.md)
-describes outcome direction.
 
 <!-- Compatibility anchors for inbound documentation links -->
 <a id="quick-start"></a>
