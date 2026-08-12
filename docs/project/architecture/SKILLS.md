@@ -236,6 +236,63 @@ Until SK-BRIDGE.* ships, declare `prompt_instruction_ids` and `policy_fragment_i
 
 ---
 
+## Third-party skill extension (developer path)
+
+**Task:** PLATFORM-PLUGIN-DOCS-3 · **Quickstart:** [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §4 · §16.6–§16.7 · **Example:** `intergrax/skills/examples/custom_pack/` (copyable in-repo; build your own wheel for distribution)
+
+### Skill is NOT a Tool
+
+Skills package **reusable capability requirements** for agents (`tool_ids`, prompt refs, policy fragments, `requires_skills`). The LLM does **not** invoke skills directly. `SkillResolver` expands manifests at agent bind time into `allowed_tools` and metadata; tools execute via `ToolRuntime`.
+
+### Public contract
+
+| Item | Value |
+|------|-------|
+| Protocol | `SkillPlugin` (`intergrax.skills.core.plugin`) |
+| Bundle manifest | `SkillBundleManifest` |
+| Skill rows | `SkillManifest` (`intergrax.skills.core.contracts`) |
+| Register | `register_skill_plugin()` |
+| EP group | `intergrax.skills` |
+| Enablement | `SkillProfile` |
+| Resolution | `SkillResolver(skill_registry, tool_registry)` |
+
+No `SkillWiringContext` — DI flows through tools at invoke time.
+
+### Runtime path
+
+```text
+SkillProfile → build_registry_from_profile → SkillRegistry
+  → AgentContract.skills[] → SkillResolver.resolve_skills()
+  → ResolvedSkillPack.tool_ids → AgentContract.allowed_tools
+  → extend_tool_profile_for_skills (Tier-3) ensures tools enabled
+```
+
+### Dependencies (`requires_skills`)
+
+Transitive expansion before parent skill; cycles raise `SkillResolutionError`. When `tool_registry` is provided, missing `tool_id` raises `SkillResolutionError`.
+
+### Delivery modes
+
+| Mode | Registration |
+|------|--------------|
+| External package | EP `intergrax.skills` + discovery + `SkillProfile` |
+| Host-embedded | `register_skill_plugin(cls)` + `SkillProfile` |
+
+### Failure and troubleshooting (summary)
+
+| Issue | Error / signal |
+|-------|----------------|
+| Duplicate bundle | `ValueError` from `register_skill_bundle` |
+| Unknown skill | `SkillResolutionError` |
+| Missing tool | `SkillResolutionError` (tool_id not in registry) |
+| Bundle not enabled | Skill skipped by `SkillProfile` filter |
+| EP discovery off | Bundle absent until explicit registration |
+| Qualification | Host semantic gate |
+
+Tests: `tests/unit/skills/test_external_skill_plugin.py`
+
+---
+
 ## Registry bootstrap (standalone)
 
 Mirror of tool catalog pattern:

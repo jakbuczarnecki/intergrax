@@ -183,6 +183,74 @@ Canonical layout under `intergrax/integrations/providers/<category>/<slug>`:
 
 ---
 
+## Third-party integration extension (developer path)
+
+**Task:** PLATFORM-PLUGIN-DOCS-3 · **Quickstart:** [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §2 · **Example:** `intergrax/integrations/examples/custom_memory_kv/`
+
+### What Integration is (vs Tool)
+
+Integrations are **infrastructure/provider backends** — databases, caches, object storage, vector stores, message buses, observability vendors, and similar. They supply typed clients to the host and to tools via `ToolWiringContext`. They are **not** agent-invokable operations (that is the **Tool** surface).
+
+### Public contract — third-party path only
+
+| Item | Value |
+|------|-------|
+| Protocol | `IntegrationPlugin` (`intergrax.integrations.core.plugin`) |
+| Manifest | `IntegrationManifest` (`intergrax.integrations.core.manifest`) |
+| Methods | `integration_manifest()` · `create_integration(**kwargs)` |
+| Register | `register_integration_plugin()` |
+| EP group | `intergrax.integrations` |
+| Runtime | `IntegrationProfile.resolve(IntegrationCategory.…)` |
+
+**Not the third-party path:** first-party shipped providers use internal `manifest.py` + `create_*` factory + `register_from_manifest` bootstrap at scale. External authors implement `IntegrationPlugin` only.
+
+### Delivery modes
+
+| Mode | Registration | When |
+|------|--------------|------|
+| External package | setuptools EP + discovery | Reusable pip-distributed provider |
+| Host-embedded | `register_integration_plugin(cls)` | Single-application integration |
+
+Same contract; different delivery. `pip install` ≠ discovered ≠ enabled ≠ production-qualified.
+
+### Configuration, secrets, and `env_prefix`
+
+- Host selects provider per category on `IntegrationProfile` (plugin class, manifest, slug, or instance).
+- Options: `IntegrationProfile.options={slug: {…}}` merged into factory kwargs.
+- **Secrets:** host-owned — never in manifest, EP values, or plugin metadata.
+- **`IntegrationManifest.env_prefix`:** domain-specific exception — factory may read env vars under that prefix. Do **not** generalize to Tool/Skill plugins.
+
+### Runtime resolution
+
+```python
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.tools.registry.wiring import ToolWiringContext
+
+profile = IntegrationProfile(key_value_cache=MyIntegrationPlugin)
+cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
+ctx = ToolWiringContext.from_integration_profile(profile)
+```
+
+### Lifecycle ownership
+
+No generic Platform Plugin shutdown API. The host owns process lifetime; integration factories may return pooled clients — document and perform category-specific cleanup in the adapter when required.
+
+### Failure and troubleshooting (summary)
+
+| Issue | Error / signal |
+|-------|----------------|
+| Duplicate slug | `ValueError` from `register_integration` |
+| Discovery off | `UnknownIntegrationError` at resolve |
+| EP load failure | `PluginLoadError` |
+| Unconfigured category | `IntegrationConfigurationError` |
+| Category mismatch | `IntegrationCategoryMismatchError` |
+| Qualification | Host gate — semantic approval, not attestation |
+
+Full matrix: EXTENSION_AUTHOR_GUIDE §2 · tests: `tests/unit/integrations/test_external_plugin.py`
+
+---
+
 ## Allowed integration responsibilities
 
 Integrations **MAY**:

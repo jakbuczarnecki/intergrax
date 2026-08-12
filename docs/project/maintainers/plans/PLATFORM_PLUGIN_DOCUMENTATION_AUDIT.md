@@ -854,3 +854,37 @@ Coherent implementation blocks derived from evidence (not microtasks):
 ---
 
 *End of PLATFORM-PLUGIN-DOCS-1 audit artifact.*
+
+---
+
+## 14. DOCS-3 remediation status (PLATFORM-PLUGIN-DOCS-3)
+
+**Date:** 2026-08-12 · **Branch:** `development` · **Scope:** Integrations, Tools, Skills developer journeys only
+
+### Matrix outcome (D1–D16)
+
+| Surface | DOCS-1 | DOCS-3 | Notes |
+|---------|--------|--------|-------|
+| **Integrations** | PARTIAL | **COMPLETE** | EXTENSION_AUTHOR_GUIDE §2 expanded; INTEGRATIONS.md third-party path; `env_prefix`/secrets/lifecycle/troubleshooting documented |
+| **Tools** | COMPLETE | **COMPLETE** | Reference flows preserved; §17 + TOOLS.md lifecycle/failure/troubleshooting added |
+| **Skills** | PARTIAL | **COMPLETE** | EXTENSION_AUTHOR_GUIDE §4 + §16.6–§16.7; SKILLS.md third-party path; `SkillResolver` runtime documented; `custom_pack` remains in-repo only (not falsely labeled installable) |
+
+### Shared blocks aligned
+
+- Discovery: `installed ≠ discovered ≠ enabled ≠ production-qualified`
+- Trust: trusted in-process Python
+- Qualification: host-owned semantic approval, not attestation
+- Secrets: not in Platform Plugin metadata or EP values
+- Local vs external: same domain contract, different delivery where supported
+
+### Runtime capability gaps
+
+**None** for Integrations, Tools, or Skills third-party author paths covered in DOCS-3. Generic Platform Plugin lifecycle unload API remains intentionally absent (documented as host/category ownership).
+
+### Changed documentation (DOCS-3 allowlist)
+
+1. `docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md`
+2. `docs/project/architecture/INTEGRATIONS.md`
+3. `docs/project/architecture/TOOLS.md`
+4. `docs/project/architecture/SKILLS.md`
+5. `docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md` (this section)

@@ -259,6 +259,50 @@ ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
 
 ---
 
+## Platform tool plugin — developer path
+
+**Task:** PLATFORM-PLUGIN-DOCS-3 · **Quickstart:** [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §3 · §16 · §17
+
+| Delivery | Reference |
+|----------|-----------|
+| External wheel | `examples/platform_plugins/intergrax_reference_tool_plugin/` |
+| Host-embedded | `examples/platform_plugins/local_embedded_tool_extension/` |
+| In-repo minimal | `intergrax/tools/examples/custom_echo` |
+
+**Sequence (both modes):** `ToolPlugin` → catalog registration → `ToolProfile` enablement → `ToolWiringContext` → `build_registry_from_profile` → `RuntimeToolInvoker`.
+
+### Lifecycle
+
+`ToolPlugin` registration is **catalog/bootstrap-time**. Handlers may own resources only when their domain design requires it. There is no generic Platform Plugin unload/shutdown manager. Integrations injected via `ToolWiringContext` follow host/domain lifecycle ownership.
+
+### Failure behavior
+
+| Condition | Behavior |
+|-----------|----------|
+| Duplicate bundle / tool id | `ValueError` from catalog or `ToolRegistry.register` |
+| EP discovery/import failure | `PluginLoadError` |
+| Bundle not on `ToolProfile` | Tool absent from runtime registry |
+| Missing `ToolWiringContext` slot | Handler receives `None` — wire `IntegrationProfile` first |
+| Qualification failure | Host `require_production_qualification` gate |
+| Runtime invoke failure | `ToolExecutionResult` error / `TOOL_FAILED` trace event |
+
+Bootstrap `on_conflict` policy: EXTENSION_AUTHOR_GUIDE §5.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Installed but tool missing | Enable discovery (`INTERGRAX_DISCOVER_PLUGINS`) |
+| EP not discovered | Verify `intergrax.tools` entry-point group |
+| Catalog row exists, not invokable | Add bundle/tool to `ToolProfile.enabled` |
+| Qualification rejected | Host semantic evidence — not attestation |
+| Handler dependency absent | Resolve `IntegrationProfile` → `ToolWiringContext` |
+| Runtime invocation fails | Check schema, scope policy, integration backend |
+
+Proof: `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`
+
+---
+
 ## Tool engine production posture (2026-06-10)
 
 Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invoke → verify → log). Distinct from AUDIT-IDEAL-11.* (catalog sandbox/MCP/lint — **Done**).
