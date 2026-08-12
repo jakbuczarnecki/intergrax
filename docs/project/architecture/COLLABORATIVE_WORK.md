@@ -154,6 +154,19 @@ Collaborative Work owns authoritative operation → policy-layer classification 
 - **Gate orchestrates existing owners** — ``CollaborativeWorkAuthorityResolver``, ``CollaborativePolicyEvaluator``, and ``RuntimePolicyEngine`` / ``PolicyEngine`` meaningful-side-effect path; no duplicated composition or runtime evaluator.
 - **Missing or inactive profile fails closed** — classification unresolved yields DENY; no operation executes inside the gate.
 
+### Durable authoritative state and production adoption (COLLAB-WORK-1H)
+
+Collaborative Work owns durable persistence for MP-1 authoritative security/configuration state behind existing repository ports:
+
+    repository ports → SQL durable adapter → configured SQL database
+
+- **Vendor-neutral domain** — contracts and enforcement gate import no database or observability vendor SDKs; concrete storage is selected at composition root (`open_sqlite_collaborative_work_repositories`).
+- **Semantic parity** — durable adapters preserve tenant/workspace isolation, revision-0 create, ``expected_revision`` CAS, idempotency replay snapshots, and database-enforced uniqueness for membership, delegation, principal authority, policy exact keys, operation profiles, and idempotency scope/key.
+- **Fail closed** — production must not silently fall back to in-memory authority state when durable storage is configured but unavailable.
+- **Canonical side-effect boundary** — ``MeaningfulSideEffectAuthorizationBoundary`` invokes ``CollaborativeWorkEnforcementGate`` immediately before a meaningful side effect may proceed; only ``ALLOW`` permits continuation; ``REQUIRE_HUMAN`` / ``ESCALATE`` return upstream without execution.
+- **Semantic channel separation** — domain authoritative state ≠ product activity history ≠ audit/evidence ≠ technical logs ≠ error reporting ≠ distributed traces ≠ metrics. None of the observability channels may become authority source-of-truth.
+- **Platform modularity** — Multiplayer capabilities depend on platform-level ports/contracts; concrete vendors (persistence, messaging, logs, errors, traces, metrics, activity, audit) are selected by configuration/adapters outside canonical Collaborative Work contracts.
+
 ---
 
 ## MP-1 contract direction

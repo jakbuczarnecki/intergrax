@@ -148,7 +148,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-1G |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Authoritative operation policy classification and reusable final enforcement gate orchestrating authority, workspace/resource/runtime policy, and composition |
 | **Dependencies** | COLLAB-WORK-1E approved; COLLAB-WORK-1F approved; `compose_policy_decisions`; `CollaborativeWorkAuthorityResolver`; `CollaborativePolicyEvaluator`; `RuntimePolicyEngine.evaluate_meaningful_side_effect` |
 | **Exact scope** | `CollaborativeOperationPolicyProfile` contract; profile repository port; in-memory adapter; `CollaborativeWorkEnforcementGate`; runtime identity validation; fail-closed classification |
@@ -157,7 +157,22 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Broad application adoption; LKW operation catalog; policy management APIs; durable SQL adapter; MP-2+ rows |
 | **Acceptance** | Caller cannot control applicability or authority scope; active profile classifies layers; missing/disabled profile DENY; required resource/runtime validated; final ALLOW only when all required layers ALLOW; no operation execution in gate |
 | **Proof requirements** | `tests/unit/collaborative_work/test_enforcement_gate.py`; `tests/unit/collaborative_work/test_operation_policy_profile_repository.py`; policy composition and policy source regressions |
-| **Next step** | Production adoption wiring / durable backend gate |
+| **Next step** | COLLAB-WORK-1H — durable collaborative state and first production enforcement adoption |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1H |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | Durable authoritative Collaborative Work security state and first canonical production enforcement adoption boundary |
+| **Dependencies** | COLLAB-WORK-1G approved; `CollaborativeWorkEnforcementGate`; COLLAB-WORK-1B repository semantics |
+| **Exact scope** | SQLite durable repository adapters for MP-1 authoritative entities; `open_sqlite_collaborative_work_repositories` composition factory; `MeaningfulSideEffectAuthorizationBoundary` runtime adoption boundary |
+| **REUSED** | In-memory reference adapters; `SQLiteOptimizationArtifactRepository` persistence pattern; `RuntimePolicyEngine` meaningful-side-effect path; existing repository ports and revision/idempotency semantics |
+| **NEW** | `intergrax/collaborative_work/sqlite_repository.py`, `serialization.py`, `persistence.py`; `intergrax/runtime/policy/meaningful_side_effect_authorization.py`; contract and adoption tests |
+| **Explicit out of scope** | MP-2+ rows; broad connector/application wiring; observability routing layer; Alembic/Postgres vendor lock-in; second runtime or HITL engine |
+| **Acceptance** | Durable adapters report `durable=True` / `reference_only=False`; CAS/idempotency/uniqueness parity with in-memory; shared boundary invokes gate before side effects; ALLOW-only continuation; fail closed on missing state |
+| **Proof requirements** | `tests/unit/collaborative_work/test_repository_contracts.py`; `tests/unit/runtime/policy/test_meaningful_side_effect_authorization.py`; `tests/unit/collaborative_work/test_vendor_neutrality.py`; enforcement gate regressions |
+| **Next step** | MP-1 production adoption gate review / LKW consumer wiring (future row) |
 
 ---
 
