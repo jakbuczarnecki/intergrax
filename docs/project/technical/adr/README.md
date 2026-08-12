@@ -103,6 +103,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-HOST-ATTESTATION-001](entries/2026-07-20/ADR-HOST-ATTESTATION-001.md) | Host attestor and portable ProofReceipt | Accepted |
 | [ADR-MP-001](entries/2026-08-11/ADR-MP-001.md) | Collaborative Work Plane ownership | Accepted (architecture only) |
 | [ADR-MP-002](entries/2026-08-11/ADR-MP-002.md) | Principal / Membership / Delegation semantics | Accepted (architecture only) |
+| [ADR-AGENT-004](entries/2026-08-12/ADR-AGENT-004.md) | Agent distribution, installation and enablement architecture (AGENT-PLATFORM-1) | Accepted (architecture only) |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0…GEC-6 — [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 
