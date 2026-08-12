@@ -47,6 +47,7 @@ from intergrax.tools.registry.runtime_bindings import (
 )
 
 if TYPE_CHECKING:
+    from intergrax.distributed.source_operation import SourceOperationCoordinator
     from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
 
 
@@ -69,6 +70,7 @@ class ToolWiringContext:
     object_storage: ObjectStorage | None = None
     relational_store: RelationalStore | None = None
     document_store: DocumentStore | None = None
+    source_operation_coordinator: SourceOperationCoordinator | None = None
     browser_automation: BrowserAutomation | None = None
     document_parser: DocumentParser | None = None
     secrets_store: SecretsStore | None = None

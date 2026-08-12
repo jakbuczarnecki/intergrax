@@ -28,6 +28,9 @@ from local_workspace_application.background_ingest.worker_handler import (
     make_background_ingest_worker_handler,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.workspaces.document_store_factory import (
+    resolve_lkw_runtime_document_store,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +50,13 @@ def build_local_workspace_background_worker_wiring(
 ) -> LocalWorkspaceBackgroundWorkerWiring:
     settings = settings or LocalWorkspaceBackendSettings.from_env()
     environment = manifest.resolved_environment()
-    runtime = build_harness_host_runtime(manifest, environment, settings=settings)
+    lkw_document_store = resolve_lkw_runtime_document_store(settings)
+    runtime = build_harness_host_runtime(
+        manifest,
+        environment,
+        settings=settings,
+        document_store=lkw_document_store,
+    )
     task_enricher = build_reliability_task_enricher(
         environment,
         agent_checkpoint_store=runtime.agent_checkpoint_store,

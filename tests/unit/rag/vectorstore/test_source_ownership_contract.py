@@ -4,7 +4,11 @@ from dataclasses import dataclass
 from typing import Any
 from types import SimpleNamespace
 
+import httpx
 import pytest
+from qdrant_client.http.exceptions import UnexpectedResponse
+
+from intergrax.integrations.contracts.base import IntegrationDependencyError
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
@@ -236,6 +240,15 @@ def test_source_id_is_system_owned_and_cannot_be_spoofed_by_user_metadata() -> N
         )
 
 
+def _qdrant_collection_not_found() -> UnexpectedResponse:
+    return UnexpectedResponse(
+        status_code=404,
+        reason_phrase="Not Found",
+        content=b'{"status":{"error":"Not found: Collection"}}',
+        headers=httpx.Headers(),
+    )
+
+
 @dataclass
 class _FakeQdrantPoint:
     id: str | int
@@ -248,15 +261,37 @@ class _FakeQdrantClient:
         self.points: list[_FakeQdrantPoint] = []
         self.scroll_calls: list[dict[str, Any]] = []
         self.query_calls = 0
+        self.count_calls = 0
         self.allow_query = False
         self.fail_scroll = False
         self.missing_collection = False
+        self.fail_get_collection = False
+        self.fail_query = False
+        self.fail_hybrid_query = False
+        self.fail_count = False
+        self.query_zero_hits = False
+        self.count_zero = False
+        self.created_collections: list[str] = []
 
     def get_collection(self, collection_name: str) -> dict[str, str]:
         del collection_name
+        if self.fail_get_collection:
+            raise ConnectionError("qdrant transport unavailable")
         if self.missing_collection:
-            raise RuntimeError("collection not found")
+            raise _qdrant_collection_not_found()
         return {"name": "fake"}
+
+    def create_collection(self, *, collection_name: str, **_: Any) -> None:
+        self.created_collections.append(collection_name)
+        self.missing_collection = False
+
+    def count(self, collection_name: str, **_: Any) -> Any:
+        self.count_calls += 1
+        if self.fail_count:
+            raise ConnectionError("qdrant count backend unavailable")
+        if self.count_zero:
+            return SimpleNamespace(count=0)
+        return SimpleNamespace(count=len(self.points))
 
     def upsert(self, *, collection_name: str, points: list[Any]) -> None:
         del collection_name
@@ -269,13 +304,19 @@ class _FakeQdrantClient:
             for point in points
         )
 
-    def query_points(self, *, query_filter: Any, limit: int, **_: Any) -> Any:
+    def query_points(self, *, query_filter: Any, limit: int, **kwargs: Any) -> Any:
         self.query_calls += 1
+        if self.fail_query:
+            raise ConnectionError("qdrant query backend unavailable")
+        if self.fail_hybrid_query and kwargs.get("prefetch") is not None:
+            raise ConnectionError("qdrant hybrid query backend unavailable")
         if not self.allow_query:
             raise AssertionError("source ownership must not use similarity query")
         selected = [
             point for point in self.points if self._matches(point, query_filter)
         ]
+        if self.query_zero_hits:
+            selected = []
         return SimpleNamespace(
             points=[
                 SimpleNamespace(
@@ -320,7 +361,7 @@ class _FakeQdrantClient:
 
     def scroll(self, *, scroll_filter: Any, offset: Any, **_: Any) -> tuple[list[Any], Any]:
         if self.fail_scroll:
-            raise RuntimeError("qdrant backend unavailable")
+            raise ConnectionError("qdrant backend unavailable")
         self.scroll_calls.append({"filter": scroll_filter})
         start = int(offset or 0)
         selected = [
@@ -352,6 +393,82 @@ def test_qdrant_source_lookup_returns_empty_when_collection_missing() -> None:
         == []
     )
     assert client.scroll_calls == []
+
+
+def test_qdrant_get_collection_transport_failure_is_not_collection_missing() -> None:
+    store, client = _qdrant_store()
+    client.fail_get_collection = True
+
+    with pytest.raises(IntegrationDependencyError, match="get_collection failed"):
+        store.list_source_record_ids(source_id="source", scope=_scope())
+
+
+def test_qdrant_query_returns_empty_on_successful_zero_hits() -> None:
+    store, client = _qdrant_store()
+    client.allow_query = True
+    client.query_zero_hits = True
+
+    assert store.query([1.0, 0.0], scope=_scope(), top_k=5) == []
+
+
+def test_qdrant_query_provider_failure_is_not_empty_hits() -> None:
+    store, client = _qdrant_store()
+    client.allow_query = True
+    client.fail_query = True
+
+    with pytest.raises(IntegrationDependencyError, match="query failed"):
+        store.query([1.0, 0.0], scope=_scope(), top_k=5)
+
+
+def test_qdrant_hybrid_provider_failure_is_not_empty_hits() -> None:
+    store, client = _qdrant_store()
+    store._sparse_enabled = True  # type: ignore[attr-defined]
+    client.allow_query = True
+    client.fail_hybrid_query = True
+
+    with pytest.raises(IntegrationDependencyError, match="hybrid_query failed"):
+        store.query_hybrid(
+            [1.0, 0.0],
+            "hybrid query text",
+            scope=_scope(),
+            top_k=5,
+        )
+
+
+def test_qdrant_count_returns_zero_on_successful_empty_collection() -> None:
+    store, client = _qdrant_store()
+    client.count_zero = True
+
+    assert store.count(scope=_scope()) == 0
+    assert client.count_calls == 1
+
+
+def test_qdrant_count_provider_failure_is_not_zero() -> None:
+    store, client = _qdrant_store()
+    client.fail_count = True
+
+    with pytest.raises(IntegrationDependencyError, match="count failed"):
+        store.count(scope=_scope())
+
+
+def test_qdrant_first_ingest_missing_collection_lifecycle_remains_valid() -> None:
+    store, client = _qdrant_store()
+    client.missing_collection = True
+    scope = _scope()
+    source_id = "C:/docs/first-ingest.md"
+
+    assert store.list_source_record_ids(source_id=source_id, scope=scope) == []
+
+    returned = store.add_records(
+        [_record("first-ingest-1", source_id=source_id, scope=scope)],
+        scope=scope,
+    )
+
+    assert returned == ["first-ingest-1"]
+    assert client.created_collections
+    assert store.list_source_record_ids(source_id=source_id, scope=scope) == [
+        "first-ingest-1"
+    ]
 
 
 def test_qdrant_source_lookup_scrolls_complete_native_ids_with_scope_filter() -> None:
@@ -476,7 +593,7 @@ def test_qdrant_source_lookup_returns_empty_for_missing_source_and_propagates_fa
         store.list_source_record_ids(source_id="", scope=scope)
 
     client.fail_scroll = True
-    with pytest.raises(RuntimeError, match="backend unavailable"):
+    with pytest.raises(IntegrationDependencyError, match="scroll failed"):
         store.list_source_record_ids(source_id="source", scope=scope)
 
 

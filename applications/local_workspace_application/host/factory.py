@@ -59,6 +59,10 @@ from local_workspace_application.host.observability_wiring import (
 )
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
+from local_workspace_application.workspaces.document_store_factory import (
+    resolve_lkw_runtime_document_store,
+)
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.serving.background_task_proof_routes import (
     mount_local_workspace_background_task_proof_routes,
 )
@@ -110,12 +114,15 @@ def create_local_workspace_backend_app(
         agents=manifest.agents,
         app_id=manifest.app_id,
     )
+    lkw_document_store = resolve_lkw_runtime_document_store(resolved_settings)
+    lkw_managed_workspace_repository = ManagedWorkspaceRepository(lkw_document_store)
     runtime = build_harness_host_runtime(
         manifest,
         env,
         settings=resolved_settings,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
+        document_store=lkw_document_store,
     )
     nexus_loop = runtime.nexus_loop
     platform = bootstrap_nexus_platform(
@@ -236,6 +243,7 @@ def create_local_workspace_backend_app(
             runtime.env_wiring.tool_wiring.wiring_context.secrets_store
         ),
         ask_service_v2=hybrid_ask_service,
+        repository=lkw_managed_workspace_repository,
     )
     repository = app.state.lkw_managed_workspace_repository
     try:

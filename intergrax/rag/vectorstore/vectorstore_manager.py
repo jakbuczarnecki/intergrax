@@ -25,7 +25,10 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreRecord,
     VectorStoreScope,
 )
-from intergrax.rag.vectorstore.contracts.hybrid_search import provider_supports_native_hybrid_search
+from intergrax.rag.vectorstore.contracts.hybrid_search import (
+    provider_supports_native_hybrid_search,
+    resolve_native_hybrid_search_provider,
+)
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
 from intergrax.rag.vectorstore.governance.collection_access_policy import (
     CollectionAccessPolicy,
@@ -305,11 +308,12 @@ class VectorstoreManager(BaseVectorstoreManager):
         vector = self._validate_query_vector(query_embedding)
         limit = self._validate_top_k(top_k)
         provider_filter = MetadataFilter.for_scope(resolved_scope, metadata_filter)
-        if not provider_supports_native_hybrid_search(self._store):
+        native_provider = resolve_native_hybrid_search_provider(self._store)
+        if native_provider is None:
             raise VectorStoreContractError(
                 "provider does not support native hybrid search"
             )
-        provider_hits = self._store.query_hybrid(
+        provider_hits = native_provider.query_hybrid(
             vector.tolist(),
             query_text,
             scope=resolved_scope,

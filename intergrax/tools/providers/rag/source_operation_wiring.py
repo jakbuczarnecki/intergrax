@@ -14,8 +14,6 @@ from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVec
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.tools.registry.wiring import ToolWiringContext
 
-_COORDINATOR_CACHE_KEY = "source_operation_coordinator"
-
 
 def _default_owner_id() -> str:
     host = socket.gethostname().strip() or "local"
@@ -25,15 +23,12 @@ def _default_owner_id() -> str:
 def shared_source_operation_coordinator(
     ctx: ToolWiringContext,
 ) -> SourceOperationCoordinator:
-    cached = ctx.extras.get(_COORDINATOR_CACHE_KEY)
-    if isinstance(cached, SourceOperationCoordinator):
-        return cached
-    coordinator = resolve_source_operation_coordinator(
-        ctx.document_store,
-        owner_id=_default_owner_id(),
-    )
-    ctx.extras[_COORDINATOR_CACHE_KEY] = coordinator
-    return coordinator
+    if ctx.source_operation_coordinator is None:
+        ctx.source_operation_coordinator = resolve_source_operation_coordinator(
+            ctx.document_store,
+            owner_id=_default_owner_id(),
+        )
+    return ctx.source_operation_coordinator
 
 
 def bind_source_operation_coordinator(

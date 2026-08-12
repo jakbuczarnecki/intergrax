@@ -9,8 +9,20 @@ from typing import Literal
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentStore
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 
 _DEFAULT_COLLECTION = "lkw_managed_workspaces"
+
+
+def resolve_lkw_runtime_document_store(
+    settings: LocalWorkspaceBackendSettings | None = None,
+) -> DocumentStore:
+    """Resolve the canonical LKW durable store for ToolWiringContext and repositories."""
+    resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
+    backend = resolved_settings.document_store_backend
+    if backend == "auto":
+        return resolve_managed_workspace_document_store()
+    return resolve_managed_workspace_document_store(backend=backend)
 
 
 def resolve_managed_workspace_document_store(

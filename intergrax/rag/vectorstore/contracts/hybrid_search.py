@@ -36,6 +36,23 @@ class NativeHybridSearchCapability(Protocol):
     def supports_native_hybrid_search(self) -> bool: ...
 
 
+@runtime_checkable
+class NativeHybridSearchProvider(
+    HybridSearchCapable,
+    NativeHybridSearchCapability,
+    Protocol,
+):
+    """Complete typed native hybrid search provider contract."""
+
+
+def resolve_native_hybrid_search_provider(
+    store: object,
+) -> NativeHybridSearchProvider | None:
+    if isinstance(store, NativeHybridSearchProvider) and store.supports_native_hybrid_search():
+        return store
+    return None
+
+
 def provider_supports_native_hybrid_search(store: object) -> bool:
     """
     Return True when the store exposes durable native hybrid search explicitly.

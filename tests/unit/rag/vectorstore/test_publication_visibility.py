@@ -303,6 +303,7 @@ _CRITICAL_MODULES = (
     "intergrax/rag/vectorstore/contracts/hybrid_search.py",
     "intergrax/rag/retrievers/providers/hybrid_retriever.py",
     "intergrax/rag/vectorstore/publication_visibility.py",
+    "intergrax/tools/providers/rag/source_operation_wiring.py",
 )
 
 
@@ -324,6 +325,12 @@ def _forbidden_patterns(source: str) -> list[str]:
         violations.append("_active_publications")
     if '"_inner"' in source or "'_inner'" in source:
         violations.append("_inner")
+    if 'extras.get("source_operation_coordinator"' in source:
+        violations.append('extras coordinator lookup')
+    if 'extras["source_operation_coordinator"' in source:
+        violations.append('extras coordinator lookup')
+    if "self._store.query_hybrid(" in source:
+        violations.append("untyped query_hybrid on VectorStore")
     return violations
 
 
@@ -335,7 +342,9 @@ _CRITICAL_FUNCTION_NAMES = frozenset(
         "retrieve",
         "vector_record_visible",
         "provider_supports_native_hybrid_search",
-        "supports_native_hybrid_search",
+        "resolve_native_hybrid_search_provider",
+        "shared_source_operation_coordinator",
+        "bind_source_operation_coordinator",
     }
 )
 
@@ -356,7 +365,7 @@ def _collect_scoped_sources(path: Path) -> list[str]:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             if node.name in _CRITICAL_FUNCTION_NAMES:
                 scoped.append(_function_source(node, source))
-    if path.name == "hybrid_search.py" or path.name == "publication_visibility.py":
+    if path.name in {"hybrid_search.py", "publication_visibility.py", "source_operation_wiring.py"}:
         scoped.append(source)
     return scoped
 

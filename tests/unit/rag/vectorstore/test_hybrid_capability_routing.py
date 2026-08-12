@@ -19,7 +19,9 @@ from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.providers.hybrid_retriever import HybridRetriever
 from intergrax.rag.vectorstore.contracts.hybrid_search import (
     HybridSearchCapable,
+    NativeHybridSearchProvider,
     provider_supports_native_hybrid_search,
+    resolve_native_hybrid_search_provider,
 )
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreContractError,
@@ -246,6 +248,44 @@ def test_manager_query_hybrid_rejects_dense_only_provider() -> None:
             scope=SCOPE,
             top_k=5,
         )
+
+
+class _DuckTypedHybridWithoutCapability(_DenseOnlyProvider):
+    def query_hybrid(
+        self,
+        query_embedding,
+        query_text: str,
+        *,
+        scope: VectorStoreScope,
+        top_k: int,
+        metadata_filter: MetadataFilter | None = None,
+        include_embeddings: bool = False,
+        alpha: float = 0.5,
+    ) -> list[VectorStoreHit]:
+        return []
+
+
+def test_manager_requires_complete_native_hybrid_provider_contract() -> None:
+    provider = _DuckTypedHybridWithoutCapability([])
+    manager = VectorstoreManager(provider, scope=SCOPE)
+
+    assert resolve_native_hybrid_search_provider(provider) is None
+    assert provider_supports_native_hybrid_search(provider) is False
+
+    with pytest.raises(VectorStoreContractError, match="native hybrid search"):
+        manager.query_hybrid(
+            [1.0, 0.0],
+            "alpha",
+            scope=SCOPE,
+            top_k=5,
+        )
+
+
+def test_native_provider_satisfies_complete_typed_contract() -> None:
+    provider = _NativeHybridProvider()
+
+    assert isinstance(provider, NativeHybridSearchProvider)
+    assert resolve_native_hybrid_search_provider(provider) is provider
 
 
 def test_cold_start_generic_hybrid_ordering_is_stable_without_lexical_cache() -> None:
