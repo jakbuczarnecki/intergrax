@@ -699,7 +699,7 @@ Author-facing summary of all canonical setuptools entry-point surfaces (§20.1).
 | Distribution name / version | `intergrax-reference-tool-plugin` / `0.1.0` |
 | Entry point | `intergrax.tools:reference_prefix_echo` |
 | Host-embedded example | `examples/platform_plugins/local_embedded_tool_extension/` |
-| Application scaffold hook | `extensions/` + explicit `register_tool_plugin` in generated `host/tool_wiring.py` |
+| Application scaffold hook | `extensions/` + `register_<app>_local_tool_extensions(...)` after `require_production_qualification` in generated `host/tool_wiring.py` |
 | Executable E2E proof | `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` |
 | Wheel build | `uv build --wheel` on reference package (no new build dependency) |
 | Isolated install | `uv pip install <wheel> --target <tmpdir> --no-deps` |

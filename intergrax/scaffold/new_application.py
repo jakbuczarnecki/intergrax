@@ -242,7 +242,7 @@ def _tool_wiring_py(names: ScaffoldApplicationNames) -> str:
     pkg = names.pkg
     short = names.short
     local_block = tool_wiring_local_extension_block(names)
-    return dedent(
+    header = dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
 
@@ -251,15 +251,21 @@ def _tool_wiring_py(names: ScaffoldApplicationNames) -> str:
         from __future__ import annotations
 
         from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
+        from intergrax.core.plugins import PluginQualificationResult
         from intergrax.integrations.registry.profile import IntegrationProfile
         from intergrax.tools.registry.profile import ToolProfile
-
-        {local_block}
-
+        '''
+    ).strip()
+    footer = dedent(
+        f'''\
         def wire_{short}_tools(
             *,
             integration_profile: IntegrationProfile | None = None,
+            local_prefix_echo_qualification: PluginQualificationResult,
         ) -> ApplicationToolWiring:
+            register_{short}_local_tool_extensions(
+                local_prefix_echo_qualification=local_prefix_echo_qualification,
+            )
             profile = ToolProfile(
                 enabled=[
                     "rag.retrieve",
@@ -275,7 +281,8 @@ def _tool_wiring_py(names: ScaffoldApplicationNames) -> str:
                 extras={{"echo_prefix": "{short}"}},
             )
         '''
-    )
+    ).strip()
+    return f"{header}\n\n{local_block}\n\n{footer}\n"
 
 
 def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:

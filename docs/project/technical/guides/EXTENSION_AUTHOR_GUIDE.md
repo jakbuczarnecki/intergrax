@@ -629,10 +629,10 @@ Working reference: [`examples/platform_plugins/local_embedded_tool_extension/`](
 
 1. **Create application** — `python -m intergrax.scaffold new-application <name>`.
 2. **Add local module** — implement the same `ToolPlugin` contract under `<app_pkg>/extensions/` (see generated `extensions/README.md`).
-3. **Explicit registration** — in `host/tool_wiring.py`, call `register_tool_plugin(YourToolPlugin)` before `build_application_tool_wiring`.
-4. **Provide DI** — pass host values via `ToolWiringContext.extras` (reference plugins use `echo_prefix`).
-5. **Enable tools** — add your `tool_id` or bundle id to `ToolProfile.enabled` / `enabled_bundles`.
-6. **Qualification** — use `PluginDeliverySource.HOST_EMBEDDED_EXTENSION` via `build_host_embedded_capability_subject`; capability/domain production qualification still required (`require_production_qualification`). No package manifest or PLUGIN-6 package compatibility required.
+3. **Qualification** — build `PluginQualificationResult` for your capability via `build_host_embedded_capability_subject` (`PluginDeliverySource.HOST_EMBEDDED_EXTENSION`); host owns evidence. Production hosts require `PRODUCTION_QUALIFIED` status — no package manifest or PLUGIN-6 package compatibility required for host-embedded code.
+4. **Explicit registration** — from your composition root, call `require_production_qualification(...)`, then `register_tool_plugin(YourToolPlugin)` (generated `host/tool_wiring.py` exposes `register_<app>_local_tool_extensions(...)` that enforces this order).
+5. **Provide DI** — pass host values via `ToolWiringContext.extras` (reference plugins use `echo_prefix`).
+6. **Enable tools** — add your `tool_id` or bundle id to `ToolProfile.enabled` / `enabled_bundles`, then `build_application_tool_wiring` / runtime invocation.
 7. **No wheel / entry point** — local modules are imported directly; do not fabricate setuptools entry points for host-only code.
 
 ### 16.3 Public extension matrix

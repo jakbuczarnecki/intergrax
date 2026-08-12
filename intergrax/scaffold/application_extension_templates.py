@@ -19,9 +19,11 @@ def extensions_readme(names: ScaffoldApplicationNames) -> str:
         package them as external wheels.
 
         - Implement the public domain contract (e.g. `ToolPlugin`).
-        - Register explicitly from `host/tool_wiring.py` (or your composition root).
+        - Supply production-qualified evidence from your host composition root.
+        - Register explicitly via `register_<app>_local_tool_extensions(...)` in
+          `host/tool_wiring.py` **after** `require_production_qualification`.
         - Pass dependencies via the domain wiring context (`ToolWiringContext` for tools).
-        - Production hosts still require production-qualified evidence.
+        - Replace scaffold demo evidence with your own domain/CI approval source.
 
         Reference: `examples/platform_plugins/local_embedded_tool_extension/` and
         [`EXTENSION_AUTHOR_GUIDE.md`](../../docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md).
@@ -108,11 +110,25 @@ def local_prefix_echo_plugin_py(names: ScaffoldApplicationNames) -> str:
 
 def tool_wiring_local_extension_block(names: ScaffoldApplicationNames) -> str:
     pkg = names.pkg
+    short = names.short
     return dedent(
         f"""\
+        from intergrax.core.plugins import PluginQualificationResult, require_production_qualification
         from intergrax.tools.registry.plugin_register import register_tool_plugin
         from {pkg}.extensions.local_prefix_echo_plugin import LocalPrefixEchoToolPlugin
 
-        register_tool_plugin(LocalPrefixEchoToolPlugin)
+
+        def register_{short}_local_tool_extensions(
+            *,
+            local_prefix_echo_qualification: PluginQualificationResult,
+        ) -> None:
+            \"\"\"Register host-embedded tool plugins after explicit production qualification.
+
+            Real applications must replace scaffold demo evidence with their own
+            domain/CI approval source. ``PRODUCTION_QUALIFIED`` is an explicit host
+            decision backed by evidence — this scaffold demonstrates gate mechanics only.
+            \"\"\"
+            require_production_qualification(local_prefix_echo_qualification)
+            register_tool_plugin(LocalPrefixEchoToolPlugin)
         """
-    )
+    ).strip()
