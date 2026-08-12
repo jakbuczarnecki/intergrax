@@ -939,3 +939,92 @@ Coherent implementation blocks derived from evidence (not microtasks):
 6. `docs/project/architecture/MEMORY.md`
 7. `docs/project/architecture/RAG.md`
 8. `docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md` (this section)
+
+---
+
+## 16. DOCS-5 remediation status (PLATFORM-PLUGIN-DOCS-5)
+
+**Date:** 2026-08-12 · **Branch:** `development` · **Scope:** Security defenses, Policy rule handlers, Tool invocation patterns
+
+### Matrix outcome (D1–D16)
+
+| Surface | DOCS-1 | DOCS-5 | Notes |
+|---------|--------|--------|-------|
+| **Security defenses** | PARTIAL | **COMPLETE** | New `SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md` — contract, EP, profile enablement, `override=True` semantics, failure/troubleshooting |
+| **Policy rules** | MISSING | **PARTIAL** | New `POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md` — contract + packaging; runtime EP bootstrap and declarative enforcement gaps documented |
+| **Tool invocation patterns** | MISSING | **COMPLETE** | New `TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md` — contract, EP, mode resolution, local instance override, F009 performance |
+
+### Shared blocks aligned
+
+- Discovery: `installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`
+- Trust: trusted in-process Python
+- Qualification: host-owned semantic approval, not attestation
+- Secrets: not in Platform Plugin metadata or EP values
+- Local parity classified per surface (see guides §5)
+
+### RUNTIME_CAPABILITY_GAPS
+
+| Gap | Surfaces affected | Evidence |
+|-----|-------------------|----------|
+| `wire_policy_bundle` does not call `load_policy_rule_plugins` | Policy | `policy_wiring.py` creates `PolicyRuleRegistry()` only; loader exists but unused in production wiring |
+| Declarative `policy_rules` in `domain_fragments` not evaluated at runtime | Policy | No production caller of `PolicyRuleRegistry.evaluate_rule` |
+| Security/policy EP loaders fail-fast (no isolate) | Security, Policy | `defense_plugin_loader.py`, `plugin_loader.py` — AUDIT F004 |
+
+### REFERENCE_EXAMPLE_GAPS (deferred to DOCS-6)
+
+| Gap | Notes |
+|-----|-------|
+| Installable external Security defense wheel under `examples/platform_plugins/` | Test fixture `intergrax_security_defense_fixture` suffices for DOCS-5 |
+| Installable external Policy rule handler wheel | Unit-test patterns in `test_plugin_discovery.py` |
+| Installable external Tool invocation pattern wheel | Unit-test `_CustomPattern` in `test_tool_invocation_registry.py` |
+
+### Failure isolation (current semantics)
+
+| Loader | Bootstrap vs lazy | One broken plugin blocks group? | Isolation |
+|--------|-------------------|----------------------------------|-----------|
+| Security (`load_security_defense_plugins`) | Catalog bootstrap | **Yes** — first `PluginLoadError` / `TypeError` aborts | None |
+| Policy (`load_policy_rule_plugins`) | Host-invoked only | **Yes** — same fail-fast | None |
+| Tool invocation (`load_tool_invocation_pattern`) | Per lookup | **No** — fails only matching id lookup | Unrelated EP names not loaded |
+
+### LOCAL_PARITY classification
+
+| Surface | Local path | Classification |
+|---------|------------|----------------|
+| Security | `register_security_defense_plugin()` + profile ids | Advanced host composition |
+| Policy | `PolicyRuleRegistry.register()` + explicit loader | Advanced host composition; external-EP-first for discovery |
+| Tool invocation | `RuntimeConfig.tool_invocation_pattern` instance | Advanced host composition; EP for discoverable ids |
+
+### ENTERPRISE_ROADMAP_CANDIDATES
+
+| ID | Surface | Gap | Category | Evidence | Why enterprise | Priority suggestion |
+|----|---------|-----|----------|----------|----------------|---------------------|
+| PLUGIN-ENT-CAND-001 | Memory | No Tier-3 EP resolver for `UserProfileStorePlugin.create_user_profile_store` | EXTENSIBILITY | DOCS-4 carry-forward | Multi-tenant apps need host-owned store wiring without custom glue | Medium |
+| PLUGIN-ENT-CAND-002 | Memory | No Tier-3 EP resolver for `SessionStoragePlugin.create_session_storage` | EXTENSIBILITY | DOCS-4 carry-forward | Same as CAND-001 for session tier | Medium |
+| PLUGIN-ENT-CAND-003 | Context | Scaffold CLI parity with Tools | DX | DOCS-4 carry-forward | Application-team onboarding; not security-critical | Low |
+| PLUGIN-ENT-CAND-004 | Security | EP defense registration always `override=True` — shipped ids replaceable without policy | GOVERNANCE / SECURITY | `defense_plugin_loader.py:29`, AUDIT F005 | Enterprise needs configurable deny-by-default / audit on defense collision | High |
+| PLUGIN-ENT-CAND-005 | Security, Policy | EP loaders fail-fast — one broken plugin blocks entire group bootstrap | RELIABILITY / OPERATOR_CONTROL | AUDIT F004; bespoke loaders | Noisy neighbor EP should not deny whole security/policy surface | Medium |
+| PLUGIN-ENT-CAND-006 | Policy | `load_policy_rule_plugins` not wired from `wire_policy_bundle` | EXTENSIBILITY / DX | `policy_wiring.py` vs `plugin_loader.py` | Third-party handlers require undocumented host glue | High |
+| PLUGIN-ENT-CAND-007 | Policy | Declarative YAML rules not enforced via `evaluate_rule` at runtime | GOVERNANCE | `domain_fragments["policy_rules"]` only | Policy-as-code without runtime effect is enterprise governance gap | High |
+| PLUGIN-ENT-CAND-008 | Policy | No centrally governed handler allowlist / signed policy bundles | GOVERNANCE / OPERATOR_CONTROL | No allowlist API in registry | Regulated tenants need approved handler + bundle provenance | Medium |
+| PLUGIN-ENT-CAND-009 | Tool invocation | O(N) EP scan per `load_tool_invocation_pattern` lookup | SCALABILITY | AUDIT F009; `tool_invocation_registry.py` | Hardening at scale; ordinary perf work unless inventory required | Low (hardening) |
+
+**ENTERPRISE_ROADMAP_CANDIDATE classifications (YES/NO):**
+
+| ID | YES/NO | Rationale |
+|----|--------|-----------|
+| CAND-004 | **YES** | Security collision policy is governance/security enterprise requirement |
+| CAND-005 | **YES** | Operator control over partial catalog degradation |
+| CAND-006 | **YES** | Blocks complete third-party policy handler path without custom host code |
+| CAND-007 | **YES** | Policy without enforcement is enterprise governance gap |
+| CAND-008 | **YES** | Regulated environments need allowlist/provenance |
+| CAND-009 | **NO** | Ordinary hardening — cache/index; not enterprise differentiator alone |
+
+### Changed documentation (DOCS-5 allowlist)
+
+1. `docs/project/technical/guides/SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md` (new)
+2. `docs/project/technical/guides/POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md` (new)
+3. `docs/project/technical/guides/TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md` (new)
+4. `docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md`
+5. `docs/project/architecture/PLATFORM_PLUGINS.md`
+6. `docs/project/architecture/TOOLS.md`
+7. `docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md` (this section)

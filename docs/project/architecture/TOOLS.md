@@ -205,7 +205,7 @@ flowchart TD
 
 All successful catalog executions converge on **`RuntimeToolInvoker`** (optionally wrapped by **`IdempotentToolInvoker`**) — registry lookup, input/output schema validation, optional `ToolScopePolicy`, timeout/retry, error mapping, trace start/end.
 
-Multi-call batches route through **`run_bounded_tool_loop`** / **`ctx.invoke_tool`**, which resolve and delegate to a configured **`ToolInvocationPattern`** before `RuntimeToolInvoker` (see [§Invocation patterns](.#tool-invocation-patterns-production-orchestration)).
+Multi-call batches route through **`run_bounded_tool_loop`** / **`ctx.invoke_tool`**, which resolve and delegate to a configured **`ToolInvocationPattern`** before `RuntimeToolInvoker` (see [Tool invocation patterns](#tool-invocation-patterns) · author guide [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](../technical/guides/TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md)).
 
 ### Selection detail (layers)
 
@@ -334,6 +334,22 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | **Observability** | **Production** | Selection + pattern diag, budget ticks, `tool_traces` (TOOL-ENG-27/32) |
 
 **Strategic focus (2026-06-12):** Phase **TOOL-ENG** **closed** — maintenance via gate scripts; deferred runtime features → [Phase TOOL-PRODUCT-ROI](.#phase-tool-product-roi--catalog-extension-by-product-value-planned).
+
+---
+
+## Tool invocation patterns
+
+**Author guide:** [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](../technical/guides/TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md)
+
+| Layer | Contract | Role |
+|-------|----------|------|
+| Tool | `ToolPlugin` / `ToolContract` | What operation exists |
+| Pattern | `ToolInvocationPattern` | How batches are orchestrated (ReAct, parallel, chain, custom EP) |
+| Invoke | `RuntimeToolInvoker` | Single atomic tool execution (unchanged) |
+
+Shipped modes: `ToolInvocationMode` (`single_pass`, `bounded_react`, `parallel_batch`, `parallel_semantic_batch`, `deterministic_chain`). Custom patterns: entry point group `intergrax.tool_invocation_patterns`, selected via `RuntimeConfig.tool_invocation_pattern_id` or instance override `tool_invocation_pattern`.
+
+Resolution: `resolve_invocation_pattern` in `tool_invocation_pattern.py` · runtime entry `run_bounded_tool_loop` in `tool_loop.py`.
 
 ---
 

@@ -126,9 +126,9 @@ All canonical setuptools entry-point surfaces (architecture §20.1). One row per
 | RAG retriever | Custom retrieval implementation | `BaseRetriever` / `BaseRetrieverPlugin` | `intergrax.rag.retrievers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + vector store bindings | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
 | RAG reranker | Custom reranking | `BaseReranker` / `BaseRerankerPlugin` | `intergrax.rag.rerankers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
 | Vendor Knowledge | External knowledge source contributions | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition — **not Tier-0 catalog registration** | `KnowledgeSourceBinding` + tenant scope | [`VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md`](VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) |
-| Security defense | Runtime inspection at `HookPoint`s | `SecurityDefensePlugin` | `intergrax.security_defenses` | `bootstrap_security_providers()` + profile ids — **no local register helper** | `ApplicationSecurityProfile` | [§12](#12-security-defense-plugins-phase-sec-planes) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance) |
-| Policy rule handler | Custom policy evaluation handlers | `PolicyRuleHandler` | `intergrax.policy_rules` | Policy bundle bootstrap — **local path not documented** | `PolicyRulesProfile` / YAML bundle | [§10](#10-policy-rule-handler-plugins-phase-dx-58) · [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
-| Tool invocation pattern | Custom tool batch orchestration mode | `ToolInvocationPattern` | `intergrax.tool_invocation_patterns` | Mode via runtime config — **local path not documented** | `ToolInvocationMode` | §14.2 · [`TOOLS.md`](../../architecture/TOOLS.md) (invocation patterns) |
+| Security defense | Runtime inspection at `HookPoint`s | `SecurityDefensePlugin` | `intergrax.security_defenses` | `register_security_defense_plugin()` + profile ids — advanced host composition | `ApplicationSecurityProfile` | [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) |
+| Policy rule handler | Custom policy evaluation handlers | `PolicyRuleHandler` | `intergrax.policy_rules` | `PolicyRuleRegistry.register()` + explicit `load_policy_rule_plugins()` | `PolicyRulesProfile` / YAML bundle | [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) · [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
+| Tool invocation pattern | Custom tool batch orchestration mode | `ToolInvocationPattern` | `intergrax.tool_invocation_patterns` | `RuntimeConfig.tool_invocation_pattern` instance override | `ToolInvocationMode` | [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) · [`TOOLS.md`](../../architecture/TOOLS.md) |
 
 ---
 
@@ -761,21 +761,13 @@ Swap backends in Tier-3 by registering an EP plugin (where wired) or composing `
 
 ## 10. Policy rule handler plugins (Phase DX-5.8)
 
-Entry point group: `intergrax.policy_rules`
+**Canonical author guide:** [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md)
 
-| Mechanism | Purpose |
-|-----------|---------|
-| `PolicyRuleHandlerPlugin` | Register custom handlers evaluated by `PolicyEngine` |
-| `PolicyRulesProfile.rules_path` | Declarative YAML rules loaded via `load_policy_rules_from_path` |
-| `PolicyRulesProfile.inline_rules` | Inline rule dicts on `ApplicationEnvironmentProfile` |
+Entry point group: `intergrax.policy_rules` · handler protocol `PolicyRuleHandler` · loader `load_policy_rule_plugins(registry)`.
 
-Bootstrap: `intergrax.runtime.policy.rules.plugin_loader.register_policy_rule_plugins(discover_entry_points=True)` (called from policy wiring when enabled).
+Policy handlers are **not** Security Defense plugins. YAML / `PolicyRulesProfile` and handler packages are separate activation steps — installing a handler wheel does not enable rules.
 
-**Composition:** YAML + EP handlers merge into `RuntimePolicyBundle.domain_fragments["policy_rules"]` via `intergrax/applications/_shared/policy_wiring.py`. They **never** bypass `ToolRuntime` or `ApplicationSecurityProfile` middleware.
-
-**Author map:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) [Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon [§42.11](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine).
-
-Lab reference: `applications/lab_application/policy/rules/harness_lab.yaml`.
+**Author map:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) [Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) (PolicyEngine).
 
 ---
 
@@ -838,32 +830,15 @@ Plugins **do not** publish directly to `RuntimeEventBus`. Emit through:
 
 ## 12. Security defense plugins (Phase SEC-PLANES)
 
-Entry point group: `intergrax.security_defenses`
+**Canonical author guide:** [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md)
 
-| Mechanism | Purpose |
-|-----------|---------|
-| `SecurityDefensePlugin` | S2 runtime inspection at declared `HookPoint`s |
-| `defense_bundle_ids` | Shipped bundles on `ApplicationSecurityProfile` (e.g. `harness.strict_injection`) |
-| `defense_plugin_ids` | Explicit EP plugin ids on profile |
-| `bootstrap_security_providers()` | Load shipped bundles + optional EP discovery |
+Entry point group: `intergrax.security_defenses` · contract `SecurityDefensePlugin` · bootstrap `bootstrap_security_providers(discover_entry_points=…)`.
 
-Bootstrap: `intergrax.core.security_bootstrap.bootstrap_security_providers(discover_entry_points=True)` — also invoked from `bootstrap_catalogs()`.
+Defense plugins inspect `HookPoint`s via middleware — they are **not** `PolicyRuleHandler`s and **not** a sandbox. EP registration uses `override=True` (shipped ids can be replaced). `pip install` alone does not enable defenses — set `ApplicationSecurityProfile.defense_plugin_ids` / `defense_bundle_ids`.
 
-**Composition:** plugins merge into `MiddlewarePipeline` via `security_runtime_bridge` — after native V-SEC middleware, before `ToolRuntime`. They **never** bypass `PolicyEngine`.
+**Lab fixture (test only):** `tests/fixtures/plugin_packages/intergrax_security_defense_fixture/`
 
-**Author checklist:**
-
-| Rule | Detail |
-|------|--------|
-| Tenant scope | Read `tenant_id` from `HookContext.runtime_state`; do not exfiltrate cross-tenant data |
-| Hook coverage | Declare only `HookPoint`s you inspect — undeclared points are skipped |
-| Fail mode | Default `FAIL_CLOSED`; `FAIL_OPEN` requires explicit product justification |
-| Performance | Inspection runs under a wall-clock budget (default 100ms); slow plugins are blocked |
-| Observability | Blocks emit `platform.security.defense_blocked` on the runtime bus |
-
-**Lab fixture:** `tests/fixtures/plugin_packages/intergrax_security_defense_fixture` — reference EP package for CI discovery tests.
-
-**Author map:** [Appendix H §H.3.1](AGENT_CREATION_GUIDE.md#h31-security--trust-planes-operator-index) · canon [§42.45](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance) · [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md).
+**Author map:** [Appendix H §H.3.1](AGENT_CREATION_GUIDE.md#h31-security--trust-planes-operator-index) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) · [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md).
 
 ---
 
@@ -980,9 +955,9 @@ Use the **domain-owned** primitive for your surface — the platform does not pr
 | Context | `ContextProfile` | Typically none at plugin boundary | `register(registry)` — see [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) |
 | RAG component | `RagProfile` + bootstrap kwargs | Via integrations passed into bootstrap | `BaseRetrieverPlugin.create(…)` / registry bootstrap |
 | Memory store | `MemoryProfile` | Host `**kwargs` to factory | `create_user_profile_store(**kwargs)` |
-| Security defense | Host security profile | `HookContext` only | Middleware wraps plugin at host |
-| Policy rule | `PolicyRulesProfile` / YAML | None in EP | `evaluate(rule, context=…)` |
-| Tool invocation pattern | `ToolInvocationMode` | None | `execute(state, invoker, …)` |
+| Security defense | Host security profile | `HookContext` only | Middleware wraps plugin at host — see [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) |
+| Policy rule | `PolicyRulesProfile` / YAML | None in EP | `evaluate(rule, context=…)` — see [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) |
+| Tool invocation pattern | `ToolInvocationMode` / pattern id | None | `execute(state, invoker, …)` — see [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) |
 | Vendor Knowledge | Host builder + bindings | Scoped `credential_ref` per binding | See VK author guide — not Tier-0 catalog |
 
 ### 14.3 Integration `env_prefix` (documented exception)
