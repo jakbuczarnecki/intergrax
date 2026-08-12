@@ -42,6 +42,9 @@ what you want to understand, try, inspect, build, or review.
   architecture for governed multi-principal collaboration.
 - [Platform Extensibility / Plugins](architecture/PLATFORM_PLUGINS.md) —
   strategic architecture for independently packaged, governed platform extensions.
+- [Agent Marketplace](product/AGENT_MARKETPLACE.md) — future ecosystem layer
+  for governed agent distribution (concept and reference architecture; not a
+  shipped product).
 - [Integrations](integrations/README.md) — canonical integration documentation.
 - [Products](product/lkw/LKW_PRODUCT_TOUR.md) — begin with the documented LKW product
   route.

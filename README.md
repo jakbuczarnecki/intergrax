@@ -238,6 +238,39 @@ Canonical architecture is **frozen**; platform-wide harmonization is **not
 complete**; a complete third-party install-to-runtime E2E proof is **not yet
 established**.
 
+## Agent Marketplace — future ecosystem layer
+
+**Build once. Govern centrally. Install reusable AI capabilities into any
+Intergrax application.**
+
+Intergrax is building a governed distribution model for reusable Tier-2 agents
+across built-in sources, local and developer sources, private enterprise
+catalogs, and future public catalogs. Every source converges on the same
+governed lifecycle:
+
+```text
+Discover → Trust → Install → Configure → Materialize → Activate → Route
+```
+
+Apps install capabilities. Nexus routes work. Intergrax governs execution.
+
+> **Status — FUTURE PRODUCT:** The public marketplace experience, publisher
+> portal, catalog product, billing layer, and LKW marketplace UI are **not
+> shipped today**. Underlying distribution and platform capabilities — Agent
+> Distribution, package verification, application binding, immutable
+> materialization, RuntimeRevision activation, AgentRegistry, and Nexus
+> capability routing — have mixed **AVAILABLE TODAY** / **ARCHITECTURE FROZEN**
+> / **UNDER IMPLEMENTATION** maturity.
+
+Platform Extensibility / Agent Distribution is the governed technical substrate;
+Agent Marketplace is the future discovery, distribution, and ecosystem layer
+built on that substrate — not an independent execution engine.
+
+Example reusable capability patterns: Research · Legal · Project Management ·
+UX Research · Private Enterprise
+
+[Explore the Agent Marketplace concept and reference architecture →](docs/project/product/AGENT_MARKETPLACE.md)
+
 <!-- Compatibility anchors for inbound documentation links -->
 <a id="quick-start"></a>
 <a id="proof-of-platform"></a>
