@@ -10,7 +10,7 @@ applicability.
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
 from intergrax.collaborative_work.policy_composition import compose_policy_decisions
@@ -85,17 +85,12 @@ def _gate_deny_result(
     resource_policy: PolicyDecision | None = None,
     runtime_policy: PolicyDecision | None = None,
 ) -> CollaborativeWorkEnforcementResult:
-    deny = PolicyDecision(
-        action=PolicyAction.DENY,
-        reason=reason,
-        policy_rule_id=policy_rule_id,
-    )
     applicability = PolicyCompositionApplicability(
         workspace_policy=profile.workspace_policy_applicability,
         resource_policy=profile.resource_policy_applicability,
         runtime_policy=profile.runtime_policy_applicability,
     )
-    composition = compose_policy_decisions(
+    composed = compose_policy_decisions(
         PolicyCompositionInput(
             collaborative_authority=collaborative_authority,
             workspace_policy=workspace_policy,
@@ -104,15 +99,31 @@ def _gate_deny_result(
             applicability=applicability,
         ),
     )
-    if composition.decision.action is PolicyAction.ALLOW:
-        composition = PolicyCompositionResult(
-            decision=deny,
-            collaborative_authority=collaborative_authority,
-            workspace_policy=workspace_policy,
-            resource_policy=resource_policy,
-            runtime_policy=runtime_policy,
-            determining_layer=composition.determining_layer,
-        )
+    audit_payload: dict[str, Any] = {
+        "schema": "enforcement_gate_audit.v1",
+        "gate_failure": True,
+        "operation_id": profile.operation_id,
+        "profile_revision": profile.revision,
+        "authority_scope": profile.authority_scope,
+        "policy_rule_id": policy_rule_id,
+    }
+    contributing_layers = composed.decision.audit_payload.get("contributing_layers")
+    if contributing_layers:
+        audit_payload["contributing_layers"] = contributing_layers
+    deny = PolicyDecision(
+        action=PolicyAction.DENY,
+        reason=reason,
+        policy_rule_id=policy_rule_id,
+        audit_payload=audit_payload,
+    )
+    composition = PolicyCompositionResult(
+        decision=deny,
+        collaborative_authority=composed.collaborative_authority,
+        workspace_policy=composed.workspace_policy,
+        resource_policy=composed.resource_policy,
+        runtime_policy=composed.runtime_policy,
+        determining_layer=None,
+    )
     return CollaborativeWorkEnforcementResult(
         operation_id=profile.operation_id,
         profile_revision=profile.revision,

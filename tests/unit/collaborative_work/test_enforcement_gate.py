@@ -332,6 +332,10 @@ def test_collaborative_deny_survives_final_gate() -> None:
 def test_resource_required_operation_missing_resource_denies() -> None:
     result = _gate().evaluate(_enforcement_request(resource_scope=None))
     assert result.composition.decision.action is PolicyAction.DENY
+    assert (
+        result.composition.decision.policy_rule_id
+        == "collaborative_work.enforcement.resource_required_missing"
+    )
 
 
 def test_wrong_resource_policy_rule_denies() -> None:
@@ -391,6 +395,10 @@ def test_missing_workspace_rule_denies() -> None:
 def test_meaningful_side_effect_required_missing_runtime_request_denies() -> None:
     result = _gate().evaluate(_enforcement_request(meaningful_side_effect_request=None))
     assert result.composition.decision.action is PolicyAction.DENY
+    assert (
+        result.composition.decision.policy_rule_id
+        == "collaborative_work.enforcement.runtime_request_missing"
+    )
 
 
 def test_runtime_identity_mismatch_denies() -> None:
@@ -402,6 +410,32 @@ def test_runtime_identity_mismatch_denies() -> None:
         )
     )
     assert result.composition.decision.action is PolicyAction.DENY
+    assert (
+        result.composition.decision.policy_rule_id
+        == "collaborative_work.enforcement.runtime_identity_mismatch"
+    )
+    assert (
+        result.composition.decision.reason
+        == "runtime request action does not match operation profile"
+    )
+
+
+def test_gate_failure_preserves_evaluated_layer_decisions() -> None:
+    policy_repo = _policy_repo()
+    _seed_workspace_allow(policy_repo)
+    _seed_resource_allow(policy_repo)
+    result = _gate(policy_repo=policy_repo).evaluate(
+        _enforcement_request(meaningful_side_effect_request=None)
+    )
+    assert (
+        result.composition.decision.policy_rule_id
+        == "collaborative_work.enforcement.runtime_request_missing"
+    )
+    assert result.composition.workspace_policy is not None
+    assert result.composition.workspace_policy.action is PolicyAction.ALLOW
+    assert result.composition.resource_policy is not None
+    assert result.composition.resource_policy.action is PolicyAction.ALLOW
+    assert result.composition.decision.audit_payload.get("gate_failure") is True
 
 
 def test_runtime_deny_survives() -> None:
