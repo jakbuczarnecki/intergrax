@@ -325,7 +325,9 @@ def test_project_projections_synchronize_accepted_lkw_boundaries() -> None:
         assert "commercial validation" in text, f"{name} omits commercial boundary"
         assert "complete live-provider access" in text, f"{name} omits live-provider boundary"
 
-    assert "production indexed ask path through hybrid ask" in proofs
+    assert "bounded indexed hybrid ask branch" in proofs
+    assert "indexedonly" in proofs
+    assert "lkw-hybrid-ask-indexed" in proofs
     assert "mixed indexed + authorized live hybrid ask remains incomplete" in proofs
     assert "bounded production indexed ask path through hybrid ask" in tour
     assert "mixed indexed + authorized live hybrid ask" in tour
@@ -382,6 +384,9 @@ def test_lkw_quickstart_reader_literals_and_routes() -> None:
         "persisted_run_verified=true",
         "[LKW Product Tour](LKW_PRODUCT_TOUR.md)",
         "[LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md)",
+        "LKW-PRODUCT-QUICKSTART-WINDOWS",
+        "LKW-PRODUCT-QUICKSTART-LINUX",
+        "LKW-PRODUCT-QUICKSTART-MACOS",
     ):
         assert marker in text, f"Quick Start missing canonical marker: {marker!r}"
 

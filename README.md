@@ -65,7 +65,7 @@ workflows. **Hybrid Ask** is the real application code path used by the
 proven indexed branch; the proven scope today is indexed knowledge only.
 Hybrid Ask combining indexed and authorized live evidence is **not yet proven**.
 
-**Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`
+**Proof:** `LKW-HYBRID-ASK-INDEXED`
 
 **Not yet proven:** complete live-provider access, finished end-user packaging,
 **real-user validation**, and **commercial validation**.

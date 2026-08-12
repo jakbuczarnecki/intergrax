@@ -496,6 +496,8 @@ def test_indexed_hybrid_ask_claim_boundary_across_public_docs(
             "production hybrid ask indexed",
             "indexed-evidence path",
             "production indexed ask path through hybrid ask",
+            "bounded indexed hybrid ask branch",
+            "lkw-hybrid-ask-indexed",
         )
     )
     indexed_proven_in_readme = (

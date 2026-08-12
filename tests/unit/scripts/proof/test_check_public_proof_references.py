@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -229,6 +230,58 @@ def test_validator_does_not_process_secrets(tmp_path: Path) -> None:
 @pytest.fixture
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[4]
+
+
+_PRODUCT_QUICKSTART_PROOF_IDS = (
+    "LKW-PRODUCT-QUICKSTART-WINDOWS",
+    "LKW-PRODUCT-QUICKSTART-LINUX",
+    "LKW-PRODUCT-QUICKSTART-MACOS",
+)
+_CORE_PLATFORM_PROOF_IDS = (
+    "LKW-CORE-PLATFORM-WINDOWS",
+    "LKW-CORE-PLATFORM-LINUX",
+    "LKW-CORE-PLATFORM-MACOS",
+)
+
+
+def _proof_ids_on_line(text: str, *, label: str) -> set[str]:
+    match = re.search(
+        rf"^\*\*{re.escape(label)}:\*\*\s*(.+)$",
+        text,
+        re.MULTILINE,
+    )
+    assert match is not None, f"Missing {label} line"
+    return set(re.findall(r"`([A-Z][A-Z0-9-]*)`", match.group(1)))
+
+
+def test_public_claim_proof_mappings(repo_root: Path) -> None:
+    quickstart = (repo_root / "docs/project/product/lkw/QUICKSTART.md").read_text(
+        encoding="utf-8"
+    )
+    tour = (repo_root / "docs/project/product/lkw/LKW_PRODUCT_TOUR.md").read_text(
+        encoding="utf-8"
+    )
+    readme = (repo_root / "README.md").read_text(encoding="utf-8")
+    proofs = (repo_root / "docs/project/proofs/PROOFS.md").read_text(encoding="utf-8")
+
+    quickstart_ids = _proof_ids_on_line(quickstart, label="Proofs")
+    assert quickstart_ids == set(_PRODUCT_QUICKSTART_PROOF_IDS)
+    assert not quickstart_ids.intersection(_CORE_PLATFORM_PROOF_IDS)
+
+    tour_ids = _proof_ids_on_line(tour, label="Proofs")
+    assert tour_ids == set(_PRODUCT_QUICKSTART_PROOF_IDS)
+    assert not tour_ids.intersection(_CORE_PLATFORM_PROOF_IDS)
+
+    assert "LKW-HYBRID-ASK-INDEXED" in readme
+    assert "LKW-HYBRID-ASK-INDEXED" in proofs
+    assert "LKW-WEB-URL-INDEXED-ASK" in proofs
+
+    hybrid_section = readme.split("### What is boundedly proven today", 1)[1]
+    assert "LKW-HYBRID-ASK-INDEXED" in hybrid_section
+    assert not any(
+        core_id in hybrid_section.split("### LKW routes", 1)[0]
+        for core_id in _CORE_PLATFORM_PROOF_IDS
+    )
 
 
 def test_real_public_documents_validate(repo_root: Path) -> None:

@@ -72,9 +72,14 @@ foundations do not inherit a blanket platform-wide **IMPLEMENTED** status.
 
 **Role:** Primary product proof · **Product status:** Backend Product Alpha / MVP
 
-The bounded indexed path is demonstrated through the production Hybrid Ask
-indexed-evidence path. Mixed indexed + authorized live Hybrid Ask remains
-incomplete, and complete live-provider access remains incomplete.
+The bounded indexed Hybrid Ask branch is demonstrated through the production
+Hybrid Ask `indexed_only` path. Executable proof validates indexed retrieval and
+the indexed branch boundary; `status=insufficient_evidence` may pass after
+indexed retrieval without proving completed answer assembly. Mixed indexed +
+authorized live Hybrid Ask remains incomplete, and complete live-provider access
+remains incomplete.
+
+**Proof:** `LKW-HYBRID-ASK-INDEXED`
 
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
@@ -82,8 +87,10 @@ incomplete, and complete live-provider access remains incomplete.
 
 **Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`, `LKW-ASK-WORKSPACE-LIVE`
 
-| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | End-to-end WEB_URL intake, real RAG ingest, exact tenant/workspace vector scope, production indexed Ask path through Hybrid Ask over documented indexed evidence, grounded Ask with citation/evidence | Not live external-website certification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access remains incomplete |
+| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | Real WEB_URL capture and RAG indexing into the exact tenant/workspace Qdrant scope, verified indexed retrieval, and execution through Hybrid Ask `indexed_only`; completed-answer runs additionally validate grounded indexed citation/evidence | Controlled `example.com` origin only; not arbitrary external-site certification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access remains incomplete |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
+
+**Proof:** `LKW-WEB-URL-INDEXED-ASK`
 
 **Proof:** `LKW-MODEL-RUNTIME`
 
