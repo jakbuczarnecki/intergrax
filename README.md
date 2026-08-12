@@ -65,6 +65,8 @@ workflows. **Hybrid Ask** is the production code path used by the
 proven indexed branch; the proven scope today is indexed knowledge only.
 Mixed indexed + authorized-live Hybrid Ask in one answer is **not yet proven**.
 
+**Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`
+
 **Not yet proven:** Hybrid Ask combining indexed and authorized live evidence,
 complete live-provider access, finished end-user packaging, **real-user validation**,
 and **commercial validation**. Mixed indexed + authorized live Hybrid Ask is
@@ -117,6 +119,8 @@ platform-level bounded proof covering startup, sentry, elasticsearch,
 persistence, background task, application hosting, and file watcher. It does
 **not** imply production readiness, commercial validation, or all-provider
 certification.
+
+**Proofs:** `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`, `LKW-ASK-WORKSPACE-LIVE`
 
 ---
 
@@ -196,6 +200,8 @@ Its current status is **PARTIAL**. Live provider-wide proof, production rollout,
 final cross-provider proof, universal savings, and **production-proven savings**
 are **not established**. Details belong to the [Token Optimization guide](docs/project/capabilities/token_optimization/README.md)
 and its [claim guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
+
+**Proof:** `RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`
 
 ## Multiplayer AI
 

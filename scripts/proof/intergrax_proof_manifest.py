@@ -79,6 +79,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_READ_ONLY,
             timeout_seconds=300,
+            public_evidence_eligible=True,
         ),
         ProofManifestEntry(
             proof_id="LKW-OS-INTERACTION-WINDOWS",
@@ -97,6 +98,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=900,
+            public_evidence_eligible=True,
         ),
         ProofManifestEntry(
             proof_id="LKW-OS-INTERACTION-LINUX",
@@ -115,6 +117,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=900,
+            public_evidence_eligible=True,
         ),
         ProofManifestEntry(
             proof_id="LKW-OS-INTERACTION-MACOS",
@@ -133,6 +136,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=900,
+            public_evidence_eligible=True,
         ),
         ProofManifestEntry(
             proof_id="LKW-CORE-PLATFORM-WINDOWS",
@@ -153,6 +157,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=3600,
+            public_evidence_eligible=True,
         ),
         ProofManifestEntry(
             proof_id="LKW-CORE-PLATFORM-LINUX",
@@ -173,6 +178,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=3600,
+            public_evidence_eligible=True,
         ),
         ProofManifestEntry(
             proof_id="LKW-CORE-PLATFORM-MACOS",
@@ -193,6 +199,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=3600,
+            public_evidence_eligible=True,
         ),
         ProofManifestEntry(
             proof_id="LKW-BACKGROUND-TASK",
@@ -206,6 +213,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=900,
+            public_evidence_eligible=True,
         ),
         ProofManifestEntry(
             proof_id="LKW-HOSTING",
@@ -219,6 +227,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=900,
+            public_evidence_eligible=True,
         ),
         ProofManifestEntry(
             proof_id="LKW-FILE-WATCHER",
@@ -232,6 +241,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=1200,
+            public_evidence_eligible=True,
         ),
         ProofManifestEntry(
             proof_id="PLATFORM-WINDOWS-NATIVE-CERT",
@@ -345,6 +355,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=1800,
             requires_live_opt_in=True,
+            public_evidence_eligible=True,
         ),
         ProofManifestEntry(
             proof_id="LKW-ASK-WORKSPACE-LIVE",
@@ -359,6 +370,7 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=1800,
             requires_live_opt_in=True,
+            public_evidence_eligible=True,
         ),
     )
 

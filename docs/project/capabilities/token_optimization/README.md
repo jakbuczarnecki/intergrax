@@ -20,6 +20,9 @@ Central guide for the Token Optimization platform capability: deterministic opti
 | **Overall public classification** | PARTIAL |
 | **Implemented foundation** | Existing deterministic engine mechanisms |
 | **Accepted bounded proof** | Named vLLM prefix-cache proof |
+
+**Proof:** `RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`
+
 | **Bounded durable mechanism** | Durable repository, validation and CAS activation are implemented; live provider-wide proof, rollback execution and production rollout are not established |
 | **Public limitations** | No provider-independent, universal or production-proven savings claim |
 | **Detailed implementation roadmap** | [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) |

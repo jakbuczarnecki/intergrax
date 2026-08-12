@@ -89,10 +89,14 @@ This flow reflects workflows supported by the existing Core Platform Proof. Opti
 8. A file created in a watched folder is automatically indexed through the real Kafka/worker path, remains searchable after a non-destructive restart and produces a verified ProofReceipt.
 ```
 
+**Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`, `LKW-ASK-WORKSPACE-LIVE`
+
 ## Optional operating-system interaction claims
 
 These proofs validate one concrete operating-system client
 adapter. They are not required to complete the Core Platform Proof.
+
+**Proofs:** `LKW-OS-INTERACTION-WINDOWS`, `LKW-OS-INTERACTION-LINUX`, `LKW-OS-INTERACTION-MACOS`
 
 ```text
 Windows Application Hosting Proof:

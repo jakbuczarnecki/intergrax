@@ -52,6 +52,8 @@ On success the stack stays running for inspection — health check
 (`http://127.0.0.1:8020/health`), Docker logs, and persisted run read. For
 deeper bounded platform verification, see [Core Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md).
 
+**Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`
+
 ## Prerequisites
 
 - Git

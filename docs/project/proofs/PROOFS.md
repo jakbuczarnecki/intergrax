@@ -79,8 +79,13 @@ incomplete, and complete live-provider access remains incomplete.
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
 | **Core Platform Proof** | 🧪 **BOUNDED PROOF** | Real application startup, observability, ingest, hosting, persisted execution evidence (startup, sentry, elasticsearch, persistence, background task, application hosting, file watcher) | Bounded to documented certification profiles; not production readiness, commercial validation, or all-provider certification |
+
+**Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`, `LKW-ASK-WORKSPACE-LIVE`
+
 | Web URL knowledge intake | 🧪 **BOUNDED PROOF** | End-to-end WEB_URL intake, real RAG ingest, exact tenant/workspace vector scope, production indexed Ask path through Hybrid Ask over documented indexed evidence, grounded Ask with citation/evidence | Not live external-website certification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access remains incomplete |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
+
+**Proof:** `LKW-MODEL-RUNTIME`
 
 ### Not established by the accepted public proof
 
@@ -113,6 +118,9 @@ Accepted technical proof:
 | Cache-aware execution gate | ✅ **IMPLEMENTED** | Only `RUN` executes pipeline; conflicting evidence rejected | Does not perform in-cache compaction |
 | Durable in-cache compaction mechanism | ✅ **IMPLEMENTED (BOUNDED)** | Durable SQLite repository, validation and CAS activation exist | Live provider proof, rollback execution and production rollout remain incomplete; numeric savings are not claimed |
 | Bounded vLLM prefix-cache proof | 🧪 **BOUNDED PROOF** | Cold/warm/changed-prefix reuse in documented vLLM environment | Named version, model, and workload only |
+
+**Proof:** `RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`
+
 | Universal token reduction | ⛔ **NOT CLAIMABLE** | — | No universal savings evidence |
 | Production-proven savings | ⛔ **NOT CLAIMABLE** | — | Required proof and promotion gates are incomplete. |
 
@@ -181,3 +189,25 @@ Real-user and commercial validation remain **incomplete**.
 | [Technical documentation map](../technical/DOCUMENTATION_MAP.md) | Deep technical review entry |
 
 Maintainer status and wording rules: [Public Proof and Claims Model](../maintainers/public-adoption/PUBLIC_PROOF_AND_CLAIMS_MODEL.md)
+
+---
+
+## Executable proof suite
+
+Public documentation references `proof_id` values only. Canonical membership,
+commands, profiles, and environment requirements live in
+`scripts/proof/intergrax_proof_manifest.py`.
+
+Run the repository-wide suite from the repository root:
+
+```bash
+uv run python scripts/proof/run-intergrax-proof-suite.py --profile quick
+uv run python scripts/proof/run-intergrax-proof-suite.py --profile full
+uv run python scripts/proof/run-intergrax-proof-suite.py --profile live
+```
+
+Validate explicit public proof references:
+
+```bash
+uv run python scripts/proof/check-public-proof-references.py
+```

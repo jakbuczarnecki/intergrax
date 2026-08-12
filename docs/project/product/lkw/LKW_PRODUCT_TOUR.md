@@ -44,6 +44,8 @@ This is a neutral representation of the supported indexed workflow, not a finish
 | Quick Start | You want to run LKW | Local prerequisites | Grounded sample answer and source |
 | Platform Proof | You want technical evidence | Reviewer environment and proof steps | Bounded platform evidence |
 
+**Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`
+
 **Product Tour ≠ Quick Start ≠ Platform Proof.** None replaces the others.
 
 ## The LKW experience
