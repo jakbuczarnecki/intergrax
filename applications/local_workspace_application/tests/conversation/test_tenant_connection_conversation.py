@@ -498,6 +498,112 @@ def test_manual_credential_parser_rejects_invalid_payload() -> None:
 
 
 @pytest.mark.asyncio
+async def test_malformed_manual_credential_json_redacts_thread_memory() -> None:
+    orchestration = _OrchestrationStub()
+    executor = _executor(orchestration)
+    credential_message = "not-json"
+    result = await executor.execute(
+        make_tenant_connection_execution_command(
+            action=TenantConnectionCompleteManualAuthorizationPlannedAction(
+                action_id="a1",
+                action_type="tenant_connection.authorization.complete_manual",
+            ),
+            message_text=credential_message,
+            inventory=TenantConnectionPlanningSnapshotV1(
+                providers=_inventory().providers,
+                connections=(),
+                pending_manual_authorization=TenantConnectionPendingManualAuthorizationV1(
+                    authorization_transaction_ref="auth.slack.abc",
+                    provider_id="slack",
+                ),
+            ),
+        )
+    )
+    assert result.action_results[0].status is ConversationActionExecutionStatus.FAILED
+    assert result.thread_memory_user_text == THREAD_MEMORY_CREDENTIAL_REDACTION
+    assert credential_message not in str(result.model_dump())
+
+
+@pytest.mark.asyncio
+async def test_invalid_credential_binding_redacts_thread_memory() -> None:
+    orchestration = _OrchestrationStub()
+    executor = _executor(orchestration)
+    credential_message = '{"app_token":"","bot_token":"xoxb-1"}'
+    result = await executor.execute(
+        make_tenant_connection_execution_command(
+            action=TenantConnectionCompleteManualAuthorizationPlannedAction(
+                action_id="a1",
+                action_type="tenant_connection.authorization.complete_manual",
+            ),
+            message_text=credential_message,
+            inventory=TenantConnectionPlanningSnapshotV1(
+                providers=_inventory().providers,
+                connections=(),
+                pending_manual_authorization=TenantConnectionPendingManualAuthorizationV1(
+                    authorization_transaction_ref="auth.slack.abc",
+                    provider_id="slack",
+                ),
+            ),
+        )
+    )
+    assert result.action_results[0].status is ConversationActionExecutionStatus.FAILED
+    assert result.thread_memory_user_text == THREAD_MEMORY_CREDENTIAL_REDACTION
+    assert "xoxb-1" not in str(result.model_dump())
+
+
+@pytest.mark.asyncio
+async def test_orchestration_failure_after_parsing_redacts_thread_memory() -> None:
+    orchestration = _OrchestrationStub()
+
+    def complete_failure(**kwargs: object):
+        raise TenantConnectionProductError("credential_binding_invalid")
+
+    orchestration.complete_connection_authorization = complete_failure  # type: ignore[method-assign]
+    executor = _executor(orchestration)
+    credential_message = '{"app_token":"xapp-1","bot_token":"xoxb-1"}'
+    result = await executor.execute(
+        make_tenant_connection_execution_command(
+            action=TenantConnectionCompleteManualAuthorizationPlannedAction(
+                action_id="a1",
+                action_type="tenant_connection.authorization.complete_manual",
+            ),
+            message_text=credential_message,
+            inventory=TenantConnectionPlanningSnapshotV1(
+                providers=_inventory().providers,
+                connections=(),
+                pending_manual_authorization=TenantConnectionPendingManualAuthorizationV1(
+                    authorization_transaction_ref="auth.slack.abc",
+                    provider_id="slack",
+                ),
+            ),
+        )
+    )
+    assert result.action_results[0].status is ConversationActionExecutionStatus.FAILED
+    assert result.thread_memory_user_text == THREAD_MEMORY_CREDENTIAL_REDACTION
+    assert "xapp-1" not in str(result.model_dump())
+    assert "xoxb-1" not in str(result.model_dump())
+
+
+@pytest.mark.asyncio
+async def test_oauth_begin_message_text_is_not_redacted() -> None:
+    orchestration = _OrchestrationStub()
+    executor = _executor(orchestration)
+    message = "connect google workspace"
+    result = await executor.execute(
+        make_tenant_connection_execution_command(
+            action=TenantConnectionBeginAuthorizationPlannedAction(
+                action_id="a1",
+                action_type="tenant_connection.authorization.begin",
+                provider_id="google_workspace",
+            ),
+            message_text=message,
+        )
+    )
+    assert result.status is ConversationInteractionOverallStatus.COMPLETED
+    assert result.thread_memory_user_text is None
+
+
+@pytest.mark.asyncio
 async def test_reconnect_preserves_connection_ref_and_revoked_fails() -> None:
     orchestration = _OrchestrationStub()
     executor = _executor(orchestration)

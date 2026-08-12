@@ -508,12 +508,18 @@ def _receipt(
     ),
     memory_revision_id: str | None = None,
     memory_error_code: str | None = None,
+    safe_user_memory_text: str | None = None,
 ) -> ConversationEventReceipt:
     response_hash = (
         hashlib.sha256(safe_response.encode("utf-8")).hexdigest()
         if safe_response is not None
         else None
     )
+    if (
+        memory_status is ConversationEventMemoryStatus.PENDING
+        and safe_user_memory_text is None
+    ):
+        safe_user_memory_text = "list workspaces"
     return ConversationEventReceipt(
         tenant_id="tenant-a",
         conversation_connection_ref="slack",
@@ -525,6 +531,7 @@ def _receipt(
         memory_status=memory_status,
         memory_revision_id=memory_revision_id,
         memory_error_code=memory_error_code,
+        safe_user_memory_text=safe_user_memory_text,
         created_at=created_at or datetime.now(UTC),
         completed_at=completed_at,
     )
@@ -793,6 +800,7 @@ def test_receipt_sent_transition_rejects_pending_memory_without_write() -> None:
         receipt=_claimed_receipt(repository),
         response="safe response",
         memory_required=True,
+        safe_user_memory_text="list workspaces",
     )
 
     with pytest.raises(ConversationEventReceiptError) as error:
@@ -819,6 +827,7 @@ def test_receipt_sent_transition_accepts_terminal_memory(
         receipt=_claimed_receipt(repository),
         response="safe response",
         memory_required=True,
+        safe_user_memory_text="list workspaces",
     )
     if memory_status is ConversationEventMemoryStatus.COMPLETED:
         pending = repository.mark_memory_completed(

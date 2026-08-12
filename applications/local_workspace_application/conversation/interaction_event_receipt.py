@@ -51,6 +51,7 @@ class ConversationEventReceipt(BaseModel):
     )
     memory_revision_id: str | None = Field(default=None, max_length=128)
     memory_error_code: str | None = Field(default=None, max_length=128)
+    safe_user_memory_text: str | None = Field(default=None, max_length=16_000)
     created_at: datetime
     completed_at: datetime | None = None
 
@@ -96,11 +97,16 @@ class ConversationEventReceipt(BaseModel):
         elif self.memory_status is ConversationEventMemoryStatus.PENDING:
             if self.memory_revision_id is not None or self.memory_error_code is not None:
                 raise ValueError("pending memory state is inconsistent")
+            if not self.safe_user_memory_text or not self.safe_user_memory_text.strip():
+                raise ValueError("pending memory requires safe_user_memory_text")
         elif (
             self.memory_revision_id is not None
             or self.memory_error_code is not None
         ):
             raise ValueError("not-required memory state is inconsistent")
+        if self.memory_status is ConversationEventMemoryStatus.NOT_REQUIRED:
+            if self.safe_user_memory_text is not None:
+                raise ValueError("not-required memory cannot contain safe_user_memory_text")
 
         if self.status is ConversationEventReceiptStatus.PROCESSING:
             if (
@@ -287,6 +293,7 @@ class ConversationInteractionEventReceiptRepository:
         receipt: ConversationEventReceipt,
         response: str,
         memory_required: bool = False,
+        safe_user_memory_text: str | None = None,
     ) -> ConversationEventReceipt:
         self._ensure_transition(
             receipt,
@@ -298,6 +305,13 @@ class ConversationInteractionEventReceiptRepository:
                 "conversation_receipt_response_empty"
             )
         safe_response = safe_response[:_MAX_RESPONSE_LENGTH]
+        memory_text: str | None = None
+        if memory_required:
+            if safe_user_memory_text is None or not safe_user_memory_text.strip():
+                raise ConversationEventReceiptError(
+                    "conversation_receipt_memory_text_empty"
+                )
+            memory_text = safe_user_memory_text.strip()[:16_000]
         replacement = self._transition(
             receipt,
             update={
@@ -314,6 +328,7 @@ class ConversationInteractionEventReceiptRepository:
                 ),
                 "memory_revision_id": None,
                 "memory_error_code": None,
+                "safe_user_memory_text": memory_text,
             },
         )
         self._replace(receipt, replacement)

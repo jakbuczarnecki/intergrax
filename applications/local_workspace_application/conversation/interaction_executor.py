@@ -56,6 +56,9 @@ from local_workspace_application.conversation.interaction_models import (
     WorkspaceReference,
     WorkspaceReferenceKind,
 )
+from local_workspace_application.conversation.interaction_memory_policy import (
+    interaction_plan_requires_credential_memory_redaction,
+)
 from local_workspace_application.conversation.interaction_planner import (
     PlanRequestValidationError,
     validate_plan_against_request,
@@ -415,10 +418,7 @@ class ConversationInteractionExecutor:
             for action, item in zip(plan.actions, action_results, strict=True)
             if action.action_type == "workspace.ask" and item.artifact is not None
         )
-        thread_memory_user_text = self._thread_memory_user_text(
-            plan=plan,
-            action_results=action_results,
-        )
+        thread_memory_user_text = self._thread_memory_user_text(plan=plan)
         completed_at = self._utc_now()
         return ConversationInteractionExecutionResult(
             execution_id=execution_id,
@@ -1473,18 +1473,9 @@ class ConversationInteractionExecutor:
         self,
         *,
         plan: ConversationInteractionPlan,
-        action_results: tuple[ConversationActionExecutionResult, ...],
     ) -> str | None:
-        for action, result in zip(plan.actions, action_results, strict=True):
-            if action.action_type != "tenant_connection.authorization.complete_manual":
-                continue
-            if result.status is not ConversationActionExecutionStatus.COMPLETED:
-                continue
-            artifact = result.artifact
-            if artifact is None:
-                continue
-            if artifact.data.get("redact_user_message") is True:
-                return THREAD_MEMORY_CREDENTIAL_REDACTION
+        if interaction_plan_requires_credential_memory_redaction(plan):
+            return THREAD_MEMORY_CREDENTIAL_REDACTION
         return None
 
     def _require_candidate_service(self) -> CandidateIntakeService:

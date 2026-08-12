@@ -47,6 +47,9 @@ from local_workspace_application.conversation.interaction_models import (
     KnowledgeAddAttachmentsPlannedAction,
     WorkspaceAskPlannedAction,
 )
+from local_workspace_application.conversation.interaction_memory_policy import (
+    resolve_durable_thread_memory_user_text,
+)
 from local_workspace_application.conversation.interaction_planner import (
     ConversationInteractionPlanner,
     ConversationPlanningError,
@@ -395,6 +398,7 @@ class ConversationInteractionApplicationService:
             receipt=receipt,
             execution_result=execution_result,
             setup_snapshot=snapshot,
+            plan=plan,
         )
 
     async def _handle_missing_workspace_selection(
@@ -893,6 +897,7 @@ class ConversationInteractionApplicationService:
         execution_result: ConversationInteractionExecutionResult,
         response_text: str | None = None,
         setup_snapshot: WorkspaceSetupSnapshotV1 | None = None,
+        plan: ConversationInteractionPlan | None = None,
     ) -> ConversationInteractionApplicationResult:
         if response_text is None:
             try:
@@ -916,15 +921,24 @@ class ConversationInteractionApplicationService:
                 execution_context=execution_context,
                 execution_result=execution_result,
             )
+        memory_required = (
+            self._thread_memory is not None
+            and command is not None
+            and execution_context is not None
+        )
+        durable_user_memory_text: str | None = None
+        if memory_required and command is not None:
+            durable_user_memory_text = resolve_durable_thread_memory_user_text(
+                plan=plan,
+                message_text=command.message_text,
+                execution_result=execution_result,
+            )
         try:
             pending = self._receipts.mark_response_pending(
                 receipt=receipt,
                 response=response_text,
-                memory_required=(
-                    self._thread_memory is not None
-                    and command is not None
-                    and execution_context is not None
-                ),
+                memory_required=memory_required,
+                safe_user_memory_text=durable_user_memory_text,
             )
         except ConversationEventReceiptError:
             pending = receipt
@@ -941,11 +955,7 @@ class ConversationInteractionApplicationService:
                 assistant_created_at = max(self._clock(), user_created_at)
                 appended = self._thread_memory.append_exchange(
                     context=execution_context,
-                    user_text=(
-                        execution_result.thread_memory_user_text
-                        if execution_result.thread_memory_user_text is not None
-                        else command.message_text.strip()
-                    ),
+                    user_text=durable_user_memory_text or command.message_text.strip(),
                     assistant_text=response_text,
                     user_created_at=user_created_at,
                     assistant_created_at=assistant_created_at,
@@ -1007,7 +1017,11 @@ class ConversationInteractionApplicationService:
                     assistant_created_at = max(self._clock(), user_created_at)
                     appended = self._thread_memory.append_exchange(
                         context=execution_context,
-                        user_text=command.message_text.strip(),
+                        user_text=(
+                            receipt.safe_user_memory_text
+                            if receipt.safe_user_memory_text is not None
+                            else command.message_text.strip()
+                        ),
                         assistant_text=safe_response,
                         user_created_at=user_created_at,
                         assistant_created_at=assistant_created_at,
