@@ -444,6 +444,42 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             requires_live_opt_in=True,
             public_evidence_eligible=True,
         ),
+        ProofManifestEntry(
+            proof_id="LKW-WEB-URL-INDEXED-ASK",
+            title="LKW WEB_URL indexed Hybrid Ask proof",
+            domain="lkw",
+            profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
+            proof_kind="web_url_indexed_ask",
+            command=_uv_lkw_python("run-lkw-web-url-indexed-ask-proof.py"),
+            environment_requirements=(
+                EnvRequirement(
+                    kind=EnvRequirementKind.COMMAND_AVAILABLE, name="uv"
+                ),
+                EnvRequirement(kind=EnvRequirementKind.DOCKER_AVAILABLE, name="docker"),
+            ),
+            safety_class=ProofSafetyClass.LOCAL_MUTATING,
+            timeout_seconds=3600,
+            requires_live_opt_in=True,
+            public_evidence_eligible=True,
+        ),
+        ProofManifestEntry(
+            proof_id="LKW-HYBRID-ASK-INDEXED",
+            title="LKW indexed Hybrid Ask branch proof",
+            domain="lkw",
+            profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
+            proof_kind="hybrid_ask_indexed",
+            command=_uv_lkw_python("run-lkw-hybrid-ask-indexed-proof.py"),
+            environment_requirements=(
+                EnvRequirement(
+                    kind=EnvRequirementKind.COMMAND_AVAILABLE, name="uv"
+                ),
+                EnvRequirement(kind=EnvRequirementKind.DOCKER_AVAILABLE, name="docker"),
+            ),
+            safety_class=ProofSafetyClass.LOCAL_MUTATING,
+            timeout_seconds=3600,
+            requires_live_opt_in=True,
+            public_evidence_eligible=True,
+        ),
     )
 
 

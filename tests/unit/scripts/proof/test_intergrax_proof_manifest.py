@@ -236,3 +236,33 @@ def test_quick_excludes_product_quickstart(repo_root: Path) -> None:
     )
     ids = {entry.proof_id for entry in selected}
     assert ids.isdisjoint(_QUICKSTART_IDS)
+
+
+_LKW_INDEXED_EVIDENCE_IDS = frozenset(
+    {
+        "LKW-WEB-URL-INDEXED-ASK",
+        "LKW-HYBRID-ASK-INDEXED",
+    }
+)
+
+
+@pytest.mark.parametrize("proof_id", sorted(_LKW_INDEXED_EVIDENCE_IDS))
+def test_indexed_evidence_proofs_registered(repo_root: Path, proof_id: str) -> None:
+    manifest = load_manifest(repo_root=repo_root)
+    entry = next(item for item in manifest.entries if item.proof_id == proof_id)
+    assert entry.public_evidence_eligible is True
+    assert entry.safety_class is ProofSafetyClass.LOCAL_MUTATING
+    assert entry.requires_live_opt_in is True
+    assert ProofProfile.FULL in entry.profiles
+    assert ProofProfile.LIVE in entry.profiles
+    assert ProofProfile.QUICK not in entry.profiles
+    assert "run-lkw-" in entry.command.argv[-1]
+
+
+def test_quick_excludes_indexed_evidence_proofs(repo_root: Path) -> None:
+    manifest = load_manifest(repo_root=repo_root)
+    selected = select_proofs_from_manifest(
+        manifest, profile=ProofProfile.QUICK, platform_family="windows"
+    )
+    ids = {entry.proof_id for entry in selected}
+    assert ids.isdisjoint(_LKW_INDEXED_EVIDENCE_IDS)
