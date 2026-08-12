@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -313,12 +314,93 @@ def test_kafka_overlay_configures_real_background_task_stack() -> None:
     assert 'INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL: nomic-embed-text' in text
 
 
-def test_mongodb_overlay_shares_document_store_with_background_worker() -> None:
+def _compose_config_json(compose_files: list[Path]) -> dict:
+    args = ["docker", "compose"]
+    for path in compose_files:
+        args.extend(["-f", str(path)])
+    args.extend(["config", "--format", "json"])
+    completed = subprocess.run(
+        args,
+        cwd=_PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr or completed.stdout
+    return json.loads(completed.stdout)
+
+
+def test_mongodb_overlay_extends_local_workspace_without_background_worker() -> None:
     text = (_DOCKER_DIR / "docker-compose.mongodb.yml").read_text(encoding="utf-8")
-    assert "lkw-background-worker:" in text
+    assert "lkw-background-worker:" not in text
     assert "INTERGRAX_MONGODB_URI:" in text
     assert "lkw-mongodb:27017" in text
     assert "lkw-mongodb:" in text
+
+    resolved = _compose_config_json(
+        [_DOCKER_DIR / "docker-compose.yml", _DOCKER_DIR / "docker-compose.mongodb.yml"]
+    )
+    assert "lkw-background-worker" not in resolved["services"]
+
+
+def test_kafka_overlay_worker_has_durable_mongodb_publication_authority() -> None:
+    text = (_DOCKER_DIR / "docker-compose.kafka.yml").read_text(encoding="utf-8")
+    worker_block = text.split("lkw-background-worker:", 1)[1].split("\n  lkw-redis:", 1)[0]
+    assert "INTERGRAX_MONGODB_URI:" in worker_block
+    assert "lkw-mongodb:27017" in worker_block
+    assert "INTERGRAX_MONGODB_DATABASE:" in worker_block
+    assert "lkw-mongodb:" in worker_block
+    assert "condition: service_healthy" in worker_block
+
+    resolved = _compose_config_json(
+        [_DOCKER_DIR / "docker-compose.yml", _DOCKER_DIR / "docker-compose.kafka.yml"]
+    )
+    worker = resolved["services"]["lkw-background-worker"]
+    environment = worker.get("environment", {})
+    assert environment.get("INTERGRAX_MONGODB_URI", "").startswith("mongodb://")
+    assert "lkw-mongodb:27017" in environment.get("INTERGRAX_MONGODB_URI", "")
+    assert environment.get("INTERGRAX_MONGODB_DATABASE")
+    assert worker.get("image") or worker.get("build")
+    assert "background_worker_main" in str(worker.get("command", ""))
+    assert environment.get("INTERGRAX_QDRANT_URL")
+    assert environment.get("OLLAMA_HOST")
+    assert environment.get("INTERGRAX_KAFKA_BOOTSTRAP_SERVERS")
+    assert environment.get("INTERGRAX_REDIS_URL")
+    depends_on = worker.get("depends_on", {})
+    assert depends_on.get("lkw-mongodb", {}).get("condition") == "service_healthy"
+
+
+def test_compose_matrix_base_mongodb_kafka_and_combined() -> None:
+    base = _DOCKER_DIR / "docker-compose.yml"
+    mongodb = _DOCKER_DIR / "docker-compose.mongodb.yml"
+    kafka = _DOCKER_DIR / "docker-compose.kafka.yml"
+
+    _compose_config_json([base])
+    mongodb_only = _compose_config_json([base, mongodb])
+    kafka_only = _compose_config_json([base, kafka])
+    combined = _compose_config_json([base, kafka, mongodb])
+
+    assert "lkw-background-worker" not in mongodb_only["services"]
+    assert "lkw-mongodb" in mongodb_only["services"]
+
+    worker = kafka_only["services"]["lkw-background-worker"]
+    assert worker.get("image") or worker.get("build")
+    assert worker["environment"]["INTERGRAX_MONGODB_URI"].startswith("mongodb://")
+
+    combined_worker = combined["services"]["lkw-background-worker"]
+    assert combined_worker.get("image") or combined_worker.get("build")
+    assert (
+        combined_worker["environment"]["INTERGRAX_MONGODB_URI"]
+        == worker["environment"]["INTERGRAX_MONGODB_URI"]
+    )
+    assert "lkw-mongodb" in combined["services"]
+
+
+def test_application_hosting_compose_set_is_valid() -> None:
+    """Mirror phase_application_hosting compose_files: base + mongodb only."""
+    _compose_config_json(
+        [_DOCKER_DIR / "docker-compose.yml", _DOCKER_DIR / "docker-compose.mongodb.yml"]
+    )
 
 
 def test_background_task_proof_helper_implements_reviewer_contract() -> None:

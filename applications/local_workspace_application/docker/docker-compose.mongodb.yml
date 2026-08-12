@@ -16,14 +16,6 @@ services:
       lkw-mongodb:
         condition: service_healthy
 
-  lkw-background-worker:
-    environment:
-      INTERGRAX_MONGODB_URI: mongodb://${LKW_MONGODB_ROOT_USERNAME:-intergrax}:${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}@lkw-mongodb:27017/${LKW_MONGODB_DATABASE:-intergrax_proofs}?authSource=admin
-      INTERGRAX_MONGODB_DATABASE: ${LKW_MONGODB_DATABASE:-intergrax_proofs}
-    depends_on:
-      lkw-mongodb:
-        condition: service_healthy
-
   lkw-mongodb:
     image: mongo:7.0.14
     environment:

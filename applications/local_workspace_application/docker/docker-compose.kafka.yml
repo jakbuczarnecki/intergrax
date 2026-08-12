@@ -73,16 +73,25 @@ services:
       INTERGRAX_KAFKA_STATUS_TOPIC: intergrax.task-status
       INTERGRAX_KAFKA_RESULTS_TOPIC: intergrax.task-results
       INTERGRAX_KAFKA_CONSUMER_GROUP: lkw-background-ingest
+      INTERGRAX_MONGODB_URI: mongodb://${LKW_MONGODB_ROOT_USERNAME:-intergrax}:${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}@lkw-mongodb:27017/${LKW_MONGODB_DATABASE:-intergrax_proofs}?authSource=admin
+      INTERGRAX_MONGODB_DATABASE: ${LKW_MONGODB_DATABASE:-intergrax_proofs}
     volumes:
       - lkw_sqlite:/data/sqlite
       - lkw_shadow:/data/shadow_workspaces
       - ../.proof_docs:/data/user_docs:rw
     depends_on:
-      - qdrant
-      - ollama
-      - lkw-redis
-      - lkw-kafka
-      - lkw-kafka-topics
+      qdrant:
+        condition: service_started
+      ollama:
+        condition: service_started
+      lkw-redis:
+        condition: service_started
+      lkw-kafka:
+        condition: service_started
+      lkw-kafka-topics:
+        condition: service_started
+      lkw-mongodb:
+        condition: service_healthy
 
   lkw-redis:
     image: redis:7-alpine
