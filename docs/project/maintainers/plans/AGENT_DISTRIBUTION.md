@@ -55,4 +55,18 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 
 ## AGENT-PLATFORM-3 gate
 
-**May begin** — architecture complete; no blocking open questions.
+**Done** (2026-08-12) — Tier-0 contracts and store ports landed under `intergrax/agent_distribution/`.
+
+| Deliverable | Status |
+|-------------|--------|
+| `AgentPackageIdentity` / catalog contracts | done |
+| `CatalogSourceProvider` port | done |
+| Trust/provenance evidence surface | done |
+| Installation / binding contracts | done |
+| Effective roster projection models | done |
+| Dependency + `MaterializedRuntimeLock` contracts | done |
+| `RuntimeRevision` + materialization I/O contracts | done |
+| Store ports (installation, binding, lock, revision, artifact metadata) | done |
+| Focused unit tests + tier-boundary check | done |
+
+**Next:** AP-4 may begin (store interfaces + transactional domain services).
