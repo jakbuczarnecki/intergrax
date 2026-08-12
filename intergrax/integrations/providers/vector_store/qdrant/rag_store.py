@@ -26,7 +26,17 @@ from intergrax.rag.vectorstore.providers.native_provider_boundary import (
     validate_records,
     validate_scope,
 )
+from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.knowledge.contracts.validation import require_non_empty_str
+
+try:
+    from qdrant_client.http.exceptions import (
+        ResponseHandlingException,
+        UnexpectedResponse,
+    )
+except ImportError:
+    ResponseHandlingException = None  # type: ignore[misc, assignment]
+    UnexpectedResponse = None  # type: ignore[misc, assignment]
 
 try:
     from qdrant_client import QdrantClient
@@ -73,6 +83,25 @@ from intergrax.rag.vectorstore.sparse.sparse_encoder import SparseEncoder, resol
 _DENSE_VECTOR_NAME = "dense"
 _SPARSE_VECTOR_NAME = "sparse"
 _LOGICAL_ID_METADATA_KEY = "logical_id"
+
+
+def _unwrap_qdrant_exception(exc: BaseException) -> BaseException:
+    if ResponseHandlingException is not None and isinstance(
+        exc, ResponseHandlingException
+    ):
+        return exc.source
+    return exc
+
+
+def _is_qdrant_collection_not_found(exc: BaseException) -> bool:
+    root = _unwrap_qdrant_exception(exc)
+    if UnexpectedResponse is not None and isinstance(root, UnexpectedResponse):
+        return root.status_code == 404
+    return False
+
+
+def _raise_qdrant_provider_failure(exc: BaseException, *, operation: str) -> None:
+    raise IntegrationDependencyError(f"qdrant {operation} failed") from exc
 
 
 def _normalize_point_id(raw_id: str) -> str | int:
@@ -138,6 +167,9 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         self._sparse_encoder = sparse_encoder or resolve_sparse_encoder()
 
         self._init_qdrant()
+
+    def supports_native_hybrid_search(self) -> bool:
+        return self._sparse_enabled
 
     @staticmethod
     def _collection_vector_size(collection_info: Any) -> int | None:
@@ -221,26 +253,24 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                 vectors_config=VectorParams(size=self._dim, distance=dist),
             )
 
-    def _collection_exists(self) -> bool:
+    def _get_qdrant_collection_info(self) -> Any | None:
         assert self._client is not None
         try:
-            self._client.get_collection(self.collection_name)
-            return True
+            return self._client.get_collection(self.collection_name)
         except VectorStoreContractError:
             raise
-        except Exception:
-            return False
+        except Exception as exc:
+            if _is_qdrant_collection_not_found(exc):
+                return None
+            _raise_qdrant_provider_failure(exc, operation="get_collection")
+
+    def _collection_exists(self) -> bool:
+        return self._get_qdrant_collection_info() is not None
 
     def _ensure_qdrant_collection(self) -> None:
         assert self._client is not None
 
-        info = None
-        try:
-            info = self._client.get_collection(self.collection_name)
-        except VectorStoreContractError:
-            raise
-        except Exception:
-            info = None
+        info = self._get_qdrant_collection_info()
 
         if info is not None:
             if self._dim is not None:
@@ -255,7 +285,10 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         if self._dim is None:
             return
 
-        self._create_qdrant_collection()
+        try:
+            self._create_qdrant_collection()
+        except Exception as exc:
+            _raise_qdrant_provider_failure(exc, operation="create_collection")
 
     def _qdrant_filter(self, where: Optional[Dict[str, Any]]) -> Optional[QFilter]:  # type: ignore
         """Equality-only helper for scroll/search paths that use plain dicts."""
@@ -389,8 +422,8 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                 with_payload=True,
                 with_vectors=include_embeddings,
             )
-        except Exception:
-            return []
+        except Exception as exc:
+            _raise_qdrant_provider_failure(exc, operation="query")
 
         hits: List[VectorStoreHit] = []
 
@@ -498,8 +531,8 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                 with_payload=True,
                 with_vectors=include_embeddings,
             )
-        except Exception:
-            return []
+        except Exception as exc:
+            _raise_qdrant_provider_failure(exc, operation="hybrid_query")
 
         hits: List[VectorStoreHit] = []
         for rank, r in enumerate(results.points):
@@ -596,14 +629,17 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         ids: list[str] = []
         next_offset: Any = None
         while True:
-            records, next_offset = self._client.scroll(
-                collection_name=self.collection_name,
-                scroll_filter=qfilter,
-                limit=256,
-                offset=next_offset,
-                with_payload=[_LOGICAL_ID_METADATA_KEY],
-                with_vectors=False,
-            )
+            try:
+                records, next_offset = self._client.scroll(
+                    collection_name=self.collection_name,
+                    scroll_filter=qfilter,
+                    limit=256,
+                    offset=next_offset,
+                    with_payload=[_LOGICAL_ID_METADATA_KEY],
+                    with_vectors=False,
+                )
+            except Exception as exc:
+                _raise_qdrant_provider_failure(exc, operation="scroll")
             if not records:
                 break
             ids.extend(_logical_vector_id(point.payload or {}) for point in records)
@@ -614,19 +650,21 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
 
     def count(self, *, scope: VectorStoreScope) -> int:
         validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        if not self._collection_exists():
+            return 0
+        self._ensure_qdrant_collection()
+        qfilter = self._qdrant_filter(
+            dict(MetadataFilter.for_scope(scope, None).conditions)
+        )
         try:
-            self._ensure_qdrant_collection()
-            qfilter = self._qdrant_filter(
-                dict(MetadataFilter.for_scope(scope, None).conditions)
-            )
             c = self._client.count(
                 self.collection_name,
                 count_filter=qfilter,
                 exact=True,
             )
-            return int(attribute_access.optional(c, "count", 0))
-        except Exception:            
-            return 0
+        except Exception as exc:
+            _raise_qdrant_provider_failure(exc, operation="count")
+        return int(attribute_access.optional(c, "count", 0))
 
     def list_collections(self) -> List[str]:
         return [self.collection_name]

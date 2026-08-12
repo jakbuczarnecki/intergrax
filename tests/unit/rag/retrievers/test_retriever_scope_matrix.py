@@ -140,6 +140,9 @@ class _RecordingVectorStore:
 
 
 class _HybridRecordingVectorStore(_RecordingVectorStore):
+    def supports_native_hybrid_search(self) -> bool:
+        return True
+
     def query_hybrid(
         self,
         query_embedding,

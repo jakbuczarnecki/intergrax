@@ -40,6 +40,10 @@ class LexicalHybridSupport:
         super().__init__(*args, **kwargs)
         self._lexical_index = LexicalIndex()
 
+    def supports_native_hybrid_search(self) -> bool:
+        """In-process lexical indexes are not cold-start durable."""
+        return False
+
     def _index_lexical(self, doc_id: str, text: str) -> None:
         self._lexical_index.upsert(doc_id, text)
 

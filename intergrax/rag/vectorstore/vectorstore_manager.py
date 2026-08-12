@@ -25,6 +25,7 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreRecord,
     VectorStoreScope,
 )
+from intergrax.rag.vectorstore.contracts.hybrid_search import provider_supports_native_hybrid_search
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
 from intergrax.rag.vectorstore.governance.collection_access_policy import (
     CollectionAccessPolicy,
@@ -284,6 +285,9 @@ class VectorstoreManager(BaseVectorstoreManager):
                 ) from exc
         return normalized
 
+    def supports_native_hybrid_search(self) -> bool:
+        return provider_supports_native_hybrid_search(self._store)
+
     def query_hybrid(
         self,
         query_embedding: NDArray[np.float32] | Sequence[float],
@@ -300,24 +304,19 @@ class VectorstoreManager(BaseVectorstoreManager):
         vector = self._validate_query_vector(query_embedding)
         limit = self._validate_top_k(top_k)
         provider_filter = MetadataFilter.for_scope(resolved_scope, metadata_filter)
-        if hasattr(self._store, "query_hybrid"):
-            provider_hits = self._store.query_hybrid(
-                vector.tolist(),
-                query_text,
-                scope=resolved_scope,
-                top_k=self._publication_query_limit(limit, resolved_scope),
-                metadata_filter=provider_filter,
-                include_embeddings=include_embeddings,
-                alpha=alpha,
+        if not provider_supports_native_hybrid_search(self._store):
+            raise VectorStoreContractError(
+                "provider does not support native hybrid search"
             )
-        else:
-            provider_hits = self._store.query(
-                query_embedding=vector.tolist(),
-                scope=resolved_scope,
-                top_k=self._publication_query_limit(limit, resolved_scope),
-                metadata_filter=provider_filter,
-                include_embeddings=include_embeddings,
-            )
+        provider_hits = self._store.query_hybrid(
+            vector.tolist(),
+            query_text,
+            scope=resolved_scope,
+            top_k=self._publication_query_limit(limit, resolved_scope),
+            metadata_filter=provider_filter,
+            include_embeddings=include_embeddings,
+            alpha=alpha,
+        )
         normalized = self._normalize_hits(
             provider_hits,
             scope=resolved_scope,
@@ -337,12 +336,21 @@ class VectorstoreManager(BaseVectorstoreManager):
         except (AttributeError, TypeError, ValueError):
             return limit
 
+    def _coordinator_has_active_publications(self) -> bool:
+        coordinator = self._source_coordinator
+        if coordinator is None:
+            return False
+        active_publications = getattr(coordinator, "_active_publications", None)
+        return isinstance(active_publications, dict) and bool(active_publications)
+
     def _filter_visible_publication_hits(
         self,
         hits: Sequence[VectorStoreHit],
         scope: VectorStoreScope,
     ) -> list[VectorStoreHit]:
         if self._source_coordinator is None:
+            return list(hits)
+        if not self._coordinator_has_active_publications():
             return list(hits)
         visible: list[VectorStoreHit] = []
         for hit in hits:

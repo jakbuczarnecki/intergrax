@@ -19,6 +19,7 @@ from intergrax.integrations.contracts.vector_store import (
     VectorStoreScope,
 )
 from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
+from intergrax.rag.vectorstore.contracts.hybrid_search import provider_supports_native_hybrid_search
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.categories.storage import VectorStoreIntegrationContract
 
@@ -137,6 +138,38 @@ class QdrantVectorStoreIntegration(VectorStoreIntegrationContract):
         if not callable(lookup):
             raise RuntimeError("vectorstore_source_record_lookup_not_supported")
         return lookup(source_id=source_id, scope=scope)
+
+    def supports_native_hybrid_search(self) -> bool:
+        inner = self._inner
+        if inner is None:
+            return False
+        return provider_supports_native_hybrid_search(inner)
+
+    def query_hybrid(
+        self,
+        query_embedding: Sequence[float],
+        query_text: str,
+        *,
+        scope: VectorStoreScope,
+        top_k: int,
+        metadata_filter: MetadataFilter | None = None,
+        include_embeddings: bool = False,
+        alpha: float = 0.5,
+    ) -> list[VectorStoreHit]:
+        if not self.supports_native_hybrid_search():
+            raise IntegrationConfigurationError(
+                "Qdrant vector store integration does not expose native hybrid search"
+            )
+        inner = self._require_inner()
+        return inner.query_hybrid(
+            query_embedding,
+            query_text,
+            scope=scope,
+            top_k=top_k,
+            metadata_filter=metadata_filter,
+            include_embeddings=include_embeddings,
+            alpha=alpha,
+        )
 
     def health(self) -> HealthStatus | bool:
         inner = self._inner

@@ -113,22 +113,21 @@ class RerankerEngine:
         if limit is None and set(result_ids) != input_ids:
             raise ValueError("reranker returned an incomplete candidate batch")
 
-        # Cache store
+        # Cache store — only when the reranker scored the full input batch.
         if self._cache is not None and query is not None:
 
             texts = [c.document.content for c in candidates]
             identity_keys = [c.identity_key for c in candidates]
             scores_by_id = {id(result.candidate): result.rerank_score for result in results}
-            if len(scores_by_id) != len(candidates):
-                raise ValueError("reranker returned an incomplete candidate batch")
-            scores = [scores_by_id[id(candidate)] for candidate in candidates]
+            if len(scores_by_id) == len(candidates):
+                scores = [scores_by_id[id(candidate)] for candidate in candidates]
 
-            self._cache.set(
-                reranker=reranker_name,
-                query=query,
-                texts=texts,
-                identity_keys=identity_keys,
-                scores=scores,
-            )
+                self._cache.set(
+                    reranker=reranker_name,
+                    query=query,
+                    texts=texts,
+                    identity_keys=identity_keys,
+                    scores=scores,
+                )
 
         return results

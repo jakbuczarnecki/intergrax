@@ -59,6 +59,9 @@ class WeaviateVectorStore(BaseVectorStore):
         if self._native:
             self._collection = self._ensure_collection()
 
+    def supports_native_hybrid_search(self) -> bool:
+        return self._native
+
     def _ensure_collection(self) -> Any:
         assert self._client is not None
         try:
