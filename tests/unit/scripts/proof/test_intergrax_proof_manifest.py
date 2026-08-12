@@ -141,3 +141,98 @@ def test_expanded_profiles_composition() -> None:
 @pytest.fixture
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[4]
+
+
+_QUICKSTART_IDS = frozenset(
+    {
+        "LKW-PRODUCT-QUICKSTART-WINDOWS",
+        "LKW-PRODUCT-QUICKSTART-LINUX",
+        "LKW-PRODUCT-QUICKSTART-MACOS",
+    }
+)
+
+
+def _quickstart_entry(
+    manifest: IntergraxProofManifest, proof_id: str
+) -> ProofManifestEntry:
+    return next(entry for entry in manifest.entries if entry.proof_id == proof_id)
+
+
+def test_product_quickstart_proof_ids_unique(repo_root: Path) -> None:
+    manifest = load_manifest(repo_root=repo_root)
+    ids = [entry.proof_id for entry in manifest.entries]
+    assert len(ids) == len(set(ids))
+    assert _QUICKSTART_IDS.issubset(set(ids))
+
+
+@pytest.mark.parametrize(
+    ("proof_id", "platform", "os_family", "wrapper_id"),
+    [
+        (
+            "LKW-PRODUCT-QUICKSTART-WINDOWS",
+            "windows",
+            "windows",
+            "windows_bat",
+        ),
+        (
+            "LKW-PRODUCT-QUICKSTART-LINUX",
+            "linux",
+            "linux",
+            "linux_sh",
+        ),
+        (
+            "LKW-PRODUCT-QUICKSTART-MACOS",
+            "macos",
+            "macos",
+            "macos_sh",
+        ),
+    ],
+)
+def test_product_quickstart_platform_requirements(
+    repo_root: Path,
+    proof_id: str,
+    platform: str,
+    os_family: str,
+    wrapper_id: str,
+) -> None:
+    manifest = load_manifest(repo_root=repo_root)
+    entry = _quickstart_entry(manifest, proof_id)
+    assert entry.platform_requirements == frozenset({platform})
+    assert entry.public_evidence_eligible is True
+    assert entry.safety_class is ProofSafetyClass.LOCAL_MUTATING
+    argv = entry.command.argv
+    assert argv[:5] == (
+        "run",
+        "--project",
+        "applications/local_workspace_application",
+        "python",
+        "applications/local_workspace_application/scripts/run-lkw-product-quickstart.py",
+    )
+    assert "--os-family" in argv
+    assert "--wrapper-id" in argv
+    assert argv[argv.index("--os-family") + 1] == os_family
+    assert argv[argv.index("--wrapper-id") + 1] == wrapper_id
+    assert not any(token.endswith((".bat", ".sh")) for token in argv)
+
+
+def test_full_includes_current_platform_product_quickstart(repo_root: Path) -> None:
+    manifest = load_manifest(repo_root=repo_root)
+    for platform_family, proof_id in (
+        ("windows", "LKW-PRODUCT-QUICKSTART-WINDOWS"),
+        ("linux", "LKW-PRODUCT-QUICKSTART-LINUX"),
+        ("macos", "LKW-PRODUCT-QUICKSTART-MACOS"),
+    ):
+        selected = select_proofs_from_manifest(
+            manifest, profile=ProofProfile.FULL, platform_family=platform_family
+        )
+        ids = {entry.proof_id for entry in selected}
+        assert proof_id in ids
+
+
+def test_quick_excludes_product_quickstart(repo_root: Path) -> None:
+    manifest = load_manifest(repo_root=repo_root)
+    selected = select_proofs_from_manifest(
+        manifest, profile=ProofProfile.QUICK, platform_family="windows"
+    )
+    ids = {entry.proof_id for entry in selected}
+    assert ids.isdisjoint(_QUICKSTART_IDS)

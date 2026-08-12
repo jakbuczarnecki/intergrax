@@ -202,6 +202,78 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             public_evidence_eligible=True,
         ),
         ProofManifestEntry(
+            proof_id="LKW-PRODUCT-QUICKSTART-WINDOWS",
+            title="LKW product quickstart proof (Windows)",
+            domain="lkw",
+            profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
+            proof_kind="product_quickstart",
+            command=_uv_lkw_python(
+                "run-lkw-product-quickstart.py",
+                "--os-family",
+                "windows",
+                "--wrapper-id",
+                "windows_bat",
+            ),
+            platform_requirements=frozenset({"windows"}),
+            environment_requirements=(
+                EnvRequirement(
+                    kind=EnvRequirementKind.COMMAND_AVAILABLE, name="uv"
+                ),
+                EnvRequirement(kind=EnvRequirementKind.DOCKER_AVAILABLE, name="docker"),
+            ),
+            safety_class=ProofSafetyClass.LOCAL_MUTATING,
+            timeout_seconds=3600,
+            public_evidence_eligible=True,
+        ),
+        ProofManifestEntry(
+            proof_id="LKW-PRODUCT-QUICKSTART-LINUX",
+            title="LKW product quickstart proof (Linux)",
+            domain="lkw",
+            profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
+            proof_kind="product_quickstart",
+            command=_uv_lkw_python(
+                "run-lkw-product-quickstart.py",
+                "--os-family",
+                "linux",
+                "--wrapper-id",
+                "linux_sh",
+            ),
+            platform_requirements=frozenset({"linux"}),
+            environment_requirements=(
+                EnvRequirement(
+                    kind=EnvRequirementKind.COMMAND_AVAILABLE, name="uv"
+                ),
+                EnvRequirement(kind=EnvRequirementKind.DOCKER_AVAILABLE, name="docker"),
+            ),
+            safety_class=ProofSafetyClass.LOCAL_MUTATING,
+            timeout_seconds=3600,
+            public_evidence_eligible=True,
+        ),
+        ProofManifestEntry(
+            proof_id="LKW-PRODUCT-QUICKSTART-MACOS",
+            title="LKW product quickstart proof (macOS)",
+            domain="lkw",
+            profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
+            proof_kind="product_quickstart",
+            command=_uv_lkw_python(
+                "run-lkw-product-quickstart.py",
+                "--os-family",
+                "macos",
+                "--wrapper-id",
+                "macos_sh",
+            ),
+            platform_requirements=frozenset({"macos"}),
+            environment_requirements=(
+                EnvRequirement(
+                    kind=EnvRequirementKind.COMMAND_AVAILABLE, name="uv"
+                ),
+                EnvRequirement(kind=EnvRequirementKind.DOCKER_AVAILABLE, name="docker"),
+            ),
+            safety_class=ProofSafetyClass.LOCAL_MUTATING,
+            timeout_seconds=3600,
+            public_evidence_eligible=True,
+        ),
+        ProofManifestEntry(
             proof_id="LKW-BACKGROUND-TASK",
             title="LKW Kafka background task proof",
             domain="lkw",
