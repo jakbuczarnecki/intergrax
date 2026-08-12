@@ -803,6 +803,213 @@ def test_safe_failure_reason(core: ModuleType) -> None:
     )
 
 
+def test_background_task_child_failure_propagates_causal_reason(
+    core: ModuleType,
+) -> None:
+    child_output = (
+        "proof_result=FAIL\n"
+        "failure_reason=background_task_not_succeeded\n"
+        "task_status=FAILED\n"
+        "error_message=handler_timeout\n"
+    )
+    error = core.background_task_child_failure(exit_code=1, child_output=child_output)
+    assert error.reason == "background_task_not_succeeded"
+    assert error.child_exit_code == 1
+    assert error.child_details == {
+        "task_status": "FAILED",
+        "error_message": "handler_timeout",
+    }
+
+
+def test_background_task_child_failure_propagates_search_results_missing(
+    core: ModuleType,
+) -> None:
+    child_output = (
+        "proof_result=FAIL\n"
+        "failure_reason=search_results_missing\n"
+        "search_results=0\n"
+        "search_reason=retrieve_complete\n"
+        "search_used=False\n"
+        "search_num_results=0\n"
+    )
+    error = core.background_task_child_failure(exit_code=1, child_output=child_output)
+    assert error.reason == "search_results_missing"
+    assert error.child_details["search_results"] == "0"
+    assert error.child_details["search_reason"] == "retrieve_complete"
+    assert error.child_details["search_used"] == "False"
+
+
+def test_background_task_child_failure_falls_back_without_structured_reason(
+    core: ModuleType,
+) -> None:
+    child_output = "random stderr noise\nno structured kv here\n"
+    error = core.background_task_child_failure(exit_code=1, child_output=child_output)
+    assert error.reason == "background_task_child_failed"
+
+
+def test_background_task_child_failure_rejects_unsafe_reason(
+    core: ModuleType,
+) -> None:
+    child_output = "failure_reason=bad reason with spaces\n"
+    error = core.background_task_child_failure(exit_code=1, child_output=child_output)
+    assert error.reason == "background_task_child_failed"
+
+
+def test_background_task_child_diagnostics_do_not_leak_arbitrary_output(
+    core: ModuleType,
+) -> None:
+    child_output = (
+        "proof_result=FAIL\n"
+        "failure_reason=search_results_missing\n"
+        "arbitrary_stdout=must_not_forward\n"
+        "receipt_message=mongodb://user:secret@host/db\n"
+        "error_message=connect failed password=leak\n"
+        "search_reason=bad reason\n"
+    )
+    details = core.extract_background_task_child_diagnostics(
+        core.parse_kv_output(child_output)
+    )
+    assert "arbitrary_stdout" not in details
+    assert "receipt_message" not in details
+    assert "error_message" not in details
+    assert "search_reason" not in details
+    assert details == {}
+
+
+def test_background_task_child_diagnostics_allowlist_only(core: ModuleType) -> None:
+    child_output = (
+        "proof_result=FAIL\n"
+        "failure_reason=kafka_task_topic_empty\n"
+        "kafka_topic=intergrax.tasks\n"
+        "kafka_topic_messages=0\n"
+        "receipt_error=ProofReceiptVerificationError\n"
+    )
+    details = core.extract_background_task_child_diagnostics(
+        core.parse_kv_output(child_output)
+    )
+    assert details == {
+        "kafka_topic": "intergrax.tasks",
+        "kafka_topic_messages": "0",
+        "receipt_error": "ProofReceiptVerificationError",
+    }
+
+
+def test_background_task_phase_prepares_embedding_model_before_child(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    services_started: list[str] = []
+
+    def fake_compose_up(_files: Any, services: Sequence[str], **_k: Any) -> None:
+        services_started.extend(services)
+
+    monkeypatch.setattr(core, "compose_config", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "compose_up", fake_compose_up)
+    monkeypatch.setattr(core, "wait_for_lkw_health", lambda *_a, **_k: events.append("health"))
+    monkeypatch.setattr(core, "wait_for_compose_health", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "wait_for_http_reachable", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        core,
+        "prepare_ollama_embedding_model",
+        lambda *_a, **_k: events.append("embedding_ready") or "nomic-embed-text",
+    )
+    monkeypatch.setattr(
+        core,
+        "run_python_child",
+        lambda *_a, **_k: (
+            0,
+            "proof_result=PASS\n"
+            "proof_receipt_recorded=true\n"
+            "proof_receipt_verified=true\n"
+            "proof_receipt_query_verified=true\n"
+            "document_store_provider=mongodb\n"
+            "message_bus_provider=kafka\n"
+            "proof_receipt_id=bg-1\n",
+        ),
+    )
+    monkeypatch.setattr(core, "mongodb_child_env", lambda **_k: {})
+
+    core.phase_background_task(_config(core, phase_timeout_seconds=5))
+
+    assert "qdrant" in services_started
+    assert "ollama" in services_started
+    assert events == ["health", "embedding_ready"]
+
+
+def test_background_task_child_failure_emits_parent_kv(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        core,
+        "validate_os_wrapper_pair",
+        lambda *_a, **_k: None,
+    )
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "discover_compose_files", lambda: [])
+    monkeypatch.setattr(core, "compose_config", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "compose_up", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "wait_for_lkw_health", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "wait_for_compose_health", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "wait_for_http_reachable", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "mongodb_child_env", lambda **_k: {})
+
+    def fake_run_python_child(*_a: Any, **_k: Any) -> tuple[int, str]:
+        return (
+            1,
+            "proof_result=FAIL\n"
+            "failure_reason=search_results_missing\n"
+            "search_num_results=0\n",
+        )
+
+    monkeypatch.setattr(core, "run_python_child", fake_run_python_child)
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core, phase="background-task"),
+            phase_runners={"background-task": core.phase_background_task},
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert "failed_phase=background-task" in text
+    assert "failure_reason=search_results_missing" in text
+    assert "child_exit_code=1" in text
+    assert "search_num_results=0" in text
+
+
+def test_run_python_child_uses_utf8_transport(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_run_command(*args: Any, **kwargs: Any) -> Any:
+        captured["args"] = args
+        captured["kwargs"] = kwargs
+        return type("Completed", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(core, "run_command", fake_run_command)
+    core.run_python_child(core._BACKGROUND_PROOF_PY, [], cwd=core._REPO_ROOT)
+    assert captured["kwargs"]["encoding"] == "utf-8"
+    assert captured["kwargs"]["errors"] == "strict"
+    assert captured["kwargs"]["env"]["PYTHONIOENCODING"] == "utf-8"
+
+
+def test_run_python_child_decodes_non_ascii_output(
+    core: ModuleType,
+    tmp_path: Path,
+) -> None:
+    script = tmp_path / "utf8_child.py"
+    script.write_text(
+        'import sys\nprint("proof_marker=zażółć")\n',
+        encoding="utf-8",
+    )
+    exit_code, output = core.run_python_child(script, [], cwd=tmp_path)
+    assert exit_code == 0
+    assert "proof_marker=zażółć" in output
+
+
 def test_search_after_restart_helpers(core: ModuleType) -> None:
     before = {
         "metadata": {

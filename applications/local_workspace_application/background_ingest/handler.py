@@ -17,6 +17,7 @@ from local_workspace_application.background_ingest.contracts import (
     LkwBackgroundIngestJob,
     decode_background_ingest_job,
 )
+from local_workspace_application.workspaces.document_indexing import extract_ingest_summary
 
 LKW_BACKGROUND_INGEST_CAPABILITY = "local.workspace.index"
 LKW_BACKGROUND_INGEST_AGENT_ID = "local_indexer"
@@ -46,6 +47,7 @@ def build_background_ingest_runtime_task(
         "collection_id": job.collection_id,
         "workspace_id": job.workspace_id,
         "tenant_id": job.tenant_id,
+        "chunking_strategy_id": "recursive",
         "requested_by": job.requested_by,
         "background_ingest_schema_version": job.schema_version,
         "background_ingest_task_name": LKW_BACKGROUND_INGEST_TASK_NAME,
@@ -99,6 +101,15 @@ async def handle_background_ingest_task_request(
         runtime_result = await runner.run_task(task)
     except Exception as exc:
         return _failed_queue_result(exc)
+
+    ingest_summary = extract_ingest_summary(runtime_result)
+    if not ingest_summary.get("used"):
+        reason = str(ingest_summary.get("reason") or "background_ingest_not_indexed")
+        return QueueTaskResult(
+            status=TaskStatus.FAILED,
+            error_message=reason,
+            attempts=1,
+        )
 
     return QueueTaskResult(
         status=TaskStatus.SUCCEEDED,

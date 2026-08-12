@@ -39,6 +39,7 @@ _KAFKA_TOPICS = (
     "intergrax.task-results",
 )
 _DEFAULT_MONGO_EXPRESS_URL = "http://127.0.0.1:8086"
+_SEARCH_RETRY_SLEEP_SECONDS = 2.0
 
 
 def build_background_task_proof_id(run_id: str) -> str:
@@ -403,6 +404,28 @@ def _print_pass_output(
     print("direct_pymongo_from_lkw=false")
 
 
+def _poll_background_task_search(
+    *,
+    base_url: str,
+    search_body: dict[str, object],
+    deadline: float,
+) -> tuple[int, dict[str, object]]:
+    last_response: dict[str, object] = {}
+    run_url = f"{base_url.rstrip('/')}/v1/local_workspace/run"
+    while time.time() < deadline:
+        try:
+            response = _request_json(run_url, method="POST", payload=search_body)
+        except Exception:
+            time.sleep(_SEARCH_RETRY_SLEEP_SECONDS)
+            continue
+        last_response = response
+        search_results = _search_result_count(response)
+        if search_results >= 1:
+            return search_results, response
+        time.sleep(_SEARCH_RETRY_SLEEP_SECONDS)
+    return 0, last_response
+
+
 def build_background_task_search_payload(
     *,
     tenant_id: str,
@@ -524,16 +547,12 @@ def main() -> int:
         correlation_id=correlation_id,
         collection_id=collection_id,
     )
-    try:
-        search_response = _request_json(
-            f"{base}/v1/local_workspace/run",
-            method="POST",
-            payload=search_body,
-        )
-    except Exception as exc:  # noqa: BLE001
-        return _fail(f"search_failed:{type(exc).__name__}")
-
-    search_results = _search_result_count(search_response)
+    search_deadline = time.time() + max(30.0, min(120.0, float(args.timeout_seconds)))
+    search_results, search_response = _poll_background_task_search(
+        base_url=base,
+        search_body=search_body,
+        deadline=search_deadline,
+    )
     if search_results < 1:
         search_diag = _search_summary_diagnostic(search_response)
         return _fail(

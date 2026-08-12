@@ -67,6 +67,23 @@ _SEARCH_REASON_RETRIEVE_COMPLETE = "retrieve_complete"
 _PERSISTENCE_SEARCH_RETRY_SLEEP_SECONDS = 2.0
 _SAFE_REASON = re.compile(r"^[A-Za-z0-9_.-]+$")
 _KV_LINE = re.compile(r"^([A-Za-z0-9_.-]+)=(.*)$")
+_SECRET_DIAGNOSTIC_PATTERN = re.compile(
+    r"(mongodb(\+srv)?://|password=|token=|secret=|api[_-]?key=)",
+    re.IGNORECASE,
+)
+_BACKGROUND_TASK_CHILD_DIAGNOSTIC_KEYS: tuple[str, ...] = (
+    "task_status",
+    "error_message",
+    "search_results",
+    "search_reason",
+    "search_raw_tool_reason",
+    "search_used",
+    "search_num_results",
+    "receipt_error",
+    "kafka_topic",
+    "kafka_topic_messages",
+)
+_PYTHON_CHILD_IO_ENCODING = "utf-8"
 _FILE_WATCHER_SCOPE_ID = "lkw-file-watcher-e2e"
 _FILE_WATCHER_USER_ID = "lkw.file_watcher"
 _FILE_WATCHER_SEED_NAME = "lkw_core_proof_embed_seed.txt"
@@ -111,11 +128,13 @@ class CoreProofError(Exception):
         *,
         phase: str | None = None,
         child_exit_code: int | None = None,
+        child_details: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(reason)
         self.reason = reason
         self.phase = phase
         self.child_exit_code = child_exit_code
+        self.child_details = dict(child_details) if child_details else None
 
 
 @dataclass
@@ -214,12 +233,16 @@ def _emit_failure(
     reason: str,
     *,
     child_exit_code: int | None = None,
+    child_details: Mapping[str, str] | None = None,
 ) -> None:
     _print_kv("core_proof_result", "FAIL")
     _print_kv("failed_phase", phase)
     _print_kv("failure_reason", reason)
     if child_exit_code is not None:
         _print_kv("child_exit_code", child_exit_code)
+    if child_details:
+        for key, value in child_details.items():
+            _print_kv(key, value)
 
 
 def _which(command: str) -> str | None:
@@ -233,6 +256,8 @@ def run_command(
     env: Mapping[str, str] | None = None,
     timeout: int | None = None,
     check: bool = False,
+    encoding: str | None = None,
+    errors: str = "strict",
 ) -> subprocess.CompletedProcess[str]:
     merged_env = os.environ.copy()
     if env is not None:
@@ -246,6 +271,11 @@ def run_command(
         text=True,
         capture_output=True,
         timeout=timeout,
+        **(
+            {"encoding": encoding, "errors": errors}
+            if encoding is not None
+            else {}
+        ),
     )
     if check and completed.returncode != 0:
         raise CoreProofError(
@@ -381,12 +411,14 @@ def prepare_ollama_embedding_model(
     def _compose_exec(*compose_command: str) -> list[str]:
         return compose_exec_args(compose_files, *compose_command)
 
+    docker_run_kwargs = {"encoding": _PYTHON_CHILD_IO_ENCODING, "errors": "replace"}
     try:
         model_name = _resolve_ollama_embedding_model(
             compose_exec_args=_compose_exec,
             run_command=run_command,
             cwd=cwd,
             timeout_seconds=timeout_seconds,
+            run_command_kwargs=docker_run_kwargs,
         )
     except OllamaEmbeddingBootstrapError as exc:
         raise CoreProofError(exc.reason) from exc
@@ -398,6 +430,7 @@ def prepare_ollama_embedding_model(
             run_command=run_command,
             cwd=cwd,
             timeout_seconds=timeout_seconds,
+            run_command_kwargs=docker_run_kwargs,
         )
     except OllamaEmbeddingBootstrapError as exc:
         raise CoreProofError(exc.reason) from exc
@@ -687,11 +720,17 @@ def run_python_child(
 ) -> tuple[int, str]:
     if not script.is_file():
         raise CoreProofError("proof_script_missing")
+    child_env = os.environ.copy()
+    if env is not None:
+        child_env.update(env)
+    child_env["PYTHONIOENCODING"] = _PYTHON_CHILD_IO_ENCODING
     completed = run_command(
         [sys.executable, str(script), *args],
         cwd=cwd,
-        env=env,
+        env=child_env,
         timeout=timeout,
+        encoding=_PYTHON_CHILD_IO_ENCODING,
+        errors="strict",
     )
     combined = (completed.stdout or "") + (
         "\n" + completed.stderr if completed.stderr else ""
@@ -1015,6 +1054,65 @@ def safe_failure_reason(output: Mapping[str, str], *, fallback: str) -> str:
     if reason and _SAFE_REASON.fullmatch(reason):
         return reason
     return fallback
+
+
+def _sanitize_background_task_child_diagnostic(
+    key: str,
+    value: str,
+) -> str | None:
+    stripped = value.strip()
+    if not stripped:
+        return None
+    if len(stripped) > 500:
+        return None
+    if _SECRET_DIAGNOSTIC_PATTERN.search(stripped):
+        return None
+    if key == "search_reason" and not _SAFE_REASON.fullmatch(stripped):
+        return None
+    if key in {"search_results", "search_num_results", "kafka_topic_messages"}:
+        try:
+            int(stripped)
+        except ValueError:
+            return None
+    if key == "search_raw_tool_reason":
+        return json.dumps(stripped)
+    if key == "kafka_topic" and not _SAFE_REASON.fullmatch(stripped):
+        return None
+    if key == "receipt_error" and not _SAFE_REASON.fullmatch(stripped):
+        return None
+    if key == "task_status" and not _SAFE_REASON.fullmatch(stripped):
+        return None
+    return stripped
+
+
+def extract_background_task_child_diagnostics(
+    output: Mapping[str, str],
+) -> dict[str, str]:
+    details: dict[str, str] = {}
+    for key in _BACKGROUND_TASK_CHILD_DIAGNOSTIC_KEYS:
+        raw = output.get(key)
+        if raw is None:
+            continue
+        safe = _sanitize_background_task_child_diagnostic(key, str(raw))
+        if safe is not None:
+            details[key] = safe
+    return details
+
+
+def background_task_child_failure(
+    *,
+    exit_code: int,
+    child_output: str,
+) -> CoreProofError:
+    parsed = parse_kv_output(child_output)
+    return CoreProofError(
+        safe_failure_reason(
+            parsed,
+            fallback="background_task_child_failed",
+        ),
+        child_exit_code=exit_code,
+        child_details=extract_background_task_child_diagnostics(parsed),
+    )
 
 
 def _latest_persistence_proof_marker() -> str:
@@ -1373,6 +1471,8 @@ def phase_background_task(config: ProofConfig) -> PhaseOutcome:
         [
             "local_workspace",
             "lkw-background-worker",
+            "qdrant",
+            "ollama",
             "lkw-kafka",
             "lkw-kafka-topics",
             "lkw-kafka-ui",
@@ -1384,6 +1484,11 @@ def phase_background_task(config: ProofConfig) -> PhaseOutcome:
         build=True,
     )
     wait_for_lkw_health(config.base_url, timeout_seconds=config.phase_timeout_seconds)
+    prepare_ollama_embedding_model(
+        compose_files,
+        cwd=_REPO_ROOT,
+        timeout_seconds=config.phase_timeout_seconds,
+    )
     wait_for_compose_health(
         compose_files,
         "lkw-mongodb",
@@ -1407,10 +1512,7 @@ def phase_background_task(config: ProofConfig) -> PhaseOutcome:
         timeout=config.phase_timeout_seconds,
     )
     if exit_code != 0:
-        raise CoreProofError(
-            "background_task_child_failed",
-            child_exit_code=exit_code,
-        )
+        raise background_task_child_failure(exit_code=exit_code, child_output=text)
     receipt_id = validate_background_task_child_output(parse_kv_output(text))
     return PhaseOutcome(
         name="background-task",
@@ -1721,7 +1823,12 @@ def run_core_proof(
         phases = resolve_phases(config.phase)
     except CoreProofError as exc:
         phase = exc.phase or "startup"
-        _emit_failure(phase, exc.reason, child_exit_code=exc.child_exit_code)
+        _emit_failure(
+            phase,
+            exc.reason,
+            child_exit_code=exc.child_exit_code,
+            child_details=exc.child_details,
+        )
         return 1
 
     outcomes: dict[str, PhaseOutcome] = {}
@@ -1738,6 +1845,7 @@ def run_core_proof(
                 phase,
                 exc.reason,
                 child_exit_code=exc.child_exit_code,
+                child_details=exc.child_details,
             )
             return 1
         except Exception as exc:  # noqa: BLE001 - fail closed with safe type only

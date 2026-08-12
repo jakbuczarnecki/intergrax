@@ -313,6 +313,14 @@ def test_kafka_overlay_configures_real_background_task_stack() -> None:
     assert 'INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL: nomic-embed-text' in text
 
 
+def test_mongodb_overlay_shares_document_store_with_background_worker() -> None:
+    text = (_DOCKER_DIR / "docker-compose.mongodb.yml").read_text(encoding="utf-8")
+    assert "lkw-background-worker:" in text
+    assert "INTERGRAX_MONGODB_URI:" in text
+    assert "lkw-mongodb:27017" in text
+    assert "lkw-mongodb:" in text
+
+
 def test_background_task_proof_helper_implements_reviewer_contract() -> None:
     for path in (
         _SCRIPTS_DIR / "run-lkw-background-task-proof.bat",
