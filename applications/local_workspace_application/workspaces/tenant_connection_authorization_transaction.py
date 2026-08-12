@@ -52,10 +52,17 @@ class TenantConnectionAuthorizationTransaction(BaseModel):
     expires_at: datetime
     completion_state: TenantConnectionAuthorizationCompletionState
     completion_claim_expires_at: datetime | None = None
+    exchange_started_at: datetime | None = None
     consumed_at: datetime | None = None
     version: int = Field(ge=1)
 
-    @field_validator("created_at", "expires_at", "completion_claim_expires_at", "consumed_at")
+    @field_validator(
+        "created_at",
+        "expires_at",
+        "completion_claim_expires_at",
+        "exchange_started_at",
+        "consumed_at",
+    )
     @classmethod
     def _utc_timestamps(cls, value: datetime | None) -> datetime | None:
         if value is None:

@@ -68,6 +68,7 @@ class TenantConnectionProductOrchestrationConfig:
     redirect_allowlist: frozenset[str]
     transaction_ttl_seconds: int = 900
     completion_claim_ttl_seconds: int = 120
+    exchange_recovery_window_seconds: int = 120
 
 
 def _utcnow() -> datetime:
@@ -284,8 +285,12 @@ class TenantConnectionProductOrchestrationService:
                     completion_state=TenantConnectionAuthorizationCompletionState.CREDENTIALS_OBTAINED,
                     completion_claim_expires_at=None,
                 )
+                self._delete_verifier(obtained)
                 provider = self._resolve_provider(transaction.provider_id)
                 return self._finalize_from_staged_credentials(obtained, provider)
+            if self._is_exchange_abandoned(transaction, now):
+                self._mark_exchange_outcome_unknown(transaction)
+                raise tenant_connection_product_error("authorization_exchange_outcome_unknown")
             raise tenant_connection_product_error("authorization_already_in_progress")
 
         if transaction.completion_state is TenantConnectionAuthorizationCompletionState.CREDENTIALS_OBTAINED:
@@ -420,19 +425,68 @@ class TenantConnectionProductOrchestrationService:
         )
         cleaned = 0
         for transaction in expired:
-            if transaction.completion_state in {
+            state = transaction.completion_state
+            if state in {
                 TenantConnectionAuthorizationCompletionState.COMPLETED,
                 TenantConnectionAuthorizationCompletionState.EXCHANGE_OUTCOME_UNKNOWN,
                 TenantConnectionAuthorizationCompletionState.EXPIRED,
             }:
                 continue
-            self._cleanup_transaction_secrets(transaction)
-            self._terminalize_transaction(
-                transaction,
-                TenantConnectionAuthorizationCompletionState.EXPIRED,
-            )
-            cleaned += 1
+
+            if state in {
+                TenantConnectionAuthorizationCompletionState.PENDING,
+                TenantConnectionAuthorizationCompletionState.CLAIMED,
+            }:
+                self._cleanup_transaction_secrets(transaction)
+                self._terminalize_transaction(
+                    transaction,
+                    TenantConnectionAuthorizationCompletionState.EXPIRED,
+                )
+                cleaned += 1
+                continue
+
+            if state is TenantConnectionAuthorizationCompletionState.EXCHANGING:
+                cleaned += self._recover_expired_exchanging_transaction(transaction, now)
+                continue
+
+            if state is TenantConnectionAuthorizationCompletionState.CREDENTIALS_OBTAINED:
+                provider = self._resolve_provider(transaction.provider_id)
+                self._finalize_from_staged_credentials(transaction, provider)
+                cleaned += 1
+
         return cleaned
+
+    def _recover_expired_exchanging_transaction(
+        self,
+        transaction: TenantConnectionAuthorizationTransaction,
+        now: datetime,
+    ) -> int:
+        staged = self._read_secret(transaction.credential_staging_ref or "")
+        if staged is not None:
+            obtained = self._transition_transaction(
+                transaction,
+                completion_state=TenantConnectionAuthorizationCompletionState.CREDENTIALS_OBTAINED,
+                completion_claim_expires_at=None,
+            )
+            self._delete_verifier(obtained)
+            provider = self._resolve_provider(transaction.provider_id)
+            self._finalize_from_staged_credentials(obtained, provider)
+            return 1
+        if not self._is_exchange_abandoned(transaction, now):
+            return 0
+        self._mark_exchange_outcome_unknown(transaction)
+        return 1
+
+    def _is_exchange_abandoned(
+        self,
+        transaction: TenantConnectionAuthorizationTransaction,
+        now: datetime,
+    ) -> bool:
+        started = transaction.exchange_started_at
+        if started is None:
+            return True
+        window = timedelta(seconds=self._config.exchange_recovery_window_seconds)
+        return now >= started + window
 
     def _resolve_provider(self, provider_id: str) -> object:
         provider = self._auth_providers.get(provider_id)
@@ -759,6 +813,14 @@ class TenantConnectionProductOrchestrationService:
         completion_claim_expires_at: datetime | None,
         consumed_at: datetime | None = None,
     ) -> TenantConnectionAuthorizationTransaction:
+        exchange_started_at = transaction.exchange_started_at
+        if (
+            completion_state is TenantConnectionAuthorizationCompletionState.EXCHANGING
+            and transaction.completion_state
+            is not TenantConnectionAuthorizationCompletionState.EXCHANGING
+        ):
+            exchange_started_at = _utcnow()
+
         replacement = TenantConnectionAuthorizationTransaction(
             authorization_transaction_ref=transaction.authorization_transaction_ref,
             tenant_id=transaction.tenant_id,
@@ -772,6 +834,7 @@ class TenantConnectionProductOrchestrationService:
             expires_at=transaction.expires_at,
             completion_state=completion_state,
             completion_claim_expires_at=completion_claim_expires_at,
+            exchange_started_at=exchange_started_at,
             consumed_at=consumed_at if consumed_at is not None else transaction.consumed_at,
             version=transaction.version + 1,
         )

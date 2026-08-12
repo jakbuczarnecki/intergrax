@@ -8,6 +8,7 @@ import json
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Literal
+from unittest.mock import patch
 
 import pytest
 
@@ -169,11 +170,12 @@ def _build_service(
     *,
     secrets: _SecretsStore | None = None,
     provider: _FakeOAuthProvider | None = None,
+    store: InMemoryDocumentStore | None = None,
 ) -> tuple[TenantConnectionProductOrchestrationService, _SecretsStore, _FakeOAuthProvider]:
-    store = InMemoryDocumentStore()
+    document_store = store or InMemoryDocumentStore()
     secrets_store = secrets or _SecretsStore()
-    connection_repository = DocumentStoreTenantConnectionRepository(store)
-    transaction_repository = TenantConnectionAuthorizationTransactionRepository(store)
+    connection_repository = DocumentStoreTenantConnectionRepository(document_store)
+    transaction_repository = TenantConnectionAuthorizationTransactionRepository(document_store)
     registry = TenantConnectionAuthProviderRegistry()
     fake_provider = provider or _FakeOAuthProvider()
     registry.register(fake_provider)
@@ -387,3 +389,444 @@ def test_parse_state_parameter() -> None:
     assert tenant == _TENANT
     assert ref == "auth.ref"
     assert nonce == "nonce"
+
+
+def _replace_transaction(
+    service: TenantConnectionProductOrchestrationService,
+    replacement: TenantConnectionAuthorizationTransaction,
+) -> TenantConnectionAuthorizationTransaction:
+    current = service._transaction_repository.get(
+        tenant_id=_TENANT,
+        authorization_transaction_ref=replacement.authorization_transaction_ref,
+    )
+    assert current is not None
+    service._transaction_repository.replace_if_match(current, replacement)
+    return replacement
+
+
+def _expired_transaction(
+    stored: TenantConnectionAuthorizationTransaction,
+    *,
+    completion_state: TenantConnectionAuthorizationCompletionState,
+    exchange_started_at: datetime | None = None,
+) -> TenantConnectionAuthorizationTransaction:
+    return TenantConnectionAuthorizationTransaction(
+        authorization_transaction_ref=stored.authorization_transaction_ref,
+        tenant_id=stored.tenant_id,
+        provider_id=stored.provider_id,
+        correlation_state=stored.correlation_state,
+        redirect_uri=stored.redirect_uri,
+        connection_ref=stored.connection_ref,
+        verifier_secret_ref=stored.verifier_secret_ref,
+        credential_staging_ref=stored.credential_staging_ref,
+        created_at=stored.created_at,
+        expires_at=stored.created_at,
+        completion_state=completion_state,
+        completion_claim_expires_at=(
+            _NOW - timedelta(minutes=1)
+            if completion_state is TenantConnectionAuthorizationCompletionState.CLAIMED
+            else None
+        ),
+        exchange_started_at=exchange_started_at,
+        version=stored.version + 1,
+    )
+
+
+def _begin_expired_pending(
+    service: TenantConnectionProductOrchestrationService,
+    secrets: _SecretsStore,
+) -> tuple[TenantConnectionAuthorizationTransaction, str]:
+    begin = service.begin_connection_authorization(
+        provider_id=_PROVIDER,
+        redirect_uri=_REDIRECT,
+    )
+    stored = service._transaction_repository.get(
+        tenant_id=_TENANT,
+        authorization_transaction_ref=begin.authorization_transaction_ref,
+    )
+    assert stored is not None
+    verifier_path = verifier_secret_path(
+        tenant_id=_TENANT,
+        authorization_transaction_ref=begin.authorization_transaction_ref,
+    )
+    pending = _replace_transaction(
+        service,
+        _expired_transaction(stored, completion_state=TenantConnectionAuthorizationCompletionState.PENDING),
+    )
+    return pending, verifier_path
+
+
+@patch(
+    "local_workspace_application.workspaces.tenant_connection_product_orchestration._utcnow",
+    return_value=_NOW,
+)
+def test_cleanup_expired_pending_deletes_verifier(mock_now) -> None:
+    _ = mock_now
+    service, secrets, _ = _build_service()
+    pending, verifier_path = _begin_expired_pending(service, secrets)
+    assert secrets.store[verifier_path]
+
+    cleaned = service.cleanup_expired_authorization_transactions()
+    assert cleaned == 1
+
+    stored = service._transaction_repository.get(
+        tenant_id=_TENANT,
+        authorization_transaction_ref=pending.authorization_transaction_ref,
+    )
+    assert stored is not None
+    assert stored.completion_state is TenantConnectionAuthorizationCompletionState.EXPIRED
+    assert verifier_path in secrets.deleted
+    assert verifier_path not in secrets.store
+
+
+@patch(
+    "local_workspace_application.workspaces.tenant_connection_product_orchestration._utcnow",
+    return_value=_NOW,
+)
+def test_cleanup_expired_claimed_deletes_verifier(mock_now) -> None:
+    _ = mock_now
+    service, secrets, _ = _build_service()
+    pending, verifier_path = _begin_expired_pending(service, secrets)
+    claimed = _replace_transaction(
+        service,
+        TenantConnectionAuthorizationTransaction(
+            **{
+                **pending.model_dump(),
+                "completion_state": TenantConnectionAuthorizationCompletionState.CLAIMED,
+                "completion_claim_expires_at": _NOW + timedelta(minutes=2),
+                "version": pending.version + 1,
+            }
+        ),
+    )
+
+    cleaned = service.cleanup_expired_authorization_transactions()
+    assert cleaned == 1
+
+    stored = service._transaction_repository.get(
+        tenant_id=_TENANT,
+        authorization_transaction_ref=claimed.authorization_transaction_ref,
+    )
+    assert stored is not None
+    assert stored.completion_state is TenantConnectionAuthorizationCompletionState.EXPIRED
+    assert verifier_path in secrets.deleted
+
+
+@patch(
+    "local_workspace_application.workspaces.tenant_connection_product_orchestration._utcnow",
+    return_value=_NOW,
+)
+def test_exchanging_is_never_reset_to_pending(mock_now) -> None:
+    _ = mock_now
+    service, secrets, _ = _build_service()
+    pending, _ = _begin_expired_pending(service, secrets)
+    exchanging = _replace_transaction(
+        service,
+        TenantConnectionAuthorizationTransaction(
+            **{
+                **pending.model_dump(),
+                "completion_state": TenantConnectionAuthorizationCompletionState.EXCHANGING,
+                "completion_claim_expires_at": None,
+                "exchange_started_at": _NOW - timedelta(seconds=30),
+                "version": pending.version + 1,
+            }
+        ),
+    )
+
+    with pytest.raises(TenantConnectionProductError) as exc:
+        service.complete_connection_authorization(
+            authorization_code="code-should-not-retry",
+            authorization_transaction_ref=exchanging.authorization_transaction_ref,
+        )
+    assert exc.value.error_code == "authorization_already_in_progress"
+
+    stored = service._transaction_repository.get(
+        tenant_id=_TENANT,
+        authorization_transaction_ref=exchanging.authorization_transaction_ref,
+    )
+    assert stored is not None
+    assert stored.completion_state is TenantConnectionAuthorizationCompletionState.EXCHANGING
+
+
+@patch(
+    "local_workspace_application.workspaces.tenant_connection_product_orchestration._utcnow",
+    return_value=_NOW,
+)
+def test_cleanup_exchanging_with_staged_credentials_completes(mock_now) -> None:
+    _ = mock_now
+    service, secrets, provider = _build_service()
+    pending, _ = _begin_expired_pending(service, secrets)
+    staging = pending.credential_staging_ref
+    assert staging is not None
+    secrets.put_secret(staging, json.dumps({"access_token": "staged"}))
+    _replace_transaction(
+        service,
+        TenantConnectionAuthorizationTransaction(
+            **{
+                **pending.model_dump(),
+                "completion_state": TenantConnectionAuthorizationCompletionState.EXCHANGING,
+                "exchange_started_at": _NOW - timedelta(minutes=5),
+                "version": pending.version + 1,
+            }
+        ),
+    )
+
+    cleaned = service.cleanup_expired_authorization_transactions()
+    assert cleaned == 1
+    assert provider.exchange_calls == 0
+
+    stored = service._transaction_repository.get(
+        tenant_id=_TENANT,
+        authorization_transaction_ref=pending.authorization_transaction_ref,
+    )
+    assert stored is not None
+    assert stored.completion_state is TenantConnectionAuthorizationCompletionState.COMPLETED
+
+
+@patch(
+    "local_workspace_application.workspaces.tenant_connection_product_orchestration._utcnow",
+    return_value=_NOW,
+)
+def test_abandoned_exchanging_without_staged_credentials_becomes_unknown(mock_now) -> None:
+    _ = mock_now
+    service, secrets, provider = _build_service()
+    pending, verifier_path = _begin_expired_pending(service, secrets)
+    _replace_transaction(
+        service,
+        TenantConnectionAuthorizationTransaction(
+            **{
+                **pending.model_dump(),
+                "completion_state": TenantConnectionAuthorizationCompletionState.EXCHANGING,
+                "exchange_started_at": _NOW - timedelta(minutes=5),
+                "version": pending.version + 1,
+            }
+        ),
+    )
+
+    cleaned = service.cleanup_expired_authorization_transactions()
+    assert cleaned == 1
+    assert provider.exchange_calls == 0
+
+    stored = service._transaction_repository.get(
+        tenant_id=_TENANT,
+        authorization_transaction_ref=pending.authorization_transaction_ref,
+    )
+    assert stored is not None
+    assert (
+        stored.completion_state
+        is TenantConnectionAuthorizationCompletionState.EXCHANGE_OUTCOME_UNKNOWN
+    )
+    assert verifier_path in secrets.deleted
+
+
+@patch(
+    "local_workspace_application.workspaces.tenant_connection_product_orchestration._utcnow",
+    return_value=_NOW,
+)
+def test_recovery_never_re_exchanges_authorization_code(mock_now) -> None:
+    _ = mock_now
+    service, secrets, provider = _build_service()
+    pending, _ = _begin_expired_pending(service, secrets)
+    staging = pending.credential_staging_ref
+    assert staging is not None
+    secrets.put_secret(staging, json.dumps({"access_token": "staged"}))
+    exchanging = _replace_transaction(
+        service,
+        TenantConnectionAuthorizationTransaction(
+            **{
+                **pending.model_dump(),
+                "completion_state": TenantConnectionAuthorizationCompletionState.EXCHANGING,
+                "exchange_started_at": _NOW - timedelta(minutes=5),
+                "version": pending.version + 1,
+            }
+        ),
+    )
+    state = build_state_parameter(
+        tenant_id=_TENANT,
+        authorization_transaction_ref=exchanging.authorization_transaction_ref,
+        correlation_state=exchanging.correlation_state,
+    )
+
+    service.cleanup_expired_authorization_transactions()
+    assert provider.exchange_calls == 0
+
+    with pytest.raises(TenantConnectionProductError) as exc:
+        service.complete_connection_authorization(authorization_code="code-again", state=state)
+    assert exc.value.error_code == "authorization_callback_replay"
+    assert provider.exchange_calls == 0
+
+
+@patch(
+    "local_workspace_application.workspaces.tenant_connection_product_orchestration._utcnow",
+    return_value=_NOW,
+)
+def test_credentials_obtained_survives_auth_ttl(mock_now) -> None:
+    _ = mock_now
+    service, secrets, provider = _build_service()
+    pending, _ = _begin_expired_pending(service, secrets)
+    staging = pending.credential_staging_ref
+    assert staging is not None
+    secrets.put_secret(staging, json.dumps({"access_token": "staged"}))
+    _replace_transaction(
+        service,
+        TenantConnectionAuthorizationTransaction(
+            **{
+                **pending.model_dump(),
+                "completion_state": TenantConnectionAuthorizationCompletionState.CREDENTIALS_OBTAINED,
+                "version": pending.version + 1,
+            }
+        ),
+    )
+
+    cleaned = service.cleanup_expired_authorization_transactions()
+    assert cleaned == 1
+    assert provider.exchange_calls == 0
+    assert staging in secrets.deleted
+
+    stored = service._transaction_repository.get(
+        tenant_id=_TENANT,
+        authorization_transaction_ref=pending.authorization_transaction_ref,
+    )
+    assert stored is not None
+    assert stored.completion_state is TenantConnectionAuthorizationCompletionState.COMPLETED
+
+
+@patch(
+    "local_workspace_application.workspaces.tenant_connection_product_orchestration._utcnow",
+    return_value=_NOW,
+)
+def test_cleanup_does_not_delete_staged_credentials_before_finalize(mock_now) -> None:
+    _ = mock_now
+    service, secrets, _ = _build_service()
+    pending, _ = _begin_expired_pending(service, secrets)
+    staging = pending.credential_staging_ref
+    assert staging is not None
+    secrets.put_secret(staging, json.dumps({"access_token": "staged"}))
+    _replace_transaction(
+        service,
+        TenantConnectionAuthorizationTransaction(
+            **{
+                **pending.model_dump(),
+                "completion_state": TenantConnectionAuthorizationCompletionState.CREDENTIALS_OBTAINED,
+                "version": pending.version + 1,
+            }
+        ),
+    )
+
+    with patch.object(
+        service,
+        "_cleanup_transaction_secrets",
+        wraps=service._cleanup_transaction_secrets,
+    ) as cleanup_secrets:
+        service.cleanup_expired_authorization_transactions()
+        cleanup_secrets.assert_not_called()
+
+
+@patch(
+    "local_workspace_application.workspaces.tenant_connection_product_orchestration._utcnow",
+    return_value=_NOW,
+)
+def test_credentials_obtained_resumes_after_simulated_restart(mock_now) -> None:
+    _ = mock_now
+    document_store = InMemoryDocumentStore()
+    secrets = _SecretsStore()
+    provider = _FakeOAuthProvider()
+    service, _, _ = _build_service(secrets=secrets, provider=provider, store=document_store)
+    pending, _ = _begin_expired_pending(service, secrets)
+    staging = pending.credential_staging_ref
+    assert staging is not None
+    secrets.put_secret(staging, json.dumps({"access_token": "staged"}))
+    obtained = _replace_transaction(
+        service,
+        TenantConnectionAuthorizationTransaction(
+            **{
+                **pending.model_dump(),
+                "completion_state": TenantConnectionAuthorizationCompletionState.CREDENTIALS_OBTAINED,
+                "version": pending.version + 1,
+            }
+        ),
+    )
+
+    restarted_service, _, restarted_provider = _build_service(
+        secrets=secrets,
+        provider=provider,
+        store=document_store,
+    )
+    result = restarted_service.complete_connection_authorization(
+        authorization_transaction_ref=obtained.authorization_transaction_ref,
+    )
+    assert result.disposition == "created"
+    assert restarted_provider.exchange_calls == 0
+
+
+@patch(
+    "local_workspace_application.workspaces.tenant_connection_product_orchestration._utcnow",
+    return_value=_NOW,
+)
+def test_terminal_state_cleanup_is_idempotent(mock_now) -> None:
+    _ = mock_now
+    for terminal in (
+        TenantConnectionAuthorizationCompletionState.COMPLETED,
+        TenantConnectionAuthorizationCompletionState.EXCHANGE_OUTCOME_UNKNOWN,
+        TenantConnectionAuthorizationCompletionState.EXPIRED,
+    ):
+        service, secrets, _ = _build_service()
+        pending, _ = _begin_expired_pending(service, secrets)
+        txn = _replace_transaction(
+            service,
+            TenantConnectionAuthorizationTransaction(
+                **{
+                    **pending.model_dump(),
+                    "completion_state": terminal,
+                    "consumed_at": (
+                        _NOW
+                        if terminal is TenantConnectionAuthorizationCompletionState.COMPLETED
+                        else None
+                    ),
+                    "version": pending.version + 1,
+                }
+            ),
+        )
+        assert service.cleanup_expired_authorization_transactions() == 0
+        stored = service._transaction_repository.get(
+            tenant_id=_TENANT,
+            authorization_transaction_ref=txn.authorization_transaction_ref,
+        )
+        assert stored is not None
+        assert stored.completion_state is terminal
+        assert service.cleanup_expired_authorization_transactions() == 0
+
+
+@patch(
+    "local_workspace_application.workspaces.tenant_connection_product_orchestration._utcnow",
+    return_value=_NOW,
+)
+def test_concurrent_credentials_obtained_recovery_is_cas_safe(mock_now) -> None:
+    _ = mock_now
+    service, secrets, provider = _build_service()
+    pending, _ = _begin_expired_pending(service, secrets)
+    staging = pending.credential_staging_ref
+    assert staging is not None
+    secrets.put_secret(staging, json.dumps({"access_token": "staged"}))
+    obtained = _replace_transaction(
+        service,
+        TenantConnectionAuthorizationTransaction(
+            **{
+                **pending.model_dump(),
+                "completion_state": TenantConnectionAuthorizationCompletionState.CREDENTIALS_OBTAINED,
+                "version": pending.version + 1,
+            }
+        ),
+    )
+
+    first = service.cleanup_expired_authorization_transactions()
+    second = service.cleanup_expired_authorization_transactions()
+    assert first == 1
+    assert second == 0
+    assert provider.exchange_calls == 0
+
+    stored = service._transaction_repository.get(
+        tenant_id=_TENANT,
+        authorization_transaction_ref=obtained.authorization_transaction_ref,
+    )
+    assert stored is not None
+    assert stored.completion_state is TenantConnectionAuthorizationCompletionState.COMPLETED
