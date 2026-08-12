@@ -229,6 +229,8 @@ context_profile = ContextProfile(
 )
 ```
 
+**Installable reference:** [`examples/platform_plugins/intergrax_reference_enterprise_plugin/`](../../../../examples/platform_plugins/intergrax_reference_enterprise_plugin/) — Context EP `reference_enterprise` (multi-capability package; proof: `tests/unit/platform_plugins/test_reference_enterprise_plugin.py`).
+
 ---
 
 ## 5. Local / host path

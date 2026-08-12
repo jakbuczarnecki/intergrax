@@ -367,4 +367,4 @@ assert loaded.pattern_id == "custom_pattern"
 
 ---
 
-**Reference example gap (DOCS-6):** no installable package under `examples/platform_plugins/` — use unit-test `_CustomPattern` in `test_tool_invocation_registry.py`.
+**Reference examples:** installable external EP — [`intergrax_reference_enterprise_plugin`](../../../../examples/platform_plugins/intergrax_reference_enterprise_plugin/) (`reference_enterprise_single_pass`); unit-test `_CustomPattern` in `test_tool_invocation_registry.py` for minimal local proof.

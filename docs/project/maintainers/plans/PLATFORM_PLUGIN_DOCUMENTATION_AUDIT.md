@@ -1103,3 +1103,59 @@ Coherent implementation blocks derived from evidence (not microtasks):
 8. `docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md`
 9. `docs/project/architecture/PLATFORM_PLUGINS.md`
 10. `docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md` (this section)
+
+---
+
+## 18. DOCS-7 final validation status (PLATFORM-PLUGIN-DOCS-7)
+
+**Date:** 2026-08-12 · **Branch:** `development` · **HEAD:** `c2cf8c4cdb21fd0971e72fee8bc5b9fbf2f306d5`
+
+### Program verdict
+
+**`DOCS_COMPLETE_WITH_RUNTIME_GAPS`**
+
+All 12 surfaces independently revalidated from consumer navigation. Closeout artifact: [`PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md`](PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md).
+
+### Twelve-surface final classification
+
+| Surface | DOCS-6 | DOCS-7 final |
+|---------|--------|--------------|
+| Integrations | COMPLETE | **DOCUMENTATION_COMPLETE** |
+| Tools | COMPLETE | **DOCUMENTATION_COMPLETE** |
+| Skills | COMPLETE | **DOCUMENTATION_COMPLETE** |
+| Context | COMPLETE (guide) | **DOCUMENTATION_COMPLETE** (+ enterprise installable ref) |
+| Memory | PARTIAL | **DOCUMENTATION_PARTIAL_RUNTIME_GAP** |
+| RAG chunker/retriever/reranker | COMPLETE | **DOCUMENTATION_COMPLETE** |
+| Vendor Knowledge | COMPLETE | **DOCUMENTATION_COMPLETE** |
+| Security | COMPLETE | **DOCUMENTATION_COMPLETE** |
+| Policy | PARTIAL | **DOCUMENTATION_PARTIAL_RUNTIME_GAP** |
+| Tool invocation | COMPLETE | **DOCUMENTATION_COMPLETE** |
+
+### D1–D16 roll-up (192 cells)
+
+| Score | Cells | % |
+|-------|-------|---|
+| COMPLETE | 168 | 88% |
+| PARTIAL | 20 | 10% |
+| MISSING | 0 | 0% |
+| N/A | 4 | 2% |
+
+### DOCS-7 corrections (small)
+
+1. `TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md` — reference example line updated for enterprise plugin (stale DOCS-6 gap text).
+2. `CONTEXT_PLUGIN_AUTHOR_GUIDE.md` — installable reference pointer to `intergrax_reference_enterprise_plugin`.
+
+### Dynamic wiring
+
+`NEW_DYNAMIC_ATTRIBUTE_WIRING: 0`
+
+### Focused validation
+
+67 tests passed — see closeout §16.
+
+### Changed files (DOCS-7 allowlist)
+
+1. `docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md` (new)
+2. `docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md` (this section)
+3. `docs/project/technical/guides/TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`
+4. `docs/project/technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md`
