@@ -113,7 +113,11 @@ def iter_entry_point_specs(group: str) -> tuple[EntryPointSpec, ...]:
         if existing is not None:
             return existing
         _EP_SPECS_CACHE[group] = specs
-        _EP_SPECS_BY_NAME[group] = {spec.name: spec for spec in specs}
+        by_name: dict[str, EntryPointSpec] = {}
+        for spec in specs:
+            if spec.name not in by_name:
+                by_name[spec.name] = spec
+        _EP_SPECS_BY_NAME[group] = by_name
         return specs
 
 

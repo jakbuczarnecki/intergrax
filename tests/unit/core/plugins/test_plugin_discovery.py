@@ -194,6 +194,44 @@ def test_reset_entry_point_spec_cache_for_tests_causes_rescan(
     assert scan_calls == 2
 
 
+def test_get_entry_point_spec_duplicate_name_returns_first_sorted_spec(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first_value = f"{__name__}:_DiscoveredPlugin"
+    second_value = f"{__name__}:_plugin_factory"
+    entries = _EntryPoints(
+        [
+            _EntryPoint("dup", second_value, "intergrax.rag.chunkers"),
+            _EntryPoint("dup", first_value, "intergrax.rag.chunkers"),
+        ]
+    )
+    scan_calls = 0
+
+    def _entry_points() -> _EntryPoints:
+        nonlocal scan_calls
+        scan_calls += 1
+        return entries
+
+    def _fail_if_load(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("entry-point targets must not load during spec lookup")
+
+    monkeypatch.setattr(importlib.metadata, "entry_points", _entry_points)
+    monkeypatch.setattr(
+        "intergrax.core.plugins.discovery.load_entry_point_value",
+        _fail_if_load,
+    )
+
+    specs = iter_entry_point_specs("intergrax.rag.chunkers")
+    first_lookup = get_entry_point_spec("intergrax.rag.chunkers", "dup")
+    second_lookup = get_entry_point_spec("intergrax.rag.chunkers", "dup")
+
+    assert [spec.value for spec in specs] == [first_value, second_value]
+    assert first_lookup is not None
+    assert first_lookup.value == first_value
+    assert second_lookup is first_lookup
+    assert scan_calls == 1
+
+
 def test_get_entry_point_spec_uses_cached_index(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
