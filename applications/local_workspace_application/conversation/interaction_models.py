@@ -663,10 +663,25 @@ class ConversationInteractionPlan(BaseModel):
 
 
 def _extract_workspace_reference(action: PlannedAction) -> WorkspaceReference | None:
-    if hasattr(action, "workspace"):
-        workspace = action.workspace  # type: ignore[attr-defined]
-        if isinstance(workspace, WorkspaceReference):
-            return workspace
+    if isinstance(
+        action,
+        (
+            WorkspaceActivatePlannedAction,
+            WorkspaceDeletePlannedAction,
+            SourceListPlannedAction,
+            SourceCandidateListPlannedAction,
+            SourceCandidateAttachPlannedAction,
+            KnowledgeAddAttachmentsPlannedAction,
+            KnowledgeAddSourcesPlannedAction,
+            KnowledgeConnectionAttachPlannedAction,
+            KnowledgeIndexedSourceCreatePlannedAction,
+            WorkspaceAskPlannedAction,
+            CitationInspectPlannedAction,
+            KnowledgeInventoryListPlannedAction,
+            KnowledgeOperationExecutePlannedAction,
+        ),
+    ):
+        return action.workspace
     return None
 
 

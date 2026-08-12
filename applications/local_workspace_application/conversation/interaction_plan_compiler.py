@@ -340,9 +340,25 @@ def _merge_depends_on(
 
 
 def _extract_draft_workspace(action: DraftPlannedAction) -> DraftWorkspaceReferenceBase | None:
-    workspace = getattr(action, "workspace", None)
-    if isinstance(workspace, DraftWorkspaceReferenceBase):
-        return workspace
+    if isinstance(
+        action,
+        (
+            WorkspaceActivateDraftAction,
+            WorkspaceDeleteDraftAction,
+            SourceListDraftAction,
+            SourceCandidateListDraftAction,
+            SourceCandidateAttachDraftAction,
+            KnowledgeAddAttachmentsDraftAction,
+            KnowledgeAddSourcesDraftAction,
+            KnowledgeConnectionAttachDraftAction,
+            KnowledgeIndexedSourceCreateDraftAction,
+            WorkspaceAskDraftAction,
+            CitationInspectDraftAction,
+            KnowledgeInventoryListDraftAction,
+            KnowledgeOperationExecuteDraftAction,
+        ),
+    ):
+        return action.workspace
     return None
 
 

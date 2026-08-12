@@ -13,6 +13,7 @@ from pydantic import ValidationError
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 from local_workspace_application.conversation.interaction_draft_models import ConversationInteractionDraft
 from local_workspace_application.conversation.interaction_models import (
@@ -34,6 +35,7 @@ from local_workspace_application.conversation.interaction_models import (
     TenantConnectionReconnectPlannedAction,
     TenantConnectionRevokePlannedAction,
     WorkspaceReferenceKind,
+    _extract_workspace_reference,
     collect_user_text_context,
     request_attachment_ids,
 )
@@ -289,7 +291,7 @@ def validate_plan_against_request(
             if tenant_inventory is None or tenant_inventory.pending_manual_authorization is None:
                 raise PlanRequestValidationError("tenant connection manual authorization unavailable")
 
-        workspace = getattr(action, "workspace", None)
+        workspace = _extract_workspace_reference(action)
         if workspace is not None and workspace.kind == WorkspaceReferenceKind.name:
             if workspace.value and not _evidence_quote_in_context(workspace.value, user_contexts):
                 if not any(
@@ -434,11 +436,10 @@ class ConversationInteractionPlanner:
         return parsed
 
     def _adapter_identity(self) -> tuple[str, str]:
-        provider = getattr(self._llm_adapter, "provider", "unknown")
-        if hasattr(provider, "value"):
-            provider = provider.value  # type: ignore[union-attr]
-        model = getattr(self._llm_adapter, "model", "unknown")
-        return str(provider), str(model)
+        provider = self._llm_adapter.provider
+        if isinstance(provider, LLMProvider):
+            provider = provider.value
+        return str(provider), str(self._llm_adapter.model)
 
 
 def _compile_draft(
