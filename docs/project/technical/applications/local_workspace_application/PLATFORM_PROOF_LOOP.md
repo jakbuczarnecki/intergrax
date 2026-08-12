@@ -399,6 +399,60 @@ Compare baseline and optimized runs: input tokens, content-reduction savings, pr
 
 **Maturity:** LKW-PF6-C closure is product proof — not automatic production-grade readiness. Distinction: proof design → platform proof → operational proof → production-grade readiness.
 
-Canonical detail: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW proof phase map; schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6.
+Canonical detail: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6 proof phase map; schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6.
+
+---
+
+## 8. Repository-wide Intergrax proof suite (PUBLIC-PROOF-GATE-1)
+
+The canonical gateway answers: **which Intergrax capabilities can be proven on this exact commit and environment right now?**
+
+| Artifact | Role |
+|----------|------|
+| `scripts/proof/intergrax_proof_manifest.py` | Typed manifest — proof membership, profiles, commands, environment/platform requirements |
+| `scripts/proof/intergrax_proof_runner.py` | Master runner — selection, subprocess execution, aggregation, receipt |
+| `scripts/proof/run-intergrax-proof-suite.py` | Operator entrypoint |
+
+### Commands
+
+```bash
+uv run python scripts/proof/run-intergrax-proof-suite.py --profile quick
+uv run python scripts/proof/run-intergrax-proof-suite.py --profile full
+uv run python scripts/proof/run-intergrax-proof-suite.py --profile live
+```
+
+`--dry-run` resolves manifest selection without executing child proofs. `--allow-external-mutating` opts in to external mutating proofs when registered.
+
+### Profiles
+
+| Profile | Semantics |
+|---------|-----------|
+| `quick` | Fast, deterministic, local proofs — no required external-provider calls |
+| `full` | All locally executable proofs for the current machine (includes `quick`) |
+| `live` | Adds real external-provider proofs (includes `full`) |
+
+### Status interpretation
+
+| Status | Meaning |
+|--------|---------|
+| `PASS` | Child proof exited zero |
+| `FAIL` | Child proof failed or timed out |
+| `BLOCKED_ENVIRONMENT` | Required environment capability absent (not a product defect) |
+| `SKIPPED_PLATFORM` | Manifest declares a different OS requirement |
+| `SKIPPED_PROFILE` | Not selected for the requested profile or dry-run |
+
+`LIVE` profile: missing optional external-provider credentials yields `PASS_WITH_BLOCKED` overall when no proof actually failed.
+
+### Receipts
+
+Machine-readable receipts are written to `.artifacts/proof/<timestamp>-<profile>-<short-sha>.json` (gitignored). Receipts include commit SHA, dirty-worktree flag, per-proof status, and safe diagnostics — never tokens, API keys, or environment values.
+
+### Tests vs proofs vs qualification
+
+- **Unit/integration tests** — regression gates in CI; not public evidence by themselves.
+- **Proof scripts** — bounded, operator-runnable evidence workloads referenced by the manifest.
+- **Real-provider qualification** — live `PASS` against Slack/Google/M365 requires credentials and explicit `live` profile execution; implementation `PASS` alone is not external qualification.
+
+Canonical manifest is the source of truth. Individual LKW reviewer guides (for example [`docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../../proofs/LKW_PLATFORM_PROOF.md)) explain how to run domain proofs; the suite orchestrates them without duplicating their implementation.
 
 ---
