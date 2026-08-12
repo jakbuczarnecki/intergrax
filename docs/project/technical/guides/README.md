@@ -15,7 +15,7 @@ Authoring guides, strategic context, and audit methodology.
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) | Target Harness AI reference model |
 | [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) | 32 auditable layers, evidence, audit procedure |
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) | Scaffold → register → run → evaluate |
-| [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) | Tier-0 plugin catalogs |
+| [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) | **Platform Plugin / extension development** — start here: surface decision tree, delivery model, 12-surface matrix → domain guides |
 | [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) | Lab stack, OTLP, presets |
 | [HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) | Multi-layer / full-platform audit prompt |
 | [audit/](../../maintainers/audit) | **Architecture audit orchestration** — 22 per-domain prompts (Modes A/B/C/I) |

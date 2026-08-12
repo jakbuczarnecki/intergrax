@@ -53,7 +53,7 @@ See audit document for inventory, taxonomy proposal, gaps, and evidence matrix.
 |----------------|------------------------------|
 | **Integrations** | Largest Tier-0 catalog; dual shipped manifest vs `IntegrationPlugin` model; registry v2 metadata track |
 | **Tools / Skills** | Tier-0 catalog plugins; profile-gated materialization |
-| **Context Engineering** | `ContextPlugin` catalog; entry points wired but author guide still marks partial rollout |
+| **Context Engineering** | `ContextPlugin` public EP catalog; qualification domain-owned — see [EXTENSION_AUTHOR_GUIDE](guides/EXTENSION_AUTHOR_GUIDE.md) and [CONTEXT_ENGINEERING architecture](../../architecture/CONTEXT_ENGINEERING.md) |
 | **RAG** | Separate EP groups per component type; bootstrap-time registry, not global catalog |
 | **Vendor Knowledge** | Separate contribution catalog and EP group; host composition required |
 | **Security / Policy** | Separate EP groups; hook/policy integration |

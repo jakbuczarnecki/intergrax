@@ -18,6 +18,7 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | **Public documentation architecture** (maintainer contract) | [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) |
 | **Token Optimization main guide** | [capabilities/token_optimization/README.md](../capabilities/token_optimization/README.md) |
 | **This map** (roles and workflows) | `docs/project/technical/DOCUMENTATION_MAP.md` |
+| **Extend Intergrax / build plugins** | [EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md) → surface matrix → domain guide · design: [PLATFORM_PLUGINS.md](../architecture/PLATFORM_PLUGINS.md) |
 | Architecture hub + 22 domain pairs | [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) |
 | Multi-layer capability docs | [capabilities/README.md](../capabilities/README.md) — includes `TOKEN_OPTIMIZATION`, `LANGCHAIN_INDEPENDENCE` |
 | Domain architecture canon | `docs/project/architecture/<DOMAIN>.md` |
@@ -82,6 +83,8 @@ Domain pair index (22 names): [audit/README.md § Domain index](../maintainers/a
 6. [CONTRIBUTING.md](../../../CONTRIBUTING.md) for PR workflow
 
 Authoring: [AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) · Tier-3: [applications/USAGE.md](../../../applications/USAGE.md)
+
+**Extend Intergrax (plugins):** [EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md) — surface decision tree + 12-surface matrix → domain author guide or architecture pair. System design: [PLATFORM_PLUGINS.md](../architecture/PLATFORM_PLUGINS.md). Maintainer audit/roadmap: [PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md](../maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md) (not the first stop for plugin authors).
 
 ### Cursor operator (audit / implement / closeout)
 
