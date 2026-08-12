@@ -21,6 +21,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.config imp
     DEFAULT_TIMEOUT_SECONDS,
 )
 from intergrax.runtime.vendor_knowledge.models import JsonValue
+from intergrax.runtime.vendor_knowledge.tenant_connections import TenantConnection
 from intergrax.runtime.vendor_knowledge.tenant_connection_auth import (
     TenantConnectionAuthBeginResult,
     TenantConnectionAuthExchangeResult,
@@ -230,7 +231,7 @@ class Ms365GraphTenantConnectionAuthProvider:
         self,
         *,
         tenant_id: str,
-        reconnect_connection: object | None,
+        reconnect_connection: TenantConnection | None,
     ) -> Mapping[str, JsonValue]:
         _ = tenant_id
         config = self._oauth_config
@@ -242,8 +243,8 @@ class Ms365GraphTenantConnectionAuthProvider:
             "timeout_seconds": config.timeout_seconds,
         }
         if reconnect_connection is not None:
-            principal = getattr(reconnect_connection, "connected_principal_ref", None)
-            if isinstance(principal, str) and principal.strip():
+            principal = reconnect_connection.connected_principal_ref
+            if principal is not None and principal.strip():
                 result["default_user"] = principal.strip()
         return result
 

@@ -244,7 +244,7 @@ class TenantConnectionAuthorizationTransactionRepository:
                 else self._store.query(partition, limit=limit, row_key_prefix=prefix)
             )
             documents.extend(page.documents)
-            next_cursor = getattr(page, "next_cursor", None)
+            next_cursor = page.next_cursor
             if next_cursor is None:
                 break
             cursor = next_cursor
