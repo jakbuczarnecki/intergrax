@@ -55,7 +55,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 
 ## AGENT-PLATFORM-3 gate
 
-**Done** (2026-08-12) — Tier-0 contracts and store ports landed under `intergrax/agent_distribution/`.
+**READY_FOR_CLOSE** (2026-08-12) — Tier-0 contracts and store ports under `intergrax/agent_distribution/`; AP-3-FIX-1 hardened namespace alignment, deep immutability, recursive secret rejection, typed ports, and shared digest validation.
 
 | Deliverable | Status |
 |-------------|--------|
@@ -68,5 +68,6 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 | `RuntimeRevision` + materialization I/O contracts | done |
 | Store ports (installation, binding, lock, revision, artifact metadata) | done |
 | Focused unit tests + tier-boundary check | done |
+| AP-3-FIX-1 contract hardening | done |
 
 **Next:** AP-4 may begin (store interfaces + transactional domain services).

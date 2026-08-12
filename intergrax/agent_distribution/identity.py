@@ -10,9 +10,13 @@ from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.agent_distribution._digest import (
+    normalize_optional_package_digest,
+    normalize_package_digest,
+)
+
 _NON_EMPTY = Field(min_length=1)
 _PACKAGE_NAME_RE = re.compile(r"^[a-z][a-z0-9_]*(-[a-z0-9_]+)*$")
-_DIGEST_RE = re.compile(r"^sha256:[a-f0-9]{64}$")
 
 SCHEMA_AGENT_PACKAGE_IDENTITY_V1: Final = "agent_package_identity.v1"
 SCHEMA_AGENT_PACKAGE_CANDIDATE_V1: Final = "agent_package_candidate.v1"
@@ -31,13 +35,6 @@ def _normalize_package_name(value: str) -> str:
         raise ValueError(
             "distribution_package_id must be a normalized PyPI-style package name"
         )
-    return normalized
-
-
-def _normalize_digest(value: str) -> str:
-    normalized = _strip_required(value).lower()
-    if not _DIGEST_RE.match(normalized):
-        raise ValueError("package_digest must be sha256:<64 lowercase hex>")
     return normalized
 
 
@@ -72,7 +69,7 @@ class AgentPackageCandidate(BaseModel):
     def _validate_optional_digest(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        return _normalize_digest(value)
+        return normalize_optional_package_digest(value)
 
     def to_digest_pinned(self) -> AgentPackageIdentity:
         """Promote to digest-pinned identity after artifact verification."""
@@ -116,7 +113,7 @@ class AgentPackageIdentity(BaseModel):
     @field_validator("package_digest")
     @classmethod
     def _validate_digest(cls, value: str) -> str:
-        return _normalize_digest(value)
+        return normalize_package_digest(value)
 
     @field_validator("artifact_locator", "contract_id", "platform_compatibility_spec", "python_requires")
     @classmethod

@@ -9,6 +9,8 @@ from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.agent_distribution._digest import normalize_package_digest
+
 _NON_EMPTY = Field(min_length=1)
 
 SCHEMA_CANDIDATE_APPLICATION_RUNTIME_GRAPH_V1: Final = (
@@ -32,10 +34,15 @@ class RuntimeGraphAgentRef(BaseModel):
     distribution_package_id: str = _NON_EMPTY
     package_digest: str = _NON_EMPTY
 
-    @field_validator("logical_agent_id", "distribution_package_id", "package_digest")
+    @field_validator("logical_agent_id", "distribution_package_id")
     @classmethod
     def _strip_fields(cls, value: str) -> str:
         return _strip_required(value)
+
+    @field_validator("package_digest")
+    @classmethod
+    def _validate_package_digest(cls, value: str) -> str:
+        return normalize_package_digest(value)
 
 
 class RuntimeGraphThirdPartyRef(BaseModel):

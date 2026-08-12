@@ -11,7 +11,7 @@ from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from intergrax.agent_distribution._digest import content_digest_for_model
+from intergrax.agent_distribution._digest import content_digest_for_model, normalize_optional_package_digest, normalize_package_digest
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -56,10 +56,15 @@ class InstalledAgentPackageRequirement(BaseModel):
     package_digest: str = _NON_EMPTY
     agent_project_metadata_ref: str = _NON_EMPTY
 
-    @field_validator("distribution_package_id", "package_digest", "agent_project_metadata_ref")
+    @field_validator("distribution_package_id", "agent_project_metadata_ref")
     @classmethod
     def _strip_required_fields(cls, value: str) -> str:
         return _strip_required(value)
+
+    @field_validator("package_digest")
+    @classmethod
+    def _validate_package_digest(cls, value: str) -> str:
+        return normalize_package_digest(value)
 
 
 class InstalledAgentRequirementSet(BaseModel):
@@ -150,12 +155,17 @@ class MaterializedLockPackage(BaseModel):
     package_digest: str | None = None
     dependency_of: str | None = None
 
-    @field_validator("distribution_name", "version", "package_digest", "dependency_of")
+    @field_validator("distribution_name", "version", "dependency_of")
     @classmethod
     def _strip_optional(cls, value: str | None) -> str | None:
         if value is None:
             return None
         return _strip_required(value)
+
+    @field_validator("package_digest")
+    @classmethod
+    def _validate_optional_package_digest(cls, value: str | None) -> str | None:
+        return normalize_optional_package_digest(value)
 
 
 class MaterializedAgentClosureEntry(BaseModel):
@@ -167,10 +177,15 @@ class MaterializedAgentClosureEntry(BaseModel):
     package_digest: str = _NON_EMPTY
     role: LockPackageRole
 
-    @field_validator("distribution_package_id", "package_digest")
+    @field_validator("distribution_package_id")
     @classmethod
-    def _strip_fields(cls, value: str) -> str:
+    def _strip_distribution_package_id(cls, value: str) -> str:
         return _strip_required(value)
+
+    @field_validator("package_digest")
+    @classmethod
+    def _validate_package_digest(cls, value: str) -> str:
+        return normalize_package_digest(value)
 
 
 class MaterializedLockReproducibilityEvidence(BaseModel):

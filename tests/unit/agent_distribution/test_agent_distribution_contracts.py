@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import ast
+import inspect
 from pathlib import Path
 
 import pytest
@@ -33,6 +34,7 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
 )
+from intergrax.agent_distribution.stores import AgentArtifactMetadata, RuntimeRevisionStore
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
     AgentQualificationStatus,
@@ -123,6 +125,133 @@ def test_binding_config_rejects_secret_values() -> None:
             installation_slot_id="slot-search-prod",
             config={"api_key": "sk-live-not-a-ref"},
             binding_revision=0,
+        )
+
+
+def test_binding_config_rejects_nested_secret_key() -> None:
+    with pytest.raises(ValidationError):
+        ApplicationAgentBinding(
+            application_binding_id="bind-1",
+            application_id="demo_app",
+            application_environment_id="env-prod",
+            logical_agent_id="search",
+            installation_slot_id="slot-search-prod",
+            config={"provider": {"api_key": "public-value"}},
+            binding_revision=0,
+        )
+
+
+def test_binding_config_rejects_nested_secret_value() -> None:
+    with pytest.raises(ValidationError):
+        ApplicationAgentBinding(
+            application_binding_id="bind-1",
+            application_id="demo_app",
+            application_environment_id="env-prod",
+            logical_agent_id="search",
+            installation_slot_id="slot-search-prod",
+            config={"provider": {"token_ref_name": "sk-live-not-a-ref"}},
+            binding_revision=0,
+        )
+
+
+def test_binding_config_accepts_legitimate_nested_config() -> None:
+    binding = ApplicationAgentBinding(
+        application_binding_id="bind-1",
+        application_id="demo_app",
+        application_environment_id="env-prod",
+        logical_agent_id="search",
+        installation_slot_id="slot-search-prod",
+        config={"provider": {"region": "eu-west-1", "limits": {"rpm": 120}}},
+        binding_revision=0,
+    )
+    assert binding.config["provider"]["region"] == "eu-west-1"
+
+
+def test_binding_config_is_deeply_immutable() -> None:
+    binding = ApplicationAgentBinding(
+        application_binding_id="bind-1",
+        application_id="demo_app",
+        application_environment_id="env-prod",
+        logical_agent_id="search",
+        installation_slot_id="slot-search-prod",
+        config={"provider": {"region": "eu-west-1"}},
+        binding_revision=0,
+    )
+    with pytest.raises(TypeError):
+        binding.config["provider"]["region"] = "mutated"
+
+
+def test_effective_roster_merged_config_is_deeply_immutable() -> None:
+    entry = EffectiveRosterEntry(
+        logical_agent_id="search",
+        installation_slot_id="slot-1",
+        package_digest=_DIGEST,
+        distribution_package_id="intergrax-local-search-agent",
+        effective_enablement=True,
+        merged_config={"limits": {"rpm": 100}},
+    )
+    with pytest.raises(TypeError):
+        entry.merged_config["limits"]["rpm"] = 999
+
+
+def test_effective_roster_revision_immune_to_nested_mutation_attempt() -> None:
+    entry = EffectiveRosterEntry(
+        logical_agent_id="search",
+        installation_slot_id="slot-1",
+        package_digest=_DIGEST,
+        distribution_package_id="intergrax-local-search-agent",
+        effective_enablement=True,
+        merged_config={"limits": {"rpm": 100}},
+    )
+    roster = EffectiveRoster(
+        application_id="demo_app",
+        application_environment_id="env-prod",
+        manifest_release_id="rel-1",
+        binding_revisions=(1,),
+        entries=(entry,),
+    ).with_revision_id()
+    revision_id = roster.effective_roster_revision_id
+    with pytest.raises(TypeError):
+        roster.entries[0].merged_config["limits"]["rpm"] = 999
+    assert roster.with_revision_id().effective_roster_revision_id == revision_id
+
+
+def test_canonical_namespace_matches_architecture_doc() -> None:
+    repo = Path(__file__).resolve().parents[3]
+    architecture = (repo / "docs" / "project" / "architecture" / "AGENT_DISTRIBUTION.md").read_text(
+        encoding="utf-8"
+    )
+    assert "intergrax/agent_distribution/" in architecture
+    assert "intergrax/core/agent_distribution/" not in architecture
+    assert (repo / "intergrax" / "agent_distribution" / "__init__.py").is_file()
+
+
+def test_runtime_revision_store_expected_state_is_typed() -> None:
+    signature = inspect.signature(RuntimeRevisionStore.persist_candidate_revision)
+    annotation = signature.parameters["expected_revision_state"].annotation
+    assert annotation in {RuntimeRevisionState | None, "RuntimeRevisionState | None"}
+
+
+def test_malformed_package_digest_rejected_consistently() -> None:
+    with pytest.raises(ValidationError):
+        AgentArtifactMetadata(
+            package_digest="not-a-digest",
+            artifact_store_ref="store://artifacts/1",
+            distribution_package_id="intergrax-local-search-agent",
+        )
+    with pytest.raises(ValidationError):
+        EffectiveRosterEntry(
+            logical_agent_id="search",
+            installation_slot_id="slot-1",
+            package_digest="sha256:deadbeef",
+            distribution_package_id="intergrax-local-search-agent",
+            effective_enablement=True,
+        )
+    with pytest.raises(ValidationError):
+        InstalledAgentPackageRequirement(
+            distribution_package_id="intergrax-local-search-agent",
+            package_digest="digest-only",
+            agent_project_metadata_ref="meta://1",
         )
 
 

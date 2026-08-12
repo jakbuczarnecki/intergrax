@@ -85,7 +85,7 @@ This document is the **canonical architecture** for the Intergrax **Agent Distri
 
 | ADR decision | AGENT-PLATFORM-2 resolution |
 |--------------|----------------------------|
-| AD-AP1-01 Tier-0 Agent Distribution domain | §4 ownership map; `intergrax/core/agent_distribution/` (deferred module tree) |
+| AD-AP1-01 Tier-0 Agent Distribution domain | §4 ownership map; `intergrax/agent_distribution/` |
 | AD-AP1-02 Model B immutable materialization | §19 materialization abstraction; §20 activation |
 | AD-AP1-03 Manifest defaults + durable bindings | §12–§14 binding and effective roster |
 | AD-AP1-04 Persisted enablement | §7 state model; §13 merge precedence |
@@ -169,7 +169,7 @@ CatalogSourceProvider
 ## 4. Layer and ownership map
 
 ```text
-Tier-0  intergrax/core/agent_distribution/   distribution contracts, trust, stores (interfaces),
+Tier-0  intergrax/agent_distribution/          distribution contracts, trust, stores (interfaces),
                                               dependency lock producer, catalog provider interfaces
 Tier-1  intergrax/runtime/registry/          AgentRegistry, routing policy, Nexus (unchanged spine)
 Tier-2  agents/<slug>/                       AgentContract, package metadata, agent pyproject

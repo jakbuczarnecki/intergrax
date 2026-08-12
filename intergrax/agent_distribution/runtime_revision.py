@@ -12,6 +12,7 @@ from typing import Final
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.agent_distribution.trust import AgentTrustEvidenceRef
+from intergrax.agent_distribution._digest import normalize_package_digest
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -96,8 +97,8 @@ class RuntimeRevision(BaseModel):
 
     @field_validator("installed_agent_package_digests")
     @classmethod
-    def _strip_digests(cls, value: tuple[str, ...]) -> tuple[str, ...]:
-        return tuple(_strip_required(item) for item in value)
+    def _validate_installed_digests(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        return tuple(normalize_package_digest(item) for item in value)
 
     @model_validator(mode="after")
     def _validate_state_requirements(self) -> RuntimeRevision:

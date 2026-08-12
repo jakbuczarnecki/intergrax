@@ -5,11 +5,18 @@
 
 from __future__ import annotations
 
-from typing import Any, Final
+from collections.abc import Mapping
+from typing import Final
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
-from intergrax.agent_distribution._digest import content_digest_for_model
+from intergrax.agent_distribution._digest import content_digest_for_model, normalize_package_digest
+from intergrax.agent_distribution._immutable_json import (
+    DistributionJsonValue,
+    assert_distribution_json_object,
+    distribution_json_to_plain,
+    freeze_distribution_json_object,
+)
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference, AgentBindingPolicyOverrides
 
 _NON_EMPTY = Field(min_length=1)
@@ -37,7 +44,7 @@ class EffectiveRosterEntry(BaseModel):
     package_digest: str = _NON_EMPTY
     distribution_package_id: str = _NON_EMPTY
     effective_enablement: bool
-    merged_config: dict[str, Any] = Field(default_factory=dict)
+    merged_config: Mapping[str, DistributionJsonValue] = Field(default_factory=dict)
     secret_refs: tuple[str, ...] = ()
     policy_overrides: AgentBindingPolicyOverrides | None = None
     factory_reference: AgentBindingFactoryReference | None = None
@@ -48,7 +55,6 @@ class EffectiveRosterEntry(BaseModel):
         "logical_agent_id",
         "installation_slot_id",
         "active_installation_id",
-        "package_digest",
         "distribution_package_id",
         "application_binding_id",
         "manifest_origin_ref",
@@ -58,6 +64,33 @@ class EffectiveRosterEntry(BaseModel):
         if value is None:
             return None
         return _strip_required(value)
+
+    @field_validator("package_digest")
+    @classmethod
+    def _validate_package_digest(cls, value: str) -> str:
+        return normalize_package_digest(value)
+
+    @field_validator("merged_config", mode="before")
+    @classmethod
+    def _validate_merged_config_raw(cls, value: object) -> dict[str, DistributionJsonValue]:
+        if not isinstance(value, Mapping):
+            raise ValueError("merged_config must be a mapping")
+        return assert_distribution_json_object(value, field_name="merged_config")
+
+    @field_validator("merged_config", mode="after")
+    @classmethod
+    def _freeze_merged_config(
+        cls,
+        value: dict[str, DistributionJsonValue],
+    ) -> Mapping[str, DistributionJsonValue]:
+        return freeze_distribution_json_object(value)
+
+    @field_serializer("merged_config")
+    def _serialize_merged_config(
+        self,
+        value: Mapping[str, DistributionJsonValue],
+    ) -> dict[str, DistributionJsonValue]:
+        return distribution_json_to_plain(value)
 
 
 class EffectiveRoster(BaseModel):

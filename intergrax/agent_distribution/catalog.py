@@ -11,6 +11,7 @@ from typing import Final, Protocol
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.agent_distribution.identity import AgentPackageCandidate
+from intergrax.agent_distribution._digest import normalize_optional_package_digest
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -59,12 +60,17 @@ class AgentCatalogVersionChannelRef(BaseModel):
     package_version: str | None = None
     package_digest: str | None = None
 
-    @field_validator("version_label", "package_version", "package_digest")
+    @field_validator("version_label", "package_version")
     @classmethod
     def _strip_optional(cls, value: str | None) -> str | None:
         if value is None:
             return None
         return _strip_required(value)
+
+    @field_validator("package_digest")
+    @classmethod
+    def _validate_optional_package_digest(cls, value: str | None) -> str | None:
+        return normalize_optional_package_digest(value)
 
 
 class AgentCatalogEntry(BaseModel):

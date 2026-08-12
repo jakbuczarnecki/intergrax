@@ -7,12 +7,15 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
 from intergrax.agent_distribution.installation import AgentInstallationRecord
-from intergrax.agent_distribution.runtime_revision import RuntimeRevision
+from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
+
+_NON_EMPTY = Field(min_length=1)
 
 
 class AgentArtifactMetadata(BaseModel):
@@ -20,10 +23,15 @@ class AgentArtifactMetadata(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    package_digest: str = Field(min_length=1)
+    package_digest: str = _NON_EMPTY
     artifact_store_ref: str = Field(min_length=1)
     distribution_package_id: str = Field(min_length=1)
     tombstoned: bool = False
+
+    @field_validator("package_digest")
+    @classmethod
+    def _validate_package_digest(cls, value: str) -> str:
+        return normalize_package_digest(value)
 
 
 class AgentInstallationStore(Protocol):
@@ -103,7 +111,7 @@ class RuntimeRevisionStore(Protocol):
         self,
         revision: RuntimeRevision,
         *,
-        expected_revision_state: str | None = None,
+        expected_revision_state: RuntimeRevisionState | None = None,
     ) -> RuntimeRevision:
         """Persist candidate/validated revision with optimistic state guard."""
 
