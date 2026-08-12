@@ -89,9 +89,9 @@ Enterprise Platform Plugin work is **architecturally bounded, dependency-ordered
 | Track | Types | Evaluator | Production use |
 |-------|-------|-----------|----------------|
 | **Immutable pack** | `ImmutableRuntimePolicyBundle`, `PolicyBundleRule` | `RuntimePolicyBundleEvaluator` | Governed contractor / external-work paths |
-| **Declarative YAML rules** | `DeclarativePolicyRule`, `PolicyRuleHandler` | `PolicyRuleRegistry.evaluate_rule` | **Loaded into `domain_fragments` only — no production consumer** |
+| **Declarative YAML rules** | `DeclarativePolicyRule`, `PolicyRuleHandler` | `PolicyRuleRegistry.evaluate_rule` | **Today:** `domain_fragments` string-key carrier only — no production consumer. **Target:** typed `DeclarativePolicyRuntime` on `RuntimePolicyBundle` (§7) |
 
-Evidence: `policy_wiring.py` places `policy_rules` + fresh `PolicyRuleRegistry()` in fragments; no module calls `PolicyRuleRegistry.evaluate_rule` outside registry definition and tests. `RuntimePolicyBundleEvaluator` does **not** read `DeclarativePolicyRule`.
+Evidence: `policy_wiring.py` places `policy_rules` + fresh `PolicyRuleRegistry()` in `domain_fragments`; no module calls `PolicyRuleRegistry.evaluate_rule` outside registry definition and tests. `RuntimePolicyBundleEvaluator` does **not** read `DeclarativePolicyRule`. Enterprise target **must not** freeze this `Dict[str, Any]` wiring as the composition contract.
 
 ### 3.4 Memory resolution asymmetry
 
@@ -168,7 +168,7 @@ flowchart TD
 | CAND-004 | `ConflictPolicy`, `catalog_conflict` patterns | CAND-005, CAND-006 (policy EP admission) | `discovery.load_entry_point_targets` | `defense_registry` (Security domain) |
 | CAND-005 | CAND-004 (security conflict semantics defined) | CAND-006, CAND-001, CAND-002 | `EntryPointLoadResult`, `LoadIsolation` | Per-domain loaders + `catalog_bootstrap` |
 | CAND-006 | CAND-005 (safe EP load) | CAND-007, CAND-008 | `PolicyRuleRegistry`, `load_policy_rule_plugins` | `policy_wiring.py` (Tier-3) |
-| CAND-007 | CAND-006 | CAND-008 | `DeclarativePolicyRule`, `PolicyRuleRegistry.evaluate_rule` | New: `DeclarativePolicyEnforcer` at tool/runtime gate |
+| CAND-007 | CAND-006 | CAND-008 | `DeclarativePolicyRule`, `DeclarativePolicyRuntime`, `PolicyRuleRegistry.evaluate_rule` | New: `DeclarativePolicyEnforcer` at tool/runtime gate — consumes typed bundle field |
 | CAND-008 | CAND-006, CAND-007 (enforcement path exists) | — | `platform_qualification`, handler admission DTO | Policy domain + host production profile |
 | CAND-001 | CAND-005 (optional: isolated EP load for memory) | — | `UserProfileStorePlugin` Protocol | `memory_wiring.py` + new typed resolver |
 | CAND-002 | CAND-001 (shared resolver infra) | — | `SessionStoragePlugin` Protocol | Same as CAND-001 |
@@ -197,7 +197,7 @@ flowchart TD
 7. **Explicit host-owned activation** — `discover_entry_points` flags, profile-driven
 8. **Deterministic conflict/admission semantics** — sorted EP order, explicit policy modes
 9. **Auditable failure behavior** — structured bootstrap results, no silent registry mutation
-10. **Tenant/app isolation** where domain semantics require — per-bundle policy registry, per-tenant memory materialization context
+10. **Tenant/app isolation** where domain semantics require — per-bundle typed `DeclarativePolicyRuntime`, per-tenant memory materialization context
 11. **Typed contracts only** — Protocol/ABC, immutable DTOs
 12. **Fail-closed** for security/governance critical paths (configurable with migration)
 13. **No silent registry mutation** — explicit `override` authorization
@@ -213,11 +213,18 @@ flowchart TD
 PolicyRulesProfile (config, no executable code)
   → load_policy_rules_from_path / inline_rules → list[DeclarativePolicyRule]
   → build_runtime_policy_bundle:
-       registry = PolicyRuleRegistry()          # includes DenyToolRuleHandler
-       load_policy_rule_plugins(registry, admission=...)   # CAND-006
-       optional: filter registry by handler allowlist      # CAND-008
-  → domain_fragments["policy_rules"] + ["policy_rule_registry"]
+       declarative_runtime = DeclarativePolicyRuntime(   # immutable typed DTO
+         registry = PolicyRuleRegistry(),               # includes DenyToolRuleHandler
+         rules = tuple[DeclarativePolicyRule, ...],
+         provenance = PolicyBundleProvenance | None,
+         enforcement_mode = typed enum/config,
+       )
+       load_policy_rule_plugins(declarative_runtime.registry, admission=...)   # CAND-006
+       optional: filter registry by handler allowlist                            # CAND-008
+  → RuntimePolicyBundle.declarative_policy_runtime = declarative_runtime      # additive typed field
+     (domain_fragments may retain legacy keys during compatibility — not new enterprise wiring)
   → DeclarativePolicyEnforcer (new, CAND-007):
+       consumes bundle.declarative_policy_runtime — no Dict[str, Any] lookup, no casts
        on tool invocation / meaningful side-effect:
          for matching rules → registry.evaluate_rule(rule, context)
          aggregate → DENY | ALLOW | REQUIRE_HITL
@@ -225,12 +232,14 @@ PolicyRulesProfile (config, no executable code)
   → evidence: PolicyEvaluationEvidence DTO on deny/HITL
 ```
 
+**Typed composition contract (frozen):** declarative policy runtime state is reachable only through an explicit typed field/component on `RuntimePolicyBundle` (implementation-owned name; conceptually `DeclarativePolicyRuntime`). `domain_fragments` remains for legacy/auxiliary domain data — **not** for new enterprise live runtime capabilities.
+
 ### 7.2 Design decisions
 
 | # | Question | Target answer |
 |---|----------|---------------|
 | 1 | Where should `load_policy_rule_plugins()` be called? | **`build_runtime_policy_bundle`** when `policy_rules is not None` — single Tier-3 composition point (`policy_wiring.py`) |
-| 2 | Who owns `PolicyRuleRegistry` lifetime? | **Host composition** — created per `RuntimePolicyBundle`, stored in `domain_fragments["policy_rule_registry"]` |
+| 2 | Who owns `PolicyRuleRegistry` lifetime? | **Host composition** — one `DeclarativePolicyRuntime` per `RuntimePolicyBundle` via additive typed field; registry is `declarative_policy_runtime.registry`. Legacy `domain_fragments["policy_rule_registry"]` readable during compatibility only |
 | 3 | Registry scope? | **Per-application bundle** (process-scoped, immutable after wire). **Not** global mutable singleton. Per-tenant variants require **per-tenant bundle** or tenant-scoped rule subsets (see §12) |
 | 4 | YAML `rule_id` resolution? | `DeclarativePolicyRule.rule_id` → `PolicyRuleRegistry._handlers[rule_id]` — typed handler `evaluate()` |
 | 5 | Who calls `evaluate_rule`? | **New `DeclarativePolicyEnforcer`** — not `RuntimePolicyBundleEvaluator` (different rule model) |
@@ -248,7 +257,8 @@ PolicyRulesProfile (config, no executable code)
 | Component | Reuse |
 |-----------|-------|
 | `PolicyRuleRegistry` | Yes — extend with `register` admission gate, change unknown-handler semantics |
-| `RuntimePolicyBundle` | Yes — keep `domain_fragments` carrier |
+| `RuntimePolicyBundle` | Yes — additive `declarative_policy_runtime` typed field; `domain_fragments` for legacy/auxiliary only, not new policy runtime wiring |
+| `DeclarativePolicyRuntime` (new) | Yes — immutable DTO: `registry`, `rules`, `provenance`, `enforcement_mode` |
 | `PolicyRulesProfile` | Yes |
 | `load_policy_rules_from_path` | Yes |
 | `RuntimePolicyBundleEvaluator` | **No** for declarative rules — parallel track for immutable packs |
@@ -413,7 +423,8 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 
 | Component | Process | Application | Tenant | Notes |
 |-----------|---------|-------------|--------|-------|
-| `PolicyRuleRegistry` | One per bundle build | **Owned by app host** | Rules may include `tenant_id` in `context` dict at evaluation | No global mutable registry |
+| `DeclarativePolicyRuntime` | One per bundle build | **Owned by app host** — typed field on `RuntimePolicyBundle` | Rules may include `tenant_id` in `context` dict at evaluation | No global mutable registry; consumers use typed field, not `domain_fragments` |
+| `PolicyRuleRegistry` | Nested in `DeclarativePolicyRuntime` | Same as parent runtime | Same | Same |
 | `DeclarativePolicyRule` config | — | App env profile | Filter at evaluation via context | Per-tenant bundles = future OPEN_ARCH |
 | `SecurityDefensePlugin` registry | Process-global `_DYNAMIC` | All apps in process | `inspect()` tenant scope | Document isolation limitation; multi-tenant hosts need process isolation or future scoped registry |
 | Memory store instances | — | App wiring | `tenant_id` in materialization context | Resolver per wiring, stores tenant-scoped |
@@ -426,8 +437,8 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | Block | API compatibility | Config | Default change | Rollout | Rollback |
 |-------|-------------------|--------|----------------|--------|----------|
 | BLOCK C | Additive — new policy config types | `SecurityDefenseAdmissionPolicy` optional | Production: shipped-id override **denied** unless opted in | Feature profile `enterprise_plugin_admission_v1` | Revert to `override=True` via legacy profile flag |
-| BLOCK A | Additive — wiring calls loader | None | EP handlers appear when `policy_rules` set | Enable in lab hosts first | Omit loader call |
-| BLOCK B | Behavior change — YAML rules enforced | Handler allowlist | Unknown handler → DENY | Staged: audit-only mode then enforce | Disable enforcer flag |
+| BLOCK A | Additive — typed `declarative_policy_runtime` field + wiring calls loader | None | EP handlers appear when `policy_rules` set | Enable in lab hosts first | Omit loader call; legacy `domain_fragments` keys still readable |
+| BLOCK B | Behavior change — YAML rules enforced via typed runtime | Handler allowlist | Unknown handler → DENY | Staged: audit-only mode then enforce | Disable enforcer flag |
 | BLOCK D | Additive — optional `MemoryProfile` plugin_id | New profile fields | Default path unchanged (integration backends) | Opt-in plugin_id | Remove plugin_id from profile |
 | BLOCK E | Additive CLI | None | None | Ship scaffold | N/A |
 
@@ -478,10 +489,13 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 
 **Acceptance gates:**
 - [ ] `wire_policy_bundle` / `build_runtime_policy_bundle` calls `load_policy_rule_plugins` when `policy_rules` present
-- [ ] Registry instance in `domain_fragments` contains EP handlers after wire
+- [ ] `RuntimePolicyBundle.declarative_policy_runtime` populated with typed `DeclarativePolicyRuntime` (registry + rules + provenance + enforcement_mode)
+- [ ] Registry in typed runtime contains EP handlers after wire
+- [ ] New runtime consumers read typed field only — no `domain_fragments["policy_rule_registry"]` / `["policy_rules"]` lookup
+- [ ] Compatibility: legacy `domain_fragments` keys may be mirrored during migration; not required for new consumers
 - [ ] Production qualification gate on EP handlers (when profile requires)
-- [ ] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0`
-- [ ] Contract test: EP handler reachable in bundle after standard host wire
+- [ ] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` — no new `Dict[str, Any]` / string-key runtime wiring
+- [ ] Contract test: EP handler reachable via typed composition API after standard host wire
 - [ ] No change to immutable pack evaluator behavior
 
 ---
@@ -501,13 +515,14 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | **Order** | **3** |
 
 **Acceptance gates:**
-- [ ] `evaluate_rule` invoked on tool invocation path for matching `policy_rules`
+- [ ] `DeclarativePolicyEnforcer` consumes `bundle.declarative_policy_runtime` — no fragment lookup or casts
+- [ ] `evaluate_rule` invoked on tool invocation path for matching rules from typed runtime
 - [ ] Unknown `rule_id` → **DENY** (fail-closed) with audit evidence
 - [ ] Handler allowlist enforced at registration (CAND-008)
-- [ ] `PolicyBundleProvenance` DTO recorded (path hash + handler EP metadata)
+- [ ] `PolicyBundleProvenance` DTO on typed runtime (path hash + handler EP metadata)
 - [ ] Signing **not required** for block completion; provenance-only acceptable
-- [ ] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0`
-- [ ] E2E: YAML deny rule blocks tool call in wired host
+- [ ] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` — no new `Dict[str, Any]` / string-key runtime wiring
+- [ ] E2E: YAML deny rule blocks tool call in wired host via typed composition path
 - [ ] Migration: `policy_enforcement_mode=audit_only|enforce` profile flag
 
 ---
@@ -598,16 +613,17 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 | 2 | Collision governance | Security shipped-id override requires explicit authorization in production profile |
 | 3 | Isolated load failures | Broken EP does not prevent siblings from loading (`DomainPluginLoadReport.failed` populated, `registered_count > 0`) |
 | 4 | Policy runtime enforcement | YAML deny rule blocks tool execution in standard wired host |
-| 5 | Policy provenance | `PolicyBundleProvenance` attached to bundle when `policy_rules` configured |
+| 5 | Policy provenance | `PolicyBundleProvenance` on typed `declarative_policy_runtime` when `policy_rules` configured |
 | 6 | Handler allowlist | Production profile rejects non-allowlisted `rule_id` at registration |
 | 7 | Typed Memory external resolution | EP user-profile + session plugins materialize without host manual wiring |
-| 8 | Tenant/application isolation | Policy registry per-bundle; memory materialization requires explicit `tenant_id` where domain requires |
+| 8 | Tenant/application isolation | `DeclarativePolicyRuntime` per-bundle via typed field; memory materialization requires explicit `tenant_id` where domain requires |
 | 9 | Operator visibility | Bootstrap summary available per domain (not necessarily unified F006 UI) |
 | 10 | Production qualification | EP packages blocked when `require_production_qualification` and admission fails |
 | 11 | Backwards compatibility | Legacy profile flags restore pre-enterprise behavior for one release cycle |
 | 12 | Focused E2E conformance | Extended PLATFORM_PLUGIN contract suite green |
 | 13 | Zero dynamic wiring | `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` in all new/modified enterprise modules |
-| 14 | Documentation sync | Author guides reflect shipped behavior, not gaps |
+| 14 | Typed policy composition | Declarative policy runtime reachable through typed composition API; no new `Any`/string-key runtime wiring |
+| 15 | Documentation sync | Author guides reflect shipped behavior, not gaps |
 
 **Not sufficient:** closing CAND IDs alone without exit gate evidence.
 
@@ -619,10 +635,10 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 
 | Field | Value |
 |-------|-------|
-| **Question** | Single per-app `PolicyRuleRegistry` vs per-tenant registry instances in multi-tenant hosts? |
-| **Options** | (A) Per-app bundle, tenant in evaluation context; (B) Per-tenant bundle fork at request boundary; (C) Per-tenant registry map on host |
-| **Tradeoffs** | A simplest; B/C required if tenants ship different `policy_rules` files |
-| **Recommended** | **A for BLOCK A/B** — tenant in `context` dict; revisit if LKW/multi-tenant hosts prove conflicting YAML per tenant |
+| **Question** | Single per-app `DeclarativePolicyRuntime` vs per-tenant runtime instances in multi-tenant hosts? |
+| **Options** | (A) Per-app bundle + typed field, tenant in evaluation context; (B) Per-tenant bundle fork at request boundary; (C) Per-tenant runtime map on host |
+| **Tradeoffs** | A simplest and aligns with typed composition; B/C required if tenants ship different `policy_rules` files |
+| **Recommended** | **A for BLOCK A/B** — one `declarative_policy_runtime` per bundle; tenant in `context` dict; revisit if LKW/multi-tenant hosts prove conflicting YAML per tenant |
 | **Evidence needed** | Audit of hosts with per-tenant `policy_rules` configuration |
 
 ### OPEN_ARCHITECTURAL_DECISION-002 — Security production default for shipped-id override
@@ -676,6 +692,7 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 |-------|--------|
 | Policy wiring gap | `intergrax/applications/_shared/policy_wiring.py:39-41` |
 | No `load_policy_rule_plugins` in wire | Same file — absent from `wire_policy_bundle` |
+| Typed composition target | §7 — `DeclarativePolicyRuntime` on `RuntimePolicyBundle`; not `domain_fragments` for new consumers |
 | Unknown handler returns ALLOW | `intergrax/runtime/policy/rules/registry.py:49-51` |
 | Security `override=True` | `intergrax/runtime/security/defense_plugin_loader.py:29` |
 | Memory `hasattr` probing | `intergrax/core/memory_bootstrap.py:20-35` |
