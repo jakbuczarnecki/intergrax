@@ -2,7 +2,7 @@
 
 > **Application dependencies:** each Tier-3 host owns applications/<app>/pyproject.toml (Intergrax workspace package + selected extras). Sync with uv sync --project applications/<app>. Canon: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
-**Last updated:** 2026-08-12 · PLATFORM-PLUGIN-DOCS-3
+**Last updated:** 2026-08-12 · PLATFORM-PLUGIN-DOCS-4
 
 Intergrax exposes four **core plugin catalogs** plus opt-in RAG component entry points. Shipped providers and third-party pip packages register through the same discovery protocol.
 
@@ -106,8 +106,8 @@ Working Tools reference: §16.2 · [`examples/platform_plugins/local_embedded_to
 | Local path status | Surfaces |
 |-------------------|----------|
 | **Documented explicit registration** | Integrations (`register_integration_plugin`), Tools (`register_tool_plugin` + scaffold `extensions/`), Skills (`register_skill_plugin`) |
-| **Host composition possible; incomplete developer path** | Context (`register_context_plugin` — no scaffold hook yet), Memory stores (host invokes factory callables), Vendor Knowledge (host builder + bindings — not Tier-0 catalog registration) |
-| **External-EP-first / no documented local author path** | RAG chunker, RAG retriever, RAG reranker, Security defense, Policy rule handler, Tool invocation pattern |
+| **Host composition possible; incomplete developer path** | Context (`register_context_plugin` — no scaffold hook yet), Memory stores (host invokes factory callables / `MemoryPlatformWiring`), Vendor Knowledge (host builder + bindings — not Tier-0 catalog registration) |
+| **External-EP-first / advanced host composition only** | RAG chunker, RAG retriever, RAG reranker (registry `register` APIs — see RAG guide §0.2), Security defense, Policy rule handler, Tool invocation pattern |
 
 ---
 
@@ -120,11 +120,11 @@ All canonical setuptools entry-point surfaces (architecture §20.1). One row per
 | Integration | New backend / provider category | `IntegrationPlugin` | `intergrax.integrations` | `register_integration_plugin()` | `IntegrationProfile` + `IntegrationManifest.env_prefix` | [§2](#2-external-integration-plugin) · [§16.4–§16.5](#164-external-integration-package-quickstart) · [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) |
 | Tool | New LLM-invokable operation | `ToolPlugin` | `intergrax.tools` | `register_tool_plugin()` + scaffold `extensions/` | `ToolWiringContext` | [§3](#3-external-tool-plugin) · [§16](#16-dual-mode-developer-quickstarts-platform-plugin-8) · [`TOOLS.md`](../../architecture/TOOLS.md) |
 | Skill | Reusable agent capability bundle | `SkillPlugin` | `intergrax.skills` | `register_skill_plugin()` | `SkillProfile` | [§4](#4-external-skill-plugin) · [§16.6–§16.7](#166-external-skill-package-quickstart) · [`SKILLS.md`](../../architecture/SKILLS.md) |
-| Context | Custom context / prompt material | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` — **no scaffold hook yet** | `ContextProfile` | [`CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) · §14.2 (dedicated author guide: DOCS-4) |
-| Memory store | Swap profile / session / episodic storage | `UserProfileStorePlugin` / `SessionStoragePlugin` factories | `intergrax.memory_stores` | Host factory callables — **no local register helper** | `MemoryProfile` + host `**kwargs` | [§9](#9-memory-store-plugins-phase-mem) · [`MEMORY.md`](../../architecture/MEMORY.md) §5.3 |
-| RAG chunker | Custom chunking strategy | `BaseChunkingStrategy` | `intergrax.rag.chunkers` | RAG bootstrap registry — **local path not documented** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
-| RAG retriever | Custom retrieval implementation | `BaseRetriever` | `intergrax.rag.retrievers` | Same as chunkers | `RagProfile` + vector store bindings | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
-| RAG reranker | Custom reranking | `BaseReranker` | `intergrax.rag.rerankers` | Same as chunkers | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
+| Context | Custom context / prompt material | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` — **no scaffold hook yet** | `ContextProfile` | [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) · [`CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) |
+| Memory store | Swap profile / session / episodic storage | `UserProfileStorePlugin` / `SessionStoragePlugin` / `SessionTurnIndexStorePlugin` | `intergrax.memory_stores` | Host factory / `MemoryPlatformWiring` — **no `register_*` helper** | `MemoryProfile` + host `**kwargs` | [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) · [`MEMORY.md`](../../architecture/MEMORY.md) §5.3 |
+| RAG chunker | Custom chunking strategy | `BaseChunkingStrategy` | `intergrax.rag.chunkers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
+| RAG retriever | Custom retrieval implementation | `BaseRetriever` / `BaseRetrieverPlugin` | `intergrax.rag.retrievers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + vector store bindings | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
+| RAG reranker | Custom reranking | `BaseReranker` / `BaseRerankerPlugin` | `intergrax.rag.rerankers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
 | Vendor Knowledge | External knowledge source contributions | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition — **not Tier-0 catalog registration** | `KnowledgeSourceBinding` + tenant scope | [`VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md`](VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) |
 | Security defense | Runtime inspection at `HookPoint`s | `SecurityDefensePlugin` | `intergrax.security_defenses` | `bootstrap_security_providers()` + profile ids — **no local register helper** | `ApplicationSecurityProfile` | [§12](#12-security-defense-plugins-phase-sec-planes) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance) |
 | Policy rule handler | Custom policy evaluation handlers | `PolicyRuleHandler` | `intergrax.policy_rules` | Policy bundle bootstrap — **local path not documented** | `PolicyRulesProfile` / YAML bundle | [§10](#10-policy-rule-handler-plugins-phase-dx-58) · [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
@@ -736,21 +736,26 @@ Agents consume **tools** via `ToolRegistry` and **skills** via `SkillResolver` �
 
 ## 9. Memory store plugins (Phase MEM)
 
+**Author guide:** [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) — full developer journey, bootstrap semantics, and runtime paths.
+
 Entry point group: `intergrax.memory_stores`
 
 | Protocol | Factory method | Replaces |
 |----------|----------------|----------|
 | `UserProfileStorePlugin` | `create_user_profile_store(**kwargs)` | Default `InMemoryUserProfileStore` / sqlite bundle / optional Mongo `document_store` (MEM-PERS.2) |
 | `SessionStoragePlugin` | `create_session_storage(**kwargs)` | Default `InMemorySessionStorage` / sqlite bundle |
-| `SessionTurnIndexStore` (target MEM-VEC-3.1) | `create_session_turn_index(**kwargs)` | Default episodic vector adapter over host `VectorstoreManager` |
+| `SessionTurnIndexStorePlugin` | `create_session_turn_index(**kwargs)` | Default episodic vector adapter over host `VectorstoreManager` |
 
-Bootstrap: `intergrax.core.memory_bootstrap.bootstrap_memory_stores(discover_entry_points=True)`.
+Bootstrap: `intergrax.core.memory_bootstrap.bootstrap_memory_stores(discover_entry_points=True)` **counts** discovered plugins — it does **not** activate a store. See the memory author guide §9.
 
 **Vector memory:** LTM and session episodic indexes reuse the host integration **vector store** — memory plugins swap index adapters, not vendor SDKs. See [`architecture/MEMORY.md`](../../architecture/MEMORY.md) §5.3.
 
-Reference fixture: `tests/fixtures/plugin_packages/memory_store_plugin`.
+Reference fixtures (**test fixture — packaging reference, not production sample**):
 
-Swap backends in Tier-3 by registering an EP plugin — agents still use `UserProfileManager` / `SessionManager`; never import store implementations from Tier-2.
+- `tests/fixtures/plugin_packages/memory_store_plugin/`
+- `tests/fixtures/plugin_packages/session_turn_index_plugin/`
+
+Swap backends in Tier-3 by registering an EP plugin (where wired) or composing `MemoryPlatformWiring` — agents still use `UserProfileManager` / `SessionManager`; never import store implementations from Tier-2.
 
 ---
 
@@ -972,7 +977,7 @@ Use the **domain-owned** primitive for your surface — the platform does not pr
 | Integration | `IntegrationProfile` + `ApplicationEnvironmentProfile` | Host resolves; optional `IntegrationManifest.env_prefix` (domain contract) | `profile.resolve(IntegrationCategory.…)` |
 | Tool | `ToolProfile` | `ToolWiringContext` integration slots | `register_tools(registry, ctx)` |
 | Skill | `SkillProfile` | Via tools at invoke time | `register_skills(registry)` |
-| Context | `ContextProfile` | Typically none at plugin boundary | `register(registry)` |
+| Context | `ContextProfile` | Typically none at plugin boundary | `register(registry)` — see [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) |
 | RAG component | `RagProfile` + bootstrap kwargs | Via integrations passed into bootstrap | `BaseRetrieverPlugin.create(…)` / registry bootstrap |
 | Memory store | `MemoryProfile` | Host `**kwargs` to factory | `create_user_profile_store(**kwargs)` |
 | Security defense | Host security profile | `HookContext` only | Middleware wraps plugin at host |

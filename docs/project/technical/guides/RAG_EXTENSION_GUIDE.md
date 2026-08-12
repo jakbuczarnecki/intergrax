@@ -1,9 +1,10 @@
 # RAG Extension Guide
 
-**Status:** canonical developer guide · **RAG-DEV-12**
+**Status:** canonical developer guide · **RAG-DEV-12** · **PLATFORM-PLUGIN-DOCS-4**
 **Architecture owner:** [`docs/project/architecture/RAG.md`](../../architecture/RAG.md)
 **Document ABI:** [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
 **Integration architecture:** [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md)
+**Platform catalog:** [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md)
 
 This guide describes how to extend Intergrax RAG without modifying RAG core.
 The design is **batteries included, but not locked to Intergrax algorithms**:
@@ -13,6 +14,138 @@ boundary documented here.
 
 This is an authoring guide, not a provider qualification claim. Provider status
 and live/offline evidence remain in [`RAG.md`](../../architecture/RAG.md).
+
+---
+
+## Developer journey — chunker / retriever / reranker (D1–D16)
+
+The three public RAG entry-point surfaces share discovery semantics but differ in contracts and DI. Scores below apply to the **external-EP author path**.
+
+### Chunker (`intergrax.rag.chunkers`)
+
+| D | Topic | Status | Section |
+|---|-------|--------|---------|
+| D1 Purpose | COMPLETE | §0, §4 |
+| D2 Public contract | COMPLETE | §4 — `BaseChunkingStrategy` |
+| D3 Minimal implementation | COMPLETE | §4 |
+| D4 External package | COMPLETE | §15 |
+| D5 Local / host path | COMPLETE | §0.2 — advanced composition only |
+| D6 Configuration | COMPLETE | §0.3 — `RagProfile.chunking_strategy_id` |
+| D7 Secrets | N/A | |
+| D8 DI | COMPLETE | No-arg EP constructor; `register_chunking_strategy_plugin` for composition |
+| D9 Registration/discovery | COMPLETE | §1, §0.1 |
+| D10 Qualification | COMPLETE | §0.4, §16 |
+| D11 Runtime use | COMPLETE | §0.3 |
+| D12 Lifecycle | N/A | |
+| D13 Failure behavior | COMPLETE | §1, §17 |
+| D14 Testing | COMPLETE | §16 |
+| D15 Production checklist | COMPLETE | §16 |
+| D16 Troubleshooting | COMPLETE | §17 |
+
+**Overall: COMPLETE** (external-EP path)
+
+### Retriever (`intergrax.rag.retrievers`)
+
+| D | Topic | Status | Section |
+|---|-------|--------|---------|
+| D1–D4 | Same pattern as chunker | COMPLETE | §5, §15 |
+| D5 Local / host path | COMPLETE | §0.2 |
+| D6 Configuration | COMPLETE | `RagProfile.retriever_id`, `fast_retriever_id`, `deep_retriever_id` |
+| D8 DI | COMPLETE | `BaseRetrieverPlugin.create(...)` |
+| D9–D16 | Same pattern as chunker | COMPLETE | §1, §16–§17 |
+
+**Overall: COMPLETE** (external-EP path)
+
+### Reranker (`intergrax.rag.rerankers`)
+
+| D | Topic | Status | Section |
+|---|-------|--------|---------|
+| D1–D4 | Same pattern as chunker | COMPLETE | §6, §15 |
+| D5 Local / host path | COMPLETE | §0.2 |
+| D6 Configuration | COMPLETE | `RagProfile.reranker_id`, `enable_rerank` |
+| D8 DI | COMPLETE | `BaseRerankerPlugin.create(embedding_manager=...)` |
+| D9–D16 | Same pattern as chunker | COMPLETE | §1, §16–§17 |
+
+**Overall: COMPLETE** (external-EP path)
+
+---
+
+## 0. Shared RAG model and platform truths
+
+### Pipeline stages (what each plugin owns)
+
+```text
+documents
+  → chunker (BaseChunkingStrategy)     # index time
+  → embed + vector index
+  → retriever (BaseRetriever)          # query time — candidate set
+  → reranker (BaseReranker)            # optional — ranked context
+  → Context Engineering (builtin.rag)  # not a RAG EP surface
+```
+
+Chunkers transform `KnowledgeDocument` sequences. Retrievers map `RetrieverQuery` → `RetrievalHit`. Rerankers reorder `RerankerCandidate` → `RerankerResult`. Vector backends use Integration Library — not `intergrax.rag.*` EP groups.
+
+### Discovery and trust (all Platform Plugin surfaces)
+
+- `installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`
+- Third-party plugins are **trusted in-process Python**
+- Qualification is **host-owned semantic approval**, not attestation
+- Secrets stay in host/integration configuration — not EP values
+- No universal Platform Plugin lifecycle/unload manager
+
+### 0.1 Discovery timing (chunker / retriever / reranker)
+
+RAG discovery is opt-in: `discover_entry_points=True` on bootstrap functions or `INTERGRAX_DISCOVER_PLUGINS=true`. Built-in strategies register first; EP plugins append. Duplicate component IDs fail in native registries (`ValueError`). See §1 for conflict policy details.
+
+### 0.2 Local / host path — classification
+
+RAG local authoring is **not** equivalent to Tools scaffold + `register_tool_plugin()`. Classify as **external-EP-first** with optional **advanced host composition**:
+
+| Surface | Advanced host composition (trusted code) | Canonical author path |
+|---------|------------------------------------------|------------------------|
+| Chunker | `register_chunking_strategy_plugin(strategy_id, factory)` then `create_default_chunking_engine(registry=custom)`; or `ChunkingStrategyRegistry.register(instance)` | External EP `intergrax.rag.chunkers` |
+| Retriever | `RetrieverRegistry.register(retriever)` passed to `create_default_retriever_manager(registry=...)` | External EP `intergrax.rag.retrievers` |
+| Reranker | `RerankerRegistry.register(reranker)` passed to `create_default_reranker_engine(registry=...)` | External EP `intergrax.rag.rerankers` |
+
+Do not document these composition APIs as a portable local plugin framework. They require host-owned bootstrap code in the same process.
+
+### 0.3 Runtime path — RagProfile to active component
+
+```text
+ApplicationEnvironmentProfile
+  → resolve_rag_profile_for_environment(env)     # may return None when enable_rag=False
+  → create_default_rag_stack(..., profile=rag_profile)
+      → create_default_chunking_engine()           # selects chunking_strategy_id at ingest
+      → create_default_retriever_manager()         # registers retriever_id / fast / deep
+      → create_default_reranker_engine()           # registers reranker_id when enable_rerank
+  → RagStack on ToolWiringContext / RuntimeConfig
+  → RetrievalService.retrieve(RetrievalRequest)    # uses profile retriever + reranker ids
+```
+
+Key `RagProfile` selectors:
+
+| Field | Selects |
+|-------|---------|
+| `chunking_strategy_id` | `ChunkingStrategyRegistry` entry (default `recursive`) |
+| `retriever_id` | Primary retriever (default `hybrid`) |
+| `fast_retriever_id` / `deep_retriever_id` | Adaptive routing pair |
+| `reranker_id` | Reranker when `enable_rerank=True` (default `embedding_cosine`) |
+| `enable_rerank` | Rerank stage on/off |
+| `prefetch_top_k` / `final_top_k` | Retrieval limits |
+
+Tier-3 hosts wire via `intergrax.applications._shared.rag_runtime_bridge.resolve_rag_stack_for_environment`.
+
+### 0.4 Qualification layers (do not merge)
+
+| Layer | Meaning |
+|-------|---------|
+| Contract validity | Plugin implements `BaseChunkingStrategy` / `BaseRetriever` / `BaseReranker` (or plugin bases) |
+| Platform production qualification | Host `require_production_qualification` gates — compatible ≠ qualified |
+| Domain / live backend qualification | Separate evidence for vector stores, live PgVector/Chroma/Neo4j, etc. — see [`RAG.md`](../../architecture/RAG.md) qualification records |
+
+External EP registration does not grant `LIVE_QUALIFIED` or `STABLE` provider status.
+
+---
 
 ## 1. Extension topology: audit result
 

@@ -888,3 +888,54 @@ Coherent implementation blocks derived from evidence (not microtasks):
 3. `docs/project/architecture/TOOLS.md`
 4. `docs/project/architecture/SKILLS.md`
 5. `docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md` (this section)
+
+---
+
+## 15. DOCS-4 remediation status (PLATFORM-PLUGIN-DOCS-4)
+
+**Date:** 2026-08-12 · **Branch:** `development` · **Scope:** Context, Memory stores, RAG chunker/retriever/reranker developer journeys
+
+### Matrix outcome (D1–D16)
+
+| Surface | DOCS-1 | DOCS-4 | Notes |
+|---------|--------|--------|-------|
+| **Context** | MISSING | **COMPLETE** | New `CONTEXT_PLUGIN_AUTHOR_GUIDE.md` — `ContextPlugin`, EP, `ContextProfile`, bootstrap, runtime, tests, troubleshooting |
+| **Memory stores** | MISSING | **PARTIAL** | New `MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md` — bootstrap count-only corrected; `SessionTurnIndexStorePlugin` wired; user/session EP resolver gap documented |
+| **RAG chunker** | PARTIAL | **COMPLETE** | `RAG_EXTENSION_GUIDE.md` §0 journey matrix, local path §0.2, `RagProfile` runtime §0.3 |
+| **RAG retriever** | PARTIAL | **COMPLETE** | Same guide upgrade |
+| **RAG reranker** | PARTIAL | **COMPLETE** | Same guide upgrade |
+
+### Shared blocks aligned
+
+- Discovery: `installed ≠ discovered ≠ enabled ≠ production-qualified`
+- Trust: trusted in-process Python
+- Qualification: host-owned semantic approval; RAG live-backend qualification separated (§0.4)
+- Secrets: not in Platform Plugin metadata or EP values
+- Lifecycle: no universal Platform Plugin unload API
+
+### RUNTIME_CAPABILITY_GAPS
+
+| Gap | Surfaces affected |
+|-----|-------------------|
+| No shipped Tier-3 resolver for `UserProfileStorePlugin.create_user_profile_store` from EP discovery | Memory — user profile store |
+| No shipped Tier-3 resolver for `SessionStoragePlugin.create_session_storage` from EP discovery | Memory — session storage |
+| Context scaffold CLI parity with Tools | Context — DX only; external-EP path complete |
+
+### REFERENCE_EXAMPLE_GAPS (deferred to DOCS-6)
+
+| Gap | Notes |
+|-----|-------|
+| Installable external Context plugin wheel under `examples/platform_plugins/` | Documentation + unit-test patterns suffice for DOCS-4 |
+| Installable external Memory store wheel | Test fixtures labeled; no production sample package |
+| `examples/platform_plugins/intergrax_reference_rag_plugin/` | RAG guide §15 skeleton + `test_rag_plugin_discovery.py` suffice |
+
+### Changed documentation (DOCS-4 allowlist)
+
+1. `docs/project/technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md` (new)
+2. `docs/project/technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md` (new)
+3. `docs/project/technical/guides/RAG_EXTENSION_GUIDE.md`
+4. `docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md`
+5. `docs/project/architecture/CONTEXT_ENGINEERING.md`
+6. `docs/project/architecture/MEMORY.md`
+7. `docs/project/architecture/RAG.md`
+8. `docs/project/maintainers/plans/PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md` (this section)
