@@ -293,11 +293,17 @@ class MaterializedRuntimeLock(BaseModel):
         return self.model_copy(update={"lock_id": digest, "lock_digest": digest})
 
     @model_validator(mode="after")
-    def _validate_identity_pair(self) -> MaterializedRuntimeLock:
-        if (
-            self.lock_id is not None
-            and self.lock_digest is not None
-            and self.lock_id != self.lock_digest
-        ):
-            raise ValueError("lock_id and lock_digest must match when both are set")
+    def _validate_content_identity(self) -> MaterializedRuntimeLock:
+        computed = self.compute_lock_digest()
+        has_lock_id = self.lock_id is not None
+        has_lock_digest = self.lock_digest is not None
+        if has_lock_id != has_lock_digest:
+            raise ValueError("lock_id and lock_digest must both be set or both absent")
+        if has_lock_id:
+            if self.lock_id != self.lock_digest:
+                raise ValueError("lock_id and lock_digest must match")
+            if self.lock_id != computed:
+                raise ValueError(
+                    "claimed lock identity does not match semantic content digest"
+                )
         return self

@@ -298,9 +298,16 @@ class InMemoryMaterializedRuntimeLockStore:
 
     def persist_lock(self, lock: MaterializedRuntimeLock) -> MaterializedRuntimeLock:
         with self._lock:
-            identity = lock if lock.lock_id is not None else lock.with_content_identity()
-            if identity.lock_id is None or identity.lock_digest is None:
-                raise MaterializedRuntimeLockConflict("lock missing content identity")
+            canonical = lock.with_content_identity()
+            if lock.lock_id is not None or lock.lock_digest is not None:
+                if (
+                    lock.lock_id != canonical.lock_id
+                    or lock.lock_digest != canonical.lock_digest
+                ):
+                    raise MaterializedRuntimeLockConflict(
+                        "lock identity does not match semantic content"
+                    )
+            identity = canonical
             existing = self._state.locks.get(identity.lock_id)
             if existing is not None:
                 if existing.compute_lock_digest() != identity.compute_lock_digest():

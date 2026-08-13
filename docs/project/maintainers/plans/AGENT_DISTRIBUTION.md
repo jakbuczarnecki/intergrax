@@ -150,14 +150,35 @@ in-memory lock store, and candidate runtime graph simulation gates under `interg
 | `MaterializedRuntimeLockProducer` / `MaterializedRuntimeLockService` | done |
 | Deterministic package/agent closure canonicalization | done |
 | `created_at` excluded from lock content digest | done |
-| `InMemoryMaterializedRuntimeLockStore` | done |
+| Content-addressed lock identity invariant (`lock_id == lock_digest == compute_lock_digest()`) | done |
+| `InMemoryMaterializedRuntimeLockStore` canonicalization + idempotency | done |
 | `AgentProjectMetadataProvider` port | done |
 | `CandidateRuntimeGraphBuilder` + `CandidateRuntimeGraphValidator` | done |
 | `CandidateApplicationRuntimeGraph` content-addressed digest | done |
+| Neutral `intergrax/runtime_graph_semantics.py` shared by legacy + AP-7 | done |
 | Focused AP-7 lock + graph tests | done |
 | AP-3..AP-6 regression | done |
 | Tier-boundary check | done |
 
-**Evidence:** `tests/unit/agent_distribution/test_agent_distribution_runtime_lock.py`, `test_agent_distribution_runtime_graph.py`
+**Evidence:** `tests/unit/agent_distribution/test_agent_distribution_runtime_lock.py`, `test_agent_distribution_runtime_graph.py`, `tests/unit/test_runtime_graph_semantics.py`
+
+**Next:** AP-8 may begin (physical materialization).
+
+## AGENT-PLATFORM-7-FIX-1 gate
+
+**READY_FOR_CLOSE** (2026-08-13) — enforce true content-addressed lock identity and consolidate
+runtime-graph semantics into neutral `intergrax/runtime_graph_semantics.py`.
+
+| Deliverable | Status |
+|-------------|--------|
+| `MaterializedRuntimeLock` forged-identity fail-closed validation | done |
+| Store canonicalization before persist (no caller-trusted IDs) | done |
+| Shared dependency parsing / taxonomy / cycle formatting | done |
+| Legacy `application_runtime_graph` consumes neutral helpers | done |
+| AP-7 `runtime_graph_service` duplicate semantics removed | done |
+| Lock + graph regression tests | done |
+| Tier-boundary check | done |
+
+**Evidence:** `intergrax/runtime_graph_semantics.py`, `tests/unit/test_runtime_graph_semantics.py`
 
 **Next:** AP-8 may begin (physical materialization).

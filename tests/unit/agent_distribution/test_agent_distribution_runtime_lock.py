@@ -7,6 +7,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.agent_distribution.dependency import (
     CandidateDependencySpecification,
@@ -244,6 +245,75 @@ def test_resolver_identity_mismatch_fails_closed() -> None:
         _produce_lock(resolved=resolved)
 
 
+def test_with_content_identity_matches_compute_lock_digest() -> None:
+    lock = _produce_lock()
+    unidentified = lock.model_copy(update={"lock_id": None, "lock_digest": None})
+    identified = unidentified.with_content_identity()
+    digest = unidentified.compute_lock_digest()
+    assert identified.lock_id == digest
+    assert identified.lock_digest == digest
+    assert identified.lock_id == identified.lock_digest
+
+
+def test_forged_lock_identity_rejected_at_construction() -> None:
+    lock = _produce_lock()
+    forged_digest = "sha256:" + ("f" * 64)
+    payload = lock.model_dump()
+    payload["lock_id"] = forged_digest
+    payload["lock_digest"] = forged_digest
+    with pytest.raises(ValidationError, match="claimed lock identity"):
+        MaterializedRuntimeLock.model_validate(payload)
+
+
+def test_store_cannot_persist_forged_identity() -> None:
+    state = AgentDistributionStoreState()
+    store = InMemoryMaterializedRuntimeLockStore(state)
+    lock = _produce_lock()
+    payload = lock.model_dump()
+    payload["lock_id"] = "sha256:" + ("f" * 64)
+    payload["lock_digest"] = payload["lock_id"]
+    forged = MaterializedRuntimeLock.model_construct(**payload)
+    with pytest.raises(MaterializedRuntimeLockConflict, match="semantic content"):
+        store.persist_lock(forged)
+
+
+def test_unidentified_lock_canonicalized_and_persisted() -> None:
+    state = AgentDistributionStoreState()
+    store = InMemoryMaterializedRuntimeLockStore(state)
+    lock = _produce_lock().model_copy(update={"lock_id": None, "lock_digest": None})
+    persisted = store.persist_lock(lock)
+    assert persisted.lock_id is not None
+    assert persisted.lock_digest == persisted.lock_id
+    assert persisted.lock_id == lock.with_content_identity().lock_id
+
+
+def test_semantic_content_change_produces_different_lock_id() -> None:
+    first = _produce_lock()
+    second = _produce_lock(
+        resolved=_resolved_closure(
+            packages=(
+                MaterializedLockPackage(
+                    distribution_name=_AGENT_A,
+                    version="9.9.9",
+                    package_digest=_DIGEST_A,
+                ),
+            )
+        )
+    )
+    assert first.lock_id != second.lock_id
+
+
+def test_created_at_difference_does_not_change_lock_id() -> None:
+    first = _produce_lock(
+        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+    )
+    second = _produce_lock(
+        created_at=datetime(2026, 8, 13, tzinfo=timezone.utc),
+    )
+    assert first.lock_id == second.lock_id
+    assert first.lock_digest == second.lock_digest
+
+
 def test_lock_store_idempotent_persist() -> None:
     state = AgentDistributionStoreState()
     store = InMemoryMaterializedRuntimeLockStore(state)
@@ -271,8 +341,10 @@ def test_lock_store_identity_collision_with_different_content_fails_closed() -> 
             )
         )
     )
-    tampered = other.model_copy(update={"lock_id": lock.lock_id, "lock_digest": lock.lock_digest})
-    with pytest.raises(MaterializedRuntimeLockConflict):
+    tampered = other.model_copy(
+        update={"lock_id": lock.lock_id, "lock_digest": lock.lock_digest},
+    )
+    with pytest.raises(MaterializedRuntimeLockConflict, match="semantic content"):
         store.persist_lock(tampered)
 
 

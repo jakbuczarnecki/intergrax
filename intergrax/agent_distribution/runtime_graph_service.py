@@ -5,9 +5,7 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping, Sequence
-from enum import Enum
 
 from intergrax.agent_distribution.agent_project_metadata import (
     AgentProjectMetadata,
@@ -27,57 +25,20 @@ from intergrax.agent_distribution.runtime_graph import (
     RuntimeGraphAgentRef,
     RuntimeGraphThirdPartyRef,
 )
-
-_AGENT_DIST_RE = re.compile(r"^intergrax-(.+)-agent$", re.IGNORECASE)
-_EXTRA_RE = re.compile(r"Intergrax-ai(?:\[([^\]]*)\])?", re.IGNORECASE)
-_APPLICATION_DIST_RE = re.compile(r"^intergrax-.+-application$", re.IGNORECASE)
-
-
-class _VisitState(Enum):
-    UNVISITED = 0
-    VISITING = 1
-    VISITED = 2
-
-
-def _normalize_distribution_name(name: str) -> str:
-    return name.strip().lower().replace("_", "-")
-
-
-def _parse_dependency_name(dep: str) -> str:
-    raw = dep.strip().strip("\"'")
-    raw = raw.split(";")[0].strip()
-    raw = re.split(r"[<>=!~\[]", raw, maxsplit=1)[0].strip()
-    return raw
-
-
-def _is_platform_dependency(name: str) -> bool:
-    return _normalize_distribution_name(name) in {
-        "intergrax-ai",
-        "intergrax_ai",
-    }
-
-
-def _is_agent_distribution(name: str) -> bool:
-    cleaned = name.strip()
-    if cleaned.lower() == "intergrax-assistant-agent":
-        return True
-    return _AGENT_DIST_RE.match(cleaned) is not None
-
-
-def _is_application_distribution(name: str) -> bool:
-    return _APPLICATION_DIST_RE.match(name.strip()) is not None
-
-
-def _format_cycle(path: list[str], closing: str) -> str:
-    chain = path + [closing]
-    return "AGENT_DEPENDENCY_CYCLE:\n→ ".join(chain)
-
-
+from intergrax.runtime_graph_semantics import (
+    GraphVisitState,
+    format_agent_dependency_cycle,
+    is_agent_distribution,
+    is_application_distribution,
+    is_platform_dependency,
+    normalize_distribution_name,
+    parse_dependency_name,
+)
 def _lock_package_index(
     lock: MaterializedRuntimeLock,
 ) -> dict[str, MaterializedLockPackage]:
     return {
-        _normalize_distribution_name(package.distribution_name): package
+        normalize_distribution_name(package.distribution_name): package
         for package in lock.packages
     }
 
@@ -186,7 +147,7 @@ class CandidateRuntimeGraphBuilder:
                 raise CandidateRuntimeGraphError(
                     f"direct agent digest mismatch for {agent.distribution_package_id}"
                 )
-            package_key = _normalize_distribution_name(agent.distribution_package_id)
+            package_key = normalize_distribution_name(agent.distribution_package_id)
             if package_key not in packages_by_name:
                 raise CandidateRuntimeGraphError(
                     f"direct agent package {agent.distribution_package_id} missing from lock packages"
@@ -224,17 +185,17 @@ class CandidateRuntimeGraphBuilder:
         packages_by_name: dict[str, MaterializedLockPackage],
     ) -> tuple[list[RuntimeGraphAgentRef], None]:
         direct_keys = {
-            _normalize_distribution_name(agent.distribution_package_id)
+            normalize_distribution_name(agent.distribution_package_id)
             for agent in direct_agents
         }
-        visit_state: dict[str, _VisitState] = {
-            key: _VisitState.UNVISITED for key in direct_keys
+        visit_state: dict[str, GraphVisitState] = {
+            key: GraphVisitState.UNVISITED for key in direct_keys
         }
         transitive: list[RuntimeGraphAgentRef] = []
         stack: list[str] = []
 
         def ensure_agent_in_lock(dist_name: str) -> MaterializedAgentClosureEntry:
-            if not _is_agent_distribution(dist_name):
+            if not is_agent_distribution(dist_name):
                 raise CandidateRuntimeGraphError(
                     f"undeclared Tier-2 agent dependency {dist_name}"
                 )
@@ -243,7 +204,7 @@ class CandidateRuntimeGraphBuilder:
                 raise CandidateRuntimeGraphError(
                     f"undeclared Tier-2 agent {dist_name} absent from lock closure"
                 )
-            package_key = _normalize_distribution_name(dist_name)
+            package_key = normalize_distribution_name(dist_name)
             if package_key not in packages_by_name:
                 raise CandidateRuntimeGraphError(
                     f"agent package {dist_name} missing from lock packages"
@@ -251,16 +212,16 @@ class CandidateRuntimeGraphBuilder:
             return closure_entry
 
         def dfs(agent: RuntimeGraphAgentRef) -> None:
-            key = _normalize_distribution_name(agent.distribution_package_id)
-            state = visit_state.get(key, _VisitState.UNVISITED)
-            if state is _VisitState.VISITING:
+            key = normalize_distribution_name(agent.distribution_package_id)
+            state = visit_state.get(key, GraphVisitState.UNVISITED)
+            if state is GraphVisitState.VISITING:
                 raise CandidateRuntimeGraphError(
-                    _format_cycle(stack, agent.distribution_package_id)
+                    format_agent_dependency_cycle(stack, agent.distribution_package_id)
                 )
-            if state is _VisitState.VISITED:
+            if state is GraphVisitState.VISITED:
                 return
 
-            visit_state[key] = _VisitState.VISITING
+            visit_state[key] = GraphVisitState.VISITING
             stack.append(agent.distribution_package_id)
             metadata = self._metadata_for_agent(
                 agent=agent,
@@ -268,23 +229,25 @@ class CandidateRuntimeGraphBuilder:
             )
 
             for dep in metadata.dependencies:
-                dep_name = _parse_dependency_name(dep)
-                if _is_platform_dependency(dep_name):
+                dep_name = parse_dependency_name(dep)
+                if is_platform_dependency(dep_name):
                     continue
-                if _is_application_distribution(dep_name):
+                if is_application_distribution(dep_name):
                     raise CandidateRuntimeGraphError(
                         f"AGENT_TIER_VIOLATION: agent {agent.distribution_package_id} "
                         f"depends on forbidden application distribution {dep_name}"
                     )
-                if not _is_agent_distribution(dep_name):
+                if not is_agent_distribution(dep_name):
                     continue
 
                 closure_entry = ensure_agent_in_lock(dep_name)
-                dep_key = _normalize_distribution_name(dep_name)
-                dep_state = visit_state.get(dep_key, _VisitState.UNVISITED)
-                if dep_state is _VisitState.VISITING:
-                    raise CandidateRuntimeGraphError(_format_cycle(stack, dep_name))
-                if dep_state is _VisitState.VISITED:
+                dep_key = normalize_distribution_name(dep_name)
+                dep_state = visit_state.get(dep_key, GraphVisitState.UNVISITED)
+                if dep_state is GraphVisitState.VISITING:
+                    raise CandidateRuntimeGraphError(
+                        format_agent_dependency_cycle(stack, dep_name)
+                    )
+                if dep_state is GraphVisitState.VISITED:
                     continue
 
                 transitive_agent = RuntimeGraphAgentRef(
@@ -293,14 +256,14 @@ class CandidateRuntimeGraphBuilder:
                     package_digest=closure_entry.package_digest,
                 )
                 if dep_key not in direct_keys and all(
-                    _normalize_distribution_name(item.distribution_package_id) != dep_key
+                    normalize_distribution_name(item.distribution_package_id) != dep_key
                     for item in transitive
                 ):
                     transitive.append(transitive_agent)
                 dfs(transitive_agent)
 
             stack.pop()
-            visit_state[key] = _VisitState.VISITED
+            visit_state[key] = GraphVisitState.VISITED
 
         for direct in direct_agents:
             dfs(direct)
@@ -316,14 +279,14 @@ class CandidateRuntimeGraphBuilder:
         third_party: list[RuntimeGraphThirdPartyRef] = []
         seen: set[str] = set()
         for dep in repository_declaration.direct_dependencies:
-            dep_name = _parse_dependency_name(dep)
-            if _is_platform_dependency(dep_name) or _is_agent_distribution(dep_name):
+            dep_name = parse_dependency_name(dep)
+            if is_platform_dependency(dep_name) or is_agent_distribution(dep_name):
                 continue
-            if _is_application_distribution(dep_name):
+            if is_application_distribution(dep_name):
                 raise CandidateRuntimeGraphError(
                     f"APPLICATION_TIER_VIOLATION: application depends on {dep_name}"
                 )
-            key = _normalize_distribution_name(dep_name)
+            key = normalize_distribution_name(dep_name)
             if key in seen:
                 continue
             seen.add(key)
@@ -341,7 +304,7 @@ class CandidateRuntimeGraphBuilder:
         return tuple(
             sorted(
                 third_party,
-                key=lambda item: (_normalize_distribution_name(item.distribution_name), item.version),
+                key=lambda item: (normalize_distribution_name(item.distribution_name), item.version),
             )
         )
 
@@ -398,7 +361,7 @@ class CandidateRuntimeGraphValidator:
                 raise CandidateRuntimeGraphError(
                     f"graph agent digest mismatch for {agent.distribution_package_id}"
                 )
-            package_key = _normalize_distribution_name(agent.distribution_package_id)
+            package_key = normalize_distribution_name(agent.distribution_package_id)
             if package_key not in packages_by_name:
                 raise CandidateRuntimeGraphError(
                     f"graph agent package {agent.distribution_package_id} missing from lock"
