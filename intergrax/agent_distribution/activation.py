@@ -28,10 +28,11 @@ from intergrax.agent_distribution.errors import (
     RuntimeReadinessError,
     RuntimeRollbackError,
 )
-from intergrax.agent_distribution.events import TransitionResult
+from intergrax.agent_distribution.events import TransitionResult, distribution_event
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.stores import (
+    ApplicationEnvironmentActivationStore,
     ApplicationEnvironmentServingRecord,
     ApplicationEnvironmentServingStore,
     DeploymentInstanceStore,
@@ -44,14 +45,11 @@ _NON_EMPTY = Field(min_length=1)
 class RuntimeServingProjectionCoordinator(Protocol):
     """AP-10 coordination boundary — registry projection aligned with traffic commit."""
 
-    def prepare_projection(self, runtime_revision_id: str) -> None:
-        """Prepare registry projection inputs for candidate revision."""
-
-    def commit_projection(self, runtime_revision_id: str) -> None:
-        """Publish registry projection for traffic-serving revision."""
+    def prepare_projection(self, runtime_revision_id: str) -> str:
+        """Prepare registry projection; return readiness token for candidate revision."""
 
     def rollback_projection(self, runtime_revision_id: str) -> None:
-        """Restore registry projection for rollback target revision."""
+        """Restore registry projection inputs for rollback target revision."""
 
 
 class FakeRuntimeServingProjectionCoordinator:
@@ -59,20 +57,20 @@ class FakeRuntimeServingProjectionCoordinator:
 
     def __init__(self) -> None:
         self.prepared: set[str] = set()
-        self.committed: str | None = None
+        self.ready_tokens: dict[str, str] = {}
         self.rolled_back: str | None = None
         self.fail_prepare_for: set[str] = set()
 
     def fail_prepare(self, runtime_revision_id: str) -> None:
         self.fail_prepare_for.add(runtime_revision_id)
 
-    def prepare_projection(self, runtime_revision_id: str) -> None:
+    def prepare_projection(self, runtime_revision_id: str) -> str:
         if runtime_revision_id in self.fail_prepare_for:
             raise RuntimeActivationError("simulated projection prepare failure")
         self.prepared.add(runtime_revision_id)
-
-    def commit_projection(self, runtime_revision_id: str) -> None:
-        self.committed = runtime_revision_id
+        token = f"projection-ready:{runtime_revision_id}"
+        self.ready_tokens[runtime_revision_id] = token
+        return token
 
     def rollback_projection(self, runtime_revision_id: str) -> None:
         self.rolled_back = runtime_revision_id
@@ -130,6 +128,7 @@ class ActivationService:
         revision_store: RuntimeRevisionStore,
         deployment_instance_store: DeploymentInstanceStore,
         serving_store: ApplicationEnvironmentServingStore,
+        activation_store: ApplicationEnvironmentActivationStore,
         deployment_adapter: RuntimeDeploymentAdapter,
         projection_coordinator: RuntimeServingProjectionCoordinator,
         artifact_revalidation: ArtifactRevalidationHook | None = None,
@@ -138,6 +137,7 @@ class ActivationService:
         self._revision_service = RuntimeRevisionService(revision_store)
         self._deployment_instance_store = deployment_instance_store
         self._serving_store = serving_store
+        self._activation_store = activation_store
         self._deployment_adapter = deployment_adapter
         self._projection_coordinator = projection_coordinator
         self._artifact_revalidation = artifact_revalidation or ArtifactRevalidationHook(
@@ -256,7 +256,7 @@ class ActivationService:
             if revision.revision_state is not RuntimeRevisionState.VALIDATED:
                 raise RuntimeActivationError("commit requires validated runtime revision")
 
-            instance = self._require_ready_instance(
+            self._require_ready_instance(
                 application_environment_id=application_environment_id,
                 runtime_revision_id=runtime_revision_id,
             )
@@ -265,76 +265,65 @@ class ActivationService:
 
             now = datetime.now(UTC)
             try:
-                serving_record = self._serving_store.atomic_swap_serving_revision(
+                atomic_result = self._activation_store.atomic_commit_activation(
                     application_id=application_id,
                     application_environment_id=application_environment_id,
                     expected_current_revision_id=expected_prior_traffic_revision_id,
                     expected_pointer_revision=expected_serving_pointer_revision,
-                    new_revision_id=runtime_revision_id,
-                    prior_revision_id=expected_prior_traffic_revision_id,
+                    candidate_revision_id=runtime_revision_id,
+                    expected_artifact_digest=expected_artifact_digest,
                     committed_at=now,
                 )
             except RuntimeActivationConflict:
                 raise
+            except RuntimeActivationError:
+                raise
             except Exception as exc:
-                raise RuntimeActivationConflict("serving pointer CAS failed") from exc
+                raise RuntimeActivationConflict("activation atomic commit failed") from exc
 
-            try:
-                activated = self._revision_service.activate_revision(
-                    runtime_revision_id,
-                    expected_prior_active_revision_id=expected_prior_traffic_revision_id,
-                )
-            except Exception as exc:
-                raise RuntimeActivationError("revision activation failed after pointer swap") from exc
-
-            serving_instance = instance.model_copy(
-                update={
-                    "instance_state": DeploymentInstanceState.SERVING,
-                    "record_revision": instance.record_revision + 1,
-                }
-            )
-            self._deployment_instance_store.update_instance(
-                serving_instance,
-                expected_state=DeploymentInstanceState.READY,
-                expected_record_revision=instance.record_revision,
-            )
-
-            prior_instance: DeploymentInstanceRecord | None = None
-            if expected_prior_traffic_revision_id is not None:
-                prior = self._deployment_instance_store.get_instance(
-                    application_environment_id,
-                    expected_prior_traffic_revision_id,
-                )
-                if prior is not None and prior.serving_unit_ref is not None:
-                    prior_revision = self._require_revision(expected_prior_traffic_revision_id)
+            drain_error: RuntimeDrainError | None = None
+            prior_instance = atomic_result.prior_instance
+            if prior_instance is not None and prior_instance.serving_unit_ref is not None:
+                try:
+                    prior_revision = self._require_revision(prior_instance.runtime_revision_id)
                     self._deployment_adapter.begin_drain(
                         prior_revision,
-                        serving_unit_ref=prior.serving_unit_ref,
+                        serving_unit_ref=prior_instance.serving_unit_ref,
                     )
-                    prior_instance = prior.model_copy(
+                except Exception as exc:
+                    recovery = prior_instance.model_copy(
                         update={
-                            "instance_state": DeploymentInstanceState.DRAINING,
-                            "drain_started_at": now,
-                            "record_revision": prior.record_revision + 1,
+                            "failure_evidence_ref": f"drain-start:{exc}",
+                            "record_revision": prior_instance.record_revision + 1,
                         }
                     )
                     self._deployment_instance_store.update_instance(
-                        prior_instance,
-                        expected_state=prior.instance_state,
-                        expected_record_revision=prior.record_revision,
+                        recovery,
+                        expected_state=DeploymentInstanceState.DRAINING,
+                        expected_record_revision=prior_instance.record_revision,
+                    )
+                    drain_error = RuntimeDrainError(
+                        "physical drain start failed; recovery required"
                     )
 
-            self._projection_coordinator.commit_projection(runtime_revision_id)
-
-            return TransitionResult(
+            result = TransitionResult(
                 value=ActivationCommitResult(
-                    serving_record=serving_record,
-                    activated_revision=activated.value,
-                    candidate_instance=serving_instance,
+                    serving_record=atomic_result.serving_record,
+                    activated_revision=atomic_result.activated_revision,
+                    candidate_instance=atomic_result.candidate_instance,
                     prior_instance=prior_instance,
                 ),
-                events=activated.events,
+                events=(
+                    distribution_event(
+                        "runtime_revision.activated",
+                        runtime_revision_id,
+                        application_environment_id=application_environment_id,
+                    ),
+                ),
             )
+            if drain_error is not None:
+                raise drain_error
+            return result
 
     def complete_drain(
         self,
@@ -437,88 +426,68 @@ class ActivationService:
             self._assert_identity_unchanged(prior_revision)
 
             current_revision_id = serving.traffic_serving_revision_id
-            prior_instance = self._ensure_prior_instance_ready(
+            self._ensure_prior_instance_ready(
                 application_id=application_id,
                 application_environment_id=application_environment_id,
                 prior_revision=prior_revision,
             )
 
+            self._projection_coordinator.rollback_projection(prior_revision_id)
             self._projection_coordinator.prepare_projection(prior_revision_id)
 
             now = datetime.now(UTC)
-            serving_record = self._serving_store.atomic_swap_serving_revision(
-                application_id=application_id,
-                application_environment_id=application_environment_id,
-                expected_current_revision_id=current_revision_id,
-                expected_pointer_revision=expected_serving_pointer_revision,
-                new_revision_id=prior_revision_id,
-                prior_revision_id=current_revision_id,
-                committed_at=now,
-            )
-
-            restored = prior_revision.model_copy(
-                update={
-                    "revision_state": RuntimeRevisionState.ACTIVE,
-                    "activated_at": now,
-                }
-            )
-            current_revision = self._require_revision(current_revision_id)
-            demoted_current = current_revision.model_copy(
-                update={"revision_state": RuntimeRevisionState.SUPERSEDED}
-            )
-            self._revision_store.atomic_activate_revision(
-                application_environment_id=application_environment_id,
-                promoted=restored,
-                demoted_prior=demoted_current,
-                expected_prior_active_revision_id=current_revision_id,
-            )
-
-            restored_instance = prior_instance.model_copy(
-                update={
-                    "instance_state": DeploymentInstanceState.SERVING,
-                    "record_revision": prior_instance.record_revision + 1,
-                }
-            )
-            self._deployment_instance_store.update_instance(
-                restored_instance,
-                expected_state=prior_instance.instance_state,
-                expected_record_revision=prior_instance.record_revision,
-            )
-
-            superseded_instance: DeploymentInstanceRecord | None = None
-            current_instance = self._deployment_instance_store.get_instance(
-                application_environment_id,
-                current_revision_id,
-            )
-            if current_instance is not None and current_instance.serving_unit_ref is not None:
-                self._deployment_adapter.begin_drain(
-                    current_revision,
-                    serving_unit_ref=current_instance.serving_unit_ref,
+            try:
+                atomic_result = self._activation_store.atomic_commit_rollback(
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                    expected_current_revision_id=current_revision_id,
+                    expected_pointer_revision=expected_serving_pointer_revision,
+                    target_revision_id=prior_revision_id,
+                    committed_at=now,
                 )
-                superseded_instance = current_instance.model_copy(
-                    update={
-                        "instance_state": DeploymentInstanceState.DRAINING,
-                        "drain_started_at": now,
-                        "record_revision": current_instance.record_revision + 1,
-                    }
-                )
-                self._deployment_instance_store.update_instance(
-                    superseded_instance,
-                    expected_state=current_instance.instance_state,
-                    expected_record_revision=current_instance.record_revision,
-                )
+            except RuntimeActivationConflict:
+                raise
+            except RuntimeRollbackError:
+                raise
+            except Exception as exc:
+                raise RuntimeRollbackError("rollback atomic commit failed") from exc
 
-            self._projection_coordinator.rollback_projection(prior_revision_id)
-            self._projection_coordinator.commit_projection(prior_revision_id)
+            superseded_instance = atomic_result.superseded_instance
+            drain_error: RuntimeDrainError | None = None
+            if superseded_instance is not None and superseded_instance.serving_unit_ref is not None:
+                try:
+                    current_revision = self._require_revision(current_revision_id)
+                    self._deployment_adapter.begin_drain(
+                        current_revision,
+                        serving_unit_ref=superseded_instance.serving_unit_ref,
+                    )
+                except Exception as exc:
+                    recovery = superseded_instance.model_copy(
+                        update={
+                            "failure_evidence_ref": f"drain-start:{exc}",
+                            "record_revision": superseded_instance.record_revision + 1,
+                        }
+                    )
+                    self._deployment_instance_store.update_instance(
+                        recovery,
+                        expected_state=DeploymentInstanceState.DRAINING,
+                        expected_record_revision=superseded_instance.record_revision,
+                    )
+                    drain_error = RuntimeDrainError(
+                        "physical drain start failed; recovery required"
+                    )
 
-            return TransitionResult(
+            result = TransitionResult(
                 value=RollbackResult(
-                    serving_record=serving_record,
-                    restored_revision=restored,
-                    restored_instance=restored_instance,
+                    serving_record=atomic_result.serving_record,
+                    restored_revision=atomic_result.restored_revision,
+                    restored_instance=atomic_result.restored_instance,
                     superseded_instance=superseded_instance,
                 )
             )
+            if drain_error is not None:
+                raise drain_error
+            return result
 
     def mark_post_cutover_failure(
         self,

@@ -175,6 +175,7 @@ class FakeInMemoryRuntimeDeploymentAdapter:
         self._units: dict[str, DeploymentInstanceState] = {}
         self._fail_prepare_for: set[str] = set()
         self._fail_readiness_for: set[str] = set()
+        self._fail_begin_drain_for: set[str] = set()
         self._drain_pending: set[str] = set()
         self._drain_timeout_for: set[str] = set()
         self._prepare_count: dict[str, int] = {}
@@ -188,6 +189,9 @@ class FakeInMemoryRuntimeDeploymentAdapter:
 
     def fail_readiness(self, runtime_revision_id: str) -> None:
         self._fail_readiness_for.add(runtime_revision_id)
+
+    def fail_begin_drain(self, serving_unit_ref: str) -> None:
+        self._fail_begin_drain_for.add(serving_unit_ref)
 
     def force_drain_timeout(self, serving_unit_ref: str) -> None:
         self._drain_timeout_for.add(serving_unit_ref)
@@ -239,6 +243,8 @@ class FakeInMemoryRuntimeDeploymentAdapter:
         *,
         serving_unit_ref: str,
     ) -> None:
+        if serving_unit_ref in self._fail_begin_drain_for:
+            raise RuntimeError("simulated begin_drain failure")
         self._units[serving_unit_ref] = DeploymentInstanceState.DRAINING
         self._drain_pending.add(serving_unit_ref)
 

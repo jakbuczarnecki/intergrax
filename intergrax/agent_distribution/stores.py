@@ -250,3 +250,56 @@ class ApplicationEnvironmentServingStore(Protocol):
         committed_at: datetime,
     ) -> ApplicationEnvironmentServingRecord:
         """CAS-protected traffic pointer swap (§24.5)."""
+
+
+class ActivationAtomicCommitResult(BaseModel):
+    """Outcome of one durable activation commit boundary (§20.5)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    serving_record: ApplicationEnvironmentServingRecord
+    activated_revision: RuntimeRevision
+    candidate_instance: DeploymentInstanceRecord
+    prior_instance: DeploymentInstanceRecord | None = None
+    demoted_prior_revision: RuntimeRevision | None = None
+
+
+class RollbackAtomicCommitResult(BaseModel):
+    """Outcome of one durable rollback commit boundary (§20.7)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    serving_record: ApplicationEnvironmentServingRecord
+    restored_revision: RuntimeRevision
+    restored_instance: DeploymentInstanceRecord
+    demoted_current_revision: RuntimeRevision
+    superseded_instance: DeploymentInstanceRecord | None = None
+
+
+class ApplicationEnvironmentActivationStore(Protocol):
+    """Atomic activation / rollback commit boundary across serving, revision, deployment."""
+
+    def atomic_commit_activation(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        expected_current_revision_id: str | None,
+        expected_pointer_revision: int,
+        candidate_revision_id: str,
+        expected_artifact_digest: str,
+        committed_at: datetime,
+    ) -> ActivationAtomicCommitResult:
+        """Atomically commit traffic pointer, revision, and deployment activation states."""
+
+    def atomic_commit_rollback(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        expected_current_revision_id: str,
+        expected_pointer_revision: int,
+        target_revision_id: str,
+        committed_at: datetime,
+    ) -> RollbackAtomicCommitResult:
+        """Atomically commit traffic pointer rollback and restored serving states."""

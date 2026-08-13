@@ -27,6 +27,7 @@ from intergrax.agent_distribution.errors import (
 )
 from intergrax.agent_distribution.in_memory_stores import (
     AgentDistributionStoreState,
+    InMemoryApplicationEnvironmentActivationStore,
     InMemoryApplicationEnvironmentServingStore,
     InMemoryDeploymentInstanceStore,
     InMemoryRuntimeRevisionStore,
@@ -93,6 +94,7 @@ class ActivationHarness:
         self.revision_store = InMemoryRuntimeRevisionStore(self.state)
         self.deployment_store = InMemoryDeploymentInstanceStore(self.state)
         self.serving_store = InMemoryApplicationEnvironmentServingStore(self.state)
+        self.activation_store = InMemoryApplicationEnvironmentActivationStore(self.state)
         self.deployment_adapter = FakeInMemoryRuntimeDeploymentAdapter()
         self.projection = FakeRuntimeServingProjectionCoordinator()
         self.revision_service = RuntimeRevisionService(self.revision_store)
@@ -100,6 +102,7 @@ class ActivationHarness:
             revision_store=self.revision_store,
             deployment_instance_store=self.deployment_store,
             serving_store=self.serving_store,
+            activation_store=self.activation_store,
             deployment_adapter=self.deployment_adapter,
             projection_coordinator=self.projection,
         )
@@ -372,7 +375,7 @@ def test_projection_prepared_before_traffic_commit() -> None:
     harness.prepare("rev-1")
     harness.commit("rev-1")
     assert "rev-1" in harness.projection.prepared
-    assert harness.projection.committed == "rev-1"
+    assert harness.projection.ready_tokens["rev-1"] == "projection-ready:rev-1"
 
 
 def test_traffic_switch_blocked_when_projection_prepare_fails() -> None:
@@ -385,12 +388,12 @@ def test_traffic_switch_blocked_when_projection_prepare_fails() -> None:
     assert harness.serving_store.get_serving_record(_ENV_PROD) is None
 
 
-def test_post_commit_projection_visible_for_candidate_revision() -> None:
+def test_post_commit_projection_ready_without_fallible_publication() -> None:
     harness = ActivationHarness()
     harness.seed_validated("rev-1")
     harness.prepare("rev-1")
     harness.commit("rev-1")
-    assert harness.projection.committed == "rev-1"
+    assert "rev-1" in harness.projection.ready_tokens
 
 
 def test_activation_prod_leaves_staging_untouched() -> None:
@@ -440,3 +443,145 @@ def test_no_live_mutation_boundaries_enforced_by_orchestration_only() -> None:
     harness.commit("rev-1")
     assert not hasattr(harness.activation, "mutate_effective_roster")
     assert not hasattr(harness.activation, "mutate_installation")
+
+
+def _snapshot_activation_state(harness: ActivationHarness) -> dict[str, object]:
+    serving = harness.serving_store.get_serving_record(_ENV_PROD)
+    return {
+        "serving": serving.model_dump() if serving else None,
+        "revisions": {k: v.model_dump() for k, v in harness.state.revisions.items()},
+        "instances": {str(k): v.model_dump() for k, v in harness.state.deployment_instances.items()},
+    }
+
+
+def test_atomic_commit_revision_precondition_failure_leaves_pointer_unchanged() -> None:
+    harness = ActivationHarness()
+    harness.seed_validated("rev-1")
+    harness.prepare("rev-1")
+    harness.commit("rev-1")
+    harness.seed_validated("rev-2")
+    harness.prepare("rev-2")
+    harness.state.revisions["rev-2"] = harness.state.revisions["rev-2"].model_copy(
+        update={"revision_state": RuntimeRevisionState.CANDIDATE}
+    )
+    before = _snapshot_activation_state(harness)
+    with pytest.raises(RuntimeActivationError):
+        harness.commit("rev-2", expected_prior="rev-1", pointer=1)
+    assert _snapshot_activation_state(harness) == before
+
+
+def test_atomic_commit_candidate_deployment_conflict_leaves_pointer_unchanged() -> None:
+    harness = ActivationHarness()
+    harness.seed_validated("rev-1")
+    harness.prepare("rev-1")
+    harness.commit("rev-1")
+    harness.seed_validated("rev-2")
+    harness.prepare("rev-2")
+    instance = harness.deployment_store.get_instance(_ENV_PROD, "rev-2")
+    assert instance is not None
+    harness.deployment_store.persist_instance(
+        instance.model_copy(update={"instance_state": DeploymentInstanceState.PREPARING})
+    )
+    before = _snapshot_activation_state(harness)
+    with pytest.raises(RuntimeActivationError):
+        harness.commit("rev-2", expected_prior="rev-1", pointer=1)
+    assert _snapshot_activation_state(harness) == before
+
+
+def test_atomic_commit_prior_deployment_conflict_leaves_pointer_unchanged() -> None:
+    harness = ActivationHarness()
+    harness.seed_validated("rev-1")
+    harness.prepare("rev-1")
+    harness.commit("rev-1")
+    harness.seed_validated("rev-2")
+    harness.prepare("rev-2")
+    prior = harness.deployment_store.get_instance(_ENV_PROD, "rev-1")
+    assert prior is not None
+    harness.deployment_store.persist_instance(
+        prior.model_copy(update={"instance_state": DeploymentInstanceState.READY})
+    )
+    before = _snapshot_activation_state(harness)
+    with pytest.raises(RuntimeActivationError):
+        harness.commit("rev-2", expected_prior="rev-1", pointer=1)
+    assert _snapshot_activation_state(harness) == before
+
+
+def test_stale_pointer_cas_leaves_revision_and_deployment_unmutated() -> None:
+    harness = ActivationHarness()
+    harness.seed_validated("rev-1")
+    harness.prepare("rev-1")
+    harness.commit("rev-1")
+    harness.seed_validated("rev-2")
+    harness.prepare("rev-2")
+    before = _snapshot_activation_state(harness)
+    with pytest.raises(RuntimeActivationConflict):
+        harness.commit("rev-2", expected_prior="rev-1", pointer=0)
+    assert _snapshot_activation_state(harness) == before
+
+
+def test_projection_prepare_failure_leaves_no_durable_mutations() -> None:
+    harness = ActivationHarness()
+    harness.seed_validated("rev-1")
+    harness.prepare("rev-1")
+    harness.projection.fail_prepare("rev-1")
+    before = _snapshot_activation_state(harness)
+    with pytest.raises(RuntimeActivationError):
+        harness.commit("rev-1")
+    assert _snapshot_activation_state(harness) == before
+
+
+def test_atomic_store_internal_precondition_failure_leaves_no_partial_writes() -> None:
+    harness = ActivationHarness()
+    harness.seed_validated("rev-1")
+    harness.prepare("rev-1")
+    harness.commit("rev-1")
+    harness.seed_validated("rev-2")
+    harness.prepare("rev-2")
+    before = _snapshot_activation_state(harness)
+    harness.activation_store._fail_atomic_commit_activation = True
+    with pytest.raises(RuntimeActivationConflict):
+        harness.commit("rev-2", expected_prior="rev-1", pointer=1)
+    assert _snapshot_activation_state(harness) == before
+
+
+def test_successful_atomic_commit_sets_consistent_authority_bundle() -> None:
+    harness = ActivationHarness()
+    harness.seed_validated("rev-1")
+    harness.prepare("rev-1")
+    harness.commit("rev-1")
+    harness.seed_validated("rev-2")
+    harness.prepare("rev-2")
+    harness.commit("rev-2", expected_prior="rev-1", pointer=1)
+    serving = harness.serving_store.get_serving_record(_ENV_PROD)
+    assert serving is not None
+    assert serving.traffic_serving_revision_id == "rev-2"
+    assert harness.state.revisions["rev-2"].revision_state is RuntimeRevisionState.ACTIVE
+    assert harness.state.revisions["rev-1"].revision_state is RuntimeRevisionState.SUPERSEDED
+    candidate = harness.deployment_store.get_instance(_ENV_PROD, "rev-2")
+    prior = harness.deployment_store.get_instance(_ENV_PROD, "rev-1")
+    assert candidate is not None and candidate.instance_state is DeploymentInstanceState.SERVING
+    assert prior is not None and prior.instance_state is DeploymentInstanceState.DRAINING
+
+
+def test_begin_drain_failure_after_commit_retains_n_plus_one_authority() -> None:
+    harness = ActivationHarness()
+    harness.seed_validated("rev-1")
+    harness.prepare("rev-1")
+    harness.commit("rev-1")
+    harness.seed_validated("rev-2")
+    harness.prepare("rev-2")
+    prior = harness.deployment_store.get_instance(_ENV_PROD, "rev-1")
+    assert prior is not None
+    harness.deployment_adapter.fail_begin_drain(prior.serving_unit_ref or "")
+    with pytest.raises(RuntimeDrainError):
+        harness.commit("rev-2", expected_prior="rev-1", pointer=1)
+    serving = harness.serving_store.get_serving_record(_ENV_PROD)
+    assert serving is not None
+    assert serving.traffic_serving_revision_id == "rev-2"
+    assert harness.state.revisions["rev-2"].revision_state is RuntimeRevisionState.ACTIVE
+    candidate = harness.deployment_store.get_instance(_ENV_PROD, "rev-2")
+    assert candidate is not None and candidate.instance_state is DeploymentInstanceState.SERVING
+    drained_prior = harness.deployment_store.get_instance(_ENV_PROD, "rev-1")
+    assert drained_prior is not None
+    assert drained_prior.instance_state is DeploymentInstanceState.DRAINING
+    assert drained_prior.failure_evidence_ref is not None

@@ -17,11 +17,18 @@ from intergrax.agent_distribution.errors import (
     InstallationSlotConflict,
     MaterializedRuntimeLockConflict,
     RuntimeActivationConflict,
+    RuntimeActivationError,
     RuntimeRevisionConflict,
+    RuntimeRollbackError,
 )
 from intergrax.agent_distribution.installation import AgentInstallationRecord, InstallationState
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
-from intergrax.agent_distribution.stores import AgentArtifactMetadata, ApplicationEnvironmentServingRecord
+from intergrax.agent_distribution.stores import (
+    ActivationAtomicCommitResult,
+    AgentArtifactMetadata,
+    ApplicationEnvironmentServingRecord,
+    RollbackAtomicCommitResult,
+)
 
 
 @dataclass
@@ -37,6 +44,7 @@ class AgentDistributionStoreState:
     locks: dict[str, MaterializedRuntimeLock] = field(default_factory=dict)
     deployment_instances: dict[tuple[str, str], DeploymentInstanceRecord] = field(default_factory=dict)
     serving_records: dict[str, ApplicationEnvironmentServingRecord] = field(default_factory=dict)
+    _activation_lock: threading.RLock = field(default_factory=threading.RLock, repr=False, compare=False)
 
 
 class InMemoryAgentInstallationStore:
@@ -444,3 +452,339 @@ class InMemoryApplicationEnvironmentServingStore:
                 )
             self._state.serving_records[application_environment_id] = record
             return record
+
+
+class InMemoryApplicationEnvironmentActivationStore:
+    """Shared-state activation commit store — one critical section per cutover."""
+
+    def __init__(self, state: AgentDistributionStoreState | None = None) -> None:
+        self._state = state or AgentDistributionStoreState()
+        self._fail_atomic_commit_activation = False
+        self._fail_atomic_commit_rollback = False
+
+    @property
+    def state(self) -> AgentDistributionStoreState:
+        return self._state
+
+    def atomic_commit_activation(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        expected_current_revision_id: str | None,
+        expected_pointer_revision: int,
+        candidate_revision_id: str,
+        expected_artifact_digest: str,
+        committed_at: datetime,
+    ) -> ActivationAtomicCommitResult:
+        with self._state._activation_lock:
+            serving = self._state.serving_records.get(application_environment_id)
+            if (
+                serving is not None
+                and serving.traffic_serving_revision_id == candidate_revision_id
+            ):
+                return self._idempotent_activation_result(
+                    application_environment_id=application_environment_id,
+                    candidate_revision_id=candidate_revision_id,
+                    serving=serving,
+                )
+
+            candidate = self._state.revisions.get(candidate_revision_id)
+            if candidate is None:
+                raise RuntimeActivationError("candidate runtime revision was not found")
+            if candidate.application_environment_id != application_environment_id:
+                raise RuntimeActivationError("candidate runtime revision environment mismatch")
+            if candidate.revision_state is not RuntimeRevisionState.VALIDATED:
+                raise RuntimeActivationError("commit requires validated runtime revision")
+            if candidate.materialization_artifact_digest != expected_artifact_digest:
+                raise RuntimeActivationError("artifact identity mismatch at commit")
+
+            candidate_key = _deployment_instance_key(
+                application_environment_id,
+                candidate_revision_id,
+            )
+            candidate_instance = self._state.deployment_instances.get(candidate_key)
+            if candidate_instance is None:
+                raise RuntimeActivationError("deployment instance does not exist")
+            if candidate_instance.instance_state is not DeploymentInstanceState.READY:
+                raise RuntimeActivationError("commit requires ready deployment instance")
+            if candidate_instance.readiness_evidence_ref is None:
+                raise RuntimeActivationError("ready deployment instance lacks readiness evidence")
+
+            if serving is None:
+                if expected_pointer_revision != 0 or expected_current_revision_id is not None:
+                    raise RuntimeActivationConflict("serving pointer does not match expected value")
+            else:
+                if serving.traffic_serving_revision_id != expected_current_revision_id:
+                    raise RuntimeActivationConflict("serving pointer does not match expected value")
+                if serving.serving_pointer_revision != expected_pointer_revision:
+                    raise RuntimeActivationConflict("serving pointer revision does not match expected value")
+
+            prior_revision: RuntimeRevision | None = None
+            prior_instance: DeploymentInstanceRecord | None = None
+            if expected_current_revision_id is not None:
+                prior_revision = self._state.revisions.get(expected_current_revision_id)
+                if prior_revision is None:
+                    raise RuntimeActivationError("prior runtime revision was not found")
+                if prior_revision.revision_state is not RuntimeRevisionState.ACTIVE:
+                    raise RuntimeActivationError("prior runtime revision is not active")
+                prior_key = _deployment_instance_key(
+                    application_environment_id,
+                    expected_current_revision_id,
+                )
+                prior_instance = self._state.deployment_instances.get(prior_key)
+                if prior_instance is None:
+                    raise RuntimeActivationError("prior deployment instance does not exist")
+                if prior_instance.instance_state is not DeploymentInstanceState.SERVING:
+                    raise RuntimeActivationError("prior deployment instance is not serving")
+
+            if self._fail_atomic_commit_activation:
+                raise RuntimeActivationConflict("simulated atomic activation commit failure")
+
+            promoted = candidate.model_copy(
+                update={
+                    "revision_state": RuntimeRevisionState.ACTIVE,
+                    "activated_at": committed_at,
+                    "supersedes_revision_id": expected_current_revision_id,
+                    "rollback_target_revision_id": expected_current_revision_id,
+                }
+            )
+            self._state.revisions[candidate_revision_id] = promoted
+
+            demoted_prior: RuntimeRevision | None = None
+            if prior_revision is not None:
+                demoted_prior = prior_revision.model_copy(
+                    update={"revision_state": RuntimeRevisionState.SUPERSEDED}
+                )
+                self._state.revisions[expected_current_revision_id] = demoted_prior
+
+            self._state.active_revision_by_environment[application_environment_id] = candidate_revision_id
+
+            serving_instance = candidate_instance.model_copy(
+                update={
+                    "instance_state": DeploymentInstanceState.SERVING,
+                    "record_revision": candidate_instance.record_revision + 1,
+                }
+            )
+            self._state.deployment_instances[candidate_key] = serving_instance
+
+            draining_prior: DeploymentInstanceRecord | None = None
+            if prior_instance is not None:
+                draining_prior = prior_instance.model_copy(
+                    update={
+                        "instance_state": DeploymentInstanceState.DRAINING,
+                        "drain_started_at": committed_at,
+                        "record_revision": prior_instance.record_revision + 1,
+                    }
+                )
+                prior_key = _deployment_instance_key(
+                    application_environment_id,
+                    expected_current_revision_id or "",
+                )
+                self._state.deployment_instances[prior_key] = draining_prior
+
+            new_pointer_revision = 1 if serving is None else serving.serving_pointer_revision + 1
+            serving_record = ApplicationEnvironmentServingRecord(
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                traffic_serving_revision_id=candidate_revision_id,
+                serving_pointer_revision=new_pointer_revision,
+                prior_traffic_revision_id=expected_current_revision_id,
+                committed_at=committed_at,
+            )
+            self._state.serving_records[application_environment_id] = serving_record
+
+            return ActivationAtomicCommitResult(
+                serving_record=serving_record,
+                activated_revision=promoted,
+                candidate_instance=serving_instance,
+                prior_instance=draining_prior,
+                demoted_prior_revision=demoted_prior,
+            )
+
+    def atomic_commit_rollback(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        expected_current_revision_id: str,
+        expected_pointer_revision: int,
+        target_revision_id: str,
+        committed_at: datetime,
+    ) -> RollbackAtomicCommitResult:
+        with self._state._activation_lock:
+            serving = self._state.serving_records.get(application_environment_id)
+            if serving is None:
+                raise RuntimeActivationConflict("no serving record for rollback")
+
+            if serving.traffic_serving_revision_id == target_revision_id:
+                return self._idempotent_rollback_result(
+                    application_environment_id=application_environment_id,
+                    target_revision_id=target_revision_id,
+                    serving=serving,
+                )
+
+            if serving.traffic_serving_revision_id != expected_current_revision_id:
+                raise RuntimeActivationConflict("rollback serving pointer does not match expected current")
+            if serving.serving_pointer_revision != expected_pointer_revision:
+                raise RuntimeActivationConflict("rollback serving pointer revision mismatch")
+            if serving.prior_traffic_revision_id != target_revision_id:
+                raise RuntimeActivationError("rollback target revision is not prior traffic revision")
+
+            target_revision = self._state.revisions.get(target_revision_id)
+            if target_revision is None:
+                raise RuntimeActivationError("rollback target runtime revision was not found")
+            if target_revision.revision_state is not RuntimeRevisionState.SUPERSEDED:
+                raise RuntimeActivationError("prior revision is not rollback-eligible")
+
+            current_revision = self._state.revisions.get(expected_current_revision_id)
+            if current_revision is None:
+                raise RuntimeActivationError("current runtime revision was not found")
+            if current_revision.revision_state is not RuntimeRevisionState.ACTIVE:
+                raise RuntimeActivationError("current runtime revision is not active")
+
+            target_key = _deployment_instance_key(application_environment_id, target_revision_id)
+            target_instance = self._state.deployment_instances.get(target_key)
+            if target_instance is None:
+                raise RuntimeActivationError("rollback target deployment instance does not exist")
+            if target_instance.instance_state is not DeploymentInstanceState.READY:
+                raise RuntimeActivationError("rollback target deployment instance is not ready")
+
+            current_key = _deployment_instance_key(
+                application_environment_id,
+                expected_current_revision_id,
+            )
+            current_instance = self._state.deployment_instances.get(current_key)
+            if current_instance is None:
+                raise RuntimeActivationError("current deployment instance does not exist")
+            if current_instance.instance_state not in {
+                DeploymentInstanceState.SERVING,
+                DeploymentInstanceState.FAILED,
+            }:
+                raise RuntimeActivationError("current deployment instance is not serving")
+
+            if self._fail_atomic_commit_rollback:
+                raise RuntimeActivationConflict("simulated atomic rollback commit failure")
+
+            restored = target_revision.model_copy(
+                update={
+                    "revision_state": RuntimeRevisionState.ACTIVE,
+                    "activated_at": committed_at,
+                }
+            )
+            demoted_current = current_revision.model_copy(
+                update={"revision_state": RuntimeRevisionState.SUPERSEDED}
+            )
+            self._state.revisions[target_revision_id] = restored
+            self._state.revisions[expected_current_revision_id] = demoted_current
+            self._state.active_revision_by_environment[application_environment_id] = target_revision_id
+
+            restored_instance = target_instance.model_copy(
+                update={
+                    "instance_state": DeploymentInstanceState.SERVING,
+                    "record_revision": target_instance.record_revision + 1,
+                }
+            )
+            self._state.deployment_instances[target_key] = restored_instance
+
+            draining_current = current_instance.model_copy(
+                update={
+                    "instance_state": DeploymentInstanceState.DRAINING,
+                    "drain_started_at": committed_at,
+                    "record_revision": current_instance.record_revision + 1,
+                }
+            )
+            self._state.deployment_instances[current_key] = draining_current
+
+            serving_record = ApplicationEnvironmentServingRecord(
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                traffic_serving_revision_id=target_revision_id,
+                serving_pointer_revision=serving.serving_pointer_revision + 1,
+                prior_traffic_revision_id=expected_current_revision_id,
+                committed_at=committed_at,
+            )
+            self._state.serving_records[application_environment_id] = serving_record
+
+            return RollbackAtomicCommitResult(
+                serving_record=serving_record,
+                restored_revision=restored,
+                restored_instance=restored_instance,
+                demoted_current_revision=demoted_current,
+                superseded_instance=draining_current,
+            )
+
+    def _idempotent_activation_result(
+        self,
+        *,
+        application_environment_id: str,
+        candidate_revision_id: str,
+        serving: ApplicationEnvironmentServingRecord,
+    ) -> ActivationAtomicCommitResult:
+        candidate = self._state.revisions.get(candidate_revision_id)
+        if candidate is None or candidate.revision_state is not RuntimeRevisionState.ACTIVE:
+            raise RuntimeActivationConflict(
+                "serving pointer already targets revision but state is not active"
+            )
+        candidate_key = _deployment_instance_key(application_environment_id, candidate_revision_id)
+        candidate_instance = self._state.deployment_instances.get(candidate_key)
+        if (
+            candidate_instance is None
+            or candidate_instance.instance_state is not DeploymentInstanceState.SERVING
+        ):
+            raise RuntimeActivationConflict("idempotent commit requires serving deployment instance")
+
+        prior_instance: DeploymentInstanceRecord | None = None
+        demoted_prior: RuntimeRevision | None = None
+        if serving.prior_traffic_revision_id is not None:
+            prior_key = _deployment_instance_key(
+                application_environment_id,
+                serving.prior_traffic_revision_id,
+            )
+            prior_instance = self._state.deployment_instances.get(prior_key)
+            demoted_prior = self._state.revisions.get(serving.prior_traffic_revision_id)
+
+        return ActivationAtomicCommitResult(
+            serving_record=serving,
+            activated_revision=candidate,
+            candidate_instance=candidate_instance,
+            prior_instance=prior_instance,
+            demoted_prior_revision=demoted_prior,
+        )
+
+    def _idempotent_rollback_result(
+        self,
+        *,
+        application_environment_id: str,
+        target_revision_id: str,
+        serving: ApplicationEnvironmentServingRecord,
+    ) -> RollbackAtomicCommitResult:
+        restored = self._state.revisions.get(target_revision_id)
+        if restored is None or restored.revision_state is not RuntimeRevisionState.ACTIVE:
+            raise RuntimeRollbackError("idempotent rollback requires active restored revision")
+
+        current_revision_id = serving.prior_traffic_revision_id
+        if current_revision_id is None:
+            raise RuntimeRollbackError("idempotent rollback requires superseded current revision")
+        demoted_current = self._state.revisions.get(current_revision_id)
+        if demoted_current is None or demoted_current.revision_state is not RuntimeRevisionState.SUPERSEDED:
+            raise RuntimeRollbackError("idempotent rollback requires superseded current revision")
+
+        target_key = _deployment_instance_key(application_environment_id, target_revision_id)
+        restored_instance = self._state.deployment_instances.get(target_key)
+        if (
+            restored_instance is None
+            or restored_instance.instance_state is not DeploymentInstanceState.SERVING
+        ):
+            raise RuntimeRollbackError("idempotent rollback requires serving prior instance")
+
+        superseded_instance = self._state.deployment_instances.get(
+            _deployment_instance_key(application_environment_id, current_revision_id)
+        )
+        return RollbackAtomicCommitResult(
+            serving_record=serving,
+            restored_revision=restored,
+            restored_instance=restored_instance,
+            demoted_current_revision=demoted_current,
+            superseded_instance=superseded_instance,
+        )

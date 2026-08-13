@@ -75,6 +75,7 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryAgentArtifactMetadataStore,
     InMemoryAgentInstallationStore,
     InMemoryApplicationAgentBindingStore,
+    InMemoryApplicationEnvironmentActivationStore,
     InMemoryApplicationEnvironmentServingStore,
     InMemoryDeploymentInstanceStore,
     InMemoryMaterializedRuntimeLockStore,
@@ -157,14 +158,17 @@ from intergrax.agent_distribution.runtime_lock import (
 )
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.stores import (
+    ActivationAtomicCommitResult,
     AgentArtifactMetadata,
     AgentArtifactMetadataStore,
     AgentInstallationStore,
     ApplicationAgentBindingStore,
+    ApplicationEnvironmentActivationStore,
     ApplicationEnvironmentServingRecord,
     ApplicationEnvironmentServingStore,
     DeploymentInstanceStore,
     MaterializedRuntimeLockStore,
+    RollbackAtomicCommitResult,
     RuntimeRevisionStore,
 )
 from intergrax.agent_distribution.trust import (
@@ -186,6 +190,7 @@ from intergrax.agent_distribution.trust import (
 )
 
 __all__ = [
+    "ActivationAtomicCommitResult",
     "ActivationCommitResult",
     "ActivationService",
     "AgentArtifactMetadata",
@@ -222,6 +227,7 @@ __all__ = [
     "AgentTrustEvidenceRef",
     "ApplicationAgentBinding",
     "ApplicationAgentBindingStore",
+    "ApplicationEnvironmentActivationStore",
     "ApplicationEnvironmentServingRecord",
     "ApplicationEnvironmentServingStore",
     "ArtifactRevalidationHook",
@@ -255,6 +261,7 @@ __all__ = [
     "EffectiveRosterConflict",
     "EffectiveRoster",
     "EffectiveRosterEntry",
+    "InMemoryApplicationEnvironmentActivationStore",
     "InMemoryApplicationEnvironmentServingStore",
     "InMemoryDeploymentInstanceStore",
     "InMemoryAgentInstallationStore",
@@ -300,6 +307,7 @@ __all__ = [
     "RepositoryDependencyDeclaration",
     "ResolvedDependencyClosure",
     "PreparedDeployment",
+    "RollbackAtomicCommitResult",
     "RollbackResult",
     "RuntimeActivationConflict",
     "RuntimeActivationError",

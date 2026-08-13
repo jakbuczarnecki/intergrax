@@ -8,7 +8,11 @@ from datetime import UTC, datetime
 
 import pytest
 
-from intergrax.agent_distribution.activation import ActivationService, ArtifactRevalidationHook
+from intergrax.agent_distribution.activation import (
+    ActivationService,
+    ArtifactRevalidationHook,
+    FakeRuntimeServingProjectionCoordinator,
+)
 from intergrax.agent_distribution.deployment import DeploymentInstanceState, FakeInMemoryRuntimeDeploymentAdapter
 from intergrax.agent_distribution.errors import (
     RuntimeActivationConflict,
@@ -16,6 +20,7 @@ from intergrax.agent_distribution.errors import (
 )
 from intergrax.agent_distribution.in_memory_stores import (
     AgentDistributionStoreState,
+    InMemoryApplicationEnvironmentActivationStore,
     InMemoryApplicationEnvironmentServingStore,
     InMemoryDeploymentInstanceStore,
     InMemoryRuntimeRevisionStore,
@@ -26,7 +31,6 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevisionState,
 )
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
-from intergrax.agent_distribution.activation import FakeRuntimeServingProjectionCoordinator
 
 _APP = "app-a"
 _ENV = "env-prod"
@@ -61,6 +65,7 @@ def _bootstrap_active_pair() -> tuple[ActivationService, RuntimeRevisionService,
     revision_store = InMemoryRuntimeRevisionStore(state)
     deployment_store = InMemoryDeploymentInstanceStore(state)
     serving_store = InMemoryApplicationEnvironmentServingStore(state)
+    activation_store = InMemoryApplicationEnvironmentActivationStore(state)
     deployment_adapter = FakeInMemoryRuntimeDeploymentAdapter()
     projection = FakeRuntimeServingProjectionCoordinator()
     revision_service = RuntimeRevisionService(revision_store)
@@ -68,6 +73,7 @@ def _bootstrap_active_pair() -> tuple[ActivationService, RuntimeRevisionService,
         revision_store=revision_store,
         deployment_instance_store=deployment_store,
         serving_store=serving_store,
+        activation_store=activation_store,
         deployment_adapter=deployment_adapter,
         projection_coordinator=projection,
     )
@@ -244,3 +250,50 @@ def test_rollback_reuses_draining_instance_without_prepare() -> None:
         expected_serving_pointer_revision=2,
     )
     assert deployment_adapter.prepare_count.get("rev-n", 0) == prepare_before
+
+
+def test_rollback_precondition_failure_leaves_pointer_unchanged() -> None:
+    activation, _, _ = _bootstrap_active_pair()
+    serving_before = activation._serving_store.get_serving_record(_ENV)
+    activation._artifact_revalidation = ArtifactRevalidationHook(
+        validate=lambda _revision: (_ for _ in ()).throw(RuntimeRollbackError("trust invalid"))
+    )
+    with pytest.raises(RuntimeRollbackError):
+        activation.rollback(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            expected_current_traffic_revision_id="rev-n1",
+            expected_serving_pointer_revision=2,
+        )
+    serving_after = activation._serving_store.get_serving_record(_ENV)
+    assert serving_before == serving_after
+
+
+def test_rollback_atomic_commit_failure_leaves_no_partial_writes() -> None:
+    activation, revision_service, _ = _bootstrap_active_pair()
+    serving_before = activation._serving_store.get_serving_record(_ENV)
+    activation._activation_store._fail_atomic_commit_rollback = True
+    with pytest.raises(RuntimeActivationConflict):
+        activation.rollback(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            expected_current_traffic_revision_id="rev-n1",
+            expected_serving_pointer_revision=2,
+        )
+    serving_after = activation._serving_store.get_serving_record(_ENV)
+    assert serving_before == serving_after
+    assert revision_service.get_active_revision(_ENV).runtime_revision_id == "rev-n1"
+
+
+def test_rollback_projection_prepared_before_pointer_commit() -> None:
+    activation, _, _ = _bootstrap_active_pair()
+    projection = activation._projection_coordinator
+    assert isinstance(projection, FakeRuntimeServingProjectionCoordinator)
+    activation.rollback(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        expected_current_traffic_revision_id="rev-n1",
+        expected_serving_pointer_revision=2,
+    )
+    assert projection.rolled_back == "rev-n"
+    assert "rev-n" in projection.prepared
