@@ -211,7 +211,19 @@ staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 
 **Evidence:** `intergrax/agent_distribution/materialization_service.py`, `materialization_adapters.py`, `runtime_context_staging.py`, `package_artifact_provider.py`, `errors.py`, `tests/unit/agent_distribution/test_agent_distribution_materialization.py`, `test_agent_distribution_materialization_adapter.py`
 
-**Next:** AP-10 may begin after AP-9 close — registry projection population from traffic-serving `RuntimeRevision`.
+**Next:** AP-11 may begin after AP-10 close — generic Tier-3 harness admin API routes.
+
+### AP-10 evidence (registry projection)
+
+| Item | Status |
+|------|--------|
+| `build_application_registry(..., effective_roster=...)` extension | done |
+| `ApplicationRegistryProjectionCoordinator` + projection store | done |
+| `RegistryProjectionEvidence` / audit snapshot fields | done |
+| Legacy manifest-only behavior preserved | done |
+| AP-10 focused tests + AP-9 activation regression | done |
+
+**Evidence:** `intergrax/applications/_shared/wiring.py`, `registry_projection.py`, `tests/unit/applications/test_registry_projection_ap10.py`
 
 ### AP-9 evidence (activation orchestration)
 
