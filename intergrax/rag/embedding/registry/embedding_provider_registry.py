@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from importlib import import_module
 from threading import RLock
-from typing import Dict
+from typing import Dict, Mapping
 
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 
@@ -108,8 +108,11 @@ def lazy_import_provider_factory(
     class_name: str,
     dependency_name: str,
     extra_name: str | None = None,
+    init_kwargs: Mapping[str, object] | None = None,
 ) -> Callable[[], EmbeddingProvider]:
     """Build a provider factory whose implementation is imported on selection."""
+
+    factory_kwargs = dict(init_kwargs or {})
 
     def create_provider() -> EmbeddingProvider:
         try:
@@ -139,6 +142,6 @@ def lazy_import_provider_factory(
                 f"does not define expected class '{class_name}'."
             ) from exc
 
-        return provider_type()
+        return provider_type(**factory_kwargs)
 
     return create_provider

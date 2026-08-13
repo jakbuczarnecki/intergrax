@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import Optional
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
@@ -15,9 +14,19 @@ from intergrax.rag.embedding.registry.embedding_provider_registry import (
     EmbeddingProviderRegistry,
     lazy_import_provider_factory,
 )
+from intergrax.rag.embedding.registry.profile import embedding_profile_from_env
 
 
-def create_default_registry() -> EmbeddingProviderRegistry:
+def _model_init_kwargs(embedding_model: Optional[str]) -> dict[str, str]:
+    if embedding_model:
+        return {"model_name": embedding_model}
+    return {}
+
+
+def create_default_registry(
+    embedding_model: Optional[str] = None,
+) -> EmbeddingProviderRegistry:
+    model_kwargs = _model_init_kwargs(embedding_model)
     registry = EmbeddingProviderRegistry()
     registry.register_factory(
         "hf",
@@ -27,6 +36,7 @@ def create_default_registry() -> EmbeddingProviderRegistry:
             class_name="HFEmbeddingProvider",
             dependency_name="sentence-transformers",
             extra_name="rag-local-embeddings",
+            init_kwargs=model_kwargs,
         ),
     )
     registry.register_factory(
@@ -36,6 +46,7 @@ def create_default_registry() -> EmbeddingProviderRegistry:
             module_name="intergrax.rag.embedding.providers.openai_embedding_provider",
             class_name="OpenAIEmbeddingProvider",
             dependency_name="openai",
+            init_kwargs=model_kwargs,
         ),
     )
     registry.register_factory(
@@ -45,6 +56,7 @@ def create_default_registry() -> EmbeddingProviderRegistry:
             module_name="intergrax.rag.embedding.providers.ollama_embedding_provider",
             class_name="OllamaEmbeddingProvider",
             dependency_name="langchain-ollama",
+            init_kwargs=model_kwargs,
         ),
     )
     registry.register_factory(
@@ -54,6 +66,7 @@ def create_default_registry() -> EmbeddingProviderRegistry:
             module_name="intergrax.rag.embedding.providers.vllm_embedding_provider",
             class_name="VllmEmbeddingProvider",
             dependency_name="openai",
+            init_kwargs=model_kwargs,
         ),
     )
     registry.register_factory(
@@ -63,6 +76,7 @@ def create_default_registry() -> EmbeddingProviderRegistry:
             module_name="intergrax.rag.embedding.providers.llama_cpp_embedding_provider",
             class_name="LlamaCppEmbeddingProvider",
             dependency_name="openai",
+            init_kwargs=model_kwargs,
         ),
     )
     return registry
@@ -78,6 +92,7 @@ def create_default_embedding_manager()-> BaseEmbeddingManager:
 
 def create_default_embedding_engine(
     registry: EmbeddingProviderRegistry | None = None,
+    embedding_model: Optional[str] = None,
 ) -> EmbeddingEngine:
     """
     Create EmbeddingEngine with default embedding providers registered.
@@ -86,7 +101,7 @@ def create_default_embedding_engine(
     """
 
     if registry is None:
-        registry = create_default_registry()
+        registry = create_default_registry(embedding_model=embedding_model)
 
     return EmbeddingEngine(
         registry=registry,
@@ -96,21 +111,26 @@ def create_default_embedding_engine(
 def create_default_embedding_pipeline(
     provider_id: Optional[str] = None,
     registry: EmbeddingProviderRegistry | None = None,
+    embedding_model: Optional[str] = None,
 ) -> EmbeddingPipeline:
     """
     Create EmbeddingPipeline using the default embedding engine.
     """
 
+    profile = embedding_profile_from_env()
+    resolved_model = embedding_model if embedding_model is not None else profile.model
+
     if registry is None:
-        registry = create_default_registry()
+        registry = create_default_registry(embedding_model=resolved_model)
 
-    if provider_id is None:
-        env_provider = os.getenv("INTERGRAX_RAG_EMBEDDING_PROVIDER", "").strip()
-        provider_id = env_provider or registry.default_provider()
+    resolved_provider = provider_id or profile.provider
 
-    engine = create_default_embedding_engine(registry=registry)
+    engine = create_default_embedding_engine(
+        registry=registry,
+        embedding_model=resolved_model,
+    )
 
     return EmbeddingPipeline(
         engine=engine,
-        provider_id=provider_id,
+        provider_id=resolved_provider,
     )

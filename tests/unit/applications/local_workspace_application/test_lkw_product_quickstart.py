@@ -166,7 +166,11 @@ def test_env_example_copied_only_when_absent(
     app_dir = tmp_path / "app"
     app_dir.mkdir()
     example = app_dir / ".env.example"
-    example.write_text("SAFE_KEY=safe\n", encoding="utf-8")
+    example.write_text(
+        "SAFE_KEY=safe\nINTERGRAX_EMBEDDING_PROVIDER=ollama\n"
+        "INTERGRAX_EMBEDDING_MODEL=nomic-embed-text\n",
+        encoding="utf-8",
+    )
     env_file = app_dir / ".env"
     monkeypatch.setattr(quick, "_APP_DIR", app_dir)
     monkeypatch.setattr(quick, "_ENV_FILE", env_file)
@@ -175,7 +179,9 @@ def test_env_example_copied_only_when_absent(
     assert created is True
     text = env_file.read_text(encoding="utf-8")
     assert "SAFE_KEY=safe" in text
-    assert "INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL=" in text
+    assert "INTERGRAX_EMBEDDING_PROVIDER=ollama" in text
+    assert "INTERGRAX_EMBEDDING_MODEL=nomic-embed-text" in text
+    assert "INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL" not in text
 
 
 def test_existing_env_never_overwritten(
@@ -956,13 +962,8 @@ def test_stack_bootstrap_invokes_embedding_pull(
     monkeypatch.setattr(quick, "run_command", _run_command)
     monkeypatch.setattr(
         quick,
-        "resolve_ollama_embedding_model",
+        "ensure_embedding_model_if_ollama",
         lambda **_k: "configured-embed-model",
-    )
-    monkeypatch.setattr(
-        quick,
-        "ensure_ollama_embedding_model",
-        lambda *_a, **_k: None,
     )
     monkeypatch.setattr(quick, "wait_for_health", lambda *_a, **_k: None)
     monkeypatch.setattr(quick, "create_workspace", lambda *_a, **_k: "ws-1")
@@ -992,10 +993,9 @@ def test_skip_stack_start_skips_bootstrap(
     monkeypatch.setattr(quick, "ensure_env_file", lambda: False)
     monkeypatch.setattr(
         quick,
-        "resolve_ollama_embedding_model",
+        "ensure_embedding_model_if_ollama",
         lambda **_k: "configured-embed-model",
     )
-    monkeypatch.setattr(quick, "ensure_ollama_embedding_model", lambda *_a, **_k: None)
     monkeypatch.setattr(quick, "wait_for_health", lambda *_a, **_k: None)
     monkeypatch.setattr(quick, "create_workspace", lambda *_a, **_k: "ws-1")
     monkeypatch.setattr(quick, "upload_sample_file", lambda *_a, **_k: "op-1")
@@ -1038,10 +1038,9 @@ def _patch_success_flow(
     monkeypatch.setattr(quick, "ensure_env_file", lambda: False)
     monkeypatch.setattr(
         quick,
-        "resolve_ollama_embedding_model",
+        "ensure_embedding_model_if_ollama",
         lambda **_k: "configured-embed-model",
     )
-    monkeypatch.setattr(quick, "ensure_ollama_embedding_model", lambda *_a, **_k: None)
     monkeypatch.setattr(quick, "wait_for_health", lambda *_a, **_k: None)
     workspace_calls: list[dict[str, Any]] = []
     upload_calls: list[dict[str, Any]] = []
@@ -1523,13 +1522,8 @@ def test_failure_output_contract(
     monkeypatch.setattr(quick, "ensure_env_file", lambda: False)
     monkeypatch.setattr(
         quick,
-        "resolve_ollama_embedding_model",
+        "ensure_embedding_model_if_ollama",
         lambda **_kwargs: "configured-embed-model",
-    )
-    monkeypatch.setattr(
-        quick,
-        "ensure_ollama_embedding_model",
-        lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(quick, "wait_for_health", lambda *_a, **_k: None)
     monkeypatch.setattr(quick, "create_workspace", lambda *_a, **_k: "ws-1")
@@ -1749,22 +1743,27 @@ def test_model_resolution_reads_container_configured_value(
 
     def _run(args: list[str], **_kwargs: Any) -> Any:
         calls.append(args)
-        return type("CP", (), {"returncode": 0, "stdout": "custom/embed:latest\n", "stderr": ""})()
+        return type(
+            "CP",
+            (),
+            {"returncode": 0, "stdout": "ollama\ncustom/embed:latest\n", "stderr": ""},
+        )()
 
     monkeypatch.setattr(quick, "run_command", _run)
     model_name = quick.resolve_ollama_embedding_model(timeout_seconds=10)
     assert model_name == "custom/embed:latest"
     command = " ".join(calls[0])
     assert "local_workspace" in command
-    assert "OllamaEmbeddingProvider.ENV_MODEL" in command
-    assert "OllamaEmbeddingProvider.DEFAULT_MODEL" in command
+    assert "embedding_profile_from_env" in command
 
 
-def test_model_resolution_expression_uses_runtime_default_when_env_missing(
-    quick: ModuleType,
-) -> None:
-    assert "os.getenv(OllamaEmbeddingProvider.ENV_MODEL)" in quick._MODEL_RESOLUTION_CODE
-    assert "OllamaEmbeddingProvider.DEFAULT_MODEL" in quick._MODEL_RESOLUTION_CODE
+def test_embedding_profile_resolution_code_uses_canonical_contract() -> None:
+    text = (
+        Path("applications/local_workspace_application/scripts/lkw_ollama_embedding_bootstrap.py")
+        .read_text(encoding="utf-8")
+    )
+    assert "embedding_profile_from_env" in text
+    assert "INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL" not in text
 
 
 def test_resolved_model_is_passed_to_ollama_pull(
@@ -1781,7 +1780,7 @@ def test_resolved_model_is_passed_to_ollama_pull(
     assert calls[0][-1] == "custom/embed:latest"
 
 
-@pytest.mark.parametrize("output", ["one\ntwo\n", "\n", "x" * 257, "bad\x01model\n"])
+@pytest.mark.parametrize("output", ["one\ntwo\n", "\n", "x" * 257, "bad\x01model\n", "openai\nmodel\n"])
 def test_malformed_embedding_model_output_is_rejected(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch, output: str
 ) -> None:
@@ -1794,27 +1793,26 @@ def test_malformed_embedding_model_output_is_rejected(
     )
     with pytest.raises(quick.QuickstartError) as exc:
         quick.resolve_ollama_embedding_model(timeout_seconds=10)
-    assert exc.value.reason == "embedding_model_resolution_failed"
+    assert exc.value.reason in {
+        "embedding_model_resolution_failed",
+        "embedding_provider_not_ollama",
+        "embedding_profile_resolution_failed",
+    }
 
 
-def test_skip_stack_start_still_resolves_and_pulls_model(
+def test_skip_stack_start_still_provisions_ollama_embedding_when_configured(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     calls: list[str] = []
     _patch_success_flow(quick, monkeypatch, tmp_path)
     monkeypatch.setattr(
         quick,
-        "resolve_ollama_embedding_model",
-        lambda **_k: calls.append("resolve") or "custom/embed:latest",
-    )
-    monkeypatch.setattr(
-        quick,
-        "ensure_ollama_embedding_model",
-        lambda model_name, **_k: calls.append(f"pull:{model_name}"),
+        "ensure_embedding_model_if_ollama",
+        lambda **_k: calls.append("embed") or "custom/embed:latest",
     )
     code = quick.run_quickstart(_config(quick, skip_stack_start=True))
     assert code == 0
-    assert calls == ["resolve", "pull:custom/embed:latest"]
+    assert calls == ["embed"]
 
 
 def test_no_shell_true_in_runner_source() -> None:

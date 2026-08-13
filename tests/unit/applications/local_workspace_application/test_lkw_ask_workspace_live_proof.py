@@ -237,3 +237,51 @@ def test_verify_running_vector_store_uses_proof_compose_project(
     assert captured
     for command in captured:
         assert command[3] == proof._COMPOSE_PROJECT
+
+
+def test_trusted_ask_ensure_ollama_model_pulls_chat_and_embedding_models(
+    proof: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pulled: list[str] = []
+
+    def fake_run_compose(*args: str, **kwargs: Any) -> object:
+        if args[:2] == ("config",):
+            stdout = (
+                "INTERGRAX_LLM_MODEL: llama3.1:latest\n"
+                "INTERGRAX_EMBEDDING_PROVIDER: ollama\n"
+                "INTERGRAX_EMBEDDING_MODEL: nomic-embed-text\n"
+            )
+            return type("CP", (), {"returncode": 0, "stdout": stdout, "stderr": ""})()
+        if "pull" in args:
+            pulled.append(args[-1])
+            return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(proof, "_run_compose", fake_run_compose)
+    proof.ensure_ollama_model()
+    assert pulled == ["llama3.1:latest", "nomic-embed-text"]
+
+
+def test_trusted_ask_skips_embedding_pull_when_provider_not_ollama(
+    proof: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pulled: list[str] = []
+
+    def fake_run_compose(*args: str, **kwargs: Any) -> object:
+        if args[:2] == ("config",):
+            stdout = (
+                "INTERGRAX_LLM_MODEL: llama3.1:latest\n"
+                "INTERGRAX_EMBEDDING_PROVIDER: openai\n"
+                "INTERGRAX_EMBEDDING_MODEL: text-embedding-3-large\n"
+            )
+            return type("CP", (), {"returncode": 0, "stdout": stdout, "stderr": ""})()
+        if "pull" in args:
+            pulled.append(args[-1])
+            return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(proof, "_run_compose", fake_run_compose)
+    proof.ensure_ollama_model()
+    assert pulled == ["llama3.1:latest"]

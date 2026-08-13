@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING, Optional, Sequence
 
 import numpy as np
@@ -21,19 +20,14 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
     Ollama embedding provider.
     """
 
-    DEFAULT_MODEL = "rjmalagon/gte-qwen2-1.5b-instruct-embed-f16:latest"
-    ENV_MODEL = "INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL"
+    DEFAULT_MODEL = "nomic-embed-text"
 
     def __init__(
         self,
         model_name: Optional[str] = None
     ) -> None:
 
-        env_model = os.getenv(self.ENV_MODEL)
-        resolved_model = model_name or env_model or self.DEFAULT_MODEL
-
-        # store configuration only
-        self._model_name = resolved_model
+        self._model_name = model_name or self.DEFAULT_MODEL
         self._model: Optional[OllamaEmbeddings] = None
 
         self._dim: Optional[int] = None

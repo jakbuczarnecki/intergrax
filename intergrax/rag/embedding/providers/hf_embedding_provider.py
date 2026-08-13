@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import Sequence, Optional
 
 import numpy as np
@@ -21,7 +20,6 @@ class HFEmbeddingProvider(EmbeddingProvider):
     """
 
     DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-    ENV_MODEL = "INTERGRAX_DEFAULT_HF_EMBED_MODEL"
 
     def __init__(
         self,
@@ -33,10 +31,7 @@ class HFEmbeddingProvider(EmbeddingProvider):
         max_length: Optional[int] = None,
     ) -> None:
 
-        env_model = os.getenv(self.ENV_MODEL)
-        resolved_model = model_name or env_model or self.DEFAULT_MODEL
-
-        self._model_name = resolved_model
+        self._model_name = model_name or self.DEFAULT_MODEL
         self._device = device
         self._max_length = max_length
 

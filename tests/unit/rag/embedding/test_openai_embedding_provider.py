@@ -31,19 +31,12 @@ def make_client(*vectors: list[float]) -> MagicMock:
 
 
 def test_openai_provider_name_and_model_precedence() -> None:
-    with patch.dict(
-        "os.environ",
-        {"INTERGRAX_DEFAULT_OPENAI_EMBED_MODEL": "env-model"},
-        clear=False,
-    ):
-        assert OpenAIEmbeddingProvider()._model_name == "env-model"
-        assert (
-            OpenAIEmbeddingProvider(model_name="constructor-model")._model_name
-            == "constructor-model"
-        )
-
+    assert OpenAIEmbeddingProvider(model_name="constructor-model")._model_name == (
+        "constructor-model"
+    )
     assert OpenAIEmbeddingProvider().provider_name() == "openai"
     assert OpenAIEmbeddingProvider.DEFAULT_MODEL == "text-embedding-3-small"
+    assert OpenAIEmbeddingProvider()._model_name == "text-embedding-3-small"
 
 
 @patch("intergrax.rag.embedding.providers.openai_embedding_provider.OpenAI")

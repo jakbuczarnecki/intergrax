@@ -44,7 +44,6 @@ _BOOTSTRAP_BAT = _SCRIPT_DIR / "build-local-docker.bat"
 _BOOTSTRAP_SH = _SCRIPT_DIR / "build-local-docker.sh"
 _COMPOSE_FILE = _APP_DIR / "docker" / "docker-compose.yml"
 _COMPOSE_PROJECT = "intergrax_lkw"
-_NEW_ENV_OLLAMA_EMBED_MODEL = "nomic-embed-text"
 _DEFAULT_GENERATION_MODEL = "llama3.1:latest"
 _MIN_FREE_SPACE_BYTES = 20 * 1024**3
 _PRODUCT_HOST_PORT = 8020
@@ -63,14 +62,13 @@ if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 from lkw_ollama_embedding_bootstrap import (
     MAX_EMBEDDING_MODEL_LENGTH,
-    MODEL_RESOLUTION_CODE,
     OllamaEmbeddingBootstrapError,
+    ensure_ollama_embedding_model_if_configured as _ensure_ollama_embedding_model_if_configured,
     ensure_ollama_embedding_model as _ensure_ollama_embedding_model,
     resolve_ollama_embedding_model as _resolve_ollama_embedding_model,
     validate_resolved_embedding_model,
 )
 
-_MODEL_RESOLUTION_CODE = MODEL_RESOLUTION_CODE
 _MAX_EMBEDDING_MODEL_LENGTH = MAX_EMBEDDING_MODEL_LENGTH
 
 _DEFAULT_BASE_URL = "http://127.0.0.1:8020"
@@ -414,11 +412,6 @@ def ensure_env_file() -> bool:
         raise QuickstartError("env_example_missing", stage="preflight")
     try:
         shutil.copyfile(_ENV_EXAMPLE, _ENV_FILE)
-        with _ENV_FILE.open("a", encoding="utf-8") as handle:
-            handle.write(
-                f"\nINTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL="
-                f"{_NEW_ENV_OLLAMA_EMBED_MODEL}\n"
-            )
     except OSError:
         raise QuickstartError("env_materialization_failed", stage="preflight") from None
     return True
@@ -812,6 +805,26 @@ def ensure_ollama_embedding_model(
     try:
         _ensure_ollama_embedding_model(
             model_name,
+            compose_exec_args=compose_exec_args,
+            run_command=run_command,
+            cwd=_APP_DIR,
+            timeout_seconds=timeout_seconds,
+            run_command_kwargs={
+                "stage": "stack_start",
+                "progress": progress,
+            },
+        )
+    except OllamaEmbeddingBootstrapError as exc:
+        raise QuickstartError(exc.reason, stage="stack_start") from exc
+
+
+def ensure_embedding_model_if_ollama(
+    *,
+    timeout_seconds: int,
+    progress: ProgressReporter | None = None,
+) -> str | None:
+    try:
+        return _ensure_ollama_embedding_model_if_configured(
             compose_exec_args=compose_exec_args,
             run_command=run_command,
             cwd=_APP_DIR,
@@ -1241,16 +1254,14 @@ def _run_quickstart(config: QuickstartConfig) -> int:
         progress.complete("LKW services are ready")
         progress.start(4, "Preparing embedding model")
         current_stage = "stack_start"
-        model_name = resolve_ollama_embedding_model(
+        embedding_model = ensure_embedding_model_if_ollama(
             timeout_seconds=config.timeout_seconds,
             progress=progress,
         )
-        ensure_ollama_embedding_model(
-            model_name,
-            timeout_seconds=config.timeout_seconds,
-            progress=progress,
-        )
-        progress.complete("Embedding model is ready")
+        if embedding_model is None:
+            progress.complete("Non-Ollama embedding provider; skipped Ollama embedding pull")
+        else:
+            progress.complete("Embedding model is ready")
         progress.start(5, "Creating evaluation workspace")
         current_stage = "workspace"
         workspace_id = create_workspace(base_url)

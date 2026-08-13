@@ -26,15 +26,13 @@ class VllmEmbeddingProvider(EmbeddingProvider):
     """
 
     DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
-    ENV_MODEL = "INTERGRAX_DEFAULT_VLLM_EMBED_MODEL"
     ENV_BASE_URL = "INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL"
     ENV_FALLBACK_BASE_URL = "INTERGRAX_DEFAULT_VLLM_BASE_URL"
     ENV_API_KEY = "VLLM_API_KEY"
     DEFAULT_BASE_URL = "http://127.0.0.1:8000/v1"
 
     def __init__(self, model_name: Optional[str] = None) -> None:
-        env_model = os.getenv(self.ENV_MODEL)
-        self._model_name = model_name or env_model or self.DEFAULT_MODEL
+        self._model_name = model_name or self.DEFAULT_MODEL
         self._client: Optional[OpenAI] = None
         self._dim: Optional[int] = None
 

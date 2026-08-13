@@ -227,16 +227,31 @@ def start_canonical_stack() -> None:
 
 
 def ensure_ollama_model() -> None:
-    """Pull the Compose-configured chat model into the ollama service."""
+    """Pull Compose-configured chat and embedding models when provider is Ollama."""
     config = _run_compose("config", capture=True, timeout=60)
-    model = "llama3.1:latest"
+    chat_model = "llama3.1:latest"
+    embedding_provider = "ollama"
+    embedding_model = ""
     for line in (config.stdout or "").splitlines():
         stripped = line.strip().replace('"', "").replace("'", "")
         if stripped.startswith("INTERGRAX_LLM_MODEL:"):
             candidate = stripped.split(":", 1)[1].strip()
             if candidate:
-                model = candidate
-                break
+                chat_model = candidate
+        elif stripped.startswith("INTERGRAX_EMBEDDING_PROVIDER:"):
+            candidate = stripped.split(":", 1)[1].strip().lower()
+            if candidate:
+                embedding_provider = candidate
+        elif stripped.startswith("INTERGRAX_EMBEDDING_MODEL:"):
+            candidate = stripped.split(":", 1)[1].strip()
+            if candidate:
+                embedding_model = candidate
+    _ollama_pull(chat_model)
+    if embedding_provider == "ollama":
+        _ollama_pull(embedding_model or "nomic-embed-text")
+
+
+def _ollama_pull(model: str) -> None:
     completed = _run_compose(
         "exec",
         "-T",

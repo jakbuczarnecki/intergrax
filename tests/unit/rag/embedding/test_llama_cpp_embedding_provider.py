@@ -96,19 +96,18 @@ def test_llama_cpp_base_url_precedence_and_normalization() -> None:
 
 
 @patch("intergrax.rag.embedding.providers.llama_cpp_embedding_provider.OpenAI")
-def test_llama_cpp_api_key_and_model_env_resolution(
+def test_llama_cpp_api_key_resolution(
     mock_openai_cls: MagicMock,
 ) -> None:
     mock_openai_cls.return_value = MagicMock()
     with patch.dict(
         "os.environ",
         {
-            "INTERGRAX_DEFAULT_LLAMA_CPP_EMBED_MODEL": "env-model",
             "LLAMA_CPP_API_KEY": "explicit-key",
         },
         clear=False,
     ):
-        provider = LlamaCppEmbeddingProvider()
+        provider = LlamaCppEmbeddingProvider(model_name="env-model")
         provider._ensure_client()
 
     assert provider._model_name == "env-model"

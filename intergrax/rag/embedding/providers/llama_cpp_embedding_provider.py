@@ -26,15 +26,13 @@ class LlamaCppEmbeddingProvider(EmbeddingProvider):
     """
 
     DEFAULT_MODEL = "default"
-    ENV_MODEL = "INTERGRAX_DEFAULT_LLAMA_CPP_EMBED_MODEL"
     ENV_BASE_URL = "INTERGRAX_DEFAULT_LLAMA_CPP_EMBED_BASE_URL"
     ENV_FALLBACK_BASE_URL = "INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL"
     ENV_API_KEY = "LLAMA_CPP_API_KEY"
     DEFAULT_BASE_URL = "http://127.0.0.1:8080/v1"
 
     def __init__(self, model_name: Optional[str] = None) -> None:
-        env_model = os.getenv(self.ENV_MODEL)
-        self._model_name = model_name or env_model or self.DEFAULT_MODEL
+        self._model_name = model_name or self.DEFAULT_MODEL
         self._client: Optional[OpenAI] = None
         self._dim: Optional[int] = None
 
