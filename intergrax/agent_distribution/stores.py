@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -12,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
+from intergrax.agent_distribution.deployment import DeploymentInstanceRecord, DeploymentInstanceState
 from intergrax.agent_distribution.installation import AgentInstallationRecord
 from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
@@ -174,3 +176,77 @@ class AgentArtifactMetadataStore(Protocol):
         self, metadata: AgentArtifactMetadata
     ) -> AgentArtifactMetadata:
         """Persist artifact metadata record."""
+
+
+class ApplicationEnvironmentServingRecord(BaseModel):
+    """Authoritative traffic serving pointer for one environment (§20.5)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    application_id: str = _NON_EMPTY
+    application_environment_id: str = _NON_EMPTY
+    traffic_serving_revision_id: str | None = None
+    serving_pointer_revision: int = Field(default=0, ge=0)
+    prior_traffic_revision_id: str | None = None
+    committed_at: datetime | None = None
+
+    @field_validator(
+        "application_id",
+        "application_environment_id",
+        "traffic_serving_revision_id",
+        "prior_traffic_revision_id",
+    )
+    @classmethod
+    def _strip_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
+class DeploymentInstanceStore(Protocol):
+    """Durable deployment instance persistence."""
+
+    def get_instance(
+        self,
+        application_environment_id: str,
+        runtime_revision_id: str,
+    ) -> DeploymentInstanceRecord | None:
+        """Load deployment instance for one revision in an environment."""
+
+    def persist_instance(self, instance: DeploymentInstanceRecord) -> DeploymentInstanceRecord:
+        """Create or replace deployment instance record."""
+
+    def update_instance(
+        self,
+        instance: DeploymentInstanceRecord,
+        *,
+        expected_state: DeploymentInstanceState | None = None,
+        expected_record_revision: int | None = None,
+    ) -> DeploymentInstanceRecord:
+        """Update deployment instance with optimistic concurrency."""
+
+
+class ApplicationEnvironmentServingStore(Protocol):
+    """Durable traffic serving pointer persistence."""
+
+    def get_serving_record(
+        self,
+        application_environment_id: str,
+    ) -> ApplicationEnvironmentServingRecord | None:
+        """Load authoritative serving record for an environment."""
+
+    def atomic_swap_serving_revision(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        expected_current_revision_id: str | None,
+        expected_pointer_revision: int,
+        new_revision_id: str,
+        prior_revision_id: str | None,
+        committed_at: datetime,
+    ) -> ApplicationEnvironmentServingRecord:
+        """CAS-protected traffic pointer swap (§24.5)."""

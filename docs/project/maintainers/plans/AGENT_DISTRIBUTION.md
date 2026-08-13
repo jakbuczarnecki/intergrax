@@ -33,7 +33,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 | AP-6 | Effective roster merge + `CandidateDependencySpecification` builder | AP-4 |
 | AP-7 | `MaterializedRuntimeLock` producer + graph simulation gates | AP-6, runtime graph util |
 | AP-8 | Materialization adapters (OCI, venv bundle) | AP-7 |
-| AP-9 | `RuntimeRevision` activation + rollback orchestration (implements §20 zero-downtime model) | AP-8, ARCH-AGENT-ACTIVATION-1 arch |
+| AP-9 | `RuntimeRevision` activation + rollback orchestration (implements §20 zero-downtime model) | in progress |
 | AP-10 | `build_application_registry` extension + snapshot fields | AP-9 |
 | AP-11 | Generic Tier-3 harness admin API routes | AP-4..AP-9 |
 | AP-12 | LKW consumer proof wiring | AP-11 |
@@ -211,4 +211,17 @@ staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 
 **Evidence:** `intergrax/agent_distribution/materialization_service.py`, `materialization_adapters.py`, `runtime_context_staging.py`, `package_artifact_provider.py`, `errors.py`, `tests/unit/agent_distribution/test_agent_distribution_materialization.py`, `test_agent_distribution_materialization_adapter.py`
 
-**Next:** AP-9 may begin after AP-8 close — must implement frozen zero-downtime activation semantics (ARCH-AGENT-ACTIVATION-1, architecture §20).
+**Next:** AP-10 may begin after AP-9 close — registry projection population from traffic-serving `RuntimeRevision`.
+
+### AP-9 evidence (activation orchestration)
+
+| Item | Status |
+|------|--------|
+| `DeploymentInstanceState` + `DeploymentInstanceRecord` | done |
+| `ApplicationEnvironmentServingRecord` CAS serving pointer | done |
+| `RuntimeDeploymentAdapter` port + `FakeInMemoryRuntimeDeploymentAdapter` | done |
+| `ActivationService` PREPARE → READY → COMMIT + drain + rollback | done |
+| `RuntimeServingProjectionCoordinator` boundary + fake | done |
+| AP-9 focused tests + AP-8 regression | pending validation |
+
+**Evidence:** `intergrax/agent_distribution/activation.py`, `deployment.py`, `stores.py`, `in_memory_stores.py`, `tests/unit/agent_distribution/test_agent_distribution_activation.py`, `test_agent_distribution_rollback.py`

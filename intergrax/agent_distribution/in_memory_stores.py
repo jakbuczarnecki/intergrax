@@ -7,18 +7,21 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
+from intergrax.agent_distribution.deployment import DeploymentInstanceRecord, DeploymentInstanceState
 from intergrax.agent_distribution.errors import (
     BindingRevisionConflict,
     InstallationSlotConflict,
     MaterializedRuntimeLockConflict,
+    RuntimeActivationConflict,
     RuntimeRevisionConflict,
 )
 from intergrax.agent_distribution.installation import AgentInstallationRecord, InstallationState
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
-from intergrax.agent_distribution.stores import AgentArtifactMetadata
+from intergrax.agent_distribution.stores import AgentArtifactMetadata, ApplicationEnvironmentServingRecord
 
 
 @dataclass
@@ -32,6 +35,8 @@ class AgentDistributionStoreState:
     active_revision_by_environment: dict[str, str] = field(default_factory=dict)
     artifact_metadata: dict[str, AgentArtifactMetadata] = field(default_factory=dict)
     locks: dict[str, MaterializedRuntimeLock] = field(default_factory=dict)
+    deployment_instances: dict[tuple[str, str], DeploymentInstanceRecord] = field(default_factory=dict)
+    serving_records: dict[str, ApplicationEnvironmentServingRecord] = field(default_factory=dict)
 
 
 class InMemoryAgentInstallationStore:
@@ -317,3 +322,125 @@ class InMemoryMaterializedRuntimeLockStore:
                 return existing
             self._state.locks[identity.lock_id] = identity
             return identity
+
+
+def _deployment_instance_key(
+    application_environment_id: str,
+    runtime_revision_id: str,
+) -> tuple[str, str]:
+    return (application_environment_id, runtime_revision_id)
+
+
+class InMemoryDeploymentInstanceStore:
+    """Process-local deployment instance store with optimistic concurrency."""
+
+    def __init__(self, state: AgentDistributionStoreState | None = None) -> None:
+        self._state = state or AgentDistributionStoreState()
+        self._lock = threading.RLock()
+
+    @property
+    def state(self) -> AgentDistributionStoreState:
+        return self._state
+
+    def get_instance(
+        self,
+        application_environment_id: str,
+        runtime_revision_id: str,
+    ) -> DeploymentInstanceRecord | None:
+        with self._lock:
+            return self._state.deployment_instances.get(
+                _deployment_instance_key(application_environment_id, runtime_revision_id)
+            )
+
+    def persist_instance(self, instance: DeploymentInstanceRecord) -> DeploymentInstanceRecord:
+        with self._lock:
+            key = _deployment_instance_key(
+                instance.application_environment_id,
+                instance.runtime_revision_id,
+            )
+            self._state.deployment_instances[key] = instance
+            return instance
+
+    def update_instance(
+        self,
+        instance: DeploymentInstanceRecord,
+        *,
+        expected_state: DeploymentInstanceState | None = None,
+        expected_record_revision: int | None = None,
+    ) -> DeploymentInstanceRecord:
+        with self._lock:
+            key = _deployment_instance_key(
+                instance.application_environment_id,
+                instance.runtime_revision_id,
+            )
+            current = self._state.deployment_instances.get(key)
+            if current is None:
+                raise RuntimeActivationConflict("deployment instance was not found")
+            if expected_state is not None and current.instance_state != expected_state:
+                raise RuntimeActivationConflict("deployment instance state does not match expected value")
+            if (
+                expected_record_revision is not None
+                and current.record_revision != expected_record_revision
+            ):
+                raise RuntimeActivationConflict("deployment instance revision does not match expected value")
+            self._state.deployment_instances[key] = instance
+            return instance
+
+
+class InMemoryApplicationEnvironmentServingStore:
+    """Process-local serving pointer store with CAS-protected swaps."""
+
+    def __init__(self, state: AgentDistributionStoreState | None = None) -> None:
+        self._state = state or AgentDistributionStoreState()
+        self._lock = threading.RLock()
+
+    @property
+    def state(self) -> AgentDistributionStoreState:
+        return self._state
+
+    def get_serving_record(
+        self,
+        application_environment_id: str,
+    ) -> ApplicationEnvironmentServingRecord | None:
+        with self._lock:
+            return self._state.serving_records.get(application_environment_id)
+
+    def atomic_swap_serving_revision(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        expected_current_revision_id: str | None,
+        expected_pointer_revision: int,
+        new_revision_id: str,
+        prior_revision_id: str | None,
+        committed_at: datetime,
+    ) -> ApplicationEnvironmentServingRecord:
+        with self._lock:
+            current = self._state.serving_records.get(application_environment_id)
+            if current is None:
+                if expected_pointer_revision != 0 or expected_current_revision_id is not None:
+                    raise RuntimeActivationConflict("serving pointer does not match expected value")
+                record = ApplicationEnvironmentServingRecord(
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                    traffic_serving_revision_id=new_revision_id,
+                    serving_pointer_revision=1,
+                    prior_traffic_revision_id=prior_revision_id,
+                    committed_at=committed_at,
+                )
+            else:
+                if current.traffic_serving_revision_id != expected_current_revision_id:
+                    raise RuntimeActivationConflict("serving pointer does not match expected value")
+                if current.serving_pointer_revision != expected_pointer_revision:
+                    raise RuntimeActivationConflict("serving pointer revision does not match expected value")
+                record = ApplicationEnvironmentServingRecord(
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                    traffic_serving_revision_id=new_revision_id,
+                    serving_pointer_revision=current.serving_pointer_revision + 1,
+                    prior_traffic_revision_id=prior_revision_id,
+                    committed_at=committed_at,
+                )
+            self._state.serving_records[application_environment_id] = record
+            return record

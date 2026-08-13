@@ -87,3 +87,23 @@ class MaterializationLockArtifactIdentityBlocked(MaterializationError):
     """Lock package lacks cryptographic identity required for production install."""
 
     BLOCKER_CODE = "AP-8_BLOCKED_BY_MISSING_LOCK_ARTIFACT_IDENTITY"
+
+
+class RuntimeActivationError(AgentDistributionError):
+    """Activation orchestration precondition or persistence failure."""
+
+
+class RuntimeActivationConflict(RuntimeActivationError):
+    """Concurrent or stale activation / serving pointer mutation."""
+
+
+class RuntimeReadinessError(RuntimeActivationError):
+    """Candidate deployment failed readiness validation."""
+
+
+class RuntimeRollbackError(AgentDistributionError):
+    """Rollback orchestration precondition or persistence failure."""
+
+
+class RuntimeDrainError(AgentDistributionError):
+    """Drain orchestration failure or timeout outcome."""
