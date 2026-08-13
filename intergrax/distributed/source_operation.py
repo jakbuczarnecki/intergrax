@@ -44,6 +44,7 @@ class RagSourceOperationKey:
     namespace: str | None
     workspace_id: str | None
     source_id: str
+    publication_scope_id: str | None = None
 
     def __post_init__(self) -> None:
         _require_non_empty(self.tenant_id, field_name="tenant_id")
@@ -52,19 +53,23 @@ class RagSourceOperationKey:
         if self.workspace_id is not None:
             _require_non_empty(self.workspace_id, field_name="workspace_id")
         _require_non_empty(self.source_id, field_name="source_id")
+        if self.publication_scope_id is not None:
+            _require_non_empty(
+                self.publication_scope_id,
+                field_name="publication_scope_id",
+            )
 
     @property
     def canonical_value(self) -> str:
-        return json.dumps(
-            {
-                "tenant_id": self.tenant_id,
-                "namespace": self.namespace,
-                "workspace_id": self.workspace_id,
-                "source_id": self.source_id,
-            },
-            sort_keys=True,
-            separators=(",", ":"),
-        )
+        payload: dict[str, str | None] = {
+            "tenant_id": self.tenant_id,
+            "namespace": self.namespace,
+            "workspace_id": self.workspace_id,
+            "source_id": self.source_id,
+        }
+        if self.publication_scope_id is not None:
+            payload["publication_scope_id"] = self.publication_scope_id
+        return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
     @property
     def storage_id(self) -> str:

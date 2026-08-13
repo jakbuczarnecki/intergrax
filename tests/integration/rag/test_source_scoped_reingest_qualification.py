@@ -330,3 +330,72 @@ def test_source_reingest_replaces_only_current_source_safely(tmp_path: Path) -> 
         )
     )
     assert any("A-new" in chunk.text for chunk in preserved.chunks)
+
+
+def test_managed_workspace_folder_source_preserves_sibling_documents(
+    tmp_path: Path,
+) -> None:
+    """Managed workspace folder sources share one source_id across files."""
+    pipeline, _, vectorstore, retrieval = _build()
+    shared_source_id = "src:managed-folder"
+    obligations_id = "lkwdoc:obligations-alpha"
+    invoices_id = "lkwdoc:invoices-beta"
+    obligations = tmp_path / "obligations.txt"
+    invoices = tmp_path / "invoices.txt"
+    _write(obligations, "A-old aurora orchard harvest logistics alpha")
+    _write(invoices, "B-stable zephyr submarine sonar calibration beta")
+
+    obligations_ids = set(
+        pipeline.run(
+            IngestRequest(
+                source_path=str(obligations),
+                base_metadata={
+                    "tenant_id": TENANT_ID,
+                    "namespace": NAMESPACE,
+                    "source_id": shared_source_id,
+                    "document_id": obligations_id,
+                },
+                workspace_id=WORKSPACE_ID,
+            )
+        ).vector_ids
+    )
+    invoices_ids = set(
+        pipeline.run(
+            IngestRequest(
+                source_path=str(invoices),
+                base_metadata={
+                    "tenant_id": TENANT_ID,
+                    "namespace": NAMESPACE,
+                    "source_id": shared_source_id,
+                    "document_id": invoices_id,
+                },
+                workspace_id=WORKSPACE_ID,
+            )
+        ).vector_ids
+    )
+    assert obligations_ids
+    assert invoices_ids
+    assert obligations_ids.isdisjoint(invoices_ids)
+    assert vectorstore.count(scope=SCOPE) == len(obligations_ids) + len(invoices_ids)
+
+    obligations_reingest = set(
+        pipeline.run(
+            IngestRequest(
+                source_path=str(obligations),
+                base_metadata={
+                    "tenant_id": TENANT_ID,
+                    "namespace": NAMESPACE,
+                    "source_id": shared_source_id,
+                    "document_id": obligations_id,
+                },
+                workspace_id=WORKSPACE_ID,
+            )
+        ).vector_ids
+    )
+    assert obligations_reingest == obligations_ids
+    assert vectorstore.list_source_record_ids(
+        source_id=shared_source_id,
+        root_document_id=invoices_id,
+        scope=SCOPE,
+    )
+    assert vectorstore.count(scope=SCOPE) == len(obligations_ids) + len(invoices_ids)

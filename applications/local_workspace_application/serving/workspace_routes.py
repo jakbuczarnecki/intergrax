@@ -89,6 +89,9 @@ from local_workspace_application.workspaces.connected_source_wiring import (
 from local_workspace_application.workspaces.document_indexing import (
     WorkspaceDocumentIndexingService,
 )
+from local_workspace_application.workspaces.indexed_vector_verifier import (
+    ManagedWorkspaceIndexedVectorVerifier,
+)
 from local_workspace_application.workspaces.document_inspect_service import (
     DocumentInspectError,
     DocumentInspectService,
@@ -507,6 +510,8 @@ def mount_managed_workspace_routes(
     ask_service: WorkspaceAskService | None = None,
     llm_adapter: Any | None = None,
     vectorstore_manager: Any | None = None,
+    tenant_vectorstore_cache: dict[str, Any] | None = None,
+    integration_profile: Any | None = None,
     object_storage: ObjectStorage | None = None,
     web_url_access_policy: Any | None = None,
     web_content_capture: Any | None = None,
@@ -570,6 +575,15 @@ def mount_managed_workspace_routes(
     indexing_service = indexing_service or WorkspaceDocumentIndexingService(
         repository,
         task_executor,
+        indexed_vector_verifier=(
+            ManagedWorkspaceIndexedVectorVerifier(
+                vectorstore_manager,
+                tenant_vectorstore_cache=tenant_vectorstore_cache,
+                integration_profile=integration_profile,
+            )
+            if vectorstore_manager is not None
+            else None
+        ),
     )
     folder_indexing = LocalFolderIndexingService(
         indexing_service,

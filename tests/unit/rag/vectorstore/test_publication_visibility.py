@@ -96,12 +96,13 @@ def _manager_with_hits(
     return manager
 
 
-def _source_key() -> RagSourceOperationKey:
+def _source_key(*, document_id: str = "fresh-source") -> RagSourceOperationKey:
     return RagSourceOperationKey(
         tenant_id=SCOPE.tenant_id,
         namespace=SCOPE.namespace,
         workspace_id=SCOPE.workspace_id,
         source_id=SOURCE_ID,
+        publication_scope_id=document_id,
     )
 
 

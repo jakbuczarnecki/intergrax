@@ -110,10 +110,12 @@ class InmemoryVectorStoreIntegration(VectorStoreIntegrationContract):
         *,
         source_id: str,
         scope: VectorStoreScope,
+        root_document_id: str | None = None,
     ) -> Sequence[str]:
         return self._require_inner().list_source_record_ids(
             source_id=source_id,
             scope=scope,
+            root_document_id=root_document_id,
         )
 
 

@@ -35,6 +35,17 @@ class TaskExecutorPort(Protocol):
     async def execute(self, task: Task) -> Any: ...
 
 
+class IndexedVectorVerifierPort(Protocol):
+    def has_indexed_vectors(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        document_id: str,
+    ) -> bool: ...
+
+
 def _utc_now() -> datetime:
     return datetime.now(UTC)
 
@@ -178,9 +189,29 @@ class WorkspaceDocumentIndexingService:
         self,
         repository: ManagedWorkspaceRepository,
         task_executor: TaskExecutorPort,
+        *,
+        indexed_vector_verifier: IndexedVectorVerifierPort | None = None,
     ) -> None:
         self._repository = repository
         self._task_executor = task_executor
+        self._indexed_vector_verifier = indexed_vector_verifier
+
+    def _indexed_vectors_missing(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        document_id: str,
+    ) -> bool:
+        if self._indexed_vector_verifier is None:
+            return False
+        return not self._indexed_vector_verifier.has_indexed_vectors(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            document_id=document_id,
+        )
 
     def _get_index_receipt(
         self,
@@ -543,6 +574,27 @@ class WorkspaceDocumentIndexingService:
                     materialization_ownership=materialization_ownership,
                     receipt=receipt,
                 )
+            vectors_missing = self._indexed_vectors_missing(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                document_id=receipt.document_id,
+            )
+            if vectors_missing:
+                return await self._execute_workspace_index_task(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    source_id=source_id,
+                    operation_id=operation_id,
+                    physical_path=physical_path,
+                    logical_source_path=logical_source_path,
+                    safe_file_name=safe_file_name,
+                    content_hash=content_hash,
+                    document_id=document_id,
+                    materialization_scope=materialization_scope,
+                    materialization_ownership=materialization_ownership,
+                    receipt=receipt,
+                )
             self._repository.put_document_ref(
                 WorkspaceDocumentReference(
                     document_id=receipt.document_id,
@@ -593,29 +645,36 @@ class WorkspaceDocumentIndexingService:
             source_path=logical_source_path,
         )
         if existing is not None and existing.content_hash == content_hash:
-            if (
-                materialization_ownership.ownership_mode
-                is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
-            ):
-                self._repository.put_document_ref(
-                    existing.model_copy(
-                        update={
-                            "materialization_ownership": materialization_ownership,
-                            "visibility_authority_type": (
-                                KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_MANIFEST
-                            ),
-                            "visibility_authority_ref": materialization_ownership.delivery_id,
-                        }
-                    )
-                )
-            return WorkspaceDocumentIndexingResult(
-                indexed=False,
-                unchanged=True,
+            vectors_missing = self._indexed_vectors_missing(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
                 document_id=existing.document_id,
-                documents_indexed=0,
-                num_chunks=0,
-                reason="unchanged",
             )
+            if not vectors_missing:
+                if (
+                    materialization_ownership.ownership_mode
+                    is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                ):
+                    self._repository.put_document_ref(
+                        existing.model_copy(
+                            update={
+                                "materialization_ownership": materialization_ownership,
+                                "visibility_authority_type": (
+                                    KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_MANIFEST
+                                ),
+                                "visibility_authority_ref": materialization_ownership.delivery_id,
+                            }
+                        )
+                    )
+                return WorkspaceDocumentIndexingResult(
+                    indexed=False,
+                    unchanged=True,
+                    document_id=existing.document_id,
+                    documents_indexed=0,
+                    num_chunks=0,
+                    reason="unchanged",
+                )
 
         receipt = _WorkspaceDocumentIndexReceipt(
             tenant_id=tenant_id,

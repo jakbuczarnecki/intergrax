@@ -349,11 +349,13 @@ class VectorstoreManager(BaseVectorstoreManager):
         visible: list[VectorStoreHit] = []
         for hit in hits:
             source_id = str(hit.document.provenance.source_id)
+            publication_scope_id = str(hit.document.identity.root_document_id).strip()
             key = RagSourceOperationKey(
                 tenant_id=scope.tenant_id,
                 namespace=scope.namespace,
                 workspace_id=scope.workspace_id,
                 source_id=source_id,
+                publication_scope_id=publication_scope_id,
             )
             record_generation = hit.document.metadata.get(
                 SOURCE_PUBLICATION_GENERATION_METADATA_KEY
@@ -400,6 +402,7 @@ class VectorstoreManager(BaseVectorstoreManager):
         *,
         source_id: str,
         scope: VectorStoreScope | None = None,
+        root_document_id: str | None = None,
     ) -> Sequence[str]:
         resolved_scope = self._resolve_scope(scope)
         self._enforce_access("read", resolved_scope)
@@ -408,8 +411,18 @@ class VectorstoreManager(BaseVectorstoreManager):
                 source_id,
                 field_name="source_id",
             )
+            canonical_root_document_id = (
+                require_non_empty_str(
+                    root_document_id,
+                    field_name="root_document_id",
+                )
+                if root_document_id is not None
+                else None
+            )
         except ValueError as exc:
-            raise VectorStoreContractError("source_id must be a non-empty string") from exc
+            raise VectorStoreContractError(
+                "source_id and root_document_id must be non-empty strings when provided"
+            ) from exc
 
         provider_lookup = getattr(self._store, "list_source_record_ids", None)
         if not callable(provider_lookup):
@@ -417,6 +430,7 @@ class VectorstoreManager(BaseVectorstoreManager):
         provider_ids = provider_lookup(
             source_id=canonical_source_id,
             scope=resolved_scope,
+            root_document_id=canonical_root_document_id,
         )
         return tuple(sorted(provider_ids))
 

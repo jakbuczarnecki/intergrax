@@ -238,6 +238,19 @@ def create_local_workspace_backend_app(
         settings=resolved_settings,
         prefix=resolved_settings.route_prefix,
         vectorstore_manager=runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
+        tenant_vectorstore_cache=(
+            runtime.env_wiring.tool_wiring.wiring_context.extras.get(
+                "tenant_vectorstore_managers"
+            )
+            if isinstance(
+                runtime.env_wiring.tool_wiring.wiring_context.extras.get(
+                    "tenant_vectorstore_managers"
+                ),
+                dict,
+            )
+            else None
+        ),
+        integration_profile=runtime.env_wiring.tool_wiring.wiring_context.integration_profile,
         object_storage=runtime.env_wiring.tool_wiring.wiring_context.object_storage,
         tenant_connection_secrets_store=(
             runtime.env_wiring.tool_wiring.wiring_context.secrets_store

@@ -321,20 +321,23 @@ class IngestPipeline:
             namespace=source_scope.namespace,
             workspace_id=source_scope.workspace_id,
             source_id=source_id,
+            publication_scope_id=str(native_docs[0].identity.root_document_id).strip(),
         )
         lease = self._source_coordinator.acquire(key=key)
         if lease is None:
             return IngestResult(used=False, reason="source_ingest_conflict")
         try:
             try:
-                old_main_ids = self._list_current_source_ids(
+                old_main_ids = self._list_replacement_source_ids(
                     source_id=source_id,
                     scope=source_scope,
+                    native_docs=native_docs,
                 )
                 old_toc_ids = (
-                    self._list_current_source_ids(
+                    self._list_replacement_source_ids(
                         source_id=source_id,
                         scope=source_scope,
+                        native_docs=native_docs,
                         vectorstore=self._toc_vectorstore,
                     )
                     if self._uses_dual_index()
@@ -578,6 +581,7 @@ class IngestPipeline:
         source_id: str,
         scope: VectorStoreScope,
         vectorstore: BaseVectorstoreManager | None = None,
+        root_document_id: str | None = None,
     ) -> set[str]:
         target_vectorstore = vectorstore or self._vectorstore
         lookup = getattr(target_vectorstore, "list_source_record_ids", None)
@@ -585,7 +589,13 @@ class IngestPipeline:
             lookup_error = RuntimeError(self._SOURCE_LOOKUP_UNSUPPORTED)
         else:
             try:
-                return set(lookup(source_id=source_id, scope=scope))
+                return set(
+                    lookup(
+                        source_id=source_id,
+                        scope=scope,
+                        root_document_id=root_document_id,
+                    )
+                )
             except RuntimeError as exc:
                 if str(exc) != self._SOURCE_LOOKUP_UNSUPPORTED:
                     raise
@@ -594,6 +604,43 @@ class IngestPipeline:
         if target_vectorstore.count(scope=scope) == 0:
             return set()
         raise RuntimeError(self._SOURCE_REINGEST_UNSUPPORTED) from lookup_error
+
+    def _replacement_root_document_ids(
+        self,
+        native_docs: list[KnowledgeDocument],
+    ) -> set[str]:
+        return {
+            str(doc.identity.root_document_id).strip()
+            for doc in native_docs
+            if str(doc.identity.root_document_id).strip()
+        }
+
+    def _list_replacement_source_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope,
+        native_docs: list[KnowledgeDocument],
+        vectorstore: BaseVectorstoreManager | None = None,
+    ) -> set[str]:
+        replacement_roots = self._replacement_root_document_ids(native_docs)
+        if not replacement_roots:
+            return self._list_current_source_ids(
+                source_id=source_id,
+                scope=scope,
+                vectorstore=vectorstore,
+            )
+        collected: set[str] = set()
+        for root_document_id in sorted(replacement_roots):
+            collected.update(
+                self._list_current_source_ids(
+                    source_id=source_id,
+                    scope=scope,
+                    vectorstore=vectorstore,
+                    root_document_id=root_document_id,
+                )
+            )
+        return collected
 
     def _uses_dual_index(self) -> bool:
         return (

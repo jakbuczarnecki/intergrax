@@ -142,14 +142,24 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
         *,
         source_id: str,
         scope: VectorStoreScope,
+        root_document_id: str | None = None,
     ) -> Sequence[str]:
         canonical_source_id = require_non_empty_str(source_id, field_name="source_id")
+        canonical_root_document_id = (
+            require_non_empty_str(root_document_id, field_name="root_document_id")
+            if root_document_id is not None
+            else None
+        )
         validate_scope(scope, tenant_id=self._tenant_id)
         return sorted(
             vector_id
             for vector_id, payload in self._payloads.items()
             if self._matches_scope(payload, scope)
             and payload.get("source_id") == canonical_source_id
+            and (
+                canonical_root_document_id is None
+                or payload.get("root_document_id") == canonical_root_document_id
+            )
         )
 
     # ---------------------------------------------------------

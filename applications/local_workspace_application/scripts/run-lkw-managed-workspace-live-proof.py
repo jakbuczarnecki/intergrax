@@ -502,7 +502,7 @@ def main() -> int:
             raise RuntimeError(f"operation_probe_failed:{status}:{queued_probe}")
         if queued_probe.get("status") not in {"queued", "running", "completed"}:
             raise RuntimeError(f"operation_unexpected_status:{queued_probe}")
-        evidence["operation_queued"] = queued_probe.get("status") == "queued" or True
+        evidence["operation_queued"] = queued_probe.get("status") == "queued"
 
         # Concurrent sync while active must be controlled (409).
         status, concurrent = _request_json(
@@ -735,7 +735,7 @@ def main() -> int:
             durable_evidence={
                 "sync_requested": True,
                 "operation_persisted": True,
-                "operation_queued": True,
+                "operation_queued": bool(evidence.get("operation_queued")),
                 "host_or_worker_interrupted": True,
                 "operation_not_lost": True,
                 "operation_completed_after_restart": True,

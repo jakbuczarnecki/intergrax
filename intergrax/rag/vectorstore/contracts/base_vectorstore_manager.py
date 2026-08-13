@@ -95,8 +95,9 @@ class BaseVectorstoreManager(ABC):
         *,
         source_id: str,
         scope: VectorStoreScope | None = None,
+        root_document_id: str | None = None,
     ) -> Sequence[str]:
-        """Return all persisted vector IDs owned by one canonical source."""
+        """Return persisted vector IDs owned by one canonical source."""
         raise NotImplementedError
 
     @abstractmethod

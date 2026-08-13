@@ -235,6 +235,43 @@ def test_sync_search_idempotency_and_workspace_isolation(api_client) -> None:
     assert hit["source_path"]
     assert hit["file_name"]
 
+    search_b = client.post(
+        f"{_PREFIX}/workspaces/{ws1['workspace_id']}/search",
+        headers=_headers(tenant),
+        json={"query": marker_b, "limit": 10},
+    )
+    assert search_b.status_code == 200, search_b.text
+    results_b = search_b.json()["results"]
+    assert results_b, search_b.json()
+    hit_b = next(
+        (item for item in results_b if marker_b in item.get("snippet", "")),
+        None,
+    )
+    assert hit_b is not None, search_b.json()
+    assert hit_b["source_id"] == source["source_id"]
+    assert hit_b["workspace_id"] == ws1["workspace_id"]
+
+    semantic_a = client.post(
+        f"{_PREFIX}/workspaces/{ws1['workspace_id']}/search",
+        headers=_headers(tenant),
+        json={"query": "payment obligations", "limit": 10},
+    )
+    assert semantic_a.status_code == 200, semantic_a.text
+    assert any(
+        item.get("file_name") == "invoice-alpha.txt"
+        for item in semantic_a.json()["results"]
+    )
+    semantic_b = client.post(
+        f"{_PREFIX}/workspaces/{ws1['workspace_id']}/search",
+        headers=_headers(tenant),
+        json={"query": "outstanding invoices", "limit": 10},
+    )
+    assert semantic_b.status_code == 200, semantic_b.text
+    assert any(
+        item.get("file_name") == "payment-beta.txt"
+        for item in semantic_b.json()["results"]
+    )
+
     second = client.post(
         f"{_PREFIX}/workspaces/{ws1['workspace_id']}/sources/{source['source_id']}/sync",
         headers=_headers(tenant),

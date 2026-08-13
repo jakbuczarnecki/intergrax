@@ -593,8 +593,14 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         *,
         source_id: str,
         scope: VectorStoreScope,
+        root_document_id: str | None = None,
     ) -> Sequence[str]:
         canonical_source_id = require_non_empty_str(source_id, field_name="source_id")
+        canonical_root_document_id = (
+            require_non_empty_str(root_document_id, field_name="root_document_id")
+            if root_document_id is not None
+            else None
+        )
         validate_scope(scope, tenant_id=self.cfg.tenant_id)
         if not self._collection_exists():
             return []
@@ -606,6 +612,8 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
             "tenant_id": scope.tenant_id,
             "source_id": canonical_source_id,
         }
+        if canonical_root_document_id is not None:
+            effective_where["root_document_id"] = canonical_root_document_id
         if scope.namespace is not None:
             effective_where["namespace"] = scope.namespace
         if scope.workspace_id is not None:

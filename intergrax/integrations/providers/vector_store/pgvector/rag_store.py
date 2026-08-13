@@ -218,28 +218,54 @@ class PgVectorRagStore(VectorStore, IntegrationHealthProbe):
         *,
         source_id: str,
         scope: VectorStoreScope,
+        root_document_id: str | None = None,
     ) -> Sequence[str]:
         canonical_source_id = require_non_empty_str(source_id, field_name="source_id")
+        canonical_root_document_id = (
+            require_non_empty_str(root_document_id, field_name="root_document_id")
+            if root_document_id is not None
+            else None
+        )
         validate_scope(scope, tenant_id=self._tenant_id)
         connection = self._require_connection()
         try:
             with connection.cursor() as cursor:
-                cursor.execute(
-                    f"""
-                    SELECT logical_id FROM {self._TABLE}
-                    WHERE tenant_id = %s
-                      AND namespace IS NOT DISTINCT FROM %s
-                      AND workspace_id IS NOT DISTINCT FROM %s
-                      AND source_id = %s
-                    ORDER BY logical_id
-                    """,
-                    (
-                        self._tenant_id,
-                        scope.namespace,
-                        scope.workspace_id,
-                        canonical_source_id,
-                    ),
-                )
+                if canonical_root_document_id is None:
+                    cursor.execute(
+                        f"""
+                        SELECT logical_id FROM {self._TABLE}
+                        WHERE tenant_id = %s
+                          AND namespace IS NOT DISTINCT FROM %s
+                          AND workspace_id IS NOT DISTINCT FROM %s
+                          AND source_id = %s
+                        ORDER BY logical_id
+                        """,
+                        (
+                            self._tenant_id,
+                            scope.namespace,
+                            scope.workspace_id,
+                            canonical_source_id,
+                        ),
+                    )
+                else:
+                    cursor.execute(
+                        f"""
+                        SELECT logical_id FROM {self._TABLE}
+                        WHERE tenant_id = %s
+                          AND namespace IS NOT DISTINCT FROM %s
+                          AND workspace_id IS NOT DISTINCT FROM %s
+                          AND source_id = %s
+                          AND root_document_id = %s
+                        ORDER BY logical_id
+                        """,
+                        (
+                            self._tenant_id,
+                            scope.namespace,
+                            scope.workspace_id,
+                            canonical_source_id,
+                            canonical_root_document_id,
+                        ),
+                    )
                 rows = cursor.fetchall()
         except Exception:  # noqa: BLE001 — provider boundary
             self._rollback(connection)

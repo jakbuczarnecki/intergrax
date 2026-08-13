@@ -257,14 +257,22 @@ class ChromaVectorStore(BaseVectorStore):
         *,
         source_id: str,
         scope: VectorStoreScope,
+        root_document_id: str | None = None,
     ) -> Sequence[str]:
         canonical_source_id = require_non_empty_str(
             source_id,
             field_name="source_id",
         )
+        canonical_root_document_id = (
+            require_non_empty_str(root_document_id, field_name="root_document_id")
+            if root_document_id is not None
+            else None
+        )
         validate_scope(scope, tenant_id=self.cfg.tenant_id)
         conditions = dict(MetadataFilter.for_scope(scope, None).conditions)
         conditions["source_id"] = canonical_source_id
+        if canonical_root_document_id is not None:
+            conditions["root_document_id"] = canonical_root_document_id
         result = self._collection.get(
             where=self._normalize_chroma_where(conditions),
             include=[],
