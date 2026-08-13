@@ -202,13 +202,19 @@ class _FakeCollection:
         self.operations.append(("find", query))
         rows: list[dict[str, Any]] = []
         prefix = None
+        after_row_key = None
         row_key_filter = query.get("row_key")
-        if isinstance(row_key_filter, dict) and "$regex" in row_key_filter:
-            prefix = str(row_key_filter["$regex"]).removeprefix("^")
+        if isinstance(row_key_filter, dict):
+            if "$regex" in row_key_filter:
+                prefix = str(row_key_filter["$regex"]).removeprefix("^")
+            if "$gt" in row_key_filter:
+                after_row_key = str(row_key_filter["$gt"])
         for (partition_key, row_key), doc in sorted(self.storage.items()):
             if partition_key != query.get("partition_key"):
                 continue
             if prefix is not None and not row_key.startswith(prefix):
+                continue
+            if after_row_key is not None and row_key <= after_row_key:
                 continue
             rows.append(dict(doc))
         return _FakeCursor(rows)
