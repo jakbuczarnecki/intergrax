@@ -58,6 +58,12 @@ On success the stack stays running for inspection — health check
 (`http://127.0.0.1:8020/health`), Docker logs, and persisted run read. For
 deeper bounded platform verification, see [Core Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md).
 
+Product Quick Start and Core Platform Proof use separate execution lifecycles.
+Stop this quickstart stack before starting the isolated Core Platform Proof; see
+[Stop the stack](#stop-the-stack) and the proof document's
+[After Product Quick Start](../../proofs/LKW_PLATFORM_PROOF.md#after-product-quick-start)
+section.
+
 **Proofs:** `LKW-PRODUCT-QUICKSTART-WINDOWS`, `LKW-PRODUCT-QUICKSTART-LINUX`, `LKW-PRODUCT-QUICKSTART-MACOS`
 
 ## Prerequisites

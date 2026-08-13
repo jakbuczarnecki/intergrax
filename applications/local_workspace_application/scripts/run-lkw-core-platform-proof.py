@@ -29,6 +29,12 @@ _APP_DIR = _SCRIPT_DIR.parent
 _REPO_ROOT = _APP_DIR.parent.parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
+from lkw_host_port_preflight import (
+    canonical_compose_owned_host_ports,
+    is_loopback_tcp_port_reachable,
+    probe_host_port_available,
+    resolve_compose_published_host_ports,
+)
 from lkw_ollama_embedding_bootstrap import (
     OllamaEmbeddingBootstrapError,
     ensure_ollama_embedding_model as _ensure_ollama_embedding_model,
@@ -88,6 +94,9 @@ _FILE_WATCHER_SCOPE_ID = "lkw-file-watcher-e2e"
 _FILE_WATCHER_USER_ID = "lkw.file_watcher"
 _FILE_WATCHER_SEED_NAME = "lkw_core_proof_embed_seed.txt"
 _PERSISTENCE_PROOF_SCOPE_ID = "lkw-persistence-proof"
+_COMPOSE_PROJECT = "lkw-core-platform-proof"
+_PRODUCT_COMPOSE_PROJECT = "intergrax_lkw"
+_PRODUCT_COMPOSE_FILE = _BASE_COMPOSE
 
 ALL_PHASE_ORDER: tuple[str, ...] = (
     "startup",
@@ -389,10 +398,74 @@ def discover_compose_files() -> list[Path]:
 
 
 def compose_args(compose_files: Sequence[Path]) -> list[str]:
-    args = ["docker", "compose"]
+    args = ["docker", "compose", "-p", _COMPOSE_PROJECT]
     for path in compose_files:
         args.extend(["-f", str(path)])
     return args
+
+
+def product_compose_exec_args(*compose_command: str) -> list[str]:
+    return [
+        "docker",
+        "compose",
+        "-p",
+        _PRODUCT_COMPOSE_PROJECT,
+        "-f",
+        str(_PRODUCT_COMPOSE_FILE),
+        *compose_command,
+    ]
+
+
+def check_startup_host_port_preflight(config: ProofConfig) -> None:
+    compose_files = discover_compose_files()
+    proof_compose_exec = lambda *command: compose_exec_args(compose_files, *command)
+    try:
+        required_ports = resolve_compose_published_host_ports(
+            compose_exec_args=proof_compose_exec,
+            run_command=run_command,
+            cwd=_REPO_ROOT,
+            timeout=min(120, config.phase_timeout_seconds),
+        )
+    except RuntimeError as exc:
+        raise CoreProofError("compose_config_failed") from exc
+
+    proof_owned = canonical_compose_owned_host_ports(
+        compose_exec_args=proof_compose_exec,
+        run_command=run_command,
+        cwd=_REPO_ROOT,
+        timeout=30,
+    )
+    product_owned = canonical_compose_owned_host_ports(
+        compose_exec_args=product_compose_exec_args,
+        run_command=run_command,
+        cwd=_REPO_ROOT,
+        timeout=30,
+    )
+
+    for port in sorted(required_ports):
+        if proof_owned is not None and port in proof_owned:
+            continue
+        if probe_host_port_available(port) and not is_loopback_tcp_port_reachable(port):
+            continue
+        if not is_loopback_tcp_port_reachable(port):
+            continue
+        details: dict[str, str] = {
+            "occupied_port": str(port),
+            "recommended_action": (
+                "Free the required Core Platform Proof host ports before starting."
+            ),
+        }
+        if product_owned is not None and port in product_owned:
+            details["occupied_by"] = "lkw_product_quickstart"
+            details["recommended_action"] = (
+                "Stop the LKW Product Quick Start stack using the documented "
+                "non-destructive stop command, then rerun Core Platform Proof."
+            )
+        raise CoreProofError(
+            "required_port_unavailable",
+            phase="startup",
+            child_details=details,
+        )
 
 
 def compose_exec_args(
@@ -1234,6 +1307,7 @@ def phase_startup(config: ProofConfig) -> PhaseOutcome:
     for path in compose_files:
         if not path.is_file():
             raise CoreProofError("required_path_missing")
+    check_startup_host_port_preflight(config)
     materialize_runtime_context()
     compose_config(compose_files, cwd=_REPO_ROOT)
     compose_down(compose_files, cwd=_REPO_ROOT, volumes=True, remove_orphans=True)
@@ -1631,6 +1705,8 @@ def phase_file_watcher(config: ProofConfig) -> PhaseOutcome:
         "LKW_FILE_WATCHER_E2E_KAFKA_BOOTSTRAP",
         "127.0.0.1:9094",
     )
+    file_watcher_env = mongodb_child_env()
+    file_watcher_env["COMPOSE_PROJECT_NAME"] = _COMPOSE_PROJECT
     exit_code, text = run_python_child(
         _FILE_WATCHER_PROOF_PY,
         [
@@ -1656,7 +1732,7 @@ def phase_file_watcher(config: ProofConfig) -> PhaseOutcome:
             config.mongo_express,
         ],
         cwd=_REPO_ROOT,
-        env=mongodb_child_env(),
+        env=file_watcher_env,
         timeout=None,
     )
     parsed_child = parse_kv_output(text)

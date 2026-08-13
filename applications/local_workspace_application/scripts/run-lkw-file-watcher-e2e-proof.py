@@ -363,19 +363,24 @@ def build_compose_command(
     watcher_compose: Path,
     mongodb_compose: Path,
 ) -> list[str]:
-    return [
-        "docker",
-        "compose",
-        "-f",
-        str(base_compose),
-        "-f",
-        str(kafka_compose),
-        "-f",
-        str(watcher_compose),
-        "-f",
-        str(mongodb_compose),
-        *compose_args,
-    ]
+    command = ["docker", "compose"]
+    compose_project = os.environ.get("COMPOSE_PROJECT_NAME", "").strip()
+    if compose_project:
+        command.extend(["-p", compose_project])
+    command.extend(
+        [
+            "-f",
+            str(base_compose),
+            "-f",
+            str(kafka_compose),
+            "-f",
+            str(watcher_compose),
+            "-f",
+            str(mongodb_compose),
+            *compose_args,
+        ]
+    )
+    return command
 
 
 def run_compose(

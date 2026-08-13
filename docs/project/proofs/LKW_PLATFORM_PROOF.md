@@ -376,6 +376,22 @@ Run all commands from the repository root.
 
 ---
 
+## After Product Quick Start
+
+Product Quick Start and Core Platform Proof use **separate execution
+lifecycles**.
+
+Product Quick Start intentionally leaves its canonical `intergrax_lkw` stack
+running on the host for inspection. Core Platform Proof starts an isolated
+`lkw-core-platform-proof` stack and requires exclusive access to its documented
+local host ports (including `8020`).
+
+Before running the one-command Core Platform Proof below, stop the Product Quick
+Start stack with the supported non-destructive lifecycle command documented in
+[LKW Quick Start](../product/lkw/QUICKSTART.md#stop-the-stack).
+
+---
+
 ## Recommended one-command Core Platform Proof
 
 ### Windows

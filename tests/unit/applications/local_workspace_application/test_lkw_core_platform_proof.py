@@ -395,6 +395,11 @@ def test_startup_materializes_runtime_context_before_build(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     events: list[str] = []
+    monkeypatch.setattr(
+        core,
+        "check_startup_host_port_preflight",
+        lambda *_a, **_k: events.append("preflight"),
+    )
     monkeypatch.setattr(core, "materialize_runtime_context", lambda: events.append("materialize"))
     monkeypatch.setattr(core, "compose_config", lambda *_a, **_k: events.append("config"))
     monkeypatch.setattr(core, "compose_down", lambda *_a, **_k: events.append("down"))
@@ -404,7 +409,7 @@ def test_startup_materializes_runtime_context_before_build(
 
     core.phase_startup(_config(core))
 
-    assert events == ["materialize", "config", "down", "clear", "build"]
+    assert events == ["preflight", "materialize", "config", "down", "clear", "build"]
 
 
 def test_materialization_uses_canonical_application_builder(
@@ -954,6 +959,11 @@ def test_background_task_child_failure_emits_parent_kv(
     monkeypatch.setattr(core, "wait_for_compose_health", lambda *_a, **_k: None)
     monkeypatch.setattr(core, "wait_for_http_reachable", lambda *_a, **_k: None)
     monkeypatch.setattr(core, "mongodb_child_env", lambda **_k: {})
+    monkeypatch.setattr(
+        core,
+        "prepare_ollama_embedding_model",
+        lambda *_a, **_k: "nomic-embed-text",
+    )
 
     def fake_run_python_child(*_a: Any, **_k: Any) -> tuple[int, str]:
         return (
@@ -1416,3 +1426,183 @@ def test_persistence_phase_waits_for_embedding_model_before_index(
 
     core.phase_persistence(_config(core, phase_timeout_seconds=5))
     assert order[:2] == ["embedding_ready", "index"]
+
+
+def test_compose_args_use_explicit_proof_project(core: ModuleType) -> None:
+    compose_files = core.discover_compose_files()
+    args = core.compose_args(compose_files)
+    assert args[:5] == [
+        "docker",
+        "compose",
+        "-p",
+        core._COMPOSE_PROJECT,
+        "-f",
+    ]
+    assert str(compose_files[0]) in args
+    assert core._COMPOSE_PROJECT == "lkw-core-platform-proof"
+    assert core._PRODUCT_COMPOSE_PROJECT == "intergrax_lkw"
+
+
+def test_occupied_required_port_fails_before_compose_down(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+
+    def fake_preflight(_config: Any) -> None:
+        events.append("preflight")
+        raise core.CoreProofError(
+            "required_port_unavailable",
+            phase="startup",
+            child_details={"occupied_port": "8020"},
+        )
+
+    monkeypatch.setattr(core, "check_startup_host_port_preflight", fake_preflight)
+    monkeypatch.setattr(
+        core,
+        "materialize_runtime_context",
+        lambda: events.append("materialize"),
+    )
+    monkeypatch.setattr(core, "compose_down", lambda *_a, **_k: events.append("down"))
+
+    with pytest.raises(core.CoreProofError) as exc:
+        core.phase_startup(_config(core))
+    assert exc.value.reason == "required_port_unavailable"
+    assert events == ["preflight"]
+    assert "down" not in events
+
+
+def test_product_quickstart_port_collision_has_safe_diagnostic(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        core,
+        "resolve_compose_published_host_ports",
+        lambda **_k: frozenset({8020}),
+    )
+    monkeypatch.setattr(
+        core,
+        "canonical_compose_owned_host_ports",
+        lambda *, compose_exec_args, **_k: (
+            frozenset({8020})
+            if "intergrax_lkw" in compose_exec_args("ps")
+            else frozenset()
+        ),
+    )
+    monkeypatch.setattr(core, "is_loopback_tcp_port_reachable", lambda _port: True)
+    monkeypatch.setattr(core, "probe_host_port_available", lambda _port: False)
+
+    with pytest.raises(core.CoreProofError) as exc:
+        core.check_startup_host_port_preflight(_config(core))
+    assert exc.value.reason == "required_port_unavailable"
+    assert exc.value.child_details is not None
+    assert exc.value.child_details["occupied_port"] == "8020"
+    assert exc.value.child_details["occupied_by"] == "lkw_product_quickstart"
+    assert "Stop the LKW Product Quick Start stack" in exc.value.child_details[
+        "recommended_action"
+    ]
+
+
+def test_proof_owned_ports_are_not_rejected(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        core,
+        "resolve_compose_published_host_ports",
+        lambda **_k: frozenset({8020}),
+    )
+    monkeypatch.setattr(
+        core,
+        "canonical_compose_owned_host_ports",
+        lambda **_k: frozenset({8020}),
+    )
+    monkeypatch.setattr(core, "is_loopback_tcp_port_reachable", lambda _port: True)
+    monkeypatch.setattr(core, "probe_host_port_available", lambda _port: False)
+
+    core.check_startup_host_port_preflight(_config(core))
+
+
+def test_startup_port_collision_emits_safe_failure_marker(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        core,
+        "validate_os_wrapper_pair",
+        lambda *_a, **_k: None,
+    )
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+
+    def fail_startup(_config: Any) -> Any:
+        raise core.CoreProofError(
+            "required_port_unavailable",
+            phase="startup",
+            child_details={
+                "occupied_port": "8020",
+                "occupied_by": "lkw_product_quickstart",
+            },
+        )
+
+    runners = {
+        "startup": fail_startup,
+        "sentry": lambda _c: core.PhaseOutcome(name="sentry", ok=True),
+    }
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core, phase="startup"),
+            phase_runners=runners,
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert "core_proof_result=FAIL" in text
+    assert "failed_phase=startup" in text
+    assert "failure_reason=required_port_unavailable" in text
+    assert "occupied_port=8020" in text
+    assert "occupied_by=lkw_product_quickstart" in text
+
+
+def test_file_watcher_child_receives_compose_project_env(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_run_python_child(
+        _script: Path,
+        _args: Sequence[str],
+        *,
+        cwd: Path,
+        env: Mapping[str, str] | None = None,
+        timeout: int | None = None,
+    ) -> tuple[int, str]:
+        captured["env"] = dict(env or {})
+        return (
+            0,
+            "proof_result=PASS\n"
+            "proof_kind=file_watcher_persistent_search\n"
+            "embedding_warmup_completed=true\n"
+            "reviewer_rerun_required=false\n"
+            "source_ref_found_before_restart=true\n"
+            "watcher_restored_after_restart=true\n"
+            "source_ref_found_after_restart=true\n"
+            "proof_receipt_recorded=true\n"
+            "proof_receipt_verified=true\n"
+            "proof_receipt_query_verified=true\n"
+            "proof_receipt_id=watcher-1\n",
+        )
+
+    monkeypatch.setattr(core, "discover_compose_files", lambda: [])
+    monkeypatch.setattr(core, "compose_config", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "compose_up", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "wait_for_lkw_health", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "wait_for_compose_health", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "wait_for_http_reachable", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "ensure_file_watcher_retrieve_ready", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "run_python_child", fake_run_python_child)
+
+    core.phase_file_watcher(_config(core, phase_timeout_seconds=5))
+
+    assert captured["env"]["COMPOSE_PROJECT_NAME"] == core._COMPOSE_PROJECT
