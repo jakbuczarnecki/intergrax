@@ -18,20 +18,34 @@ import argparse
 import json
 import secrets
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 _SCRIPT_PATH = Path(__file__).resolve()
+_SCRIPT_DIR = _SCRIPT_PATH.parent
 _APP_DIR = _SCRIPT_PATH.parent.parent
 _REPO_ROOT = _APP_DIR.parent.parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+from lkw_host_port_preflight import (
+    canonical_compose_owned_host_ports,
+    is_loopback_tcp_port_reachable,
+    probe_host_port_available,
+    resolve_compose_published_host_ports,
+)
 _DOCKER_DIR = _APP_DIR / "docker"
 _BASE_COMPOSE = _DOCKER_DIR / "docker-compose.yml"
 _MONGODB_COMPOSE = _DOCKER_DIR / "docker-compose.mongodb.yml"
 _SAMPLE_DOCS_DIR = _APP_DIR / "sample_docs"
 _DEFAULT_BASE_URL = "http://127.0.0.1:8020"
+_COMPOSE_PROJECT = "lkw-trusted-ask-workspace-proof"
+_PRODUCT_COMPOSE_PROJECT = "intergrax_lkw"
+_CORE_PLATFORM_COMPOSE_PROJECT = "lkw-core-platform-proof"
 _COMPOSE_SERVICES = ("qdrant", "lkw-mongodb", "ollama", "local_workspace")
 _RESTART_SERVICES = ("local_workspace", "qdrant")
 
@@ -85,12 +99,103 @@ def _compose_command(*args: str) -> list[str]:
     return [
         "docker",
         "compose",
+        "-p",
+        _COMPOSE_PROJECT,
         "-f",
         str(_BASE_COMPOSE),
         "-f",
         str(_MONGODB_COMPOSE),
         *args,
     ]
+
+
+def _foreign_compose_command(project: str, *args: str) -> list[str]:
+    return [
+        "docker",
+        "compose",
+        "-p",
+        project,
+        "-f",
+        str(_BASE_COMPOSE),
+        *args,
+    ]
+
+
+def _run_command(
+    command: Sequence[str],
+    *,
+    cwd: Path = _REPO_ROOT,
+    timeout: float | None = 30,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        list(command),
+        cwd=str(cwd),
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+
+
+def check_startup_host_port_preflight() -> None:
+    compose_exec = lambda *command: _compose_command(*command)
+    try:
+        required_ports = resolve_compose_published_host_ports(
+            compose_exec_args=compose_exec,
+            run_command=_run_command,
+            cwd=_REPO_ROOT,
+            timeout=120,
+        )
+    except RuntimeError as exc:
+        raise ProofFailure("port_preflight", "compose_config_failed") from exc
+
+    proof_owned = canonical_compose_owned_host_ports(
+        compose_exec_args=compose_exec,
+        run_command=_run_command,
+        cwd=_REPO_ROOT,
+        timeout=30,
+    )
+    product_owned = canonical_compose_owned_host_ports(
+        compose_exec_args=lambda *command: _foreign_compose_command(
+            _PRODUCT_COMPOSE_PROJECT, *command
+        ),
+        run_command=_run_command,
+        cwd=_REPO_ROOT,
+        timeout=30,
+    )
+    core_platform_owned = canonical_compose_owned_host_ports(
+        compose_exec_args=lambda *command: _foreign_compose_command(
+            _CORE_PLATFORM_COMPOSE_PROJECT, *command
+        ),
+        run_command=_run_command,
+        cwd=_REPO_ROOT,
+        timeout=30,
+    )
+
+    for port in sorted(required_ports):
+        if proof_owned is not None and port in proof_owned:
+            continue
+        if probe_host_port_available(port) and not is_loopback_tcp_port_reachable(port):
+            continue
+        if not is_loopback_tcp_port_reachable(port):
+            continue
+        reason = f"required_port_unavailable:{port}"
+        if product_owned is not None and port in product_owned:
+            reason = (
+                f"required_port_unavailable:{port}:occupied_by=lkw_product_quickstart:"
+                "stop Product Quick Start before Trusted Ask proof"
+            )
+        elif core_platform_owned is not None and port in core_platform_owned:
+            reason = (
+                f"required_port_unavailable:{port}:occupied_by=lkw_core_platform_proof:"
+                "stop Core Platform Proof before Trusted Ask proof"
+            )
+        else:
+            reason = (
+                f"required_port_unavailable:{port}:occupied_by=foreign_process:"
+                "free required host ports before Trusted Ask proof"
+            )
+        raise ProofFailure("port_preflight", reason)
 
 
 def _run_compose(
@@ -275,6 +380,8 @@ def main() -> int:
         )
 
         if not args.skip_docker:
+            failing_phase = "port_preflight"
+            check_startup_host_port_preflight()
             failing_phase = "compose_up"
             start_canonical_stack()
             failing_phase = "ollama_model"
