@@ -8,8 +8,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from intergrax.agent_distribution.catalog import CatalogProviderKind
+from intergrax.agent_distribution.identity import AgentPackageIdentity
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -130,3 +134,150 @@ class AgentInstallationTrustRecord(BaseModel):
         if value is None:
             return None
         return _strip_required(value)
+
+
+class AgentPackageTrustPosture(StrEnum):
+    """Trust evaluation posture — behavior is driven by policy, not environment names."""
+
+    DEVELOPMENT = "development"
+    PRODUCTION = "production"
+
+
+class AgentPackageTrustOutcome(StrEnum):
+    """Canonical trust coordinator decision."""
+
+    ALLOW = "allow"
+    DENY = "deny"
+    REVIEW = "review"
+
+
+class AgentPackageTrustReasonCode(StrEnum):
+    """Stable machine-readable trust decision codes."""
+
+    QUALIFIED = "qualified"
+    PACKAGE_DIGEST_MISMATCH = "package_digest_mismatch"
+    PACKAGE_DIGEST_REVOKED = "package_digest_revoked"
+    PUBLISHER_MISMATCH = "publisher_mismatch"
+    PUBLISHER_DENIED = "publisher_denied"
+    PUBLISHER_REVOKED = "publisher_revoked"
+    SOURCE_NOT_PERMITTED = "source_not_permitted"
+    SOURCE_DENIED = "source_denied"
+    SOURCE_REVOKED = "source_revoked"
+    SOURCE_DISABLED = "source_disabled"
+    MISSING_REQUIRED_EVIDENCE = "missing_required_evidence"
+    INSUFFICIENT_QUALIFICATION_STATUS = "insufficient_qualification_status"
+    EVIDENCE_DIGEST_MISMATCH = "evidence_digest_mismatch"
+    EVIDENCE_PACKAGE_MISMATCH = "evidence_package_mismatch"
+    EVIDENCE_REVOKED = "evidence_revoked"
+    MALFORMED_EVIDENCE = "malformed_evidence"
+    UNSIGNED_FORBIDDEN = "unsigned_forbidden"
+    UNQUALIFIED_FORBIDDEN = "unqualified_forbidden"
+    VERSION_LABEL_WITHOUT_DIGEST = "version_label_without_digest"
+
+
+_QUALIFICATION_STATUS_RANK: dict[AgentQualificationStatus, int] = {
+    AgentQualificationStatus.NOT_QUALIFIED: 0,
+    AgentQualificationStatus.REJECTED: 0,
+    AgentQualificationStatus.QUALIFIED: 1,
+    AgentQualificationStatus.PRODUCTION_QUALIFIED: 2,
+}
+
+
+def qualification_status_satisfies(
+    actual: AgentQualificationStatus,
+    required: AgentQualificationStatus,
+) -> bool:
+    """Return whether ``actual`` meets or exceeds ``required`` qualification."""
+    return _QUALIFICATION_STATUS_RANK[actual] >= _QUALIFICATION_STATUS_RANK[required]
+
+
+class AgentPackageTrustPolicy(BaseModel):
+    """Deterministic, serializable trust policy input for package qualification."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    posture: AgentPackageTrustPosture = AgentPackageTrustPosture.PRODUCTION
+    trust_profile_ref: str | None = None
+    permitted_provider_kinds: frozenset[CatalogProviderKind] | None = None
+    permitted_catalog_source_ids: frozenset[str] | None = None
+    permitted_delivery_sources: frozenset[AgentDeliverySource] | None = None
+    permitted_publisher_ids: frozenset[str] | None = None
+    denied_publisher_ids: frozenset[str] = frozenset()
+    denied_catalog_source_ids: frozenset[str] = frozenset()
+    denied_package_digests: frozenset[str] = frozenset()
+    required_qualification_status: AgentQualificationStatus | None = None
+    required_evidence_kinds: frozenset[AgentQualificationEvidenceKind] = frozenset()
+    forbid_unsigned_or_unqualified: bool = True
+
+    @field_validator("trust_profile_ref")
+    @classmethod
+    def _strip_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _strip_required(value)
+
+    @property
+    def effective_required_qualification_status(self) -> AgentQualificationStatus:
+        if self.required_qualification_status is not None:
+            return self.required_qualification_status
+        if self.posture is AgentPackageTrustPosture.PRODUCTION:
+            return AgentQualificationStatus.PRODUCTION_QUALIFIED
+        return AgentQualificationStatus.QUALIFIED
+
+
+class AgentPackageTrustRevocationState(BaseModel):
+    """Authoritative revocation state supplied to trust evaluation (no network fetch)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    revoked_publisher_ids: frozenset[str] = frozenset()
+    revoked_package_digests: frozenset[str] = frozenset()
+    revoked_evidence_ids: frozenset[str] = frozenset()
+    revoked_catalog_source_ids: frozenset[str] = frozenset()
+    disabled_catalog_source_ids: frozenset[str] = frozenset()
+
+
+@dataclass(frozen=True, slots=True)
+class AgentPackageTrustDecision:
+    """Immutable trust evaluation outcome with audit evidence."""
+
+    outcome: AgentPackageTrustOutcome
+    reason_code: AgentPackageTrustReasonCode
+    reason: str
+    package_identity: AgentPackageIdentity
+    publisher: AgentPublisherIdentity
+    catalog_source_id: str
+    delivery_source: AgentDeliverySource
+    policy_profile_ref: str | None
+    qualification: AgentPackageQualificationResult | None
+    trust_record: AgentInstallationTrustRecord | None
+    trust_evidence_refs: tuple[AgentTrustEvidenceRef, ...]
+
+    @property
+    def installable(self) -> bool:
+        return self.outcome is AgentPackageTrustOutcome.ALLOW and self.trust_record is not None
+
+    def to_audit_dict(self) -> dict[str, Any]:
+        """Deterministic audit payload — stable across repeated evaluation."""
+        return {
+            "outcome": self.outcome.value,
+            "reason_code": self.reason_code.value,
+            "reason": self.reason,
+            "package_digest": self.package_identity.package_digest,
+            "distribution_package_id": self.package_identity.distribution_package_id,
+            "publisher_id": self.publisher.publisher_id,
+            "catalog_source_id": self.catalog_source_id,
+            "delivery_source": self.delivery_source.value,
+            "policy_profile_ref": self.policy_profile_ref,
+            "qualification_status": (
+                self.qualification.status.value if self.qualification is not None else None
+            ),
+            "trust_evidence_refs": [
+                {
+                    "evidence_id": ref.evidence_id,
+                    "kind": ref.kind.value,
+                    "ref": ref.ref,
+                }
+                for ref in self.trust_evidence_refs
+            ],
+        }

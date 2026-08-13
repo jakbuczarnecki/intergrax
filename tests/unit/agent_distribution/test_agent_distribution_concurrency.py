@@ -20,7 +20,9 @@ from intergrax.agent_distribution.runtime_revision import MaterializationTopolog
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
+    AgentQualificationEvidenceKind,
     AgentQualificationStatus,
+    AgentTrustEvidenceRef,
 )
 
 _DIGEST_A = "sha256:" + ("a" * 64)
@@ -32,6 +34,12 @@ def _trust_record() -> AgentInstallationTrustRecord:
         qualification_status=AgentQualificationStatus.PRODUCTION_QUALIFIED,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",
+        trust_evidence_refs=(
+            AgentTrustEvidenceRef(
+                evidence_id="evidence:concurrency:0",
+                kind=AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
+            ),
+        ),
     )
 
 

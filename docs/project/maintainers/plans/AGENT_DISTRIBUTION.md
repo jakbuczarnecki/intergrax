@@ -4,7 +4,7 @@
 **Architecture (1:1):** [`architecture/AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md)  
 **ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../../technical/adr/entries/2026-08-12/ADR-AGENT-004.md)  
 **Evidence:** [`audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md)  
-**Last updated:** 2026-08-12
+**Last updated:** 2026-08-13
 
 ---
 
@@ -70,7 +70,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 | Focused unit tests + tier-boundary check | done |
 | AP-3-FIX-1 contract hardening | done |
 
-**Next:** AP-5 (`AgentPackageTrust` coordinator).
+**Next:** AP-4 (transactional domain services).
 
 ## AGENT-PLATFORM-4 gate
 
@@ -91,4 +91,23 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 
 **Evidence:** `tests/unit/agent_distribution/test_agent_distribution_services.py`, `test_agent_distribution_runtime_revision_services.py`, `test_agent_distribution_concurrency.py`, `test_agent_distribution_contracts.py` (`test_ap4_services_forbid_runtime_store_introspection`)
 
-**Next:** AP-5 may begin (`AgentPackageTrust` coordinator).
+**Next:** AP-6 may begin (effective roster merge + dependency specification builder).
+
+## AGENT-PLATFORM-5 gate
+
+**READY_FOR_CLOSE** (2026-08-13) — fail-closed `AgentPackageTrustCoordinator` with typed policy,
+revocation evaluation, deterministic reason codes, and installation verification gate.
+
+| Deliverable | Status |
+|-------------|--------|
+| `AgentPackageTrustPolicy` / `AgentPackageTrustRevocationState` contracts | done |
+| `AgentPackageTrustCoordinator` (`package_trust.py`) | done |
+| `AgentPackageTrustDecision` + stable `AgentPackageTrustReasonCode` | done |
+| `assert_installation_trust_record_acceptable` installation gate | done |
+| Focused AP-5 trust tests | done |
+| AP-3/AP-4 regression (trust evidence refs on verification) | done |
+| Tier-boundary check | done |
+
+**Evidence:** `tests/unit/agent_distribution/test_agent_distribution_package_trust.py`
+
+**Next:** AP-6 may begin.

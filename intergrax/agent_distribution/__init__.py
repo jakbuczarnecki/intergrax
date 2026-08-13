@@ -36,6 +36,7 @@ from intergrax.agent_distribution.dependency import (
 from intergrax.agent_distribution.errors import (
     AgentDistributionError,
     AgentDistributionNotFoundError,
+    AgentPackageTrustError,
     BindingLifecycleError,
     BindingRevisionConflict,
     InstallationLifecycleError,
@@ -56,6 +57,10 @@ from intergrax.agent_distribution.installation import (
     AgentInstallationRecord,
     InstallationState,
     installation_state_is_installed,
+)
+from intergrax.agent_distribution.package_trust import (
+    AgentPackageTrustCoordinator,
+    assert_installation_trust_record_acceptable,
 )
 from intergrax.agent_distribution.materialization import MaterializationInput, MaterializationOutput
 from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
@@ -84,11 +89,18 @@ from intergrax.agent_distribution.trust import (
     AgentDeliverySource,
     AgentInstallationTrustRecord,
     AgentPackageQualificationResult,
+    AgentPackageTrustDecision,
+    AgentPackageTrustOutcome,
+    AgentPackageTrustPolicy,
+    AgentPackageTrustPosture,
+    AgentPackageTrustReasonCode,
+    AgentPackageTrustRevocationState,
     AgentPublisherIdentity,
     AgentQualificationEvidence,
     AgentQualificationEvidenceKind,
     AgentQualificationStatus,
     AgentTrustEvidenceRef,
+    qualification_status_satisfies,
 )
 
 __all__ = [
@@ -109,6 +121,14 @@ __all__ = [
     "AgentPackageCandidate",
     "AgentPackageIdentity",
     "AgentPackageQualificationResult",
+    "AgentPackageTrustCoordinator",
+    "AgentPackageTrustDecision",
+    "AgentPackageTrustError",
+    "AgentPackageTrustOutcome",
+    "AgentPackageTrustPolicy",
+    "AgentPackageTrustPosture",
+    "AgentPackageTrustReasonCode",
+    "AgentPackageTrustRevocationState",
     "AgentPublisherIdentity",
     "AgentQualificationEvidence",
     "AgentQualificationEvidenceKind",
@@ -162,5 +182,7 @@ __all__ = [
     "RuntimeRevisionState",
     "RuntimeRevisionStore",
     "TransitionResult",
+    "assert_installation_trust_record_acceptable",
     "installation_state_is_installed",
+    "qualification_status_satisfies",
 ]

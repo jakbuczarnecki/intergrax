@@ -42,7 +42,9 @@ from intergrax.agent_distribution.stores import (
 )
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
+    AgentQualificationEvidenceKind,
     AgentQualificationStatus,
+    AgentTrustEvidenceRef,
 )
 
 _DIGEST = "sha256:" + ("a" * 64)
@@ -59,6 +61,12 @@ def _trust_record() -> AgentInstallationTrustRecord:
         qualification_status=AgentQualificationStatus.PRODUCTION_QUALIFIED,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",
+        trust_evidence_refs=(
+            AgentTrustEvidenceRef(
+                evidence_id="evidence:contract:0",
+                kind=AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
+            ),
+        ),
     )
 
 

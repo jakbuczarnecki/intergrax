@@ -10,6 +10,10 @@ class AgentDistributionError(Exception):
     """Base error for Agent Distribution domain services."""
 
 
+class AgentPackageTrustError(AgentDistributionError):
+    """Malformed trust invocation or unacceptable installation trust evidence."""
+
+
 class AgentDistributionNotFoundError(AgentDistributionError):
     """Requested durable record does not exist."""
 

@@ -15,6 +15,7 @@ from intergrax.agent_distribution.errors import (
 from intergrax.agent_distribution.events import TransitionResult, distribution_event
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.installation import AgentInstallationRecord, InstallationState
+from intergrax.agent_distribution.package_trust import assert_installation_trust_record_acceptable
 from intergrax.agent_distribution.stores import AgentInstallationStore
 from intergrax.agent_distribution.trust import AgentInstallationTrustRecord
 
@@ -75,6 +76,10 @@ class InstallationService:
     ) -> TransitionResult[AgentInstallationRecord]:
         record = self._require_installation(installation_id)
         self._require_transition(record.installation_state, InstallationState.VERIFIED)
+        assert_installation_trust_record_acceptable(
+            trust_record,
+            package_identity=record.package_identity,
+        )
         updated = record.model_copy(
             update={
                 "installation_state": InstallationState.VERIFIED,
