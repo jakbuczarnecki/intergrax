@@ -12,6 +12,7 @@ DOCKER_DIR="${APP_DIR}/docker"
 BASE_COMPOSE="${DOCKER_DIR}/docker-compose.yml"
 ENV_FILE="${APP_DIR}/.env"
 ENV_EXAMPLE="${APP_DIR}/.env.example"
+LKW_COMPOSE_PROJECT="${LKW_COMPOSE_PROJECT:-lkw-core-platform-proof}"
 REPO_ROOT="$(cd "${APP_DIR}/../.." && pwd)"
 
 cd "${REPO_ROOT}"
@@ -40,7 +41,7 @@ for file in "${compose_files[@]}"; do
   echo "  ${file}"
 done
 
-docker_args=(compose)
+docker_args=(compose -p "${LKW_COMPOSE_PROJECT}")
 for file in "${compose_files[@]}"; do
   docker_args+=(-f "${file}")
 done

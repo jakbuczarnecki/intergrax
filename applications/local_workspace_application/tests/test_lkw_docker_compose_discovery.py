@@ -32,7 +32,11 @@ _HARD_RESET_LOCAL_DOCKER_ALL_BAT = _SCRIPTS_DIR / "hard-reset-local-docker-all.b
 _HARD_RESET_LOCAL_DOCKER_ALL_PS1 = _SCRIPTS_DIR / "hard-reset-local-docker-all.ps1"
 _RUN_LKW_ES_PROOF_BAT = _SCRIPTS_DIR / "run-lkw-elasticsearch-proof.bat"
 _RUN_LKW_ES_PROOF_SH = _SCRIPTS_DIR / "run-lkw-elasticsearch-proof.sh"
-_BOOTSTRAP_SH = _DOCKER_DIR / "sentry" / "bootstrap" / "bootstrap.sh"
+_CHECK_STATUS_PS1 = _SCRIPTS_DIR / "check-lkw-platform-proof-status.ps1"
+_BUILD_LOCAL_DOCKER_BAT = _SCRIPTS_DIR / "build-local-docker.bat"
+_BUILD_LOCAL_DOCKER_SH = _SCRIPTS_DIR / "build-local-docker.sh"
+_CORE_PROOF_COMPOSE_PROJECT = "lkw-core-platform-proof"
+_PRODUCT_COMPOSE_PROJECT = "intergrax_lkw"
 
 _TOP_LEVEL_OVERLAY_PATTERN = re.compile(r"^docker-compose\..+\.yml$")
 _LOCAL_PROOF_SECRET = "intergrax-local-sentry-proof-secret-key-not-for-production"
@@ -77,6 +81,40 @@ def test_run_local_docker_all_bat_exists() -> None:
     assert _RUN_LOCAL_DOCKER_ALL_BAT.exists()
     script = _RUN_LOCAL_DOCKER_ALL_BAT.read_text(encoding="utf-8")
     assert "docker-compose.*.yml" in script
+    assert f"LKW_COMPOSE_PROJECT={_CORE_PROOF_COMPOSE_PROJECT}" in script
+    assert "'compose', '-p', $env:LKW_COMPOSE_PROJECT" in script
+
+
+def test_run_local_docker_all_sh_uses_explicit_proof_compose_project() -> None:
+    script = _RUN_LOCAL_DOCKER_ALL_SH.read_text(encoding="utf-8")
+    assert f"LKW_COMPOSE_PROJECT:-{_CORE_PROOF_COMPOSE_PROJECT}" in script
+    assert "compose -p" in script
+    assert f'"${{LKW_COMPOSE_PROJECT}}"' in script
+
+
+def test_check_lkw_platform_proof_status_ps1_uses_explicit_proof_compose_project() -> None:
+    script = _CHECK_STATUS_PS1.read_text(encoding="utf-8")
+    assert f'composeProject = "{_CORE_PROOF_COMPOSE_PROJECT}"' in script
+    assert '"-p", $composeProject' in script
+    assert "docker compose @composeArgs ps -a" in script
+
+
+def test_hard_reset_local_docker_all_scopes_destructive_compose_to_proof_project() -> None:
+    """Hard reset delegates down -v to run-local-docker-all.bat, which owns -p."""
+    bat = _RUN_LOCAL_DOCKER_ALL_BAT.read_text(encoding="utf-8")
+    ps1 = _HARD_RESET_LOCAL_DOCKER_ALL_PS1.read_text(encoding="utf-8")
+    assert "down -v --remove-orphans" in ps1
+    assert "'compose', '-p', $env:LKW_COMPOSE_PROJECT" in bat
+    assert f"LKW_COMPOSE_PROJECT={_CORE_PROOF_COMPOSE_PROJECT}" in bat
+
+
+def test_product_quick_start_compose_project_untouched() -> None:
+    bat = _BUILD_LOCAL_DOCKER_BAT.read_text(encoding="utf-8")
+    sh = _BUILD_LOCAL_DOCKER_SH.read_text(encoding="utf-8")
+    assert f"COMPOSE_PROJECT_NAME={_PRODUCT_COMPOSE_PROJECT}" in bat
+    assert f"COMPOSE_PROJECT_NAME=\"{_PRODUCT_COMPOSE_PROJECT}\"" in sh
+    assert _CORE_PROOF_COMPOSE_PROJECT not in bat
+    assert _CORE_PROOF_COMPOSE_PROJECT not in sh
 
 
 def test_hard_reset_local_docker_all_bat_resets_runtime_state_and_starts_stack() -> None:

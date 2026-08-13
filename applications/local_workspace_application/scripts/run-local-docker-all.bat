@@ -26,6 +26,7 @@ if not exist "%ENV_FILE%" (
     echo Created %ENV_FILE% from .env.example
 )
 
+set "LKW_COMPOSE_PROJECT=lkw-core-platform-proof"
 set "LKW_COMPOSE_BASE=%BASE_COMPOSE%"
 set "LKW_COMPOSE_DOCKER_DIR=%DOCKER_DIR%"
 if "%~1"=="" (
@@ -34,7 +35,7 @@ if "%~1"=="" (
     set "LKW_COMPOSE_COMMAND=%*"
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $base = (Resolve-Path -LiteralPath $env:LKW_COMPOSE_BASE).Path; $dockerDir = (Resolve-Path -LiteralPath $env:LKW_COMPOSE_DOCKER_DIR).Path; $files = @($base) + @(Get-ChildItem -LiteralPath $dockerDir -Filter 'docker-compose.*.yml' | Sort-Object Name | ForEach-Object { $_.FullName }); Write-Host 'Compose files:'; $files | ForEach-Object { Write-Host ('  ' + $_) }; $composeArgs = @(); foreach ($file in $files) { $composeArgs += @('-f', $file) }; $commandArgs = if ([string]::IsNullOrWhiteSpace($env:LKW_COMPOSE_COMMAND)) { @('up', '--build') } else { $env:LKW_COMPOSE_COMMAND -split ' ' }; $dockerArgs = @('compose') + $composeArgs + $commandArgs; Write-Host ('Running: docker ' + ($dockerArgs -join ' ')); & docker @dockerArgs; exit $LASTEXITCODE"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $base = (Resolve-Path -LiteralPath $env:LKW_COMPOSE_BASE).Path; $dockerDir = (Resolve-Path -LiteralPath $env:LKW_COMPOSE_DOCKER_DIR).Path; $files = @($base) + @(Get-ChildItem -LiteralPath $dockerDir -Filter 'docker-compose.*.yml' | Sort-Object Name | ForEach-Object { $_.FullName }); Write-Host 'Compose files:'; $files | ForEach-Object { Write-Host ('  ' + $_) }; $composeArgs = @(); foreach ($file in $files) { $composeArgs += @('-f', $file) }; $commandArgs = if ([string]::IsNullOrWhiteSpace($env:LKW_COMPOSE_COMMAND)) { @('up', '--build') } else { $env:LKW_COMPOSE_COMMAND -split ' ' }; $dockerArgs = @('compose', '-p', $env:LKW_COMPOSE_PROJECT) + $composeArgs + $commandArgs; Write-Host ('Running: docker ' + ($dockerArgs -join ' ')); & docker @dockerArgs; exit $LASTEXITCODE"
 set "EXIT_CODE=%ERRORLEVEL%"
 
 popd >nul

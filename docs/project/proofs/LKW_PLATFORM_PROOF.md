@@ -452,7 +452,9 @@ applications/local_workspace_application/scripts/run-local-docker-all.sh
 ```
 
 These helpers are the reviewer path for a full local proof environment.
-They are **not** required for every minimal LKW launch (base compose only).
+They target the isolated Compose project `lkw-core-platform-proof` (same as the
+one-command Core Platform Proof runner). They are **not** required for every
+minimal LKW launch (base compose only).
 
 For a **hard reset** (remove containers/volumes and local Sentry proof
 runtime state, then start the same all-in-one path):
