@@ -101,6 +101,60 @@ class KnowledgeConnectionRegistry:
             integration=integration,
         )
 
+    def refresh(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        integration: object,
+    ) -> None:
+        """Register or replace a runtime connection registration for the same identity."""
+        cleaned_tenant = tenant_id.strip()
+        cleaned_ref = connection_ref.strip()
+        cleaned_provider = provider_id.strip()
+        if not cleaned_tenant:
+            raise ValueError("tenant_id must be a non-empty string")
+        if not cleaned_ref:
+            raise ValueError("connection_ref must be a non-empty string")
+        if not cleaned_provider:
+            raise ValueError("provider_id must be a non-empty string")
+        if not isinstance(integration_kind, IntegrationCategory):
+            raise ValueError("integration_kind must be an IntegrationCategory")
+
+        actual_provider, actual_kind = _read_integration_identity(integration)
+        if actual_provider is None or actual_kind is None:
+            raise ValueError("integration instance identity is invalid")
+        if actual_provider != cleaned_provider:
+            raise ValueError("integration provider_id does not match registration")
+        if actual_kind != integration_kind.value:
+            raise ValueError("integration category does not match registration")
+
+        key: ConnectionRegistryKey = (cleaned_tenant, cleaned_ref)
+        existing = self._entries.get(key)
+        if existing is not None:
+            if existing.provider_id != cleaned_provider:
+                raise ValueError("connection provider does not match existing registration")
+            if existing.integration_kind != integration_kind:
+                raise ValueError("connection category does not match existing registration")
+            self._entries[key] = _ConnectionEntry(
+                tenant_id=cleaned_tenant,
+                connection_ref=cleaned_ref,
+                provider_id=cleaned_provider,
+                integration_kind=integration_kind,
+                integration=integration,
+            )
+            return
+
+        self.register(
+            tenant_id=cleaned_tenant,
+            connection_ref=cleaned_ref,
+            provider_id=cleaned_provider,
+            integration_kind=integration_kind,
+            integration=integration,
+        )
+
     def resolve(
         self,
         *,

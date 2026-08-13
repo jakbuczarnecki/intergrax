@@ -77,8 +77,14 @@ from intergrax.runtime.vendor_knowledge.bindings import (
     KnowledgeSourceBinding,
     KnowledgeSourceBindingService,
 )
+from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError, VendorKnowledgeErrorCode
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
+from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceRef
+from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+    TenantConnectionRehydrator,
+    TenantConnectionRuntimeRegistryReconciler,
+)
 from local_workspace_application.workspaces.vendor_knowledge_extension_composition import (
     VendorKnowledgeApplicationExtensionContext,
     build_default_vendor_knowledge_application_contribution_catalog,
@@ -89,13 +95,49 @@ class _ConnectionAwareResolver:
     def __init__(self, registry: KnowledgeConnectionRegistry) -> None:
         self._registry = registry
 
-    def resolve(self, *, source):
+    def resolve(self, *, source: KnowledgeSourceRef) -> object:
+        if source.connection_ref is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message="Connection-aware source requires a connection_ref",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
         return self._registry.resolve(
             tenant_id=source.tenant_id,
             connection_ref=source.connection_ref,
             provider_id=source.provider_id,
             integration_kind=source.integration_kind,
         )
+
+
+class _RuntimeReconcilingResolver:
+    def __init__(
+        self,
+        *,
+        inner: _ConnectionAwareResolver,
+        reconciler: TenantConnectionRuntimeRegistryReconciler,
+    ) -> None:
+        self._inner = inner
+        self._reconciler = reconciler
+
+    def resolve(self, *, source: KnowledgeSourceRef) -> object:
+        if source.connection_ref is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message="Connection-aware source requires a connection_ref",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+        self._reconciler.ensure_registered(
+            tenant_id=source.tenant_id,
+            connection_ref=source.connection_ref,
+            provider_id=source.provider_id,
+            integration_kind=source.integration_kind,
+        )
+        return self._inner.resolve(source=source)
 
 
 class _TenantBindingPort:
@@ -184,6 +226,7 @@ def build_connected_source_wiring(
     msgraph_mailbox_user_id: str | None = None,
     msgraph_teams_channel_team_id: str | None = None,
     discover_vendor_knowledge_entry_points: bool = False,
+    tenant_connection_rehydrator: TenantConnectionRehydrator | None = None,
 ) -> ConnectedSourceWiring:
     registry = connection_registry or KnowledgeConnectionRegistry()
     codec = opaque_ref_codec or build_connected_source_opaque_ref_codec(settings)
@@ -231,7 +274,16 @@ def build_connected_source_wiring(
     )
     adapter_registry = build_vendor_knowledge_adapter_registry(contribution_catalog)
     binding_repo = DocumentStoreKnowledgeSourceBindingRepository(repository.document_store)
-    resolver = _ConnectionAwareResolver(registry)
+    base_resolver = _ConnectionAwareResolver(registry)
+    resolver = base_resolver
+    if tenant_connection_rehydrator is not None:
+        resolver = _RuntimeReconcilingResolver(
+            inner=base_resolver,
+            reconciler=TenantConnectionRuntimeRegistryReconciler(
+                rehydrator=tenant_connection_rehydrator,
+                connection_registry=registry,
+            ),
+        )
 
     def binding_service_factory(tenant_id: str) -> KnowledgeSourceBindingService:
         return KnowledgeSourceBindingService(

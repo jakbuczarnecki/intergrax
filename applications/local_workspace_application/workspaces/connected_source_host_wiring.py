@@ -37,6 +37,7 @@ from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
     TenantConnectionRehydrationStatus,
 )
 from intergrax.integrations.contracts.secrets_store import SecretsStore
+from intergrax.utils import attribute_access
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceReadinessState,
@@ -84,6 +85,7 @@ class ConnectedSourceHostBundle:
     tenant_connection_port: TenantConnectionPort | None = None
     tenant_live_capability_catalog: TenantLiveCapabilityCatalog | None = None
     tenant_source_catalog: TenantVendorKnowledgeSourceCatalog | None = None
+    tenant_connection_rehydrator: TenantConnectionRehydrator | None = None
 
     @property
     def legacy_local_integration(self) -> Any | None:
@@ -124,19 +126,21 @@ def _bootstrap_from_legacy_integration(
 ) -> VendorKnowledgeLegacyLocalBootstrap | None:
     if integration is None:
         return None
-    provider_id = getattr(integration, "provider_id", None)
-    integration_kind = getattr(integration, "integration_kind", None)
-    if not isinstance(provider_id, str) or not provider_id.strip():
+    provider_raw = attribute_access.optional(integration, "provider_id", None)
+    integration_kind_raw = attribute_access.optional(integration, "integration_kind", None)
+    if not isinstance(provider_raw, str) or not provider_raw.strip():
         return None
-    if isinstance(integration_kind, str):
+    if isinstance(integration_kind_raw, str):
         try:
-            integration_kind = IntegrationCategory(integration_kind)
+            integration_kind = IntegrationCategory(integration_kind_raw)
         except ValueError:
             return None
-    if not isinstance(integration_kind, IntegrationCategory):
+    elif isinstance(integration_kind_raw, IntegrationCategory):
+        integration_kind = integration_kind_raw
+    else:
         return None
     return VendorKnowledgeLegacyLocalBootstrap(
-        provider_id=provider_id.strip(),
+        provider_id=provider_raw.strip(),
         integration_kind=integration_kind,
         integration=integration,
     )
@@ -184,6 +188,14 @@ def build_connected_source_host_bundle(
             discover_entry_points=discover_vendor_knowledge_entry_points,
         )
     )
+    tenant_connection_rehydrator: TenantConnectionRehydrator | None = None
+    if tenant_connection_secrets_store is not None:
+        tenant_connection_rehydrator = TenantConnectionRehydrator(
+            repository=connection_repository,
+            secrets_store=tenant_connection_secrets_store,
+            integration_factory=factory_registry,
+            connection_registry=registry,
+        )
     legacy_local_integration = legacy_local_integration or slack_integration
     legacy_local_bootstrap = legacy_local_bootstrap or _bootstrap_from_legacy_integration(
         legacy_local_integration
@@ -236,13 +248,8 @@ def build_connected_source_host_bundle(
             hybrid_ask_connection_registry=registry,
         )
 
-    if tenant_connection_secrets_store is not None:
-        rehydrator = TenantConnectionRehydrator(
-            repository=connection_repository,
-            secrets_store=tenant_connection_secrets_store,
-            integration_factory=factory_registry,
-            connection_registry=registry,
-        )
+    if tenant_connection_secrets_store is not None and tenant_connection_rehydrator is not None:
+        rehydrator = tenant_connection_rehydrator
         if production_tenant_ids:
             for production_tenant_id in production_tenant_ids:
                 try:
@@ -364,6 +371,7 @@ def build_connected_source_host_bundle(
         msgraph_mailbox_user_id=msgraph_mailbox_user_id,
         msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
         discover_vendor_knowledge_entry_points=discover_vendor_knowledge_entry_points,
+        tenant_connection_rehydrator=tenant_connection_rehydrator,
     )
     if not rehydrated:
         legacy_local_bootstrap = legacy_local_bootstrap or _bootstrap_from_legacy_integration(
@@ -407,4 +415,5 @@ def build_connected_source_host_bundle(
         tenant_connection_port=connection_port,
         tenant_live_capability_catalog=live_capability_catalog,
         tenant_source_catalog=source_catalog,
+        tenant_connection_rehydrator=tenant_connection_rehydrator,
     )

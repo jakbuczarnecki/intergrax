@@ -640,6 +640,11 @@ def mount_managed_workspace_routes(
     app.state.lkw_legacy_local_integration = host_bundle.legacy_local_integration
     if connected_wiring is None:
         connected_wiring = host_bundle.wiring
+    runtime_connection_registry = (
+        connected_wiring.connection_registry
+        if connected_wiring is not None
+        else host_bundle.hybrid_ask_connection_registry
+    )
     app.state.lkw_tenant_connection_port = host_bundle.tenant_connection_port
     app.state.lkw_tenant_live_capability_catalog = (
         host_bundle.tenant_live_capability_catalog
@@ -683,19 +688,21 @@ def mount_managed_workspace_routes(
             tenant_connection_factory_registry
             or build_default_vendor_knowledge_connection_factory_registry()
         )
-        rehydrator = TenantConnectionRehydrator(
-            repository=connection_repository,
-            secrets_store=tenant_connection_secrets_store,
-            integration_factory=factory_registry,
-            connection_registry=host_bundle.hybrid_ask_connection_registry,
-        )
+        rehydrator = host_bundle.tenant_connection_rehydrator
+        if rehydrator is None:
+            rehydrator = TenantConnectionRehydrator(
+                repository=connection_repository,
+                secrets_store=tenant_connection_secrets_store,
+                integration_factory=factory_registry,
+                connection_registry=runtime_connection_registry,
+            )
         orchestration_factory = TenantConnectionProductOrchestrationFactory(
             connection_repository=connection_repository,
             transaction_repository=transaction_repository,
             secrets_store=tenant_connection_secrets_store,
             auth_provider_registry=auth_registry,
             rehydrator=rehydrator,
-            connection_registry=host_bundle.hybrid_ask_connection_registry,
+            connection_registry=runtime_connection_registry,
             config=TenantConnectionProductOrchestrationConfig(
                 redirect_allowlist=frozenset(settings.connection_auth_redirect_allowlist),
                 transaction_ttl_seconds=settings.connection_auth_transaction_ttl_seconds,
@@ -711,11 +718,7 @@ def mount_managed_workspace_routes(
     ask_capability_catalog = (
         tenant_live_capability_catalog or host_bundle.tenant_live_capability_catalog
     )
-    hybrid_ask_connection_registry = (
-        connected_wiring.connection_registry
-        if connected_wiring is not None
-        else host_bundle.hybrid_ask_connection_registry
-    )
+    hybrid_ask_connection_registry = runtime_connection_registry
     recovery_tenant_ids: tuple[str, ...] = ()
     if connected_wiring is not None:
         legacy_tenant_id, _ = resolve_connected_source_host_mapping(settings)
