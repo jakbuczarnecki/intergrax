@@ -419,8 +419,6 @@ The structural validator allows the same `proof_id` in multiple public gateway d
 
 `live` does not mean “external provider only.” It expands the selected proof set. Missing optional credentials may yield `PASS_WITH_BLOCKED` on the `live` profile when no child proof actually failed.
 
-`requires_live_opt_in` is manifest metadata today; runner enforcement semantics remain under review (see task decision notes when unresolved).
-
 ---
 
 ## 16. Partial vs full proof lists

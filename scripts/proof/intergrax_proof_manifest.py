@@ -364,7 +364,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             external_provider="slack",
             safety_class=ProofSafetyClass.EXTERNAL_READ_ONLY,
             timeout_seconds=300,
-            requires_live_opt_in=True,
         ),
         ProofManifestEntry(
             proof_id="SLACK-ASK-PREFLIGHT",
@@ -390,7 +389,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             external_provider="slack",
             safety_class=ProofSafetyClass.EXTERNAL_READ_ONLY,
             timeout_seconds=60,
-            requires_live_opt_in=True,
         ),
         ProofManifestEntry(
             proof_id="SLACK-ASK-WORKFLOW",
@@ -412,7 +410,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             external_provider="slack",
             safety_class=ProofSafetyClass.EXTERNAL_READ_ONLY,
             timeout_seconds=60,
-            requires_live_opt_in=True,
         ),
         ProofManifestEntry(
             proof_id="LKW-MANAGED-WORKSPACE-LIVE",
@@ -426,7 +423,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=1800,
-            requires_live_opt_in=True,
             public_evidence_eligible=True,
         ),
         ProofManifestEntry(
@@ -441,7 +437,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=1800,
-            requires_live_opt_in=True,
             public_evidence_eligible=True,
         ),
         ProofManifestEntry(
@@ -459,7 +454,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=3600,
-            requires_live_opt_in=True,
             public_evidence_eligible=True,
         ),
         ProofManifestEntry(
@@ -477,7 +471,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             ),
             safety_class=ProofSafetyClass.LOCAL_MUTATING,
             timeout_seconds=3600,
-            requires_live_opt_in=True,
             public_evidence_eligible=True,
         ),
     )

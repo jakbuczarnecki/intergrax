@@ -252,7 +252,6 @@ def test_indexed_evidence_proofs_registered(repo_root: Path, proof_id: str) -> N
     entry = next(item for item in manifest.entries if item.proof_id == proof_id)
     assert entry.public_evidence_eligible is True
     assert entry.safety_class is ProofSafetyClass.LOCAL_MUTATING
-    assert entry.requires_live_opt_in is True
     assert ProofProfile.FULL in entry.profiles
     assert ProofProfile.LIVE in entry.profiles
     assert ProofProfile.QUICK not in entry.profiles

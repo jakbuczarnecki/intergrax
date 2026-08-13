@@ -175,7 +175,7 @@ Intergrax may coexist with model providers, retrieval systems, integration tools
 | Area | Classification | Status | Notes |
 | ---- | -------------- | ------ | ----- |
 | **LKW** | **Primary product proof** | **PARTIAL** | **Backend Product Alpha / MVP** — bounded application and platform proof. |
-| **Token Optimization** | **Featured platform-capability proof** | **PARTIAL** | Implemented mechanisms plus **bounded vLLM** proof. |
+| **Token Optimization** | **Featured platform-capability proof** | **PARTIAL** | Implemented deterministic mechanisms; bounded executable offline smoke proof. Manual vLLM prefix-cache evidence is separate — no public_evidence_eligible vLLM proof_id today. |
 
 **Evidence and detail:** [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [Token Optimization guide](../capabilities/token_optimization/README.md) · [PROOFS.md](../proofs/PROOFS.md)
 

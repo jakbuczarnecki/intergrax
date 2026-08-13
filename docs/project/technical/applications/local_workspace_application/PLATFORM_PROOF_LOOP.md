@@ -443,6 +443,12 @@ uv run python scripts/proof/run-intergrax-proof-suite.py --profile live
 
 `LIVE` profile: missing optional external-provider credentials yields `PASS_WITH_BLOCKED` overall when no proof actually failed.
 
+### Overall suite status
+
+| Status | Meaning |
+|--------|---------|
+| `DRY_RUN` | Manifest selection and dry execution plan validated; child proofs were not executed. Not equivalent to `PASS`. Exit code may be 0 because the dry-run itself succeeded. |
+
 ### Receipts
 
 Machine-readable receipts are written to `.artifacts/proof/<timestamp>-<profile>-<short-sha>.json` (gitignored). Receipts include commit SHA, dirty-worktree flag, per-proof status, and safe diagnostics — never tokens, API keys, or environment values.

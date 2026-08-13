@@ -108,7 +108,6 @@ class ProofManifestEntry(BaseModel):
     timeout_seconds: int = Field(default=600, ge=1)
     safety_class: ProofSafetyClass
     public_evidence_eligible: bool = False
-    requires_live_opt_in: bool = False
 
     @field_validator("proof_id", "title", "domain", "proof_kind")
     @classmethod
