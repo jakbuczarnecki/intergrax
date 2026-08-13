@@ -76,3 +76,8 @@ class MaterializationInputConflict(MaterializationError):
 
 class MaterializationUnsupportedTopology(MaterializationError):
     """Requested materialization topology has no production adapter."""
+
+class MaterializationLockArtifactLocationBlocked(MaterializationError):
+    """Lock lacks physical artifact location required for deterministic wheel install."""
+
+    BLOCKER_CODE = "AP-8_BLOCKED_BY_MISSING_LOCK_ARTIFACT_LOCATION_CONTRACT"

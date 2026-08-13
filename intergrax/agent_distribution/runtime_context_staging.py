@@ -10,17 +10,27 @@ import json
 import os
 import re
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
-from intergrax.agent_distribution.errors import MaterializationError
+from intergrax.agent_distribution.errors import (
+    MaterializationError,
+    MaterializationLockArtifactLocationBlocked,
+)
 from intergrax.agent_distribution.materialization import ApplicationBuildContext
 from intergrax.agent_distribution.roster import EffectiveRoster
 from intergrax.agent_distribution.runtime_graph import CandidateApplicationRuntimeGraph
 
 RUNTIME_GRAPH_MANIFEST_FILENAME = ".intergrax-runtime-graph.json"
 RUNTIME_LOCK_MANIFEST_FILENAME = ".intergrax-runtime-lock.json"
+RUNTIME_INSTALL_MANIFEST_FILENAME = ".intergrax-runtime-install.txt"
+
+_PYPROJECT_NAME_RE = re.compile(
+    r"""(?:^|\n)\s*name\s*=\s*(['"])([^'"]+)\1""",
+    re.MULTILINE,
+)
 
 _SKIP_DIR_NAMES = frozenset(
     {
@@ -277,6 +287,139 @@ def render_runtime_lock_manifest(lock: MaterializedRuntimeLock) -> dict[str, Any
     return lock.model_dump(mode="json")
 
 
+def _normalize_distribution_name(name: str) -> str:
+    return name.strip().lower().replace("_", "-")
+
+
+def _read_pyproject_distribution_name(pyproject_path: Path) -> str | None:
+    if not pyproject_path.is_file():
+        return None
+    try:
+        text = pyproject_path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    match = _PYPROJECT_NAME_RE.search(text)
+    if match is None:
+        return None
+    return match.group(2).strip()
+
+
+def _pip_hash_suffix(package_digest: str) -> str:
+    digest = package_digest.strip().lower()
+    if not digest.startswith("sha256:"):
+        raise MaterializationError("package_digest must be sha256:<hex>")
+    return f" --hash={digest}"
+
+
+@dataclass(frozen=True)
+class LockDrivenInstallEntry:
+    """One lock-authoritative install line for OCI/runtime materialization."""
+
+    distribution_name: str
+    version: str
+    install_line: str
+    package_digest: str | None = None
+    source_kind: str = "index"
+
+
+@dataclass(frozen=True)
+class LockDrivenInstallPlan:
+    """Deterministic install manifest derived only from MaterializedRuntimeLock."""
+
+    entries: tuple[LockDrivenInstallEntry, ...]
+    manifest_text: str
+
+
+def build_lock_driven_install_plan(
+    *,
+    lock: MaterializedRuntimeLock,
+    build_context: ApplicationBuildContext,
+    staged_source_roots: tuple[str, ...],
+) -> LockDrivenInstallPlan:
+    """Build exact install manifest from lock closure — repository uv.lock is not authority."""
+    if lock.lock_id is None:
+        raise MaterializationError("lock must have content identity before install plan render")
+
+    source_root = Path(build_context.source_context_root).resolve()
+    agent_roots = {
+        _normalize_distribution_name(package_id): rel_path.rstrip("/")
+        for package_id, rel_path in build_context.agent_source_roots
+    }
+    closure_agent_ids = {
+        _normalize_distribution_name(entry.distribution_package_id)
+        for entry in lock.agent_closure
+    }
+    app_root = build_context.application_source_root.rstrip("/")
+    app_distribution = _read_pyproject_distribution_name(
+        source_root / app_root / "pyproject.toml"
+    )
+    root_distribution = _read_pyproject_distribution_name(source_root / "pyproject.toml")
+    staged_norm = {_normalize_distribution_name(root.rstrip("/")) for root in staged_source_roots}
+    platform_staged = "intergrax" in staged_norm or any(
+        norm.startswith("intergrax") for norm in staged_norm
+    )
+
+    entries: list[LockDrivenInstallEntry] = []
+    for package in sorted(
+        lock.packages,
+        key=lambda item: (
+            _normalize_distribution_name(item.distribution_name),
+            item.version,
+            item.package_digest or "",
+        ),
+    ):
+        norm = _normalize_distribution_name(package.distribution_name)
+        install_line: str | None = None
+        source_kind = "index"
+
+        if norm in agent_roots:
+            install_line = (
+                f"{package.distribution_name} @ file:///app/{agent_roots[norm]}"
+            )
+            source_kind = "path"
+        elif app_distribution is not None and norm == _normalize_distribution_name(
+            app_distribution
+        ):
+            install_line = f"{package.distribution_name} @ file:///app/{app_root}"
+            source_kind = "path"
+        elif (
+            platform_staged
+            and root_distribution is not None
+            and norm == _normalize_distribution_name(root_distribution)
+        ):
+            install_line = f"{package.distribution_name} @ file:///app/intergrax"
+            source_kind = "path"
+        elif norm in closure_agent_ids:
+            raise MaterializationLockArtifactLocationBlocked(
+                MaterializationLockArtifactLocationBlocked.BLOCKER_CODE
+                + f": agent package {package.distribution_name} lacks staged source root "
+                "and lock provides no artifact location for wheel install"
+            )
+        else:
+            install_line = f"{package.distribution_name}=={package.version}"
+            if package.package_digest is not None:
+                install_line += _pip_hash_suffix(package.package_digest)
+
+        entries.append(
+            LockDrivenInstallEntry(
+                distribution_name=package.distribution_name,
+                version=package.version,
+                install_line=install_line,
+                package_digest=package.package_digest,
+                source_kind=source_kind,
+            )
+        )
+
+    manifest_lines = [entry.install_line for entry in entries]
+    manifest_text = "\n".join(manifest_lines) + ("\n" if manifest_lines else "")
+    return LockDrivenInstallPlan(entries=tuple(entries), manifest_text=manifest_text)
+
+
+def render_lock_driven_install_manifest(plan: LockDrivenInstallPlan) -> str:
+    """Serialize install manifest bytes for staging into build context."""
+    return plan.manifest_text
+
+
 def write_json_artifact(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
@@ -356,5 +499,15 @@ def stage_graph_authorized_context(
     write_json_artifact(
         candidate_dir / RUNTIME_LOCK_MANIFEST_FILENAME,
         render_runtime_lock_manifest(lock),
+    )
+    install_plan = build_lock_driven_install_plan(
+        lock=lock,
+        build_context=build_context,
+        staged_source_roots=tuple(sorted(set(staged))),
+    )
+    (candidate_dir / RUNTIME_INSTALL_MANIFEST_FILENAME).write_text(
+        render_lock_driven_install_manifest(install_plan),
+        encoding="utf-8",
+        newline="\n",
     )
     return tuple(sorted(set(staged)))

@@ -185,8 +185,8 @@ runtime-graph semantics into neutral `intergrax/runtime_graph_semantics.py`.
 
 ## AGENT-PLATFORM-8 gate
 
-**READY_FOR_REVIEW** (2026-08-13) — topology-agnostic materialization coordinator, explicit adapters,
-graph-authoritative staging, and OCI production path with explicit VENV unsupported port.
+**READY_FOR_CLOSE** (2026-08-13) — topology-agnostic materialization coordinator, explicit adapters,
+graph-authoritative staging, lock-driven OCI install manifest, and explicit VENV unsupported port.
 
 | Deliverable | Status |
 |-------------|--------|
@@ -194,12 +194,16 @@ graph-authoritative staging, and OCI production path with explicit VENV unsuppor
 | `RuntimeMaterializationAdapter` explicit topology port | done |
 | `RuntimeMaterializationService` consistency gates + output validation | done |
 | Graph-authoritative `runtime_context_staging` helpers | done |
+| Lock-driven `.intergrax-runtime-install.txt` from `MaterializedRuntimeLock` | done |
+| OCI Dockerfile uses lock install manifest — not repository `uv.lock` authority | done |
+| `DockerBuildRunner` explicit `image_ref` contract + RepoDigest/image-ID inspect | done |
 | `FakeRuntimeMaterializationAdapter` deterministic test adapter | done |
 | `OciImageMaterializationAdapter` production staging + docker boundary | done |
 | `UnsupportedVenvBundleMaterializationAdapter` explicit deferral | done |
+| `MaterializationLockArtifactLocationBlocked` fail-closed for missing wheel location | done |
 | AP-8 focused tests + AP-3..AP-7 regression | done |
 | Tier-boundary check (no `applications/` imports) | done |
 
-**Evidence:** `intergrax/agent_distribution/materialization_service.py`, `materialization_adapters.py`, `runtime_context_staging.py`, `tests/unit/agent_distribution/test_agent_distribution_materialization.py`, `test_agent_distribution_materialization_adapter.py`
+**Evidence:** `intergrax/agent_distribution/materialization_service.py`, `materialization_adapters.py`, `runtime_context_staging.py`, `errors.py`, `tests/unit/agent_distribution/test_agent_distribution_materialization.py`, `test_agent_distribution_materialization_adapter.py`
 
 **Next:** AP-9 may begin (activation + rollback orchestration).

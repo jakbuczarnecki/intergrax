@@ -16,6 +16,7 @@ from intergrax.agent_distribution.errors import MaterializationError, Materializ
 from intergrax.agent_distribution.materialization import MaterializationInput, MaterializationOutput
 from intergrax.agent_distribution.runtime_context_staging import (
     RUNTIME_GRAPH_MANIFEST_FILENAME,
+    RUNTIME_INSTALL_MANIFEST_FILENAME,
     directory_content_digest,
     resolve_safe_path,
     stage_graph_authorized_context,
@@ -23,7 +24,7 @@ from intergrax.agent_distribution.runtime_context_staging import (
 )
 from intergrax.agent_distribution.runtime_revision import MaterializationTopology
 
-DockerBuildRunner = Callable[[Sequence[str], Path], str]
+DockerBuildRunner = Callable[[Sequence[str], Path, str], str]
 
 
 class RuntimeMaterializationAdapter(Protocol):
@@ -59,13 +60,16 @@ def _render_minimal_oci_dockerfile(*, application_package: str, entrypoint_modul
         "# syntax=docker/dockerfile:1\n"
         "FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder\n"
         "WORKDIR /app\n"
-        "COPY pyproject.toml uv.lock ./\n"
+        f"COPY {RUNTIME_INSTALL_MANIFEST_FILENAME} ./\n"
         f"COPY {RUNTIME_GRAPH_MANIFEST_FILENAME} ./\n"
         f"COPY {'.intergrax-runtime-lock.json'} ./\n"
         "COPY intergrax/ ./intergrax/\n"
         "COPY applications/ ./applications/\n"
         "COPY agents/ ./agents/\n"
-        f"RUN uv sync --frozen --no-dev --project applications/{application_package}\n"
+        "RUN uv venv /app/.venv && "
+        "UV_PROJECT_ENVIRONMENT=/app/.venv "
+        "uv pip install --python /app/.venv/bin/python --no-deps "
+        f"-r {RUNTIME_INSTALL_MANIFEST_FILENAME}\n"
         "FROM python:3.12-slim-bookworm AS runtime\n"
         "WORKDIR /app\n"
         "COPY --from=builder /app /app\n"
@@ -73,7 +77,11 @@ def _render_minimal_oci_dockerfile(*, application_package: str, entrypoint_modul
     )
 
 
-def _default_docker_build_runner(args: Sequence[str], *, cwd: Path) -> str:
+def _default_docker_build_runner(
+    args: Sequence[str],
+    cwd: Path,
+    image_ref: str,
+) -> str:
     completed = subprocess.run(
         list(args),
         cwd=str(cwd),
@@ -87,7 +95,6 @@ def _default_docker_build_runner(args: Sequence[str], *, cwd: Path) -> str:
             "docker build failed: "
             + (completed.stderr.strip() or completed.stdout.strip() or "unknown error")
         )
-    image_ref = args[-1]
     inspect = subprocess.run(
         ["docker", "inspect", "--format={{index .RepoDigests 0}}", image_ref],
         check=False,
@@ -97,7 +104,7 @@ def _default_docker_build_runner(args: Sequence[str], *, cwd: Path) -> str:
     )
     digest = inspect.stdout.strip()
     if inspect.returncode == 0 and digest:
-        return digest
+        return _normalize_image_digest(digest)
     image_id = subprocess.run(
         ["docker", "inspect", "--format={{.Id}}", image_ref],
         check=False,
@@ -108,7 +115,7 @@ def _default_docker_build_runner(args: Sequence[str], *, cwd: Path) -> str:
     image_id_text = image_id.stdout.strip()
     if image_id.returncode != 0 or not image_id_text:
         raise MaterializationError("docker build succeeded but image digest unavailable")
-    return image_id_text
+    return _normalize_image_digest(image_id_text)
 
 
 def _normalize_image_digest(image_ref: str) -> str:
@@ -210,7 +217,7 @@ class OciImageMaterializationAdapter:
             raise MaterializationError("malformed docker image tag rejected")
 
         runner = self.docker_build_runner or _default_docker_build_runner
-        artifact_locator = runner(
+        artifact_digest = runner(
             [
                 "docker",
                 "build",
@@ -220,12 +227,12 @@ class OciImageMaterializationAdapter:
                 image_tag,
                 ".",
             ],
-            cwd=candidate_dir,
+            candidate_dir,
+            image_tag,
         )
-        digest = _normalize_image_digest(artifact_locator)
         return MaterializationOutput(
-            materialization_artifact_digest=digest,
-            artifact_locator=artifact_locator,
+            materialization_artifact_digest=artifact_digest,
+            artifact_locator=image_tag,
             health_check_evidence_ref=f"oci://build-context/{directory_content_digest(candidate_dir)}",
             runtime_graph_manifest_path=RUNTIME_GRAPH_MANIFEST_FILENAME,
             topology=self.topology,
