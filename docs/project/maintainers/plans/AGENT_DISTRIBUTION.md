@@ -1,6 +1,6 @@
 # Agent Distribution and Management — Plan
 
-**Status:** Active (architecture frozen — AGENT-PLATFORM-2)  
+**Status:** Active (architecture frozen — AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1)  
 **Architecture (1:1):** [`architecture/AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md)  
 **ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../../technical/adr/entries/2026-08-12/ADR-AGENT-004.md)  
 **Evidence:** [`audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md)  
@@ -18,7 +18,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 |------|--------|
 | Canonical `AGENT_DISTRIBUTION.md` | done |
 | Deterministic `MaterializedRuntimeLock` model | done (architecture) |
-| `RuntimeRevision` + activation semantics | done (architecture) |
+| `RuntimeRevision` + activation semantics | done (architecture — ARCH-AGENT-ACTIVATION-1 frozen) |
 | Effective roster merge specification | done (architecture) |
 | Cross-link from agent execution hub | done |
 | Plan pair (this file) | done |
@@ -33,7 +33,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 | AP-6 | Effective roster merge + `CandidateDependencySpecification` builder | AP-4 |
 | AP-7 | `MaterializedRuntimeLock` producer + graph simulation gates | AP-6, runtime graph util |
 | AP-8 | Materialization adapters (OCI, venv bundle) | AP-7 |
-| AP-9 | `RuntimeRevision` activation + rollback orchestration | AP-8 |
+| AP-9 | `RuntimeRevision` activation + rollback orchestration (implements §20 zero-downtime model) | AP-8, ARCH-AGENT-ACTIVATION-1 arch |
 | AP-10 | `build_application_registry` extension + snapshot fields | AP-9 |
 | AP-11 | Generic Tier-3 harness admin API routes | AP-4..AP-9 |
 | AP-12 | LKW consumer proof wiring | AP-11 |
@@ -211,4 +211,4 @@ staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 
 **Evidence:** `intergrax/agent_distribution/materialization_service.py`, `materialization_adapters.py`, `runtime_context_staging.py`, `package_artifact_provider.py`, `errors.py`, `tests/unit/agent_distribution/test_agent_distribution_materialization.py`, `test_agent_distribution_materialization_adapter.py`
 
-**Next:** AP-9 may begin (activation + rollback orchestration).
+**Next:** AP-9 may begin after AP-8 close — must implement frozen zero-downtime activation semantics (ARCH-AGENT-ACTIVATION-1, architecture §20).

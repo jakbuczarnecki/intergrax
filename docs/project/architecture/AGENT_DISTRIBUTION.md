@@ -1,6 +1,6 @@
 # Agent Distribution and Management
 
-**Status:** Canonical architecture (AGENT-PLATFORM-2 frozen — documentation only)  
+**Status:** Canonical architecture (AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1 activation semantics frozen — documentation only)  
 **Plan (1:1):** [`plan/AGENT_DISTRIBUTION.md`](../maintainers/plans/AGENT_DISTRIBUTION.md)  
 **ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md)  
 **Evidence gate:** [`audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../maintainers/audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md) (AGENT-PLATFORM-0)  
@@ -95,6 +95,7 @@ This document is the **canonical architecture** for the Intergrax **Agent Distri
 | AD-AP1-08 `AgentPackageTrust` parallel to plugins | §10 trust architecture |
 | AD-AP1-09 `CatalogSourceProvider` | §8 catalog architecture |
 | AD-AP1-10 LKW consumer only | §27 LKW proof boundary |
+| ARCH-AGENT-ACTIVATION-1 zero-downtime activation semantics | §18.1 scope; §20 operator mutations + PREPARE/READY/COMMIT/DRAIN; §21 registry atomicity; §24–§25 |
 
 ADR open questions OQ-1 (schema) and OQ-2 (default artifact topology per deploy) are **resolved at architecture level** in §12, §18–§19, §23; concrete schema and host defaults remain **AP-3+ implementation**.
 
@@ -207,7 +208,7 @@ Tier-3  applications/<app>/                ApplicationManifest defaults, host ad
 | **Effective roster** | Single derived merge of manifest defaults + durable bindings |
 | **Materialized runtime lock** | Immutable resolved dependency closure artifact for one candidate/active revision |
 | **Runtime revision** | Complete identity of one materialized application runtime |
-| **Activation** | Atomic promotion of a validated runtime revision to **active** for an application environment |
+| **Activation** | Atomic traffic commit (`traffic_serving_revision_id` swap) promoting one `validated` + `ready` revision to traffic-serving authority for one `application_environment_id` (§20) |
 | **Materialization** | Physical build of runtime bundle (image, venv bundle, or future sandbox unit) |
 
 ---
@@ -313,13 +314,17 @@ AVAILABLE ──install──► INSTALLED ──bind──► BOUND_TO_APPLICAT
 
 ### 7.4 Runtime revision lifecycle
 
+**Durable `revision_state`** (immutable revision artifact — see §18.3):
+
 ```text
-candidate ──validate──► validated ──activate──► active ──supersede──► superseded
-     │                      │                      │
-     └────fail──────────────┴──────fail────────────┴──► failed
+candidate ──validate──► validated ──traffic commit──► active ──supersede──► superseded
+     │                      │                              │
+     └────fail──────────────┴──────────fail─────────────────┴──► failed
 ```
 
-Only **one** `active` `RuntimeRevision` per `application_environment_id` at a time.
+**Ephemeral serving state** (`DeploymentInstanceState` — see §20.4) models instance readiness (`preparing` → `ready` → `serving` → `draining` → `stopped`) separately from durable artifact lifecycle. A revision may be `validated` + `ready` before it becomes traffic authority.
+
+Only **one** `revision_state = active` (traffic-serving authority) per `application_environment_id` at a time. Prior revision may remain in `draining` deployment state after supersession.
 
 ---
 
@@ -768,41 +773,77 @@ Output serializes to `.intergrax-runtime-graph.json` (schema v3+ — version bum
 
 ## 18. Runtime revision model
 
-### 18.1 `RuntimeRevision` (canonical)
+### 18.1 Application environment scope invariant (normative)
 
-Identifies the **complete materialized application runtime**:
+Every `RuntimeRevision` belongs to **exactly one** activation target:
+
+```text
+(application_id, application_environment_id)
+```
+
+| Operator change for | MUST rebuild / activate | MUST NOT rebuild / activate |
+|---------------------|-------------------------|-----------------------------|
+| App A / `production` | App A / `production` only | global Intergrax platform; App A / `staging`; App B; any other `application_environment_id` |
+
+The **unit of runtime replacement** is one `application_environment_id`. Agent enablement, binding, or install changes for one application environment never imply platform-wide rebuild or cross-environment activation.
+
+### 18.2 `RuntimeRevision` (canonical)
+
+Identifies the **complete immutable materialized application runtime** for one application environment:
 
 ```text
 RuntimeRevision:
   runtime_revision_id
-  application_environment_id
+  application_id
+  application_environment_id        # sole activation scope (§18.1)
   application_release_id            # app version / image tag lineage
   platform_version
-  effective_roster_revision_id
-  installed_agent_package_digests[] # from roster
+  effective_roster_revision_id      # frozen roster snapshot for this revision
+  installed_agent_package_digests[]   # from roster snapshot
   materialized_runtime_lock_id
   materialized_runtime_lock_digest
   runtime_graph_digest
   materialization_artifact_digest
   materialization_topology          # oci_image | venv_bundle | sandbox_sidecar
   policy_certification_evidence_refs[]
-  revision_state                    # candidate|validated|active|superseded|failed
+  revision_state                    # candidate|validated|active|superseded|failed (durable only)
   supersedes_revision_id
   rollback_target_revision_id
   activated_at
+  superseded_at
 ```
 
-### 18.2 Lifecycle
+### 18.3 Durable `revision_state` lifecycle
 
 ```text
 candidate
-  → validated     (lock + graph + trust + certification OK)
-  → active        (atomic activation — application-visible)
-  → superseded    (replaced by newer active)
-  → failed        (validation or activation failure)
+  → validated     (lock + graph + trust + certification + materialization artifact OK)
+  → active        (traffic commit — sole traffic-serving authority for app env)
+  → superseded    (replaced; serving unit may still drain — §20.6)
+  → failed        (validation, readiness, or activation failure)
 ```
 
-**Atomicity (application perspective):** routing and registry observe either the **prior** active revision or the **new** active revision — never a mixed agent closure.
+**State model decision (ARCH-AGENT-ACTIVATION-1):** `revision_state` records **durable immutable revision identity** only. Ephemeral instance readiness (`preparing`, `ready`, `serving`, `draining`, `stopped`) lives in **`DeploymentInstanceState`** (§20.4), not in `revision_state`. This avoids conflating “artifact exists and is validated” with “serving unit is ready to accept traffic” or “in-flight work is draining.”
+
+| Fact | Authoritative store |
+|------|---------------------|
+| Artifact validated, digest-pinned, immutable | `revision_state = validated` |
+| Serving unit started, health/readiness OK | `DeploymentInstanceState = ready` |
+| Production traffic authority | `traffic_serving_revision_id` + `revision_state = active` |
+| Prior revision completing in-flight work | `DeploymentInstanceState = draining` on superseded revision |
+
+### 18.4 Physical materialization and cache reuse
+
+A logical `RuntimeRevision` is **complete and immutable** once `revision_state` reaches `validated`. Physical materialization **MAY** reuse unchanged bytes without weakening content identity:
+
+- OCI image layers shared with prior revision
+- Package artifacts already in environment artifact store
+- Dependency resolution caches
+- Unchanged runtime base layers
+
+Cache reuse MUST NOT alter `materialization_artifact_digest`, `materialized_runtime_lock_digest`, or `runtime_graph_digest`. New agent inclusion produces a **new** revision identity even when most physical bytes are reused.
+
+**Atomicity (application perspective):** routing, registry, and `traffic_serving_revision_id` MUST resolve to **one** exact `RuntimeRevision` — never a mixed agent closure (§20.5).
 
 ---
 
@@ -847,41 +888,196 @@ MaterializationOutput:
   5. Materialize physical bundle (topology-specific adapter)
   6. Health validation on candidate bundle
   7. Create RuntimeRevision (candidate → validated)
-  8. Activation (§20)
+  8. Zero-downtime activation protocol (§20): PREPARE serving unit → READY → COMMIT traffic switch → DRAIN prior
 ```
 
 ---
 
 ## 20. Activation and rollback model
 
-### 20.1 Activation
+### 20.0 Operator mutations and activation boundary (normative)
+
+Operator-facing mutations are **not** interchangeable. Only **ACTIVATE** (traffic commit) may change production traffic or runtime visibility for an `application_environment_id`.
+
+| Operator action | Effect | MUST NOT |
+|-----------------|--------|----------|
+| **INSTALL** | Resolve catalog entry; verify trust; persist digest-pinned artifact into platform/org inventory | Affect any running application or `traffic_serving_revision_id` |
+| **BIND / CONFIGURE** | Update durable desired `ApplicationAgentBinding` configuration | Mutate active runtime, registry, or traffic pointer |
+| **ENABLE / DISABLE** | Change desired `EffectiveRoster` enablement inputs | Hot-mutate running runtime or registry |
+| **BUILD / APPLY** | Compute frozen roster snapshot; build `MaterializedRuntimeLock`; graph; physical candidate `RuntimeRevision` (`candidate` → `validated`) | Change traffic-serving authority |
+| **ACTIVATE** | Atomic traffic commit for one `application_environment_id` (§20.5) | Occur implicitly during install, bind, or enable |
+
+**Frozen inequalities:**
 
 ```text
-activate(runtime_revision_id):
-  1. Assert revision_state == validated
-  2. Begin activation transaction
-  3. Mark prior active → superseded (retain rollback pointer)
-  4. Mark candidate → active
-  5. Commit durable activation record
-  6. Host process restart OR rolling deploy OR hot-swap registry on startup hook
-  7. build_application_registry(EffectiveRoster) → AgentRegistry
-  8. Capture registry snapshot audit
+INSTALL  ≠ ACTIVATE
+BIND     ≠ ACTIVATE
+ENABLE   ≠ ACTIVATE
 ```
 
-Failure after step 5 but before healthy registry → **failed** activation; attempt automatic rollback to `rollback_target_revision_id`.
+Install, bind, and enable are **desired-state** mutations. They create inputs for the next candidate revision but do not, by themselves, change what concurrent users observe.
 
-### 20.2 Rollback
+### 20.1 Immutable active runtime (forbidden vs required pattern)
+
+The active traffic-serving runtime **MUST NOT** be mutated in place.
+
+| Forbidden (production) | Required |
+|------------------------|----------|
+| `pip install` / package add-remove into live Python process | Build separate immutable `RuntimeRevision N+1` while N serves traffic |
+| Live registry mutation to add/remove agents | Full revision swap at traffic commit |
+| In-place container filesystem mutation for agent closure | Topology-specific **deployment adapter** starts new **serving unit** for N+1 |
+
+Only complete immutable revisions may become production traffic authority.
+
+### 20.2 Zero-downtime candidate preparation
+
+While revision **N** remains the traffic-serving authority, revision **N+1** is prepared in parallel:
+
+```text
+  1. Resolve frozen EffectiveRoster snapshot (from desired state at build start)
+  2. Build MaterializedRuntimeLock + CandidateApplicationRuntimeGraph
+  3. Materialize physical artifact (topology adapter)
+  4. Deploy / start serving unit for N+1 (no production traffic)
+  5. Health check + readiness check + certification re-check on candidate instance
+  6. Mark DeploymentInstanceState = ready
+```
+
+**Normative:** N continues serving **all** normal production traffic throughout steps 1–6. N+1 receives **no** normal production traffic before readiness unless an explicit shadow/canary policy is added in a future revision. **Canary routing is not required in v1.**
+
+Topology-neutral terms: **serving unit** (process, container, venv host, sidecar), **deployment adapter** (OCI / venv bundle / sandbox), **traffic router** (abstract pointer — not Kubernetes-specific). Kubernetes rolling deployment MAY illustrate an adapter but is **not** architecturally mandatory.
+
+### 20.3 Durable state ordering: PREPARE → READY → COMMIT
+
+Activation is a **two-phase** protocol when infrastructure must start before traffic commit:
+
+| Phase | Durable / ephemeral effect | On failure |
+|-------|---------------------------|------------|
+| **PREPARE** | Create `RuntimeRevision` (`candidate` → `validated`); deploy serving unit (`preparing`) | N remains traffic authority; N+1 → `failed` or discarded candidate |
+| **READY** | Health + readiness + certification on candidate instance; `DeploymentInstanceState = ready` | N remains traffic authority; N+1 never receives traffic |
+| **COMMIT (traffic switch)** | Atomic `traffic_serving_revision_id` swap; N+1 `revision_state = active`; registry projection aligned (§21) | See §25 — one exact serving revision MUST remain authoritative |
+
+**Ordering invariant:** durable control plane MUST NOT claim `revision_state = active` or set `traffic_serving_revision_id = N+1` until N+1 `DeploymentInstanceState = ready`. Failure before COMMIT leaves N active with no user-visible change.
+
+### 20.4 Serving state model (`DeploymentInstanceState`)
+
+Ephemeral per-revision, per-application-environment serving facts (distinct from durable `revision_state`):
+
+```text
+DeploymentInstanceState:
+  runtime_revision_id
+  application_environment_id
+  instance_state        # preparing | ready | serving | draining | stopped | failed
+  readiness_evidence_ref
+  drain_started_at
+  drain_completed_at
+```
+
+| `instance_state` | Meaning |
+|------------------|---------|
+| **preparing** | Serving unit allocated; artifact deployed; not yet readiness-checked |
+| **ready** | Health + readiness + certification passed; eligible for traffic commit |
+| **serving** | Receiving new production traffic (matches `traffic_serving_revision_id`) |
+| **draining** | Superseded; no new traffic; in-flight work allowed to complete (§20.6) |
+| **stopped** | Serving unit terminated after drain policy satisfied |
+| **failed** | Instance failed readiness or post-cutover health; does not become traffic authority |
+
+### 20.5 Atomic traffic cutover and serving pointer
+
+Each `application_environment_id` has exactly one authoritative **traffic serving pointer**:
+
+```text
+ApplicationEnvironmentServingRecord:
+  application_environment_id
+  traffic_serving_revision_id       # single activation authority
+  serving_pointer_revision          # monotonic CAS generation for races (§24)
+  prior_traffic_revision_id         # rollback eligibility window (§20.7)
+  committed_at
+```
+
+**ACTIVATE (traffic commit)** — atomic logical operation:
+
+```text
+commit_traffic_switch(application_environment_id, candidate_revision_id):
+  1. Assert candidate revision_state == validated
+  2. Assert candidate DeploymentInstanceState == ready
+  3. Assert traffic_serving_revision_id == expected_current (CAS — §24)
+  4. Begin activation transaction
+  5. Set traffic_serving_revision_id = candidate_revision_id
+  6. Mark candidate revision_state = active
+  7. Mark prior revision revision_state = superseded; prior DeploymentInstanceState = draining
+  8. Publish AgentRegistry projection from candidate frozen roster (§21) — same transaction boundary as pointer
+  9. Commit durable activation record
+ 10. Traffic router directs all new requests to N+1 serving unit
+```
+
+**Cutover invariant:** at no observable moment may routing, `AgentRegistry`, and `traffic_serving_revision_id` disagree on revision identity. Forbidden mixed states include: traffic routes to N+1 while registry still reflects N, or registry reflects N+1 while traffic still routes to N.
+
+Steps 5–8 MUST be one atomic durable boundary (or equivalent linearizable two-phase commit with rollback on partial failure).
+
+### 20.6 Graceful drain
+
+After traffic commit:
+
+- **New requests** → N+1 (`serving`)
+- **Existing / in-flight work** → MAY complete on N (`draining`)
+
+N is **not** immediately terminated at cutover. N `revision_state` becomes `superseded` at commit, but N `DeploymentInstanceState` remains `draining` until:
+
+1. Active requests on N complete, **or**
+2. Bounded drain timeout / policy is reached (explicit operator policy; alert on timeout)
+
+Then N `DeploymentInstanceState` → `stopped` and serving unit MAY be reclaimed.
+
+**Drain-aware work:** long-running jobs, streaming responses, and websocket sessions MUST be classified as drain-aware. The deployment adapter and traffic router cooperate so drain does not truncate in-flight work before policy allows. Disable / binding changes already persisted do not retroactively cancel in-flight runs on the draining revision.
+
+### 20.7 Rollback
+
+Prior immutable revision **N** and its artifacts are retained for a **rollback eligibility window** after N+1 becomes active.
 
 ```text
 rollback(application_environment_id):
-  1. Load rollback_target_revision_id (previous active)
-  2. Re-verify trust + artifact presence + lock digest
-  3. Atomic pointer swap to prior revision
-  4. Redeploy / restart
-  5. On failure → fail closed; alert; retain last known good if ambiguous
+  1. Load prior_traffic_revision_id (revision N) from serving record
+  2. Assert N rollback-eligible: revision_state superseded, artifacts present, trust valid
+  3. Re-verify: materialization_artifact_digest, lock digest, graph digest, registry projection inputs
+  4. Assert N DeploymentInstanceState can reach ready (restart serving unit if stopped)
+  5. Atomic CAS traffic commit: N+1 → draining/failed; N → active; registry projection = N roster
+  6. On failure → fail closed; alert; retain last known good traffic pointer where possible
 ```
 
-Rollback uses **digest-pinned** prior installation records — never floating version labels.
+Rollback **reuses** prior artifact digest, lock, graph, and registry projection — **no rebuild** of N. N+1 becomes `failed` or `draining` as appropriate. If prior revision is unavailable or trust is no longer valid → **fail closed** and alert; do not silently serve a partial closure.
+
+### 20.8 Normative example: large active user base
+
+**Scenario:** App A / `production`, revision **17** active, **1000** concurrent users. Operator enables Agent X.
+
+```text
+T0  traffic_serving_revision_id = 17; revision 17 serving; users on 17
+T1  Operator ENABLE Agent X (desired state only — 17 unchanged)
+T2  BUILD/APPLY: revision 18 candidate → validated (frozen roster includes Agent X)
+T3  Deploy serving unit for 18; health + readiness; 18 DeploymentInstanceState = ready
+    (revision 17 continues serving all 1000 users — zero downtime to this point)
+T4  ACTIVATE / COMMIT: atomic pointer 17 → 18
+    revision 18 active + serving; revision 17 superseded + draining
+    registry projection = revision 18 frozen roster (includes Agent X)
+T5  New requests → 18; in-flight work on 17 completes under drain policy
+T6  revision 17 DeploymentInstanceState = stopped after drain
+```
+
+**Explicit guarantees in this example:**
+
+- No platform-wide Intergrax rebuild
+- No App A / `staging` or App B impact
+- No production downtime required by architecture
+- No live in-place package or registry mutation
+
+### 20.9 Activation failure and post-cutover health (summary)
+
+| When | Behavior |
+|------|----------|
+| Before COMMIT | N remains sole traffic authority (§25) |
+| COMMIT partial failure | One exact serving revision remains authoritative; no mixed closure |
+| Post-cutover health failure on N+1 | Automatic rollback to N when rollback-eligible (§20.7) |
+| Rollback failure | Fail closed; alert; retain last known serving state where possible |
 
 ---
 
@@ -891,13 +1087,18 @@ Rollback uses **digest-pinned** prior installation records — never floating ve
 
 | Rule | Detail |
 |------|--------|
-| Population source | `EffectiveRoster` entries with `enablement=true` after successful activation |
+| Population source | Frozen `EffectiveRoster` snapshot from the **traffic-serving** `RuntimeRevision` (`enablement=true`) |
 | Input contract | `build_application_registry(manifest, env, effective_roster=...)` (AP-3) |
+| Revision binding | Registry MUST reflect exactly `traffic_serving_revision_id` — not desired state, not candidate roster |
 | Install state | **Never** stored in registry |
 | Disabled agents | Excluded from register (preferred) or registered not routable |
-| Dynamic register API | **Not required** v1 — restart/redeploy after binding changes |
+| Dynamic register API | **Not required** v1 — population occurs at traffic commit, not as independent post-step |
 
-Registry snapshots (`registry_snapshot_store`) SHOULD include `effective_roster_revision_id`, `runtime_revision_id`, and installation/binding ids for audit — not as install DB.
+**Atomic registry rule (ARCH-AGENT-ACTIVATION-1):** `AgentRegistry` is a **projection of the exact traffic-serving `RuntimeRevision`**. Registry publication and traffic switch MUST be coordinated in the same activation boundary (§20.5 step 8) so operators and concurrent users never observe a mixed revision (e.g. registry agents from N+1 while requests still route to N). Registry population is **not** an independent best-effort post-activation step.
+
+AP-10 implements the projection mechanism; AP-9 architecture **requires** this atomic relationship.
+
+Registry snapshots (`registry_snapshot_store`) SHOULD include `effective_roster_revision_id`, `runtime_revision_id`, `traffic_serving_revision_id`, and installation/binding ids for audit — not as install DB.
 
 ---
 
@@ -917,7 +1118,7 @@ Task.required_capability
   → agent.run()
 ```
 
-Install/enable/disable affects routing only after **next materialization + activation** (or startup hook on active revision).
+Install/enable/disable affects routing only after **BUILD/APPLY + ACTIVATE** (traffic commit) for the target `application_environment_id`. Desired-state changes alone never mutate the live registry.
 
 ---
 
@@ -928,12 +1129,13 @@ Install/enable/disable affects routing only after **next materialization + activ
 | Catalog provider index | Provider + optional **catalog cache** | Cache optional | `AgentCatalogEntry` |
 | **Installation store** | Tier-0 | **Yes** | `AgentInstallationRecord`, artifact metadata |
 | **Binding store** | Tier-0 | **Yes** | `ApplicationAgentBinding` |
-| **Runtime revision store** | Tier-0 | **Yes** | `RuntimeRevision`, activation pointers |
+| **Runtime revision store** | Tier-0 | **Yes** | `RuntimeRevision`, `traffic_serving_revision_id`, `ApplicationEnvironmentServingRecord` |
 | **Artifact metadata store** | Tier-0 | **Yes** | Digests, locators, tombstones |
 | **Lock artifact store** | Tier-0 | **Yes** | `MaterializedRuntimeLock` blobs |
 | Manifest defaults | Tier-3 release | Versioned with app | `ApplicationManifest.agents` |
-| `AgentRegistry` | Tier-1 | **No** (process) | Execution projection |
-| Effective roster | — | **No** | Derived per activation |
+| `AgentRegistry` | Tier-1 | **No** (process) | Execution projection of `traffic_serving_revision_id` |
+| Effective roster | — | **No** | Derived per revision build; frozen at candidate validation |
+| `DeploymentInstanceState` | Tier-0 + host adapter | **Ephemeral** | Instance readiness / drain per revision |
 
 ### Transaction / atomicity boundaries
 
@@ -942,43 +1144,55 @@ Install/enable/disable affects routing only after **next materialization + activ
 | Artifact persist + `INSTALLED` record | **Yes** |
 | Binding write + revision bump | **Yes** |
 | Lock persist + graph validation result | **Yes** |
-| Activation pointer swap | **Yes** |
-| Registry population | Process startup — consistent with active revision |
+| Traffic commit: `traffic_serving_revision_id` + `revision_state` + registry projection | **Yes** (§20.5) |
+| Registry population | **Same boundary as traffic commit** — not independent |
 | Catalog cache refresh | **No** — best effort |
 
 ---
 
 ## 24. Concurrency and transaction semantics
 
-| Scenario | Behavior |
-|----------|----------|
-| Concurrent installs same slot | Serialize on `installation_slot_id`; one wins, other gets conflict |
-| Concurrent binding mutations | Optimistic locking on `binding_revision` |
-| Install during activation | Activation uses roster snapshot taken at validation start; concurrent install requires re-validation |
-| Runtime restart during activation | On startup, load **durable active** `RuntimeRevision` only; incomplete candidate ignored |
-| Partial persistence failure | Roll back transaction; no `INSTALLED` / no `active` revision |
+| # | Scenario | Behavior |
+|---|----------|----------|
+| 1 | **Activation serialization** | At most one in-flight traffic commit per `application_environment_id`; concurrent activate requests queue or conflict |
+| 2 | **Concurrent install / bind / enable** | Desired-state mutations do not alter a frozen candidate's roster, lock, or graph snapshot |
+| 3 | **Candidate validation immutability** | Validation uses immutable roster / lock / graph snapshot captured at BUILD/APPLY start |
+| 4 | **Later desired-state mutation** | Creates a **newer** candidate revision; does not mutate in-flight candidate |
+| 5 | **Concurrent activation race** | Two activations cannot both win; `traffic_serving_revision_id` CAS on `serving_pointer_revision` (expected-current revision) |
+| 6 | **Rollback vs activation race** | Rollback and activation serialized per `application_environment_id`; loser gets `RuntimeRevisionConflict` |
+| 7 | **Concurrent installs same slot** | Serialize on `installation_slot_id`; one wins, other gets conflict |
+| 8 | **Concurrent binding mutations** | Optimistic locking on `binding_revision` |
+| 9 | **Install during candidate prep** | In-flight candidate uses snapshot from validation start; concurrent install requires new BUILD/APPLY for next revision |
+| 10 | **Runtime restart during activation** | On startup, load durable `traffic_serving_revision_id` only; incomplete candidates ignored |
+| 11 | **Partial persistence failure** | Roll back transaction; no `INSTALLED` / no traffic pointer change |
 
 ---
 
 ## 25. Failure and recovery semantics
 
-| Failure | Behavior | Fail mode |
-|---------|----------|-----------|
-| Package resolution failure | Abort install; no record | Closed |
-| Trust failure | Reject; quarantine artifact | Closed |
-| Dependency conflict | Lock/graph simulation fails | Closed |
-| Candidate lock failure | No revision promotion | Closed |
-| Runtime graph failure | Activation blocked | Closed |
-| Certification failure | Install/enable/activate rejected (prod) | Closed |
-| Materialization failure | No activation; prior active remains | Closed |
-| Health validation failure | Candidate failed; no activation | Closed |
-| Activation failure | Rollback attempt to previous revision | Closed |
-| Partial persistence failure | Transaction rollback | Closed |
-| Active package revocation | Block new enables; flag install; policy may force disable on next materialization | Closed |
-| Rollback failure | Alert; manual intervention | Closed |
-| Removal with active bindings | Reject uninstall until unbind | Closed |
-| Catalog unavailable after prior install | No impact on active digest-pinned revision | Open for discovery only |
-| Disable with in-flight runs | Disable persisted; in-flight continue | Open for in-flight only |
+| Failure | Behavior | Active revision impact | Fail mode |
+|---------|----------|------------------------|-----------|
+| Package resolution failure | Abort install; no record | Unchanged | Closed |
+| Trust failure | Reject; quarantine artifact | Unchanged | Closed |
+| Dependency conflict | Lock/graph simulation fails | Unchanged | Closed |
+| Candidate lock failure | No revision promotion | Unchanged | Closed |
+| Runtime graph failure | Activation blocked | Unchanged | Closed |
+| Certification failure | Install/enable/activate rejected (prod) | Unchanged | Closed |
+| Candidate materialization failure | Candidate → `failed`; no traffic commit | **Unchanged** | Closed |
+| Candidate deploy / start failure | Serving unit `failed`; no READY | **Unchanged** | Closed |
+| Readiness / health check failure | Candidate never reaches `ready`; no COMMIT | **Unchanged** | Closed |
+| Failure before traffic COMMIT | Discard or mark candidate `failed` | **Unchanged** | Closed |
+| Traffic COMMIT partial failure | Abort or complete atomically; one exact serving revision authoritative | Prior OR new — never mixed | Closed |
+| Post-cutover health failure (N+1) | Automatic rollback to N when rollback-eligible (§20.7) | Revert to N if eligible | Closed |
+| Drain timeout | Apply bounded termination policy; alert; force `stopped` on draining unit | N+1 remains authority | Closed (policy) |
+| Activation failure (generic) | Rollback attempt to `prior_traffic_revision_id` | Revert when eligible | Closed |
+| Partial persistence failure | Transaction rollback | Unchanged | Closed |
+| Active package revocation | Block new enables; flag install; policy may force disable on next BUILD | Unchanged until next activate | Closed |
+| Rollback failure | Alert; manual intervention; retain last known serving state where possible | Last known good | Closed |
+| Removal with active bindings | Reject uninstall until unbind | Unchanged | Closed |
+| Prior revision unavailable for rollback | Fail closed; alert; do not serve ambiguous closure | Retain N+1 or halt per policy | Closed |
+| Catalog unavailable after prior install | No impact on active digest-pinned revision | Unchanged | Open for discovery only |
+| Disable with in-flight runs | Disable persisted; in-flight continue on draining revision | Next activate applies | Open for in-flight only |
 
 ---
 
