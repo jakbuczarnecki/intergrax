@@ -64,6 +64,7 @@ class _MongoDBDocumentStore:
     ) -> DocumentQueryPageV1:
         self._require_open()
         bounded_limit = validate_document_query_limit(limit)
+        max_page_limit = validate_document_query_limit(5000)
         after_row_key: str | None = None
         if cursor is not None:
             after_row_key = self._cursor_codec.decode(
@@ -71,15 +72,36 @@ class _MongoDBDocumentStore:
                 partition_key=partition_key,
                 row_key_prefix=row_key_prefix,
             ).last_row_key
-        fetch_limit = min(bounded_limit + 1, validate_document_query_limit(5000))
-        documents = self._client.query(
-            partition_key,
-            limit=fetch_limit,
-            row_key_prefix=row_key_prefix,
-            after_row_key=after_row_key,
-        )
-        has_more = len(documents) > bounded_limit
-        page = documents[:bounded_limit]
+        if bounded_limit < max_page_limit:
+            fetch_limit = bounded_limit + 1
+            documents = self._client.query(
+                partition_key,
+                limit=fetch_limit,
+                row_key_prefix=row_key_prefix,
+                after_row_key=after_row_key,
+            )
+            has_more = len(documents) > bounded_limit
+            page = documents[:bounded_limit]
+        else:
+            documents = self._client.query(
+                partition_key,
+                limit=bounded_limit,
+                row_key_prefix=row_key_prefix,
+                after_row_key=after_row_key,
+            )
+            page = documents[:bounded_limit]
+            has_more = (
+                len(page) == bounded_limit
+                and page
+                and len(
+                    self._client.query(
+                        partition_key,
+                        limit=1,
+                        row_key_prefix=row_key_prefix,
+                        after_row_key=page[-1].row_key,
+                    )
+                ) > 0
+            )
         next_cursor = (
             self._cursor_codec.encode(
                 partition_key=partition_key,

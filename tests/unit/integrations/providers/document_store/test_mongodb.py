@@ -18,7 +18,10 @@ from intergrax.integrations._shared.conformance import (
     assert_document_store,
 )
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.contracts.document_store import DocumentRecord
+from intergrax.integrations.contracts.document_store import (
+    DocumentRecord,
+    validate_document_query_limit,
+)
 from intergrax.integrations.providers.document_store.mongodb import bundle as mongodb_bundle
 from intergrax.integrations.providers.document_store.mongodb import integration as mongodb_integration
 from intergrax.integrations.providers.document_store.mongodb.client import MongoCollectionClient
@@ -75,15 +78,19 @@ def _clean_catalog() -> None:
 class _FakeCursor:
     def __init__(self, rows: list[dict[str, Any]]) -> None:
         self._rows = rows
+        self._limit: int | None = None
 
     def sort(self, _field: str, _direction: int) -> _FakeCursor:
         return self
 
-    def limit(self, _count: int) -> _FakeCursor:
+    def limit(self, count: int) -> _FakeCursor:
+        self._limit = count
         return self
 
     def __iter__(self) -> Iterable[dict[str, Any]]:
-        return iter(self._rows)
+        if self._limit is None:
+            return iter(self._rows)
+        return iter(self._rows[:self._limit])
 
 
 class _FakeWriteResult:
@@ -672,3 +679,128 @@ def test_mongodb_store_implements_conditional_document_store() -> None:
     store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
     assert_document_store(store)
     assert_conditional_document_store(store)
+
+
+_MAX_QUERY_LIMIT = validate_document_query_limit(5000)
+
+
+def _seed_partition_rows(
+    collection: _FakeCollection,
+    partition_key: str,
+    count: int,
+    *,
+    prefix: str = "row-",
+) -> list[str]:
+    row_keys: list[str] = []
+    for index in range(count):
+        row_key = f"{prefix}{index:05d}"
+        row_keys.append(row_key)
+        collection.storage[(partition_key, row_key)] = {
+            "partition_key": partition_key,
+            "row_key": row_key,
+            "data": {},
+            "expires_at": None,
+        }
+    return row_keys
+
+
+def test_query_limit_one_with_multiple_rows_returns_next_cursor() -> None:
+    factory, collection = _collection_factory()
+    _seed_partition_rows(collection, "p1", 2)
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+
+    page = store.query("p1", limit=1)
+
+    assert len(page.documents) == 1
+    assert page.next_cursor is not None
+
+
+def test_query_exact_limit_rows_returns_no_next_cursor() -> None:
+    factory, collection = _collection_factory()
+    _seed_partition_rows(collection, "p1", 3)
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+
+    page = store.query("p1", limit=3)
+
+    assert len(page.documents) == 3
+    assert page.next_cursor is None
+
+
+def test_query_limit_plus_one_rows_returns_next_cursor() -> None:
+    factory, collection = _collection_factory()
+    _seed_partition_rows(collection, "p1", 4)
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+
+    page = store.query("p1", limit=3)
+
+    assert len(page.documents) == 3
+    assert page.next_cursor is not None
+
+
+def test_query_max_limit_exact_rows_returns_no_next_cursor() -> None:
+    factory, collection = _collection_factory()
+    _seed_partition_rows(collection, "p1", _MAX_QUERY_LIMIT)
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+
+    page = store.query("p1", limit=_MAX_QUERY_LIMIT)
+
+    assert len(page.documents) == _MAX_QUERY_LIMIT
+    assert page.next_cursor is None
+
+
+def test_query_max_limit_plus_one_rows_paginates_remaining_row() -> None:
+    factory, collection = _collection_factory()
+    expected_keys = _seed_partition_rows(collection, "p1", _MAX_QUERY_LIMIT + 1)
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+
+    first_page = store.query("p1", limit=_MAX_QUERY_LIMIT)
+    assert len(first_page.documents) == _MAX_QUERY_LIMIT
+    assert first_page.next_cursor is not None
+    assert [doc.row_key for doc in first_page.documents] == expected_keys[:_MAX_QUERY_LIMIT]
+
+    second_page = store.query("p1", limit=_MAX_QUERY_LIMIT, cursor=first_page.next_cursor)
+    assert len(second_page.documents) == 1
+    assert second_page.documents[0].row_key == expected_keys[_MAX_QUERY_LIMIT]
+    assert second_page.next_cursor is None
+
+
+def test_query_prefix_cursor_continuation_returns_expected_slice() -> None:
+    factory, collection = _collection_factory()
+    _seed_partition_rows(collection, "p1", 5, prefix="scope-")
+    _seed_partition_rows(collection, "p1", 2, prefix="other-")
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+
+    first_page = store.query("p1", row_key_prefix="scope-", limit=2)
+    assert [doc.row_key for doc in first_page.documents] == ["scope-00000", "scope-00001"]
+    assert first_page.next_cursor is not None
+
+    second_page = store.query(
+        "p1",
+        row_key_prefix="scope-",
+        limit=2,
+        cursor=first_page.next_cursor,
+    )
+    assert [doc.row_key for doc in second_page.documents] == ["scope-00002", "scope-00003"]
+    assert second_page.next_cursor is not None
+
+    third_page = store.query(
+        "p1",
+        row_key_prefix="scope-",
+        limit=2,
+        cursor=second_page.next_cursor,
+    )
+    assert [doc.row_key for doc in third_page.documents] == ["scope-00004"]
+    assert third_page.next_cursor is None
+
+
+def test_query_cursor_partition_mismatch_fails_closed() -> None:
+    factory, collection = _collection_factory()
+    _seed_partition_rows(collection, "p1", 2)
+    _seed_partition_rows(collection, "p2", 2)
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+
+    cursor = store.query("p1", limit=1).next_cursor
+    assert cursor is not None
+
+    with pytest.raises(ValueError, match="document_store_cursor_query_mismatch"):
+        store.query("p2", limit=1, cursor=cursor)
