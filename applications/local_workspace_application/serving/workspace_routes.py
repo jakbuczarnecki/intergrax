@@ -19,6 +19,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.serving.knowledge_connected_source_routes import (
@@ -269,7 +270,7 @@ from local_workspace_application.workspaces.web_url_ingestion import (
 
 from intergrax.fastapi_core.context import get_request_context
 from intergrax.integrations.contracts.object_storage import ObjectStorage
-from intergrax.runtime.task.task import Task, TaskContext
+from intergrax.runtime.task.task import Task, TaskContext, TaskResult
 from intergrax.runtime.task.task_run_bridge import new_run_id
 from intergrax.runtime.vendor_knowledge.live.bootstrap import (
     build_vendor_knowledge_live_registration_registry,
@@ -522,6 +523,7 @@ def mount_managed_workspace_routes(
     tenant_live_capability_catalog: TenantLiveCapabilityCatalogPort | None = None,
     live_access_remote_resource_lookup_port: LiveAccessRemoteResourceLookupPort | None = None,
     ask_service_v2: WorkspaceAskServiceV2 | None = None,
+    host_lifecycle: LocalWorkspaceHostLifecycle | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
 
@@ -972,17 +974,15 @@ def mount_managed_workspace_routes(
                         repository.document_store.close()
                     except Exception:
                         pass
-                lifecycle = getattr(app.state, "lkw_host_lifecycle", None)
-                if lifecycle is not None:
-                    lifecycle.update_component(
+                if host_lifecycle is not None:
+                    host_lifecycle.update_component(
                         "sync_runtime",
                         healthy=False,
                         detail="startup_failed",
                     )
                 raise RuntimeError("lkw_sync_runtime_start_failed") from exc
-            lifecycle = getattr(app.state, "lkw_host_lifecycle", None)
-            if lifecycle is not None:
-                lifecycle.update_component(
+            if host_lifecycle is not None:
+                host_lifecycle.update_component(
                     "sync_runtime",
                     healthy=True,
                     detail="running",
@@ -993,9 +993,8 @@ def mount_managed_workspace_routes(
             try:
                 sync_runtime.stop()
             finally:
-                lifecycle = getattr(app.state, "lkw_host_lifecycle", None)
-                if lifecycle is not None:
-                    lifecycle.update_component(
+                if host_lifecycle is not None:
+                    host_lifecycle.update_component(
                         "sync_runtime",
                         healthy=False,
                         detail="stopped",
@@ -1128,9 +1127,7 @@ def mount_managed_workspace_routes(
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> None:
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        current: ManagedWorkspaceService = getattr(
-            request.app.state, "lkw_managed_workspace_service", service
-        )
+        current: ManagedWorkspaceService = request.app.state.lkw_managed_workspace_service
         try:
             deleted = current.delete_workspace(
                 tenant_id=tenant_id,
@@ -1161,8 +1158,8 @@ def mount_managed_workspace_routes(
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     ) -> ManagedFileBatchAcceptedV1:
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        intake: ManagedFileIntakeService | None = getattr(
-            request.app.state, "lkw_managed_file_intake_service", managed_file_intake_service
+        intake: ManagedFileIntakeService | None = (
+            request.app.state.lkw_managed_file_intake_service
         )
         if intake is None:
             raise HTTPException(
@@ -1538,10 +1535,8 @@ def mount_managed_workspace_routes(
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
         if service.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
             raise _not_found()
-        inspection: KnowledgeInspectionService = getattr(
-            request.app.state,
-            "lkw_knowledge_inspection_service",
-            knowledge_inspection_service,
+        inspection: KnowledgeInspectionService = (
+            request.app.state.lkw_knowledge_inspection_service
         )
         try:
             return inspection.list_items(tenant_id=tenant_id, workspace_id=workspace_id)
@@ -1560,10 +1555,8 @@ def mount_managed_workspace_routes(
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
         if service.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
             raise _not_found()
-        snapshot_service: WorkspaceSetupSnapshotService = getattr(
-            request.app.state,
-            "lkw_workspace_setup_snapshot_service",
-            setup_snapshot_service,
+        snapshot_service: WorkspaceSetupSnapshotService = (
+            request.app.state.lkw_workspace_setup_snapshot_service
         )
         try:
             return snapshot_service.derive_snapshot(
@@ -1586,10 +1579,8 @@ def mount_managed_workspace_routes(
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
         if service.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
             raise _not_found()
-        inspect_service: DocumentInspectService = getattr(
-            request.app.state,
-            "lkw_document_inspect_service",
-            document_inspect_service,
+        inspect_service: DocumentInspectService = (
+            request.app.state.lkw_document_inspect_service
         )
         try:
             view = inspect_service.inspect(
@@ -1639,15 +1630,11 @@ def mount_managed_workspace_routes(
             raise _not_found()
         operation = _parse_knowledge_operation(body.operation)
         idempotency = require_knowledge_configuration_idempotency_key(idempotency_key)
-        inspection: KnowledgeInspectionService = getattr(
-            request.app.state,
-            "lkw_knowledge_inspection_service",
-            knowledge_inspection_service,
+        inspection: KnowledgeInspectionService = (
+            request.app.state.lkw_knowledge_inspection_service
         )
-        operations: KnowledgeOperationsService = getattr(
-            request.app.state,
-            "lkw_knowledge_operations_service",
-            knowledge_operations_service,
+        operations: KnowledgeOperationsService = (
+            request.app.state.lkw_knowledge_operations_service
         )
         expected_revision = body.expected_revision
         if operation is KnowledgeOperationV1.DETACH:
@@ -1730,9 +1717,7 @@ def mount_managed_workspace_routes(
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> OperationListResponseV1:
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        current: ManagedWorkspaceService = getattr(
-            request.app.state, "lkw_managed_workspace_service", service
-        )
+        current: ManagedWorkspaceService = request.app.state.lkw_managed_workspace_service
         if current.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
             raise _not_found()
         operations = current.list_workspace_operations(
@@ -1789,14 +1774,14 @@ def mount_managed_workspace_routes(
             },
         )
         try:
-            result = await task_executor.execute(task)
+            result: TaskResult = await task_executor.execute(task)
         except Exception as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"search_error: {exc.__class__.__name__}",
             ) from exc
 
-        result_metadata = dict(getattr(result, "metadata", None) or {})
+        result_metadata = dict(result.metadata)
         attach_lkw_evidence_metadata(
             result_metadata,
             task_result=result,
@@ -1840,14 +1825,12 @@ def mount_managed_workspace_routes(
             logger.warning(
                 "ask_tenant_resolution reason=tenant_scope_mismatch"
             )
-        current_ask: WorkspaceAskService = getattr(
-            request.app.state, "lkw_ask_service", ask_service
+        current_ask: WorkspaceAskService = request.app.state.lkw_ask_service
+        managed_service: ManagedWorkspaceService = (
+            request.app.state.lkw_managed_workspace_service
         )
-        managed_service: ManagedWorkspaceService = getattr(
-            request.app.state, "lkw_managed_workspace_service", service
-        )
-        managed_repository: ManagedWorkspaceRepository | None = getattr(
-            request.app.state, "lkw_managed_workspace_repository", None
+        managed_repository: ManagedWorkspaceRepository = (
+            request.app.state.lkw_managed_workspace_repository
         )
         current_ask.use_workspace_authority(managed_service, managed_repository)
         knowledge_scope = None
@@ -1903,14 +1886,12 @@ def mount_managed_workspace_routes(
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> WorkspaceAskResponseV1:
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        current_ask: WorkspaceAskService = getattr(
-            request.app.state, "lkw_ask_service", ask_service
+        current_ask: WorkspaceAskService = request.app.state.lkw_ask_service
+        managed_service: ManagedWorkspaceService = (
+            request.app.state.lkw_managed_workspace_service
         )
-        managed_service: ManagedWorkspaceService = getattr(
-            request.app.state, "lkw_managed_workspace_service", service
-        )
-        managed_repository: ManagedWorkspaceRepository | None = getattr(
-            request.app.state, "lkw_managed_workspace_repository", None
+        managed_repository: ManagedWorkspaceRepository = (
+            request.app.state.lkw_managed_workspace_repository
         )
         current_ask.use_workspace_authority(managed_service, managed_repository)
         try:
@@ -1992,9 +1973,7 @@ def mount_managed_workspace_routes(
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> WorkspaceAskRunV2:
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        current_v2: WorkspaceAskServiceV2 = getattr(
-            request.app.state, "lkw_ask_service_v2", ask_service_v2
-        )
+        current_v2: WorkspaceAskServiceV2 = request.app.state.lkw_ask_service_v2
         try:
             return await current_v2.ask(
                 WorkspaceAskCommandV2(
@@ -2031,12 +2010,10 @@ def mount_managed_workspace_routes(
         x_tenant_id: str | None,
     ) -> WorkspaceAskRunV2:
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        managed_service: ManagedWorkspaceService = getattr(
-            request.app.state, "lkw_managed_workspace_service", service
+        managed_service: ManagedWorkspaceService = (
+            request.app.state.lkw_managed_workspace_service
         )
-        current_v2: WorkspaceAskServiceV2 = getattr(
-            request.app.state, "lkw_ask_service_v2", ask_service_v2
-        )
+        current_v2: WorkspaceAskServiceV2 = request.app.state.lkw_ask_service_v2
         try:
             run = current_v2.get_run(tenant_id=tenant_id, run_id=run_id)
         except WorkspaceAskV2LookupError as exc:

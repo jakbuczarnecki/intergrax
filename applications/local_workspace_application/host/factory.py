@@ -244,6 +244,7 @@ def create_local_workspace_backend_app(
         ),
         ask_service_v2=hybrid_ask_service,
         repository=lkw_managed_workspace_repository,
+        host_lifecycle=host_lifecycle,
     )
     repository = app.state.lkw_managed_workspace_repository
     try:
