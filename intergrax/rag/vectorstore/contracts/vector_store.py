@@ -63,6 +63,16 @@ class VectorStore(ABC):
         """Count only vectors belonging to the authoritative scope."""
         raise NotImplementedError
 
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope,
+        root_document_id: str | None = None,
+    ) -> Sequence[str]:
+        """Return persisted vector IDs owned by one canonical source."""
+        raise RuntimeError("vectorstore_source_record_lookup_not_supported")
+
     def list_collections(self) -> list[str]:
         """Return logical collection names exposed by this store (default: single active collection)."""
         name = attribute_access.optional(self, "collection_name", None)

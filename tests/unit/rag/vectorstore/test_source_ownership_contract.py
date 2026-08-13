@@ -128,6 +128,46 @@ def test_inmemory_returns_complete_persisted_ids_with_exact_source_scope() -> No
     assert manager.list_source_record_ids(source_id="missing", scope=scope_a) == ()
 
 
+def test_root_document_lookup_isolates_siblings_sharing_source_id() -> None:
+    shared_source = "/data/workspace/shared-folder"
+    obligations_id = "obligations-doc"
+    invoices_id = "invoices-doc"
+    scope = _scope()
+    manager = VectorstoreManager(InMemoryVectorStore(tenant_id="tenant-a"), scope=scope)
+    manager.add_records(
+        [
+            _record(
+                "obligations-1",
+                source_id=shared_source,
+                scope=scope,
+                document_id=obligations_id,
+            ),
+            _record(
+                "invoices-1",
+                source_id=shared_source,
+                scope=scope,
+                document_id=invoices_id,
+            ),
+        ],
+        scope=scope,
+    )
+
+    assert manager.list_source_record_ids(source_id=shared_source, scope=scope) == (
+        "invoices-1",
+        "obligations-1",
+    )
+    assert manager.list_source_record_ids(
+        source_id=shared_source,
+        root_document_id=obligations_id,
+        scope=scope,
+    ) == ("obligations-1",)
+    assert manager.list_source_record_ids(
+        source_id=shared_source,
+        root_document_id=invoices_id,
+        scope=scope,
+    ) == ("invoices-1",)
+
+
 @pytest.mark.parametrize(
     "store_factory",
     [
@@ -218,10 +258,32 @@ def test_source_lookup_is_tenant_isolated_and_bound_scope_cannot_escape() -> Non
 
 
 def test_source_lookup_reports_unsupported_optional_provider_explicitly() -> None:
-    class _UnsupportedProvider:
+    from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
+
+    class _UnsupportedProvider(VectorStore):
         _tenant_id = "tenant-a"
 
-    manager = VectorstoreManager(_UnsupportedProvider())  # type: ignore[arg-type]
+        def add_records(self, records, *, scope):  # type: ignore[no-untyped-def]
+            return []
+
+        def query(  # type: ignore[no-untyped-def]
+            self,
+            query_embedding,
+            *,
+            scope,
+            top_k,
+            metadata_filter=None,
+            include_embeddings=False,
+        ):
+            return []
+
+        def delete(self, ids, *, scope):  # type: ignore[no-untyped-def]
+            return None
+
+        def count(self, *, scope):  # type: ignore[no-untyped-def]
+            return 0
+
+    manager = VectorstoreManager(_UnsupportedProvider())
 
     with pytest.raises(
         RuntimeError,

@@ -180,6 +180,7 @@ def test_qdrant_integration_delegates_list_source_record_ids() -> None:
     inner.list_source_record_ids.assert_called_once_with(
         source_id="/data/user_docs/proof.txt",
         scope=scope,
+        root_document_id=None,
     )
     assert ids == ("chunk-a", "chunk-b")
 

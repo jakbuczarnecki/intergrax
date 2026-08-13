@@ -305,6 +305,7 @@ _CRITICAL_MODULES = (
     "intergrax/rag/retrievers/providers/hybrid_retriever.py",
     "intergrax/rag/vectorstore/publication_visibility.py",
     "intergrax/tools/providers/rag/source_operation_wiring.py",
+    "intergrax/rag/ingest/ingest_pipeline.py",
 )
 
 
@@ -346,6 +347,8 @@ _CRITICAL_FUNCTION_NAMES = frozenset(
         "resolve_native_hybrid_search_provider",
         "shared_source_operation_coordinator",
         "bind_source_operation_coordinator",
+        "list_source_record_ids",
+        "_list_current_source_ids",
     }
 )
 
@@ -387,3 +390,17 @@ def test_critical_rag_modules_parse_cleanly() -> None:
     for relative in _CRITICAL_MODULES:
         path = root / relative
         ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+
+def test_vector_store_declares_list_source_record_ids() -> None:
+    import inspect
+
+    from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
+
+    signature = inspect.signature(VectorStore.list_source_record_ids)
+    assert tuple(signature.parameters) == (
+        "self",
+        "source_id",
+        "scope",
+        "root_document_id",
+    )

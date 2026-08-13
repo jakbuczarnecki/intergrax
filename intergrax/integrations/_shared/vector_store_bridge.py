@@ -77,6 +77,19 @@ class VectorStoreBridge(VectorStore):
     def count(self, *, scope: VectorStoreScope) -> int:
         return self._inner.count(scope=scope)
 
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope,
+        root_document_id: str | None = None,
+    ) -> Sequence[str]:
+        return self._inner.list_source_record_ids(
+            source_id=source_id,
+            scope=scope,
+            root_document_id=root_document_id,
+        )
+
     def health(self) -> HealthStatus | bool:
         if isinstance(self._inner, IntegrationHealthProbe):
             return self._inner.health()

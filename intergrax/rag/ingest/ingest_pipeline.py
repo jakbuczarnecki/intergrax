@@ -584,22 +584,18 @@ class IngestPipeline:
         root_document_id: str | None = None,
     ) -> set[str]:
         target_vectorstore = vectorstore or self._vectorstore
-        lookup = getattr(target_vectorstore, "list_source_record_ids", None)
-        if not callable(lookup):
-            lookup_error = RuntimeError(self._SOURCE_LOOKUP_UNSUPPORTED)
-        else:
-            try:
-                return set(
-                    lookup(
-                        source_id=source_id,
-                        scope=scope,
-                        root_document_id=root_document_id,
-                    )
+        try:
+            return set(
+                target_vectorstore.list_source_record_ids(
+                    source_id=source_id,
+                    scope=scope,
+                    root_document_id=root_document_id,
                 )
-            except RuntimeError as exc:
-                if str(exc) != self._SOURCE_LOOKUP_UNSUPPORTED:
-                    raise
-                lookup_error = exc
+            )
+        except RuntimeError as exc:
+            if str(exc) != self._SOURCE_LOOKUP_UNSUPPORTED:
+                raise
+            lookup_error = exc
 
         if target_vectorstore.count(scope=scope) == 0:
             return set()

@@ -424,10 +424,7 @@ class VectorstoreManager(BaseVectorstoreManager):
                 "source_id and root_document_id must be non-empty strings when provided"
             ) from exc
 
-        provider_lookup = getattr(self._store, "list_source_record_ids", None)
-        if not callable(provider_lookup):
-            raise RuntimeError("vectorstore_source_record_lookup_not_supported")
-        provider_ids = provider_lookup(
+        provider_ids = self._store.list_source_record_ids(
             source_id=canonical_source_id,
             scope=resolved_scope,
             root_document_id=canonical_root_document_id,
