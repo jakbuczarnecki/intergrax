@@ -11,13 +11,21 @@ from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from intergrax.agent_distribution._digest import content_digest_for_model, normalize_optional_package_digest, normalize_package_digest
+from intergrax.agent_distribution._digest import (
+    content_digest_for_model,
+    normalize_optional_package_digest,
+    normalize_package_digest,
+)
 
 _NON_EMPTY = Field(min_length=1)
 
-SCHEMA_REPOSITORY_DEPENDENCY_DECLARATION_V1: Final = "repository_dependency_declaration.v1"
+SCHEMA_REPOSITORY_DEPENDENCY_DECLARATION_V1: Final = (
+    "repository_dependency_declaration.v1"
+)
 SCHEMA_INSTALLED_AGENT_REQUIREMENT_SET_V1: Final = "installed_agent_requirement_set.v1"
-SCHEMA_CANDIDATE_DEPENDENCY_SPECIFICATION_V1: Final = "candidate_dependency_specification.v1"
+SCHEMA_CANDIDATE_DEPENDENCY_SPECIFICATION_V1: Final = (
+    "candidate_dependency_specification.v1"
+)
 SCHEMA_DEPENDENCY_RESOLVER_INPUT_V1: Final = "dependency_resolver_input.v1"
 SCHEMA_MATERIALIZED_RUNTIME_LOCK_V1: Final = "materialized_runtime_lock.v1"
 
@@ -110,12 +118,27 @@ class CandidateDependencySpecification(BaseModel):
     policy_constraints: tuple[PolicyDependencyConstraint, ...] = ()
     repository_lock_hint_ref: str | None = None
 
-    @field_validator("application_release_id", "platform_version", "repository_lock_hint_ref")
+    @field_validator(
+        "application_release_id", "platform_version", "repository_lock_hint_ref"
+    )
     @classmethod
     def _strip_optional(cls, value: str | None) -> str | None:
         if value is None:
             return None
         return _strip_required(value)
+
+    @model_validator(mode="after")
+    def _validate_application_release_alignment(
+        self,
+    ) -> CandidateDependencySpecification:
+        if (
+            self.application_release_id
+            != self.repository_declaration.application_release_id
+        ):
+            raise ValueError(
+                "application_release_id must match repository_declaration.application_release_id"
+            )
+        return self
 
 
 class DependencyResolverInput(BaseModel):
@@ -129,7 +152,9 @@ class DependencyResolverInput(BaseModel):
     resolver_algorithm_version: str = _NON_EMPTY
     lock_policy_ref: str | None = None
 
-    @field_validator("resolver_algorithm_id", "resolver_algorithm_version", "lock_policy_ref")
+    @field_validator(
+        "resolver_algorithm_id", "resolver_algorithm_version", "lock_policy_ref"
+    )
     @classmethod
     def _strip_optional(cls, value: str | None) -> str | None:
         if value is None:
@@ -267,6 +292,10 @@ class MaterializedRuntimeLock(BaseModel):
 
     @model_validator(mode="after")
     def _validate_identity_pair(self) -> MaterializedRuntimeLock:
-        if self.lock_id is not None and self.lock_digest is not None and self.lock_id != self.lock_digest:
+        if (
+            self.lock_id is not None
+            and self.lock_digest is not None
+            and self.lock_id != self.lock_digest
+        ):
             raise ValueError("lock_id and lock_digest must match when both are set")
         return self

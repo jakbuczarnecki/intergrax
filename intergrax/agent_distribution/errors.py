@@ -40,3 +40,11 @@ class RuntimeRevisionConflict(AgentDistributionError):
 
 class RuntimeRevisionLifecycleError(AgentDistributionError):
     """Illegal runtime revision lifecycle transition."""
+
+
+class EffectiveRosterConflict(AgentDistributionError):
+    """Ambiguous or invalid effective roster merge inputs."""
+
+
+class DependencySpecificationError(AgentDistributionError):
+    """Invalid candidate dependency specification assembly."""

@@ -13,7 +13,10 @@ from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
 from intergrax.agent_distribution.installation import AgentInstallationRecord
-from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
+from intergrax.agent_distribution.runtime_revision import (
+    RuntimeRevision,
+    RuntimeRevisionState,
+)
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -26,7 +29,16 @@ class AgentArtifactMetadata(BaseModel):
     package_digest: str = _NON_EMPTY
     artifact_store_ref: str = Field(min_length=1)
     distribution_package_id: str = Field(min_length=1)
+    agent_project_metadata_ref: str = _NON_EMPTY
     tombstoned: bool = False
+
+    @field_validator("agent_project_metadata_ref")
+    @classmethod
+    def _strip_metadata_ref(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
 
     @field_validator("package_digest")
     @classmethod
@@ -73,7 +85,9 @@ class AgentInstallationStore(Protocol):
 class ApplicationAgentBindingStore(Protocol):
     """Durable application agent binding persistence."""
 
-    def get_binding(self, application_binding_id: str) -> ApplicationAgentBinding | None:
+    def get_binding(
+        self, application_binding_id: str
+    ) -> ApplicationAgentBinding | None:
         """Load one binding by stable id."""
 
     def list_bindings_for_environment(
@@ -156,5 +170,7 @@ class AgentArtifactMetadataStore(Protocol):
     def get_by_digest(self, package_digest: str) -> AgentArtifactMetadata | None:
         """Resolve artifact metadata by immutable digest."""
 
-    def persist_metadata(self, metadata: AgentArtifactMetadata) -> AgentArtifactMetadata:
+    def persist_metadata(
+        self, metadata: AgentArtifactMetadata
+    ) -> AgentArtifactMetadata:
         """Persist artifact metadata record."""

@@ -113,4 +113,24 @@ verification gate.
 
 **Evidence:** `tests/unit/agent_distribution/test_agent_distribution_package_trust.py`
 
-**Next:** AP-6 may begin.
+**Next:** AP-7 may begin.
+
+## AGENT-PLATFORM-6 gate
+
+**READY_FOR_REVIEW** — deterministic effective roster merge, L2 installed-agent requirement set, and L3 `CandidateDependencySpecification` builder under `intergrax/agent_distribution/`.
+
+| Deliverable | Status |
+|-------------|--------|
+| `ManifestDefaultAgentDeclaration` neutral manifest input | done |
+| `EffectiveRosterBuilder` (manifest + durable merge) | done |
+| `InstalledAgentRequirementSetBuilder` | done |
+| `build_candidate_dependency_specification` (L1 + L2 → L3) | done |
+| `AgentArtifactMetadata.agent_project_metadata_ref` | done |
+| `CandidateDependencySpecification` release-id invariant | done |
+| Focused AP-6 tests | done |
+| AP-3/AP-4/AP-5 regression | done |
+| Tier-boundary check | done |
+
+**Evidence:** `tests/unit/agent_distribution/test_agent_distribution_effective_roster.py`, `tests/unit/agent_distribution/test_agent_distribution_dependency_specification.py`
+
+**Next:** AP-7 may begin.

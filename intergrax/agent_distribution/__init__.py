@@ -33,12 +33,21 @@ from intergrax.agent_distribution.dependency import (
     PolicyDependencyConstraint,
     RepositoryDependencyDeclaration,
 )
+from intergrax.agent_distribution.dependency_specification import (
+    build_candidate_dependency_specification,
+)
+from intergrax.agent_distribution.effective_roster import (
+    EffectiveRosterBuilder,
+    InstalledAgentRequirementSetBuilder,
+)
 from intergrax.agent_distribution.errors import (
     AgentDistributionError,
     AgentDistributionNotFoundError,
     AgentPackageTrustError,
     BindingLifecycleError,
     BindingRevisionConflict,
+    DependencySpecificationError,
+    EffectiveRosterConflict,
     InstallationLifecycleError,
     InstallationSlotConflict,
     RuntimeRevisionConflict,
@@ -62,15 +71,25 @@ from intergrax.agent_distribution.package_trust import (
     AgentPackageTrustCoordinator,
     assert_installation_trust_record_acceptable,
 )
-from intergrax.agent_distribution.materialization import MaterializationInput, MaterializationOutput
-from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
+from intergrax.agent_distribution.materialization import (
+    MaterializationInput,
+    MaterializationOutput,
+)
+from intergrax.agent_distribution.roster import (
+    EffectiveRoster,
+    EffectiveRosterEntry,
+    ManifestDefaultAgentDeclaration,
+)
 from intergrax.agent_distribution.runtime_graph import (
     CandidateApplicationRuntimeGraph,
     RuntimeGraphAgentRef,
     RuntimeGraphThirdPartyRef,
     RuntimeGraphTierViolation,
 )
-from intergrax.agent_distribution.identity import AgentPackageCandidate, AgentPackageIdentity
+from intergrax.agent_distribution.identity import (
+    AgentPackageCandidate,
+    AgentPackageIdentity,
+)
 from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevision,
@@ -146,7 +165,10 @@ __all__ = [
     "CatalogProviderKind",
     "CatalogSourceIdentity",
     "CatalogSourceProvider",
+    "DependencySpecificationError",
     "DependencyResolverInput",
+    "EffectiveRosterBuilder",
+    "EffectiveRosterConflict",
     "EffectiveRoster",
     "EffectiveRosterEntry",
     "InMemoryAgentArtifactMetadataStore",
@@ -155,10 +177,12 @@ __all__ = [
     "InMemoryRuntimeRevisionStore",
     "InstalledAgentPackageRequirement",
     "InstalledAgentRequirementSet",
+    "InstalledAgentRequirementSetBuilder",
     "InstallationLifecycleError",
     "InstallationService",
     "InstallationSlotConflict",
     "InstallationState",
+    "ManifestDefaultAgentDeclaration",
     "MaterializationInput",
     "MaterializationOutput",
     "MaterializationTopology",
@@ -183,6 +207,7 @@ __all__ = [
     "RuntimeRevisionStore",
     "TransitionResult",
     "assert_installation_trust_record_acceptable",
+    "build_candidate_dependency_specification",
     "installation_state_is_installed",
     "qualification_status_satisfies",
 ]
