@@ -7,15 +7,19 @@ from __future__ import annotations
 
 from typing import Final
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from intergrax.agent_distribution._digest import normalize_package_digest
+from intergrax.agent_distribution._digest import (
+    content_digest_for_model,
+    normalize_package_digest,
+)
 
 _NON_EMPTY = Field(min_length=1)
 
 SCHEMA_CANDIDATE_APPLICATION_RUNTIME_GRAPH_V1: Final = (
     "candidate_application_runtime_graph.v1"
 )
+GRAPH_SCHEMA_VERSION_V3: Final = "3"
 
 
 def _strip_required(value: str) -> str:
@@ -81,7 +85,7 @@ class CandidateApplicationRuntimeGraph(BaseModel):
     schema_version: str = SCHEMA_CANDIDATE_APPLICATION_RUNTIME_GRAPH_V1
     graph_schema_version: str = _NON_EMPTY
     application_id: str = _NON_EMPTY
-    runtime_graph_digest: str = _NON_EMPTY
+    runtime_graph_digest: str | None = None
     materialized_runtime_lock_id: str = _NON_EMPTY
     direct_agents: tuple[RuntimeGraphAgentRef, ...]
     transitive_agents: tuple[RuntimeGraphAgentRef, ...] = ()
@@ -95,5 +99,27 @@ class CandidateApplicationRuntimeGraph(BaseModel):
         "materialized_runtime_lock_id",
     )
     @classmethod
-    def _strip_fields(cls, value: str) -> str:
+    def _strip_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         return _strip_required(value)
+
+    def compute_runtime_graph_digest(self) -> str:
+        payload = self.model_copy(update={"runtime_graph_digest": None})
+        return content_digest_for_model(payload)
+
+    def with_content_identity(self) -> CandidateApplicationRuntimeGraph:
+        digest = self.compute_runtime_graph_digest()
+        return self.model_copy(update={"runtime_graph_digest": digest})
+
+    @model_validator(mode="after")
+    def _validate_runtime_graph_digest_identity(
+        self,
+    ) -> CandidateApplicationRuntimeGraph:
+        if self.runtime_graph_digest is None:
+            return self
+        if self.compute_runtime_graph_digest() != self.runtime_graph_digest:
+            raise ValueError(
+                "runtime_graph_digest does not match canonical semantic content"
+            )
+        return self

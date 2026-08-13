@@ -283,7 +283,9 @@ class MaterializedRuntimeLock(BaseModel):
         return _strip_required(value)
 
     def compute_lock_digest(self) -> str:
-        payload = self.model_copy(update={"lock_id": None, "lock_digest": None})
+        payload = self.model_copy(
+            update={"lock_id": None, "lock_digest": None, "created_at": None}
+        )
         return content_digest_for_model(payload)
 
     def with_content_identity(self) -> MaterializedRuntimeLock:

@@ -48,3 +48,19 @@ class EffectiveRosterConflict(AgentDistributionError):
 
 class DependencySpecificationError(AgentDistributionError):
     """Invalid candidate dependency specification assembly."""
+
+
+class DependencyResolutionError(AgentDistributionError):
+    """Resolver output failed validation or conflict detection."""
+
+
+class MaterializedRuntimeLockError(AgentDistributionError):
+    """Invalid materialized runtime lock assembly."""
+
+
+class MaterializedRuntimeLockConflict(AgentDistributionError):
+    """Lock identity collision with different semantic content."""
+
+
+class CandidateRuntimeGraphError(AgentDistributionError):
+    """Candidate runtime graph failed structural validation gates."""

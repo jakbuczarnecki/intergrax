@@ -9,9 +9,11 @@ import threading
 from dataclasses import dataclass, field
 
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
+from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
 from intergrax.agent_distribution.errors import (
     BindingRevisionConflict,
     InstallationSlotConflict,
+    MaterializedRuntimeLockConflict,
     RuntimeRevisionConflict,
 )
 from intergrax.agent_distribution.installation import AgentInstallationRecord, InstallationState
@@ -29,6 +31,7 @@ class AgentDistributionStoreState:
     revisions: dict[str, RuntimeRevision] = field(default_factory=dict)
     active_revision_by_environment: dict[str, str] = field(default_factory=dict)
     artifact_metadata: dict[str, AgentArtifactMetadata] = field(default_factory=dict)
+    locks: dict[str, MaterializedRuntimeLock] = field(default_factory=dict)
 
 
 class InMemoryAgentInstallationStore:
@@ -272,3 +275,38 @@ class InMemoryAgentArtifactMetadataStore:
         with self._lock:
             self._state.artifact_metadata[metadata.package_digest] = metadata
             return metadata
+
+
+class InMemoryMaterializedRuntimeLockStore:
+    """Process-local immutable lock artifact store."""
+
+    def __init__(self, state: AgentDistributionStoreState | None = None) -> None:
+        self._state = state or AgentDistributionStoreState()
+        self._lock = threading.RLock()
+
+    @property
+    def state(self) -> AgentDistributionStoreState:
+        return self._state
+
+    def get_lock(self, lock_id: str) -> MaterializedRuntimeLock | None:
+        with self._lock:
+            return self._state.locks.get(lock_id)
+
+    def get_lock_by_digest(self, lock_digest: str) -> MaterializedRuntimeLock | None:
+        with self._lock:
+            return self._state.locks.get(lock_digest)
+
+    def persist_lock(self, lock: MaterializedRuntimeLock) -> MaterializedRuntimeLock:
+        with self._lock:
+            identity = lock if lock.lock_id is not None else lock.with_content_identity()
+            if identity.lock_id is None or identity.lock_digest is None:
+                raise MaterializedRuntimeLockConflict("lock missing content identity")
+            existing = self._state.locks.get(identity.lock_id)
+            if existing is not None:
+                if existing.compute_lock_digest() != identity.compute_lock_digest():
+                    raise MaterializedRuntimeLockConflict(
+                        "lock_id collision with different semantic content"
+                    )
+                return existing
+            self._state.locks[identity.lock_id] = identity
+            return identity

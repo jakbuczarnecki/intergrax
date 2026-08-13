@@ -138,3 +138,26 @@ verification gate.
 **Evidence:** `tests/unit/agent_distribution/test_agent_distribution_effective_roster.py`, `tests/unit/agent_distribution/test_agent_distribution_dependency_specification.py`, `tests/unit/agent_distribution/test_agent_distribution_services.py`, `tests/unit/agent_distribution/test_agent_distribution_contracts.py`
 
 **Next:** AP-7 may begin.
+
+## AGENT-PLATFORM-7 gate
+
+**READY_FOR_CLOSE** (2026-08-13) — deterministic `MaterializedRuntimeLock` producer, resolver port,
+in-memory lock store, and candidate runtime graph simulation gates under `intergrax/agent_distribution/`.
+
+| Deliverable | Status |
+|-------------|--------|
+| `DependencyResolver` port + `ResolvedDependencyClosure` | done |
+| `MaterializedRuntimeLockProducer` / `MaterializedRuntimeLockService` | done |
+| Deterministic package/agent closure canonicalization | done |
+| `created_at` excluded from lock content digest | done |
+| `InMemoryMaterializedRuntimeLockStore` | done |
+| `AgentProjectMetadataProvider` port | done |
+| `CandidateRuntimeGraphBuilder` + `CandidateRuntimeGraphValidator` | done |
+| `CandidateApplicationRuntimeGraph` content-addressed digest | done |
+| Focused AP-7 lock + graph tests | done |
+| AP-3..AP-6 regression | done |
+| Tier-boundary check | done |
+
+**Evidence:** `tests/unit/agent_distribution/test_agent_distribution_runtime_lock.py`, `test_agent_distribution_runtime_graph.py`
+
+**Next:** AP-8 may begin (physical materialization).

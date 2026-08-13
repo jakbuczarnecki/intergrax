@@ -3,6 +3,10 @@
 
 """Tier-0 Agent Distribution domain contracts, stores, and services (AP-3/AP-4)."""
 
+from intergrax.agent_distribution.agent_project_metadata import (
+    AgentProjectMetadata,
+    AgentProjectMetadataProvider,
+)
 from intergrax.agent_distribution.binding import (
     AgentBindingFactoryReference,
     AgentBindingPolicyOverrides,
@@ -47,9 +51,13 @@ from intergrax.agent_distribution.errors import (
     BindingLifecycleError,
     BindingRevisionConflict,
     DependencySpecificationError,
+    DependencyResolutionError,
     EffectiveRosterConflict,
     InstallationLifecycleError,
     InstallationSlotConflict,
+    MaterializedRuntimeLockConflict,
+    MaterializedRuntimeLockError,
+    CandidateRuntimeGraphError,
     RuntimeRevisionConflict,
     RuntimeRevisionLifecycleError,
 )
@@ -59,6 +67,7 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryAgentArtifactMetadataStore,
     InMemoryAgentInstallationStore,
     InMemoryApplicationAgentBindingStore,
+    InMemoryMaterializedRuntimeLockStore,
     InMemoryRuntimeRevisionStore,
 )
 from intergrax.agent_distribution.installation_service import InstallationService
@@ -94,6 +103,19 @@ from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevision,
     RuntimeRevisionState,
+)
+from intergrax.agent_distribution.resolver import (
+    CallableDependencyResolver,
+    DependencyResolver,
+    ResolvedDependencyClosure,
+)
+from intergrax.agent_distribution.runtime_graph_service import (
+    CandidateRuntimeGraphBuilder,
+    CandidateRuntimeGraphValidator,
+)
+from intergrax.agent_distribution.runtime_lock import (
+    MaterializedRuntimeLockProducer,
+    MaterializedRuntimeLockService,
 )
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.stores import (
@@ -137,6 +159,8 @@ __all__ = [
     "AgentInstallationRecord",
     "AgentInstallationStore",
     "AgentInstallationTrustRecord",
+    "AgentProjectMetadata",
+    "AgentProjectMetadataProvider",
     "AgentPackageCandidate",
     "AgentPackageIdentity",
     "AgentPackageQualificationResult",
@@ -158,7 +182,11 @@ __all__ = [
     "BindingLifecycleError",
     "BindingRevisionConflict",
     "BindingService",
+    "CallableDependencyResolver",
     "CandidateApplicationRuntimeGraph",
+    "CandidateRuntimeGraphBuilder",
+    "CandidateRuntimeGraphError",
+    "CandidateRuntimeGraphValidator",
     "CandidateDependencySpecification",
     "CatalogEntryFilters",
     "CatalogPackageResolution",
@@ -166,6 +194,8 @@ __all__ = [
     "CatalogSourceIdentity",
     "CatalogSourceProvider",
     "DependencySpecificationError",
+    "DependencyResolutionError",
+    "DependencyResolver",
     "DependencyResolverInput",
     "EffectiveRosterBuilder",
     "EffectiveRosterConflict",
@@ -174,6 +204,7 @@ __all__ = [
     "InMemoryAgentArtifactMetadataStore",
     "InMemoryAgentInstallationStore",
     "InMemoryApplicationAgentBindingStore",
+    "InMemoryMaterializedRuntimeLockStore",
     "InMemoryRuntimeRevisionStore",
     "InstalledAgentPackageRequirement",
     "InstalledAgentRequirementSet",
@@ -191,11 +222,16 @@ __all__ = [
     "MaterializedLockReproducibilityEvidence",
     "MaterializedLockRollbackEvidence",
     "MaterializedRuntimeLock",
+    "MaterializedRuntimeLockConflict",
+    "MaterializedRuntimeLockError",
+    "MaterializedRuntimeLockProducer",
+    "MaterializedRuntimeLockService",
     "MaterializedRuntimeLockStore",
     "PolicyDependencyConstraint",
     "ProviderHealth",
     "ProviderHealthStatus",
     "RepositoryDependencyDeclaration",
+    "ResolvedDependencyClosure",
     "RuntimeGraphAgentRef",
     "RuntimeGraphThirdPartyRef",
     "RuntimeGraphTierViolation",
