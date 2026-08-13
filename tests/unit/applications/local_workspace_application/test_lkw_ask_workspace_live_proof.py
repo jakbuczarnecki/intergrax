@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any
 
 import pytest
+import yaml
 
 pytestmark = [pytest.mark.unit]
 
@@ -41,6 +43,53 @@ def test_compose_command_uses_explicit_proof_project(proof: ModuleType) -> None:
     assert proof._COMPOSE_PROJECT == "lkw-trusted-ask-workspace-proof"
     assert str(proof._BASE_COMPOSE) in args
     assert str(proof._MONGODB_COMPOSE) in args
+    assert str(proof._TRUSTED_ASK_PROOF_COMPOSE) in args
+
+
+def test_compose_lifecycle_commands_include_trusted_ask_proof_overlay(
+    proof: ModuleType,
+) -> None:
+    overlay = str(proof._TRUSTED_ASK_PROOF_COMPOSE)
+    for command in (
+        proof._compose_command("config"),
+        proof._compose_command("up", "-d"),
+        proof._compose_command("exec", "-T", "local_workspace", "printenv"),
+        proof._compose_command("restart", *proof._RESTART_SERVICES),
+        proof._compose_command("ps", "-a"),
+    ):
+        assert overlay in command
+
+
+def test_trusted_ask_proof_overlay_mounts_sample_docs_read_only(
+    proof: ModuleType,
+) -> None:
+    overlay = yaml.safe_load(proof._TRUSTED_ASK_PROOF_COMPOSE.read_text(encoding="utf-8"))
+    volumes = overlay["services"]["local_workspace"]["volumes"]
+    assert "../sample_docs:/data/user_docs:ro" in volumes
+
+
+def test_trusted_ask_proof_overlay_allowlist_is_container_path_only(
+    proof: ModuleType,
+) -> None:
+    overlay = yaml.safe_load(proof._TRUSTED_ASK_PROOF_COMPOSE.read_text(encoding="utf-8"))
+    allowlist = overlay["services"]["local_workspace"]["environment"][
+        "INTERGRAX_ALLOWED_READ_ROOTS"
+    ]
+    assert allowlist == "/data/user_docs"
+    assert "\\" not in allowlist
+    assert re.search(r"^[A-Za-z]:", allowlist) is None
+
+
+def test_host_proof_document_path_matches_mounted_sample_docs_dir(
+    proof: ModuleType,
+) -> None:
+    assert proof._SAMPLE_DOCS_DIR == proof._APP_DIR / "sample_docs"
+    assert proof._SAMPLE_DOCS_DIR.resolve() == (proof._DOCKER_DIR / "../sample_docs").resolve()
+    proof_file_name = "ask_qdrant_durability_test.txt"
+    host_doc_path = proof._SAMPLE_DOCS_DIR / proof_file_name
+    container_doc_path = f"/data/user_docs/{proof_file_name}"
+    assert host_doc_path.name == Path(container_doc_path).name
+    assert str(host_doc_path.parent.resolve()) == str(proof._SAMPLE_DOCS_DIR.resolve())
 
 
 def test_compose_paths_include_project_for_lifecycle_commands(proof: ModuleType) -> None:

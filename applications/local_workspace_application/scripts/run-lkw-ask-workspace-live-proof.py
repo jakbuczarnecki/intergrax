@@ -41,6 +41,7 @@ from lkw_host_port_preflight import (
 _DOCKER_DIR = _APP_DIR / "docker"
 _BASE_COMPOSE = _DOCKER_DIR / "docker-compose.yml"
 _MONGODB_COMPOSE = _DOCKER_DIR / "docker-compose.mongodb.yml"
+_TRUSTED_ASK_PROOF_COMPOSE = _DOCKER_DIR / "docker-compose.trusted-ask-proof.yml"
 _SAMPLE_DOCS_DIR = _APP_DIR / "sample_docs"
 _DEFAULT_BASE_URL = "http://127.0.0.1:8020"
 _COMPOSE_PROJECT = "lkw-trusted-ask-workspace-proof"
@@ -105,6 +106,8 @@ def _compose_command(*args: str) -> list[str]:
         str(_BASE_COMPOSE),
         "-f",
         str(_MONGODB_COMPOSE),
+        "-f",
+        str(_TRUSTED_ASK_PROOF_COMPOSE),
         *args,
     ]
 
