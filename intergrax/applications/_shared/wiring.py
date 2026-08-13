@@ -224,6 +224,66 @@ def _resolve_manifest_binding_for_entry(
     return None
 
 
+def _roster_entry_binding_overrides(
+    entry: EffectiveRosterEntry,
+    roster_config: dict[str, Any],
+    *,
+    base: AgentBinding | None,
+) -> AgentBinding:
+    """Apply frozen roster overrides onto a manifest binding row."""
+    factory_reference = entry.factory_reference
+    if base is not None:
+        if factory_reference is None:
+            return base.model_copy(
+                update={
+                    "enabled": True,
+                    "default": entry.effective_default_agent,
+                    "config": roster_config,
+                }
+            )
+        if factory_reference.factory_path is not None:
+            return base.model_copy(
+                update={
+                    "enabled": True,
+                    "default": entry.effective_default_agent,
+                    "config": roster_config,
+                    "factory_path": factory_reference.factory_path,
+                    "factory": None,
+                }
+            )
+        return base.model_copy(
+            update={
+                "enabled": True,
+                "default": entry.effective_default_agent,
+                "config": roster_config,
+                "builder_key": factory_reference.builder_key,
+                "factory": None,
+            }
+        )
+
+    if factory_reference is None:
+        raise ApplicationManifestConformanceError(
+            f"roster entry {entry.logical_agent_id!r} lacks manifest binding and factory_reference"
+        )
+    if factory_reference.factory_path is not None:
+        return AgentBinding(
+            contract_id=entry.logical_agent_id,
+            enabled=True,
+            default=entry.effective_default_agent,
+            config=roster_config,
+            factory_path=factory_reference.factory_path,
+            factory=None,
+        )
+    return AgentBinding(
+        contract_id=entry.logical_agent_id,
+        enabled=True,
+        default=entry.effective_default_agent,
+        config=roster_config,
+        builder_key=factory_reference.builder_key,
+        factory=None,
+    )
+
+
 def binding_from_roster_entry(
     entry: EffectiveRosterEntry,
     manifest_bindings: Mapping[str, AgentBinding],
@@ -231,29 +291,10 @@ def binding_from_roster_entry(
     """Materialize one manifest binding row from a frozen effective roster entry."""
     base = _resolve_manifest_binding_for_entry(entry, manifest_bindings)
     roster_config = distribution_json_to_plain(dict(entry.merged_config))
-    updates: dict[str, Any] = {
-        "enabled": True,
-        "default": entry.effective_default_agent,
-        "config": roster_config,
-    }
-    if entry.factory_reference is not None:
-        if entry.factory_reference.factory_path is not None:
-            updates["factory_path"] = entry.factory_reference.factory_path
-            updates["factory"] = None
-        if entry.factory_reference.builder_key is not None:
-            updates["builder_key"] = entry.factory_reference.builder_key
-            updates["factory"] = None
-
-    if base is not None:
-        return base.model_copy(update=updates)
-
-    if entry.factory_reference is None:
-        raise ApplicationManifestConformanceError(
-            f"roster entry {entry.logical_agent_id!r} lacks manifest binding and factory_reference"
-        )
-    return AgentBinding(
-        contract_id=entry.logical_agent_id,
-        **updates,
+    return _roster_entry_binding_overrides(
+        entry,
+        roster_config,
+        base=base,
     )
 
 

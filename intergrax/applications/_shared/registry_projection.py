@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from typing import Final, Protocol
 
@@ -20,9 +21,11 @@ from intergrax.applications._shared.wiring import (
     build_application_registry,
     binding_from_roster_entry,
     _index_manifest_bindings,
+    _resolve_manifest_binding_for_entry,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.runtime.attestation.canonical_json import stable_payload_hash
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.registry.harness_snapshot import HarnessRegistrySnapshot
 
@@ -53,10 +56,13 @@ class RegistryProjectionEvidence(BaseModel):
     runtime_revision_id: str = _NON_EMPTY
     application_id: str = _NON_EMPTY
     application_environment_id: str = _NON_EMPTY
+    application_release_id: str = _NON_EMPTY
     effective_roster_revision_id: str = _NON_EMPTY
     materialized_runtime_lock_id: str | None = None
     materialized_runtime_lock_digest: str | None = None
     runtime_graph_digest: str | None = None
+    materialization_artifact_digest: str | None = None
+    registry_factory_wiring_digest: str = _NON_EMPTY
     registered_agent_ids: tuple[str, ...] = ()
     readiness_token: str = _NON_EMPTY
 
@@ -64,10 +70,13 @@ class RegistryProjectionEvidence(BaseModel):
         "runtime_revision_id",
         "application_id",
         "application_environment_id",
+        "application_release_id",
         "effective_roster_revision_id",
         "materialized_runtime_lock_id",
         "materialized_runtime_lock_digest",
         "runtime_graph_digest",
+        "materialization_artifact_digest",
+        "registry_factory_wiring_digest",
         "readiness_token",
     )
     @classmethod
@@ -105,6 +114,7 @@ class RegistryProjectionInputBundle:
     manifest: ApplicationManifest
     build_context: ApplicationBuildContext
     builders: BuilderMap | None = None
+    materialization_artifact_digest: str | None = None
 
 
 class RegistryProjectionInputStore(Protocol):
@@ -127,17 +137,87 @@ class RuntimeRegistryProjectionStore(Protocol):
         """Store a prepared projection without mutating prior revisions."""
 
 
+def _builder_map_key_fingerprint(builders: BuilderMap | None) -> tuple[str, ...]:
+    if builders is None:
+        return ()
+    keys: list[str] = []
+    for key in builders:
+        if isinstance(key, str):
+            keys.append(f"builder_key:{key}")
+            continue
+        keys.append(f"agent_type:{key.__module__}.{key.__qualname__}")
+    return tuple(sorted(keys))
+
+
+def _build_context_fingerprint(ctx: ApplicationBuildContext) -> dict[str, object]:
+    manifest = ctx.manifest
+    app_id = manifest.app_id if isinstance(manifest, ApplicationManifest) else None
+    return {
+        "manifest_app_id": app_id,
+        "skill_profile": (
+            ctx.skill_profile.model_dump(mode="json") if ctx.skill_profile is not None else None
+        ),
+        "tool_profile": (
+            ctx.tool_profile.model_dump(mode="json") if ctx.tool_profile is not None else None
+        ),
+        "strict_harness": ctx.strict_harness,
+    }
+
+
+def _bundle_semantic_fingerprint(bundle: RegistryProjectionInputBundle) -> str:
+    payload = {
+        "runtime_revision": bundle.runtime_revision.model_dump(mode="json"),
+        "effective_roster": bundle.effective_roster.model_dump(mode="json"),
+        "manifest": bundle.manifest.model_dump(mode="json"),
+        "materialization_artifact_digest": bundle.materialization_artifact_digest,
+        "builder_keys": _builder_map_key_fingerprint(bundle.builders),
+        "build_context": _build_context_fingerprint(bundle.build_context),
+    }
+    return stable_payload_hash(payload)
+
+
+def _registry_factory_wiring_digest(bundle: RegistryProjectionInputBundle) -> str:
+    revision = bundle.runtime_revision
+    seed = {
+        "application_release_id": revision.application_release_id,
+        "materialization_artifact_digest": bundle.materialization_artifact_digest,
+        "manifest": bundle.manifest.model_dump(mode="json"),
+        "builder_keys": _builder_map_key_fingerprint(bundle.builders),
+        "build_context": _build_context_fingerprint(bundle.build_context),
+    }
+    return stable_payload_hash(seed)
+
+
 class InMemoryRegistryProjectionInputStore:
     """Deterministic in-memory projection input store for tests."""
 
     def __init__(self) -> None:
         self._bundles: dict[str, RegistryProjectionInputBundle] = {}
+        self._fingerprints: dict[str, str] = {}
+        self._lock = threading.Lock()
 
     def get(self, runtime_revision_id: str) -> RegistryProjectionInputBundle | None:
-        return self._bundles.get(runtime_revision_id)
+        with self._lock:
+            return self._bundles.get(runtime_revision_id)
 
     def register(self, bundle: RegistryProjectionInputBundle) -> None:
-        self._bundles[bundle.runtime_revision.runtime_revision_id] = bundle
+        revision_id = bundle.runtime_revision.runtime_revision_id
+        fingerprint = _bundle_semantic_fingerprint(bundle)
+        with self._lock:
+            existing = self._fingerprints.get(revision_id)
+            if existing is not None:
+                if existing != fingerprint:
+                    raise RegistryProjectionError(
+                        f"conflicting frozen projection inputs for {revision_id!r}"
+                    )
+                return
+            self._bundles[revision_id] = bundle
+            self._fingerprints[revision_id] = fingerprint
+
+
+def _projection_semantic_fingerprint(projection: MaterializedRegistryProjection) -> str:
+    evidence = projection.evidence.model_copy(update={"readiness_token": "projection-seed"})
+    return content_digest_for_model(evidence)
 
 
 class InMemoryRuntimeRegistryProjectionStore:
@@ -145,17 +225,26 @@ class InMemoryRuntimeRegistryProjectionStore:
 
     def __init__(self) -> None:
         self._projections: dict[str, MaterializedRegistryProjection] = {}
+        self._fingerprints: dict[str, str] = {}
+        self._lock = threading.Lock()
 
     def get(self, runtime_revision_id: str) -> MaterializedRegistryProjection | None:
-        return self._projections.get(runtime_revision_id)
+        with self._lock:
+            return self._projections.get(runtime_revision_id)
 
     def put(self, projection: MaterializedRegistryProjection) -> None:
         revision_id = projection.evidence.runtime_revision_id
-        if revision_id in self._projections:
-            raise RegistryProjectionError(
-                f"registry projection already materialized for {revision_id!r}"
-            )
-        self._projections[revision_id] = projection
+        fingerprint = _projection_semantic_fingerprint(projection)
+        with self._lock:
+            existing = self._projections.get(revision_id)
+            if existing is not None:
+                if self._fingerprints[revision_id] != fingerprint:
+                    raise RegistryProjectionError(
+                        f"conflicting registry projection for {revision_id!r}"
+                    )
+                return
+            self._projections[revision_id] = projection
+            self._fingerprints[revision_id] = fingerprint
 
 
 def _expected_contract_ids(
@@ -176,19 +265,57 @@ def _expected_contract_ids(
     return tuple(sorted(contract_ids))
 
 
-def _validate_revision_bundle(bundle: RegistryProjectionInputBundle) -> None:
+def _validate_operator_factory_authority(bundle: RegistryProjectionInputBundle) -> None:
+    builders = bundle.builders
+    if builders is None:
+        builders = {}
+    manifest_bindings = _index_manifest_bindings(bundle.manifest)
+    for entry in bundle.effective_roster.entries:
+        if not entry.effective_enablement:
+            continue
+        if _resolve_manifest_binding_for_entry(entry, manifest_bindings) is not None:
+            continue
+        factory_reference = entry.factory_reference
+        if factory_reference is None:
+            continue
+        builder_key = factory_reference.builder_key
+        if builder_key is not None and builder_key not in builders:
+            raise RegistryProjectionError(
+                f"operator-added agent {entry.logical_agent_id!r} references "
+                f"builder_key {builder_key!r} missing from frozen release builders"
+            )
+
+
+def _validate_release_authority(bundle: RegistryProjectionInputBundle) -> None:
+    """Mirror MaterializationInput release binding for registry factory wiring."""
     revision = bundle.runtime_revision
     roster = bundle.effective_roster
     manifest = bundle.manifest
 
     if revision.application_environment_id != roster.application_environment_id:
         raise RegistryProjectionError("runtime revision environment mismatch with roster")
+    if revision.application_release_id != roster.manifest_release_id:
+        raise RegistryProjectionError("runtime revision release mismatch with roster")
     if roster.application_id != manifest.app_id:
         raise RegistryProjectionError("effective roster application_id mismatch with manifest")
     if roster.effective_roster_revision_id is None:
         raise RegistryProjectionError("effective roster requires revision identity")
     if revision.effective_roster_revision_id != roster.effective_roster_revision_id:
         raise RegistryProjectionError("runtime revision roster revision mismatch")
+
+    artifact_digest = bundle.materialization_artifact_digest
+    if revision.materialization_artifact_digest is not None:
+        if artifact_digest is None:
+            raise RegistryProjectionError(
+                "projection inputs require materialization artifact identity"
+            )
+        if artifact_digest != revision.materialization_artifact_digest:
+            raise RegistryProjectionError("materialization artifact digest mismatch")
+
+
+def _validate_revision_bundle(bundle: RegistryProjectionInputBundle) -> None:
+    _validate_release_authority(bundle)
+    _validate_operator_factory_authority(bundle)
 
 
 def _validate_revision_identity(
@@ -201,6 +328,8 @@ def _validate_revision_identity(
         raise RegistryProjectionError("runtime revision id mismatch")
     if revision.application_environment_id != roster.application_environment_id:
         raise RegistryProjectionError("runtime revision environment mismatch")
+    if revision.application_release_id != roster.manifest_release_id:
+        raise RegistryProjectionError("runtime revision release mismatch")
     if revision.effective_roster_revision_id != roster.effective_roster_revision_id:
         raise RegistryProjectionError("effective roster revision mismatch")
     if frozen_revision.materialized_runtime_lock_id is not None:
@@ -215,6 +344,14 @@ def _validate_revision_identity(
     if frozen_revision.runtime_graph_digest is not None:
         if revision.runtime_graph_digest != frozen_revision.runtime_graph_digest:
             raise RegistryProjectionError("runtime graph digest mismatch")
+    if revision.materialization_artifact_digest is not None:
+        artifact_digest = bundle.materialization_artifact_digest
+        if artifact_digest is None:
+            raise RegistryProjectionError(
+                "projection inputs require materialization artifact identity"
+            )
+        if revision.materialization_artifact_digest != artifact_digest:
+            raise RegistryProjectionError("materialization artifact digest mismatch")
 
 
 def build_registry_projection(
@@ -237,14 +374,18 @@ def build_registry_projection(
 
     revision = bundle.runtime_revision
     roster = bundle.effective_roster
+    wiring_digest = _registry_factory_wiring_digest(bundle)
     seed = RegistryProjectionEvidence(
         runtime_revision_id=revision.runtime_revision_id,
         application_id=roster.application_id,
         application_environment_id=roster.application_environment_id,
+        application_release_id=revision.application_release_id,
         effective_roster_revision_id=roster.effective_roster_revision_id or "",
         materialized_runtime_lock_id=revision.materialized_runtime_lock_id,
         materialized_runtime_lock_digest=revision.materialized_runtime_lock_digest,
         runtime_graph_digest=revision.runtime_graph_digest,
+        materialization_artifact_digest=bundle.materialization_artifact_digest,
+        registry_factory_wiring_digest=wiring_digest,
         registered_agent_ids=registered_ids,
         readiness_token="projection-seed",
     )
@@ -286,28 +427,34 @@ class ApplicationRegistryProjectionCoordinator:
         self._revision_store = revision_store
         self._input_store = input_store
         self._projection_store = projection_store
+        self._prepare_lock = threading.Lock()
 
     def prepare_projection(self, runtime_revision_id: str) -> str:
         existing = self._projection_store.get(runtime_revision_id)
         if existing is not None:
             return existing.evidence.readiness_token
 
-        revision = self._revision_store.get_revision(runtime_revision_id)
-        if revision is None:
-            raise RegistryProjectionError(
-                f"runtime revision not found: {runtime_revision_id!r}"
-            )
+        with self._prepare_lock:
+            existing = self._projection_store.get(runtime_revision_id)
+            if existing is not None:
+                return existing.evidence.readiness_token
 
-        bundle = self._input_store.get(runtime_revision_id)
-        if bundle is None:
-            raise RegistryProjectionError(
-                f"missing frozen projection inputs for {runtime_revision_id!r}"
-            )
+            revision = self._revision_store.get_revision(runtime_revision_id)
+            if revision is None:
+                raise RegistryProjectionError(
+                    f"runtime revision not found: {runtime_revision_id!r}"
+                )
 
-        _validate_revision_identity(revision, bundle)
-        projection = build_registry_projection(bundle)
-        self._projection_store.put(projection)
-        return projection.evidence.readiness_token
+            bundle = self._input_store.get(runtime_revision_id)
+            if bundle is None:
+                raise RegistryProjectionError(
+                    f"missing frozen projection inputs for {runtime_revision_id!r}"
+                )
+
+            _validate_revision_identity(revision, bundle)
+            projection = build_registry_projection(bundle)
+            self._projection_store.put(projection)
+            return projection.evidence.readiness_token
 
     def rollback_projection(self, runtime_revision_id: str) -> None:
         """Ensure rollback target projection is available without rebuilding from desired state."""

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 
 import pytest
@@ -29,6 +30,7 @@ from intergrax.applications._shared.registry_projection import (
     ApplicationRegistryProjectionCoordinator,
     InMemoryRegistryProjectionInputStore,
     InMemoryRuntimeRegistryProjectionStore,
+    MaterializedRegistryProjection,
     RegistryProjectionError,
     RegistryProjectionInputBundle,
     build_registry_projection,
@@ -54,6 +56,9 @@ _GRAPH_DIGEST = "sha256:" + ("c" * 64)
 _ARTIFACT = "sha256:" + ("d" * 64)
 _ROSTER_A = "sha256:" + ("e" * 64)
 _ROSTER_B = "sha256:" + ("f" * 64)
+
+_RELEASE_OTHER = "rel-2"
+_ARTIFACT_OTHER = "sha256:" + ("9" * 64)
 
 
 def _echo_factory(_ctx: ApplicationBuildContext, _binding: AgentBinding) -> EchoAgent:
@@ -100,11 +105,12 @@ def _roster(
     entries: tuple[EffectiveRosterEntry, ...],
     *,
     revision_id: str | None = None,
+    manifest_release_id: str = _RELEASE,
 ) -> EffectiveRoster:
     roster = EffectiveRoster(
         application_id=_APP,
         application_environment_id=_ENV,
-        manifest_release_id=_RELEASE,
+        manifest_release_id=manifest_release_id,
         entries=entries,
     ).with_revision_id()
     if revision_id is not None:
@@ -139,9 +145,19 @@ def _bundle(
     revision_id: str,
     roster: EffectiveRoster,
     manifest: ApplicationManifest | None = None,
+    *,
+    release_id: str = _RELEASE,
+    artifact_digest: str | None = _ARTIFACT,
 ) -> RegistryProjectionInputBundle:
     manifest = manifest or _manifest()
-    revision = _revision(revision_id, roster_revision_id=roster.effective_roster_revision_id or _ROSTER_A)
+    revision = _revision(
+        revision_id,
+        roster_revision_id=roster.effective_roster_revision_id or _ROSTER_A,
+    )
+    if release_id != _RELEASE:
+        revision = revision.model_copy(update={"application_release_id": release_id})
+    if artifact_digest is not None:
+        revision = revision.model_copy(update={"materialization_artifact_digest": artifact_digest})
     ctx = ApplicationBuildContext.for_manifest(manifest)
     return RegistryProjectionInputBundle(
         runtime_revision=revision,
@@ -149,6 +165,23 @@ def _bundle(
         manifest=manifest,
         build_context=ctx,
         builders=ECHO_BUILDERS,
+        materialization_artifact_digest=artifact_digest,
+    )
+
+
+def _bundle_parts(
+    revision: RuntimeRevision,
+    roster: EffectiveRoster,
+    manifest: ApplicationManifest | None = None,
+) -> RegistryProjectionInputBundle:
+    manifest = manifest or _manifest()
+    return RegistryProjectionInputBundle(
+        runtime_revision=revision,
+        effective_roster=roster,
+        manifest=manifest,
+        build_context=ApplicationBuildContext.for_manifest(manifest),
+        builders=ECHO_BUILDERS,
+        materialization_artifact_digest=revision.materialization_artifact_digest,
     )
 
 
@@ -260,15 +293,13 @@ def test_frozen_roster_ignores_later_binding_mutation_inputs() -> None:
     manifest = _manifest()
     projection_a = build_registry_projection(_bundle("rev-1", roster_frozen, manifest))
     projection_b = build_registry_projection(
-        RegistryProjectionInputBundle(
-            runtime_revision=_revision(
+        _bundle_parts(
+            _revision(
                 "rev-2",
                 roster_revision_id=roster_mutated.effective_roster_revision_id or _ROSTER_B,
             ),
-            effective_roster=roster_mutated,
-            manifest=manifest,
-            build_context=ApplicationBuildContext.for_manifest(manifest),
-            builders=ECHO_BUILDERS,
+            roster_mutated,
+            manifest,
         )
     )
     assert projection_a.agent_registry.list_agent_ids() == ["search"]
@@ -327,15 +358,12 @@ def test_registry_n_and_n_plus_one_coexist() -> None:
     roster_n1 = _roster((_entry("search"), _entry("indexer")), revision_id=_ROSTER_B)
     projection_n = build_registry_projection(_bundle("rev-n", roster_n))
     projection_n1 = build_registry_projection(
-        RegistryProjectionInputBundle(
-            runtime_revision=_revision(
+        _bundle_parts(
+            _revision(
                 "rev-n1",
                 roster_revision_id=roster_n1.effective_roster_revision_id or _ROSTER_B,
             ),
-            effective_roster=roster_n1,
-            manifest=_manifest(),
-            build_context=ApplicationBuildContext.for_manifest(_manifest()),
-            builders=ECHO_BUILDERS,
+            roster_n1,
         )
     )
     assert projection_n.agent_registry is not projection_n1.agent_registry
@@ -348,15 +376,12 @@ def test_preparing_n_plus_one_does_not_mutate_registry_n() -> None:
     roster_n = _roster((_entry("search"),))
     roster_n1 = _roster((_entry("search"), _entry("indexer")), revision_id=_ROSTER_B)
     bundle_n = _bundle("rev-n", roster_n)
-    bundle_n1 = RegistryProjectionInputBundle(
-        runtime_revision=_revision(
+    bundle_n1 = _bundle_parts(
+        _revision(
             "rev-n1",
             roster_revision_id=roster_n1.effective_roster_revision_id or _ROSTER_B,
         ),
-        effective_roster=roster_n1,
-        manifest=_manifest(),
-        build_context=ApplicationBuildContext.for_manifest(_manifest()),
-        builders=ECHO_BUILDERS,
+        roster_n1,
     )
     revision_store.persist_candidate_revision(bundle_n.runtime_revision)
     revision_store.persist_candidate_revision(bundle_n1.runtime_revision)
@@ -445,15 +470,12 @@ def test_rollback_restores_registry_n_projection() -> None:
     roster_n = _roster((_entry("search"),))
     roster_n1 = _roster((_entry("search"), _entry("indexer")), revision_id=_ROSTER_B)
     bundle_n = _bundle("rev-n", roster_n)
-    bundle_n1 = RegistryProjectionInputBundle(
-        runtime_revision=_revision(
+    bundle_n1 = _bundle_parts(
+        _revision(
             "rev-n1",
             roster_revision_id=roster_n1.effective_roster_revision_id or _ROSTER_B,
         ),
-        effective_roster=roster_n1,
-        manifest=_manifest(),
-        build_context=ApplicationBuildContext.for_manifest(_manifest()),
-        builders=ECHO_BUILDERS,
+        roster_n1,
     )
     revision_store.persist_candidate_revision(bundle_n.runtime_revision)
     revision_store.persist_candidate_revision(bundle_n1.runtime_revision)
@@ -476,15 +498,10 @@ def test_rollback_reuses_cached_projection_not_desired_state() -> None:
     input_store.register(bundle_n)
     token_first = coordinator.prepare_projection("rev-n")
     roster_mutated = _roster((_entry("search"), _entry("indexer")), revision_id=_ROSTER_B)
-    input_store.register(
-        RegistryProjectionInputBundle(
-            runtime_revision=bundle_n.runtime_revision,
-            effective_roster=roster_mutated,
-            manifest=_manifest(),
-            build_context=ApplicationBuildContext.for_manifest(_manifest()),
-            builders=ECHO_BUILDERS,
+    with pytest.raises(RegistryProjectionError, match="conflicting frozen projection inputs"):
+        input_store.register(
+            _bundle_parts(bundle_n.runtime_revision, roster_mutated),
         )
-    )
     token_second = coordinator.prepare_projection("rev-n")
     assert token_first == token_second
     assert projection_store.get("rev-n").agent_registry.list_agent_ids() == ["search"]
@@ -520,17 +537,183 @@ def test_snapshot_n_distinct_from_n_plus_one() -> None:
     snap_n = projection_audit_snapshot(build_registry_projection(_bundle("rev-n", roster_n)))
     snap_n1 = projection_audit_snapshot(
         build_registry_projection(
-            RegistryProjectionInputBundle(
-                runtime_revision=_revision(
+            _bundle_parts(
+                _revision(
                     "rev-n1",
                     roster_revision_id=roster_n1.effective_roster_revision_id or _ROSTER_B,
                 ),
-                effective_roster=roster_n1,
-                manifest=_manifest(),
-                build_context=ApplicationBuildContext.for_manifest(_manifest()),
-                builders=ECHO_BUILDERS,
+                roster_n1,
             )
         )
     )
     assert snap_n.evidence.runtime_revision_id != snap_n1.evidence.runtime_revision_id
     assert snap_n.agent_contract_ids != snap_n1.agent_contract_ids
+
+
+def test_projection_accepts_correct_application_release_identity() -> None:
+    roster = _roster((_entry("search"),))
+    projection = build_registry_projection(_bundle("rev-1", roster))
+    assert projection.evidence.application_release_id == _RELEASE
+    assert projection.evidence.materialization_artifact_digest == _ARTIFACT
+
+
+def test_projection_rejects_mismatched_application_release_id() -> None:
+    roster = _roster((_entry("search"),), manifest_release_id=_RELEASE)
+    bundle = _bundle("rev-1", roster, release_id=_RELEASE_OTHER)
+    with pytest.raises(RegistryProjectionError, match="release mismatch"):
+        build_registry_projection(bundle)
+
+
+def test_projection_rejects_mismatched_materialization_artifact_digest() -> None:
+    roster = _roster((_entry("search"),))
+    revision = _revision("rev-1", roster_revision_id=roster.effective_roster_revision_id or _ROSTER_A)
+    bundle = RegistryProjectionInputBundle(
+        runtime_revision=revision,
+        effective_roster=roster,
+        manifest=_manifest(),
+        build_context=ApplicationBuildContext.for_manifest(_manifest()),
+        builders=ECHO_BUILDERS,
+        materialization_artifact_digest=_ARTIFACT_OTHER,
+    )
+    with pytest.raises(RegistryProjectionError, match="materialization artifact"):
+        build_registry_projection(bundle)
+
+
+def test_other_release_build_context_cannot_build_registry_n() -> None:
+    roster_n = _roster((_entry("search"),), manifest_release_id=_RELEASE)
+    roster_other = _roster((_entry("search"),), manifest_release_id=_RELEASE_OTHER)
+    manifest_other = _manifest(
+        agents=[AgentBinding.mount(EchoAgent, contract_id="other", factory=_echo_factory)]
+    )
+    with pytest.raises(RegistryProjectionError, match="release mismatch"):
+        build_registry_projection(
+            RegistryProjectionInputBundle(
+                runtime_revision=_revision(
+                    "rev-n",
+                    roster_revision_id=roster_n.effective_roster_revision_id or _ROSTER_A,
+                ),
+                effective_roster=roster_other,
+                manifest=manifest_other,
+                build_context=ApplicationBuildContext.for_manifest(manifest_other),
+                builders=ECHO_BUILDERS,
+                materialization_artifact_digest=_ARTIFACT,
+            )
+        )
+
+
+def test_future_revision_wiring_cannot_replace_revision_n_inputs() -> None:
+    coordinator, input_store, projection_store, revision_store = _coordinator()
+    roster_n = _roster((_entry("search"),))
+    roster_n1 = _roster((_entry("search"), _entry("indexer")), revision_id=_ROSTER_B)
+    bundle_n = _bundle("rev-n", roster_n)
+    bundle_n1 = _bundle_parts(
+        _revision(
+            "rev-n1",
+            roster_revision_id=roster_n1.effective_roster_revision_id or _ROSTER_B,
+        ),
+        roster_n1,
+    )
+    revision_store.persist_candidate_revision(bundle_n.runtime_revision)
+    revision_store.persist_candidate_revision(bundle_n1.runtime_revision)
+    input_store.register(bundle_n)
+    input_store.register(bundle_n1)
+    coordinator.prepare_projection("rev-n")
+    with pytest.raises(RegistryProjectionError, match="conflicting frozen projection inputs"):
+        input_store.register(
+            _bundle_parts(bundle_n.runtime_revision, roster_n1),
+        )
+    assert projection_store.get("rev-n").agent_registry.list_agent_ids() == ["search"]
+
+
+def test_register_same_frozen_input_is_idempotent() -> None:
+    _, input_store, _, _ = _coordinator()
+    bundle = _bundle("rev-1", _roster((_entry("search"),)))
+    input_store.register(bundle)
+    input_store.register(bundle)
+    assert input_store.get("rev-1") is bundle
+
+
+def test_register_conflicting_input_for_same_revision_rejected() -> None:
+    _, input_store, _, _ = _coordinator()
+    bundle = _bundle("rev-1", _roster((_entry("search"),)))
+    input_store.register(bundle)
+    conflicting = _bundle_parts(
+        bundle.runtime_revision,
+        _roster((_entry("search"), _entry("indexer")), revision_id=_ROSTER_B),
+    )
+    with pytest.raises(RegistryProjectionError, match="conflicting frozen projection inputs"):
+        input_store.register(conflicting)
+
+
+def test_concurrent_prepare_same_revision_returns_one_semantic_projection() -> None:
+    coordinator, input_store, projection_store, revision_store = _coordinator()
+    roster = _roster((_entry("search"),))
+    bundle = _bundle("rev-concurrent", roster)
+    revision_store.persist_candidate_revision(bundle.runtime_revision)
+    input_store.register(bundle)
+
+    def _prepare() -> str:
+        return coordinator.prepare_projection("rev-concurrent")
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        tokens = list(pool.map(lambda _: _prepare(), range(8)))
+
+    assert len(set(tokens)) == 1
+    projection = projection_store.get("rev-concurrent")
+    assert projection is not None
+    assert projection.agent_registry.list_agent_ids() == ["search"]
+
+
+def test_concurrent_conflicting_projection_fails_closed() -> None:
+    store = InMemoryRuntimeRegistryProjectionStore()
+    roster = _roster((_entry("search"),))
+    projection_a = build_registry_projection(_bundle("rev-conflict", roster))
+    conflicting_evidence = projection_a.evidence.model_copy(
+        update={"registry_factory_wiring_digest": "sha256:" + ("1" * 64)}
+    )
+    projection_b = MaterializedRegistryProjection(
+        evidence=conflicting_evidence,
+        agent_registry=projection_a.agent_registry,
+        harness_snapshot=projection_a.harness_snapshot,
+    )
+    store.put(projection_a)
+    with pytest.raises(RegistryProjectionError, match="conflicting registry projection"):
+        store.put(projection_b)
+
+
+def test_operator_added_agent_rejects_missing_frozen_builder_reference() -> None:
+    roster = _roster(
+        (
+            EffectiveRosterEntry(
+                logical_agent_id="custom",
+                installation_slot_id="slot-custom",
+                package_digest=_DIGEST,
+                distribution_package_id="pkg-custom",
+                effective_enablement=True,
+                factory_reference=AgentBindingFactoryReference(builder_key="custom"),
+            ),
+        )
+    )
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    bundle = RegistryProjectionInputBundle(
+        runtime_revision=_revision(
+            "rev-1",
+            roster_revision_id=roster.effective_roster_revision_id or _ROSTER_A,
+        ),
+        effective_roster=roster,
+        manifest=manifest,
+        build_context=ApplicationBuildContext.for_manifest(manifest),
+        builders={},
+        materialization_artifact_digest=_ARTIFACT,
+    )
+    with pytest.raises(RegistryProjectionError, match="missing from frozen release builders"):
+        build_registry_projection(bundle)
+
+
+def test_audit_snapshot_contains_release_binding_fields() -> None:
+    roster = _roster((_entry("search"),))
+    projection = build_registry_projection(_bundle("rev-42", roster))
+    snapshot = projection_audit_snapshot(projection)
+    assert snapshot.evidence.application_release_id == _RELEASE
+    assert snapshot.evidence.registry_factory_wiring_digest
+    assert snapshot.evidence.materialization_artifact_digest == _ARTIFACT
