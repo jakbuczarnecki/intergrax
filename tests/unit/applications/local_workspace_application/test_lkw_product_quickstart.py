@@ -78,6 +78,7 @@ def _stub_product_preflight(
         "run_product_preflight",
         lambda *_args, **_kwargs: "llama3.1:latest",
     )
+    monkeypatch.setattr(quick, "_is_loopback_tcp_port_reachable", lambda _port: False)
 
 
 def _config(quick: ModuleType, **overrides: Any) -> Any:
@@ -631,6 +632,7 @@ def test_foreign_compose_project_ownership_is_not_canonical(
         "_canonical_product_owned_host_ports",
         lambda: frozenset(),
     )
+    monkeypatch.setattr(quick, "_is_loopback_tcp_port_reachable", lambda _port: False)
 
     class _BusySocket:
         def bind(self, address: tuple[object, ...]) -> None:
@@ -644,6 +646,49 @@ def test_foreign_compose_project_ownership_is_not_canonical(
     with pytest.raises(quick.QuickstartError) as exc:
         quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
     assert exc.value.reason == "port_unavailable"
+
+
+def test_loopback_reachable_port_is_rejected_when_bind_probe_passes(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "_canonical_product_owned_host_ports",
+        lambda: frozenset(),
+    )
+    monkeypatch.setattr(quick, "_is_loopback_tcp_port_reachable", lambda port: port == 27018)
+
+    class _Socket:
+        def bind(self, *_args: Any) -> None:
+            return None
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(quick.socket, "socket", lambda *_a, **_k: _Socket())
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
+    assert exc.value.reason == "port_unavailable"
+
+
+def test_exited_mongodb_maps_to_mongodb_not_ready(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {
+                "returncode": 0,
+                "stdout": _compose_ps_stdout(
+                    _canonical_service("lkw-mongodb", state="exited"),
+                ),
+            },
+        )(),
+    )
+    assert quick._stack_failure_reason() == "mongodb_not_ready"
 
 
 def test_port_not_in_canonical_publishers_still_probes(

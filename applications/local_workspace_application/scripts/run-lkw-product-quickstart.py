@@ -651,6 +651,15 @@ def _is_unsupported_ipv6_error(error: OSError) -> bool:
     return error.errno in _IPV6_UNSUPPORTED_ERRNOS
 
 
+def _is_loopback_tcp_port_reachable(port: int) -> bool:
+    probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    probe.settimeout(1.0)
+    try:
+        return probe.connect_ex(("127.0.0.1", port)) == 0
+    finally:
+        probe.close()
+
+
 def _probe_host_port(port: int) -> None:
     probes: list[tuple[int, tuple[object, ...]]] = [
         (socket.AF_INET, ("0.0.0.0", port)),
@@ -701,6 +710,8 @@ def _check_required_ports(
         if canonical_owned is not None and port in canonical_owned:
             continue
         _probe_host_port(port)
+        if _is_loopback_tcp_port_reachable(port):
+            raise QuickstartError("port_unavailable", stage="preflight")
 
 
 def run_product_preflight(config: QuickstartConfig) -> str:
@@ -744,7 +755,7 @@ def compose_exec_args(*compose_command: str) -> list[str]:
 
 def _stack_failure_reason() -> str:
     completed = run_command(
-        compose_exec_args("ps", "--format", "json"),
+        compose_exec_args("ps", "-a", "--format", "json"),
         timeout=30,
         stage="stack_start",
     )
