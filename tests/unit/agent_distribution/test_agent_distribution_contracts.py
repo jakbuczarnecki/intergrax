@@ -56,9 +56,10 @@ _PACKAGE = AgentPackageIdentity(
 )
 
 
-def _trust_record() -> AgentInstallationTrustRecord:
+def _trust_record(digest: str = _DIGEST) -> AgentInstallationTrustRecord:
     return AgentInstallationTrustRecord(
         qualification_status=AgentQualificationStatus.PRODUCTION_QUALIFIED,
+        package_digest=digest,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",
         trust_evidence_refs=(

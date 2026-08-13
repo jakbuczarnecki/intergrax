@@ -12,6 +12,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.catalog import CatalogProviderKind
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 
@@ -122,11 +123,17 @@ class AgentInstallationTrustRecord(BaseModel):
 
     trust_evidence_refs: tuple[AgentTrustEvidenceRef, ...] = ()
     qualification_status: AgentQualificationStatus
+    package_digest: str = _NON_EMPTY
     publisher_identity_ref: str = _NON_EMPTY
     source_provider_id: str = _NON_EMPTY
     source_entry_ref: str | None = None
     revocation_checked_at: datetime | None = None
     org_policy_decision_ref: str | None = None
+
+    @field_validator("package_digest")
+    @classmethod
+    def _validate_package_digest(cls, value: str) -> str:
+        return normalize_package_digest(value)
 
     @field_validator("publisher_identity_ref", "source_provider_id", "source_entry_ref", "org_policy_decision_ref")
     @classmethod
@@ -167,6 +174,7 @@ class AgentPackageTrustReasonCode(StrEnum):
     MISSING_REQUIRED_EVIDENCE = "missing_required_evidence"
     INSUFFICIENT_QUALIFICATION_STATUS = "insufficient_qualification_status"
     EVIDENCE_DIGEST_MISMATCH = "evidence_digest_mismatch"
+    MISSING_PACKAGE_DIGEST_EVIDENCE = "missing_package_digest_evidence"
     EVIDENCE_PACKAGE_MISMATCH = "evidence_package_mismatch"
     EVIDENCE_REVOKED = "evidence_revoked"
     MALFORMED_EVIDENCE = "malformed_evidence"

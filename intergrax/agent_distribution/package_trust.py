@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.catalog import CatalogSourceIdentity
 from intergrax.agent_distribution.errors import AgentPackageTrustError
 from intergrax.agent_distribution.identity import AgentPackageCandidate, AgentPackageIdentity
@@ -176,18 +177,6 @@ class AgentPackageTrustCoordinator:
                 reason="qualification evidence is revoked",
             )
 
-        if evidence_package_digest is not None and evidence_package_digest != digest:
-            return self._deny(
-                package_identity=package_identity,
-                publisher=publisher,
-                catalog_source_id=source_id,
-                delivery_source=delivery_source,
-                policy=policy,
-                qualification=qualification,
-                reason_code=AgentPackageTrustReasonCode.EVIDENCE_DIGEST_MISMATCH,
-                reason="qualification evidence digest does not match package digest",
-            )
-
         if qualification is None:
             if policy.forbid_unsigned_or_unqualified:
                 return self._deny(
@@ -292,6 +281,44 @@ class AgentPackageTrustCoordinator:
                 reason="qualification evidence payload is empty",
             )
 
+        if evidence_package_digest is None:
+            return self._deny(
+                package_identity=package_identity,
+                publisher=publisher,
+                catalog_source_id=source_id,
+                delivery_source=delivery_source,
+                policy=policy,
+                qualification=qualification,
+                reason_code=AgentPackageTrustReasonCode.MISSING_PACKAGE_DIGEST_EVIDENCE,
+                reason="qualification evidence is not bound to a package digest",
+            )
+
+        try:
+            evidence_digest = normalize_package_digest(evidence_package_digest)
+        except ValueError:
+            return self._deny(
+                package_identity=package_identity,
+                publisher=publisher,
+                catalog_source_id=source_id,
+                delivery_source=delivery_source,
+                policy=policy,
+                qualification=qualification,
+                reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE,
+                reason="qualification evidence package digest is malformed",
+            )
+
+        if evidence_digest != digest:
+            return self._deny(
+                package_identity=package_identity,
+                publisher=publisher,
+                catalog_source_id=source_id,
+                delivery_source=delivery_source,
+                policy=policy,
+                qualification=qualification,
+                reason_code=AgentPackageTrustReasonCode.EVIDENCE_DIGEST_MISMATCH,
+                reason="qualification evidence digest does not match package digest",
+            )
+
         trust_evidence_refs = self._build_evidence_refs(
             qualification.evidence,
             evidence_id=evidence_id,
@@ -299,6 +326,7 @@ class AgentPackageTrustCoordinator:
         trust_record = AgentInstallationTrustRecord(
             trust_evidence_refs=trust_evidence_refs,
             qualification_status=qualification.status,
+            package_digest=digest,
             publisher_identity_ref=publisher_ref,
             source_provider_id=source_id,
             source_entry_ref=source_entry_ref,
@@ -503,3 +531,7 @@ def assert_installation_trust_record_acceptable(
         )
     if package_identity.package_digest == "":
         raise AgentPackageTrustError("installation verification requires digest-pinned package")
+    if trust_record.package_digest != package_identity.package_digest:
+        raise AgentPackageTrustError(
+            "installation verification trust record digest does not match package digest"
+        )

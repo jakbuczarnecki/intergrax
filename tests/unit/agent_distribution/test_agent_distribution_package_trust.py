@@ -7,6 +7,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.agent_distribution.catalog import CatalogProviderKind, CatalogSourceIdentity
 from intergrax.agent_distribution.errors import AgentPackageTrustError
@@ -42,6 +43,9 @@ _PACKAGE = AgentPackageIdentity(
     distribution_package_id="intergrax-local-search-agent",
     package_version="1.0.0",
     package_digest=_DIGEST_A,
+)
+_PACKAGE_B = _PACKAGE.model_copy(
+    update={"package_version": "2.0.0", "package_digest": _DIGEST_B}
 )
 _PUBLISHER = AgentPublisherIdentity(publisher_id="publisher:acme", display_name="ACME")
 _BUILTIN_SOURCE = CatalogSourceIdentity(
@@ -139,9 +143,22 @@ def test_trust_happy_path_produces_installable_record() -> None:
     assert decision.reason_code is AgentPackageTrustReasonCode.QUALIFIED
     assert decision.installable is True
     assert decision.trust_record is not None
+    assert decision.trust_record.package_digest == _DIGEST_A
     assert decision.trust_record.qualification_status is AgentQualificationStatus.PRODUCTION_QUALIFIED
     assert decision.trust_record.publisher_identity_ref == "publisher:acme"
     assert len(decision.trust_evidence_refs) == 2
+
+
+def test_trust_missing_evidence_digest_fails_closed() -> None:
+    decision = _evaluate(evidence_package_digest=None)
+    assert decision.outcome is AgentPackageTrustOutcome.DENY
+    assert decision.reason_code is AgentPackageTrustReasonCode.MISSING_PACKAGE_DIGEST_EVIDENCE
+
+
+def test_trust_evidence_digest_match_may_allow() -> None:
+    decision = _evaluate(evidence_package_digest=_DIGEST_A)
+    assert decision.outcome is AgentPackageTrustOutcome.ALLOW
+    assert decision.reason_code is AgentPackageTrustReasonCode.QUALIFIED
 
 
 def test_trust_evidence_digest_mismatch_fails_closed() -> None:
@@ -269,6 +286,14 @@ def test_trust_evidence_delivery_source_mismatch_fails_closed() -> None:
     assert decision.reason_code is AgentPackageTrustReasonCode.EVIDENCE_PACKAGE_MISMATCH
 
 
+def test_trust_revoked_package_digest_fails_closed() -> None:
+    revocation = AgentPackageTrustRevocationState(
+        revoked_package_digests=frozenset({_DIGEST_A})
+    )
+    decision = _evaluate(revocation_state=revocation)
+    assert decision.reason_code is AgentPackageTrustReasonCode.PACKAGE_DIGEST_REVOKED
+
+
 def test_trust_decision_is_deterministic() -> None:
     first = _evaluate()
     second = _evaluate()
@@ -290,6 +315,7 @@ def test_installation_service_rejects_unacceptable_trust_record() -> None:
             artifact_store_ref="store://artifacts/1",
             trust_record=AgentInstallationTrustRecord(
                 qualification_status=AgentQualificationStatus.NOT_QUALIFIED,
+                package_digest=_DIGEST_A,
                 publisher_identity_ref="publisher:acme",
                 source_provider_id="builtin",
                 trust_evidence_refs=(
@@ -300,6 +326,64 @@ def test_installation_service_rejects_unacceptable_trust_record() -> None:
                 ),
             ),
         )
+
+
+def test_malformed_trust_record_digest_rejected() -> None:
+    with pytest.raises(ValidationError):
+        AgentInstallationTrustRecord(
+            qualification_status=AgentQualificationStatus.PRODUCTION_QUALIFIED,
+            package_digest="not-a-digest",
+            publisher_identity_ref="publisher:acme",
+            source_provider_id="builtin",
+            trust_evidence_refs=(
+                AgentTrustEvidenceRef(
+                    evidence_id="evidence:bad",
+                    kind=AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
+                ),
+            ),
+        )
+
+
+def test_trust_record_matching_digest_verifies_installation() -> None:
+    decision = _evaluate()
+    assert decision.trust_record is not None
+
+    state = AgentDistributionStoreState()
+    service = InstallationService(InMemoryAgentInstallationStore(state))
+    service.create_candidate_installation(
+        installation_id="inst-a",
+        installation_slot_id="slot-1",
+        environment_id="env-1",
+        package_identity=_PACKAGE,
+    )
+    verified = service.mark_verified(
+        "inst-a",
+        artifact_store_ref="store://artifacts/a",
+        trust_record=decision.trust_record,
+    )
+    assert verified.value.installation_state is InstallationState.VERIFIED
+
+
+def test_trust_record_digest_mismatch_cannot_verify_installation() -> None:
+    decision = _evaluate()
+    assert decision.trust_record is not None
+
+    state = AgentDistributionStoreState()
+    service = InstallationService(InMemoryAgentInstallationStore(state))
+    service.create_candidate_installation(
+        installation_id="inst-b",
+        installation_slot_id="slot-1",
+        environment_id="env-1",
+        package_identity=_PACKAGE_B,
+    )
+    with pytest.raises(AgentPackageTrustError):
+        service.mark_verified(
+            "inst-b",
+            artifact_store_ref="store://artifacts/b",
+            trust_record=decision.trust_record,
+        )
+    record = state.installations["inst-b"]
+    assert record.installation_state is InstallationState.CANDIDATE
 
 
 def test_installation_service_accepts_coordinator_trust_record() -> None:

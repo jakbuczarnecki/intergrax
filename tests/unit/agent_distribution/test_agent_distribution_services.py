@@ -40,9 +40,10 @@ _PACKAGE_B = _PACKAGE_A.model_copy(
 )
 
 
-def _trust_record() -> AgentInstallationTrustRecord:
+def _trust_record(digest: str = _DIGEST_A) -> AgentInstallationTrustRecord:
     return AgentInstallationTrustRecord(
         qualification_status=AgentQualificationStatus.PRODUCTION_QUALIFIED,
+        package_digest=digest,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",
         trust_evidence_refs=(
@@ -78,7 +79,7 @@ def _verified_installation(
     installation_service.mark_verified(
         installation_id,
         artifact_store_ref=f"store://artifacts/{installation_id}",
-        trust_record=_trust_record(),
+        trust_record=_trust_record(package_identity.package_digest),
     )
 
 
