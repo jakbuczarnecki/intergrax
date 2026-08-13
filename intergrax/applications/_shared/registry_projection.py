@@ -7,12 +7,14 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
+from collections.abc import Mapping
 from typing import Final, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.agent_distribution._digest import content_digest_for_model
-from intergrax.agent_distribution.roster import EffectiveRoster
+from intergrax.agent_distribution.binding import AgentBindingFactoryReference
+from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision
 from intergrax.agent_distribution.stores import RuntimeRevisionStore
 from intergrax.applications._shared.registry_snapshot import resolve_registry_snapshot
@@ -24,7 +26,7 @@ from intergrax.applications._shared.wiring import (
     _resolve_manifest_binding_for_entry,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.runtime.attestation.canonical_json import stable_payload_hash
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.registry.harness_snapshot import HarnessRegistrySnapshot
@@ -137,16 +139,49 @@ class RuntimeRegistryProjectionStore(Protocol):
         """Store a prepared projection without mutating prior revisions."""
 
 
-def _builder_map_key_fingerprint(builders: BuilderMap | None) -> tuple[str, ...]:
-    if builders is None:
-        return ()
-    keys: list[str] = []
-    for key in builders:
-        if isinstance(key, str):
-            keys.append(f"builder_key:{key}")
+def _manifest_factory_entrypoint(binding: AgentBinding) -> dict[str, str]:
+    if binding.factory_path is not None:
+        return {"manifest_factory_path": binding.factory_path}
+    if binding.builder_key is not None:
+        return {"manifest_builder_key": binding.builder_key}
+    import_path = binding.import_path
+    if import_path is None:
+        raise RegistryProjectionError("manifest binding lacks factory entrypoint")
+    return {"manifest_import_path": import_path}
+
+
+def _entry_factory_authority_payload(
+    entry: EffectiveRosterEntry,
+    manifest_bindings: Mapping[str, AgentBinding],
+) -> dict[str, object]:
+    manifest_binding = _resolve_manifest_binding_for_entry(entry, manifest_bindings)
+    payload: dict[str, object] = {
+        "logical_agent_id": entry.logical_agent_id,
+        "package_digest": entry.package_digest,
+        "distribution_package_id": entry.distribution_package_id,
+    }
+    factory_reference = entry.factory_reference
+    if factory_reference is not None:
+        payload["factory_reference"] = factory_reference.model_dump(mode="json")
+    elif manifest_binding is not None:
+        payload.update(_manifest_factory_entrypoint(manifest_binding))
+    else:
+        raise RegistryProjectionError(
+            f"enabled roster entry {entry.logical_agent_id!r} lacks factory authority"
+        )
+    return payload
+
+
+def _factory_authority_fingerprint(
+    bundle: RegistryProjectionInputBundle,
+) -> tuple[dict[str, object], ...]:
+    manifest_bindings = _index_manifest_bindings(bundle.manifest)
+    authorities: list[dict[str, object]] = []
+    for entry in bundle.effective_roster.entries:
+        if not entry.effective_enablement:
             continue
-        keys.append(f"agent_type:{key.__module__}.{key.__qualname__}")
-    return tuple(sorted(keys))
+        authorities.append(_entry_factory_authority_payload(entry, manifest_bindings))
+    return tuple(sorted(authorities, key=lambda item: str(item["logical_agent_id"])))
 
 
 def _build_context_fingerprint(ctx: ApplicationBuildContext) -> dict[str, object]:
@@ -170,7 +205,7 @@ def _bundle_semantic_fingerprint(bundle: RegistryProjectionInputBundle) -> str:
         "effective_roster": bundle.effective_roster.model_dump(mode="json"),
         "manifest": bundle.manifest.model_dump(mode="json"),
         "materialization_artifact_digest": bundle.materialization_artifact_digest,
-        "builder_keys": _builder_map_key_fingerprint(bundle.builders),
+        "factory_authorities": _factory_authority_fingerprint(bundle),
         "build_context": _build_context_fingerprint(bundle.build_context),
     }
     return stable_payload_hash(payload)
@@ -182,7 +217,7 @@ def _registry_factory_wiring_digest(bundle: RegistryProjectionInputBundle) -> st
         "application_release_id": revision.application_release_id,
         "materialization_artifact_digest": bundle.materialization_artifact_digest,
         "manifest": bundle.manifest.model_dump(mode="json"),
-        "builder_keys": _builder_map_key_fingerprint(bundle.builders),
+        "factory_authorities": _factory_authority_fingerprint(bundle),
         "build_context": _build_context_fingerprint(bundle.build_context),
     }
     return stable_payload_hash(seed)
@@ -265,24 +300,78 @@ def _expected_contract_ids(
     return tuple(sorted(contract_ids))
 
 
-def _validate_operator_factory_authority(bundle: RegistryProjectionInputBundle) -> None:
-    builders = bundle.builders
-    if builders is None:
-        builders = {}
+def _validate_factory_reference_against_builders(
+    *,
+    logical_agent_id: str,
+    factory_reference: AgentBindingFactoryReference,
+    builders: Mapping[object, object],
+) -> None:
+    builder_key = factory_reference.builder_key
+    if builder_key is not None and builder_key not in builders:
+        raise RegistryProjectionError(
+            f"roster entry {logical_agent_id!r} references builder_key "
+            f"{builder_key!r} missing from frozen release builders"
+        )
+
+
+def _validate_entry_package_digest_trust(
+    *,
+    logical_agent_id: str,
+    package_digest: str,
+    trusted_package_digests: frozenset[str],
+) -> None:
+    if package_digest not in trusted_package_digests:
+        raise RegistryProjectionError(
+            f"roster entry {logical_agent_id!r} package_digest "
+            f"{package_digest!r} is not trusted by runtime revision"
+        )
+
+
+def _validate_factory_authority(bundle: RegistryProjectionInputBundle) -> None:
+    builders: Mapping[object, object] = bundle.builders or {}
     manifest_bindings = _index_manifest_bindings(bundle.manifest)
+    revision = bundle.runtime_revision
+    trusted_packages = frozenset(revision.installed_agent_package_digests)
+    require_trusted_packages = bool(trusted_packages)
+
     for entry in bundle.effective_roster.entries:
         if not entry.effective_enablement:
             continue
-        if _resolve_manifest_binding_for_entry(entry, manifest_bindings) is not None:
-            continue
+
+        manifest_binding = _resolve_manifest_binding_for_entry(entry, manifest_bindings)
         factory_reference = entry.factory_reference
-        if factory_reference is None:
+
+        if manifest_binding is None:
+            if factory_reference is None:
+                raise RegistryProjectionError(
+                    f"operator-added agent {entry.logical_agent_id!r} requires "
+                    "immutable factory_reference authority"
+                )
+            if require_trusted_packages:
+                _validate_entry_package_digest_trust(
+                    logical_agent_id=entry.logical_agent_id,
+                    package_digest=entry.package_digest,
+                    trusted_package_digests=trusted_packages,
+                )
+            _validate_factory_reference_against_builders(
+                logical_agent_id=entry.logical_agent_id,
+                factory_reference=factory_reference,
+                builders=builders,
+            )
             continue
-        builder_key = factory_reference.builder_key
-        if builder_key is not None and builder_key not in builders:
-            raise RegistryProjectionError(
-                f"operator-added agent {entry.logical_agent_id!r} references "
-                f"builder_key {builder_key!r} missing from frozen release builders"
+
+        if require_trusted_packages:
+            _validate_entry_package_digest_trust(
+                logical_agent_id=entry.logical_agent_id,
+                package_digest=entry.package_digest,
+                trusted_package_digests=trusted_packages,
+            )
+
+        if factory_reference is not None:
+            _validate_factory_reference_against_builders(
+                logical_agent_id=entry.logical_agent_id,
+                factory_reference=factory_reference,
+                builders=builders,
             )
 
 
@@ -315,7 +404,7 @@ def _validate_release_authority(bundle: RegistryProjectionInputBundle) -> None:
 
 def _validate_revision_bundle(bundle: RegistryProjectionInputBundle) -> None:
     _validate_release_authority(bundle)
-    _validate_operator_factory_authority(bundle)
+    _validate_factory_authority(bundle)
 
 
 def _validate_revision_identity(

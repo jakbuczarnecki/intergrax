@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
@@ -35,6 +36,10 @@ from intergrax.applications._shared.registry_projection import (
     RegistryProjectionInputBundle,
     build_registry_projection,
     projection_audit_snapshot,
+)
+from intergrax.applications._shared.registry_projection import (
+    _bundle_semantic_fingerprint,
+    _registry_factory_wiring_digest,
 )
 from intergrax.applications._shared.wiring import (
     build_application_registry,
@@ -168,6 +173,21 @@ def _bundle(
         materialization_artifact_digest=artifact_digest,
     )
 
+_DIGEST_OTHER = "sha256:" + ("8" * 64)
+_PACKAGE_OTHER = "sha256:" + ("7" * 64)
+
+
+def _revision_with_trusted_packages(
+    revision_id: str,
+    roster: EffectiveRoster,
+    *,
+    package_digests: tuple[str, ...] = (_DIGEST,),
+) -> RuntimeRevision:
+    return _revision(
+        revision_id,
+        roster_revision_id=roster.effective_roster_revision_id or _ROSTER_A,
+    ).model_copy(update={"installed_agent_package_digests": package_digests})
+
 
 def _bundle_parts(
     revision: RuntimeRevision,
@@ -181,6 +201,24 @@ def _bundle_parts(
         manifest=manifest,
         build_context=ApplicationBuildContext.for_manifest(manifest),
         builders=ECHO_BUILDERS,
+        materialization_artifact_digest=revision.materialization_artifact_digest,
+    )
+
+
+def _bundle_with_revision(
+    revision: RuntimeRevision,
+    roster: EffectiveRoster,
+    manifest: ApplicationManifest | None = None,
+    *,
+    builders: dict[str, object] | None = None,
+) -> RegistryProjectionInputBundle:
+    manifest = manifest or _manifest()
+    return RegistryProjectionInputBundle(
+        runtime_revision=revision,
+        effective_roster=roster,
+        manifest=manifest,
+        build_context=ApplicationBuildContext.for_manifest(manifest),
+        builders=builders if builders is not None else ECHO_BUILDERS,
         materialization_artifact_digest=revision.materialization_artifact_digest,
     )
 
@@ -717,3 +755,226 @@ def test_audit_snapshot_contains_release_binding_fields() -> None:
     assert snapshot.evidence.application_release_id == _RELEASE
     assert snapshot.evidence.registry_factory_wiring_digest
     assert snapshot.evidence.materialization_artifact_digest == _ARTIFACT
+
+
+def _operator_entry(
+    *,
+    builder_key: str = "custom",
+    package_digest: str = _DIGEST,
+    factory_reference: AgentBindingFactoryReference | None = None,
+) -> EffectiveRosterEntry:
+    return EffectiveRosterEntry(
+        logical_agent_id="custom",
+        installation_slot_id="slot-custom",
+        package_digest=package_digest,
+        distribution_package_id="pkg-custom",
+        effective_enablement=True,
+        factory_reference=factory_reference
+        or AgentBindingFactoryReference(builder_key=builder_key),
+    )
+
+
+def test_same_builder_key_same_factory_authority_accepted() -> None:
+    roster = _roster((_operator_entry(builder_key="shared"),))
+    revision = _revision_with_trusted_packages("rev-factory-a", roster)
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    bundle = _bundle_with_revision(
+        revision,
+        roster,
+        manifest,
+        builders={"shared": _echo_factory},
+    )
+    projection = build_registry_projection(bundle)
+    assert projection.agent_registry.has("custom")
+
+
+def test_same_builder_key_different_factory_authority_rejected() -> None:
+    _, input_store, _, _ = _coordinator()
+    roster_a = _roster((_operator_entry(builder_key="shared", package_digest=_DIGEST),))
+    roster_b = _roster(
+        (_operator_entry(builder_key="shared", package_digest=_PACKAGE_OTHER),)
+    )
+    revision = _revision_with_trusted_packages(
+        "rev-factory-b",
+        roster_a,
+        package_digests=(_DIGEST, _PACKAGE_OTHER),
+    )
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    bundle_a = _bundle_with_revision(
+        revision,
+        roster_a,
+        manifest,
+        builders={"shared": _echo_factory},
+    )
+    bundle_b = _bundle_with_revision(
+        revision,
+        roster_b,
+        manifest,
+        builders={"shared": _echo_factory},
+    )
+    input_store.register(bundle_a)
+    with pytest.raises(RegistryProjectionError, match="conflicting frozen projection inputs"):
+        input_store.register(bundle_b)
+    assert _registry_factory_wiring_digest(bundle_a) != _registry_factory_wiring_digest(bundle_b)
+
+
+def test_factory_authority_rejects_untrusted_package_digest() -> None:
+    roster = _roster((_operator_entry(package_digest=_DIGEST),))
+    revision = _revision_with_trusted_packages(
+        "rev-factory-c",
+        roster,
+        package_digests=(_PACKAGE_OTHER,),
+    )
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    bundle = _bundle_with_revision(
+        revision,
+        roster,
+        manifest,
+        builders={"custom": _echo_factory},
+    )
+    with pytest.raises(RegistryProjectionError, match="not trusted by runtime revision"):
+        build_registry_projection(bundle)
+
+
+def test_operator_added_projection_with_trusted_factory_authority() -> None:
+    roster = _roster((_operator_entry(),))
+    revision = _revision_with_trusted_packages("rev-factory-d", roster)
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    bundle = _bundle_with_revision(
+        revision,
+        roster,
+        manifest,
+        builders={"custom": _echo_factory},
+    )
+    projection = build_registry_projection(bundle)
+    assert projection.evidence.materialization_artifact_digest == _ARTIFACT
+
+
+def test_operator_added_rejects_builder_key_without_factory_reference() -> None:
+    entry = EffectiveRosterEntry(
+        logical_agent_id="custom",
+        installation_slot_id="slot-custom",
+        package_digest=_DIGEST,
+        distribution_package_id="pkg-custom",
+        effective_enablement=True,
+        factory_reference=None,
+    )
+    roster = _roster((entry,))
+    revision = _revision_with_trusted_packages("rev-factory-e", roster)
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    bundle = _bundle_with_revision(
+        revision,
+        roster,
+        manifest,
+        builders={"custom": _echo_factory},
+    )
+    with pytest.raises(RegistryProjectionError, match="requires immutable factory_reference"):
+        build_registry_projection(bundle)
+
+
+def test_operator_added_rejects_builder_key_without_trusted_package_authority() -> None:
+    roster = _roster((_operator_entry(package_digest=_DIGEST),))
+    revision = _revision_with_trusted_packages(
+        "rev-factory-f",
+        roster,
+        package_digests=(_PACKAGE_OTHER,),
+    )
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    bundle = _bundle_with_revision(
+        revision,
+        roster,
+        manifest,
+        builders={"custom": _echo_factory},
+    )
+    with pytest.raises(RegistryProjectionError, match="not trusted by runtime revision"):
+        build_registry_projection(bundle)
+
+
+def test_future_factory_authority_cannot_replace_registry_n_inputs() -> None:
+    coordinator, input_store, projection_store, revision_store = _coordinator()
+    roster_n = _roster((_entry("search"),))
+    revision = _revision_with_trusted_packages("rev-n-factory", roster_n)
+    roster_swapped = _roster(
+        (
+            EffectiveRosterEntry(
+                logical_agent_id="search",
+                installation_slot_id="slot-search",
+                package_digest=_PACKAGE_OTHER,
+                distribution_package_id="pkg-search",
+                effective_enablement=True,
+                manifest_origin_ref="manifest:agents/search",
+            ),
+        ),
+        revision_id=roster_n.effective_roster_revision_id,
+    )
+    bundle_n = _bundle_with_revision(revision, roster_n)
+    revision_store.persist_candidate_revision(revision)
+    input_store.register(bundle_n)
+    coordinator.prepare_projection("rev-n-factory")
+    with pytest.raises(RegistryProjectionError, match="conflicting frozen projection inputs"):
+        input_store.register(_bundle_with_revision(revision, roster_swapped))
+    assert projection_store.get("rev-n-factory").agent_registry.list_agent_ids() == ["search"]
+
+
+def test_rollback_preserves_original_factory_authority() -> None:
+    coordinator, input_store, projection_store, revision_store = _coordinator()
+    roster_n = _roster((_entry("search"),))
+    revision = _revision_with_trusted_packages("rev-rollback-factory", roster_n)
+    roster_n1 = _roster((_entry("search"), _entry("indexer")), revision_id=_ROSTER_B)
+    bundle_n = _bundle_with_revision(revision, roster_n)
+    bundle_n1 = _bundle_with_revision(
+        revision.model_copy(
+            update={
+                "runtime_revision_id": "rev-rollback-factory-n1",
+                "effective_roster_revision_id": roster_n1.effective_roster_revision_id or _ROSTER_B,
+            }
+        ),
+        roster_n1,
+    )
+    revision_store.persist_candidate_revision(bundle_n.runtime_revision)
+    revision_store.persist_candidate_revision(bundle_n1.runtime_revision)
+    input_store.register(bundle_n)
+    input_store.register(bundle_n1)
+    coordinator.prepare_projection("rev-rollback-factory")
+    original_digest = projection_store.get("rev-rollback-factory").evidence.registry_factory_wiring_digest
+    coordinator.prepare_projection("rev-rollback-factory-n1")
+    coordinator.rollback_projection("rev-rollback-factory")
+    restored = projection_store.get("rev-rollback-factory")
+    assert restored.evidence.registry_factory_wiring_digest == original_digest
+
+
+def test_bundle_semantic_fingerprint_includes_factory_authority() -> None:
+    roster_a = _roster((_operator_entry(package_digest=_DIGEST),))
+    roster_b = _roster((_operator_entry(package_digest=_PACKAGE_OTHER),))
+    revision = _revision_with_trusted_packages(
+        "rev-fingerprint",
+        roster_a,
+        package_digests=(_DIGEST, _PACKAGE_OTHER),
+    )
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    bundle_a = _bundle_with_revision(
+        revision,
+        roster_a,
+        manifest,
+        builders={"custom": _echo_factory},
+    )
+    bundle_b = _bundle_with_revision(
+        revision,
+        roster_b,
+        manifest,
+        builders={"custom": _echo_factory},
+    )
+    assert _bundle_semantic_fingerprint(bundle_a) != _bundle_semantic_fingerprint(bundle_b)
+
+
+def test_ap10_path_has_no_loose_dict_any_or_reflection() -> None:
+    registry_projection_source = (
+        Path(__file__).resolve().parents[3]
+        / "intergrax"
+        / "applications"
+        / "_shared"
+        / "registry_projection.py"
+    ).read_text(encoding="utf-8")
+    forbidden = ("dict[str, Any]", "getattr(", "setattr(", "hasattr(")
+    for token in forbidden:
+        assert token not in registry_projection_source

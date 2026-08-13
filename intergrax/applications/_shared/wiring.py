@@ -14,7 +14,7 @@ from collections.abc import Mapping
 from typing import Any, Callable, Union
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agent_distribution._immutable_json import distribution_json_to_plain
+from intergrax.agent_distribution._immutable_json import DistributionJsonValue
 from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import AgentFactory
@@ -226,7 +226,7 @@ def _resolve_manifest_binding_for_entry(
 
 def _roster_entry_binding_overrides(
     entry: EffectiveRosterEntry,
-    roster_config: dict[str, Any],
+    roster_config: Mapping[str, DistributionJsonValue],
     *,
     base: AgentBinding | None,
 ) -> AgentBinding:
@@ -290,7 +290,7 @@ def binding_from_roster_entry(
 ) -> AgentBinding:
     """Materialize one manifest binding row from a frozen effective roster entry."""
     base = _resolve_manifest_binding_for_entry(entry, manifest_bindings)
-    roster_config = distribution_json_to_plain(dict(entry.merged_config))
+    roster_config = entry.merged_config
     return _roster_entry_binding_overrides(
         entry,
         roster_config,
