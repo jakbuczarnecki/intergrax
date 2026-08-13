@@ -17,15 +17,22 @@ from typing import Any
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
 from intergrax.agent_distribution.errors import (
     MaterializationError,
+    MaterializationLockArtifactIdentityBlocked,
     MaterializationLockArtifactLocationBlocked,
 )
 from intergrax.agent_distribution.materialization import ApplicationBuildContext
+from intergrax.agent_distribution.package_artifact_provider import (
+    PackageArtifactProvider,
+    ResolvedPackageArtifact,
+    verify_artifact_file_digest,
+)
 from intergrax.agent_distribution.roster import EffectiveRoster
 from intergrax.agent_distribution.runtime_graph import CandidateApplicationRuntimeGraph
 
 RUNTIME_GRAPH_MANIFEST_FILENAME = ".intergrax-runtime-graph.json"
 RUNTIME_LOCK_MANIFEST_FILENAME = ".intergrax-runtime-lock.json"
 RUNTIME_INSTALL_MANIFEST_FILENAME = ".intergrax-runtime-install.txt"
+ARTIFACTS_STAGING_DIR = ".intergrax-artifacts"
 
 _PYPROJECT_NAME_RE = re.compile(
     r"""(?:^|\n)\s*name\s*=\s*(['"])([^'"]+)\1""",
@@ -209,19 +216,9 @@ def authorized_source_roots_for_graph(
     build_context: ApplicationBuildContext,
 ) -> tuple[str, ...]:
     """Return relative source roots authorized by graph closure + build context."""
-    agent_roots = {package_id: rel_path for package_id, rel_path in build_context.agent_source_roots}
-    required_agents = {
-        agent.distribution_package_id for agent in (*graph.direct_agents, *graph.transitive_agents)
-    }
-    missing = sorted(required_agents - set(agent_roots))
-    if missing:
-        raise MaterializationError(
-            "build context missing agent source roots for graph agents: "
-            + ", ".join(missing)
-        )
+    _ = graph
     roots = [
         build_context.application_source_root,
-        *sorted(agent_roots[agent_id] for agent_id in required_agents),
     ]
     for root_name in ("pyproject.toml", "uv.lock"):
         if (Path(build_context.source_context_root) / root_name).is_file():
@@ -311,6 +308,106 @@ def _pip_hash_suffix(package_digest: str) -> str:
     return f" --hash={digest}"
 
 
+def digest_staging_key(package_digest: str) -> str:
+    """Map lock digest to deterministic artifact staging directory name."""
+    digest = package_digest.strip().lower()
+    if not digest.startswith("sha256:"):
+        raise MaterializationError("package_digest must be sha256:<hex>")
+    return digest.replace(":", "-", 1)
+
+
+def stage_verified_package_artifact(
+    *,
+    artifact: ResolvedPackageArtifact,
+    candidate_dir: Path,
+) -> str:
+    """Copy one digest-verified package artifact into digest-keyed staging layout."""
+    verify_artifact_file_digest(artifact.local_source_path, artifact.package_digest)
+    staging_key = digest_staging_key(artifact.package_digest)
+    dest_dir = candidate_dir / ARTIFACTS_STAGING_DIR / staging_key
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / artifact.local_source_path.name
+    dest.write_bytes(artifact.local_source_path.read_bytes())
+    verify_artifact_file_digest(dest, artifact.package_digest)
+    return f"{ARTIFACTS_STAGING_DIR}/{staging_key}/{artifact.local_source_path.name}"
+
+
+def stage_lock_authorized_package_artifacts(
+    *,
+    lock: MaterializedRuntimeLock,
+    candidate_dir: Path,
+    package_artifact_provider: PackageArtifactProvider,
+) -> dict[str, str]:
+    """Stage digest-verified agent/package artifacts authorized by lock closure."""
+    staged: dict[str, str] = {}
+    seen: set[str] = set()
+    for entry in lock.agent_closure:
+        if entry.distribution_package_id in seen:
+            continue
+        seen.add(entry.distribution_package_id)
+        artifact = package_artifact_provider.resolve_artifact(
+            entry.distribution_package_id,
+            entry.package_digest,
+        )
+        rel_path = stage_verified_package_artifact(
+            artifact=artifact,
+            candidate_dir=candidate_dir,
+        )
+        staged[_normalize_distribution_name(entry.distribution_package_id)] = rel_path
+    return staged
+
+
+def validate_lock_package_install_completeness(
+    *,
+    lock: MaterializedRuntimeLock,
+    build_context: ApplicationBuildContext,
+    staged_source_roots: tuple[str, ...],
+    staged_package_artifacts: dict[str, str],
+) -> None:
+    """Ensure every lock package has a deterministic production install source."""
+    source_root = Path(build_context.source_context_root).resolve()
+    app_root = build_context.application_source_root.rstrip("/")
+    app_distribution = _read_pyproject_distribution_name(
+        source_root / app_root / "pyproject.toml"
+    )
+    root_distribution = _read_pyproject_distribution_name(source_root / "pyproject.toml")
+    staged_norm = {_normalize_distribution_name(root.rstrip("/")) for root in staged_source_roots}
+    platform_staged = "intergrax" in staged_norm or any(
+        norm.startswith("intergrax") for norm in staged_norm
+    )
+    closure_agent_ids = {
+        _normalize_distribution_name(entry.distribution_package_id)
+        for entry in lock.agent_closure
+    }
+
+    for package in lock.packages:
+        norm = _normalize_distribution_name(package.distribution_name)
+        has_artifact = norm in staged_package_artifacts
+        has_app_path = (
+            app_distribution is not None
+            and norm == _normalize_distribution_name(app_distribution)
+        )
+        has_platform_path = (
+            platform_staged
+            and root_distribution is not None
+            and norm == _normalize_distribution_name(root_distribution)
+        )
+        has_index_digest = package.package_digest is not None
+
+        if has_artifact or has_app_path or has_platform_path:
+            continue
+        if norm in closure_agent_ids:
+            raise MaterializationLockArtifactLocationBlocked(
+                MaterializationLockArtifactLocationBlocked.BLOCKER_CODE
+                + f": agent package {package.distribution_name} lacks verified artifact"
+            )
+        if not has_index_digest:
+            raise MaterializationLockArtifactIdentityBlocked(
+                MaterializationLockArtifactIdentityBlocked.BLOCKER_CODE
+                + f": package {package.distribution_name} lacks package_digest"
+            )
+
+
 @dataclass(frozen=True)
 class LockDrivenInstallEntry:
     """One lock-authoritative install line for OCI/runtime materialization."""
@@ -335,16 +432,14 @@ def build_lock_driven_install_plan(
     lock: MaterializedRuntimeLock,
     build_context: ApplicationBuildContext,
     staged_source_roots: tuple[str, ...],
+    staged_package_artifacts: dict[str, str] | None = None,
 ) -> LockDrivenInstallPlan:
     """Build exact install manifest from lock closure — repository uv.lock is not authority."""
     if lock.lock_id is None:
         raise MaterializationError("lock must have content identity before install plan render")
 
     source_root = Path(build_context.source_context_root).resolve()
-    agent_roots = {
-        _normalize_distribution_name(package_id): rel_path.rstrip("/")
-        for package_id, rel_path in build_context.agent_source_roots
-    }
+    artifact_paths = staged_package_artifacts or {}
     closure_agent_ids = {
         _normalize_distribution_name(entry.distribution_package_id)
         for entry in lock.agent_closure
@@ -372,11 +467,11 @@ def build_lock_driven_install_plan(
         install_line: str | None = None
         source_kind = "index"
 
-        if norm in agent_roots:
+        if norm in artifact_paths:
             install_line = (
-                f"{package.distribution_name} @ file:///app/{agent_roots[norm]}"
+                f"{package.distribution_name} @ file:///app/{artifact_paths[norm]}"
             )
-            source_kind = "path"
+            source_kind = "artifact"
         elif app_distribution is not None and norm == _normalize_distribution_name(
             app_distribution
         ):
@@ -392,13 +487,18 @@ def build_lock_driven_install_plan(
         elif norm in closure_agent_ids:
             raise MaterializationLockArtifactLocationBlocked(
                 MaterializationLockArtifactLocationBlocked.BLOCKER_CODE
-                + f": agent package {package.distribution_name} lacks staged source root "
-                "and lock provides no artifact location for wheel install"
+                + f": agent package {package.distribution_name} lacks verified artifact"
             )
         else:
-            install_line = f"{package.distribution_name}=={package.version}"
-            if package.package_digest is not None:
-                install_line += _pip_hash_suffix(package.package_digest)
+            if package.package_digest is None:
+                raise MaterializationLockArtifactIdentityBlocked(
+                    MaterializationLockArtifactIdentityBlocked.BLOCKER_CODE
+                    + f": package {package.distribution_name} lacks package_digest"
+                )
+            install_line = (
+                f"{package.distribution_name}=={package.version}"
+                + _pip_hash_suffix(package.package_digest)
+            )
 
         entries.append(
             LockDrivenInstallEntry(
@@ -452,6 +552,7 @@ def stage_graph_authorized_context(
     effective_roster: EffectiveRoster,
     application_release_id: str,
     candidate_dir: Path,
+    package_artifact_provider: PackageArtifactProvider,
 ) -> tuple[str, ...]:
     """Stage minimal graph-authorized source closure into ``candidate_dir``."""
     source_root = Path(_strip_required(build_context.source_context_root)).resolve()
@@ -488,6 +589,18 @@ def stage_graph_authorized_context(
         )
         staged.append(rel if rel.endswith("/") else f"{rel}/")
 
+    staged_artifacts = stage_lock_authorized_package_artifacts(
+        lock=lock,
+        candidate_dir=candidate_dir,
+        package_artifact_provider=package_artifact_provider,
+    )
+    validate_lock_package_install_completeness(
+        lock=lock,
+        build_context=build_context,
+        staged_source_roots=tuple(sorted(set(staged))),
+        staged_package_artifacts=staged_artifacts,
+    )
+
     manifest = render_distribution_runtime_graph_manifest(
         graph=graph,
         lock=lock,
@@ -504,6 +617,7 @@ def stage_graph_authorized_context(
         lock=lock,
         build_context=build_context,
         staged_source_roots=tuple(sorted(set(staged))),
+        staged_package_artifacts=staged_artifacts,
     )
     (candidate_dir / RUNTIME_INSTALL_MANIFEST_FILENAME).write_text(
         render_lock_driven_install_manifest(install_plan),

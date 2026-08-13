@@ -24,6 +24,7 @@ from intergrax.agent_distribution.errors import (
     MaterializationInputConflict,
     MaterializationUnsupportedTopology,
 )
+from intergrax.agent_distribution.in_memory_stores import InMemoryAgentArtifactMetadataStore
 from intergrax.agent_distribution.materialization import (
     ApplicationBuildContext,
     MaterializationInput,
@@ -34,6 +35,12 @@ from intergrax.agent_distribution.materialization_adapters import (
     UnsupportedVenvBundleMaterializationAdapter,
 )
 from intergrax.agent_distribution.materialization_service import RuntimeMaterializationService
+from intergrax.agent_distribution.package_artifact_provider import (
+    FilesystemArtifactStoreRefResolver,
+    MetadataBackedPackageArtifactProvider,
+    PackageArtifactProvider,
+    sha256_file_digest,
+)
 from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
 from intergrax.agent_distribution.runtime_graph_service import (
     CandidateRuntimeGraphBuilder,
@@ -46,9 +53,10 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevisionState,
 )
 from intergrax.agent_distribution.resolver import ResolvedDependencyClosure
+from intergrax.agent_distribution.stores import AgentArtifactMetadata
 
-_DIGEST_A = "sha256:" + ("a" * 64)
 _DIGEST_B = "sha256:" + ("b" * 64)
+_REQUESTS_DIGEST = "sha256:" + ("c" * 64)
 _AGENT_A = "intergrax-local-search-agent"
 _APP_ID = "local_workspace_application"
 _RELEASE = "rel-ap8"
@@ -78,7 +86,41 @@ class _RecordingAdapter:
         return self.output
 
 
-def _lock_and_graph(tmp_path: Path) -> tuple[object, object, EffectiveRoster]:
+def _write_agent_wheel(tmp_path: Path) -> tuple[Path, str]:
+    artifact_root = tmp_path / "artifact-store"
+    wheel = artifact_root / "intergrax_local_search_agent-1.0.0-py3-none-any.whl"
+    wheel.parent.mkdir(parents=True, exist_ok=True)
+    wheel.write_bytes(b"PK\x03\x04ap8-agent-wheel-bytes")
+    return wheel, sha256_file_digest(wheel)
+
+
+def _artifact_provider_for_wheel(
+    tmp_path: Path,
+    wheel: Path,
+    package_digest: str,
+) -> PackageArtifactProvider:
+    artifact_root = wheel.parent
+    rel = wheel.relative_to(artifact_root).as_posix()
+    store = InMemoryAgentArtifactMetadataStore()
+    store.persist_metadata(
+        AgentArtifactMetadata(
+            package_digest=package_digest,
+            artifact_store_ref=f"file://{rel}",
+            distribution_package_id=_AGENT_A,
+            agent_project_metadata_ref="meta://search",
+        )
+    )
+    return MetadataBackedPackageArtifactProvider(
+        metadata_store=store,
+        ref_resolver=FilesystemArtifactStoreRefResolver(root=artifact_root),
+    )
+
+
+def _lock_and_graph(
+    agent_digest: str,
+    *,
+    requests_digest: str | None = _REQUESTS_DIGEST,
+) -> tuple[object, object, EffectiveRoster]:
     spec = CandidateDependencySpecification(
         application_release_id=_RELEASE,
         platform_version=_PLATFORM,
@@ -89,7 +131,7 @@ def _lock_and_graph(tmp_path: Path) -> tuple[object, object, EffectiveRoster]:
         agent_packages=(
             InstalledAgentPackageRequirement(
                 distribution_package_id=_AGENT_A,
-                package_digest=_DIGEST_A,
+                package_digest=agent_digest,
                 agent_project_metadata_ref="meta://search",
             ),
         ),
@@ -107,9 +149,13 @@ def _lock_and_graph(tmp_path: Path) -> tuple[object, object, EffectiveRoster]:
             MaterializedLockPackage(
                 distribution_name=_AGENT_A,
                 version="1.0.0",
-                package_digest=_DIGEST_A,
+                package_digest=agent_digest,
             ),
-            MaterializedLockPackage(distribution_name="requests", version="2.32.0"),
+            MaterializedLockPackage(
+                distribution_name="requests",
+                version="2.32.0",
+                package_digest=requests_digest,
+            ),
         ),
     )
     lock = MaterializedRuntimeLockProducer().produce(resolver_input, resolved)
@@ -122,7 +168,7 @@ def _lock_and_graph(tmp_path: Path) -> tuple[object, object, EffectiveRoster]:
             EffectiveRosterEntry(
                 logical_agent_id="search",
                 installation_slot_id="slot-search",
-                package_digest=_DIGEST_A,
+                package_digest=agent_digest,
                 distribution_package_id=_AGENT_A,
                 effective_enablement=True,
             ),
@@ -145,29 +191,31 @@ def _lock_and_graph(tmp_path: Path) -> tuple[object, object, EffectiveRoster]:
     return lock, graph, roster
 
 
-def _build_fixture(tmp_path: Path) -> tuple[MaterializationInput, _RecordingAdapter]:
+def _build_fixture(
+    tmp_path: Path,
+) -> tuple[MaterializationInput, _RecordingAdapter, PackageArtifactProvider, str]:
     source_root = tmp_path / "source"
     output_root = tmp_path / "output"
     app_root = source_root / "applications" / _APP_ID
-    agent_root = source_root / "agents" / "local_search_agent"
+    agent_wheel, agent_digest = _write_agent_wheel(tmp_path)
+    artifact_provider = _artifact_provider_for_wheel(tmp_path, agent_wheel, agent_digest)
     for path, content in (
         (source_root / "pyproject.toml", "[project]\nname='Intergrax-ai'\n"),
         (source_root / "uv.lock", "# lock\n"),
         (app_root / "pyproject.toml", "[project]\nname='app'\n"),
-        (agent_root / "pyproject.toml", "[project]\nname='agent'\n"),
         (source_root / "intergrax" / "marker.txt", "platform\n"),
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
 
-    lock, graph, roster = _lock_and_graph(tmp_path)
+    lock, graph, roster = _lock_and_graph(agent_digest)
     revision = RuntimeRevision(
         runtime_revision_id="rev-ap8-1",
         application_environment_id=_ENV,
         application_release_id=_RELEASE,
         platform_version=_PLATFORM,
         effective_roster_revision_id=roster.effective_roster_revision_id,
-        installed_agent_package_digests=(_DIGEST_A,),
+        installed_agent_package_digests=(agent_digest,),
         materialized_runtime_lock_id=lock.lock_id,
         materialized_runtime_lock_digest=lock.lock_digest,
         runtime_graph_digest=graph.runtime_graph_digest,
@@ -194,18 +242,18 @@ def _build_fixture(tmp_path: Path) -> tuple[MaterializationInput, _RecordingAdap
     )
     adapter = _RecordingAdapter(
         output=MaterializationOutput(
-            materialization_artifact_digest=_DIGEST_A,
+            materialization_artifact_digest=agent_digest,
             artifact_locator="test://artifact",
             health_check_evidence_ref="test://health",
             runtime_graph_manifest_path=".intergrax-runtime-graph.json",
             topology=MaterializationTopology.OCI_IMAGE,
         )
     )
-    return materialization_input, adapter
+    return materialization_input, adapter, artifact_provider, agent_digest
 
 
 def test_valid_inputs_invoke_adapter(tmp_path: Path) -> None:
-    materialization_input, adapter = _build_fixture(tmp_path)
+    materialization_input, adapter, _provider, _digest = _build_fixture(tmp_path)
     service = RuntimeMaterializationService({MaterializationTopology.OCI_IMAGE: adapter})
     output = service.materialize(materialization_input)
     assert adapter.invoked is True
@@ -213,7 +261,7 @@ def test_valid_inputs_invoke_adapter(tmp_path: Path) -> None:
 
 
 def test_lock_graph_mismatch_fails_closed(tmp_path: Path) -> None:
-    materialization_input, adapter = _build_fixture(tmp_path)
+    materialization_input, adapter, _provider, _digest = _build_fixture(tmp_path)
     tampered_graph = materialization_input.candidate_runtime_graph.model_copy(
         update={"materialized_runtime_lock_id": "sha256:" + ("f" * 64)}
     )
@@ -228,7 +276,7 @@ def test_lock_graph_mismatch_fails_closed(tmp_path: Path) -> None:
 
 
 def test_roster_revision_mismatch_fails_closed(tmp_path: Path) -> None:
-    materialization_input, adapter = _build_fixture(tmp_path)
+    materialization_input, adapter, _provider, _digest = _build_fixture(tmp_path)
     bad_revision = materialization_input.runtime_revision.model_copy(
         update={"effective_roster_revision_id": "sha256:" + ("c" * 64)}
     )
@@ -240,7 +288,7 @@ def test_roster_revision_mismatch_fails_closed(tmp_path: Path) -> None:
 
 
 def test_release_mismatch_fails_closed(tmp_path: Path) -> None:
-    materialization_input, adapter = _build_fixture(tmp_path)
+    materialization_input, adapter, _provider, _digest = _build_fixture(tmp_path)
     bad_context = materialization_input.application_build_context.model_copy(
         update={"application_release_id": "rel-other"}
     )
@@ -254,7 +302,7 @@ def test_release_mismatch_fails_closed(tmp_path: Path) -> None:
 
 
 def test_environment_mismatch_fails_closed(tmp_path: Path) -> None:
-    materialization_input, adapter = _build_fixture(tmp_path)
+    materialization_input, adapter, _provider, _digest = _build_fixture(tmp_path)
     bad_context = materialization_input.application_build_context.model_copy(
         update={"application_environment_id": "env-other"}
     )
@@ -268,9 +316,13 @@ def test_environment_mismatch_fails_closed(tmp_path: Path) -> None:
 
 
 def test_unsupported_topology_raises_typed_failure(tmp_path: Path) -> None:
-    materialization_input, _adapter = _build_fixture(tmp_path)
+    materialization_input, _adapter, artifact_provider, _digest = _build_fixture(tmp_path)
     service = RuntimeMaterializationService(
-        {MaterializationTopology.OCI_IMAGE: FakeRuntimeMaterializationAdapter()}
+        {
+            MaterializationTopology.OCI_IMAGE: FakeRuntimeMaterializationAdapter(
+                package_artifact_provider=artifact_provider
+            )
+        }
     )
     with pytest.raises(MaterializationUnsupportedTopology):
         service.materialize(
@@ -280,9 +332,9 @@ def test_unsupported_topology_raises_typed_failure(tmp_path: Path) -> None:
 
 
 def test_adapter_wrong_topology_fails_closed(tmp_path: Path) -> None:
-    materialization_input, adapter = _build_fixture(tmp_path)
+    materialization_input, adapter, _provider, agent_digest = _build_fixture(tmp_path)
     adapter.output = MaterializationOutput(
-        materialization_artifact_digest=_DIGEST_A,
+        materialization_artifact_digest=agent_digest,
         artifact_locator="test://artifact",
         runtime_graph_manifest_path=".intergrax-runtime-graph.json",
         topology=MaterializationTopology.VENV_BUNDLE,
@@ -293,7 +345,7 @@ def test_adapter_wrong_topology_fails_closed(tmp_path: Path) -> None:
 
 
 def test_empty_artifact_digest_fails_closed(tmp_path: Path) -> None:
-    materialization_input, adapter = _build_fixture(tmp_path)
+    materialization_input, adapter, _provider, _digest = _build_fixture(tmp_path)
     adapter.output = MaterializationOutput(
         materialization_artifact_digest="not-a-digest",
         artifact_locator="test://artifact",
@@ -306,9 +358,9 @@ def test_empty_artifact_digest_fails_closed(tmp_path: Path) -> None:
 
 
 def test_runtime_graph_manifest_path_required(tmp_path: Path) -> None:
-    materialization_input, adapter = _build_fixture(tmp_path)
+    materialization_input, adapter, _provider, agent_digest = _build_fixture(tmp_path)
     adapter.output = MaterializationOutput.model_construct(
-        materialization_artifact_digest=_DIGEST_A,
+        materialization_artifact_digest=agent_digest,
         artifact_locator="test://artifact",
         runtime_graph_manifest_path="   ",
         topology=MaterializationTopology.OCI_IMAGE,
@@ -319,9 +371,13 @@ def test_runtime_graph_manifest_path_required(tmp_path: Path) -> None:
 
 
 def test_materialization_does_not_activate_revision(tmp_path: Path) -> None:
-    materialization_input, _adapter = _build_fixture(tmp_path)
+    materialization_input, _adapter, artifact_provider, _digest = _build_fixture(tmp_path)
     service = RuntimeMaterializationService(
-        {MaterializationTopology.OCI_IMAGE: FakeRuntimeMaterializationAdapter()}
+        {
+            MaterializationTopology.OCI_IMAGE: FakeRuntimeMaterializationAdapter(
+                package_artifact_provider=artifact_provider
+            )
+        }
     )
     before = materialization_input.runtime_revision.revision_state
     service.materialize(materialization_input)
@@ -329,9 +385,13 @@ def test_materialization_does_not_activate_revision(tmp_path: Path) -> None:
 
 
 def test_fake_adapter_digest_is_deterministic(tmp_path: Path) -> None:
-    materialization_input, _adapter = _build_fixture(tmp_path)
+    materialization_input, _adapter, artifact_provider, _digest = _build_fixture(tmp_path)
     service = RuntimeMaterializationService(
-        {MaterializationTopology.OCI_IMAGE: FakeRuntimeMaterializationAdapter()}
+        {
+            MaterializationTopology.OCI_IMAGE: FakeRuntimeMaterializationAdapter(
+                package_artifact_provider=artifact_provider
+            )
+        }
     )
     first = service.materialize(materialization_input)
     second = service.materialize(materialization_input)
@@ -339,9 +399,13 @@ def test_fake_adapter_digest_is_deterministic(tmp_path: Path) -> None:
 
 
 def test_different_graph_changes_fake_digest(tmp_path: Path) -> None:
-    materialization_input, _adapter = _build_fixture(tmp_path)
+    materialization_input, _adapter, artifact_provider, _digest = _build_fixture(tmp_path)
     service = RuntimeMaterializationService(
-        {MaterializationTopology.OCI_IMAGE: FakeRuntimeMaterializationAdapter()}
+        {
+            MaterializationTopology.OCI_IMAGE: FakeRuntimeMaterializationAdapter(
+                package_artifact_provider=artifact_provider
+            )
+        }
     )
     baseline = service.materialize(materialization_input)
     other_graph = materialization_input.candidate_runtime_graph.model_copy(
@@ -361,9 +425,13 @@ def test_different_graph_changes_fake_digest(tmp_path: Path) -> None:
 
 
 def test_manifest_references_graph_digest_and_lock_id(tmp_path: Path) -> None:
-    materialization_input, _adapter = _build_fixture(tmp_path)
+    materialization_input, _adapter, artifact_provider, agent_digest = _build_fixture(tmp_path)
     service = RuntimeMaterializationService(
-        {MaterializationTopology.OCI_IMAGE: FakeRuntimeMaterializationAdapter()}
+        {
+            MaterializationTopology.OCI_IMAGE: FakeRuntimeMaterializationAdapter(
+                package_artifact_provider=artifact_provider
+            )
+        }
     )
     service.materialize(materialization_input)
     candidate_dir = (
@@ -375,14 +443,14 @@ def test_manifest_references_graph_digest_and_lock_id(tmp_path: Path) -> None:
     )
     assert manifest["runtime_graph_digest"] == materialization_input.candidate_runtime_graph.runtime_graph_digest
     assert manifest["materialized_runtime_lock_id"] == materialization_input.materialized_runtime_lock.lock_id
-    assert manifest["enabled_roster_agents"][0]["package_digest"] == _DIGEST_A
+    assert manifest["enabled_roster_agents"][0]["package_digest"] == agent_digest
     blob = json.dumps(manifest)
     assert "secret" not in blob.lower()
     assert "password" not in blob.lower()
 
 
 def test_venv_topology_is_explicitly_unsupported(tmp_path: Path) -> None:
-    materialization_input, _adapter = _build_fixture(tmp_path)
+    materialization_input, _adapter, _provider, _digest = _build_fixture(tmp_path)
     revision = materialization_input.runtime_revision.model_copy(
         update={"materialization_topology": MaterializationTopology.VENV_BUNDLE}
     )

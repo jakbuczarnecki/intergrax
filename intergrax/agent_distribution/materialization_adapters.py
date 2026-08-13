@@ -14,7 +14,9 @@ from typing import Protocol
 
 from intergrax.agent_distribution.errors import MaterializationError, MaterializationUnsupportedTopology
 from intergrax.agent_distribution.materialization import MaterializationInput, MaterializationOutput
+from intergrax.agent_distribution.package_artifact_provider import PackageArtifactProvider
 from intergrax.agent_distribution.runtime_context_staging import (
+    ARTIFACTS_STAGING_DIR,
     RUNTIME_GRAPH_MANIFEST_FILENAME,
     RUNTIME_INSTALL_MANIFEST_FILENAME,
     directory_content_digest,
@@ -63,9 +65,9 @@ def _render_minimal_oci_dockerfile(*, application_package: str, entrypoint_modul
         f"COPY {RUNTIME_INSTALL_MANIFEST_FILENAME} ./\n"
         f"COPY {RUNTIME_GRAPH_MANIFEST_FILENAME} ./\n"
         f"COPY {'.intergrax-runtime-lock.json'} ./\n"
+        f"COPY {ARTIFACTS_STAGING_DIR}/ ./{ARTIFACTS_STAGING_DIR}/\n"
         "COPY intergrax/ ./intergrax/\n"
         "COPY applications/ ./applications/\n"
-        "COPY agents/ ./agents/\n"
         "RUN uv venv /app/.venv && "
         "UV_PROJECT_ENVIRONMENT=/app/.venv "
         "uv pip install --python /app/.venv/bin/python --no-deps "
@@ -132,6 +134,7 @@ def _normalize_image_digest(image_ref: str) -> str:
 class FakeRuntimeMaterializationAdapter:
     """Deterministic in-memory/fake adapter for coordinator tests."""
 
+    package_artifact_provider: PackageArtifactProvider
     materializer_id: str = "intergrax.test-materializer"
     materializer_version: str = "1.0.0"
 
@@ -157,6 +160,7 @@ class FakeRuntimeMaterializationAdapter:
             effective_roster=materialization_input.effective_roster,
             application_release_id=build_context.application_release_id,
             candidate_dir=candidate_dir,
+            package_artifact_provider=self.package_artifact_provider,
         )
         digest = directory_content_digest(candidate_dir)
         manifest_path = RUNTIME_GRAPH_MANIFEST_FILENAME
@@ -173,6 +177,7 @@ class FakeRuntimeMaterializationAdapter:
 class OciImageMaterializationAdapter:
     """Production OCI adapter reusing graph-authoritative staging (§19.2)."""
 
+    package_artifact_provider: PackageArtifactProvider
     materializer_id: str = "intergrax.oci-image-materializer"
     materializer_version: str = "1.0.0"
     docker_build_runner: DockerBuildRunner | None = None
@@ -200,6 +205,7 @@ class OciImageMaterializationAdapter:
             effective_roster=materialization_input.effective_roster,
             application_release_id=build_context.application_release_id,
             candidate_dir=candidate_dir,
+            package_artifact_provider=self.package_artifact_provider,
         )
 
         app_rel = resolve_safe_path(source_root, build_context.application_source_root)
@@ -259,10 +265,14 @@ class UnsupportedVenvBundleMaterializationAdapter:
 
 def default_materialization_adapters(
     *,
+    package_artifact_provider: PackageArtifactProvider,
     docker_build_runner: DockerBuildRunner | None = None,
 ) -> Mapping[MaterializationTopology, RuntimeMaterializationAdapter]:
     """Register explicit topology adapters for coordinator wiring."""
-    oci = OciImageMaterializationAdapter(docker_build_runner=docker_build_runner)
+    oci = OciImageMaterializationAdapter(
+        package_artifact_provider=package_artifact_provider,
+        docker_build_runner=docker_build_runner,
+    )
     venv = UnsupportedVenvBundleMaterializationAdapter()
     return {
         MaterializationTopology.OCI_IMAGE: oci,

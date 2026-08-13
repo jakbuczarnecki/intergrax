@@ -186,7 +186,8 @@ runtime-graph semantics into neutral `intergrax/runtime_graph_semantics.py`.
 ## AGENT-PLATFORM-8 gate
 
 **READY_FOR_CLOSE** (2026-08-13) — topology-agnostic materialization coordinator, explicit adapters,
-graph-authoritative staging, lock-driven OCI install manifest, and explicit VENV unsupported port.
+graph-authoritative staging, lock-driven OCI install manifest, digest-verified package artifact
+staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 
 | Deliverable | Status |
 |-------------|--------|
@@ -194,16 +195,20 @@ graph-authoritative staging, lock-driven OCI install manifest, and explicit VENV
 | `RuntimeMaterializationAdapter` explicit topology port | done |
 | `RuntimeMaterializationService` consistency gates + output validation | done |
 | Graph-authoritative `runtime_context_staging` helpers | done |
+| `PackageArtifactProvider` + `MetadataBackedPackageArtifactProvider` artifact authority | done |
+| Digest-verified `.intergrax-artifacts/` staging keyed by `package_digest` | done |
 | Lock-driven `.intergrax-runtime-install.txt` from `MaterializedRuntimeLock` | done |
+| Third-party production install requires `package_digest` + `--hash=` enforcement | done |
 | OCI Dockerfile uses lock install manifest — not repository `uv.lock` authority | done |
 | `DockerBuildRunner` explicit `image_ref` contract + RepoDigest/image-ID inspect | done |
 | `FakeRuntimeMaterializationAdapter` deterministic test adapter | done |
 | `OciImageMaterializationAdapter` production staging + docker boundary | done |
 | `UnsupportedVenvBundleMaterializationAdapter` explicit deferral | done |
-| `MaterializationLockArtifactLocationBlocked` fail-closed for missing wheel location | done |
+| `MaterializationLockArtifactLocationBlocked` fail-closed for missing artifact bytes | done |
+| `MaterializationLockArtifactIdentityBlocked` fail-closed for missing package digest | done |
 | AP-8 focused tests + AP-3..AP-7 regression | done |
 | Tier-boundary check (no `applications/` imports) | done |
 
-**Evidence:** `intergrax/agent_distribution/materialization_service.py`, `materialization_adapters.py`, `runtime_context_staging.py`, `errors.py`, `tests/unit/agent_distribution/test_agent_distribution_materialization.py`, `test_agent_distribution_materialization_adapter.py`
+**Evidence:** `intergrax/agent_distribution/materialization_service.py`, `materialization_adapters.py`, `runtime_context_staging.py`, `package_artifact_provider.py`, `errors.py`, `tests/unit/agent_distribution/test_agent_distribution_materialization.py`, `test_agent_distribution_materialization_adapter.py`
 
 **Next:** AP-9 may begin (activation + rollback orchestration).
