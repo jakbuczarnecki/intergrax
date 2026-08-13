@@ -19,7 +19,8 @@ Central guide for the Token Optimization platform capability: deterministic opti
 | **Role** | Featured platform-capability proof |
 | **Overall public classification** | PARTIAL |
 | **Implemented foundation** | Existing deterministic engine mechanisms |
-| **Accepted bounded proof** | Named vLLM prefix-cache proof |
+| **Accepted bounded proof** | Bounded offline smoke proof (`RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`) |
+| **Manual live evidence** | vLLM prefix-cache live path (reviewer guide; not a canonical manifest proof_id) |
 
 **Proof:** `RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`
 
@@ -96,8 +97,9 @@ input
 
 ## 2. Current maturity
 
-The guide documents an implemented deterministic engine foundation, a named
-bounded vLLM prefix-cache proof, a bounded durable in-cache compaction
+The guide documents an implemented deterministic engine foundation, a bounded
+offline smoke proof (`RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`), a manual vLLM
+prefix-cache live path documented separately, a bounded durable in-cache compaction
 mechanism, and an overall **PARTIAL** public status. Live provider proof,
 production rollout, and rollback execution remain incomplete; numeric savings
 are not claimed.

@@ -364,3 +364,67 @@ Do not silently choose the more promotional interpretation.
 5. Block public promotion until the owning sources are reconciled.
 6. Do not copy transient task conflicts into `../../proofs/PROOFS.md`.
 7. Record only contradictions that affect an active public claim decision.
+
+---
+
+## 12. Executable public proof binding
+
+1. Public documentation owners own claim wording and placement.
+2. The canonical manifest (`scripts/proof/intergrax_proof_manifest.py`) owns executable proof identity and execution metadata.
+3. A significant public claim presented as executable evidence must reference the exact supporting `proof_id` through **`Proof:`** or **`Proofs:`**.
+4. Proof semantics must cover claim wording. An existing or eligible proof is not automatically evidence for any nearby claim.
+5. `public_evidence_eligible=True` means the proof may be referenced from public evidence surfaces — not that the proof automatically proves adjacent prose.
+6. The capability under claim must not be replaced by a fake or mock. Deterministic fixtures are acceptable only when they do not substitute the capability being claimed.
+7. Public docs do not store current execution PASS/FAIL. Current execution status belongs to the runner and receipts.
+8. Commands, profiles, environment requirements, and safety metadata belong to the canonical manifest — not duplicated public prose.
+9. Never invent `proof_id` in documentation. If no sufficient proof exists, narrow or remove the claim, or record the evidence gap through normal planning/review.
+10. Live, external, or provider claims require evidence at the corresponding real boundary.
+11. The public-proof-reference validator is **structural**. It does not validate semantic claim↔proof matching.
+12. Semantic mapping remains protected through human review plus bounded contract tests for critical claims.
+
+---
+
+## 13. Receipt hierarchy
+
+Two receipt families coexist by design:
+
+| Receipt | Role | Not |
+|---------|------|-----|
+| **`SuiteReceipt`** (`intergrax.proof_suite_receipt.v1`) | Execution record from the canonical proof-suite runner (`.artifacts/proof/*.json`) | Public claim registry or current documentation status |
+| **`ProofReceipt`** (`intergrax/proofs/receipts`) | Domain-specific evidence artifact persisted by certain platform/LKW proofs (for example MongoDB-backed workload receipts) | Canonical suite receipt or public claim status |
+
+Do not merge these systems. Historical evidence ownership stays with the receipt type that produced it.
+
+---
+
+## 14. Duplicate proof references
+
+The structural validator allows the same `proof_id` in multiple public gateway documents.
+
+- Cross-document reuse is allowed when each reference is intentional.
+- Duplicate references within one document are reported in the validator output but do **not** fail validation.
+- Duplicates are informational only unless paired with a separate semantic review finding.
+
+---
+
+## 15. Proof suite profiles
+
+`quick`, `full`, and `live` are **execution-selection profiles** in `scripts/proof/intergrax_proof_runner.py`. They are not evidence-strength levels (weak / medium / strong).
+
+| Profile | Selection semantics |
+|---------|---------------------|
+| `quick` | Fast local proofs registered for the quick profile |
+| `full` | Includes `quick` plus additional locally executable proofs for the current machine |
+| `live` | Includes `full` plus external-provider and other live-profile proofs |
+
+`live` does not mean “external provider only.” It expands the selected proof set. Missing optional credentials may yield `PASS_WITH_BLOCKED` on the `live` profile when no child proof actually failed.
+
+`requires_live_opt_in` is manifest metadata today; runner enforcement semantics remain under review (see task decision notes when unresolved).
+
+---
+
+## 16. Partial vs full proof lists
+
+- Root `README.md` may expose a reader-oriented **subset** of proof references.
+- `docs/project/proofs/PROOFS.md` may expose a fuller capability-specific evidence map.
+- Neither list replaces the canonical manifest. Documents need not repeat every `proof_id`.

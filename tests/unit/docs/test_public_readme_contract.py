@@ -178,7 +178,7 @@ def test_public_maturity_boundary(readme_text: str) -> None:
 def test_token_optimization_claim_boundary(readme_text: str) -> None:
     for phrase in (
         "PARTIAL",
-        "bounded vLLM",
+        "offline smoke",
         "universal savings",
         "production-proven savings",
     ):

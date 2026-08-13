@@ -37,6 +37,7 @@ class ProofStatus(StrEnum):
 class SuiteOverallStatus(StrEnum):
     PASS = "PASS"
     PASS_WITH_BLOCKED = "PASS_WITH_BLOCKED"
+    DRY_RUN = "DRY_RUN"
     FAIL = "FAIL"
     FAIL_MANIFEST = "FAIL_MANIFEST"
 

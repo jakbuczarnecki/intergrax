@@ -190,14 +190,7 @@ platform.
 
 ## Token Optimization
 
-Token Optimization is a compact example of a reusable platform capability
-below the product surface: policy-governed context and prompt optimization with
-protected-region validation, receipts, fallback, and a bounded vLLM proof path.
-
-Its current status is **PARTIAL**. Live provider-wide proof, production rollout,
-final cross-provider proof, universal savings, and **production-proven savings**
-are **not established**. Details belong to the [Token Optimization guide](docs/project/capabilities/token_optimization/README.md)
-and its [claim guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
+Token Optimization is a compact reusable platform capability below the product surface: policy-governed context and prompt optimization with protected-region validation, receipts, fallback, and a bounded offline smoke proof path. Its current status is **PARTIAL**; live provider-wide proof, production rollout, final cross-provider proof, universal savings, and **production-proven savings** are **not established**. The canonical manifest proof_id is offline_smoke only; vLLM prefix-cache reuse is a separate manual live path. Details: [Token Optimization guide](docs/project/capabilities/token_optimization/README.md) and [claim guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
 
 **Proof:** `RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`
 

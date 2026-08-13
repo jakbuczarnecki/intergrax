@@ -57,7 +57,7 @@ without copying either roadmap.
 | Proof path | Public classification | Current public status | What it demonstrates | Verify | Detailed roadmap |
 |------------|------------------------|----------------------|----------------------|--------|------------------|
 | **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [LKW Platform Proof](LKW_PLATFORM_PROOF.md) · [Core Platform Proof](LKW_PLATFORM_PROOF.md#core-platform-proof) | [LKW implementation plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) |
-| **Token Optimization** | Featured platform-capability proof | 🟡 **PARTIAL** | Deterministic optimization pipeline, cache-aware execution, bounded vLLM prefix-cache proof | [Token Optimization guide](../capabilities/token_optimization/README.md) | [Token Optimization plan](../capabilities/plan/TOKEN_OPTIMIZATION.md) |
+| **Token Optimization** | Featured platform-capability proof | 🟡 **PARTIAL** | Deterministic optimization pipeline, cache-aware execution, bounded offline smoke proof | [Token Optimization guide](../capabilities/token_optimization/README.md) | [Token Optimization plan](../capabilities/plan/TOKEN_OPTIMIZATION.md) |
 
 `Verify` answers **what has been demonstrated?**
 `Detailed roadmap` answers **what is being implemented and what comes next?**
@@ -87,7 +87,7 @@ remains incomplete.
 
 **Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`, `LKW-ASK-WORKSPACE-LIVE`
 
-| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | Real WEB_URL capture and RAG indexing into the exact tenant/workspace Qdrant scope, verified indexed retrieval, and execution through Hybrid Ask `indexed_only`; completed-answer runs additionally validate grounded indexed citation/evidence | Controlled `example.com` origin only; not arbitrary external-site certification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access remains incomplete |
+| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | Real WEB_URL capture and RAG indexing into the exact tenant/workspace Qdrant scope, verified indexed retrieval, and execution through Hybrid Ask `indexed_only`; a suite **PASS** always requires those indexed-path steps — grounded answer and indexed citation/evidence are verified only when the run completes with `status=completed`; `status=insufficient_evidence` may still **PASS** after successful indexed retrieval without proving completed answer assembly | Controlled `example.com` origin only; not arbitrary external-site certification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access remains incomplete |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
 
 **Proof:** `LKW-WEB-URL-INDEXED-ASK`
@@ -124,7 +124,8 @@ Accepted technical proof:
 | Exact-send integrity | ✅ **IMPLEMENTED** | Message and tool-schema integrity before adapter send | Provider-specific cache behavior varies |
 | Cache-aware execution gate | ✅ **IMPLEMENTED** | Only `RUN` executes pipeline; conflicting evidence rejected | Does not perform in-cache compaction |
 | Durable in-cache compaction mechanism | ✅ **IMPLEMENTED (BOUNDED)** | Durable SQLite repository, validation and CAS activation exist | Live provider proof, rollback execution and production rollout remain incomplete; numeric savings are not claimed |
-| Bounded vLLM prefix-cache proof | 🧪 **BOUNDED PROOF** | Cold/warm/changed-prefix reuse in documented vLLM environment | Named version, model, and workload only |
+| Bounded offline smoke proof | 🧪 **BOUNDED PROOF** | Offline_smoke universal proof path via local adapter; exercises deterministic pipeline contracts | Does not execute live vLLM prefix-cache verification |
+| vLLM prefix-cache reuse | 🧪 **BOUNDED PROOF** (manual) | Cold/warm/changed-prefix reuse when operator runs the documented manual live path | Named version, model, and workload only; no `public_evidence_eligible` manifest proof_id today |
 
 **Proof:** `RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`
 

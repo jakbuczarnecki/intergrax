@@ -393,6 +393,8 @@ def run_suite(
 
     result_tuple = tuple(results)
     overall = aggregate_overall_status(config.profile, result_tuple)
+    if config.dry_run:
+        overall = SuiteOverallStatus.DRY_RUN
     passed, failed, blocked, skipped = _count_results(result_tuple)
     completed_at = datetime.now(UTC)
     receipt = SuiteReceipt(
@@ -419,6 +421,7 @@ def suite_exit_code(receipt: SuiteReceipt) -> int:
     if receipt.overall_status in {
         SuiteOverallStatus.PASS,
         SuiteOverallStatus.PASS_WITH_BLOCKED,
+        SuiteOverallStatus.DRY_RUN,
     }:
         return 0
     return 1

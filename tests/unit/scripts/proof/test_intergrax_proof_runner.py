@@ -409,3 +409,6 @@ def test_dry_run_skips_execution() -> None:
     assert all(
         result.status == ProofStatus.SKIPPED_PROFILE for result in receipt.results
     )
+    assert receipt.overall_status == SuiteOverallStatus.DRY_RUN
+    assert receipt.passed_count == 0
+    assert suite_exit_code(receipt) == 0
