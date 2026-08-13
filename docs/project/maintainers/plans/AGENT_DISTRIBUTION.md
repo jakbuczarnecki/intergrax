@@ -117,20 +117,24 @@ verification gate.
 
 ## AGENT-PLATFORM-6 gate
 
-**READY_FOR_REVIEW** — deterministic effective roster merge, L2 installed-agent requirement set, and L3 `CandidateDependencySpecification` builder under `intergrax/agent_distribution/`.
+**READY_FOR_CLOSE** (2026-08-13) — deterministic effective roster merge with durable default-agent override, secret-safe manifest defaults, L2 installed-agent requirement set, and L3 `CandidateDependencySpecification` builder under `intergrax/agent_distribution/`.
 
 | Deliverable | Status |
 |-------------|--------|
 | `ManifestDefaultAgentDeclaration` neutral manifest input | done |
-| `EffectiveRosterBuilder` (manifest + durable merge) | done |
+| `ApplicationAgentBinding.default_agent` durable override (`bool \| None`) | done |
+| `BindingService.update_default_agent` revision-safe path | done |
+| `EffectiveRosterBuilder` canonical §13.2 default merge | done |
+| `EffectiveRosterEntry.effective_default_agent` | done |
+| Shared `validate_non_secret_distribution_config` (binding + manifest) | done |
 | `InstalledAgentRequirementSetBuilder` | done |
 | `build_candidate_dependency_specification` (L1 + L2 → L3) | done |
 | `AgentArtifactMetadata.agent_project_metadata_ref` | done |
 | `CandidateDependencySpecification` release-id invariant | done |
-| Focused AP-6 tests | done |
+| Focused AP-6 / AP-6-FIX-1 tests | done |
 | AP-3/AP-4/AP-5 regression | done |
 | Tier-boundary check | done |
 
-**Evidence:** `tests/unit/agent_distribution/test_agent_distribution_effective_roster.py`, `tests/unit/agent_distribution/test_agent_distribution_dependency_specification.py`
+**Evidence:** `tests/unit/agent_distribution/test_agent_distribution_effective_roster.py`, `tests/unit/agent_distribution/test_agent_distribution_dependency_specification.py`, `tests/unit/agent_distribution/test_agent_distribution_services.py`, `tests/unit/agent_distribution/test_agent_distribution_contracts.py`
 
 **Next:** AP-7 may begin.

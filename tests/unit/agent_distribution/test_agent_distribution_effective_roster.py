@@ -88,7 +88,7 @@ def _persist_active_installation(
 
 
 def _manifest_search(
-    *, enabled: bool = True, digest: str = _DIGEST_A
+    *, enabled: bool = True, digest: str = _DIGEST_A, default_agent: bool = False
 ) -> ManifestDefaultAgentDeclaration:
     return ManifestDefaultAgentDeclaration(
         logical_agent_id="search",
@@ -97,6 +97,7 @@ def _manifest_search(
         distribution_package_id="intergrax-local-search-agent",
         package_digest=digest,
         enabled=enabled,
+        default_agent=default_agent,
         config={"timeout_seconds": 30, "nested": {"mode": "fast"}},
         secret_refs=("secret://search-api-key",),
         policy_overrides=AgentBindingPolicyOverrides(tool_allowlist=("search",)),
@@ -367,3 +368,245 @@ def test_deep_immutable_merged_config_preserved() -> None:
     merged = roster.entries[0].merged_config
     with pytest.raises(TypeError):
         merged["timeout_seconds"] = 99  # type: ignore[index]
+
+
+def _manifest_agent(
+    logical_agent_id: str,
+    *,
+    slot_id: str,
+    default_agent: bool = False,
+    digest: str = _DIGEST_A,
+    package_id: str | None = None,
+) -> ManifestDefaultAgentDeclaration:
+    return ManifestDefaultAgentDeclaration(
+        logical_agent_id=logical_agent_id,
+        manifest_origin_ref=f"manifest:agents/{logical_agent_id}",
+        installation_slot_id=slot_id,
+        distribution_package_id=package_id or f"intergrax-local-{logical_agent_id}-agent",
+        package_digest=digest,
+        default_agent=default_agent,
+        builtin_package_ref=f"builtin:{logical_agent_id}",
+    )
+
+
+def _binding_agent(
+    logical_agent_id: str,
+    *,
+    slot_id: str,
+    default_agent: bool | None = None,
+    revision: int = 1,
+) -> ApplicationAgentBinding:
+    return ApplicationAgentBinding(
+        application_binding_id=f"bind-{logical_agent_id}-prod",
+        application_id=_APP_ID,
+        application_environment_id=_ENV_ID,
+        logical_agent_id=logical_agent_id,
+        installation_slot_id=slot_id,
+        active_installation_id=f"inst-{logical_agent_id}",
+        enablement=True,
+        default_agent=default_agent,
+        manifest_origin_ref=f"manifest:agents/{logical_agent_id}",
+        binding_revision=revision,
+    )
+
+
+def _package_for(logical_agent_id: str, digest: str = _DIGEST_A) -> AgentPackageIdentity:
+    return AgentPackageIdentity(
+        distribution_package_id=f"intergrax-local-{logical_agent_id}-agent",
+        package_version="1.0.0",
+        package_digest=digest,
+    )
+
+
+def test_manifest_default_inherited_when_binding_has_no_override() -> None:
+    builder, state = _builder()
+    _persist_active_installation(
+        state, installation_id="inst-search", slot_id="slot-search-prod"
+    )
+    roster = builder.build(
+        application_id=_APP_ID,
+        application_environment_id=_ENV_ID,
+        manifest_release_id=_RELEASE_ID,
+        manifest_defaults=(
+            _manifest_agent("search", slot_id="slot-search-prod", default_agent=True),
+        ),
+        durable_bindings=(_binding_agent("search", slot_id="slot-search-prod"),),
+    )
+    assert roster.entries[0].effective_default_agent is True
+
+
+def test_durable_default_true_overrides_manifest_false() -> None:
+    builder, state = _builder()
+    _persist_active_installation(
+        state, installation_id="inst-search", slot_id="slot-search-prod"
+    )
+    roster = builder.build(
+        application_id=_APP_ID,
+        application_environment_id=_ENV_ID,
+        manifest_release_id=_RELEASE_ID,
+        manifest_defaults=(
+            _manifest_agent("search", slot_id="slot-search-prod", default_agent=False),
+        ),
+        durable_bindings=(
+            _binding_agent(
+                "search", slot_id="slot-search-prod", default_agent=True
+            ),
+        ),
+    )
+    assert roster.entries[0].effective_default_agent is True
+
+
+def test_durable_default_false_clears_manifest_true() -> None:
+    builder, state = _builder()
+    _persist_active_installation(
+        state, installation_id="inst-search", slot_id="slot-search-prod"
+    )
+    roster = builder.build(
+        application_id=_APP_ID,
+        application_environment_id=_ENV_ID,
+        manifest_release_id=_RELEASE_ID,
+        manifest_defaults=(
+            _manifest_agent("search", slot_id="slot-search-prod", default_agent=True),
+        ),
+        durable_bindings=(
+            _binding_agent(
+                "search", slot_id="slot-search-prod", default_agent=False
+            ),
+        ),
+    )
+    assert roster.entries[0].effective_default_agent is False
+
+
+def test_move_default_between_agents_with_durable_overrides() -> None:
+    builder, state = _builder()
+    _persist_active_installation(
+        state,
+        installation_id="inst-a",
+        slot_id="slot-a",
+        package_identity=_package_for("agent-a"),
+    )
+    _persist_active_installation(
+        state,
+        installation_id="inst-b",
+        slot_id="slot-b",
+        package_identity=_package_for("agent-b"),
+    )
+    roster = builder.build(
+        application_id=_APP_ID,
+        application_environment_id=_ENV_ID,
+        manifest_release_id=_RELEASE_ID,
+        manifest_defaults=(
+            _manifest_agent("agent-a", slot_id="slot-a", default_agent=True),
+            _manifest_agent("agent-b", slot_id="slot-b", default_agent=False),
+        ),
+        durable_bindings=(
+            _binding_agent("agent-a", slot_id="slot-a", default_agent=False),
+            _binding_agent("agent-b", slot_id="slot-b", default_agent=True),
+        ),
+    )
+    by_id = {entry.logical_agent_id: entry for entry in roster.entries}
+    assert by_id["agent-a"].effective_default_agent is False
+    assert by_id["agent-b"].effective_default_agent is True
+
+
+def test_two_effective_defaults_fail_closed() -> None:
+    builder, _ = _builder()
+    with pytest.raises(EffectiveRosterConflict, match="multiple default_agent"):
+        builder.build(
+            application_id=_APP_ID,
+            application_environment_id=_ENV_ID,
+            manifest_release_id=_RELEASE_ID,
+            manifest_defaults=(
+                _manifest_agent("agent-a", slot_id="slot-a", default_agent=True),
+                _manifest_agent("agent-b", slot_id="slot-b", default_agent=True),
+            ),
+            durable_bindings=(),
+        )
+
+
+def test_operator_added_binding_can_become_default() -> None:
+    builder, state = _builder()
+    _persist_active_installation(
+        state,
+        installation_id="inst-custom",
+        slot_id="slot-custom",
+        package_identity=_package_for("custom"),
+    )
+    roster = builder.build(
+        application_id=_APP_ID,
+        application_environment_id=_ENV_ID,
+        manifest_release_id=_RELEASE_ID,
+        manifest_defaults=(),
+        durable_bindings=(
+            _binding_agent(
+                "custom", slot_id="slot-custom", default_agent=True
+            ),
+        ),
+    )
+    assert roster.entries[0].effective_default_agent is True
+
+
+def test_default_override_survives_installation_digest_upgrade() -> None:
+    builder, state = _builder()
+    _persist_active_installation(
+        state, installation_id="inst-v1", slot_id="slot-search-prod"
+    )
+    binding = _binding_search().model_copy(update={"default_agent": True})
+    roster_a = builder.build(
+        application_id=_APP_ID,
+        application_environment_id=_ENV_ID,
+        manifest_release_id=_RELEASE_ID,
+        manifest_defaults=(_manifest_search(default_agent=False),),
+        durable_bindings=(binding,),
+    )
+    _persist_active_installation(
+        state,
+        installation_id="inst-v2",
+        slot_id="slot-search-prod",
+        package_identity=_PACKAGE_B,
+    )
+    state.installations["inst-v1"] = state.installations["inst-v1"].model_copy(
+        update={
+            "installation_state": InstallationState.INSTALLED_PREVIOUS,
+            "active_for_slot": False,
+        }
+    )
+    state.active_installation_by_slot["slot-search-prod"] = "inst-v2"
+    roster_b = builder.build(
+        application_id=_APP_ID,
+        application_environment_id=_ENV_ID,
+        manifest_release_id=_RELEASE_ID,
+        manifest_defaults=(_manifest_search(default_agent=False),),
+        durable_bindings=(binding,),
+    )
+    assert roster_a.entries[0].effective_default_agent is True
+    assert roster_b.entries[0].effective_default_agent is True
+
+
+def test_default_state_affects_effective_roster_revision_id() -> None:
+    builder, state = _builder()
+    _persist_active_installation(
+        state, installation_id="inst-search", slot_id="slot-search-prod"
+    )
+    base_kwargs = dict(
+        application_id=_APP_ID,
+        application_environment_id=_ENV_ID,
+        manifest_release_id=_RELEASE_ID,
+        manifest_defaults=(_manifest_search(default_agent=False),),
+    )
+    roster_false = builder.build(
+        **base_kwargs,
+        durable_bindings=(
+            _binding_search().model_copy(update={"default_agent": False}),
+        ),
+    )
+    roster_true = builder.build(
+        **base_kwargs,
+        durable_bindings=(
+            _binding_search().model_copy(update={"default_agent": True}),
+        ),
+    )
+    assert (
+        roster_false.effective_roster_revision_id
+        != roster_true.effective_roster_revision_id
+    )

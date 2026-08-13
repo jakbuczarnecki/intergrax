@@ -10,6 +10,7 @@ from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
+from intergrax.agent_distribution._config_validation import validate_non_secret_distribution_config
 from intergrax.agent_distribution._digest import (
     content_digest_for_model,
     normalize_package_digest,
@@ -88,7 +89,10 @@ class ManifestDefaultAgentDeclaration(BaseModel):
     def _validate_config_raw(cls, value: object) -> dict[str, DistributionJsonValue]:
         if not isinstance(value, Mapping):
             raise ValueError("config must be a mapping")
-        return assert_distribution_json_object(value, field_name="config")
+        return validate_non_secret_distribution_config(
+            value,
+            context_label="manifest config",
+        )
 
     @field_validator("config", mode="after")
     @classmethod
@@ -117,6 +121,7 @@ class EffectiveRosterEntry(BaseModel):
     package_digest: str = _NON_EMPTY
     distribution_package_id: str = _NON_EMPTY
     effective_enablement: bool
+    effective_default_agent: bool = False
     merged_config: Mapping[str, DistributionJsonValue] = Field(default_factory=dict)
     secret_refs: tuple[str, ...] = ()
     policy_overrides: AgentBindingPolicyOverrides | None = None

@@ -49,6 +49,7 @@ class BindingService:
         manifest_origin_ref: str | None = None,
         builtin_package_ref: str | None = None,
         enablement: bool = False,
+        default_agent: bool | None = None,
     ) -> TransitionResult[ApplicationAgentBinding]:
         active_installation_id = self._resolve_active_installation_id(
             installation_slot_id=installation_slot_id,
@@ -64,6 +65,7 @@ class BindingService:
             active_installation_id=active_installation_id,
             builtin_package_ref=builtin_package_ref,
             enablement=enablement,
+            default_agent=default_agent,
             config=config or {},
             secret_refs=secret_refs,
             policy_overrides=policy_overrides,
@@ -122,6 +124,20 @@ class BindingService:
             application_binding_id,
             expected_revision=expected_revision,
             updates={"policy_overrides": policy_overrides},
+            event_type="binding.updated",
+        )
+
+    def update_default_agent(
+        self,
+        application_binding_id: str,
+        default_agent: bool | None,
+        *,
+        expected_revision: int,
+    ) -> TransitionResult[ApplicationAgentBinding]:
+        return self._update_binding(
+            application_binding_id,
+            expected_revision=expected_revision,
+            updates={"default_agent": default_agent},
             event_type="binding.updated",
         )
 

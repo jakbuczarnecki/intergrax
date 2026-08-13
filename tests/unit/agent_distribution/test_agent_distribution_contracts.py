@@ -28,7 +28,7 @@ from intergrax.agent_distribution.dependency import (
 )
 from intergrax.agent_distribution.identity import AgentPackageCandidate, AgentPackageIdentity
 from intergrax.agent_distribution.installation import AgentInstallationRecord, InstallationState
-from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
+from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry, ManifestDefaultAgentDeclaration
 from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevision,
@@ -193,6 +193,39 @@ def test_binding_config_is_deeply_immutable() -> None:
     )
     with pytest.raises(TypeError):
         binding.config["provider"]["region"] = "mutated"
+
+
+def test_manifest_config_rejects_nested_secret_key() -> None:
+    with pytest.raises(ValidationError):
+        ManifestDefaultAgentDeclaration(
+            logical_agent_id="search",
+            installation_slot_id="slot-1",
+            distribution_package_id="intergrax-local-search-agent",
+            package_digest=_DIGEST,
+            config={"provider": {"api_key": "public-value"}},
+        )
+
+
+def test_manifest_config_rejects_nested_secret_value() -> None:
+    with pytest.raises(ValidationError):
+        ManifestDefaultAgentDeclaration(
+            logical_agent_id="search",
+            installation_slot_id="slot-1",
+            distribution_package_id="intergrax-local-search-agent",
+            package_digest=_DIGEST,
+            config={"provider": {"token_ref_name": "sk-live-not-a-ref"}},
+        )
+
+
+def test_manifest_config_accepts_legitimate_nested_config() -> None:
+    manifest = ManifestDefaultAgentDeclaration(
+        logical_agent_id="search",
+        installation_slot_id="slot-1",
+        distribution_package_id="intergrax-local-search-agent",
+        package_digest=_DIGEST,
+        config={"provider": {"region": "eu-west-1", "limits": {"rpm": 120}}},
+    )
+    assert manifest.config["provider"]["region"] == "eu-west-1"
 
 
 def test_effective_roster_merged_config_is_deeply_immutable() -> None:

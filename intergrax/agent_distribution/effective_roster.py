@@ -190,6 +190,18 @@ def _validate_installation_package_line(
         )
 
 
+def _resolve_effective_default_agent(
+    *,
+    manifest: ManifestDefaultAgentDeclaration | None,
+    binding: ApplicationAgentBinding | None,
+) -> bool:
+    if binding is not None and binding.default_agent is not None:
+        return binding.default_agent
+    if manifest is not None:
+        return manifest.default_agent
+    return False
+
+
 def _merge_entry(
     *,
     logical_agent_id: str,
@@ -215,6 +227,10 @@ def _merge_entry(
     effective_enablement = (
         binding.enablement if binding is not None else manifest.enabled
     )  # type: ignore[union-attr]
+    effective_default_agent = _resolve_effective_default_agent(
+        manifest=manifest,
+        binding=binding,
+    )
     if binding is not None and binding.tombstone:
         raise EffectiveRosterConflict(
             "tombstoned binding cannot produce effective roster entry"
@@ -252,6 +268,7 @@ def _merge_entry(
         package_digest=package_digest,
         distribution_package_id=distribution_package_id,
         effective_enablement=effective_enablement,
+        effective_default_agent=effective_default_agent,
         merged_config=merged_config,
         secret_refs=secret_refs,
         policy_overrides=policy_overrides,
@@ -296,13 +313,10 @@ class EffectiveRosterBuilder:
             if logical_agent_id not in tombstoned_ids:
                 logical_agent_ids.add(logical_agent_id)
 
-        default_agent_ids: list[str] = []
         entries: list[EffectiveRosterEntry] = []
         for logical_agent_id in sorted(logical_agent_ids):
             manifest = manifest_by_id.get(logical_agent_id)
             binding = bindings_by_id.get(logical_agent_id)
-            if manifest is not None and manifest.default_agent:
-                default_agent_ids.append(logical_agent_id)
             entries.append(
                 _merge_entry(
                     logical_agent_id=logical_agent_id,
@@ -312,6 +326,11 @@ class EffectiveRosterBuilder:
                 )
             )
 
+        default_agent_ids = [
+            entry.logical_agent_id
+            for entry in entries
+            if entry.effective_default_agent
+        ]
         if len(default_agent_ids) > 1:
             raise EffectiveRosterConflict(
                 "multiple default_agent=true entries after merge: "

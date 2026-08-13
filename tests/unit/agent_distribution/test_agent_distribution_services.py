@@ -273,3 +273,38 @@ def test_binding_list_by_slot_uses_store_port() -> None:
     assert [binding.application_binding_id for binding in slot_bindings] == ["bind-1"]
     assert all(binding.installation_slot_id == "slot-search-prod" for binding in slot_bindings)
     assert "bind-2" in state.bindings
+
+
+def test_binding_default_agent_update_increments_revision() -> None:
+    installation_service, binding_service, _ = _services()
+    _verified_installation(installation_service, installation_id="inst-v1")
+    installation_service.promote_verified_to_active("inst-v1")
+    binding_service.create_binding(
+        application_binding_id="bind-1",
+        application_id="demo_app",
+        application_environment_id="env-prod",
+        logical_agent_id="search",
+        installation_slot_id="slot-search-prod",
+    )
+    updated = binding_service.update_default_agent(
+        "bind-1",
+        True,
+        expected_revision=0,
+    )
+    assert updated.value.binding_revision == 1
+    assert updated.value.default_agent is True
+
+
+def test_binding_default_agent_stale_revision_conflict() -> None:
+    installation_service, binding_service, _ = _services()
+    _verified_installation(installation_service, installation_id="inst-v1")
+    installation_service.promote_verified_to_active("inst-v1")
+    binding_service.create_binding(
+        application_binding_id="bind-1",
+        application_id="demo_app",
+        application_environment_id="env-prod",
+        logical_agent_id="search",
+        installation_slot_id="slot-search-prod",
+    )
+    with pytest.raises(BindingRevisionConflict):
+        binding_service.update_default_agent("bind-1", True, expected_revision=5)

@@ -5,15 +5,14 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping
-from typing import Any, Final
+from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator, model_validator
 
+from intergrax.agent_distribution._config_validation import validate_non_secret_distribution_config
 from intergrax.agent_distribution._immutable_json import (
     DistributionJsonValue,
-    assert_distribution_json_object,
     distribution_json_to_plain,
     freeze_distribution_json_object,
 )
@@ -22,46 +21,12 @@ _NON_EMPTY = Field(min_length=1)
 
 SCHEMA_APPLICATION_AGENT_BINDING_V1: Final = "application_agent_binding.v1"
 
-_SECRET_CONFIG_KEY_RE = re.compile(
-    r"(password|secret|api[_-]?key|token|credential|private[_-]?key)",
-    re.IGNORECASE,
-)
-_SECRET_VALUE_RE = re.compile(
-    r"^(sk-|xox[baprs]-|Bearer\s|eyJ[A-Za-z0-9_-]+\.)",
-    re.IGNORECASE,
-)
-
 
 def _strip_required(value: str) -> str:
     normalized = value.strip()
     if not normalized:
         raise ValueError("must be non-empty")
     return normalized
-
-
-def _reject_secret_like_config_value(value: Any, *, path: str = "") -> None:
-    if isinstance(value, Mapping):
-        for key, child in value.items():
-            key_str = str(key)
-            label = f"{path}.{key_str}" if path else key_str
-            if _SECRET_CONFIG_KEY_RE.search(key_str):
-                raise ValueError(
-                    f"binding config key '{label}' must use secret_refs, not config values"
-                )
-            if isinstance(child, str) and _SECRET_VALUE_RE.match(child.strip()):
-                raise ValueError(
-                    f"binding config value for '{label}' resembles a secret literal"
-                )
-            _reject_secret_like_config_value(child, path=label)
-        return
-    if isinstance(value, list):
-        for index, child in enumerate(value):
-            _reject_secret_like_config_value(child, path=f"{path}[{index}]")
-
-
-def _reject_secret_like_config(config: Mapping[str, Any]) -> dict[str, DistributionJsonValue]:
-    _reject_secret_like_config_value(config)
-    return assert_distribution_json_object(config, field_name="config")
 
 
 class AgentBindingPolicyOverrides(BaseModel):
@@ -117,6 +82,7 @@ class ApplicationAgentBinding(BaseModel):
     active_installation_id: str | None = None
     builtin_package_ref: str | None = None
     enablement: bool = False
+    default_agent: bool | None = None
     config: Mapping[str, DistributionJsonValue] = Field(default_factory=dict)
     secret_refs: tuple[str, ...] = ()
     policy_overrides: AgentBindingPolicyOverrides | None = None
@@ -151,7 +117,10 @@ class ApplicationAgentBinding(BaseModel):
     def _validate_config_raw(cls, value: object) -> dict[str, DistributionJsonValue]:
         if not isinstance(value, Mapping):
             raise ValueError("config must be a mapping")
-        return _reject_secret_like_config(value)
+        return validate_non_secret_distribution_config(
+            value,
+            context_label="binding config",
+        )
 
     @field_validator("config", mode="after")
     @classmethod
