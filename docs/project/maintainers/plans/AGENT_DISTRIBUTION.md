@@ -182,3 +182,24 @@ runtime-graph semantics into neutral `intergrax/runtime_graph_semantics.py`.
 **Evidence:** `intergrax/runtime_graph_semantics.py`, `tests/unit/test_runtime_graph_semantics.py`
 
 **Next:** AP-8 may begin (physical materialization).
+
+## AGENT-PLATFORM-8 gate
+
+**READY_FOR_REVIEW** (2026-08-13) — topology-agnostic materialization coordinator, explicit adapters,
+graph-authoritative staging, and OCI production path with explicit VENV unsupported port.
+
+| Deliverable | Status |
+|-------------|--------|
+| `ApplicationBuildContext` Tier-0 physical-build contract | done |
+| `RuntimeMaterializationAdapter` explicit topology port | done |
+| `RuntimeMaterializationService` consistency gates + output validation | done |
+| Graph-authoritative `runtime_context_staging` helpers | done |
+| `FakeRuntimeMaterializationAdapter` deterministic test adapter | done |
+| `OciImageMaterializationAdapter` production staging + docker boundary | done |
+| `UnsupportedVenvBundleMaterializationAdapter` explicit deferral | done |
+| AP-8 focused tests + AP-3..AP-7 regression | done |
+| Tier-boundary check (no `applications/` imports) | done |
+
+**Evidence:** `intergrax/agent_distribution/materialization_service.py`, `materialization_adapters.py`, `runtime_context_staging.py`, `tests/unit/agent_distribution/test_agent_distribution_materialization.py`, `test_agent_distribution_materialization_adapter.py`
+
+**Next:** AP-9 may begin (activation + rollback orchestration).

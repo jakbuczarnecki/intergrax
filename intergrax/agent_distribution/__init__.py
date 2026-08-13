@@ -57,6 +57,9 @@ from intergrax.agent_distribution.errors import (
     InstallationSlotConflict,
     MaterializedRuntimeLockConflict,
     MaterializedRuntimeLockError,
+    MaterializationError,
+    MaterializationInputConflict,
+    MaterializationUnsupportedTopology,
     CandidateRuntimeGraphError,
     RuntimeRevisionConflict,
     RuntimeRevisionLifecycleError,
@@ -80,10 +83,14 @@ from intergrax.agent_distribution.package_trust import (
     AgentPackageTrustCoordinator,
     assert_installation_trust_record_acceptable,
 )
-from intergrax.agent_distribution.materialization import (
-    MaterializationInput,
-    MaterializationOutput,
+from intergrax.agent_distribution.materialization_adapters import (
+    OciImageMaterializationAdapter,
+    RuntimeMaterializationAdapter,
+    FakeRuntimeMaterializationAdapter,
+    UnsupportedVenvBundleMaterializationAdapter,
+    default_materialization_adapters,
 )
+from intergrax.agent_distribution.materialization_service import RuntimeMaterializationService
 from intergrax.agent_distribution.roster import (
     EffectiveRoster,
     EffectiveRosterEntry,
@@ -214,8 +221,18 @@ __all__ = [
     "InstallationSlotConflict",
     "InstallationState",
     "ManifestDefaultAgentDeclaration",
+    "ApplicationBuildContext",
+    "MaterializationError",
+    "MaterializationInputConflict",
+    "MaterializationUnsupportedTopology",
     "MaterializationInput",
     "MaterializationOutput",
+    "OciImageMaterializationAdapter",
+    "RuntimeMaterializationAdapter",
+    "RuntimeMaterializationService",
+    "FakeRuntimeMaterializationAdapter",
+    "UnsupportedVenvBundleMaterializationAdapter",
+    "default_materialization_adapters",
     "MaterializationTopology",
     "MaterializedAgentClosureEntry",
     "MaterializedLockPackage",

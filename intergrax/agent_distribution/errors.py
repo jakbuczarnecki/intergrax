@@ -64,3 +64,15 @@ class MaterializedRuntimeLockConflict(AgentDistributionError):
 
 class CandidateRuntimeGraphError(AgentDistributionError):
     """Candidate runtime graph failed structural validation gates."""
+
+
+class MaterializationError(AgentDistributionError):
+    """Materialization failed or returned invalid output."""
+
+
+class MaterializationInputConflict(MaterializationError):
+    """Materialization inputs are mutually inconsistent."""
+
+
+class MaterializationUnsupportedTopology(MaterializationError):
+    """Requested materialization topology has no production adapter."""
