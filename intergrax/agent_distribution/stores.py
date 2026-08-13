@@ -60,6 +60,15 @@ class AgentInstallationStore(Protocol):
     ) -> AgentInstallationRecord:
         """Persist installation with serialized slot updates."""
 
+    def atomic_promote_active_installation(
+        self,
+        *,
+        demoted_prior: AgentInstallationRecord | None,
+        promoted: AgentInstallationRecord,
+        expected_active_installation_id: str | None,
+    ) -> tuple[AgentInstallationRecord, AgentInstallationRecord | None]:
+        """Atomically demote prior active and promote verified installation."""
+
 
 class ApplicationAgentBindingStore(Protocol):
     """Durable application agent binding persistence."""
@@ -72,6 +81,12 @@ class ApplicationAgentBindingStore(Protocol):
         application_environment_id: str,
     ) -> list[ApplicationAgentBinding]:
         """List bindings scoped to an application environment."""
+
+    def list_bindings_for_slot(
+        self,
+        installation_slot_id: str,
+    ) -> list[ApplicationAgentBinding]:
+        """List bindings anchored to an installation slot."""
 
     def persist_binding(
         self,
@@ -123,6 +138,16 @@ class RuntimeRevisionStore(Protocol):
         prior_active_revision_id: str | None = None,
     ) -> RuntimeRevision:
         """Atomically promote validated revision to active."""
+
+    def atomic_activate_revision(
+        self,
+        *,
+        application_environment_id: str,
+        promoted: RuntimeRevision,
+        demoted_prior: RuntimeRevision | None,
+        expected_prior_active_revision_id: str | None,
+    ) -> tuple[RuntimeRevision, RuntimeRevision | None]:
+        """Atomically supersede prior active revision and activate validated revision."""
 
 
 class AgentArtifactMetadataStore(Protocol):

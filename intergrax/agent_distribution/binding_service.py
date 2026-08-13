@@ -191,7 +191,7 @@ class BindingService:
         results: list[TransitionResult[ApplicationAgentBinding]] = []
         bindings = [
             binding
-            for binding in self._bindings_for_slot(installation_slot_id)
+            for binding in self._binding_store.list_bindings_for_slot(installation_slot_id)
             if not binding.tombstone
         ]
         for binding in bindings:
@@ -252,19 +252,6 @@ class BindingService:
         if binding is None:
             raise AgentDistributionNotFoundError(f"binding {application_binding_id} was not found")
         return binding
-
-    def _bindings_for_slot(self, installation_slot_id: str) -> list[ApplicationAgentBinding]:
-        list_for_slot = getattr(self._binding_store, "list_bindings_for_slot", None)
-        if callable(list_for_slot):
-            return list(list_for_slot(installation_slot_id))
-        if hasattr(self._binding_store, "state"):
-            state = self._binding_store.state  # type: ignore[attr-defined]
-            return [
-                binding
-                for binding in state.bindings.values()
-                if binding.installation_slot_id == installation_slot_id
-            ]
-        return []
 
     def _resolve_active_installation_id(
         self,

@@ -146,3 +146,5 @@ def test_partial_runtime_revision_activation_failure_leaves_prior_active() -> No
     assert active is not None
     assert active.runtime_revision_id == "rev-1"
     assert state.revisions["rev-1"].revision_state is RuntimeRevisionState.ACTIVE
+    assert state.revisions["rev-2"].revision_state is RuntimeRevisionState.VALIDATED
+    assert state.active_revision_by_environment["env-prod"] == "rev-1"

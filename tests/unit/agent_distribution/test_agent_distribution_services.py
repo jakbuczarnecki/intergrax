@@ -240,3 +240,27 @@ def test_binding_config_survives_installation_upgrade() -> None:
     assert dict(binding.config) == {"mode": "fast", "top_k": 5}
     resolved = binding_service.list_bindings_for_environment("env-prod")[0]
     assert resolved.active_installation_id == "inst-v2"
+
+
+def test_binding_list_by_slot_uses_store_port() -> None:
+    installation_service, binding_service, state = _services()
+    _verified_installation(installation_service, installation_id="inst-v1")
+    installation_service.promote_verified_to_active("inst-v1")
+    binding_service.create_binding(
+        application_binding_id="bind-1",
+        application_id="demo_app",
+        application_environment_id="env-prod",
+        logical_agent_id="search",
+        installation_slot_id="slot-search-prod",
+    )
+    binding_service.create_binding(
+        application_binding_id="bind-2",
+        application_id="demo_app",
+        application_environment_id="env-staging",
+        logical_agent_id="search",
+        installation_slot_id="slot-search-staging",
+    )
+    slot_bindings = binding_service._binding_store.list_bindings_for_slot("slot-search-prod")
+    assert [binding.application_binding_id for binding in slot_bindings] == ["bind-1"]
+    assert all(binding.installation_slot_id == "slot-search-prod" for binding in slot_bindings)
+    assert "bind-2" in state.bindings

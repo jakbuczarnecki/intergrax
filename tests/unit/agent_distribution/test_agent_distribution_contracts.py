@@ -34,7 +34,12 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
 )
-from intergrax.agent_distribution.stores import AgentArtifactMetadata, RuntimeRevisionStore
+from intergrax.agent_distribution.stores import (
+    AgentArtifactMetadata,
+    AgentInstallationStore,
+    ApplicationAgentBindingStore,
+    RuntimeRevisionStore,
+)
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
     AgentQualificationStatus,
@@ -230,6 +235,38 @@ def test_runtime_revision_store_expected_state_is_typed() -> None:
     signature = inspect.signature(RuntimeRevisionStore.persist_candidate_revision)
     annotation = signature.parameters["expected_revision_state"].annotation
     assert annotation in {RuntimeRevisionState | None, "RuntimeRevisionState | None"}
+
+
+def test_installation_store_requires_atomic_promote_port() -> None:
+    assert "atomic_promote_active_installation" in AgentInstallationStore.__dict__
+
+
+def test_binding_store_requires_list_bindings_for_slot_port() -> None:
+    assert "list_bindings_for_slot" in ApplicationAgentBindingStore.__dict__
+
+
+def test_runtime_revision_store_requires_atomic_activate_port() -> None:
+    assert "atomic_activate_revision" in RuntimeRevisionStore.__dict__
+
+
+def test_ap4_services_forbid_runtime_store_introspection() -> None:
+    repo = Path(__file__).resolve().parents[3]
+    service_files = (
+        "installation_service.py",
+        "binding_service.py",
+        "runtime_revision_service.py",
+    )
+    violations: list[str] = []
+    for filename in service_files:
+        path = repo / "intergrax" / "agent_distribution" / filename
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id in {"getattr", "hasattr"}:
+                    violations.append(f"{filename} uses {node.func.id}()")
+            if isinstance(node, ast.Attribute) and node.attr == "state":
+                violations.append(f"{filename} accesses .state")
+    assert not violations, "\n".join(violations)
 
 
 def test_malformed_package_digest_rejected_consistently() -> None:

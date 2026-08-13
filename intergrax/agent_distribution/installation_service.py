@@ -137,25 +137,11 @@ class InstallationService:
             }
         )
 
-        atomic_promote = getattr(self._store, "atomic_promote_active_installation", None)
-        if callable(atomic_promote):
-            persisted, _ = atomic_promote(
-                demoted_prior=demoted_prior,
-                promoted=promoted,
-                expected_active_installation_id=expected_active_installation_id,
-            )
-        else:
-            if demoted_prior is not None:
-                self._store.persist_installation(
-                    demoted_prior,
-                    expected_active_installation_id=expected_active_installation_id,
-                )
-            persisted = self._store.persist_installation(
-                promoted,
-                expected_active_installation_id=(
-                    demoted_prior.installation_id if demoted_prior is not None else expected_active_installation_id
-                ),
-            )
+        persisted, _ = self._store.atomic_promote_active_installation(
+            demoted_prior=demoted_prior,
+            promoted=promoted,
+            expected_active_installation_id=expected_active_installation_id,
+        )
 
         return TransitionResult(
             value=persisted,
@@ -240,22 +226,11 @@ class InstallationService:
             }
         )
 
-        atomic_promote = getattr(self._store, "atomic_promote_active_installation", None)
-        if callable(atomic_promote):
-            persisted, _ = atomic_promote(
-                demoted_prior=demoted_active,
-                promoted=restored,
-                expected_active_installation_id=expected_active_installation_id,
-            )
-        else:
-            self._store.persist_installation(
-                demoted_active,
-                expected_active_installation_id=expected_active_installation_id,
-            )
-            persisted = self._store.persist_installation(
-                restored,
-                expected_active_installation_id=demoted_active.installation_id,
-            )
+        persisted, _ = self._store.atomic_promote_active_installation(
+            demoted_prior=demoted_active,
+            promoted=restored,
+            expected_active_installation_id=expected_active_installation_id,
+        )
 
         return TransitionResult(
             value=persisted,

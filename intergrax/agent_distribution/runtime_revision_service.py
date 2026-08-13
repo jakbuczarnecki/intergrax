@@ -9,7 +9,6 @@ from datetime import UTC, datetime
 
 from intergrax.agent_distribution.errors import (
     AgentDistributionNotFoundError,
-    RuntimeRevisionConflict,
     RuntimeRevisionLifecycleError,
 )
 from intergrax.agent_distribution.events import TransitionResult, distribution_event
@@ -87,31 +86,12 @@ class RuntimeRevisionService:
             }
         )
 
-        atomic_activate = getattr(self._store, "atomic_activate_revision", None)
-        if callable(atomic_activate):
-            persisted, _ = atomic_activate(
-                application_environment_id=revision.application_environment_id,
-                promoted=promoted,
-                demoted_prior=demoted_prior,
-                expected_prior_active_revision_id=expected_prior_active_revision_id,
-            )
-        else:
-            if demoted_prior is not None:
-                self._store.persist_candidate_revision(
-                    demoted_prior,
-                    expected_revision_state=RuntimeRevisionState.ACTIVE,
-                )
-            swapped = self._store.swap_active_revision(
-                application_environment_id=revision.application_environment_id,
-                new_active_revision_id=runtime_revision_id,
-                prior_active_revision_id=expected_prior_active_revision_id,
-            )
-            if swapped.runtime_revision_id != runtime_revision_id:
-                raise RuntimeRevisionConflict("activation swap returned unexpected revision")
-            persisted = self._store.persist_candidate_revision(
-                promoted,
-                expected_revision_state=RuntimeRevisionState.VALIDATED,
-            )
+        persisted, _ = self._store.atomic_activate_revision(
+            application_environment_id=revision.application_environment_id,
+            promoted=promoted,
+            demoted_prior=demoted_prior,
+            expected_prior_active_revision_id=expected_prior_active_revision_id,
+        )
 
         return TransitionResult(
             value=persisted,

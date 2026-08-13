@@ -74,7 +74,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 
 ## AGENT-PLATFORM-4 gate
 
-**READY_FOR_REVIEW** (2026-08-12) — transactional domain services and in-memory/durable-backed store implementations under `intergrax/agent_distribution/`.
+**READY_FOR_CLOSE** (2026-08-13) — transactional domain services with explicit store-port atomic operations; no runtime capability discovery in AP-4 services.
 
 | Deliverable | Status |
 |-------------|--------|
@@ -86,7 +86,9 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 | Bounded domain events on `TransitionResult` | done |
 | Focused AP-4 tests (installation, binding, runtime revision, concurrency/atomicity) | done |
 | Tier-boundary check (no `agents/` / `applications/` imports) | done |
+| AP-4-FIX-1 explicit port atomic ops (`atomic_promote_active_installation`, `atomic_activate_revision`, `list_bindings_for_slot`) | done |
+| AP-4-FIX-1 service boundary (no `getattr`/`hasattr`/`.state` introspection) | done |
 
-**Evidence:** `tests/unit/agent_distribution/test_agent_distribution_services.py`, `test_agent_distribution_runtime_revision_services.py`, `test_agent_distribution_concurrency.py`
+**Evidence:** `tests/unit/agent_distribution/test_agent_distribution_services.py`, `test_agent_distribution_runtime_revision_services.py`, `test_agent_distribution_concurrency.py`, `test_agent_distribution_contracts.py` (`test_ap4_services_forbid_runtime_store_introspection`)
 
 **Next:** AP-5 may begin (`AgentPackageTrust` coordinator).
