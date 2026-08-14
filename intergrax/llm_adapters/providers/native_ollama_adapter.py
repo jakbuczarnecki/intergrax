@@ -76,7 +76,20 @@ class NativeOllamaAdapter(LLMAdapter):
 
         resolved_model = model or self.DEFAULT_MODEL
         if client is None:
-            from ollama import Client
+            try:
+                from ollama import Client
+            except ModuleNotFoundError as exc:
+                if exc.name != "ollama":
+                    raise
+                from intergrax.llm_adapters.llm_provider_registry import (
+                    LLMAdapterDependencyError,
+                )
+
+                raise LLMAdapterDependencyError(
+                    "LLM provider 'ollama' requires dependency 'ollama'. "
+                    "Install it with 'Intergrax-ai[llm-ollama]' before selecting "
+                    "this provider."
+                ) from exc
 
             client = cast(
                 _NativeOllamaClient,

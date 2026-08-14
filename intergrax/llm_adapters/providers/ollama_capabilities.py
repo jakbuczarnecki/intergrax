@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from typing import cast
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -53,12 +54,30 @@ class OllamaModelCapabilities:
 
 
 def _default_show_model(base_url: str | None) -> Callable[[str], object]:
-    from ollama import Client
-
-    client = Client(host=base_url) if base_url else Client()
+    client: object | None = None
 
     def show(model: str) -> object:
-        return client.show(model=model)
+        nonlocal client
+        if client is None:
+            try:
+                from ollama import Client
+            except ModuleNotFoundError as exc:
+                if exc.name != "ollama":
+                    raise
+                from intergrax.llm_adapters.llm_provider_registry import (
+                    LLMAdapterDependencyError,
+                )
+
+                raise LLMAdapterDependencyError(
+                    "LLM provider 'ollama' requires dependency 'ollama'. "
+                    "Install it with 'Intergrax-ai[llm-ollama]' before selecting "
+                    "this provider."
+                ) from exc
+
+            client = Client(host=base_url) if base_url else Client()
+
+        show_client = cast(Callable[..., object], client)
+        return show_client.show(model=model)
 
     return show
 
