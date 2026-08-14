@@ -17,8 +17,22 @@ README_PATH = REPO_ROOT / "README.md"
 PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
-LKW_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "lkw-grounded-result-light.svg"
-LKW_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "lkw-grounded-result-dark.svg"
+LKW_LIGHT_PATH = (
+    REPO_ROOT
+    / "applications"
+    / "local_workspace_application"
+    / "docs"
+    / "assets"
+    / "lkw-grounded-result-light.svg"
+)
+LKW_DARK_PATH = (
+    REPO_ROOT
+    / "applications"
+    / "local_workspace_application"
+    / "docs"
+    / "assets"
+    / "lkw-grounded-result-dark.svg"
+)
 
 _SECTION_HEADINGS_ORDER = (
     "## Local Knowledge Workspace (LKW)",
@@ -35,7 +49,7 @@ _SECTION_HEADINGS_ORDER = (
 )
 
 _REQUIRED_PUBLIC_LINKS = (
-    "docs/project/proofs/LKW_PLATFORM_PROOF.md",
+    "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
     "docs/project/capabilities/token_optimization/README.md",
     "PROOFS.md",
     "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
@@ -97,8 +111,8 @@ def test_required_public_links(readme_text: str) -> None:
 
 
 def test_hero_contract(readme_text: str) -> None:
-    assert "docs/project/assets/public/lkw-grounded-result-light.svg" in readme_text
-    assert "docs/project/assets/public/lkw-grounded-result-dark.svg" in readme_text
+    assert "applications/local_workspace_application/docs/assets/lkw-grounded-result-light.svg" in readme_text
+    assert "applications/local_workspace_application/docs/assets/lkw-grounded-result-dark.svg" in readme_text
     assert readme_text.count("<picture>") == 1
     assert 'alt="LKW quickstart flow' in readme_text
     assert "docs/project/assets/public/intergrax-hero-light.svg" not in readme_text
@@ -221,7 +235,7 @@ def test_lkw_proof_boundary(readme_text: str) -> None:
 def test_proof_dashboard_route(readme_text: str) -> None:
     """Proof-path CLI details live outside the product-first README; dashboard must remain linked."""
     assert "PROOFS.md" in readme_text
-    assert "docs/project/proofs/LKW_PLATFORM_PROOF.md" in readme_text
+    assert "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md" in readme_text
 
 
 def test_relative_links(readme_text: str) -> None:

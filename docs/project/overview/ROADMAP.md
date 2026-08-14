@@ -52,7 +52,7 @@ The sequence is conceptual and has no dates. Each transition requires evidence b
 | Predictable approved-source lifecycle | A bounded source lifecycle can be repeated for documented sources, including disable and recovery |
 | Repeatable grounded indexed Ask | A supported Ask run returns reviewable citations and evidence from indexed knowledge |
 | Setup, restart, and recovery | A non-maintainer evaluator can follow the documented path without manual repair or reconstruction |
-| Runnable public proof | The [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) is reproducible in its documented environment |
+| Runnable public proof | The [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) is reproducible in its documented environment |
 
 The stage is achieved only when the documented workflow is repeatable as a user-facing proof, not merely when its implementation exists. See [PROOFS.md](../proofs/PROOFS.md) for current evidence.
 
@@ -158,7 +158,7 @@ See the [Platform Plugins architecture](../architecture/PLATFORM_PLUGINS.md) for
 | Reader need | Start here |
 |-------------|------------|
 | Current evidence | [PROOFS.md](../proofs/PROOFS.md) |
-| Verify the bounded LKW proof | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
+| Verify the bounded LKW proof | [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
 | Current workflow fit | [USE_CASES.md](USE_CASES.md) |
 | Build or inspect a bounded workflow | [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
 | Bounded evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |

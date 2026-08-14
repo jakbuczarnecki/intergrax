@@ -38,7 +38,7 @@ _MONGODB_COMPOSE = _DOCKER_DIR / "docker-compose.mongodb.yml"
 _HOSTING_BAT = _SCRIPT_DIR / "run-lkw-core-platform-proof-windows.bat"
 _INTERACTION_BAT = _SCRIPT_DIR / "run-lkw-windows-interaction-proof.bat"
 _EVIDENCE_PATH = (
-    _REPO_ROOT / "docs/project/maintainers/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json"
+    _REPO_ROOT / "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json"
 )
 
 _EXPECTED_PARENT = "6b71a841c894728766fd6f574c9cd53ad12ec5f9"
@@ -73,8 +73,8 @@ _SECRET_PATTERN = re.compile(
 # Untracked paths that must contribute content to the source fingerprint.
 _FINGERPRINT_PATH_PREFIXES = (
     "applications/local_workspace_application/scripts/run-lkw-windows-native-certification",
-    "docs/project/maintainers/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json",
-    "docs/project/proofs/LKW_PLATFORM_PROOF.md",
+    "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json",
+    "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
     "applications/local_workspace_application/docs/ARCHITECTURE.md",
     "applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md",
     "tests/unit/applications/local_workspace_application/test_lkw_windows_native_certification.py",

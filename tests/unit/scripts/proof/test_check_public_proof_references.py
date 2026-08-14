@@ -255,10 +255,10 @@ def _proof_ids_on_line(text: str, *, label: str) -> set[str]:
 
 
 def test_public_claim_proof_mappings(repo_root: Path) -> None:
-    quickstart = (repo_root / "docs/project/product/lkw/QUICKSTART.md").read_text(
+    quickstart = (repo_root / "applications/local_workspace_application/docs/product/QUICKSTART.md").read_text(
         encoding="utf-8"
     )
-    tour = (repo_root / "docs/project/product/lkw/LKW_PRODUCT_TOUR.md").read_text(
+    tour = (repo_root / "applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md").read_text(
         encoding="utf-8"
     )
     readme = (repo_root / "README.md").read_text(encoding="utf-8")

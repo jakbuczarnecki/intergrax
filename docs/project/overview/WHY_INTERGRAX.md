@@ -177,7 +177,7 @@ Intergrax may coexist with model providers, retrieval systems, integration tools
 | **LKW** | **Primary product proof** | **PARTIAL** | **Backend Product Alpha / MVP** — bounded application and platform proof. |
 | **Token Optimization** | **Featured platform-capability proof** | **PARTIAL** | Implemented deterministic mechanisms; bounded executable offline smoke proof. Manual vLLM prefix-cache evidence is separate — no public_evidence_eligible vLLM proof_id today. |
 
-**Evidence and detail:** [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [Token Optimization guide](../capabilities/token_optimization/README.md) · [PROOFS.md](../proofs/PROOFS.md)
+**Evidence and detail:** [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Token Optimization guide](../capabilities/token_optimization/README.md) · [PROOFS.md](../proofs/PROOFS.md)
 
 The bounded indexed Hybrid Ask path is not the same as a completed mixed indexed + authorized live workflow: **mixed indexed + authorized live Hybrid Ask remains incomplete**. Real-user validation and commercial validation are incomplete. Universal production readiness and universal token savings are not claimed.
 

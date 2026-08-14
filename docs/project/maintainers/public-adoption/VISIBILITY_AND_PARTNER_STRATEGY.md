@@ -358,7 +358,7 @@ This checklist turns the strategy into a concrete asset backlog.
 | Asset | Location / channel | Purpose |
 |---|---|---|
 | README visual proof block | `README.md` | Show the proof before deep architecture navigation |
-| LKW Platform Proof | `docs/project/proofs/LKW_PLATFORM_PROOF.md` | Canonical technical proof path |
+| LKW Platform Proof | `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` | Canonical technical proof path |
 | LKW hardening log | `docs/project/maintainers/public-adoption/LKW_PLATFORM_HARDENING_LOG.md` | Show what real product work forced the platform to fix |
 | What LKW proves | `docs/project/maintainers/public-adoption/WHAT_LKW_PROVES.md` | Explain the platform claim in one focused document |
 | Main review issue | GitHub issue | Capture all proof feedback in one place |

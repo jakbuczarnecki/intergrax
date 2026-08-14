@@ -42,9 +42,9 @@ with Try LKW as the repository’s primary product action.
 
 | I want to… | Primary action |
 |------------|----------------|
-| Try LKW | [LKW Quick Start](../product/lkw/QUICKSTART.md) |
-| Understand LKW without running it | [LKW Product Tour](../product/lkw/LKW_PRODUCT_TOUR.md) |
-| Inspect bounded LKW technical evidence | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
+| Try LKW | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) |
+| Understand LKW without running it | [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) |
+| Inspect bounded LKW technical evidence | [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
 | Start building with Intergrax | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md) |
 | Plan a deeper build | [BUILD_WITH_INTERGRAX](../builders/BUILD_WITH_INTERGRAX.md) |
 | Review as an architect or platform engineer | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) |
@@ -82,7 +82,7 @@ Product Tour
 → Platform Proof
 ```
 
-Start with the [LKW Product Tour](../product/lkw/LKW_PRODUCT_TOUR.md) to understand the experience without running anything. From there, choose the [LKW Quick Start](../product/lkw/QUICKSTART.md) to run the supported indexed path or the [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) to inspect bounded technical evidence.
+Start with the [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) to understand the experience without running anything. From there, choose the [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) to run the supported indexed path or the [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) to inspect bounded technical evidence.
 
 ### Token Optimization Engine
 
@@ -122,9 +122,9 @@ publisher portal, or commercial catalog today.
 | [Roadmap](../overview/ROADMAP.md) | Outcome-gated direction across repeatability, complete intended outcome, real-user validation, evidence-driven expansion and hardening/packaging |
 | [Collaboration](COLLABORATION.md) | Evaluation feedback, contribution, pilot-discussion, permission-request and security routes |
 | [LICENSE](../../../LICENSE) | Legal evaluation and collaboration terms |
-| [LKW Product Tour](../product/lkw/LKW_PRODUCT_TOUR.md) | Non-executable product-first walkthrough of the supported LKW experience and boundaries |
-| [LKW Quick Start](../product/lkw/QUICKSTART.md) | Supported executable indexed LKW product evaluation |
-| [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
+| [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) | Non-executable product-first walkthrough of the supported LKW experience and boundaries |
+| [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Supported executable indexed LKW product evaluation |
+| [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
 | [Token Optimization guide](../capabilities/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
 | [Agent Marketplace concept](../product/AGENT_MARKETPLACE.md) | Future ecosystem direction — governed agent distribution concept and reference architecture (not a shipped product) |
 | [Intergrax Proofs](../proofs/PROOFS.md) | Current evidence status / public evidence dashboard — status legend and verification paths |

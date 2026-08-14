@@ -426,7 +426,7 @@ No Slack-only stores or duplicate crypto required. Retrieval requires **new** na
 
 ### Accepted PRODUCT-4 audit (1)
 
-1. `docs/project/product/lkw/PRODUCT_4_SLACK_DAILY_USE_GAP_AUDIT.md`
+1. `applications/local_workspace_application/docs/product/PRODUCT_4_SLACK_DAILY_USE_GAP_AUDIT.md`
 
 ### Production / source files (6 — R2 budget respected)
 
@@ -472,6 +472,6 @@ No Slack-only stores or duplicate crypto required. Retrieval requires **new** na
 
 ## Document metadata
 
-**Files changed:** `docs/project/product/lkw/PRODUCT_4_DAILY_USE_ARCHITECTURE_DECISIONS.md` (this file only at commit).
+**Files changed:** `applications/local_workspace_application/docs/product/PRODUCT_4_DAILY_USE_ARCHITECTURE_DECISIONS.md` (this file only at commit).
 
 **Concurrent work:** preserve unrelated repository changes; stage only this file at commit.

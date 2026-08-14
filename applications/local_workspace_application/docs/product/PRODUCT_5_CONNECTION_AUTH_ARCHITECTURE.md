@@ -534,4 +534,4 @@ applications/local_workspace_application/tests/.../test_tenant_connection_produc
 | Field | Value |
 |-------|-------|
 | Task | LKW-PRODUCT-5B-ARCH-1 · R1: LKW-PRODUCT-5B-ARCH-1-R1 · R2: LKW-PRODUCT-5B-ARCH-1-R2 |
-| Document only | `docs/project/product/lkw/PRODUCT_5_CONNECTION_AUTH_ARCHITECTURE.md` |
+| Document only | `applications/local_workspace_application/docs/product/PRODUCT_5_CONNECTION_AUTH_ARCHITECTURE.md` |

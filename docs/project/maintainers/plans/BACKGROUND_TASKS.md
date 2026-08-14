@@ -127,7 +127,7 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 | Local `MessageBus` provider wiring | Configured `message_bus` integration in proof stack (for example RabbitMQ in Docker) |
 | Async enqueue / consume | `message_bus.enqueue` returns before handler completes; worker consumes from broker |
 | WorkerRuntime proof mode | Resolves registry, runs handler, stores result |
-| LKW.4E consumer | Background ingest live proof via public reviewer path ([`LKW_PLATFORM_PROOF.md`](../../proofs/LKW_PLATFORM_PROOF.md) Step 8) |
+| LKW.4E consumer | Background ingest live proof via public reviewer path ([`LKW_PLATFORM_PROOF.md`](../../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) Step 8) |
 
 **Depends on:** BG-TASKS-1, BG-TASKS-2 (minimal contract)  
 **Out of scope:** Cloud-managed vendor backends (SQS, Service Bus, Pub/Sub) in LKW.4E first pass

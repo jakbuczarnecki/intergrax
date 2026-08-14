@@ -11,7 +11,7 @@ import pytest
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-_LKW_PLATFORM_PROOF = _REPO_ROOT / "docs/project/proofs/LKW_PLATFORM_PROOF.md"
+_LKW_PLATFORM_PROOF = _REPO_ROOT / "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md"
 _SCRIPTS = _REPO_ROOT / "applications/local_workspace_application/scripts"
 _DOCKER = _REPO_ROOT / "applications/local_workspace_application/docker"
 _PROOFS = _REPO_ROOT / "docs/project/proofs/PROOFS.md"
@@ -272,7 +272,7 @@ def test_proofs_doc_core_platform_proof_deep_link_resolves() -> None:
     fragments = [
         target.split("#", 1)[1]
         for target in _MD_LINK.findall(proofs_text)
-        if target.startswith("LKW_PLATFORM_PROOF.md#")
+        if "LKW_PLATFORM_PROOF.md#" in target
     ]
     assert fragments, "PROOFS.md must link to anchored LKW Platform Proof sections"
     assert all(fragment in heading_slugs for fragment in fragments), fragments
@@ -394,7 +394,7 @@ def test_lkw_platform_proof_certification_matrix() -> None:
         _SCRIPTS / "generate-lkw-platform-certification-matrix.py"
     ).is_file()
     matrix_md = (
-        _REPO_ROOT / "docs/project/maintainers/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
+        _REPO_ROOT / "applications/local_workspace_application/docs/proof/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
     )
     assert matrix_md.is_file()
     matrix_text = matrix_md.read_text(encoding="utf-8")

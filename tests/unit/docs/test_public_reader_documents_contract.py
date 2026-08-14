@@ -18,8 +18,12 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
 PROOFS_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "PROOFS.md"
-LKW_PRODUCT_TOUR_PATH = REPO_ROOT / "docs" / "project" / "product" / "lkw" / "LKW_PRODUCT_TOUR.md"
-LKW_QUICKSTART_PATH = REPO_ROOT / "docs" / "project" / "product" / "lkw" / "QUICKSTART.md"
+LKW_PRODUCT_TOUR_PATH = (
+    REPO_ROOT / "applications" / "local_workspace_application" / "docs" / "product" / "LKW_PRODUCT_TOUR.md"
+)
+LKW_QUICKSTART_PATH = (
+    REPO_ROOT / "applications" / "local_workspace_application" / "docs" / "product" / "QUICKSTART.md"
+)
 HUB_PATH = REPO_ROOT / "docs" / "project" / "README.md"
 WHY_PATH = REPO_ROOT / "docs" / "project" / "overview" / "WHY_INTERGRAX.md"
 USE_CASES_PATH = REPO_ROOT / "docs" / "project" / "overview" / "USE_CASES.md"
@@ -138,14 +142,14 @@ _BOUNDARY_PHRASES_BUILD = (
 _LINK_TARGETS_BY_DOC: dict[Path, tuple[str, ...]] = {
     WHY_PATH: (
         "../proofs/PROOFS.md",
-        "../proofs/LKW_PLATFORM_PROOF.md",
+        "../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
         "../capabilities/token_optimization/README.md",
         "../architecture/ARCHITECTURE_OVERVIEW.md",
         "../builders/BUILD_WITH_INTERGRAX.md",
     ),
     ARCHITECTURE_OVERVIEW_PATH: (
         "../proofs/PROOFS.md",
-        "../proofs/LKW_PLATFORM_PROOF.md",
+        "../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
         "../capabilities/token_optimization/README.md",
         "../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md",
         "../technical/DOCUMENTATION_MAP.md",
@@ -153,7 +157,7 @@ _LINK_TARGETS_BY_DOC: dict[Path, tuple[str, ...]] = {
     ),
     BUILD_PATH: (
         "../proofs/PROOFS.md",
-        "../proofs/LKW_PLATFORM_PROOF.md",
+        "../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
         "../capabilities/token_optimization/README.md",
         "../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md",
         "../community/PUBLIC_DOCUMENTATION_MAP.md",
@@ -174,7 +178,7 @@ _LINK_TARGETS_BY_DOC: dict[Path, tuple[str, ...]] = {
         "../technical/guides/AGENT_CREATION_GUIDE.md",
         "../../../applications/USAGE.md",
         "../technical/DOCUMENTATION_MAP.md",
-        "../product/lkw/QUICKSTART.md",
+        "../../../applications/local_workspace_application/docs/product/QUICKSTART.md",
     ),
     USE_CASES_PATH: (
         "../proofs/PROOFS.md",
@@ -357,7 +361,7 @@ def test_project_projections_synchronize_accepted_lkw_boundaries() -> None:
 
 def test_lkw_quickstart_reader_literals_and_routes() -> None:
     text = _read(LKW_QUICKSTART_PATH)
-    malformed_prefix = "../../../../applications/local_workspace_application/docs/"
+    malformed_prefix = "../../"
     for literal in (
         "uv",
         "PATH",
@@ -377,7 +381,7 @@ def test_lkw_quickstart_reader_literals_and_routes() -> None:
         assert f"{malformed_prefix}{literal}" not in text
 
     assert (
-        "../../../../applications/local_workspace_application/docs/"
+        "../../"
         "applications/local_workspace_application"
     ) not in text
     for launcher in _LKW_QUICKSTART_SCRIPTS:
@@ -387,7 +391,7 @@ def test_lkw_quickstart_reader_literals_and_routes() -> None:
         "lkw_product_quickstart.txt",
         "persisted_run_verified=true",
         "[LKW Product Tour](LKW_PRODUCT_TOUR.md)",
-        "[LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md)",
+        "[LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md)",
         "LKW-PRODUCT-QUICKSTART-WINDOWS",
         "LKW-PRODUCT-QUICKSTART-LINUX",
         "LKW-PRODUCT-QUICKSTART-MACOS",
@@ -696,10 +700,10 @@ def test_project_documentation_hub_routing() -> None:
         "Evaluate",
         "Build with Intergrax",
         "Review architecture",
-        "product/lkw/LKW_PRODUCT_TOUR.md",
-        "product/lkw/QUICKSTART.md",
+        "applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md",
+        "applications/local_workspace_application/docs/product/QUICKSTART.md",
         "proofs/PROOFS.md",
-        "proofs/LKW_PLATFORM_PROOF.md",
+        "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
         "builders/EVALUATION_GUIDE.md",
         "builders/BUILDER_QUICKSTART.md",
         "architecture/ARCHITECTURE_OVERVIEW.md",
@@ -976,7 +980,9 @@ def test_why_canonical_opening(why_text: str) -> None:
         assert phrase in opening, f"WHY opening missing semantic marker: {phrase}"
 
 
-_LKW_PLATFORM_PROOF_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "LKW_PLATFORM_PROOF.md"
+_LKW_PLATFORM_PROOF_PATH = (
+    REPO_ROOT / "applications" / "local_workspace_application" / "docs" / "proof" / "LKW_PLATFORM_PROOF.md"
+)
 
 
 def test_quickstart_canonical_model_configuration_contract() -> None:

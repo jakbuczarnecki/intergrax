@@ -74,7 +74,7 @@ The diagram is a responsibility-based evaluation route, not a list of completed 
 
 LKW is the **Primary Product Proof**, **Backend Product Alpha / MVP**, with **PARTIAL** proof status. Bounded indexed Ask evidence exists, including the indexed path through production Hybrid Ask. Indexed Ask through production Hybrid Ask is boundedly demonstrated; authorized live evidence combined with indexed evidence is not yet established. Mixed indexed + authorized live Hybrid Ask remains incomplete, and complete live-provider access is incomplete. This is not a finished SaaS claim.
 
-Canonical verification route: [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) via [PROOFS — LKW Primary Product Proof](../proofs/PROOFS.md#lkw--primary-product-proof).
+Canonical verification route: [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) via [PROOFS — LKW Primary Product Proof](../proofs/PROOFS.md#lkw--primary-product-proof).
 
 ## Other bounded technical fits
 

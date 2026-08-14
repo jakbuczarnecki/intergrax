@@ -29,7 +29,9 @@ PROOFS_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "PROOFS.md"
 PARTNERS_PATH = REPO_ROOT / "docs" / "project" / "community" / "PARTNERS.md"
 COLLABORATION_PATH = REPO_ROOT / "docs" / "project" / "community" / "COLLABORATION.md"
 LICENSE_PATH = REPO_ROOT / "LICENSE"
-LKW_PROOF_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "LKW_PLATFORM_PROOF.md"
+LKW_PROOF_PATH = (
+    REPO_ROOT / "applications" / "local_workspace_application" / "docs" / "proof" / "LKW_PLATFORM_PROOF.md"
+)
 TOKEN_GUIDE_PATH = REPO_ROOT / "docs" / "project" / "capabilities" / "token_optimization" / "README.md"
 
 _LEGAL_HEADER = (
@@ -155,7 +157,7 @@ _STALE_PHRASES = (
     "README.md#start-here",
     "README.md#proof-of-platform",
     "LOCAL_KNOWLEDGE_WORKSPACE_ALPHA",
-    "docs/project/proofs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md",
+    "applications/local_workspace_application/docs/proof/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md",
 )
 
 _ISSUE_URL_PATTERN = re.compile(
@@ -251,7 +253,7 @@ _EVAL_GUIDE_LINKS = (
     "../../../LICENSE",
     "../community/PUBLIC_DOCUMENTATION_MAP.md",
     "../technical/DOCUMENTATION_MAP.md",
-    "../proofs/LKW_PLATFORM_PROOF.md",
+    "../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
     "../capabilities/token_optimization/README.md",
 )
 

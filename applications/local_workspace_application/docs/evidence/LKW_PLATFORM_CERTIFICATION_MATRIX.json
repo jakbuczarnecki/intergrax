@@ -25,7 +25,7 @@
       "certification_source_commit": "40a73fbb455def6d5106180d74a7e65388457465",
       "certified_at_utc": "2026-07-21T09:34:20Z",
       "evidence_available": true,
-      "evidence_source": "docs/project/maintainers/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json",
+      "evidence_source": "applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json",
       "execution_environment": "container",
       "full_core_platform_proof_certified_by_profile": false,
       "implementation_status": "implemented",
@@ -117,7 +117,7 @@
       "certification_source_commit": "6b71a841c894728766fd6f574c9cd53ad12ec5f9",
       "certified_at_utc": "2026-07-21T10:18:33Z",
       "evidence_available": true,
-      "evidence_source": "docs/project/maintainers/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json",
+      "evidence_source": "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json",
       "execution_environment": "native_host",
       "full_core_platform_proof_certified_by_profile": false,
       "implementation_status": "implemented",
@@ -169,7 +169,7 @@
       "certification_result": "PASS",
       "certification_source_commit": "40a73fbb455def6d5106180d74a7e65388457465",
       "certified_at_utc": "2026-07-21T09:34:20Z",
-      "path": "docs/project/maintainers/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json",
+      "path": "applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json",
       "schema_version": "lkw.linux_docker_certification.v1",
       "sha256": "bd940d683d445a08db5deff4f57d3071ed19890e821b875281371fb60ad33678"
     },
@@ -178,7 +178,7 @@
       "certification_result": "PASS",
       "certification_source_commit": "6b71a841c894728766fd6f574c9cd53ad12ec5f9",
       "certified_at_utc": "2026-07-21T10:18:33Z",
-      "path": "docs/project/maintainers/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json",
+      "path": "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json",
       "schema_version": "lkw.windows_native_certification.v1",
       "sha256": "2445b2222ba329169e8a437e5c4499f2835f559c1407f200e6d415e720519801"
     }

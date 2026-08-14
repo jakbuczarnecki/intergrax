@@ -306,11 +306,11 @@ setup snapshot.
 12. `applications/local_workspace_application/workspaces/conversation_workspace_selection_service.py` (targeted sections)
 13. `applications/local_workspace_application/serving/knowledge_query_policy_routes.py` (targeted sections)
 14. `applications/local_workspace_application/serving/knowledge_connection_attachment_routes.py` (targeted sections)
-15. `docs/project/product/lkw/USER_JOURNEY.md` (targeted sections)
+15. `applications/local_workspace_application/docs/product/USER_JOURNEY.md` (targeted sections)
 
 **Targeted discovery only:** `grep` / `glob` on `applications/local_workspace_application/` for routes, symbols, and onboarding keywords — not repo-wide semantic search.
 
-**Files changed:** `docs/project/product/lkw/PRODUCT_3_FIRST_RUN_GAP_AUDIT.md` (this file); aligned with Slack-first contract correction in `PRODUCT_CONTRACT.md` and `USER_JOURNEY.md`.
+**Files changed:** `applications/local_workspace_application/docs/product/PRODUCT_3_FIRST_RUN_GAP_AUDIT.md` (this file); aligned with Slack-first contract correction in `PRODUCT_CONTRACT.md` and `USER_JOURNEY.md`.
 
 ---
 

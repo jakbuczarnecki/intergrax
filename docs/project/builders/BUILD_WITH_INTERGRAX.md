@@ -138,13 +138,13 @@ Deeper technical owner:
 
 ## Concrete composition example: LKW
 
-[LKW](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) demonstrates the pattern without being a mandatory builder starting point: its workspace workflow, approved-source choice, user-facing Ask, and product acceptance are application responsibilities; ingest, knowledge boundaries, governed execution, evidence/provenance, and hosting/runtime mechanisms are shared foundations. Use the [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) only when that product-specific route is relevant. Do not duplicate its technical architecture here.
+[LKW](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) demonstrates the pattern without being a mandatory builder starting point: its workspace workflow, approved-source choice, user-facing Ask, and product acceptance are application responsibilities; ingest, knowledge boundaries, governed execution, evidence/provenance, and hosting/runtime mechanisms are shared foundations. Use the [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) only when that product-specific route is relevant. Do not duplicate its technical architecture here.
 
 ## Sibling routes and boundaries
 
 - If the goal is a time-boxed evaluation rather than application composition, use the separate [Evaluation Guide](EVALUATION_GUIDE.md). It owns evaluation execution; this guide does not turn every builder into an evaluator.
 - If the goal is current public evidence status, use [PROOFS](../proofs/PROOFS.md). A builder plan or local result does not promote a public claim.
-- For the product trial, use [Try LKW](../../../README.md#try-lkw) or its [LKW Quick Start](../product/lkw/QUICKSTART.md).
+- For the product trial, use [Try LKW](../../../README.md#try-lkw) or its [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md).
 - For public reader routing, use the [Public Documentation Map](../community/PUBLIC_DOCUMENTATION_MAP.md); for deep technical routing, use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md).
 - Collaboration routes are in [COLLABORATION.md](../community/COLLABORATION.md).
 

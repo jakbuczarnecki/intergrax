@@ -206,8 +206,8 @@ Implement daily Slack inventory/freshness/attention presentation and lifecycle w
 
 ### Canonical product docs (2)
 
-1. `docs/project/product/lkw/PRODUCT_CONTRACT.md`
-2. `docs/project/product/lkw/PRODUCT_3_FIRST_RUN_GAP_AUDIT.md`
+1. `applications/local_workspace_application/docs/product/PRODUCT_CONTRACT.md`
+2. `applications/local_workspace_application/docs/product/PRODUCT_3_FIRST_RUN_GAP_AUDIT.md`
 
 ### Production / source files read (12 — budget respected)
 
@@ -247,6 +247,6 @@ Implement daily Slack inventory/freshness/attention presentation and lifecycle w
 
 ## Audit metadata
 
-**Files changed:** `docs/project/product/lkw/PRODUCT_4_SLACK_DAILY_USE_GAP_AUDIT.md` (this file only).
+**Files changed:** `applications/local_workspace_application/docs/product/PRODUCT_4_SLACK_DAILY_USE_GAP_AUDIT.md` (this file only).
 
 **Concurrent work:** preserve unrelated repository changes; stage only this file at commit.

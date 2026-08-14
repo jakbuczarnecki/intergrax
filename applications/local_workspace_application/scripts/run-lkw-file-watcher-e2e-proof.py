@@ -59,7 +59,7 @@ _SIDECAR_RESULT_SCHEMA = "lkw.file_watcher_sidecar_result.v1"
 _VERIFICATION_DOCUMENT = (
     "applications/local_workspace_application/docs/LKW_7_FILE_WATCHER_VERIFICATION.md"
 )
-_REVIEWER_GUIDE = "docs/project/proofs/LKW_PLATFORM_PROOF.md"
+_REVIEWER_GUIDE = "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md"
 
 _TENANT_ID = "lkw-file-watcher-e2e"
 _WORKSPACE_ID = "lkw-file-watcher-e2e"

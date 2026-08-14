@@ -77,7 +77,7 @@ def test_proofs_surface_lkw_product_quickstart_taxonomy(proofs_text: str) -> Non
 
     assert "Product Quick Start" in lkw_section
     assert "indexed Ask V1" in lkw_section or "Ask V1" in lkw_section
-    assert "../product/lkw/QUICKSTART.md" in lkw_section
+    assert "../../../applications/local_workspace_application/docs/product/QUICKSTART.md" in lkw_section
 
     for proof_id in (
         "LKW-PRODUCT-QUICKSTART-WINDOWS",

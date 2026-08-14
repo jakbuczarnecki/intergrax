@@ -1190,7 +1190,7 @@ def emit_success(answer: str, workspace_id: str, run_id: str) -> None:
     _print_kv("persisted_run_verified", "true")
     _print_kv("stack_left_running", "true")
     print(
-        "Stack remains running for inspection. See docs/project/product/lkw/QUICKSTART.md "
+        "Stack remains running for inspection. See applications/local_workspace_application/docs/product/QUICKSTART.md "
         "for stop and troubleshooting commands.",
         flush=True,
     )

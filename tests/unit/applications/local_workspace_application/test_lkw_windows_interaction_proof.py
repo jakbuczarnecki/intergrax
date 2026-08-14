@@ -23,7 +23,14 @@ _PROOF_BAT = _SCRIPTS_DIR / "run-lkw-windows-interaction-proof.bat"
 _ADAPTER_SCRIPT = _SCRIPTS_DIR / "invoke-lkw-interaction.ps1"
 _SHARED_CLIENT = _SCRIPTS_DIR / "invoke-lkw-interaction.py"
 _PUBLIC_PLATFORM_PROOF = (
-    _PROJECT_ROOT / "docs" / "project" / "proofs" / "LKW_PLATFORM_PROOF.md"
+_LKW_PLATFORM_PROOF = (
+    _PROJECT_ROOT
+    / "applications"
+    / "local_workspace_application"
+    / "docs"
+    / "proof"
+    / "LKW_PLATFORM_PROOF.md"
+)
 )
 _LIVE_TEST = (
     _LKW_ROOT / "tests" / "interactions" / "test_windows_powershell_interaction_live.py"

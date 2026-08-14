@@ -7,10 +7,10 @@ what you want to understand, try, inspect, build, or review.
 
 - **Understand Intergrax** — [Why Intergrax](overview/WHY_INTERGRAX.md) explains the
   problem, value, and fit.
-- **Try LKW** — [LKW Product Tour](product/lkw/LKW_PRODUCT_TOUR.md) →
-  [LKW Quick Start](product/lkw/QUICKSTART.md). This is the primary product action.
+- **Try LKW** — [LKW Product Tour](../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) →
+  [LKW Quick Start](../../applications/local_workspace_application/docs/product/QUICKSTART.md). This is the primary product action.
 - **Review proof** — [Proofs](proofs/PROOFS.md) shows evidence status; [LKW Platform
-  Proof](proofs/LKW_PLATFORM_PROOF.md) provides the deeper product evidence route.
+  Proof](../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) provides the deeper product evidence route.
 - **Evaluate** — use the [Evaluation Guide](builders/EVALUATION_GUIDE.md) to test one
   selected claim or workflow.
 - **Build with Intergrax** — [Builder Quick Start](builders/BUILDER_QUICKSTART.md) →
@@ -46,7 +46,7 @@ what you want to understand, try, inspect, build, or review.
   for governed agent distribution (concept and reference architecture; not a
   shipped product).
 - [Integrations](integrations/README.md) — canonical integration documentation.
-- [Products](product/lkw/LKW_PRODUCT_TOUR.md) — begin with the documented LKW product
+- [Products](../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) — begin with the documented LKW product
   route.
 
 ## Documentation depth
@@ -54,7 +54,7 @@ what you want to understand, try, inspect, build, or review.
 - **Project landing and first contact** — the [root README](../../README.md).
 - **Public reader routes** — the [Public Documentation Map](community/PUBLIC_DOCUMENTATION_MAP.md).
 - **Proof and evidence** — [Intergrax Proofs](proofs/PROOFS.md) and the
-  [LKW Platform Proof](proofs/LKW_PLATFORM_PROOF.md).
+  [LKW Platform Proof](../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md).
 - **Technical routing** — the [Technical Documentation Map](technical/DOCUMENTATION_MAP.md).
 - **Maintainer controls** — [Maintainer Documentation](maintainers/public-adoption/README.md).
 

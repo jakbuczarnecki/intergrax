@@ -2,7 +2,7 @@
 
 Local Knowledge Workspace (LKW) is the primary Intergrax product path: a workspace for adding approved knowledge, asking questions, and receiving grounded answers with a source reference.
 
-This tour explains the supported indexed-knowledge experience without requiring installation or a local run. It is a product walkthrough, not a screenshot of a finished application UI. Readers who want to run the path should use the [LKW Quick Start](QUICKSTART.md); technical reviewers should use the [LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md).
+This tour explains the supported indexed-knowledge experience without requiring installation or a local run. It is a product walkthrough, not a screenshot of a finished application UI. Readers who want to run the path should use the [LKW Quick Start](QUICKSTART.md); technical reviewers should use the [LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md).
 
 LKW is the **Primary Product Proof** and currently a **Backend Product Alpha / MVP** with **PARTIAL** status. The tour covers indexed knowledge, while real-user validation and commercial validation remain incomplete.
 
@@ -17,20 +17,20 @@ LKW is the **Primary Product Proof** and currently a **Backend Product Alpha / M
 | Maturity | Backend Product Alpha / MVP |
 | Primary next action | Run the supported LKW Quick Start |
 | Run it | [LKW Quick Start](QUICKSTART.md) |
-| Technical review | [LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md) |
+| Technical review | [LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md) |
 
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
-    srcset="../../assets/public/lkw-grounded-result-dark.svg"
+    srcset="../assets/lkw-grounded-result-dark.svg"
   >
   <source
     media="(prefers-color-scheme: light)"
-    srcset="../../assets/public/lkw-grounded-result-light.svg"
+    srcset="../assets/lkw-grounded-result-light.svg"
   >
   <img
     alt="LKW quickstart flow showing the approved sample file lkw_product_quickstart.txt, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification."
-    src="../../assets/public/lkw-grounded-result-light.svg"
+    src="../assets/lkw-grounded-result-light.svg"
   >
 </picture>
 
@@ -118,8 +118,8 @@ It does not represent:
 
 | Route | Use it for |
 |-------|------------|
-| [LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md) | Inspect deeper technical evidence |
-| [docs/project/proofs/PROOFS.md](../../proofs/PROOFS.md) | Check current evidence status |
-| [docs/project/overview/USE_CASES.md](../../overview/USE_CASES.md) | Check whether the use case fits |
-| [Evaluation Guide](../../builders/EVALUATION_GUIDE.md) | Evaluate one bounded claim fairly |
+| [LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md) | Inspect deeper technical evidence |
+| [docs/project/proofs/PROOFS.md](../../../../docs/project/proofs/PROOFS.md) | Check current evidence status |
+| [docs/project/overview/USE_CASES.md](../../../../docs/project/overview/USE_CASES.md) | Check whether the use case fits |
+| [Evaluation Guide](../../../../docs/project/builders/EVALUATION_GUIDE.md) | Evaluate one bounded claim fairly |
 | [README.md](../../../../README.md) | Return to the project overview |

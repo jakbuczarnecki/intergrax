@@ -113,7 +113,7 @@ _LINK_CHECK_PATHS = (
 
 _REQUIRED_LINKS_ROADMAP = (
     "PROOFS.md",
-    "../proofs/LKW_PLATFORM_PROOF.md",
+    "../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
     "USE_CASES.md",
     "BUILD_WITH_INTERGRAX.md",
     "../community/PUBLIC_DOCUMENTATION_MAP.md",
@@ -121,7 +121,7 @@ _REQUIRED_LINKS_ROADMAP = (
 
 _REQUIRED_LINKS_USE_CASES = (
     "PROOFS.md",
-    "../proofs/LKW_PLATFORM_PROOF.md",
+    "../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
     "../capabilities/token_optimization/README.md",
     "BUILD_WITH_INTERGRAX.md",
     "EVALUATION_GUIDE.md",

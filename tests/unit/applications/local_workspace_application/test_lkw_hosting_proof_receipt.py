@@ -16,7 +16,12 @@ _SCRIPTS_DIR = _LKW_ROOT / "scripts"
 _PROOF_SCRIPT = _SCRIPTS_DIR / "run-lkw-hosting-proof.py"
 _PROOF_BAT = _SCRIPTS_DIR / "run-lkw-hosting-proof.bat"
 _PUBLIC_PLATFORM_PROOF = (
-    _PROJECT_ROOT / "docs" / "project" / "proofs" / "LKW_PLATFORM_PROOF.md"
+    _PROJECT_ROOT
+    / "applications"
+    / "local_workspace_application"
+    / "docs"
+    / "proof"
+    / "LKW_PLATFORM_PROOF.md"
 )
 _FOREGROUND_TEST = _LKW_ROOT / "tests" / "hosting" / "test_hosted_foreground_process.py"
 _RESTART_TEST = _LKW_ROOT / "tests" / "hosting" / "test_hosted_restart_live.py"

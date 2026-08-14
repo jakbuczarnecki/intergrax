@@ -8,7 +8,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Central guide for the Token Optimization platform capability: deterministic optimization layers, policy-governed routing, protected-region safety, receipts, cache-stable prompt assembly, and reproducible proofs.
 
-**Public proof dashboard:** [`../../proofs/PROOFS.md`](../../proofs/PROOFS.md)
+**Public proof dashboard:** [`../../../../docs/project/proofs/PROOFS.md`](../../../../docs/project/proofs/PROOFS.md)
 
 ---
 
@@ -27,7 +27,7 @@ Central guide for the Token Optimization platform capability: deterministic opti
 | **Bounded durable mechanism** | Durable repository, validation and CAS activation are implemented; live provider-wide proof, rollback execution and production rollout are not established |
 | **Public limitations** | No provider-independent, universal or production-proven savings claim |
 | **Detailed implementation roadmap** | [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) |
-| **Public proof dashboard** | [`../../proofs/PROOFS.md`](../../proofs/PROOFS.md) |
+| **Public proof dashboard** | [`../../../../docs/project/proofs/PROOFS.md`](../../../../docs/project/proofs/PROOFS.md) |
 
 Detailed phase, dependency and review status is maintained only
 in the Token Optimization implementation plan and is not repeated here.

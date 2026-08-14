@@ -16,7 +16,7 @@ references and persisted evidence.
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
 [![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44e.svg)](docs/project/proofs/PROOFS.md)
 
-**[Try LKW](#try-lkw)** · [See the LKW workflow](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) · [Review proof](docs/project/proofs/PROOFS.md)
+**[Try LKW](#try-lkw)** · [See the LKW workflow](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) · [Review proof](docs/project/proofs/PROOFS.md)
 
 > Intergrax is **source-available** and under **active R&D**. LKW is a
 > **Backend Product Alpha / MVP**. **Real-user validation** and **commercial
@@ -42,15 +42,15 @@ quick-start proof.
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/lkw-grounded-result-dark.svg"
+    srcset="applications/local_workspace_application/docs/assets/lkw-grounded-result-dark.svg"
   >
   <source
     media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/lkw-grounded-result-light.svg"
+    srcset="applications/local_workspace_application/docs/assets/lkw-grounded-result-light.svg"
   >
   <img
     alt="LKW quickstart flow showing the approved sample file lkw_product_quickstart.txt, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification."
-    src="docs/project/assets/public/lkw-grounded-result-light.svg"
+    src="applications/local_workspace_application/docs/assets/lkw-grounded-result-light.svg"
   >
 </picture>
 
@@ -62,7 +62,7 @@ screenshot; dynamic workspace and Ask-run IDs are omitted.
 LKW is the **Primary Product Proof**, classified as **Backend Product Alpha /
 MVP**, with **PARTIAL** status.
 
-**Primary executable product path:** [Product Quick Start](docs/project/product/lkw/QUICKSTART.md)
+**Primary executable product path:** [Product Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md)
 exercises **indexed Ask V1** — not Hybrid Ask certification, Trusted Ask
 durability, or Core Platform Proof.
 
@@ -70,20 +70,20 @@ durability, or Core Platform Proof.
 (`LKW-HYBRID-ASK-INDEXED`) validates indexed retrieval and boundary behavior.
 Hybrid Ask combining indexed and authorized live evidence is **not yet proven**.
 
-**Separate live durability evidence:** [Trusted Ask](docs/project/proofs/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
+**Separate live durability evidence:** [Trusted Ask](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
 (`LKW-ASK-WORKSPACE-LIVE`) verifies completed grounded Ask outcomes across
 restart without resync/reindex.
 
 **Not yet proven:** complete live-provider access, finished end-user packaging,
 **real-user validation**, and **commercial validation**. See
-[LKW Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) and
+[LKW Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) and
 [PROOFS](docs/project/proofs/PROOFS.md).
 
 ## Try LKW
 
 One supported command takes you from the repository root to a grounded answer
 with a source citation over indexed knowledge. Detailed prerequisites and
-troubleshooting live in the [LKW Quick Start](docs/project/product/lkw/QUICKSTART.md).
+troubleshooting live in the [LKW Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md).
 
 **Windows:**
 
@@ -114,9 +114,9 @@ selected provider; duration depends on your environment.
 
 | Route | Purpose |
 | --- | --- |
-| [Product Tour](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) | Understand what the product experience looks like |
-| [Quick Start](docs/project/product/lkw/QUICKSTART.md) | Run the canonical product path |
-| [Core Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) | Verify bounded infrastructure/platform behavior |
+| [Product Tour](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) | Understand what the product experience looks like |
+| [Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md) | Run the canonical product path |
+| [Core Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) | Verify bounded infrastructure/platform behavior |
 
 **Core Platform Proof** is separate from Product Quick Start and Trusted Ask: a
 platform-level bounded proof covering startup/readiness, durable knowledge and
@@ -132,9 +132,9 @@ or all-provider certification.
 
 | You want to… | Start here |
 | --- | --- |
-| Try the product | [LKW Quick Start](docs/project/product/lkw/QUICKSTART.md) |
-| Understand the product first | [LKW Product Tour](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) |
-| Verify bounded platform behavior | [Core Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) |
+| Try the product | [LKW Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md) |
+| Understand the product first | [LKW Product Tour](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) |
+| Verify bounded platform behavior | [Core Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
 | Check whether your workflow fits | [Use Cases](docs/project/overview/USE_CASES.md) |
 | Review current evidence | [PROOFS](docs/project/proofs/PROOFS.md) |
 | Evaluate as an investor or business decision maker | [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md) |

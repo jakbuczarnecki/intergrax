@@ -453,8 +453,8 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Understand product-validation direction | `ROADMAP.md` |
 | See the first-contact LKW product workflow | `README.md#local-knowledge-workspace-lkw` |
 | Understand LKW without running it | `LKW_PRODUCT_TOUR.md` |
-| Try LKW (supported product quickstart) | `docs/project/product/lkw/QUICKSTART.md` |
-| Run or inspect the bounded LKW technical proof | `docs/project/proofs/LKW_PLATFORM_PROOF.md` |
+| Try LKW (supported product quickstart) | `applications/local_workspace_application/docs/product/QUICKSTART.md` |
+| Run or inspect the bounded LKW technical proof | `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` |
 | Explore Token Optimization | Token Optimization main guide — `docs/project/capabilities/token_optimization/README.md` |
 | Start building with Intergrax | `BUILDER_QUICKSTART.md` |
 | Plan a deeper application build | `BUILD_WITH_INTERGRAX.md` |
@@ -696,11 +696,11 @@ PX-4 owns the neutral documentation visual for the supported indexed LKW Quick S
 The canonical assets are:
 
 ```text
-docs/project/assets/public/lkw-grounded-result-light.svg
-docs/project/assets/public/lkw-grounded-result-dark.svg
+applications/local_workspace_application/docs/assets/lkw-grounded-result-light.svg
+applications/local_workspace_application/docs/assets/lkw-grounded-result-dark.svg
 ```
 
-The root `README.md` is the primary placement and `docs/project/product/lkw/QUICKSTART.md` is the secondary placement. The visual is not a UI screenshot and makes no Hybrid, live-provider, or production claim.
+The root `README.md` is the primary placement and `applications/local_workspace_application/docs/product/QUICKSTART.md` is the secondary placement. The visual is not a UI screenshot and makes no Hybrid, live-provider, or production claim.
 
 The canonical alt-text meaning identifies `lkw_product_quickstart.txt`, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification.
 
@@ -801,7 +801,7 @@ the performance gate.
 | `FAQ.md` | Mixed general, architecture and legal FAQ | Layer 2 concise first-contact FAQ | `FAQ.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `ROADMAP.md` | Public product-validation roadmap | Layer 2 outcome-gated public roadmap | `ROADMAP.md` | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
 | `COLLABORATION.md` | Mixed collaboration and maintainer-control document | Layer 2 practical collaboration and permission-request router | `COLLABORATION.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
-| `docs/project/proofs/LKW_PLATFORM_PROOF.md` | LKW guided proof | Primary product proof | LKW proof docs | stable |
+| `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` | LKW guided proof | Primary product proof | LKW proof docs | stable |
 | `docs/project/capabilities/token_optimization/README.md` | Token Optimization guide | Featured platform-capability proof entry | Token Optimization docs | stable (this task) |
 | `docs/project/technical/DOCUMENTATION_MAP.md` | Technical/developer navigation | Layer 4 technical map | `docs/project/technical/DOCUMENTATION_MAP.md` | stable |
 | `docs/project/maintainers/public-adoption/README.md` | Maintainer adoption controls | Layer 5 maintainer index | `docs/project/maintainers/public-adoption/` | stable (this task) |

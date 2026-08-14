@@ -19,7 +19,7 @@ Intergrax supports specialized applications built on reusable foundations. This 
 | Audience | AI engineers and application developers |
 | First checkpoint | Workflow → ownership → closest surface → bounded change → nearest verification |
 | Primary next document | [Build With Intergrax](BUILD_WITH_INTERGRAX.md), after the checkpoint is clear |
-| Separate product trial | [LKW Quick Start](../product/lkw/QUICKSTART.md) |
+| Separate product trial | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) |
 | Separate evaluation route | [Evaluation Guide](EVALUATION_GUIDE.md) |
 
 ## The first builder decision
@@ -107,7 +107,7 @@ Setup and verification are route-owned. There is no universal builder setup comm
 
 Once you can state the workflow, ownership boundary, starting surface, bounded first change, and verification owner, continue to [Build With Intergrax](BUILD_WITH_INTERGRAX.md). It owns deeper route selection and build planning.
 
-For the selected route, follow its architecture or implementation guide. Use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) only when a deeper technical question needs routing. Use the [LKW Quick Start](../product/lkw/QUICKSTART.md) only when the goal is to try the LKW product, not to begin builder onboarding.
+For the selected route, follow its architecture or implementation guide. Use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) only when a deeper technical question needs routing. Use the [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) only when the goal is to try the LKW product, not to begin builder onboarding.
 
 ## Current boundaries
 

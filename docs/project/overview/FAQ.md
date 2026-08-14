@@ -16,8 +16,8 @@ This is a concise first-contact router. It does not replace the document that ow
 
 | First-contact question | Correct route |
 |------------------------|---------------|
-| Try LKW | [LKW Quick Start](../product/lkw/QUICKSTART.md) |
-| Understand LKW first | [LKW Product Tour](../product/lkw/LKW_PRODUCT_TOUR.md) |
+| Try LKW | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) |
+| Understand LKW first | [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) |
 | Evaluate a claim or proof | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
 | Build or extend an application | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md) |
 | Check current evidence | [PROOFS](../proofs/PROOFS.md) |
@@ -44,11 +44,11 @@ Current claim status belongs to [PROOFS](../proofs/PROOFS.md). It separates impl
 
 ## Is Hybrid Ask proven?
 
-Partly, with boundaries. The [Product Quick Start](../product/lkw/QUICKSTART.md) exercises indexed **Ask V1** — it is not the Hybrid Ask certification path. Separate accepted evidence demonstrates the bounded indexed branch through Hybrid Ask; see [PROOFS](../proofs/PROOFS.md) and [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md). Mixed indexed + authorized-live Hybrid Ask in one answer is **not proven**; this does not imply general production readiness or complete live-provider access.
+Partly, with boundaries. The [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) exercises indexed **Ask V1** — it is not the Hybrid Ask certification path. Separate accepted evidence demonstrates the bounded indexed branch through Hybrid Ask; see [PROOFS](../proofs/PROOFS.md) and [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md). Mixed indexed + authorized-live Hybrid Ask in one answer is **not proven**; this does not imply general production readiness or complete live-provider access.
 
 ## Where should I start?
 
-Use the [LKW Product Tour](../product/lkw/LKW_PRODUCT_TOUR.md) to understand the path, then the [LKW Quick Start](../product/lkw/QUICKSTART.md) to try it. For workflow fit, use [USE_CASES](USE_CASES.md).
+Use the [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) to understand the path, then the [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) to try it. For workflow fit, use [USE_CASES](USE_CASES.md).
 
 ## How do I evaluate Intergrax?
 

@@ -46,8 +46,8 @@ This Quick Start exercises the indexed **Ask V1** product path — real applicat
 boundaries, indexed knowledge only. It is **not** the separate Hybrid Ask
 proof/certification path, not a platform certification run, and not a production
 deployment. Accepted public evidence for the bounded indexed Hybrid Ask branch
-lives in [PROOFS](../../proofs/PROOFS.md) and
-[LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md); mixed indexed +
+lives in [PROOFS](../../../../docs/project/proofs/PROOFS.md) and
+[LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md); mixed indexed +
 authorized-live Hybrid Ask in one answer remains **not proven**.
 
 ## After the run
@@ -56,12 +56,12 @@ The quickstart is **script-driven**: one command uploads, asks, cites, and
 verifies the persisted Ask run. There is no polished end-user UI on this path.
 On success the stack stays running for inspection — health check
 (`http://127.0.0.1:8020/health`), Docker logs, and persisted run read. For
-deeper bounded platform verification, see [Core Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md).
+deeper bounded platform verification, see [Core Platform Proof](../proof/LKW_PLATFORM_PROOF.md).
 
 Product Quick Start and Core Platform Proof use separate execution lifecycles.
 Stop this quickstart stack before starting the isolated Core Platform Proof; see
 [Stop the stack](#stop-the-stack) and the proof document's
-[After Product Quick Start](../../proofs/LKW_PLATFORM_PROOF.md#after-product-quick-start)
+[After Product Quick Start](../proof/LKW_PLATFORM_PROOF.md#after-product-quick-start)
 section.
 
 **Proofs:** `LKW-PRODUCT-QUICKSTART-WINDOWS`, `LKW-PRODUCT-QUICKSTART-LINUX`, `LKW-PRODUCT-QUICKSTART-MACOS`
@@ -83,15 +83,15 @@ First-run duration depends on image downloads, model download, network speed, an
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
-    srcset="../../assets/public/lkw-grounded-result-dark.svg"
+    srcset="../assets/lkw-grounded-result-dark.svg"
   >
   <source
     media="(prefers-color-scheme: light)"
-    srcset="../../assets/public/lkw-grounded-result-light.svg"
+    srcset="../assets/lkw-grounded-result-light.svg"
   >
   <img
     alt="LKW quickstart flow showing the approved sample file lkw_product_quickstart.txt, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification."
-    src="../../assets/public/lkw-grounded-result-light.svg"
+    src="../assets/lkw-grounded-result-light.svg"
   >
 </picture>
 
@@ -153,7 +153,7 @@ You did not need to write API JSON, copy operation IDs manually, or configure `I
   model may be downloaded.
 
 **Canonical model-selection contract** (see
-[Platform Configuration](../../technical/guides/PLATFORM_CONFIGURATION.md)):
+[Platform Configuration](../../../../docs/project/technical/guides/PLATFORM_CONFIGURATION.md)):
 
 | Role | Provider variable | Model variable |
 | --- | --- | --- |
@@ -224,21 +224,21 @@ On Windows, from the repository root, run `cd /d applications\local_workspace_ap
 
 ## What this does not prove
 
-- the separate Hybrid Ask proof/certification path (see [PROOFS](../../proofs/PROOFS.md))
+- the separate Hybrid Ask proof/certification path (see [PROOFS](../../../../docs/project/proofs/PROOFS.md))
 - mixed indexed + authorized-live Hybrid Ask in one answer
 - Live-provider access
 - Production readiness or security/compliance certification
 - Commercial validation
-- Full LKW platform certification ([LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md) remains the deeper technical path)
+- Full LKW platform certification ([LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md) remains the deeper technical path)
 - Linux or macOS live certification unless you actually run the quickstart on those systems
 
 ## Primary next action
 
-**Inspect the bounded technical evidence:** [LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md)
+**Inspect the bounded technical evidence:** [LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md)
 
 ## Other routes
 
 - Product orientation: [LKW Product Tour](LKW_PRODUCT_TOUR.md)
-- Proof status dashboard: [docs/project/proofs/PROOFS.md](../../proofs/PROOFS.md)
-- Builder route: [Builder Quick Start](../../builders/BUILDER_QUICKSTART.md)
-- Deeper build planning: [docs/project/builders/BUILD_WITH_INTERGRAX.md](../../builders/BUILD_WITH_INTERGRAX.md)
+- Proof status dashboard: [docs/project/proofs/PROOFS.md](../../../../docs/project/proofs/PROOFS.md)
+- Builder route: [Builder Quick Start](../../../../docs/project/builders/BUILDER_QUICKSTART.md)
+- Deeper build planning: [docs/project/builders/BUILD_WITH_INTERGRAX.md](../../../../docs/project/builders/BUILD_WITH_INTERGRAX.md)

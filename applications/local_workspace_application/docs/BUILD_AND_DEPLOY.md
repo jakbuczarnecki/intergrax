@@ -221,7 +221,7 @@ Notes:
 
 Explicit `docker compose` commands from repository root are the **cross-platform reference path**. Windows `.bat` helpers below are convenience wrappers around the same stacks.
 
-For the full external reviewer walkthrough (expected outputs, Kibana inspection, proof-helper PASS criteria), see [`docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../../../docs/project/proofs/LKW_PLATFORM_PROOF.md).
+For the full external reviewer walkthrough (expected outputs, Kibana inspection, proof-helper PASS criteria), see [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md).
 
 From repository root:
 
@@ -284,7 +284,7 @@ docker compose -f docker-compose.yml -f docker-compose.<overlay>.yml ... up --bu
 
 ### Run with Elasticsearch/OpenSearch-compatible observability backend
 
-Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof. This is the stack used by the public platform proof — step-by-step evaluation: [`docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../../../docs/project/proofs/LKW_PLATFORM_PROOF.md).
+Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof. This is the stack used by the public platform proof — step-by-step evaluation: [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md).
 
 ```bash
 docker compose \

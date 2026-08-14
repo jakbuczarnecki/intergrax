@@ -14,10 +14,10 @@ from scripts.proof.intergrax_proof_manifest import load_manifest
 PUBLIC_GATEWAY_DOCUMENTS: tuple[str, ...] = (
     "README.md",
     "docs/project/proofs/PROOFS.md",
-    "docs/project/proofs/LKW_PLATFORM_PROOF.md",
+    "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
     "docs/project/capabilities/token_optimization/README.md",
-    "docs/project/product/lkw/QUICKSTART.md",
-    "docs/project/product/lkw/LKW_PRODUCT_TOUR.md",
+    "applications/local_workspace_application/docs/product/QUICKSTART.md",
+    "applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md",
 )
 
 PROOF_REFERENCE_LINE_RE = re.compile(r"^\*\*Proofs?:\*\*\s*(.+)$", re.MULTILINE)

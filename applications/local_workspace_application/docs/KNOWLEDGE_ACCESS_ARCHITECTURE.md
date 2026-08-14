@@ -1065,4 +1065,4 @@ This is a focused LKW product proof boundary, not the deferred broad five-model 
 | [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md) | Planner vs executor |
 | [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md) | Slack thin-client contract |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Runtime configuration |
-| [`docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../../../docs/project/proofs/LKW_PLATFORM_PROOF.md) | Public proof honesty |
+| [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md) | Public proof honesty |

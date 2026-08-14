@@ -4,7 +4,7 @@
 **Branch:** `development`  
 **Architecture:** [`../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
 **Reuse audit:** [`../audit/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../audit/KNOWLEDGE_SOURCE_INTEGRATIONS.md)  
-**LKW intake discovery:** [`../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md`](../../../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md)
+**LKW intake discovery:** [`../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md`](../../KNOWLEDGE_INTAKE_DISCOVERY.md)
 
 ---
 
@@ -2363,7 +2363,7 @@ Connecting a Slack conversation as an Indexed Source does **not** activate the b
 
 **Status:** `PLANNED` (LKW application — LKW-wide, not platform Slack ownership)
 
-Provider-neutral durable Conversation Context Bindings, observed-audience validation, workspace audience policy, conversation-level state versus thread-level memory, evidence guards and shared `READ_ONLY_ASK` capability boundary. Canonical architecture: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
+Provider-neutral durable Conversation Context Bindings, observed-audience validation, workspace audience policy, conversation-level state versus thread-level memory, evidence guards and shared `READ_ONLY_ASK` capability boundary. Canonical architecture: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 #### `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`
 
@@ -2449,7 +2449,7 @@ approved user selects a Slack conversation
 → citations identify safe Slack message/thread provenance
 ```
 
-**User-facing meaning after completion:** A user asking through Slack can receive one grounded answer combining Slack history, current authorized Slack evidence and other workspace sources — with strict personal/shared audience isolation per [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
+**User-facing meaning after completion:** A user asking through Slack can receive one grounded answer combining Slack history, current authorized Slack evidence and other workspace sources — with strict personal/shared audience isolation per [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 ---
 

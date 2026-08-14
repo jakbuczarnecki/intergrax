@@ -9,7 +9,7 @@
 **Knowledge Intake discovery:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)  
 **Hybrid knowledge access:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)
 **Hybrid Ask architecture:** [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md)
-**External verification:** [`LKW_PLATFORM_PROOF.md`](../../../../docs/project/proofs/LKW_PLATFORM_PROOF.md)
+**External verification:** [`LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md)
 **Historical full plan:** [`archive/IMPLEMENTATION_PLAN_2026-07-22.md`](archive/IMPLEMENTATION_PLAN_2026-07-22.md)
 
 ## AUTHORITATIVE CURRENT STATUS

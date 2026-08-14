@@ -268,6 +268,6 @@ Dependency order — **no microtasks**:
 
 ## 12. Files changed
 
-- `docs/project/product/lkw/PRODUCT_5_REAL_VENDOR_GAP_AUDIT.md` (this file only)
+- `applications/local_workspace_application/docs/product/PRODUCT_5_REAL_VENDOR_GAP_AUDIT.md` (this file only)
 
 **Commit:** none (audit document created; commit not requested).

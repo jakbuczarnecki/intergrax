@@ -3,14 +3,14 @@
 **Status:** Canonical architecture (domain pair 1:1)
 **Plan (1:1):** [`plan/PROOF_RECEIPTS.md`](../maintainers/plans/PROOF_RECEIPTS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
-**Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)
+**Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) §LKW-PR)
 **Last updated:** 2026-07-19 — **LKW.7C2 closed** (PROOF-RECEIPTS-1E remains closed)
 
 ---
 
 ## A. Purpose
 
-Platform proofs must leave **structured, queryable evidence** that reviewers and automation can inspect without parsing ad-hoc markdown logs. Markdown reviewer guides (for example [`docs/project/proofs/LKW_PLATFORM_PROOF.md`](../proofs/LKW_PLATFORM_PROOF.md)) explain *how* to run a proof; they are **not** the source of truth for proof outcomes.
+Platform proofs must leave **structured, queryable evidence** that reviewers and automation can inspect without parsing ad-hoc markdown logs. Markdown reviewer guides (for example [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md)) explain *how* to run a proof; they are **not** the source of truth for proof outcomes.
 
 The source of truth is a **`ProofReceipt`** document persisted through the provider-neutral **`DocumentStore`** contract and selected vendor integration (MongoDB for the default live proof path).
 
@@ -191,7 +191,7 @@ LKW background-task workload
 **Workload proof:** `applications/local_workspace_application/scripts/run-lkw-file-watcher-e2e-proof.py`
 **Runner:** `applications/local_workspace_application/scripts/run-lkw-file-watcher-e2e-proof.bat`
 **Verification guide:** `applications/local_workspace_application/docs/LKW_7_FILE_WATCHER_VERIFICATION.md`
-**Public Steps:** Steps 12–13 in `docs/project/proofs/LKW_PLATFORM_PROOF.md`
+**Public Steps:** Steps 12–13 in `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`
 
 ```text
 filesystem create (after watcher baseline)

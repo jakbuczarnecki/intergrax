@@ -47,15 +47,15 @@ The internal route review explicitly covered:
 
 - [Public Documentation Map](../../community/PUBLIC_DOCUMENTATION_MAP.md)
 - [root README](../../../../README.md)
-- [LKW Product Tour](../../product/lkw/LKW_PRODUCT_TOUR.md)
-- [LKW Quick Start](../../product/lkw/QUICKSTART.md)
-- [LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md)
+- [LKW Product Tour](../product/LKW_PRODUCT_TOUR.md)
+- [LKW Quick Start](../../../../applications/local_workspace_application/docs/product/QUICKSTART.md)
+- [LKW Platform Proof](../../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md)
 - [Builder Quick Start](../../builders/BUILDER_QUICKSTART.md)
 - [BUILD_WITH_INTERGRAX](../../builders/BUILD_WITH_INTERGRAX.md)
 - [Evaluation Guide](../../builders/EVALUATION_GUIDE.md)
 - [Architecture Overview](../../architecture/ARCHITECTURE_OVERVIEW.md)
 - [Use Cases](../../overview/USE_CASES.md)
-- [PROOFS](../../proofs/PROOFS.md)
+- [PROOFS](../../../../docs/project/proofs/PROOFS.md)
 - [Partners](../../community/PARTNERS.md)
 - [Collaboration](../../community/COLLABORATION.md)
 - [LICENSE](../../../../LICENSE)
@@ -111,7 +111,7 @@ The previous readiness snapshot recorded three blockers: the `transformers`/meta
 - `source-available`, active R&D, LKW Backend Product Alpha / MVP and PARTIAL remain unchanged.
 - No production-ready, compliance, security, universal-savings or external-validation claim was introduced.
 - Permission routes remain owned by [LICENSE](../../../../LICENSE) and [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md).
-- Token Optimization remains secondary, PARTIAL, and bounded by `../../proofs/PROOFS.md` and its claim guardrails.
+- Token Optimization remains secondary, PARTIAL, and bounded by `../../../../docs/project/proofs/PROOFS.md` and its claim guardrails.
 
 ### Internal outcome
 

@@ -125,4 +125,4 @@ uv run pytest agents/local_synthesizer/tests -q
 ## References
 
 - Shadow workspace: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix B](../../guides/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox)
-- LKW architecture: [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md)
+- LKW architecture: [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../../applications/local_workspace_application/docs/ARCHITECTURE.md)

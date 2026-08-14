@@ -4,7 +4,7 @@ Tier-3 product host for a private-by-default, tenant-scoped, deployment-neutral 
 
 ## PRODUCT QUICKSTART
 
-The supported first-run product path is [docs/project/product/lkw/QUICKSTART.md](../../docs/project/product/lkw/QUICKSTART.md).
+The supported first-run product path is [applications/local_workspace_application/docs/product/QUICKSTART.md](docs/product/QUICKSTART.md).
 Run the documented OS launcher from the repository root. It performs the
 bounded prerequisite checks, starts or reuses the canonical stack, uploads the
 bundled sample, and proves grounded Ask with a citation.
@@ -15,7 +15,7 @@ bundled sample, and proves grounded Ask with a citation.
 
 **Architecture (canonical):** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 **Live verification:** [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)
-**User journey:** [USER_JOURNEY.md](../../docs/project/product/lkw/USER_JOURNEY.md) · **Product quickstart:** [docs/QUICKSTART.md](../../docs/project/product/lkw/QUICKSTART.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)
+**User journey:** [USER_JOURNEY.md](docs/product/USER_JOURNEY.md) · **Product quickstart:** [docs/QUICKSTART.md](docs/product/QUICKSTART.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)
 **Build & deploy:** [BUILD_AND_DEPLOY.md](docs/BUILD_AND_DEPLOY.md)
 
 ## Agents
@@ -28,14 +28,14 @@ bundled sample, and proves grounded Ask with a citation.
 
 ## Try LKW
 
-**Supported product quickstart:** [docs/QUICKSTART.md](../../docs/project/product/lkw/QUICKSTART.md)
+**Supported product quickstart:** [docs/QUICKSTART.md](docs/product/QUICKSTART.md)
 
 One command uploads a bundled sample through managed-file intake, waits for indexing, asks a grounded question, shows a citation, and verifies persisted Ask readback. No `INTERGRAX_ALLOWED_READ_ROOTS`, no manual API JSON, and no Platform Proof run required.
 
 ## What LKW proves
 
 For deeper bounded technical review, see the **advanced proof-only path**
-[public LKW Platform Proof](../../docs/project/proofs/LKW_PLATFORM_PROOF.md).
+[public LKW Platform Proof](docs/proof/LKW_PLATFORM_PROOF.md).
 The product quickstart above is the normal first evaluation path; Platform
 Proof is separate and is not required for product installation.
 
@@ -49,7 +49,7 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 
 **LKW.2** (graph pipeline + local workspace skills) is **closed — pipeline proof passed**. **LKW.2.1–LKW.2.4C** and closeout smoke verified direct capabilities (`local.workspace.index`, `local.workspace.search`, `local.workspace.synthesize`) and the pipeline capability (`local.workspace.pipeline`: index → search → synthesize → shadow artifact). **Next platform step:** **OBS-EXPORT-5** — remaining vendor adapters (Langfuse/Arize/Phoenix); LKW uses platform observability export wiring only (**INTEGRATIONS-1D**).
 
-A new user should be able to follow [USER_JOURNEY.md](../../docs/project/product/lkw/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
+A new user should be able to follow [USER_JOURNEY.md](docs/product/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 
 Current LKW.2 status: [IMPLEMENTATION_PLAN.md §5](docs/IMPLEMENTATION_PLAN.md#5-lkw2-graph-pipeline--local-workspace-skills). [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md) is the historical LKW.1/H1 live proof record, not the current LKW.2 execution status.
 
@@ -70,7 +70,7 @@ In-memory vector storage is only for tests or temporary development. It is not t
 
 ### Supported product quickstart
 
-See [docs/QUICKSTART.md](../../docs/project/product/lkw/QUICKSTART.md) — one command per OS; managed sample upload; indexed Ask with citation.
+See [docs/QUICKSTART.md](docs/product/QUICKSTART.md) — one command per OS; managed sample upload; indexed Ask with citation.
 
 ### Advanced direct Docker bootstrap
 
@@ -142,7 +142,7 @@ This section defines the minimal first-run path for a new developer after LKW.2
 | Docker   | Local stack (optional; in-memory mode works) |
 
 > Full configuration reference: [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md).
-> Conceptual user journey: [`USER_JOURNEY.md`](../../docs/project/product/lkw/USER_JOURNEY.md).
+> Conceptual user journey: [`USER_JOURNEY.md`](docs/product/USER_JOURNEY.md).
 
 ### 1. Start the LKW host (manual developer flow)
 
@@ -406,7 +406,7 @@ LKW uses **platform observability export mechanisms only** — there is no LKW-s
 
 See [docs/README.md](docs/README.md) for the full local documentation index.
 
-- Final user journey: [USER_JOURNEY.md](../../docs/project/product/lkw/USER_JOURNEY.md)
+- Final user journey: [USER_JOURNEY.md](docs/product/USER_JOURNEY.md)
 - LKW architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - LKW live verification: [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)
 - LKW hardening: [ARCHITECTURE_HARDENING.md](docs/ARCHITECTURE_HARDENING.md)

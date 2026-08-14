@@ -459,6 +459,6 @@ Machine-readable receipts are written to `.artifacts/proof/<timestamp>-<profile>
 - **Proof scripts** — bounded, operator-runnable evidence workloads referenced by the manifest.
 - **Real-provider qualification** — live `PASS` against Slack/Google/M365 requires credentials and explicit `live` profile execution; implementation `PASS` alone is not external qualification.
 
-Canonical manifest is the source of truth. Individual LKW reviewer guides (for example [`docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../../../docs/project/proofs/LKW_PLATFORM_PROOF.md)) explain how to run domain proofs; the suite orchestrates them without duplicating their implementation.
+Canonical manifest is the source of truth. Individual LKW reviewer guides (for example [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md)) explain how to run domain proofs; the suite orchestrates them without duplicating their implementation.
 
 ---

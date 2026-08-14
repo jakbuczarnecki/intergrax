@@ -46,8 +46,8 @@ Do not evaluate “Intergrax” as one undifferentiated product. Select one targ
 
 | Target | Question | Canonical owner |
 |---|---|---|
-| LKW product trial | Can I run the supported bounded indexed LKW workflow? | [LKW Quick Start](../product/lkw/QUICKSTART.md) |
-| LKW deep product/platform proof | Does the bounded LKW proof support the stated product/platform claim? | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
+| LKW product trial | Can I run the supported bounded indexed LKW workflow? | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) |
+| LKW deep product/platform proof | Does the bounded LKW proof support the stated product/platform claim? | [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
 | Token Optimization capability | Does its bounded evidence support the claim being evaluated? | [Token Optimization guide](../capabilities/token_optimization/README.md) and its owning proof |
 | Architecture / builder fit | Does the responsibility model fit the application I intend to build? | [ARCHITECTURE_OVERVIEW](../architecture/ARCHITECTURE_OVERVIEW.md), [USE_CASES](../overview/USE_CASES.md), [BUILD_WITH_INTERGRAX](BUILD_WITH_INTERGRAX.md) |
 
@@ -74,8 +74,8 @@ For example, an indexed LKW path may support a bounded indexed Ask result. It do
 
 Commands and path-specific prerequisites belong to the canonical owner:
 
-- LKW product trial → [LKW Quick Start](../product/lkw/QUICKSTART.md);
-- deeper LKW proof → [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md);
+- LKW product trial → [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md);
+- deeper LKW proof → [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md);
 - Token Optimization → its owning capability/proof documentation;
 - architecture fit → the architecture and builder documents above.
 
@@ -141,7 +141,7 @@ Do not use `ACCEPTED`, `READY_FOR_REVIEW`, or `DONE` as reader decisions; lifecy
 
 ## 9. ROUTE NEXT
 
-- Successful LKW trial → inspect [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md); a Quick Start pass alone is not full technical validation.
+- Successful LKW trial → inspect [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md); a Quick Start pass alone is not full technical validation.
 - PROCEED to building → [Builder Quick Start](BUILDER_QUICKSTART.md), then [BUILD_WITH_INTERGRAX](BUILD_WITH_INTERGRAX.md) for composition planning.
 - Architecture-fit evaluation → [ARCHITECTURE_OVERVIEW](../architecture/ARCHITECTURE_OVERVIEW.md), [USE_CASES](../overview/USE_CASES.md), and [BUILD_WITH_INTERGRAX](BUILD_WITH_INTERGRAX.md).
 - Partner or pilot discussion → [PARTNERS](../community/PARTNERS.md) and [COLLABORATION](../community/COLLABORATION.md). Evaluation does not grant production permission, hosting, redistribution, or commercial permission; [LICENSE](../../../LICENSE) controls those boundaries.

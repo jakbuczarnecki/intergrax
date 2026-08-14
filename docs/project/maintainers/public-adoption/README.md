@@ -58,7 +58,7 @@ Normal readers should start with the public documentation map:
 
 [Intergrax Public Documentation Map](../../community/PUBLIC_DOCUMENTATION_MAP.md)
 
-**Public proof dashboard:** [`../../proofs/PROOFS.md`](../../proofs/PROOFS.md) — reader-facing proof status and verification paths.
+**Public proof dashboard:** [`../../../../docs/project/proofs/PROOFS.md`](../../../../docs/project/proofs/PROOFS.md) — reader-facing proof status and verification paths.
 
 **Maintainer proof rules:** [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) — status vocabulary, evidence requirements, and allowed public wording.
 
@@ -79,7 +79,7 @@ Detailed Token Optimization implementation roadmap:
 ```
 
 The roadmap links own detailed implementation progress.
-`../../proofs/PROOFS.md` does not reproduce their current tasks,
+`../../../../docs/project/proofs/PROOFS.md` does not reproduce their current tasks,
 dependencies or review states.
 
 This directory contains maintainer controls and operational public-adoption material — not the default first-contact path for external reviewers.
@@ -159,12 +159,12 @@ The [External Reader Validation Protocol](EXTERNAL_READER_VALIDATION_PROTOCOL.md
 
 | Route | Classification | Entry point |
 |-------|----------------|-------------|
-| Product Tour | Product orientation | `../../product/lkw/LKW_PRODUCT_TOUR.md` |
-| Product Quick Start | Supported executable product evaluation | `../../docs/project/product/lkw/QUICKSTART.md` |
+| Product Tour | Product orientation | `../product/LKW_PRODUCT_TOUR.md` |
+| Product Quick Start | Supported executable product evaluation | `docs/product/QUICKSTART.md` |
 | Builder Quick Start | First bounded builder orientation | `../../builders/BUILDER_QUICKSTART.md` |
 | Deeper builder planning | Builder route selection and deeper planning | `../../builders/BUILD_WITH_INTERGRAX.md` |
 | Broader evaluation | Bounded evaluation execution | `../../builders/EVALUATION_GUIDE.md` |
-| Technical Platform Proof | Bounded technical reviewer evidence | `../../proofs/LKW_PLATFORM_PROOF.md` |
+| Technical Platform Proof | Bounded technical reviewer evidence | `../../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` |
 | Token Optimization | Featured platform-capability proof | `../../capabilities/token_optimization/README.md` |
 
 Secondary control for Token Optimization public wording: [`../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md`](../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md)

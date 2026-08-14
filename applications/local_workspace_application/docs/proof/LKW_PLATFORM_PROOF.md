@@ -4,17 +4,17 @@
 
 | Reader goal | Route |
 |-------------|-------|
-| Understand the product without running it | [LKW Product Tour](../product/lkw/LKW_PRODUCT_TOUR.md) |
-| Run the supported indexed product evaluation | [LKW Quick Start](../product/lkw/QUICKSTART.md) |
+| Understand the product without running it | [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) |
+| Run the supported indexed product evaluation | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) |
 | Inspect bounded technical evidence | This LKW Platform Proof |
 
 **Product Tour ≠ Product Quick Start ≠ Platform Proof.**
 
-**Prerequisite:** For the supported first LKW product run, use the [LKW Quickstart](../product/lkw/QUICKSTART.md). This document is the deeper bounded technical reviewer proof. It is not required to complete the product quickstart.
+**Prerequisite:** For the supported first LKW product run, use the [LKW Quickstart](../../../applications/local_workspace_application/docs/product/QUICKSTART.md). This document is the deeper bounded technical reviewer proof. It is not required to complete the product quickstart.
 
 **Product quickstart ≠ platform proof.** The quickstart demonstrates managed upload, indexed Ask, citation, and persisted read for product evaluation. This proof document remains the authoritative bounded technical certification path.
 
-Start with the [root README](../../../README.md) for the product overview, then use the prerequisites and one-command proof entrypoints documented below.
+Start with the [root README](../../../../README.md) for the product overview, then use the prerequisites and one-command proof entrypoints documented below.
 
 No `lab_application` or `echo.basic` prerequisite is required.
 
@@ -191,8 +191,8 @@ Implementation is shared. Live certification is OS-specific.
 Authoritative cross-platform certification status and evidence summary:
 
 ```text
-docs/project/maintainers/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md
-docs/project/maintainers/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json
+applications/local_workspace_application/docs/proof/LKW_PLATFORM_CERTIFICATION_MATRIX.md
+applications/local_workspace_application/docs/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json
 ```
 
 This proof guide remains the execution path. The matrix consolidates
@@ -233,7 +233,7 @@ platform_windows_interaction
 Evidence:
 
 ```text
-docs/project/maintainers/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json
+applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json
 ```
 
 Not certified by this Windows native profile:
@@ -327,7 +327,7 @@ applications/local_workspace_application/scripts/run-lkw-linux-container-certifi
 Evidence artifact:
 
 ```text
-docs/project/maintainers/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json
+applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json
 ```
 
 Do not run Windows .bat or Windows PowerShell interaction steps.
@@ -421,7 +421,7 @@ stack non-destructively, then rerun the path you want.
 
 Before running the one-command Core Platform Proof below, stop the Product Quick
 Start stack with the supported non-destructive lifecycle command documented in
-[LKW Quick Start](../product/lkw/QUICKSTART.md#stop-the-stack).
+[LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md#stop-the-stack).
 
 ---
 
@@ -698,7 +698,7 @@ This proof:
 
 `PASS` means indexed local knowledge survived the restart.
 
-Latest recorded live result: [`LKW_5_PERSISTENCE_VERIFICATION.md`](../../../applications/local_workspace_application/docs/LKW_5_PERSISTENCE_VERIFICATION.md).
+Latest recorded live result: [`LKW_5_PERSISTENCE_VERIFICATION.md`](../LKW_5_PERSISTENCE_VERIFICATION.md).
 
 Do not use hard-reset-local-docker-all between the before/after search. Hard reset removes volumes and invalidates this persistence proof.
 
@@ -1464,7 +1464,7 @@ applications\local_workspace_application\scripts\run-lkw-windows-native-certific
 Evidence:
 
 ```text
-docs/project/maintainers/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json
+applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json
 ```
 
 Run the interaction proof alone:
@@ -1662,7 +1662,7 @@ applications\local_workspace_application\scripts\run-lkw-linux-container-certifi
 Evidence:
 
 ```text
-docs/project/maintainers/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json
+applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json
 ```
 
 Direct Linux host launcher (when already on Linux):
@@ -1858,4 +1858,4 @@ This proof does not establish combined indexed + live evidence, complete live-pr
 
 Claim types must be labeled: **real provider proof**, **controlled integration proof**, or **deterministic fixture proof**.
 
-Canonical roadmap: [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+Canonical roadmap: [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../KNOWLEDGE_ACCESS_ARCHITECTURE.md).

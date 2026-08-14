@@ -6,11 +6,11 @@
 [![Harness AI](https://img.shields.io/badge/Harness%20AI-Agent%20OS-6c5ce7.svg)](#harness-ai--the-core-idea)
 [![Docs](https://img.shields.io/badge/docs-canonical-green.svg)](#documentation-index)
 [![LLM context](https://img.shields.io/badge/llms.txt-available-orange.svg)](llms.txt)
-[![LKW proof](https://img.shields.io/badge/LKW%20platform%20proof-step%202-2ea44f.svg)](docs/project/proofs/LKW_PLATFORM_PROOF.md)
+[![LKW proof](https://img.shields.io/badge/LKW%20platform%20proof-step%202-2ea44f.svg)](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md)
 
 **Agent OS and Harness AI runtime** for building, orchestrating, experimenting with, and validating specialized AI agents — with a **clear separation between who decides, who executes, and who orchestrates.**
 
-**First time evaluating?** Start with [Quick start](#quick-start) (lab host, ~5 min) → [Token Optimization Engine](docs/project/capabilities/token_optimization/README.md) (engine overview and proofs) → [LKW Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) (Docker + Elasticsearch + Kibana). **Prerequisites:** Python 3.12 · [`uv`](https://github.com/astral-sh/uv) · Git
+**First time evaluating?** Start with [Quick start](#quick-start) (lab host, ~5 min) → [Token Optimization Engine](docs/project/capabilities/token_optimization/README.md) (engine overview and proofs) → [LKW Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) (Docker + Elasticsearch + Kibana). **Prerequisites:** Python 3.12 · [`uv`](https://github.com/astral-sh/uv) · Git
 
 ---
 
@@ -22,7 +22,7 @@ Three evaluation paths — start with the lighter lab path, explore the Token Op
 |------|----------|----------|
 | **[Quick start](#quick-start)** | First contact — clone, verify, lab run, trace inspect | `uv sync`, lab host on `:8090` |
 | **[Token Optimization Engine](docs/project/capabilities/token_optimization/README.md)** | Engine architecture, deterministic layers, plugin model, cache-aware execution and reproducible proofs | Python 3.12; Docker + NVIDIA GPU only for the live vLLM proof |
-| **[LKW Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md)** | Full Tier-3 product proof — RAG, observability export, Elasticsearch, Kibana, Slack, qdrant, other vendors | Docker Compose, prerequisites above |
+| **[LKW Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md)** | Full Tier-3 product proof — RAG, observability export, Elasticsearch, Kibana, Slack, qdrant, other vendors | Docker Compose, prerequisites above |
 
 **Quick start** runs the lab host and a traced Echo capability run. **Token Optimization** introduces the deterministic optimization engine, built-in layers, plugin contract, and proof catalog (live vLLM proof is optional and gated). **LKW platform proof** validates a real `run_id`, `tool_requested` / `tool_completed` events, duplicate-free export, and safety-checked observability documents.
 
@@ -152,12 +152,12 @@ Intergrax is not presented as a finished SaaS, a general-purpose open-source fra
 
 | If you are… | Start with |
 |-------------|------------|
-| Evaluating Intergrax for the first time | [Quick start](#quick-start) · [LKW Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [FAQ.md](FAQ.md) · [Proof of platform](#proof-of-platform) |
+| Evaluating Intergrax for the first time | [Quick start](#quick-start) · [LKW Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [FAQ.md](FAQ.md) · [Proof of platform](#proof-of-platform) |
 | Checking use-case fit | [USE_CASES.md](USE_CASES.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
 | Checking collaboration or license boundaries | [COLLABORATION.md](COLLABORATION.md) · [LICENSE](LICENSE) |
 | Reviewing the Harness AI / Agent OS model | [INTERGRAX_HARNESS_NARRATIVE.md](docs/project/technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [AGENT_CREATION_GUIDE.md](docs/project/technical/guides/AGENT_CREATION_GUIDE.md) |
 | Exploring attestation, boundary events, or external verification | [BOUNDARYATTEST_ATTESTATION_POC.md](docs/project/overview/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) · [attestation_demo README](applications/attestation_demo/README.md) |
-| Exploring product-validation directions | [LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md](docs/project/proofs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [USE_CASES.md](USE_CASES.md) |
+| Exploring product-validation directions | [LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md](applications/local_workspace_application/docs/proof/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [USE_CASES.md](USE_CASES.md) |
 | Interested in feedback, design-partner work, or integration proposals | [PARTNERS.md](PARTNERS.md) · [COLLABORATION.md](COLLABORATION.md) · [Public Issue Index](docs/project/maintainers/public-adoption/PUBLIC_ISSUE_INDEX.md) |
 
 Looking for common questions? See [FAQ.md](FAQ.md).
@@ -319,13 +319,13 @@ After running the quick start, share structured feedback via [#186 README quick 
 
 ## Proof of platform
 
-**Live application proof:** [LKW Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) — run a real Local Knowledge Workspace platform path with Docker Compose, Elasticsearch, Kibana, and duplicate/safety validation.
+**Live application proof:** [LKW Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) — run a real Local Knowledge Workspace platform path with Docker Compose, Elasticsearch, Kibana, and duplicate/safety validation.
 
 External narrative: [Intergrax Harness Narrative](docs/project/technical/guides/INTERGRAX_HARNESS_NARRATIVE.md)
 
 **External integration proof:** [BoundaryAttest Attestation PoC](docs/project/overview/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — external validation of host-signed execution boundary events (technical integration validation, not production certification).
 
-**Product-validation direction:** [Local Knowledge Workspace alpha](docs/project/proofs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) — product-validation narrative for local governed knowledge workflows (alpha track, not a finished product or SaaS).
+**Product-validation direction:** [Local Knowledge Workspace alpha](applications/local_workspace_application/docs/proof/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) — product-validation narrative for local governed knowledge workflows (alpha track, not a finished product or SaaS).
 
 **What is it?** The fastest local way to verify Intergrax as an evidence-backed harness platform — not a production readiness or compliance claim.
 

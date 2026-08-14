@@ -34,7 +34,7 @@ Core Platform Proof certification.
 - Source commit: `6b71a841c894728766fd6f574c9cd53ad12ec5f9`
 - Application-hosting proof ID: `local_workspace:platform_application_hosting:lkw-hosting-a636dbd5d6e3`
 - Interaction proof ID: `local_workspace:platform_windows_interaction:lkw-windows-interaction-2b42a6222d61`
-- Source artifact: `docs/project/maintainers/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json`
+- Source artifact: `applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json`
 - Source artifact SHA-256: `2445b2222ba329169e8a437e5c4499f2835f559c1407f200e6d415e720519801`
 
 ### linux_docker_runtime
@@ -45,7 +45,7 @@ Core Platform Proof certification.
 - Source commit: `40a73fbb455def6d5106180d74a7e65388457465`
 - Application-hosting proof ID: `local_workspace:platform_application_hosting:lkw-hosting-a5cd37adf7d9`
 - Interaction proof ID: `local_workspace:platform_linux_interaction:lkw-linux-interaction-44cd93cabccd`
-- Source artifact: `docs/project/maintainers/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json`
+- Source artifact: `applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json`
 - Source artifact SHA-256: `bd940d683d445a08db5deff4f57d3071ed19890e821b875281371fb60ad33678`
 
 ## Implemented but not live-certified profiles
@@ -69,9 +69,9 @@ Core Platform Proof certification.
 ## Evidence sources
 
 ```text
-docs/project/maintainers/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json
-docs/project/maintainers/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json
-docs/project/maintainers/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json
+applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json
+applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json
+applications/local_workspace_application/docs/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json
 ```
 
 ## Scope limitations

@@ -87,7 +87,7 @@ Local Knowledge Workspace (LKW) is the **Primary product proof** at **Backend Pr
 | ---------------------------------- | ---------------------------- |
 | Workspace workflow, approved-source choice, user-facing Ask, and product acceptance | Ingest and knowledge boundaries, governed Ask execution, evidence/provenance, and hosting/runtime mechanisms |
 
-The accepted indexed path demonstrates bounded ingest, indexed knowledge, grounded Ask, source references, and persisted execution evidence. Mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access, real-user validation, and commercial validation are not established. See [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) and the [PROOFS dashboard](../proofs/PROOFS.md).
+The accepted indexed path demonstrates bounded ingest, indexed knowledge, grounded Ask, source references, and persisted execution evidence. Mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access, real-user validation, and commercial validation are not established. See [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) and the [PROOFS dashboard](../proofs/PROOFS.md).
 
 ## Token Optimization as a secondary capability example
 

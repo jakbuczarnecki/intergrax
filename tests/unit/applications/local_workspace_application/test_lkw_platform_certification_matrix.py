@@ -22,15 +22,15 @@ _GEN = (
     / "generate-lkw-platform-certification-matrix.py"
 )
 _WINDOWS_SRC = (
-    _REPO_ROOT / "docs/project/maintainers/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json"
+    _REPO_ROOT / "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json"
 )
 _LINUX_SRC = (
-    _REPO_ROOT / "docs/project/maintainers/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json"
+    _REPO_ROOT / "applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json"
 )
 _MATRIX_JSON = (
-    _REPO_ROOT / "docs/project/maintainers/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json"
+    _REPO_ROOT / "applications/local_workspace_application/docs/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json"
 )
-_MATRIX_MD = _REPO_ROOT / "docs/project/maintainers/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
+_MATRIX_MD = _REPO_ROOT / "applications/local_workspace_application/docs/proof/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
 
 _SECRET_NEEDLES = (
     "password",
@@ -437,9 +437,9 @@ def test_markdown_states_hosting_is_not_full_core(gen: ModuleType) -> None:
 
 def test_markdown_references_both_source_artifacts(gen: ModuleType) -> None:
     md = gen.render_markdown(_build(gen))
-    assert "docs/project/maintainers/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json" in md
-    assert "docs/project/maintainers/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json" in md
-    assert "docs/project/maintainers/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json" in md
+    assert "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json" in md
+    assert "applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json" in md
+    assert "applications/local_workspace_application/docs/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json" in md
 
 
 def test_no_secrets_in_json_or_markdown(gen: ModuleType) -> None:

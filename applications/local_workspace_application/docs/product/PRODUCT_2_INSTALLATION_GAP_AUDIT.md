@@ -284,7 +284,7 @@ The future implementation block should be limited to:
 3. `applications/local_workspace_application/scripts/build-local-docker.sh`
    - provide the same configured-model and machine-contract behavior as the
      Windows bootstrap without requiring identical shell implementation.
-4. `docs/project/product/lkw/QUICKSTART.md`
+4. `applications/local_workspace_application/docs/product/QUICKSTART.md`
    - document the one supported installation command per OS, preflight result
      meanings, rerun contract, and safe actions.
 5. `applications/local_workspace_application/README.md`

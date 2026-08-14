@@ -200,11 +200,11 @@ See the LKW workflow
 
 Run the primary product:
 Run the supported LKW path
-→ docs/project/product/lkw/QUICKSTART.md
+→ applications/local_workspace_application/docs/product/QUICKSTART.md
 
 Review LKW after the supported run:
 Inspect bounded LKW evidence
-→ docs/project/proofs/LKW_PLATFORM_PROOF.md
+→ applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md
 
 Builder:
 Start with the Builder Quick Start

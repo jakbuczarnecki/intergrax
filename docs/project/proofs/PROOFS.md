@@ -56,7 +56,7 @@ without copying either roadmap.
 
 | Proof path | Public classification | Current public status | What it demonstrates | Verify | Detailed roadmap |
 |------------|------------------------|----------------------|----------------------|--------|------------------|
-| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [Product Quick Start](../product/lkw/QUICKSTART.md) · [LKW Platform Proof](LKW_PLATFORM_PROOF.md) · [Core Platform Proof](LKW_PLATFORM_PROOF.md#core-platform-proof) | [LKW implementation plan](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) |
+| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) · [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Core Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#core-platform-proof) | [LKW implementation plan](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) |
 | **Token Optimization** | Featured platform-capability proof | 🟡 **PARTIAL** | Deterministic optimization pipeline, cache-aware execution, bounded offline smoke proof | [Token Optimization guide](../capabilities/token_optimization/README.md) | [Token Optimization plan](../capabilities/plan/TOKEN_OPTIMIZATION.md) |
 
 `Verify` answers **what has been demonstrated?**
@@ -72,7 +72,7 @@ foundations do not inherit a blanket platform-wide **IMPLEMENTED** status.
 
 **Role:** Primary product proof · **Product status:** Backend Product Alpha / MVP
 
-**Primary executable path:** [Product Quick Start](../product/lkw/QUICKSTART.md) —
+**Primary executable path:** [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) —
 indexed **Ask V1** product evaluation with one command per supported OS, managed
 sample upload, indexing, grounded Ask, source citation, and persisted Ask-run
 verification.
@@ -89,7 +89,7 @@ incomplete, and complete live-provider access remains incomplete.
 
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
-| **Product Quick Start / indexed Ask V1** | 🧪 **BOUNDED PROOF** · supported product-evaluation path | One-command local execution of the canonical LKW application path: managed sample upload → indexing → grounded indexed Ask → source citation → persisted Ask-run verification — [run it](../product/lkw/QUICKSTART.md) | Indexed knowledge only; script-driven; no polished end-user UI; not Hybrid Ask certification; not production readiness; no real-user or commercial validation |
+| **Product Quick Start / indexed Ask V1** | 🧪 **BOUNDED PROOF** · supported product-evaluation path | One-command local execution of the canonical LKW application path: managed sample upload → indexing → grounded indexed Ask → source citation → persisted Ask-run verification — [run it](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Indexed knowledge only; script-driven; no polished end-user UI; not Hybrid Ask certification; not production readiness; no real-user or commercial validation |
 | **Indexed Hybrid Ask** | 🧪 **BOUNDED PROOF** | Bounded indexed branch through production Hybrid Ask `indexed_only`; some proofs validate retrieval and boundary behavior even when answer assembly returns insufficient evidence | Not Product Quick Start; not mixed indexed + authorized-live Hybrid Ask; not production readiness or commercial validation |
 | **Trusted Ask / durable indexed workspace Ask** | 🧪 **BOUNDED PROOF** | Current runtime image through Ollama generation and embeddings, workspace source sync, Qdrant indexed retrieval, completed first Ask with evidence, non-destructive restart, completed second Ask without resync/reindex, and unchanged persisted first Ask run | Indexed knowledge only; bounded local runtime; no mixed indexed + authorized-live Hybrid Ask; no universal provider, production, or commercial claims |
 | **Core Platform Proof** | 🧪 **BOUNDED PROOF** | Real application startup/readiness, durable knowledge and execution, background processing, persisted reviewable evidence, hosting/recovery, and watched-folder indexing (Elasticsearch/Kibana observability, Sentry problem signals, MongoDB ProofReceipts) | Bounded to documented certification profiles; not production readiness, commercial validation, or all-provider certification |
@@ -98,7 +98,7 @@ incomplete, and complete live-provider access remains incomplete.
 
 **Indexed Hybrid Ask proof:** `LKW-HYBRID-ASK-INDEXED`
 
-**Trusted Ask proof:** `LKW-ASK-WORKSPACE-LIVE` — [authoritative live proof section](LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
+**Trusted Ask proof:** `LKW-ASK-WORKSPACE-LIVE` — [authoritative live proof section](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
 
 **Core platform proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`
 
@@ -121,7 +121,7 @@ Detailed implementation roadmap:
 [applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md)
 
 Accepted technical proof:
-[LKW Platform Proof](LKW_PLATFORM_PROOF.md)
+[LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md)
 
 ---
 
@@ -202,8 +202,8 @@ Real-user and commercial validation remain **incomplete**.
 
 | Document | Purpose |
 |----------|---------|
-| [LKW Platform Proof](LKW_PLATFORM_PROOF.md) | Guided LKW reviewer proof path |
-| [Core Platform Proof](LKW_PLATFORM_PROOF.md#core-platform-proof) | Bounded platform-level verification (startup, sentry, elasticsearch, persistence, background task, application hosting, file watcher) |
+| [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) | Guided LKW reviewer proof path |
+| [Core Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#core-platform-proof) | Bounded platform-level verification (startup, sentry, elasticsearch, persistence, background task, application hosting, file watcher) |
 | [LKW Implementation Plan](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) | Detailed LKW implementation roadmap |
 | [Token Optimization guide](../capabilities/token_optimization/README.md) | Engine overview and proof catalog |
 | [Token Optimization plan](../capabilities/plan/TOKEN_OPTIMIZATION.md) | Detailed Token Optimization implementation roadmap |

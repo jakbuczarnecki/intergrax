@@ -11,7 +11,7 @@ workspace selection, Ask, citations, source state, sync, and recovery.
 **Installation / evaluation paths:** quickstart scripts, curl/API proof, Docker
 bootstrap — prove infrastructure and backend capability; they are **not** the
 primary daily-use client.
-**Related:** [`../../../../applications/local_workspace_application/README.md`](../../../../applications/local_workspace_application/README.md) · [`../../../../applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../../applications/local_workspace_application/docs/ARCHITECTURE.md) · [`../../../../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../../../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) · [`../../../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md`](../../../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md) · [`../../../../applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md`](../../../../applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md)
+**Related:** [`../../README.md`](../../README.md) · [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · [`../KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) · [`../KNOWLEDGE_INTAKE_DISCOVERY.md`](../KNOWLEDGE_INTAKE_DISCOVERY.md) · [`../PLATFORM_PROOF_LOOP.md`](../PLATFORM_PROOF_LOOP.md)
 
 ---
 
@@ -105,7 +105,7 @@ Uploaded folder snapshot ≠ connected local folder. Slack and other remote chat
 | Inspect citations and live freshness | **PARTIAL** — indexed citations **IMPLEMENTED**; live freshness **PLANNED** |
 | Switch model runtime and repeat | **PLANNED** |
 
-Full journey reference: [`../../../../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../../../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
+Full journey reference: [`../../KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md).
 
 ---
 
@@ -117,7 +117,7 @@ daily-use product experience for LKW 1.0.**
 | User type | Goal | Entry path |
 |-----------|------|------------|
 | **Daily LKW user** | Ask grounded questions, inspect sources, manage knowledge daily | **Slack** — conversational UX (PRODUCT-3D first-run → PRODUCT-4 daily-use) |
-| Product evaluator | Verify install and indexed Ask proof without Slack | README → [Try LKW](../../../../applications/README.md#try-lkw) → managed sample upload → indexed Ask → grounded answer and citation → persisted Ask-run verification |
+| Product evaluator | Verify install and indexed Ask proof without Slack | README → [Try LKW](../../README.md#try-lkw) → managed sample upload → indexed Ask → grounded answer and citation → persisted Ask-run verification |
 | Platform evaluator | See that Intergrax can produce repeatable agent applications | README -> LKW platform proof loop -> scaffold/build/deploy docs |
 | Developer contributor | Extend or improve LKW / Intergrax | architecture -> implementation plan -> one wave -> tests -> platform propagation |
 
@@ -230,7 +230,7 @@ Final product rule:
 
 #### Target path — channel-neutral Knowledge Intake (PLANNED / FROZEN CONTRACT)
 
-Replaceable clients (Slack, web, mobile, desktop, MCP, HTTP) submit a Knowledge Input to the public LKW Knowledge Intake capability. LKW accepts a durable Ingestion Operation, processes asynchronously, and notifies through a channel-neutral lifecycle event. See [`../../../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md`](../../../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md).
+Replaceable clients (Slack, web, mobile, desktop, MCP, HTTP) submit a Knowledge Input to the public LKW Knowledge Intake capability. LKW accepts a durable Ingestion Operation, processes asynchronously, and notifies through a channel-neutral lifecycle event. See [`../KNOWLEDGE_INTAKE_DISCOVERY.md`](../KNOWLEDGE_INTAKE_DISCOVERY.md).
 
 Asynchronous user journey (target):
 

@@ -296,7 +296,7 @@ This posts the same Block Kit selection UI (or auto-selects if only one). Changi
 8. Restart LKW with vLLM; repeat the same product scenario.
 ```
 
-Public claims must distinguish **real provider proof**, **controlled integration proof** and **deterministic fixture proof**. See [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §7.8 and [`LKW_PLATFORM_PROOF.md`](../../../../docs/project/proofs/LKW_PLATFORM_PROOF.md).
+Public claims must distinguish **real provider proof**, **controlled integration proof** and **deterministic fixture proof**. See [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §7.8 and [`LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md).
 
 ---
 
