@@ -303,7 +303,6 @@ load_entry_point_targets(group, on_conflict=..., on_load_failure=...)
 class SecurityDefenseAdmissionPolicy:
     ep_name_conflict: ConflictPolicy = "error"
     shipped_id_override: Literal["error", "warn_override", "allow"] = "error"
-    require_production_qualification: bool = True
     on_load_failure: LoadIsolation = "isolate"
 ```
 
@@ -478,7 +477,7 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | **CAND-004** | **DONE** — EP-name, `plugin_id`, and shipped-id collisions are explicit; production default `shipped_id_override=error`; authorized override requires `SecurityDefenseAdmissionPolicy` (`allow` / `warn_override`) or `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` |
 | **CAND-005** | **DONE** — Security + Policy reuse `load_entry_point_targets`; isolate mode records `failed`; invalid types are `rejected`; int wrappers preserved |
 | **OAD-002** | **RESOLVED (A)** — immediate production `error`. No supported production host uses security EP override (`bootstrap_security_providers(discover_entry_points=False)` default; `INTERGRAX_DISCOVER_PLUGINS` opt-in). Lab/legacy: explicit policy only |
-| **Qualification** | **DEFERRED seam** — `require_production_qualification` exists on `SecurityDefenseAdmissionPolicy` but is **not enforced**. `EntryPointSpec` has optional distribution name only; package version and `PlatformCompatibilityResult` are absent. Do not fabricate admission. Host/BLOCK A composition owns `evaluate_package_production_admission` |
+| **Qualification** | **DEFERRED seam** — qualification enforcement is deferred. BLOCK C does **not** expose a fake/inert `require qualification` control on `SecurityDefenseAdmissionPolicy`. `EntryPointSpec` has optional distribution name only; package version and `PlatformCompatibilityResult` are absent. Do not fabricate admission. Future BLOCK A/host admission must provide actual package/version/compatibility evidence before invoking `evaluate_package_production_admission` / platform qualification primitives |
 | **Compatibility** | Report APIs: `load_security_defense_plugin_report`, `load_policy_rule_plugin_report`. Int wrappers: `load_security_defense_plugins` → production admission defaults; `load_policy_rule_plugins` → legacy `fail_fast` when `policy` omitted |
 | **Not done** | CAND-006/007/008, CAND-001/002/003, F006/F016, hot reload, enterprise-ready |
 
@@ -629,7 +628,7 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 | 7 | Typed Memory external resolution | EP user-profile + session plugins materialize without host manual wiring |
 | 8 | Tenant/application isolation | `DeclarativePolicyRuntime` per-bundle via typed field; memory materialization requires explicit `tenant_id` where domain requires |
 | 9 | Operator visibility | Bootstrap summary available per domain (not necessarily unified F006 UI) |
-| 10 | Production qualification | EP packages blocked when `require_production_qualification` and admission fails |
+| 10 | Production qualification | Deferred — enforced at BLOCK A/host admission with package/version/compatibility evidence via `evaluate_package_production_admission`; not represented on BLOCK C `SecurityDefenseAdmissionPolicy` |
 | 11 | Backwards compatibility | Legacy profile flags restore pre-enterprise behavior for one release cycle |
 | 12 | Focused E2E conformance | Extended PLATFORM_PLUGIN contract suite green |
 | 13 | Zero dynamic wiring | `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` in all new/modified enterprise modules |

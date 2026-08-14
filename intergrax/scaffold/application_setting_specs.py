@@ -9,6 +9,44 @@ from dataclasses import dataclass
 from typing import Literal
 
 RequiredFlag = Literal["Yes", "No", "Conditional"]
+EnvCategory = Literal[
+    "runtime",
+    "http_server",
+    "agents",
+    "identity",
+    "interactions",
+    "task_control",
+    "mcp",
+    "workers",
+    "http_security",
+    "api_auth",
+]
+
+ENV_CATEGORY_ORDER: tuple[EnvCategory, ...] = (
+    "runtime",
+    "http_server",
+    "agents",
+    "identity",
+    "interactions",
+    "task_control",
+    "mcp",
+    "workers",
+    "http_security",
+    "api_auth",
+)
+
+ENV_CATEGORY_TITLES: dict[EnvCategory, str] = {
+    "runtime": "Runtime",
+    "http_server": "HTTP server",
+    "agents": "Agents",
+    "identity": "Identity",
+    "interactions": "Interactions",
+    "task_control": "Task control",
+    "mcp": "MCP",
+    "workers": "Background workers",
+    "http_security": "HTTP security",
+    "api_auth": "API authentication",
+}
 
 
 @dataclass(frozen=True)
@@ -20,6 +58,8 @@ class ApplicationSettingSpec:
     default: str
     required: RequiredFlag
     example: str
+    category: EnvCategory
+    env_comment: str = ""
     related_suffixes: tuple[str, ...] = ()
     platform_relation: str = ""
     required_note: str = ""
@@ -38,6 +78,8 @@ def _host_setting_specs(
             default="dev (uses INTERGRAX_ENV when this variable is unset)",
             required="No",
             example="dev",
+            category="runtime",
+            env_comment="Application runtime environment (dev, test, stage, prod)",
             platform_relation="Falls back to the shared INTERGRAX_ENV platform setting.",
         ),
         ApplicationSettingSpec(
@@ -46,6 +88,8 @@ def _host_setting_specs(
             default="127.0.0.1",
             required="No",
             example="127.0.0.1",
+            category="http_server",
+            env_comment="Bind address for the application HTTP server",
             related_suffixes=("BACKEND_PORT",),
             platform_relation="This host process runs the shared Intergrax runtime.",
         ),
@@ -55,6 +99,8 @@ def _host_setting_specs(
             default="{port}",
             required="No",
             example="{port}",
+            category="http_server",
+            env_comment="TCP port for the application HTTP server",
             related_suffixes=("BACKEND_HOST",),
         ),
         ApplicationSettingSpec(
@@ -63,6 +109,8 @@ def _host_setting_specs(
             default="{route_prefix}",
             required="No",
             example="{route_prefix}",
+            category="http_server",
+            env_comment="URL prefix for this application's HTTP routes",
         ),
         ApplicationSettingSpec(
             env_suffix="INCLUDE_INTERACTIONS",
@@ -70,6 +118,8 @@ def _host_setting_specs(
             default="true",
             required="No",
             example="true",
+            category="interactions",
+            env_comment="Expose interaction HTTP routes on this application",
             related_suffixes=("INTERACTION_ROUTE_PREFIX", "INTERACTION_SURFACE"),
         ),
         ApplicationSettingSpec(
@@ -78,6 +128,8 @@ def _host_setting_specs(
             default="/v1/interactions",
             required="No",
             example="/v1/interactions",
+            category="interactions",
+            env_comment="URL prefix for interaction routes",
             related_suffixes=("INCLUDE_INTERACTIONS",),
         ),
         ApplicationSettingSpec(
@@ -86,6 +138,8 @@ def _host_setting_specs(
             default="auto",
             required="No",
             example="auto",
+            category="interactions",
+            env_comment="Interaction UI/API surface to mount (auto selects the default)",
             related_suffixes=("INCLUDE_INTERACTIONS",),
         ),
         ApplicationSettingSpec(
@@ -94,6 +148,8 @@ def _host_setting_specs(
             default=include_scheduler_default,
             required="No",
             example=include_scheduler_default,
+            category="workers",
+            env_comment="Run the in-process scheduler with this application",
             platform_relation="Poll interval is the platform setting INTERGRAX_SCHEDULER_POLL_SECONDS.",
         ),
         ApplicationSettingSpec(
@@ -102,6 +158,8 @@ def _host_setting_specs(
             default="false",
             required="No",
             example="false",
+            category="mcp",
+            env_comment="Mount the MCP server on the same process as this application",
             related_suffixes=("MCP_MOUNT_PATH",),
         ),
         ApplicationSettingSpec(
@@ -110,6 +168,8 @@ def _host_setting_specs(
             default="/mcp",
             required="No",
             example="/mcp",
+            category="mcp",
+            env_comment="HTTP path where the MCP server is mounted when enabled",
             related_suffixes=("INCLUDE_MCP",),
         ),
         ApplicationSettingSpec(
@@ -118,6 +178,8 @@ def _host_setting_specs(
             default="true",
             required="No",
             example="true",
+            category="task_control",
+            env_comment="Expose task-control HTTP routes on this application",
             related_suffixes=("TASK_CONTROL_ROUTE_PREFIX",),
         ),
         ApplicationSettingSpec(
@@ -126,6 +188,8 @@ def _host_setting_specs(
             default="/v1/tasks",
             required="No",
             example="/v1/tasks",
+            category="task_control",
+            env_comment="URL prefix for task-control routes",
             related_suffixes=("INCLUDE_TASK_CONTROL",),
         ),
         ApplicationSettingSpec(
@@ -134,6 +198,8 @@ def _host_setting_specs(
             default=include_queue_worker_default,
             required="No",
             example=include_queue_worker_default,
+            category="workers",
+            env_comment="Run the in-process queue worker with this application",
         ),
     )
 
@@ -145,6 +211,8 @@ _PRODUCT_SETTING_SPECS: tuple[ApplicationSettingSpec, ...] = (
         default="echo",
         required="No",
         example="echo",
+        category="agents",
+        env_comment="Default agent id when a request does not name one",
     ),
     ApplicationSettingSpec(
         env_suffix="IDENTITY_SOURCE",
@@ -152,6 +220,8 @@ _PRODUCT_SETTING_SPECS: tuple[ApplicationSettingSpec, ...] = (
         default="body_or_context (context_only when BACKEND_ENV=prod)",
         required="Conditional",
         example="body_or_context",
+        category="identity",
+        env_comment="Where the API reads caller identity (body_or_context or context_only)",
         related_suffixes=("BACKEND_ENV",),
         required_note="Production requires context_only (or omit the variable to use that default).",
     ),
@@ -161,6 +231,8 @@ _PRODUCT_SETTING_SPECS: tuple[ApplicationSettingSpec, ...] = (
         default="(empty)",
         required="No",
         example="https://app.example.com",
+        category="http_security",
+        env_comment="Comma-separated CORS origins allowed by this application",
         related_suffixes=("BACKEND_ALLOWED_HOSTS",),
         comment_in_env_example=True,
     ),
@@ -170,6 +242,8 @@ _PRODUCT_SETTING_SPECS: tuple[ApplicationSettingSpec, ...] = (
         default="(empty)",
         required="No",
         example="api.example.com",
+        category="http_security",
+        env_comment="Comma-separated Host headers this application accepts",
         related_suffixes=("BACKEND_CORS_ORIGINS",),
         comment_in_env_example=True,
     ),
@@ -179,6 +253,8 @@ _PRODUCT_SETTING_SPECS: tuple[ApplicationSettingSpec, ...] = (
         default="unset (framework default)",
         required="No",
         example="true",
+        category="http_security",
+        env_comment="Override whether OpenAPI docs are enabled for this application",
         comment_in_env_example=True,
     ),
     ApplicationSettingSpec(
@@ -187,6 +263,8 @@ _PRODUCT_SETTING_SPECS: tuple[ApplicationSettingSpec, ...] = (
         default="(empty)",
         required="Conditional",
         example="dev-key",
+        category="api_auth",
+        env_comment="Single development API key for this application",
         related_suffixes=(
             "BACKEND_BOOTSTRAP_TENANT_ID",
             "BACKEND_BOOTSTRAP_USER_ID",
@@ -202,6 +280,8 @@ _PRODUCT_SETTING_SPECS: tuple[ApplicationSettingSpec, ...] = (
         default="(empty)",
         required="Conditional",
         example="dev-tenant",
+        category="api_auth",
+        env_comment="Tenant id bound to BACKEND_BOOTSTRAP_API_KEY",
         related_suffixes=("BACKEND_BOOTSTRAP_API_KEY", "BACKEND_BOOTSTRAP_USER_ID"),
         required_note="Required when BACKEND_BOOTSTRAP_API_KEY is set.",
         comment_in_env_example=True,
@@ -212,6 +292,8 @@ _PRODUCT_SETTING_SPECS: tuple[ApplicationSettingSpec, ...] = (
         default="(empty)",
         required="Conditional",
         example="dev-user",
+        category="api_auth",
+        env_comment="User id bound to BACKEND_BOOTSTRAP_API_KEY",
         related_suffixes=("BACKEND_BOOTSTRAP_API_KEY", "BACKEND_BOOTSTRAP_TENANT_ID"),
         required_note="Required when BACKEND_BOOTSTRAP_API_KEY is set.",
         comment_in_env_example=True,
@@ -222,6 +304,8 @@ _PRODUCT_SETTING_SPECS: tuple[ApplicationSettingSpec, ...] = (
         default="(empty)",
         required="Conditional",
         example='{"dev-key":{"tenant_id":"dev-tenant","user_id":"dev-user"}}',
+        category="api_auth",
+        env_comment="JSON map of API keys to tenant/user identities",
         related_suffixes=("BACKEND_BOOTSTRAP_API_KEY", "BACKEND_ALLOW_UNAUTHENTICATED"),
         required_note="Required in production unless BACKEND_BOOTSTRAP_API_KEY or BACKEND_ALLOW_UNAUTHENTICATED is set.",
         comment_in_env_example=True,
@@ -232,6 +316,8 @@ _PRODUCT_SETTING_SPECS: tuple[ApplicationSettingSpec, ...] = (
         default="false",
         required="No",
         example="true",
+        category="api_auth",
+        env_comment="Allow unauthenticated access (local disaster debugging only)",
         related_suffixes=("BACKEND_BOOTSTRAP_API_KEY", "BACKEND_API_KEYS_JSON"),
         comment_in_env_example=True,
     ),
@@ -241,6 +327,8 @@ _PRODUCT_SETTING_SPECS: tuple[ApplicationSettingSpec, ...] = (
         default="true",
         required="No",
         example="true",
+        category="interactions",
+        env_comment="Enable interaction execute by default on this application",
         related_suffixes=("INCLUDE_INTERACTIONS",),
     ),
 )

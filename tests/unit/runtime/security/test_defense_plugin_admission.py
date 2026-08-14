@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.metadata
+from dataclasses import fields
 
 import pytest
 
@@ -357,14 +358,17 @@ def test_shipped_unaffected_when_discovery_disabled() -> None:
     assert "harness.strict_injection" in result.shipped_bundle_ids
 
 
-def test_qualification_seam_is_not_enforced_without_package_evidence(
+def test_block_c_does_not_represent_qualification_until_host_admission_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """BLOCK C defers qualification; no inert require-qualification policy field."""
+    policy_field_names = {field.name for field in fields(SecurityDefenseAdmissionPolicy)}
+    assert "require_production_qualification" not in policy_field_names
+
     _install_eps(monkeypatch, [_ep("alpha", "_AlphaDefense")])
-    policy = SecurityDefenseAdmissionPolicy(require_production_qualification=True)
     report = load_security_defense_plugin_report(
         discover_entry_points=True,
-        admission=policy,
+        admission=SecurityDefenseAdmissionPolicy(),
     )
     assert report.registered_count == 1
     assert report.rejected == ()

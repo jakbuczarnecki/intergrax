@@ -41,7 +41,6 @@ class SecurityDefenseAdmissionPolicy:
     ep_name_conflict: ConflictPolicy = "error"
     plugin_id_conflict: ConflictPolicy = "error"
     shipped_id_override: ShippedIdOverride = "error"
-    require_production_qualification: bool = True
     on_load_failure: LoadIsolation = "isolate"
 
 
@@ -51,7 +50,6 @@ LEGACY_UNCONDITIONAL_OVERRIDE_POLICY = SecurityDefenseAdmissionPolicy(
     ep_name_conflict="override",
     plugin_id_conflict="override",
     shipped_id_override="allow",
-    require_production_qualification=False,
     on_load_failure="fail_fast",
 )
 

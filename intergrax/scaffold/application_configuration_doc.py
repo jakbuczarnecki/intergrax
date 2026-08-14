@@ -5,10 +5,13 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from textwrap import dedent
 
 from intergrax.scaffold.application_names import ScaffoldApplicationNames
 from intergrax.scaffold.application_setting_specs import (
+    ENV_CATEGORY_ORDER,
+    ENV_CATEGORY_TITLES,
     ApplicationSettingSpec,
     application_setting_specs,
 )
@@ -17,9 +20,13 @@ PLATFORM_CONFIGURATION_RELATIVE = (
     "../../../docs/project/technical/guides/PLATFORM_CONFIGURATION.md"
 )
 
-_LAB_ENV_FOOTER = """\
-# Optional LLM guardrails (M.12) — platform keys; see PLATFORM_CONFIGURATION.md
+_LAB_PLATFORM_GUARDRAILS = """\
+# -----------------------------------------------------------------------------
+# LLM guardrails (optional)
+# -----------------------------------------------------------------------------
+# Enable application-level LLM guardrails (M.12)
 # {env_prefix}ENABLE_LLM_GUARDRAILS=false
+# Primary guardrail integration slug
 # {env_prefix}LLM_GUARDRAIL_PRIMARY=llm_guard
 # INTERGRAX_LAKERA_API_KEY=
 # INTERGRAX_OPENGUARDRAILS_BASE_URL=
@@ -70,6 +77,37 @@ def _render_setting_entry(
     if spec.platform_relation:
         blocks.extend(["", "Platform relation:", spec.platform_relation])
     return "\n".join(blocks)
+
+
+def _env_comment(spec: ApplicationSettingSpec) -> str:
+    if spec.env_comment:
+        return spec.env_comment
+    return spec.purpose.split(".", maxsplit=1)[0]
+
+
+def _append_env_section(lines: list[str], title: str) -> None:
+    lines.extend(
+        [
+            "",
+            "# -----------------------------------------------------------------------------",
+            f"# {title}",
+            "# -----------------------------------------------------------------------------",
+        ]
+    )
+
+
+def _append_env_assignment(
+    lines: list[str],
+    *,
+    spec: ApplicationSettingSpec,
+    env_prefix: str,
+    port: int,
+    route_prefix: str,
+) -> None:
+    example_value = _format_spec_value(spec.example, port=port, route_prefix=route_prefix)
+    assignment = f"{env_prefix}{spec.env_suffix}={example_value}"
+    lines.append(f"# {_env_comment(spec)}")
+    lines.append(f"# {assignment}" if spec.comment_in_env_example else assignment)
 
 
 def render_application_configuration_doc(
@@ -157,19 +195,55 @@ def render_application_env_example(
 ) -> str:
     """Render application `.env.example` from the same setting specs as CONFIGURATION.md."""
     lines = [
-        f"# {env_prefix}* — copy to .env (gitignored) in this application directory.",
-        "# Platform INTERGRAX_* settings: docs/project/technical/guides/PLATFORM_CONFIGURATION.md",
-        "INTERGRAX_ENV=dev",
+        f"# {env_prefix}* - copy to .env (gitignored) in this application directory.",
+        f"# Application settings use the {env_prefix}* prefix.",
+        f"# Platform INTERGRAX_* catalog: docs/project/technical/guides/PLATFORM_CONFIGURATION.md",
+        "",
+        "# =============================================================================",
+        "# Application configuration",
+        "# =============================================================================",
     ]
+
+    by_category: dict[str, list[ApplicationSettingSpec]] = defaultdict(list)
     for spec in application_setting_specs(profile):
-        example_value = _format_spec_value(
-            spec.example, port=port, route_prefix=route_prefix
-        )
-        assignment = f"{env_prefix}{spec.env_suffix}={example_value}"
-        lines.append(f"# {assignment}" if spec.comment_in_env_example else assignment)
-    lines.append(f"# Example run capability for POST {route_prefix}/run")
-    lines.append(f"# DEFAULT_CAPABILITY={example_capability}")
-    body = "\n".join(lines) + "\n"
+        by_category[spec.category].append(spec)
+
+    for category in ENV_CATEGORY_ORDER:
+        specs = by_category.get(category)
+        if not specs:
+            continue
+        _append_env_section(lines, ENV_CATEGORY_TITLES[category])
+        for spec in specs:
+            _append_env_assignment(
+                lines,
+                spec=spec,
+                env_prefix=env_prefix,
+                port=port,
+                route_prefix=route_prefix,
+            )
+
+    lines.extend(
+        [
+            "",
+            "# Example run capability for POST {route_prefix}/run".format(
+                route_prefix=route_prefix
+            ),
+            f"# DEFAULT_CAPABILITY={example_capability}",
+            "",
+            "# =============================================================================",
+            "# Platform configuration",
+            "# =============================================================================",
+        ]
+    )
+    _append_env_section(lines, "Runtime")
+    lines.extend(
+        [
+            "# Shared platform runtime environment (dev, test, stage, prod)",
+            "INTERGRAX_ENV=dev",
+        ]
+    )
+
     if profile == "lab":
-        body += _LAB_ENV_FOOTER.format(env_prefix=env_prefix)
-    return body
+        lines.append(_LAB_PLATFORM_GUARDRAILS.format(env_prefix=env_prefix).rstrip())
+
+    return "\n".join(lines) + "\n"
