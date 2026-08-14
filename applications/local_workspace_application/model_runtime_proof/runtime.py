@@ -93,8 +93,6 @@ def build_proof_runtime_session(
     tracked_keys = (
         "INTERGRAX_LLM_PROVIDER",
         "INTERGRAX_LLM_MODEL",
-        "INTERGRAX_DEFAULT_OLLAMA_MODEL",
-        "INTERGRAX_DEFAULT_VLLM_MODEL",
         "INTERGRAX_DEFAULT_VLLM_BASE_URL",
         "OLLAMA_HOST",
         "INTERGRAX_QDRANT_URL",

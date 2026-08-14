@@ -16,6 +16,13 @@ DOC = REPO / "docs" / "project" / "technical" / "guides" / "PLATFORM_CONFIGURATI
 MAP = REPO / "docs" / "project" / "technical" / "DOCUMENTATION_MAP.md"
 GUIDES_INDEX = REPO / "docs" / "project" / "technical" / "guides" / "README.md"
 
+_REMOVED_GENERATION_SELECTION = (
+    "INTERGRAX_DEFAULT_OLLAMA_MODEL",
+    "INTERGRAX_DEFAULT_VLLM_MODEL",
+    "INTERGRAX_DEFAULT_OPENAI_MODEL",
+    "INTERGRAX_DEFAULT_BEDROCK_MODEL_ID",
+)
+
 _REMOVED_EMBEDDING_SELECTION = (
     "INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL",
     "INTERGRAX_DEFAULT_VLLM_EMBED_MODEL",
@@ -53,6 +60,16 @@ def test_canonical_llm_and_embedding_pairs_are_documented() -> None:
         "### INTERGRAX_EMBEDDING_MODEL",
     ):
         assert heading in text, f"missing heading {heading}"
+
+
+def test_removed_generation_vars_are_not_supported_configuration() -> None:
+    text = DOC.read_text(encoding="utf-8")
+    quick = _quick_reference_block(text)
+    for name in _REMOVED_GENERATION_SELECTION:
+        assert f"| `{name}`" not in text, f"{name} listed as supported generation config"
+        assert name not in quick, f"{name} in quick reference"
+    normalized = text.replace("**", "").replace("\n", " ")
+    assert "not supported for generation model selection" in normalized
 
 
 def test_removed_embedding_vars_are_not_current_configuration() -> None:

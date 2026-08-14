@@ -21,12 +21,12 @@ def test_bedrock_stream_with_tools_converse_stream() -> None:
         "os.environ",
         {
             "INTERGRAX_DEFAULT_AWS_REGION": "us-east-1",
-            "INTERGRAX_DEFAULT_BEDROCK_MODEL_ID": "anthropic.claude-3-haiku-20240307-v1:0",
         },
         clear=False,
     ):
         adapter = BedrockChatAdapter(
             client=client,
+            model_id="anthropic.claude-3-haiku-20240307-v1:0",
             family=BedrockModelFamily.ANTHROPIC,
             use_converse=True,
         )

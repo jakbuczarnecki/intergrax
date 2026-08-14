@@ -20,15 +20,13 @@ echo Building and starting complete LKW stack...
 docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" up --build -d
 if errorlevel 1 goto fail
 
-if not defined INTERGRAX_DEFAULT_OLLAMA_MODEL if defined INTERGRAX_LLM_MODEL set "INTERGRAX_DEFAULT_OLLAMA_MODEL=%INTERGRAX_LLM_MODEL%"
-if not defined INTERGRAX_DEFAULT_OLLAMA_MODEL for /f "tokens=1,* delims==" %%A in ('docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" config --environment 2^>nul') do if /I "%%A"=="INTERGRAX_DEFAULT_OLLAMA_MODEL" set "INTERGRAX_DEFAULT_OLLAMA_MODEL=%%B"
-if not defined INTERGRAX_DEFAULT_OLLAMA_MODEL for /f "tokens=1,* delims==" %%A in ('docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" config --environment 2^>nul') do if /I "%%A"=="INTERGRAX_LLM_MODEL" set "INTERGRAX_DEFAULT_OLLAMA_MODEL=%%B"
-if not defined INTERGRAX_DEFAULT_OLLAMA_MODEL set "INTERGRAX_DEFAULT_OLLAMA_MODEL=llama3.1:latest"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$model = $env:INTERGRAX_DEFAULT_OLLAMA_MODEL; if ($model -notmatch '^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$') { exit 1 }"
+if not defined INTERGRAX_LLM_MODEL for /f "tokens=1,* delims==" %%A in ('docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" config --environment 2^>nul') do if /I "%%A"=="INTERGRAX_LLM_MODEL" set "INTERGRAX_LLM_MODEL=%%B"
+if not defined INTERGRAX_LLM_MODEL set "INTERGRAX_LLM_MODEL=llama3.1:latest"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$model = $env:INTERGRAX_LLM_MODEL; if ($model -notmatch '^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$') { exit 1 }"
 if errorlevel 1 goto fail
 
 echo Ensuring the configured Ollama generation model is available...
-docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" exec -T --env "INTERGRAX_DEFAULT_OLLAMA_MODEL=%INTERGRAX_DEFAULT_OLLAMA_MODEL%" ollama sh -c "ollama pull \"$INTERGRAX_DEFAULT_OLLAMA_MODEL\""
+docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" exec -T --env "INTERGRAX_LLM_MODEL=%INTERGRAX_LLM_MODEL%" ollama sh -c "ollama pull \"$INTERGRAX_LLM_MODEL\""
 if errorlevel 1 goto fail
 
 echo Waiting for LKW health...

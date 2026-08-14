@@ -162,7 +162,6 @@ class GroqChatAdapter(_CompatAdapterBase):
     _CONFIG = OpenAICompatProviderConfig(
         provider=LLMProvider.GROQ,
         api_key_env="GROQ_API_KEY",
-        model_env="INTERGRAX_DEFAULT_GROQ_MODEL",
         base_url_env="INTERGRAX_DEFAULT_GROQ_BASE_URL",
         default_base_url="https://api.groq.com/openai/v1",
         default_model="llama-3.3-70b-versatile",
@@ -174,7 +173,6 @@ class VllmChatAdapter(_CompatAdapterBase):
     _CONFIG = OpenAICompatProviderConfig(
         provider=LLMProvider.VLLM,
         api_key_env="VLLM_API_KEY",
-        model_env="INTERGRAX_DEFAULT_VLLM_MODEL",
         base_url_env="INTERGRAX_DEFAULT_VLLM_BASE_URL",
         default_base_url="http://127.0.0.1:8000/v1",
         default_model="Qwen/Qwen2.5-7B-Instruct",
@@ -193,7 +191,6 @@ class TogetherChatAdapter(_CompatAdapterBase):
     _CONFIG = OpenAICompatProviderConfig(
         provider=LLMProvider.TOGETHER,
         api_key_env="TOGETHER_API_KEY",
-        model_env="INTERGRAX_DEFAULT_TOGETHER_MODEL",
         base_url_env="INTERGRAX_DEFAULT_TOGETHER_BASE_URL",
         default_base_url="https://api.together.xyz/v1",
         default_model="meta-llama/Llama-3.1-8B-Instruct-Turbo",
@@ -205,7 +202,6 @@ class FireworksChatAdapter(_CompatAdapterBase):
     _CONFIG = OpenAICompatProviderConfig(
         provider=LLMProvider.FIREWORKS,
         api_key_env="FIREWORKS_API_KEY",
-        model_env="INTERGRAX_DEFAULT_FIREWORKS_MODEL",
         base_url_env="INTERGRAX_DEFAULT_FIREWORKS_BASE_URL",
         default_base_url="https://api.fireworks.ai/inference/v1",
         default_model="accounts/fireworks/models/llama-v3p1-8b-instruct",
@@ -217,7 +213,6 @@ class OpenRouterChatAdapter(_CompatAdapterBase):
     _CONFIG = OpenAICompatProviderConfig(
         provider=LLMProvider.OPENROUTER,
         api_key_env="OPENROUTER_API_KEY",
-        model_env="INTERGRAX_DEFAULT_OPENROUTER_MODEL",
         base_url_env="INTERGRAX_DEFAULT_OPENROUTER_BASE_URL",
         default_base_url="https://openrouter.ai/api/v1",
         default_model="openai/gpt-4o-mini",
@@ -229,7 +224,6 @@ class DeepSeekChatAdapter(_CompatAdapterBase):
     _CONFIG = OpenAICompatProviderConfig(
         provider=LLMProvider.DEEPSEEK,
         api_key_env="DEEPSEEK_API_KEY",
-        model_env="INTERGRAX_DEFAULT_DEEPSEEK_MODEL",
         base_url_env="INTERGRAX_DEFAULT_DEEPSEEK_BASE_URL",
         default_base_url="https://api.deepseek.com",
         default_model="deepseek-chat",
@@ -241,7 +235,6 @@ class XaiChatAdapter(_CompatAdapterBase):
     _CONFIG = OpenAICompatProviderConfig(
         provider=LLMProvider.XAI,
         api_key_env="XAI_API_KEY",
-        model_env="INTERGRAX_DEFAULT_XAI_MODEL",
         base_url_env="INTERGRAX_DEFAULT_XAI_BASE_URL",
         default_base_url="https://api.x.ai/v1",
         default_model="grok-2-latest",
@@ -253,7 +246,6 @@ class LlamaCppChatAdapter(_CompatAdapterBase):
     _CONFIG = OpenAICompatProviderConfig(
         provider=LLMProvider.LLAMA_CPP,
         api_key_env="LLAMA_CPP_API_KEY",
-        model_env="INTERGRAX_DEFAULT_LLAMA_CPP_MODEL",
         base_url_env="INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL",
         default_base_url="http://127.0.0.1:8080/v1",
         default_model="default",
@@ -273,7 +265,6 @@ class CohereChatAdapter(_CompatAdapterBase):
     _CONFIG = OpenAICompatProviderConfig(
         provider=LLMProvider.COHERE,
         api_key_env="COHERE_API_KEY",
-        model_env="INTERGRAX_DEFAULT_COHERE_MODEL",
         base_url_env="INTERGRAX_DEFAULT_COHERE_BASE_URL",
         default_base_url="https://api.cohere.com/compatibility/v1",
         default_model="command-r-plus",
@@ -285,7 +276,6 @@ class AzureAiInferenceChatAdapter(_CompatAdapterBase):
     _CONFIG = OpenAICompatProviderConfig(
         provider=LLMProvider.AZURE_AI_INFERENCE,
         api_key_env="AZURE_AI_INFERENCE_API_KEY",
-        model_env="INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_MODEL",
         base_url_env="INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_BASE_URL",
         default_base_url="",
         default_model="gpt-4o-mini",

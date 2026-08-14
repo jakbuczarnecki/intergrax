@@ -52,7 +52,6 @@ _DEFAULT_MONGODB_HOST_PORT = 27018
 _MODEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$")
 _ENV_KEYS = frozenset(
     {
-        "INTERGRAX_DEFAULT_OLLAMA_MODEL",
         "INTERGRAX_LLM_MODEL",
         "INTERGRAX_LLM_PROVIDER",
         "LKW_MONGODB_HOST_PORT",
@@ -452,10 +451,8 @@ def _configured_value(values: Mapping[str, str], key: str) -> str | None:
 
 def resolve_generation_model() -> str:
     values = _read_supported_env_values()
-    for key in ("INTERGRAX_DEFAULT_OLLAMA_MODEL", "INTERGRAX_LLM_MODEL"):
-        value = _configured_value(values, key)
-        if value is None:
-            continue
+    value = _configured_value(values, "INTERGRAX_LLM_MODEL")
+    if value is not None:
         if not _MODEL_PATTERN.fullmatch(value):
             raise QuickstartError(
                 "invalid_mandatory_configuration",
@@ -1232,7 +1229,7 @@ def _run_quickstart(config: QuickstartConfig) -> int:
                 progress=progress,
                 env={
                     **os.environ,
-                    "INTERGRAX_DEFAULT_OLLAMA_MODEL": generation_model,
+                    "INTERGRAX_LLM_MODEL": generation_model,
                 },
             )
             if completed.returncode != 0:

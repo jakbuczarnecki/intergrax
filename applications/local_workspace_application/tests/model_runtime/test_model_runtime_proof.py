@@ -97,13 +97,16 @@ def test_materialize_provider_env_sets_canonical_names() -> None:
     )
     ollama_env = materialize_provider_env(provider="ollama", config=config, target={})
     assert ollama_env["INTERGRAX_LLM_PROVIDER"] == "ollama"
-    assert ollama_env["INTERGRAX_DEFAULT_OLLAMA_MODEL"] == "llama3.1:latest"
+    assert ollama_env["INTERGRAX_LLM_MODEL"] == "llama3.1:latest"
+    assert "INTERGRAX_DEFAULT_OLLAMA_MODEL" not in ollama_env
     vllm_env = materialize_provider_env(
         provider="vllm",
         config=config,
         target={"OLLAMA_HOST": "http://127.0.0.1:11434"},
     )
-    assert vllm_env["INTERGRAX_DEFAULT_VLLM_MODEL"] == "Qwen/Qwen2.5-7B-Instruct"
+    assert vllm_env["INTERGRAX_LLM_PROVIDER"] == "vllm"
+    assert vllm_env["INTERGRAX_LLM_MODEL"] == "Qwen/Qwen2.5-7B-Instruct"
+    assert "INTERGRAX_DEFAULT_VLLM_MODEL" not in vllm_env
     assert "OLLAMA_HOST" not in vllm_env
 
 

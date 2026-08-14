@@ -23,7 +23,6 @@ class VertexGeminiChatAdapter(GeminiChatAdapter):
 
     ENV_PROJECT = "INTERGRAX_VERTEX_PROJECT"
     ENV_LOCATION = "INTERGRAX_DEFAULT_VERTEX_LOCATION"
-    ENV_MODEL = "INTERGRAX_DEFAULT_VERTEX_GEMINI_MODEL"
     DEFAULT_LOCATION = "us-central1"
     DEFAULT_MODEL = "gemini-2.5-flash"
 
@@ -52,7 +51,7 @@ class VertexGeminiChatAdapter(GeminiChatAdapter):
                 location=resolved_location,
             )
 
-        resolved_model = model or os.getenv(self.ENV_MODEL) or self.DEFAULT_MODEL
+        resolved_model = model or self.DEFAULT_MODEL
 
         super().__init__(client=client, model=resolved_model, **defaults)
         self.provider = LLMProvider.VERTEX_GEMINI

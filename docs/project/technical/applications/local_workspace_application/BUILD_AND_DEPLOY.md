@@ -40,7 +40,7 @@ Minimum local stack variables are documented in `.env.example`:
 | `INTERGRAX_QDRANT_URL` | Qdrant endpoint |
 | `INTERGRAX_QDRANT_COLLECTION` | Default local RAG collection |
 | `INTERGRAX_LLM_PROVIDER` | `ollama` by default |
-| `INTERGRAX_LLM_MODEL` / `INTERGRAX_DEFAULT_OLLAMA_MODEL` | Ollama model pulled by local bootstrap scripts |
+| `INTERGRAX_LLM_MODEL` | Canonical generation model pulled by local bootstrap scripts |
 | `LOCAL_WORKSPACE_ENABLE_REDIS` | Optional; keep false until background ingest / queue work requires Redis |
 
 Agent roster and integrations: `manifest.py`, `host/environment_profile.py`, `host/tool_wiring.py`.
@@ -100,8 +100,8 @@ LKW receives a provider-neutral `LLMAdapter` through application wiring. The LKW
 
 | Profile | Existing configuration | Status |
 |---------|------------------------|--------|
-| **Ollama** (default) | `INTERGRAX_LLM_PROVIDER=ollama`, `INTERGRAX_LLM_MODEL`, `INTERGRAX_DEFAULT_OLLAMA_MODEL` | **IMPLEMENTED** — default local stack |
-| **vLLM** | Commented optional block in `.env.example`: `INTERGRAX_LLM_PROVIDER=vllm`, `INTERGRAX_DEFAULT_VLLM_BASE_URL`, `INTERGRAX_DEFAULT_VLLM_MODEL` | **EXISTING CONFIG** — end-to-end LKW product proof **NEXT** (`LKW-MODEL-RUNTIME-1`) |
+| **Ollama** (default) | `INTERGRAX_LLM_PROVIDER=ollama`, `INTERGRAX_LLM_MODEL` | **IMPLEMENTED** — default local stack |
+| **vLLM** | Commented optional block in `.env.example`: `INTERGRAX_LLM_PROVIDER=vllm`, `INTERGRAX_LLM_MODEL`, `INTERGRAX_DEFAULT_VLLM_BASE_URL` | **EXISTING CONFIG** — end-to-end LKW product proof **NEXT** (`LKW-MODEL-RUNTIME-1`) |
 
 **Embedding provider is separate** from the conversation/reasoning LLM. Switching `INTERGRAX_LLM_PROVIDER` must not silently change embedding model, vector dimensions or indexed collections. Reindexing is not required merely because the chat model changes.
 
@@ -141,7 +141,6 @@ LKW stack start
 Model resolution order:
 
 ```text
-INTERGRAX_DEFAULT_OLLAMA_MODEL
 INTERGRAX_LLM_MODEL
 llama3.1:latest fallback
 ```

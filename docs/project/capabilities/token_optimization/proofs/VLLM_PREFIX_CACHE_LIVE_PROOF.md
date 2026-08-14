@@ -197,7 +197,7 @@ NVIDIA GeForce RTX 4080 Laptop GPU, 12282 MiB, ...
 
 ```powershell
 $env:VLLM_MODEL = "Qwen/Qwen2.5-3B-Instruct"
-$env:INTERGRAX_DEFAULT_VLLM_MODEL = "Qwen/Qwen2.5-3B-Instruct"
+$env:INTERGRAX_LLM_MODEL = "Qwen/Qwen2.5-3B-Instruct"
 $env:INTERGRAX_DEFAULT_VLLM_BASE_URL = "http://127.0.0.1:8100/v1"
 $env:VLLM_MODEL
 ```

@@ -47,11 +47,12 @@ def test_claude_live_one_shot() -> None:
 
 
 @pytest.mark.skipif(
-    not os.getenv("INTERGRAX_DEFAULT_AWS_REGION") or not os.getenv("INTERGRAX_DEFAULT_BEDROCK_MODEL_ID"),
+    not os.getenv("INTERGRAX_DEFAULT_AWS_REGION") or not os.getenv("INTERGRAX_LLM_MODEL"),
     reason="Bedrock env not set",
 )
 def test_bedrock_live_one_shot() -> None:
-    _one_shot(LLMProvider.AWS_BEDROCK, use_converse=True)
+    model = os.getenv("INTERGRAX_LLM_MODEL", "").strip()
+    _one_shot(LLMProvider.AWS_BEDROCK, model=model, use_converse=True)
 
 
 @pytest.mark.skipif(
@@ -66,5 +67,5 @@ def test_vllm_live_one_shot() -> None:
     from testing_support.builder import require_vllm_reachable
 
     require_vllm_reachable()
-    model = os.getenv("INTERGRAX_DEFAULT_VLLM_MODEL", "").strip() or None
+    model = os.getenv("INTERGRAX_LLM_MODEL", "").strip() or None
     _one_shot(LLMProvider.VLLM, model=model)

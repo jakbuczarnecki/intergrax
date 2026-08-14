@@ -161,9 +161,9 @@ You did not need to write API JSON, copy operation IDs manually, or configure `I
 | Embedding | `INTERGRAX_EMBEDDING_PROVIDER` | `INTERGRAX_EMBEDDING_MODEL` |
 
 `PROVIDER` selects the adapter; `MODEL` selects the configured model.
-Provider-specific `INTERGRAX_DEFAULT_*_MODEL` variables may exist as adapter
-fallbacks when the canonical model is omitted — they are not the primary
-application model-selection contract.
+Generation model selection uses only `INTERGRAX_LLM_PROVIDER` and
+`INTERGRAX_LLM_MODEL`. Provider-specific `INTERGRAX_DEFAULT_*_MODEL` variables
+are not supported.
 
 Canonical local LKW example:
 

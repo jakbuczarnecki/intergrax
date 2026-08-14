@@ -58,7 +58,6 @@ _MISSING = object()
 class NativeOllamaAdapter(LLMAdapter):
     """Ollama adapter using the official native Python client."""
 
-    ENV_MODEL = "INTERGRAX_DEFAULT_OLLAMA_MODEL"
     DEFAULT_MODEL = "llama3.1:latest"
 
     def __init__(
@@ -74,7 +73,7 @@ class NativeOllamaAdapter(LLMAdapter):
         super().__init__()
         self._apply_defaults_call_config(defaults)
 
-        resolved_model = model or os.getenv(self.ENV_MODEL) or self.DEFAULT_MODEL
+        resolved_model = model or self.DEFAULT_MODEL
         if client is None:
             from ollama import Client
 

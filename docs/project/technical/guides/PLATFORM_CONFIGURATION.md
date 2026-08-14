@@ -266,12 +266,10 @@ Purpose: Selects the generation model id for the chosen provider.
 
 Owner: Platform.
 
-Default: Platform profile default: **none**. If omitted, the selected provider
-adapter may use its own **provider adapter fallback** (`INTERGRAX_DEFAULT_*_MODEL`
-or a hardcoded adapter default such as Ollama `llama3.1:latest`).
+Default: Platform profile default: **none**. If omitted, adapters use their
+own code-level constructor default (for example Ollama `llama3.1:latest`).
 
-Required: Conditional. Set it whenever you need a specific model. Do not rely
-on provider `DEFAULT_*_MODEL` variables as the primary selection contract.
+Required: Conditional. Set it whenever you need a specific model.
 
 Accepted values: Free string (provider-specific model id). No platform model enum.
 
@@ -285,36 +283,9 @@ Related settings: `INTERGRAX_LLM_PROVIDER`.
 
 Used by: Generation LLM. Passed into the adapter as `model` when set.
 
-### Adapter fallback model variables (not primary selection)
-
-These are **provider adapter fallbacks**. They apply only when
-`INTERGRAX_LLM_MODEL` is omitted (or when an adapter is constructed without a
-model argument). They are **not** the canonical model-selection contract.
-
-| Variable | Provider | Adapter fallback (when model omitted) |
-|----------|----------|----------------------------------------|
-| `INTERGRAX_DEFAULT_OLLAMA_MODEL` | `ollama` | Adapter default: `llama3.1:latest` |
-| `INTERGRAX_DEFAULT_OPENAI_MODEL` | `openai` | none (adapter requires a model) |
-| `INTERGRAX_DEFAULT_CLAUDE_MODEL` | `claude` | none |
-| `INTERGRAX_DEFAULT_GEMINI_MODEL` | `gemini` | none |
-| `INTERGRAX_DEFAULT_MISTRAL_MODEL` | `mistral` | none |
-| `INTERGRAX_DEFAULT_VLLM_MODEL` | `vllm` | Adapter default: `Qwen/Qwen2.5-7B-Instruct` |
-| `INTERGRAX_DEFAULT_LLAMA_CPP_MODEL` | `llama_cpp` | Adapter default: `default` |
-| `INTERGRAX_DEFAULT_GROQ_MODEL` | `groq` | Adapter default: `llama-3.3-70b-versatile` |
-| `INTERGRAX_DEFAULT_TOGETHER_MODEL` | `together` | Adapter default: `meta-llama/Llama-3.1-8B-Instruct-Turbo` |
-| `INTERGRAX_DEFAULT_FIREWORKS_MODEL` | `fireworks` | Adapter default: `accounts/fireworks/models/llama-v3p1-8b-instruct` |
-| `INTERGRAX_DEFAULT_OPENROUTER_MODEL` | `openrouter` | Adapter default: `openai/gpt-4o-mini` |
-| `INTERGRAX_DEFAULT_DEEPSEEK_MODEL` | `deepseek` | Adapter default: `deepseek-chat` |
-| `INTERGRAX_DEFAULT_XAI_MODEL` | `xai` | Adapter default: `grok-2-latest` |
-| `INTERGRAX_DEFAULT_COHERE_MODEL` | `cohere` | Adapter default: `command-r-plus` |
-| `INTERGRAX_DEFAULT_COHERE_NATIVE_MODEL` | `cohere_native` | adapter-defined |
-| `INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_MODEL` | `azure_ai_inference` | Adapter default: `gpt-4o-mini` |
-| `INTERGRAX_DEFAULT_VERTEX_GEMINI_MODEL` | `vertex_gemini` | Adapter default: `gemini-2.5-flash` |
-| `INTERGRAX_DEFAULT_BEDROCK_MODEL_ID` | `aws_bedrock` | none (required by the adapter if model omitted) |
-| `INTERGRAX_DEFAULT_AZURE_OPENAI_DEPLOYMENT` | `azure_openai` | none (required by the adapter if deployment omitted) |
-
-`.env.example` may show different **example values** (for example a vLLM Docker
-image name). Those examples are not adapter defaults.
+Provider-specific `INTERGRAX_DEFAULT_*_MODEL` environment variables are **not**
+supported for generation model selection. Use `INTERGRAX_LLM_PROVIDER` and
+`INTERGRAX_LLM_MODEL` only.
 
 ### INTERGRAX_LLM_TENANT_MAX_TOKENS
 
@@ -452,7 +423,7 @@ API origins): `INTERGRAX_DEFAULT_GROQ_BASE_URL`,
 | Variable | Purpose | Default | Required when `aws_bedrock` |
 |----------|---------|---------|------------------------------|
 | `INTERGRAX_DEFAULT_AWS_REGION` | AWS region | none | Yes |
-| `INTERGRAX_DEFAULT_BEDROCK_MODEL_ID` | Adapter fallback model id | none | Yes if `INTERGRAX_LLM_MODEL` omitted |
+| `INTERGRAX_LLM_MODEL` | Bedrock model id | none | Yes |
 | `INTERGRAX_BEDROCK_USE_CONVERSE` | Use Bedrock Converse API when truthy | none (off) | No |
 
 Auth uses the standard AWS credential chain (`AWS_ACCESS_KEY_ID` /
@@ -463,8 +434,8 @@ Auth uses the standard AWS credential chain (`AWS_ACCESS_KEY_ID` /
 | Variable | Purpose | Default | Required when `vertex_gemini` |
 |----------|---------|---------|-------------------------------|
 | `INTERGRAX_VERTEX_PROJECT` | GCP project | none | Yes |
-| `INTERGRAX_DEFAULT_VERTEX_LOCATION` | Vertex location | Provider adapter fallback: `us-central1` | No |
-| `INTERGRAX_DEFAULT_VERTEX_GEMINI_MODEL` | Adapter fallback model | Provider adapter fallback: `gemini-2.5-flash` | No if `INTERGRAX_LLM_MODEL` is set |
+| `INTERGRAX_DEFAULT_VERTEX_LOCATION` | Vertex location | `us-central1` | No |
+| `INTERGRAX_LLM_MODEL` | Gemini model id on Vertex | Adapter code default: `gemini-2.5-flash` when omitted | No |
 
 Uses Application Default Credentials (no API key env).
 

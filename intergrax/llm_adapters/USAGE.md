@@ -43,27 +43,27 @@ if completion.usage:
 
 ### Built-in providers (19)
 
-| Slug | Primary secret env | Default model env |
+| Slug | Primary secret env | Connection / notes |
 |------|-------------------|-------------------|
-| `openai` | `OPENAI_API_KEY` | `INTERGRAX_DEFAULT_OPENAI_MODEL` |
-| `claude` | `ANTHROPIC_API_KEY` | `INTERGRAX_DEFAULT_CLAUDE_MODEL` |
-| `gemini` | `GOOGLE_API_KEY` | `INTERGRAX_DEFAULT_GEMINI_MODEL` |
-| `mistral` | `MISTRAL_API_KEY` | `INTERGRAX_DEFAULT_MISTRAL_MODEL` |
+| `openai` | `OPENAI_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `claude` | `ANTHROPIC_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `gemini` | `GOOGLE_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `mistral` | `MISTRAL_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
 | `azure_openai` | `AZURE_OPENAI_*` | deployment-specific |
-| `aws_bedrock` | `AWS_*` | `INTERGRAX_DEFAULT_BEDROCK_MODEL_ID` |
-| `ollama` | — | `INTERGRAX_DEFAULT_OLLAMA_MODEL` |
-| `groq` | `GROQ_API_KEY` | `INTERGRAX_DEFAULT_GROQ_MODEL` |
-| `vllm` | `VLLM_API_KEY` (optional) | `INTERGRAX_DEFAULT_VLLM_MODEL` |
-| `together` | `TOGETHER_API_KEY` | `INTERGRAX_DEFAULT_TOGETHER_MODEL` |
-| `fireworks` | `FIREWORKS_API_KEY` | `INTERGRAX_DEFAULT_FIREWORKS_MODEL` |
-| `openrouter` | `OPENROUTER_API_KEY` | `INTERGRAX_DEFAULT_OPENROUTER_MODEL` |
-| `deepseek` | `DEEPSEEK_API_KEY` | `INTERGRAX_DEFAULT_DEEPSEEK_MODEL` |
-| `xai` | `XAI_API_KEY` | `INTERGRAX_DEFAULT_XAI_MODEL` |
-| `llama_cpp` | optional | `INTERGRAX_DEFAULT_LLAMA_CPP_MODEL` |
-| `cohere` | `COHERE_API_KEY` | `INTERGRAX_DEFAULT_COHERE_MODEL` |
-| `cohere_native` | `COHERE_API_KEY` | `INTERGRAX_DEFAULT_COHERE_MODEL` |
-| `vertex_gemini` | `GOOGLE_APPLICATION_CREDENTIALS` | `INTERGRAX_DEFAULT_GEMINI_MODEL` |
-| `azure_ai_inference` | `AZURE_AI_INFERENCE_API_KEY` | `INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_MODEL` |
+| `aws_bedrock` | `AWS_*` | `INTERGRAX_LLM_MODEL` + `INTERGRAX_DEFAULT_AWS_REGION` |
+| `ollama` | — | `OLLAMA_HOST` optional |
+| `groq` | `GROQ_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `vllm` | `VLLM_API_KEY` (optional) | `INTERGRAX_DEFAULT_VLLM_BASE_URL` |
+| `together` | `TOGETHER_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `fireworks` | `FIREWORKS_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `openrouter` | `OPENROUTER_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `deepseek` | `DEEPSEEK_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `xai` | `XAI_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `llama_cpp` | optional | `INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL` |
+| `cohere` | `COHERE_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `cohere_native` | `COHERE_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `vertex_gemini` | `GOOGLE_APPLICATION_CREDENTIALS` | `INTERGRAX_VERTEX_PROJECT` |
+| `azure_ai_inference` | `AZURE_AI_INFERENCE_API_KEY` | `INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_BASE_URL` |
 
 Platform defaults: `INTERGRAX_LLM_PROVIDER`, `INTERGRAX_LLM_MODEL`.
 
@@ -510,7 +510,8 @@ Optional live smoke (not PR gate) — **vLLM only** in GitHub `llm-network-smoke
 ```bash
 cd infra/integration && ./manage.sh start vllm
 export INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
-export INTERGRAX_DEFAULT_VLLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
+export INTERGRAX_LLM_PROVIDER=vllm
+export INTERGRAX_LLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
 uv run pytest tests/unit/llm_adapters/test_network_smoke.py::test_vllm_live_one_shot -m network -q
 ```
 

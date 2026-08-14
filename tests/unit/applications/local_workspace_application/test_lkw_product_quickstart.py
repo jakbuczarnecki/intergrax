@@ -425,7 +425,7 @@ def test_invalid_generation_configuration_is_not_echoed(
         quick,
         tmp_path,
         monkeypatch,
-        "INTERGRAX_DEFAULT_OLLAMA_MODEL=bad model secret\n",
+        "INTERGRAX_LLM_MODEL=bad model secret\n",
     )
     with pytest.raises(quick.QuickstartError) as exc:
         quick.resolve_generation_model()
@@ -940,10 +940,10 @@ def test_bootstrap_compose_and_generation_model_contracts(quick: ModuleType) -> 
         in shell_source
     )
     assert 'docker compose -f "$COMPOSE_FILE"' not in shell_source
-    assert "INTERGRAX_DEFAULT_OLLAMA_MODEL" in windows_source
-    assert "INTERGRAX_DEFAULT_OLLAMA_MODEL" in shell_source
+    assert "INTERGRAX_LLM_MODEL" in windows_source
+    assert "INTERGRAX_LLM_MODEL" in shell_source
     assert "ollama pull" in windows_source
-    assert 'ollama pull "$INTERGRAX_DEFAULT_OLLAMA_MODEL"' in shell_source
+    assert 'ollama pull "$INTERGRAX_LLM_MODEL"' in shell_source
 
 
 def test_stack_bootstrap_invokes_embedding_pull(

@@ -99,3 +99,21 @@ def test_llm_profile_from_env_unknown_provider(_restore_registry_state) -> None:
 def test_llm_profile_lab_default() -> None:
     profile = LLMProfile.lab()
     assert profile.provider == LLMProvider.OLLAMA
+
+
+def test_llm_profile_propagates_canonical_model_and_ignores_legacy_env() -> None:
+    with patch.dict(
+        "os.environ",
+        {
+            "INTERGRAX_LLM_PROVIDER": "groq",
+            "INTERGRAX_LLM_MODEL": "canonical-model",
+            "INTERGRAX_DEFAULT_GROQ_MODEL": "legacy-model",
+            "GROQ_API_KEY": "k",
+        },
+        clear=False,
+    ):
+        profile = llm_profile_from_env()
+        adapter = profile.create_adapter(client=MagicMock())
+    inner = unwrap_catalog_capability_adapter(adapter)
+    assert isinstance(inner, GroqChatAdapter)
+    assert adapter.model == "canonical-model"

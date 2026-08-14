@@ -115,8 +115,6 @@ class LangChainOllamaAdapter(LLMAdapter):
         # Conservative fallback if the model is unknown.
         return 8_192
 
-    ENV_MODEL = "INTERGRAX_DEFAULT_OLLAMA_MODEL"
-
     def __init__(
         self,
         chat: Optional[Any] = None,
@@ -130,7 +128,7 @@ class LangChainOllamaAdapter(LLMAdapter):
         super().__init__()
         self._apply_defaults_call_config(defaults)
 
-        resolved_model = model or os.getenv(self.ENV_MODEL) or self.DEFAULT_MODEL
+        resolved_model = model or self.DEFAULT_MODEL
         chat_kwargs: Dict[str, Any] = {"model": resolved_model}
         if base_url is not None:
             chat_kwargs["base_url"] = base_url

@@ -406,6 +406,7 @@ class BedrockChatAdapter(LLMAdapter):
         self,
         client: Optional[BedrockRuntimeClient] = None,
         model_id: Optional[str] = None,
+        model: Optional[str] = None,
         region: Optional[str] = None,
         family: Optional[BedrockModelFamily] = None,
         **defaults,
@@ -414,7 +415,7 @@ class BedrockChatAdapter(LLMAdapter):
         self._apply_defaults_call_config(defaults)
 
         resolved_region = region or os.getenv("INTERGRAX_DEFAULT_AWS_REGION", "")
-        resolved_model_id = model_id or os.getenv("INTERGRAX_DEFAULT_BEDROCK_MODEL_ID", "")
+        resolved_model_id = (model_id or model or "").strip()
 
         if not resolved_region:
             raise RuntimeError(
@@ -423,7 +424,8 @@ class BedrockChatAdapter(LLMAdapter):
 
         if not resolved_model_id:
             raise RuntimeError(
-                "INTERGRAX_DEFAULT_BEDROCK_MODEL_ID must be configured for Bedrock adapter."
+                "Bedrock adapter requires an explicit model_id (set INTERGRAX_LLM_MODEL "
+                "via LLMProfile / llm_profile_from_env)."
             )
 
         inferred_family = family or self._infer_family_from_model_id(resolved_model_id)

@@ -172,9 +172,8 @@ def _build_adapter(provider: LLMProvider) -> LLMAdapter:
         patch_env["INTERGRAX_VERTEX_PROJECT"] = "demo"
     if provider == LLMProvider.AWS_BEDROCK:
         patch_env["INTERGRAX_DEFAULT_AWS_REGION"] = "us-east-1"
-        patch_env["INTERGRAX_DEFAULT_BEDROCK_MODEL_ID"] = kwargs.get(
-            "model_id", "anthropic.claude-3-haiku-20240307-v1:0"
-        )
+        if "model_id" not in kwargs:
+            kwargs["model_id"] = "anthropic.claude-3-haiku-20240307-v1:0"
     if provider == LLMProvider.AZURE_OPENAI:
         patch_env.update(
             {

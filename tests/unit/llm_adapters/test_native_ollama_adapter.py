@@ -128,11 +128,11 @@ def _adapter(
     )
 
 
-def test_constructor_uses_env_and_does_not_generate(
+def test_constructor_ignores_legacy_env_and_uses_code_default(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client = FakeNativeClient()
-    monkeypatch.setenv("INTERGRAX_DEFAULT_OLLAMA_MODEL", "env-model")
+    monkeypatch.setenv("INTERGRAX_DEFAULT_OLLAMA_MODEL", "legacy-model")
 
     adapter = NativeOllamaAdapter(
         client=client,
@@ -140,7 +140,7 @@ def test_constructor_uses_env_and_does_not_generate(
         context_window_tokens=1234,
     )
 
-    assert adapter.model == "env-model"
+    assert adapter.model == NativeOllamaAdapter.DEFAULT_MODEL
     assert adapter.provider is LLMProvider.OLLAMA
     assert adapter.context_window_tokens == 1234
     assert client.calls == []

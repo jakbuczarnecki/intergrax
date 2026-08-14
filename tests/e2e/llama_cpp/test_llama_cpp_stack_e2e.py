@@ -58,7 +58,7 @@ def test_llama_cpp_models_endpoint_lists_served_model() -> None:
 
 def test_llama_cpp_chat_adapter_completion() -> None:
     require_llama_cpp_reachable(base_url=_chat_base_url(), hard_fail=_VERIFY_MODE)
-    model = os.getenv("INTERGRAX_DEFAULT_LLAMA_CPP_MODEL", "").strip() or "default"
+    model = os.getenv("INTERGRAX_LLM_MODEL", "").strip() or "default"
     adapter = LLMAdapterRegistry.create(LLMProvider.LLAMA_CPP, model=model)
     response = adapter.generate_messages(
         [ChatMessage(role="user", content="Reply with one short word: ok")],
@@ -72,7 +72,7 @@ def test_llama_cpp_chat_adapter_completion() -> None:
 
 def test_llama_cpp_profile_create_adapter() -> None:
     require_llama_cpp_reachable(base_url=_chat_base_url(), hard_fail=_VERIFY_MODE)
-    model = os.getenv("INTERGRAX_DEFAULT_LLAMA_CPP_MODEL", "").strip() or "default"
+    model = os.getenv("INTERGRAX_LLM_MODEL", "").strip() or "default"
     profile = LLMProfile(provider=LLMProvider.LLAMA_CPP, model=model)
     adapter = profile.create_adapter()
     response = adapter.generate_messages(
