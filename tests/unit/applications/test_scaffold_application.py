@@ -28,6 +28,7 @@ def test_scaffold_creates_application_tree(tmp_path):
     assert (target / "manifest.py").exists()
     assert (target / "docs" / "ARCHITECTURE.md").exists()
     assert (target / "docs" / "IMPLEMENTATION_PLAN.md").exists()
+    assert (target / "docs" / "CONFIGURATION.md").exists()
     assert (target / ".env.example").exists()
     assert (target / "host" / "factory.py").exists()
     assert (target / "host" / "wiring.py").exists()

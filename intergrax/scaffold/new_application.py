@@ -16,6 +16,10 @@ from intergrax.scaffold.adr_templates import write_application_adr_scaffold
 from intergrax.scaffold.signal_templates import write_application_signal_scaffold
 from intergrax.scaffold.tracing_templates import write_application_tracing_scaffold
 from intergrax.scaffold.agent_catalog import ScaffoldAgentSpec, resolve_agent_specs
+from intergrax.scaffold.application_configuration_doc import (
+    render_application_configuration_doc,
+    render_application_env_example,
+)
 from intergrax.scaffold.doc_templates import (
     render_application_architecture_doc,
     render_application_implementation_plan,
@@ -823,29 +827,12 @@ def _mcp_server_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpe
 
 def _env_example(env_prefix: str, route_prefix: str, port: int, specs: list[ScaffoldAgentSpec]) -> str:
     caps = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
-    return dedent(
-        f'''\
-        # {env_prefix}* — copy to .env (gitignored) in this application directory.
-        INTERGRAX_ENV=dev
-        {env_prefix}BACKEND_HOST=127.0.0.1
-        {env_prefix}BACKEND_PORT={port}
-        {env_prefix}ROUTE_PREFIX={route_prefix}
-        {env_prefix}INCLUDE_INTERACTIONS=true
-        {env_prefix}INCLUDE_SCHEDULER=true
-        {env_prefix}INTERACTION_SURFACE=auto
-        {env_prefix}INCLUDE_MCP=false
-        {env_prefix}MCP_MOUNT_PATH=/mcp
-        {env_prefix}INCLUDE_TASK_CONTROL=true
-        {env_prefix}INCLUDE_QUEUE_WORKER=true
-        {env_prefix}TASK_CONTROL_ROUTE_PREFIX=/v1/tasks
-        # Example run capability for POST {route_prefix}/run
-        # DEFAULT_CAPABILITY={caps}
-        # Optional LLM guardrails (M.12)
-        # {env_prefix}ENABLE_LLM_GUARDRAILS=false
-        # {env_prefix}LLM_GUARDRAIL_PRIMARY=llm_guard
-        # INTERGRAX_LAKERA_API_KEY=
-        # INTERGRAX_OPENGUARDRAILS_BASE_URL=
-        '''
+    return render_application_env_example(
+        env_prefix=env_prefix,
+        route_prefix=route_prefix,
+        port=port,
+        profile="lab",
+        example_capability=caps,
     )
 
 
@@ -870,7 +857,7 @@ def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> 
 
         **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/project/technical/adr/README.md`](docs/project/technical/adr/README.md)
 
-        **Build & deploy:** [`docs/BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md)
+        **Configuration:** [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) · **Build & deploy:** [`docs/BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md)
 
         ## Three-command quickstart
 
@@ -1013,6 +1000,11 @@ def _create_lab_application(
             profile=profile,
             minimal=minimal,
         ),
+        force=force,
+    )
+    _write(
+        docs_dir / "CONFIGURATION.md",
+        render_application_configuration_doc(names=names, profile=profile),
         force=force,
     )
     write_sample_docs_scaffold(target, force=force)
@@ -1161,11 +1153,22 @@ def _create_product_application(
         ),
         force=force,
     )
+    _write(
+        docs_dir / "CONFIGURATION.md",
+        render_application_configuration_doc(names=names, profile=profile),
+        force=force,
+    )
     write_sample_docs_scaffold(target, force=force)
     write_application_journal_scaffold(target, force=force)
     _write(
         target / ".env.example",
-        product_tpl.env_example(names.env_prefix, names.route_prefix, names.port, specs),
+        render_application_env_example(
+            env_prefix=names.env_prefix,
+            route_prefix=names.route_prefix,
+            port=names.port,
+            profile=profile,
+            example_capability=cap,
+        ),
         force=force,
     )
 

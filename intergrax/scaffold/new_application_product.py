@@ -8,6 +8,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from intergrax.scaffold.agent_catalog import ScaffoldAgentSpec
+from intergrax.scaffold.application_configuration_doc import render_application_env_example
 from intergrax.scaffold.application_names import ScaffoldApplicationNames
 
 
@@ -834,32 +835,12 @@ def env_example(
     specs: list[ScaffoldAgentSpec],
 ) -> str:
     caps = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
-    return dedent(
-        f'''\
-        # {env_prefix}* — copy to .env (gitignored) in this application directory.
-        INTERGRAX_ENV=dev
-        {env_prefix}BACKEND_ENV=dev
-        {env_prefix}BACKEND_HOST=127.0.0.1
-        {env_prefix}BACKEND_PORT={port}
-        {env_prefix}ROUTE_PREFIX={route_prefix}
-        {env_prefix}DEFAULT_AGENT_ID=echo
-        {env_prefix}IDENTITY_SOURCE=body_or_context
-        {env_prefix}INCLUDE_MCP=false
-        {env_prefix}MCP_MOUNT_PATH=/mcp
-        {env_prefix}INCLUDE_INTERACTIONS=true
-        {env_prefix}INTERACTION_ROUTE_PREFIX=/v1/interactions
-        {env_prefix}INTERACTION_SURFACE=auto
-        {env_prefix}INCLUDE_SCHEDULER=false
-        {env_prefix}INCLUDE_TASK_CONTROL=true
-        {env_prefix}INCLUDE_QUEUE_WORKER=true
-        {env_prefix}TASK_CONTROL_ROUTE_PREFIX=/v1/tasks
-        # Optional dev API key (prod requires keys or ALLOW_UNAUTHENTICATED=true):
-        # {env_prefix}BACKEND_BOOTSTRAP_API_KEY=dev-key
-        # {env_prefix}BACKEND_BOOTSTRAP_TENANT_ID=dev-tenant
-        # {env_prefix}BACKEND_BOOTSTRAP_USER_ID=dev-user
-        # Example capability for POST {route_prefix}/run
-        # DEFAULT_CAPABILITY={caps}
-        '''
+    return render_application_env_example(
+        env_prefix=env_prefix,
+        route_prefix=route_prefix,
+        port=port,
+        profile="product",
+        example_capability=caps,
     )
 
 
@@ -880,7 +861,7 @@ def readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> s
 
         **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 
-        **Build & deploy:** [`docs/BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md)
+        **Configuration:** [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) · **Build & deploy:** [`docs/BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md)
 
         ## Three-command quickstart
 
