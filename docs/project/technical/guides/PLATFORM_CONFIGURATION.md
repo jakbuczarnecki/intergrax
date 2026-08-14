@@ -1038,9 +1038,8 @@ Example:
 INTERGRAX_CELERY_BROKER_URL=redis://localhost:6379/0
 ```
 
-Notes: Root `.env.example` also mentions `INTERGRAX_USE_WORKER_QUEUE`. That name
-is **not** an active runtime contract (not read by platform code). Use host
-composition to enable a queued execution adapter.
+Notes: `INTERGRAX_USE_WORKER_QUEUE` is **not** an active runtime contract (not
+read by platform code). Use host composition to enable a queued execution adapter.
 
 ---
 
@@ -1139,12 +1138,11 @@ Also out of scope here:
 | Artifact | Role |
 |----------|------|
 | **This document** | Canonical explanation of supported **platform** options |
-| Root [`.env.example`](../../../../.env.example) | Copyable practical template and common examples |
+| Root [`.env.example`](../../../../.env.example) | Copyable practical template of common platform examples |
 
 `.env.example` is not automatically authoritative. Where the template and
-runtime disagree, **runtime wins**. The template still contains application,
-proof, and development keys that do not belong in a platform catalog; those are
-tracked for a later template cleanup (CONFIG-4), not removed in this document.
+runtime disagree, **runtime wins**. Application, proof, and development-tooling
+keys belong in their own templates and docs, not in the root platform example.
 
 ---
 
