@@ -11,6 +11,8 @@ from fastapi.testclient import TestClient
 from intergrax.applications._shared.agent_platform_admin_routes import (
     mount_agent_platform_admin_routes,
 )
+from intergrax.applications._shared.harness_auth import HarnessAuthState
+from intergrax.integrations.contracts.identity_provider import IdentityUser
 from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     _DIGEST,
     _META_REF,
@@ -21,13 +23,38 @@ from tests.unit.agent_distribution.test_agent_platform_admin_service import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _APP = "app-a"
+_APP_B = "app-b"
 _ENV = "env-prod"
 _PREFIX = f"/v1/agent-platform/applications/{_APP}/environments/{_ENV}"
+_PREFIX_B = f"/v1/agent-platform/applications/{_APP_B}/environments/{_ENV}"
+_CATALOG = "/v1/agent-platform/catalog/agents"
 
 
-def _client(*, with_catalog: bool = True) -> tuple[TestClient, object]:
+class _FakeIdentityProvider:
+    def __init__(self, *, valid_token: str) -> None:
+        self._valid_token = valid_token
+
+    def verify_token(self, token: str) -> IdentityUser:
+        if token != self._valid_token:
+            raise ValueError("invalid token")
+        return IdentityUser(user_id="admin-user")
+
+    def userinfo(self, token: str) -> IdentityUser:
+        return self.verify_token(token)
+
+    def list_tenants(self, *, limit: int = 50) -> tuple[()]:
+        return ()
+
+
+def _client(
+    *,
+    with_catalog: bool = True,
+    dev_auth: bool = True,
+) -> tuple[TestClient, object]:
     stack = build_admin_stack(with_catalog=with_catalog)
     app = FastAPI()
+    if dev_auth:
+        app.state.harness_auth = HarnessAuthState(require_api_key=False)
     mount_agent_platform_admin_routes(app, admin_service=stack.service)
     return TestClient(app), stack
 
@@ -121,7 +148,7 @@ def test_read_endpoint_response_contracts() -> None:
     payload = status.json()
     assert payload["enabled_in_desired_state"] is True
     assert payload["included_in_active_revision"] is False
-    catalog = client.get("/v1/agent-platform/catalog/agents")
+    catalog = client.get(_CATALOG)
     assert catalog.status_code == 200
     assert catalog.json()["entries"][0]["display_name"] == "Researcher"
 
@@ -257,20 +284,108 @@ def test_invalid_request_422() -> None:
     assert response.status_code == 422
 
 
+def test_admin_authorization_fail_closed_without_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("INTERGRAX_HARNESS_API_KEY", raising=False)
+    client, _stack = _client(dev_auth=False)
+    denied = client.get(f"{_PREFIX}/bindings")
+    assert denied.status_code == 401
+
+
 def test_admin_authorization_enforced(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "lab-key")
-    client, _stack = _client()
+    client, _stack = _client(dev_auth=False)
     denied = client.get(f"{_PREFIX}/bindings")
     assert denied.status_code == 401
     allowed = client.get(f"{_PREFIX}/bindings", headers={"X-Api-Key": "lab-key"})
     assert allowed.status_code == 200
 
 
+def test_admin_authorization_rejects_invalid_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "lab-key")
+    client, _stack = _client(dev_auth=False)
+    denied = client.get(f"{_PREFIX}/bindings", headers={"X-Api-Key": "wrong-key"})
+    assert denied.status_code == 401
+
+
+def test_admin_authorization_allows_identity_provider_bearer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("INTERGRAX_HARNESS_API_KEY", raising=False)
+    stack = build_admin_stack()
+    app = FastAPI()
+    app.state.harness_auth = HarnessAuthState(
+        identity_provider=_FakeIdentityProvider(valid_token="oidc-admin-token"),
+        require_api_key=True,
+    )
+    mount_agent_platform_admin_routes(app, admin_service=stack.service)
+    client = TestClient(app)
+    denied = client.get(f"{_PREFIX}/bindings")
+    assert denied.status_code == 401
+    allowed = client.get(
+        f"{_PREFIX}/bindings",
+        headers={"Authorization": "Bearer oidc-admin-token"},
+    )
+    assert allowed.status_code == 200
+
+
+def test_missing_auth_blocks_install(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("INTERGRAX_HARNESS_API_KEY", raising=False)
+    client, _stack = _client(dev_auth=False)
+    denied = client.post(f"{_PREFIX}/installations", json=_install_payload())
+    assert denied.status_code == 401
+
+
+def test_missing_auth_blocks_enable_disable_build_activate_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("INTERGRAX_HARNESS_API_KEY", raising=False)
+    client, _stack = _client(dev_auth=False)
+    assert (
+        client.post(
+            f"{_PREFIX}/bindings/bind-search/enable",
+            json={"expected_revision": 0},
+        ).status_code
+        == 401
+    )
+    assert (
+        client.post(
+            f"{_PREFIX}/bindings/bind-search/disable",
+            json={"expected_revision": 0},
+        ).status_code
+        == 401
+    )
+    assert (
+        client.post(f"{_PREFIX}/revisions/build", json=_build_payload("rev-17")).status_code
+        == 401
+    )
+    assert (
+        client.post(
+            f"{_PREFIX}/revisions/activate",
+            json={"runtime_revision_id": "rev-17", "artifact_locator": "x"},
+        ).status_code
+        == 401
+    )
+    assert (
+        client.post(
+            f"{_PREFIX}/revisions/rollback",
+            json={
+                "expected_current_traffic_revision_id": "rev-18",
+                "expected_serving_pointer_revision": 0,
+            },
+        ).status_code
+        == 401
+    )
+
+
 def test_shared_harness_auth_still_applies_to_mutations(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "lab-key")
-    client, _stack = _client()
+    client, _stack = _client(dev_auth=False)
     denied = client.post(f"{_PREFIX}/installations", json=_install_payload())
     assert denied.status_code == 401
     allowed = client.post(
@@ -279,6 +394,115 @@ def test_shared_harness_auth_still_applies_to_mutations(
         headers={"X-Api-Key": "lab-key"},
     )
     assert allowed.status_code == 200
+
+
+def _seed_app_a(client: TestClient) -> None:
+    _seed_enabled(client)
+
+
+def test_cross_app_scope_blocks_foreign_installation() -> None:
+    client, _stack = _client()
+    _seed_app_a(client)
+    denied = client.get(f"{_PREFIX_B}/installations/inst-1")
+    assert denied.status_code == 404
+
+
+def test_cross_app_scope_blocks_foreign_revision() -> None:
+    client, _stack = _client()
+    _seed_app_a(client)
+    built = client.post(f"{_PREFIX}/revisions/build", json=_build_payload("rev-17"))
+    assert built.status_code == 200
+    denied = client.get(f"{_PREFIX_B}/revisions/rev-17")
+    assert denied.status_code == 404
+
+
+def test_cross_app_scope_blocks_foreign_bindings() -> None:
+    client, _stack = _client()
+    _seed_app_a(client)
+    denied = client.get(f"{_PREFIX_B}/bindings")
+    assert denied.status_code == 404
+
+
+def test_cross_app_scope_blocks_foreign_serving() -> None:
+    client, _stack = _client()
+    _seed_app_a(client)
+    built = client.post(f"{_PREFIX}/revisions/build", json=_build_payload("rev-17"))
+    assert built.status_code == 200
+    activated = client.post(
+        f"{_PREFIX}/revisions/activate",
+        json={
+            "runtime_revision_id": "rev-17",
+            "artifact_locator": built.json()["artifact_locator"],
+            "expected_artifact_digest": built.json()["materialization_artifact_digest"],
+            "expected_serving_pointer_revision": 0,
+        },
+    )
+    assert activated.status_code == 200
+    denied = client.get(f"{_PREFIX_B}/serving")
+    assert denied.status_code == 404
+
+
+def test_cross_app_scope_blocks_foreign_activate() -> None:
+    client, _stack = _client()
+    _seed_app_a(client)
+    built = client.post(f"{_PREFIX}/revisions/build", json=_build_payload("rev-17"))
+    assert built.status_code == 200
+    denied = client.post(
+        f"{_PREFIX_B}/revisions/activate",
+        json={
+            "runtime_revision_id": "rev-17",
+            "artifact_locator": built.json()["artifact_locator"],
+            "expected_artifact_digest": built.json()["materialization_artifact_digest"],
+            "expected_serving_pointer_revision": 0,
+        },
+    )
+    assert denied.status_code == 404
+
+
+def test_cross_app_scope_blocks_foreign_rollback() -> None:
+    client, _stack = _client()
+    _seed_app_a(client)
+    first = client.post(f"{_PREFIX}/revisions/build", json=_build_payload("rev-17"))
+    assert first.status_code == 200
+    activated = client.post(
+        f"{_PREFIX}/revisions/activate",
+        json={
+            "runtime_revision_id": "rev-17",
+            "artifact_locator": first.json()["artifact_locator"],
+            "expected_artifact_digest": first.json()["materialization_artifact_digest"],
+            "expected_serving_pointer_revision": 0,
+        },
+    )
+    assert activated.status_code == 200
+    second = client.post(f"{_PREFIX}/revisions/build", json=_build_payload("rev-18"))
+    assert second.status_code == 200
+    activated_two = client.post(
+        f"{_PREFIX}/revisions/activate",
+        json={
+            "runtime_revision_id": "rev-18",
+            "artifact_locator": second.json()["artifact_locator"],
+            "expected_artifact_digest": second.json()["materialization_artifact_digest"],
+            "expected_serving_pointer_revision": 1,
+            "expected_prior_traffic_revision_id": "rev-17",
+        },
+    )
+    assert activated_two.status_code == 200
+    denied = client.post(
+        f"{_PREFIX_B}/revisions/rollback",
+        json={
+            "expected_current_traffic_revision_id": "rev-18",
+            "expected_serving_pointer_revision": 2,
+            "target_runtime_revision_id": "rev-17",
+        },
+    )
+    assert denied.status_code == 404
+
+
+def test_cross_app_scope_blocks_foreign_agent_status() -> None:
+    client, _stack = _client()
+    _seed_app_a(client)
+    denied = client.get(f"{_PREFIX_B}/agents/researcher/status")
+    assert denied.status_code == 404
 
 
 def test_ap10_registry_projection_surface_still_importable() -> None:

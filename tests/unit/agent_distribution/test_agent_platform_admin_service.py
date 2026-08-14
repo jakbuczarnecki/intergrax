@@ -37,7 +37,11 @@ from intergrax.agent_distribution.effective_roster import (
     EffectiveRosterBuilder,
     InstalledAgentRequirementSetBuilder,
 )
-from intergrax.agent_distribution.errors import BindingRevisionConflict, RuntimeActivationConflict
+from intergrax.agent_distribution.errors import (
+    AgentDistributionNotFoundError,
+    BindingRevisionConflict,
+    RuntimeActivationConflict,
+)
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.in_memory_stores import (
     AgentDistributionStoreState,
@@ -70,6 +74,7 @@ from intergrax.agent_distribution.trust import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _APP = "app-a"
+_APP_B = "app-b"
 _ENV = "env-prod"
 _DIGEST = "sha256:" + ("a" * 64)
 _ARTIFACT = "sha256:" + ("d" * 64)
@@ -615,3 +620,52 @@ def test_ap9_activation_service_still_commits_on_shared_stores() -> None:
     )
     assert history.traffic_serving_revision_id == "rev-ap9"
     assert any(item.runtime_revision_id == "rev-ap9" for item in history.revisions)
+
+
+def test_cross_application_environment_scope_rejects_foreign_application() -> None:
+    stack = build_admin_stack()
+    _install_bind(stack)
+    with pytest.raises(AgentDistributionNotFoundError):
+        stack.service.inspect_installation(
+            application_id=_APP_B,
+            application_environment_id=_ENV,
+            installation_id="inst-1",
+        )
+    with pytest.raises(AgentDistributionNotFoundError):
+        stack.service.list_bindings(application_id=_APP_B, application_environment_id=_ENV)
+    stack.service.enable_binding(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        application_binding_id="bind-search",
+        request=SetAgentEnablementRequest(expected_revision=0),
+    )
+    built = stack.service.build_application_revision(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=_build_request("rev-scope"),
+    )
+    with pytest.raises(AgentDistributionNotFoundError):
+        stack.service.inspect_revision(
+            application_id=_APP_B,
+            application_environment_id=_ENV,
+            runtime_revision_id="rev-scope",
+        )
+    activated = stack.service.activate_revision(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=ActivateRuntimeRevisionRequest(
+            runtime_revision_id="rev-scope",
+            artifact_locator=built.artifact_locator or "test://artifact",
+            expected_artifact_digest=_ARTIFACT,
+            expected_serving_pointer_revision=0,
+        ),
+    )
+    assert activated.traffic_serving_revision_id == "rev-scope"
+    with pytest.raises(AgentDistributionNotFoundError):
+        stack.service.inspect_serving(application_id=_APP_B, application_environment_id=_ENV)
+    with pytest.raises(AgentDistributionNotFoundError):
+        stack.service.inspect_agent_status(
+            application_id=_APP_B,
+            application_environment_id=_ENV,
+            logical_agent_id="researcher",
+        )

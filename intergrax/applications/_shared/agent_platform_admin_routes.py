@@ -51,7 +51,7 @@ from intergrax.agent_distribution.errors import (
     RuntimeRevisionLifecycleError,
     RuntimeRollbackError,
 )
-from intergrax.applications._shared.harness_auth import require_harness_api_key
+from intergrax.applications._shared.harness_auth import require_agent_platform_admin_auth
 
 _CONFLICT_ERRORS = (
     BindingRevisionConflict,
@@ -113,7 +113,7 @@ def mount_agent_platform_admin_routes(
     router = APIRouter(
         prefix=prefix,
         tags=["agent-platform-admin"],
-        dependencies=[Depends(require_harness_api_key)],
+        dependencies=[Depends(require_agent_platform_admin_auth)],
     )
     env_prefix = "/applications/{application_id}/environments/{environment_id}"
 
