@@ -436,7 +436,7 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | Block | API compatibility | Config | Default change | Rollout | Rollback |
 |-------|-------------------|--------|----------------|--------|----------|
 | BLOCK C | Additive — new policy config types | `SecurityDefenseAdmissionPolicy` optional | Production: shipped-id override **denied** unless opted in | Feature profile `enterprise_plugin_admission_v1` | Revert to `override=True` via legacy profile flag |
-| BLOCK A | Additive — typed `declarative_policy_runtime` field + wiring calls loader | None | EP handlers appear when `policy_rules` set | Enable in lab hosts first | Omit loader call; legacy `domain_fragments` keys still readable |
+| BLOCK A | Additive — typed `declarative_policy_runtime` field + wiring calls loader | None | EP handlers load when `policy_rules` set **and** `INTERGRAX_DISCOVER_PLUGINS` enabled | Enable in lab hosts first | Omit loader call; typed field `None` when `policy_rules` unset |
 | BLOCK B | Behavior change — YAML rules enforced via typed runtime | Handler allowlist | Unknown handler → DENY | Staged: audit-only mode then enforce | Disable enforcer flag |
 | BLOCK D | Additive — optional `MemoryProfile` plugin_id | New profile fields | Default path unchanged (integration backends) | Opt-in plugin_id | Remove plugin_id from profile |
 | BLOCK E | Additive CLI | None | None | Ship scaffold | N/A |
@@ -479,7 +479,7 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | **OAD-002** | **RESOLVED (A)** — immediate production `error`. No supported production host uses security EP override (`bootstrap_security_providers(discover_entry_points=False)` default; `INTERGRAX_DISCOVER_PLUGINS` opt-in). Lab/legacy: explicit policy only |
 | **Qualification** | **DEFERRED seam** — qualification enforcement is deferred. BLOCK C does **not** expose a fake/inert `require qualification` control on `SecurityDefenseAdmissionPolicy`. `EntryPointSpec` has optional distribution name only; package version and `PlatformCompatibilityResult` are absent. Do not fabricate admission. Future BLOCK A/host admission must provide actual package/version/compatibility evidence before invoking `evaluate_package_production_admission` / platform qualification primitives |
 | **Compatibility** | Report APIs: `load_security_defense_plugin_report`, `load_policy_rule_plugin_report`. Int wrappers: `load_security_defense_plugins` → production admission defaults; `load_policy_rule_plugins` → legacy `fail_fast` when `policy` omitted |
-| **Not done** | CAND-006/007/008, CAND-001/002/003, F006/F016, hot reload, enterprise-ready |
+| **Not done** | CAND-007/008, CAND-001/002/003, F006/F016, hot reload, enterprise-ready |
 
 ---
 
@@ -498,15 +498,25 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | **Order** | **2** |
 
 **Acceptance gates:**
-- [ ] `wire_policy_bundle` / `build_runtime_policy_bundle` calls `load_policy_rule_plugins` when `policy_rules` present
-- [ ] `RuntimePolicyBundle.declarative_policy_runtime` populated with typed `DeclarativePolicyRuntime` (registry + rules + provenance + enforcement_mode)
-- [ ] Registry in typed runtime contains EP handlers after wire
-- [ ] New runtime consumers read typed field only — no `domain_fragments["policy_rule_registry"]` / `["policy_rules"]` lookup
-- [ ] Compatibility: legacy `domain_fragments` keys may be mirrored during migration; not required for new consumers
-- [ ] Production qualification gate on EP handlers (when profile requires)
-- [ ] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` — no new `Dict[str, Any]` / string-key runtime wiring
-- [ ] Contract test: EP handler reachable via typed composition API after standard host wire
-- [ ] No change to immutable pack evaluator behavior
+- [x] `wire_policy_bundle` / `build_runtime_policy_bundle` calls `load_policy_rule_plugin_report` when `policy_rules` present and discovery enabled
+- [x] `RuntimePolicyBundle.declarative_policy_runtime` populated with typed `DeclarativePolicyRuntime` (registry + rules + load_report)
+- [x] Registry in typed runtime contains EP handlers after wire (when discovery enabled)
+- [x] New runtime consumers read typed field only — no `domain_fragments["policy_rule_registry"]` / `["policy_rules"]` lookup or writes
+- [x] Compatibility: legacy `domain_fragments` keys removed (no direct production consumers found)
+- [ ] Production qualification gate on EP handlers (when profile requires) — **DEFERRED seam** (same evidence gap as BLOCK C: no package version / `PlatformCompatibilityResult` on standard host path)
+- [x] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` — no new `Dict[str, Any]` / string-key runtime wiring
+- [x] Contract test: EP handler reachable via typed composition API after standard host wire (`test_policy_wiring.py`)
+- [x] No change to immutable pack evaluator behavior
+
+**ENTERPRISE-3 implementation status (2026-08-14):**
+
+| Item | Status |
+|------|--------|
+| **CAND-006** | **DONE** — `DeclarativePolicyRuntime` on `RuntimePolicyBundle`; `policy_wiring.py` resolves rules once, owns per-bundle `PolicyRuleRegistry`, calls `load_policy_rule_plugin_report` when `INTERGRAX_DISCOVER_PLUGINS` enabled; `load_report` preserved; budget reconstruction propagates typed field |
+| **Discovery** | Opt-in via `discover_plugins_enabled()` / `INTERGRAX_DISCOVER_PLUGINS`; `policy_rules` without discovery → typed runtime with shipped `deny_tool` handler only + `DomainPluginLoadReport.empty` |
+| **Qualification** | **DEFERRED seam** — no fake `require_production_qualification` control; host path lacks package version and `PlatformCompatibilityResult` required for `evaluate_package_production_admission` |
+| **enforcement_mode / provenance** | **Not started** — BLOCK B (CAND-007/008) |
+| **Not done** | CAND-007, CAND-008, CAND-001/002/003, F006/F016, enterprise-ready |
 
 ---
 
@@ -590,7 +600,7 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | Priority | Blocks | Rationale |
 |----------|--------|-----------|
 | **P0** | BLOCK C | Security risk (CAND-004 silent shipped override); operator reliability (CAND-005 fail-fast blast radius) |
-| **P0/P1** | BLOCK A | Public EP API exists (`intergrax.policy_rules`) but production wiring incomplete |
+| **P0/P1** | BLOCK A | **DONE (ENTERPRISE-3)** — typed declarative runtime wired; enforcement deferred to BLOCK B |
 | **P1** | BLOCK B | Governance correctness — YAML rules documented but unenforced |
 | **P2** | BLOCK D | Extensibility — supported workaround exists; medium severity |
 | **P2** | BLOCK E | DX only — lowest impact |
@@ -701,8 +711,8 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 
 | Claim | Source |
 |-------|--------|
-| Policy wiring gap | `intergrax/applications/_shared/policy_wiring.py:39-41` |
-| No `load_policy_rule_plugins` in wire | Same file — absent from `wire_policy_bundle` |
+| Policy wiring gap | `intergrax/applications/_shared/policy_wiring.py` — typed `DeclarativePolicyRuntime` composition |
+| EP load in standard wire | `policy_wiring._build_declarative_policy_runtime` → `load_policy_rule_plugin_report` when discovery enabled |
 | Typed composition target | §7 — `DeclarativePolicyRuntime` on `RuntimePolicyBundle`; not `domain_fragments` for new consumers |
 | Unknown handler returns ALLOW | `intergrax/runtime/policy/rules/registry.py:49-51` |
 | Security `override=True` | `intergrax/runtime/security/defense_plugin_loader.py:29` |

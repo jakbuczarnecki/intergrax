@@ -36,7 +36,7 @@ def load_policy_rule_plugin_report(
     *,
     policy: PolicyRuleLoadPolicy | None = None,
 ) -> DomainPluginLoadReport:
-    """Load ``intergrax.policy_rules`` EPs with structured evidence. Does not wire CAND-006."""
+    """Load ``intergrax.policy_rules`` EPs with structured evidence."""
     chosen = policy if policy is not None else PolicyRuleLoadPolicy()
     accepted: list[EntryPointSpec] = []
     rejected: list[PluginAdmissionRejection] = []
