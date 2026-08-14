@@ -62,7 +62,6 @@ services:
       INTERGRAX_ALLOWED_READ_ROOTS: /data/user_docs
       INTERGRAX_LLM_PROVIDER: ollama
       INTERGRAX_LLM_MODEL: llama3.1:latest
-      INTERGRAX_DEFAULT_OLLAMA_MODEL: llama3.1:latest
       INTERGRAX_EMBEDDING_PROVIDER: ollama
       INTERGRAX_EMBEDDING_MODEL: nomic-embed-text
       OLLAMA_HOST: http://ollama:11434
