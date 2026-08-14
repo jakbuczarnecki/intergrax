@@ -126,6 +126,7 @@ def test_partial_runtime_revision_activation_failure_leaves_prior_active() -> No
     def candidate(revision_id: str) -> RuntimeRevision:
         return RuntimeRevision(
             runtime_revision_id=revision_id,
+            application_id="app-a",
             application_environment_id="env-prod",
             application_release_id="rel-1",
             platform_version="0.1.0",
@@ -151,9 +152,17 @@ def test_partial_runtime_revision_activation_failure_leaves_prior_active() -> No
 
     with pytest.raises(RuntimeRevisionConflict):
         service.activate_revision("rev-2", expected_prior_active_revision_id="rev-1")
-    active = service.get_active_revision("env-prod")
+    active = service.get_active_revision("app-a", "env-prod")
     assert active is not None
     assert active.runtime_revision_id == "rev-1"
     assert state.revisions["rev-1"].revision_state is RuntimeRevisionState.ACTIVE
     assert state.revisions["rev-2"].revision_state is RuntimeRevisionState.VALIDATED
-    assert state.active_revision_by_environment["env-prod"] == "rev-1"
+    from intergrax.agent_distribution.application_environment_identity import (
+        ApplicationEnvironmentIdentity,
+    )
+
+    scope = ApplicationEnvironmentIdentity(
+        application_id="app-a",
+        application_environment_id="env-prod",
+    )
+    assert state.active_revision_by_scope[scope] == "rev-1"

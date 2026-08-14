@@ -622,17 +622,16 @@ def test_ap9_activation_service_still_commits_on_shared_stores() -> None:
     assert any(item.runtime_revision_id == "rev-ap9" for item in history.revisions)
 
 
-def test_cross_application_environment_scope_rejects_foreign_application() -> None:
+def test_cross_application_resource_isolation() -> None:
     stack = build_admin_stack()
     _install_bind(stack)
+    assert stack.service.list_bindings(application_id=_APP_B, application_environment_id=_ENV).bindings == ()
     with pytest.raises(AgentDistributionNotFoundError):
         stack.service.inspect_installation(
             application_id=_APP_B,
             application_environment_id=_ENV,
             installation_id="inst-1",
         )
-    with pytest.raises(AgentDistributionNotFoundError):
-        stack.service.list_bindings(application_id=_APP_B, application_environment_id=_ENV)
     stack.service.enable_binding(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -661,11 +660,19 @@ def test_cross_application_environment_scope_rejects_foreign_application() -> No
         ),
     )
     assert activated.traffic_serving_revision_id == "rev-scope"
-    with pytest.raises(AgentDistributionNotFoundError):
-        stack.service.inspect_serving(application_id=_APP_B, application_environment_id=_ENV)
-    with pytest.raises(AgentDistributionNotFoundError):
-        stack.service.inspect_agent_status(
-            application_id=_APP_B,
-            application_environment_id=_ENV,
-            logical_agent_id="researcher",
-        )
+    app_b_serving = stack.service.inspect_serving(
+        application_id=_APP_B,
+        application_environment_id=_ENV,
+    )
+    assert app_b_serving.traffic_serving_revision_id is None
+    assert stack.service.inspect_serving(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    ).traffic_serving_revision_id == "rev-scope"
+    app_b_status = stack.service.inspect_agent_status(
+        application_id=_APP_B,
+        application_environment_id=_ENV,
+        logical_agent_id="researcher",
+    )
+    assert app_b_status.bound is False
+    assert app_b_status.included_in_active_revision is False

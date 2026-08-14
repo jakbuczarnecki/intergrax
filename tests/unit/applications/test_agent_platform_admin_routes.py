@@ -419,8 +419,9 @@ def test_cross_app_scope_blocks_foreign_revision() -> None:
 def test_cross_app_scope_blocks_foreign_bindings() -> None:
     client, _stack = _client()
     _seed_app_a(client)
-    denied = client.get(f"{_PREFIX_B}/bindings")
-    assert denied.status_code == 404
+    response = client.get(f"{_PREFIX_B}/bindings")
+    assert response.status_code == 200
+    assert response.json()["bindings"] == []
 
 
 def test_cross_app_scope_blocks_foreign_serving() -> None:
@@ -438,8 +439,9 @@ def test_cross_app_scope_blocks_foreign_serving() -> None:
         },
     )
     assert activated.status_code == 200
-    denied = client.get(f"{_PREFIX_B}/serving")
-    assert denied.status_code == 404
+    response = client.get(f"{_PREFIX_B}/serving")
+    assert response.status_code == 200
+    assert response.json()["traffic_serving_revision_id"] is None
 
 
 def test_cross_app_scope_blocks_foreign_activate() -> None:
@@ -495,14 +497,15 @@ def test_cross_app_scope_blocks_foreign_rollback() -> None:
             "target_runtime_revision_id": "rev-17",
         },
     )
-    assert denied.status_code == 404
+    assert denied.status_code == 409
 
 
 def test_cross_app_scope_blocks_foreign_agent_status() -> None:
     client, _stack = _client()
     _seed_app_a(client)
-    denied = client.get(f"{_PREFIX_B}/agents/researcher/status")
-    assert denied.status_code == 404
+    response = client.get(f"{_PREFIX_B}/agents/researcher/status")
+    assert response.status_code == 200
+    assert response.json()["bound"] is False
 
 
 def test_ap10_registry_projection_surface_still_importable() -> None:

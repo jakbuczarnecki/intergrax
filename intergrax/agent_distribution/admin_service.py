@@ -234,10 +234,7 @@ class AgentPlatformAdminService:
         application_id: str,
         application_environment_id: str,
     ) -> InstallationListResult:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
+        del application_id
         records = self._installation_store.list_installations_for_environment(
             application_environment_id
         )
@@ -252,10 +249,6 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         installation_id: str,
     ) -> InstallationView:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
         record = self._installation_store.get_installation(installation_id)
         if record is None or record.environment_id != application_environment_id:
             raise AgentDistributionNotFoundError(
@@ -274,17 +267,10 @@ class AgentPlatformAdminService:
         application_id: str,
         application_environment_id: str,
     ) -> BindingListResult:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
+        bindings = self._binding_service.list_bindings_for_environment(
+            application_id,
+            application_environment_id,
         )
-        bindings = [
-            binding
-            for binding in self._binding_service.list_bindings_for_environment(
-                application_environment_id
-            )
-            if binding.application_id == application_id
-        ]
         return BindingListResult(bindings=tuple(_binding_view(item) for item in bindings))
 
     def inspect_effective_roster(
@@ -294,10 +280,6 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         manifest_release_id: str = "unspecified",
     ) -> EffectiveRosterView:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
         roster = self._build_roster(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -328,12 +310,14 @@ class AgentPlatformAdminService:
         application_id: str,
         application_environment_id: str,
     ) -> ServingStateView:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
+        serving = self._serving_store.get_serving_record(
+            application_id,
+            application_environment_id,
         )
-        serving = self._serving_store.get_serving_record(application_environment_id)
-        active = self._revision_service.get_active_revision(application_environment_id)
+        active = self._revision_service.get_active_revision(
+            application_id,
+            application_environment_id,
+        )
         return ServingStateView(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -356,20 +340,15 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         runtime_revision_id: str,
     ) -> RuntimeRevisionView:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
         revision = self._revision_store.get_revision(runtime_revision_id)
-        if revision is None or revision.application_environment_id != application_environment_id:
+        if (
+            revision is None
+            or revision.application_id != application_id
+            or revision.application_environment_id != application_environment_id
+        ):
             raise AgentDistributionNotFoundError(
                 f"runtime revision {runtime_revision_id} was not found"
             )
-        self._assert_revision_application_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-            revision=revision,
-        )
         return _revision_view(revision)
 
     def inspect_revision_history(
@@ -378,16 +357,13 @@ class AgentPlatformAdminService:
         application_id: str,
         application_environment_id: str,
     ) -> RevisionHistoryView:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
         serving = self.inspect_serving(
             application_id=application_id,
             application_environment_id=application_environment_id,
         )
         revisions = self._revision_store.list_revisions_for_environment(
-            application_environment_id
+            application_id,
+            application_environment_id,
         )
         return RevisionHistoryView(
             traffic_serving_revision_id=serving.traffic_serving_revision_id,
@@ -401,15 +377,12 @@ class AgentPlatformAdminService:
         application_id: str,
         application_environment_id: str,
     ) -> ActivationStatusView:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
         serving = self.inspect_serving(
             application_id=application_id,
             application_environment_id=application_environment_id,
         )
         pending = self._pending_candidate(
+            application_id=application_id,
             application_environment_id=application_environment_id,
             traffic_serving_revision_id=serving.traffic_serving_revision_id,
         )
@@ -417,6 +390,7 @@ class AgentPlatformAdminService:
         readiness: str | None = None
         if serving.traffic_serving_revision_id is not None:
             instance = self._deployment_instance_store.get_instance(
+                application_id,
                 application_environment_id,
                 serving.traffic_serving_revision_id,
             )
@@ -437,17 +411,13 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         logical_agent_id: str,
     ) -> AgentStatusView:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
         bindings = [
             binding
             for binding in self._binding_service.list_bindings_for_environment(
-                application_environment_id
+                application_id,
+                application_environment_id,
             )
-            if binding.application_id == application_id
-            and binding.logical_agent_id == logical_agent_id
+            if binding.logical_agent_id == logical_agent_id
             and not binding.tombstone
         ]
         binding = bindings[0] if bindings else None
@@ -477,6 +447,7 @@ class AgentPlatformAdminService:
         ):
             included = True
         pending = self._pending_candidate(
+            application_id=application_id,
             application_environment_id=application_environment_id,
             traffic_serving_revision_id=serving.traffic_serving_revision_id,
         )
@@ -514,10 +485,6 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         request: InstallAgentRequest,
     ) -> InstallationMutationResult:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
         identity = self._resolve_install_identity(request)
         existing = self._installation_store.get_installation(request.installation_id)
         if existing is not None:
@@ -568,10 +535,6 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         request: BindAgentRequest,
     ) -> BindingMutationResult:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
         existing = self._binding_store.get_binding(request.application_binding_id)
         if existing is not None:
             if (
@@ -677,10 +640,6 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         request: BuildApplicationRevisionRequest,
     ) -> BuildRevisionResult:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
         if self._materialization_service is None or self._graph_builder is None:
             raise AgentPlatformAdminBlockedError(
                 "AP-11_BLOCKED_BY_MISSING_BUILD_APPLY_SERVICE",
@@ -694,7 +653,8 @@ class AgentPlatformAdminService:
         existing = self._revision_store.get_revision(request.runtime_revision_id)
         if existing is not None:
             if (
-                existing.application_environment_id == application_environment_id
+                existing.application_id == application_id
+                and existing.application_environment_id == application_environment_id
                 and existing.revision_state
                 in {RuntimeRevisionState.VALIDATED, RuntimeRevisionState.CANDIDATE}
             ):
@@ -754,6 +714,7 @@ class AgentPlatformAdminService:
             raise AgentDistributionNotFoundError("effective roster lacks revision identity")
         candidate = RuntimeRevision(
             runtime_revision_id=request.runtime_revision_id,
+            application_id=application_id,
             application_environment_id=application_environment_id,
             application_release_id=request.application_release_id,
             platform_version=request.platform_version,
@@ -797,7 +758,10 @@ class AgentPlatformAdminService:
             request.runtime_revision_id,
             validated_revision=validated,
         )
-        serving = self._serving_store.get_serving_record(application_environment_id)
+        serving = self._serving_store.get_serving_record(
+            application_id,
+            application_environment_id,
+        )
         if (
             serving is not None
             and serving.traffic_serving_revision_id == marked.value.runtime_revision_id
@@ -823,7 +787,8 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         request: ActivateRuntimeRevisionRequest,
     ) -> ActivationResultView:
-        self._assert_application_environment_scope(
+        self._require_revision_scope(
+            runtime_revision_id=request.runtime_revision_id,
             application_id=application_id,
             application_environment_id=application_environment_id,
         )
@@ -859,11 +824,10 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         request: RollbackRuntimeRevisionRequest,
     ) -> RollbackResultView:
-        self._assert_application_environment_scope(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
+        serving = self._serving_store.get_serving_record(
+            application_id,
+            application_environment_id,
         )
-        serving = self._serving_store.get_serving_record(application_environment_id)
         if serving is None or serving.prior_traffic_revision_id is None:
             raise RuntimeRollbackError("no prior traffic revision available for rollback")
         if (
@@ -919,13 +883,10 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         manifest_release_id: str = "unspecified",
     ) -> EffectiveRoster:
-        bindings = [
-            binding
-            for binding in self._binding_service.list_bindings_for_environment(
-                application_environment_id
-            )
-            if binding.application_id == application_id
-        ]
+        bindings = self._binding_service.list_bindings_for_environment(
+            application_id,
+            application_environment_id,
+        )
         return self._roster_builder.build(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -933,30 +894,6 @@ class AgentPlatformAdminService:
             manifest_defaults=self._manifest_defaults,
             durable_bindings=bindings,
         )
-
-    def _assert_application_environment_scope(
-        self,
-        *,
-        application_id: str,
-        application_environment_id: str,
-    ) -> None:
-        serving = self._serving_store.get_serving_record(application_environment_id)
-        if serving is not None:
-            if serving.application_id != application_id:
-                raise AgentDistributionNotFoundError(
-                    f"environment {application_environment_id} was not found"
-                )
-            return
-
-        bindings = self._binding_service.list_bindings_for_environment(
-            application_environment_id
-        )
-        if bindings and not any(
-            binding.application_id == application_id for binding in bindings
-        ):
-            raise AgentDistributionNotFoundError(
-                f"environment {application_environment_id} was not found"
-            )
 
     def _assert_installation_application_scope(
         self,
@@ -966,35 +903,34 @@ class AgentPlatformAdminService:
         record: AgentInstallationRecord,
     ) -> None:
         bindings = self._binding_service.list_bindings_for_environment(
-            application_environment_id
+            application_id,
+            application_environment_id,
         )
-        slot_bindings = [
-            binding
+        if not any(
+            binding.installation_slot_id == record.installation_slot_id
             for binding in bindings
-            if binding.installation_slot_id == record.installation_slot_id
-        ]
-        if slot_bindings and not any(
-            binding.application_id == application_id for binding in slot_bindings
         ):
             raise AgentDistributionNotFoundError(
                 f"installation {record.installation_id} was not found"
             )
 
-    def _assert_revision_application_scope(
+    def _require_revision_scope(
         self,
         *,
+        runtime_revision_id: str,
         application_id: str,
         application_environment_id: str,
-        revision: RuntimeRevision,
-    ) -> None:
-        instance = self._deployment_instance_store.get_instance(
-            application_environment_id,
-            revision.runtime_revision_id,
-        )
-        if instance is not None and instance.application_id != application_id:
+    ) -> RuntimeRevision:
+        revision = self._revision_store.get_revision(runtime_revision_id)
+        if (
+            revision is None
+            or revision.application_id != application_id
+            or revision.application_environment_id != application_environment_id
+        ):
             raise AgentDistributionNotFoundError(
-                f"runtime revision {revision.runtime_revision_id} was not found"
+                f"runtime revision {runtime_revision_id} was not found"
             )
+        return revision
 
     def _require_binding_scope(
         self,
@@ -1017,12 +953,14 @@ class AgentPlatformAdminService:
     def _pending_candidate(
         self,
         *,
+        application_id: str,
         application_environment_id: str,
         traffic_serving_revision_id: str | None,
     ) -> RuntimeRevision | None:
         pending: list[RuntimeRevision] = []
         for revision in self._revision_store.list_revisions_for_environment(
-            application_environment_id
+            application_id,
+            application_environment_id,
         ):
             if revision.runtime_revision_id == traffic_serving_revision_id:
                 continue

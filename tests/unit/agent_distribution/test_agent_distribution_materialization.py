@@ -211,6 +211,7 @@ def _build_fixture(
     lock, graph, roster = _lock_and_graph(agent_digest)
     revision = RuntimeRevision(
         runtime_revision_id="rev-ap8-1",
+        application_id=_APP_ID,
         application_environment_id=_ENV,
         application_release_id=_RELEASE,
         platform_version=_PLATFORM,

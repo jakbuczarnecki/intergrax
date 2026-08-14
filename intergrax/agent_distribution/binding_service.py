@@ -193,9 +193,13 @@ class BindingService:
 
     def list_bindings_for_environment(
         self,
+        application_id: str,
         application_environment_id: str,
     ) -> list[ApplicationAgentBinding]:
-        return self._binding_store.list_bindings_for_environment(application_environment_id)
+        return self._binding_store.list_bindings_for_environment(
+            application_id,
+            application_environment_id,
+        )
 
     def refresh_active_installation_for_slot(
         self,

@@ -33,12 +33,22 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
 )
+from intergrax.agent_distribution.application_environment_identity import (
+    ApplicationEnvironmentIdentity,
+)
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 
 _APP = "app-a"
 _ENV = "env-prod"
 _ARTIFACT = "sha256:" + ("d" * 64)
 _LOCATOR = f"artifact://{_ARTIFACT}"
+
+
+def _scope() -> ApplicationEnvironmentIdentity:
+    return ApplicationEnvironmentIdentity(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
 
 
 def _revision(
@@ -48,6 +58,7 @@ def _revision(
 ) -> RuntimeRevision:
     return RuntimeRevision(
         runtime_revision_id=revision_id,
+        application_id=_APP,
         application_environment_id=_ENV,
         application_release_id="rel-1",
         platform_version="0.1.0",
@@ -153,14 +164,14 @@ class SharedActivationHarness:
 
 
 def _snapshot_state(state: AgentDistributionStoreState) -> dict[str, object]:
-    serving = state.serving_records.get(_ENV)
+    serving = state.serving_records.get(_scope())
     return {
         "serving": serving.model_dump() if serving else None,
         "revisions": {k: v.model_dump() for k, v in state.revisions.items()},
         "instances": {
             str(k): v.model_dump() for k, v in state.deployment_instances.items()
         },
-        "active": dict(state.active_revision_by_environment),
+        "active": dict(state.active_revision_by_scope),
     }
 
 
@@ -215,7 +226,7 @@ def test_two_activation_services_one_conflicting_activation_wins() -> None:
     assert len(winners) == 1
     assert len(errors) == 1
     assert isinstance(errors[0], RuntimeActivationConflict)
-    serving = harness.state.serving_records[_ENV]
+    serving = harness.state.serving_records[_scope()]
     assert serving.traffic_serving_revision_id == winners[0]
 
 
@@ -238,7 +249,7 @@ def test_deployment_mutation_blocked_during_atomic_commit() -> None:
     def mutate_deployment() -> None:
         at_validation.wait(timeout=5.0)
         mutation_started.set()
-        instance = harness.deployment_store_b.get_instance(_ENV, "rev-2")
+        instance = harness.deployment_store_b.get_instance(_APP, _ENV, "rev-2")
         assert instance is not None
         with pytest.raises(RuntimeActivationConflict):
             harness.deployment_store_b.update_instance(
@@ -263,7 +274,7 @@ def test_deployment_mutation_blocked_during_atomic_commit() -> None:
     assert mutation_finished.is_set()
     assert not commit_error
     assert (
-        harness.state.deployment_instances[(_ENV, "rev-2")].instance_state
+        harness.state.deployment_instances[(_scope(), "rev-2")].instance_state
         is DeploymentInstanceState.SERVING
     )
 
@@ -351,7 +362,7 @@ def test_serving_pointer_mutation_blocked_during_atomic_commit() -> None:
     t_swap.join(timeout=5.0)
     assert mutation_finished.is_set()
     assert swap_error and isinstance(swap_error[0], RuntimeActivationConflict)
-    assert harness.state.serving_records[_ENV].traffic_serving_revision_id == "rev-2"
+    assert harness.state.serving_records[_scope()].traffic_serving_revision_id == "rev-2"
 
 
 def test_failed_concurrent_mutation_leaves_activation_state_unchanged() -> None:
@@ -372,7 +383,7 @@ def test_failed_concurrent_mutation_leaves_activation_state_unchanged() -> None:
     def stale_mutate() -> None:
         at_validation.wait(timeout=5.0)
         mutation_started.set()
-        instance = harness.deployment_store_b.get_instance(_ENV, "rev-2")
+        instance = harness.deployment_store_b.get_instance(_APP, _ENV, "rev-2")
         assert instance is not None
         with pytest.raises(RuntimeActivationConflict):
             harness.deployment_store_b.update_instance(
@@ -435,7 +446,7 @@ def test_rollback_vs_activation_from_different_services_one_coherent_result() ->
     t_activate.join()
     t_rollback.join()
     assert len(outcomes) == 1
-    serving = harness.state.serving_records[_ENV]
+    serving = harness.state.serving_records[_scope()]
     if outcomes[0] == "activate":
         assert serving.traffic_serving_revision_id == "rev-n2"
         assert (
@@ -456,7 +467,7 @@ def test_cross_service_idempotent_retry_remains_correct() -> None:
     harness = SharedActivationHarness()
     _bootstrap_active(harness)
     harness.commit_a("rev-1")
-    first_pointer = harness.state.serving_records[_ENV].serving_pointer_revision
+    first_pointer = harness.state.serving_records[_scope()].serving_pointer_revision
     second = harness.activation_b.commit_activation(
         application_id=_APP,
         application_environment_id=_ENV,

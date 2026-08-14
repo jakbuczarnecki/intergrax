@@ -143,7 +143,7 @@ class ActivationService:
         self._artifact_revalidation = artifact_revalidation or ArtifactRevalidationHook(
             validate=_default_artifact_revalidation
         )
-        self._environment_locks: dict[str, threading.RLock] = {}
+        self._environment_locks: dict[tuple[str, str], threading.RLock] = {}
         self._locks_guard = threading.Lock()
 
     def prepare_candidate(
@@ -154,7 +154,7 @@ class ActivationService:
         runtime_revision_id: str,
         artifact_locator: str,
     ) -> TransitionResult[DeploymentInstanceRecord]:
-        with self._environment_lock(application_environment_id):
+        with self._environment_lock(application_id, application_environment_id):
             revision = self._require_revision(runtime_revision_id)
             self._assert_environment_match(
                 revision,
@@ -167,6 +167,7 @@ class ActivationService:
                 raise RuntimeActivationError("validated revision lacks materialization artifact identity")
 
             existing = self._deployment_instance_store.get_instance(
+                application_id,
                 application_environment_id,
                 runtime_revision_id,
             )
@@ -231,7 +232,7 @@ class ActivationService:
         expected_serving_pointer_revision: int,
         expected_artifact_digest: str,
     ) -> TransitionResult[ActivationCommitResult]:
-        with self._environment_lock(application_environment_id):
+        with self._environment_lock(application_id, application_environment_id):
             revision = self._require_revision(runtime_revision_id)
             self._assert_environment_match(
                 revision,
@@ -241,13 +242,17 @@ class ActivationService:
             if revision.materialization_artifact_digest != expected_artifact_digest:
                 raise RuntimeActivationError("artifact identity mismatch at commit")
 
-            serving = self._serving_store.get_serving_record(application_environment_id)
+            serving = self._serving_store.get_serving_record(
+                application_id,
+                application_environment_id,
+            )
             if serving is not None:
                 if serving.traffic_serving_revision_id == runtime_revision_id:
                     if serving.serving_pointer_revision > expected_serving_pointer_revision:
                         return self._idempotent_active_commit(
                             revision=revision,
                             serving=serving,
+                            application_id=application_id,
                             application_environment_id=application_environment_id,
                         )
                     if serving.serving_pointer_revision < expected_serving_pointer_revision:
@@ -257,6 +262,7 @@ class ActivationService:
                 raise RuntimeActivationError("commit requires validated runtime revision")
 
             self._require_ready_instance(
+                application_id=application_id,
                 application_environment_id=application_environment_id,
                 runtime_revision_id=runtime_revision_id,
             )
@@ -332,8 +338,13 @@ class ActivationService:
         runtime_revision_id: str,
         policy: DrainPolicy,
     ) -> TransitionResult[DrainCompletionResult]:
-        with self._environment_lock(application_environment_id):
+        revision = self._require_revision(runtime_revision_id)
+        if revision.application_environment_id != application_environment_id:
+            raise RuntimeActivationError("runtime revision environment mismatch")
+        application_id = revision.application_id
+        with self._environment_lock(application_id, application_environment_id):
             instance = self._deployment_instance_store.get_instance(
+                application_id,
                 application_environment_id,
                 runtime_revision_id,
             )
@@ -392,8 +403,11 @@ class ActivationService:
         expected_current_traffic_revision_id: str,
         expected_serving_pointer_revision: int,
     ) -> TransitionResult[RollbackResult]:
-        with self._environment_lock(application_environment_id):
-            serving = self._serving_store.get_serving_record(application_environment_id)
+        with self._environment_lock(application_id, application_environment_id):
+            serving = self._serving_store.get_serving_record(
+                application_id,
+                application_environment_id,
+            )
             if serving is None or serving.traffic_serving_revision_id is None:
                 raise RuntimeRollbackError("no current serving revision to rollback from")
             if serving.prior_traffic_revision_id is None:
@@ -411,6 +425,7 @@ class ActivationService:
                     ):
                         return self._idempotent_rollback_result(
                             serving=serving,
+                            application_id=application_id,
                             application_environment_id=application_environment_id,
                             prior_revision_id=restored.runtime_revision_id,
                         )
@@ -498,12 +513,16 @@ class ActivationService:
         failure_evidence_ref: str,
         attempt_rollback: bool = True,
     ) -> TransitionResult[RollbackResult | None]:
-        with self._environment_lock(application_environment_id):
-            serving = self._serving_store.get_serving_record(application_environment_id)
+        with self._environment_lock(application_id, application_environment_id):
+            serving = self._serving_store.get_serving_record(
+                application_id,
+                application_environment_id,
+            )
             if serving is None or serving.traffic_serving_revision_id != runtime_revision_id:
                 raise RuntimeActivationError("post-cutover failure requires current serving revision")
 
             instance = self._deployment_instance_store.get_instance(
+                application_id,
                 application_environment_id,
                 runtime_revision_id,
             )
@@ -541,11 +560,13 @@ class ActivationService:
         *,
         revision: RuntimeRevision,
         serving: ApplicationEnvironmentServingRecord,
+        application_id: str,
         application_environment_id: str,
     ) -> TransitionResult[ActivationCommitResult]:
         if revision.revision_state is not RuntimeRevisionState.ACTIVE:
             raise RuntimeActivationConflict("serving pointer already targets revision but state is not active")
         instance = self._deployment_instance_store.get_instance(
+            application_id,
             application_environment_id,
             revision.runtime_revision_id,
         )
@@ -563,11 +584,13 @@ class ActivationService:
         self,
         *,
         serving: ApplicationEnvironmentServingRecord,
+        application_id: str,
         application_environment_id: str,
         prior_revision_id: str,
     ) -> TransitionResult[RollbackResult]:
         restored = self._require_revision(prior_revision_id)
         instance = self._deployment_instance_store.get_instance(
+            application_id,
             application_environment_id,
             prior_revision_id,
         )
@@ -589,6 +612,7 @@ class ActivationService:
         prior_revision: RuntimeRevision,
     ) -> DeploymentInstanceRecord:
         instance = self._deployment_instance_store.get_instance(
+            application_id,
             application_environment_id,
             prior_revision.runtime_revision_id,
         )
@@ -675,10 +699,12 @@ class ActivationService:
     def _require_ready_instance(
         self,
         *,
+        application_id: str,
         application_environment_id: str,
         runtime_revision_id: str,
     ) -> DeploymentInstanceRecord:
         instance = self._deployment_instance_store.get_instance(
+            application_id,
             application_environment_id,
             runtime_revision_id,
         )
@@ -686,6 +712,8 @@ class ActivationService:
             raise RuntimeActivationError("deployment instance does not exist")
         if instance.runtime_revision_id != runtime_revision_id:
             raise RuntimeActivationError("deployment instance revision mismatch")
+        if instance.application_id != application_id:
+            raise RuntimeActivationError("deployment instance application mismatch")
         if instance.application_environment_id != application_environment_id:
             raise RuntimeActivationError("deployment instance environment mismatch")
         if instance.instance_state is not DeploymentInstanceState.READY:
@@ -701,6 +729,8 @@ class ActivationService:
         application_id: str,
         application_environment_id: str,
     ) -> None:
+        if revision.application_id != application_id:
+            raise RuntimeActivationError("runtime revision application mismatch")
         if revision.application_environment_id != application_environment_id:
             raise RuntimeActivationError("runtime revision environment mismatch")
 
@@ -719,10 +749,15 @@ class ActivationService:
             )
         return revision
 
-    def _environment_lock(self, application_environment_id: str) -> threading.RLock:
+    def _environment_lock(
+        self,
+        application_id: str,
+        application_environment_id: str,
+    ) -> threading.RLock:
+        scope = (application_id, application_environment_id)
         with self._locks_guard:
-            lock = self._environment_locks.get(application_environment_id)
+            lock = self._environment_locks.get(scope)
             if lock is None:
                 lock = threading.RLock()
-                self._environment_locks[application_environment_id] = lock
+                self._environment_locks[scope] = lock
             return lock

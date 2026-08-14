@@ -67,7 +67,10 @@ class RuntimeRevisionService:
         if revision.revision_state is not RuntimeRevisionState.VALIDATED:
             raise RuntimeRevisionLifecycleError("only validated revisions may be activated")
 
-        prior_active = self._store.get_active_revision(revision.application_environment_id)
+        prior_active = self._store.get_active_revision(
+            revision.application_id,
+            revision.application_environment_id,
+        )
         now = datetime.now(UTC)
         demoted_prior: RuntimeRevision | None = None
         rollback_target = prior_active.runtime_revision_id if prior_active is not None else None
@@ -87,6 +90,7 @@ class RuntimeRevisionService:
         )
 
         persisted, _ = self._store.atomic_activate_revision(
+            application_id=revision.application_id,
             application_environment_id=revision.application_environment_id,
             promoted=promoted,
             demoted_prior=demoted_prior,
@@ -106,9 +110,10 @@ class RuntimeRevisionService:
 
     def get_active_revision(
         self,
+        application_id: str,
         application_environment_id: str,
     ) -> RuntimeRevision | None:
-        return self._store.get_active_revision(application_environment_id)
+        return self._store.get_active_revision(application_id, application_environment_id)
 
     def _require_revision(self, runtime_revision_id: str) -> RuntimeRevision:
         revision = self._store.get_revision(runtime_revision_id)

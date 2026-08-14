@@ -60,6 +60,7 @@ class RuntimeRevision(BaseModel):
 
     schema_version: str = SCHEMA_RUNTIME_REVISION_V1
     runtime_revision_id: str = _NON_EMPTY
+    application_id: str = _NON_EMPTY
     application_environment_id: str = _NON_EMPTY
     application_release_id: str = _NON_EMPTY
     platform_version: str = _NON_EMPTY
@@ -78,6 +79,7 @@ class RuntimeRevision(BaseModel):
 
     @field_validator(
         "runtime_revision_id",
+        "application_id",
         "application_environment_id",
         "application_release_id",
         "platform_version",

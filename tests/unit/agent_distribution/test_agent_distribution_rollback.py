@@ -46,6 +46,7 @@ def _revision(
 ) -> RuntimeRevision:
     return RuntimeRevision(
         runtime_revision_id=revision_id,
+        application_id=_APP,
         application_environment_id=_ENV,
         application_release_id="rel-1",
         platform_version="0.1.0",
@@ -149,8 +150,8 @@ def test_rollback_restored_revision_serving_and_prior_draining() -> None:
         expected_current_traffic_revision_id="rev-n1",
         expected_serving_pointer_revision=2,
     )
-    assert revision_service.get_active_revision(_ENV).runtime_revision_id == "rev-n"
-    n1_instance = activation._deployment_instance_store.get_instance(_ENV, "rev-n1")
+    assert revision_service.get_active_revision(_APP, _ENV).runtime_revision_id == "rev-n"
+    n1_instance = activation._deployment_instance_store.get_instance(_APP, _ENV, "rev-n1")
     assert n1_instance is not None
     assert n1_instance.instance_state is DeploymentInstanceState.DRAINING
 
@@ -209,7 +210,7 @@ def test_rollback_failure_retains_authoritative_serving_pointer() -> None:
             expected_current_traffic_revision_id="rev-n1",
             expected_serving_pointer_revision=2,
         )
-    serving = activation._serving_store.get_serving_record(_ENV)
+    serving = activation._serving_store.get_serving_record(_APP, _ENV)
     assert serving is not None
     assert serving.traffic_serving_revision_id == "rev-n1"
 
@@ -224,12 +225,12 @@ def test_post_cutover_failure_triggers_rollback() -> None:
     )
     assert result.value is not None
     assert result.value.serving_record.traffic_serving_revision_id == "rev-n"
-    assert revision_service.get_active_revision(_ENV).runtime_revision_id == "rev-n"
+    assert revision_service.get_active_revision(_APP, _ENV).runtime_revision_id == "rev-n"
 
 
 def test_rollback_reuses_draining_instance_without_prepare() -> None:
     activation, _, deployment_adapter = _bootstrap_active_pair()
-    n_instance = activation._deployment_instance_store.get_instance(_ENV, "rev-n")
+    n_instance = activation._deployment_instance_store.get_instance(_APP, _ENV, "rev-n")
     assert n_instance is not None
     draining = n_instance.model_copy(
         update={
@@ -254,7 +255,7 @@ def test_rollback_reuses_draining_instance_without_prepare() -> None:
 
 def test_rollback_precondition_failure_leaves_pointer_unchanged() -> None:
     activation, _, _ = _bootstrap_active_pair()
-    serving_before = activation._serving_store.get_serving_record(_ENV)
+    serving_before = activation._serving_store.get_serving_record(_APP, _ENV)
     activation._artifact_revalidation = ArtifactRevalidationHook(
         validate=lambda _revision: (_ for _ in ()).throw(RuntimeRollbackError("trust invalid"))
     )
@@ -265,13 +266,13 @@ def test_rollback_precondition_failure_leaves_pointer_unchanged() -> None:
             expected_current_traffic_revision_id="rev-n1",
             expected_serving_pointer_revision=2,
         )
-    serving_after = activation._serving_store.get_serving_record(_ENV)
+    serving_after = activation._serving_store.get_serving_record(_APP, _ENV)
     assert serving_before == serving_after
 
 
 def test_rollback_atomic_commit_failure_leaves_no_partial_writes() -> None:
     activation, revision_service, _ = _bootstrap_active_pair()
-    serving_before = activation._serving_store.get_serving_record(_ENV)
+    serving_before = activation._serving_store.get_serving_record(_APP, _ENV)
     activation._activation_store._fail_atomic_commit_rollback = True
     with pytest.raises(RuntimeActivationConflict):
         activation.rollback(
@@ -280,9 +281,9 @@ def test_rollback_atomic_commit_failure_leaves_no_partial_writes() -> None:
             expected_current_traffic_revision_id="rev-n1",
             expected_serving_pointer_revision=2,
         )
-    serving_after = activation._serving_store.get_serving_record(_ENV)
+    serving_after = activation._serving_store.get_serving_record(_APP, _ENV)
     assert serving_before == serving_after
-    assert revision_service.get_active_revision(_ENV).runtime_revision_id == "rev-n1"
+    assert revision_service.get_active_revision(_APP, _ENV).runtime_revision_id == "rev-n1"
 
 
 def test_rollback_projection_prepared_before_pointer_commit() -> None:

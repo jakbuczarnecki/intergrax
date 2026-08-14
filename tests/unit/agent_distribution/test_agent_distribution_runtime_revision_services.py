@@ -24,6 +24,7 @@ def _validated_revision(
 ) -> RuntimeRevision:
     return RuntimeRevision(
         runtime_revision_id=revision_id,
+        application_id="app-a",
         application_environment_id="env-prod",
         application_release_id="rel-1",
         platform_version="0.1.0",
@@ -54,7 +55,15 @@ def test_runtime_revision_candidate_to_validated_to_active() -> None:
     assert activated.value.revision_state is RuntimeRevisionState.ACTIVE
     assert activated.value.rollback_target_revision_id is None
     assert any(event.event_type == "runtime_revision.activated" for event in activated.events)
-    assert state.active_revision_by_environment["env-prod"] == "rev-1"
+    from intergrax.agent_distribution.application_environment_identity import (
+        ApplicationEnvironmentIdentity,
+    )
+
+    scope = ApplicationEnvironmentIdentity(
+        application_id="app-a",
+        application_environment_id="env-prod",
+    )
+    assert state.active_revision_by_scope[scope] == "rev-1"
 
 
 def test_runtime_revision_prior_active_becomes_superseded_with_rollback_pointer() -> None:
@@ -94,7 +103,7 @@ def test_runtime_revision_restart_reads_durable_active_revision() -> None:
     service.activate_revision("rev-1")
     restarted_store = InMemoryRuntimeRevisionStore(state)
     restarted_service = RuntimeRevisionService(restarted_store)
-    active = restarted_service.get_active_revision("env-prod")
+    active = restarted_service.get_active_revision("app-a", "env-prod")
     assert active is not None
     assert active.runtime_revision_id == "rev-1"
     assert active.revision_state is RuntimeRevisionState.ACTIVE

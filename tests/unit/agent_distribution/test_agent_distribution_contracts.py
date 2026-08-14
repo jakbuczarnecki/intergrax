@@ -352,6 +352,7 @@ def test_runtime_revision_requires_lock_graph_and_artifact_for_validated() -> No
     with pytest.raises(ValidationError):
         RuntimeRevision(
             runtime_revision_id="rev-1",
+            application_id="app-a",
             application_environment_id="env-prod",
             application_release_id="rel-1",
             platform_version="0.1.0",
@@ -364,6 +365,7 @@ def test_runtime_revision_active_requires_activated_at() -> None:
     with pytest.raises(ValidationError):
         RuntimeRevision(
             runtime_revision_id="rev-1",
+            application_id="app-a",
             application_environment_id="env-prod",
             application_release_id="rel-1",
             platform_version="0.1.0",
@@ -482,6 +484,7 @@ def test_agent_distribution_package_has_no_forbidden_imports() -> None:
 def test_validated_runtime_revision_accepts_required_identities() -> None:
     revision = RuntimeRevision(
         runtime_revision_id="rev-active",
+        application_id="app-a",
         application_environment_id="env-prod",
         application_release_id="rel-1",
         platform_version="0.1.0",

@@ -100,9 +100,10 @@ class ApplicationAgentBindingStore(Protocol):
 
     def list_bindings_for_environment(
         self,
+        application_id: str,
         application_environment_id: str,
     ) -> list[ApplicationAgentBinding]:
-        """List bindings scoped to an application environment."""
+        """List bindings scoped to one application environment."""
 
     def list_bindings_for_slot(
         self,
@@ -140,12 +141,14 @@ class RuntimeRevisionStore(Protocol):
 
     def get_active_revision(
         self,
+        application_id: str,
         application_environment_id: str,
     ) -> RuntimeRevision | None:
-        """Resolve the active runtime revision for an environment."""
+        """Resolve the active runtime revision for an application environment."""
 
     def list_revisions_for_environment(
         self,
+        application_id: str,
         application_environment_id: str,
     ) -> list[RuntimeRevision]:
         """List persisted runtime revisions for one application environment."""
@@ -161,6 +164,7 @@ class RuntimeRevisionStore(Protocol):
     def swap_active_revision(
         self,
         *,
+        application_id: str,
         application_environment_id: str,
         new_active_revision_id: str,
         prior_active_revision_id: str | None = None,
@@ -170,6 +174,7 @@ class RuntimeRevisionStore(Protocol):
     def atomic_activate_revision(
         self,
         *,
+        application_id: str,
         application_environment_id: str,
         promoted: RuntimeRevision,
         demoted_prior: RuntimeRevision | None,
@@ -223,10 +228,11 @@ class DeploymentInstanceStore(Protocol):
 
     def get_instance(
         self,
+        application_id: str,
         application_environment_id: str,
         runtime_revision_id: str,
     ) -> DeploymentInstanceRecord | None:
-        """Load deployment instance for one revision in an environment."""
+        """Load deployment instance for one revision in an application environment."""
 
     def persist_instance(self, instance: DeploymentInstanceRecord) -> DeploymentInstanceRecord:
         """Create or replace deployment instance record."""
@@ -246,9 +252,10 @@ class ApplicationEnvironmentServingStore(Protocol):
 
     def get_serving_record(
         self,
+        application_id: str,
         application_environment_id: str,
     ) -> ApplicationEnvironmentServingRecord | None:
-        """Load authoritative serving record for an environment."""
+        """Load authoritative serving record for an application environment."""
 
     def atomic_swap_serving_revision(
         self,

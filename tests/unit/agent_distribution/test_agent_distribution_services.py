@@ -247,7 +247,7 @@ def test_binding_config_survives_installation_upgrade() -> None:
     assert binding.active_installation_id == "inst-v2"
     assert binding.installation_slot_id == "slot-search-prod"
     assert dict(binding.config) == {"mode": "fast", "top_k": 5}
-    resolved = binding_service.list_bindings_for_environment("env-prod")[0]
+    resolved = binding_service.list_bindings_for_environment("demo_app", "env-prod")[0]
     assert resolved.active_installation_id == "inst-v2"
 
 

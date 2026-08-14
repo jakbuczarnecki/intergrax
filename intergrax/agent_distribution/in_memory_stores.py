@@ -11,6 +11,9 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from intergrax.agent_distribution.application_environment_identity import (
+    ApplicationEnvironmentIdentity,
+)
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
 from intergrax.agent_distribution.deployment import (
@@ -63,13 +66,15 @@ class AgentDistributionStoreState:
     active_installation_by_slot: dict[str, str] = field(default_factory=dict)
     bindings: dict[str, ApplicationAgentBinding] = field(default_factory=dict)
     revisions: dict[str, RuntimeRevision] = field(default_factory=dict)
-    active_revision_by_environment: dict[str, str] = field(default_factory=dict)
-    artifact_metadata: dict[str, AgentArtifactMetadata] = field(default_factory=dict)
-    locks: dict[str, MaterializedRuntimeLock] = field(default_factory=dict)
-    deployment_instances: dict[tuple[str, str], DeploymentInstanceRecord] = field(
+    active_revision_by_scope: dict[ApplicationEnvironmentIdentity, str] = field(
         default_factory=dict
     )
-    serving_records: dict[str, ApplicationEnvironmentServingRecord] = field(
+    artifact_metadata: dict[str, AgentArtifactMetadata] = field(default_factory=dict)
+    locks: dict[str, MaterializedRuntimeLock] = field(default_factory=dict)
+    deployment_instances: dict[tuple[ApplicationEnvironmentIdentity, str], DeploymentInstanceRecord] = field(
+        default_factory=dict
+    )
+    serving_records: dict[ApplicationEnvironmentIdentity, ApplicationEnvironmentServingRecord] = field(
         default_factory=dict
     )
     _activation_lock: threading.RLock = field(
@@ -218,13 +223,15 @@ class InMemoryApplicationAgentBindingStore:
 
     def list_bindings_for_environment(
         self,
+        application_id: str,
         application_environment_id: str,
     ) -> list[ApplicationAgentBinding]:
         with self._lock:
             return [
                 binding
                 for binding in self._state.bindings.values()
-                if binding.application_environment_id == application_environment_id
+                if binding.application_id == application_id
+                and binding.application_environment_id == application_environment_id
             ]
 
     def list_bindings_for_slot(
@@ -275,25 +282,27 @@ class InMemoryRuntimeRevisionStore:
 
     def get_active_revision(
         self,
+        application_id: str,
         application_environment_id: str,
     ) -> RuntimeRevision | None:
         with self._lock:
-            active_id = self._state.active_revision_by_environment.get(
-                application_environment_id
-            )
+            scope = _application_environment_scope(application_id, application_environment_id)
+            active_id = self._state.active_revision_by_scope.get(scope)
             if active_id is None:
                 return None
             return self._state.revisions.get(active_id)
 
     def list_revisions_for_environment(
         self,
+        application_id: str,
         application_environment_id: str,
     ) -> list[RuntimeRevision]:
         with self._lock:
             return [
                 revision
                 for revision in self._state.revisions.values()
-                if revision.application_environment_id == application_environment_id
+                if revision.application_id == application_id
+                and revision.application_environment_id == application_environment_id
             ]
 
     def persist_candidate_revision(
@@ -315,14 +324,14 @@ class InMemoryRuntimeRevisionStore:
     def swap_active_revision(
         self,
         *,
+        application_id: str,
         application_environment_id: str,
         new_active_revision_id: str,
         prior_active_revision_id: str | None = None,
     ) -> RuntimeRevision:
         with _activation_domain(self._state, self._lock):
-            current_active_id = self._state.active_revision_by_environment.get(
-                application_environment_id
-            )
+            scope = _application_environment_scope(application_id, application_environment_id)
+            current_active_id = self._state.active_revision_by_scope.get(scope)
             if (
                 prior_active_revision_id is not None
                 and current_active_id != prior_active_revision_id
@@ -335,6 +344,14 @@ class InMemoryRuntimeRevisionStore:
                 raise RuntimeRevisionConflict(
                     "new active runtime revision was not found"
                 )
+            if new_revision.application_id != application_id:
+                raise RuntimeRevisionConflict(
+                    "new active runtime revision application mismatch"
+                )
+            if new_revision.application_environment_id != application_environment_id:
+                raise RuntimeRevisionConflict(
+                    "new active runtime revision environment mismatch"
+                )
             if new_revision.revision_state is not RuntimeRevisionState.VALIDATED:
                 raise RuntimeRevisionConflict(
                     "only validated revisions may become active"
@@ -343,29 +360,35 @@ class InMemoryRuntimeRevisionStore:
                 raise RuntimeRevisionConflict(
                     "simulated persistence failure during activation swap"
                 )
-            self._state.active_revision_by_environment[application_environment_id] = (
-                new_active_revision_id
-            )
+            self._state.active_revision_by_scope[scope] = new_active_revision_id
             return new_revision
 
     def atomic_activate_revision(
         self,
         *,
+        application_id: str,
         application_environment_id: str,
         promoted: RuntimeRevision,
         demoted_prior: RuntimeRevision | None,
         expected_prior_active_revision_id: str | None,
     ) -> tuple[RuntimeRevision, RuntimeRevision | None]:
         with _activation_domain(self._state, self._lock):
-            current_active_id = self._state.active_revision_by_environment.get(
-                application_environment_id
-            )
+            scope = _application_environment_scope(application_id, application_environment_id)
+            current_active_id = self._state.active_revision_by_scope.get(scope)
             if (
                 expected_prior_active_revision_id is not None
                 and current_active_id != expected_prior_active_revision_id
             ):
                 raise RuntimeRevisionConflict(
                     "active runtime revision does not match expected prior"
+                )
+            if promoted.application_id != application_id:
+                raise RuntimeRevisionConflict(
+                    "promoted runtime revision application mismatch"
+                )
+            if promoted.application_environment_id != application_environment_id:
+                raise RuntimeRevisionConflict(
+                    "promoted runtime revision environment mismatch"
                 )
             if demoted_prior is not None:
                 if self._fail_after_prior_supersede:
@@ -374,9 +397,7 @@ class InMemoryRuntimeRevisionStore:
                     )
                 self._state.revisions[demoted_prior.runtime_revision_id] = demoted_prior
             self._state.revisions[promoted.runtime_revision_id] = promoted
-            self._state.active_revision_by_environment[application_environment_id] = (
-                promoted.runtime_revision_id
-            )
+            self._state.active_revision_by_scope[scope] = promoted.runtime_revision_id
             return promoted, demoted_prior
 
 
@@ -441,11 +462,25 @@ class InMemoryMaterializedRuntimeLockStore:
             return identity
 
 
+def _application_environment_scope(
+    application_id: str,
+    application_environment_id: str,
+) -> ApplicationEnvironmentIdentity:
+    return ApplicationEnvironmentIdentity(
+        application_id=application_id,
+        application_environment_id=application_environment_id,
+    )
+
+
 def _deployment_instance_key(
+    application_id: str,
     application_environment_id: str,
     runtime_revision_id: str,
-) -> tuple[str, str]:
-    return (application_environment_id, runtime_revision_id)
+) -> tuple[ApplicationEnvironmentIdentity, str]:
+    return (
+        _application_environment_scope(application_id, application_environment_id),
+        runtime_revision_id,
+    )
 
 
 class InMemoryDeploymentInstanceStore:
@@ -461,13 +496,14 @@ class InMemoryDeploymentInstanceStore:
 
     def get_instance(
         self,
+        application_id: str,
         application_environment_id: str,
         runtime_revision_id: str,
     ) -> DeploymentInstanceRecord | None:
         with self._lock:
             return self._state.deployment_instances.get(
                 _deployment_instance_key(
-                    application_environment_id, runtime_revision_id
+                    application_id, application_environment_id, runtime_revision_id
                 )
             )
 
@@ -476,6 +512,7 @@ class InMemoryDeploymentInstanceStore:
     ) -> DeploymentInstanceRecord:
         with _activation_domain(self._state, self._lock):
             key = _deployment_instance_key(
+                instance.application_id,
                 instance.application_environment_id,
                 instance.runtime_revision_id,
             )
@@ -491,6 +528,7 @@ class InMemoryDeploymentInstanceStore:
     ) -> DeploymentInstanceRecord:
         with _activation_domain(self._state, self._lock):
             key = _deployment_instance_key(
+                instance.application_id,
                 instance.application_environment_id,
                 instance.runtime_revision_id,
             )
@@ -525,10 +563,12 @@ class InMemoryApplicationEnvironmentServingStore:
 
     def get_serving_record(
         self,
+        application_id: str,
         application_environment_id: str,
     ) -> ApplicationEnvironmentServingRecord | None:
         with self._lock:
-            return self._state.serving_records.get(application_environment_id)
+            scope = _application_environment_scope(application_id, application_environment_id)
+            return self._state.serving_records.get(scope)
 
     def atomic_swap_serving_revision(
         self,
@@ -542,7 +582,8 @@ class InMemoryApplicationEnvironmentServingStore:
         committed_at: datetime,
     ) -> ApplicationEnvironmentServingRecord:
         with _activation_domain(self._state, self._lock):
-            current = self._state.serving_records.get(application_environment_id)
+            scope = _application_environment_scope(application_id, application_environment_id)
+            current = self._state.serving_records.get(scope)
             if current is None:
                 if (
                     expected_pointer_revision != 0
@@ -576,7 +617,7 @@ class InMemoryApplicationEnvironmentServingStore:
                     prior_traffic_revision_id=prior_revision_id,
                     committed_at=committed_at,
                 )
-            self._state.serving_records[application_environment_id] = record
+            self._state.serving_records[scope] = record
             return record
 
 
@@ -605,12 +646,14 @@ class InMemoryApplicationEnvironmentActivationStore:
         committed_at: datetime,
     ) -> ActivationAtomicCommitResult:
         with self._state._activation_lock:
-            serving = self._state.serving_records.get(application_environment_id)
+            scope = _application_environment_scope(application_id, application_environment_id)
+            serving = self._state.serving_records.get(scope)
             if (
                 serving is not None
                 and serving.traffic_serving_revision_id == candidate_revision_id
             ):
                 return self._idempotent_activation_result(
+                    application_id=application_id,
                     application_environment_id=application_environment_id,
                     candidate_revision_id=candidate_revision_id,
                     serving=serving,
@@ -619,6 +662,10 @@ class InMemoryApplicationEnvironmentActivationStore:
             candidate = self._state.revisions.get(candidate_revision_id)
             if candidate is None:
                 raise RuntimeActivationError("candidate runtime revision was not found")
+            if candidate.application_id != application_id:
+                raise RuntimeActivationError(
+                    "candidate runtime revision application mismatch"
+                )
             if candidate.application_environment_id != application_environment_id:
                 raise RuntimeActivationError(
                     "candidate runtime revision environment mismatch"
@@ -631,6 +678,7 @@ class InMemoryApplicationEnvironmentActivationStore:
                 raise RuntimeActivationError("artifact identity mismatch at commit")
 
             candidate_key = _deployment_instance_key(
+                application_id,
                 application_environment_id,
                 candidate_revision_id,
             )
@@ -673,6 +721,7 @@ class InMemoryApplicationEnvironmentActivationStore:
                 if prior_revision.revision_state is not RuntimeRevisionState.ACTIVE:
                     raise RuntimeActivationError("prior runtime revision is not active")
                 prior_key = _deployment_instance_key(
+                    application_id,
                     application_environment_id,
                     expected_current_revision_id,
                 )
@@ -711,9 +760,7 @@ class InMemoryApplicationEnvironmentActivationStore:
                 )
                 self._state.revisions[expected_current_revision_id] = demoted_prior
 
-            self._state.active_revision_by_environment[application_environment_id] = (
-                candidate_revision_id
-            )
+            self._state.active_revision_by_scope[scope] = candidate_revision_id
 
             serving_instance = candidate_instance.model_copy(
                 update={
@@ -733,6 +780,7 @@ class InMemoryApplicationEnvironmentActivationStore:
                     }
                 )
                 prior_key = _deployment_instance_key(
+                    application_id,
                     application_environment_id,
                     expected_current_revision_id or "",
                 )
@@ -749,7 +797,7 @@ class InMemoryApplicationEnvironmentActivationStore:
                 prior_traffic_revision_id=expected_current_revision_id,
                 committed_at=committed_at,
             )
-            self._state.serving_records[application_environment_id] = serving_record
+            self._state.serving_records[scope] = serving_record
 
             return ActivationAtomicCommitResult(
                 serving_record=serving_record,
@@ -770,12 +818,14 @@ class InMemoryApplicationEnvironmentActivationStore:
         committed_at: datetime,
     ) -> RollbackAtomicCommitResult:
         with self._state._activation_lock:
-            serving = self._state.serving_records.get(application_environment_id)
+            scope = _application_environment_scope(application_id, application_environment_id)
+            serving = self._state.serving_records.get(scope)
             if serving is None:
                 raise RuntimeActivationConflict("no serving record for rollback")
 
             if serving.traffic_serving_revision_id == target_revision_id:
                 return self._idempotent_rollback_result(
+                    application_id=application_id,
                     application_environment_id=application_environment_id,
                     target_revision_id=target_revision_id,
                     serving=serving,
@@ -799,17 +849,25 @@ class InMemoryApplicationEnvironmentActivationStore:
                 raise RuntimeActivationError(
                     "rollback target runtime revision was not found"
                 )
+            if target_revision.application_id != application_id:
+                raise RuntimeActivationError(
+                    "rollback target runtime revision application mismatch"
+                )
             if target_revision.revision_state is not RuntimeRevisionState.SUPERSEDED:
                 raise RuntimeActivationError("prior revision is not rollback-eligible")
 
             current_revision = self._state.revisions.get(expected_current_revision_id)
             if current_revision is None:
                 raise RuntimeActivationError("current runtime revision was not found")
+            if current_revision.application_id != application_id:
+                raise RuntimeActivationError(
+                    "current runtime revision application mismatch"
+                )
             if current_revision.revision_state is not RuntimeRevisionState.ACTIVE:
                 raise RuntimeActivationError("current runtime revision is not active")
 
             target_key = _deployment_instance_key(
-                application_environment_id, target_revision_id
+                application_id, application_environment_id, target_revision_id
             )
             target_instance = self._state.deployment_instances.get(target_key)
             if target_instance is None:
@@ -822,6 +880,7 @@ class InMemoryApplicationEnvironmentActivationStore:
                 )
 
             current_key = _deployment_instance_key(
+                application_id,
                 application_environment_id,
                 expected_current_revision_id,
             )
@@ -857,9 +916,7 @@ class InMemoryApplicationEnvironmentActivationStore:
             )
             self._state.revisions[target_revision_id] = restored
             self._state.revisions[expected_current_revision_id] = demoted_current
-            self._state.active_revision_by_environment[application_environment_id] = (
-                target_revision_id
-            )
+            self._state.active_revision_by_scope[scope] = target_revision_id
 
             restored_instance = target_instance.model_copy(
                 update={
@@ -886,7 +943,7 @@ class InMemoryApplicationEnvironmentActivationStore:
                 prior_traffic_revision_id=expected_current_revision_id,
                 committed_at=committed_at,
             )
-            self._state.serving_records[application_environment_id] = serving_record
+            self._state.serving_records[scope] = serving_record
 
             return RollbackAtomicCommitResult(
                 serving_record=serving_record,
@@ -899,6 +956,7 @@ class InMemoryApplicationEnvironmentActivationStore:
     def _idempotent_activation_result(
         self,
         *,
+        application_id: str,
         application_environment_id: str,
         candidate_revision_id: str,
         serving: ApplicationEnvironmentServingRecord,
@@ -912,7 +970,9 @@ class InMemoryApplicationEnvironmentActivationStore:
                 "serving pointer already targets revision but state is not active"
             )
         candidate_key = _deployment_instance_key(
-            application_environment_id, candidate_revision_id
+            application_id,
+            application_environment_id,
+            candidate_revision_id,
         )
         candidate_instance = self._state.deployment_instances.get(candidate_key)
         if (
@@ -927,6 +987,7 @@ class InMemoryApplicationEnvironmentActivationStore:
         demoted_prior: RuntimeRevision | None = None
         if serving.prior_traffic_revision_id is not None:
             prior_key = _deployment_instance_key(
+                application_id,
                 application_environment_id,
                 serving.prior_traffic_revision_id,
             )
@@ -944,6 +1005,7 @@ class InMemoryApplicationEnvironmentActivationStore:
     def _idempotent_rollback_result(
         self,
         *,
+        application_id: str,
         application_environment_id: str,
         target_revision_id: str,
         serving: ApplicationEnvironmentServingRecord,
@@ -972,7 +1034,7 @@ class InMemoryApplicationEnvironmentActivationStore:
             )
 
         target_key = _deployment_instance_key(
-            application_environment_id, target_revision_id
+            application_id, application_environment_id, target_revision_id
         )
         restored_instance = self._state.deployment_instances.get(target_key)
         if (
@@ -984,7 +1046,9 @@ class InMemoryApplicationEnvironmentActivationStore:
             )
 
         superseded_instance = self._state.deployment_instances.get(
-            _deployment_instance_key(application_environment_id, current_revision_id)
+            _deployment_instance_key(
+                application_id, application_environment_id, current_revision_id
+            )
         )
         return RollbackAtomicCommitResult(
             serving_record=serving,
