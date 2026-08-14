@@ -172,6 +172,20 @@ def _factory_authority_fingerprint(
     return tuple(sorted(authorities, key=lambda item: str(item["logical_agent_id"])))
 
 
+def _build_context_application_id(ctx: ApplicationBuildContext) -> str | None:
+    manifest = ctx.manifest
+    if isinstance(manifest, ApplicationManifest):
+        return manifest.app_id
+    return None
+
+
+def _build_context_environment_id(ctx: ApplicationBuildContext) -> str | None:
+    environment = ctx.environment
+    if environment is not None:
+        return environment.profile_id
+    return None
+
+
 def _build_context_fingerprint(ctx: ApplicationBuildContext) -> dict[str, object]:
     manifest = ctx.manifest
     app_id = manifest.app_id if isinstance(manifest, ApplicationManifest) else None
@@ -329,13 +343,32 @@ def _validate_release_authority(bundle: RegistryProjectionInputBundle) -> None:
     revision = bundle.runtime_revision
     roster = bundle.effective_roster
     manifest = bundle.manifest
+    build_context = bundle.build_context
+    build_app_id = _build_context_application_id(build_context)
+    build_env_id = _build_context_environment_id(build_context)
 
-    if revision.application_environment_id != roster.application_environment_id:
-        raise RegistryProjectionError("runtime revision environment mismatch with roster")
-    if revision.application_release_id != roster.manifest_release_id:
-        raise RegistryProjectionError("runtime revision release mismatch with roster")
+    if revision.application_id != roster.application_id:
+        raise RegistryProjectionError("runtime revision application_id mismatch with roster")
+    if revision.application_id != manifest.app_id:
+        raise RegistryProjectionError("runtime revision application_id mismatch with manifest")
+    if build_app_id is not None and revision.application_id != build_app_id:
+        raise RegistryProjectionError(
+            "runtime revision application_id mismatch with build context"
+        )
     if roster.application_id != manifest.app_id:
         raise RegistryProjectionError("effective roster application_id mismatch with manifest")
+    if build_app_id is not None and roster.application_id != build_app_id:
+        raise RegistryProjectionError(
+            "effective roster application_id mismatch with build context"
+        )
+    if revision.application_environment_id != roster.application_environment_id:
+        raise RegistryProjectionError("runtime revision environment mismatch with roster")
+    if build_env_id is not None and revision.application_environment_id != build_env_id:
+        raise RegistryProjectionError(
+            "runtime revision environment mismatch with build context"
+        )
+    if revision.application_release_id != roster.manifest_release_id:
+        raise RegistryProjectionError("runtime revision release mismatch with roster")
     if roster.effective_roster_revision_id is None:
         raise RegistryProjectionError("effective roster requires revision identity")
     if revision.effective_roster_revision_id != roster.effective_roster_revision_id:
@@ -362,8 +395,18 @@ def _validate_revision_identity(
 ) -> None:
     frozen_revision = bundle.runtime_revision
     roster = bundle.effective_roster
+    manifest = bundle.manifest
+    build_app_id = _build_context_application_id(bundle.build_context)
     if revision.runtime_revision_id != frozen_revision.runtime_revision_id:
         raise RegistryProjectionError("runtime revision id mismatch")
+    if revision.application_id != roster.application_id:
+        raise RegistryProjectionError("runtime revision application_id mismatch with roster")
+    if revision.application_id != manifest.app_id:
+        raise RegistryProjectionError("runtime revision application_id mismatch with manifest")
+    if build_app_id is not None and revision.application_id != build_app_id:
+        raise RegistryProjectionError(
+            "runtime revision application_id mismatch with build context"
+        )
     if revision.application_environment_id != roster.application_environment_id:
         raise RegistryProjectionError("runtime revision environment mismatch")
     if revision.application_release_id != roster.manifest_release_id:

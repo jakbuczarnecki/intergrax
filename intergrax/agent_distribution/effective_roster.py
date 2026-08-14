@@ -107,12 +107,16 @@ def _binding_revisions_for_environment(
 def _resolve_package_identity(
     *,
     installation_store: AgentInstallationStore,
+    application_environment_id: str,
     installation_slot_id: str,
     manifest: ManifestDefaultAgentDeclaration | None,
     binding: ApplicationAgentBinding | None,
     effective_enablement: bool,
 ) -> tuple[str | None, str, str]:
-    active = installation_store.get_active_installation_for_slot(installation_slot_id)
+    active = installation_store.get_active_installation_for_slot(
+        application_environment_id,
+        installation_slot_id,
+    )
     if active is not None:
         _validate_installation_package_line(
             active=active,
@@ -205,6 +209,7 @@ def _resolve_effective_default_agent(
 def _merge_entry(
     *,
     logical_agent_id: str,
+    application_environment_id: str,
     manifest: ManifestDefaultAgentDeclaration | None,
     binding: ApplicationAgentBinding | None,
     installation_store: AgentInstallationStore,
@@ -254,6 +259,7 @@ def _merge_entry(
     active_installation_id, package_digest, distribution_package_id = (
         _resolve_package_identity(
             installation_store=installation_store,
+            application_environment_id=application_environment_id,
             installation_slot_id=installation_slot_id,
             manifest=manifest,
             binding=binding,
@@ -320,6 +326,7 @@ class EffectiveRosterBuilder:
             entries.append(
                 _merge_entry(
                     logical_agent_id=logical_agent_id,
+                    application_environment_id=application_environment_id,
                     manifest=manifest,
                     binding=binding,
                     installation_store=self._installation_store,

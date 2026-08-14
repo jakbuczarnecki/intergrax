@@ -66,6 +66,17 @@ def test_runtime_revision_candidate_to_validated_to_active() -> None:
     assert state.active_revision_by_scope[scope] == "rev-1"
 
 
+def test_runtime_revision_rejects_identity_mutation_on_validation() -> None:
+    service, _ = _service()
+    candidate = _validated_revision("rev-1", state=RuntimeRevisionState.CANDIDATE)
+    service.persist_candidate_revision(candidate)
+    mutated = _validated_revision("rev-1").model_copy(
+        update={"application_id": "app-other"},
+    )
+    with pytest.raises(RuntimeRevisionLifecycleError, match="application_id"):
+        service.mark_validated("rev-1", validated_revision=mutated)
+
+
 def test_runtime_revision_prior_active_becomes_superseded_with_rollback_pointer() -> None:
     service, state = _service()
     first_candidate = _validated_revision("rev-1", state=RuntimeRevisionState.CANDIDATE)

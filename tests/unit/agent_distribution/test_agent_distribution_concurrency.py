@@ -95,7 +95,7 @@ def test_concurrent_install_on_same_slot_one_succeeds_one_conflicts() -> None:
     second.join()
     assert len(results) == 1
     assert len(errors) == 1
-    active = service.resolve_active_for_slot("slot-search-prod")
+    active = service.resolve_active_for_slot("env-prod", "slot-search-prod")
     assert active is not None
     assert active.installation_id in {"inst-v1", "inst-v2"}
 
@@ -110,7 +110,7 @@ def test_partial_installation_promotion_failure_leaves_no_double_active() -> Non
     service.promote_verified_to_active("inst-a")
     with pytest.raises(InstallationSlotConflict):
         service.promote_verified_to_active("inst-b", expected_active_installation_id="inst-a")
-    active = service.resolve_active_for_slot("slot-search-prod")
+    active = service.resolve_active_for_slot("env-prod", "slot-search-prod")
     assert active is not None
     assert active.installation_id == "inst-a"
     assert state.installations["inst-a"].installation_state.value == "installed_active"

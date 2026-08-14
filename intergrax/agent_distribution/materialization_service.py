@@ -86,6 +86,24 @@ class RuntimeMaterializationService:
         if roster.effective_roster_revision_id is None:
             raise MaterializationInputConflict("effective roster requires revision identity")
 
+        if revision.application_id != roster.application_id:
+            raise MaterializationInputConflict("runtime revision application_id mismatch")
+        if revision.application_id != graph.application_id:
+            raise MaterializationInputConflict("runtime revision graph application_id mismatch")
+        if revision.application_id != build_context.application_id:
+            raise MaterializationInputConflict(
+                "runtime revision build context application_id mismatch"
+            )
+        if roster.application_id != graph.application_id:
+            raise MaterializationInputConflict("effective roster graph application_id mismatch")
+        if roster.application_id != build_context.application_id:
+            raise MaterializationInputConflict(
+                "effective roster build context application_id mismatch"
+            )
+        if revision.application_environment_id != roster.application_environment_id:
+            raise MaterializationInputConflict(
+                "runtime revision environment mismatch with roster"
+            )
         if revision.application_environment_id != build_context.application_environment_id:
             raise MaterializationInputConflict("runtime revision environment mismatch")
         if revision.application_release_id != build_context.application_release_id:

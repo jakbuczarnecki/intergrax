@@ -12,7 +12,12 @@ from intergrax.agent_distribution.errors import (
     RuntimeRevisionLifecycleError,
 )
 from intergrax.agent_distribution.events import TransitionResult, distribution_event
-from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
+from intergrax.agent_distribution.runtime_revision import (
+    RUNTIME_REVISION_IMMUTABLE_IDENTITY_FIELDS,
+    RUNTIME_REVISION_VALIDATION_TRANSITION_FIELDS,
+    RuntimeRevision,
+    RuntimeRevisionState,
+)
 from intergrax.agent_distribution.stores import RuntimeRevisionStore
 
 
@@ -50,6 +55,7 @@ class RuntimeRevisionService:
             raise RuntimeRevisionLifecycleError("validated revision id mismatch")
         if validated_revision.revision_state is not RuntimeRevisionState.VALIDATED:
             raise RuntimeRevisionLifecycleError("validated revision must use validated state")
+        self._assert_candidate_identity_preserved(current, validated_revision)
         persisted = self._store.persist_candidate_revision(
             validated_revision,
             expected_revision_state=RuntimeRevisionState.CANDIDATE,
@@ -122,6 +128,28 @@ class RuntimeRevisionService:
                 f"runtime revision {runtime_revision_id} was not found"
             )
         return revision
+
+    @staticmethod
+    def _assert_candidate_identity_preserved(
+        candidate: RuntimeRevision,
+        validated: RuntimeRevision,
+    ) -> None:
+        candidate_data = candidate.model_dump()
+        validated_data = validated.model_dump()
+        for field_name in RUNTIME_REVISION_IMMUTABLE_IDENTITY_FIELDS:
+            if candidate_data[field_name] != validated_data[field_name]:
+                raise RuntimeRevisionLifecycleError(
+                    f"immutable runtime revision field {field_name} mutated during validation"
+                )
+        for field_name in RuntimeRevision.model_fields:
+            if field_name in RUNTIME_REVISION_IMMUTABLE_IDENTITY_FIELDS:
+                continue
+            if field_name in RUNTIME_REVISION_VALIDATION_TRANSITION_FIELDS:
+                continue
+            if candidate_data[field_name] != validated_data[field_name]:
+                raise RuntimeRevisionLifecycleError(
+                    f"unexpected runtime revision field {field_name} mutated during validation"
+                )
 
     @staticmethod
     def _require_transition(current: RuntimeRevisionState, target: RuntimeRevisionState) -> None:

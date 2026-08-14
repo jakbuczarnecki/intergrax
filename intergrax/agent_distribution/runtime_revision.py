@@ -52,6 +52,28 @@ _ACTIVE_OR_VALIDATED = frozenset(
     }
 )
 
+RUNTIME_REVISION_IMMUTABLE_IDENTITY_FIELDS: Final = (
+    "runtime_revision_id",
+    "application_id",
+    "application_environment_id",
+    "application_release_id",
+    "platform_version",
+    "effective_roster_revision_id",
+    "installed_agent_package_digests",
+    "materialized_runtime_lock_id",
+    "materialized_runtime_lock_digest",
+    "runtime_graph_digest",
+    "materialization_topology",
+)
+
+RUNTIME_REVISION_VALIDATION_TRANSITION_FIELDS: Final = frozenset(
+    {
+        "revision_state",
+        "materialization_artifact_digest",
+        "materialization_topology",
+    }
+)
+
 
 class RuntimeRevision(BaseModel):
     """Complete materialized application runtime identity (§18.1)."""

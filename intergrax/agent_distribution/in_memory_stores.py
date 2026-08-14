@@ -33,6 +33,7 @@ from intergrax.agent_distribution.installation import (
     AgentInstallationRecord,
     InstallationState,
 )
+from intergrax.agent_distribution.installation_slot_scope import InstallationSlotScope
 from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
@@ -63,7 +64,9 @@ class AgentDistributionStoreState:
     """
 
     installations: dict[str, AgentInstallationRecord] = field(default_factory=dict)
-    active_installation_by_slot: dict[str, str] = field(default_factory=dict)
+    active_installation_by_scope: dict[InstallationSlotScope, str] = field(
+        default_factory=dict
+    )
     bindings: dict[str, ApplicationAgentBinding] = field(default_factory=dict)
     revisions: dict[str, RuntimeRevision] = field(default_factory=dict)
     active_revision_by_scope: dict[ApplicationEnvironmentIdentity, str] = field(
@@ -100,25 +103,30 @@ class InMemoryAgentInstallationStore:
 
     def get_active_installation_for_slot(
         self,
+        environment_id: str,
         installation_slot_id: str,
     ) -> AgentInstallationRecord | None:
+        scope = InstallationSlotScope(
+            environment_id=environment_id,
+            installation_slot_id=installation_slot_id,
+        )
         with self._lock:
-            active_id = self._state.active_installation_by_slot.get(
-                installation_slot_id
-            )
+            active_id = self._state.active_installation_by_scope.get(scope)
             if active_id is None:
                 return None
             return self._state.installations.get(active_id)
 
     def list_installations_for_slot(
         self,
+        environment_id: str,
         installation_slot_id: str,
     ) -> list[AgentInstallationRecord]:
         with self._lock:
             return [
                 record
                 for record in self._state.installations.values()
-                if record.installation_slot_id == installation_slot_id
+                if record.environment_id == environment_id
+                and record.installation_slot_id == installation_slot_id
             ]
 
     def list_installations_for_environment(
@@ -139,9 +147,11 @@ class InMemoryAgentInstallationStore:
         expected_active_installation_id: str | None = None,
     ) -> AgentInstallationRecord:
         with self._lock:
-            current_active_id = self._state.active_installation_by_slot.get(
-                record.installation_slot_id
+            scope = InstallationSlotScope(
+                environment_id=record.environment_id,
+                installation_slot_id=record.installation_slot_id,
             )
+            current_active_id = self._state.active_installation_by_scope.get(scope)
             if (
                 expected_active_installation_id is not None
                 and current_active_id != expected_active_installation_id
@@ -158,13 +168,9 @@ class InMemoryAgentInstallationStore:
                     raise InstallationSlotConflict(
                         "slot already has a different active installation"
                     )
-                self._state.active_installation_by_slot[record.installation_slot_id] = (
-                    record.installation_id
-                )
+                self._state.active_installation_by_scope[scope] = record.installation_id
             elif current_active_id == record.installation_id:
-                self._state.active_installation_by_slot.pop(
-                    record.installation_slot_id, None
-                )
+                self._state.active_installation_by_scope.pop(scope, None)
             self._state.installations[record.installation_id] = record
             return record
 
@@ -177,9 +183,11 @@ class InMemoryAgentInstallationStore:
     ) -> tuple[AgentInstallationRecord, AgentInstallationRecord | None]:
         """Atomically demote prior active and promote verified installation."""
         with self._lock:
-            current_active_id = self._state.active_installation_by_slot.get(
-                promoted.installation_slot_id
+            scope = InstallationSlotScope(
+                environment_id=promoted.environment_id,
+                installation_slot_id=promoted.installation_slot_id,
             )
+            current_active_id = self._state.active_installation_by_scope.get(scope)
             if (
                 expected_active_installation_id is not None
                 and current_active_id != expected_active_installation_id
@@ -198,9 +206,7 @@ class InMemoryAgentInstallationStore:
                     )
                 self._state.installations[demoted_prior.installation_id] = demoted_prior
             self._state.installations[promoted.installation_id] = promoted
-            self._state.active_installation_by_slot[promoted.installation_slot_id] = (
-                promoted.installation_id
-            )
+            self._state.active_installation_by_scope[scope] = promoted.installation_id
             return promoted, demoted_prior
 
 

@@ -52,6 +52,7 @@ class BindingService:
         default_agent: bool | None = None,
     ) -> TransitionResult[ApplicationAgentBinding]:
         active_installation_id = self._resolve_active_installation_id(
+            environment_id=application_environment_id,
             installation_slot_id=installation_slot_id,
             builtin_package_ref=builtin_package_ref,
             require_for_enablement=enablement,
@@ -151,6 +152,7 @@ class BindingService:
         if binding.tombstone:
             raise BindingLifecycleError("tombstoned bindings cannot be enabled")
         active_installation_id = self._resolve_active_installation_id(
+            environment_id=binding.application_environment_id,
             installation_slot_id=binding.installation_slot_id,
             builtin_package_ref=binding.builtin_package_ref,
             require_for_enablement=True,
@@ -276,11 +278,15 @@ class BindingService:
     def _resolve_active_installation_id(
         self,
         *,
+        environment_id: str,
         installation_slot_id: str,
         builtin_package_ref: str | None,
         require_for_enablement: bool,
     ) -> str | None:
-        active = self._installation_service.resolve_active_for_slot(installation_slot_id)
+        active = self._installation_service.resolve_active_for_slot(
+            environment_id,
+            installation_slot_id,
+        )
         if active is not None:
             return active.installation_id
         if builtin_package_ref is not None:

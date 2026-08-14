@@ -119,7 +119,10 @@ class InstallationService:
         if record.artifact_store_ref is None:
             raise InstallationLifecycleError("verified installation requires artifact_store_ref")
 
-        prior_active = self._store.get_active_installation_for_slot(record.installation_slot_id)
+        prior_active = self._store.get_active_installation_for_slot(
+            record.environment_id,
+            record.installation_slot_id,
+        )
         if prior_active is not None and prior_active.installation_id == record.installation_id:
             raise InstallationLifecycleError("installation is already active for slot")
 
@@ -190,17 +193,25 @@ class InstallationService:
 
     def resolve_active_for_slot(
         self,
+        environment_id: str,
         installation_slot_id: str,
     ) -> AgentInstallationRecord | None:
-        return self._store.get_active_installation_for_slot(installation_slot_id)
+        return self._store.get_active_installation_for_slot(
+            environment_id,
+            installation_slot_id,
+        )
 
     def rollback_slot_to_previous(
         self,
+        environment_id: str,
         installation_slot_id: str,
         *,
         expected_active_installation_id: str,
     ) -> TransitionResult[AgentInstallationRecord]:
-        active = self._store.get_active_installation_for_slot(installation_slot_id)
+        active = self._store.get_active_installation_for_slot(
+            environment_id,
+            installation_slot_id,
+        )
         if active is None:
             raise AgentDistributionNotFoundError("no active installation for slot")
         if active.installation_id != expected_active_installation_id:

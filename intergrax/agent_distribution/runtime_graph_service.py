@@ -325,6 +325,10 @@ class CandidateRuntimeGraphValidator:
             raise CandidateRuntimeGraphError(
                 "graph materialized_runtime_lock_id does not match lock"
             )
+        if graph.application_id != effective_roster.application_id:
+            raise CandidateRuntimeGraphError(
+                "graph application_id does not match effective roster"
+            )
 
         identity = graph.with_content_identity()
         if identity.runtime_graph_digest != graph.runtime_graph_digest:

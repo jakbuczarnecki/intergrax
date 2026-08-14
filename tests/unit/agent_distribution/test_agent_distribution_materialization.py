@@ -425,6 +425,48 @@ def test_different_graph_changes_fake_digest(tmp_path: Path) -> None:
     assert changed.materialization_artifact_digest != baseline.materialization_artifact_digest
 
 
+@pytest.mark.parametrize(
+    ("field", "update", "match"),
+    [
+        ("runtime_revision", {"application_id": "app-other"}, "application_id"),
+        ("effective_roster", {"application_id": "app-other"}, "application_id"),
+        ("candidate_runtime_graph", {"application_id": "app-other"}, "application_id"),
+        (
+            "application_build_context",
+            {"application_id": "app-other"},
+            "application_id",
+        ),
+        (
+            "runtime_revision",
+            {"application_environment_id": "env-other"},
+            "environment",
+        ),
+        (
+            "effective_roster",
+            {"application_environment_id": "env-other"},
+            "environment",
+        ),
+        (
+            "application_build_context",
+            {"application_environment_id": "env-other"},
+            "environment",
+        ),
+    ],
+)
+def test_materialization_rejects_application_identity_mismatch(
+    tmp_path: Path,
+    field: str,
+    update: dict[str, str],
+    match: str,
+) -> None:
+    materialization_input, _, _, _ = _build_fixture(tmp_path)
+    original = getattr(materialization_input, field)
+    mutated = original.model_copy(update=update)
+    tampered = materialization_input.model_copy(update={field: mutated})
+    with pytest.raises(MaterializationInputConflict, match=match):
+        RuntimeMaterializationService._validate_input_consistency(tampered)
+
+
 def test_manifest_references_graph_digest_and_lock_id(tmp_path: Path) -> None:
     materialization_input, _adapter, artifact_provider, agent_digest = _build_fixture(tmp_path)
     service = RuntimeMaterializationService(

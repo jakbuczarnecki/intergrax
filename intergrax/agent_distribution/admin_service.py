@@ -37,10 +37,7 @@ from intergrax.agent_distribution.agent_project_metadata import AgentProjectMeta
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.catalog import CatalogEntryFilters, CatalogSourceProvider
-from intergrax.agent_distribution.dependency import (
-    DependencyResolverInput,
-    MaterializedLockPackage,
-)
+from intergrax.agent_distribution.dependency import DependencyResolverInput
 from intergrax.agent_distribution.dependency_specification import (
     build_candidate_dependency_specification,
 )
@@ -68,11 +65,7 @@ from intergrax.agent_distribution.materialization import (
     MaterializationInput,
 )
 from intergrax.agent_distribution.materialization_service import RuntimeMaterializationService
-from intergrax.agent_distribution.resolver import (
-    CallableDependencyResolver,
-    DependencyResolver,
-    ResolvedDependencyClosure,
-)
+from intergrax.agent_distribution.resolver import DependencyResolver
 from intergrax.agent_distribution.roster import EffectiveRoster, ManifestDefaultAgentDeclaration
 from intergrax.agent_distribution.runtime_graph_service import (
     CandidateRuntimeGraphBuilder,
@@ -148,23 +141,6 @@ def _revision_view(revision: RuntimeRevision) -> RuntimeRevisionView:
     )
 
 
-def _identity_resolver(resolver_input: DependencyResolverInput) -> ResolvedDependencyClosure:
-    packages = tuple(
-        MaterializedLockPackage(
-            distribution_name=package.distribution_package_id,
-            version="1.0.0",
-            package_digest=package.package_digest,
-        )
-        for package in resolver_input.specification.agent_packages
-    )
-    return ResolvedDependencyClosure(
-        resolver_algorithm_id=resolver_input.resolver_algorithm_id,
-        resolver_algorithm_version=resolver_input.resolver_algorithm_version,
-        python_version="3.12",
-        packages=packages,
-    )
-
-
 class AgentPlatformAdminService:
     """One control-plane facade over AP-3..AP-10 services — no HTTP concerns."""
 
@@ -206,9 +182,12 @@ class AgentPlatformAdminService:
         self._roster_builder = roster_builder
         self._requirement_set_builder = requirement_set_builder
         self._activation_service = activation_service
-        self._lock_service = lock_service or MaterializedRuntimeLockService(
-            dependency_resolver or CallableDependencyResolver(_identity_resolver)
-        )
+        if lock_service is not None:
+            self._lock_service = lock_service
+        elif dependency_resolver is not None:
+            self._lock_service = MaterializedRuntimeLockService(dependency_resolver)
+        else:
+            self._lock_service = None
         self._graph_builder = graph_builder
         self._graph_validator = graph_validator or CandidateRuntimeGraphValidator()
         self._materialization_service = materialization_service
@@ -426,7 +405,8 @@ class AgentPlatformAdminService:
         distribution_package_id: str | None = None
         if binding is not None:
             active = self._installation_service.resolve_active_for_slot(
-                binding.installation_slot_id
+                application_environment_id,
+                binding.installation_slot_id,
             )
             installed = active is not None and installation_state_is_installed(
                 active.installation_state
@@ -649,6 +629,11 @@ class AgentPlatformAdminService:
             raise AgentPlatformAdminBlockedError(
                 "AP-11_BLOCKED_BY_MISSING_BUILD_APPLY_SERVICE",
                 "build/apply requires AgentProjectMetadataProvider",
+            )
+        if self._lock_service is None:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_DEPENDENCY_RESOLVER",
+                "build/apply requires an injected DependencyResolver",
             )
         existing = self._revision_store.get_revision(request.runtime_revision_id)
         if existing is not None:

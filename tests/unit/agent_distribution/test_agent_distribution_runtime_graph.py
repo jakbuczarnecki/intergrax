@@ -414,6 +414,40 @@ def test_transitive_agent_from_authoritative_metadata() -> None:
     assert graph.transitive_agents[0].distribution_package_id == _AGENT_B
 
 
+def test_validator_rejects_foreign_application_id() -> None:
+    lock = _lock_with_agents(agents=((_AGENT_A, _DIGEST_A),))
+    roster = _roster(
+        entries=(
+            EffectiveRosterEntry(
+                logical_agent_id="search",
+                installation_slot_id="slot-search",
+                package_digest=_DIGEST_A,
+                distribution_package_id=_AGENT_A,
+                effective_enablement=True,
+            ),
+        )
+    )
+    provider = _InMemoryMetadataProvider(
+        {f"meta://{_AGENT_A}": AgentProjectMetadata(distribution_package_id=_AGENT_A, dependencies=())}
+    )
+    graph = CandidateRuntimeGraphBuilder(provider).build(
+        lock=lock,
+        effective_roster=roster,
+        repository_declaration=RepositoryDependencyDeclaration(
+            application_release_id="rel-ap7",
+            direct_dependencies=(),
+        ),
+        agent_metadata_refs={_AGENT_A: f"meta://{_AGENT_A}"},
+    )
+    foreign_graph = graph.model_copy(update={"application_id": "foreign-app"})
+    with pytest.raises(CandidateRuntimeGraphError, match="application_id"):
+        CandidateRuntimeGraphValidator().validate(
+            lock=lock,
+            effective_roster=roster,
+            graph=foreign_graph,
+        )
+
+
 def test_validator_rejects_wrong_lock_binding() -> None:
     lock = _lock_with_agents(agents=((_AGENT_A, _DIGEST_A),))
     roster = _roster(

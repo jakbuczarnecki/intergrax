@@ -32,6 +32,7 @@ from intergrax.agent_distribution.installation import (
     AgentInstallationRecord,
     InstallationState,
 )
+from intergrax.agent_distribution.installation_slot_scope import InstallationSlotScope
 from intergrax.agent_distribution.roster import (
     EffectiveRosterEntry,
     ManifestDefaultAgentDeclaration,
@@ -99,7 +100,9 @@ def test_effective_roster_to_digest_pinned_requirement_set() -> None:
         artifact_store_ref="store://artifacts/inst-v1",
         trust_record=_trust_record(),
     )
-    state.active_installation_by_slot["slot-search-prod"] = "inst-v1"
+    state.active_installation_by_scope[
+        InstallationSlotScope(environment_id=_ENV_ID, installation_slot_id="slot-search-prod")
+    ] = "inst-v1"
     roster = EffectiveRosterBuilder(InMemoryAgentInstallationStore(state)).build(
         application_id=_APP_ID,
         application_environment_id=_ENV_ID,

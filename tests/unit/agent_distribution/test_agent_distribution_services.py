@@ -139,6 +139,7 @@ def test_installation_upgrade_marks_previous_and_rollback_restores_digest() -> N
     installation_service.promote_verified_to_active("inst-v1")
     installation_service.promote_verified_to_active("inst-v2", expected_active_installation_id="inst-v1")
     rolled = installation_service.rollback_slot_to_previous(
+        "env-prod",
         "slot-search-prod",
         expected_active_installation_id="inst-v2",
     )

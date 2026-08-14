@@ -23,6 +23,7 @@ from intergrax.agent_distribution.installation import (
     AgentInstallationRecord,
     InstallationState,
 )
+from intergrax.agent_distribution.installation_slot_scope import InstallationSlotScope
 from intergrax.agent_distribution.roster import ManifestDefaultAgentDeclaration
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
@@ -84,7 +85,9 @@ def _persist_active_installation(
         artifact_store_ref=f"store://artifacts/{installation_id}",
         trust_record=_trust_record(package_identity.package_digest),
     )
-    state.active_installation_by_slot[slot_id] = installation_id
+    state.active_installation_by_scope[
+        InstallationSlotScope(environment_id=_ENV_ID, installation_slot_id=slot_id)
+    ] = installation_id
 
 
 def _manifest_search(
@@ -240,7 +243,9 @@ def test_installation_upgrade_preserves_binding_identity_and_config() -> None:
             "active_for_slot": False,
         }
     )
-    state.active_installation_by_slot["slot-search-prod"] = "inst-v2"
+    state.active_installation_by_scope[
+        InstallationSlotScope(environment_id=_ENV_ID, installation_slot_id="slot-search-prod")
+    ] = "inst-v2"
     roster_b = builder.build(
         application_id=_APP_ID,
         application_environment_id=_ENV_ID,
@@ -571,7 +576,9 @@ def test_default_override_survives_installation_digest_upgrade() -> None:
             "active_for_slot": False,
         }
     )
-    state.active_installation_by_slot["slot-search-prod"] = "inst-v2"
+    state.active_installation_by_scope[
+        InstallationSlotScope(environment_id=_ENV_ID, installation_slot_id="slot-search-prod")
+    ] = "inst-v2"
     roster_b = builder.build(
         application_id=_APP_ID,
         application_environment_id=_ENV_ID,

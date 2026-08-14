@@ -70,6 +70,7 @@ from intergrax.agent_distribution.trust import (
     AgentQualificationStatus,
     AgentTrustEvidenceRef,
 )
+from testing_support.agent_platform_dependency_resolver import make_identity_dependency_resolver
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -251,6 +252,7 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
         ),
         metadata_provider=metadata_provider,
         catalog_provider=catalog if with_catalog else None,
+        dependency_resolver=make_identity_dependency_resolver(),
     )
     return AdminStack(service=service, state=state, catalog=catalog)
 
@@ -569,6 +571,18 @@ def test_catalog_list_blocked_without_provider() -> None:
     with pytest.raises(AgentPlatformAdminBlockedError) as exc:
         stack.service.list_catalog()
     assert exc.value.blocker_code == "AP-11_BLOCKED_BY_MISSING_CATALOG_PROVIDER"
+
+
+def test_build_revision_blocked_without_dependency_resolver() -> None:
+    stack = build_admin_stack()
+    stack.service._lock_service = None  # type: ignore[attr-defined]
+    with pytest.raises(AgentPlatformAdminBlockedError) as exc:
+        stack.service.build_application_revision(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            request=_build_request("rev-no-resolver"),
+        )
+    assert exc.value.blocker_code == "AP-11_BLOCKED_BY_MISSING_DEPENDENCY_RESOLVER"
 
 
 def test_catalog_list_delegates_to_provider() -> None:

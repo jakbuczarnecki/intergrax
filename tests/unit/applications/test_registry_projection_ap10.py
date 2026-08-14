@@ -151,6 +151,7 @@ def _revision(
 ) -> RuntimeRevision:
     return RuntimeRevision(
         runtime_revision_id=revision_id,
+        application_id=_APP,
         application_environment_id=environment,
         application_release_id=_RELEASE,
         platform_version="0.1.0",
@@ -415,6 +416,14 @@ def test_projection_rejects_mismatched_environment() -> None:
     input_store.register(bundle)
     with pytest.raises(RegistryProjectionError, match="environment"):
         coordinator.prepare_projection("rev-1")
+
+
+def test_projection_rejects_revision_for_app_b_with_app_a_authority() -> None:
+    roster_app_a = _roster((_entry("search"),))
+    revision_app_b = _revision("rev-app-b").model_copy(update={"application_id": "app_b"})
+    bundle = _bundle_parts(revision_app_b, roster_app_a, _manifest(app_id=_APP))
+    with pytest.raises(RegistryProjectionError, match="application_id"):
+        build_registry_projection(bundle)
 
 
 def test_projection_rejects_mismatched_roster_revision_id() -> None:

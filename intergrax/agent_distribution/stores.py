@@ -56,15 +56,17 @@ class AgentInstallationStore(Protocol):
 
     def get_active_installation_for_slot(
         self,
+        environment_id: str,
         installation_slot_id: str,
     ) -> AgentInstallationRecord | None:
-        """Resolve the active digest-pinned installation for a slot."""
+        """Resolve the active digest-pinned installation for one environment slot."""
 
     def list_installations_for_slot(
         self,
+        environment_id: str,
         installation_slot_id: str,
     ) -> list[AgentInstallationRecord]:
-        """List installation revisions for a slot (audit / rollback)."""
+        """List installation revisions for one environment slot (audit / rollback)."""
 
     def list_installations_for_environment(
         self,
