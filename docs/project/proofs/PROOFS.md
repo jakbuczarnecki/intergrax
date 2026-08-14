@@ -73,19 +73,22 @@ foundations do not inherit a blanket platform-wide **IMPLEMENTED** status.
 **Role:** Primary product proof · **Product status:** Backend Product Alpha / MVP
 
 The bounded indexed Hybrid Ask branch is demonstrated through the production
-Hybrid Ask `indexed_only` path. Executable proof validates indexed retrieval and
-the indexed branch boundary; `status=insufficient_evidence` may pass after
-indexed retrieval without proving completed answer assembly. Mixed indexed +
-authorized live Hybrid Ask remains incomplete, and complete live-provider access
-remains incomplete.
+Hybrid Ask `indexed_only` path. Some indexed-path proofs validate retrieval and
+boundary behavior even when answer assembly returns insufficient evidence.
+The Trusted Ask durability proof separately verifies completed grounded Ask
+outcomes before and after restart. Mixed indexed + authorized live Hybrid Ask
+remains incomplete, and complete live-provider access remains incomplete.
 
 **Proof:** `LKW-HYBRID-ASK-INDEXED`
 
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
-| **Core Platform Proof** | 🧪 **BOUNDED PROOF** | Real application startup, observability, ingest, hosting, persisted execution evidence (startup, sentry, elasticsearch, persistence, background task, application hosting, file watcher) | Bounded to documented certification profiles; not production readiness, commercial validation, or all-provider certification |
+| **Core Platform Proof** | 🧪 **BOUNDED PROOF** | Real application startup/readiness, durable knowledge and execution, background processing, persisted reviewable evidence, hosting/recovery, and watched-folder indexing (Elasticsearch/Kibana observability, Sentry problem signals, MongoDB ProofReceipts) | Bounded to documented certification profiles; not production readiness, commercial validation, or all-provider certification |
+| **Trusted Ask / durable indexed workspace Ask** | 🧪 **BOUNDED PROOF** | Current runtime image through Ollama generation and embeddings, workspace source sync, Qdrant indexed retrieval, completed first Ask with evidence, non-destructive restart, completed second Ask without resync/reindex, and unchanged persisted first Ask run | Indexed knowledge only; bounded local runtime; no mixed indexed + authorized-live Hybrid Ask; no universal provider, production, or commercial claims |
 
-**Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`, `LKW-ASK-WORKSPACE-LIVE`
+**Core platform proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`
+
+**Trusted Ask proof:** `LKW-ASK-WORKSPACE-LIVE` — [authoritative live proof section](LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
 
 | Web URL knowledge intake | 🧪 **BOUNDED PROOF** | Real WEB_URL capture and RAG indexing into the exact tenant/workspace Qdrant scope, verified indexed retrieval, and execution through Hybrid Ask `indexed_only`; a suite **PASS** always requires those indexed-path steps — grounded answer and indexed citation/evidence are verified only when the run completes with `status=completed`; `status=insufficient_evidence` may still **PASS** after successful indexed retrieval without proving completed answer assembly | Controlled `example.com` origin only; not arbitrary external-site certification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access remains incomplete |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
@@ -125,7 +128,7 @@ Accepted technical proof:
 | Cache-aware execution gate | ✅ **IMPLEMENTED** | Only `RUN` executes pipeline; conflicting evidence rejected | Does not perform in-cache compaction |
 | Durable in-cache compaction mechanism | ✅ **IMPLEMENTED (BOUNDED)** | Durable SQLite repository, validation and CAS activation exist | Live provider proof, rollback execution and production rollout remain incomplete; numeric savings are not claimed |
 | Bounded offline smoke proof | 🧪 **BOUNDED PROOF** | Offline_smoke universal proof path via local adapter; exercises deterministic pipeline contracts | Does not execute live vLLM prefix-cache verification |
-| vLLM prefix-cache reuse | 🧪 **BOUNDED PROOF** (manual) | Cold/warm/changed-prefix reuse when operator runs the documented manual live path | Named version, model, and workload only; no `public_evidence_eligible` manifest proof_id today |
+| vLLM prefix-cache reuse | 🧪 **BOUNDED PROOF** (manual) | Cold/warm/changed-prefix reuse when operator runs the documented manual live path | Named version, model, and workload only; no accepted public manifest proof exists for this path today |
 
 **Proof:** `RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`
 

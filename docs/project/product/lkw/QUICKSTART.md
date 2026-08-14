@@ -71,7 +71,8 @@ section.
 - Git
 - Docker Desktop or Docker Engine with Compose
 - `uv` installed and available on `PATH`
-- Sufficient disk space for Docker images and the configured local model (Ollama pull on first run)
+- Sufficient disk space for Docker images and configured models when the
+  selected generation or embedding provider is Ollama (model pull on first run)
 
 First-run duration depends on image downloads, model download, network speed, and machine performance. A 15-minute target is not yet externally validated.
 
@@ -146,10 +147,33 @@ You did not need to write API JSON, copy operation IDs manually, or configure `I
 ## First-run downloads
 
 - Docker images for the LKW stack may be downloaded on first run.
-- The configured generation model (`llama3.1:latest` by default) may be downloaded by the stack.
-- Generation model resolution is `INTERGRAX_DEFAULT_OLLAMA_MODEL`, then
-  `INTERGRAX_LLM_MODEL`, then `llama3.1:latest`.
-- The quickstart resolves the embedding model configured in the running LKW container and pulls that exact model.
+- When the selected **generation** provider is Ollama, the configured generation
+  model may be downloaded.
+- When the selected **embedding** provider is Ollama, the configured embedding
+  model may be downloaded.
+
+**Canonical model-selection contract** (see
+[Platform Configuration](../../technical/guides/PLATFORM_CONFIGURATION.md)):
+
+| Role | Provider variable | Model variable |
+| --- | --- | --- |
+| Generation | `INTERGRAX_LLM_PROVIDER` | `INTERGRAX_LLM_MODEL` |
+| Embedding | `INTERGRAX_EMBEDDING_PROVIDER` | `INTERGRAX_EMBEDDING_MODEL` |
+
+`PROVIDER` selects the adapter; `MODEL` selects the configured model.
+Provider-specific `INTERGRAX_DEFAULT_*_MODEL` variables may exist as adapter
+fallbacks when the canonical model is omitted — they are not the primary
+application model-selection contract.
+
+Canonical local LKW example:
+
+```text
+INTERGRAX_LLM_PROVIDER=ollama
+INTERGRAX_LLM_MODEL=llama3.1:latest
+INTERGRAX_EMBEDDING_PROVIDER=ollama
+INTERGRAX_EMBEDDING_MODEL=nomic-embed-text
+```
+
 - An existing `applications/local_workspace_application/.env` is not modified; a missing `applications/local_workspace_application/.env` is created once from `applications/local_workspace_application/.env.example`.
 - Operational failures return `failed_stage`, `failure_reason`, and
   `recommended_action` instead of raw Docker, HTTP or subprocess logs.
@@ -185,6 +209,13 @@ On Windows, from the repository root, run `cd /d applications\local_workspace_ap
 - For a normal failure, follow `failed_stage`, `failure_reason`, and
   `recommended_action`. Docker, Compose, and `uv` remain user-managed
   prerequisites.
+- **Port already in use (for example `8020`):** another documented LKW stack or
+  process may already own the port. Common Compose project names are
+  `intergrax_lkw` (Product Quick Start), `lkw-core-platform-proof` (Core
+  Platform Proof), and `lkw-trusted-ask-workspace-proof` (Trusted Ask proof).
+  Do not delete volumes or reset data by default — stop the conflicting
+  documented stack non-destructively (see [Stop the stack](#stop-the-stack)
+  or the proof document's stop guidance), then rerun the path you want.
 - From `applications/local_workspace_application`, inspect service status with `docker compose -p intergrax_lkw -f docker/docker-compose.yml ps`.
 - From `applications/local_workspace_application`, inspect logs with `docker compose -p intergrax_lkw -f docker/docker-compose.yml logs --tail 200 local_workspace`.
 - Health check: `http://127.0.0.1:8020/health` should return `status: ok`.

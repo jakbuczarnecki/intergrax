@@ -329,7 +329,7 @@ def test_project_projections_synchronize_accepted_lkw_boundaries() -> None:
     assert "indexedonly" in proofs
     assert "lkw-hybrid-ask-indexed" in proofs
     assert "mixed indexed + authorized live hybrid ask remains incomplete" in proofs
-    assert "bounded production indexed ask path through hybrid ask" in tour
+    assert "actual application/runtime indexed ask path" in tour
     assert "mixed indexed + authorized live hybrid ask" in tour
     assert not re.search(r"does not represent:\s*-\s*hybrid ask\b", tour_text, re.IGNORECASE)
 
@@ -970,3 +970,72 @@ def test_why_canonical_opening(why_text: str) -> None:
         "bounded current evidence",
     ):
         assert phrase in opening, f"WHY opening missing semantic marker: {phrase}"
+
+
+_LKW_PLATFORM_PROOF_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "LKW_PLATFORM_PROOF.md"
+
+
+def test_quickstart_canonical_model_configuration_contract() -> None:
+    text = _read(LKW_QUICKSTART_PATH)
+    assert "INTERGRAX_DEFAULT_OLLAMA_MODEL" not in text
+    for var in (
+        "INTERGRAX_LLM_PROVIDER",
+        "INTERGRAX_LLM_MODEL",
+        "INTERGRAX_EMBEDDING_PROVIDER",
+        "INTERGRAX_EMBEDDING_MODEL",
+    ):
+        assert var in text, f"Quick Start missing canonical variable: {var}"
+    assert "PLATFORM_CONFIGURATION.md" in text
+
+
+def test_proofs_trusted_ask_public_entry() -> None:
+    text = _read(PROOFS_PATH)
+    normalized = " ".join(_normalize(text).split())
+    assert "trusted ask" in normalized
+    assert "lkw-ask-workspace-live" in normalized
+    assert "trusted-ask-workspace-mvp-2" in text.lower()
+    assert "no mixed indexed + authorized-live hybrid ask" in normalized
+
+
+def test_readme_distinguishes_quickstart_from_hybrid_ask_certification(
+    readme_text: str,
+) -> None:
+    normalized = " ".join(_normalize(readme_text).split())
+    assert "indexed ask v1" in normalized
+    assert "not hybrid ask certification" in normalized
+    assert "lkw-hybrid-ask-indexed" in normalized
+
+
+def test_product_tour_avoids_production_readiness_ambiguity() -> None:
+    tour = " ".join(_normalize(_read(LKW_PRODUCT_TOUR_PATH)).split())
+    assert "bounded production indexed ask path" not in tour
+    assert "actual application/runtime indexed ask path" in tour
+
+
+def test_proofs_public_text_avoids_public_evidence_eligible_reader_term() -> None:
+    text = _read(PROOFS_PATH)
+    assert "public_evidence_eligible" not in text
+
+
+def test_lkw_platform_proof_core_outcome_first_summary() -> None:
+    text = _read(_LKW_PLATFORM_PROOF_PATH)
+    core_start = text.index("## Core Platform Proof")
+    steps_start = text.index("1. LKW starts as a real Intergrax application.", core_start)
+    summary = text[core_start:steps_start]
+    assert "outcome-first" in summary.lower()
+    assert "application starts and reports readiness" in summary.lower()
+    assert "watched knowledge reaches the searchable index automatically" in summary.lower()
+
+
+def test_public_reader_correction_wave_maturity_disclaimers_preserved(
+    readme_text: str,
+) -> None:
+    for path in (README_PATH, PROOFS_PATH, LKW_PRODUCT_TOUR_PATH):
+        normalized = " ".join(_normalize(_read(path)).split())
+        for phrase in ("real-user validation", "commercial validation"):
+            assert phrase in normalized, f"{path.name} missing disclaimer: {phrase}"
+    readme_norm = " ".join(_normalize(readme_text).split())
+    assert "backend product alpha" in readme_norm
+    assert "partial" in readme_norm
+    quickstart_norm = " ".join(_normalize(_read(LKW_QUICKSTART_PATH)).split())
+    assert "commercial validation" in quickstart_norm

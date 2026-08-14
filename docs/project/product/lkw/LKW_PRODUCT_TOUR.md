@@ -92,7 +92,7 @@ The result includes a source reference so you can see where the answer came from
 
 This tour represents:
 
-- the bounded production indexed Ask path through Hybrid Ask over documented indexed evidence;
+- the actual application/runtime indexed Ask path through Hybrid Ask over documented indexed evidence;
 - indexed knowledge;
 - managed sample upload;
 - grounded Ask;

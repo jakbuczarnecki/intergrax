@@ -60,18 +60,24 @@ screenshot; dynamic workspace and Ask-run IDs are omitted.
 ### What is boundedly proven today
 
 LKW is the **Primary Product Proof**, classified as **Backend Product Alpha /
-MVP**, with **PARTIAL** status. Bounded proof exists for indexed knowledge
-workflows. **Hybrid Ask** is the real application code path used by the
-proven indexed branch; the proven scope today is indexed knowledge only.
+MVP**, with **PARTIAL** status.
+
+**Primary executable product path:** [Product Quick Start](docs/project/product/lkw/QUICKSTART.md)
+exercises **indexed Ask V1** — not Hybrid Ask certification, Trusted Ask
+durability, or Core Platform Proof.
+
+**Separate bounded technical evidence:** indexed Hybrid Ask branch
+(`LKW-HYBRID-ASK-INDEXED`) validates indexed retrieval and boundary behavior.
 Hybrid Ask combining indexed and authorized live evidence is **not yet proven**.
 
-**Proof:** `LKW-HYBRID-ASK-INDEXED`
+**Separate live durability evidence:** [Trusted Ask](docs/project/proofs/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
+(`LKW-ASK-WORKSPACE-LIVE`) verifies completed grounded Ask outcomes across
+restart without resync/reindex.
 
 **Not yet proven:** complete live-provider access, finished end-user packaging,
-**real-user validation**, and **commercial validation**.
-
-See the detailed [LKW Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md)
-and the current [PROOFS dashboard](docs/project/proofs/PROOFS.md).
+**real-user validation**, and **commercial validation**. See
+[LKW Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) and
+[PROOFS](docs/project/proofs/PROOFS.md).
 
 ## Try LKW
 
@@ -99,8 +105,8 @@ applications\local_workspace_application\scripts\run-lkw-product-quickstart-wind
 
 **Expected answer marker:** `AURORA-17` · **Expected source file:** `lkw_product_quickstart.txt`
 
-First run may download Docker images and the configured local model; duration
-depends on your environment and is not externally validated as a fixed target.
+First run may download Docker images and configured models when Ollama is the
+selected provider; duration depends on your environment.
 
 <a id="try-lkw"></a>
 
@@ -112,13 +118,13 @@ depends on your environment and is not externally validated as a fixed target.
 | [Quick Start](docs/project/product/lkw/QUICKSTART.md) | Run the canonical product path |
 | [Core Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) | Verify bounded infrastructure/platform behavior |
 
-**Core Platform Proof** is separate from the Product Quick Start: a
-platform-level bounded proof covering startup, sentry, elasticsearch,
-persistence, background task, application hosting, and file watcher. It does
-**not** imply production readiness, commercial validation, or all-provider
-certification.
+**Core Platform Proof** is separate from Product Quick Start and Trusted Ask: a
+platform-level bounded proof covering startup/readiness, durable knowledge and
+execution, background processing, persisted reviewable evidence, hosting/recovery,
+and watched-folder indexing — not production readiness, commercial validation,
+or all-provider certification.
 
-**Proofs:** `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`, `LKW-ASK-WORKSPACE-LIVE`
+**Proof families:** Product evaluation (`LKW-PRODUCT-QUICKSTART-*`), Core platform (`LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`), Indexed Hybrid Ask (`LKW-HYBRID-ASK-INDEXED`), Trusted Ask (`LKW-ASK-WORKSPACE-LIVE`).
 
 ---
 

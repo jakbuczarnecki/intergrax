@@ -18,7 +18,17 @@ Start with the [root README](../../../README.md) for the product overview, then 
 
 No `lab_application` or `echo.basic` prerequisite is required.
 
-This document is the guided reviewer path for two proof categories:
+This document is the guided reviewer path for the proof families below:
+
+```text
+LKW Platform Proof
+├── Core Platform Proof
+├── Managed Workspace proof
+├── Trusted Ask / Qdrant durability proof
+└── optional OS-specific proofs
+```
+
+Within those families:
 
 ```text
 Core Platform Proof
@@ -78,6 +88,19 @@ This flow reflects workflows supported by the existing Core Platform Proof. Opti
 
 ## Core Platform Proof
 
+### What this demonstrates (outcome-first)
+
+| Capability demonstrated | Why an evaluator cares |
+| --- | --- |
+| Application starts and reports readiness | Confirms LKW runs as a real Intergrax application, not a mocked demo |
+| Controlled knowledge survives restart | Shows indexed local knowledge persists across non-destructive restart |
+| Background work executes through durable infrastructure | Validates real message-bus and worker processing for ingest jobs |
+| Execution evidence is persisted and reviewable | ProofReceipt records in MongoDB provide inspectable outcomes |
+| Hosted application ownership/restart behavior is controlled | Application Hosting proves readiness, single-instance ownership, graceful stop, and supervised restart |
+| Watched knowledge reaches the searchable index automatically | File watcher path indexes new files through Kafka/worker and survives restart |
+
+The numbered steps below are the concrete technical evidence for these outcomes.
+
 ```text
 1. LKW starts as a real Intergrax application.
 2. LKW emits policy-safe observability records into Elasticsearch/Kibana.
@@ -89,7 +112,10 @@ This flow reflects workflows supported by the existing Core Platform Proof. Opti
 8. A file created in a watched folder is automatically indexed through the real Kafka/worker path, remains searchable after a non-destructive restart and produces a verified ProofReceipt.
 ```
 
-**Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`, `LKW-ASK-WORKSPACE-LIVE`
+**Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`
+
+Trusted Ask / durable workspace Ask is a separate proof family:
+`LKW-ASK-WORKSPACE-LIVE` — see [Trusted Ask Workspace (MVP-2)](#trusted-ask-workspace-mvp-2).
 
 ## Optional operating-system interaction claims
 
@@ -384,7 +410,14 @@ lifecycles**.
 Product Quick Start intentionally leaves its canonical `intergrax_lkw` stack
 running on the host for inspection. Core Platform Proof starts an isolated
 `lkw-core-platform-proof` stack and requires exclusive access to its documented
-local host ports (including `8020`).
+local host ports (including `8020`). The Trusted Ask live proof uses
+`lkw-trusted-ask-workspace-proof` with the same port constraints.
+
+If port `8020` or another required LKW port is already owned by Product Quick
+Start, Core Platform Proof, Trusted Ask proof, or another process, the runner
+should report occupied-port ownership and a recommended action where available.
+Do not delete volumes or reset data by default — stop the conflicting documented
+stack non-destructively, then rerun the path you want.
 
 Before running the one-command Core Platform Proof below, stop the Product Quick
 Start stack with the supported non-destructive lifecycle command documented in
