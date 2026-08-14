@@ -11,6 +11,8 @@ from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy
 from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
 from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
+from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
+from intergrax.runtime.policy.rules.provenance import PolicyBundleProvenance
 from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
 from intergrax.runtime.policy.rules.schema import DeclarativePolicyRule
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
@@ -28,6 +30,8 @@ class DeclarativePolicyRuntime:
     registry: PolicyRuleRegistry
     rules: tuple[DeclarativePolicyRule, ...]
     load_report: DomainPluginLoadReport
+    provenance: PolicyBundleProvenance
+    enforcement_mode: PolicyEnforcementMode = PolicyEnforcementMode.AUDIT_ONLY
 
 
 @dataclass(frozen=True, slots=True)

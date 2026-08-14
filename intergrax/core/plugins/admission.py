@@ -19,6 +19,7 @@ class PluginAdmissionReasonCode(StrEnum):
     SHIPPED_ID_COLLISION = "shipped_id_collision"
     ALREADY_REGISTERED = "already_registered"
     PLUGIN_ID_SKIPPED = "plugin_id_skipped"
+    NOT_IN_ALLOWLIST = "not_in_allowlist"
 
 
 @dataclass(frozen=True, slots=True)

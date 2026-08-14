@@ -526,6 +526,7 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 |-------|-------|
 | **Purpose** | Evaluate declarative YAML rules at runtime; govern handler admission and provenance |
 | **Candidates** | CAND-007, CAND-008 |
+| **Status** | **DONE (ENTERPRISE-4)** |
 | **Prerequisites** | BLOCK A |
 | **Architecture** | §7 full flow |
 | **Production owners** | New `intergrax/runtime/policy/declarative_enforcer.py`, `registry.py`, `tool_policy_resolution.py` / `tool_gateway.py` |
@@ -535,15 +536,17 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | **Order** | **3** |
 
 **Acceptance gates:**
-- [ ] `DeclarativePolicyEnforcer` consumes `bundle.declarative_policy_runtime` — no fragment lookup or casts
-- [ ] `evaluate_rule` invoked on tool invocation path for matching rules from typed runtime
-- [ ] Unknown `rule_id` → **DENY** (fail-closed) with audit evidence
-- [ ] Handler allowlist enforced at registration (CAND-008)
-- [ ] `PolicyBundleProvenance` DTO on typed runtime (path hash + handler EP metadata)
-- [ ] Signing **not required** for block completion; provenance-only acceptable
-- [ ] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` — no new `Dict[str, Any]` / string-key runtime wiring
-- [ ] E2E: YAML deny rule blocks tool call in wired host via typed composition path
-- [ ] Migration: `policy_enforcement_mode=audit_only|enforce` profile flag
+- [x] `DeclarativePolicyEnforcer` consumes `bundle.declarative_policy_runtime` — no fragment lookup or casts
+- [x] `evaluate_rule` invoked on tool invocation path for matching rules from typed runtime
+- [x] Unknown `rule_id` → **DENY** (fail-closed) with audit evidence
+- [x] Handler allowlist enforced at registration (CAND-008)
+- [x] `PolicyBundleProvenance` DTO on typed runtime (path hash + handler EP metadata)
+- [x] Signing **not required** for block completion; provenance-only acceptable
+- [x] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` — no new `Dict[str, Any]` / string-key runtime wiring
+- [x] E2E: YAML deny rule blocks tool call in wired host via typed composition path
+- [x] Migration: `policy_enforcement_mode=audit_only|enforce` profile flag (default `audit_only`)
+
+**Qualification:** `QUALIFICATION_STILL_DEFERRED` — package version/compatibility inputs exist elsewhere but production qualification is not enforced at policy handler admission in this block.
 
 ---
 

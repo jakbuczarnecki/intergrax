@@ -15,6 +15,7 @@ from intergrax.runtime.policy.rules.plugin_loader import (
     load_policy_rule_plugins,
 )
 from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
+from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 
 pytestmark = pytest.mark.unit
@@ -40,14 +41,24 @@ class _EntryPoints:
 class _AlphaHandler:
     rule_id = "alpha-rule"
 
-    def evaluate(self, rule: object, *, context: dict[str, str]) -> object:
+    def evaluate(
+        self,
+        rule: object,
+        *,
+        context: PolicyEvaluationContext,
+    ) -> object:
         return PolicyRuleAction.ALLOW
 
 
 class _BetaHandler:
     rule_id = "beta-rule"
 
-    def evaluate(self, rule: object, *, context: dict[str, str]) -> object:
+    def evaluate(
+        self,
+        rule: object,
+        *,
+        context: PolicyEvaluationContext,
+    ) -> object:
         return PolicyRuleAction.ALLOW
 
 
@@ -73,7 +84,7 @@ def _ep(name: str, attr: str) -> _EntryPoint:
 def test_valid_handler_registers(monkeypatch: pytest.MonkeyPatch) -> None:
     _install_eps(monkeypatch, [_ep("alpha", "_AlphaHandler")])
     registry = PolicyRuleRegistry()
-    report = load_policy_rule_plugin_report(registry)
+    report = load_policy_rule_plugin_report(registry).report
     assert report.registered_count == 1
     assert [item.name for item in report.accepted] == ["alpha"]
     assert "alpha-rule" in registry._handlers
@@ -90,10 +101,11 @@ def test_broken_and_valid_handler_isolate(monkeypatch: pytest.MonkeyPatch) -> No
         ],
     )
     registry = PolicyRuleRegistry()
-    report = load_policy_rule_plugin_report(
+    outcome = load_policy_rule_plugin_report(
         registry,
         policy=PolicyRuleLoadPolicy(on_load_failure="isolate"),
     )
+    report = outcome.report
     assert [item.name for item in report.accepted] == ["alpha", "beta"]
     assert [item.spec.name for item in report.failed] == ["broken"]
     assert "alpha-rule" in registry._handlers
@@ -123,7 +135,7 @@ def test_invalid_handler_target_structured_result(monkeypatch: pytest.MonkeyPatc
         ],
     )
     registry = PolicyRuleRegistry()
-    report = load_policy_rule_plugin_report(registry)
+    report = load_policy_rule_plugin_report(registry).report
     assert report.registered_count == 1
     assert report.rejected[0].reason_code is PluginAdmissionReasonCode.INVALID_TARGET_TYPE
     assert report.rejected[0].spec.name == "nope"

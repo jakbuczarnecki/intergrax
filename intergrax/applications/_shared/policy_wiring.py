@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
-from typing import Any
 
 from intergrax.applications._shared.cost_wiring import wire_application_cost
 from intergrax.applications._shared.critic_wiring import wire_application_critic
@@ -25,10 +25,18 @@ from intergrax.runtime.policy.policy_bundle import (
     DeclarativePolicyRuntime,
     RuntimePolicyBundle,
 )
+from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
 from intergrax.runtime.policy.rules.loader import load_policy_rules_from_path
 from intergrax.runtime.policy.rules.plugin_loader import (
     PolicyRuleLoadPolicy,
     load_policy_rule_plugin_report,
+)
+from intergrax.runtime.policy.rules.provenance import (
+    PolicyBundleProvenance,
+    PolicyHandlerProvenance,
+    PolicyRulesSourceKind,
+    digest_inline_rules,
+    digest_policy_rules_file,
 )
 from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
 from intergrax.runtime.policy.rules.schema import DeclarativePolicyRule
@@ -39,7 +47,7 @@ _STANDARD_POLICY_LOAD_POLICY = PolicyRuleLoadPolicy(on_load_failure="isolate")
 def build_runtime_policy_bundle(
     *,
     require_human_on_critical: bool = True,
-    domain_fragments: dict[str, Any] | None = None,
+    domain_fragments: dict[str, object] | None = None,
     execution_mode: ExecutionMode | None = None,
     policy_rules: PolicyRulesProfile | None = None,
     discover_entry_points: bool | None = None,
@@ -96,23 +104,37 @@ def _build_declarative_policy_runtime(
     if policy_rules is None:
         return None
     rules = _resolve_policy_rules(policy_rules)
+    enforcement_mode = _resolve_enforcement_mode(policy_rules)
+    allowlist = _resolve_handler_allowlist(policy_rules)
     registry = PolicyRuleRegistry()
     discover = (
         discover_plugins_enabled()
         if discover_entry_points is None
         else discover_entry_points
     )
+    load_policy = PolicyRuleLoadPolicy(
+        on_load_failure=_STANDARD_POLICY_LOAD_POLICY.on_load_failure,
+        allowed_handler_ids=allowlist,
+    )
     if discover:
-        load_report = load_policy_rule_plugin_report(
-            registry,
-            policy=_STANDARD_POLICY_LOAD_POLICY,
-        )
+        plugin_outcome = load_policy_rule_plugin_report(registry, policy=load_policy)
+        load_report = plugin_outcome.report
+        external_handler_provenance = plugin_outcome.handler_provenance
     else:
         load_report = DomainPluginLoadReport.empty(EP_POLICY_RULES)
+        external_handler_provenance = ()
+    provenance = _build_provenance(
+        policy_rules,
+        rules=rules,
+        load_report=load_report,
+        external_handler_provenance=external_handler_provenance,
+    )
     return DeclarativePolicyRuntime(
         registry=registry,
         rules=rules,
         load_report=load_report,
+        enforcement_mode=enforcement_mode,
+        provenance=provenance,
     )
 
 
@@ -123,3 +145,65 @@ def _resolve_policy_rules(profile: PolicyRulesProfile) -> tuple[DeclarativePolic
     for item in profile.inline_rules:
         rules.append(DeclarativePolicyRule.model_validate(item))
     return tuple(rules)
+
+
+def _resolve_enforcement_mode(profile: PolicyRulesProfile) -> PolicyEnforcementMode:
+    raw = profile.policy_enforcement_mode.strip().lower()
+    if raw == PolicyEnforcementMode.ENFORCE.value:
+        return PolicyEnforcementMode.ENFORCE
+    return PolicyEnforcementMode.AUDIT_ONLY
+
+
+def _resolve_handler_allowlist(
+    profile: PolicyRulesProfile,
+) -> frozenset[str] | None:
+    if not profile.allowed_handler_ids:
+        return None
+    return frozenset(profile.allowed_handler_ids)
+
+
+def _build_provenance(
+    profile: PolicyRulesProfile,
+    *,
+    rules: tuple[DeclarativePolicyRule, ...],
+    load_report: DomainPluginLoadReport,
+    external_handler_provenance: tuple[PolicyHandlerProvenance, ...],
+) -> PolicyBundleProvenance:
+    has_file = profile.rules_path is not None
+    has_inline = bool(profile.inline_rules)
+    if has_file and has_inline:
+        source_kind: PolicyRulesSourceKind = "mixed"
+    elif has_file:
+        source_kind = "file"
+    else:
+        source_kind = "inline"
+
+    rules_digest = _rules_digest(profile, rules)
+    rejected_handler_ids = tuple(
+        sorted(
+            item.plugin_id
+            for item in load_report.rejected
+            if item.plugin_id is not None
+        )
+    )
+    return PolicyBundleProvenance(
+        source_kind=source_kind,
+        rules_path=str(profile.rules_path) if profile.rules_path is not None else None,
+        rules_digest_sha256=rules_digest,
+        handler_provenance=external_handler_provenance,
+        rejected_handler_ids=rejected_handler_ids,
+    )
+
+
+def _rules_digest(
+    profile: PolicyRulesProfile,
+    rules: tuple[DeclarativePolicyRule, ...],
+) -> str:
+    if profile.rules_path is not None and not profile.inline_rules:
+        return digest_policy_rules_file(Path(profile.rules_path))
+    if profile.rules_path is not None and profile.inline_rules:
+        file_digest = digest_policy_rules_file(Path(profile.rules_path))
+        inline_digest = digest_inline_rules(rules)
+        combined = f"{file_digest}:{inline_digest}".encode("utf-8")
+        return hashlib.sha256(combined).hexdigest()
+    return digest_inline_rules(rules)

@@ -20,6 +20,7 @@ from intergrax.applications.contracts.environment_profile import (
 from intergrax.core.plugins.admission import PluginAdmissionReasonCode
 from intergrax.core.plugins.discovery import EP_POLICY_RULES, reset_entry_point_spec_cache_for_tests
 from intergrax.runtime.policy.policy_bundle import DeclarativePolicyRuntime, RuntimePolicyBundle
+from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 
 pytestmark = pytest.mark.unit
@@ -51,7 +52,12 @@ class _EntryPoints:
 class _AlphaHandler:
     rule_id = "alpha-rule"
 
-    def evaluate(self, rule: object, *, context: dict[str, str]) -> object:
+    def evaluate(
+        self,
+        rule: object,
+        *,
+        context: PolicyEvaluationContext,
+    ) -> object:
         return PolicyRuleAction.ALLOW
 
 
@@ -218,6 +224,20 @@ def test_wire_policy_bundle_standard_host_contract_with_discovery(
     assert runtime is not None
     assert "alpha-rule" in runtime.registry._handlers
     assert runtime.load_report.registered_count == 1
+
+
+def test_configured_policy_rules_include_mode_and_provenance() -> None:
+    bundle = build_runtime_policy_bundle(
+        policy_rules=PolicyRulesProfile(
+            inline_rules=[_INLINE_RULE],
+            policy_enforcement_mode="enforce",
+        ),
+        discover_entry_points=False,
+    )
+    runtime = bundle.declarative_policy_runtime
+    assert runtime is not None
+    assert runtime.enforcement_mode.value == "enforce"
+    assert runtime.provenance.rules_digest_sha256
 
 
 def test_no_evaluate_rule_in_policy_wiring_module() -> None:

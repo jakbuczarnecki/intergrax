@@ -51,6 +51,8 @@ class PolicyRulesProfile(BaseModel):
 
     rules_path: Path | None = None
     inline_rules: list[dict[str, Any]] = Field(default_factory=list)
+    policy_enforcement_mode: str = "audit_only"
+    allowed_handler_ids: list[str] = Field(default_factory=list)
 
 
 class ApplicationSecurityProfile(BaseModel):
