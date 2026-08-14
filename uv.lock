@@ -1672,6 +1672,12 @@ dev-ci = [
     { name = "pytest-xdist", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "redis", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+dev-ci-rag = [
+    { name = "langchain-core", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-api", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "qdrant-client", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 harness-author = [
     { name = "fastapi", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "python-dotenv", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1881,6 +1887,7 @@ requires-dist = [
     { name = "langchain-community", marker = "extra == 'parsing-office'", specifier = ">=0.3,<0.5" },
     { name = "langchain-community", marker = "extra == 'parsing-pdf'", specifier = ">=0.3,<0.5" },
     { name = "langchain-community", marker = "extra == 'rag-langchain-loaders'", specifier = ">=0.3,<0.5" },
+    { name = "langchain-core", marker = "extra == 'dev-ci-rag'", specifier = ">=0.3,<2.0" },
     { name = "langchain-core", marker = "extra == 'llm-langchain-ollama'", specifier = ">=0.3,<2.0" },
     { name = "langchain-ollama", marker = "extra == 'llm-langchain-ollama'", specifier = ">=0.2,<2.0" },
     { name = "langchain-ollama", marker = "extra == 'rag-langchain-embeddings'", specifier = ">=0.2,<2.0" },
@@ -1902,6 +1909,8 @@ requires-dist = [
     { name = "openai-whisper", marker = "extra == 'media-whisper'", specifier = ">=20240930,<20250626" },
     { name = "opencv-python-headless", marker = "extra == 'media-video'", specifier = "==4.9.0.80" },
     { name = "openpyxl", marker = "extra == 'parsing-office'", specifier = ">=3.1,<4" },
+    { name = "opentelemetry-api", marker = "extra == 'dev-ci-rag'", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-sdk", marker = "extra == 'dev-ci-rag'", specifier = ">=1.27,<2" },
     { name = "pandas", marker = "extra == 'parsing-office'", specifier = ">=2.1.4,<3" },
     { name = "pgvector", marker = "extra == 'integrations-pgvector'", specifier = ">=0.3" },
     { name = "pika", marker = "extra == 'dev'", specifier = ">=1.3.2" },
@@ -1932,6 +1941,7 @@ requires-dist = [
     { name = "python-multipart", specifier = ">=0.0.9,<1" },
     { name = "pyyaml", specifier = ">=6.0,<7" },
     { name = "pyyaml", marker = "extra == 'harness-author'", specifier = ">=6.0,<7" },
+    { name = "qdrant-client", marker = "extra == 'dev-ci-rag'", specifier = ">=1.9,<2" },
     { name = "qdrant-client", marker = "extra == 'vector-qdrant'", specifier = ">=1.9,<2" },
     { name = "redis", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "redis", marker = "extra == 'dev-ci'", specifier = ">=5.0" },
@@ -1968,7 +1978,7 @@ requires-dist = [
     { name = "xlrd", marker = "extra == 'parsing-office'", specifier = ">=2.0,<3" },
     { name = "yt-dlp", marker = "extra == 'media-youtube'", specifier = ">=2024.0,<2027" },
 ]
-provides-extras = ["integrations-neo4j", "vector-chroma", "vector-qdrant", "vector-pinecone", "parsing-web", "parsing-office", "parsing-pdf", "parsing-ocr", "media-youtube", "media-video", "media-image", "media-ocr", "media-whisper", "ui-streamlit", "mcp", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-pgvector", "integrations-harness", "integrations-guardrails", "integrations-slack"]
+provides-extras = ["integrations-neo4j", "vector-chroma", "vector-qdrant", "vector-pinecone", "parsing-web", "parsing-office", "parsing-pdf", "parsing-ocr", "media-youtube", "media-video", "media-image", "media-ocr", "media-whisper", "ui-streamlit", "mcp", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "dev-ci-rag", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-pgvector", "integrations-harness", "integrations-guardrails", "integrations-slack"]
 
 [package.metadata.requires-dev]
 quality = [

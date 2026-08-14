@@ -138,6 +138,9 @@ class _RecordingVectorStore:
             metadata_filter=metadata_filter,
         )
 
+    def supports_native_hybrid_search(self) -> bool:
+        return False
+
 
 class _HybridRecordingVectorStore(_RecordingVectorStore):
     def supports_native_hybrid_search(self) -> bool:

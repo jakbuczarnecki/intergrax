@@ -132,28 +132,22 @@ def _build_adapter(provider: LLMProvider) -> LLMAdapter:
         kwargs = {"client": _openai_chat_mock(), "deployment": "gpt-test"}
 
     if provider == LLMProvider.OLLAMA:
-        from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+        from intergrax.llm_adapters.providers.native_ollama_adapter import NativeOllamaAdapter
         from intergrax.llm_adapters.providers.ollama_capabilities import (
             OllamaModelCapabilityResolver,
         )
 
-        chat = MagicMock()
-        chat.model = "llama3.1:latest"
-        chat.invoke.return_value = MagicMock(content="ok")
-        bound_chat = MagicMock()
-        bound_chat.invoke.return_value = MagicMock(
-            content="ok",
-            tool_calls=[],
-            invalid_tool_calls=[],
+        client = MagicMock()
+        client.chat.return_value = SimpleNamespace(
+            message=SimpleNamespace(content="ok", tool_calls=[]),
         )
-        chat.bind_tools.return_value = bound_chat
         capability_resolver = OllamaModelCapabilityResolver(
             show_model=lambda _model: SimpleNamespace(
                 capabilities=["tools", "completion"],
             )
         )
-        return LangChainOllamaAdapter(
-            chat=chat,
+        return NativeOllamaAdapter(
+            client=client,
             model="llama3.1:latest",
             capability_resolver=capability_resolver,
         )

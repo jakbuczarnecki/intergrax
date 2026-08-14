@@ -237,6 +237,20 @@ class _RecordingVectorstore:
         self.added_tenants.extend(record.document.scope.tenant_id for record in records)
         return [record.vector_id for record in records]
 
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: object,
+        root_document_id: str | None = None,
+    ) -> tuple[str, ...]:
+        del source_id, scope, root_document_id
+        return ()
+
+    def count(self, *, scope: object) -> int:
+        del scope
+        return 0
+
 
 class _FakeLoader:
     def load_document(

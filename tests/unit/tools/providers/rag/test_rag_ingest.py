@@ -42,6 +42,20 @@ class FakeVectorstoreManager:
         self.added = [record.vector_id for record in records]
         return self.added
 
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: object,
+        root_document_id: str | None = None,
+    ) -> tuple[str, ...]:
+        del source_id, scope, root_document_id
+        return ()
+
+    def count(self, *, scope: object) -> int:
+        del scope
+        return 0
+
 
 class FakeDocumentsLoader:
     def load_document(

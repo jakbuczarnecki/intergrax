@@ -29,7 +29,7 @@ jobs:
           enable-cache: true
           python-version: "3.12"
 
-      - run: uv sync --extra dev-ci --frozen
+      - run: uv sync --extra dev-ci --extra dev-ci-rag --frozen
 
       - name: Environment conformance (CI profile)
         run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
