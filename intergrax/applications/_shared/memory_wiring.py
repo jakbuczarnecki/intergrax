@@ -148,9 +148,10 @@ def _apply_external_memory_store_overlay(
     if user_plugin_id is None and session_plugin_id is None:
         return wiring
 
-    if not discover_entry_points:
+    if not discover_entry_points and not explicit_memory_plugins:
         raise MemoryStorePluginResolutionError(
-            "External memory store plugin selection requires plugin discovery to be enabled"
+            "External memory store plugin selection requires entry-point discovery "
+            "or explicit_memory_plugins candidates"
         )
 
     materialization_ctx = MemoryStoreMaterializationContext(
@@ -163,7 +164,7 @@ def _apply_external_memory_store_overlay(
         user_profile_store = materialize_user_profile_store(
             user_plugin_id,
             materialization_ctx,
-            discover_entry_points=True,
+            discover_entry_points=discover_entry_points,
             explicit_plugins=explicit_memory_plugins,
         )
         updated = replace(updated, user_profile_store=user_profile_store)
@@ -171,7 +172,7 @@ def _apply_external_memory_store_overlay(
         session_storage = materialize_session_storage(
             session_plugin_id,
             materialization_ctx,
-            discover_entry_points=True,
+            discover_entry_points=discover_entry_points,
             explicit_plugins=explicit_memory_plugins,
         )
         updated = replace(updated, session_storage=session_storage)

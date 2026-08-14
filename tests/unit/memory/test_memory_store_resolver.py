@@ -227,15 +227,84 @@ def test_resolve_memory_platform_wiring_wrong_kind_fails() -> None:
         )
 
 
-def test_resolve_memory_platform_wiring_discovery_disabled_fails() -> None:
-    env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.wiring.no_discover")
+def test_resolve_memory_platform_wiring_explicit_user_profile_only() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.wiring.explicit.user")
+    env.integration_profile = IntegrationProfile()
+    env.memory_profile = MemoryProfile(
+        user_profile_store_plugin_id="external.in_memory_user_profile",
+    )
+    wiring = resolve_memory_platform_wiring(
+        env,
+        discover_entry_points=False,
+        explicit_memory_plugins=(ExternalInMemoryUserProfileStorePlugin,),
+    )
+    assert isinstance(wiring.user_profile_store, FixtureExternalUserProfileStore)
+    assert isinstance(wiring.session_storage, InMemorySessionStorage)
+
+
+def test_resolve_memory_platform_wiring_explicit_session_storage_only() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.wiring.explicit.session")
+    env.integration_profile = IntegrationProfile()
+    env.memory_profile = MemoryProfile(
+        session_storage_plugin_id="external.in_memory_session_storage",
+    )
+    wiring = resolve_memory_platform_wiring(
+        env,
+        discover_entry_points=False,
+        explicit_memory_plugins=(ExternalInMemorySessionStoragePlugin,),
+    )
+    assert isinstance(wiring.session_storage, FixtureExternalSessionStorage)
+    assert isinstance(wiring.user_profile_store, InMemoryUserProfileStore)
+
+
+def test_resolve_memory_platform_wiring_explicit_both() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.wiring.explicit.both")
+    env.integration_profile = IntegrationProfile()
+    env.memory_profile = MemoryProfile(
+        user_profile_store_plugin_id="external.in_memory_user_profile",
+        session_storage_plugin_id="external.in_memory_session_storage",
+    )
+    wiring = resolve_memory_platform_wiring(
+        env,
+        discover_entry_points=False,
+        explicit_memory_plugins=(
+            ExternalInMemoryUserProfileStorePlugin,
+            ExternalInMemorySessionStoragePlugin,
+        ),
+    )
+    assert isinstance(wiring.user_profile_store, FixtureExternalUserProfileStore)
+    assert isinstance(wiring.session_storage, FixtureExternalSessionStorage)
+
+
+def test_resolve_memory_platform_wiring_explicit_no_candidates_fails() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.wiring.explicit.no_candidates")
     env.integration_profile = IntegrationProfile()
     env.memory_profile = MemoryProfile(user_profile_store_plugin_id="external.in_memory_user_profile")
-    with pytest.raises(MemoryStorePluginResolutionError, match="discovery"):
+    with pytest.raises(MemoryStorePluginResolutionError, match="explicit_memory_plugins"):
+        resolve_memory_platform_wiring(env, discover_entry_points=False)
+
+
+def test_resolve_memory_platform_wiring_explicit_unknown_id_fails() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.wiring.explicit.unknown")
+    env.integration_profile = IntegrationProfile()
+    env.memory_profile = MemoryProfile(user_profile_store_plugin_id="missing.plugin")
+    with pytest.raises(MemoryStorePluginResolutionError, match="not available"):
         resolve_memory_platform_wiring(
             env,
             discover_entry_points=False,
             explicit_memory_plugins=(ExternalInMemoryUserProfileStorePlugin,),
+        )
+
+
+def test_resolve_memory_platform_wiring_explicit_duplicate_id_fails() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.wiring.explicit.duplicate")
+    env.integration_profile = IntegrationProfile()
+    env.memory_profile = MemoryProfile(user_profile_store_plugin_id="test.duplicate_id")
+    with pytest.raises(MemoryStorePluginResolutionError, match="Duplicate memory store plugin_id"):
+        resolve_memory_platform_wiring(
+            env,
+            discover_entry_points=False,
+            explicit_memory_plugins=(_DuplicateIdUserProfilePluginA, _DuplicateIdUserProfilePluginB),
         )
 
 
