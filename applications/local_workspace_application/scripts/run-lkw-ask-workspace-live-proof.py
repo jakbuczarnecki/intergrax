@@ -39,6 +39,10 @@ from lkw_host_port_preflight import (
     resolve_compose_published_host_ports,
 )
 from lkw_ollama_embedding_bootstrap import EMBEDDING_PROFILE_RESOLUTION_CODE
+from lkw_runtime_context_materialization import (
+    RuntimeContextMaterializationError,
+    materialize_local_workspace_runtime_context,
+)
 
 LLM_PROFILE_RESOLUTION_CODE = (
     "from intergrax.llm_adapters.contracts.llm_provider import LLMProvider; "
@@ -49,6 +53,8 @@ LLM_PROFILE_RESOLUTION_CODE = (
     "print(profile.model or '')"
 )
 _DOCKER_DIR = _APP_DIR / "docker"
+_RUNTIME_CONTEXT_DIR = _DOCKER_DIR / "runtime-context"
+_APPLICATION_IMAGE_BUILDER = _REPO_ROOT / "scripts" / "build" / "build_application_image.py"
 _BASE_COMPOSE = _DOCKER_DIR / "docker-compose.yml"
 _MONGODB_COMPOSE = _DOCKER_DIR / "docker-compose.mongodb.yml"
 _TRUSTED_ASK_PROOF_COMPOSE = _DOCKER_DIR / "docker-compose.trusted-ask-proof.yml"
@@ -230,6 +236,19 @@ def _run_compose(
         detail = (completed.stderr or completed.stdout or "").strip()[-800:]
         raise RuntimeError(f"docker_compose_failed:{' '.join(args)}:{detail}")
     return completed
+
+
+def materialize_runtime_context() -> None:
+    try:
+        materialize_local_workspace_runtime_context(
+            repo_root=_REPO_ROOT,
+            application_image_builder=_APPLICATION_IMAGE_BUILDER,
+            runtime_context_dir=_RUNTIME_CONTEXT_DIR,
+            run_command=_run_command,
+        )
+    except RuntimeContextMaterializationError as exc:
+        raise ProofFailure("runtime_context_materialization", exc.reason) from exc
+    _print_kv("runtime_context_materialized", "true")
 
 
 def start_canonical_stack() -> None:
@@ -418,6 +437,8 @@ def main() -> int:
         if not args.skip_docker:
             failing_phase = "port_preflight"
             check_startup_host_port_preflight()
+            failing_phase = "runtime_context_materialization"
+            materialize_runtime_context()
             failing_phase = "compose_up"
             start_canonical_stack()
             failing_phase = "ollama_model"

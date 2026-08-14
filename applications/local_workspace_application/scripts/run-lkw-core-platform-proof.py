@@ -40,6 +40,10 @@ from lkw_ollama_embedding_bootstrap import (
     ensure_ollama_embedding_model as _ensure_ollama_embedding_model,
     resolve_ollama_embedding_model as _resolve_ollama_embedding_model,
 )
+from lkw_runtime_context_materialization import (
+    RuntimeContextMaterializationError,
+    materialize_local_workspace_runtime_context,
+)
 _DOCKER_DIR = _APP_DIR / "docker"
 _BASE_COMPOSE = _DOCKER_DIR / "docker-compose.yml"
 _ES_COMPOSE = _DOCKER_DIR / "docker-compose.elasticsearch.yml"
@@ -525,26 +529,15 @@ def compose_config(compose_files: Sequence[Path], *, cwd: Path) -> None:
 
 
 def materialize_runtime_context() -> None:
-    completed = run_command(
-        [
-            "uv",
-            "run",
-            "python",
-            str(_APPLICATION_IMAGE_BUILDER),
-            "--application",
-            "local_workspace_application",
-            "--context-dir",
-            str(_RUNTIME_CONTEXT_DIR),
-            "--materialize-only",
-        ],
-        cwd=_REPO_ROOT,
-        timeout=300,
-    )
-    if completed.returncode != 0:
-        raise CoreProofError(
-            "runtime_context_materialization_failed",
-            child_exit_code=completed.returncode,
+    try:
+        materialize_local_workspace_runtime_context(
+            repo_root=_REPO_ROOT,
+            application_image_builder=_APPLICATION_IMAGE_BUILDER,
+            runtime_context_dir=_RUNTIME_CONTEXT_DIR,
+            run_command=run_command,
         )
+    except RuntimeContextMaterializationError as exc:
+        raise CoreProofError(exc.reason) from exc
     _print_kv("runtime_context_materialized", "true")
 
 

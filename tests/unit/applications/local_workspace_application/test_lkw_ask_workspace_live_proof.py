@@ -134,6 +134,7 @@ def test_occupied_foreign_port_fails_before_compose_up(
         raise proof.ProofFailure("port_preflight", "required_port_unavailable:8020")
 
     monkeypatch.setattr(proof, "check_startup_host_port_preflight", fail_preflight)
+    monkeypatch.setattr(proof, "materialize_runtime_context", lambda: events.append("materialize"))
     monkeypatch.setattr(
         proof,
         "start_canonical_stack",
@@ -143,7 +144,142 @@ def test_occupied_foreign_port_fails_before_compose_up(
     with pytest.raises(proof.ProofFailure):
         proof.check_startup_host_port_preflight()
     assert events == ["preflight"]
+    assert "materialize" not in events
     assert "compose_up" not in events
+
+
+def test_startup_materializes_runtime_context_before_compose_up(
+    proof: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    monkeypatch.setattr(sys, "argv", [str(proof._SCRIPT_PATH)])
+    monkeypatch.setattr(
+        proof,
+        "check_startup_host_port_preflight",
+        lambda: events.append("preflight"),
+    )
+    monkeypatch.setattr(proof, "materialize_runtime_context", lambda: events.append("materialize"))
+    monkeypatch.setattr(proof, "start_canonical_stack", lambda: events.append("compose_up"))
+    monkeypatch.setattr(proof, "ensure_ollama_model", lambda: events.append("ollama_model"))
+    monkeypatch.setattr(proof, "wait_ready", lambda *_a, **_k: events.append("readiness"))
+    monkeypatch.setattr(
+        proof,
+        "verify_running_vector_store_is_qdrant",
+        lambda: (_ for _ in ()).throw(RuntimeError("stop_after_startup")),
+    )
+
+    exit_code = proof.main()
+    assert exit_code == 1
+    assert events[:4] == ["preflight", "materialize", "compose_up", "ollama_model"]
+
+
+def test_skip_docker_does_not_materialize_runtime_context(
+    proof: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    monkeypatch.setattr(sys, "argv", [str(proof._SCRIPT_PATH), "--skip-docker"])
+    monkeypatch.setattr(
+        proof,
+        "check_startup_host_port_preflight",
+        lambda: events.append("preflight"),
+    )
+    monkeypatch.setattr(proof, "materialize_runtime_context", lambda: events.append("materialize"))
+    monkeypatch.setattr(proof, "start_canonical_stack", lambda: events.append("compose_up"))
+    monkeypatch.setattr(proof, "ensure_ollama_model", lambda: events.append("ollama_model"))
+    monkeypatch.setattr(proof, "wait_ready", lambda *_a, **_k: events.append("readiness"))
+    monkeypatch.setattr(
+        proof,
+        "verify_running_vector_store_is_qdrant",
+        lambda: (_ for _ in ()).throw(RuntimeError("stop_after_startup")),
+    )
+
+    exit_code = proof.main()
+    assert exit_code == 1
+    assert "preflight" not in events
+    assert "materialize" not in events
+    assert "compose_up" not in events
+    assert "ollama_model" not in events
+    assert events == ["readiness"]
+
+
+def test_materialization_failure_stops_before_compose_up(
+    proof: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    monkeypatch.setattr(sys, "argv", [str(proof._SCRIPT_PATH)])
+    monkeypatch.setattr(
+        proof,
+        "check_startup_host_port_preflight",
+        lambda: events.append("preflight"),
+    )
+
+    def fail_materialize() -> None:
+        events.append("materialize")
+        raise proof.ProofFailure(
+            "runtime_context_materialization",
+            "runtime_context_materialization_failed",
+        )
+
+    monkeypatch.setattr(proof, "materialize_runtime_context", fail_materialize)
+    monkeypatch.setattr(proof, "start_canonical_stack", lambda: events.append("compose_up"))
+
+    exit_code = proof.main()
+    assert exit_code == 1
+    assert events == ["preflight", "materialize"]
+    assert "compose_up" not in events
+
+
+def test_materialization_uses_canonical_application_builder(
+    proof: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[list[str], dict[str, object]]] = []
+
+    def fake_run_command(
+        command: list[str] | tuple[str, ...],
+        **kwargs: object,
+    ) -> object:
+        calls.append((list(command), kwargs))
+        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(proof, "_run_command", fake_run_command)
+    proof.materialize_runtime_context()
+
+    assert calls == [
+        (
+            [
+                "uv",
+                "run",
+                "python",
+                str(proof._APPLICATION_IMAGE_BUILDER),
+                "--application",
+                "local_workspace_application",
+                "--context-dir",
+                str(proof._RUNTIME_CONTEXT_DIR),
+                "--materialize-only",
+            ],
+            {"cwd": proof._REPO_ROOT, "timeout": 300},
+        )
+    ]
+
+
+def test_materialization_failure_surfaces_runtime_context_phase(
+    proof: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(proof, "check_startup_host_port_preflight", lambda: None)
+
+    def fail_run_command(*_args: object, **_kwargs: object) -> object:
+        return type("CP", (), {"returncode": 1, "stdout": "", "stderr": "failed"})()
+
+    monkeypatch.setattr(proof, "_run_command", fail_run_command)
+    with pytest.raises(proof.ProofFailure) as exc:
+        proof.materialize_runtime_context()
+    assert exc.value.phase == "runtime_context_materialization"
+    assert exc.value.reason == "runtime_context_materialization_failed"
 
 
 def test_product_quickstart_port_collision_has_safe_reason(
