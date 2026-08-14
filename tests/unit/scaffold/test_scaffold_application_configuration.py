@@ -72,6 +72,12 @@ def _assert_configuration_contract(
     assert "### INTERGRAX_EMBEDDING_PROVIDER" not in doc
     assert "### INTERGRAX_EMBEDDING_MODEL" not in doc
     assert all(name in _env_example_prefixed_names(env_example, names.env_prefix) for name in expected)
+    assert "ApplicationSettingSpec" in doc
+    assert "intergrax/scaffold/application_setting_specs.py" in doc
+    assert "generated from the shared spec" in doc
+    assert "not generated from `ApplicationSettingSpec`" in doc
+    assert "Document the new variable in this file" not in doc
+    assert "Add the same variable to `.env.example`" not in doc
     assert f'env_prefix: ClassVar[str] = "{names.env_prefix}"' in settings_src
     assert f'route_prefix: str = "{names.route_prefix}"' in settings_src
     assert f"backend_port: int = {names.port}" in settings_src
@@ -174,3 +180,24 @@ def test_configuration_renderer_uses_caller_names_not_placeholders() -> None:
     assert "ALPHA_PROBE_ROUTE_PREFIX=/v1/alpha" in doc
     assert "poc_template" not in doc.lower()
     assert "### INTERGRAX_LLM_PROVIDER" not in doc
+
+
+def test_configuration_guidance_points_to_setting_specs_not_manual_duplication() -> None:
+    lab_names = ScaffoldApplicationNames.resolve("alpha_probe", route_prefix="/v1/alpha", port=8111)
+    product_names = ScaffoldApplicationNames.resolve(
+        "alpha_product", route_prefix="/v1/alpha_product", port=8002
+    )
+    lab_doc = render_application_configuration_doc(names=lab_names, profile="lab")
+    product_doc = render_application_configuration_doc(names=product_names, profile="product")
+    for doc, settings_class in (
+        (lab_doc, "AlphaProbeApplicationSettings"),
+        (product_doc, "AlphaProductBackendSettings"),
+    ):
+        assert "ApplicationSettingSpec" in doc
+        assert "intergrax/scaffold/application_setting_specs.py" in doc
+        assert "generated from the shared spec" in doc
+        assert "not generated from `ApplicationSettingSpec`" in doc
+        assert settings_class in doc
+        assert "Document the new variable in this file" not in doc
+        assert "Add the same variable to `.env.example`" not in doc
+        assert "Add a typed field on" not in doc

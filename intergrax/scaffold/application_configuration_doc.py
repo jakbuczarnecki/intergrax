@@ -119,11 +119,29 @@ def render_application_configuration_doc(
 
         ## Adding application-specific settings
 
-        1. Add a typed field on `{settings_class}` in `host/settings.py`.
-        2. Load it in `_load_app_env` from the environment. The variable name is
-           `{names.env_prefix}` plus a suffix (for example `{names.env_prefix}MY_SETTING`).
-        3. Document the new variable in this file (purpose, default, required, example).
-        4. Add the same variable to `.env.example`.
+        Scaffold-owned settings in this file and `.env.example` are generated
+        from `ApplicationSettingSpec` metadata
+        (`intergrax/scaffold/application_setting_specs.py`). Typed fields and
+        runtime loaders are emitted separately: keep `{settings_class}` in
+        `host/settings.py` (and `IntergraxApplicationSettingsBase` for shared
+        host keys) aligned with the spec. Do not treat the spec as a generator
+        for arbitrary later app-local code.
+
+        For a scaffold-owned setting:
+
+        1. Add or update the `ApplicationSettingSpec` metadata.
+        2. Ensure the typed settings class and runtime loader consume it
+           (`{settings_class}` / `_load_app_env`, or
+           `IntergraxApplicationSettingsBase` for shared host keys).
+        3. Re-run the application scaffold. `CONFIGURATION.md` and
+           `.env.example` are generated from the shared spec — do not
+           hand-copy the same setting into those generated files.
+        4. Add or update tests for the setting.
+
+        Custom settings added in this application after scaffolding are not generated from `ApplicationSettingSpec`.
+        Add a typed field and load it in `_load_app_env` on `{settings_class}`
+        (prefix `{names.env_prefix}`). Those app-local keys are outside the
+        scaffold catalog.
         """
     )
     return header + entries + footer
