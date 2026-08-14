@@ -24,6 +24,9 @@ from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapt
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaModelCapabilityResolver,
 )
+from intergrax.runtime.config.forbidden_generation_model_env import (
+    FORBIDDEN_GENERATION_MODEL_ENV_NAMES,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -132,7 +135,10 @@ def test_constructor_ignores_legacy_env_and_uses_code_default(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client = FakeNativeClient()
-    monkeypatch.setenv("INTERGRAX_DEFAULT_OLLAMA_MODEL", "legacy-model")
+    legacy_env = next(
+        name for name in FORBIDDEN_GENERATION_MODEL_ENV_NAMES if name.endswith("_OLLAMA_MODEL")
+    )
+    monkeypatch.setenv(legacy_env, "legacy-model")
 
     adapter = NativeOllamaAdapter(
         client=client,

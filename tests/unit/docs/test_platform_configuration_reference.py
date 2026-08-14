@@ -9,6 +9,10 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.runtime.config.forbidden_generation_model_env import (
+    DOC_REFERENCE_FORBIDDEN_GENERATION_MODEL_ENV_NAMES,
+)
+
 pytestmark = pytest.mark.unit
 
 REPO = Path(__file__).resolve().parents[3]
@@ -16,12 +20,7 @@ DOC = REPO / "docs" / "project" / "technical" / "guides" / "PLATFORM_CONFIGURATI
 MAP = REPO / "docs" / "project" / "technical" / "DOCUMENTATION_MAP.md"
 GUIDES_INDEX = REPO / "docs" / "project" / "technical" / "guides" / "README.md"
 
-_REMOVED_GENERATION_SELECTION = (
-    "INTERGRAX_DEFAULT_OLLAMA_MODEL",
-    "INTERGRAX_DEFAULT_VLLM_MODEL",
-    "INTERGRAX_DEFAULT_OPENAI_MODEL",
-    "INTERGRAX_DEFAULT_BEDROCK_MODEL_ID",
-)
+_REMOVED_GENERATION_SELECTION = DOC_REFERENCE_FORBIDDEN_GENERATION_MODEL_ENV_NAMES
 
 _REMOVED_EMBEDDING_SELECTION = (
     "INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL",

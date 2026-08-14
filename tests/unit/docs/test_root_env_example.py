@@ -10,6 +10,9 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.runtime.config.forbidden_generation_model_env import (
+    BOOTSTRAP_FORBIDDEN_GENERATION_MODEL_ENV_NAMES,
+)
 from intergrax.runtime.notifications.factory import NotificationBackend
 
 pytestmark = pytest.mark.unit
@@ -75,7 +78,8 @@ def test_canonical_llm_and_embedding_pairs_are_present() -> None:
     assert "INTERGRAX_EMBEDDING_PROVIDER=ollama" in text
     assert "INTERGRAX_EMBEDDING_MODEL=nomic-embed-text" in text
     assignments = dict(_active_assignments(text))
-    assert "INTERGRAX_DEFAULT_OLLAMA_MODEL" not in assignments
+    for key in BOOTSTRAP_FORBIDDEN_GENERATION_MODEL_ENV_NAMES:
+        assert key not in assignments
 
 
 def test_removed_embedding_and_app_and_proof_keys_are_absent() -> None:

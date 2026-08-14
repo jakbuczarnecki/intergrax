@@ -9,6 +9,10 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.runtime.config.forbidden_generation_model_env import (
+    FORBIDDEN_GENERATION_MODEL_ENV_NAMES,
+)
+
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -977,7 +981,8 @@ _LKW_PLATFORM_PROOF_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "LKW_PLAT
 
 def test_quickstart_canonical_model_configuration_contract() -> None:
     text = _read(LKW_QUICKSTART_PATH)
-    assert "INTERGRAX_DEFAULT_OLLAMA_MODEL" not in text
+    for key in FORBIDDEN_GENERATION_MODEL_ENV_NAMES:
+        assert key not in text
     for var in (
         "INTERGRAX_LLM_PROVIDER",
         "INTERGRAX_LLM_MODEL",

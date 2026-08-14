@@ -10,6 +10,9 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from intergrax.runtime.config.forbidden_generation_model_env import (
+    FORBIDDEN_GENERATION_MODEL_ENV_NAMES,
+)
 from intergrax.llm_adapters.registry.catalog_capabilities import unwrap_catalog_capability_adapter
 from intergrax.llm_adapters.providers.openai_compat_providers import GroqChatAdapter
 
@@ -102,12 +105,15 @@ def test_llm_profile_lab_default() -> None:
 
 
 def test_llm_profile_propagates_canonical_model_and_ignores_legacy_env() -> None:
+    legacy_env = next(
+        name for name in FORBIDDEN_GENERATION_MODEL_ENV_NAMES if name.endswith("_GROQ_MODEL")
+    )
     with patch.dict(
         "os.environ",
         {
             "INTERGRAX_LLM_PROVIDER": "groq",
             "INTERGRAX_LLM_MODEL": "canonical-model",
-            "INTERGRAX_DEFAULT_GROQ_MODEL": "legacy-model",
+            legacy_env: "legacy-model",
             "GROQ_API_KEY": "k",
         },
         clear=False,

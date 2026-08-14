@@ -10,6 +10,9 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.runtime.config.forbidden_generation_model_env import (
+    FORBIDDEN_GENERATION_MODEL_ENV_NAMES,
+)
 from local_workspace_application.model_runtime_proof.aggregation import (
     index_invariance_passes,
     provider_qualification_passes,
@@ -98,7 +101,8 @@ def test_materialize_provider_env_sets_canonical_names() -> None:
     ollama_env = materialize_provider_env(provider="ollama", config=config, target={})
     assert ollama_env["INTERGRAX_LLM_PROVIDER"] == "ollama"
     assert ollama_env["INTERGRAX_LLM_MODEL"] == "llama3.1:latest"
-    assert "INTERGRAX_DEFAULT_OLLAMA_MODEL" not in ollama_env
+    for key in FORBIDDEN_GENERATION_MODEL_ENV_NAMES:
+        assert key not in ollama_env
     vllm_env = materialize_provider_env(
         provider="vllm",
         config=config,
@@ -106,7 +110,8 @@ def test_materialize_provider_env_sets_canonical_names() -> None:
     )
     assert vllm_env["INTERGRAX_LLM_PROVIDER"] == "vllm"
     assert vllm_env["INTERGRAX_LLM_MODEL"] == "Qwen/Qwen2.5-7B-Instruct"
-    assert "INTERGRAX_DEFAULT_VLLM_MODEL" not in vllm_env
+    for key in FORBIDDEN_GENERATION_MODEL_ENV_NAMES:
+        assert key not in vllm_env
     assert "OLLAMA_HOST" not in vllm_env
 
 

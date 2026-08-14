@@ -9,6 +9,10 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.runtime.config.forbidden_generation_model_env import (
+    BOOTSTRAP_FORBIDDEN_GENERATION_MODEL_ENV_NAMES,
+)
+
 pytestmark = pytest.mark.unit
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -35,12 +39,6 @@ _LEGACY_EMBEDDING_KEYS = (
     "INTERGRAX_DEFAULT_OPENAI_EMBED_MODEL",
     "INTERGRAX_DEFAULT_HF_EMBED_MODEL",
     "INTERGRAX_RAG_EMBEDDING_PROVIDER",
-)
-
-_REDUNDANT_GENERATION_DEFAULTS = (
-    "INTERGRAX_DEFAULT_OLLAMA_MODEL",
-    "INTERGRAX_DEFAULT_VLLM_MODEL",
-    "INTERGRAX_DEFAULT_LLAMA_CPP_MODEL",
 )
 
 
@@ -79,7 +77,7 @@ def test_active_env_example_uses_canonical_model_pairs(app: str) -> None:
 
     if "INTERGRAX_LLM_MODEL" in active:
         assert "INTERGRAX_LLM_PROVIDER" in active, f"{app}: missing INTERGRAX_LLM_PROVIDER"
-        for key in _REDUNDANT_GENERATION_DEFAULTS:
+        for key in BOOTSTRAP_FORBIDDEN_GENERATION_MODEL_ENV_NAMES:
             assert key not in named, f"{app}: redundant {key} with INTERGRAX_LLM_MODEL"
 
     if "INTERGRAX_EMBEDDING_MODEL" in active:
@@ -95,7 +93,7 @@ def test_active_compose_does_not_reintroduce_removed_model_keys(app: str) -> Non
         for key in _LEGACY_EMBEDDING_KEYS:
             assert key not in text, f"{path.as_posix()}: legacy embedding key {key}"
         if "INTERGRAX_LLM_MODEL" in named or "INTERGRAX_LLM_MODEL:" in text:
-            for key in _REDUNDANT_GENERATION_DEFAULTS:
+            for key in BOOTSTRAP_FORBIDDEN_GENERATION_MODEL_ENV_NAMES:
                 assert key not in text, f"{path.as_posix()}: redundant {key}"
 
 
@@ -105,8 +103,8 @@ def test_lkw_env_example_keeps_canonical_pairs() -> None:
     assert "INTERGRAX_LLM_MODEL=" in text
     assert "INTERGRAX_EMBEDDING_PROVIDER=ollama" in text
     assert "INTERGRAX_EMBEDDING_MODEL=nomic-embed-text" in text
-    assert "INTERGRAX_DEFAULT_OLLAMA_MODEL" not in text
-    assert "INTERGRAX_DEFAULT_VLLM_MODEL" not in text
+    for key in BOOTSTRAP_FORBIDDEN_GENERATION_MODEL_ENV_NAMES:
+        assert key not in text
     assert "PLATFORM_CONFIGURATION.md" in text
 
 
