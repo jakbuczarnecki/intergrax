@@ -61,17 +61,37 @@ Do **not** mirror harness ADR filenames (`ADR-AREA-NNN.md` under a date folder) 
 
 `IJ-YYYY-MM-DD-NNN` — `NNN` = max suffix for that date in INDEX + 1 (zero-padded).
 
+## Documentation ownership (location by owner / primary subject)
+
+Location is determined by **owner / primary subject**, not by whether a document is public, proof, product, technical, evaluator-facing, or linked from the root README.
+
+| Owner / subject | Canonical location |
+|-----------------|-------------------|
+| Concrete application | `applications/<app>/README.md` and `applications/<app>/docs/**` |
+| Concrete agent | `agents/<agent>/README.md` and `agents/<agent>/docs/**` |
+| Project / platform / cross-cutting | `docs/project/**` |
+
+There must be **no** canonical per-application or per-agent documentation trees under `docs/project/`. Project docs may **link** to application/agent documentation but must not duplicate it or become its canonical owner.
+
+This project implementation journal (`docs/project/maintainers/implementation-journal/`) remains the cross-cutting milestone log. Application-specific journals belong under `applications/<app>/docs/`; agent-specific journals belong under `agents/<agent>/docs/`.
+
+**Application-specific artifacts** (when applicable): ARCHITECTURE, IMPLEMENTATION_PLAN, CONFIGURATION, BUILD_AND_DEPLOY, product docs, proof/evidence, ADRs, journals, assets, application-specific audits.
+
+**Agent-specific artifacts:** ARCHITECTURE, IMPLEMENTATION_PLAN, ADRs, journals, proof/evidence, agent-specific assets/design docs.
+
+**Correct:** `applications/local_workspace_application/docs/product/QUICKSTART.md`; `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`; `agents/local_indexer/docs/ARCHITECTURE.md`
+
+**Incorrect (do not recreate):** `docs/project/product/lkw/QUICKSTART.md`; `docs/project/proofs/LKW_PLATFORM_PROOF.md`; `docs/project/technical/agents/local_indexer/ARCHITECTURE.md`; `docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`
+
 ## Scope → traceability
 
 | Path prefix | `tiers` | Link |
 |-------------|---------|------|
 | `intergrax/` (not `runtime/`) | `tier-0` | `docs/project/architecture/<DOMAIN>.md` + `docs/project/maintainers/plans/<DOMAIN>.md` |
 | `intergrax/runtime/` | `tier-1` | Same domain pair |
-| `agents/<slug>/` | `tier-2` | `agents/<slug>/ARCHITECTURE.md`; `agents/<slug>/adr/` if ADR |
-| `applications/<pkg>/` | `tier-3` | `docs/project/technical/applications/<pkg>/ARCHITECTURE.md`; `docs/project/technical/applications/<pkg>/adr/` if ADR |
+| `agents/<agent>/` | `tier-2` | `agents/<agent>/docs/ARCHITECTURE.md`; `agents/<agent>/docs/adr/` if ADR |
+| `applications/<app>/` | `tier-3` | `applications/<app>/docs/ARCHITECTURE.md`; `applications/<app>/docs/adr/` if ADR |
 | `intergrax/applications/_shared/` | `tier-3` | Link shared module + consuming host(s) |
-
-**Tier-3 doc layout:** Application root contains `README.md` only. Human-facing application documentation belongs under `docs/project/technical/applications/<pkg>/`.
 
 ## Content rules
 
