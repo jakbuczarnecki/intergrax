@@ -38,7 +38,7 @@ This document consolidates ownership, lifecycle, invariants, and extensibility f
 Domain composition notes (not ADR substitutes):
 
 - [`docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md) — GEC-4…GEC-6 composition sections
-- [`docs/project/technical/agents/external_contractor_adapter/ARCHITECTURE.md`](../agents/external_contractor_adapter/ARCHITECTURE.md) — Tier-2 mapping consumer
+- [`agents/external_contractor_adapter/docs/ARCHITECTURE.md`](../../../../agents/external_contractor_adapter/docs/ARCHITECTURE.md) — Tier-2 mapping consumer
 - [`applications/governed_contractor_application/docs/ARCHITECTURE.md`](../applications/governed_contractor_application/docs/ARCHITECTURE.md) — Tier-3 host vertical
 
 ---

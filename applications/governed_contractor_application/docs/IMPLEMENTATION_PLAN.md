@@ -5,7 +5,7 @@
 **Status:** Working draft (2026-07-20) — **GEC-0…GEC-6 Done**; GEC-7…GEC-11 Planned  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
-**Agent tracker:** [`docs/project/technical/agents/external_contractor_adapter/IMPLEMENTATION_PLAN.md`](../../../docs/project/technical/agents/external_contractor_adapter/IMPLEMENTATION_PLAN.md)
+**Agent tracker:** [`agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md`](../../../agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md)
 **Partner handoff:** [`PARTNER_HANDOFF.md`](PARTNER_HANDOFF.md)
 
 Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is not an orchestrator** · **no unsupported maturity claims**
@@ -21,7 +21,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | Application architecture decisions | **`adr`** — [`adr/README.md`](adr/README.md) |
 | Deploy runbook | **BUILD_AND_DEPLOY.md** |
 | Partner quickstart | **PARTNER_HANDOFF.md** |
-| Adapter contracts / prohibited duties | `../../../docs/project/technical/agents/external_contractor_adapter` |
+| Adapter contracts / prohibited duties | `../../../agents/external_contractor_adapter/docs` |
 
 ---
 

@@ -63,10 +63,10 @@ See architecture §3–§4.
 
 | Agent | Plan file |
 |-------|-----------|
-| `dispute_intake` | [`docs/project/technical/agents/dispute_intake/IMPLEMENTATION_PLAN.md`](../../../docs/project/technical/agents/dispute_intake/IMPLEMENTATION_PLAN.md) |
-| `dispute_analyst` | [`docs/project/technical/agents/dispute_analyst/IMPLEMENTATION_PLAN.md`](../../../docs/project/technical/agents/dispute_analyst/IMPLEMENTATION_PLAN.md) |
-| `dispute_strategist` | [`docs/project/technical/agents/dispute_strategist/IMPLEMENTATION_PLAN.md`](../../../docs/project/technical/agents/dispute_strategist/IMPLEMENTATION_PLAN.md) |
-| `dispute_scenario` | [`docs/project/technical/agents/dispute_scenario/IMPLEMENTATION_PLAN.md`](../../../docs/project/technical/agents/dispute_scenario/IMPLEMENTATION_PLAN.md) |
+| `dispute_intake` | [`agents/dispute_intake/docs/IMPLEMENTATION_PLAN.md`](../../../agents/dispute_intake/docs/IMPLEMENTATION_PLAN.md) |
+| `dispute_analyst` | [`agents/dispute_analyst/docs/IMPLEMENTATION_PLAN.md`](../../../agents/dispute_analyst/docs/IMPLEMENTATION_PLAN.md) |
+| `dispute_strategist` | [`agents/dispute_strategist/docs/IMPLEMENTATION_PLAN.md`](../../../agents/dispute_strategist/docs/IMPLEMENTATION_PLAN.md) |
+| `dispute_scenario` | [`agents/dispute_scenario/docs/IMPLEMENTATION_PLAN.md`](../../../agents/dispute_scenario/docs/IMPLEMENTATION_PLAN.md) |
 
 ---
 

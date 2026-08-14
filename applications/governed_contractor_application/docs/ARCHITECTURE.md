@@ -7,7 +7,7 @@
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
 **Partner handoff (planned):** [`PARTNER_HANDOFF.md`](PARTNER_HANDOFF.md) · [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)  
-**Tier-2 adapter:** [`docs/project/technical/agents/external_contractor_adapter/ARCHITECTURE.md`](../../../docs/project/technical/agents/external_contractor_adapter/ARCHITECTURE.md)
+**Tier-2 adapter:** [`agents/external_contractor_adapter/docs/ARCHITECTURE.md`](../../../agents/external_contractor_adapter/docs/ARCHITECTURE.md)
 
 **Collaboration boundary:** Intergrax is **source-available** for evaluation and technical partner discovery. It is **not** open source. Production, commercial, and redistribution use require explicit permission — see repository [`../../../docs/project/community/COLLABORATION.md`](../../../docs/project/community/COLLABORATION.md) and [`LICENSE`](../../../LICENSE). This vertical is a **proof path**, not a production-readiness or certification claim.
 

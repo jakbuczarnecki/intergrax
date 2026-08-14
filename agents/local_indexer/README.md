@@ -2,7 +2,7 @@
 
 Indexes user-local files into the Intergrax RAG vector store.
 
-**Architecture:** [ARCHITECTURE.md](../../docs/project/technical/agents/local_indexer/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](../../docs/project/technical/agents/local_indexer/IMPLEMENTATION_PLAN.md)
+**Architecture:** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 **Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
 **Capability:** `local.workspace.index`
 

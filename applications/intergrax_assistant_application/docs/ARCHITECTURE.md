@@ -282,7 +282,7 @@ uv run pytest applications/intergrax_assistant_application/tests -q
 
 | Document | Role |
 |----------|------|
-| [`docs/project/technical/agents/intergrax_assistant/ARCHITECTURE.md`](../../../docs/project/technical/agents/intergrax_assistant/ARCHITECTURE.md) | Hub agent (Tier-2) |
+| [`agents/intergrax_assistant/docs/ARCHITECTURE.md`](../../../agents/intergrax_assistant/docs/ARCHITECTURE.md) | Hub agent (Tier-2) |
 | [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) §7.4.11 | Platform canon entry |
 | [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) Appendix F · I · G | Tier-3, orchestration, memory |
 | [`docs/project/architecture/LLM_ADAPTERS.md`](../../../docs/project/architecture/LLM_ADAPTERS.md) | Provider swap |

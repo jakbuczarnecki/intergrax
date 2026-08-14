@@ -2,7 +2,7 @@
 
 Produces reports, emails, and estimates from retrieved evidence — writes only to shadow workspace.
 
-**Architecture:** [ARCHITECTURE.md](../../docs/project/technical/agents/local_synthesizer/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](../../docs/project/technical/agents/local_synthesizer/IMPLEMENTATION_PLAN.md)
+**Architecture:** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 **Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
 **Capability:** `local.workspace.synthesize`
 

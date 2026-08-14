@@ -6,7 +6,7 @@ Argument analysis for **Dispute Simulation Workspace (DSW)** — strength/weakne
 
 ## Docs
 
-- [`ARCHITECTURE.md`](../../docs/project/technical/agents/dispute_analyst/ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/dispute_analyst/IMPLEMENTATION_PLAN.md) · [`adr/README.md`](../../docs/project/technical/agents/dispute_analyst/adr/README.md)
+- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · [`adr/README.md`](docs/adr/README.md)
 
 ## Quick start
 
@@ -39,4 +39,4 @@ See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 - ``schemas/`` — I/O models
 - ``tests/`` — agent smoke tests
 - ``notebooks/`` — interactive experiments
-- ``../../docs/project/technical/agents/dispute_analyst`` — architecture, plan, ADRs, journal
+- ``docs`` — architecture, plan, ADRs, journal

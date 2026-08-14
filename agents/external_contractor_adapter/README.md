@@ -2,7 +2,7 @@
 
 Typed **reflex** Tier-2 external-work adapter (GEC-3) — maps via injected ``ExternalWorkIntegration``.
 
-**Architecture:** [`../../docs/project/technical/agents/external_contractor_adapter/ARCHITECTURE.md`](../../docs/project/technical/agents/external_contractor_adapter/ARCHITECTURE.md) · **Plan:** [`../../docs/project/technical/agents/external_contractor_adapter/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/external_contractor_adapter/IMPLEMENTATION_PLAN.md) · **ADRs:** [`../../docs/project/technical/adr/README.md`](../../docs/project/technical/agents/external_contractor_adapter/adr/README.md)
+**Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/adr/README.md`](docs/adr/README.md)
 
 Full process: [`../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
 
@@ -48,4 +48,4 @@ See **Step 4** in ``../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md`
 - ``signals/`` — domain signal payloads
 - ``tests/`` — standalone agent smoke tests
 - ``notebooks/`` — interactive experiments
-- ``../../docs/project/technical/agents/external_contractor_adapter`` — architecture, plan, ADRs, journal
+- ``docs`` — architecture, plan, ADRs, journal

@@ -387,7 +387,7 @@ docs/project/architecture/
 docs/project/maintainers/plans/
 docs/project/capabilities/
 applications/<pkg>/docs/
-docs/project/technical/agents/
+agents/<agent>/docs/
 ```
 
 This layer serves developers, architects, reviewers, and implementation agents.

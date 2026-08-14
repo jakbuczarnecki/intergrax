@@ -95,6 +95,6 @@ def test_platform_doc_roots_exist_for_boundary_scope() -> None:
     assert "applications/*/docs/" in technical_map
     assert "docs/project/proofs/PROOFS.md" in public_architecture
     assert "applications/<pkg>/docs/" in public_architecture
-    assert "docs/project/technical/agents/" in public_architecture
+    assert "agents/<agent>/docs/" in public_architecture
 
     assert _provider_usage_files()

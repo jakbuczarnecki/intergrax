@@ -827,9 +827,9 @@ AgentContract (Tier-2)
 
 Agent architecture docs:
 
-- [`docs/project/technical/agents/local_indexer/ARCHITECTURE.md`](../../agents/local_indexer/ARCHITECTURE.md)
-- [`docs/project/technical/agents/local_search/ARCHITECTURE.md`](../../agents/local_search/ARCHITECTURE.md)
-- [`docs/project/technical/agents/local_synthesizer/ARCHITECTURE.md`](../../agents/local_synthesizer/ARCHITECTURE.md)
+- [`agents/local_indexer/docs/ARCHITECTURE.md`](../../../agents/local_indexer/docs/ARCHITECTURE.md)
+- [`agents/local_search/docs/ARCHITECTURE.md`](../../../agents/local_search/docs/ARCHITECTURE.md)
+- [`agents/local_synthesizer/docs/ARCHITECTURE.md`](../../../agents/local_synthesizer/docs/ARCHITECTURE.md)
 
 ---
 

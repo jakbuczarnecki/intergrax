@@ -4,9 +4,9 @@ UAEP-first scaffold. Full process: [`../../docs/project/technical/guides/AGENT_C
 
 ## Docs
 
-- [`ARCHITECTURE.md`](../../docs/project/technical/agents/intergrax_assistant/ARCHITECTURE.md) — purpose, contracts, runtime layout
-- [`IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/intergrax_assistant/IMPLEMENTATION_PLAN.md) — task queue and verification
-- [`adr/README.md`](../../docs/project/technical/agents/intergrax_assistant/adr/README.md) — architecture decision records
+- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) — purpose, contracts, runtime layout
+- [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — task queue and verification
+- [`adr/README.md`](docs/adr/README.md) — architecture decision records
 
 ## Quick start
 
@@ -39,4 +39,4 @@ See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 - ``schemas/`` — I/O models
 - ``tests/`` — agent smoke tests
 - ``notebooks/`` — interactive experiments
-- ``../../docs/project/technical/agents/intergrax_assistant`` — architecture, plan, ADRs, journal
+- ``docs`` — architecture, plan, ADRs, journal

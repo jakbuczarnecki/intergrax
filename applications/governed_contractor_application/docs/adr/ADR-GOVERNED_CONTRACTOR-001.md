@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-07-20 |
 | **Deciders** | Platform / GEC bootstrap |
-| **Related** | [`ARCHITECTURE.md`](../ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) · [`ADR-EXTERNAL_CONTRACTOR_ADAPTER-001`](../../../../docs/project/technical/agents/external_contractor_adapter/adr/ADR-EXTERNAL_CONTRACTOR_ADAPTER-001.md) |
+| **Related** | [`ARCHITECTURE.md`](../ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) · [`ADR-EXTERNAL_CONTRACTOR_ADAPTER-001`](../../../../agents/external_contractor_adapter/docs/adr/ADR-EXTERNAL_CONTRACTOR_ADAPTER-001.md) |
 
 ## Context
 

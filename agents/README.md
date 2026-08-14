@@ -127,12 +127,13 @@ Use **`lab_application`** (port `8090`) to experiment with any registered agent 
 
 Each agent folder ships:
 
-| File | Purpose |
+| Path | Purpose |
 |------|---------|
 | `README.md` | Quick start, capabilities, registration |
-| `ARCHITECTURE.md` | Purpose, layout, runtime contracts |
-| `IMPLEMENTATION_PLAN.md` | Local task queue |
-| `adr/` | Agent-level architecture decisions (when needed) |
+| `docs/ARCHITECTURE.md` | Purpose, layout, runtime contracts |
+| `docs/IMPLEMENTATION_PLAN.md` | Local task queue |
+| `docs/adr/` | Agent-level architecture decisions (when needed) |
+| `docs/journal/` | Implementation journal entries |
 
 ---
 
