@@ -16,6 +16,7 @@ Authoring guides, strategic context, and audit methodology.
 | [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) | 32 auditable layers, evidence, audit procedure |
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) | Scaffold → register → run → evaluate |
 | [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) | **Platform Plugin / extension development** — start here: surface decision tree, delivery model, 12-surface matrix → domain guides |
+| [PLATFORM_CONFIGURATION.md](PLATFORM_CONFIGURATION.md) | Canonical platform configuration reference (env, LLM, embeddings) |
 | [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) | Lab stack, OTLP, presets |
 | [HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) | Multi-layer / full-platform audit prompt |
 | [audit/](../../maintainers/audit) | **Architecture audit orchestration** — 22 per-domain prompts (Modes A/B/C/I) |

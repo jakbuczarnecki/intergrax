@@ -14,6 +14,7 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | You need… | Read |
 |-----------|------|
 | Project overview and quick start | [README.md](../../../README.md) |
+| **Platform configuration** (env, LLM, embeddings) | [PLATFORM_CONFIGURATION.md](guides/PLATFORM_CONFIGURATION.md) |
 | **Public documentation map** (reader routes, proof paths) | [PUBLIC_DOCUMENTATION_MAP.md](../community/PUBLIC_DOCUMENTATION_MAP.md) |
 | **Public documentation architecture** (maintainer contract) | [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) |
 | **Token Optimization main guide** | [capabilities/token_optimization/README.md](../capabilities/token_optimization/README.md) |

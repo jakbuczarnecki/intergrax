@@ -135,6 +135,7 @@ certification.
 | Start building | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
 | Plan deeper application composition | [Build With Intergrax](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
 | Review architecture | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
+| Configure the platform | [Platform Configuration](docs/project/technical/guides/PLATFORM_CONFIGURATION.md) |
 | Discuss a pilot or design partnership | [Partners](docs/project/community/PARTNERS.md) |
 | Contribute, give feedback, or ask about permissions | [Collaboration](docs/project/community/COLLABORATION.md) |
 | Perform a deep technical review | [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
