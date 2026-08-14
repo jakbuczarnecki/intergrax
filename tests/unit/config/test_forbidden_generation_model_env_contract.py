@@ -50,20 +50,8 @@ _ALLOWED_SUFFIXES = {
     ".example",
 }
 
-# Explicit allowlist for files that may reference forbidden generation-model env names
-# for negative regression semantics only. No directory-level exemptions.
-_ALLOWED_NEGATIVE_REFERENCE_FILES: frozenset[str] = frozenset(
-    {
-        "tests/unit/config/test_forbidden_generation_model_env_contract.py",
-        "tests/unit/llm_adapters/test_llm_profile.py",
-        "tests/unit/llm_adapters/test_native_ollama_adapter.py",
-        "tests/unit/docs/test_public_reader_documents_contract.py",
-        "tests/unit/docs/test_platform_configuration_reference.py",
-        "tests/unit/docs/test_root_env_example.py",
-        "tests/unit/applications/test_active_application_env_contracts.py",
-        "applications/local_workspace_application/tests/model_runtime/test_model_runtime_proof.py",
-    }
-)
+# Guard self-tests intentionally embed synthetic forbidden literals; no other file is exempt.
+_GUARD_SELF_TEST_REL = "tests/unit/config/test_forbidden_generation_model_env_contract.py"
 
 
 def _relative_posix(path: Path, repo_root: Path) -> str:
@@ -71,9 +59,7 @@ def _relative_posix(path: Path, repo_root: Path) -> str:
 
 
 def is_allowed_forbidden_generation_model_env_reference(rel_path: str) -> bool:
-    if rel_path == _REGISTRY_REL:
-        return True
-    return rel_path in _ALLOWED_NEGATIVE_REFERENCE_FILES
+    return rel_path == _GUARD_SELF_TEST_REL
 
 
 def _should_skip(path: Path, repo_root: Path) -> bool:
@@ -134,8 +120,8 @@ def test_forbidden_generation_model_env_not_present_in_active_repo(env_name: str
     assert not violations, f"{env_name} found in: {', '.join(violations)}"
 
 
-def test_guard_allows_allowlisted_negative_reference(tmp_path: Path) -> None:
-    rel = "tests/unit/llm_adapters/test_llm_profile.py"
+def test_guard_allows_guard_self_test_literals(tmp_path: Path) -> None:
+    rel = _GUARD_SELF_TEST_REL
     path = tmp_path / rel
     path.parent.mkdir(parents=True)
     path.write_text(
@@ -149,6 +135,23 @@ def test_guard_allows_allowlisted_negative_reference(tmp_path: Path) -> None:
         scan_roots=(tmp_path / "tests",),
     )
     assert violations == []
+
+
+def test_guard_rejects_literal_in_former_allowlisted_test_path(tmp_path: Path) -> None:
+    rel = "tests/unit/llm_adapters/test_llm_profile.py"
+    path = tmp_path / rel
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        'os.environ["INTERGRAX_DEFAULT_OLLAMA_MODEL"] = "legacy"\n'
+        'assert adapter.model != "legacy"\n',
+        encoding="utf-8",
+    )
+    violations = find_forbidden_generation_model_env_violations(
+        repo_root=tmp_path,
+        env_name="INTERGRAX_DEFAULT_OLLAMA_MODEL",
+        scan_roots=(tmp_path / "tests",),
+    )
+    assert violations == [rel]
 
 
 def test_guard_rejects_positive_reference_in_source_file(tmp_path: Path) -> None:
