@@ -74,15 +74,37 @@ def _within(path: Path, parent: Path) -> bool:
 
 
 def evaluate_venv_paths(
-    executable: Path, prefix: Path, venv_root: Path
+    executable: Path,
+    prefix: Path,
+    venv_root: Path,
+    *,
+    base_executable: Path | None = None,
 ) -> tuple[bool, str]:
     resolved_executable = executable.resolve()
     resolved_prefix = prefix.resolve()
     resolved_venv = venv_root.resolve()
-    executable_ok = _within(resolved_executable, resolved_venv)
-    prefix_ok = resolved_prefix == resolved_venv
     detail = f"executable={resolved_executable}; prefix={resolved_prefix}"
-    return executable_ok and prefix_ok, detail
+
+    if resolved_prefix != resolved_venv:
+        return False, detail
+
+    if _within(resolved_executable, resolved_venv):
+        return True, detail
+
+    if base_executable is not None:
+        resolved_base = base_executable.resolve()
+        if resolved_executable == resolved_base:
+            return (
+                True,
+                f"executable={resolved_executable} (base runtime for active venv); "
+                f"prefix={resolved_prefix}",
+            )
+
+    return (
+        False,
+        f"executable={resolved_executable} is outside .venv and not the venv base "
+        f"interpreter; prefix={resolved_prefix}",
+    )
 
 
 def evaluate_pythonpath(environment: dict[str, str]) -> tuple[bool, str]:
@@ -125,7 +147,7 @@ def parse_pyvenv_cfg(path: Path) -> dict[str, str]:
 
 
 def evaluate_pyvenv_cfg(
-    cfg_path: Path, base_prefix: Path
+    cfg_path: Path, base_executable: Path
 ) -> tuple[bool, str, dict[str, str]]:
     if not cfg_path.is_file():
         return False, f"missing {cfg_path}", {}
@@ -136,7 +158,7 @@ def evaluate_pyvenv_cfg(
     except (KeyError, OSError, ValueError) as exc:
         return False, f"invalid pyvenv.cfg: {exc}", values if "values" in locals() else {}
 
-    expected_home = base_prefix.resolve()
+    expected_home = base_executable.resolve().parent
     missing = [
         key
         for key in ("home", "include-system-site-packages")
@@ -145,7 +167,11 @@ def evaluate_pyvenv_cfg(
     if missing:
         return False, f"missing keys: {', '.join(missing)}", values
     if home != expected_home:
-        return False, f"home={home} does not match base_prefix={expected_home}", values
+        return (
+            False,
+            f"home={home} does not match base_executable parent={expected_home}",
+            values,
+        )
     if values["include-system-site-packages"].casefold() != "false":
         return False, "include-system-site-packages must be false", values
     return True, f"home={home}; isolated=true", values
@@ -319,8 +345,13 @@ def main() -> int:
         )
     )
 
+    base_executable = Path(getattr(sys, "_base_executable", sys.executable))
+    base_prefix = Path(sys.base_prefix)
     venv_ok, venv_detail = evaluate_venv_paths(
-        Path(sys.executable), Path(sys.prefix), VENV_ROOT
+        Path(sys.executable),
+        Path(sys.prefix),
+        VENV_ROOT,
+        base_executable=base_executable,
     )
     checks.append(Check("VENV", venv_ok, venv_detail))
     checks.append(
@@ -330,10 +361,8 @@ def main() -> int:
         )
     )
 
-    base_executable = Path(getattr(sys, "_base_executable", ""))
-    base_prefix = Path(sys.base_prefix)
     cfg_ok, cfg_detail, _ = evaluate_pyvenv_cfg(
-        VENV_ROOT / "pyvenv.cfg", base_prefix
+        VENV_ROOT / "pyvenv.cfg", base_executable
     )
     checks.append(Check("PYVENV_CFG", cfg_ok, cfg_detail))
     if profile.requires_managed_python:
