@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
+from enum import StrEnum
 from typing import TYPE_CHECKING, Sequence
 from uuid import uuid4
 
@@ -138,8 +139,7 @@ def raise_hitl_pause_from_tool_invocation(
     interrupt_handler: ExecutionInterruptHandler | None = None,
     policy_provenance_digest: str | None = None,
 ) -> None:
-    meta = state.request.metadata
-    task_id = str(meta.get("task_id") or state.run_id)
+    task_id = state.task_id
     signal = signal_from_error(
         error,
         state=state,
@@ -183,6 +183,38 @@ def raise_hitl_pause_from_tool_invocation(
     )
 
 
+class DeclarativeHitlCandidateStatus(StrEnum):
+    NO_GRANT = "no_grant"
+    UNIQUE = "unique"
+    NO_MATCH = "no_match"
+    AMBIGUOUS = "ambiguous"
+
+
+@dataclass(frozen=True, slots=True)
+class UniqueDeclarativeHitlCandidate:
+    candidate_index: int
+
+
+@dataclass(frozen=True, slots=True)
+class DeclarativeHitlScopeCandidateResolution:
+    status: DeclarativeHitlCandidateStatus
+    candidate_index: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DeclarativeHitlGrantCandidateMismatch(RuntimeError):
+    """Fail-closed when grant cannot be uniquely mapped to a ToolExecutionRequest."""
+
+    status: DeclarativeHitlCandidateStatus
+    task_id: str
+
+    def __str__(self) -> str:
+        return (
+            f"Declarative HITL grant candidate resolution failed "
+            f"({self.status}, task_id={self.task_id})."
+        )
+
+
 @dataclass
 class DeclarativeHitlScopeAssignmentState:
     """Local one-shot guard: grant scope assigned to at most one ToolExecutionRequest."""
@@ -213,20 +245,43 @@ def grant_matches_request_dimensions(
     return True
 
 
-def select_grant_scope_candidate_index(
+def resolve_grant_scope_candidate(
     requests: Sequence[ToolExecutionRequest[object]],
     *,
-    grant: object,
+    grant: object | None,
     task_id: str,
-) -> int | None:
+) -> DeclarativeHitlScopeCandidateResolution:
+    if grant is None:
+        return DeclarativeHitlScopeCandidateResolution(
+            status=DeclarativeHitlCandidateStatus.NO_GRANT,
+        )
     matches = [
         index
         for index, request in enumerate(requests)
         if grant_matches_request_dimensions(grant, request, task_id=task_id)
     ]
     if len(matches) == 1:
-        return matches[0]
-    return None
+        return DeclarativeHitlScopeCandidateResolution(
+            status=DeclarativeHitlCandidateStatus.UNIQUE,
+            candidate_index=matches[0],
+        )
+    if len(matches) == 0:
+        return DeclarativeHitlScopeCandidateResolution(
+            status=DeclarativeHitlCandidateStatus.NO_MATCH,
+        )
+    return DeclarativeHitlScopeCandidateResolution(
+        status=DeclarativeHitlCandidateStatus.AMBIGUOUS,
+    )
+
+
+def unique_candidate_from_resolution(
+    resolution: DeclarativeHitlScopeCandidateResolution,
+) -> UniqueDeclarativeHitlCandidate | None:
+    if resolution.status is not DeclarativeHitlCandidateStatus.UNIQUE:
+        return None
+    if resolution.candidate_index is None:
+        return None
+    return UniqueDeclarativeHitlCandidate(candidate_index=resolution.candidate_index)
 
 
 def maybe_assign_declarative_hitl_scope(
@@ -234,16 +289,15 @@ def maybe_assign_declarative_hitl_scope(
     *,
     state: RuntimeState,
     assignment_state: DeclarativeHitlScopeAssignmentState | None,
-    candidate_index: int | None = None,
+    unique_candidate: UniqueDeclarativeHitlCandidate | None = None,
     request_index: int = 0,
 ) -> ToolExecutionRequest[object]:
     grant = state.declarative_hitl_grant
     if grant is None or assignment_state is None or assignment_state.assigned:
         return request
-    if candidate_index is not None and request_index != candidate_index:
+    if unique_candidate is None or request_index != unique_candidate.candidate_index:
         return request
-    meta = state.request.metadata
-    task_id = str(meta.get("task_id") or state.run_id)
+    task_id = state.task_id
     if not grant_matches_request_dimensions(grant, request, task_id=task_id):
         return request
     assignment_state.assigned = True

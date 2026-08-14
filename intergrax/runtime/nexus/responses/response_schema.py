@@ -154,6 +154,9 @@ class RuntimeRequest:
     # Typed declarative HITL grant transport (approval evidence only).
     declarative_hitl_grant: Optional[DeclarativeHitlApprovalGrant] = None
 
+    # Typed task identity for grant scope / policy matching (not metadata fallback).
+    task_id: Optional[str] = None
+
     def to_envelope(self) -> TaskEnvelope:
         tenant = self.tenant_id or self.metadata.get("tenant_id") or "default"
         return TaskEnvelope(

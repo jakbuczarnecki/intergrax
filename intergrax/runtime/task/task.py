@@ -143,6 +143,7 @@ class Task(BaseModel):
             message=self.message,
             workspace_id=self.metadata.get("workspace_id"),
             metadata=metadata,
+            task_id=self.task_id,
         )
 
 

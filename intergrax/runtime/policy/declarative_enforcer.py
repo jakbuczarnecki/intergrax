@@ -54,19 +54,23 @@ def _grant_satisfies_hitl(
         return False
     if context.invocation_scope_id != grant.invocation_scope_id:
         return False
-    if context.task_id is not None and context.task_id != grant.task_id:
+    if context.task_id is None:
         return False
-    if context.run_id is not None and context.run_id != grant.run_id:
+    if context.task_id != grant.task_id:
         return False
-    if context.step_id is not None and context.step_id != grant.step_id:
+    if context.run_id is None:
+        return False
+    if context.run_id != grant.run_id:
+        return False
+    if context.step_id is None:
+        return False
+    if context.step_id != grant.step_id:
         return False
     if context.tool_id != grant.tool_id:
         return False
-    if (
-        context.idempotency_key is not None
-        and context.idempotency_key != grant.idempotency_key
-    ):
-        return False
+    if grant.idempotency_key is not None:
+        if context.idempotency_key != grant.idempotency_key:
+            return False
     if set(decision.matched_rule_ids) != set(grant.matched_rule_ids):
         return False
     if (

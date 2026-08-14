@@ -20,10 +20,14 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyHitlRequiredError,
 )
 from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
+    DeclarativeHitlCandidateStatus,
+    DeclarativeHitlGrantCandidateMismatch,
     DeclarativeHitlScopeAssignmentState,
+    UniqueDeclarativeHitlCandidate,
     maybe_assign_declarative_hitl_scope,
     raise_hitl_pause_from_tool_invocation,
-    select_grant_scope_candidate_index,
+    resolve_grant_scope_candidate,
+    unique_candidate_from_resolution,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
@@ -88,7 +92,7 @@ def _invoke_planned_call(
     idempotency_prefix: str,
     invoke_lock: threading.Lock | None = None,
     assignment_state: DeclarativeHitlScopeAssignmentState | None = None,
-    candidate_index: int | None = None,
+    unique_candidate: UniqueDeclarativeHitlCandidate | None = None,
 ) -> ToolCallTrace:
     req = _build_planned_request(
         state=state,
@@ -100,7 +104,7 @@ def _invoke_planned_call(
         req,
         state=state,
         assignment_state=assignment_state,
-        candidate_index=candidate_index,
+        unique_candidate=unique_candidate,
         request_index=index,
     )
     try:
@@ -158,7 +162,7 @@ def execute_planned_tool_calls(
         if state.declarative_hitl_grant is not None
         else None
     )
-    candidate_index: int | None = None
+    unique_candidate = None
     if state.declarative_hitl_grant is not None:
         built_requests = [
             _build_planned_request(
@@ -169,18 +173,26 @@ def execute_planned_tool_calls(
             )
             for index, call in enumerate(calls)
         ]
-        task_id = str(state.request.metadata.get("task_id") or state.run_id)
-        candidate_index = select_grant_scope_candidate_index(
+        resolution = resolve_grant_scope_candidate(
             built_requests,
             grant=state.declarative_hitl_grant,
-            task_id=task_id,
+            task_id=state.task_id,
         )
+        if resolution.status in (
+            DeclarativeHitlCandidateStatus.NO_MATCH,
+            DeclarativeHitlCandidateStatus.AMBIGUOUS,
+        ):
+            raise DeclarativeHitlGrantCandidateMismatch(
+                status=resolution.status,
+                task_id=state.task_id,
+            )
+        unique_candidate = unique_candidate_from_resolution(resolution)
     invoke_kwargs = {
         "state": state,
         "invoker": invoker,
         "idempotency_prefix": idempotency_prefix,
         "assignment_state": assignment_state,
-        "candidate_index": candidate_index,
+        "unique_candidate": unique_candidate,
     }
     if max_parallel_read_only <= 1:
         return [

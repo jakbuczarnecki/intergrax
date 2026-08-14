@@ -197,6 +197,8 @@ class UAEPExecutor:
         task_options = execution_options_for_request(request)
         run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or uuid4().hex)
         task_id = str(request.metadata.get("task_id") or run_id)
+        if request.task_id is None:
+            request = replace(request, task_id=task_id)
         node_id = request.metadata.get("graph_node_id")
 
         exec_ctx = RuntimeExecutionContext(

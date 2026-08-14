@@ -60,4 +60,5 @@ def test_transfer_persisted_grant_for_resume() -> None:
     request = RuntimeRequest(agent_id="agent-1", user_id="u1", session_id="s1", message="x")
     updated = DeclarativeHitlGrantCoordinator.transfer_persisted_grant_for_resume(task, request)
     assert updated.declarative_hitl_grant == grant
+    assert updated.task_id == "task-1"
     assert task.runtime.governance.declarative_hitl_grant is None

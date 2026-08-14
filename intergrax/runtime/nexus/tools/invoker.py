@@ -122,8 +122,7 @@ class RuntimeToolInvoker:
 
         declarative_enforcer = resolve_declarative_policy_enforcer(state)
         if declarative_enforcer is not None:
-            meta = state.request.metadata
-            task_id = str(meta.get("task_id") or state.run_id)
+            task_id = state.task_id
             policy_context = PolicyEvaluationContext(
                 tool_id=request.tool_id,
                 tenant_id=state.tenant_id,

@@ -446,6 +446,7 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
         user_id="test-user",
         session_id="test-session",
         message="test",
+        task_id=run_id,
     )
 
     cfg = RuntimeConfig(

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -52,7 +53,9 @@ class DeclarativeHitlGrantCoordinator:
         grant = task.runtime.governance.declarative_hitl_grant
         if grant is None:
             return request
-        request.declarative_hitl_grant = grant
+        updated = replace(request, declarative_hitl_grant=grant)
+        if updated.task_id is None:
+            updated = replace(updated, task_id=task.task_id)
         task.runtime.governance.declarative_hitl_grant = None
         task.sync_metadata()
-        return request
+        return updated
