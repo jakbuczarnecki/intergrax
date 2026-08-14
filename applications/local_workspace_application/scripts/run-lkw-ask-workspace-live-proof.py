@@ -38,6 +38,16 @@ from lkw_host_port_preflight import (
     probe_host_port_available,
     resolve_compose_published_host_ports,
 )
+from lkw_ollama_embedding_bootstrap import EMBEDDING_PROFILE_RESOLUTION_CODE
+
+LLM_PROFILE_RESOLUTION_CODE = (
+    "from intergrax.llm_adapters.contracts.llm_provider import LLMProvider; "
+    "from intergrax.llm_adapters.registry.profile import llm_profile_from_env; "
+    "profile = llm_profile_from_env(); "
+    "provider = profile.provider; "
+    "print(provider.value if isinstance(provider, LLMProvider) else str(provider)); "
+    "print(profile.model or '')"
+)
 _DOCKER_DIR = _APP_DIR / "docker"
 _BASE_COMPOSE = _DOCKER_DIR / "docker-compose.yml"
 _MONGODB_COMPOSE = _DOCKER_DIR / "docker-compose.mongodb.yml"
@@ -226,27 +236,35 @@ def start_canonical_stack() -> None:
     _run_compose("up", "-d", "--build", *_COMPOSE_SERVICES, timeout=None)
 
 
+def _resolve_typed_profile_from_container(resolution_code: str, *, kind: str) -> tuple[str, str]:
+    completed = _run_compose(
+        "exec",
+        "-T",
+        "local_workspace",
+        "python",
+        "-c",
+        resolution_code,
+        capture=True,
+        timeout=60,
+    )
+    lines = [line.strip() for line in (completed.stdout or "").splitlines() if line.strip()]
+    if len(lines) != 2:
+        raise RuntimeError(f"{kind}_profile_resolution_failed")
+    return lines[0].strip().lower(), lines[1].strip()
+
+
 def ensure_ollama_model() -> None:
-    """Pull Compose-configured chat and embedding models when provider is Ollama."""
-    config = _run_compose("config", capture=True, timeout=60)
-    chat_model = "llama3.1:latest"
-    embedding_provider = "ollama"
-    embedding_model = ""
-    for line in (config.stdout or "").splitlines():
-        stripped = line.strip().replace('"', "").replace("'", "")
-        if stripped.startswith("INTERGRAX_LLM_MODEL:"):
-            candidate = stripped.split(":", 1)[1].strip()
-            if candidate:
-                chat_model = candidate
-        elif stripped.startswith("INTERGRAX_EMBEDDING_PROVIDER:"):
-            candidate = stripped.split(":", 1)[1].strip().lower()
-            if candidate:
-                embedding_provider = candidate
-        elif stripped.startswith("INTERGRAX_EMBEDDING_MODEL:"):
-            candidate = stripped.split(":", 1)[1].strip()
-            if candidate:
-                embedding_model = candidate
-    _ollama_pull(chat_model)
+    """Pull chat and embedding models only when each typed provider is Ollama."""
+    llm_provider, llm_model = _resolve_typed_profile_from_container(
+        LLM_PROFILE_RESOLUTION_CODE,
+        kind="llm",
+    )
+    embedding_provider, embedding_model = _resolve_typed_profile_from_container(
+        EMBEDDING_PROFILE_RESOLUTION_CODE,
+        kind="embedding",
+    )
+    if llm_provider == "ollama":
+        _ollama_pull(llm_model or "llama3.1:latest")
     if embedding_provider == "ollama":
         _ollama_pull(embedding_model or "nomic-embed-text")
 

@@ -239,26 +239,48 @@ def test_verify_running_vector_store_uses_proof_compose_project(
         assert command[3] == proof._COMPOSE_PROJECT
 
 
-def test_trusted_ask_ensure_ollama_model_pulls_chat_and_embedding_models(
-    proof: ModuleType,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    pulled: list[str] = []
-
+def _fake_typed_profile_compose(
+    *,
+    llm_provider: str,
+    llm_model: str,
+    embedding_provider: str,
+    embedding_model: str,
+    pulled: list[str],
+) -> object:
     def fake_run_compose(*args: str, **kwargs: Any) -> object:
-        if args[:2] == ("config",):
-            stdout = (
-                "INTERGRAX_LLM_MODEL: llama3.1:latest\n"
-                "INTERGRAX_EMBEDDING_PROVIDER: ollama\n"
-                "INTERGRAX_EMBEDDING_MODEL: nomic-embed-text\n"
-            )
+        if args[:3] == ("exec", "-T", "local_workspace") and "python" in args:
+            code = args[-1]
+            if "llm_profile_from_env" in code:
+                stdout = f"{llm_provider}\n{llm_model}\n"
+            elif "embedding_profile_from_env" in code:
+                stdout = f"{embedding_provider}\n{embedding_model}\n"
+            else:
+                stdout = ""
             return type("CP", (), {"returncode": 0, "stdout": stdout, "stderr": ""})()
         if "pull" in args:
             pulled.append(args[-1])
             return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
         return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
 
-    monkeypatch.setattr(proof, "_run_compose", fake_run_compose)
+    return fake_run_compose
+
+
+def test_trusted_ask_ensure_ollama_model_pulls_chat_and_embedding_models(
+    proof: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pulled: list[str] = []
+    monkeypatch.setattr(
+        proof,
+        "_run_compose",
+        _fake_typed_profile_compose(
+            llm_provider="ollama",
+            llm_model="llama3.1:latest",
+            embedding_provider="ollama",
+            embedding_model="nomic-embed-text",
+            pulled=pulled,
+        ),
+    )
     proof.ensure_ollama_model()
     assert pulled == ["llama3.1:latest", "nomic-embed-text"]
 
@@ -268,20 +290,87 @@ def test_trusted_ask_skips_embedding_pull_when_provider_not_ollama(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     pulled: list[str] = []
-
-    def fake_run_compose(*args: str, **kwargs: Any) -> object:
-        if args[:2] == ("config",):
-            stdout = (
-                "INTERGRAX_LLM_MODEL: llama3.1:latest\n"
-                "INTERGRAX_EMBEDDING_PROVIDER: openai\n"
-                "INTERGRAX_EMBEDDING_MODEL: text-embedding-3-large\n"
-            )
-            return type("CP", (), {"returncode": 0, "stdout": stdout, "stderr": ""})()
-        if "pull" in args:
-            pulled.append(args[-1])
-            return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
-        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
-
-    monkeypatch.setattr(proof, "_run_compose", fake_run_compose)
+    monkeypatch.setattr(
+        proof,
+        "_run_compose",
+        _fake_typed_profile_compose(
+            llm_provider="ollama",
+            llm_model="llama3.1:latest",
+            embedding_provider="openai",
+            embedding_model="text-embedding-3-large",
+            pulled=pulled,
+        ),
+    )
     proof.ensure_ollama_model()
     assert pulled == ["llama3.1:latest"]
+
+
+def test_trusted_ask_skips_generation_pull_when_provider_not_ollama(
+    proof: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pulled: list[str] = []
+    monkeypatch.setattr(
+        proof,
+        "_run_compose",
+        _fake_typed_profile_compose(
+            llm_provider="openai",
+            llm_model="gpt-4o",
+            embedding_provider="ollama",
+            embedding_model="nomic-embed-text",
+            pulled=pulled,
+        ),
+    )
+    proof.ensure_ollama_model()
+    assert pulled == ["nomic-embed-text"]
+
+
+def test_trusted_ask_generation_and_embedding_providers_are_independent(
+    proof: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pulled: list[str] = []
+    monkeypatch.setattr(
+        proof,
+        "_run_compose",
+        _fake_typed_profile_compose(
+            llm_provider="openai",
+            llm_model="gpt-4o",
+            embedding_provider="ollama",
+            embedding_model="nomic-embed-text",
+            pulled=pulled,
+        ),
+    )
+    proof.ensure_ollama_model()
+    assert "gpt-4o" not in pulled
+    assert pulled == ["nomic-embed-text"]
+
+
+def test_trusted_ask_skips_all_ollama_pulls_when_neither_provider_is_ollama(
+    proof: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pulled: list[str] = []
+    monkeypatch.setattr(
+        proof,
+        "_run_compose",
+        _fake_typed_profile_compose(
+            llm_provider="openai",
+            llm_model="gpt-4o",
+            embedding_provider="openai",
+            embedding_model="text-embedding-3-large",
+            pulled=pulled,
+        ),
+    )
+    proof.ensure_ollama_model()
+    assert pulled == []
+
+
+def test_env_example_utf8_without_mojibake_keeps_canonical_embedding_pair() -> None:
+    path = _REPO_ROOT / "applications/local_workspace_application/.env.example"
+    raw = path.read_bytes()
+    assert not raw.startswith(b"\xef\xbb\xbf")
+    text = raw.decode("utf-8")
+    assert "â" not in text
+    assert "INTERGRAX_EMBEDDING_PROVIDER=ollama" in text
+    assert "INTERGRAX_EMBEDDING_MODEL=nomic-embed-text" in text
