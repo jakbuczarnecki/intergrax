@@ -709,7 +709,7 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 
 ## 20. Pre-BLOCK-B residual defect gate (PLATFORM-PLUGIN-CLEANUP-1)
 
-**Task:** PLATFORM-PLUGIN-CLEANUP-1 · **Date:** 2026-08-14 · **HEAD:** `39830db79e57e97d98add146fae7cdd7212eeea7`
+**Task:** PLATFORM-PLUGIN-CLEANUP-1 · **Date:** 2026-08-14 · **Baseline before CLEANUP-1:** `39830db79e57e97d98add146fae7cdd7212eeea7` (ENTERPRISE-3 required ancestor `514b7e7dc0dd3c6b57d5eb49e1e01897ed046de6`)
 
 Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](PLATFORM_PLUGIN_PRODUCTION_AUDIT.md) (2026-08-12). This table is the **current** residual ledger before ENTERPRISE-4 (BLOCK B).
 
@@ -728,7 +728,7 @@ Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](
 | F011 | **RESOLVED** | HARDENING-1: typed `conflict_kind` / `result` on public exceptions (`errors.py`) |
 | F012 | **PLANNED_BLOCK** | CAND-003 Context scaffold DX — BLOCK E (`ENTERPRISE-6`); not in cleanup scope |
 | F013 | **RESOLVED** | HARDENING-1: `test_plugin_catalog_counts.py` recalibrated (`MIN_FULL_INTEGRATIONS = 95`) |
-| F014 | **RESOLVED** | Linux gate expanded + `platform-plugin-windows-e2e` job on `windows-latest` (PR / main / dispatch smoke) in `.github/workflows/unit-tests.yml` |
+| F014 | **RESOLVED** | Linux gate expanded + `platform-plugin-windows-e2e` job on `windows-latest` (PR / main / workflow_dispatch smoke+full) in `.github/workflows/unit-tests.yml` |
 | F015 | **RESOLVED** | HARDENING-1: `_EP_SPECS_CACHE` / `get_entry_point_spec` in `discovery.py` |
 | F016 | **DEFERRED_ENTERPRISE** | `PlatformPluginLifecycleState` enum exists; no runtime transition telemetry |
 | F017 | **DOCUMENTED_NON_GOAL** | `PlatformPluginTrustModel.TRUSTED_IN_PROCESS` only; contract forbids sandbox/signing enums |
