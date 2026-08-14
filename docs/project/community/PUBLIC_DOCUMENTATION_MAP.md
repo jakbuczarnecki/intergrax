@@ -18,6 +18,7 @@ flowchart TD
     S -->|Try the primary product| Q[LKW Quick Start]
     S -->|Understand the product| T[LKW Product Tour]
     S -->|Check workflow fit| U[Use Cases]
+    S -->|Evaluate business or strategic fit| W[WHY_INTERGRAX]
     S -->|Check current evidence| R[PROOFS]
     S -->|Evaluate one claim| E[Evaluation Guide]
     S -->|Build| B[Builder Quick Start]
@@ -28,6 +29,7 @@ flowchart TD
     T --> Q
     Q --> L[LKW Platform Proof]
     U --> R
+    W --> R
     E -->|PROCEED to build| B
     B --> C[Build With Intergrax]
     A --> R
@@ -47,6 +49,7 @@ with Try LKW as the repository’s primary product action.
 | Plan a deeper build | [BUILD_WITH_INTERGRAX](../builders/BUILD_WITH_INTERGRAX.md) |
 | Review as an architect or platform engineer | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) |
 | Assess fit as a CTO, product lead or technical buyer | [Use Cases](../overview/USE_CASES.md) |
+| Evaluate as an investor, business decision maker or strategic evaluator | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) — then [PROOFS](../proofs/PROOFS.md) for evidence |
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore multi-agent / collaborative AI direction | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) |

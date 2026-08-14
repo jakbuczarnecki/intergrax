@@ -137,6 +137,7 @@ or all-provider certification.
 | Verify bounded platform behavior | [Core Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) |
 | Check whether your workflow fits | [Use Cases](docs/project/overview/USE_CASES.md) |
 | Review current evidence | [PROOFS](docs/project/proofs/PROOFS.md) |
+| Evaluate as an investor or business decision maker | [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md) |
 | Evaluate one claim fairly | [Evaluation Guide](docs/project/builders/EVALUATION_GUIDE.md) |
 | Start building | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
 | Plan deeper application composition | [Build With Intergrax](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
@@ -146,8 +147,7 @@ or all-provider certification.
 | Contribute, give feedback, or ask about permissions | [Collaboration](docs/project/community/COLLABORATION.md) |
 | Perform a deep technical review | [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
 
-Questions? See the [FAQ](docs/project/overview/FAQ.md). For the complete
-public route map, use the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
+Questions? See the [FAQ](docs/project/overview/FAQ.md). For the complete public route map, use the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
 The [project documentation hub](docs/project/README.md) is the secondary
 all-docs entry point. The [public roadmap](docs/project/overview/ROADMAP.md)
 describes outcome direction.
