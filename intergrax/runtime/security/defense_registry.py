@@ -76,9 +76,11 @@ def list_shipped_defense_bundle_ids() -> tuple[str, ...]:
 
 
 def get_security_defense_plugin(plugin_id: str) -> SecurityDefensePlugin | None:
-    if plugin_id in _SHIPPED:
-        return _SHIPPED[plugin_id]
-    return _DYNAMIC.get(plugin_id)
+    """Return the active plugin. Authorized dynamic override shadows shipped."""
+    dynamic = _DYNAMIC.get(plugin_id)
+    if dynamic is not None:
+        return dynamic
+    return _SHIPPED.get(plugin_id)
 
 
 def resolve_security_defense_plugins(

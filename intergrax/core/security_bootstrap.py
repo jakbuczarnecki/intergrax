@@ -6,7 +6,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.runtime.security.defense_plugin_loader import load_security_defense_plugins
+from intergrax.core.plugins.admission import DomainPluginLoadReport
+from intergrax.runtime.security.defense_plugin_loader import (
+    SecurityDefenseAdmissionPolicy,
+    load_security_defense_plugin_report,
+)
 from intergrax.runtime.security.defense_registry import list_shipped_defense_bundle_ids
 
 
@@ -33,18 +37,32 @@ def register_security_payload_schemas() -> None:
 class SecurityBootstrapResult:
     shipped_bundle_ids: tuple[str, ...]
     entry_point_plugins: int
+    load_report: DomainPluginLoadReport
+    critical_bootstrap_acceptable: bool
 
 
-def bootstrap_security_providers(*, discover_entry_points: bool = False) -> SecurityBootstrapResult:
+def bootstrap_security_providers(
+    *,
+    discover_entry_points: bool = False,
+    admission: SecurityDefenseAdmissionPolicy | None = None,
+) -> SecurityBootstrapResult:
     """
     Register shipped defense bundles (always available) and optional EP plugins.
 
     Shipped bundles are registered at import time via ``defense_registry``;
     this function loads third-party entry points when requested.
+
+    Isolation examines sibling EPs; this result does not exit the process.
+    Production hosts must treat ``critical_bootstrap_acceptable`` as fail-closed.
     """
-    loaded = load_security_defense_plugins(discover_entry_points=discover_entry_points)
+    report = load_security_defense_plugin_report(
+        discover_entry_points=discover_entry_points,
+        admission=admission,
+    )
     register_security_payload_schemas()
     return SecurityBootstrapResult(
         shipped_bundle_ids=list_shipped_defense_bundle_ids(),
-        entry_point_plugins=loaded,
+        entry_point_plugins=report.registered_count,
+        load_report=report,
+        critical_bootstrap_acceptable=report.critical_bootstrap_acceptable,
     )

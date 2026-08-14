@@ -463,13 +463,24 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | **Order** | **1** |
 
 **Acceptance gates:**
-- [ ] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0`
-- [ ] Security loader uses configurable `SecurityDefenseAdmissionPolicy`; production default `shipped_id_override=error`
-- [ ] Security + Policy loaders use `on_load_failure="isolate"` with `DomainPluginLoadReport`
-- [ ] No unconditional `override=True` in security EP path
-- [ ] Deterministic EP ordering preserved
-- [ ] Focused tests: collision modes, isolation, bootstrap summary
-- [ ] Backward compat: legacy profile restores current override behavior
+- [x] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0`
+- [x] Security loader uses configurable `SecurityDefenseAdmissionPolicy`; production default `shipped_id_override=error`
+- [x] Security + Policy loaders use `on_load_failure="isolate"` with `DomainPluginLoadReport`
+- [x] No unconditional `override=True` in security EP path
+- [x] Deterministic EP ordering preserved
+- [x] Focused tests: collision modes, isolation, bootstrap summary
+- [x] Backward compat: legacy profile restores current override behavior
+
+**ENTERPRISE-2 implementation status (2026-08-14):**
+
+| Item | Status |
+|------|--------|
+| **CAND-004** | **DONE** — EP-name, `plugin_id`, and shipped-id collisions are explicit; production default `shipped_id_override=error`; authorized override requires `SecurityDefenseAdmissionPolicy` (`allow` / `warn_override`) or `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` |
+| **CAND-005** | **DONE** — Security + Policy reuse `load_entry_point_targets`; isolate mode records `failed`; invalid types are `rejected`; int wrappers preserved |
+| **OAD-002** | **RESOLVED (A)** — immediate production `error`. No supported production host uses security EP override (`bootstrap_security_providers(discover_entry_points=False)` default; `INTERGRAX_DISCOVER_PLUGINS` opt-in). Lab/legacy: explicit policy only |
+| **Qualification** | **DEFERRED seam** — `require_production_qualification` exists on `SecurityDefenseAdmissionPolicy` but is **not enforced**. `EntryPointSpec` has optional distribution name only; package version and `PlatformCompatibilityResult` are absent. Do not fabricate admission. Host/BLOCK A composition owns `evaluate_package_production_admission` |
+| **Compatibility** | Report APIs: `load_security_defense_plugin_report`, `load_policy_rule_plugin_report`. Int wrappers: `load_security_defense_plugins` → production admission defaults; `load_policy_rule_plugins` → legacy `fail_fast` when `policy` omitted |
+| **Not done** | CAND-006/007/008, CAND-001/002/003, F006/F016, hot reload, enterprise-ready |
 
 ---
 
@@ -648,8 +659,9 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 | **Question** | Immediate `error` default vs phased `warn_override` → `error`? |
 | **Options** | (A) Fail-closed immediately; (B) One-release warn; (C) Lab-only enforcement |
 | **Tradeoffs** | A may break hosts using EP to patch shipped defenses; B reduces surprise |
-| **Recommended** | **B** — `warn_override` one release with structured log, then `error` |
-| **Evidence needed** | Inventory of production hosts with `INTERGRAX_DISCOVER_PLUGINS` + security EPs |
+| **Recommended** | **A** — production `error` immediately |
+| **Resolution (ENTERPRISE-2)** | **A (error)** — no supported production host relies on security EP override. Evidence: `bootstrap_security_providers(discover_entry_points=False)` default; catalog bootstrap default off; assistant `discover_plugins` default false; `INTERGRAX_DISCOVER_PLUGINS` opt-in only; sole `override=True` was the security EP loader. Migration: `shipped_id_override="allow"` / `"warn_override"` or `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` |
+| **Evidence needed** | Closed — targeted host/profile/bootstrap inspection; no production override consumer |
 
 ### OPEN_ARCHITECTURAL_DECISION-003 — Bundle signing vs provenance-only
 
