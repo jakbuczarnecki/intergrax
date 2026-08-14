@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Intergrax is under **active private R&D**. Security fixes are applied to the **current main branch** only.
+Intergrax is **source-available**, **proprietary**, and under **active R&D**. Security fixes are applied to the **current main branch** only.
 
 | Version | Supported |
 |---------|-----------|
@@ -44,7 +44,7 @@ We will coordinate disclosure timing with you. Credit will be given if desired a
 
 ## Security architecture (overview)
 
-Intergrax implements security as a **control plane** within the Harness AI platform. Canonical references:
+Intergrax implements security as a **control plane** within the Harness AI platform. Documented security architecture and mechanisms describe intended and enforced control-plane boundaries; they do **not** constitute formal security certification, compliance certification, penetration-test certification, or a universal production-security guarantee. Canonical references:
 
 | Topic | Document |
 |-------|----------|
