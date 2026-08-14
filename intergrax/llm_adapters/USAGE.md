@@ -183,7 +183,7 @@ groups:
           summary: "Many prefix-heuristic context windows — consider exact catalog entries"
 ```
 
-Cross-ref: [`OBSERVABILITY.md` §7.1.1](../../docs/project/architecture/OBSERVABILITY.md#711-llm-catalog-miss-slo-m-llm-x-16) for SLO guidance.
+Cross-ref: [`OBSERVABILITY_extended_depth.md` §7.1.1](../../docs/project/architecture/satellites/OBSERVABILITY_extended_depth.md#711-llm-catalog-miss-slo-m-llm-x16) for SLO guidance.
 
 ---
 
@@ -459,7 +459,7 @@ env.llm_routing_profile = LLMRoutingProfile(
 - [x] Platform CI umbrella registration (**16.3** · LLM-MAINT-06)
 - [x] Run-scoped dedupe + concurrent isolation test (**16.4**)
 - [x] OBS-BUS emission coverage (**16.5**)
-- [x] SLO canon in OBSERVABILITY §7.1.1 (**16.6**)
+- [x] SLO canon in OBSERVABILITY_extended_depth §7.1.1 (**16.6**)
 
 **Current maturity label:** **L5** (strict mid-run routing on core UAEP/Nexus/ACP paths).
 

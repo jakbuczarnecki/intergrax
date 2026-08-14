@@ -602,7 +602,7 @@ LKW is not defined solely by RAG. The target product combines:
 
 **Knowledge Intake** introduces or synchronizes durable indexed knowledge. **Live Access Binding** authorizes bounded query-time reads. Live provider results do not automatically become Documents.
 
-Conversation/reasoning LLM (`LLMAdapter`, Ollama or vLLM via wiring) is separate from the embedding provider. Model runtime portability is a planned product proof (`LKW-MODEL-RUNTIME-1`), not a completed claim.
+Conversation/reasoning LLM (`LLMAdapter`, Ollama or vLLM via wiring) is separate from the embedding provider. Provider-neutral model runtime wiring is part of current architecture. Ollama/vLLM portability has an **accepted bounded proof** (`LKW-MODEL-RUNTIME`); see [`PROOFS.md`](../../../proofs/PROOFS.md). This does not imply runtime hot swapping, complete provider parity, production readiness, all-provider certification, automatic embedding changes, or no-restart switching.
 
 ### Application and adapter boundaries
 
