@@ -170,6 +170,16 @@ class MemoryProfile(BaseModel):
     session_index_score_threshold: float | None = None
     vector_index_namespace: str | None = None
     session_index_roles: tuple[str, ...] = ("user", "assistant")
+    user_profile_store_plugin_id: str | None = None
+    session_storage_plugin_id: str | None = None
+
+    @field_validator("user_profile_store_plugin_id", "session_storage_plugin_id")
+    @classmethod
+    def _strip_memory_store_plugin_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
 
 
 class ReliabilityProfile(BaseModel):

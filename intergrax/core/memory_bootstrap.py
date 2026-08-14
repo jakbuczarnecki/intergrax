@@ -4,10 +4,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Sequence
+from collections.abc import Sequence
 
-from intergrax.core.plugins.discovery import EP_MEMORY_STORES, load_entry_point_plugins
+from dataclasses import dataclass
+
+from intergrax.memory.resolver.classifier import MemoryStorePluginKind
+from intergrax.memory.resolver.discovery import discover_classified_memory_store_plugins
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,22 +19,8 @@ class MemoryStoreBootstrapResult:
     session_turn_index_plugins: int
 
 
-def _is_session_turn_index_plugin(plugin_type: type) -> bool:
-    return hasattr(plugin_type, "create_session_turn_index") and callable(
-        plugin_type.create_session_turn_index
-    )
-
-
-def _is_user_profile_store_plugin(plugin_type: type) -> bool:
-    return hasattr(plugin_type, "create_user_profile_store") and callable(
-        plugin_type.create_user_profile_store
-    )
-
-
-def _is_session_storage_plugin(plugin_type: type) -> bool:
-    return hasattr(plugin_type, "create_session_storage") and callable(
-        plugin_type.create_session_storage
-    )
+def _count_by_kind(plugins: Sequence[object], kind: MemoryStorePluginKind) -> int:
+    return sum(1 for item in plugins if item.kind is kind)
 
 
 def bootstrap_memory_stores(
@@ -43,30 +31,34 @@ def bootstrap_memory_stores(
     session_turn_index_plugins: Sequence[type] = (),
 ) -> MemoryStoreBootstrapResult:
     """Discover memory store plugins from entry points and explicit classes."""
-    discovered_user = 0
-    discovered_session = 0
-    discovered_turn_index = 0
-    if discover_entry_points:
-        for loaded in load_entry_point_plugins(EP_MEMORY_STORES):
-            plugin_type = loaded.plugin_type
-            if _is_session_turn_index_plugin(plugin_type):
-                discovered_turn_index += 1
-            elif _is_user_profile_store_plugin(plugin_type):
-                discovered_user += 1
-            elif _is_session_storage_plugin(plugin_type):
-                discovered_session += 1
+    explicit = (
+        *user_profile_plugins,
+        *session_storage_plugins,
+        *session_turn_index_plugins,
+    )
+    discovered = discover_classified_memory_store_plugins(
+        discover_entry_points=discover_entry_points,
+        explicit_plugins=(),
+    )
+    explicit_classified = discover_classified_memory_store_plugins(
+        discover_entry_points=False,
+        explicit_plugins=explicit,
+    )
     return MemoryStoreBootstrapResult(
-        user_profile_plugins=discovered_user + len(user_profile_plugins),
-        session_storage_plugins=discovered_session + len(session_storage_plugins),
-        session_turn_index_plugins=discovered_turn_index + len(session_turn_index_plugins),
+        user_profile_plugins=_count_by_kind(discovered, MemoryStorePluginKind.USER_PROFILE_STORE)
+        + _count_by_kind(explicit_classified, MemoryStorePluginKind.USER_PROFILE_STORE),
+        session_storage_plugins=_count_by_kind(discovered, MemoryStorePluginKind.SESSION_STORAGE)
+        + _count_by_kind(explicit_classified, MemoryStorePluginKind.SESSION_STORAGE),
+        session_turn_index_plugins=_count_by_kind(discovered, MemoryStorePluginKind.SESSION_TURN_INDEX)
+        + _count_by_kind(explicit_classified, MemoryStorePluginKind.SESSION_TURN_INDEX),
     )
 
 
 def discover_session_turn_index_plugin_types() -> list[type]:
-    """Return plugin classes exposing ``create_session_turn_index``."""
-    explicit: list[type] = []
-    for loaded in load_entry_point_plugins(EP_MEMORY_STORES):
-        plugin_type = loaded.plugin_type
-        if _is_session_turn_index_plugin(plugin_type):
-            explicit.append(plugin_type)
-    return explicit
+    """Return plugin classes classified as session turn index stores."""
+    classified = discover_classified_memory_store_plugins(discover_entry_points=True)
+    return [
+        item.plugin_type
+        for item in classified
+        if item.kind is MemoryStorePluginKind.SESSION_TURN_INDEX
+    ]

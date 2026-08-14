@@ -4,7 +4,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Sequence
+from dataclasses import dataclass, replace
 from typing import Optional
 
 from intergrax.applications._shared.entity_graph_wiring import resolve_entity_graph_memory_store
@@ -13,6 +14,7 @@ from intergrax.applications._shared.memory_vector_wiring import (
     build_user_profile_manager,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.providers.document_store.mongodb.bundle import (
     MongoDBIntegrationBundle,
@@ -34,6 +36,12 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
 from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
 from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
+from intergrax.memory.resolver import (
+    MemoryStoreMaterializationContext,
+    MemoryStorePluginResolutionError,
+    materialize_session_storage,
+    materialize_user_profile_store,
+)
 
 
 @dataclass(frozen=True)
@@ -79,20 +87,11 @@ def _mongodb_integration_overrides(profile: IntegrationProfile) -> dict[str, obj
     return {}
 
 
-def resolve_memory_platform_wiring(
+def _resolve_baseline_memory_platform_wiring(
     env: ApplicationEnvironmentProfile,
-    *,
-    integration_profile: IntegrationProfile | None = None,
+    profile: IntegrationProfile,
 ) -> MemoryPlatformWiring:
-    """
-    Resolve durable memory backends from the integration profile.
-
-    Priority:
-    1. SQLite relational_store — session + user LTM + org profile (lab default).
-    2. MongoDB document_store — user LTM artifacts when SQLite is not enabled (MEM-PERS.2).
-    3. In-memory fallbacks for session and user LTM.
-    """
-    profile = integration_profile or env.integration_profile
+    """Resolve integration-backed memory stores without external plugin overlay."""
     entity_graph_store = resolve_entity_graph_memory_store(env)
     if _sqlite_enabled(profile):
         bundle = create_sqlite_integration(**_sqlite_integration_overrides(profile))
@@ -134,6 +133,81 @@ def resolve_memory_platform_wiring(
     )
 
 
+def _apply_external_memory_store_overlay(
+    wiring: MemoryPlatformWiring,
+    env: ApplicationEnvironmentProfile,
+    profile: IntegrationProfile,
+    *,
+    tenant_id: str | None,
+    discover_entry_points: bool,
+    explicit_memory_plugins: Sequence[type] = (),
+) -> MemoryPlatformWiring:
+    memory_profile = env.memory_profile
+    user_plugin_id = memory_profile.user_profile_store_plugin_id
+    session_plugin_id = memory_profile.session_storage_plugin_id
+    if user_plugin_id is None and session_plugin_id is None:
+        return wiring
+
+    if not discover_entry_points:
+        raise MemoryStorePluginResolutionError(
+            "External memory store plugin selection requires plugin discovery to be enabled"
+        )
+
+    materialization_ctx = MemoryStoreMaterializationContext(
+        env=env,
+        tenant_id=tenant_id,
+        integration_profile=profile,
+    )
+    updated = wiring
+    if user_plugin_id is not None:
+        user_profile_store = materialize_user_profile_store(
+            user_plugin_id,
+            materialization_ctx,
+            discover_entry_points=True,
+            explicit_plugins=explicit_memory_plugins,
+        )
+        updated = replace(updated, user_profile_store=user_profile_store)
+    if session_plugin_id is not None:
+        session_storage = materialize_session_storage(
+            session_plugin_id,
+            materialization_ctx,
+            discover_entry_points=True,
+            explicit_plugins=explicit_memory_plugins,
+        )
+        updated = replace(updated, session_storage=session_storage)
+    return updated
+
+
+def resolve_memory_platform_wiring(
+    env: ApplicationEnvironmentProfile,
+    *,
+    integration_profile: IntegrationProfile | None = None,
+    tenant_id: str | None = None,
+    discover_entry_points: bool | None = None,
+    explicit_memory_plugins: Sequence[type] = (),
+) -> MemoryPlatformWiring:
+    """
+    Resolve durable memory backends from the integration profile.
+
+    Priority:
+    1. SQLite relational_store — session + user LTM + org profile (lab default).
+    2. MongoDB document_store — user LTM artifacts when SQLite is not enabled (MEM-PERS.2).
+    3. In-memory fallbacks for session and user LTM.
+    4. Explicit external Memory store plugin ids overlay their owned slots only.
+    """
+    profile = integration_profile or env.integration_profile
+    wiring = _resolve_baseline_memory_platform_wiring(env, profile)
+    discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
+    return _apply_external_memory_store_overlay(
+        wiring,
+        env,
+        profile,
+        tenant_id=tenant_id,
+        discover_entry_points=discover,
+        explicit_memory_plugins=explicit_memory_plugins,
+    )
+
+
 def build_session_manager_from_environment(
     env: ApplicationEnvironmentProfile,
     *,
@@ -146,6 +220,7 @@ def build_session_manager_from_environment(
     wiring = memory_wiring or resolve_memory_platform_wiring(
         env,
         integration_profile=integration_profile,
+        tenant_id=tenant_id,
     )
     memory_profile = env.memory_profile
 

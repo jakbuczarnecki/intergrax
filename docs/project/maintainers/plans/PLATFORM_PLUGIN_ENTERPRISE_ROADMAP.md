@@ -27,11 +27,11 @@ Enterprise Platform Plugin work is **architecturally bounded, dependency-ordered
 | Verdict | Detail |
 |---------|--------|
 | **Candidates** | CAND-001…008 **CONFIRMED** as enterprise; CAND-009 remains **non-enterprise** (hardening, resolved) |
-| **Critical path** | BLOCK C → BLOCK A → BLOCK B **CLOSED** → **BLOCK D (next)** → BLOCK E |
-| **Parallel track** | BLOCK D (Memory typed resolution) — **NEXT** after BLOCK B closeout |
+| **Critical path** | BLOCK C → BLOCK A → BLOCK B **CLOSED** → **BLOCK D (READY_FOR_REVIEW)** → BLOCK E |
+| **Parallel track** | BLOCK D (Memory typed resolution) — **READY_FOR_REVIEW** |
 | **Low priority** | BLOCK E (Context scaffold DX) — no runtime architecture |
-| **Not enterprise-ready today** | BLOCK B governance closed; Memory resolution, Context DX, production qualification, and remaining exit gates still open |
-| **Migration debt** | `memory_bootstrap.py` method-shape `hasattr` probing — replace in BLOCK D, not extend |
+| **Not enterprise-ready today** | BLOCK D evidence pending independent review; Context DX, production qualification, and remaining exit gates still open |
+| **Migration debt** | `memory_bootstrap.py` method-shape `hasattr` probing — **resolved in BLOCK D** |
 
 **Recommended implementation order:** BLOCK C → BLOCK A → BLOCK B → BLOCK D → BLOCK E
 
@@ -42,7 +42,7 @@ Enterprise Platform Plugin work is **architecturally bounded, dependency-ordered
 | **BLOCK C** | ENTERPRISE-2 | **CLOSED** | Plugin loading security / admission / isolation finished |
 | **BLOCK A** | ENTERPRISE-3 | **CLOSED** | Policy plugin runtime wiring finished |
 | **BLOCK B** | ENTERPRISE-4 | **CLOSED** | Policy enforcement + HITL governance finished |
-| **BLOCK D** | ENTERPRISE-5 | **NEXT** | External Memory plugins materialize (CAND-001 + CAND-002) |
+| **BLOCK D** | ENTERPRISE-5 | **READY_FOR_REVIEW** | External Memory plugins materialize (CAND-001 + CAND-002) |
 | **BLOCK E** | ENTERPRISE-6 | **PLANNED** | Context plugin scaffold DX (CAND-003) |
 
 **Qualification seam (not a BLOCK B blocker):** `QUALIFICATION_STILL_DEFERRED` — production package/version compatibility admission remains a deferred ENTERPRISE gap; BLOCK B governance requirements are closed without claiming full enterprise-ready status.
@@ -115,7 +115,7 @@ Evidence: `policy_wiring.py` places `policy_rules` + fresh `PolicyRuleRegistry()
 | `UserProfileStorePlugin` | `memory/contracts/memory_store_plugin.py` | Counted via `hasattr` | **Not wired** — `resolve_memory_platform_wiring` uses integration profile only |
 | `SessionStoragePlugin` | `memory/contracts/memory_store_plugin.py` | Counted via `hasattr` | **Not wired** |
 
-Evidence: `memory_wiring.py:resolve_memory_platform_wiring` — SQLite/MongoDB/in-memory only; `memory_bootstrap.py:26-35` — `hasattr` method-shape dispatch (**migration debt**).
+Evidence: `memory_wiring.py:resolve_memory_platform_wiring` — SQLite/MongoDB/in-memory baseline + optional typed external overlay via `intergrax/memory/resolver/`; `memory_bootstrap.py` — typed `MemoryStorePluginKind` classifier (**migration debt resolved in BLOCK D**).
 
 ---
 
@@ -123,8 +123,8 @@ Evidence: `memory_wiring.py:resolve_memory_platform_wiring` — SQLite/MongoDB/i
 
 | ID | Outcome | Gap exists? | Owner module(s) | Severity | Operator impact | Workaround | Workaround status |
 |----|---------|-------------|-----------------|----------|-----------------|------------|-------------------|
-| **CAND-001** | **CONFIRMED** | Yes | `memory_bootstrap.py` (count), `memory_wiring.py` (resolution) | Medium | External user-profile store EPs install but do not affect Tier-3 hosts | Explicit `MemoryPlatformWiring(user_profile_store=...)` | **Supported** — documented in MEMORY_STORE_PLUGIN_AUTHOR_GUIDE §11 |
-| **CAND-002** | **CONFIRMED** | Yes | Same as CAND-001 | Medium | External session storage EPs do not materialize | Explicit `MemoryPlatformWiring(session_storage=...)` | **Supported** — documented |
+| **CAND-001** | **READY_FOR_REVIEW** | No (implemented) | `memory_wiring.py`, `intergrax/memory/resolver/` | Medium | External user-profile store EPs materialize when `MemoryProfile.user_profile_store_plugin_id` set and discovery enabled | Explicit `MemoryPlatformWiring(user_profile_store=...)` | **Supported** — opt-in profile field + EP discovery |
+| **CAND-002** | **READY_FOR_REVIEW** | No (implemented) | Same as CAND-001 | Medium | External session storage EPs materialize when `MemoryProfile.session_storage_plugin_id` set | Explicit `MemoryPlatformWiring(session_storage=...)` | **Supported** — opt-in profile field + EP discovery |
 | **CAND-003** | **CONFIRMED** | Yes | `intergrax/scaffold/` (Tools only) | Low | No `new-context-bundle` / `extensions/` hook for Context | Manual `register_context_plugin()` or EP wheel | **Supported** — documented in CONTEXT_PLUGIN_AUTHOR_GUIDE §5 |
 | **CAND-004** | **CONFIRMED** | Yes | `defense_plugin_loader.py`, `defense_registry.py` | **High** | Malicious/misconfigured EP can silently replace shipped defense (`override=True`) | Disable EP discovery; host-only registration | **Supported** — `discover_entry_points=False` default |
 | **CAND-005** | **CONFIRMED** | Yes | Security + Policy loaders; primitive in `discovery.py` | Medium | One broken EP aborts entire domain load | Disable discovery; fix broken package | **Supported** — documented fail-fast |
@@ -604,15 +604,16 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | **Likely files** | `memory_wiring.py`, `memory_bootstrap.py`, `memory_vector_wiring.py`, `memory_store_plugin.py` (unchanged), `environment_profile` memory profile fields |
 | **Complexity** | **L** |
 | **Order** | **4** |
+| **Status** | **READY_FOR_REVIEW** |
 
 **Acceptance gates:**
-- [ ] EP `UserProfileStorePlugin` materializes via `resolve_memory_platform_wiring` when configured
-- [ ] EP `SessionStoragePlugin` same
-- [ ] `hasattr` method-shape dispatch **removed** from `memory_bootstrap.py`
-- [ ] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0`
-- [ ] Integration test with `tests/fixtures/plugin_packages/memory_store_plugin/`
-- [ ] Default hosts unchanged without `MemoryProfile` external plugin selection
-- [ ] Session turn index path uses same classifier (no regression)
+- [x] EP `UserProfileStorePlugin` materializes via `resolve_memory_platform_wiring` when configured
+- [x] EP `SessionStoragePlugin` same
+- [x] `hasattr` method-shape dispatch **removed** from `memory_bootstrap.py`
+- [x] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0`
+- [x] Integration test with `tests/fixtures/plugin_packages/memory_store_plugin/`
+- [x] Default hosts unchanged without `MemoryProfile` external plugin selection
+- [x] Session turn index path uses same classifier (no regression)
 
 ---
 
@@ -679,8 +680,8 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 | 4 | Policy runtime enforcement | YAML deny rule blocks tool execution in standard wired host | **SATISFIED** (BLOCK B / CAND-007) |
 | 5 | Policy provenance | `PolicyBundleProvenance` on typed `declarative_policy_runtime` when `policy_rules` configured | **SATISFIED** (BLOCK B / CAND-008) |
 | 6 | Handler allowlist | Production profile rejects non-allowlisted `rule_id` at registration | **SATISFIED** (BLOCK B / CAND-008) |
-| 7 | Typed Memory external resolution | EP user-profile + session plugins materialize without host manual wiring | **OPEN** — ENTERPRISE-5 / BLOCK D |
-| 8 | Tenant/application isolation | `DeclarativePolicyRuntime` per-bundle via typed field; memory materialization requires explicit `tenant_id` where domain requires | **PARTIAL** — policy per-bundle satisfied; memory tenant path pending BLOCK D |
+| 7 | Typed Memory external resolution | EP user-profile + session plugins materialize without host manual wiring | **READY_FOR_REVIEW** — ENTERPRISE-5 / BLOCK D evidence in `tests/unit/memory/test_memory_store_resolver.py` |
+| 8 | Tenant/application isolation | `DeclarativePolicyRuntime` per-bundle via typed field; memory materialization requires explicit `tenant_id` where domain requires | **PARTIAL** — policy per-bundle satisfied; memory `tenant_id` propagated via `MemoryStoreMaterializationContext` (BLOCK D evidence) |
 | 9 | Operator visibility | Bootstrap summary available per domain (not necessarily unified F006 UI) | **SATISFIED** (BLOCK C) |
 | 10 | Production qualification | Deferred — enforced at BLOCK A/host admission with package/version/compatibility evidence via `evaluate_package_production_admission`; not represented on BLOCK C `SecurityDefenseAdmissionPolicy` | **DEFERRED** (`QUALIFICATION_STILL_DEFERRED`) |
 | 11 | Backwards compatibility | Legacy profile flags restore pre-enterprise behavior for one release cycle | **SATISFIED** (migration profiles shipped) |
@@ -746,8 +747,8 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 | **ENTERPRISE-3** | BLOCK A — Policy runtime foundation |
 | **ENTERPRISE-4** | BLOCK B — Policy enforcement & governance — **CLOSED** |
 | **ENTERPRISE-4-CLOSEOUT** | BLOCK B evidence, status & roadmap closure — **CLOSED** |
-| **ENTERPRISE-5** | BLOCK D — Memory typed external store resolution — **NEXT** |
-| **ENTERPRISE-6** | BLOCK E — Context scaffold DX parity |
+| **ENTERPRISE-5** | BLOCK D — Memory typed external store resolution — **READY_FOR_REVIEW** |
+| **ENTERPRISE-6** | BLOCK E — Context scaffold DX parity — **NEXT** |
 | **ENTERPRISE-INV-1** (optional, later) | F006 unified operator inventory — only if OPEN_ARCH-004 resolves to option B |
 
 ---
@@ -794,12 +795,14 @@ Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](
 | Typed composition target | §7 — `DeclarativePolicyRuntime` on `RuntimePolicyBundle`; not `domain_fragments` for new consumers |
 | Unknown handler fail-closed DENY | `intergrax/runtime/policy/rules/registry.py` (`evaluate_rule` → `PolicyRuleAction.DENY`, `unknown_handler=True`); `test_policy_registry.py::test_unknown_handler_fail_closed` |
 | Declarative enforcement at tool boundary | `intergrax/runtime/policy/declarative_enforcer.py`; `test_declarative_enforcer.py`, `test_declarative_policy_e2e.py` |
-| REQUIRE_HITL canonical Nexus lifecycle | `test_declarative_policy_hitl_bridge.py`, `test_integration/runtime/test_declarative_policy_hitl_nexus_e2e.py` |
+| REQUIRE_HITL canonical Nexus lifecycle | `test_declarative_policy_hitl_bridge.py`, `tests/integration/runtime/test_declarative_policy_hitl_nexus_e2e.py` |
 | HITL grant coordinator / ambiguity fail-closed | `test_declarative_hitl_tool_loop_grant_resolution.py`, `test_declarative_hitl_acceptance.py` (A–P suite) |
 | Handler allowlist + provenance | `PolicyBundleProvenance`, handler admission gates — BLOCK B / CAND-008 |
 | Security `override=True` (baseline) | `intergrax/runtime/security/defense_plugin_loader.py:29` — **historical baseline**; resolved in BLOCK C |
-| Memory `hasattr` probing | `intergrax/core/memory_bootstrap.py:20-35` |
-| Memory wiring integration-only | `intergrax/applications/_shared/memory_wiring.py:82-134` |
+| Memory typed classifier + resolver | `intergrax/memory/resolver/` — `MemoryStorePluginKind`, `discover_classified_memory_store_plugins`, `materialize_*` |
+| Memory external overlay wiring | `intergrax/applications/_shared/memory_wiring.py` — `MemoryProfile.user_profile_store_plugin_id` / `session_storage_plugin_id` |
+| Memory bootstrap classifier migration | `intergrax/core/memory_bootstrap.py` — zero method-shape `hasattr` |
+| Memory fixture EP integration | `tests/fixtures/plugin_packages/memory_store_plugin/`, `tests/unit/memory/test_memory_store_resolver.py` |
 | Session turn index wired | `intergrax/applications/_shared/memory_vector_wiring.py:121-128` |
 | Shared conflict/isolation primitives | `intergrax/core/plugins/discovery.py:19-20, 61-66, 161-196` |
 | Context configurable conflict (reference) | `intergrax/context/bootstrap.py:45-59` |
@@ -829,7 +832,7 @@ Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](
 | **Canonical HITL** | **PASS** |
 | **Ambiguous/no-match** | **FAIL-CLOSED PASS** |
 | **Typed task identity** | **PASS** |
-| **Next block** | ENTERPRISE-5 / BLOCK D |
+| **Next block** | ENTERPRISE-6 / BLOCK E |
 
 **Committed test evidence (not re-run in closeout):**
 
