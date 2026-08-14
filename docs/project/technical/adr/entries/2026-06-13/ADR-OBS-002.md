@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-13 |
 | **Deciders** | Harness platform + partner (AgentReceipt PoC) |
-| **Related** | [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §18 · [ADR-OBS-001](../2026-06-08/ADR-OBS-001.md) · `applications/attestation_demo/adr/ADR-ATTESTATION_DEMO-001.md` |
+| **Related** | [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §18 · [ADR-OBS-001](../2026-06-08/ADR-OBS-001.md) · `applications/attestation_demo/docs/adr/ADR-ATTESTATION_DEMO-001.md` |
 
 ## Context
 

@@ -5,7 +5,7 @@
 **Platform reference:** [`docs/project/technical/platform/governed_external_execution.md`](../../platform/governed_external_execution.md) — ownership · lifecycle · invariants
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)  
-**Host architecture:** [`docs/project/technical/applications/governed_contractor_application/ARCHITECTURE.md`](../../applications/governed_contractor_application/ARCHITECTURE.md)
+**Host architecture:** [`applications/governed_contractor_application/docs/ARCHITECTURE.md`](../../applications/governed_contractor_application/docs/ARCHITECTURE.md)
 
 This agent is a **Tier-2 domain adapter**, not a second orchestration system. Nexus owns multi-step task orchestration; this package maps external work into Intergrax contracts via the GEC-2 Protocol and may **surface** a governed continuation blocker / **forward** continuation evidence (GEC-4).
 

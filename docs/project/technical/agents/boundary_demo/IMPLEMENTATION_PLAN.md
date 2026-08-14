@@ -2,7 +2,7 @@
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../architecture/intergrax_runtime_architecture.md)
-Host tracker: [`docs/project/technical/applications/attestation_demo/IMPLEMENTATION_PLAN.md`](../../applications/attestation_demo/IMPLEMENTATION_PLAN.md)
+Host tracker: [`applications/attestation_demo/docs/IMPLEMENTATION_PLAN.md`](../../applications/attestation_demo/docs/IMPLEMENTATION_PLAN.md)
 
 Principle: **stable PoC agent** · **no receipt logic in Tier-2** · **no Tier-3 imports in agent code**
 

@@ -33,7 +33,7 @@ Partners can sign separate receipts for tool execution and harness step completi
 |------|--------|
 | Architecture | `docs/project/architecture/OBSERVABILITY.md` §18 |
 | Plan | `docs/project/maintainers/plans/OBSERVABILITY.md` EBE-8 |
-| Application | `applications/attestation_demo/ARCHITECTURE.md` |
+| Application | `applications/attestation_demo/docs/ARCHITECTURE.md` |
 | ADR | `docs/project/technical/adr/entries/2026-06-13/ADR-OBS-002.md` |
 
 ## Changed artifacts

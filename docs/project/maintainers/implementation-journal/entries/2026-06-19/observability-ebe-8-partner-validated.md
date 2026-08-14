@@ -34,7 +34,7 @@ EBE-8 PoC v2 is **partner-validated** end-to-end. Handoff reference commit and b
 | Architecture | `docs/project/architecture/OBSERVABILITY.md` §18 |
 | Plan | `docs/project/maintainers/plans/OBSERVABILITY.md` EBE-8 |
 | Handoff | `applications/attestation_demo/partner_handoff/README.md` |
-| Runbook | `applications/attestation_demo/DOCKER_VERIFY_RUNBOOK.md` |
+| Runbook | `applications/attestation_demo/docs/DOCKER_VERIFY_RUNBOOK.md` |
 
 ## Partner evidence (external)
 
@@ -49,7 +49,7 @@ EBE-8 PoC v2 is **partner-validated** end-to-end. Handoff reference commit and b
 
 - `docs/project/maintainers/plans/OBSERVABILITY.md` — EBE-8 partner-validated acceptance
 - `docs/project/architecture/OBSERVABILITY.md` — §18 partner validation + trace scope
-- `applications/attestation_demo/DOCKER_VERIFY_RUNBOOK.md` — buildx fallback
+- `applications/attestation_demo/docs/DOCKER_VERIFY_RUNBOOK.md` — buildx fallback
 - `applications/attestation_demo/docker/build-docker.sh` — auto-fallback on `--ignorefile` failure
 - `applications/attestation_demo/partner_handoff/README.md` — trace vs boundary correlation
 

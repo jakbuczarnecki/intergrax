@@ -63,8 +63,6 @@ def test_application_pyproject_workspace_contract(app_pkg: str) -> None:
     assert "build_application_image.py" in dockerfile or "runtime-graph" in dockerfile.lower() or "materialized" in dockerfile.lower()
     assert "COPY agents/local_" not in dockerfile or "materialized" in dockerfile.lower()
     deploy = REPO / "applications" / app_pkg / "docs" / "BUILD_AND_DEPLOY.md"
-    if not deploy.is_file() and app_pkg == "attestation_demo":
-        deploy = REPO / "applications" / app_pkg / "BUILD_AND_DEPLOY.md"
     text = deploy.read_text(encoding="utf-8")
     assert "pyproject.toml" in text
     assert (

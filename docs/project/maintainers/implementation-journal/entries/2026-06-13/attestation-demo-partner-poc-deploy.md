@@ -15,7 +15,7 @@ plan_ref:
   - EBE-6
 status: completed
 commit: pending
-adr: docs/project/technical/adr/entries/2026-06-13/ADR-OBS-002.md · applications/attestation_demo/adr/ADR-ATTESTATION_DEMO-001.md
+adr: docs/project/technical/adr/entries/2026-06-13/ADR-OBS-002.md · applications/attestation_demo/docs/adr/ADR-ATTESTATION_DEMO-001.md
 ---
 
 # EBE PoC v1 — deployable attestation_demo for AgentReceipt partner handoff
@@ -36,9 +36,9 @@ External partners can trigger governed `records.put` execution, receive unsigned
 
 | Link | Target |
 |------|--------|
-| Architecture | `docs/project/architecture/OBSERVABILITY.md` §18 · `applications/attestation_demo/ARCHITECTURE.md` |
+| Architecture | `docs/project/architecture/OBSERVABILITY.md` §18 · `applications/attestation_demo/docs/ARCHITECTURE.md` |
 | Plan | `docs/project/maintainers/plans/OBSERVABILITY.md` Phase EBE |
-| ADR | `docs/project/technical/adr/entries/2026-06-13/ADR-OBS-002.md` · `applications/attestation_demo/adr/ADR-ATTESTATION_DEMO-001.md` |
+| ADR | `docs/project/technical/adr/entries/2026-06-13/ADR-OBS-002.md` · `applications/attestation_demo/docs/adr/ADR-ATTESTATION_DEMO-001.md` |
 | Partner handoff | `applications/attestation_demo/partner_handoff/README.md` |
 
 ## Changed artifacts

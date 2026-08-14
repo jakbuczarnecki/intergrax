@@ -16,7 +16,7 @@ Tier-2 agent logic lives in `agents/` — not here.
 Isolation (current monorepo): **declaration** and **dependency-graph** isolation per application project are supported; the default physical environment remains the workspace root `.venv` (not one `.venv` per app unless `UV_PROJECT_ENVIRONMENT` is set). Each Docker image has its own `/app/.venv` and contains only the declared runtime graph (no sibling Tier-3 sources, no undeclared agents).
 
 **Proof evidence:** Application-scoped live evidence belongs under
-`../docs/project/technical/applications/<app>/proof` when the execution uses that application as the
+`applications/<app>/docs/proof` when the execution uses that application as the
 reference host and closes an application roadmap gate.
 Reusable proof harnesses and platform provider tests remain in platform-owned
 locations.
@@ -270,7 +270,7 @@ applications/my_lab_application/docker/build-docker.sh
 docker run --env-file applications/my_lab_application/.env -p 8091:8091 my-lab-application
 ```
 
-Manual build: see `../docs/project/technical/applications/<app>/BUILD_AND_DEPLOY.md`.
+Manual build: see `applications/<app>/docs/BUILD_AND_DEPLOY.md`.
 
 ### Docker and CI
 

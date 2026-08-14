@@ -2,7 +2,7 @@
 
 Case material intake for **Dispute Simulation Workspace (DSW)** — classify documents, build chronology, ingest to case-scoped RAG.
 
-**Host:** [`applications/dispute_sim_application/`](../../applications/dispute_sim_application/) · **Product architecture:** [ARCHITECTURE.md](../../docs/project/technical/applications/dispute_sim_application/ARCHITECTURE.md)
+**Host:** [`applications/dispute_sim_application/`](../../applications/dispute_sim_application/) · **Product architecture:** [ARCHITECTURE.md](../../applications/dispute_sim_application/docs/ARCHITECTURE.md)
 **Agent roster:** [`agents/README.md`](../README.md)
 
 ## Docs

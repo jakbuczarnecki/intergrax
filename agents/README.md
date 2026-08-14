@@ -80,7 +80,7 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 | `dispute_strategist` | `dispute.strategy` | Attack/defense lines, emphasis map |
 | `dispute_scenario` | `dispute.scenario` | Court variants, correspondence review |
 
-**Host:** [`applications/dispute_sim_application/`](../applications/dispute_sim_application/) · **Architecture:** [ARCHITECTURE.md](../docs/project/technical/applications/dispute_sim_application/ARCHITECTURE.md)
+**Host:** [`applications/dispute_sim_application/`](../applications/dispute_sim_application/) · **Architecture:** [ARCHITECTURE.md](../applications/dispute_sim_application/docs/ARCHITECTURE.md)
 
 ### Legal review (single-agent SKU)
 
@@ -107,7 +107,7 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 
 Optional specialists (Legal, Research, …) are mounted in the same Tier-3 host via env flags; Nexus delegates — hub does not call them directly.
 
-**Host:** [`applications/intergrax_assistant_application/`](../applications/intergrax_assistant_application/) · **Architecture:** [ARCHITECTURE.md](../docs/project/technical/applications/intergrax_assistant_application/ARCHITECTURE.md)
+**Host:** [`applications/intergrax_assistant_application/`](../applications/intergrax_assistant_application/) · **Architecture:** [ARCHITECTURE.md](../applications/intergrax_assistant_application/docs/ARCHITECTURE.md)
 
 ---
 

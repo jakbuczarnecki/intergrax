@@ -1071,8 +1071,8 @@ See [`plan/PLATFORM_FOUNDATION.md) Phase N for step-by-step delivery.
 |-------|----------|
 | Tier-3 host | `applications/intergrax_assistant_application` |
 | Hub agent | `agents/intergrax_assistant` — capability `platform.assist` |
-| Architecture | [`applications/intergrax_assistant_application/ARCHITECTURE.md`](../../technical/applications/intergrax_assistant_application/ARCHITECTURE.md) |
-| ADR | [`ADR-INTERGRAX_ASSISTANT-001`](../../technical/applications/intergrax_assistant_application/adr/ADR-INTERGRAX_ASSISTANT-001.md) |
+| Architecture | [`applications/intergrax_assistant_application/docs/ARCHITECTURE.md`](../../applications/intergrax_assistant_application/docs/ARCHITECTURE.md) |
+| ADR | [`ADR-INTERGRAX_ASSISTANT-001`](../../applications/intergrax_assistant_application/docs/adr/ADR-INTERGRAX_ASSISTANT-001.md) |
 
 **Topology (hub-and-spoke):**
 

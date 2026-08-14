@@ -3,7 +3,7 @@
 **Status:** Scaffold baseline (2026-06-08) — hub / concierge role defined  
 **Tier:** Tier-2 (`agents/intergrax_assistant`)
 **Host:** [`applications/intergrax_assistant_application`](../../applications/intergrax_assistant_application/)
-**Platform ADR:** [`ADR-INTERGRAX_ASSISTANT-001`](../../applications/intergrax_assistant_application/adr/ADR-INTERGRAX_ASSISTANT-001.md)
+**Platform ADR:** [`ADR-INTERGRAX_ASSISTANT-001`](../../applications/intergrax_assistant_application/docs/adr/ADR-INTERGRAX_ASSISTANT-001.md)
 
 ---
 

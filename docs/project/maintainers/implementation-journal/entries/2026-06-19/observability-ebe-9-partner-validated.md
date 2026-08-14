@@ -51,8 +51,8 @@ EBE-9 PoC is **partner-validated** end-to-end on both sides. Intergrax host sign
 - `docs/project/maintainers/plans/OBSERVABILITY.md` — EBE-9 partner-validated acceptance
 - `docs/project/architecture/OBSERVABILITY.md` — §18 EBE-9 validation pins + non-goals cleanup
 - `applications/attestation_demo/partner_handoff/README.md` — dual validation pins (EBE-8 + EBE-9)
-- `applications/attestation_demo/IMPLEMENTATION_PLAN.md` — partner-validated status
-- `applications/attestation_demo/ARCHITECTURE.md` — partner-validated status
+- `applications/attestation_demo/docs/IMPLEMENTATION_PLAN.md` — partner-validated status
+- `applications/attestation_demo/docs/ARCHITECTURE.md` — partner-validated status
 
 ## Verification
 

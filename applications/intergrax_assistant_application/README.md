@@ -2,7 +2,7 @@
 
 Harness-native conversational lab — hub agent, swappable LLM (local Ollama default), optional platform specialist delegation.
 
-**Architecture:** [`ARCHITECTURE.md`](../../docs/project/technical/applications/intergrax_assistant_application/ARCHITECTURE.md) · **ADR:** [`adr/ADR-INTERGRAX_ASSISTANT-001.md`](../../docs/project/technical/applications/intergrax_assistant_application/adr/ADR-INTERGRAX_ASSISTANT-001.md)
+**Architecture:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **ADR:** [`adr/ADR-INTERGRAX_ASSISTANT-001.md`](docs/adr/ADR-INTERGRAX_ASSISTANT-001.md)
 
 ## Quick start
 
@@ -42,4 +42,4 @@ INTERGRAX_ASSISTANT_INCLUDE_LEGAL=true
 INTERGRAX_ASSISTANT_INCLUDE_RESEARCH=true
 ```
 
-Nexus delegates to mounted agents — see [`ARCHITECTURE.md` §3](../../docs/project/technical/applications/intergrax_assistant_application/ARCHITECTURE.md).
+Nexus delegates to mounted agents — see [`ARCHITECTURE.md` §3](docs/ARCHITECTURE.md).

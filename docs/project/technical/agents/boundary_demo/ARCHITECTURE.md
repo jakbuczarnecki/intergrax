@@ -57,4 +57,4 @@ run_step(store_demo_record):
 ## Registration
 
 - Tier-3 host: `AgentBinding.mount(BoundaryDemoAgent, ...)` in `applications/attestation_demo/manifest.py`
-- Canon: [`docs/project/technical/applications/attestation_demo/ARCHITECTURE.md`](../../applications/attestation_demo/ARCHITECTURE.md) §10
+- Canon: [`applications/attestation_demo/docs/ARCHITECTURE.md`](../../applications/attestation_demo/docs/ARCHITECTURE.md) §10

@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-07-20 |
 | **Deciders** | Platform / GEC-1 |
-| **Related** | GEC host [`IMPLEMENTATION_PLAN.md`](../../../applications/governed_contractor_application/IMPLEMENTATION_PLAN.md) · [`intergrax/contracts/external_work.py`](../../../../../../intergrax/contracts/external_work.py) · [`intergrax/contracts/money.py`](../../../../../../intergrax/contracts/money.py) · Platform consolidation [`governed_external_execution.md`](../../../platform/governed_external_execution.md) |
+| **Related** | GEC host [`IMPLEMENTATION_PLAN.md`](../../../applications/governed_contractor_application/docs/IMPLEMENTATION_PLAN.md) · [`intergrax/contracts/external_work.py`](../../../../../../intergrax/contracts/external_work.py) · [`intergrax/contracts/money.py`](../../../../../../intergrax/contracts/money.py) · Platform consolidation [`governed_external_execution.md`](../../../platform/governed_external_execution.md) |
 
 ## Context
 

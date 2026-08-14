@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-07-20 |
 | **Deciders** | Platform / GEC bootstrap |
-| **Related** | [`ARCHITECTURE.md`](../ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) · Host [`ADR-GOVERNED_CONTRACTOR-001`](../../../applications/governed_contractor_application/adr/ADR-GOVERNED_CONTRACTOR-001.md) |
+| **Related** | [`ARCHITECTURE.md`](../ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) · Host [`ADR-GOVERNED_CONTRACTOR-001`](../../../applications/governed_contractor_application/docs/adr/ADR-GOVERNED_CONTRACTOR-001.md) |
 
 ## Context
 
