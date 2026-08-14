@@ -390,7 +390,7 @@ Nexus (unchanged spine)
 | LKW factory | `applications/local_workspace_application/host/factory.py` | `create_local_workspace_backend_app` |
 | LKW agent factories | `applications/local_workspace_application/host/agent_factories.py` | `build_local_workspace_*_from_context` |
 | LKW agent listing | `applications/local_workspace_application/serving/fastapi_router.py` | `list_agents` |
-| LKW architecture | `docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md` | §5.1, §6 agent roster |
+| LKW architecture | `applications/local_workspace_application/docs/ARCHITECTURE.md` | §5.1, §6 agent roster |
 | Agent package example | `agents/local_search/pyproject.toml` | `intergrax-local-search-agent` |
 | Lifecycle governance | `intergrax/runtime/architecture/agent_lifecycle_governance.py` | `AgentLifecycleTransitionRequest` |
 | Certification eval | `intergrax/runtime/architecture/agent_certification.py` | `evaluate_agent_certification` |

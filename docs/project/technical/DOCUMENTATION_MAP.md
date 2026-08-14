@@ -68,7 +68,7 @@ Domain pair index (22 names): [audit/README.md § Domain index](../maintainers/a
 | `docs/project/maintainers/audit/*_ORCHESTRATOR.md` | Mode-specific procedure (A / B / C / I) | General onboarding |
 | [implementation-journal/](../maintainers/implementation-journal/README.md) | Milestone narrative (optional) | Plan source of truth or ADR store |
 
-**One source of truth per topic.** Canonical human-facing technical documentation lives under `docs/project/`, including product and agent documentation under `docs/project/technical/applications/` and `docs/project/technical/agents/`. Code-local README files, tooling documentation, and evidence may remain near `applications/<name>/` or `agents/<name>/` when their location is required by the code or workflow; those exceptions are not competing documentation roots.
+**One source of truth per topic.** Canonical platform, product, and agent technical documentation lives under `docs/project/`. Application-owned technical canon lives under `applications/*/docs/` (architecture, implementation plan, build/deploy, ADRs, application evidence). Code-local README files and workflow-adjacent artifacts may remain at the application or agent root when required by tooling; those are not competing documentation roots.
 
 ---
 

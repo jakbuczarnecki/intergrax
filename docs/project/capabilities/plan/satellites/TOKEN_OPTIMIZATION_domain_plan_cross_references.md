@@ -128,7 +128,7 @@ docs: add token optimization domain plan cross-references
 | TOKEN-10E in-cache compaction | feature plan + MEMORY (if persistent) |
 | TOKEN-10F..10G universal proof | feature plan + OBSERVABILITY |
 | TOKEN-10H README promotion | feature plan + public-adoption claims |
-| LKW-PF6-A..C product proof | docs/project/technical/applications/local_workspace_application/* (after TOKEN-10G) |
+| LKW-PF6-A..C product proof | applications/local_workspace_application/docs/* (after TOKEN-10G) |
 
 Domain plan row checklist addition:
 

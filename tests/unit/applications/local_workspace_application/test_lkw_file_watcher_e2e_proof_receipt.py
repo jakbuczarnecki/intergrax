@@ -230,7 +230,7 @@ def test_build_file_watcher_e2e_proof_receipt_maps_live_evidence() -> None:
     assert metadata["reviewer_guide"] == "docs/project/proofs/LKW_PLATFORM_PROOF.md"
     assert (
         metadata["verification_document"]
-            == "docs/project/technical/applications/local_workspace_application/"
+            == "applications/local_workspace_application/docs/"
         "LKW_7_FILE_WATCHER_VERIFICATION.md"
     )
 

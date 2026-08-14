@@ -96,7 +96,7 @@ includes, for example:
 
 ```text
 LKW:
-docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md
+applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md
 module architecture, operational proof, and lifecycle details
 
 Token Optimization:
@@ -194,7 +194,7 @@ A public claim update requires accepted evidence or a changed claim boundary.
 
 ```text
 LKW:
-docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md
+applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md
 
 Token Optimization:
 docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md
@@ -386,15 +386,15 @@ docs/project/architecture/intergrax_runtime_architecture.md
 docs/project/architecture/
 docs/project/maintainers/plans/
 docs/project/capabilities/
-docs/project/technical/applications/
+applications/<pkg>/docs/
 docs/project/technical/agents/
 ```
 
 This layer serves developers, architects, reviewers, and implementation agents.
-Code-local README files, tooling documentation, and evidence may remain near
-`applications/*/` or `agents/*/` when their location is required by the code or
-workflow; these are narrow exceptions, not competing canonical documentation
-roots.
+Application-owned technical canon (architecture, plan, build/deploy, ADRs, evidence)
+lives under `applications/<pkg>/docs/`. Code-local README files and workflow-adjacent
+artifacts may remain at the application or agent root when required by tooling; these
+are narrow exceptions, not competing canonical documentation roots.
 
 ### Layer 5 — Maintainer controls
 

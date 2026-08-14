@@ -179,7 +179,7 @@ Claim production-grade readiness only when applicable items below are **actually
 Rules:
 
 - **`closed proof != production complete`** — a closed platform proof remains valid; production gaps do not reopen proof scope.
-- Record gaps in the owning platform plan (for example [`docs/project/maintainers/plans/OBSERVABILITY.md`](../../../maintainers/plans/OBSERVABILITY.md) Phase OBS-VENDOR for observability vendors).
+- Record gaps in the owning platform plan (for example [`docs/project/maintainers/plans/OBSERVABILITY.md`](../../../../docs/project/maintainers/plans/OBSERVABILITY.md) Phase OBS-VENDOR for observability vendors).
 - Future hardening work continues without invalidating or reopening the already-valid platform proof.
 - Do not downgrade closed proof status when adding backlog items.
 
@@ -199,7 +199,7 @@ When closing any LKW-driven platform proof wave:
 | Platform proof | **Closed** | Elasticsearch/OpenSearch export through platform contract (`OBS-VENDOR-4A` … `OBS-VENDOR-5`); LKW proof workload and live readback (`OBS-VENDOR-7` live proof, [`ELASTICSEARCH_OBSERVABILITY_PROOF_2026_06_30.md`](ELASTICSEARCH_OBSERVABILITY_PROOF_2026_06_30.md)). |
 | Operational proof | **Closed** (proof environment) | Operator runbook, inspectors, and controlled local proof documented in [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md). |
 | Production-grade readiness | **Not claimed** | Auth/TLS, retention/rotation, batching policy, dashboards-as-code, CI/live automation, and full operational hardening remain open. |
-| Production hardening backlog | **Planned** | Tracked in [`docs/project/maintainers/plans/OBSERVABILITY.md`](../../../maintainers/plans/OBSERVABILITY.md) Phase OBS-VENDOR (`OBS-VENDOR-6`, `OBS-VENDOR-6C`, and related rows). |
+| Production hardening backlog | **Planned** | Tracked in [`docs/project/maintainers/plans/OBSERVABILITY.md`](../../../../docs/project/maintainers/plans/OBSERVABILITY.md) Phase OBS-VENDOR (`OBS-VENDOR-6`, `OBS-VENDOR-6C`, and related rows). |
 
 **Preserved distinction:** Elasticsearch/Kibana path is **closed for platform proof**, but **not production-grade**. Full **OBS-VENDOR** production hardening remains **Planned**.
 
@@ -213,7 +213,7 @@ When closing any LKW-driven platform proof wave:
 
 **Purpose:** Define exactly what the LKW Token Optimization proof must demonstrate **before** `TOKEN-1A` code starts. Token Optimization is a **cross-layer platform capability** — not a private LKW feature. Narrative: Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems — not hand-wired demos.
 
-Canonical detail: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0. Implementation schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout.
+Canonical detail: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../../docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0. Implementation schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout.
 
 ### 10.1 Representative LKW workflows
 
@@ -335,7 +335,7 @@ Token savings must be visible through the **Harness Observability Spine** or an 
 
 Proof must later show attribution by: `run_id`, `step_id`, `workflow_id`, `model`, `provider`, `profile`, `source/category`, `strategy`, `baseline_tokens`, `optimized_tokens`, `saved_tokens`, `saved_ratio`, `validation_status`, `fallback_status`.
 
-See [`docs/project/maintainers/plans/OBSERVABILITY.md`](../../../maintainers/plans/OBSERVABILITY.md) Phase TOKEN-OBS.
+See [`docs/project/maintainers/plans/OBSERVABILITY.md`](../../../../docs/project/maintainers/plans/OBSERVABILITY.md) Phase TOKEN-OBS.
 
 ### 10.9 Public proof format
 
@@ -399,7 +399,7 @@ Compare baseline and optimized runs: input tokens, content-reduction savings, pr
 
 **Maturity:** LKW-PF6-C closure is product proof — not automatic production-grade readiness. Distinction: proof design → platform proof → operational proof → production-grade readiness.
 
-Canonical detail: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6 proof phase map; schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6.
+Canonical detail: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../../docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6 proof phase map; schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6.
 
 ---
 
@@ -459,6 +459,6 @@ Machine-readable receipts are written to `.artifacts/proof/<timestamp>-<profile>
 - **Proof scripts** — bounded, operator-runnable evidence workloads referenced by the manifest.
 - **Real-provider qualification** — live `PASS` against Slack/Google/M365 requires credentials and explicit `live` profile execution; implementation `PASS` alone is not external qualification.
 
-Canonical manifest is the source of truth. Individual LKW reviewer guides (for example [`docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../../proofs/LKW_PLATFORM_PROOF.md)) explain how to run domain proofs; the suite orchestrates them without duplicating their implementation.
+Canonical manifest is the source of truth. Individual LKW reviewer guides (for example [`docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../../../docs/project/proofs/LKW_PLATFORM_PROOF.md)) explain how to run domain proofs; the suite orchestrates them without duplicating their implementation.
 
 ---

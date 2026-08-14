@@ -2,7 +2,7 @@
 
 **Architecture (1:1):** [`architecture/BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
-**Proof consumer:** LKW.4 ([`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) §6)
+**Proof consumer:** LKW.4 ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6)
 **Last updated:** 2026-07-08 — **BG-TASKS-ARCH-1** / **LKW.4E-ARCH-1** / **LKW.4E-PROOF-DOC-1**
 
 ---
@@ -200,5 +200,5 @@ When BG-TASKS phases are implemented, the platform must satisfy:
 - [`architecture/BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md)
 - [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) — `message_bus` category
 - [`plan/INTEGRATIONS.md`](INTEGRATIONS.md)
-- [`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`](../../technical/applications/local_workspace_application/ARCHITECTURE.md) §8.7
-- [`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) §6
+- [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7
+- [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6

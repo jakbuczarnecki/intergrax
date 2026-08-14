@@ -698,7 +698,7 @@ This proof:
 
 `PASS` means indexed local knowledge survived the restart.
 
-Latest recorded live result: [`LKW_5_PERSISTENCE_VERIFICATION.md`](../technical/applications/local_workspace_application/LKW_5_PERSISTENCE_VERIFICATION.md).
+Latest recorded live result: [`LKW_5_PERSISTENCE_VERIFICATION.md`](../../../applications/local_workspace_application/docs/LKW_5_PERSISTENCE_VERIFICATION.md).
 
 Do not use hard-reset-local-docker-all between the before/after search. Hard reset removes volumes and invalidates this persistence proof.
 
@@ -1858,4 +1858,4 @@ This proof does not establish combined indexed + live evidence, complete live-pr
 
 Claim types must be labeled: **real provider proof**, **controlled integration proof**, or **deterministic fixture proof**.
 
-Canonical roadmap: [`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+Canonical roadmap: [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md).

@@ -3,7 +3,7 @@
 **Status:** Canonical architecture (domain pair 1:1)
 **Plan (1:1):** [`plan/PROOF_RECEIPTS.md`](../maintainers/plans/PROOF_RECEIPTS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
-**Proof consumer:** LKW ([`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) §LKW-PR)
+**Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)
 **Last updated:** 2026-07-19 — **LKW.7C2 closed** (PROOF-RECEIPTS-1E remains closed)
 
 ---
@@ -190,7 +190,7 @@ LKW background-task workload
 
 **Workload proof:** `applications/local_workspace_application/scripts/run-lkw-file-watcher-e2e-proof.py`
 **Runner:** `applications/local_workspace_application/scripts/run-lkw-file-watcher-e2e-proof.bat`
-**Verification guide:** `docs/project/technical/applications/local_workspace_application/LKW_7_FILE_WATCHER_VERIFICATION.md`
+**Verification guide:** `applications/local_workspace_application/docs/LKW_7_FILE_WATCHER_VERIFICATION.md`
 **Public Steps:** Steps 12–13 in `docs/project/proofs/LKW_PLATFORM_PROOF.md`
 
 ```text
@@ -238,4 +238,4 @@ Public Steps 9 / Steps 12–13 in `LKW_PLATFORM_PROOF.md` document Mongo Express
 | DocumentStore contract | `intergrax/integrations/contracts/document_store.py` |
 | DocumentStore vendor contract | `intergrax/runtime/integrations/document_store.py` |
 | MongoDB provider | `intergrax/integrations/providers/document_store/mongodb` |
-| LKW proof schedule | `docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md` §LKW-PR |
+| LKW proof schedule | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` §LKW-PR |

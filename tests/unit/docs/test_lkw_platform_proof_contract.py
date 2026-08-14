@@ -45,7 +45,7 @@ def test_lkw_platform_proof_step_4_is_self_contained() -> None:
     )
     assert (
         "Use the local proof credentials from "
-        "`docs/project/technical/applications/local_workspace_application/SENTRY_OBSERVABILITY.md`"
+        "`applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md`"
         not in text
     )
 
@@ -189,14 +189,14 @@ def test_sentry_events_consumer_waits_for_kafka_topics() -> None:
 
 
 _IMPL_PLAN = (
-    _REPO_ROOT / "docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md"
+    _REPO_ROOT / "applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md"
 )
 _IMPL_PLAN_HISTORICAL = (
     _REPO_ROOT
-    / "docs/project/technical/applications/local_workspace_application/archive/IMPLEMENTATION_PLAN_2026-07-22.md"
+    / "applications/local_workspace_application/docs/archive/IMPLEMENTATION_PLAN_2026-07-22.md"
 )
 _LKW_ARCHITECTURE = (
-    _REPO_ROOT / "docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md"
+    _REPO_ROOT / "applications/local_workspace_application/docs/ARCHITECTURE.md"
 )
 _PROOF_RECEIPTS = _REPO_ROOT / "docs/project/architecture/PROOF_RECEIPTS.md"
 _RUNTIME_ARCHITECTURE = _REPO_ROOT / "docs/project/architecture/intergrax_runtime_architecture.md"

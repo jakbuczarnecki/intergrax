@@ -65,7 +65,7 @@ def main() -> int:
         "note=Start the LKW host with Slack companion enabled, send one approved DM, "
         "confirm threaded ack+answer, redeliver/duplicate once, then shut down cleanly. "
         "Record evidence under "
-        "docs/project/technical/applications/local_workspace_application/proof/ "
+        "applications/local_workspace_application/docs/proof/ "
         "only after a real Slack + Ask execution."
     )
     return 0

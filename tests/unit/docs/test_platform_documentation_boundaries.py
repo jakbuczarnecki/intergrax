@@ -86,15 +86,15 @@ def test_platform_doc_roots_exist_for_boundary_scope() -> None:
         "Sole `docs/` root file",
         "root `PROOFS.md`",
         "root proof dashboard",
-        "applications/*/docs/",
     )
     for phrase in stale_topology_language:
         assert phrase not in technical_map
         assert phrase not in public_architecture
 
     assert "docs/project/architecture/" in technical_map
+    assert "applications/*/docs/" in technical_map
     assert "docs/project/proofs/PROOFS.md" in public_architecture
-    assert "docs/project/technical/applications/" in public_architecture
+    assert "applications/<pkg>/docs/" in public_architecture
     assert "docs/project/technical/agents/" in public_architecture
 
     assert _provider_usage_files()

@@ -3,7 +3,7 @@
 **Task:** MVP-1  
 **Status:** complete  
 **Base commit:** `f290a6113703c65b824f4743ebdea5ee604eb51a`  
-**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../maintainers/plans/PRODUCT_FIRST_MVP.md)
+**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)
 
 ---
@@ -722,8 +722,8 @@ Do not implement these tests in MVP-1.
 Governing:
 
 - `docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md`
-- `docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`
-- `docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`
+- `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`
+- `applications/local_workspace_application/docs/ARCHITECTURE.md`
 
 LKW application:
 

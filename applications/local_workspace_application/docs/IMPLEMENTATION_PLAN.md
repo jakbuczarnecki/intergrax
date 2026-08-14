@@ -1,7 +1,7 @@
 # Local Workspace Application — Implementation Plan
 
 **Status:** Product-first MVP roadmap (2026-07-31)  
-**Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../maintainers/plans/PRODUCT_FIRST_MVP.md)
+**Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Ask Workspace discovery:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)  
 **Slack MVP discovery:** [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)  
@@ -9,7 +9,7 @@
 **Knowledge Intake discovery:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)  
 **Hybrid knowledge access:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)
 **Hybrid Ask architecture:** [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md)
-**External verification:** [`LKW_PLATFORM_PROOF.md`](../../../proofs/LKW_PLATFORM_PROOF.md)
+**External verification:** [`LKW_PLATFORM_PROOF.md`](../../../../docs/project/proofs/LKW_PLATFORM_PROOF.md)
 **Historical full plan:** [`archive/IMPLEMENTATION_PLAN_2026-07-22.md`](archive/IMPLEMENTATION_PLAN_2026-07-22.md)
 
 ## AUTHORITATIVE CURRENT STATUS
@@ -765,7 +765,7 @@ It must not create a second URL-specific queue, worker or document pipeline. URL
 
 **Why `1B-5-4` was superseded:** the target frontend will not use a separate strict URL command; one natural message can contain multiple source types and actions (attachments, URLs, local references, workspace targets). See [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md).
 
-Platform prerequisite: [`docs/project/architecture/WEB_CONTENT_CAPTURE.md`](../../../architecture/WEB_CONTENT_CAPTURE.md). `1B-5-1` is accepted; `LKW-CONVERSATIONAL-INTERACTION-1A` (planner contract) precedes `1B-5-2` so URL intake is designed as a planner action, not another terminal command.
+Platform prerequisite: [`docs/project/architecture/WEB_CONTENT_CAPTURE.md`](../../../../docs/project/architecture/WEB_CONTENT_CAPTURE.md). `1B-5-1` is accepted; `LKW-CONVERSATIONAL-INTERACTION-1A` (planner contract) precedes `1B-5-2` so URL intake is designed as a planner action, not another terminal command.
 
 ---
 
@@ -1187,7 +1187,7 @@ Token Optimization is a platform capability under `intergrax/runtime/token_optim
 | **LKW-PF6-B** | LKW-PF6-A, TOKEN-10D | Integrate public runtime contract |
 | **LKW-PF6-C** | LKW-PF6-B | Baseline vs optimized product proof |
 
-Canonical: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../capabilities/plan/TOKEN_OPTIMIZATION.md) · [`ARCHITECTURE.md`](ARCHITECTURE.md) (Token Optimization subsection) · [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §11.
+Canonical: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../../docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md) · [`ARCHITECTURE.md`](ARCHITECTURE.md) (Token Optimization subsection) · [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §11.
 
 ---
 

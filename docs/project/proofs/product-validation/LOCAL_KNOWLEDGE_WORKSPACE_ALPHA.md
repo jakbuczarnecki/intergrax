@@ -117,7 +117,7 @@ Share structured feedback via the collaboration tracks in [docs/project/communit
 
 | Document | Purpose |
 |----------|---------|
-| [Local Knowledge Workspace architecture](../../technical/applications/local_workspace_application/ARCHITECTURE.md) | Technical architecture baseline for the Tier-3 application |
+| [Local Knowledge Workspace architecture](../../../../applications/local_workspace_application/docs/ARCHITECTURE.md) | Technical architecture baseline for the Tier-3 application |
 | [README.md](../../../../README.md) | Project overview, proof path, documentation index |
 | [docs/project/overview/ROADMAP.md](../../overview/ROADMAP.md) | Public adoption roadmap and collaboration tracks |
 | [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md) | Collaboration model, permitted use, contact |

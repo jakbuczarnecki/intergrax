@@ -2,7 +2,7 @@
 
 **Architecture (1:1):** [`architecture/PROOF_RECEIPTS.md`](../../architecture/PROOF_RECEIPTS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
-**Proof consumer:** LKW-PR ([`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) §LKW-PR)
+**Proof consumer:** LKW-PR ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)
 **Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1E closed**
 
 ---

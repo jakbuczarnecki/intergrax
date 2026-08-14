@@ -37,10 +37,10 @@ docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md
   - add cross-plan ownership note
   - no copy of APP-HOST backlog
 
-docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md
+applications/local_workspace_application/docs/ARCHITECTURE.md
   - state LKW is first adopter/proof only
 
-docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md
+applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md
   - reframe LKW.6B as adoption/proof
   - block generic hosting work on platform APP-HOST foundation
 ```

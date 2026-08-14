@@ -138,7 +138,7 @@ Deeper technical owner:
 
 ## Concrete composition example: LKW
 
-[LKW](../technical/applications/local_workspace_application/ARCHITECTURE.md) demonstrates the pattern without being a mandatory builder starting point: its workspace workflow, approved-source choice, user-facing Ask, and product acceptance are application responsibilities; ingest, knowledge boundaries, governed execution, evidence/provenance, and hosting/runtime mechanisms are shared foundations. Use the [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) only when that product-specific route is relevant. Do not duplicate its technical architecture here.
+[LKW](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) demonstrates the pattern without being a mandatory builder starting point: its workspace workflow, approved-source choice, user-facing Ask, and product acceptance are application responsibilities; ingest, knowledge boundaries, governed execution, evidence/provenance, and hosting/runtime mechanisms are shared foundations. Use the [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) only when that product-specific route is relevant. Do not duplicate its technical architecture here.
 
 ## Sibling routes and boundaries
 

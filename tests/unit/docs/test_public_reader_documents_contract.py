@@ -170,7 +170,7 @@ _LINK_TARGETS_BY_DOC: dict[Path, tuple[str, ...]] = {
         "BUILD_WITH_INTERGRAX.md",
         "EVALUATION_GUIDE.md",
         "../architecture/ARCHITECTURE_OVERVIEW.md",
-        "../technical/applications/local_workspace_application/ARCHITECTURE.md",
+        "../../../applications/local_workspace_application/docs/ARCHITECTURE.md",
         "../technical/guides/AGENT_CREATION_GUIDE.md",
         "../../../applications/USAGE.md",
         "../technical/DOCUMENTATION_MAP.md",
@@ -357,7 +357,7 @@ def test_project_projections_synchronize_accepted_lkw_boundaries() -> None:
 
 def test_lkw_quickstart_reader_literals_and_routes() -> None:
     text = _read(LKW_QUICKSTART_PATH)
-    malformed_prefix = "../../technical/applications/local_workspace_application/"
+    malformed_prefix = "../../../../applications/local_workspace_application/docs/"
     for literal in (
         "uv",
         "PATH",
@@ -377,7 +377,7 @@ def test_lkw_quickstart_reader_literals_and_routes() -> None:
         assert f"{malformed_prefix}{literal}" not in text
 
     assert (
-        "../../technical/applications/local_workspace_application/"
+        "../../../../applications/local_workspace_application/docs/"
         "applications/local_workspace_application"
     ) not in text
     for launcher in _LKW_QUICKSTART_SCRIPTS:

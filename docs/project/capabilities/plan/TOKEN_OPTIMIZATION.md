@@ -63,7 +63,7 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 | `TOKEN-6` telemetry and regression gates | `docs/project/maintainers/plans/OBSERVABILITY.md` plus affected domain plans |
 | `TOKEN-7` adaptive optimization | `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` |
 
-**LKW proof workload:** LKW is a **later product client and product proof** for Token Optimization — not the owner of Token Optimization mechanisms. The universal platform proof (**TOKEN-10A**–**TOKEN-10G**) must complete before LKW product proof (**LKW-PF6-A**–**C**). Token Optimization is a cross-layer platform capability owned by runtime and domain plans. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed**; **TOKEN-1** through **TOKEN-9** are closed per their closeout records. Active roadmap: **TOKEN-10** (§TOKEN-10 below). See [`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) for LKW-PF6 scheduling.
+**LKW proof workload:** LKW is a **later product client and product proof** for Token Optimization — not the owner of Token Optimization mechanisms. The universal platform proof (**TOKEN-10A**–**TOKEN-10G**) must complete before LKW product proof (**LKW-PF6-A**–**C**). Token Optimization is a cross-layer platform capability owned by runtime and domain plans. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed**; **TOKEN-1** through **TOKEN-9** are closed per their closeout records. Active roadmap: **TOKEN-10** (§TOKEN-10 below). See [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) for LKW-PF6 scheduling.
 
 ---
 
@@ -73,7 +73,7 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 
 **Maturity level:** proof design only — does not close `LKW-PF6` platform proof.
 
-**Purpose:** Define exactly what the LKW Token Optimization proof must demonstrate before **TOKEN-1A** code starts. This section is the canonical source; [`docs/project/technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md`](../../technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md) §10 and [`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout mirror it for LKW scheduling.
+**Purpose:** Define exactly what the LKW Token Optimization proof must demonstrate before **TOKEN-1A** code starts. This section is the canonical source; [`applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md`](../../../../applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md) §10 and [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout mirror it for LKW scheduling.
 
 **Narrative:** Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems — not hand-wired demos.
 

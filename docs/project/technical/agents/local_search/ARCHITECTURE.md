@@ -118,5 +118,5 @@ uv run pytest agents/local_search/tests -q
 
 ## References
 
-- LKW architecture: [`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`](../../applications/local_workspace_application/ARCHITECTURE.md)
+- LKW architecture: [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md)
 - Retrieval control plane: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix K](../../guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane)

@@ -1216,7 +1216,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 python -m intergrax.scaffold new-stack <slug> --profile lab --capability <slug>.basic
 ```
 
-See [`applications/TIER3_READINESS.md`](../../../../../applications/TIER3_READINESS.md). Existing hosts (`lab_application`, `legal_application`, `research_application`, `poc_template_application`) are sufficient for **all harness** work. **Product:** [`local_workspace_application`](../../../../../applications/local_workspace_application) — Local Knowledge Workspace (LKW) — first business environment after harness GA; see [ARCHITECTURE.md](../../../technical/applications/local_workspace_application/ARCHITECTURE.md).
+See [`applications/TIER3_READINESS.md`](../../../../../applications/TIER3_READINESS.md). Existing hosts (`lab_application`, `legal_application`, `research_application`, `poc_template_application`) are sufficient for **all harness** work. **Product:** [`local_workspace_application`](../../../../../applications/local_workspace_application) — Local Knowledge Workspace (LKW) — first business environment after harness GA; see [ARCHITECTURE.md](../../../../../applications/local_workspace_application/docs/ARCHITECTURE.md).
 
 ### 6.3a Business backlog register (consolidated)
 

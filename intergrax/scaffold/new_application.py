@@ -1401,6 +1401,6 @@ def run_new_application(args: argparse.Namespace) -> int:
     print(f"  MCP:    http://127.0.0.1:{names.port}/mcp  (FastMCP, coupled to FastAPI)")
     print(f"  Docker: applications/{names.pkg}/docker/build-docker.sh")
     print(f"          applications\\{names.pkg}\\docker\\build-docker.bat  (Windows)")
-    print(f"  Deploy: docs/project/technical/applications/{names.pkg}/BUILD_AND_DEPLOY.md")
+    print(f"  Deploy: applications/{names.pkg}/docs/BUILD_AND_DEPLOY.md")
     print("  Docs:   intergrax/applications/USAGE.md · applications/USAGE.md")
     return 0

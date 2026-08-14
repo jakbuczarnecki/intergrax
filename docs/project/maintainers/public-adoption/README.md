@@ -72,7 +72,7 @@ Public proof vocabulary and promotion rules:
 PUBLIC_PROOF_AND_CLAIMS_MODEL.md
 
 Detailed LKW implementation roadmap:
-../../docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md
+../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md
 
 Detailed Token Optimization implementation roadmap:
 ../features/plan/TOKEN_OPTIMIZATION.md

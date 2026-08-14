@@ -9,14 +9,14 @@ Run the documented OS launcher from the repository root. It performs the
 bounded prerequisite checks, starts or reuses the canonical stack, uploads the
 bundled sample, and proves grounded Ask with a citation.
 
-**Product direction:** provider-neutral frontends (Slack, HTTP, MCP); personal/shared conversation context isolation ([`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../docs/project/technical/applications/local_workspace_application/CONVERSATION_CONTEXT_ARCHITECTURE.md) — **ACCEPTED**); Ollama/vLLM conversation runtime portability (`LKW-MODEL-RUNTIME-1` — **ACCEPTED**); Google Workspace knowledge architecture frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` — **READY_FOR_REVIEW**, runtime **PLANNED** — starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**); final live platform proof (`LKW-LIVE-PLATFORM-PROOF-1`). Architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../docs/project/technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md) (**ACCEPTED**). Last accepted intake: end-to-end `WEB_URL` Knowledge Intake (`1B-5-2`).
+**Product direction:** provider-neutral frontends (Slack, HTTP, MCP); personal/shared conversation context isolation ([`CONVERSATION_CONTEXT_ARCHITECTURE.md`](docs/CONVERSATION_CONTEXT_ARCHITECTURE.md) — **ACCEPTED**); Ollama/vLLM conversation runtime portability (`LKW-MODEL-RUNTIME-1` — **ACCEPTED**); Google Workspace knowledge architecture frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` — **READY_FOR_REVIEW**, runtime **PLANNED** — starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**); final live platform proof (`LKW-LIVE-PLATFORM-PROOF-1`). Architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) (**ACCEPTED**). Last accepted intake: end-to-end `WEB_URL` Knowledge Intake (`1B-5-2`).
 
-**“Local”** means user-controlled deployment and configuration (full self-hosted / fully local topology remains first-class). It does **not** mean storage must always reside on a single user device. Storage location is selected by configuration and provider wiring — see [ARCHITECTURE.md — Deployment, storage and tenancy model](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md#deployment-storage-and-tenancy-model).
+**“Local”** means user-controlled deployment and configuration (full self-hosted / fully local topology remains first-class). It does **not** mean storage must always reside on a single user device. Storage location is selected by configuration and provider wiring — see [ARCHITECTURE.md — Deployment, storage and tenancy model](docs/ARCHITECTURE.md#deployment-storage-and-tenancy-model).
 
-**Architecture (canonical):** [ARCHITECTURE.md](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](../../docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md)
-**Live verification:** [LKW_1_LIVE_VERIFICATION.md](../../docs/project/technical/applications/local_workspace_application/LKW_1_LIVE_VERIFICATION.md)
-**User journey:** [USER_JOURNEY.md](../../docs/project/product/lkw/USER_JOURNEY.md) · **Product quickstart:** [docs/QUICKSTART.md](../../docs/project/product/lkw/QUICKSTART.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](../../docs/project/technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md)
-**Build & deploy:** [BUILD_AND_DEPLOY.md](../../docs/project/technical/applications/local_workspace_application/BUILD_AND_DEPLOY.md)
+**Architecture (canonical):** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
+**Live verification:** [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)
+**User journey:** [USER_JOURNEY.md](../../docs/project/product/lkw/USER_JOURNEY.md) · **Product quickstart:** [docs/QUICKSTART.md](../../docs/project/product/lkw/QUICKSTART.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)
+**Build & deploy:** [BUILD_AND_DEPLOY.md](docs/BUILD_AND_DEPLOY.md)
 
 ## Agents
 
@@ -51,7 +51,7 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 
 A new user should be able to follow [USER_JOURNEY.md](../../docs/project/product/lkw/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 
-Current LKW.2 status: [IMPLEMENTATION_PLAN.md §5](../../docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md#5-lkw2-graph-pipeline--local-workspace-skills). [LKW_1_LIVE_VERIFICATION.md](../../docs/project/technical/applications/local_workspace_application/LKW_1_LIVE_VERIFICATION.md) is the historical LKW.1/H1 live proof record, not the current LKW.2 execution status.
+Current LKW.2 status: [IMPLEMENTATION_PLAN.md §5](docs/IMPLEMENTATION_PLAN.md#5-lkw2-graph-pipeline--local-workspace-skills). [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md) is the historical LKW.1/H1 live proof record, not the current LKW.2 execution status.
 
 ## Reference local stack
 
@@ -141,7 +141,7 @@ This section defines the minimal first-run path for a new developer after LKW.2
 | Git      | Clone the repository                       |
 | Docker   | Local stack (optional; in-memory mode works) |
 
-> Full configuration reference: [`BUILD_AND_DEPLOY.md`](../../docs/project/technical/applications/local_workspace_application/BUILD_AND_DEPLOY.md).
+> Full configuration reference: [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md).
 > Conceptual user journey: [`USER_JOURNEY.md`](../../docs/project/product/lkw/USER_JOURNEY.md).
 
 ### 1. Start the LKW host (manual developer flow)
@@ -154,7 +154,7 @@ cp applications/local_workspace_application/.env.example applications/local_work
 uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
 ```
 
-**Docker:** see [`BUILD_AND_DEPLOY.md §2`](../../docs/project/technical/applications/local_workspace_application/BUILD_AND_DEPLOY.md#2-recommended-local-docker-bootstrap).
+**Docker:** see [`BUILD_AND_DEPLOY.md §2`](docs/BUILD_AND_DEPLOY.md#2-recommended-local-docker-bootstrap).
 
 All examples below assume the host is running at `http://127.0.0.1:8020`.
 
@@ -298,7 +298,7 @@ All four platform/application keys plus `lkw_proof_summary.v1` are present in a 
 
 ## Running the LKW Slack Ask companion
 
-Temporary slice **LKW-SLACK-WORKFLOW-1A**: approved Slack **DM-only** → temporary in-memory personal workspace selection → Ask HTTP → threaded answer. **Slack connected source** (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED**): HTTP discovery/create/sync scaffold for approved Slack conversations as `PERSONAL_ONLY` indexed sources; `REVIEW-FIX-2` **CHANGES_REQUIRED**, `REVIEW-FIX-3` not accepted — final crash-safe recovery and real indexed Search/Ask proof remain under correction. Durable `PERSONAL_SELECTION`, observed-audience validation, shared-channel Ask, mention activation and Conversation Context Bindings are **not** implemented — see [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../docs/project/technical/applications/local_workspace_application/CONVERSATION_CONTEXT_ARCHITECTURE.md).
+Temporary slice **LKW-SLACK-WORKFLOW-1A**: approved Slack **DM-only** → temporary in-memory personal workspace selection → Ask HTTP → threaded answer. **Slack connected source** (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED**): HTTP discovery/create/sync scaffold for approved Slack conversations as `PERSONAL_ONLY` indexed sources; `REVIEW-FIX-2` **CHANGES_REQUIRED**, `REVIEW-FIX-3` not accepted — final crash-safe recovery and real indexed Search/Ask proof remain under correction. Durable `PERSONAL_SELECTION`, observed-audience validation, shared-channel Ask, mention activation and Conversation Context Bindings are **not** implemented — see [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 ### Configuration architecture
 
@@ -377,17 +377,17 @@ Next task after this closure: `LKW-SLACK-WORKFLOW-1A-OPERATOR-PREFLIGHT`.
 
 ## Runtime model
 
-**Philosophy:** local **backend daemon** (Nexus + agents + index) + **thin frontends** (MCP, tray, optional Slack). See [ARCHITECTURE.md §3–§4](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md#3-product-philosophy).
+**Philosophy:** local **backend daemon** (Nexus + agents + index) + **thin frontends** (MCP, tray, optional Slack). See [ARCHITECTURE.md §3–§4](docs/ARCHITECTURE.md#3-product-philosophy).
 
-**Install & data paths:** [ARCHITECTURE.md §7](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md#7-installation-lifecycle-and-on-disk-layout)
+**Install & data paths:** [ARCHITECTURE.md §7](docs/ARCHITECTURE.md#7-installation-lifecycle-and-on-disk-layout)
 
-**Runtime:** [ARCHITECTURE.md §9](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md#9-local-os-runtime-and-interaction-model) — Slack is **optional** (§9.4).
+**Runtime:** [ARCHITECTURE.md §9](docs/ARCHITECTURE.md#9-local-os-runtime-and-interaction-model) — Slack is **optional** (§9.4).
 
-**Implementation waves:** [ARCHITECTURE.md §15](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md#15-implementation-plan-derivation-canonical) · [IMPLEMENTATION_PLAN.md](../../docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md)
+**Implementation waves:** [ARCHITECTURE.md §15](docs/ARCHITECTURE.md#15-implementation-plan-derivation-canonical) · [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 
 ## Platform stack
 
-LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCHITECTURE.md §8](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md#8-integrations-tools-and-skills)):
+LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCHITECTURE.md §8](docs/ARCHITECTURE.md#8-integrations-tools-and-skills)):
 
 - **Integrations:** LKW local product profile — SQLite, Qdrant, Docling, optional Redis, local LLM;
 - **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`;
@@ -404,13 +404,13 @@ LKW uses **platform observability export mechanisms only** — there is no LKW-s
 
 ## Docs
 
-See [docs/README.md](../../docs/project/technical/applications/local_workspace_application/README.md) for the full local documentation index.
+See [docs/README.md](docs/README.md) for the full local documentation index.
 
 - Final user journey: [USER_JOURNEY.md](../../docs/project/product/lkw/USER_JOURNEY.md)
-- LKW architecture: [ARCHITECTURE.md](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md)
-- LKW live verification: [LKW_1_LIVE_VERIFICATION.md](../../docs/project/technical/applications/local_workspace_application/LKW_1_LIVE_VERIFICATION.md)
-- LKW hardening: [ARCHITECTURE_HARDENING.md](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE_HARDENING.md)
-- Platform proof loop: [PLATFORM_PROOF_LOOP.md](../../docs/project/technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md)
-- Implementation plan: [IMPLEMENTATION_PLAN.md](../../docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md)
+- LKW architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- LKW live verification: [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)
+- LKW hardening: [ARCHITECTURE_HARDENING.md](docs/ARCHITECTURE_HARDENING.md)
+- Platform proof loop: [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)
+- Implementation plan: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 - Agent workflow: [docs/project/technical/guides/AGENT_CREATION_GUIDE.md](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
 - Application layout: [applications/USAGE.md](../USAGE.md)

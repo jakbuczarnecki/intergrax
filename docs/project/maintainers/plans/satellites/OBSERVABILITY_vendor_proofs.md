@@ -6,7 +6,7 @@ This satellite records completed live vendor proof evidence without expanding th
 
 **Date:** 2026-06-30  
 **Backend:** Elasticsearch/OpenSearch-compatible local Docker Compose backend  
-**Proof artifact:** `docs/project/technical/applications/local_workspace_application/ELASTICSEARCH_OBSERVABILITY_PROOF_2026_06_30.md`
+**Proof artifact:** `applications/local_workspace_application/docs/ELASTICSEARCH_OBSERVABILITY_PROOF_2026_06_30.md`
 
 Live proof result:
 

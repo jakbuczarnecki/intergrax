@@ -3,7 +3,7 @@
 **Status:** Target platform architecture (not production implementation yet)  
 **Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
-**Generalizes:** LKW.4 background ingest proof ([`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`](../technical/applications/local_workspace_application/ARCHITECTURE.md) §8.7)
+**Generalizes:** LKW.4 background ingest proof ([`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7)
 **Last updated:** 2026-07-08 — **BG-TASKS-ARCH-1** / **LKW.4E-ARCH-1** / **LKW.4E-PROOF-DOC-1**
 
 ---
@@ -400,5 +400,5 @@ Explicitly **out of scope** for this architecture document and the BG-TASKS trac
 
 - [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md) — implementation phases
 - [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) — `message_bus` provider category
-- [`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`](../technical/applications/local_workspace_application/ARCHITECTURE.md) §8.7 — LKW.4 product architecture
-- [`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) §6 — LKW.4 task schedule
+- [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7 — LKW.4 product architecture
+- [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6 — LKW.4 task schedule

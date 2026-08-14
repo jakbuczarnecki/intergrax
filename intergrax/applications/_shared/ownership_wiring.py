@@ -61,7 +61,7 @@ def standard_product_operational_ownership(
         ),
         on_call_rotation=on_call_rotation,
         runbook_ref=runbook_ref or f"applications/{pkg}/BUILD_AND_DEPLOY.md",
-        architecture_ref=architecture_ref or f"docs/project/technical/applications/{pkg}/ARCHITECTURE.md",
+        architecture_ref=architecture_ref or f"applications/{pkg}/docs/ARCHITECTURE.md",
         status_page_component=status_page_component,
     )
 

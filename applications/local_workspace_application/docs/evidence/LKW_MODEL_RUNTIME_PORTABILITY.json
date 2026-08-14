@@ -138,7 +138,7 @@
     "repository_head_role": "pre_evidence_commit_head",
     "task_owned_dirty_paths": [
       "applications/local_workspace_application/docs/evidence/LKW_MODEL_RUNTIME_PORTABILITY.json",
-      "docs/project/technical/applications/local_workspace_application/evidence/LKW_MODEL_RUNTIME_PORTABILITY.md",
+      "applications/local_workspace_application/docs/evidence/LKW_MODEL_RUNTIME_PORTABILITY.md",
       "applications/local_workspace_application/model_runtime_proof/aggregation.py",
       "applications/local_workspace_application/model_runtime_proof/contracts.py",
       "applications/local_workspace_application/model_runtime_proof/health.py",
@@ -149,8 +149,8 @@
     "unrelated_dirty_paths": [
       ".env.example",
       "ROADMAP.md",
-      "docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md",
-      "docs/project/technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md",
+      "applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md",
+      "applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md",
       "docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md",
       "docs/project/maintainers/audit/KNOWLEDGE_SOURCE_INTEGRATIONS.md",
       "docs/project/capabilities/architecture/TOKEN_OPTIMIZATION.md",

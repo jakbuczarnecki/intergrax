@@ -40,7 +40,7 @@ When an LCI-* task becomes active, add a concrete implementation row to the owni
 | LCI-6A | docs/project/maintainers/plans/LLM_ADAPTERS.md | Native Ollama adapter architecture and parity matrix |
 | LCI-6B | docs/project/maintainers/plans/LLM_ADAPTERS.md | Native Ollama adapter implementation |
 | LCI-6C | docs/project/maintainers/plans/LLM_ADAPTERS.md | Native Ollama live parity proof |
-| LCI-6D | docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md, docs/project/maintainers/plans/LLM_ADAPTERS.md | LKW and Token Optimization native Ollama cutover |
+| LCI-6D | applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md, docs/project/maintainers/plans/LLM_ADAPTERS.md | LKW and Token Optimization native Ollama cutover |
 | LCI-6E | docs/project/maintainers/plans/LLM_ADAPTERS.md | LangChain Ollama compatibility optionalization |
 | LCI-7A | docs/project/maintainers/plans/PLATFORM_FOUNDATION.md | LangChain optional extras packaging |
 | LCI-7B | docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md | LangChain-free core installation gate |

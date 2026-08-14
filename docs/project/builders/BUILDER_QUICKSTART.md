@@ -73,7 +73,7 @@ The [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) explains t
 
 | Route | Use it when | Closest canonical source |
 |------|-------------|--------------------------|
-| **A — Extend an existing application** | The requested behavior is specific to an existing product workflow. The current primary example is LKW. | [LKW application architecture](../technical/applications/local_workspace_application/ARCHITECTURE.md) |
+| **A — Extend an existing application** | The requested behavior is specific to an existing product workflow. The current primary example is LKW. | [LKW application architecture](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) |
 | **B — Build a specialized application** | You are creating a distinct product workflow on reusable Intergrax foundations. | [Build With Intergrax](BUILD_WITH_INTERGRAX.md), then the [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md); use the [Agent Creation Guide](../technical/guides/AGENT_CREATION_GUIDE.md) or [applications usage](../../../applications/USAGE.md) only when deeper technical material is required. |
 | **C — Evaluate before building** | You do not yet know whether the foundation fits the intended workflow. | [Evaluation Guide](EVALUATION_GUIDE.md) |
 

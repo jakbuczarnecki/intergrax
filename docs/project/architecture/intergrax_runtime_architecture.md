@@ -208,11 +208,11 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 
 LKW.7 is **Closed**: LKW.7A Done; LKW.7B1 Done; LKW.7B2A Done; LKW.7B2B Done; LKW.7B Closed; LKW.7C Closed; LKW.7C1 Done; LKW.7C2 Done.
-LKW.6 closed narrowly as: unified interaction intake; Application Hosting adoption; first Windows PowerShell product interaction adapter; live reviewer proof. Product docs: [`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md).
+LKW.6 closed narrowly as: unified interaction intake; Application Hosting adoption; first Windows PowerShell product interaction adapter; live reviewer proof. Product docs: [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
 
 ### LKW Hybrid Knowledge Workspace — active product roadmap
 
-Canonical execution order: [docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md). Architecture: [KNOWLEDGE_ACCESS_ARCHITECTURE.md](../technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+Canonical execution order: [applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md). Architecture: [KNOWLEDGE_ACCESS_ARCHITECTURE.md](../../../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
 | Block | Scope | Status |
 |-------|-------|--------|
@@ -242,7 +242,7 @@ Canonical plan: [plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md](../maintainers/plans/KNO
 | **LKW-GOOGLE-WORKSPACE-PROOF-1** | First user-oriented Google Doc/Sheet/Calendar/Drive proof | **PLANNED** |
 | **MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR** | Microsoft Graph Calendar Vendor Knowledge adapter | **PLANNED** (after first accepted Google LKW proof) |
 
-LKW application tasks (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED**; `LKW-CONVERSATION-CONTEXT-1` **NEXT**; `LKW-CONVERSATION-CONTEXT-ARCH-1` **ACCEPTED**; `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, `LKW-SLACK-KNOWLEDGE-PROOF-1` **PLANNED**; final proof joins `LKW-HYBRID-ASK-1`; Google Workspace runtime starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**) are tracked in the [LKW Implementation Plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) and [Conversation Context Architecture](../technical/applications/local_workspace_application/CONVERSATION_CONTEXT_ARCHITECTURE.md), not as platform adapter tasks.
+LKW application tasks (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED**; `LKW-CONVERSATION-CONTEXT-1` **NEXT**; `LKW-CONVERSATION-CONTEXT-ARCH-1` **ACCEPTED**; `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, `LKW-SLACK-KNOWLEDGE-PROOF-1` **PLANNED**; final proof joins `LKW-HYBRID-ASK-1`; Google Workspace runtime starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**) are tracked in the [LKW Implementation Plan](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) and [Conversation Context Architecture](../../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md), not as platform adapter tasks.
 
 
 Former 1B-6 / 1C–1E slices are **mapped into** the blocks above; see Implementation Plan §3.4.

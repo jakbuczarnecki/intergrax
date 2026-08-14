@@ -119,7 +119,7 @@ uv run python scripts/proof/slack_conversation_channel_live_proof.py
 **Task:** MVP-3  
 **Classification:** docs-only product discovery  
 **Base commit:** `6c9e1eab634852e42d45e086faa78aca71a77016`  
-**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../maintainers/plans/PRODUCT_FIRST_MVP.md)
+**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)
 **Ask contract:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Knowledge Intake:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)
 
@@ -211,7 +211,7 @@ Slack Live Access Binding does not imply durable synchronization or RAG indexing
 
 Enabling the Slack chatbot does not authorize indexing or querying Slack history. Conversation transport events do not automatically become durable knowledge. The LKW Slack companion must not construct Slack SDK clients, call Slack history APIs directly or implement Slack-specific synchronization.
 
-Binding architecture: [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7 · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+Binding architecture: [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7 · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
 **Who is the first user?**  
 One approved knowledge worker who already uses Slack and needs answers from local company documents.
@@ -296,7 +296,7 @@ This posts the same Block Kit selection UI (or auto-selects if only one). Changi
 8. Restart LKW with vLLM; repeat the same product scenario.
 ```
 
-Public claims must distinguish **real provider proof**, **controlled integration proof** and **deterministic fixture proof**. See [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §7.8 and [`LKW_PLATFORM_PROOF.md`](../../../proofs/LKW_PLATFORM_PROOF.md).
+Public claims must distinguish **real provider proof**, **controlled integration proof** and **deterministic fixture proof**. See [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §7.8 and [`LKW_PLATFORM_PROOF.md`](../../../../docs/project/proofs/LKW_PLATFORM_PROOF.md).
 
 ---
 
@@ -1595,9 +1595,9 @@ confirm threaded chat.postMessage behavior in the real test workspace
 Governing:
 
 - `docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md`
-- `docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`
-- `docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`
-- `docs/project/technical/applications/local_workspace_application/ASK_WORKSPACE_DISCOVERY.md`
+- `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`
+- `applications/local_workspace_application/docs/ARCHITECTURE.md`
+- `applications/local_workspace_application/docs/ASK_WORKSPACE_DISCOVERY.md`
 
 Ask contract:
 

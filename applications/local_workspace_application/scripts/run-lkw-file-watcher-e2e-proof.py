@@ -57,7 +57,7 @@ _PROOF_RUNNER = "run-lkw-file-watcher-e2e-proof.py"
 _DEFAULT_MONGO_EXPRESS_URL = "http://127.0.0.1:8086"
 _SIDECAR_RESULT_SCHEMA = "lkw.file_watcher_sidecar_result.v1"
 _VERIFICATION_DOCUMENT = (
-    "docs/project/technical/applications/local_workspace_application/LKW_7_FILE_WATCHER_VERIFICATION.md"
+    "applications/local_workspace_application/docs/LKW_7_FILE_WATCHER_VERIFICATION.md"
 )
 _REVIEWER_GUIDE = "docs/project/proofs/LKW_PLATFORM_PROOF.md"
 

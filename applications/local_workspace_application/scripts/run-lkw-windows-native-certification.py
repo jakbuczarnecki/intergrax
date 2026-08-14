@@ -75,8 +75,8 @@ _FINGERPRINT_PATH_PREFIXES = (
     "applications/local_workspace_application/scripts/run-lkw-windows-native-certification",
     "docs/project/maintainers/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json",
     "docs/project/proofs/LKW_PLATFORM_PROOF.md",
-    "docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md",
-    "docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md",
+    "applications/local_workspace_application/docs/ARCHITECTURE.md",
+    "applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md",
     "tests/unit/applications/local_workspace_application/test_lkw_windows_native_certification.py",
     "tests/unit/docs/test_lkw_platform_proof_contract.py",
 )

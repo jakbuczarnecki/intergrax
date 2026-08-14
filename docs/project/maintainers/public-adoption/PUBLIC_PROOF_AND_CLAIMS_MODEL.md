@@ -200,7 +200,7 @@ When sources disagree, apply **claim audit rules** (§11): use the lower support
 | Overall public classification | PARTIAL |
 | Product maturity | Backend Product Alpha / MVP |
 | Accepted proof owner | `../../proofs/LKW_PLATFORM_PROOF.md` and referenced evidence |
-| Detailed implementation owner | `docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md` |
+| Detailed implementation owner | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` |
 | Public claim snapshot | `../../proofs/PROOFS.md` |
 | Non-duplication rule | Current tasks, slices, dependencies and next steps remain only in the implementation plan |
 
@@ -328,7 +328,7 @@ a repository-wide public-document status update.
 |-------|-------|
 | Public proof dashboard | `../../proofs/PROOFS.md` |
 | Status vocabulary and promotion rules | this document |
-| Detailed LKW implementation progress | `docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md` |
+| Detailed LKW implementation progress | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` |
 | Detailed Token Optimization implementation progress | `docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md` |
 | Accepted LKW proof | `../../proofs/LKW_PLATFORM_PROOF.md` and referenced evidence |
 | Accepted Token Optimization proof | owning proof documents and guide |

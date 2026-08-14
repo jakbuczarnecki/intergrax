@@ -56,7 +56,7 @@ without copying either roadmap.
 
 | Proof path | Public classification | Current public status | What it demonstrates | Verify | Detailed roadmap |
 |------------|------------------------|----------------------|----------------------|--------|------------------|
-| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [Product Quick Start](../product/lkw/QUICKSTART.md) · [LKW Platform Proof](LKW_PLATFORM_PROOF.md) · [Core Platform Proof](LKW_PLATFORM_PROOF.md#core-platform-proof) | [LKW implementation plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) |
+| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [Product Quick Start](../product/lkw/QUICKSTART.md) · [LKW Platform Proof](LKW_PLATFORM_PROOF.md) · [Core Platform Proof](LKW_PLATFORM_PROOF.md#core-platform-proof) | [LKW implementation plan](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) |
 | **Token Optimization** | Featured platform-capability proof | 🟡 **PARTIAL** | Deterministic optimization pipeline, cache-aware execution, bounded offline smoke proof | [Token Optimization guide](../capabilities/token_optimization/README.md) | [Token Optimization plan](../capabilities/plan/TOKEN_OPTIMIZATION.md) |
 
 `Verify` answers **what has been demonstrated?**
@@ -118,7 +118,7 @@ incomplete, and complete live-provider access remains incomplete.
 - Commercial validation is not established.
 
 Detailed implementation roadmap:
-[docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md)
+[applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md)
 
 Accepted technical proof:
 [LKW Platform Proof](LKW_PLATFORM_PROOF.md)
@@ -204,7 +204,7 @@ Real-user and commercial validation remain **incomplete**.
 |----------|---------|
 | [LKW Platform Proof](LKW_PLATFORM_PROOF.md) | Guided LKW reviewer proof path |
 | [Core Platform Proof](LKW_PLATFORM_PROOF.md#core-platform-proof) | Bounded platform-level verification (startup, sentry, elasticsearch, persistence, background task, application hosting, file watcher) |
-| [LKW Implementation Plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) | Detailed LKW implementation roadmap |
+| [LKW Implementation Plan](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) | Detailed LKW implementation roadmap |
 | [Token Optimization guide](../capabilities/token_optimization/README.md) | Engine overview and proof catalog |
 | [Token Optimization plan](../capabilities/plan/TOKEN_OPTIMIZATION.md) | Detailed Token Optimization implementation roadmap |
 | [Token Optimization claim guardrails](../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md) | Safe public wording boundaries |

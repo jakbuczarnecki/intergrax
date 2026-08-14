@@ -239,6 +239,6 @@ An external SaaS DSN may be supplied only as an advanced operator override throu
 
 ## Related docs
 
-- Platform proof narrative: [`docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../../proofs/LKW_PLATFORM_PROOF.md)
+- Platform proof narrative: [`docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../../../docs/project/proofs/LKW_PLATFORM_PROOF.md)
 - Kibana/Elasticsearch proof: [`KIBANA_OBSERVABILITY.md`](KIBANA_OBSERVABILITY.md)
-- Observability architecture: [`docs/project/architecture/OBSERVABILITY.md`](../../../architecture/OBSERVABILITY.md)
+- Observability architecture: [`docs/project/architecture/OBSERVABILITY.md`](../../../../docs/project/architecture/OBSERVABILITY.md)
