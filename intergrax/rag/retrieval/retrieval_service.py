@@ -20,6 +20,7 @@ from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
 from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit, retrieval_hit_to_chunk
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
+from intergrax.rag.retrievers.contracts.scoped_retrieval_capability import ScopedRetrievalCapability
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
 from intergrax.rag.routing.query_router import QueryRouter
@@ -107,9 +108,9 @@ class RetrievalService:
             prefetch_k = request.resolved_prefetch_k(self._profile.prefetch_top_k, final_k)
 
             t0 = time.perf_counter()
-            if (
-                request.scope is not None
-                and self._retriever_manager.supports_scoped_retrieval is not True
+            if request.scope is not None and not (
+                isinstance(self._retriever_manager, ScopedRetrievalCapability)
+                and self._retriever_manager.supports_scoped_retrieval is True
             ):
                 trace.retrieval_error_kind = "scoped_retrieval_unsupported"
                 trace.retrieval_latency_ms = (time.perf_counter() - t0) * 1000.0
