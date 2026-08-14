@@ -195,10 +195,11 @@ class UAEPExecutor:
     ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
         contract = contract or agent.get_contract()
         task_options = execution_options_for_request(request)
-        run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or uuid4().hex)
-        task_id = str(request.metadata.get("task_id") or run_id)
+        run_id = str(request.metadata.get("run_id") or uuid4().hex)
+        typed_task_id = request.task_id or run_id
         if request.task_id is None:
-            request = replace(request, task_id=task_id)
+            request = replace(request, task_id=typed_task_id)
+        task_id = typed_task_id
         node_id = request.metadata.get("graph_node_id")
 
         exec_ctx = RuntimeExecutionContext(
