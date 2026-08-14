@@ -17,6 +17,7 @@ import pytest
 import tomllib
 
 from intergrax.core.catalog_bootstrap import bootstrap_catalogs, reset_tier0_catalog_bootstrap_for_tests
+from intergrax.core.plugins.discovery import reset_entry_point_spec_cache_for_tests
 from intergrax.core.plugins import (
     EP_TOOLS,
     PluginDeliverySource,
@@ -220,6 +221,7 @@ def test_external_reference_wheel_end_to_end(tmp_path: Path) -> None:
 
     inserted = str(install_target)
     sys.path.insert(0, inserted)
+    reset_entry_point_spec_cache_for_tests()
     try:
         dist_names = {
             dist.metadata["Name"]
@@ -296,6 +298,7 @@ def test_external_reference_wheel_end_to_end(tmp_path: Path) -> None:
                 "intergrax_reference_tool_plugin."
             ):
                 del sys.modules[module_name]
+        reset_entry_point_spec_cache_for_tests()
         try:
             distribution(_PACKAGE_NAME)
         except PackageNotFoundError:

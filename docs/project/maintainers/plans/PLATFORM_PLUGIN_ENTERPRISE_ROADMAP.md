@@ -707,7 +707,38 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 
 ---
 
-## 20. Evidence index
+## 20. Pre-BLOCK-B residual defect gate (PLATFORM-PLUGIN-CLEANUP-1)
+
+**Task:** PLATFORM-PLUGIN-CLEANUP-1 · **Date:** 2026-08-14 · **HEAD:** `39830db79e57e97d98add146fae7cdd7212eeea7`
+
+Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](PLATFORM_PLUGIN_PRODUCTION_AUDIT.md) (2026-08-12). This table is the **current** residual ledger before ENTERPRISE-4 (BLOCK B).
+
+| ID | Current status | Evidence (current development) |
+|----|----------------|------------------------------|
+| F001 | **DEFERRED_ENTERPRISE** | No global platform version authority; `check_platform_compatibility` still requires caller-supplied `platform_version` (`intergrax/core/plugins/platform_semantics.py`) |
+| F002 | **DEFERRED_ENTERPRISE** | Host-constructed `build_qualification_result(..., PRODUCTION_QUALIFIED)`; contract `test_host_embedded_package_compatibility_not_fabricated` |
+| F003 | **ACCEPTED_MODEL** | Fail-closed: `discover_plugins_enabled()` default false; `INTERGRAX_DISCOVER_PLUGINS` opt-in; enterprise policy-driven activation deferred |
+| F004 | **RESOLVED** | ENTERPRISE-2: `SecurityDefenseAdmissionPolicy` / `PolicyRuleLoadPolicy` default `on_load_failure="isolate"`; standard policy wiring uses isolate (`policy_wiring.py`) |
+| F005 | **RESOLVED** | ENTERPRISE-2: security defense admission policy defaults `ep_name_conflict`/`plugin_id_conflict`/`shipped_id_override` to `"error"`; `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` explicit opt-in only |
+| F006 | **DEFERRED_ENTERPRISE** | No unified operator inventory API; per-domain bootstrap reports only |
+| F007 | **ACCEPTED_MODEL** | Module-level catalogs; documented multi-app-per-process limitation; test `reset_*_for_tests` helpers |
+| F008 | **RESOLVED** | HARDENING-1: `iter_entry_point_specs` per-process cache; `test_memory_bootstrap_reuses_cached_entry_point_specs` |
+| F009 | **RESOLVED** | HARDENING-1: `load_tool_invocation_pattern` uses `get_entry_point_spec` O(1) lookup (`tool_invocation_registry.py`) |
+| F010 | **RESOLVED_BY_DOCS** | `MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md` §9–§13: bootstrap discovers/classifies/counts only; does not register catalog, activate, or materialize stores |
+| F011 | **RESOLVED** | HARDENING-1: typed `conflict_kind` / `result` on public exceptions (`errors.py`) |
+| F012 | **PLANNED_BLOCK** | CAND-003 Context scaffold DX — BLOCK E (`ENTERPRISE-6`); not in cleanup scope |
+| F013 | **RESOLVED** | HARDENING-1: `test_plugin_catalog_counts.py` recalibrated (`MIN_FULL_INTEGRATIONS = 95`) |
+| F014 | **RESOLVED** | Linux gate expanded + `platform-plugin-windows-e2e` job on `windows-latest` (PR / main / dispatch smoke) in `.github/workflows/unit-tests.yml` |
+| F015 | **RESOLVED** | HARDENING-1: `_EP_SPECS_CACHE` / `get_entry_point_spec` in `discovery.py` |
+| F016 | **DEFERRED_ENTERPRISE** | `PlatformPluginLifecycleState` enum exists; no runtime transition telemetry |
+| F017 | **DOCUMENTED_NON_GOAL** | `PlatformPluginTrustModel.TRUSTED_IN_PROCESS` only; contract forbids sandbox/signing enums |
+| F018 | **DOCUMENTED_ARCHITECTURE** | VK group `intergrax.vendor_knowledge.providers` excluded from Tier-0 `discovery.py` EP constants |
+
+**Exit gate (2026-08-14):** `OPEN_NON_ENTERPRISE_DEFECTS = 0` → **NO_KNOWN_NON_ENTERPRISE_DEFECTS_REMAIN**
+
+---
+
+## 21. Evidence index
 
 | Claim | Source |
 |-------|--------|
@@ -731,4 +762,4 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 
 ---
 
-*End of PLATFORM-PLUGIN-ENTERPRISE-1 roadmap.*
+*End of PLATFORM-PLUGIN enterprise roadmap (ENTERPRISE-1 + CLEANUP-1 residual gate).*
