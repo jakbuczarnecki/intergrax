@@ -6,8 +6,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
+
+if TYPE_CHECKING:
+    from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 
 
 class PolicyEnforcementMode(StrEnum):
@@ -24,6 +28,12 @@ class PolicyEvaluationContext:
     tool_id: str
     tenant_id: str | None = None
     agent_id: str | None = None
+    task_id: str | None = None
+    run_id: str | None = None
+    step_id: str | None = None
+    idempotency_key: str | None = None
+    invocation_scope_id: str | None = None
+    approval_grant: DeclarativeHitlApprovalGrant | None = None
 
 
 @dataclass(frozen=True, slots=True)

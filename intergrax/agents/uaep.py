@@ -282,6 +282,7 @@ class UAEPExecutor:
             context=runtime_context,
             request=request,
             run_id=run_id,
+            declarative_hitl_grant=request.declarative_hitl_grant,
         )
         from intergrax.runtime.wiring.llm_routing_runtime_bridge import (
             sync_llm_routing_snapshot_for_state,
@@ -348,30 +349,57 @@ class UAEPExecutor:
                 sync_llm_routing_snapshot_for_state(runtime_state)
 
             started = time.perf_counter()
-            if should_skip_uaep_step(
-                step_index=index,
-                step_id=step.step_id,
-                checkpoint=runtime_ckpt,
-                human_approved=human_approved,
-            ):
-                last_output = StepOutput.model_validate(runtime_ckpt.last_step_output)
-                step_result = StepExecutionResult(output=last_output)
-            elif should_resume_uaep_step(
-                step_index=index,
-                step_id=step.step_id,
-                checkpoint=runtime_ckpt,
-                human_approved=human_approved,
-            ):
-                assert runtime_ckpt is not None
-                exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(runtime_ckpt.uaep_step_cursor or {})
-                step_result = await self._execute_step_with_resume(
-                    agent,
-                    step,
-                    exec_ctx,
-                    runtime_ckpt.uaep_step_cursor or {},
+            try:
+                if should_skip_uaep_step(
+                    step_index=index,
+                    step_id=step.step_id,
+                    checkpoint=runtime_ckpt,
+                    human_approved=human_approved,
+                ):
+                    last_output = StepOutput.model_validate(runtime_ckpt.last_step_output)
+                    step_result = StepExecutionResult(output=last_output)
+                elif should_resume_uaep_step(
+                    step_index=index,
+                    step_id=step.step_id,
+                    checkpoint=runtime_ckpt,
+                    human_approved=human_approved,
+                ):
+                    assert runtime_ckpt is not None
+                    exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(runtime_ckpt.uaep_step_cursor or {})
+                    step_result = await self._execute_step_with_resume(
+                        agent,
+                        step,
+                        exec_ctx,
+                        runtime_ckpt.uaep_step_cursor or {},
+                    )
+                else:
+                    step_result = await self.execute_step(agent, step, exec_ctx)
+            except Exception as exc:
+                from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
+                    DeclarativePolicyHitlPauseRequired,
                 )
-            else:
-                step_result = await self.execute_step(agent, step, exec_ctx)
+
+                if not isinstance(exc, DeclarativePolicyHitlPauseRequired):
+                    raise
+                governance = exc.governance.model_copy(
+                    update={"declarative_hitl_pending": exc.pending}
+                )
+                exec_ctx.metadata["governance_resolution"] = governance
+                runtime_snapshot = self._build_runtime_checkpoint(
+                    request=request,
+                    contract_id=contract.id,
+                    step_index=index,
+                    step=step,
+                    last_output=last_output,
+                    resolution=governance,
+                    step_cursor=exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
+                    if isinstance(exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY), dict)
+                    else None,
+                )
+                exec_ctx.metadata[RUNTIME_CHECKPOINT_KEY] = runtime_snapshot
+                answer = self._build_answer(exec_ctx, last_output, run_id)
+                validation = ValidationResult(valid=False, errors=["awaiting human input"])
+                return answer, validation, runtime_context, governance
             step_result.duration_ms = int((time.perf_counter() - started) * 1000)
 
             await self._guard_hook(

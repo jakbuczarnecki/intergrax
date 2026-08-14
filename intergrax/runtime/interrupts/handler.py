@@ -17,6 +17,7 @@ from intergrax.contracts.agent_decision import (
     HumanRequestUrgency,
     human_request_fields_from_payload,
 )
+from intergrax.contracts.declarative_hitl import DeclarativeHitlPendingApproval
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
 from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
@@ -34,6 +35,7 @@ class GovernanceResolution(BaseModel):
     agent_decision: AgentDecision
     interrupt: Optional[ExecutionInterrupt] = None
     human_request: Optional[HumanRequest] = None
+    declarative_hitl_pending: Optional[DeclarativeHitlPendingApproval] = None
     schema_version: str = "governance_resolution.v1"
 
     @property

@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
+from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.llm.messages import AttachmentRef
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageReport
@@ -149,6 +150,9 @@ class RuntimeRequest:
 
     # Optional UI / app metadata (channel, app name, etc.)
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    # Typed declarative HITL grant transport (approval evidence only).
+    declarative_hitl_grant: Optional[DeclarativeHitlApprovalGrant] = None
 
     def to_envelope(self) -> TaskEnvelope:
         tenant = self.tenant_id or self.metadata.get("tenant_id") or "default"

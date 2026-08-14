@@ -526,7 +526,7 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 |-------|-------|
 | **Purpose** | Evaluate declarative YAML rules at runtime; govern handler admission and provenance |
 | **Candidates** | CAND-007, CAND-008 |
-| **Status** | **PARTIAL (ENTERPRISE-4)** — enforcement + DENY path done; REQUIRE_HITL bridge ADR **ACCEPTED** / **IMPL-1 READY** ([ADR-PLATFORM-PLUGIN-001](../../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md)) |
+| **Status** | **READY_FOR_REVIEW (ENTERPRISE-4-IMPL-1)** — REQUIRE_HITL bridge implemented per [ADR-PLATFORM-PLUGIN-001](../../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) |
 | **Prerequisites** | BLOCK A |
 | **Architecture** | §7 full flow |
 | **Production owners** | New `intergrax/runtime/policy/declarative_enforcer.py`, `registry.py`, `tool_policy_resolution.py` / `tool_gateway.py` |
@@ -545,14 +545,14 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 - [x] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` — no new `Dict[str, Any]` / string-key runtime wiring
 - [x] E2E: YAML deny rule blocks tool call in wired host via typed composition path
 - [x] Migration: `policy_enforcement_mode=audit_only|enforce` profile flag (default `audit_only`; invalid values fail profile validation)
-- [ ] REQUIRE_HITL declarative rule reaches canonical Nexus HITL lifecycle (`WAITING_FOR_HUMAN` / `HumanPauseCoordinator`) — **IMPL-1** per [ADR-PLATFORM-PLUGIN-001](../../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md)
+- [x] REQUIRE_HITL declarative rule reaches canonical Nexus HITL lifecycle (`WAITING_FOR_HUMAN` / `HumanPauseCoordinator`) — **IMPL-1 READY_FOR_REVIEW** per [ADR-PLATFORM-PLUGIN-001](../../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md)
 
 **ENTERPRISE-4 review-fix status (2026-08-14):**
 
 | Item | Status |
 |------|--------|
 | **CAND-007 enforcement** | **PARTIAL** — `PolicyEnforcementMode` typed on `PolicyRulesProfile`; invalid profile values fail validation; `DeclarativePolicyEnforcer` + DENY/audit_only at tool boundary |
-| **CAND-007 HITL** | **ADR ACCEPTED / IMPL-1 READY** — pending approval + grant DTOs, invocation identity, typed transport frozen; see [ADR-PLATFORM-PLUGIN-001](../../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) |
+| **CAND-007 HITL** | **READY_FOR_REVIEW (IMPL-1)** — typed pending/grant DTOs, bridge, grant coordinator, Nexus E2E; see [ADR-PLATFORM-PLUGIN-001](../../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) |
 | **CAND-008** | **DONE** — handler allowlist + provenance gates remain valid |
 
 **Qualification:** `QUALIFICATION_STILL_DEFERRED` — package version/compatibility inputs exist elsewhere but production qualification is not enforced at policy handler admission in this block.

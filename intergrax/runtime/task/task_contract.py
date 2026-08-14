@@ -11,6 +11,10 @@ from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.autonomy_level import AutonomyLevel
+from intergrax.contracts.declarative_hitl import (
+    DeclarativeHitlApprovalGrant,
+    DeclarativeHitlPendingApproval,
+)
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 
@@ -96,6 +100,8 @@ class TaskGovernanceState(BaseModel):
     escalation_level: int = 0
     escalation_target: Optional[str] = None
     escalation_chain: List[EscalationStep] = Field(default_factory=list)
+    declarative_hitl_pending: Optional[DeclarativeHitlPendingApproval] = None
+    declarative_hitl_grant: Optional[DeclarativeHitlApprovalGrant] = None
 
 
 class TaskClassificationState(BaseModel):

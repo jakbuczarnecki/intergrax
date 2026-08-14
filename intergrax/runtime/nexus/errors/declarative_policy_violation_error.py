@@ -28,11 +28,7 @@ class DeclarativePolicyViolationError(RuntimeError):
 
 @dataclass(frozen=True)
 class DeclarativePolicyHitlRequiredError(RuntimeError):
-    """Typed boundary signal: declarative policy requires HITL before tool execution.
-
-    Orchestration bridge to ``HumanPauseCoordinator`` / ``TaskState.WAITING_FOR_HUMAN``
-    is not yet wired — see ENTERPRISE-4 review-fix ADR (sync invoker vs async task HITL).
-    """
+    """Typed boundary signal: declarative policy requires HITL before tool execution."""
 
     run_id: str
     agent_id: str

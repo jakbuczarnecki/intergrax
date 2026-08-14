@@ -26,6 +26,7 @@ class ToolExecutionRequest(Generic[InModelT]):
     tool_id: str
     input: InModelT
     idempotency_key: Optional[str] = None
+    declarative_hitl_invocation_scope_id: Optional[str] = None
 
 
 @dataclass(frozen=True, slots=True)

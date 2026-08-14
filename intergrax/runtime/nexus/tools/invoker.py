@@ -122,10 +122,18 @@ class RuntimeToolInvoker:
 
         declarative_enforcer = resolve_declarative_policy_enforcer(state)
         if declarative_enforcer is not None:
+            meta = state.request.metadata
+            task_id = str(meta.get("task_id") or state.run_id)
             policy_context = PolicyEvaluationContext(
                 tool_id=request.tool_id,
                 tenant_id=state.tenant_id,
                 agent_id=agent_id,
+                task_id=task_id,
+                run_id=request.run_id,
+                step_id=str(request.step_id),
+                idempotency_key=request.idempotency_key,
+                invocation_scope_id=request.declarative_hitl_invocation_scope_id,
+                approval_grant=state.declarative_hitl_grant,
             )
             decision = declarative_enforcer.evaluate_tool_invocation(context=policy_context)
             state.trace_event(

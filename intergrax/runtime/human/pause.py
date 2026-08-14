@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
@@ -13,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.declarative_hitl import DeclarativeHitlPendingApproval
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 from intergrax.runtime.human.response_parser import parse_human_response
 from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
@@ -89,6 +91,16 @@ class HumanPauseCoordinator:
                 created_at=record.created_at.isoformat(),
                 schema_version=record.schema_version,
             )
+        if execution.declarative_hitl_pending is not None:
+            pending = execution.declarative_hitl_pending
+            if gov.pause_record is not None:
+                pending = pending.model_copy(
+                    update={
+                        "human_request_id": gov.pause_record.human_request_id,
+                        "pause_id": gov.pause_record.pause_id,
+                    }
+                )
+            gov.declarative_hitl_pending = pending
         gov.paused = True
         task.sync_metadata()
         return task

@@ -41,3 +41,34 @@ class DeclarativePolicyEvaluationDiagV1(DiagnosticPayload):
             "unknown_handler_ids": list(self.unknown_handler_ids),
             "provenance_digest": self.provenance_digest,
         }
+
+
+@dataclass(frozen=True)
+class DeclarativePolicyHitlRequiredDiagV1(DiagnosticPayload):
+    invocation_scope_id: str
+    task_id: str
+    run_id: str
+    step_id: str
+    tool_id: str
+    human_request_id: str
+    pause_id: str
+    matched_rule_ids: tuple[str, ...]
+
+    def redact(self) -> DeclarativePolicyHitlRequiredDiagV1:
+        return self
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "intergrax.diag.policy.declarative_hitl_required"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "invocation_scope_id": self.invocation_scope_id,
+            "task_id": self.task_id,
+            "run_id": self.run_id,
+            "step_id": self.step_id,
+            "tool_id": self.tool_id,
+            "human_request_id": self.human_request_id,
+            "pause_id": self.pause_id,
+            "matched_rule_ids": list(self.matched_rule_ids),
+        }

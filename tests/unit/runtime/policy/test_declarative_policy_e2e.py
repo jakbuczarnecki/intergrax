@@ -203,7 +203,7 @@ def test_unknown_handler_enforce_denies_without_side_effect() -> None:
 
 
 def test_require_hitl_blocks_tool_before_orchestration_bridge() -> None:
-    """REQUIRE_HITL blocks handler execution; Nexus HITL lifecycle bridge is pending ADR."""
+    """REQUIRE_HITL blocks handler execution at invoker boundary."""
     from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
         DeclarativePolicyHitlRequiredError,
     )
@@ -300,3 +300,96 @@ def test_scope_deny_still_wins_over_declarative_allow() -> None:
     with pytest.raises(ToolScopeViolationError):
         invoker.invoke(state=state, agent_id="agent-e2e", request=request)
     assert executor.calls == 0
+
+
+def test_require_hitl_satisfied_by_matching_grant() -> None:
+    from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
+    from intergrax.runtime.policy.declarative_enforcer import DeclarativePolicyEnforcer
+    from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
+
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.e2e.grant")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[
+            {
+                "rule_id": "deny_tool",
+                "resource_kind": "tool",
+                "resource_id": _TOOL_ID,
+                "action": "require_hitl",
+            }
+        ],
+        policy_enforcement_mode="enforce",
+    )
+    bundle = wire_policy_bundle(env)
+    assert bundle.declarative_policy_runtime is not None
+    enforcer = DeclarativePolicyEnforcer(runtime=bundle.declarative_policy_runtime)
+    grant = DeclarativeHitlApprovalGrant(
+        grant_id="grant-1",
+        invocation_scope_id="dhr_scope",
+        task_id="task-1",
+        run_id="run-e2e",
+        step_id="1",
+        tool_id=_TOOL_ID,
+        idempotency_key=None,
+        matched_rule_ids=("deny_tool",),
+        human_request_id="hr-1",
+        policy_provenance_digest=bundle.declarative_policy_runtime.provenance.rules_digest_sha256,
+        pause_id="pause-1",
+        approved_at="2026-08-14T00:00:00+00:00",
+    )
+    decision = enforcer.evaluate_tool_invocation(
+        context=PolicyEvaluationContext(
+            tool_id=_TOOL_ID,
+            task_id="task-1",
+            run_id="run-e2e",
+            step_id="1",
+            invocation_scope_id="dhr_scope",
+            approval_grant=grant,
+        )
+    )
+    assert decision.action.value == "allow"
+    assert decision.should_block_execution is False
+
+
+def test_deny_overrides_matching_grant() -> None:
+    from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
+    from intergrax.runtime.policy.declarative_enforcer import DeclarativePolicyEnforcer
+    from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
+
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.e2e.deny_grant")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[
+            {
+                "rule_id": "deny_tool",
+                "resource_kind": "tool",
+                "resource_id": _TOOL_ID,
+                "action": "deny",
+            }
+        ],
+        policy_enforcement_mode="enforce",
+    )
+    bundle = wire_policy_bundle(env)
+    assert bundle.declarative_policy_runtime is not None
+    enforcer = DeclarativePolicyEnforcer(runtime=bundle.declarative_policy_runtime)
+    grant = DeclarativeHitlApprovalGrant(
+        grant_id="grant-1",
+        invocation_scope_id="dhr_scope",
+        task_id="task-1",
+        run_id="run-e2e",
+        step_id="1",
+        tool_id=_TOOL_ID,
+        idempotency_key=None,
+        matched_rule_ids=("deny_tool",),
+        human_request_id="hr-1",
+        policy_provenance_digest=None,
+        pause_id="pause-1",
+        approved_at="2026-08-14T00:00:00+00:00",
+    )
+    decision = enforcer.evaluate_tool_invocation(
+        context=PolicyEvaluationContext(
+            tool_id=_TOOL_ID,
+            invocation_scope_id="dhr_scope",
+            approval_grant=grant,
+        )
+    )
+    assert decision.should_block_execution is True
+    assert decision.action.value == "deny"

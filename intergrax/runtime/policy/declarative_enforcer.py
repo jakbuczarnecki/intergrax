@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.runtime.policy.policy_bundle import DeclarativePolicyRuntime
 from intergrax.runtime.policy.rules.evaluation import (
     PolicyEnforcementDecision,
@@ -41,6 +42,39 @@ def _aggregate_action(outcomes: tuple[PolicyRuleEvaluationOutcome, ...]) -> Poli
             best = outcome.action
             best_rank = rank
     return best
+
+
+def _grant_satisfies_hitl(
+    grant: DeclarativeHitlApprovalGrant,
+    *,
+    context: PolicyEvaluationContext,
+    decision: PolicyEnforcementDecision,
+) -> bool:
+    if context.invocation_scope_id is None:
+        return False
+    if context.invocation_scope_id != grant.invocation_scope_id:
+        return False
+    if context.task_id is not None and context.task_id != grant.task_id:
+        return False
+    if context.run_id is not None and context.run_id != grant.run_id:
+        return False
+    if context.step_id is not None and context.step_id != grant.step_id:
+        return False
+    if context.tool_id != grant.tool_id:
+        return False
+    if (
+        context.idempotency_key is not None
+        and context.idempotency_key != grant.idempotency_key
+    ):
+        return False
+    if set(decision.matched_rule_ids) != set(grant.matched_rule_ids):
+        return False
+    if (
+        decision.provenance_digest is not None
+        and decision.provenance_digest != grant.policy_provenance_digest
+    ):
+        return False
+    return True
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,7 +129,7 @@ class DeclarativePolicyEnforcer:
         if would_deny and not enforced:
             audit_reasons.append("audit_only_bypass")
 
-        return PolicyEnforcementDecision(
+        decision = PolicyEnforcementDecision(
             action=final_action,
             matched_rule_ids=tuple(matched_rule_ids),
             reasons=tuple(audit_reasons),
@@ -106,6 +140,26 @@ class DeclarativePolicyEnforcer:
             unknown_handler_ids=tuple(unknown_handler_ids),
             provenance_digest=self.runtime.provenance.rules_digest_sha256,
         )
+
+        if (
+            decision.action is PolicyRuleAction.REQUIRE_HITL
+            and decision.enforced
+            and isinstance(context.approval_grant, DeclarativeHitlApprovalGrant)
+            and _grant_satisfies_hitl(context.approval_grant, context=context, decision=decision)
+        ):
+            return PolicyEnforcementDecision(
+                action=PolicyRuleAction.ALLOW,
+                matched_rule_ids=decision.matched_rule_ids,
+                reasons=decision.reasons,
+                enforcement_mode=decision.enforcement_mode,
+                enforced=False,
+                would_deny=decision.would_deny,
+                requires_hitl=True,
+                unknown_handler_ids=decision.unknown_handler_ids,
+                provenance_digest=decision.provenance_digest,
+            )
+
+        return decision
 
 
 def resolve_declarative_policy_enforcer(

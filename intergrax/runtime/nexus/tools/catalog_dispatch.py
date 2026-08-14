@@ -12,6 +12,14 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel, ValidationError
 
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
+    DeclarativePolicyHitlRequiredError,
+)
+from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
+    DeclarativeHitlScopeAssignmentState,
+    maybe_assign_declarative_hitl_scope,
+    raise_hitl_pause_from_tool_invocation,
+)
 from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
@@ -142,15 +150,35 @@ def invoke_catalog_tool_ids(
             dispatched += 1
             continue
 
-        request = ToolExecutionRequest(
+        exec_request = ToolExecutionRequest(
             run_id=state.run_id,
             step_id=step_id,
             tool_id=tool_id,
             input=validated,
             idempotency_key=f"{state.run_id}:{step_id}",
         )
+        assignment_state = (
+            DeclarativeHitlScopeAssignmentState()
+            if state.declarative_hitl_grant is not None
+            else None
+        )
+        exec_request = maybe_assign_declarative_hitl_scope(
+            exec_request,
+            state=state,
+            assignment_state=assignment_state,
+            candidate_index=0 if assignment_state is not None else None,
+            request_index=0,
+        )
 
-        result = invoker.invoke(state=state, agent_id=agent_id, request=request)
+        try:
+            result = invoker.invoke(state=state, agent_id=agent_id, request=exec_request)
+        except DeclarativePolicyHitlRequiredError as exc:
+            raise_hitl_pause_from_tool_invocation(
+                exc,
+                state=state,
+                request=exec_request,
+                agent_id=agent_id,
+            )
         state.used_tools = True
         dispatched += 1
 
@@ -224,12 +252,31 @@ def invoke_catalog_tool_request(
         input=validated,
         idempotency_key=request.idempotency_key or f"{state.run_id}:{request.request_id}",
     )
+    assignment_state = (
+        DeclarativeHitlScopeAssignmentState()
+        if state.declarative_hitl_grant is not None
+        else None
+    )
+    exec_request = maybe_assign_declarative_hitl_scope(
+        exec_request,
+        state=state,
+        assignment_state=assignment_state,
+        candidate_index=0 if assignment_state is not None else None,
+        request_index=0,
+    )
 
     try:
         result = invoker.invoke(
             state=state,
             agent_id=request.agent_id,
             request=exec_request,
+        )
+    except DeclarativePolicyHitlRequiredError as exc:
+        raise_hitl_pause_from_tool_invocation(
+            exc,
+            state=state,
+            request=exec_request,
+            agent_id=request.agent_id,
         )
     except Exception as exc:  # noqa: BLE001 — gateway boundary
         return ToolResponse(

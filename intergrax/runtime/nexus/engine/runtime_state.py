@@ -11,6 +11,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 from intergrax.contracts.runtime_cost import tokens_to_cost_units
+from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.runtime.nexus.engine.contracts.agent_state import AgentState
 from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
 from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
@@ -52,6 +53,9 @@ class RuntimeState(RuntimeStateContract):
 
     # Run
     run_id: str
+
+    # Typed declarative HITL grant mirror (transport only; scope is per ToolExecutionRequest).
+    declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
 
     # Utc
     started_at_utc: str = field(
