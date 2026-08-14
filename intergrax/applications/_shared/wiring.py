@@ -15,7 +15,13 @@ from typing import Any, Callable, Union
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agent_distribution._immutable_json import DistributionJsonValue
+from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
+from intergrax.agent_distribution.runtime_revision import RuntimeRevision
+from intergrax.applications._shared.runtime_agent_factory_resolver import (
+    RuntimeAgentFactoryResolutionError,
+    RuntimeAgentFactoryResolver,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import AgentFactory
 from intergrax.applications.contracts.errors import (
@@ -298,6 +304,31 @@ def binding_from_roster_entry(
     )
 
 
+def factory_reference_for_roster_entry(
+    entry: EffectiveRosterEntry,
+    manifest_bindings: Mapping[str, AgentBinding],
+) -> AgentBindingFactoryReference:
+    """Return the explicit string factory reference for one roster entry."""
+    factory_reference = entry.factory_reference
+    if factory_reference is not None:
+        return factory_reference
+    binding = _resolve_manifest_binding_for_entry(entry, manifest_bindings)
+    if binding is None:
+        raise RuntimeAgentFactoryResolutionError(
+            f"operator-added agent {entry.logical_agent_id!r} requires "
+            "immutable factory_reference authority"
+        )
+    builder_key = binding.builder_key
+    if builder_key is not None:
+        return AgentBindingFactoryReference(builder_key=builder_key)
+    factory_path = binding.factory_path
+    if factory_path is not None:
+        return AgentBindingFactoryReference(factory_path=factory_path)
+    raise RuntimeAgentFactoryResolutionError(
+        f"roster entry {entry.logical_agent_id!r} lacks explicit factory reference"
+    )
+
+
 def _register_binding(
     registry: AgentRegistry,
     binding: AgentBinding,
@@ -305,8 +336,12 @@ def _register_binding(
     *,
     builders: BuilderMap | None,
     skill_registry: SkillRegistry | None,
+    resolved_factory: AgentFactory | None = None,
 ) -> None:
-    agent = build_agent_from_binding(binding, ctx, builders=builders)
+    if resolved_factory is not None:
+        agent = invoke_agent_factory(resolved_factory, ctx, binding)
+    else:
+        agent = build_agent_from_binding(binding, ctx, builders=builders)
     registry.register(
         agent,
         contract=contract_for_binding(agent, binding),
@@ -324,8 +359,15 @@ def build_application_registry(
     builders: BuilderMap | None = None,
     require_enabled: bool = True,
     effective_roster: EffectiveRoster | None = None,
+    runtime_revision: RuntimeRevision | None = None,
+    factory_resolver: RuntimeAgentFactoryResolver | None = None,
 ) -> AgentRegistry:
-    """Canonical Tier-3 registry builder: manifest roster + context + optional builders."""
+    """Canonical Tier-3 registry builder: manifest roster + context + optional builders.
+
+    Revision-bound AP-10 projection (``effective_roster`` + ``runtime_revision``)
+    resolves factories through ``factory_resolver`` and must not fall back to
+    the host builders map.
+    """
     skill_registry = ctx.skill_registry
     if skill_registry is None and ctx.skill_profile is not None:
         register_default_skills()
@@ -371,12 +413,40 @@ def build_application_registry(
             f"{manifest.app_id}: multiple default agents in effective roster"
         )
 
+    revision_bound_resolver: RuntimeAgentFactoryResolver | None = None
+    if runtime_revision is not None:
+        if factory_resolver is None:
+            raise RuntimeAgentFactoryResolutionError(
+                "revision-bound registry projection requires RuntimeAgentFactoryResolver; "
+                "host builders fallback is forbidden"
+            )
+        revision_bound_resolver = factory_resolver
+
     manifest_bindings = _index_manifest_bindings(manifest)
     registry = AgentRegistry()
     for entry in effective_roster.entries:
         if not entry.effective_enablement:
             continue
         binding = binding_from_roster_entry(entry, manifest_bindings)
+        if runtime_revision is not None and revision_bound_resolver is not None:
+            factory_reference = factory_reference_for_roster_entry(
+                entry,
+                manifest_bindings,
+            )
+            resolved = revision_bound_resolver.resolve_factory(
+                runtime_revision=runtime_revision,
+                package_digest=entry.package_digest,
+                factory_reference=factory_reference,
+            )
+            _register_binding(
+                registry,
+                binding,
+                ctx,
+                builders=None,
+                skill_registry=skill_registry,
+                resolved_factory=resolved,
+            )
+            continue
         _register_binding(
             registry,
             binding,

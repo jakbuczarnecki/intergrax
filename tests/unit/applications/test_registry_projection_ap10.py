@@ -41,6 +41,10 @@ from intergrax.applications._shared.registry_projection import (
     _bundle_semantic_fingerprint,
     _registry_factory_wiring_digest,
 )
+from intergrax.applications._shared.runtime_agent_factory_resolver import (
+    InMemoryRuntimeAgentFactoryResolver,
+    RuntimeAgentFactoryResolutionError,
+)
 from intergrax.applications._shared.wiring import (
     build_application_registry,
     binding_from_roster_entry,
@@ -70,7 +74,17 @@ def _echo_factory(_ctx: ApplicationBuildContext, _binding: AgentBinding) -> Echo
     return EchoAgent()
 
 
+def _factory_aaa(_ctx: ApplicationBuildContext, _binding: AgentBinding) -> EchoAgent:
+    return EchoAgent()
+
+
+def _factory_bbb(_ctx: ApplicationBuildContext, _binding: AgentBinding) -> EchoAgent:
+    return EchoAgent()
+
+
 ECHO_BUILDERS = {EchoAgent: _echo_factory}
+_ECHO_REF = AgentBindingFactoryReference(builder_key="echo")
+_RESEARCHER_REF = AgentBindingFactoryReference(builder_key="researcher")
 
 
 def _manifest(
@@ -101,7 +115,11 @@ def _entry(
         distribution_package_id=f"pkg-{logical_agent_id}",
         effective_enablement=enabled,
         effective_default_agent=default,
-        factory_reference=factory_reference,
+        factory_reference=(
+            factory_reference
+            if factory_reference is not None
+            else _ECHO_REF
+        ),
         manifest_origin_ref=manifest_origin_ref or f"manifest:agents/{logical_agent_id}",
     )
 
@@ -129,6 +147,7 @@ def _revision(
     roster_revision_id: str = _ROSTER_A,
     environment: str = _ENV,
     state: RuntimeRevisionState = RuntimeRevisionState.VALIDATED,
+    package_digests: tuple[str, ...] = (_DIGEST,),
 ) -> RuntimeRevision:
     return RuntimeRevision(
         runtime_revision_id=revision_id,
@@ -136,6 +155,7 @@ def _revision(
         application_release_id=_RELEASE,
         platform_version="0.1.0",
         effective_roster_revision_id=roster_revision_id,
+        installed_agent_package_digests=package_digests,
         materialized_runtime_lock_id=_LOCK_ID,
         materialized_runtime_lock_digest=_LOCK_DIGEST,
         runtime_graph_digest=_GRAPH_DIGEST,
@@ -146,6 +166,26 @@ def _revision(
     )
 
 
+def _resolver_from_roster(
+    roster: EffectiveRoster,
+    *,
+    factory: object = _echo_factory,
+) -> InMemoryRuntimeAgentFactoryResolver:
+    resolver = InMemoryRuntimeAgentFactoryResolver()
+    for entry in roster.entries:
+        if not entry.effective_enablement:
+            continue
+        factory_reference = entry.factory_reference
+        if factory_reference is None:
+            continue
+        resolver.register(
+            package_digest=entry.package_digest,
+            factory_reference=factory_reference,
+            factory=factory,
+        )
+    return resolver
+
+
 def _bundle(
     revision_id: str,
     roster: EffectiveRoster,
@@ -153,11 +193,13 @@ def _bundle(
     *,
     release_id: str = _RELEASE,
     artifact_digest: str | None = _ARTIFACT,
+    factory_resolver: InMemoryRuntimeAgentFactoryResolver | None = None,
 ) -> RegistryProjectionInputBundle:
     manifest = manifest or _manifest()
     revision = _revision(
         revision_id,
         roster_revision_id=roster.effective_roster_revision_id or _ROSTER_A,
+        package_digests=tuple(dict.fromkeys(entry.package_digest for entry in roster.entries)),
     )
     if release_id != _RELEASE:
         revision = revision.model_copy(update={"application_release_id": release_id})
@@ -169,6 +211,7 @@ def _bundle(
         effective_roster=roster,
         manifest=manifest,
         build_context=ctx,
+        factory_resolver=factory_resolver or _resolver_from_roster(roster),
         builders=ECHO_BUILDERS,
         materialization_artifact_digest=artifact_digest,
     )
@@ -200,6 +243,7 @@ def _bundle_parts(
         effective_roster=roster,
         manifest=manifest,
         build_context=ApplicationBuildContext.for_manifest(manifest),
+        factory_resolver=_resolver_from_roster(roster),
         builders=ECHO_BUILDERS,
         materialization_artifact_digest=revision.materialization_artifact_digest,
     )
@@ -211,13 +255,23 @@ def _bundle_with_revision(
     manifest: ApplicationManifest | None = None,
     *,
     builders: dict[str, object] | None = None,
+    factory_resolver: InMemoryRuntimeAgentFactoryResolver | None = None,
+    attach_resolver: bool = True,
 ) -> RegistryProjectionInputBundle:
     manifest = manifest or _manifest()
+    resolver: InMemoryRuntimeAgentFactoryResolver | None
+    if not attach_resolver:
+        resolver = None
+    elif factory_resolver is not None:
+        resolver = factory_resolver
+    else:
+        resolver = _resolver_from_roster(roster)
     return RegistryProjectionInputBundle(
         runtime_revision=revision,
         effective_roster=roster,
         manifest=manifest,
         build_context=ApplicationBuildContext.for_manifest(manifest),
+        factory_resolver=resolver,
         builders=builders if builders is not None else ECHO_BUILDERS,
         materialization_artifact_digest=revision.materialization_artifact_digest,
     )
@@ -741,10 +795,11 @@ def test_operator_added_agent_rejects_missing_frozen_builder_reference() -> None
         effective_roster=roster,
         manifest=manifest,
         build_context=ApplicationBuildContext.for_manifest(manifest),
-        builders={},
+        factory_resolver=None,
+        builders={"custom": _echo_factory},
         materialization_artifact_digest=_ARTIFACT,
     )
-    with pytest.raises(RegistryProjectionError, match="missing from frozen release builders"):
+    with pytest.raises(RegistryProjectionError, match="host builders fallback is forbidden"):
         build_registry_projection(bundle)
 
 
@@ -968,13 +1023,287 @@ def test_bundle_semantic_fingerprint_includes_factory_authority() -> None:
 
 
 def test_ap10_path_has_no_loose_dict_any_or_reflection() -> None:
-    registry_projection_source = (
-        Path(__file__).resolve().parents[3]
-        / "intergrax"
-        / "applications"
-        / "_shared"
-        / "registry_projection.py"
-    ).read_text(encoding="utf-8")
+    shared = Path(__file__).resolve().parents[3] / "intergrax" / "applications" / "_shared"
+    sources = (
+        (shared / "registry_projection.py").read_text(encoding="utf-8"),
+        (shared / "runtime_agent_factory_resolver.py").read_text(encoding="utf-8"),
+    )
     forbidden = ("dict[str, Any]", "getattr(", "setattr(", "hasattr(")
-    for token in forbidden:
-        assert token not in registry_projection_source
+    for source in sources:
+        for token in forbidden:
+            assert token not in source
+
+
+def test_exact_package_and_factory_resolves_expected_factory() -> None:
+    resolver = InMemoryRuntimeAgentFactoryResolver()
+    resolver.register(
+        package_digest=_DIGEST,
+        factory_reference=_RESEARCHER_REF,
+        factory=_factory_aaa,
+    )
+    revision = _revision("rev-resolve-aaa", package_digests=(_DIGEST,))
+    resolved = resolver.resolve_factory(
+        runtime_revision=revision,
+        package_digest=_DIGEST,
+        factory_reference=_RESEARCHER_REF,
+    )
+    assert resolved is _factory_aaa
+
+
+def test_same_builder_key_different_packages_resolve_different_factories() -> None:
+    resolver = InMemoryRuntimeAgentFactoryResolver()
+    resolver.register(
+        package_digest=_DIGEST,
+        factory_reference=_RESEARCHER_REF,
+        factory=_factory_aaa,
+    )
+    resolver.register(
+        package_digest=_PACKAGE_OTHER,
+        factory_reference=_RESEARCHER_REF,
+        factory=_factory_bbb,
+    )
+    revision = _revision(
+        "rev-resolve-both",
+        package_digests=(_DIGEST, _PACKAGE_OTHER),
+    )
+    assert (
+        resolver.resolve_factory(
+            runtime_revision=revision,
+            package_digest=_DIGEST,
+            factory_reference=_RESEARCHER_REF,
+        )
+        is _factory_aaa
+    )
+    assert (
+        resolver.resolve_factory(
+            runtime_revision=revision,
+            package_digest=_PACKAGE_OTHER,
+            factory_reference=_RESEARCHER_REF,
+        )
+        is _factory_bbb
+    )
+
+
+def test_revision_with_package_aaa_cannot_resolve_factory_from_bbb() -> None:
+    resolver = InMemoryRuntimeAgentFactoryResolver()
+    resolver.register(
+        package_digest=_PACKAGE_OTHER,
+        factory_reference=_RESEARCHER_REF,
+        factory=_factory_bbb,
+    )
+    revision = _revision("rev-aaa-only", package_digests=(_DIGEST,))
+    with pytest.raises(RuntimeAgentFactoryResolutionError, match="is not part of runtime revision"):
+        resolver.resolve_factory(
+            runtime_revision=revision,
+            package_digest=_PACKAGE_OTHER,
+            factory_reference=_RESEARCHER_REF,
+        )
+
+
+def test_missing_package_authority_fails_closed() -> None:
+    resolver = InMemoryRuntimeAgentFactoryResolver()
+    revision = _revision("rev-missing-pkg", package_digests=(_DIGEST,))
+    with pytest.raises(RuntimeAgentFactoryResolutionError, match="cannot resolve factory"):
+        resolver.resolve_factory(
+            runtime_revision=revision,
+            package_digest=_DIGEST,
+            factory_reference=_RESEARCHER_REF,
+        )
+
+
+def test_production_projection_does_not_fall_back_to_builders_map() -> None:
+    roster = _roster((_operator_entry(builder_key="researcher"),))
+    revision = _revision_with_trusted_packages("rev-no-fallback", roster)
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    bundle = _bundle_with_revision(
+        revision,
+        roster,
+        manifest,
+        builders={"researcher": _echo_factory},
+        attach_resolver=False,
+    )
+    with pytest.raises(RegistryProjectionError, match="host builders fallback is forbidden"):
+        build_registry_projection(bundle)
+
+
+def test_operator_added_agent_resolves_through_exact_runtime_resolver() -> None:
+    roster = _roster((_operator_entry(builder_key="researcher", package_digest=_DIGEST),))
+    revision = _revision_with_trusted_packages("rev-operator-resolver", roster)
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    resolver = InMemoryRuntimeAgentFactoryResolver()
+    resolver.register(
+        package_digest=_DIGEST,
+        factory_reference=_RESEARCHER_REF,
+        factory=_factory_aaa,
+    )
+    projection = build_registry_projection(
+        _bundle_with_revision(
+            revision,
+            roster,
+            manifest,
+            factory_resolver=resolver,
+            builders={"researcher": _factory_bbb},
+        )
+    )
+    assert projection.agent_registry.has("custom")
+
+
+def test_manifest_origin_agent_uses_revision_bound_resolver() -> None:
+    manifest = _manifest(
+        agents=[
+            AgentBinding.mount(EchoAgent, contract_id="search", builder_key="researcher"),
+        ]
+    )
+    entry = EffectiveRosterEntry(
+        logical_agent_id="search",
+        installation_slot_id="slot-search",
+        package_digest=_DIGEST,
+        distribution_package_id="pkg-search",
+        effective_enablement=True,
+        factory_reference=None,
+        manifest_origin_ref="manifest:agents/search",
+    )
+    roster = _roster((entry,))
+    resolver = InMemoryRuntimeAgentFactoryResolver()
+    resolver.register(
+        package_digest=_DIGEST,
+        factory_reference=_RESEARCHER_REF,
+        factory=_factory_aaa,
+    )
+    revision = _revision_with_trusted_packages("rev-manifest-resolver", roster)
+    projection = build_registry_projection(
+        _bundle_with_revision(
+            revision,
+            roster,
+            manifest,
+            factory_resolver=resolver,
+            builders={"researcher": _factory_bbb},
+        )
+    )
+    assert projection.agent_registry.has("search")
+
+
+def test_registry_n_and_n_plus_one_same_builder_key_different_package_digests() -> None:
+    resolver = InMemoryRuntimeAgentFactoryResolver()
+    resolver.register(
+        package_digest=_DIGEST,
+        factory_reference=_RESEARCHER_REF,
+        factory=_factory_aaa,
+    )
+    resolver.register(
+        package_digest=_PACKAGE_OTHER,
+        factory_reference=_RESEARCHER_REF,
+        factory=_factory_bbb,
+    )
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    roster_n = _roster((_operator_entry(builder_key="researcher", package_digest=_DIGEST),))
+    roster_n1 = _roster(
+        (_operator_entry(builder_key="researcher", package_digest=_PACKAGE_OTHER),),
+        revision_id=_ROSTER_B,
+    )
+    rev_n = _revision_with_trusted_packages("rev-n-pkg", roster_n, package_digests=(_DIGEST,))
+    rev_n1 = _revision(
+        "rev-n1-pkg",
+        roster_revision_id=roster_n1.effective_roster_revision_id or _ROSTER_B,
+        package_digests=(_PACKAGE_OTHER,),
+    )
+    projection_n = build_registry_projection(
+        _bundle_with_revision(rev_n, roster_n, manifest, factory_resolver=resolver)
+    )
+    projection_n1 = build_registry_projection(
+        _bundle_with_revision(rev_n1, roster_n1, manifest, factory_resolver=resolver)
+    )
+    assert projection_n.agent_registry.has("custom")
+    assert projection_n1.agent_registry.has("custom")
+    assert projection_n is not projection_n1
+    assert _registry_factory_wiring_digest(
+        _bundle_with_revision(rev_n, roster_n, manifest, factory_resolver=resolver)
+    ) != _registry_factory_wiring_digest(
+        _bundle_with_revision(rev_n1, roster_n1, manifest, factory_resolver=resolver)
+    )
+
+
+def test_preparing_n_plus_one_does_not_change_factory_resolution_for_n() -> None:
+    coordinator, input_store, projection_store, revision_store = _coordinator()
+    resolver = InMemoryRuntimeAgentFactoryResolver()
+    resolver.register(
+        package_digest=_DIGEST,
+        factory_reference=_RESEARCHER_REF,
+        factory=_factory_aaa,
+    )
+    resolver.register(
+        package_digest=_PACKAGE_OTHER,
+        factory_reference=_RESEARCHER_REF,
+        factory=_factory_bbb,
+    )
+    manifest = ApplicationManifest.lab(app_id=_APP, name="App A", agents=[])
+    roster_n = _roster((_operator_entry(builder_key="researcher", package_digest=_DIGEST),))
+    roster_n1 = _roster(
+        (_operator_entry(builder_key="researcher", package_digest=_PACKAGE_OTHER),),
+        revision_id=_ROSTER_B,
+    )
+    bundle_n = _bundle_with_revision(
+        _revision_with_trusted_packages("rev-n-iso", roster_n, package_digests=(_DIGEST,)),
+        roster_n,
+        manifest,
+        factory_resolver=resolver,
+    )
+    bundle_n1 = _bundle_with_revision(
+        _revision(
+            "rev-n1-iso",
+            roster_revision_id=roster_n1.effective_roster_revision_id or _ROSTER_B,
+            package_digests=(_PACKAGE_OTHER,),
+        ),
+        roster_n1,
+        manifest,
+        factory_resolver=resolver,
+    )
+    revision_store.persist_candidate_revision(bundle_n.runtime_revision)
+    revision_store.persist_candidate_revision(bundle_n1.runtime_revision)
+    input_store.register(bundle_n)
+    input_store.register(bundle_n1)
+    coordinator.prepare_projection("rev-n-iso")
+    digest_before = projection_store.get("rev-n-iso").evidence.registry_factory_wiring_digest
+    coordinator.prepare_projection("rev-n1-iso")
+    restored = projection_store.get("rev-n-iso")
+    assert restored.evidence.registry_factory_wiring_digest == digest_before
+    assert restored.agent_registry.has("custom")
+
+
+def test_resolver_failure_blocks_ap9_cutover() -> None:
+    state = AgentDistributionStoreState()
+    coordinator, input_store, _, revision_store = _coordinator(state)
+    roster = _roster((_entry("search"),))
+    bundle = _bundle(
+        "rev-1",
+        roster,
+        factory_resolver=InMemoryRuntimeAgentFactoryResolver(),
+    )
+    revision_store.persist_candidate_revision(bundle.runtime_revision)
+    input_store.register(bundle)
+    deployment_store = InMemoryDeploymentInstanceStore(state)
+    serving_store = InMemoryApplicationEnvironmentServingStore(state)
+    activation_store = InMemoryApplicationEnvironmentActivationStore(state)
+    activation = ActivationService(
+        revision_store=revision_store,
+        deployment_instance_store=deployment_store,
+        serving_store=serving_store,
+        activation_store=activation_store,
+        deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
+        projection_coordinator=coordinator,
+    )
+    activation.prepare_candidate(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id="rev-1",
+        artifact_locator=f"artifact://{_ARTIFACT}",
+    )
+    with pytest.raises(RegistryProjectionError, match="cannot resolve factory"):
+        activation.commit_activation(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            runtime_revision_id="rev-1",
+            expected_prior_traffic_revision_id=None,
+            expected_serving_pointer_revision=0,
+            expected_artifact_digest=_ARTIFACT,
+        )

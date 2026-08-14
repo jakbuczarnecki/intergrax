@@ -221,9 +221,15 @@ staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 | `ApplicationRegistryProjectionCoordinator` + projection store | done |
 | `RegistryProjectionEvidence` / audit snapshot fields | done |
 | Legacy manifest-only behavior preserved | done |
+| `RuntimeAgentFactoryResolver` port + in-memory test adapter | done |
+| Revision-bound projection uses exact `(package_digest, factory_reference)` resolver | done |
+| Host builders map is not production authority for AP-10 projection | done |
+| `PRODUCTION_RUNTIME_FACTORY_ADAPTER_DEFERRED` | deferred — AP-8 locators/bytes only; no callable loader |
 | AP-10 focused tests + AP-9 activation regression | done |
 
-**Evidence:** `intergrax/applications/_shared/wiring.py`, `registry_projection.py`, `tests/unit/applications/test_registry_projection_ap10.py`
+**Evidence:** `intergrax/applications/_shared/runtime_agent_factory_resolver.py`, `wiring.py`, `registry_projection.py`, `tests/unit/applications/test_registry_projection_ap10.py`
+
+**Next:** AP-11 may begin after AP-10 close — generic Tier-3 harness admin API routes. Production topology factory loaders (OCI_IMAGE / VENV_BUNDLE / SANDBOX_SIDECAR) remain a separate host/runtime adapter.
 
 ### AP-9 evidence (activation orchestration)
 

@@ -13,17 +13,20 @@ from typing import Final, Protocol
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.agent_distribution._digest import content_digest_for_model
-from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision
 from intergrax.agent_distribution.stores import RuntimeRevisionStore
 from intergrax.applications._shared.registry_snapshot import resolve_registry_snapshot
+from intergrax.applications._shared.runtime_agent_factory_resolver import (
+    RuntimeAgentFactoryResolutionError,
+    RuntimeAgentFactoryResolver,
+)
 from intergrax.applications._shared.wiring import (
     BuilderMap,
     build_application_registry,
     binding_from_roster_entry,
+    factory_reference_for_roster_entry,
     _index_manifest_bindings,
-    _resolve_manifest_binding_for_entry,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
@@ -115,6 +118,7 @@ class RegistryProjectionInputBundle:
     effective_roster: EffectiveRoster
     manifest: ApplicationManifest
     build_context: ApplicationBuildContext
+    factory_resolver: RuntimeAgentFactoryResolver | None = None
     builders: BuilderMap | None = None
     materialization_artifact_digest: str | None = None
 
@@ -139,36 +143,20 @@ class RuntimeRegistryProjectionStore(Protocol):
         """Store a prepared projection without mutating prior revisions."""
 
 
-def _manifest_factory_entrypoint(binding: AgentBinding) -> dict[str, str]:
-    if binding.factory_path is not None:
-        return {"manifest_factory_path": binding.factory_path}
-    if binding.builder_key is not None:
-        return {"manifest_builder_key": binding.builder_key}
-    import_path = binding.import_path
-    if import_path is None:
-        raise RegistryProjectionError("manifest binding lacks factory entrypoint")
-    return {"manifest_import_path": import_path}
-
-
 def _entry_factory_authority_payload(
     entry: EffectiveRosterEntry,
     manifest_bindings: Mapping[str, AgentBinding],
 ) -> dict[str, object]:
-    manifest_binding = _resolve_manifest_binding_for_entry(entry, manifest_bindings)
     payload: dict[str, object] = {
         "logical_agent_id": entry.logical_agent_id,
         "package_digest": entry.package_digest,
         "distribution_package_id": entry.distribution_package_id,
     }
-    factory_reference = entry.factory_reference
-    if factory_reference is not None:
-        payload["factory_reference"] = factory_reference.model_dump(mode="json")
-    elif manifest_binding is not None:
-        payload.update(_manifest_factory_entrypoint(manifest_binding))
-    else:
-        raise RegistryProjectionError(
-            f"enabled roster entry {entry.logical_agent_id!r} lacks factory authority"
-        )
+    try:
+        factory_reference = factory_reference_for_roster_entry(entry, manifest_bindings)
+    except RuntimeAgentFactoryResolutionError as exc:
+        raise RegistryProjectionError(str(exc)) from exc
+    payload["factory_reference"] = factory_reference.model_dump(mode="json")
     return payload
 
 
@@ -300,20 +288,6 @@ def _expected_contract_ids(
     return tuple(sorted(contract_ids))
 
 
-def _validate_factory_reference_against_builders(
-    *,
-    logical_agent_id: str,
-    factory_reference: AgentBindingFactoryReference,
-    builders: Mapping[object, object],
-) -> None:
-    builder_key = factory_reference.builder_key
-    if builder_key is not None and builder_key not in builders:
-        raise RegistryProjectionError(
-            f"roster entry {logical_agent_id!r} references builder_key "
-            f"{builder_key!r} missing from frozen release builders"
-        )
-
-
 def _validate_entry_package_digest_trust(
     *,
     logical_agent_id: str,
@@ -328,51 +302,26 @@ def _validate_entry_package_digest_trust(
 
 
 def _validate_factory_authority(bundle: RegistryProjectionInputBundle) -> None:
-    builders: Mapping[object, object] = bundle.builders or {}
+    if bundle.factory_resolver is None:
+        raise RegistryProjectionError(
+            "revision-bound registry projection requires RuntimeAgentFactoryResolver; "
+            "host builders fallback is forbidden"
+        )
     manifest_bindings = _index_manifest_bindings(bundle.manifest)
-    revision = bundle.runtime_revision
-    trusted_packages = frozenset(revision.installed_agent_package_digests)
-    require_trusted_packages = bool(trusted_packages)
+    trusted_packages = frozenset(bundle.runtime_revision.installed_agent_package_digests)
 
     for entry in bundle.effective_roster.entries:
         if not entry.effective_enablement:
             continue
-
-        manifest_binding = _resolve_manifest_binding_for_entry(entry, manifest_bindings)
-        factory_reference = entry.factory_reference
-
-        if manifest_binding is None:
-            if factory_reference is None:
-                raise RegistryProjectionError(
-                    f"operator-added agent {entry.logical_agent_id!r} requires "
-                    "immutable factory_reference authority"
-                )
-            if require_trusted_packages:
-                _validate_entry_package_digest_trust(
-                    logical_agent_id=entry.logical_agent_id,
-                    package_digest=entry.package_digest,
-                    trusted_package_digests=trusted_packages,
-                )
-            _validate_factory_reference_against_builders(
-                logical_agent_id=entry.logical_agent_id,
-                factory_reference=factory_reference,
-                builders=builders,
-            )
-            continue
-
-        if require_trusted_packages:
-            _validate_entry_package_digest_trust(
-                logical_agent_id=entry.logical_agent_id,
-                package_digest=entry.package_digest,
-                trusted_package_digests=trusted_packages,
-            )
-
-        if factory_reference is not None:
-            _validate_factory_reference_against_builders(
-                logical_agent_id=entry.logical_agent_id,
-                factory_reference=factory_reference,
-                builders=builders,
-            )
+        _validate_entry_package_digest_trust(
+            logical_agent_id=entry.logical_agent_id,
+            package_digest=entry.package_digest,
+            trusted_package_digests=trusted_packages,
+        )
+        try:
+            factory_reference_for_roster_entry(entry, manifest_bindings)
+        except RuntimeAgentFactoryResolutionError as exc:
+            raise RegistryProjectionError(str(exc)) from exc
 
 
 def _validate_release_authority(bundle: RegistryProjectionInputBundle) -> None:
@@ -448,12 +397,17 @@ def build_registry_projection(
 ) -> MaterializedRegistryProjection:
     """Build one immutable registry projection from frozen revision inputs."""
     _validate_revision_bundle(bundle)
-    registry = build_application_registry(
-        bundle.manifest,
-        bundle.build_context,
-        builders=bundle.builders,
-        effective_roster=bundle.effective_roster,
-    )
+    try:
+        registry = build_application_registry(
+            bundle.manifest,
+            bundle.build_context,
+            builders=None,
+            effective_roster=bundle.effective_roster,
+            runtime_revision=bundle.runtime_revision,
+            factory_resolver=bundle.factory_resolver,
+        )
+    except RuntimeAgentFactoryResolutionError as exc:
+        raise RegistryProjectionError(str(exc)) from exc
     expected_ids = _expected_contract_ids(bundle)
     registered_ids = tuple(sorted(registry.list_agent_ids()))
     if registered_ids != expected_ids:
