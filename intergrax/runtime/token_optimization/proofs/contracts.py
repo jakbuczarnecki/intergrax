@@ -224,7 +224,7 @@ class ProofRouterEvidence:
             "risk",
             "transport",
         ):
-            _validate_evidence_string(getattr(self, field_name), field_name)
+            _validate_evidence_string(object.__getattribute__(self, field_name), field_name)
         if self.review_required is not None and type(self.review_required) is not bool:
             raise ValueError("review_required must be bool or None")
         if self.structured_output_fallback_used is not None and (
@@ -236,7 +236,7 @@ class ProofRouterEvidence:
             "model_reason_code",
             "model_risk",
         ):
-            _validate_evidence_string(getattr(self, field_name), field_name)
+            _validate_evidence_string(object.__getattribute__(self, field_name), field_name)
         if self.model_review_required is not None and type(
             self.model_review_required
         ) is not bool:
@@ -275,13 +275,13 @@ class ProofPipelineEvidence:
             "validation_reason_code",
             "required_layer_failure",
         ):
-            _validate_evidence_string(getattr(self, field_name), field_name)
+            _validate_evidence_string(object.__getattribute__(self, field_name), field_name)
         for field_name in (
             "completed",
             "fallback_applied",
             "receipt_completion_status",
         ):
-            value = getattr(self, field_name)
+            value = object.__getattribute__(self, field_name)
             if value is not None and type(value) is not bool:
                 raise ValueError(f"{field_name} must be bool or None")
 
@@ -303,7 +303,7 @@ class ProofProtectedRegionEvidence:
             "validated_protected_region_count",
             "preserved_protected_region_count",
         ):
-            _validate_count(getattr(self, field_name), field_name)
+            _validate_count(object.__getattribute__(self, field_name), field_name)
         if self.validated_protected_region_count > self.input_protected_region_count:
             raise ValueError("validated protected-region count exceeds input count")
         if self.preserved_protected_region_count > self.input_protected_region_count:
@@ -357,7 +357,7 @@ class ProofPrefixIdentityEvidence:
             "message_envelope_hash",
         ):
             _validate_optional_digest(
-                getattr(self, field_name),
+                object.__getattribute__(self, field_name),
                 field_name,
             )
         _validate_evidence_string(

@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from intergrax.utils import attribute_access
 
 from intergrax.distributed.source_operation import (
     InProcessSourceOperationCoordinator,
@@ -175,7 +175,7 @@ class IngestPipeline:
         self._graph_store = graph_store
         self._llm_for_graph = llm_for_graph
         self._metadata_callback = metadata_callback
-        existing_source_coordinator = getattr(
+        existing_source_coordinator = attribute_access.optional(
             vectorstore,
             "_source_coordinator",
             None,
@@ -186,14 +186,14 @@ class IngestPipeline:
             or InProcessSourceOperationCoordinator()
         )
         for publication_store in (self._vectorstore, self._toc_vectorstore):
-            configure = getattr(
+            configure = attribute_access.optional(
                 publication_store,
                 "set_source_operation_coordinator",
                 None,
             )
             if callable(configure):
                 configure(self._source_coordinator)
-        configure_graph = getattr(
+        configure_graph = attribute_access.optional(
             self._graph_store,
             "set_source_operation_coordinator",
             None,

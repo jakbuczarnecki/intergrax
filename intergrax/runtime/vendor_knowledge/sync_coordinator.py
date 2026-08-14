@@ -14,6 +14,7 @@ from intergrax.runtime.vendor_knowledge.bindings import (
     KnowledgeSourceBindingService,
 )
 from intergrax.runtime.vendor_knowledge.contracts import VendorKnowledgeFacade
+from intergrax.utils import attribute_access
 from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
@@ -236,7 +237,9 @@ class VendorKnowledgeSyncCoordinator:
             )
         self._publication_fence_port = publication_fence_port
         self._require_fenced_publication = require_fenced_publication
-        set_publication_validator = getattr(sink, "set_publication_validator", None)
+        set_publication_validator = attribute_access.optional(
+            sink, "set_publication_validator", None
+        )
         if callable(set_publication_validator):
             set_publication_validator(self._validate_publication)
         self._active_lease: KnowledgeSourceLeaseToken | None = None
@@ -695,7 +698,9 @@ class VendorKnowledgeSyncCoordinator:
                 binding_id=binding_id,
                 status=KnowledgeSyncRunStatus.PUBLICATION_DISABLED,
             )
-        acquire = getattr(self._publication_fence_port, "acquire_publication_permit", None)
+        acquire = attribute_access.optional(
+            self._publication_fence_port, "acquire_publication_permit", None
+        )
         if acquire is None:
             if self._require_fenced_publication:
                 raise VendorKnowledgeError(
@@ -807,7 +812,9 @@ class VendorKnowledgeSyncCoordinator:
         self,
         permit: KnowledgeSyncPublicationPermitV1,
     ) -> None:
-        release = getattr(self._publication_fence_port, "release_publication_permit", None)
+        release = attribute_access.optional(
+            self._publication_fence_port, "release_publication_permit", None
+        )
         if release is None:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,

@@ -61,7 +61,7 @@ class AnswerPipeline:
 
         documents_by_id: dict[str, KnowledgeDocument] = {}
         for candidate in retrieved_candidates:
-            document = getattr(candidate, "document", None)
+            document = candidate.document
             if not isinstance(document, KnowledgeDocument):
                 raise TypeError("retriever must return native documents")
             documents_by_id[candidate.id] = document

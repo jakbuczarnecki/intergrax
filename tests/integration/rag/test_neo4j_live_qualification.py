@@ -596,22 +596,20 @@ def test_neo4j_live_graphrag_baseline(
             )
         )
     integration_type = type(context.integration)
-    with monkeypatch.context() as patch:
-        patch.setattr(
-            integration_type,
-            "run_query",
-            lambda self, *args, **kwargs: object(),
-        )
-        with pytest.raises(RuntimeError, match="malformed result"):
-            runtime.graph.find_nodes(label_contains="Matrix")
-    with monkeypatch.context() as patch:
-        patch.setattr(
-            integration_type,
-            "run_query",
-            lambda self, *args, **kwargs: (_ for _ in ()).throw(
-                RuntimeError("cypher error")
-            ),
-        )
+    monkeypatch.setattr(
+        integration_type,
+        "run_query",
+        lambda self, *args, **kwargs: object(),
+    )
+    with pytest.raises(RuntimeError, match="malformed result"):
+        runtime.graph.find_nodes(label_contains="Matrix")
+    monkeypatch.setattr(
+        integration_type,
+        "run_query",
+        lambda self, *args, **kwargs: (_ for _ in ()).throw(
+            RuntimeError("cypher error")
+        ),
+    )
         with pytest.raises(RuntimeError, match="cypher error"):
             runtime.graph.find_nodes(label_contains="Matrix")
         with pytest.raises(RuntimeError, match="cypher error"):

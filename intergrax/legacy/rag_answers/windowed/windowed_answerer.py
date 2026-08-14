@@ -64,7 +64,7 @@ class WindowedAnswerer:
 
         docs: list[KnowledgeDocument] = []
         for candidate in candidates:
-            document = getattr(candidate, "document", None)
+            document = candidate.document
             if not isinstance(document, KnowledgeDocument):
                 raise TypeError("retriever must return native documents")
             docs.append(document)

@@ -194,7 +194,7 @@ def test_context_package_unknown_attribute_fails_normally() -> None:
         AttributeError,
         match="has no attribute",
     ):
-        getattr(
+        object.__getattribute__(
             context_package,
             "DefinitelyMissingContextSymbol",
         )

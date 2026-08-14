@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.utils import attribute_access
 from intergrax.llm_adapters.contracts.llm_adapter import (
     LLMAdapter,
     LLMAdapterResponse,
@@ -131,12 +132,12 @@ def _measurements_from_pipeline(
     *,
     original_content: str = "",
 ) -> tuple[ProofMeasurement, ProofMeasurement]:
-    measurement = getattr(result, "aggregate_measurement", None)
+    measurement = attribute_access.optional(result, "aggregate_measurement", None)
     if measurement is not None:
-        baseline = getattr(measurement, "baseline_tokens", None)
-        optimized = getattr(measurement, "optimized_tokens", None)
-    elif getattr(result, "receipt_metadata", {}).get("completed") is True:
-        optimized_content = getattr(result, "final_content", None)
+        baseline = attribute_access.optional(measurement, "baseline_tokens", None)
+        optimized = attribute_access.optional(measurement, "optimized_tokens", None)
+    elif attribute_access.optional(result, "receipt_metadata", {}).get("completed") is True:
+        optimized_content = attribute_access.optional(result, "final_content", None)
         if not isinstance(optimized_content, str):
             return ProofMeasurement(), ProofMeasurement()
         baseline = len(original_content)

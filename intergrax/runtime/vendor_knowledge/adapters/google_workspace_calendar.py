@@ -759,7 +759,7 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
                 raise ValueError("invalid event type")
             data = event.model_dump(mode="python")
             for field_name in ("start", "end", "original_start_time"):
-                value = getattr(event, field_name)
+                value = object.__getattribute__(event, field_name)
                 data[field_name] = (
                     None
                     if value is None
@@ -768,7 +768,7 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
                     )
                 )
             for field_name in ("creator", "organizer"):
-                value = getattr(event, field_name)
+                value = object.__getattribute__(event, field_name)
                 data[field_name] = (
                     None
                     if value is None

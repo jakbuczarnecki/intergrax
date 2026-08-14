@@ -244,7 +244,7 @@ class ContextBuilder:
         if workspace_reason:
             return None, workspace_reason
 
-        bound_scope = getattr(self._vectorstore, "bound_scope", None)
+        bound_scope = self._vectorstore.bound_scope
         if not isinstance(bound_scope, VectorStoreScope):
             if bound_scope is not None:
                 return None, "tenant_scope_invalid"

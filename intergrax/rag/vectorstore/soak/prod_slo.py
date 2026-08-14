@@ -19,6 +19,7 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreScope,
 )
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
+from intergrax.utils import attribute_access
 
 STABLE_PROD_SLO_SLUGS: tuple[str, ...] = (
     "qdrant",
@@ -104,10 +105,11 @@ def run_vectorstore_soak(
     Used by gate unit tests (in-memory harness) and integration probes for stable backends.
     """
     cfg = config or SoakConfig()
-    bound_store = getattr(store, "rag_store", store)
+    bound_store = attribute_access.optional(store, "rag_store", store)
+    bound_cfg = attribute_access.optional(bound_store, "cfg", None)
     tenant_id = str(
-        getattr(bound_store, "_tenant_id", None)
-        or getattr(getattr(bound_store, "cfg", None), "tenant_id", None)
+        attribute_access.optional(bound_store, "_tenant_id", None)
+        or attribute_access.optional(bound_cfg, "tenant_id", None)
         or "soak"
     )
     scope = VectorStoreScope(tenant_id=tenant_id)

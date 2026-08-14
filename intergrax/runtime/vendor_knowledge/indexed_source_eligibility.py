@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
+
+from intergrax.utils import attribute_access
 from urllib.parse import parse_qsl, urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -371,14 +373,16 @@ class IndexedSourceMaterializationRegistry:
         provider_id = _safe_text(str(provider.provider_id), field_name="provider_id")
         source_kind = _safe_text(str(provider.source_kind), field_name="source_kind")
         integration_kind = provider.integration_kind
-        contract_version = getattr(provider, "materialization_contract_version", None)
+        contract_version = attribute_access.optional(
+            provider, "materialization_contract_version", None
+        )
         if not isinstance(integration_kind, IntegrationCategory):
             raise ValueError("integration_kind_invalid")
         if not isinstance(contract_version, str) or not contract_version.strip():
             raise ValueError("materialization_contract_version_required")
-        if not callable(getattr(provider, "qualify", None)):
+        if not attribute_access.is_callable_attr(provider, "qualify"):
             raise ValueError("materialization_qualifier_required")
-        handler_ref = getattr(provider, "sync_handler_ref", None)
+        handler_ref = attribute_access.optional(provider, "sync_handler_ref", None)
         if not callable(handler_ref):
             raise ValueError("materialization_handler_registration_incomplete")
         try:

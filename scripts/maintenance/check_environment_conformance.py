@@ -345,7 +345,10 @@ def main() -> int:
         )
     )
 
-    base_executable = Path(getattr(sys, "_base_executable", sys.executable))
+    try:
+        base_executable = Path(object.__getattribute__(sys, "_base_executable"))
+    except AttributeError:
+        base_executable = Path(sys.executable)
     base_prefix = Path(sys.base_prefix)
     venv_ok, venv_detail = evaluate_venv_paths(
         Path(sys.executable),

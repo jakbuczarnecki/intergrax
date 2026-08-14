@@ -15,6 +15,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from intergrax.utils import attribute_access
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FORBIDDEN_PREFIXES = ("langchain", "langgraph")
@@ -186,7 +188,7 @@ def _run_native_openai() -> None:
     module = importlib.import_module(
         "intergrax.llm_adapters.providers.openai_responses_adapter"
     )
-    adapter_class = getattr(module, "OpenAIChatResponsesAdapter", None)
+    adapter_class = attribute_access.optional(module, "OpenAIChatResponsesAdapter", None)
     if adapter_class is None:
         raise GateFailure("OpenAIChatResponsesAdapter is not exported by native module")
     print("[gate] native OpenAI module/class import: PASS (no network, no credentials)")

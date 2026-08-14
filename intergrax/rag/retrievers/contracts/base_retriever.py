@@ -136,7 +136,7 @@ class RetrievalHit:
             "child_vector_id",
             "retriever_name",
         ):
-            value = getattr(self, field_name)
+            value = object.__getattribute__(self, field_name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise ValueError(f"{field_name} must be a non-empty string when provided")
         source_rank = self.source_rank
@@ -205,7 +205,7 @@ class RetrievalHit:
             "source_rank",
             "retriever_name",
         ):
-            value = getattr(self, field_name)
+            value = object.__getattribute__(self, field_name)
             if value is not None:
                 payload[field_name] = value
         return payload

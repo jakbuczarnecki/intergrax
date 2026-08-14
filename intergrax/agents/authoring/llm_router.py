@@ -176,13 +176,8 @@ class StepLLMRouter:
             prepared = replace_final_user_message(self.model_input_messages, prompt)
             send_messages = copy_model_input_messages(prepared)
             completion_port = self._resolve_completion_port()
-            complete_messages = (
-                getattr(completion_port, "complete_messages", None)
-                if completion_port is not None
-                else None
-            )
-            if callable(complete_messages):
-                text, tokens_in, tokens_out = await complete_messages(
+            if isinstance(completion_port, LlmMessagesCompletePort):
+                text, tokens_in, tokens_out = await completion_port.complete_messages(
                     list(send_messages),
                     model_id=model_id,
                     provider=provider,

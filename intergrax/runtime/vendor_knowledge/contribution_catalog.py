@@ -23,6 +23,7 @@ from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 from intergrax.runtime.vendor_knowledge.tenant_connection_factory_registry import (
     TenantConnectionIntegrationFactoryRegistry,
 )
+from intergrax.utils import attribute_access
 
 VENDOR_KNOWLEDGE_PROVIDER_ENTRY_POINT_GROUP: Final = (
     "intergrax.vendor_knowledge.providers"
@@ -52,8 +53,8 @@ def _entry_points(group: str) -> tuple[object, ...]:
         sorted(
             selected,
             key=lambda item: (
-                str(getattr(item, "name", "")),
-                str(getattr(item, "value", "")),
+                str(attribute_access.optional(item, "name", "")),
+                str(attribute_access.optional(item, "value", "")),
             ),
         )
     )
@@ -64,13 +65,13 @@ def discover_vendor_knowledge_contributions() -> tuple[VendorKnowledgeProviderCo
     loaded: list[VendorKnowledgeProviderContribution] = []
     seen_names: set[str] = set()
     for entry_point in _entry_points(VENDOR_KNOWLEDGE_PROVIDER_ENTRY_POINT_GROUP):
-        name = getattr(entry_point, "name", None)
+        name = attribute_access.optional(entry_point, "name", None)
         if not isinstance(name, str) or not name.strip():
             raise VendorKnowledgePluginLoadError("entry_point_name_invalid")
         if name in seen_names:
             raise VendorKnowledgePluginConflict("duplicate_entry_point_name")
         seen_names.add(name)
-        load = getattr(entry_point, "load", None)
+        load = attribute_access.optional(entry_point, "load", None)
         if not callable(load):
             raise VendorKnowledgePluginLoadError("entry_point_loader_invalid")
         try:

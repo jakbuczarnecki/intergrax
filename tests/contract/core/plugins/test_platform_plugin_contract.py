@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.utils import attribute_access
 from intergrax.core import plugins as core_plugins
 from intergrax.core.plugins import (
     EP_INTEGRATIONS,
@@ -108,7 +109,7 @@ def _load_plugin_class(path: Path, class_name: str) -> type:
     module = importlib.util.module_from_spec(spec)
     sys.modules[path.stem] = module
     spec.loader.exec_module(module)
-    plugin_type = getattr(module, class_name)
+    plugin_type = attribute_access.optional(module, class_name)
     assert isinstance(plugin_type, type)
     return plugin_type
 
@@ -385,7 +386,7 @@ def test_no_platform_plugin_execute_universal_runtime_api() -> None:
 def test_no_global_platform_plugin_manager() -> None:
     assert "PlatformPluginManager" not in core_plugins.__all__
     with pytest.raises(AttributeError):
-        getattr(core_plugins, "PlatformPluginManager")
+        attribute_access.optional(core_plugins, "PlatformPluginManager")
 
 
 def test_no_global_local_plugin_scanning_mechanism() -> None:

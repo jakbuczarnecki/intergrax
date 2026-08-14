@@ -13,6 +13,7 @@ from intergrax.compat.langchain import to_langchain_document
 from intergrax.compat.langchain.documents import make_langchain_document
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
+from intergrax.utils import attribute_access
 
 
 class _KnowledgeDocumentWithParserRuntime(KnowledgeDocument):
@@ -61,9 +62,9 @@ def to_legacy_rag_document(document: KnowledgeDocument) -> object:
 def from_legacy_rag_hit(hit: object) -> KnowledgeDocument:
     """Reconstruct a native document from a legacy provider hit."""
     try:
-        metadata = getattr(hit, "metadata")
-        content = getattr(hit, "content")
-        document_id = getattr(hit, "id", None)
+        metadata = attribute_access.optional(hit, "metadata")
+        content = attribute_access.optional(hit, "content")
+        document_id = attribute_access.optional(hit, "id", None)
     except AttributeError as exc:
         raise ValueError("legacy vector-store hit is malformed") from exc
     if not isinstance(metadata, Mapping):

@@ -17,6 +17,7 @@ from intergrax.runtime.vendor_knowledge.live.identity import (
     LIVE_CONTRACT_VERSION,
     validate_capability_identity,
 )
+from intergrax.utils import attribute_access
 
 HARD_MAX_LIVE_CALLS = 50
 HARD_MAX_TOTAL_DURATION_MS = 300_000
@@ -403,9 +404,9 @@ def result_hash_for_items(
     ordered_items = [
         {
             "position": position,
-            "remote_item_id": getattr(item, "remote_item_id", None),
-            "content_hash": getattr(item, "content_hash", None),
-            "truncated": bool(getattr(item, "truncated", False)),
+            "remote_item_id": attribute_access.optional(item, "remote_item_id", None),
+            "content_hash": attribute_access.optional(item, "content_hash", None),
+            "truncated": bool(attribute_access.optional_bool(item, "truncated")),
         }
         for position, item in enumerate(items)
     ]

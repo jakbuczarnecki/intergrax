@@ -1900,7 +1900,7 @@ def test_tab_identifier_collection_exact_tuple_accepted(field_name: str) -> None
         segments=(_minimal_body_segment(),),
         **{field_name: ("id-1", "id-2")},
     )
-    assert getattr(tab, field_name) == ("id-1", "id-2")
+    assert object.__getattribute__(tab, field_name) == ("id-1", "id-2")
 
 
 @pytest.mark.parametrize(

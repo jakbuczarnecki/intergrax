@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 from typing import Literal
 
-from pydantic import field_validator
+from pydantic import ValidationInfo, field_validator
 
 from intergrax.integrations._shared.config import BaseIntegrationConfig
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
@@ -92,8 +92,8 @@ class ChromaIntegrationConfig(BaseIntegrationConfig):
 
     @field_validator("http_host", "collection_name", "tenant_id")
     @classmethod
-    def _validate_text_fields(cls, value: object, info: object) -> str:
-        field_name = getattr(info, "field_name", "field")
+    def _validate_text_fields(cls, value: object, info: ValidationInfo) -> str:
+        field_name = info.field_name or "field"
         return cls._required_text(value, field_name=field_name)
 
     @field_validator("metric")

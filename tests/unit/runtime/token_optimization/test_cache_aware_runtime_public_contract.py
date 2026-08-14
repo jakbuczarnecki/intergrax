@@ -331,7 +331,7 @@ def test_frozen_token_10d_symbol_available_through_package_root(symbol_name: str
 
 @pytest.mark.parametrize("symbol_name", _FROZEN_TOKEN_10D_SYMBOLS)
 def test_frozen_token_10d_symbol_has_canonical_module_identity(symbol_name: str) -> None:
-    exported = getattr(token_optimization, symbol_name)
+    exported = object.__getattribute__(token_optimization, symbol_name)
     assert exported.__module__ == _CANONICAL_MODULES[symbol_name]
 
 

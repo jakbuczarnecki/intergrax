@@ -161,7 +161,7 @@ def _reusable_artifact(**overrides: object) -> ReusableOptimizationArtifact:
     ],
 )
 def test_enum_serialized_values(enum_cls: type, member: str, expected: str) -> None:
-    assert getattr(enum_cls, member).value == expected
+    assert object.__getattribute__(enum_cls, member).value == expected
 
 
 def test_representative_contracts_are_frozen() -> None:

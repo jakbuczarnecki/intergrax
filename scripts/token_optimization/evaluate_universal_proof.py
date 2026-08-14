@@ -38,6 +38,7 @@ from intergrax.runtime.token_optimization.proofs.report import (
 from intergrax.runtime.token_optimization.proofs.runner import (
     UniversalTokenOptimizationProofRunner,
 )
+from intergrax.utils import attribute_access
 
 EXIT_OK = 0
 EXIT_INVALID_CONFIG = 2
@@ -170,7 +171,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error={exc.reason_code}", file=sys.stderr)
         return EXIT_INVALID_CONFIG
     except Exception as exc:  # noqa: BLE001
-        reason_code = getattr(exc, "reason_code", "EVALUATION_ARTIFACT_WRITE_FAILED")
+        reason_code = attribute_access.optional(
+            exc, "reason_code", "EVALUATION_ARTIFACT_WRITE_FAILED"
+        )
         print(f"error={reason_code}", file=sys.stderr)
         return EXIT_ARTIFACT_FAILED
     _print_summary(persisted)

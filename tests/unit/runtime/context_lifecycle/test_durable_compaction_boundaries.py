@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.utils import attribute_access
 import importlib
 import pkgutil
 
@@ -32,7 +33,7 @@ def test_context_lifecycle_modules_do_not_define_forbidden_runtime_symbols() -> 
     package = importlib.import_module("intergrax.runtime.context_lifecycle")
     for module_info in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
         module = importlib.import_module(module_info.name)
-        source = getattr(module, "__file__", None)
+        source = attribute_access.optional(module, "__file__", None)
         if source is None:
             continue
         for symbol in _FORBIDDEN_RUNTIME_SYMBOLS:

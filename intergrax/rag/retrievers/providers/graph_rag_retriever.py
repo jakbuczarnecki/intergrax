@@ -21,6 +21,7 @@ from intergrax.rag.retrieval.graph_channel_fusion import (
 from intergrax.rag.retrieval.graph_provenance_builder import (
     build_graph_retrieval_provenance,
 )
+from intergrax.utils import attribute_access
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
     RetrievalHit,
@@ -62,7 +63,7 @@ class GraphRagRetriever(BaseRetriever):
         self._hybrid_fusion_enabled = bool(hybrid_fusion_enabled)
         self._last_trace: GraphRetrieverTrace | None = None
         if source_coordinator is not None:
-            configure = getattr(
+            configure = attribute_access.optional(
                 self._graph,
                 "set_source_operation_coordinator",
                 None,
@@ -83,7 +84,7 @@ class GraphRagRetriever(BaseRetriever):
         if not query.query_text:
             return ()
         if query.scope is not None:
-            bind_scope = getattr(self._graph, "bind_scope", None)
+            bind_scope = attribute_access.optional(self._graph, "bind_scope", None)
             if callable(bind_scope):
                 bind_scope(GraphScope.from_object(query.scope))
 

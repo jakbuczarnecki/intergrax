@@ -242,7 +242,11 @@ class DefaultNexusContextEngine:
             session_history=session_history,
             resolved_global_budget_tokens=resolved_budget,
             optimization_policy=optimization_policy,
-            model_family=getattr(runtime_config.llm_adapter, "model", None),
+            model_family=(
+                runtime_config.llm_adapter.model
+                if runtime_config.llm_adapter is not None
+                else None
+            ),
         )
 
         ucl_runtime = ctx.handles.get(NEXUS_UCL_RUNTIME_HANDLE)

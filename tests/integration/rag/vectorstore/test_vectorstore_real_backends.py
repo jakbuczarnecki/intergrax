@@ -13,6 +13,7 @@ from intergrax.integrations.contracts.base import (
 )
 from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
 from intergrax.integrations.providers.vector_store.pgvector.bundle import create_pgvector_vector_store
+from intergrax.utils import attribute_access
 from intergrax.integrations.providers.vector_store.qdrant.bundle import create_qdrant_vector_store
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
@@ -178,7 +179,7 @@ def _open_stable_store(slug: str) -> _Backend:
     }
     try:
         integration = builders[slug]()
-        native_store = getattr(integration, "rag_store", integration)
+        native_store = attribute_access.optional(integration, "rag_store", integration)
     except Exception as exc:
         _skip_or_raise_backend_failure(slug, exc, during_open=True)
 

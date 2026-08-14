@@ -20,6 +20,7 @@ from intergrax.runtime.vendor_knowledge.plugin import (
 from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
     TenantConnectionIntegrationFactory,
 )
+from intergrax.utils import attribute_access
 
 VENDOR_KNOWLEDGE_PROVIDER_CONTRIBUTION_CONTRACT_VERSION: Final = (
     "vendor-knowledge.provider-contribution.v1"
@@ -71,9 +72,9 @@ def _component_identity(
 ) -> VendorKnowledgeSourceIdentity:
     try:
         identity = VendorKnowledgeSourceIdentity(
-            provider_id=getattr(component, "provider_id"),
-            integration_category=getattr(component, "integration_kind"),
-            source_kind=getattr(component, "source_kind"),
+            provider_id=attribute_access.optional(component, "provider_id"),
+            integration_category=attribute_access.optional(component, "integration_kind"),
+            source_kind=attribute_access.optional(component, "source_kind"),
         )
     except (AttributeError, TypeError, ValueError):
         raise VendorKnowledgeContributionError(

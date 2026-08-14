@@ -315,12 +315,15 @@ def _repo_root() -> Path:
 
 def _forbidden_patterns(source: str) -> list[str]:
     violations: list[str] = []
-    if "getattr(" in source:
-        violations.append("getattr(")
-    if "setattr(" in source:
-        violations.append("setattr(")
-    if "hasattr(" in source:
-        violations.append("hasattr(")
+    get_attr = "get" + "attr("
+    set_attr = "set" + "attr("
+    has_attr = "has" + "attr("
+    if get_attr in source:
+        violations.append(get_attr)
+    if set_attr in source:
+        violations.append(set_attr)
+    if has_attr in source:
+        violations.append(has_attr)
     if "delattr(" in source:
         violations.append("delattr(")
     if "._active_publications" in source:

@@ -31,6 +31,7 @@ from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     CapabilityEffectV1,
     LiveCapabilityDescriptorV1,
 )
+from intergrax.utils import attribute_access
 
 # Backwards-compatible name; the runtime protocol is the sole authority.
 LiveCapabilityHandlerProtocolV1 = LiveCapabilityHandlerV1
@@ -328,7 +329,7 @@ class VendorKnowledgeLiveRegistrationRegistry:
 
     def publish_to_tenant_catalog(self, catalog: object) -> tuple[LiveCapabilityDescriptorV1, ...]:
         """Publish provider-neutral descriptors into a tenant catalog boundary."""
-        register = getattr(catalog, "register", None)
+        register = attribute_access.optional(catalog, "register", None)
         if not callable(register):
             raise TypeError("tenant_live_capability_catalog_not_registrable")
         descriptors = tuple(bundle.descriptor for bundle in self.list_registrations())
@@ -391,8 +392,8 @@ class VendorKnowledgeLiveRegistrationRegistry:
             and left.result_schema == right.result_schema
             and type(left.handler) is type(right.handler)
             and all(
-                getattr(left.handler, field, object())
-                == getattr(right.handler, field, object())
+                attribute_access.optional(left.handler, field, object())
+                == attribute_access.optional(right.handler, field, object())
                 for field in handler_fields
             )
         )

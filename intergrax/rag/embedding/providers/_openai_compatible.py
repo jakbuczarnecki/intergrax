@@ -10,6 +10,7 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
+from intergrax.utils import attribute_access
 from openai import OpenAI
 
 
@@ -22,7 +23,7 @@ def embed_openai_compatible(
     """Request and validate an OpenAI-compatible embeddings batch."""
     batch = list(texts)
     response = client.embeddings.create(model=model, input=batch)
-    data = getattr(response, "data", None)
+    data = attribute_access.optional(response, "data", None)
     if data is None:
         raise ValueError("Embedding response is missing data")
 
@@ -35,7 +36,7 @@ def embed_openai_compatible(
 
     ordered: list[NDArray[np.float32] | None] = [None] * len(batch)
     for item in items:
-        index = getattr(item, "index", None)
+        index = attribute_access.optional(item, "index", None)
         if not isinstance(index, int) or isinstance(index, bool):
             raise ValueError("Embedding response item has an invalid index")
         if index < 0 or index >= len(batch):
@@ -43,7 +44,7 @@ def embed_openai_compatible(
         if ordered[index] is not None:
             raise ValueError(f"Duplicate embedding response index: {index}")
 
-        vector: Any = getattr(item, "embedding", None)
+        vector: Any = attribute_access.optional(item, "embedding", None)
         vector_array = np.asarray(vector)
         if isinstance(vector, (str, bytes)) or vector_array.ndim != 1:
             raise ValueError("Embedding must be a one-dimensional numeric sequence")

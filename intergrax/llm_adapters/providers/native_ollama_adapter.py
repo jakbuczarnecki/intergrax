@@ -27,6 +27,7 @@ from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.llm_adapters.providers._ollama_schema import (
     prepare_ollama_generation_schema,
 )
+from intergrax.utils import attribute_access
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaModelCapabilities,
     OllamaModelCapabilityResolver,
@@ -110,7 +111,7 @@ class NativeOllamaAdapter(LLMAdapter):
     def _field(value: object, name: str, default: object = None) -> object:
         if isinstance(value, Mapping):
             return value.get(name, default)
-        return getattr(value, name, default)
+        return attribute_access.optional(value, name, default)
 
     @classmethod
     def _response_content(cls, response: object) -> str:

@@ -29,6 +29,7 @@ from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
 )
+from intergrax.utils import attribute_access
 from intergrax.runtime.vendor_knowledge.live import (
     LiveCapabilityExecutionContextV1,
     LiveCapabilityExecutionResultV1,
@@ -164,9 +165,9 @@ class MsGraphCalendarListLiveHandlerV1(LiveCapabilityHandlerV1):
                     source_kind=self.source_kind,
                     retryable=False,
                 )
-            resolved_scope = getattr(call, "resolved_resource_scope", None)
+            resolved_scope = attribute_access.optional(call, "resolved_resource_scope", None)
             scope_token = (
-                getattr(resolved_scope, "scope_token", None)
+                attribute_access.optional(resolved_scope, "scope_token", None)
                 if resolved_scope is not None
                 else None
             )

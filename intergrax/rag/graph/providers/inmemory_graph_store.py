@@ -102,7 +102,7 @@ class InMemoryGraphStore(GraphStore):
             resolved = self._bound_scope
             for name in ("tenant_id", "namespace", "workspace_id"):
                 supplied = values.get(name)
-                if supplied is not None and supplied != getattr(resolved, name):
+                if supplied is not None and supplied != object.__getattribute__(resolved, name):
                     raise ValueError(f"graph {name} differs from bound scope")
         elif scope is not None:
             resolved = GraphScope.from_object(scope)

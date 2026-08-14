@@ -16,6 +16,7 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreRecord,
     VectorStoreScope,
 )
+from intergrax.utils import attribute_access
 
 pytestmark = pytest.mark.unit
 
@@ -147,7 +148,7 @@ class _TypesenseFakeHttp:
 
 def _provider_method_names(provider: object) -> dict[str, inspect.Signature]:
     return {
-        name: inspect.signature(getattr(type(provider), name))
+        name: inspect.signature(object.__getattribute__(type(provider), name))
         for name in ("add_records", "query", "delete", "count")
     }
 
@@ -190,7 +191,10 @@ def test_invalid_batch_is_rejected_before_provider_transport(provider_name: str)
 
     with pytest.raises(VectorStoreContractError):
         provider.add_records([foreign], scope=scope)
-    assert not getattr(client, "fed", getattr(client, "calls", []))
+    assert not (
+        attribute_access.optional(client, "fed", None)
+        or attribute_access.optional(client, "calls", [])
+    )
 
 
 @pytest.mark.parametrize("provider_name", ["vespa", "lancedb", "typesense"])

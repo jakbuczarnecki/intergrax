@@ -13,6 +13,7 @@ from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentRecord,
 )
+from intergrax.utils import attribute_access
 from intergrax.runtime.vendor_knowledge.tenant_connections import (
     TenantConnection,
     TenantConnectionAdministrativeStatus,
@@ -210,9 +211,9 @@ class DocumentStoreTenantConnectionRepository:
                     cursor=cursor,
                 )
             documents.extend(page.documents)
-            if getattr(page, "total", len(page.documents)) > _MAX_LIST_SCAN:
+            if attribute_access.optional(page, "total", len(page.documents)) > _MAX_LIST_SCAN:
                 raise TenantConnectionCorruptRecord("connection list exceeds scan limit")
-            next_cursor = getattr(page, "next_cursor", None)
+            next_cursor = attribute_access.optional(page, "next_cursor", None)
             if next_cursor is None:
                 break
             cursor = next_cursor

@@ -109,8 +109,7 @@ class RetrievalService:
             t0 = time.perf_counter()
             if (
                 request.scope is not None
-                and getattr(self._retriever_manager, "supports_scoped_retrieval", False)
-                is not True
+                and self._retriever_manager.supports_scoped_retrieval is not True
             ):
                 trace.retrieval_error_kind = "scoped_retrieval_unsupported"
                 trace.retrieval_latency_ms = (time.perf_counter() - t0) * 1000.0

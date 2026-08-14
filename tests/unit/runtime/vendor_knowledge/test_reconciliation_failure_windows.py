@@ -19,6 +19,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeReconciliationRunPagePrepared,
     KnowledgeReconciliationRunPhase,
 )
+from intergrax.utils import attribute_access
 from tests.unit.runtime.vendor_knowledge.test_reconciliation_durable_coordinator import (
     _durable_coordinator,
 )
@@ -196,7 +197,7 @@ async def test_same_job_retry_after_page_applied_is_idempotent() -> None:
     parent_trigger = first.delivery_id
     reads_before = len(facade.read_calls)
     sink_before = len(sink.calls)
-    state_before = len(getattr(state, "states", {}))
+    state_before = len(attribute_access.optional(state, "states", {}))
     version_before = run_after_second.record_version
     retry = await coordinator.reconcile_once(
         binding_id="binding-1",
@@ -232,7 +233,7 @@ async def test_completed_run_retry_returns_final_result_without_mutation() -> No
     assert completed.delivery_id == run.final_delivery_id
     reads_before = len(facade.read_calls)
     sink_before = len(sink.calls)
-    state_before = len(getattr(state, "states", {}))
+    state_before = len(attribute_access.optional(state, "states", {}))
     checkpoint_before = len(checkpoint.commit_calls)
     version_before = run.record_version
     retry = await coordinator.reconcile_once(
@@ -288,7 +289,7 @@ async def test_initial_job_replay_after_first_page_is_idempotent() -> None:
     assert run_after_first.applied_page_count == 1
     reads_before = len(facade.read_calls)
     sink_before = len(sink.calls)
-    state_before = len(getattr(state, "states", {}))
+    state_before = len(attribute_access.optional(state, "states", {}))
     checkpoint_before = len(checkpoint.commit_calls)
     version_before = run_after_first.record_version
     retry = await coordinator.reconcile_once(
@@ -428,7 +429,7 @@ async def test_multi_page_completed_replay_reports_committed_checkpoint() -> Non
     assert completed.checkpoint_advanced is True
     reads_before = len(facade_ref.read_calls)
     sink_before = len(sink.calls)
-    state_before = len(getattr(state, "states", {}))
+    state_before = len(attribute_access.optional(state, "states", {}))
     checkpoint_before = len(checkpoint.commit_calls)
     version_before = run.record_version
     parent = run.last_applied_parent_delivery_id
@@ -523,7 +524,7 @@ async def test_foreign_operation_page_prepared_rejects_missing_trigger() -> None
     phase_before = prepared.phase
     reads_before = len(facade.read_calls)
     sink_before = len(sink.calls)
-    state_before = len(getattr(state, "states", {}))
+    state_before = len(attribute_access.optional(state, "states", {}))
     checkpoint_before = len(checkpoint.commit_calls)
     with pytest.raises(VendorKnowledgeError) as exc_info:
         await coordinator.reconcile_once(
@@ -555,7 +556,7 @@ async def test_same_operation_page_prepared_rejects_missing_trigger() -> None:
     phase_before = prepared.phase
     reads_before = len(facade.read_calls)
     sink_before = len(sink.calls)
-    state_before = len(getattr(state, "states", {}))
+    state_before = len(attribute_access.optional(state, "states", {}))
     checkpoint_before = len(checkpoint.commit_calls)
     with pytest.raises(VendorKnowledgeError) as exc_info:
         await coordinator.reconcile_once(

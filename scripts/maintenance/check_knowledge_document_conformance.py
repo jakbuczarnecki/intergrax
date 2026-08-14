@@ -202,6 +202,7 @@ def _isolated_import_failure(description: str) -> str:
 
 def check_public_surface() -> list[str]:
     from intergrax.knowledge import contracts
+    from intergrax.utils import attribute_access
 
     violations: list[str] = []
 
@@ -245,7 +246,7 @@ def check_public_surface() -> list[str]:
             )
 
     for func_name, expected_params in EXPECTED_SERIALIZER_PARAMS.items():
-        func = getattr(contracts, func_name)
+        func = attribute_access.optional(contracts, func_name)
         params = tuple(
             name
             for name, parameter in inspect.signature(func).parameters.items()

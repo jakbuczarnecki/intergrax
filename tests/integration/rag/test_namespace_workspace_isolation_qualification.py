@@ -6,6 +6,8 @@ from typing import Any, Sequence
 
 import pytest
 
+from intergrax.utils import attribute_access
+
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
     InMemoryVectorStore,
 )
@@ -242,8 +244,10 @@ class _FakeQdrantClient:
         if isinstance(condition, dict):
             match = condition.get("match") or {}
             return condition.get("key"), match.get("value")
-        match = getattr(condition, "match", None)
-        return getattr(condition, "key", None), getattr(match, "value", None)
+        match = attribute_access.optional(condition, "match", None)
+        return attribute_access.optional(condition, "key", None), attribute_access.optional(
+            match, "value", None
+        )
 
     def query_points(
         self,
@@ -255,7 +259,7 @@ class _FakeQdrantClient:
     ) -> Any:
         self.query_filters.append(query_filter)
         rows = list(self.points)
-        for condition in getattr(query_filter, "must", []) or []:
+        for condition in attribute_access.optional(query_filter, "must", []) or []:
             key, value = self._condition_value(condition)
             rows = [row for row in rows if row.payload.get(key) == value]
 

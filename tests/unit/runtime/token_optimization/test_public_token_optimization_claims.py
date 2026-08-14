@@ -317,7 +317,7 @@ def test_token_10e_public_contracts_are_frozen_at_package_root() -> None:
 
     for name, canonical_symbol in _TOKEN_10E_PUBLIC_CONTRACTS.items():
         assert name in exported
-        assert getattr(token_optimization, name) is canonical_symbol
+        assert object.__getattribute__(token_optimization, name) is canonical_symbol
         assert exported.count(name) == 1
 
     for foreign_name in (

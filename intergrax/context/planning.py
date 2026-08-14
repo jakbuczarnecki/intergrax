@@ -97,6 +97,20 @@ def budget_class_for_execution_scope(
     return ContextBudgetClass.INTERNAL_OPTIMIZATION_INPUT
 
 
+def _group_classification_flag(group: "ContextSourceGroup", flag_name: str) -> bool:
+    if flag_name == "required":
+        return group.required
+    if flag_name == "protected":
+        return group.protected
+    if flag_name == "compressible":
+        return group.compressible
+    if flag_name == "droppable":
+        return group.droppable
+    if flag_name == "trim_safe":
+        return group.trim_safe
+    raise ValueError(f"unknown group classification flag: {flag_name}")
+
+
 @dataclass(frozen=True, slots=True)
 class ContextSourceGroup:
     group_id: str
@@ -434,7 +448,7 @@ class ContextPlan:
         )
         for field_name, flag_name in classification_fields:
             expected_ids = tuple(
-                group.group_id for group in groups if getattr(group, flag_name)  # type: ignore[union-attr]
+                group.group_id for group in groups if _group_classification_flag(group, flag_name)
             )
             actual_ids = tuple(object.__getattribute__(self, field_name))
             if actual_ids != expected_ids:

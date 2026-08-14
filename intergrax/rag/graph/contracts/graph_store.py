@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 import hashlib
 from typing import TYPE_CHECKING, Dict, List, Sequence, Set
 
+from intergrax.utils import attribute_access
+
 if TYPE_CHECKING:
     from intergrax.distributed.source_operation import SourceOperationCoordinator
 
@@ -58,9 +60,9 @@ class GraphScope:
     def from_object(cls, value: object) -> "GraphScope":
         if isinstance(value, cls):
             return value
-        tenant_id = getattr(value, "tenant_id", None)
-        namespace = getattr(value, "namespace", None)
-        workspace_id = getattr(value, "workspace_id", None)
+        tenant_id = attribute_access.optional(value, "tenant_id", None)
+        namespace = attribute_access.optional(value, "namespace", None)
+        workspace_id = attribute_access.optional(value, "workspace_id", None)
         if not isinstance(tenant_id, str):
             raise TypeError("scope must expose tenant_id")
         return cls(

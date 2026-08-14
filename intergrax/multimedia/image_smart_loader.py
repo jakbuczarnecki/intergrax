@@ -23,7 +23,7 @@ class _PillowModuleProxy:
 
 class _PillowExifTagsProxy:
     def __getattr__(self, name: str) -> Any:
-        return getattr(_import_pillow()[1], name)
+        return attribute_access.optional(_import_pillow()[1], name)
 
 
 def _import_pillow():

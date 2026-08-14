@@ -501,7 +501,7 @@ def _normalize_langchain_messages(
             role = "assistant"
         else:
             role = "tool"
-        normalized.append({"role": role, "content": getattr(message, "content", "")})
+        normalized.append({"role": role, "content": message.content})
     return normalized
 
 

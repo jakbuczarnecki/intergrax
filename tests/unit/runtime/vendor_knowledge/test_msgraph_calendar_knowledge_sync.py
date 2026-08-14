@@ -64,6 +64,7 @@ from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
 )
+from intergrax.utils import attribute_access
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeContentMode,
@@ -539,7 +540,7 @@ class _FailingItemStateRepository:
         self.fail_times = fail_times
 
     def __getattr__(self, name: str) -> object:
-        return getattr(self._delegate, name)
+        return attribute_access.optional(self._delegate, name)
 
     def apply_batch(self, **kwargs: Any) -> None:
         if self.fail_times > 0:
@@ -555,7 +556,7 @@ class _FailingCheckpointRepository:
         self.successful_commits = 0
 
     def __getattr__(self, name: str) -> object:
-        return getattr(self._delegate, name)
+        return attribute_access.optional(self._delegate, name)
 
     def commit(
         self,

@@ -12,6 +12,7 @@ from numpy.typing import NDArray
 
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.knowledge.contracts.validation import require_non_empty_str
+from intergrax.utils import attribute_access
 from intergrax.distributed.source_operation import (
     RagSourceOperationKey,
     SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
@@ -60,7 +61,7 @@ class VectorstoreManager(BaseVectorstoreManager):
         self._collection_name = collection_name
         self._bound_scope = scope
         self._source_coordinator: SourceOperationCoordinator | None = None
-        provider_tenant = getattr(store, "_tenant_id", None)
+        provider_tenant = attribute_access.optional(store, "_tenant_id", None)
         if isinstance(provider_tenant, str) and provider_tenant.strip():
             provider_tenant = provider_tenant.strip()
             provider_scope = VectorStoreScope(tenant_id=provider_tenant)

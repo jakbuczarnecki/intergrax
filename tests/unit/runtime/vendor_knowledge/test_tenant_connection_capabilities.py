@@ -559,7 +559,7 @@ def test_live_registration_requires_callable_execution_surface() -> None:
         )
 
     non_callable_handler = _FoundationHandler()
-    setattr(non_callable_handler, "execute", "not-callable")
+    object.__setattr__(non_callable_handler, "execute", "not-callable")
     with pytest.raises(ValueError, match="live_handler_execution_not_callable"):
         publish_live_registration_bundles(
             (_foundation_bundle(handler=non_callable_handler),)

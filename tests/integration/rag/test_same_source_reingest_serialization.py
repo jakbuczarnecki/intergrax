@@ -337,7 +337,10 @@ def test_same_source_concurrent_reingest_serializes_to_one_version(
         thread.join(timeout=10)
 
     assert len(results) == 2
-    reasons = [getattr(result, "reason", None) for result in results]
+    reasons = [
+        result.reason if not isinstance(result, BaseException) else None
+        for result in results
+    ]
     assert reasons.count("ok") == 1
     assert reasons.count("source_ingest_conflict") == 1
     records = [
@@ -422,7 +425,7 @@ def test_stale_inflight_publication_cannot_become_active_after_takeover(
     second_thread.start()
     second_thread.join(timeout=10)
     assert not second_thread.is_alive()
-    assert getattr(results["T2"], "reason", None) == "ok"
+    assert results["T2"].reason == "ok"
 
     vectorstore.allow_t1_write.set()
     first_thread.join(timeout=10)
@@ -523,7 +526,7 @@ def test_stale_graph_topology_is_inactive_after_generation_takeover(
     second_thread.start()
     second_thread.join(timeout=10)
     assert not second_thread.is_alive()
-    assert getattr(results["G2"], "reason", None) == "ok"
+    assert results["G2"].reason == "ok"
 
     graph.allow_g1_write.set()
     first_thread.join(timeout=10)

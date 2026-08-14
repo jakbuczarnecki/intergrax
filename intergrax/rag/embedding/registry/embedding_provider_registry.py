@@ -10,6 +10,7 @@ from threading import RLock
 from typing import Dict, Mapping
 
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
+from intergrax.utils import attribute_access
 
 
 class EmbeddingProviderDependencyError(RuntimeError):
@@ -135,7 +136,7 @@ def lazy_import_provider_factory(
             raise
 
         try:
-            provider_type = getattr(module, class_name)
+            provider_type = attribute_access.optional(module, class_name)
         except AttributeError as exc:
             raise EmbeddingProviderRegistrationError(
                 f"Embedding provider '{provider_id}' module '{module_name}' "

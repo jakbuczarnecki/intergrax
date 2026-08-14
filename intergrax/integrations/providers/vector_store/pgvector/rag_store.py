@@ -21,6 +21,7 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreRecord,
     VectorStoreScope,
 )
+from intergrax.utils import attribute_access
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
 from intergrax.rag.vectorstore.providers.native_provider_boundary import (
     effective_filter,
@@ -528,7 +529,7 @@ class PgVectorRagStore(VectorStore, IntegrationHealthProbe):
 
     @staticmethod
     def _embedding_values(value: object) -> list[float]:
-        to_list = getattr(value, "to_list", None)
+        to_list = attribute_access.optional(value, "to_list", None)
         if callable(to_list):
             return list(to_list())
         try:

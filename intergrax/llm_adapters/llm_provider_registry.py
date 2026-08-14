@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, Tuple, Union, cast
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.utils import attribute_access
 
 
 class LLMAdapterDependencyError(RuntimeError):
@@ -168,7 +169,10 @@ class LLMAdapterRegistry:
             raise
 
         try:
-            adapter_cls = cast(Callable[..., LLMAdapter], getattr(module, class_name))
+            adapter_cls = cast(
+                Callable[..., LLMAdapter],
+                attribute_access.optional(module, class_name),
+            )
         except AttributeError as exc:
             raise LLMAdapterRegistrationError(
                 f"LLM provider '{key}' module '{module_path}' does not define "

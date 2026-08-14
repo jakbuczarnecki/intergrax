@@ -9,6 +9,7 @@ import pytest
 from qdrant_client.http.exceptions import UnexpectedResponse
 
 from intergrax.integrations.contracts.base import IntegrationDependencyError
+from intergrax.utils import attribute_access
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
@@ -393,24 +394,24 @@ class _FakeQdrantClient:
 
     @staticmethod
     def _matches(point: _FakeQdrantPoint, qfilter: Any) -> bool:
-        for condition in getattr(qfilter, "must", []) or []:
-            has_id = getattr(condition, "has_id", None)
+        for condition in attribute_access.optional(qfilter, "must", []) or []:
+            has_id = attribute_access.optional(condition, "has_id", None)
             if has_id is not None and point.id not in has_id:
                 return False
-            field = getattr(condition, "key", None)
-            match = getattr(condition, "match", None)
+            field = attribute_access.optional(condition, "key", None)
+            match = attribute_access.optional(condition, "match", None)
             if field is not None and match is not None:
-                if point.payload.get(field) != getattr(match, "value", None):
+                if point.payload.get(field) != attribute_access.optional(match, "value", None):
                     return False
-            is_null = getattr(condition, "is_null", None)
+            is_null = attribute_access.optional(condition, "is_null", None)
             if is_null is not None:
                 if is_null.key in point.payload:
                     return False
         return True
 
     def delete(self, *, points_selector: Any, **_: Any) -> None:
-        qfilter = getattr(points_selector, "filter", None)
-        point_ids = getattr(points_selector, "points", None)
+        qfilter = attribute_access.optional(points_selector, "filter", None)
+        point_ids = attribute_access.optional(points_selector, "points", None)
         self.points = [
             point
             for point in self.points
@@ -564,23 +565,23 @@ def test_qdrant_source_lookup_scrolls_complete_native_ids_with_scope_filter() ->
     assert len(client.scroll_calls) > 1
     conditions = client.scroll_calls[0]["filter"].must
     assert any(
-        getattr(condition, "key", None) == "tenant_id"
-        and getattr(getattr(condition, "match", None), "value", None) == "tenant-a"
+        attribute_access.optional(condition, "key", None) == "tenant_id"
+        and attribute_access.optional(attribute_access.optional(condition, "match", None), "value", None) == "tenant-a"
         for condition in conditions
     )
     assert any(
-        getattr(condition, "key", None) == "namespace"
-        and getattr(getattr(condition, "match", None), "value", None) == "rag"
+        attribute_access.optional(condition, "key", None) == "namespace"
+        and attribute_access.optional(attribute_access.optional(condition, "match", None), "value", None) == "rag"
         for condition in conditions
     )
     assert any(
-        getattr(condition, "key", None) == "workspace_id"
-        and getattr(getattr(condition, "match", None), "value", None) == "workspace-a"
+        attribute_access.optional(condition, "key", None) == "workspace_id"
+        and attribute_access.optional(attribute_access.optional(condition, "match", None), "value", None) == "workspace-a"
         for condition in conditions
     )
     assert any(
-        getattr(condition, "key", None) == "source_id"
-        and getattr(getattr(condition, "match", None), "value", None) == source_a
+        attribute_access.optional(condition, "key", None) == "source_id"
+        and attribute_access.optional(attribute_access.optional(condition, "match", None), "value", None) == source_a
         for condition in conditions
     )
 

@@ -614,7 +614,7 @@ def _render_google_docs_inline(element: object) -> str:
     if not isinstance(element, GoogleDocsInlineElement):
         return ""
     kind = element.kind
-    text = getattr(element, "text", None)
+    text = element.text
     if isinstance(text, str) and text:
         return text
     if kind is GoogleDocsInlineKind.AUTO_TEXT:

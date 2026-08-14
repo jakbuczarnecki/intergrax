@@ -9,6 +9,7 @@ import math
 from typing import List, Optional
 
 from intergrax.integrations.providers.rerank_provider.cohere_rerank.config import CohereRerankIntegrationConfig
+from intergrax.utils import attribute_access
 
 _CLIENT = None
 
@@ -54,19 +55,19 @@ def cohere_rerank_scores(
         documents=texts,
         top_n=limit,
     )
-    response_results = getattr(response, "results", None)
+    response_results = attribute_access.optional(response, "results", None)
     if not isinstance(response_results, list) or not response_results:
         raise ValueError("Cohere response is missing results")
     scores: List[float] = [0.0] * len(texts)
     seen: set[int] = set()
     for item in response_results:
-        index = getattr(item, "index", None)
+        index = attribute_access.optional(item, "index", None)
         if type(index) is not int or not 0 <= index < len(texts):
             raise ValueError("Cohere response contains an invalid index")
         if index in seen:
             raise ValueError("Cohere response contains a duplicate index")
         seen.add(index)
-        raw_score = getattr(item, "relevance_score", None)
+        raw_score = attribute_access.optional(item, "relevance_score", None)
         if isinstance(raw_score, bool):
             raise TypeError("Cohere response score must be numeric")
         score = float(raw_score)

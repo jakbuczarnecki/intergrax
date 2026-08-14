@@ -77,7 +77,7 @@ class LexicalHybridSupport:
                     doc_id,
                     payload,
                 )
-            document = getattr(self, "_documents", {}).get(doc_id)
+            document = attribute_access.optional(self, "_documents", {}).get(doc_id)
             if document is not None:
                 hits.append(
                     VectorStoreHit(

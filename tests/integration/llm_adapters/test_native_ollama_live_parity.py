@@ -23,6 +23,7 @@ from intergrax.llm_adapters.providers.native_ollama_adapter import (
     NativeOllamaAdapter,
 )
 from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+from intergrax.utils import attribute_access
 
 pytestmark = [pytest.mark.network, pytest.mark.no_ci]
 
@@ -85,7 +86,7 @@ class _RecordingClient:
 def _field(value: object, name: str, default: object = None) -> object:
     if isinstance(value, Mapping):
         return value.get(name, default)
-    return getattr(value, name, default)
+    return attribute_access.optional(value, name, default)
 
 
 def _exception_observation(exc: BaseException) -> dict[str, object]:
@@ -129,7 +130,7 @@ def _raw_counters(response: object | None) -> dict[str, object]:
 def _stats_observation(adapter: NativeOllamaAdapter, run_id: str) -> dict[str, object]:
     stats = adapter.usage.get_run_stats(run_id)
     names = ("calls", "errors", "input_tokens", "output_tokens")
-    return {name: getattr(stats, name, None) for name in names}
+    return {name: attribute_access.optional(stats, name, None) for name in names}
 
 
 def _available_models(

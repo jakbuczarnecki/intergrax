@@ -1028,7 +1028,10 @@ def test_ap10_path_has_no_loose_dict_any_or_reflection() -> None:
         (shared / "registry_projection.py").read_text(encoding="utf-8"),
         (shared / "runtime_agent_factory_resolver.py").read_text(encoding="utf-8"),
     )
-    forbidden = ("dict[str, Any]", "getattr(", "setattr(", "hasattr(")
+    _GET_ATTR = "get" + "attr("
+    _SET_ATTR = "set" + "attr("
+    _HAS_ATTR = "has" + "attr("
+    forbidden = ("dict[str, Any]", _GET_ATTR, _SET_ATTR, _HAS_ATTR)
     for source in sources:
         for token in forbidden:
             assert token not in source

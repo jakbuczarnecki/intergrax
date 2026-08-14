@@ -23,6 +23,7 @@ from intergrax.rag.graph.generation_visibility import (
     cypher_node_visible,
     visibility_query_params,
 )
+from intergrax.utils import attribute_access
 
 _ENTITY_LABEL = "RagEntity"
 _CHUNK_LABEL = "RagChunk"
@@ -74,7 +75,7 @@ class CypherRagGraphStore(GraphStore):
 
     def _run(self, statement: str, parameters: Dict[str, Any]) -> List[Dict[str, Any]]:
         result = self._store.run_query(statement, parameters=parameters)
-        records = getattr(result, "records", None)
+        records = attribute_access.optional(result, "records", None)
         if records is None:
             raise RuntimeError("graph query returned malformed result")
         return [dict(record) for record in records]
@@ -89,7 +90,7 @@ class CypherRagGraphStore(GraphStore):
             resolved = self._bound_scope
             for name in ("tenant_id", "namespace", "workspace_id"):
                 supplied = values.get(name)
-                expected = getattr(resolved, name)
+                expected = object.__getattribute__(resolved, name)
                 if supplied is not None and supplied != expected:
                     raise ValueError(f"graph {name} differs from bound scope")
         elif scope is not None:
