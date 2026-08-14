@@ -1,6 +1,6 @@
 # Collaborative Work
 
-**Status:** Canonical architecture (domain pair 1:1) — **MP-1 ownership frozen; runtime implementation NOT STARTED**
+**Status:** Canonical architecture (domain pair 1:1) — **MP-1 core runtime implemented; final review pending**
 **Plan (1:1):** [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/architecture/MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
@@ -112,6 +112,9 @@ It does not answer:
 - **CW-INV-13:** Collaborative Work ALLOW satisfies only the collaborative authority slice; workspace, resource, and runtime/tool policy remain required for execution authorization.
 - **CW-INV-14:** Final execution ALLOW requires every applicable mandatory policy layer to return ALLOW; composition is fail closed and never weakens a restrictive decision.
 - **CW-INV-15:** Missing or unavailable mandatory policy evaluation is DENY — never implicit ALLOW.
+- **CW-INV-16:** Within `tenant_id + workspace_id`, each `principal_id` has at most one authoritative `WorkspaceMembership`; `membership_id` is immutable record identity, not a duplicate-membership selector.
+- **CW-INV-17:** Delegated authority requires both delegate and delegator to hold active workspace membership; revoked/suspended/missing delegator membership fails closed.
+- **CW-INV-18:** Authoritative Collaborative Work production paths must not use dynamic attribute access (`getattr`, `setattr`, `hasattr`, `vars`, `object.__setattr__`, direct `.__dict__`).
 
 ### Policy composition boundary (COLLAB-WORK-1E)
 
@@ -161,7 +164,7 @@ Collaborative Work owns durable persistence for MP-1 authoritative security/conf
     repository ports → SQL durable adapter → configured SQL database
 
 - **Vendor-neutral domain** — contracts and enforcement gate import no database or observability vendor SDKs; concrete storage is selected at composition root (`open_sqlite_collaborative_work_repositories`).
-- **Semantic parity** — durable adapters preserve tenant/workspace isolation, revision-0 create, ``expected_revision`` CAS, idempotency replay snapshots, and database-enforced uniqueness for membership, delegation, principal authority, policy exact keys, operation profiles, and idempotency scope/key.
+- **Semantic parity** — durable adapters preserve tenant/workspace isolation, revision-0 create, ``expected_revision`` CAS, idempotency replay snapshots, and database-enforced uniqueness for membership (including one membership per principal per workspace), delegation, principal authority, policy exact keys, operation profiles, and idempotency scope/key.
 - **Fail closed** — production must not silently fall back to in-memory authority state when durable storage is configured but unavailable.
 - **Canonical side-effect boundary** — ``MeaningfulSideEffectAuthorizationBoundary`` invokes ``CollaborativeWorkEnforcementGate`` immediately before a meaningful side effect may proceed; only ``ALLOW`` permits continuation; ``REQUIRE_HUMAN`` / ``ESCALATE`` return upstream without execution.
 - **Semantic channel separation** — domain authoritative state ≠ product activity history ≠ audit/evidence ≠ technical logs ≠ error reporting ≠ distributed traces ≠ metrics. None of the observability channels may become authority source-of-truth.
@@ -181,7 +184,7 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 | **Delegation** | delegator + delegate principals; scoped authority; optional resource/time bounds; never amplifies delegator base authority |
 | **Effective authority** | base principal authority ∩ membership ∩ delegation ∩ workspace policy ∩ resource policy ∩ runtime/tool policy |
 
-Persistence, APIs, repositories, and enforcement implementation remain **out of scope** until the MP-1 implementation gate opens.
+Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core; LKW/application adoption remains out of scope until MP-1 final review closes.
 
 ---
 

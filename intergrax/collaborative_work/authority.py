@@ -92,6 +92,9 @@ class CollaborativeWorkAuthorityResolver:
             return membership_denial
 
         if request.delegator_principal_id is not None:
+            delegator_membership_denial = self._resolve_delegator_membership(request)
+            if delegator_membership_denial is not None:
+                return delegator_membership_denial
             delegation_denial = self._resolve_delegation(request)
             if delegation_denial is not None:
                 return delegation_denial
@@ -111,15 +114,21 @@ class CollaborativeWorkAuthorityResolver:
                 denial_reason=EffectiveAuthorityDenialReason.MISSING_MEMBERSHIP,
             )
 
-        locator = request.membership
-        authoritative = self._membership_repository.get(
-            tenant_id=locator.tenant_id,
-            workspace_id=locator.workspace_id,
-            membership_id=locator.membership_id,
+        authoritative = self._membership_repository.get_for_principal(
+            tenant_id=request.tenant_id,
+            workspace_id=request.workspace_id,
+            principal_id=request.acting_principal_id,
         )
         if authoritative is None:
             return fail_closed_effective_authority_decision(
                 reason="authoritative workspace membership not found",
+                denial_reason=EffectiveAuthorityDenialReason.MISSING_MEMBERSHIP,
+            )
+
+        locator = request.membership
+        if locator.membership_id != authoritative.membership_id:
+            return fail_closed_effective_authority_decision(
+                reason="membership locator does not match canonical principal membership",
                 denial_reason=EffectiveAuthorityDenialReason.MISSING_MEMBERSHIP,
             )
 
@@ -133,6 +142,32 @@ class CollaborativeWorkAuthorityResolver:
             return fail_closed_effective_authority_decision(
                 reason="workspace membership is not active",
                 denial_reason=EffectiveAuthorityDenialReason.MEMBERSHIP_NOT_ACTIVE,
+            )
+
+        return None
+
+    def _resolve_delegator_membership(
+        self,
+        request: EffectiveAuthorityRequest,
+    ) -> EffectiveAuthorityDecision | None:
+        if request.delegator_principal_id is None:
+            return None
+
+        authoritative = self._membership_repository.get_for_principal(
+            tenant_id=request.tenant_id,
+            workspace_id=request.workspace_id,
+            principal_id=request.delegator_principal_id,
+        )
+        if authoritative is None:
+            return fail_closed_effective_authority_decision(
+                reason="authoritative delegator workspace membership not found",
+                denial_reason=EffectiveAuthorityDenialReason.MISSING_DELEGATOR_MEMBERSHIP,
+            )
+
+        if authoritative.status is not MembershipStatus.ACTIVE:
+            return fail_closed_effective_authority_decision(
+                reason="delegator workspace membership is not active",
+                denial_reason=EffectiveAuthorityDenialReason.DELEGATOR_MEMBERSHIP_NOT_ACTIVE,
             )
 
         return None

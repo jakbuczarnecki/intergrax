@@ -5,7 +5,7 @@
 **Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md)
 
-**Status:** Domain registered — **MP-1A ownership freeze complete; MP-1 runtime implementation NOT STARTED**
+**Status:** Domain registered — **MP-1 core runtime CLOSED pending final review**
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -163,7 +163,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-1H |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Durable authoritative Collaborative Work security state and first canonical production enforcement adoption boundary |
 | **Dependencies** | COLLAB-WORK-1G approved; `CollaborativeWorkEnforcementGate`; COLLAB-WORK-1B repository semantics |
 | **Exact scope** | SQLite durable repository adapters for MP-1 authoritative entities; `open_sqlite_collaborative_work_repositories` composition factory; `MeaningfulSideEffectAuthorizationBoundary` runtime adoption boundary |
@@ -172,7 +172,22 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | MP-2+ rows; broad connector/application wiring; observability routing layer; Alembic/Postgres vendor lock-in; second runtime or HITL engine |
 | **Acceptance** | Durable adapters report `durable=True` / `reference_only=False`; CAS/idempotency/uniqueness parity with in-memory; shared boundary invokes gate before side effects; ALLOW-only continuation; fail closed on missing state |
 | **Proof requirements** | `tests/unit/collaborative_work/test_repository_contracts.py`; `tests/unit/runtime/policy/test_meaningful_side_effect_authorization.py`; `tests/unit/collaborative_work/test_vendor_neutrality.py`; enforcement gate regressions |
-| **Next step** | MP-1 production adoption gate review / LKW consumer wiring (future row) |
+| **Next step** | MP-1 CORE FINAL REVIEW |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1H-R2 |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | MP-1 core security and typed-wiring closure — canonical principal membership, delegator membership validity, zero dynamic attribute mutation |
+| **Dependencies** | COLLAB-WORK-1H approved lineage; `CollaborativeWorkAuthorityResolver`; repository ports |
+| **Exact scope** | `get_for_principal` membership lookup; principal uniqueness in memory/SQLite; delegator active membership gate; Pydantic repository commands; AST typed-wiring proof |
+| **REUSED** | COLLAB-WORK-1B revision/idempotency semantics; durable SQLite adapter; effective-authority resolver |
+| **NEW** | CW-INV-16…18; `MISSING_DELEGATOR_MEMBERSHIP` / `DELEGATOR_MEMBERSHIP_NOT_ACTIVE`; closure tests |
+| **Explicit out of scope** | LKW integration; MP-2+; observability; Postgres |
+| **Acceptance** | One membership per principal/workspace; delegator must remain active member; no `getattr`/`setattr` family in scoped production paths; docs synchronized |
+| **Proof requirements** | `tests/unit/collaborative_work/test_canonical_membership_closure.py`; `tests/unit/collaborative_work/test_typed_wiring_architecture.py`; authority and repository regressions |
+| **Next step** | MP-1 CORE FINAL REVIEW |
 
 ---
 

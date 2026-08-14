@@ -75,18 +75,40 @@ def _seed_membership(
     repo: InMemoryWorkspaceMembershipRepository,
     *,
     principal_id: str = _ACTING,
+    membership_id: str = "membership-1",
     status: MembershipStatus = MembershipStatus.ACTIVE,
 ) -> WorkspaceMembership:
     return repo.create(
         CreateWorkspaceMembershipCommand(
             tenant_id=_TENANT,
             workspace_id=_WORKSPACE,
-            membership_id="membership-1",
+            membership_id=membership_id,
             principal_id=principal_id,
             role=WorkspaceMembershipRole.MEMBER,
             status=status,
         )
     )
+
+
+def _seed_delegated_memberships(
+    repo: InMemoryWorkspaceMembershipRepository,
+    *,
+    delegate_status: MembershipStatus = MembershipStatus.ACTIVE,
+    delegator_status: MembershipStatus = MembershipStatus.ACTIVE,
+) -> tuple[WorkspaceMembership, WorkspaceMembership]:
+    delegate = _seed_membership(
+        repo,
+        principal_id=_ACTING,
+        membership_id="membership-acting",
+        status=delegate_status,
+    )
+    delegator = _seed_membership(
+        repo,
+        principal_id=_DELEGATOR,
+        membership_id="membership-delegator",
+        status=delegator_status,
+    )
+    return delegate, delegator
 
 
 def _seed_delegation(
@@ -154,6 +176,10 @@ def _delegation_locator(**overrides: object) -> AuthorityDelegation:
     return AuthorityDelegation.model_validate(payload)
 
 
+def _acting_membership_locator(**overrides: object) -> WorkspaceMembership:
+    return _membership_locator(membership_id="membership-acting", **overrides)
+
+
 def _request(**overrides: object) -> EffectiveAuthorityRequest:
     payload = {
         "tenant_id": _TENANT,
@@ -211,7 +237,7 @@ def test_membership_revoked_in_repository_denies_despite_stale_active_embed() ->
 def test_delegation_repository_state_overrides_embedded_request_state() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo, authority_scopes=("workspace.read",))
 
     resolver = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo)
@@ -219,7 +245,7 @@ def test_delegation_repository_state_overrides_embedded_request_state() -> None:
         _request(
             delegator_principal_id=_DELEGATOR,
             requested_authority_scopes=("workspace.write",),
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(
                 authority_scopes=("workspace.read", "workspace.write", "workspace.admin"),
             ),
@@ -264,12 +290,12 @@ def test_cross_scope_membership_locator_cannot_authorize() -> None:
 
 def test_delegated_request_missing_delegation_locator() -> None:
     membership_repo = _membership_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
 
     decision = _resolver(membership_repo=membership_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
         )
     )
     assert decision.denial_reason is EffectiveAuthorityDenialReason.MISSING_DELEGATION
@@ -277,12 +303,12 @@ def test_delegated_request_missing_delegation_locator() -> None:
 
 def test_missing_authoritative_delegation_record() -> None:
     membership_repo = _membership_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
 
     decision = _resolver(membership_repo=membership_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(),
         )
     )
@@ -292,13 +318,13 @@ def test_missing_authoritative_delegation_record() -> None:
 def test_inactive_delegation_denied() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo, status=DelegationStatus.REVOKED)
 
     decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(status=DelegationStatus.ACTIVE),
         )
     )
@@ -308,7 +334,7 @@ def test_inactive_delegation_denied() -> None:
 def test_delegation_not_yet_valid() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(
         delegation_repo,
         valid_from=_NOW + timedelta(days=1),
@@ -318,7 +344,7 @@ def test_delegation_not_yet_valid() -> None:
     decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(
                 valid_from=_NOW + timedelta(days=1),
                 valid_until=_NOW + timedelta(days=30),
@@ -331,7 +357,7 @@ def test_delegation_not_yet_valid() -> None:
 def test_delegation_expired() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(
         delegation_repo,
         valid_from=_NOW - timedelta(days=30),
@@ -341,7 +367,7 @@ def test_delegation_expired() -> None:
     decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(
                 valid_from=_NOW - timedelta(days=30),
                 valid_until=_NOW - timedelta(seconds=1),
@@ -354,14 +380,14 @@ def test_delegation_expired() -> None:
 def test_requested_scope_exceeds_delegation() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo, authority_scopes=("workspace.read",))
 
     decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
             requested_authority_scopes=("workspace.write",),
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(authority_scopes=("workspace.read", "workspace.write")),
         )
     )
@@ -371,13 +397,13 @@ def test_requested_scope_exceeds_delegation() -> None:
 def test_delegate_mismatch_cannot_authorize() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo, delegate_principal_id="other-delegate")
 
     decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(delegate_principal_id=_ACTING),
         )
     )
@@ -387,13 +413,13 @@ def test_delegate_mismatch_cannot_authorize() -> None:
 def test_delegator_mismatch_cannot_authorize() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo, delegator_principal_id="other-delegator")
 
     decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(delegator_principal_id=_DELEGATOR),
         )
     )
@@ -403,14 +429,14 @@ def test_delegator_mismatch_cannot_authorize() -> None:
 def test_resource_scope_mismatch_denied() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo, resource_scope="artifact-a")
 
     decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
             resource_scope="artifact-b",
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(resource_scope="artifact-a"),
         )
     )
@@ -420,13 +446,13 @@ def test_resource_scope_mismatch_denied() -> None:
 def test_resource_limited_delegation_requires_request_resource_scope() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo, resource_scope="artifact-a")
 
     decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(resource_scope="artifact-a"),
         )
     )
@@ -437,7 +463,7 @@ def test_valid_delegated_evidence_reaches_collaborative_slice_allow() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
     authority_repo = _authority_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(
         delegation_repo,
         resource_scope="artifact-a",
@@ -454,7 +480,7 @@ def test_valid_delegated_evidence_reaches_collaborative_slice_allow() -> None:
         _request(
             delegator_principal_id=_DELEGATOR,
             resource_scope="artifact-a",
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(
                 resource_scope="artifact-a",
                 valid_from=_NOW - timedelta(days=1),
@@ -554,14 +580,14 @@ def test_admin_membership_without_base_authority_does_not_authorize() -> None:
 def test_delegation_scopes_alone_do_not_manufacture_delegator_authority() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo, authority_scopes=("workspace.admin",))
 
     decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
             requested_authority_scopes=("workspace.admin",),
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(authority_scopes=("workspace.admin",)),
         )
     )
@@ -574,7 +600,7 @@ def test_delegation_scope_exceeds_delegator_base_authority_denies() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
     authority_repo = _authority_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo, authority_scopes=("workspace.read", "workspace.write"))
     _seed_authority(authority_repo, principal_id=_DELEGATOR, authority_scopes=("workspace.read",))
 
@@ -586,7 +612,7 @@ def test_delegation_scope_exceeds_delegator_base_authority_denies() -> None:
         _request(
             delegator_principal_id=_DELEGATOR,
             requested_authority_scopes=("workspace.write",),
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(authority_scopes=("workspace.read", "workspace.write")),
         )
     )
@@ -599,7 +625,7 @@ def test_delegator_base_authority_without_delegation_scope_denies() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
     authority_repo = _authority_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo, authority_scopes=("workspace.read",))
     _seed_authority(
         authority_repo,
@@ -615,7 +641,7 @@ def test_delegator_base_authority_without_delegation_scope_denies() -> None:
         _request(
             delegator_principal_id=_DELEGATOR,
             requested_authority_scopes=("workspace.write",),
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(authority_scopes=("workspace.read",)),
         )
     )
@@ -627,13 +653,13 @@ def test_delegator_base_authority_without_delegation_scope_denies() -> None:
 def test_missing_delegator_base_authority_denies() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo)
 
     decision = _resolver(membership_repo=membership_repo, delegation_repo=delegation_repo).resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(),
         )
     )
@@ -645,7 +671,7 @@ def test_delegate_own_base_authority_cannot_substitute_delegator_authority() -> 
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
     authority_repo = _authority_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(delegation_repo, authority_scopes=("workspace.admin",))
     _seed_authority(authority_repo, principal_id=_ACTING, authority_scopes=("workspace.admin",))
 
@@ -657,7 +683,7 @@ def test_delegate_own_base_authority_cannot_substitute_delegator_authority() -> 
         _request(
             delegator_principal_id=_DELEGATOR,
             requested_authority_scopes=("workspace.admin",),
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(authority_scopes=("workspace.admin",)),
         )
     )
@@ -677,7 +703,7 @@ def test_resolver_does_not_require_policy_engine() -> None:
 def test_naive_clock_result_fail_closed_without_type_error() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    membership = _seed_membership(membership_repo)
+    delegate_membership, _ = _seed_delegated_memberships(membership_repo)
     delegation = _seed_delegation(
         delegation_repo,
         valid_from=_NOW - timedelta(days=1),
@@ -693,7 +719,7 @@ def test_naive_clock_result_fail_closed_without_type_error() -> None:
     decision = resolver.resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(
                 valid_from=_NOW - timedelta(days=1),
                 valid_until=_NOW + timedelta(days=1),
@@ -707,10 +733,10 @@ def test_naive_clock_result_fail_closed_without_type_error() -> None:
         is EffectiveAuthorityDenialReason.AUTHORITY_TEMPORAL_CONTEXT_UNAVAILABLE
     )
     assert membership_repo.get(
-        tenant_id=membership.tenant_id,
-        workspace_id=membership.workspace_id,
-        membership_id=membership.membership_id,
-    ) == membership
+        tenant_id=delegate_membership.tenant_id,
+        workspace_id=delegate_membership.workspace_id,
+        membership_id=delegate_membership.membership_id,
+    ) == delegate_membership
     assert delegation_repo.get(
         tenant_id=delegation.tenant_id,
         workspace_id=delegation.workspace_id,
@@ -721,7 +747,7 @@ def test_naive_clock_result_fail_closed_without_type_error() -> None:
 def test_non_datetime_clock_result_fail_closed() -> None:
     membership_repo = _membership_repo()
     delegation_repo = _delegation_repo()
-    _seed_membership(membership_repo)
+    _seed_delegated_memberships(membership_repo)
     _seed_delegation(
         delegation_repo,
         valid_from=_NOW - timedelta(days=1),
@@ -736,7 +762,7 @@ def test_non_datetime_clock_result_fail_closed() -> None:
     decision = resolver.resolve(
         _request(
             delegator_principal_id=_DELEGATOR,
-            membership=_membership_locator(),
+            membership=_acting_membership_locator(),
             delegation=_delegation_locator(
                 valid_from=_NOW - timedelta(days=1),
                 valid_until=_NOW + timedelta(days=1),

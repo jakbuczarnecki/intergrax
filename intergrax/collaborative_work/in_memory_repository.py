@@ -97,6 +97,7 @@ class InMemoryWorkspaceMembershipRepository:
     def __init__(self) -> None:
         self._lock = threading.RLock()
         self._records: dict[MembershipKey, WorkspaceMembership] = {}
+        self._principal_index: dict[PrincipalKey, MembershipKey] = {}
         self._idempotency: dict[IdempotencyKey, _MembershipIdempotencyEntry] = {}
 
     @property
@@ -113,6 +114,11 @@ class InMemoryWorkspaceMembershipRepository:
             command.workspace_id,
             command.membership_id,
         )
+        principal_key = self._principal_key(
+            command.tenant_id,
+            command.workspace_id,
+            command.principal_id,
+        )
         with self._lock:
             if command.idempotency_key is not None:
                 replay = self._replay_membership_create(command)
@@ -120,6 +126,8 @@ class InMemoryWorkspaceMembershipRepository:
                     return replay
 
             if key in self._records:
+                raise WorkspaceMembershipAlreadyExists("workspace membership already exists")
+            if principal_key in self._principal_index:
                 raise WorkspaceMembershipAlreadyExists("workspace membership already exists")
 
             record = WorkspaceMembership(
@@ -132,6 +140,7 @@ class InMemoryWorkspaceMembershipRepository:
                 revision=INITIAL_RECORD_REVISION,
             )
             self._records[key] = record
+            self._principal_index[principal_key] = key
             self._store_membership_idempotency(command, record)
             return record
 
@@ -148,6 +157,27 @@ class InMemoryWorkspaceMembershipRepository:
             if record is None:
                 return None
             if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
+                return None
+            return record
+
+    def get_for_principal(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        principal_id: str,
+    ) -> WorkspaceMembership | None:
+        principal_key = self._principal_key(tenant_id, workspace_id, principal_id)
+        with self._lock:
+            membership_key = self._principal_index.get(principal_key)
+            if membership_key is None:
+                return None
+            record = self._records.get(membership_key)
+            if record is None:
+                return None
+            if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
+                return None
+            if record.principal_id != principal_id.strip():
                 return None
             return record
 
@@ -226,6 +256,10 @@ class InMemoryWorkspaceMembershipRepository:
         workspace_id: str,
     ) -> bool:
         return record.tenant_id == tenant_id.strip() and record.workspace_id == workspace_id.strip()
+
+    @staticmethod
+    def _principal_key(tenant_id: str, workspace_id: str, principal_id: str) -> PrincipalKey:
+        return (tenant_id.strip(), workspace_id.strip(), principal_id.strip())
 
 
 class InMemoryPrincipalAuthorityRepository:

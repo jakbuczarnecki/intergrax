@@ -29,9 +29,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol, runtime_checkable
+from typing import Protocol, Self, runtime_checkable
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.collaborative_work import (
     AuthorityDelegation,
@@ -52,6 +53,8 @@ from intergrax.contracts.collaborative_work import (
 from intergrax.contracts.runtime_policy import PolicyAction
 
 INITIAL_RECORD_REVISION: int = 0
+
+_NON_EMPTY = Field(min_length=1)
 
 
 class WorkspaceMembershipNotFound(Exception):
@@ -102,150 +105,88 @@ class PrincipalAuthorityGrantIdempotencyConflict(Exception):
     """Idempotency key replayed with a different semantic command."""
 
 
-def _require_non_empty(value: str, *, field_name: str) -> str:
-    cleaned = value.strip()
-    if not cleaned:
-        raise ValueError(f"{field_name} must be a non-empty string")
-    return cleaned
+class _RepositoryModelBase(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    @staticmethod
+    def _strip_required(value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("must be non-empty")
+        return cleaned
+
+    @classmethod
+    def _strip_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return cls._strip_required(value)
 
 
-def _require_non_negative_int(value: int, *, field_name: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise ValueError(f"{field_name} must be an integer")
-    if value < 0:
-        raise ValueError(f"{field_name} must be >= 0")
-    return value
-
-
-@dataclass(frozen=True, slots=True)
-class CollaborativeWorkRepositoryCapabilities:
+class CollaborativeWorkRepositoryCapabilities(_RepositoryModelBase):
     """Declared backend capabilities for collaborative work repositories."""
 
-    backend_id: str
+    backend_id: str = _NON_EMPTY
     durable: bool
     reference_only: bool
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "backend_id",
-            _require_non_empty(self.backend_id, field_name="backend_id"),
-        )
-        if not isinstance(self.durable, bool):
-            raise ValueError("durable must be a bool")
-        if not isinstance(self.reference_only, bool):
-            raise ValueError("reference_only must be a bool")
+    @field_validator("backend_id")
+    @classmethod
+    def _validate_backend_id(cls, value: str) -> str:
+        return cls._strip_required(value)
 
 
-@dataclass(frozen=True, slots=True)
-class WorkspaceMembershipScopeKey:
-    tenant_id: str
-    workspace_id: str
-    membership_id: str
+class WorkspaceMembershipScopeKey(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    membership_id: str = _NON_EMPTY
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "tenant_id",
-            _require_non_empty(self.tenant_id, field_name="tenant_id"),
-        )
-        object.__setattr__(
-            self,
-            "workspace_id",
-            _require_non_empty(self.workspace_id, field_name="workspace_id"),
-        )
-        object.__setattr__(
-            self,
-            "membership_id",
-            _require_non_empty(self.membership_id, field_name="membership_id"),
-        )
+    @field_validator("tenant_id", "workspace_id", "membership_id")
+    @classmethod
+    def _strip_scope_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
 
 
-@dataclass(frozen=True, slots=True)
-class AuthorityDelegationScopeKey:
-    tenant_id: str
-    workspace_id: str
-    delegation_id: str
+class AuthorityDelegationScopeKey(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    delegation_id: str = _NON_EMPTY
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "tenant_id",
-            _require_non_empty(self.tenant_id, field_name="tenant_id"),
-        )
-        object.__setattr__(
-            self,
-            "workspace_id",
-            _require_non_empty(self.workspace_id, field_name="workspace_id"),
-        )
-        object.__setattr__(
-            self,
-            "delegation_id",
-            _require_non_empty(self.delegation_id, field_name="delegation_id"),
-        )
+    @field_validator("tenant_id", "workspace_id", "delegation_id")
+    @classmethod
+    def _strip_scope_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
 
 
-@dataclass(frozen=True, slots=True)
-class PrincipalAuthorityGrantScopeKey:
-    tenant_id: str
-    workspace_id: str
-    authority_grant_id: str
+class PrincipalAuthorityGrantScopeKey(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    authority_grant_id: str = _NON_EMPTY
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "tenant_id",
-            _require_non_empty(self.tenant_id, field_name="tenant_id"),
-        )
-        object.__setattr__(
-            self,
-            "workspace_id",
-            _require_non_empty(self.workspace_id, field_name="workspace_id"),
-        )
-        object.__setattr__(
-            self,
-            "authority_grant_id",
-            _require_non_empty(self.authority_grant_id, field_name="authority_grant_id"),
-        )
+    @field_validator("tenant_id", "workspace_id", "authority_grant_id")
+    @classmethod
+    def _strip_scope_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
 
 
-@dataclass(frozen=True, slots=True)
-class CreateWorkspaceMembershipCommand:
-    tenant_id: str
-    workspace_id: str
-    membership_id: str
-    principal_id: str
+class CreateWorkspaceMembershipCommand(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    membership_id: str = _NON_EMPTY
+    principal_id: str = _NON_EMPTY
     role: WorkspaceMembershipRole
     status: MembershipStatus = MembershipStatus.ACTIVE
     idempotency_key: str | None = None
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "tenant_id",
-            _require_non_empty(self.tenant_id, field_name="tenant_id"),
-        )
-        object.__setattr__(
-            self,
-            "workspace_id",
-            _require_non_empty(self.workspace_id, field_name="workspace_id"),
-        )
-        object.__setattr__(
-            self,
-            "membership_id",
-            _require_non_empty(self.membership_id, field_name="membership_id"),
-        )
-        object.__setattr__(
-            self,
-            "principal_id",
-            _require_non_empty(self.principal_id, field_name="principal_id"),
-        )
-        if self.idempotency_key is not None:
-            object.__setattr__(
-                self,
-                "idempotency_key",
-                _require_non_empty(self.idempotency_key, field_name="idempotency_key"),
-            )
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "membership_id",
+        "principal_id",
+        "idempotency_key",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
 
     def semantic_fingerprint(self) -> str:
         payload = {
@@ -260,53 +201,31 @@ class CreateWorkspaceMembershipCommand:
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-@dataclass(frozen=True, slots=True)
-class CreatePrincipalAuthorityGrantCommand:
-    tenant_id: str
-    workspace_id: str
-    authority_grant_id: str
-    principal_id: str
+class CreatePrincipalAuthorityGrantCommand(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    authority_grant_id: str = _NON_EMPTY
+    principal_id: str = _NON_EMPTY
     authority_scopes: tuple[str, ...]
     status: AuthorityGrantStatus = AuthorityGrantStatus.ACTIVE
     idempotency_key: str | None = None
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "tenant_id",
-            _require_non_empty(self.tenant_id, field_name="tenant_id"),
-        )
-        object.__setattr__(
-            self,
-            "workspace_id",
-            _require_non_empty(self.workspace_id, field_name="workspace_id"),
-        )
-        object.__setattr__(
-            self,
-            "authority_grant_id",
-            _require_non_empty(self.authority_grant_id, field_name="authority_grant_id"),
-        )
-        object.__setattr__(
-            self,
-            "principal_id",
-            _require_non_empty(self.principal_id, field_name="principal_id"),
-        )
-        if not self.authority_scopes:
+    @field_validator("tenant_id", "workspace_id", "authority_grant_id", "principal_id")
+    @classmethod
+    def _strip_required_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
+
+    @field_validator("idempotency_key")
+    @classmethod
+    def _strip_idempotency(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
+
+    @field_validator("authority_scopes")
+    @classmethod
+    def _normalize_authority_scopes(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if not value:
             raise ValueError("authority_scopes must be non-empty")
-        object.__setattr__(
-            self,
-            "authority_scopes",
-            tuple(
-                _require_non_empty(scope, field_name="authority_scopes")
-                for scope in self.authority_scopes
-            ),
-        )
-        if self.idempotency_key is not None:
-            object.__setattr__(
-                self,
-                "idempotency_key",
-                _require_non_empty(self.idempotency_key, field_name="idempotency_key"),
-            )
+        return tuple(cls._strip_required(scope) for scope in value)
 
     def semantic_fingerprint(self) -> str:
         payload = {
@@ -321,59 +240,33 @@ class CreatePrincipalAuthorityGrantCommand:
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-@dataclass(frozen=True, slots=True)
-class UpdatePrincipalAuthorityGrantCommand:
+class UpdatePrincipalAuthorityGrantCommand(_RepositoryModelBase):
     scope: PrincipalAuthorityGrantScopeKey
-    expected_revision: int
+    expected_revision: int = Field(ge=0)
     authority_scopes: tuple[str, ...]
     status: AuthorityGrantStatus
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "scope",
-            _require_scope_key(self.scope, PrincipalAuthorityGrantScopeKey),
-        )
-        object.__setattr__(
-            self,
-            "expected_revision",
-            _require_non_negative_int(self.expected_revision, field_name="expected_revision"),
-        )
-        if not self.authority_scopes:
+    @field_validator("authority_scopes")
+    @classmethod
+    def _normalize_authority_scopes(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if not value:
             raise ValueError("authority_scopes must be non-empty")
-        object.__setattr__(
-            self,
-            "authority_scopes",
-            tuple(
-                _require_non_empty(scope, field_name="authority_scopes")
-                for scope in self.authority_scopes
-            ),
-        )
+        return tuple(cls._strip_required(scope) for scope in value)
 
 
-@dataclass(frozen=True, slots=True)
-class UpdateWorkspaceMembershipCommand:
+class UpdateWorkspaceMembershipCommand(_RepositoryModelBase):
     scope: WorkspaceMembershipScopeKey
-    expected_revision: int
+    expected_revision: int = Field(ge=0)
     role: WorkspaceMembershipRole
     status: MembershipStatus
 
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "scope", _require_scope_key(self.scope, WorkspaceMembershipScopeKey))
-        object.__setattr__(
-            self,
-            "expected_revision",
-            _require_non_negative_int(self.expected_revision, field_name="expected_revision"),
-        )
 
-
-@dataclass(frozen=True, slots=True)
-class CreateAuthorityDelegationCommand:
-    tenant_id: str
-    workspace_id: str
-    delegation_id: str
-    delegator_principal_id: str
-    delegate_principal_id: str
+class CreateAuthorityDelegationCommand(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    delegation_id: str = _NON_EMPTY
+    delegator_principal_id: str = _NON_EMPTY
+    delegate_principal_id: str = _NON_EMPTY
     authority_scopes: tuple[str, ...]
     resource_scope: str | None = None
     valid_from: datetime | None = None
@@ -381,51 +274,28 @@ class CreateAuthorityDelegationCommand:
     status: DelegationStatus = DelegationStatus.ACTIVE
     idempotency_key: str | None = None
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "tenant_id",
-            _require_non_empty(self.tenant_id, field_name="tenant_id"),
-        )
-        object.__setattr__(
-            self,
-            "workspace_id",
-            _require_non_empty(self.workspace_id, field_name="workspace_id"),
-        )
-        object.__setattr__(
-            self,
-            "delegation_id",
-            _require_non_empty(self.delegation_id, field_name="delegation_id"),
-        )
-        object.__setattr__(
-            self,
-            "delegator_principal_id",
-            _require_non_empty(self.delegator_principal_id, field_name="delegator_principal_id"),
-        )
-        object.__setattr__(
-            self,
-            "delegate_principal_id",
-            _require_non_empty(self.delegate_principal_id, field_name="delegate_principal_id"),
-        )
-        if not self.authority_scopes:
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "delegation_id",
+        "delegator_principal_id",
+        "delegate_principal_id",
+    )
+    @classmethod
+    def _strip_required_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
+
+    @field_validator("resource_scope", "idempotency_key")
+    @classmethod
+    def _strip_optional_fields(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
+
+    @field_validator("authority_scopes")
+    @classmethod
+    def _normalize_authority_scopes(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if not value:
             raise ValueError("authority_scopes must be non-empty")
-        object.__setattr__(
-            self,
-            "authority_scopes",
-            tuple(_require_non_empty(scope, field_name="authority_scopes") for scope in self.authority_scopes),
-        )
-        if self.resource_scope is not None:
-            object.__setattr__(
-                self,
-                "resource_scope",
-                _require_non_empty(self.resource_scope, field_name="resource_scope"),
-            )
-        if self.idempotency_key is not None:
-            object.__setattr__(
-                self,
-                "idempotency_key",
-                _require_non_empty(self.idempotency_key, field_name="idempotency_key"),
-            )
+        return tuple(cls._strip_required(scope) for scope in value)
 
     def semantic_fingerprint(self) -> str:
         payload = {
@@ -444,42 +314,26 @@ class CreateAuthorityDelegationCommand:
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-@dataclass(frozen=True, slots=True)
-class UpdateAuthorityDelegationCommand:
+class UpdateAuthorityDelegationCommand(_RepositoryModelBase):
     scope: AuthorityDelegationScopeKey
-    expected_revision: int
+    expected_revision: int = Field(ge=0)
     authority_scopes: tuple[str, ...]
     resource_scope: str | None
     valid_from: datetime | None
     valid_until: datetime | None
     status: DelegationStatus
 
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "scope", _require_scope_key(self.scope, AuthorityDelegationScopeKey))
-        object.__setattr__(
-            self,
-            "expected_revision",
-            _require_non_negative_int(self.expected_revision, field_name="expected_revision"),
-        )
-        if not self.authority_scopes:
+    @field_validator("authority_scopes")
+    @classmethod
+    def _normalize_authority_scopes(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if not value:
             raise ValueError("authority_scopes must be non-empty")
-        object.__setattr__(
-            self,
-            "authority_scopes",
-            tuple(_require_non_empty(scope, field_name="authority_scopes") for scope in self.authority_scopes),
-        )
-        if self.resource_scope is not None:
-            object.__setattr__(
-                self,
-                "resource_scope",
-                _require_non_empty(self.resource_scope, field_name="resource_scope"),
-            )
+        return tuple(cls._strip_required(scope) for scope in value)
 
-
-def _require_scope_key[T](value: object, expected_type: type[T]) -> T:
-    if not isinstance(value, expected_type):
-        raise ValueError(f"scope must be {expected_type.__name__}")
-    return value
+    @field_validator("resource_scope")
+    @classmethod
+    def _strip_resource_scope(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
 
 
 @runtime_checkable
@@ -501,6 +355,15 @@ class WorkspaceMembershipRepository(Protocol):
         membership_id: str,
     ) -> WorkspaceMembership | None:
         """Return membership for the scoped identity or ``None``."""
+
+    def get_for_principal(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        principal_id: str,
+    ) -> WorkspaceMembership | None:
+        """Return the canonical membership for a principal in workspace scope or ``None``."""
 
     def update(self, command: UpdateWorkspaceMembershipCommand) -> WorkspaceMembership:
         """Replace membership semantics under optimistic concurrency."""
@@ -579,75 +442,40 @@ class CollaborativePolicyRuleIdempotencyConflict(Exception):
     """Idempotency key replayed with a different semantic command."""
 
 
-@dataclass(frozen=True, slots=True)
-class CollaborativePolicyRuleScopeKey:
-    tenant_id: str
-    workspace_id: str
-    policy_rule_id: str
+class CollaborativePolicyRuleScopeKey(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    policy_rule_id: str = _NON_EMPTY
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "tenant_id",
-            _require_non_empty(self.tenant_id, field_name="tenant_id"),
-        )
-        object.__setattr__(
-            self,
-            "workspace_id",
-            _require_non_empty(self.workspace_id, field_name="workspace_id"),
-        )
-        object.__setattr__(
-            self,
-            "policy_rule_id",
-            _require_non_empty(self.policy_rule_id, field_name="policy_rule_id"),
-        )
+    @field_validator("tenant_id", "workspace_id", "policy_rule_id")
+    @classmethod
+    def _strip_scope_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
 
 
-@dataclass(frozen=True, slots=True)
-class CreateCollaborativePolicyRuleCommand:
-    tenant_id: str
-    workspace_id: str
-    policy_rule_id: str
+class CreateCollaborativePolicyRuleCommand(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    policy_rule_id: str = _NON_EMPTY
     layer: PolicyCompositionLayer
-    authority_scope: str
+    authority_scope: str = _NON_EMPTY
     action: PolicyAction
     resource_scope: str | None = None
     status: CollaborativePolicyRuleStatus = CollaborativePolicyRuleStatus.ACTIVE
     idempotency_key: str | None = None
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "tenant_id",
-            _require_non_empty(self.tenant_id, field_name="tenant_id"),
-        )
-        object.__setattr__(
-            self,
-            "workspace_id",
-            _require_non_empty(self.workspace_id, field_name="workspace_id"),
-        )
-        object.__setattr__(
-            self,
-            "policy_rule_id",
-            _require_non_empty(self.policy_rule_id, field_name="policy_rule_id"),
-        )
-        object.__setattr__(
-            self,
-            "authority_scope",
-            _require_non_empty(self.authority_scope, field_name="authority_scope"),
-        )
-        if self.resource_scope is not None:
-            object.__setattr__(
-                self,
-                "resource_scope",
-                _require_non_empty(self.resource_scope, field_name="resource_scope"),
-            )
-        if self.idempotency_key is not None:
-            object.__setattr__(
-                self,
-                "idempotency_key",
-                _require_non_empty(self.idempotency_key, field_name="idempotency_key"),
-            )
+    @field_validator("tenant_id", "workspace_id", "policy_rule_id", "authority_scope")
+    @classmethod
+    def _strip_required_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
+
+    @field_validator("resource_scope", "idempotency_key")
+    @classmethod
+    def _strip_optional_fields(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
+
+    @model_validator(mode="after")
+    def _validate_layer_resource_scope(self) -> Self:
         if self.layer not in (
             PolicyCompositionLayer.WORKSPACE_POLICY,
             PolicyCompositionLayer.RESOURCE_POLICY,
@@ -657,6 +485,7 @@ class CreateCollaborativePolicyRuleCommand:
             raise ValueError("WORKSPACE_POLICY rules must not include resource_scope")
         if self.layer is PolicyCompositionLayer.RESOURCE_POLICY and self.resource_scope is None:
             raise ValueError("RESOURCE_POLICY rules require resource_scope")
+        return self
 
     def semantic_fingerprint(self) -> str:
         payload = {
@@ -673,24 +502,11 @@ class CreateCollaborativePolicyRuleCommand:
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-@dataclass(frozen=True, slots=True)
-class UpdateCollaborativePolicyRuleCommand:
+class UpdateCollaborativePolicyRuleCommand(_RepositoryModelBase):
     scope: CollaborativePolicyRuleScopeKey
-    expected_revision: int
+    expected_revision: int = Field(ge=0)
     action: PolicyAction
     status: CollaborativePolicyRuleStatus
-
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "scope",
-            _require_scope_key(self.scope, CollaborativePolicyRuleScopeKey),
-        )
-        object.__setattr__(
-            self,
-            "expected_revision",
-            _require_non_negative_int(self.expected_revision, field_name="expected_revision"),
-        )
 
 
 @runtime_checkable
@@ -747,71 +563,41 @@ class CollaborativeOperationPolicyProfileIdempotencyConflict(Exception):
     """Idempotency key replayed with a different semantic command."""
 
 
-@dataclass(frozen=True, slots=True)
-class CollaborativeOperationPolicyProfileScopeKey:
-    tenant_id: str
-    workspace_id: str
-    operation_id: str
+class CollaborativeOperationPolicyProfileScopeKey(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    operation_id: str = _NON_EMPTY
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "tenant_id",
-            _require_non_empty(self.tenant_id, field_name="tenant_id"),
-        )
-        object.__setattr__(
-            self,
-            "workspace_id",
-            _require_non_empty(self.workspace_id, field_name="workspace_id"),
-        )
-        object.__setattr__(
-            self,
-            "operation_id",
-            _require_non_empty(self.operation_id, field_name="operation_id"),
-        )
+    @field_validator("tenant_id", "workspace_id", "operation_id")
+    @classmethod
+    def _strip_scope_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
 
 
-@dataclass(frozen=True, slots=True)
-class CreateCollaborativeOperationPolicyProfileCommand:
-    tenant_id: str
-    workspace_id: str
-    operation_id: str
-    authority_scope: str
+class CreateCollaborativeOperationPolicyProfileCommand(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    operation_id: str = _NON_EMPTY
+    authority_scope: str = _NON_EMPTY
     workspace_policy_applicability: PolicyLayerApplicability
     resource_policy_applicability: PolicyLayerApplicability
     runtime_policy_applicability: PolicyLayerApplicability
     resource_requirement: OperationPolicyRequirement
     meaningful_side_effect_requirement: OperationPolicyRequirement
-    status: CollaborativeOperationPolicyProfileStatus = CollaborativeOperationPolicyProfileStatus.ACTIVE
+    status: CollaborativeOperationPolicyProfileStatus = (
+        CollaborativeOperationPolicyProfileStatus.ACTIVE
+    )
     idempotency_key: str | None = None
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "tenant_id",
-            _require_non_empty(self.tenant_id, field_name="tenant_id"),
-        )
-        object.__setattr__(
-            self,
-            "workspace_id",
-            _require_non_empty(self.workspace_id, field_name="workspace_id"),
-        )
-        object.__setattr__(
-            self,
-            "operation_id",
-            _require_non_empty(self.operation_id, field_name="operation_id"),
-        )
-        object.__setattr__(
-            self,
-            "authority_scope",
-            _require_non_empty(self.authority_scope, field_name="authority_scope"),
-        )
-        if self.idempotency_key is not None:
-            object.__setattr__(
-                self,
-                "idempotency_key",
-                _require_non_empty(self.idempotency_key, field_name="idempotency_key"),
-            )
+    @field_validator("tenant_id", "workspace_id", "operation_id", "authority_scope")
+    @classmethod
+    def _strip_required_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
+
+    @field_validator("idempotency_key")
+    @classmethod
+    def _strip_idempotency(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
 
     def semantic_fingerprint(self) -> str:
         payload = {
@@ -830,11 +616,10 @@ class CreateCollaborativeOperationPolicyProfileCommand:
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-@dataclass(frozen=True, slots=True)
-class UpdateCollaborativeOperationPolicyProfileCommand:
+class UpdateCollaborativeOperationPolicyProfileCommand(_RepositoryModelBase):
     scope: CollaborativeOperationPolicyProfileScopeKey
-    expected_revision: int
-    authority_scope: str
+    expected_revision: int = Field(ge=0)
+    authority_scope: str = _NON_EMPTY
     workspace_policy_applicability: PolicyLayerApplicability
     resource_policy_applicability: PolicyLayerApplicability
     runtime_policy_applicability: PolicyLayerApplicability
@@ -842,22 +627,10 @@ class UpdateCollaborativeOperationPolicyProfileCommand:
     meaningful_side_effect_requirement: OperationPolicyRequirement
     status: CollaborativeOperationPolicyProfileStatus
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "scope",
-            _require_scope_key(self.scope, CollaborativeOperationPolicyProfileScopeKey),
-        )
-        object.__setattr__(
-            self,
-            "expected_revision",
-            _require_non_negative_int(self.expected_revision, field_name="expected_revision"),
-        )
-        object.__setattr__(
-            self,
-            "authority_scope",
-            _require_non_empty(self.authority_scope, field_name="authority_scope"),
-        )
+    @field_validator("authority_scope")
+    @classmethod
+    def _strip_authority_scope(cls, value: str) -> str:
+        return cls._strip_required(value)
 
 
 @runtime_checkable

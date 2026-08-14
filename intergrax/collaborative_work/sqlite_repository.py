@@ -118,9 +118,11 @@ class SQLiteCollaborativeWorkStore:
                     tenant_id TEXT NOT NULL,
                     workspace_id TEXT NOT NULL,
                     membership_id TEXT NOT NULL,
+                    principal_id TEXT NOT NULL,
                     record_json TEXT NOT NULL,
                     revision INTEGER NOT NULL,
-                    PRIMARY KEY (tenant_id, workspace_id, membership_id)
+                    PRIMARY KEY (tenant_id, workspace_id, membership_id),
+                    UNIQUE (tenant_id, workspace_id, principal_id)
                 );
 
                 CREATE TABLE IF NOT EXISTS authority_delegations (
@@ -183,7 +185,45 @@ class SQLiteCollaborativeWorkStore:
                 );
                 """
             )
-            self._connection.commit()
+            self._migrate_workspace_memberships_principal_column()
+
+    def _migrate_workspace_memberships_principal_column(self) -> None:
+        rows = self._connection.execute("PRAGMA table_info(workspace_memberships)").fetchall()
+        if not rows:
+            return
+        column_names = {row[1] for row in rows}
+        if "principal_id" in column_names:
+            return
+        self._connection.execute(
+            "ALTER TABLE workspace_memberships ADD COLUMN principal_id TEXT"
+        )
+        for row in self._connection.execute(
+            """
+            SELECT tenant_id, workspace_id, membership_id, record_json
+            FROM workspace_memberships
+            """
+        ):
+            membership = workspace_membership_from_json(row["record_json"])
+            self._connection.execute(
+                """
+                UPDATE workspace_memberships
+                SET principal_id = ?
+                WHERE tenant_id = ? AND workspace_id = ? AND membership_id = ?
+                """,
+                (
+                    membership.principal_id.strip(),
+                    row["tenant_id"],
+                    row["workspace_id"],
+                    row["membership_id"],
+                ),
+            )
+        self._connection.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_workspace_memberships_principal
+            ON workspace_memberships (tenant_id, workspace_id, principal_id)
+            """
+        )
+        self._connection.commit()
 
 
 def _scope_matches_tenant_workspace(
@@ -280,6 +320,14 @@ class SQLiteWorkspaceMembershipRepository(_IdempotencyMixin):
                 if existing is not None:
                     raise WorkspaceMembershipAlreadyExists("workspace membership already exists")
 
+                principal_existing = self._get_for_principal_in_transaction(
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    principal_id=command.principal_id,
+                )
+                if principal_existing is not None:
+                    raise WorkspaceMembershipAlreadyExists("workspace membership already exists")
+
                 record = WorkspaceMembership(
                     membership_id=command.membership_id,
                     tenant_id=command.tenant_id,
@@ -293,13 +341,14 @@ class SQLiteWorkspaceMembershipRepository(_IdempotencyMixin):
                 self._store.transaction().execute(
                     """
                     INSERT INTO workspace_memberships (
-                        tenant_id, workspace_id, membership_id, record_json, revision
-                    ) VALUES (?, ?, ?, ?, ?)
+                        tenant_id, workspace_id, membership_id, principal_id, record_json, revision
+                    ) VALUES (?, ?, ?, ?, ?, ?)
                     """,
                     (
                         record.tenant_id.strip(),
                         record.workspace_id.strip(),
                         record.membership_id.strip(),
+                        record.principal_id.strip(),
                         result_json,
                         record.revision,
                     ),
@@ -334,6 +383,21 @@ class SQLiteWorkspaceMembershipRepository(_IdempotencyMixin):
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 membership_id=membership_id,
+            )
+
+    def get_for_principal(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        principal_id: str,
+    ) -> WorkspaceMembership | None:
+        with self._store._lock:
+            self._store._ensure_open()
+            return self._get_for_principal_in_transaction(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                principal_id=principal_id,
             )
 
     def update(self, command: UpdateWorkspaceMembershipCommand) -> WorkspaceMembership:
@@ -410,6 +474,34 @@ class SQLiteWorkspaceMembershipRepository(_IdempotencyMixin):
             tenant_id=tenant_id,
             workspace_id=workspace_id,
         ):
+            return None
+        return record
+
+    def _get_for_principal_in_transaction(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        principal_id: str,
+    ) -> WorkspaceMembership | None:
+        row = self._store.transaction().execute(
+            """
+            SELECT record_json FROM workspace_memberships
+            WHERE tenant_id = ? AND workspace_id = ? AND principal_id = ?
+            """,
+            (tenant_id.strip(), workspace_id.strip(), principal_id.strip()),
+        ).fetchone()
+        if row is None:
+            return None
+        record = workspace_membership_from_json(row["record_json"])
+        if not _scope_matches_tenant_workspace(
+            record.tenant_id,
+            record.workspace_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ):
+            return None
+        if record.principal_id != principal_id.strip():
             return None
         return record
 

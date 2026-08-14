@@ -106,6 +106,8 @@ class EffectiveAuthorityDenialReason(StrEnum):
     MISSING_DELEGATION = "missing_delegation"
     INSUFFICIENT_DELEGATION_SCOPE = "insufficient_delegation_scope"
     MEMBERSHIP_NOT_ACTIVE = "membership_not_active"
+    MISSING_DELEGATOR_MEMBERSHIP = "missing_delegator_membership"
+    DELEGATOR_MEMBERSHIP_NOT_ACTIVE = "delegator_membership_not_active"
     DELEGATION_NOT_ACTIVE = "delegation_not_active"
     AUTHORITY_TEMPORAL_CONTEXT_UNAVAILABLE = "authority_temporal_context_unavailable"
     SCOPE_ONLY_INSUFFICIENT = "scope_only_insufficient"
