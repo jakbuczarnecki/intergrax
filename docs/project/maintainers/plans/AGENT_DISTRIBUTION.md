@@ -4,7 +4,7 @@
 **Architecture (1:1):** [`architecture/AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md)  
 **ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../../technical/adr/entries/2026-08-12/ADR-AGENT-004.md)  
 **Evidence:** [`audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md)  
-**Last updated:** 2026-08-13
+**Last updated:** 2026-08-14
 
 ---
 
@@ -33,7 +33,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 | AP-6 | Effective roster merge + `CandidateDependencySpecification` builder | AP-4 |
 | AP-7 | `MaterializedRuntimeLock` producer + graph simulation gates | AP-6, runtime graph util |
 | AP-8 | Materialization adapters (OCI, venv bundle) | AP-7 |
-| AP-9 | `RuntimeRevision` activation + rollback orchestration (implements §20 zero-downtime model) | in progress |
+| AP-9 | `RuntimeRevision` activation + rollback orchestration (implements §20 zero-downtime model) | AP-8 |
 | AP-10 | `build_application_registry` extension + snapshot fields | AP-9 |
 | AP-11 | Generic Tier-3 harness admin API routes | AP-4..AP-9 |
 | AP-12 | LKW consumer proof wiring | AP-11 |
@@ -211,7 +211,7 @@ staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 
 **Evidence:** `intergrax/agent_distribution/materialization_service.py`, `materialization_adapters.py`, `runtime_context_staging.py`, `package_artifact_provider.py`, `errors.py`, `tests/unit/agent_distribution/test_agent_distribution_materialization.py`, `test_agent_distribution_materialization_adapter.py`
 
-**Next:** AP-11 may begin after AP-10 close — generic Tier-3 harness admin API routes.
+**Next:** AP-11 delivered — generic V1 admin control plane. AP-12 is LKW consumer proof wiring.
 
 ### AP-10 evidence (registry projection)
 
@@ -229,7 +229,32 @@ staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 
 **Evidence:** `intergrax/applications/_shared/runtime_agent_factory_resolver.py`, `wiring.py`, `registry_projection.py`, `tests/unit/applications/test_registry_projection_ap10.py`
 
-**Next:** AP-11 may begin after AP-10 close — generic Tier-3 harness admin API routes. Production topology factory loaders (OCI_IMAGE / VENV_BUNDLE / SANDBOX_SIDECAR) remain a separate host/runtime adapter.
+**Next:** AP-12 may begin after AP-11 close — LKW consumer proof wiring.
+
+## AGENT-PLATFORM-11 gate
+
+**READY_FOR_REVIEW** (2026-08-14) — generic V1 Agent Platform administration control plane:
+typed `AgentPlatformAdminService` facade over AP-3..AP-10 services, shared FastAPI routes
+under `/v1/agent-platform`, reused `require_harness_api_key` authorization, desired vs serving
+read models, and enable/disable that never mutate the serving RuntimeRevision.
+
+| Deliverable | Status |
+|-------------|--------|
+| `AgentPlatformAdminService` typed orchestration facade | done |
+| Explicit V1 REST operations (no generic action dispatcher) | done |
+| Environment scope `(application_id, application_environment_id)` | done |
+| Desired-state vs serving-state response split | done |
+| Build/apply → AP-6/7/8 candidate (no auto-activate) | done |
+| Activate/rollback → AP-9 `ActivationService` CAS | done |
+| Catalog list via injected `CatalogSourceProvider` | done (blocked 501 if missing) |
+| Reused harness admin API-key boundary | done |
+| Domain events preserved from delegated services | done |
+| Secret-like binding config rejected via existing validators | done |
+| Focused facade + HTTP tests + AP-9/AP-10 regression | done |
+
+**Evidence:** `intergrax/agent_distribution/admin_service.py`, `admin_models.py`, `intergrax/applications/_shared/agent_platform_admin_routes.py`, `tests/unit/agent_distribution/test_agent_platform_admin_service.py`, `tests/unit/applications/test_agent_platform_admin_routes.py`
+
+**Next:** AP-12 may begin — LKW consumer proof wiring of this admin control plane. Production topology factory loaders remain a separate host/runtime adapter.
 
 ### AP-9 evidence (activation orchestration)
 

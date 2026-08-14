@@ -12,6 +12,18 @@ from intergrax.agent_distribution.binding import (
     AgentBindingPolicyOverrides,
     ApplicationAgentBinding,
 )
+from intergrax.agent_distribution.admin_models import (
+    ActivateRuntimeRevisionRequest,
+    AgentPlatformAdminBlockedError,
+    AgentStatusView,
+    BindAgentRequest,
+    BuildApplicationRevisionRequest,
+    InstallAgentRequest,
+    RollbackRuntimeRevisionRequest,
+    SetAgentEnablementRequest,
+    UpdateAgentBindingRequest,
+)
+from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
 from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
@@ -193,6 +205,12 @@ __all__ = [
     "ActivationAtomicCommitResult",
     "ActivationCommitResult",
     "ActivationService",
+    "ActivateRuntimeRevisionRequest",
+    "AgentPlatformAdminBlockedError",
+    "AgentPlatformAdminService",
+    "AgentStatusView",
+    "BindAgentRequest",
+    "BuildApplicationRevisionRequest",
     "AgentArtifactMetadata",
     "AgentArtifactMetadataStore",
     "AgentBindingFactoryReference",
@@ -268,6 +286,7 @@ __all__ = [
     "InMemoryAgentArtifactMetadataStore",
     "InMemoryMaterializedRuntimeLockStore",
     "InMemoryRuntimeRevisionStore",
+    "InstallAgentRequest",
     "InstalledAgentPackageRequirement",
     "InstalledAgentRequirementSet",
     "InstalledAgentRequirementSetBuilder",
@@ -309,6 +328,7 @@ __all__ = [
     "PreparedDeployment",
     "RollbackAtomicCommitResult",
     "RollbackResult",
+    "RollbackRuntimeRevisionRequest",
     "RuntimeActivationConflict",
     "RuntimeActivationError",
     "RuntimeDeploymentAdapter",
@@ -316,6 +336,7 @@ __all__ = [
     "RuntimeReadinessError",
     "RuntimeRollbackError",
     "RuntimeServingProjectionCoordinator",
+    "SetAgentEnablementRequest",
     "RuntimeGraphAgentRef",
     "RuntimeGraphThirdPartyRef",
     "RuntimeGraphTierViolation",
@@ -326,6 +347,7 @@ __all__ = [
     "RuntimeRevisionState",
     "RuntimeRevisionStore",
     "TransitionResult",
+    "UpdateAgentBindingRequest",
     "assert_installation_trust_record_acceptable",
     "build_candidate_dependency_specification",
     "installation_state_is_installed",

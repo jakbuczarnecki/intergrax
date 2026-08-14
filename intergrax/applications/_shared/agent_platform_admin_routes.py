@@ -1,0 +1,404 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Shared V1 Agent Platform administration HTTP routes (AP-11)."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from pydantic import ValidationError
+
+from intergrax.agent_distribution.admin_models import (
+    ActivationResultView,
+    ActivationStatusView,
+    ActivateRuntimeRevisionRequest,
+    AgentPlatformAdminBlockedError,
+    AgentStatusView,
+    BindAgentRequest,
+    BindingListResult,
+    BindingMutationResult,
+    BuildApplicationRevisionRequest,
+    BuildRevisionResult,
+    CatalogListResult,
+    EffectiveRosterView,
+    InstallAgentRequest,
+    InstallationListResult,
+    InstallationMutationResult,
+    InstallationView,
+    RevisionHistoryView,
+    RollbackResultView,
+    RollbackRuntimeRevisionRequest,
+    RuntimeRevisionView,
+    ServingStateView,
+    SetAgentEnablementRequest,
+    UpdateAgentBindingRequest,
+)
+from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
+from intergrax.agent_distribution.catalog import CatalogEntryFilters
+from intergrax.agent_distribution.errors import (
+    AgentDistributionError,
+    AgentDistributionNotFoundError,
+    BindingLifecycleError,
+    BindingRevisionConflict,
+    EffectiveRosterConflict,
+    InstallationLifecycleError,
+    InstallationSlotConflict,
+    MaterializationError,
+    MaterializedRuntimeLockConflict,
+    RuntimeActivationConflict,
+    RuntimeActivationError,
+    RuntimeReadinessError,
+    RuntimeRevisionConflict,
+    RuntimeRevisionLifecycleError,
+    RuntimeRollbackError,
+)
+from intergrax.applications._shared.harness_auth import require_harness_api_key
+
+_CONFLICT_ERRORS = (
+    BindingRevisionConflict,
+    BindingLifecycleError,
+    InstallationSlotConflict,
+    InstallationLifecycleError,
+    RuntimeActivationConflict,
+    RuntimeActivationError,
+    RuntimeReadinessError,
+    RuntimeRevisionConflict,
+    RuntimeRevisionLifecycleError,
+    RuntimeRollbackError,
+    EffectiveRosterConflict,
+    MaterializedRuntimeLockConflict,
+    MaterializationError,
+)
+
+
+def _raise_admin_http(exc: Exception) -> None:
+    if isinstance(exc, AgentPlatformAdminBlockedError):
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail=exc.blocker_code,
+        ) from exc
+    if isinstance(exc, AgentDistributionNotFoundError):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    if isinstance(exc, _CONFLICT_ERRORS):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    if isinstance(exc, ValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.errors(),
+        ) from exc
+    if isinstance(exc, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+    if isinstance(exc, AgentDistributionError):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    raise exc
+
+
+def mount_agent_platform_admin_routes(
+    app: FastAPI,
+    *,
+    admin_service: AgentPlatformAdminService,
+    prefix: str = "/v1/agent-platform",
+) -> APIRouter:
+    router = APIRouter(
+        prefix=prefix,
+        tags=["agent-platform-admin"],
+        dependencies=[Depends(require_harness_api_key)],
+    )
+    env_prefix = "/applications/{application_id}/environments/{environment_id}"
+
+    @router.get("/catalog/agents", response_model=CatalogListResult)
+    def list_catalog() -> CatalogListResult:
+        try:
+            return admin_service.list_catalog(CatalogEntryFilters())
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.get(f"{env_prefix}/installations", response_model=InstallationListResult)
+    def list_installations(
+        application_id: str,
+        environment_id: str,
+    ) -> InstallationListResult:
+        try:
+            return admin_service.list_installed(
+                application_id=application_id,
+                application_environment_id=environment_id,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.get(
+        f"{env_prefix}/installations/{{installation_id}}",
+        response_model=InstallationView,
+    )
+    def inspect_installation(
+        application_id: str,
+        environment_id: str,
+        installation_id: str,
+    ) -> InstallationView:
+        try:
+            return admin_service.inspect_installation(
+                application_id=application_id,
+                application_environment_id=environment_id,
+                installation_id=installation_id,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.post(f"{env_prefix}/installations", response_model=InstallationMutationResult)
+    def install_agent(
+        application_id: str,
+        environment_id: str,
+        body: InstallAgentRequest,
+    ) -> InstallationMutationResult:
+        try:
+            return admin_service.install_agent(
+                application_id=application_id,
+                application_environment_id=environment_id,
+                request=body,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.get(f"{env_prefix}/bindings", response_model=BindingListResult)
+    def list_bindings(application_id: str, environment_id: str) -> BindingListResult:
+        try:
+            return admin_service.list_bindings(
+                application_id=application_id,
+                application_environment_id=environment_id,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.post(f"{env_prefix}/bindings", response_model=BindingMutationResult)
+    def bind_agent(
+        application_id: str,
+        environment_id: str,
+        body: BindAgentRequest,
+    ) -> BindingMutationResult:
+        try:
+            return admin_service.bind_agent(
+                application_id=application_id,
+                application_environment_id=environment_id,
+                request=body,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.patch(
+        f"{env_prefix}/bindings/{{application_binding_id}}/config",
+        response_model=BindingMutationResult,
+    )
+    def update_binding_config(
+        application_id: str,
+        environment_id: str,
+        application_binding_id: str,
+        body: UpdateAgentBindingRequest,
+    ) -> BindingMutationResult:
+        try:
+            return admin_service.update_binding_config(
+                application_id=application_id,
+                application_environment_id=environment_id,
+                application_binding_id=application_binding_id,
+                request=body,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.post(
+        f"{env_prefix}/bindings/{{application_binding_id}}/enable",
+        response_model=BindingMutationResult,
+    )
+    def enable_binding(
+        application_id: str,
+        environment_id: str,
+        application_binding_id: str,
+        body: SetAgentEnablementRequest,
+    ) -> BindingMutationResult:
+        try:
+            return admin_service.enable_binding(
+                application_id=application_id,
+                application_environment_id=environment_id,
+                application_binding_id=application_binding_id,
+                request=body,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.post(
+        f"{env_prefix}/bindings/{{application_binding_id}}/disable",
+        response_model=BindingMutationResult,
+    )
+    def disable_binding(
+        application_id: str,
+        environment_id: str,
+        application_binding_id: str,
+        body: SetAgentEnablementRequest,
+    ) -> BindingMutationResult:
+        try:
+            return admin_service.disable_binding(
+                application_id=application_id,
+                application_environment_id=environment_id,
+                application_binding_id=application_binding_id,
+                request=body,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.get(f"{env_prefix}/roster", response_model=EffectiveRosterView)
+    def inspect_roster(application_id: str, environment_id: str) -> EffectiveRosterView:
+        try:
+            return admin_service.inspect_effective_roster(
+                application_id=application_id,
+                application_environment_id=environment_id,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.get(f"{env_prefix}/serving", response_model=ServingStateView)
+    def inspect_serving(application_id: str, environment_id: str) -> ServingStateView:
+        try:
+            return admin_service.inspect_serving(
+                application_id=application_id,
+                application_environment_id=environment_id,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.get(f"{env_prefix}/revisions", response_model=RevisionHistoryView)
+    def inspect_revision_history(
+        application_id: str,
+        environment_id: str,
+    ) -> RevisionHistoryView:
+        try:
+            return admin_service.inspect_revision_history(
+                application_id=application_id,
+                application_environment_id=environment_id,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.get(
+        f"{env_prefix}/revisions/{{runtime_revision_id}}",
+        response_model=RuntimeRevisionView,
+    )
+    def inspect_revision(
+        application_id: str,
+        environment_id: str,
+        runtime_revision_id: str,
+    ) -> RuntimeRevisionView:
+        try:
+            return admin_service.inspect_revision(
+                application_id=application_id,
+                application_environment_id=environment_id,
+                runtime_revision_id=runtime_revision_id,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.get(f"{env_prefix}/activation", response_model=ActivationStatusView)
+    def inspect_activation(
+        application_id: str,
+        environment_id: str,
+    ) -> ActivationStatusView:
+        try:
+            return admin_service.inspect_activation(
+                application_id=application_id,
+                application_environment_id=environment_id,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.get(
+        f"{env_prefix}/agents/{{logical_agent_id}}/status",
+        response_model=AgentStatusView,
+    )
+    def inspect_agent_status(
+        application_id: str,
+        environment_id: str,
+        logical_agent_id: str,
+    ) -> AgentStatusView:
+        try:
+            return admin_service.inspect_agent_status(
+                application_id=application_id,
+                application_environment_id=environment_id,
+                logical_agent_id=logical_agent_id,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.post(f"{env_prefix}/revisions/build", response_model=BuildRevisionResult)
+    def build_revision(
+        application_id: str,
+        environment_id: str,
+        body: BuildApplicationRevisionRequest,
+    ) -> BuildRevisionResult:
+        try:
+            return admin_service.build_application_revision(
+                application_id=application_id,
+                application_environment_id=environment_id,
+                request=body,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.post(f"{env_prefix}/revisions/activate", response_model=ActivationResultView)
+    def activate_revision(
+        application_id: str,
+        environment_id: str,
+        body: ActivateRuntimeRevisionRequest,
+    ) -> ActivationResultView:
+        try:
+            return admin_service.activate_revision(
+                application_id=application_id,
+                application_environment_id=environment_id,
+                request=body,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    @router.post(f"{env_prefix}/revisions/rollback", response_model=RollbackResultView)
+    def rollback_revision(
+        application_id: str,
+        environment_id: str,
+        body: RollbackRuntimeRevisionRequest,
+    ) -> RollbackResultView:
+        try:
+            return admin_service.rollback_revision(
+                application_id=application_id,
+                application_environment_id=environment_id,
+                request=body,
+            )
+        except Exception as exc:
+            _raise_admin_http(exc)
+            raise
+
+    app.include_router(router)
+    return router

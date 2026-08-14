@@ -66,6 +66,12 @@ class AgentInstallationStore(Protocol):
     ) -> list[AgentInstallationRecord]:
         """List installation revisions for a slot (audit / rollback)."""
 
+    def list_installations_for_environment(
+        self,
+        environment_id: str,
+    ) -> list[AgentInstallationRecord]:
+        """List installation records scoped to one environment id."""
+
     def persist_installation(
         self,
         record: AgentInstallationRecord,
@@ -137,6 +143,12 @@ class RuntimeRevisionStore(Protocol):
         application_environment_id: str,
     ) -> RuntimeRevision | None:
         """Resolve the active runtime revision for an environment."""
+
+    def list_revisions_for_environment(
+        self,
+        application_environment_id: str,
+    ) -> list[RuntimeRevision]:
+        """List persisted runtime revisions for one application environment."""
 
     def persist_candidate_revision(
         self,

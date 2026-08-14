@@ -116,6 +116,17 @@ class InMemoryAgentInstallationStore:
                 if record.installation_slot_id == installation_slot_id
             ]
 
+    def list_installations_for_environment(
+        self,
+        environment_id: str,
+    ) -> list[AgentInstallationRecord]:
+        with self._lock:
+            return [
+                record
+                for record in self._state.installations.values()
+                if record.environment_id == environment_id
+            ]
+
     def persist_installation(
         self,
         record: AgentInstallationRecord,
@@ -273,6 +284,17 @@ class InMemoryRuntimeRevisionStore:
             if active_id is None:
                 return None
             return self._state.revisions.get(active_id)
+
+    def list_revisions_for_environment(
+        self,
+        application_environment_id: str,
+    ) -> list[RuntimeRevision]:
+        with self._lock:
+            return [
+                revision
+                for revision in self._state.revisions.values()
+                if revision.application_environment_id == application_environment_id
+            ]
 
     def persist_candidate_revision(
         self,
