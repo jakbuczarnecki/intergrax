@@ -2,13 +2,15 @@
 
 **Task:** PLATFORM-PLUGIN-ENTERPRISE-1 — ENTERPRISE ARCHITECTURE, DEPENDENCY GRAPH & IMPLEMENTATION ROADMAP
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACTIVE — ENTERPRISE-4 / BLOCK B **CLOSED** (closeout 2026-08-14)
 
-**Date:** 2026-08-12
+**Date:** 2026-08-12 (ENTERPRISE-1) · **ENTERPRISE-4 closeout:** 2026-08-14
 
 **Branch:** `development`
 
-**Starting HEAD / origin:** `a7efcaecf8c191fa7b226e752e93a67beafa8a45`
+**Starting HEAD / origin (ENTERPRISE-1):** `a7efcaecf8c191fa7b226e752e93a67beafa8a45`
+
+**ENTERPRISE-4 closeout HEAD:** `c44a180bbb7c02c5f775ec26db1446d734edc4ea`
 
 **Required ancestors verified:** PLUGIN-9 `f7b6eedf` · DOCS-7 primary `9081a49d` · DOCS-7 metadata `4c292dcc` · HARDENING-1 `06c1dad6` · HARDENING-1 review `a12aa429`
 
@@ -25,13 +27,25 @@ Enterprise Platform Plugin work is **architecturally bounded, dependency-ordered
 | Verdict | Detail |
 |---------|--------|
 | **Candidates** | CAND-001…008 **CONFIRMED** as enterprise; CAND-009 remains **non-enterprise** (hardening, resolved) |
-| **Critical path** | BLOCK C (admission/isolation) → BLOCK A (policy EP wiring) → BLOCK B (policy enforcement/governance) |
-| **Parallel track** | BLOCK D (Memory typed resolution) — independent after shared admission primitives exist |
+| **Critical path** | BLOCK C → BLOCK A → BLOCK B **CLOSED** → **BLOCK D (next)** → BLOCK E |
+| **Parallel track** | BLOCK D (Memory typed resolution) — **NEXT** after BLOCK B closeout |
 | **Low priority** | BLOCK E (Context scaffold DX) — no runtime architecture |
-| **Not enterprise-ready today** | Documented runtime gaps remain; closing all blocks + exit gates required |
+| **Not enterprise-ready today** | BLOCK B governance closed; Memory resolution, Context DX, production qualification, and remaining exit gates still open |
 | **Migration debt** | `memory_bootstrap.py` method-shape `hasattr` probing — replace in BLOCK D, not extend |
 
 **Recommended implementation order:** BLOCK C → BLOCK A → BLOCK B → BLOCK D → BLOCK E
+
+### Global execution status (current)
+
+| Block | Task | Status | Meaning |
+|-------|------|--------|---------|
+| **BLOCK C** | ENTERPRISE-2 | **CLOSED** | Plugin loading security / admission / isolation finished |
+| **BLOCK A** | ENTERPRISE-3 | **CLOSED** | Policy plugin runtime wiring finished |
+| **BLOCK B** | ENTERPRISE-4 | **CLOSED** | Policy enforcement + HITL governance finished |
+| **BLOCK D** | ENTERPRISE-5 | **NEXT** | External Memory plugins materialize (CAND-001 + CAND-002) |
+| **BLOCK E** | ENTERPRISE-6 | **PLANNED** | Context plugin scaffold DX (CAND-003) |
+
+**Qualification seam (not a BLOCK B blocker):** `QUALIFICATION_STILL_DEFERRED` — production package/version compatibility admission remains a deferred ENTERPRISE gap; BLOCK B governance requirements are closed without claiming full enterprise-ready status.
 
 ---
 
@@ -89,7 +103,7 @@ Enterprise Platform Plugin work is **architecturally bounded, dependency-ordered
 | Track | Types | Evaluator | Production use |
 |-------|-------|-----------|----------------|
 | **Immutable pack** | `ImmutableRuntimePolicyBundle`, `PolicyBundleRule` | `RuntimePolicyBundleEvaluator` | Governed contractor / external-work paths |
-| **Declarative YAML rules** | `DeclarativePolicyRule`, `PolicyRuleHandler` | `PolicyRuleRegistry.evaluate_rule` | **Today:** `domain_fragments` string-key carrier only — no production consumer. **Target:** typed `DeclarativePolicyRuntime` on `RuntimePolicyBundle` (§7) |
+| **Declarative YAML rules** | `DeclarativePolicyRule`, `PolicyRuleHandler` | `PolicyRuleRegistry.evaluate_rule` | **Baseline (pre-BLOCK-B):** `domain_fragments` string-key carrier only — no production consumer. **Current (post ENTERPRISE-4):** typed `DeclarativePolicyRuntime` + `DeclarativePolicyEnforcer` at tool boundary — see BLOCK B closeout §22 |
 
 Evidence: `policy_wiring.py` places `policy_rules` + fresh `PolicyRuleRegistry()` in `domain_fragments`; no module calls `PolicyRuleRegistry.evaluate_rule` outside registry definition and tests. `RuntimePolicyBundleEvaluator` does **not** read `DeclarativePolicyRule`. Enterprise target **must not** freeze this `Dict[str, Any]` wiring as the composition contract.
 
@@ -178,7 +192,7 @@ flowchart TD
 
 | Question | Answer | Evidence |
 |----------|--------|----------|
-| Does CAND-007 require CAND-006 first? | **Yes** — EP handlers must be in registry before YAML `rule_id` resolution is meaningful | `registry.evaluate_rule` looks up `rule.rule_id` in `_handlers`; empty registry → unknown handler → `ALLOW` (fail-open) |
+| Does CAND-007 require CAND-006 first? | **Yes** — EP handlers must be in registry before YAML `rule_id` resolution is meaningful | **Pre-BLOCK-B baseline:** `registry.evaluate_rule` looked up `rule.rule_id` in `_handlers`; empty registry → unknown handler → `ALLOW` (fail-open). **Current (ENTERPRISE-4):** unknown handler → `DENY` fail-closed |
 | Does CAND-008 need CAND-006 admission path? | **Yes** — allowlist gates EP handler registration | No allowlist exists; `plugin_loader.py` registers all valid EPs |
 | CAND-004 + CAND-005 shared API? | **Option C** — shared low-level primitive (`load_entry_point_targets`) + domain-specific policy config | Context uses shared primitive; Security is outlier |
 | CAND-001/002 shared abstraction? | **Yes** — discriminated union resolver over typed Protocols, shared admission/count infra | Distinct factory methods, same wiring entry |
@@ -479,7 +493,7 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | **OAD-002** | **RESOLVED (A)** — immediate production `error`. No supported production host uses security EP override (`bootstrap_security_providers(discover_entry_points=False)` default; `INTERGRAX_DISCOVER_PLUGINS` opt-in). Lab/legacy: explicit policy only |
 | **Qualification** | **DEFERRED seam** — qualification enforcement is deferred. BLOCK C does **not** expose a fake/inert `require qualification` control on `SecurityDefenseAdmissionPolicy`. `EntryPointSpec` has optional distribution name only; package version and `PlatformCompatibilityResult` are absent. Do not fabricate admission. Future BLOCK A/host admission must provide actual package/version/compatibility evidence before invoking `evaluate_package_production_admission` / platform qualification primitives |
 | **Compatibility** | Report APIs: `load_security_defense_plugin_report`, `load_policy_rule_plugin_report`. Int wrappers: `load_security_defense_plugins` → production admission defaults; `load_policy_rule_plugins` → legacy `fail_fast` when `policy` omitted |
-| **Not done** | CAND-007/008, CAND-001/002/003, F006/F016, hot reload, enterprise-ready |
+| **Not done** | CAND-001/002/003, F006/F016, hot reload, enterprise-ready |
 
 ---
 
@@ -515,8 +529,8 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | **CAND-006** | **DONE** — `DeclarativePolicyRuntime` on `RuntimePolicyBundle`; `policy_wiring.py` resolves rules once, owns per-bundle `PolicyRuleRegistry`, calls `load_policy_rule_plugin_report` when `INTERGRAX_DISCOVER_PLUGINS` enabled; `load_report` preserved; budget reconstruction propagates typed field |
 | **Discovery** | Opt-in via `discover_plugins_enabled()` / `INTERGRAX_DISCOVER_PLUGINS`; `policy_rules` without discovery → typed runtime with shipped `deny_tool` handler only + `DomainPluginLoadReport.empty` |
 | **Qualification** | **DEFERRED seam** — no fake `require_production_qualification` control; host path lacks package version and `PlatformCompatibilityResult` required for `evaluate_package_production_admission` |
-| **enforcement_mode / provenance** | **Not started** — BLOCK B (CAND-007/008) |
-| **Not done** | CAND-007, CAND-008, CAND-001/002/003, F006/F016, enterprise-ready |
+| **enforcement_mode / provenance** | **DONE (ENTERPRISE-4)** — `PolicyEnforcementMode`, `PolicyBundleProvenance`, handler allowlist enforced at BLOCK B closeout |
+| **Not done** | CAND-001/002/003, F006/F016, enterprise-ready |
 
 ---
 
@@ -526,10 +540,10 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 |-------|-------|
 | **Purpose** | Evaluate declarative YAML rules at runtime; govern handler admission and provenance |
 | **Candidates** | CAND-007, CAND-008 |
-| **Status** | **READY_FOR_REVIEW (ENTERPRISE-4-IMPL-1)** — REQUIRE_HITL bridge implemented per [ADR-PLATFORM-PLUGIN-001](../../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) |
+| **Status** | **CLOSED (ENTERPRISE-4)** — independent review accepted; see closeout table §22 |
 | **Prerequisites** | BLOCK A |
 | **Architecture** | §7 full flow |
-| **Production owners** | New `intergrax/runtime/policy/declarative_enforcer.py`, `registry.py`, `tool_policy_resolution.py` / `tool_gateway.py` |
+| **Production owners** | `intergrax/runtime/policy/declarative_enforcer.py`, `registry.py`, `tool_policy_resolution.py` / `tool_gateway.py` |
 | **Reusable** | `PolicyRuleRegistry.evaluate_rule`, `DeclarativePolicyRule`, `platform_qualification` |
 | **Likely files** | `declarative_enforcer.py`, `registry.py` (unknown-handler semantics), `tool_gateway.py`, `policy_wiring.py`, `PolicyRulesProfile` extensions for allowlist/provenance |
 | **Complexity** | **XL** |
@@ -545,17 +559,37 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 - [x] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` — no new `Dict[str, Any]` / string-key runtime wiring
 - [x] E2E: YAML deny rule blocks tool call in wired host via typed composition path
 - [x] Migration: `policy_enforcement_mode=audit_only|enforce` profile flag (default `audit_only`; invalid values fail profile validation)
-- [x] REQUIRE_HITL declarative rule reaches canonical Nexus HITL lifecycle (`WAITING_FOR_HUMAN` / `HumanPauseCoordinator`) — **IMPL-1 READY_FOR_REVIEW** per [ADR-PLATFORM-PLUGIN-001](../../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md)
+- [x] REQUIRE_HITL declarative rule reaches canonical Nexus HITL lifecycle (`WAITING_FOR_HUMAN` / `HumanPauseCoordinator`) — per [ADR-PLATFORM-PLUGIN-001](../../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md)
 
-**ENTERPRISE-4 review-fix status (2026-08-14):**
+**ENTERPRISE-4 implementation status (CLOSED 2026-08-14):**
 
 | Item | Status |
 |------|--------|
-| **CAND-007 enforcement** | **PARTIAL** — `PolicyEnforcementMode` typed on `PolicyRulesProfile`; invalid profile values fail validation; `DeclarativePolicyEnforcer` + DENY/audit_only at tool boundary |
-| **CAND-007 HITL** | **READY_FOR_REVIEW (IMPL-1)** — typed pending/grant DTOs, bridge, grant coordinator, Nexus E2E; see [ADR-PLATFORM-PLUGIN-001](../../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) |
-| **CAND-008** | **DONE** — handler allowlist + provenance gates remain valid |
+| **CAND-007** | **DONE** — declarative YAML policy enforcement via typed `DeclarativePolicyRuntime` at standard tool invocation boundary; `PolicyEnforcementMode` on `PolicyRulesProfile`; `DeclarativePolicyEnforcer` with DENY fail-closed, `AUDIT_ONLY` non-blocking, `REQUIRE_HITL` canonical Nexus lifecycle, policy re-evaluation after approval (DENY remains authoritative) |
+| **CAND-008** | **DONE** — explicit handler allowlist; shipped handler collision governance; plugin ID collision governance; `PolicyBundleProvenance` digest; no mandatory signing claim |
+| **ADR-PLATFORM-PLUGIN-001** | **Accepted / Implemented** |
 
-**Qualification:** `QUALIFICATION_STILL_DEFERRED` — package version/compatibility inputs exist elsewhere but production qualification is not enforced at policy handler admission in this block.
+**CAND-007 final evidence (enforcement + HITL):**
+
+| Surface | Evidence |
+|---------|----------|
+| Declarative enforcement | Typed `DeclarativePolicyRuntime`; `DeclarativePolicyEnforcer` at tool boundary; DENY fail-closed; `AUDIT_ONLY` non-blocking |
+| REQUIRE_HITL lifecycle | `DeclarativePolicyHitlRequiredError` → typed bridge → `AgentDecision.REQUEST_HUMAN` → `GovernanceResolution` / `NEEDS_INPUT` → `WAITING_FOR_HUMAN` checkpoint → canonical approve/reject/escalate |
+| Typed pending/grant | Scoped resume; handler executes exactly once after valid approval |
+| Security | Approval grant not generic metadata; current invocation identity on `ToolExecutionRequest`; ambiguous/no-match grant resolution fail-closed; typed task identity (`metadata task_id` not authoritative); multi-tool/parallel no grant broadcast |
+| Dynamic wiring | `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` |
+
+**CAND-008 final evidence:**
+
+| Surface | Evidence |
+|---------|----------|
+| Handler admission | Explicit handler allowlist at registration |
+| Collision governance | Shipped handler + plugin ID collision governance |
+| Provenance | `PolicyBundleProvenance` digest on typed runtime |
+| Signing | **Not required** — provenance metadata only |
+| Qualification | `QUALIFICATION_STILL_DEFERRED` — real package/version compatibility evidence absent; BLOCK B does not claim production qualification solved |
+
+**Qualification:** `QUALIFICATION_STILL_DEFERRED` — BLOCK B governance requirements are **CLOSED**; production qualification / package compatibility admission remains a **DEFERRED ENTERPRISE GAP** (not a BLOCK B blocker).
 
 ### BLOCK D — Memory typed external store resolution
 
@@ -610,8 +644,8 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | Priority | Blocks | Rationale |
 |----------|--------|-----------|
 | **P0** | BLOCK C | Security risk (CAND-004 silent shipped override); operator reliability (CAND-005 fail-fast blast radius) |
-| **P0/P1** | BLOCK A | **DONE (ENTERPRISE-3)** — typed declarative runtime wired; enforcement deferred to BLOCK B |
-| **P1** | BLOCK B | Governance correctness — YAML rules documented but unenforced |
+| **P0/P1** | BLOCK A | **DONE (ENTERPRISE-3)** — typed declarative runtime wired |
+| **P1** | BLOCK B | **DONE (ENTERPRISE-4)** — declarative YAML enforcement + HITL governance closed |
 | **P2** | BLOCK D | Extensibility — supported workaround exists; medium severity |
 | **P2** | BLOCK E | DX only — lowest impact |
 
@@ -637,23 +671,23 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 
 Platform Plugin system is **enterprise-ready** when **all** are measurable:
 
-| # | Gate | Measurement |
-|---|------|-------------|
-| 1 | Deterministic plugin admission | Same EP set → same registration outcome; sorted order documented |
-| 2 | Collision governance | Security shipped-id override requires explicit authorization in production profile |
-| 3 | Isolated load failures | Broken EP does not prevent siblings from loading (`DomainPluginLoadReport.failed` populated, `registered_count > 0`) |
-| 4 | Policy runtime enforcement | YAML deny rule blocks tool execution in standard wired host |
-| 5 | Policy provenance | `PolicyBundleProvenance` on typed `declarative_policy_runtime` when `policy_rules` configured |
-| 6 | Handler allowlist | Production profile rejects non-allowlisted `rule_id` at registration |
-| 7 | Typed Memory external resolution | EP user-profile + session plugins materialize without host manual wiring |
-| 8 | Tenant/application isolation | `DeclarativePolicyRuntime` per-bundle via typed field; memory materialization requires explicit `tenant_id` where domain requires |
-| 9 | Operator visibility | Bootstrap summary available per domain (not necessarily unified F006 UI) |
-| 10 | Production qualification | Deferred — enforced at BLOCK A/host admission with package/version/compatibility evidence via `evaluate_package_production_admission`; not represented on BLOCK C `SecurityDefenseAdmissionPolicy` |
-| 11 | Backwards compatibility | Legacy profile flags restore pre-enterprise behavior for one release cycle |
-| 12 | Focused E2E conformance | Extended PLATFORM_PLUGIN contract suite green |
-| 13 | Zero dynamic wiring | `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` in all new/modified enterprise modules |
-| 14 | Typed policy composition | Declarative policy runtime reachable through typed composition API; no new `Any`/string-key runtime wiring |
-| 15 | Documentation sync | Author guides reflect shipped behavior, not gaps |
+| # | Gate | Measurement | Status (2026-08-14) |
+|---|------|-------------|---------------------|
+| 1 | Deterministic plugin admission | Same EP set → same registration outcome; sorted order documented | **SATISFIED** (BLOCK C) |
+| 2 | Collision governance | Security shipped-id override requires explicit authorization in production profile | **SATISFIED** (BLOCK C) |
+| 3 | Isolated load failures | Broken EP does not prevent siblings from loading (`DomainPluginLoadReport.failed` populated, `registered_count > 0`) | **SATISFIED** (BLOCK C) |
+| 4 | Policy runtime enforcement | YAML deny rule blocks tool execution in standard wired host | **SATISFIED** (BLOCK B / CAND-007) |
+| 5 | Policy provenance | `PolicyBundleProvenance` on typed `declarative_policy_runtime` when `policy_rules` configured | **SATISFIED** (BLOCK B / CAND-008) |
+| 6 | Handler allowlist | Production profile rejects non-allowlisted `rule_id` at registration | **SATISFIED** (BLOCK B / CAND-008) |
+| 7 | Typed Memory external resolution | EP user-profile + session plugins materialize without host manual wiring | **OPEN** — ENTERPRISE-5 / BLOCK D |
+| 8 | Tenant/application isolation | `DeclarativePolicyRuntime` per-bundle via typed field; memory materialization requires explicit `tenant_id` where domain requires | **PARTIAL** — policy per-bundle satisfied; memory tenant path pending BLOCK D |
+| 9 | Operator visibility | Bootstrap summary available per domain (not necessarily unified F006 UI) | **SATISFIED** (BLOCK C) |
+| 10 | Production qualification | Deferred — enforced at BLOCK A/host admission with package/version/compatibility evidence via `evaluate_package_production_admission`; not represented on BLOCK C `SecurityDefenseAdmissionPolicy` | **DEFERRED** (`QUALIFICATION_STILL_DEFERRED`) |
+| 11 | Backwards compatibility | Legacy profile flags restore pre-enterprise behavior for one release cycle | **SATISFIED** (migration profiles shipped) |
+| 12 | Focused E2E conformance | Extended PLATFORM_PLUGIN contract suite green | **SATISFIED** (committed contract + BLOCK B acceptance tests) |
+| 13 | Zero dynamic wiring | `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` in all new/modified enterprise modules | **SATISFIED** (BLOCK B closeout) |
+| 14 | Typed policy composition | Declarative policy runtime reachable through typed composition API; no new `Any`/string-key runtime wiring | **SATISFIED** (BLOCK A + B) |
+| 15 | Documentation sync | Author guides reflect shipped behavior, not gaps | **NOT EVALUATED** — `POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md` may still describe pre-BLOCK-B gaps; separate docs sync task |
 
 **Not sufficient:** closing CAND IDs alone without exit gate evidence.
 
@@ -710,8 +744,9 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 |------|-------|
 | **ENTERPRISE-2** | BLOCK C — Plugin admission & failure isolation |
 | **ENTERPRISE-3** | BLOCK A — Policy runtime foundation |
-| **ENTERPRISE-4** | BLOCK B — Policy enforcement & governance |
-| **ENTERPRISE-5** | BLOCK D — Memory typed external store resolution |
+| **ENTERPRISE-4** | BLOCK B — Policy enforcement & governance — **CLOSED** |
+| **ENTERPRISE-4-CLOSEOUT** | BLOCK B evidence, status & roadmap closure — **CLOSED** |
+| **ENTERPRISE-5** | BLOCK D — Memory typed external store resolution — **NEXT** |
 | **ENTERPRISE-6** | BLOCK E — Context scaffold DX parity |
 | **ENTERPRISE-INV-1** (optional, later) | F006 unified operator inventory — only if OPEN_ARCH-004 resolves to option B |
 
@@ -721,7 +756,9 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 
 **Task:** PLATFORM-PLUGIN-CLEANUP-1 · **Date:** 2026-08-14 · **Baseline before CLEANUP-1:** `39830db79e57e97d98add146fae7cdd7212eeea7` · **ENTERPRISE-3:** `d22969e3ce590b0f683f06329c3755afd9f1478c`
 
-Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](PLATFORM_PLUGIN_PRODUCTION_AUDIT.md) (2026-08-12). This table is the **current** residual ledger before ENTERPRISE-4 (BLOCK B).
+**Historical scope:** audit observations captured **before ENTERPRISE-4 (BLOCK B) closeout**. Policy enforcement / handler allowlist / provenance gaps referenced here were closed by ENTERPRISE-4 (`364a5df6`, review-fixes `1bf7d14d`, `347d4c2d`). Do not treat this table as the current policy-runtime status ledger.
+
+Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](PLATFORM_PLUGIN_PRODUCTION_AUDIT.md) (2026-08-12).
 
 | ID | Current status | Evidence (current development) |
 |----|----------------|------------------------------|
@@ -752,18 +789,22 @@ Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](
 
 | Claim | Source |
 |-------|--------|
-| Policy wiring gap | `intergrax/applications/_shared/policy_wiring.py` — typed `DeclarativePolicyRuntime` composition |
+| Policy wiring / typed runtime | `intergrax/applications/_shared/policy_wiring.py` — typed `DeclarativePolicyRuntime` composition |
 | EP load in standard wire | `policy_wiring._build_declarative_policy_runtime` → `load_policy_rule_plugin_report` when discovery enabled |
 | Typed composition target | §7 — `DeclarativePolicyRuntime` on `RuntimePolicyBundle`; not `domain_fragments` for new consumers |
-| Unknown handler returns ALLOW | `intergrax/runtime/policy/rules/registry.py:49-51` |
-| Security `override=True` | `intergrax/runtime/security/defense_plugin_loader.py:29` |
+| Unknown handler fail-closed DENY | `intergrax/runtime/policy/rules/registry.py` (`evaluate_rule` → `PolicyRuleAction.DENY`, `unknown_handler=True`); `test_policy_registry.py::test_unknown_handler_fail_closed` |
+| Declarative enforcement at tool boundary | `intergrax/runtime/policy/declarative_enforcer.py`; `test_declarative_enforcer.py`, `test_declarative_policy_e2e.py` |
+| REQUIRE_HITL canonical Nexus lifecycle | `test_declarative_policy_hitl_bridge.py`, `test_integration/runtime/test_declarative_policy_hitl_nexus_e2e.py` |
+| HITL grant coordinator / ambiguity fail-closed | `test_declarative_hitl_tool_loop_grant_resolution.py`, `test_declarative_hitl_acceptance.py` (A–P suite) |
+| Handler allowlist + provenance | `PolicyBundleProvenance`, handler admission gates — BLOCK B / CAND-008 |
+| Security `override=True` (baseline) | `intergrax/runtime/security/defense_plugin_loader.py:29` — **historical baseline**; resolved in BLOCK C |
 | Memory `hasattr` probing | `intergrax/core/memory_bootstrap.py:20-35` |
 | Memory wiring integration-only | `intergrax/applications/_shared/memory_wiring.py:82-134` |
 | Session turn index wired | `intergrax/applications/_shared/memory_vector_wiring.py:121-128` |
 | Shared conflict/isolation primitives | `intergrax/core/plugins/discovery.py:19-20, 61-66, 161-196` |
 | Context configurable conflict (reference) | `intergrax/context/bootstrap.py:45-59` |
 | Context scaffold gap | `docs/project/technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md:32,238` |
-| Policy author guide gaps | `docs/project/technical/guides/POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md:375-382` |
+| Policy author guide gaps | `docs/project/technical/guides/POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md:375-382` — may be stale post-BLOCK-B; gate 15 not evaluated |
 | Security author guide gaps | `docs/project/technical/guides/SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md:265-327` |
 | Memory author guide gaps | `docs/project/technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md:335-339` |
 | Immutable vs declarative policy split | `intergrax/runtime/policy/runtime_policy_bundle_evaluator.py` vs `registry.py` |
@@ -772,4 +813,36 @@ Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](
 
 ---
 
-*End of PLATFORM-PLUGIN enterprise roadmap (ENTERPRISE-1 + CLEANUP-1 residual gate).*
+## 22. ENTERPRISE-4 / BLOCK B closeout evidence
+
+| Field | Value |
+|-------|-------|
+| **Task** | ENTERPRISE-4 / BLOCK B |
+| **Status** | **CLOSED** |
+| **ADR** | [ADR-PLATFORM-PLUGIN-001](../../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) — Accepted / Implemented |
+| **Primary implementation** | `364a5df6fddb11c3c0d3b0da5138f6cf7d9bf6bd` |
+| **Security review fixes** | `1bf7d14d78f52d4ae0d8e852f0c84be65434299d`, `347d4c2d488bbf11adc9be3f12d1f9e18a5be410` |
+| **CAND-007** | **DONE** |
+| **CAND-008** | **DONE** |
+| **Qualification** | `QUALIFICATION_STILL_DEFERRED` |
+| **Dynamic wiring** | `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` |
+| **Canonical HITL** | **PASS** |
+| **Ambiguous/no-match** | **FAIL-CLOSED PASS** |
+| **Typed task identity** | **PASS** |
+| **Next block** | ENTERPRISE-5 / BLOCK D |
+
+**Committed test evidence (not re-run in closeout):**
+
+| Area | Tests |
+|------|-------|
+| Declarative policy enforcement | `tests/unit/runtime/policy/test_declarative_enforcer.py`, `test_declarative_policy_e2e.py`, `test_policy_registry.py` |
+| Nexus HITL pause/approve/resume | `tests/integration/runtime/test_declarative_policy_hitl_nexus_e2e.py` |
+| Grant coordinator / candidate resolution | `tests/unit/runtime/nexus/tools/test_declarative_hitl_tool_loop_grant_resolution.py` |
+| Ambiguous/no-match handler calls = 0 | `test_declarative_hitl_acceptance.py` (`test_m_parallel_sibling_resolution_ambiguous`, `test_n_zero_candidates_with_grant`, `test_o_multiple_candidates_with_grant`) |
+| Typed task identity regression | `test_declarative_hitl_acceptance.py::test_p_missing_task_id_in_context_grant_does_not_satisfy` |
+| A–P acceptance suite | `tests/unit/runtime/nexus/tools/test_declarative_hitl_acceptance.py` |
+| Platform plugin contract | `tests/contract/core/plugins/test_platform_plugin_contract.py` |
+
+---
+
+*End of PLATFORM-PLUGIN enterprise roadmap (ENTERPRISE-1 + CLEANUP-1 residual gate + ENTERPRISE-4 BLOCK B closeout).*
