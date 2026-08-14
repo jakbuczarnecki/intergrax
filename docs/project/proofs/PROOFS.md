@@ -56,7 +56,7 @@ without copying either roadmap.
 
 | Proof path | Public classification | Current public status | What it demonstrates | Verify | Detailed roadmap |
 |------------|------------------------|----------------------|----------------------|--------|------------------|
-| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [LKW Platform Proof](LKW_PLATFORM_PROOF.md) · [Core Platform Proof](LKW_PLATFORM_PROOF.md#core-platform-proof) | [LKW implementation plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) |
+| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [Product Quick Start](../product/lkw/QUICKSTART.md) · [LKW Platform Proof](LKW_PLATFORM_PROOF.md) · [Core Platform Proof](LKW_PLATFORM_PROOF.md#core-platform-proof) | [LKW implementation plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) |
 | **Token Optimization** | Featured platform-capability proof | 🟡 **PARTIAL** | Deterministic optimization pipeline, cache-aware execution, bounded offline smoke proof | [Token Optimization guide](../capabilities/token_optimization/README.md) | [Token Optimization plan](../capabilities/plan/TOKEN_OPTIMIZATION.md) |
 
 `Verify` answers **what has been demonstrated?**
@@ -72,23 +72,35 @@ foundations do not inherit a blanket platform-wide **IMPLEMENTED** status.
 
 **Role:** Primary product proof · **Product status:** Backend Product Alpha / MVP
 
-The bounded indexed Hybrid Ask branch is demonstrated through the production
-Hybrid Ask `indexed_only` path. Some indexed-path proofs validate retrieval and
-boundary behavior even when answer assembly returns insufficient evidence.
-The Trusted Ask durability proof separately verifies completed grounded Ask
-outcomes before and after restart. Mixed indexed + authorized live Hybrid Ask
-remains incomplete, and complete live-provider access remains incomplete.
+**Primary executable path:** [Product Quick Start](../product/lkw/QUICKSTART.md) —
+indexed **Ask V1** product evaluation with one command per supported OS, managed
+sample upload, indexing, grounded Ask, source citation, and persisted Ask-run
+verification.
 
-**Proof:** `LKW-HYBRID-ASK-INDEXED`
+**Separate technical proof:** the bounded indexed Hybrid Ask branch is
+demonstrated through the production Hybrid Ask `indexed_only` path. Some
+indexed-path proofs validate retrieval and boundary behavior even when answer
+assembly returns insufficient evidence. This is not the Product Quick Start path.
+
+The Trusted Ask durability proof separately verifies completed grounded Ask
+outcomes before and after restart. Core Platform Proof separately verifies bounded
+infrastructure behavior. Mixed indexed + authorized live Hybrid Ask remains
+incomplete, and complete live-provider access remains incomplete.
 
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
-| **Core Platform Proof** | 🧪 **BOUNDED PROOF** | Real application startup/readiness, durable knowledge and execution, background processing, persisted reviewable evidence, hosting/recovery, and watched-folder indexing (Elasticsearch/Kibana observability, Sentry problem signals, MongoDB ProofReceipts) | Bounded to documented certification profiles; not production readiness, commercial validation, or all-provider certification |
+| **Product Quick Start / indexed Ask V1** | 🧪 **BOUNDED PROOF** · supported product-evaluation path | One-command local execution of the canonical LKW application path: managed sample upload → indexing → grounded indexed Ask → source citation → persisted Ask-run verification — [run it](../product/lkw/QUICKSTART.md) | Indexed knowledge only; script-driven; no polished end-user UI; not Hybrid Ask certification; not production readiness; no real-user or commercial validation |
+| **Indexed Hybrid Ask** | 🧪 **BOUNDED PROOF** | Bounded indexed branch through production Hybrid Ask `indexed_only`; some proofs validate retrieval and boundary behavior even when answer assembly returns insufficient evidence | Not Product Quick Start; not mixed indexed + authorized-live Hybrid Ask; not production readiness or commercial validation |
 | **Trusted Ask / durable indexed workspace Ask** | 🧪 **BOUNDED PROOF** | Current runtime image through Ollama generation and embeddings, workspace source sync, Qdrant indexed retrieval, completed first Ask with evidence, non-destructive restart, completed second Ask without resync/reindex, and unchanged persisted first Ask run | Indexed knowledge only; bounded local runtime; no mixed indexed + authorized-live Hybrid Ask; no universal provider, production, or commercial claims |
+| **Core Platform Proof** | 🧪 **BOUNDED PROOF** | Real application startup/readiness, durable knowledge and execution, background processing, persisted reviewable evidence, hosting/recovery, and watched-folder indexing (Elasticsearch/Kibana observability, Sentry problem signals, MongoDB ProofReceipts) | Bounded to documented certification profiles; not production readiness, commercial validation, or all-provider certification |
 
-**Core platform proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`
+**Product Quick Start proofs:** `LKW-PRODUCT-QUICKSTART-WINDOWS`, `LKW-PRODUCT-QUICKSTART-LINUX`, `LKW-PRODUCT-QUICKSTART-MACOS`
+
+**Indexed Hybrid Ask proof:** `LKW-HYBRID-ASK-INDEXED`
 
 **Trusted Ask proof:** `LKW-ASK-WORKSPACE-LIVE` — [authoritative live proof section](LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
+
+**Core platform proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`
 
 | Web URL knowledge intake | 🧪 **BOUNDED PROOF** | Real WEB_URL capture and RAG indexing into the exact tenant/workspace Qdrant scope, verified indexed retrieval, and execution through Hybrid Ask `indexed_only`; a suite **PASS** always requires those indexed-path steps — grounded answer and indexed citation/evidence are verified only when the run completes with `status=completed`; `status=insufficient_evidence` may still **PASS** after successful indexed retrieval without proving completed answer assembly | Controlled `example.com` origin only; not arbitrary external-site certification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access remains incomplete |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
