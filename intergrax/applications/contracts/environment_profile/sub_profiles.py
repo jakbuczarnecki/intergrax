@@ -28,6 +28,7 @@ from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.policy.compliance_profiles import ComplianceDomainClass
+from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
 
 
 class IdentityProfile(BaseModel):
@@ -51,7 +52,7 @@ class PolicyRulesProfile(BaseModel):
 
     rules_path: Path | None = None
     inline_rules: list[dict[str, Any]] = Field(default_factory=list)
-    policy_enforcement_mode: str = "audit_only"
+    policy_enforcement_mode: PolicyEnforcementMode = PolicyEnforcementMode.AUDIT_ONLY
     allowed_handler_ids: list[str] = Field(default_factory=list)
 
 

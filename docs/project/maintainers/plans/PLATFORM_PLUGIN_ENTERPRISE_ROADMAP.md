@@ -526,7 +526,7 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 |-------|-------|
 | **Purpose** | Evaluate declarative YAML rules at runtime; govern handler admission and provenance |
 | **Candidates** | CAND-007, CAND-008 |
-| **Status** | **DONE (ENTERPRISE-4)** |
+| **Status** | **PARTIAL (ENTERPRISE-4)** — enforcement + DENY path done; REQUIRE_HITL orchestration bridge **ARCHITECTURAL_DECISION_REQUIRED** |
 | **Prerequisites** | BLOCK A |
 | **Architecture** | §7 full flow |
 | **Production owners** | New `intergrax/runtime/policy/declarative_enforcer.py`, `registry.py`, `tool_policy_resolution.py` / `tool_gateway.py` |
@@ -544,11 +544,18 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 - [x] Signing **not required** for block completion; provenance-only acceptable
 - [x] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` — no new `Dict[str, Any]` / string-key runtime wiring
 - [x] E2E: YAML deny rule blocks tool call in wired host via typed composition path
-- [x] Migration: `policy_enforcement_mode=audit_only|enforce` profile flag (default `audit_only`)
+- [x] Migration: `policy_enforcement_mode=audit_only|enforce` profile flag (default `audit_only`; invalid values fail profile validation)
+- [ ] REQUIRE_HITL declarative rule reaches canonical Nexus HITL lifecycle (`WAITING_FOR_HUMAN` / `HumanPauseCoordinator`) — **blocked** pending orchestration bridge ADR
+
+**ENTERPRISE-4 review-fix status (2026-08-14):**
+
+| Item | Status |
+|------|--------|
+| **CAND-007 enforcement** | **PARTIAL** — `PolicyEnforcementMode` typed on `PolicyRulesProfile`; invalid profile values fail validation; `DeclarativePolicyEnforcer` + DENY/audit_only at tool boundary |
+| **CAND-007 HITL** | **ARCHITECTURAL_DECISION_REQUIRED** — `DeclarativePolicyHitlRequiredError` raised synchronously in `RuntimeToolInvoker`; no catcher in `NexusHitlRunner` / `tool_loop` / `catalog_dispatch` |
+| **CAND-008** | **DONE** — handler allowlist + provenance gates remain valid |
 
 **Qualification:** `QUALIFICATION_STILL_DEFERRED` — package version/compatibility inputs exist elsewhere but production qualification is not enforced at policy handler admission in this block.
-
----
 
 ### BLOCK D — Memory typed external store resolution
 

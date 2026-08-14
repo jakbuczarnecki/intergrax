@@ -25,7 +25,6 @@ from intergrax.runtime.policy.policy_bundle import (
     DeclarativePolicyRuntime,
     RuntimePolicyBundle,
 )
-from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
 from intergrax.runtime.policy.rules.loader import load_policy_rules_from_path
 from intergrax.runtime.policy.rules.plugin_loader import (
     PolicyRuleLoadPolicy,
@@ -104,7 +103,7 @@ def _build_declarative_policy_runtime(
     if policy_rules is None:
         return None
     rules = _resolve_policy_rules(policy_rules)
-    enforcement_mode = _resolve_enforcement_mode(policy_rules)
+    enforcement_mode = policy_rules.policy_enforcement_mode
     allowlist = _resolve_handler_allowlist(policy_rules)
     registry = PolicyRuleRegistry()
     discover = (
@@ -145,13 +144,6 @@ def _resolve_policy_rules(profile: PolicyRulesProfile) -> tuple[DeclarativePolic
     for item in profile.inline_rules:
         rules.append(DeclarativePolicyRule.model_validate(item))
     return tuple(rules)
-
-
-def _resolve_enforcement_mode(profile: PolicyRulesProfile) -> PolicyEnforcementMode:
-    raw = profile.policy_enforcement_mode.strip().lower()
-    if raw == PolicyEnforcementMode.ENFORCE.value:
-        return PolicyEnforcementMode.ENFORCE
-    return PolicyEnforcementMode.AUDIT_ONLY
 
 
 def _resolve_handler_allowlist(

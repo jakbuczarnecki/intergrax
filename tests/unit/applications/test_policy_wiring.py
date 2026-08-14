@@ -8,6 +8,7 @@ import importlib.metadata
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.applications._shared.policy_wiring import (
     build_runtime_policy_bundle,
@@ -21,6 +22,7 @@ from intergrax.core.plugins.admission import PluginAdmissionReasonCode
 from intergrax.core.plugins.discovery import EP_POLICY_RULES, reset_entry_point_spec_cache_for_tests
 from intergrax.runtime.policy.policy_bundle import DeclarativePolicyRuntime, RuntimePolicyBundle
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
+from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 
 pytestmark = pytest.mark.unit
@@ -256,3 +258,31 @@ def test_no_declarative_policy_enforcer_symbol_in_policy_wiring() -> None:
     assert source is not None
     text = Path(source).read_text(encoding="utf-8")
     assert "DeclarativePolicyEnforcer" not in text
+
+
+@pytest.mark.parametrize(
+    ("raw_mode", "expected"),
+    [
+        (None, PolicyEnforcementMode.AUDIT_ONLY),
+        ("audit_only", PolicyEnforcementMode.AUDIT_ONLY),
+        ("enforce", PolicyEnforcementMode.ENFORCE),
+    ],
+)
+def test_policy_enforcement_mode_valid_values(
+    raw_mode: str | None,
+    expected: PolicyEnforcementMode,
+) -> None:
+    if raw_mode is None:
+        profile = PolicyRulesProfile()
+    else:
+        profile = PolicyRulesProfile(policy_enforcement_mode=raw_mode)
+    assert profile.policy_enforcement_mode is expected
+    bundle = build_runtime_policy_bundle(policy_rules=profile, discover_entry_points=False)
+    runtime = bundle.declarative_policy_runtime
+    assert runtime is not None
+    assert runtime.enforcement_mode is expected
+
+
+def test_policy_enforcement_mode_typo_fails_validation() -> None:
+    with pytest.raises(ValidationError):
+        PolicyRulesProfile(policy_enforcement_mode="enfroce")

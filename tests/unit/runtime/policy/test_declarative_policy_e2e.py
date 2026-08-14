@@ -202,7 +202,8 @@ def test_unknown_handler_enforce_denies_without_side_effect() -> None:
     assert trace.payload.unknown_handler_ids == ("nonexistent_handler",)
 
 
-def test_require_hitl_reaches_canonical_hitl_error() -> None:
+def test_require_hitl_blocks_tool_before_orchestration_bridge() -> None:
+    """REQUIRE_HITL blocks handler execution; Nexus HITL lifecycle bridge is pending ADR."""
     from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
         DeclarativePolicyHitlRequiredError,
     )
