@@ -425,6 +425,21 @@ def test_different_graph_changes_fake_digest(tmp_path: Path) -> None:
     assert changed.materialization_artifact_digest != baseline.materialization_artifact_digest
 
 
+def _materialization_input_field(
+    value: MaterializationInput,
+    field: str,
+) -> object:
+    if field == "runtime_revision":
+        return value.runtime_revision
+    if field == "effective_roster":
+        return value.effective_roster
+    if field == "candidate_runtime_graph":
+        return value.candidate_runtime_graph
+    if field == "application_build_context":
+        return value.application_build_context
+    raise ValueError(f"unsupported materialization input field: {field}")
+
+
 @pytest.mark.parametrize(
     ("field", "update", "match"),
     [
@@ -460,7 +475,7 @@ def test_materialization_rejects_application_identity_mismatch(
     match: str,
 ) -> None:
     materialization_input, _, _, _ = _build_fixture(tmp_path)
-    original = getattr(materialization_input, field)
+    original = _materialization_input_field(materialization_input, field)
     mutated = original.model_copy(update=update)
     tampered = materialization_input.model_copy(update={field: mutated})
     with pytest.raises(MaterializationInputConflict, match=match):
