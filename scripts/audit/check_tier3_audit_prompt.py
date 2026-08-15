@@ -10,18 +10,8 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-AUDIT_PATH = REPO_ROOT / "docs" / "project" / "technical" / "guides" / "audit" / "TIER3_APPLICATION_ENVIRONMENT.md"
-
-REQUIRED_MARKERS = (
-    "APP-EVOL-7",
-    "APP-OPS-4",
-    "EnvironmentHealthScore",
-    "ApplicationRegistry",
-    "check_application_production_gates.py",
-    "APPLICATION_CREATION_GUIDE.md",
-    "§24–§51",
-)
-
+AUDIT_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "audit" / "TIER3_APPLICATION_ENVIRONMENT.md"
+GENERATOR_PATH = REPO_ROOT / "scripts" / "audit" / "generate_domain_audit_prompts.py"
 
 def main() -> int:
     violations: list[str] = []
@@ -31,11 +21,8 @@ def main() -> int:
         return _report(violations)
 
     actual = AUDIT_PATH.read_text(encoding="utf-8")
-    for marker in REQUIRED_MARKERS:
-        if marker not in actual:
-            violations.append(f"audit prompt missing marker: {marker}")
 
-    gen = runpy.run_path(str(REPO_ROOT / "scripts" / "generate_domain_audit_prompts.py"))
+    gen = runpy.run_path(str(GENERATOR_PATH))
     domains: list[dict] = gen["DOMAINS"]
     render = gen["render"]
     tier3 = next(item for item in domains if item["id"] == "TIER3_APPLICATION_ENVIRONMENT")

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -12,20 +13,15 @@ import pytest
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-HUB = REPO_ROOT / "docs" / "project" / "architecture" / "intergrax_runtime_architecture.md"
 AUDIT = REPO_ROOT / "docs" / "project" / "maintainers" / "audit"
 GENERATOR = REPO_ROOT / "scripts" / "audit" / "generate_domain_audit_prompts.py"
 COMMON = REPO_ROOT / "scripts" / "audit" / "architecture_audit_common.py"
+_AUDIT_DIR = REPO_ROOT / "scripts" / "audit"
+if str(_AUDIT_DIR) not in sys.path:
+    sys.path.insert(0, str(_AUDIT_DIR))
+from architecture_audit_common import canonical_domain_ids  # noqa: E402
 
-_HUB_DOMAIN_ROW = re.compile(
-    r"^\| \d+ \| `([A-Z][A-Z0-9_]+)` \| \[`\1\.md`\]",
-    re.MULTILINE,
-)
 _GENERATOR_DOMAIN_ID = re.compile(r'^\s+"id": "([A-Z][A-Z0-9_]+)",', re.MULTILINE)
-
-
-def _canonical_domain_ids() -> list[str]:
-    return _HUB_DOMAIN_ROW.findall(HUB.read_text(encoding="utf-8"))
 
 
 def _generator_domain_ids() -> list[str]:
@@ -37,7 +33,7 @@ def _generated_audit_prompt_ids(canonical: set[str]) -> set[str]:
 
 
 def test_canonical_domain_ids_match_generated_audit_prompts() -> None:
-    canonical = _canonical_domain_ids()
+    canonical = list(canonical_domain_ids())
     canonical_set = set(canonical)
     assert canonical, "hub domain index is empty"
     assert len(canonical) == len(canonical_set), f"duplicate hub domain ids: {canonical}"
@@ -51,7 +47,7 @@ def test_canonical_domain_ids_match_generated_audit_prompts() -> None:
 
 
 def test_generator_registry_matches_canonical_domain_ids() -> None:
-    canonical = set(_canonical_domain_ids())
+    canonical = set(canonical_domain_ids())
     generator_ids = set(_generator_domain_ids())
     assert generator_ids == canonical, (
         f"generator DOMAINS != hub domain ids; "
@@ -71,5 +67,7 @@ def _audit_domain_order() -> list[str]:
 
 
 def test_audit_domain_order_matches_canonical_hub_order() -> None:
-    canonical = _canonical_domain_ids()
+    canonical = list(canonical_domain_ids())
     assert _audit_domain_order() == canonical
+
+
