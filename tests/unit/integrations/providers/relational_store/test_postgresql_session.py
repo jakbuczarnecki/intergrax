@@ -142,7 +142,7 @@ def test_provider_uses_psycopg_connect_when_no_connection_factory() -> None:
 
     with patch(
         "intergrax.integrations.providers.relational_store.postgresql.session.import_psycopg",
-        return_value=(mock_psycopg, MagicMock(), dict_row),
+        return_value=(mock_psycopg, MagicMock(), dict_row, MagicMock()),
     ):
         provider = PostgreSQLConnectionProvider(config)
         provider.open_configured_connection()
@@ -153,3 +153,45 @@ def test_provider_uses_psycopg_connect_when_no_connection_factory() -> None:
     )
     assert mock_conn.execute.called
     assert mock_conn.commit.call_count == 1
+
+
+def test_session_execute_statement_delegates_to_connection() -> None:
+    conn, factory = _connection_factory()
+    provider = PostgreSQLConnectionProvider(
+        PostgreSQLIntegrationConfig(dsn="postgresql://localhost/test", tenant_schema="tenant_a"),
+        connection_factory=factory,
+    )
+    statement = object()
+
+    with provider.connection() as session:
+        session.execute_statement(statement)
+
+    assert conn.executed[-1] == (statement, ())
+
+
+def test_ensure_schema_exists_uses_session_public_api() -> None:
+    conn, factory = _connection_factory()
+    provider = PostgreSQLConnectionProvider(
+        PostgreSQLIntegrationConfig(dsn="postgresql://localhost/test", tenant_schema="tenant_a"),
+        connection_factory=factory,
+    )
+
+    with provider.connection() as session:
+        provider.ensure_schema_exists(session, "tenant_a")
+
+    assert len(conn.executed) == 2
+    assert "CREATE SCHEMA" in str(conn.executed[-1][0])
+
+
+def test_ensure_schema_exists_skips_public_schema() -> None:
+    conn, factory = _connection_factory()
+    provider = PostgreSQLConnectionProvider(
+        PostgreSQLIntegrationConfig(dsn="postgresql://localhost/test", tenant_schema="public"),
+        connection_factory=factory,
+    )
+
+    with provider.connection() as session:
+        provider.ensure_schema_exists(session, "public")
+
+    assert len(conn.executed) == 1
+    assert "search_path" in str(conn.executed[0][0])

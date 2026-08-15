@@ -35,20 +35,20 @@ class PostgreSQLIsolationLevel(str, Enum):
     SERIALIZABLE = "SERIALIZABLE"
 
 
-def import_psycopg() -> tuple[Any, Any, Any]:
+def import_psycopg() -> tuple[Any, Any, Any, Any]:
     """Canonical psycopg import boundary for PostgreSQL platform infrastructure."""
     try:
         import psycopg
-        from psycopg import errors
+        from psycopg import errors, sql
         from psycopg.rows import dict_row
     except ImportError as exc:
         raise IntegrationConfigurationError(_PSYCOPG_INSTALL_GUIDANCE) from exc
-    return psycopg, errors, dict_row
+    return psycopg, errors, dict_row, sql
 
 
 def is_postgresql_unique_violation(exc: BaseException) -> bool:
     """Detect PostgreSQL unique-constraint violations without leaking driver types to callers."""
-    _, errors, _ = import_psycopg()
+    _, errors, _, _ = import_psycopg()
     return isinstance(exc, errors.UniqueViolation)
 
 
@@ -80,6 +80,11 @@ class PostgreSQLSession:
 
     def execute(self, sql: str, params: Sequence[Any] = ()) -> PostgreSQLExecutionResult:
         cursor = self._connection.execute(sql, params)
+        return PostgreSQLExecutionResult(cursor)
+
+    def execute_statement(self, statement: Any) -> PostgreSQLExecutionResult:
+        """Execute a driver-composed SQL statement via the platform session boundary."""
+        cursor = self._connection.execute(statement)
         return PostgreSQLExecutionResult(cursor)
 
     def commit(self) -> None:
@@ -153,16 +158,14 @@ class PostgreSQLConnectionProvider:
         schema = validate_schema_identifier(schema_name or self._tenant_schema)
         if schema == "public":
             return
-        import_psycopg()
-        from psycopg import sql
-
+        _, _, _, sql = import_psycopg()
         statement = sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(sql.Identifier(schema))
-        session._connection.execute(statement)
+        session.execute_statement(statement)
 
     def _open_raw_connection(self) -> Any:
         if self._connection_factory is not None:
             return self._connection_factory()
-        psycopg, _, dict_row = import_psycopg()
+        psycopg, _, dict_row, _ = import_psycopg()
         return psycopg.connect(
             self._config.connection_string(),
             row_factory=dict_row,
@@ -170,8 +173,6 @@ class PostgreSQLConnectionProvider:
 
     def _apply_search_path_on_connection(self, connection: Any) -> None:
         schema = validate_schema_identifier(self._tenant_schema)
-        import_psycopg()
-        from psycopg import sql
-
+        _, _, _, sql = import_psycopg()
         statement = sql.SQL("SET search_path TO {}, public").format(sql.Identifier(schema))
         connection.execute(statement)

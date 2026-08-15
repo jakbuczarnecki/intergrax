@@ -61,18 +61,43 @@ class _FakeConnection:
         self.closed = True
 
 
+def _open_store_with_injected_provider(
+    config: PostgreSQLIntegrationConfig,
+    conn: _FakeConnection,
+    *,
+    schema_name: str,
+) -> tuple[PostgreSQLCollaborativeWorkStore, PostgreSQLConnectionProvider]:
+    provider = PostgreSQLConnectionProvider(
+        config,
+        connection_factory=lambda: conn,
+        tenant_schema=schema_name,
+    )
+    with patch(
+        "intergrax.collaborative_work.postgresql_repository.PostgreSQLConnectionProvider",
+        return_value=provider,
+    ) as provider_ctor:
+        store = PostgreSQLCollaborativeWorkStore(
+            config,
+            connection_factory=lambda: conn,
+            schema_name=schema_name,
+        )
+    provider_ctor.assert_called_once()
+    return store, provider
+
+
 def test_collaborative_work_store_uses_platform_connection_provider() -> None:
     conn = _FakeConnection()
     config = PostgreSQLIntegrationConfig(dsn="postgresql://localhost/test", tenant_schema="tenant_a")
 
-    with patch.object(PostgreSQLConnectionProvider, "ensure_schema_exists", return_value=None):
-        store = PostgreSQLCollaborativeWorkStore(
-            config,
-            connection_factory=lambda: conn,
-            schema_name="tenant_a",
-        )
+    store, provider = _open_store_with_injected_provider(
+        config,
+        conn,
+        schema_name="tenant_a",
+    )
 
-    assert isinstance(store._provider, PostgreSQLConnectionProvider)
+    assert provider.tenant_schema == "tenant_a"
+    assert conn.committed >= 1
+    assert conn.executed
     store.close()
 
 
@@ -88,15 +113,14 @@ def test_opens_and_collaborative_work_share_platform_provider() -> None:
     with patch.object(PostgreSQLConnectionProvider, "open_configured_connection", return_value=conn):
         open_postgresql_relational_store(config, connection_factory=lambda: conn)
 
-    with patch.object(PostgreSQLConnectionProvider, "ensure_schema_exists", return_value=None):
-        store = PostgreSQLCollaborativeWorkStore(
-            config,
-            connection_factory=lambda: conn,
-            schema_name="tenant_a",
-        )
+    store, provider = _open_store_with_injected_provider(
+        config,
+        conn,
+        schema_name="tenant_a",
+    )
     store.close()
 
-    assert isinstance(store._provider, PostgreSQLConnectionProvider)
+    assert provider.tenant_schema == "tenant_a"
 
 
 def test_invalid_schema_rejected_before_collaborative_work_store_open() -> None:

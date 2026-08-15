@@ -205,7 +205,7 @@ def test_postgresql_opens_uses_psycopg_when_no_connection_factory() -> None:
 
     with patch(
         "intergrax.integrations.providers.relational_store.postgresql.session.import_psycopg",
-        return_value=(mock_psycopg, MagicMock(), dict_row),
+        return_value=(mock_psycopg, MagicMock(), dict_row, MagicMock()),
     ):
         from intergrax.integrations.providers.relational_store.postgresql.opens import open_postgresql_relational_store
 
