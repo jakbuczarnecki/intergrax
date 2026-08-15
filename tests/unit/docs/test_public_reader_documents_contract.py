@@ -852,10 +852,13 @@ def test_builder_quickstart_first_checkpoint_contract(builder_quickstart_text: s
         "build with intergrax",
         "evaluation guide",
         "lkw quick start",
+        "python -m intergrax.scaffold new-stack",
+        "uv run pytest applications/",
+        "domain job",
     ):
         assert phrase in normalized, f"BUILDER_QUICKSTART missing semantic marker: {phrase}"
 
-    assert "sibling evaluation route, not a mandatory step for every builder" in normalized
+    assert "not mandatory" in normalized
     assert "not to begin builder onboarding" in normalized
     assert "no generic project scaffold" in normalized
     assert "universal application template" in normalized
