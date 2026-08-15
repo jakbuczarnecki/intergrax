@@ -1101,3 +1101,35 @@ def test_public_reader_correction_wave_maturity_disclaimers_preserved(
     assert "partial" in readme_norm
     quickstart_norm = " ".join(_normalize(_read(LKW_QUICKSTART_PATH)).split())
     assert "commercial validation" in quickstart_norm
+
+
+def test_lkw_quickstart_progressive_disclosure_structure() -> None:
+    text = _read(LKW_QUICKSTART_PATH)
+    before_run = text.index("## Before you run")
+    run_cmd = text.index("## 1. Run one command")
+    success = text.index("## 2. Success looks like this")
+    what_happened = text.index("## 3. What just happened")
+    what_proves = text.index("## What this proves")
+    current_boundary = text.index("## Current boundary")
+    config = text.index("## Configuration and first-run downloads")
+
+    assert before_run < run_cmd < success < what_happened < what_proves < current_boundary < config
+    assert text.index("AURORA-17") < config
+    assert "### Expected result" in text
+    assert "lkw_product_quickstart.txt" in text
+    assert "persisted_run_verified=true" in text
+
+
+def test_lkw_product_tour_presentation_contract() -> None:
+    text = _read(LKW_PRODUCT_TOUR_PATH)
+    normalized = " ".join(_normalize(text).split())
+
+    assert "<picture>" in text
+    assert "lkw-grounded-result-light.svg" in text
+    assert "lkw-grounded-result-dark.svg" in text
+    assert "## The LKW experience" in text
+    assert "## What this proves" in text
+    assert "## Current boundary" in text
+    assert "not a screenshot of a finished application ui" in normalized
+    assert "[LKW Quick Start](QUICKSTART.md)" in text
+    assert normalized.index("## the lkw experience") < normalized.index("## current boundary")

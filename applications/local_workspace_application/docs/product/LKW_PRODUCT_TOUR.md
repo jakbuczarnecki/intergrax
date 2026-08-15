@@ -4,7 +4,7 @@ Local Knowledge Workspace (LKW) is the primary Intergrax product path: a workspa
 
 This tour explains the supported indexed-knowledge experience without requiring installation or a local run. It is a product walkthrough, not a screenshot of a finished application UI. Readers who want to run the path should use the [LKW Quick Start](QUICKSTART.md); technical reviewers should use the [LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md).
 
-LKW is the **Primary Product Proof** and currently a **Backend Product Alpha / MVP** with **PARTIAL** status. The tour covers indexed knowledge, while real-user validation and commercial validation remain incomplete.
+LKW is the **Primary Product Proof** and currently a **Backend Product Alpha / MVP** with **PARTIAL** status.
 
 ## At a glance
 
@@ -88,18 +88,13 @@ The result includes a source reference so you can see where the answer came from
 | Persisted Ask run | The result can be inspected again |
 | Explicit boundaries | You know what is and is not demonstrated |
 
-## Current boundaries
+## What this proves
 
-This tour represents:
+This tour represents the actual application/runtime indexed Ask path through Hybrid Ask over documented indexed evidence: approved knowledge, managed sample upload, grounded Ask, source reference, and persisted Ask-run verification.
 
-- the actual application/runtime indexed Ask path through Hybrid Ask over documented indexed evidence;
-- indexed knowledge;
-- managed sample upload;
-- grounded Ask;
-- source reference;
-- persisted Ask-run verification.
+## Current boundary
 
-It does not represent:
+This tour does **not** represent:
 
 - mixed indexed + authorized live Hybrid Ask;
 - complete live-provider access;
