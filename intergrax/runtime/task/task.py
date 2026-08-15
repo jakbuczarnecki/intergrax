@@ -7,9 +7,15 @@ from enum import Enum
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, PrivateAttr, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.execution_identity import (
+    RunId,
+    TaskId,
+    mint_task_id,
+    validate_task_id,
+)
 from intergrax.contracts.partial_result_contract import PartialResultContract
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.runtime.task.task_contract import (
@@ -46,7 +52,12 @@ class TaskContext(BaseModel):
 class Task(BaseModel):
     """Normalized task object (canonical architecture §23, §41)."""
 
-    task_id: str = Field(default_factory=lambda: f"task_{uuid4().hex}")
+    task_id: TaskId = Field(default_factory=mint_task_id)
+
+    @field_validator("task_id", mode="before")
+    @classmethod
+    def _validate_task_id_field(cls, value: object) -> TaskId:
+        return validate_task_id(value)
     tenant_id: str
     user_id: str
     session_id: Optional[str] = None
@@ -124,7 +135,7 @@ class Task(BaseModel):
             metadata=metadata,
         )
 
-    def to_runtime_request(self) -> "RuntimeRequest":
+    def to_runtime_request(self, *, run_id: RunId) -> "RuntimeRequest":
         from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
         from intergrax.runtime.task.task_metadata_bridge import task_to_request_metadata
 
@@ -132,18 +143,17 @@ class Task(BaseModel):
             raise ValueError("Task.agent_id must be set before execution.")
 
         metadata = task_to_request_metadata(self)
-        metadata["run_id"] = self.task_id
-        metadata["task_id"] = self.task_id
 
         return RuntimeRequest(
-            tenant_id=self.tenant_id,
+            agent_id=self.agent_id,
             user_id=self.user_id,
             session_id=self.session_id or f"sess_{uuid4().hex}",
-            agent_id=self.agent_id,
             message=self.message,
+            task_id=self.task_id,
+            run_id=run_id,
+            tenant_id=self.tenant_id,
             workspace_id=self.metadata.get("workspace_id"),
             metadata=metadata,
-            task_id=self.task_id,
         )
 
 

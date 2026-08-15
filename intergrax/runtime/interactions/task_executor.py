@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskResult
 
@@ -26,4 +27,4 @@ class NexusLoopTaskExecutor:
         self._nexus_loop = nexus_loop
 
     async def execute(self, task: Task) -> TaskResult:
-        return await self._nexus_loop.handle_task(task)
+        return await self._nexus_loop.handle_task(task, run_id=mint_run_id())

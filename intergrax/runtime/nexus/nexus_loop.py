@@ -10,6 +10,12 @@ from intergrax.agents.agent_engine import AgentEngine
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    RunId,
+    mint_attempt_id,
+    validate_run_id,
+)
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
@@ -233,6 +239,8 @@ class NexusLoop:
         self._trace_emitter = trace_emitter
         self._trace_store = trace_store
         self._current_task: Optional[Task] = None
+        self._current_run_id: Optional["RunId"] = None
+        self._current_attempt_id: Optional["AttemptId"] = None
         self._signal_collector = signal_collector
         self._evaluation_registry = evaluation_registry
         self._run_budget = run_budget
@@ -352,12 +360,23 @@ class NexusLoop:
     def policy_engine(self) -> PolicyEngine:
         return self._policy_engine
 
-    async def handle_task(self, task: Task) -> TaskResult:
+    async def handle_task(self, task: Task, *, run_id: RunId) -> TaskResult:
+        resolved_run_id = validate_run_id(run_id)
+        attempt_id = mint_attempt_id()
         self._current_task = task
+        self._current_run_id = resolved_run_id
+        self._current_attempt_id = attempt_id
+        self._graph_executor.set_execution_identity(
+            run_id=resolved_run_id,
+            attempt_id=attempt_id,
+        )
         try:
             return await self._handle_task_impl(task)
         finally:
             self._current_task = None
+            self._current_run_id = None
+            self._current_attempt_id = None
+            self._graph_executor.clear_execution_identity()
 
     async def _handle_task_impl(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
@@ -500,7 +519,7 @@ class NexusLoop:
         self._evaluation_registry.append(
             OnlineEvaluationObservation(
                 observation_id=f"obs_{task_id}_multi_agent",
-                run_id=task_id,
+                run_id=self._current_run_id or task_id,
                 agent_id=",".join(item.agent_id for item in executions if item.agent_id),
                 mode=OnlineEvaluationMode.SHADOW,
                 scenario_id="multi_agent_fan_in",
@@ -532,7 +551,7 @@ class NexusLoop:
         retry_records: List[RetryRecord],
         graph_id: str,
     ) -> TaskResult:
-        return build_nexus_task_result(
+        result = build_nexus_task_result(
             task,
             trace_emitter,
             answer=answer,
@@ -545,7 +564,9 @@ class NexusLoop:
             event_bus=self._event_bus,
             shadow_manager=self._shadow_manager,
             sandbox_manager=self._sandbox_manager,
+            run_id=self._current_run_id,
         )
+        return result
 
     async def _maybe_restore_long_running(self, task: Task) -> None:
         await maybe_restore_long_running(

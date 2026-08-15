@@ -15,6 +15,7 @@ from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
+from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.integrations.providers.relational_store.sqlite import (
     create_sqlite_experiment_store,
     create_sqlite_trace_store,
@@ -148,7 +149,7 @@ class ExperimentSession:
         if record.agent_id:
             task.agent_id = record.agent_id
 
-        result = await loop.handle_task(task)
+        result = await loop.handle_task(task, run_id=mint_run_id())
         run_id = result.run_id or result.task_id
 
         updated = record

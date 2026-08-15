@@ -21,6 +21,7 @@ from intergrax.agents.persistence.declarative_tool_executor import DeclarativeTo
 from intergrax.agents.persistence.tool_invoker_wiring import inject_acp_tool_invoker_metadata
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.contracts.agent_handoff import AgentHandoff, resolve_handoff_from_execution
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -134,6 +135,20 @@ class GraphExecutor:
         self._event_bus = event_bus
         self._middleware = middleware or MiddlewarePipeline()
         self._critic_graph_hooks = critic_graph_hooks
+        self._execution_run_id: RunId | None = None
+        self._execution_attempt_id: AttemptId | None = None
+
+    def set_execution_identity(self, *, run_id: RunId, attempt_id: AttemptId) -> None:
+        self._execution_run_id = run_id
+        self._execution_attempt_id = attempt_id
+
+    def clear_execution_identity(self) -> None:
+        self._execution_run_id = None
+        self._execution_attempt_id = None
+
+    @property
+    def execution_attempt_id(self) -> AttemptId | None:
+        return self._execution_attempt_id
 
     def set_retry_policy(self, policy: RetryPolicy) -> None:
         self._retry_engine = RetryEngine(
@@ -509,7 +524,9 @@ class GraphExecutor:
             )
 
         async def execute_fn(current_agent: Agent) -> AgentExecutionResult:
-            request = node_task.to_runtime_request()
+            if self._execution_run_id is None:
+                raise RuntimeError("GraphExecutor execution identity is not bound")
+            request = node_task.to_runtime_request(run_id=self._execution_run_id)
             from intergrax.runtime.human.declarative_hitl_grant import (
                 DeclarativeHitlGrantCoordinator,
             )
@@ -520,13 +537,13 @@ class GraphExecutor:
             inject_acp_checkpoint_metadata(
                 request.metadata,
                 store=self._agent_checkpoint_store,
-                run_id=task.task_id,
+                run_id=self._execution_run_id,
                 tenant_id=task.tenant_id,
             )
             inject_acp_tool_invoker_metadata(
                 request.metadata,
                 self._declarative_tool_invoker,
-                run_id=task.task_id,
+                run_id=self._execution_run_id,
                 agent_id=current_agent.get_contract().id,
                 tenant_id=task.tenant_id,
             )

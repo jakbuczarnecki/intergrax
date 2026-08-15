@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
 
+from intergrax.contracts.execution_identity import validate_run_id
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -107,7 +108,12 @@ class NexusWorkerRuntime:
 
         try:
             task = task_from_execution_request(request)
-            result = _run_coro_sync(self._task_runner.run_task(task))
+            result = _run_coro_sync(
+                self._task_runner.run_task(
+                    task,
+                    run_id=validate_run_id(run_id),
+                )
+            )
             result_payload = task_result_to_payload(result)
             if self._lifecycle is not None:
                 self._lifecycle.mark_completed(run_id, result_payload=result_payload)

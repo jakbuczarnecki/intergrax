@@ -2,6 +2,7 @@
 
 import pytest
 
+from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.task.task import Task
@@ -104,7 +105,7 @@ def test_task_to_runtime_request_propagates_workspace_id():
         metadata={"workspace_id": "workspace-a"},
     )
 
-    request = task.to_runtime_request()
+    request = task.to_runtime_request(run_id=mint_run_id())
 
     assert request.workspace_id == "workspace-a"
 
@@ -114,7 +115,7 @@ def test_task_to_runtime_request_propagates_workspace_id():
         agent_id="agent-1",
         message="tenant request",
     )
-    assert task_without_workspace.to_runtime_request().workspace_id is None
+    assert task_without_workspace.to_runtime_request(run_id=mint_run_id()).workspace_id is None
 
 
 @pytest.mark.unit

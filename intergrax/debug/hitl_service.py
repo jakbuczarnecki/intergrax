@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
@@ -78,7 +79,7 @@ class DebugHitlResumeService:
             runtime_event_store=self._runtime_event_store,
             human_decision_store=self._human_decision_store,
         )
-        return await loop.handle_task(task)
+        return await loop.handle_task(task, run_id=mint_run_id())
 
     def _resolve_checkpoint(
         self,
