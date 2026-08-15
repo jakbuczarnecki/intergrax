@@ -224,74 +224,13 @@ Platform capability maturity is summarized in
 Compact index of strategic platform capabilities. Status is bounded and
 capability-specific; see linked architecture and proof routes for detail.
 
-| Capability | Role | Current status |
-| --- | --- | --- |
-| **Observability & Auditability** | Shared observability spine for reconstructable, reviewable governed execution — runtime events, [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence, and correlated execution records; execution-level explainability, not hidden model chain-of-thought | **IMPLEMENTED CORE + BOUNDED PROOF** — [Observability](docs/project/architecture/OBSERVABILITY.md) · [LKW bounded observability proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Controlled Sentry proof](applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md); universal every-path production observability **not claimed**; broader required-path coverage remains an active program |
-| **Token Optimization** | Featured platform-capability proof — policy-governed context and prompt optimization with receipts, fallback, and bounded offline proof | **PARTIAL — bounded** |
-| **Multiplayer AI** | Strategic platform capability — governed multi-principal collaboration among humans, agents, services, and external agents | **Architecture / roadmap stage** — runtime proof not yet established |
-| **Platform Extensibility** | Strategic platform capability — governed extension packages across domain-owned contracts ([Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md)) | **Canonical architecture frozen** — implementation stages planned; complete platform-level third-party E2E proof not yet established |
-| **Agent Marketplace** | Future ecosystem layer — governed distribution of reusable Tier-2 agents built on Agent Distribution and platform extensibility | **FUTURE PRODUCT** — public marketplace experience **not shipped today**; underlying distribution capabilities have mixed maturity |
-
-## Token Optimization
-
-Token Optimization is a compact reusable platform capability below the product surface: policy-governed context and prompt optimization with protected-region validation, receipts, fallback, and a bounded offline smoke proof path. Its current status is **PARTIAL**; live provider-wide proof, production rollout, final cross-provider proof, universal savings, and **production-proven savings** are **not established**. The canonical manifest proof_id is offline_smoke only; vLLM prefix-cache reuse is a separate manual live path. Details: [Token Optimization guide](docs/project/capabilities/token_optimization/README.md) and [claim guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
-
-**Proof:** `RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`
-
-## Multiplayer AI
-
-Intergrax is extending governed execution toward governed multi-principal collaboration among humans, agents, services, and eventually external agents. The architectural direction covers identity and membership, delegation of effective authority, shared work, durable collaborative artifacts, explicit decisions, principal-scoped context, activity and provenance, and external-agent interoperability.
-
-Multiplayer AI is broader than one agent calling another. It governs who participates, what authority is effective, what shared work exists, which artifact version is authoritative, what decision was made, what context each principal may see, and what evidence remains.
-
-Current status is **architecture / roadmap stage**. Runtime implementation and proof are **not yet established**. See the [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md).
-
-## Platform Extensibility
-
-Intergrax already exposes extension points across integrations, tools, skills, RAG, Vendor Knowledge, security, policy, host composition, and other platform domains. The [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) architecture defines how independently packaged extensions can participate without collapsing those domain contracts into one universal plugin runtime.
-
-The strategic goal is coordinated **package identity**, **discovery**, **configuration**, **compatibility**, **trust**, **qualification**, **lifecycle**, and **author experience** — while domain-owned contracts still govern actual runtime behavior. Extend the platform without modifying its core while preserving governed capability boundaries.
-
-A basic plugin system answers how code can be loaded. Platform Extensibility also must answer what capability a package contributes, how it is discovered, whether it is compatible, how it receives configuration and dependencies, what trust or qualification state applies, and which domain contract governs execution.
-
-Canonical architecture is **frozen**; platform-wide harmonization is **not complete**; a complete third-party install-to-runtime E2E proof is **not yet established**.
-
-## Agent Marketplace — future ecosystem concept
-
-**Future product concept — not shipped today.**
-
-**Build once. Govern centrally. Install reusable AI capabilities into any
-Intergrax application.**
-
-Intergrax is building a governed distribution model for reusable Tier-2 agents
-across built-in sources, local and developer sources, private enterprise
-catalogs, and future public catalogs. Every source converges on the same
-governed lifecycle:
-
-```text
-Discover → Trust → Install → Configure → Materialize → Activate → Route
-```
-
-Apps install capabilities. Nexus routes work. Intergrax governs execution.
-
-> **Status — FUTURE PRODUCT:** The public marketplace experience, publisher
-> portal, catalog product, billing layer, and LKW marketplace UI are **not
-> shipped today**. Underlying distribution and platform capabilities — Agent
-> Distribution, package verification, application binding, immutable
-> materialization, RuntimeRevision activation, AgentRegistry, and Nexus
-> capability routing — have mixed **AVAILABLE TODAY** / **ARCHITECTURE FROZEN**
-> / **UNDER IMPLEMENTATION** maturity.
-
-Platform Extensibility / Agent Distribution is the governed technical substrate;
-Agent Marketplace is the future discovery, distribution, and ecosystem layer
-built on that substrate — not an independent execution engine.
-
-Example reusable capability patterns: Research · Legal · Project Management ·
-UX Research · Private Enterprise
-
-[Explore the Agent Marketplace concept and reference architecture →](docs/project/product/AGENT_MARKETPLACE.md)
-
----
+| Capability / direction | What it adds | Current maturity | Explore |
+| --- | --- | --- | --- |
+| **Observability & Auditability** | Shared observability spine for reconstructable, reviewable governed execution — runtime events, [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence; execution-level explainability, not hidden chain-of-thought | **IMPLEMENTED CORE + BOUNDED PROOF** — universal every-path production observability **not claimed** | [Observability](docs/project/architecture/OBSERVABILITY.md) · [LKW bounded observability proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Controlled Sentry proof](applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md) |
+| **Token Optimization** | Featured platform-capability proof — policy-governed context and prompt optimization with receipts, fallback, and bounded offline proof | **PARTIAL — bounded** — universal savings and production-proven savings **not established** | [Token Optimization guide](docs/project/capabilities/token_optimization/README.md) · [Claim guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md) |
+| **Multiplayer AI** | Governed multi-principal collaboration among humans, agents, services, and external agents | **Architecture / roadmap stage** — runtime proof **not yet established** | [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) |
+| **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** — implementation stages planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
+| **Agent Marketplace** | Future ecosystem layer — discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT — NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/product/AGENT_MARKETPLACE.md) |
 
 ## License and collaboration
 

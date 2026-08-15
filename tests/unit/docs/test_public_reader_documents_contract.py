@@ -529,14 +529,13 @@ def test_readme_routing(readme_text: str) -> None:
 def test_readme_multiplayer_positioning(readme_text: str) -> None:
     normalized = " ".join(_normalize(readme_text).split())
     for phrase in (
-        "strategic platform capability",
+        "multiplayer ai",
         "architecture / roadmap stage",
         "runtime proof not yet established",
         "governed multi-principal collaboration",
         "not yet established",
     ):
         assert phrase in normalized, f"README missing Multiplayer marker: {phrase}"
-    assert "multiplayer ai" in normalized
     assert "featured platform-capability proof" in normalized
     assert "primary product proof" in normalized
     forbidden_positive = (
@@ -577,14 +576,11 @@ def test_readme_platform_extensibility_positioning(readme_text: str) -> None:
     normalized = " ".join(_normalize(readme_text).split())
     for phrase in (
         "platform extensibility",
-        "strategic platform capability",
+        "governed extension/package model",
+        "domain-owned contracts",
         "canonical architecture frozen",
         "implementation stages planned",
-        "complete platform-level third-party e2e proof not yet established",
-        "without collapsing those domain contracts into one universal plugin runtime",
-        "extend the platform without modifying its core",
-        "governed capability boundaries",
-        "domain-owned contracts still govern actual runtime behavior",
+        "complete third-party install-to-runtime e2e proof not yet established",
     ):
         assert phrase in normalized, f"README missing Platform Extensibility marker: {phrase}"
     assert "primary product proof" in normalized

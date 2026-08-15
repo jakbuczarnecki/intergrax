@@ -40,12 +40,17 @@ _SECTION_HEADINGS_ORDER = (
     "## Try LKW",
     "## Why this matters",
     "## Responsibility model",
+    "## AI execution should not be a black box",
     "## What exists today",
+    "## Platform capabilities and directions",
+    "## License and collaboration",
+)
+
+_REMOVED_STANDALONE_CAPABILITY_HEADINGS = (
     "## Token Optimization",
     "## Multiplayer AI",
     "## Platform Extensibility",
     "## Agent Marketplace — future ecosystem concept",
-    "## License and collaboration",
 )
 
 _REQUIRED_PUBLIC_LINKS = (
@@ -99,6 +104,37 @@ def test_canonical_positioning(readme_text: str) -> None:
 def test_section_order(readme_text: str) -> None:
     positions = [readme_text.index(heading) for heading in _SECTION_HEADINGS_ORDER]
     assert positions == sorted(positions), "README section headings are out of required order"
+
+
+def test_platform_capabilities_table_contract(readme_text: str) -> None:
+    assert "## Platform capabilities and directions" in readme_text
+    for capability in (
+        "Observability & Auditability",
+        "Token Optimization",
+        "Multiplayer AI",
+        "Platform Extensibility",
+        "Agent Marketplace",
+    ):
+        assert capability in readme_text, f"Missing platform capability row: {capability}"
+    for heading in _REMOVED_STANDALONE_CAPABILITY_HEADINGS:
+        assert heading not in readme_text, f"Duplicated standalone section returned: {heading}"
+
+
+def test_platform_capability_claim_boundaries(readme_text: str) -> None:
+    normalized = re.sub(r"[*_`]", "", readme_text).lower()
+    for phrase in (
+        "implemented core + bounded proof",
+        "universal every-path production observability not claimed",
+        "partial — bounded",
+        "universal savings",
+        "production-proven savings",
+        "architecture / roadmap stage",
+        "runtime proof not yet established",
+        "canonical architecture frozen",
+        "complete third-party install-to-runtime e2e proof not yet established",
+        "future product — not shipped today",
+    ):
+        assert phrase in normalized, f"Missing platform capability boundary: {phrase}"
 
 
 def test_required_public_links(readme_text: str) -> None:
@@ -188,7 +224,7 @@ def test_public_maturity_boundary(readme_text: str) -> None:
 def test_token_optimization_claim_boundary(readme_text: str) -> None:
     for phrase in (
         "PARTIAL",
-        "offline smoke",
+        "bounded offline proof",
         "universal savings",
         "production-proven savings",
     ):
