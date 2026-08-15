@@ -194,16 +194,16 @@ request → context → agent / plan / decision → policy / approval
                  reviewable execution record
 ```
 
-A governed run can leave correlated runtime events, typed
-[`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md)
-artifacts, and structured
-[`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence.
+A governed run can leave correlated runtime events, typed [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, and structured [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence.
 This is execution-level explainability, not hidden model reasoning.
 Universal every-path production observability is not claimed.
 
 [Observability](docs/project/architecture/OBSERVABILITY.md) ·
 [Reasoning / DecisionRecord](docs/project/architecture/REASONING_AND_COGNITION.md) ·
 [Proof Receipts](docs/project/architecture/PROOF_RECEIPTS.md)
+
+**Runnable evidence:** Inspect the current bounded LKW observability proof, including independently inspectable Elasticsearch/Kibana records, controlled Sentry problem signals, and persisted execution evidence.
+[LKW bounded observability proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Controlled Sentry proof](applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md)
 
 ## What exists today
 
