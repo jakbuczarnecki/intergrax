@@ -70,6 +70,7 @@ class AgenticRetrievalLoop:
                 query=current_query,
                 top_k=request.top_k,
                 metadata_filter=request.metadata_filter,
+                scope=request.scope,
                 score_threshold=request.score_threshold,
                 retriever_id=retriever_id,
                 route_tier_override=request.route_tier_override or "deep",

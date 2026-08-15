@@ -5,11 +5,24 @@
 
 from __future__ import annotations
 
+import hashlib
 from typing import Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.contracts.document_store import DocumentQueryResult, DocumentRecord
+from intergrax.integrations.contracts.document_store import (
+    DocumentQueryCursorCodec,
+    DocumentQueryPageV1,
+    DocumentRecord,
+    validate_document_query_limit,
+)
 from intergrax.integrations.providers.document_store.mongodb.client import MongoCollectionClient
+from intergrax.integrations.providers.document_store.mongodb.config import MongoDBIntegrationConfig
+
+
+def _cursor_codec_for_config(config: MongoDBIntegrationConfig) -> DocumentQueryCursorCodec:
+    database, collection = config.qualified_collection()
+    material = f"{config.uri}:{database}:{collection}".encode("utf-8")
+    return DocumentQueryCursorCodec(secret=hashlib.sha256(material).digest())
 
 
 class _MongoDBDocumentStore:
@@ -22,6 +35,7 @@ class _MongoDBDocumentStore:
 
     def __init__(self, client: MongoCollectionClient) -> None:
         self._client = client
+        self._cursor_codec = _cursor_codec_for_config(client.config)
         self._closed = False
 
     @property
@@ -46,13 +60,58 @@ class _MongoDBDocumentStore:
         *,
         limit: int = 100,
         row_key_prefix: Optional[str] = None,
-    ) -> DocumentQueryResult:
+        cursor: str | None = None,
+    ) -> DocumentQueryPageV1:
         self._require_open()
-        return self._client.query(
-            partition_key,
-            limit=limit,
-            row_key_prefix=row_key_prefix,
+        bounded_limit = validate_document_query_limit(limit)
+        max_page_limit = validate_document_query_limit(5000)
+        after_row_key: str | None = None
+        if cursor is not None:
+            after_row_key = self._cursor_codec.decode(
+                cursor,
+                partition_key=partition_key,
+                row_key_prefix=row_key_prefix,
+            ).last_row_key
+        if bounded_limit < max_page_limit:
+            fetch_limit = bounded_limit + 1
+            documents = self._client.query(
+                partition_key,
+                limit=fetch_limit,
+                row_key_prefix=row_key_prefix,
+                after_row_key=after_row_key,
+            )
+            has_more = len(documents) > bounded_limit
+            page = documents[:bounded_limit]
+        else:
+            documents = self._client.query(
+                partition_key,
+                limit=bounded_limit,
+                row_key_prefix=row_key_prefix,
+                after_row_key=after_row_key,
+            )
+            page = documents[:bounded_limit]
+            has_more = (
+                len(page) == bounded_limit
+                and page
+                and len(
+                    self._client.query(
+                        partition_key,
+                        limit=1,
+                        row_key_prefix=row_key_prefix,
+                        after_row_key=page[-1].row_key,
+                    )
+                ) > 0
+            )
+        next_cursor = (
+            self._cursor_codec.encode(
+                partition_key=partition_key,
+                row_key_prefix=row_key_prefix,
+                last_row_key=page[-1].row_key,
+            )
+            if has_more and page
+            else None
         )
+        return DocumentQueryPageV1(documents=tuple(page), next_cursor=next_cursor)
 
     def put_if_absent(self, document: DocumentRecord) -> bool:
         self._require_open()

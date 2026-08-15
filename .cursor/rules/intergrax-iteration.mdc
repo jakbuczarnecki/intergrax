@@ -5,7 +5,7 @@ alwaysApply: false
 
 # Intergrax — Iteration Instruction
 
-Implement **Intergrax Harness AI / Agent OS**. Root `AGENTS.md` = stub (~350 tok). Full reference: `@docs/guides/AGENT_INSTRUCTIONS.md`. Symbol lookup: `@docs/guides/SYMBOL_INDEX.md`.
+Implement **Intergrax Harness AI / Agent OS**. Root `AGENTS.md` = stub (~350 tok). Full reference: `@docs/project/technical/guides/AGENT_INSTRUCTIONS.md`. Symbol lookup: `@docs/project/technical/guides/SYMBOL_INDEX.md`.
 
 **I1/O1:** always-on `intergrax-token-budget.mdc` — input/output token budget.
 
@@ -15,12 +15,12 @@ Implement **Intergrax Harness AI / Agent OS**. Root `AGENTS.md` = stub (~350 tok
 ONE DOMAIN = ONE NEW CHAT
 ```
 
-Audit / implement / closeout: one domain pair per chat. HEP steps: `@docs/bootstrap/hep_step.txt`. Resume: new chat + bootstrap + `RESUME: docs/audit_results/…/progress.json` only.
+Audit / implement / closeout: one domain pair per chat. HEP steps: `@docs/project/maintainers/bootstrap/hep_step.txt`. Resume: new chat + bootstrap + `RESUME: docs/audit_results/…/progress.json` only.
 
 ## Domain read scope (when I1 allows load)
 
-- **Read:** arch hub read-scope block + plan hub read-scope + **one** satellite (`docs/plan/satellites/` or `docs/architecture/satellites/`).
-- **Audits:** `docs/guides/audit_slices/<DOMAIN>.md` — not full IDEAL/AUDIT_MAP.
+- **Read:** arch hub read-scope block + plan hub read-scope + **one** satellite (`docs/project/maintainers/plans/satellites/` or `docs/project/architecture/satellites/`).
+- **Audits:** `docs/project/technical/guides/audit_slices/<DOMAIN>.md` — not full IDEAL/AUDIT_MAP.
 - **Max:** one file >5k tok per session unless RESUME cites more.
 
 ## Never violate
@@ -30,10 +30,10 @@ Tier-0 intergrax/ · Tier-1 runtime/ · Tier-2 agents/ · Tier-3 applications/
 intergrax/ ↛ agents/|applications/   agents/ ↛ applications/
 ```
 
-Default scope: gate maintenance `docs/plan/PLATFORM_FOUNDATION.md` hub. Phase K / §6.3 only with explicit operator approval.
+Default scope: gate maintenance `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` hub. Phase K / §6.3 only with explicit operator approval.
 
 **Mode I:** `audyt pomysłu` / `idea audit` → `intergrax-idea-audit.mdc` (no code until approved).
 
 Repository artifacts: English. Operator chat: session language. **Do not commit** unless asked.
 
-Verification / ADR / routing: `@docs/guides/AGENT_INSTRUCTIONS.md` when needed.
+Verification / ADR / routing: `@docs/project/technical/guides/AGENT_INSTRUCTIONS.md` when needed.

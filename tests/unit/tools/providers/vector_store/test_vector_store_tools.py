@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import pytest
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.tools.providers.vector_store.contracts import (
@@ -27,10 +31,20 @@ pytestmark = pytest.mark.unit
 @pytest.fixture
 def vectorstore_ctx() -> ToolWiringContext:
     store = InMemoryVectorStore(tenant_id="t-1")
-    store.add_documents(
-        [Document(page_content="alpha", metadata={"source": "a.md"})],
-        embeddings=[[1.0, 0.0]],
-        ids=["doc-1"],
+    document = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": "doc-1", "root_document_id": "doc-1"},
+            "scope": {"tenant_id": "t-1"},
+            "content": "alpha",
+            "metadata": {"source": "a.md"},
+            "provenance": {"source_kind": "test", "source_id": "a.md"},
+        }
+    )
+    scope = VectorStoreScope(tenant_id="t-1")
+    store.add_records(
+        [VectorStoreRecord(document=document, embedding=[1.0, 0.0], vector_id="doc-1")],
+        scope=scope,
     )
     return ToolWiringContext(vectorstore_manager=VectorstoreManager(store))
 

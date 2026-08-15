@@ -114,7 +114,13 @@ class RuntimeToolGateway:
                 trace_step=self._trace_step,
                 allowed_tools=self._allowed_tools,
             )
-        except Exception as exc:  # noqa: BLE001 — gateway boundary
+        except Exception as exc:
+            from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
+                DeclarativePolicyHitlPauseRequired,
+            )
+
+            if isinstance(exc, DeclarativePolicyHitlPauseRequired):
+                raise
             return ToolResponse(
                 request_id=request.request_id,
                 status=ToolResponseStatus.FAILED,

@@ -4,20 +4,38 @@
 
 from __future__ import annotations
 
-import math
-from typing import Any, Dict, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any, Optional
 
-from langchain_core.documents import Document
 import numpy as np
+from numpy.typing import NDArray
 
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.knowledge.contracts.validation import require_non_empty_str
+from intergrax.utils import attribute_access
+from intergrax.distributed.source_operation import (
+    RagSourceOperationKey,
+    SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
+    SourceOperationCoordinator,
+)
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreContractError,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
+from intergrax.rag.vectorstore.contracts.hybrid_search import (
+    provider_supports_native_hybrid_search,
+    resolve_native_hybrid_search_provider,
+)
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
-from intergrax.rag.vectorstore.contracts.vector_store import VectorStoreHit
 from intergrax.rag.vectorstore.governance.collection_access_policy import (
     CollectionAccessPolicy,
     enforce_collection_access,
 )
+from intergrax.rag.vectorstore.publication_visibility import vector_record_visible
 from intergrax.logging import IntergraxLogging
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
@@ -25,10 +43,9 @@ logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 class VectorstoreManager(BaseVectorstoreManager):
     """
-    Thin delegation layer for VectorStore providers.
+    Native core boundary around provider implementations.
 
-    This class no longer implements any backend logic.
-    It delegates all operations to the injected VectorStore instance.
+    Providers receive validated native records and return native hits.
     """
 
     def __init__(
@@ -37,128 +54,393 @@ class VectorstoreManager(BaseVectorstoreManager):
         *,
         access_policy: Optional[CollectionAccessPolicy] = None,
         collection_name: Optional[str] = None,
+        scope: VectorStoreScope | None = None,
     ) -> None:
         self._store = store
         self._access_policy = access_policy
         self._collection_name = collection_name
+        self._bound_scope = scope
+        self._source_coordinator: SourceOperationCoordinator | None = None
+        provider_tenant = attribute_access.optional(store, "_tenant_id", None)
+        if isinstance(provider_tenant, str) and provider_tenant.strip():
+            provider_tenant = provider_tenant.strip()
+            provider_scope = VectorStoreScope(tenant_id=provider_tenant)
+            if (
+                scope is not None
+                and scope.tenant_id != provider_scope.tenant_id
+            ):
+                raise ValueError("manager scope tenant_id does not match provider tenant")
+            if scope is None:
+                self._bound_scope = provider_scope
+        elif scope is None:
+            raise ValueError(
+                "VectorstoreManager requires an explicit scope or a tenant-bound provider"
+            )
 
-    def _workspace_from_metadata(self, metadata: Optional[Dict[str, Any]]) -> Optional[str]:
-        if not metadata:
-            return None
-        value = metadata.get("workspace_id")
-        return str(value) if value is not None else None
+    @property
+    def bound_scope(self) -> VectorStoreScope | None:
+        return self._bound_scope
 
-    def add_documents(
+    def set_source_operation_coordinator(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
-        *,
-        ids: Optional[Sequence[str]] = None,
-        base_metadata: Optional[Dict[str, Any]] = None,
+        coordinator: SourceOperationCoordinator,
     ) -> None:
+        self._source_coordinator = coordinator
+
+    def _resolve_scope(self, scope: VectorStoreScope | None) -> VectorStoreScope:
+        if scope is not None and not isinstance(scope, VectorStoreScope):
+            raise TypeError("scope must be a VectorStoreScope")
+        resolved = scope or self._bound_scope
+        if resolved is None:
+            raise ValueError("vector-store operation requires an explicit tenant scope")
+        if self._bound_scope is not None:
+            if resolved.tenant_id != self._bound_scope.tenant_id:
+                raise VectorStoreContractError("operation tenant_id differs from bound scope")
+            if (
+                self._bound_scope.namespace is not None
+                and resolved.namespace != self._bound_scope.namespace
+            ):
+                raise VectorStoreContractError("operation namespace differs from bound scope")
+            if (
+                self._bound_scope.workspace_id is not None
+                and resolved.workspace_id != self._bound_scope.workspace_id
+            ):
+                raise VectorStoreContractError("operation workspace_id differs from bound scope")
+        return resolved
+
+    def _enforce_access(self, operation: str, scope: VectorStoreScope) -> None:
+        if self._access_policy is not None and self._access_policy.tenant_id != scope.tenant_id:
+            raise ValueError("collection access policy tenant_id differs from scope")
         enforce_collection_access(
             self._access_policy,
-            "write",
-            workspace_id=self._workspace_from_metadata(base_metadata),
+            operation,
+            workspace_id=scope.workspace_id,
             collection_name=self._collection_name,
         )
 
-        docs = list(documents)
-        if base_metadata:
-            for d in docs:
-                d.metadata = {**(d.metadata or {}), **base_metadata}
+    @staticmethod
+    def _validate_query_vector(
+        value: NDArray[np.float32] | Sequence[float],
+    ) -> NDArray[np.float32]:
+        try:
+            vector = np.array(value, dtype=np.float32, copy=True)
+        except (TypeError, ValueError) as exc:
+            raise VectorStoreContractError("query_embedding must be numeric") from exc
+        if vector.ndim != 1:
+            raise VectorStoreContractError("query_embedding must be exactly 1D")
+        if vector.size == 0:
+            raise VectorStoreContractError(
+                "query_embedding must have a positive dimension"
+            )
+        if not np.isfinite(vector).all():
+            raise VectorStoreContractError(
+                "query_embedding must contain only finite values"
+            )
+        vector.setflags(write=False)
+        return vector
 
-        if len(docs) != len(embeddings):
-            raise ValueError(
-                "VectorstoreManager.add_documents: "
-                "documents and embeddings length mismatch "
-                f"({len(docs)} vs {len(embeddings)})"
+    @staticmethod
+    def _validate_top_k(top_k: int) -> int:
+        if type(top_k) is not int or top_k <= 0:
+            raise VectorStoreContractError("top_k must be an exact positive int")
+        return top_k
+
+    def add_records(
+        self,
+        records: Sequence[VectorStoreRecord],
+        *,
+        scope: VectorStoreScope | None = None,
+    ) -> Sequence[str] | None:
+        materialized = list(records)
+        if not materialized:
+            return []
+
+        validated: list[VectorStoreRecord] = []
+        for record in materialized:
+            if not isinstance(record, VectorStoreRecord):
+                raise TypeError("records must contain only VectorStoreRecord values")
+            checked = VectorStoreRecord(
+                document=record.document,
+                embedding=record.embedding,
+                vector_id=record.vector_id,
+            )
+            validated.append(checked)
+
+        first_document_scope = validated[0].document.scope
+        if any(
+            record.document.scope.tenant_id != first_document_scope.tenant_id
+            or record.document.scope.namespace != first_document_scope.namespace
+            or record.document.scope.workspace_id != first_document_scope.workspace_id
+            for record in validated[1:]
+        ):
+            raise VectorStoreContractError(
+                "records must share the same document tenant, namespace and workspace"
             )
 
-        if isinstance(embeddings, np.ndarray):
-            embeddings = embeddings.tolist()
-
-        dim = len(embeddings[0])
-        for i, vec in enumerate(embeddings):
-
-            if len(vec) != dim:
-                raise ValueError(
-                    "Embedding dimension mismatch "
-                    f"at index {i}: {len(vec)} != {dim}"
-                )
-            
-            for v in vec:
-                if math.isnan(v) or math.isinf(v):
-                    raise ValueError(
-                        f"Invalid embedding value at index {i}"
-                    )
-
-        self._store.add_documents(
-            documents=docs,
-            embeddings=embeddings,
-            ids=ids,
+        document_scope = VectorStoreScope(
+            tenant_id=first_document_scope.tenant_id,
+            namespace=first_document_scope.namespace,
+            workspace_id=first_document_scope.workspace_id,
         )
+        if scope is not None:
+            resolved_scope = self._resolve_scope(scope)
+        else:
+            bound_scope = self._bound_scope
+            if bound_scope is not None:
+                if bound_scope.tenant_id != document_scope.tenant_id:
+                    raise VectorStoreContractError(
+                        "document tenant_id differs from bound scope"
+                    )
+                if (
+                    bound_scope.namespace is not None
+                    and bound_scope.namespace != document_scope.namespace
+                ):
+                    raise VectorStoreContractError(
+                        "document namespace differs from bound scope"
+                    )
+            resolved_scope = self._resolve_scope(
+                VectorStoreScope(
+                    tenant_id=document_scope.tenant_id,
+                    namespace=document_scope.namespace,
+                    workspace_id=document_scope.workspace_id,
+                )
+            )
+
+        if any(
+            not resolved_scope.matches_document(record.document)
+            for record in validated
+        ):
+            raise VectorStoreContractError(
+                "record document scope does not match operation scope"
+            )
+
+        self._enforce_access("write", resolved_scope)
+        return self._store.add_records(validated, scope=resolved_scope)
 
     def query(
         self,
-        query_embedding: Sequence[float],
+        query_embedding: NDArray[np.float32] | Sequence[float],
         *,
+        scope: VectorStoreScope | None = None,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
     ) -> Sequence[VectorStoreHit]:
-        enforce_collection_access(
-            self._access_policy,
-            "read",
-            workspace_id=self._workspace_from_metadata(
-                metadata_filter.conditions if metadata_filter else None
-            ),
-            collection_name=self._collection_name,
-        )
-
-        if isinstance(query_embedding, np.ndarray):
-            query_embedding = query_embedding.tolist()
-
-        return self._store.query(
-            query_embedding=query_embedding,
-            top_k=top_k,
-            metadata_filter=metadata_filter,
+        resolved_scope = self._resolve_scope(scope)
+        self._enforce_access("read", resolved_scope)
+        vector = self._validate_query_vector(query_embedding)
+        limit = self._validate_top_k(top_k)
+        provider_filter = MetadataFilter.for_scope(resolved_scope, metadata_filter)
+        provider_hits = self._store.query(
+            query_embedding=vector.tolist(),
+            scope=resolved_scope,
+            top_k=self._publication_query_limit(limit, resolved_scope),
+            metadata_filter=provider_filter,
             include_embeddings=include_embeddings,
         )
+        normalized = self._normalize_hits(
+            provider_hits,
+            scope=resolved_scope,
+            include_embeddings=include_embeddings,
+        )
+        return self._filter_visible_publication_hits(normalized, resolved_scope)[:limit]
+
+    def _normalize_hits(
+        self,
+        provider_hits: Sequence[object],
+        *,
+        scope: VectorStoreScope,
+        include_embeddings: bool,
+    ) -> list[VectorStoreHit]:
+        normalized: list[VectorStoreHit] = []
+        for provider_hit in provider_hits:
+            try:
+                if not isinstance(provider_hit, VectorStoreHit):
+                    raise VectorStoreContractError(
+                        "provider returned a non-native vector-store hit"
+                    )
+                document = provider_hit.document
+                if not isinstance(document, KnowledgeDocument):
+                    raise VectorStoreContractError(
+                        "provider hit document is not a KnowledgeDocument"
+                    )
+                if not scope.matches_document(document):
+                    raise VectorStoreContractError(
+                        "provider hit document scope does not match query scope"
+                    )
+                embedding = (
+                    provider_hit.embedding
+                    if include_embeddings
+                    else None
+                )
+                normalized.append(
+                    VectorStoreHit(
+                        vector_id=provider_hit.vector_id,
+                        document=document,
+                        similarity_score=provider_hit.similarity_score,
+                        rank=provider_hit.rank,
+                        embedding=embedding,
+                    )
+                )
+            except VectorStoreContractError:
+                raise
+            except (AttributeError, TypeError, ValueError, KeyError) as exc:
+                raise VectorStoreContractError(
+                    "provider returned a malformed vector-store hit"
+                ) from exc
+        return normalized
+
+    def supports_native_hybrid_search(self) -> bool:
+        return provider_supports_native_hybrid_search(self._store)
 
     def query_hybrid(
         self,
-        query_embedding: Sequence[float],
+        query_embedding: NDArray[np.float32] | Sequence[float],
         query_text: str,
         *,
+        scope: VectorStoreScope | None = None,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
         alpha: float = 0.5,
     ) -> Sequence[VectorStoreHit]:
-        if isinstance(query_embedding, np.ndarray):
-            query_embedding = query_embedding.tolist()
-        if hasattr(self._store, "query_hybrid"):
-            return self._store.query_hybrid(
-                query_embedding,
-                query_text,
-                top_k=top_k,
-                metadata_filter=metadata_filter,
-                include_embeddings=include_embeddings,
-                alpha=alpha,
+        resolved_scope = self._resolve_scope(scope)
+        self._enforce_access("read", resolved_scope)
+        vector = self._validate_query_vector(query_embedding)
+        limit = self._validate_top_k(top_k)
+        provider_filter = MetadataFilter.for_scope(resolved_scope, metadata_filter)
+        native_provider = resolve_native_hybrid_search_provider(self._store)
+        if native_provider is None:
+            raise VectorStoreContractError(
+                "provider does not support native hybrid search"
             )
-        return self.query(
-            query_embedding=query_embedding,
-            top_k=top_k,
-            metadata_filter=metadata_filter,
+        provider_hits = native_provider.query_hybrid(
+            vector.tolist(),
+            query_text,
+            scope=resolved_scope,
+            top_k=self._publication_query_limit(limit, resolved_scope),
+            metadata_filter=provider_filter,
+            include_embeddings=include_embeddings,
+            alpha=alpha,
+        )
+        normalized = self._normalize_hits(
+            provider_hits,
+            scope=resolved_scope,
             include_embeddings=include_embeddings,
         )
+        return self._filter_visible_publication_hits(normalized, resolved_scope)[:limit]
 
-    def delete(self, ids: Sequence[str]) -> None:
-        self._store.delete(ids)
+    def _publication_query_limit(
+        self,
+        limit: int,
+        scope: VectorStoreScope,
+    ) -> int:
+        if self._source_coordinator is None:
+            return limit
+        try:
+            return max(limit, int(self._store.count(scope=scope)))
+        except (AttributeError, TypeError, ValueError):
+            return limit
 
-    def count(self) -> int:
-        return self._store.count()
+    def _filter_visible_publication_hits(
+        self,
+        hits: Sequence[VectorStoreHit],
+        scope: VectorStoreScope,
+    ) -> list[VectorStoreHit]:
+        visible: list[VectorStoreHit] = []
+        for hit in hits:
+            source_id = str(hit.document.provenance.source_id)
+            publication_scope_id = str(hit.document.identity.root_document_id).strip()
+            key = RagSourceOperationKey(
+                tenant_id=scope.tenant_id,
+                namespace=scope.namespace,
+                workspace_id=scope.workspace_id,
+                source_id=source_id,
+                publication_scope_id=publication_scope_id,
+            )
+            record_generation = hit.document.metadata.get(
+                SOURCE_PUBLICATION_GENERATION_METADATA_KEY
+            )
+            generation_value = (
+                str(record_generation)
+                if record_generation is not None
+                else None
+            )
+            if not vector_record_visible(
+                record_generation=generation_value,
+                source_key=key,
+                coordinator=self._source_coordinator,
+            ):
+                continue
+            visible.append(
+                VectorStoreHit(
+                    vector_id=hit.vector_id,
+                    document=hit.document,
+                    similarity_score=hit.similarity_score,
+                    rank=len(visible),
+                    embedding=hit.embedding,
+                )
+            )
+        return visible
+
+    def delete(
+        self,
+        ids: Sequence[str],
+        *,
+        scope: VectorStoreScope | None = None,
+    ) -> None:
+        resolved_scope = self._resolve_scope(scope)
+        self._enforce_access("delete", resolved_scope)
+        try:
+            self._store.delete(ids, scope=resolved_scope)
+        except TypeError as exc:
+            raise VectorStoreContractError(
+                "provider does not support scoped delete"
+            ) from exc
+
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope | None = None,
+        root_document_id: str | None = None,
+    ) -> Sequence[str]:
+        resolved_scope = self._resolve_scope(scope)
+        self._enforce_access("read", resolved_scope)
+        try:
+            canonical_source_id = require_non_empty_str(
+                source_id,
+                field_name="source_id",
+            )
+            canonical_root_document_id = (
+                require_non_empty_str(
+                    root_document_id,
+                    field_name="root_document_id",
+                )
+                if root_document_id is not None
+                else None
+            )
+        except ValueError as exc:
+            raise VectorStoreContractError(
+                "source_id and root_document_id must be non-empty strings when provided"
+            ) from exc
+
+        provider_ids = self._store.list_source_record_ids(
+            source_id=canonical_source_id,
+            scope=resolved_scope,
+            root_document_id=canonical_root_document_id,
+        )
+        return tuple(sorted(provider_ids))
+
+    def count(self, *, scope: VectorStoreScope | None = None) -> int:
+        resolved_scope = self._resolve_scope(scope)
+        self._enforce_access("count", resolved_scope)
+        try:
+            return self._store.count(scope=resolved_scope)
+        except TypeError as exc:
+            raise VectorStoreContractError(
+                "provider does not support scoped count"
+            ) from exc
 
     def list_collections(self) -> list[str]:
         return list(self._store.list_collections())

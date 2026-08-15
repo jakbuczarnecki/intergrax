@@ -19,7 +19,6 @@ from intergrax.contracts.agent_run import AgentRunResult
 from intergrax.contracts.validation import ValidationResult
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.runtime_mapping import runtime_answer_to_agent_result
-from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -245,6 +244,15 @@ class AgentEngine:
             return answer, validation, agent.build_context(request), None, dict(result.structured_data)
 
         if supports_uaep(agent):
+            from intergrax.llm.messages import (
+                model_input_messages_from_metadata,
+                requires_structured_model_input,
+                STRUCTURED_MODEL_INPUT_REQUIRED_REASON,
+            )
+
+            model_messages = model_input_messages_from_metadata(request.metadata)
+            if requires_structured_model_input(model_messages):
+                raise UAEPBlockedError(STRUCTURED_MODEL_INPUT_REQUIRED_REASON)
             author_contract = agent.get_contract()
             resolved_contract = author_contract
             if registry is not None and registry.has(author_contract.id):

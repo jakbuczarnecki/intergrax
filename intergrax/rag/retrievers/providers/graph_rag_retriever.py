@@ -4,33 +4,41 @@
 """Graph-augmented retrieval: vector + keyword + graph channel fusion (M-RAG.42–43, M-RAG.53–54)."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Set
+from typing import Any
 
-from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
-from intergrax.rag.graph.contracts.graph_store import GraphNode, GraphStore
+from intergrax.distributed.source_operation import SourceOperationCoordinator
+from intergrax.rag.embedding.contracts.base_embedding_manager import (
+    BaseEmbeddingManager,
+)
+from intergrax.rag.graph.contracts.graph_store import GraphNode, GraphScope, GraphStore
 from intergrax.rag.retrieval.graph_channel_fusion import (
     GraphChannelHit,
     build_keyword_hits,
     fuse_graph_channels,
 )
-from intergrax.rag.retrieval.graph_provenance_builder import build_graph_retrieval_provenance
+from intergrax.rag.retrieval.graph_provenance_builder import (
+    build_graph_retrieval_provenance,
+)
+from intergrax.utils import attribute_access
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
-from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import (
+    BaseVectorstoreManager,
+)
+from intergrax.utils import attribute_access
 
 
 @dataclass
 class GraphRetrieverTrace:
-    channel_contributions: Dict[str, List[str]] = field(default_factory=dict)
-    expanded_node_ids: List[str] = field(default_factory=list)
+    channel_contributions: dict[str, list[str]] = field(default_factory=dict)
+    expanded_node_ids: list[str] = field(default_factory=list)
     graph_provenance_summary: str = ""
-    graph_provenance_records: List[Dict[str, Any]] = field(default_factory=list)
+    graph_provenance_records: list[dict[str, Any]] = field(default_factory=list)
 
 
 class GraphRagRetriever(BaseRetriever):
@@ -45,6 +53,7 @@ class GraphRagRetriever(BaseRetriever):
         seed_top_k: int = 5,
         graph_hops: int = 1,
         hybrid_fusion_enabled: bool = True,
+        source_coordinator: SourceOperationCoordinator | None = None,
     ) -> None:
         self._vs = vector_store
         self._em = embedding_manager
@@ -53,6 +62,14 @@ class GraphRagRetriever(BaseRetriever):
         self._graph_hops = int(graph_hops)
         self._hybrid_fusion_enabled = bool(hybrid_fusion_enabled)
         self._last_trace: GraphRetrieverTrace | None = None
+        if source_coordinator is not None:
+            configure = attribute_access.optional(
+                self._graph,
+                "set_source_operation_coordinator",
+                None,
+            )
+            if callable(configure):
+                configure(source_coordinator)
 
     @property
     def last_graph_trace(self) -> GraphRetrieverTrace | None:
@@ -62,10 +79,14 @@ class GraphRagRetriever(BaseRetriever):
     def name(cls) -> str:
         return "graph_rag"
 
-    def retrieve(self, query: RetrieverQuery) -> List[RetrieverCandidate]:
+    def retrieve(self, query: RetrieverQuery) -> tuple[RetrievalHit, ...]:
         self._last_trace = None
         if not query.query_text:
-            return []
+            return ()
+        if query.scope is not None:
+            bind_scope = attribute_access.optional(self._graph, "bind_scope", None)
+            if callable(bind_scope):
+                bind_scope(GraphScope.from_object(query.scope))
 
         q_vec = (
             query.query_embedding
@@ -74,69 +95,77 @@ class GraphRagRetriever(BaseRetriever):
         )
         seeds = self._vs.query(
             query_embedding=q_vec,
+            **({"scope": query.scope} if query.scope is not None else {}),
             top_k=self._seed_top_k,
             metadata_filter=query.metadata_filter,
             include_embeddings=False,
         )
 
-        vector_hits: List[GraphChannelHit] = []
-        by_id: Dict[str, RetrieverCandidate] = {}
-        seed_chunk_ids: Set[str] = set()
+        vector_hits: list[GraphChannelHit] = []
+        by_id: dict[str, RetrievalHit] = {}
+        seed_chunk_ids: set[str] = set()
         for hit in seeds:
-            seed_chunk_ids.add(hit.id)
+            seed_chunk_ids.add(hit.vector_id)
             vector_hits.append(
-                GraphChannelHit(document_id=hit.id, score=float(hit.similarity_score), channel="vector")
+                GraphChannelHit(
+                    document_id=hit.vector_id,
+                    score=float(hit.similarity_score),
+                    channel="vector",
+                )
             )
-            by_id[hit.id] = RetrieverCandidate(
-                id=hit.id,
-                content=hit.content,
-                metadata=dict(hit.metadata or {}),
-                score=float(hit.similarity_score),
-                rank=hit.rank,
+            by_id.setdefault(
+                hit.vector_id,
+                RetrievalHit.from_vector_store_hit(
+                    hit,
+                    channel="vector",
+                    retriever_name=self.name(),
+                ),
             )
 
-        related_node_ids: Set[str] = set()
+        related_node_ids: set[str] = set()
         related_node_ids |= self._graph.node_ids_for_chunks(seed_chunk_ids)
         related_node_ids |= self._entity_ids_from_metadata(seeds)
         related_node_ids |= self._entity_ids_from_query_tokens(query.query_text)
 
-        expanded_nodes: List[GraphNode] = []
-        expanded_node_ids: Set[str] = set(related_node_ids)
+        expanded_nodes: list[GraphNode] = []
+        expanded_node_ids: set[str] = set(related_node_ids)
         for node_id in list(related_node_ids):
             for neighbor in self._graph.neighbors(node_id, max_hops=self._graph_hops):
                 expanded_node_ids.add(neighbor.id)
                 expanded_nodes.append(neighbor)
 
-        graph_hits: List[GraphChannelHit] = []
+        graph_hits: list[GraphChannelHit] = []
         extra_chunk_ids = self._graph.chunk_ids_for_nodes(expanded_node_ids)
         if extra_chunk_ids:
             prefetch = self._vs.query(
                 query_embedding=q_vec,
+                **({"scope": query.scope} if query.scope is not None else {}),
                 top_k=max(int(query.top_k), len(extra_chunk_ids) * 2),
                 metadata_filter=query.metadata_filter,
             )
             for hit in prefetch:
-                if hit.id not in extra_chunk_ids:
+                if hit.vector_id not in extra_chunk_ids:
                     continue
                 graph_hits.append(
                     GraphChannelHit(
-                        document_id=hit.id,
+                        document_id=hit.vector_id,
                         score=float(hit.similarity_score) * 0.95,
                         channel="graph",
                     )
                 )
-                if hit.id not in by_id:
-                    by_id[hit.id] = RetrieverCandidate(
-                        id=hit.id,
-                        content=hit.content,
-                        metadata={**(hit.metadata or {}), "graph_expanded": True},
-                        score=float(hit.similarity_score) * 0.95,
-                        rank=hit.rank,
+                if hit.vector_id not in by_id:
+                    by_id[hit.vector_id] = RetrievalHit.from_vector_store_hit(
+                        hit,
+                        channel="graph",
+                        retriever_name=self.name(),
                     )
 
         keyword_hits = build_keyword_hits(
             query_text=query.query_text,
-            candidates=[(candidate.id, candidate.content) for candidate in by_id.values()],
+            candidates=[
+                (vector_id, candidate.content)
+                for vector_id, candidate in by_id.items()
+            ],
         )
 
         provenance_bundle = build_graph_retrieval_provenance(
@@ -156,14 +185,21 @@ class GraphRagRetriever(BaseRetriever):
                 top_k=int(query.top_k),
             )
             ordered_ids = fusion.merged_document_ids
-            candidates = [by_id[doc_id] for doc_id in ordered_ids if doc_id in by_id]
             self._last_trace = GraphRetrieverTrace(
                 channel_contributions=dict(fusion.channel_contributions),
                 expanded_node_ids=sorted(expanded_node_ids),
                 graph_provenance_summary=provenance_summary,
                 graph_provenance_records=provenance_records,
             )
-            return candidates[: int(query.top_k)]
+            return tuple(
+                self._with_rank_and_channel(
+                    by_id[doc_id],
+                    rank=rank,
+                    channel="hybrid",
+                )
+                for rank, doc_id in enumerate(ordered_ids)
+                if doc_id in by_id
+            )[: int(query.top_k)]
 
         candidates = list(by_id.values())
         candidates.sort(key=lambda c: c.score, reverse=True)
@@ -172,10 +208,31 @@ class GraphRagRetriever(BaseRetriever):
             graph_provenance_summary=provenance_summary,
             graph_provenance_records=provenance_records,
         )
-        return candidates[: int(query.top_k)]
+        return tuple(
+            self._with_rank_and_channel(candidate, rank=rank, channel="graph")
+            for rank, candidate in enumerate(candidates[: int(query.top_k)])
+        )
 
-    def _entity_ids_from_metadata(self, seeds) -> Set[str]:
-        found: Set[str] = set()
+    def _with_rank_and_channel(
+        self,
+        hit: RetrievalHit,
+        *,
+        rank: int,
+        channel: str,
+    ) -> RetrievalHit:
+        return RetrievalHit(
+            document=hit.document,
+            score=hit.score,
+            rank=rank,
+            channel=channel,
+            vector_id=hit.vector_id,
+            embedding=hit.embedding,
+            source_rank=hit.source_rank,
+            retriever_name=self.name(),
+        )
+
+    def _entity_ids_from_metadata(self, seeds) -> set[str]:
+        found: set[str] = set()
         for hit in seeds:
             metadata = hit.metadata or {}
             raw_ids = metadata.get("graph_entity_ids")
@@ -189,9 +246,9 @@ class GraphRagRetriever(BaseRetriever):
                         found.add(f"ent:{label_text.lower().replace(' ', '_')}")
         return found
 
-    def _entity_ids_from_query_tokens(self, query_text: str) -> Set[str]:
+    def _entity_ids_from_query_tokens(self, query_text: str) -> set[str]:
         tokens = [token.strip() for token in query_text.split() if len(token.strip()) >= 3]
-        found: Set[str] = set()
+        found: set[str] = set()
         for token in tokens[:3]:
             for node in self._graph.find_nodes(label_contains=token, limit=3):
                 found.add(node.id)

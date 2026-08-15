@@ -1,4 +1,4 @@
-# ADR-EXTERNAL_CONTRACTOR_ADAPTER-001: Tier-2 domain adapter (not orchestrator)
+﻿# ADR-EXTERNAL_CONTRACTOR_ADAPTER-001: Tier-2 domain adapter (not orchestrator)
 
 | Field | Value |
 |-------|-------|
@@ -34,12 +34,12 @@ GEC requires a Tier-2 agent that speaks to an external contractor product. Witho
 
 ## Compliance
 
-- No `applications/` imports
+- No `applications` imports
 - Tier boundaries preserved
 - No GEC-3 runtime implementation claimed Done in GEC-0
 
 ## Implementation notes
 
-- Package: `agents/external_contractor_adapter/`
+- Package: `agents/external_contractor_adapter`
 - Host mount: `applications/governed_contractor_application/manifest.py`
 - Verify: `uv run pytest agents/external_contractor_adapter/tests -q`

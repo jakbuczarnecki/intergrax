@@ -74,7 +74,7 @@ def load_proof_config_from_env() -> ModelRuntimeProofConfig:
             "LKW_MODEL_RUNTIME_PROOF_OLLAMA_MODEL", _env("INTERGRAX_LLM_MODEL")
         ),
         vllm_model=_env(
-            "LKW_MODEL_RUNTIME_PROOF_VLLM_MODEL", _env("INTERGRAX_DEFAULT_VLLM_MODEL")
+            "LKW_MODEL_RUNTIME_PROOF_VLLM_MODEL", _env("INTERGRAX_LLM_MODEL")
         ),
         ollama_base_url=_env(
             "LKW_MODEL_RUNTIME_PROOF_OLLAMA_BASE_URL",
@@ -106,13 +106,11 @@ def materialize_provider_env(
     if provider == "ollama":
         env["INTERGRAX_LLM_PROVIDER"] = "ollama"
         env["INTERGRAX_LLM_MODEL"] = config.ollama_model
-        env["INTERGRAX_DEFAULT_OLLAMA_MODEL"] = config.ollama_model
         env["OLLAMA_HOST"] = config.ollama_base_url.rstrip("/")
     else:
         env.pop("OLLAMA_HOST", None)
         env["INTERGRAX_LLM_PROVIDER"] = "vllm"
         env["INTERGRAX_LLM_MODEL"] = config.vllm_model
-        env["INTERGRAX_DEFAULT_VLLM_MODEL"] = config.vllm_model
         env["INTERGRAX_DEFAULT_VLLM_BASE_URL"] = config.vllm_base_url.rstrip("/")
     return env
 

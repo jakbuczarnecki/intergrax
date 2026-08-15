@@ -5,13 +5,24 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Mapping, Sequence
+from enum import Enum
 from pathlib import Path
-from typing import Sequence
+from typing import Any
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.rag.document_loaders.contracts.metadata_provider import BaseMetadataProvider
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, Enum):
+        return _json_safe(value.value)
+    if isinstance(value, Mapping):
+        return {_json_safe(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        return [_json_safe(item) for item in value]
+    return value
 
 
 class DefaultMetadataProvider(BaseMetadataProvider):
@@ -27,9 +38,9 @@ class DefaultMetadataProvider(BaseMetadataProvider):
 
     def enrich(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
         source: Path | str,
-    ) -> Sequence[Document]:
+    ) -> Sequence[KnowledgeDocument]:
 
         source_str = str(source)
 
@@ -56,19 +67,22 @@ class DefaultMetadataProvider(BaseMetadataProvider):
             source_path = source_str
             source_name = source_str.split("/")[-1]
 
-        for d in documents:
+        enriched: list[KnowledgeDocument] = []
 
-            md = dict(d.metadata or {})
+        for doc in documents:
+            md = _json_safe(dict(doc.metadata or {}))
 
-            md.setdefault(DocumentMetadataKey.SOURCE_PATH, source_path)
-            md.setdefault(DocumentMetadataKey.SOURCE_NAME, source_name)
-            md.setdefault(DocumentMetadataKey.EXTENSION, ext)
+            md.setdefault(DocumentMetadataKey.SOURCE_PATH.value, source_path)
+            md.setdefault(DocumentMetadataKey.SOURCE_NAME.value, source_name)
+            md.setdefault(DocumentMetadataKey.EXTENSION.value, ext)
 
-            if "page" in md and DocumentMetadataKey.PAGE_INDEX not in md:
-                md[DocumentMetadataKey.PAGE_INDEX] = md.pop("page")
+            if "page" in md and DocumentMetadataKey.PAGE_INDEX.value not in md:
+                md[DocumentMetadataKey.PAGE_INDEX.value] = md.pop("page")
 
-            md.setdefault(DocumentMetadataKey.PARENT_ID, parent_id)
+            md.setdefault(DocumentMetadataKey.PARENT_ID.value, parent_id)
 
-            d.metadata = md
+            payload = doc.model_dump(mode="python")
+            payload["metadata"] = md
+            enriched.append(KnowledgeDocument.model_validate(payload))
 
-        return documents
+        return enriched

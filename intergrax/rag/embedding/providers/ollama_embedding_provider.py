@@ -4,15 +4,15 @@
 
 from __future__ import annotations
 
-import os
-from typing import Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
 
-from langchain_ollama import OllamaEmbeddings
-
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
+
+if TYPE_CHECKING:
+    from langchain_ollama import OllamaEmbeddings
 
 
 class OllamaEmbeddingProvider(EmbeddingProvider):
@@ -20,19 +20,14 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
     Ollama embedding provider.
     """
 
-    DEFAULT_MODEL = "rjmalagon/gte-qwen2-1.5b-instruct-embed-f16:latest"
-    ENV_MODEL = "INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL"
+    DEFAULT_MODEL = "nomic-embed-text"
 
     def __init__(
         self,
         model_name: Optional[str] = None
     ) -> None:
 
-        env_model = os.getenv(self.ENV_MODEL)
-        resolved_model = model_name or env_model or self.DEFAULT_MODEL
-
-        # store configuration only
-        self._model_name = resolved_model
+        self._model_name = model_name or self.DEFAULT_MODEL
         self._model: Optional[OllamaEmbeddings] = None
 
         self._dim: Optional[int] = None
@@ -43,6 +38,17 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
     def _ensure_model(self) -> None:
 
         if self._model is None:
+            try:
+                from langchain_ollama import OllamaEmbeddings
+            except ModuleNotFoundError as exc:
+                if exc.name == "langchain_ollama":
+                    raise RuntimeError(
+                        "Provider 'ollama' requires optional dependency group "
+                        "'rag-langchain-embeddings'. Install Intergrax with "
+                        "'rag-langchain-embeddings'."
+                    ) from exc
+                raise
+
             self._model = OllamaEmbeddings(model=self._model_name)
 
     def _resolve_dim(self) -> None:

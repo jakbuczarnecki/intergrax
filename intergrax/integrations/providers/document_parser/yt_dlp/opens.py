@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.integrations.providers.document_parser.yt_dlp.config import YtDlpIntegrationConfig
 
 
@@ -19,8 +20,22 @@ def yt_dlp_is_available() -> bool:
         return False
 
 
+def _import_youtube_dl():
+    try:
+        from yt_dlp import YoutubeDL
+    except ModuleNotFoundError as exc:
+        if exc.name == "yt_dlp":
+            raise IntegrationDependencyError(
+                "Provider 'yt_dlp' requires optional dependency 'yt-dlp'. "
+                "Install Intergrax-ai[media-youtube].",
+                integration_name="yt_dlp",
+            ) from exc
+        raise
+    return YoutubeDL
+
+
 def download_youtube_audio(config: YtDlpIntegrationConfig, youtube_url: str) -> Path:
-    from yt_dlp import YoutubeDL
+    YoutubeDL = _import_youtube_dl()
 
     out_dir = Path(config.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -49,7 +64,7 @@ def download_youtube_audio(config: YtDlpIntegrationConfig, youtube_url: str) -> 
 
 
 def download_youtube_video(config: YtDlpIntegrationConfig, youtube_url: str) -> Path:
-    from yt_dlp import YoutubeDL
+    YoutubeDL = _import_youtube_dl()
 
     out_dir = Path(config.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

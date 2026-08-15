@@ -5,9 +5,13 @@
 
 from __future__ import annotations
 
-from typing import Protocol, Sequence, runtime_checkable
+from collections.abc import Sequence
+from typing import Protocol, runtime_checkable
 
-from langchain_core.documents import Document
+from intergrax.rag.rerankers.contracts.reranker_types import (
+    RerankerCandidate,
+    RerankerResult,
+)
 
 
 @runtime_checkable
@@ -20,8 +24,8 @@ class RerankProvider(Protocol):
     def rerank(
         self,
         query: str,
-        documents: Sequence[Document],
+        candidates: Sequence[RerankerCandidate],
         *,
         top_n: int | None = None,
-    ) -> Sequence[Document]:
-        """Return documents reordered by relevance to ``query``."""
+    ) -> Sequence[RerankerResult]:
+        """Return native results ordered by relevance to ``query``."""

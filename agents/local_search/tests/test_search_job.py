@@ -158,6 +158,75 @@ async def test_run_search_job_retrieves_with_valid_query() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_run_search_job_rejects_invalid_source_scope_without_retrieve() -> None:
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock()
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_search",
+        request=RuntimeRequest(
+            agent_id="local_search",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="find docs",
+            metadata={"query": "find docs", "collection_id": "ws-1", "allowed_source_ids": []},
+        ),
+        tool_gateway=gateway,
+    )
+
+    summary = _search_summary(await run_search_job(_step_ctx(exec_ctx)))
+
+    assert summary["used"] is False
+    assert summary["reason"] == SearchSummaryReason.SOURCE_SCOPE_INVALID.value
+    assert summary["raw_tool_reason"] == "source_scope_empty"
+    gateway.invoke.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_search_job_does_not_expose_source_scope_in_tool_input() -> None:
+    captured_input: dict[str, object] = {}
+
+    async def _invoke_tool(request: ToolRequest) -> ToolResponse:
+        captured_input.update(dict(request.input))
+        return ToolResponse(
+            request_id=request.request_id,
+            status=ToolResponseStatus.SUCCESS,
+            output={"used": True, "chunks": [], "citations": [], "context_text": "", "reason": ""},
+        )
+
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(side_effect=_invoke_tool)
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_search",
+        request=RuntimeRequest(
+            agent_id="local_search",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="find docs",
+            metadata={
+                "query": "find docs",
+                "collection_id": "ws-1",
+                "allowed_source_ids": ["source-a"],
+            },
+        ),
+        tool_gateway=gateway,
+    )
+
+    await run_search_job(_step_ctx(exec_ctx))
+
+    assert "allowed_source_ids" not in captured_input
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_run_search_job_fails_safe_on_retrieve_error() -> None:
     gateway = AsyncMock()
     gateway.invoke = AsyncMock(

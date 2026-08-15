@@ -122,6 +122,7 @@ def materialize_runtime_config(
         enable_websearch=ctx_profile.enable_websearch,
         production_mode=strict or env.execution_mode.value == "strict",
         tenant_id=request.tenant_id,
+        workspace_id=request.workspace_id,
         trace_db_path=trace_path,
         security_profile=env.security_profile,
         modality_profile=modality_profile,
@@ -232,12 +233,14 @@ def build_runtime_context_from_environment(
     )
     rag_stack = resolve_rag_stack_for_memory_wiring(
         env,
+        tenant_id=config.tenant_id,
         integration_profile=integration_profile,
         llm_adapter=config.llm_adapter,
     )
     assert_memory_vector_backend_available(env, rag_stack)
     session_manager = build_session_manager_from_environment(
         env,
+        tenant_id=config.tenant_id,
         integration_profile=integration_profile,
         memory_wiring=memory_wiring,
         rag_stack=rag_stack,

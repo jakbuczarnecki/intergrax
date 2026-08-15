@@ -5,12 +5,19 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 from tqdm import tqdm
-from langchain_core.documents import Document
 
+from pydantic import ValidationError
+
+from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
+from intergrax.knowledge.contracts.validation import JsonValue, knowledge_metadata_to_plain
+from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+    copy_parser_runtime_state,
+)
 from intergrax.rag.document_loaders.contracts.base_document_loader import (
     BaseDocumentsLoader,
     MetadataCallback,
@@ -20,6 +27,20 @@ from intergrax.rag.document_loaders.pipeline.normalizer_pipeline import Normaliz
 from intergrax.rag.document_loaders.registry.document_handler_registry import DocumentHandlerRegistry
 
 logger = logging.getLogger(__name__)
+
+
+def _merge_custom_metadata(
+    document: KnowledgeDocument,
+    extra: Mapping[str, JsonValue],
+) -> KnowledgeDocument:
+    merged = {
+        **knowledge_metadata_to_plain(document.metadata),
+        **dict(extra),
+    }
+    payload = document.model_dump(mode="python")
+    payload["metadata"] = merged
+    validated = KnowledgeDocument.model_validate(payload)
+    return copy_parser_runtime_state(document, validated)
 
 
 class DocumentsLoader(BaseDocumentsLoader):
@@ -64,9 +85,11 @@ class DocumentsLoader(BaseDocumentsLoader):
         self,
         source: str,
         *,
+        tenant_id: str,
+        namespace: str | None = None,
         use_default_metadata: bool = True,
         call_custom_metadata: Optional[MetadataCallback] = None,
-    ) -> List[Document]:
+    ) -> List[KnowledgeDocument]:
         """
         Load a single source (path/http/s3/etc.) using handler registry + metadata pipeline.
 
@@ -75,12 +98,14 @@ class DocumentsLoader(BaseDocumentsLoader):
         - Handler is responsible for interpreting and validating the source.
         """
 
-        docs: List[Document] = []
+        scope = KnowledgeDocumentScope(tenant_id=tenant_id, namespace=namespace)
+
+        docs: List[KnowledgeDocument] = []
 
         try:
             handler = self._registry.resolve(source)
 
-            loaded = handler.load(source)
+            loaded = handler.load(source, scope=scope)
             if not loaded:
                 return docs
 
@@ -90,20 +115,27 @@ class DocumentsLoader(BaseDocumentsLoader):
             )
 
             if use_default_metadata:
-                enriched_seq = self._metadata_pipeline.enrich(normalized, source)
-                enriched: List[Document] = list(enriched_seq)
+                enriched = list(
+                    self._metadata_pipeline.enrich(normalized, source)
+                )
             else:
                 enriched = list(normalized)
 
             if call_custom_metadata is not None:
-                for d in enriched:
-                    extra: Dict[str, Any] = call_custom_metadata(d, source)
+                merged_docs: List[KnowledgeDocument] = []
+                for doc in enriched:
+                    extra = call_custom_metadata(doc, source)
                     if extra:
-                        d.metadata = {**(d.metadata or {}), **extra}
+                        merged_docs.append(_merge_custom_metadata(doc, extra))
+                    else:
+                        merged_docs.append(doc)
+                enriched = merged_docs
 
             docs.extend(enriched)
             return docs
 
+        except ValidationError:
+            raise
         except Exception as e:
             logger.exception(
                 "[intergraxDocumentsLoader] Error while loading source %s: %s",
@@ -119,7 +151,10 @@ class DocumentsLoader(BaseDocumentsLoader):
     def load_documents(
         self,
         directory_path: str,
-    ) -> List[Document]:
+        *,
+        tenant_id: str,
+        namespace: str | None = None,
+    ) -> List[KnowledgeDocument]:
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -127,7 +162,7 @@ class DocumentsLoader(BaseDocumentsLoader):
                 directory_path,
             )
 
-        docs: List[Document] = []
+        docs: List[KnowledgeDocument] = []
 
         root = Path(directory_path)
 
@@ -185,7 +220,11 @@ class DocumentsLoader(BaseDocumentsLoader):
 
                 try:
 
-                    file_docs = self.load_document(str(file))
+                    file_docs = self.load_document(
+                        str(file),
+                        tenant_id=tenant_id,
+                        namespace=namespace,
+                    )
 
                     if file_docs:
                         docs.extend(file_docs)

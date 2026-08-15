@@ -5,15 +5,14 @@
 
 from __future__ import annotations
 
-import uuid
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.graph.contracts.graph_store import GraphEdge, GraphNode, GraphStore
 from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
+from intergrax.rag.graph.indexer.validation import validate_graph_index_batch
 
 
 class CommunityReportGraphIndexer:
@@ -23,22 +22,31 @@ class CommunityReportGraphIndexer:
     When ``LLMAdapter`` is provided, summary text is LLM-generated; otherwise deterministic excerpt.
     """
 
-    def __init__(self, store: GraphStore, llm: Optional[LLMAdapter] = None) -> None:
+    def __init__(self, store: GraphStore, llm: LLMAdapter | None = None) -> None:
         self._store = store
         self._llm = llm
         self._heuristic = HeuristicGraphIndexer(store)
 
     def index_documents(
-        self, documents: Sequence[Document], *, chunk_ids: Sequence[str] | None = None
+        self,
+        documents: Sequence[KnowledgeDocument],
+        *,
+        chunk_ids: Sequence[str] | None = None,
     ) -> int:
-        count = self._heuristic.index_documents(documents, chunk_ids=chunk_ids)
-        ids = list(chunk_ids) if chunk_ids else [str(uuid.uuid4()) for _ in documents]
-        for doc, chunk_id in zip(documents, ids):
+        validated_documents, resolved_ids = validate_graph_index_batch(
+            self._store, documents, chunk_ids
+        )
+        count = self._heuristic.index_documents(
+            validated_documents, chunk_ids=resolved_ids
+        )
+        for doc, chunk_id in zip(validated_documents, resolved_ids):
             count += self._index_community_report(doc, chunk_id)
         return count
 
-    def _index_community_report(self, doc: Document, chunk_id: str) -> int:
-        text = (doc.page_content or "").strip()
+    def _index_community_report(
+        self, doc: KnowledgeDocument, chunk_id: str
+    ) -> int:
+        text = doc.content.strip()
         if not text:
             return 0
         summary = self._summarize(text)

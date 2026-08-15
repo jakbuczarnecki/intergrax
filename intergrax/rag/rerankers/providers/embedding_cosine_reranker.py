@@ -5,18 +5,18 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from collections.abc import Sequence
 from typing import List, Optional
 
 import numpy as np
-from langchain_core.documents import Document
-
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import (
     RerankerCandidate,
     RerankerResult,
     RerankerNormalizationMode,
-    Candidates,
+    validate_candidates,
+    validate_limit,
 )
 
 
@@ -58,17 +58,18 @@ class EmbeddingCosineReranker(BaseReranker):
     def rerank(
         self,
         *,
-        query: Optional[str],
-        candidates: Candidates,
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
-
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+    ) -> Sequence[RerankerResult]:
+        candidates = validate_candidates(candidates)
+        validate_limit(limit)
         if not candidates:
-            return []
+            return ()
         
         self._ensure_embed_query()
 
-        normalized = self._normalize_candidates(candidates)
+        normalized = candidates
 
         if query is None or not query.strip():
             return self._finalize_without_query(normalized, limit)
@@ -77,7 +78,7 @@ class EmbeddingCosineReranker(BaseReranker):
         carriers: List[RerankerCandidate] = []
 
         for c in normalized:
-            txt = c.text.strip()
+            txt = c.document.content.strip()
             if not txt:
                 continue
             texts.append(txt)
@@ -105,7 +106,7 @@ class EmbeddingCosineReranker(BaseReranker):
         rr_norm = self._normalize_batch(rr_vals)
         orig_norm = self._normalize_batch(orig_vals)
 
-        results: List[RerankerResult] = []
+        scored: list[tuple[RerankerCandidate, float, Optional[float]]] = []
 
         for idx, candidate in enumerate(carriers):
 
@@ -120,76 +121,41 @@ class EmbeddingCosineReranker(BaseReranker):
                 else:
                     fusion = rr
 
-            results.append(
-                RerankerResult(
-                    candidate=candidate,
-                    rerank_score=rr,
-                    fusion_score=fusion,
-                    rank=0,
-                )
-            )
+            scored.append((candidate, rr, fusion))
 
-        key = (
-            lambda r: r.fusion_score
-            if self._use_score_fusion
-            else r.rerank_score
+        scored.sort(
+            key=lambda item: item[2] if self._use_score_fusion else item[1],
+            reverse=True,
         )
-
-        results.sort(key=lambda r: float(key(r) or 0.0), reverse=True)
-
-        if limit:
-            results = results[:limit]
-
-        for i, r in enumerate(results, start=1):
-            r.rank = i
-
-        return results
-
-
-    def _normalize_candidates(self, candidates: Candidates) -> List[RerankerCandidate]:
-
-        out: List[RerankerCandidate] = []
-
-        if isinstance(candidates[0], Document):
-            for d in candidates:
-                out.append(
-                    RerankerCandidate(
-                        id=None,
-                        text=d.page_content or "",
-                        metadata=dict(d.metadata or {}),
-                        original_score=None,
-                    )
-                )
-        else:
-            out = list(candidates)
-
-        return out
+        selected = scored[:limit] if limit is not None else scored
+        return tuple(
+            RerankerResult(
+                candidate=candidate,
+                rerank_score=rerank_score,
+                fusion_score=fusion_score,
+                rank=rank,
+            )
+            for rank, (candidate, rerank_score, fusion_score) in enumerate(selected)
+        )
 
 
     def _finalize_without_query(
         self,
-        candidates: List[RerankerCandidate],
-        limit: Optional[int],
-    ) -> List[RerankerResult]:
-
-        results: List[RerankerResult] = []
-
-        for idx, c in enumerate(candidates, start=1):
-            score = c.original_score or 0.0
-
-            results.append(
-                RerankerResult(
-                    candidate=c,
-                    rerank_score=score,
-                    fusion_score=score if self._use_score_fusion else None,
-                    rank=idx,
-                )
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None,
+    ) -> Sequence[RerankerResult]:
+        selected = candidates[:limit] if limit is not None else candidates
+        return tuple(
+            RerankerResult(
+                candidate=candidate,
+                rerank_score=candidate.original_score,
+                fusion_score=(
+                    candidate.original_score if self._use_score_fusion else None
+                ),
+                rank=rank,
             )
-
-        if limit:
-            results = results[:limit]
-
-        return results
+            for rank, candidate in enumerate(selected)
+        )
 
 
     def _embed_query_uncached(self, text: str) -> np.ndarray:

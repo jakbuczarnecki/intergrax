@@ -1,8 +1,8 @@
         # Build & deploy — Dispute Sim
 
-        Tier-3 application package: ``applications/dispute_sim_application/``. This document is the **operational runbook** for local development, verification, and container deployment.
+        Tier-3 application package: ``applications/dispute_sim_application``. This document is the **operational runbook** for local development, verification, and container deployment.
 
-        > Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+        > Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../intergrax/applications/USAGE.md)
 
         ---
 
@@ -12,10 +12,10 @@
         |------|---------|
         | [uv](https://docs.astral.sh/uv/) | Python deps from repo root ``pyproject.toml`` / ``uv.lock`` |
         | Repo clone | Monorepo; **build context is always repository root** |
-        | Docker (optional) | Image build via ``docker/`` |
+        | Docker (optional) | Image build via ``docker`` |
         | Docker Buildx (recommended) | Per-app ``.dockerignore`` via ``--ignorefile`` |
 
-        Tier-2 agents used by this host: **dispute_analyst, dispute_intake, dispute_scenario, dispute_strategist** (under ``agents/`` on ``PYTHONPATH``).
+        Tier-2 agents used by this host: **dispute_analyst, dispute_intake, dispute_scenario, dispute_strategist** (under ``agents`` on ``PYTHONPATH``).
 
         ---
 
@@ -59,7 +59,7 @@
 
         ### Product API
 
-Routes are mounted under ``/v1/dispute_sim``. See ``serving/`` and application README for contract details.
+Routes are mounted under ``/v1/dispute_sim``. See ``serving`` and application README for contract details.
 
         ---
 
@@ -84,7 +84,7 @@ Routes are mounted under ``/v1/dispute_sim``. See ``serving/`` and application R
 
         ### Build scripts (recommended)
 
-        Run from **repository root** or from ``applications/dispute_sim_application/docker/`` (scripts ``cd`` to repo root):
+        Run from **repository root** or from ``applications/dispute_sim_application/docker`` (scripts ``cd`` to repo root):
 
         ```bash
         # Linux / macOS / Git Bash
@@ -159,7 +159,7 @@ Routes are mounted under ``/v1/dispute_sim``. See ``serving/`` and application R
         | Issue | What to try |
         |-------|-------------|
         | ``unknown flag: --ignorefile`` | Use **Buildx** or copy ``docker/.dockerignore`` to repo root |
-        | Import errors for agents | Confirm ``agents/<slug>/`` is listed in ``docker/.dockerignore`` exceptions |
+        | Import errors for agents | Confirm ``agents/<slug>`` is listed in ``docker/.dockerignore`` exceptions |
         | Slow rebuild | Use BuildKit cache; avoid copying whole repo without per-app ``.dockerignore`` |
         | Wrong agents in registry | Check ``manifest.py`` flags / ``host/wiring.py`` and ``LAB_INCLUDE_*`` (lab) |
 
@@ -169,7 +169,7 @@ Routes are mounted under ``/v1/dispute_sim``. See ``serving/`` and application R
 
 ## Application dependency project
 
-Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+Canonical packaging: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
 ```bash
 uv sync --project applications/dispute_sim_application
@@ -180,7 +180,7 @@ The application `pyproject.toml` selects Intergrax platform extras. Docker uses 
 
 ## Application runtime graph (isolated images)
 
-Canonical packaging and image isolation: [docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
+Canonical packaging and image isolation: [docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
 ```bash
 uv sync --project applications/dispute_sim_application

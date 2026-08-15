@@ -79,7 +79,7 @@ class RagProfile:
     llm_route_enabled: bool = False
 
     # Ingest (no fixed parser — optional integration slug)
-    chunking_strategy_id: str = "langchain_recursive"
+    chunking_strategy_id: str = "recursive"
     hierarchical_index_enabled: bool = False
     sync_ingest_max_bytes: int = 50_000_000
     semantic_chunking_max_chars: int = 100_000
@@ -258,8 +258,8 @@ def rag_profile_from_env() -> RagProfile:
         route_mode=route_mode,
         deep_query_min_words=_env_int("INTERGRAX_RAG_DEEP_QUERY_MIN_WORDS", 12),
         llm_route_enabled=_env_bool("INTERGRAX_RAG_LLM_ROUTE_ENABLED", False),
-        chunking_strategy_id=os.getenv("INTERGRAX_RAG_CHUNKING_STRATEGY", "langchain_recursive").strip()
-        or "langchain_recursive",
+        chunking_strategy_id=os.getenv("INTERGRAX_RAG_CHUNKING_STRATEGY", "recursive").strip()
+        or "recursive",
         hierarchical_index_enabled=_env_bool("INTERGRAX_RAG_HIERARCHICAL_INDEX", False),
         sync_ingest_max_bytes=_env_int("INTERGRAX_RAG_SYNC_INGEST_MAX_BYTES", 50_000_000),
         semantic_chunking_max_chars=_env_int(

@@ -2,12 +2,12 @@
 
 **Role:** Reusable domain capabilities — contracts, typed step loop (`on_next_step`), prompts.  
 **Hosts:** Tier-3 applications under `applications/` mount agents via `AgentBinding.mount(...)`.  
-**Workflow:** [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md) · Appendix AC  
-**Terminology (canonical):** [`docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §29](../docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#29-author-facing-run-facade) — session/run/step vocabulary  
-**Architecture:** [`docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · **§32.0** readability  
-**Implementation plan:** [`docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw  
+**Workflow:** [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) · Appendix AC
+**Terminology (canonical):** [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §29](../docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#29-author-facing-run-facade) — session/run/step vocabulary
+**Architecture:** [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · **§32.0** readability
+**Implementation plan:** [`docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw
 
-**Migration (2026):** full fleet program — plan **Wave 8** (`ACP-MIG-*`). Bridge compat in Wave 4; **body migration** per-agent via tiered batches (T0→T4). Tracker: [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) fleet migration tracker. New agents: **READ → UPDATE → DECIDE** + scoreboard (`ACP-PROD-12`).
+**Migration (2026):** full fleet program — plan **Wave 8** (`ACP-MIG-*`). Bridge compat in Wave 4; **body migration** per-agent via tiered batches (T0→T4). Tracker: [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) fleet migration tracker. New agents: **READ → UPDATE → DECIDE** + scoreboard (`ACP-PROD-12`).
 
 ```text
 agents/<slug>/     →  reusable Tier-2 packages (no applications/ imports)
@@ -16,7 +16,7 @@ applications/      →  deployable environments that compose declared agents
 
 Each agent owns `agents/<slug>/pyproject.toml` (`intergrax-<slug>-agent` workspace member).
 Applications select agents by package dependency — see
-[`docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md`](../docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
+[`docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md`](../docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
 ### ACP fleet migration (Wave 8)
 
@@ -80,7 +80,7 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 | `dispute_strategist` | `dispute.strategy` | Attack/defense lines, emphasis map |
 | `dispute_scenario` | `dispute.scenario` | Court variants, correspondence review |
 
-**Host:** [`applications/dispute_sim_application/`](../applications/dispute_sim_application/) · **Architecture:** [ARCHITECTURE.md](../applications/dispute_sim_application/ARCHITECTURE.md)
+**Host:** [`applications/dispute_sim_application/`](../applications/dispute_sim_application/) · **Architecture:** [ARCHITECTURE.md](../applications/dispute_sim_application/docs/ARCHITECTURE.md)
 
 ### Legal review (single-agent SKU)
 
@@ -107,7 +107,7 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 
 Optional specialists (Legal, Research, …) are mounted in the same Tier-3 host via env flags; Nexus delegates — hub does not call them directly.
 
-**Host:** [`applications/intergrax_assistant_application/`](../applications/intergrax_assistant_application/) · **Architecture:** [ARCHITECTURE.md](../applications/intergrax_assistant_application/ARCHITECTURE.md)
+**Host:** [`applications/intergrax_assistant_application/`](../applications/intergrax_assistant_application/) · **Architecture:** [ARCHITECTURE.md](../applications/intergrax_assistant_application/docs/ARCHITECTURE.md)
 
 ---
 
@@ -127,12 +127,13 @@ Use **`lab_application`** (port `8090`) to experiment with any registered agent 
 
 Each agent folder ships:
 
-| File | Purpose |
+| Path | Purpose |
 |------|---------|
 | `README.md` | Quick start, capabilities, registration |
-| `ARCHITECTURE.md` | Purpose, layout, runtime contracts |
-| `IMPLEMENTATION_PLAN.md` | Local task queue |
-| `adr/` | Agent-level architecture decisions (when needed) |
+| `docs/ARCHITECTURE.md` | Purpose, layout, runtime contracts |
+| `docs/IMPLEMENTATION_PLAN.md` | Local task queue |
+| `docs/adr/` | Agent-level architecture decisions (when needed) |
+| `docs/journal/` | Implementation journal entries |
 
 ---
 
@@ -144,4 +145,4 @@ python -m intergrax.scaffold new-agent my_agent --capability domain.action
 python -m intergrax.scaffold new-stack my_feature --profile lab --capability my_feature.basic
 ```
 
-Full workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md)
+Full workflow: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)

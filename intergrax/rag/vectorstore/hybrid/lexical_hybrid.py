@@ -8,7 +8,12 @@ from intergrax.utils import attribute_access
 
 from typing import Any, Dict, List, Optional, Sequence
 
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreScope,
+)
+from intergrax.rag.vectorstore.providers.native_provider_boundary import native_hit
 from intergrax.rag.vectorstore.sparse.lexical_index import LexicalIndex
 
 
@@ -35,6 +40,10 @@ class LexicalHybridSupport:
         super().__init__(*args, **kwargs)
         self._lexical_index = LexicalIndex()
 
+    def supports_native_hybrid_search(self) -> bool:
+        """In-process lexical indexes are not cold-start durable."""
+        return False
+
     def _index_lexical(self, doc_id: str, text: str) -> None:
         self._lexical_index.upsert(doc_id, text)
 
@@ -42,6 +51,7 @@ class LexicalHybridSupport:
         self,
         query_text: str,
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter],
         payload_by_id: Dict[str, Dict[str, Any]],
@@ -62,15 +72,32 @@ class LexicalHybridSupport:
         hits: List[VectorStoreHit] = []
         for rank, (doc_id, score) in enumerate(lexical):
             payload = payload_by_id.get(doc_id, {})
-            hits.append(
-                VectorStoreHit(
-                    id=doc_id,
-                    content=str(payload.get("text", "")),
-                    metadata=dict(payload),
-                    similarity_score=float(score),
-                    rank=rank,
+            if hasattr(self, "_payloads"):
+                payload = attribute_access.optional(self, "_payloads", {}).get(
+                    doc_id,
+                    payload,
                 )
-            )
+            document = attribute_access.optional(self, "_documents", {}).get(doc_id)
+            if document is not None:
+                hits.append(
+                    VectorStoreHit(
+                        vector_id=doc_id,
+                        document=document,
+                        similarity_score=float(score),
+                        rank=rank,
+                    )
+                )
+            else:
+                hits.append(
+                    native_hit(
+                        vector_id=doc_id,
+                        content=str(payload.get("text", "")),
+                        metadata=payload,
+                        similarity_score=float(score),
+                        rank=rank,
+                        scope=scope,
+                    )
+                )
         return hits
 
     def query_hybrid(
@@ -78,6 +105,7 @@ class LexicalHybridSupport:
         query_embedding: Sequence[float],
         query_text: str,
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
@@ -87,6 +115,7 @@ class LexicalHybridSupport:
         prefetch = max(top_k * 3, top_k)
         dense_hits = self.query(
             query_embedding,
+            scope=scope,
             top_k=prefetch,
             metadata_filter=metadata_filter,
             include_embeddings=include_embeddings,
@@ -102,6 +131,7 @@ class LexicalHybridSupport:
 
         lexical_hits = self._lexical_hits(
             query_text,
+            scope=scope,
             top_k=prefetch,
             metadata_filter=metadata_filter,
             payload_by_id=payload_by_id,
@@ -124,9 +154,8 @@ class LexicalHybridSupport:
             combined = alpha * dense_score + (1.0 - alpha) * rrf_score
             out.append(
                 VectorStoreHit(
-                    id=hit.id,
-                    content=hit.content,
-                    metadata={**(hit.metadata or {}), "hybrid_rrf": rrf_score},
+                    vector_id=hit.vector_id,
+                    document=hit.document,
                     similarity_score=float(combined),
                     rank=rank,
                     embedding=hit.embedding,

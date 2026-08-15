@@ -5,7 +5,7 @@ REM Use, modification, or distribution without written permission is prohibited.
 
 setlocal EnableExtensions
 
-set "CONFIG=docs/public-adoption/curated_public_issues.yml"
+set "CONFIG=docs/project/maintainers/public-adoption/curated_public_issues.yml"
 set "SCRIPT=scripts/public_adoption/create_curated_issues.py"
 
 pushd "%~dp0\..\.." >nul 2>&1
@@ -102,7 +102,7 @@ echo   scripts\public_adoption\manage_curated_issues.bat apply wave_3
 echo   scripts\public_adoption\manage_curated_issues.bat check wave_3
 echo.
 echo Behavior:
-echo   - Source of truth: docs\public-adoption\curated_public_issues.yml
+echo   - Source of truth: docs\project\maintainers\public-adoption\curated_public_issues.yml
 echo   - With no wave argument, processes every wave defined in the YAML
 echo   - Existing GitHub issues are skipped by exact title
 echo   - Missing GitHub issues are created only in apply mode

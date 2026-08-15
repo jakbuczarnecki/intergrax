@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.governance.embedding_version_policy import (
     clear_reindex_queue_hooks,
     register_reindex_queue_hook,
@@ -25,8 +25,22 @@ def _clear_hooks() -> None:
 
 
 class _StubLoader:
-    def load_document(self, source: str, **kwargs: object) -> list[Document]:
-        return [Document(page_content="body", metadata={"source": source})]
+    def load_document(self, source: str, **kwargs: object) -> list[KnowledgeDocument]:
+        return [
+            KnowledgeDocument.model_validate(
+                {
+                    "schema_version": 1,
+                    "identity": {
+                        "document_id": "doc-1",
+                        "root_document_id": "doc-1",
+                    },
+                    "scope": {"tenant_id": "tenant.test"},
+                    "content": "body",
+                    "metadata": {"source": source},
+                    "provenance": {"source_kind": "test", "source_id": source},
+                }
+            )
+        ]
 
 
 class _StubSplitter:
@@ -35,15 +49,29 @@ class _StubSplitter:
 
 
 class _StubEmbedding:
-    def embed_documents(self, docs):
-        from types import SimpleNamespace
-
-        return SimpleNamespace(documents=docs, embeddings=[[0.1, 0.2]])
+    def embed_texts(self, texts):
+        return [[0.1, 0.2] for _ in texts]
 
 
 class _StubVectorstore:
-    def add_documents(self, **kwargs: object) -> list[str]:
+    def add_records(self, records, *, scope=None) -> list[str]:
         return ["id-0"]
+
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: object,
+        root_document_id: str | None = None,
+    ) -> tuple[str, ...]:
+        del source_id, scope, root_document_id
+        return ()
+
+    def count(self, *, scope: object) -> int:
+        return 0
+
+    def delete(self, ids, *, scope=None) -> None:
+        del ids, scope
 
 
 def test_ingest_pipeline_records_version_warnings(tmp_path: Path) -> None:
@@ -62,7 +90,10 @@ def test_ingest_pipeline_records_version_warnings(tmp_path: Path) -> None:
     result = pipeline.run(
         IngestRequest(
             source_path=str(source),
-            base_metadata={"embedding_model_version": "v1"},
+            base_metadata={
+                "tenant_id": "tenant.test",
+                "embedding_model_version": "v1",
+            },
         )
     )
 

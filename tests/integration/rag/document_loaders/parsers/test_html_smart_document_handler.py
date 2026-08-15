@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
 
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.html_document_handler import (
@@ -67,11 +67,14 @@ def test_html_handler_loads_html(tmp_path: Path):
 
     handler = HtmlSmartDocumentHandler()
 
-    docs = handler.load(str(html_path))
+    docs = handler.load(
+        str(html_path),
+        scope=KnowledgeDocumentScope(tenant_id="tenant.test"),
+    )
 
     assert docs
-    assert all(isinstance(d, Document) for d in docs)
+    assert all(isinstance(d, KnowledgeDocument) for d in docs)
 
-    content = " ".join(d.page_content for d in docs)
+    content = " ".join(d.content for d in docs)
 
     assert "Hello from HTML handler test." in content

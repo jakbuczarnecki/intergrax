@@ -95,6 +95,30 @@ def test_task_typed_governance_options():
 
 @pytest.mark.unit
 @pytest.mark.gate
+def test_task_to_runtime_request_propagates_workspace_id():
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        agent_id="agent-1",
+        message="workspace request",
+        metadata={"workspace_id": "workspace-a"},
+    )
+
+    request = task.to_runtime_request()
+
+    assert request.workspace_id == "workspace-a"
+
+    task_without_workspace = Task(
+        tenant_id="t1",
+        user_id="u1",
+        agent_id="agent-1",
+        message="tenant request",
+    )
+    assert task_without_workspace.to_runtime_request().workspace_id is None
+
+
+@pytest.mark.unit
+@pytest.mark.gate
 def test_hydrate_task_from_metadata_preserves_extra_keys():
     task = Task(
         tenant_id="t1",

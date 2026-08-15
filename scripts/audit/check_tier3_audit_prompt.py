@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-AUDIT_PATH = REPO_ROOT / "docs" / "guides" / "audit" / "TIER3_APPLICATION_ENVIRONMENT.md"
+AUDIT_PATH = REPO_ROOT / "docs" / "project" / "technical" / "guides" / "audit" / "TIER3_APPLICATION_ENVIRONMENT.md"
 
 REQUIRED_MARKERS = (
     "APP-EVOL-7",

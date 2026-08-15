@@ -2,7 +2,7 @@
 
 Semantic search over locally indexed documents.
 
-**Architecture:** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)  
+**Architecture:** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 **Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
 **Capability:** `local.workspace.search` (default agent on LKW host)
 
@@ -37,4 +37,4 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
 
 ## Authoring
 
-See [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md).
+See [`../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md).

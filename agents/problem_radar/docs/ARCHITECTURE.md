@@ -12,7 +12,7 @@ Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ## I/O
 
-- Domain schemas under `schemas/` (Pydantic)
+- Domain schemas under `schemas` (Pydantic)
 - Notebook: `notebooks/01_problem_radar_experiment.ipynb`
 
 ## Runtime

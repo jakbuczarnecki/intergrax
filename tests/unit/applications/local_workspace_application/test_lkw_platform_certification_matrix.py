@@ -22,15 +22,15 @@ _GEN = (
     / "generate-lkw-platform-certification-matrix.py"
 )
 _WINDOWS_SRC = (
-    _REPO_ROOT / "docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json"
+    _REPO_ROOT / "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json"
 )
 _LINUX_SRC = (
-    _REPO_ROOT / "docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json"
+    _REPO_ROOT / "applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json"
 )
 _MATRIX_JSON = (
-    _REPO_ROOT / "docs/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json"
+    _REPO_ROOT / "applications/local_workspace_application/docs/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json"
 )
-_MATRIX_MD = _REPO_ROOT / "docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
+_MATRIX_MD = _REPO_ROOT / "applications/local_workspace_application/docs/proof/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
 
 _SECRET_NEEDLES = (
     "password",
@@ -235,7 +235,7 @@ def test_generation_byte_identical_for_unchanged_inputs(gen: ModuleType) -> None
 def test_check_passes_for_fresh_files(gen: ModuleType, tmp_path: Path) -> None:
     _matrix, json_text, md_text = gen.generate_artifacts(repo_root=_REPO_ROOT)
     staging = tmp_path / "repo"
-    (staging / "docs/public-adoption/evidence").mkdir(parents=True)
+    (staging / "docs/project/maintainers/public-adoption/evidence").mkdir(parents=True)
     (staging / gen.MATRIX_JSON_REL).write_text(json_text, encoding="utf-8", newline="\n")
     (staging / gen.MATRIX_MD_REL).write_text(md_text, encoding="utf-8", newline="\n")
     gen.check_artifacts(staging, json_text, md_text)
@@ -256,7 +256,7 @@ def test_check_mode_reuses_committed_generated_from_commit(
 def test_check_fails_for_stale_json(gen: ModuleType, tmp_path: Path) -> None:
     _matrix, json_text, md_text = gen.generate_artifacts(repo_root=_REPO_ROOT)
     staging = tmp_path / "repo"
-    (staging / "docs/public-adoption/evidence").mkdir(parents=True)
+    (staging / "docs/project/maintainers/public-adoption/evidence").mkdir(parents=True)
     (staging / gen.MATRIX_JSON_REL).write_text(
         json_text.replace("VALID", "STALE", 1), encoding="utf-8", newline="\n"
     )
@@ -268,7 +268,7 @@ def test_check_fails_for_stale_json(gen: ModuleType, tmp_path: Path) -> None:
 def test_check_fails_for_stale_markdown(gen: ModuleType, tmp_path: Path) -> None:
     _matrix, json_text, md_text = gen.generate_artifacts(repo_root=_REPO_ROOT)
     staging = tmp_path / "repo"
-    (staging / "docs/public-adoption/evidence").mkdir(parents=True)
+    (staging / "docs/project/maintainers/public-adoption/evidence").mkdir(parents=True)
     (staging / gen.MATRIX_JSON_REL).write_text(json_text, encoding="utf-8", newline="\n")
     (staging / gen.MATRIX_MD_REL).write_text(
         md_text + "\nstale\n", encoding="utf-8", newline="\n"
@@ -279,7 +279,7 @@ def test_check_fails_for_stale_markdown(gen: ModuleType, tmp_path: Path) -> None
 
 def test_missing_windows_evidence_fails(gen: ModuleType, tmp_path: Path) -> None:
     root = tmp_path / "repo"
-    (root / "docs/public-adoption/evidence").mkdir(parents=True)
+    (root / "docs/project/maintainers/public-adoption/evidence").mkdir(parents=True)
     (root / gen.LINUX_SOURCE_REL).write_text(_LINUX_SRC.read_text(encoding="utf-8"))
     with pytest.raises(gen.MatrixGenerationError, match="missing_source"):
         gen.generate_artifacts(repo_root=root)
@@ -287,7 +287,7 @@ def test_missing_windows_evidence_fails(gen: ModuleType, tmp_path: Path) -> None
 
 def test_missing_linux_evidence_fails(gen: ModuleType, tmp_path: Path) -> None:
     root = tmp_path / "repo"
-    (root / "docs/public-adoption/evidence").mkdir(parents=True)
+    (root / "docs/project/maintainers/public-adoption/evidence").mkdir(parents=True)
     (root / gen.WINDOWS_SOURCE_REL).write_text(_WINDOWS_SRC.read_text(encoding="utf-8"))
     with pytest.raises(gen.MatrixGenerationError, match="missing_source"):
         gen.generate_artifacts(repo_root=root)
@@ -437,9 +437,9 @@ def test_markdown_states_hosting_is_not_full_core(gen: ModuleType) -> None:
 
 def test_markdown_references_both_source_artifacts(gen: ModuleType) -> None:
     md = gen.render_markdown(_build(gen))
-    assert "docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json" in md
-    assert "docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json" in md
-    assert "docs/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json" in md
+    assert "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json" in md
+    assert "applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json" in md
+    assert "applications/local_workspace_application/docs/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json" in md
 
 
 def test_no_secrets_in_json_or_markdown(gen: ModuleType) -> None:

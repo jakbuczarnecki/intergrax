@@ -11,7 +11,6 @@ import os
 from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence, Union
 
 import boto3
-from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import (
@@ -43,6 +42,22 @@ from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
+
+
+class BedrockRuntimeClient(Protocol):
+    """Minimal Bedrock Runtime client surface used by this adapter."""
+
+    def invoke_model(self, **kwargs: Any) -> Any:
+        ...
+
+    def invoke_model_with_response_stream(self, **kwargs: Any) -> Any:
+        ...
+
+    def converse(self, **kwargs: Any) -> Any:
+        ...
+
+    def converse_stream(self, **kwargs: Any) -> Any:
+        ...
 
 
 class BedrockModelFamily(str, Enum):
@@ -391,6 +406,7 @@ class BedrockChatAdapter(LLMAdapter):
         self,
         client: Optional[BedrockRuntimeClient] = None,
         model_id: Optional[str] = None,
+        model: Optional[str] = None,
         region: Optional[str] = None,
         family: Optional[BedrockModelFamily] = None,
         **defaults,
@@ -399,7 +415,7 @@ class BedrockChatAdapter(LLMAdapter):
         self._apply_defaults_call_config(defaults)
 
         resolved_region = region or os.getenv("INTERGRAX_DEFAULT_AWS_REGION", "")
-        resolved_model_id = model_id or os.getenv("INTERGRAX_DEFAULT_BEDROCK_MODEL_ID", "")
+        resolved_model_id = (model_id or model or "").strip()
 
         if not resolved_region:
             raise RuntimeError(
@@ -408,7 +424,8 @@ class BedrockChatAdapter(LLMAdapter):
 
         if not resolved_model_id:
             raise RuntimeError(
-                "INTERGRAX_DEFAULT_BEDROCK_MODEL_ID must be configured for Bedrock adapter."
+                "Bedrock adapter requires an explicit model_id (set INTERGRAX_LLM_MODEL "
+                "via LLMProfile / llm_profile_from_env)."
             )
 
         inferred_family = family or self._infer_family_from_model_id(resolved_model_id)

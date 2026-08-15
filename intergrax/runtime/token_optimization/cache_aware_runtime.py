@@ -534,8 +534,8 @@ def _usage_values_conflict(
     right: PromptCacheUsageSnapshot,
 ) -> bool:
     for field_name in _USAGE_COMPARABLE_FIELDS:
-        left_value = getattr(left, field_name)
-        right_value = getattr(right, field_name)
+        left_value = object.__getattribute__(left, field_name)
+        right_value = object.__getattribute__(right, field_name)
         if left_value is None or right_value is None:
             continue
         if left_value != right_value:
@@ -548,7 +548,7 @@ def _usage_snapshots_identical(
     right: PromptCacheUsageSnapshot,
 ) -> bool:
     for field_name in _USAGE_COMPARABLE_FIELDS:
-        if getattr(left, field_name) != getattr(right, field_name):
+        if object.__getattribute__(left, field_name) != object.__getattribute__(right, field_name):
             return False
     return True
 

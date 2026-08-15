@@ -17,7 +17,14 @@ _SCRIPTS_DIR = _LKW_ROOT / "scripts"
 _MONGODB_OVERLAY = _DOCKER_DIR / "docker-compose.mongodb.yml"
 _VERIFY_SCRIPT = _SCRIPTS_DIR / "verify_lkw_mongodb_stack.py"
 _RUNNER_BAT = _SCRIPTS_DIR / "run-lkw-mongodb-proof-stack.bat"
-_PUBLIC_PLATFORM_PROOF = _PROJECT_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
+_PUBLIC_PLATFORM_PROOF = (
+    _PROJECT_ROOT
+    / "applications"
+    / "local_workspace_application"
+    / "docs"
+    / "proof"
+    / "LKW_PLATFORM_PROOF.md"
+)
 
 
 def _read(path: Path) -> str:

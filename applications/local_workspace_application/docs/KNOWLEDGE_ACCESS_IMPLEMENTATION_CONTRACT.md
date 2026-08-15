@@ -45,7 +45,7 @@
 
 **Architecture:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)
 **Implementation plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
-**Platform integration canon:** [`../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
+**Platform integration canon:** [`../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
 
 ---
 
@@ -69,7 +69,7 @@ Hybrid Ask, Knowledge Query Orchestrator, live provider execution, Slack UI, new
 
 ### 1.4 Repository note
 
-`intergrax/applications/local_workspace/` does **not** exist. LKW product code lives under `applications/local_workspace_application/`. Tier-1 Vendor Knowledge lives under `intergrax/runtime/vendor_knowledge/`.
+`intergrax/applications/local_workspace` does **not** exist. LKW product code lives under `applications/local_workspace_application`. Tier-1 Vendor Knowledge lives under `intergrax/runtime/vendor_knowledge`.
 
 ---
 
@@ -108,7 +108,7 @@ lkw.ask_run:{tenant_id}:ask_run
 | Source ID generation | `uuid.uuid4()` for local folder; deterministic `src:knowledge_input_source:{input_id}` for intake-derived sources |
 | Tenant/workspace validation | `KnowledgeIntakeService.accept()` and resolvers check `repository.get_workspace()` |
 | Source metadata storage | `ManagedWorkspaceRepository.put_source()` row key `{workspace_id}:{source_id}` |
-| Provider correlation | **Not present** on `WorkspaceSource` today; `CONNECTED_SOURCE` path is deferred per `docs/plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md` Section 6 |
+| Provider correlation | **Not present** on `WorkspaceSource` today; `CONNECTED_SOURCE` path is deferred per `docs/project/maintainers/plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md` Section 6 |
 | `KnowledgeInputKind` | `managed_file`, `uploaded_folder_snapshot`, `source_candidate`, `web_url` - **no new provider-specific kind required** for first connected-source milestone |
 | Document ownership | `WorkspaceDocumentReference` - every indexed document references exactly one `source_id` |
 | Operation state | `WorkspaceOperation` + `KnowledgeInput` linked by `operation_id` / `input_id` |

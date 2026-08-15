@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import List
 
 from intergrax.rag.document_loaders.contracts.base_document_handler import (

@@ -1,0 +1,186 @@
+{
+  "claims": {
+    "all_linux_deployments_certified": false,
+    "full_cross_platform_certification_complete": false,
+    "full_multi_phase_core_certified_on_linux": false,
+    "macos_live_certified": false,
+    "native_linux_host_live_certified": false,
+    "shared_architecture_live_certified_in_linux_docker_runtime": true,
+    "shared_architecture_live_certified_on_native_windows": true
+  },
+  "generated_at_utc": "2026-07-21T10:18:33Z",
+  "generated_from_commit": "4847e9578251382c6a02eb8f00137dbf16b03553",
+  "limitations": [
+    "The current shared LKW proof architecture is receipt-backed and live-certified on native Windows and in a Linux Docker runtime. Native Linux host and macOS runtime certification remain pending.",
+    "Application Hosting certification is not the same as complete multi-phase Core Platform Proof certification.",
+    "Linux Docker runtime evidence does not certify native Linux installation.",
+    "macOS remains implemented but not live-certified."
+  ],
+  "matrix_id": "lkw-platform-matrix-526905202f61",
+  "matrix_status": "VALID",
+  "profiles": {
+    "linux_docker_runtime": {
+      "application_hosting_status": "live_certified",
+      "certification_result": "PASS",
+      "certification_source_commit": "40a73fbb455def6d5106180d74a7e65388457465",
+      "certified_at_utc": "2026-07-21T09:34:20Z",
+      "evidence_available": true,
+      "evidence_source": "applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json",
+      "execution_environment": "container",
+      "full_core_platform_proof_certified_by_profile": false,
+      "implementation_status": "implemented",
+      "limitations": [
+        "Application Hosting certification is not the same as complete multi-phase Core Platform Proof certification.",
+        "Linux Docker runtime evidence does not certify native Linux installation.",
+        "Full multi-phase Core Platform Proof was not executed by this Linux Docker profile.",
+        "systemd, native desktop integration and native package installation remain outside scope."
+      ],
+      "native_host_certified": false,
+      "operating_system": "linux",
+      "os_interaction_status": "live_certified",
+      "profile_id": "linux_docker_runtime",
+      "proofs": {
+        "application_hosting": {
+          "certified_scope": "application_hosting_phase",
+          "correlation_id": "lkw-hosting-a5cd37adf7d9",
+          "full_core_platform_proof": false,
+          "proof_id": "local_workspace:platform_application_hosting:lkw-hosting-a5cd37adf7d9",
+          "proof_kind": "platform_application_hosting",
+          "receipt_query_verified": true,
+          "receipt_recorded": true,
+          "receipt_verified": true,
+          "result": "PASS",
+          "run_id": "lkw-hosting-a5cd37adf7d9"
+        },
+        "os_interaction": {
+          "adapter_id": "lkw.linux_shell",
+          "client_runtime": "python",
+          "correlation_id": "lkw-linux-interaction-44cd93cabccd",
+          "powershell_runtime": null,
+          "proof_id": "local_workspace:platform_linux_interaction:lkw-linux-interaction-44cd93cabccd",
+          "proof_kind": "platform_linux_interaction",
+          "receipt_query_verified": true,
+          "receipt_recorded": true,
+          "receipt_verified": true,
+          "result": "PASS",
+          "run_id": "lkw-linux-interaction-44cd93cabccd",
+          "source": "linux_shell",
+          "wrapper_runtime": "posix_sh"
+        }
+      }
+    },
+    "linux_native_runtime": {
+      "application_hosting_status": "not_live_certified",
+      "certification_result": "NOT_CERTIFIED",
+      "certification_source_commit": null,
+      "certified_at_utc": null,
+      "evidence_available": false,
+      "evidence_source": null,
+      "execution_environment": "native_host",
+      "full_core_platform_proof_certified_by_profile": false,
+      "implementation_status": "implemented",
+      "limitations": [
+        "Linux entrypoints are implemented.",
+        "No separate native Linux host live certification artifact exists.",
+        "Linux Docker runtime evidence does not certify native Linux installation."
+      ],
+      "native_host_certified": false,
+      "operating_system": "linux",
+      "os_interaction_status": "not_live_certified",
+      "profile_id": "linux_native_runtime",
+      "proofs": {}
+    },
+    "macos_native_runtime": {
+      "application_hosting_status": "not_live_certified",
+      "certification_result": "NOT_CERTIFIED",
+      "certification_source_commit": null,
+      "certified_at_utc": null,
+      "evidence_available": false,
+      "evidence_source": null,
+      "execution_environment": "native_host",
+      "full_core_platform_proof_certified_by_profile": false,
+      "implementation_status": "implemented",
+      "limitations": [
+        "macOS entrypoints are implemented.",
+        "No macOS live certification artifact exists.",
+        "No macOS ProofReceipt has been recorded for this matrix."
+      ],
+      "native_host_certified": false,
+      "operating_system": "macos",
+      "os_interaction_status": "not_live_certified",
+      "profile_id": "macos_native_runtime",
+      "proofs": {}
+    },
+    "windows_native_runtime": {
+      "application_hosting_status": "live_certified",
+      "certification_result": "PASS",
+      "certification_source_commit": "6b71a841c894728766fd6f574c9cd53ad12ec5f9",
+      "certified_at_utc": "2026-07-21T10:18:33Z",
+      "evidence_available": true,
+      "evidence_source": "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json",
+      "execution_environment": "native_host",
+      "full_core_platform_proof_certified_by_profile": false,
+      "implementation_status": "implemented",
+      "limitations": [
+        "Application Hosting certification is not the same as complete multi-phase Core Platform Proof certification.",
+        "Full multi-phase Core Platform Proof was not re-executed by this Windows native profile.",
+        "Windows Service installation was not tested.",
+        "Windows desktop or tray integration was not tested."
+      ],
+      "native_host_certified": true,
+      "operating_system": "windows",
+      "os_interaction_status": "live_certified",
+      "profile_id": "windows_native_runtime",
+      "proofs": {
+        "application_hosting": {
+          "certified_scope": "application_hosting_phase",
+          "correlation_id": "lkw-hosting-a636dbd5d6e3",
+          "full_core_platform_proof": false,
+          "proof_id": "local_workspace:platform_application_hosting:lkw-hosting-a636dbd5d6e3",
+          "proof_kind": "platform_application_hosting",
+          "receipt_query_verified": true,
+          "receipt_recorded": true,
+          "receipt_verified": true,
+          "result": "PASS",
+          "run_id": "lkw-hosting-a636dbd5d6e3"
+        },
+        "os_interaction": {
+          "adapter_id": "lkw.windows_powershell",
+          "client_runtime": "python",
+          "correlation_id": "lkw-windows-interaction-2b42a6222d61",
+          "powershell_runtime": "Windows PowerShell",
+          "proof_id": "local_workspace:platform_windows_interaction:lkw-windows-interaction-2b42a6222d61",
+          "proof_kind": "platform_windows_interaction",
+          "receipt_query_verified": true,
+          "receipt_recorded": true,
+          "receipt_verified": true,
+          "result": "PASS",
+          "run_id": "lkw-windows-interaction-2b42a6222d61",
+          "source": "windows_powershell",
+          "wrapper_runtime": "windows_powershell"
+        }
+      }
+    }
+  },
+  "schema_version": "lkw.platform_certification_matrix.v1",
+  "source_artifacts": {
+    "linux_docker": {
+      "certification_profile": "linux_docker_runtime",
+      "certification_result": "PASS",
+      "certification_source_commit": "40a73fbb455def6d5106180d74a7e65388457465",
+      "certified_at_utc": "2026-07-21T09:34:20Z",
+      "path": "applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json",
+      "schema_version": "lkw.linux_docker_certification.v1",
+      "sha256": "bd940d683d445a08db5deff4f57d3071ed19890e821b875281371fb60ad33678"
+    },
+    "windows_native": {
+      "certification_profile": "windows_native_runtime",
+      "certification_result": "PASS",
+      "certification_source_commit": "6b71a841c894728766fd6f574c9cd53ad12ec5f9",
+      "certified_at_utc": "2026-07-21T10:18:33Z",
+      "path": "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json",
+      "schema_version": "lkw.windows_native_certification.v1",
+      "sha256": "2445b2222ba329169e8a437e5c4499f2835f559c1407f200e6d415e720519801"
+    }
+  }
+}

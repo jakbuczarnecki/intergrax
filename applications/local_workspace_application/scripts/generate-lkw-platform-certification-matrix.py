@@ -19,15 +19,15 @@ SCHEMA_VERSION = "lkw.platform_certification_matrix.v1"
 MATRIX_STATUS_VALID = "VALID"
 
 WINDOWS_SOURCE_REL = Path(
-    "docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json"
+    "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json"
 )
 LINUX_SOURCE_REL = Path(
-    "docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json"
+    "applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json"
 )
 MATRIX_JSON_REL = Path(
-    "docs/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json"
+    "applications/local_workspace_application/docs/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json"
 )
-MATRIX_MD_REL = Path("docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md")
+MATRIX_MD_REL = Path("applications/local_workspace_application/docs/proof/LKW_PLATFORM_CERTIFICATION_MATRIX.md")
 
 WINDOWS_SCHEMA = "lkw.windows_native_certification.v1"
 LINUX_SCHEMA = "lkw.linux_docker_certification.v1"
@@ -677,9 +677,9 @@ def render_markdown(matrix: Mapping[str, Any]) -> str:
             "## Evidence sources",
             "",
             "```text",
-            "docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json",
-            "docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json",
-            "docs/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json",
+            "applications/local_workspace_application/docs/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json",
+            "applications/local_workspace_application/docs/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json",
+            "applications/local_workspace_application/docs/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json",
             "```",
             "",
             "## Scope limitations",

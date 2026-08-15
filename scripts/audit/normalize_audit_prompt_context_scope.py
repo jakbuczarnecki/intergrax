@@ -6,7 +6,7 @@ This script is intentionally narrow:
 - keeps audit capability intact,
 - preserves explicit repository availability while forbidding broad exploration.
 
-Run after regenerating docs/audit/*.md if the generator reintroduces broad-scope wording.
+Run after regenerating docs/project/maintainers/audit/*.md if the generator reintroduces broad-scope wording.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ REPLACEMENTS = {
 
 TARGETS = [
     ROOT / "scripts" / "audit" / "generate_domain_audit_prompts.py",
-    *sorted((ROOT / "docs" / "audit").glob("*.md")),
+    *sorted((ROOT / "docs" / "project" / "maintainers" / "audit").glob("*.md")),
 ]
 
 

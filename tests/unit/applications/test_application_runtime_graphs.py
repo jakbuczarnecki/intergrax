@@ -32,7 +32,7 @@ def _load_toml(path: Path) -> dict:
 
 
 def _static_top_level_imports(root: Path) -> set[str]:
-    skip = {"tests", "docs", "notebooks", "__pycache__", "prompts"}
+    skip = {"tests", "docs", "notebooks", "__pycache__", "prompts", "runtime-context"}
     found: set[str] = set()
     for path in root.rglob("*.py"):
         if any(part in skip for part in path.parts):

@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Intergrax is under **active private R&D**. Security fixes are applied to the **current main branch** only.
+Intergrax is **source-available**, **proprietary**, and under **active R&D**. Security fixes are applied to the **current main branch** only.
 
 | Version | Supported |
 |---------|-----------|
@@ -44,14 +44,14 @@ We will coordinate disclosure timing with you. Credit will be given if desired a
 
 ## Security architecture (overview)
 
-Intergrax implements security as a **control plane** within the Harness AI platform. Canonical references:
+Intergrax implements security as a **control plane** within the Harness AI platform. Documented security architecture and mechanisms describe intended and enforced control-plane boundaries; they do **not** constitute formal security certification, compliance certification, penetration-test certification, or a universal production-security guarantee. Canonical references:
 
 | Topic | Document |
 |-------|----------|
-| Policy engine | [docs/intergrax_runtime_architecture.md §42.11](docs/intergrax_runtime_architecture.md) |
-| Security control plane | [docs/guides/AGENT_CREATION_GUIDE.md Appendix S](docs/guides/AGENT_CREATION_GUIDE.md) |
-| Production hardening | [docs/intergrax_runtime_architecture.md Phase U](docs/intergrax_runtime_architecture.md) |
-| Harness audit (security layers) | [docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
+| Policy engine | [docs/project/architecture/intergrax_runtime_architecture.md §42.11](docs/project/architecture/intergrax_runtime_architecture.md) |
+| Security control plane | [docs/project/technical/guides/AGENT_CREATION_GUIDE.md Appendix S](docs/project/technical/guides/AGENT_CREATION_GUIDE.md) |
+| Production hardening | [docs/project/architecture/intergrax_runtime_architecture.md Phase U](docs/project/architecture/intergrax_runtime_architecture.md) |
+| Harness audit (security layers) | [docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 
 ### Key security mechanisms
 
@@ -69,7 +69,7 @@ Intergrax implements security as a **control plane** within the Harness AI platf
 ### Secrets
 
 - **Never** commit API keys, tokens, passwords, or `.env` files
-- Use environment variables — see integration docs in [docs/architecture/INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md)
+- Use environment variables — see integration docs in [docs/project/architecture/INTEGRATIONS.md](docs/project/architecture/INTEGRATIONS.md)
 - Rotate credentials if accidentally exposed
 
 ### Dependencies
@@ -81,12 +81,12 @@ Intergrax implements security as a **control plane** within the Harness AI platf
 
 - New tools must go through `ToolRuntime` with policy hooks
 - Do not bypass `PolicyEngine` for convenience
-- Follow [docs/guides/AGENT_CREATION_GUIDE.md Appendix S](docs/guides/AGENT_CREATION_GUIDE.md) for security wiring
+- Follow [docs/project/technical/guides/AGENT_CREATION_GUIDE.md Appendix S](docs/project/technical/guides/AGENT_CREATION_GUIDE.md) for security wiring
 
 ### Infrastructure
 
 - Local Docker backends: [infra/README.md](infra/README.md) — do not expose to public networks in development
-- Lab harness presets: [docs/guides/HARNESS_ENVIRONMENT.md](docs/guides/HARNESS_ENVIRONMENT.md)
+- Lab harness presets: [docs/project/technical/guides/HARNESS_ENVIRONMENT.md](docs/project/technical/guides/HARNESS_ENVIRONMENT.md)
 
 ---
 
@@ -113,4 +113,4 @@ Intergrax implements security as a **control plane** within the Harness AI platf
 
 ## License & confidentiality
 
-Intergrax is proprietary software. See [LICENSE](LICENSE) and the collaboration model in [COLLABORATION.md](COLLABORATION.md). Security reports are handled confidentially.
+Intergrax is proprietary software. See [LICENSE](LICENSE) and the collaboration model in [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md). Security reports are handled confidentially.

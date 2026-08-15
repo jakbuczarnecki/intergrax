@@ -6,9 +6,9 @@
 from __future__ import annotations
 
 import os
+import math
+import re
 from typing import Any, Callable, Mapping, Optional, Sequence
-
-from langchain_core.documents import Document
 
 from intergrax.integrations._shared.catalog_object_storage import CatalogObjectStorage
 from intergrax.integrations._shared.health import http_ping_ok
@@ -51,7 +51,22 @@ from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.integrations.contracts.security_scanner import SecurityScannerBackend
 from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
-from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
+from intergrax.integrations.contracts.vector_store import (
+    MetadataFilter,
+    VectorStore,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
+from intergrax.rag.vectorstore.providers.native_provider_boundary import (
+    effective_filter,
+    native_hit,
+    provider_metadata,
+    validate_query,
+    validate_records,
+    validate_scope,
+)
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreContractError
 from intergrax.integrations.contracts.vision_serving import VisionServingBackend
 from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
 from intergrax.speech_adapters.contracts.speech_adapter import SpeechAdapter
@@ -594,70 +609,130 @@ class _TypesenseHttpVectorStore(VectorStore):
     def __init__(self, http: Any, *, collection: str) -> None:
         self._http = http
         self._collection = collection
+        self._tenant_id: str | None = None
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        if self._tenant_id is None:
+            self._tenant_id = scope.tenant_id
+        validated = validate_records(
+            records,
+            scope=scope,
+            tenant_id=self._tenant_id,
+        )
+        if not validated:
+            return []
         rows: list[dict[str, Any]] = []
-        for idx, doc in enumerate(documents):
-            row_id = ids[idx] if ids and idx < len(ids) else f"doc-{idx}"
-            embedding = list(embeddings[idx]) if idx < len(embeddings) else []
-            rows.append({"id": row_id, "content": doc.page_content, "embedding": embedding, "metadata": dict(doc.metadata)})
+        for record in validated:
+            metadata = provider_metadata(record.document, scope=scope)
+            user_fields = {
+                key: value
+                for key, value in metadata.items()
+                if key not in {"id", "content", "embedding", "metadata"}
+            }
+            rows.append(
+                {
+                    "id": record.vector_id,
+                    "content": record.document.content,
+                    "embedding": record.embedding.tolist(),
+                    "metadata": metadata,
+                    **user_fields,
+                }
+            )
         response = self._http.post(f"/collections/{self._collection}/documents/import", json=rows)
         response.raise_for_status()
+        return [record.vector_id for record in validated]
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
     ) -> list[VectorStoreHit]:
+        vector, limit = validate_query(query_embedding, top_k=top_k)
+        validate_scope(scope, tenant_id=self._tenant_id or scope.tenant_id)
+        conditions = effective_filter(scope, metadata_filter).conditions
         body: dict[str, Any] = {
             "q": "*",
-            "vector_query": f"embedding:([{','.join(str(v) for v in query_embedding)}], k:{top_k})",
-            "per_page": top_k,
+            "vector_query": f"embedding:([{','.join(str(v) for v in vector)}], k:{limit})",
+            "per_page": limit,
         }
-        if metadata_filter is not None:
-            body["filter_by"] = str(metadata_filter.conditions)
+        if conditions:
+            body["filter_by"] = " && ".join(self._filter_condition(key, value) for key, value in conditions.items())
         response = self._http.post(f"/collections/{self._collection}/documents/search", json=body)
         response.raise_for_status()
         payload = response.json()
         hits: list[VectorStoreHit] = []
-        for rank, row in enumerate(list((payload.get("hits") if isinstance(payload, dict) else []) or [])[:top_k], start=1):
+        for rank, row in enumerate(list((payload.get("hits") if isinstance(payload, dict) else []) or [])[:limit]):
             document = dict(row.get("document") or row)
+            metadata = dict(document.get("metadata") or row.get("metadata") or {})
+            metadata.update(
+                {
+                    key: row[key]
+                    for key in ("schema_version", "document_id", "root_document_id", "parent_document_id",
+                                "tenant_id", "namespace", "workspace_id", "source_kind", "source_id",
+                                "source_parent_id", "provider_id", "source_revision", "source_uri", "content_hash")
+                    if key in row and key not in metadata
+                }
+            )
             hits.append(
-                VectorStoreHit(
-                    id=str(document.get("id") or ""),
+                native_hit(
+                    vector_id=str(document.get("id") or ""),
                     content=str(document.get("content") or ""),
-                    metadata=dict(document.get("metadata") or {}),
-                    similarity_score=float(row.get("vector_distance") or row.get("text_match") or 0.0),
+                    metadata=metadata,
+                    similarity_score=self._score(row),
                     rank=rank,
-                    embedding=list(document.get("embedding") or []) if include_embeddings else None,
+                    scope=scope,
+                    embedding=document.get("embedding") if include_embeddings else None,
                 )
             )
         return hits
 
-    def delete(self, ids: Sequence[str]) -> None:
-        for doc_id in ids:
-            response = self._http.delete(f"/collections/{self._collection}/documents/{doc_id}")
-            response.raise_for_status()
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
+        validate_scope(scope, tenant_id=self._tenant_id or scope.tenant_id)
+        if ids:
+            raise VectorStoreContractError("typesense scoped delete is unsupported")
 
-    def count(self) -> int:
-        response = self._http.get(f"/collections/{self._collection}")
-        response.raise_for_status()
-        payload = response.json()
-        if isinstance(payload, dict):
-            return int(payload.get("num_documents") or 0)
-        return 0
+    def count(self, *, scope: VectorStoreScope) -> int:
+        validate_scope(scope, tenant_id=self._tenant_id or scope.tenant_id)
+        raise VectorStoreContractError("typesense scoped count is unsupported")
 
     def health(self) -> bool:
         return http_ping_ok(self._http, path="/health")
+
+    @staticmethod
+    def _filter_condition(key: str, value: object) -> str:
+        if not isinstance(key, str) or re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key) is None:
+            raise VectorStoreContractError("typesense filter contains an invalid field")
+        if isinstance(value, bool):
+            literal = "true" if value else "false"
+        elif isinstance(value, (int, float)) and not isinstance(value, bool):
+            if isinstance(value, float) and not math.isfinite(value):
+                raise VectorStoreContractError("typesense filter value must be finite")
+            literal = str(value)
+        elif isinstance(value, str):
+            escaped = value.replace("\\", "\\\\").replace("`", "\\`")
+            literal = f"`{escaped}`"
+        else:
+            raise VectorStoreContractError("typesense filter value is unsupported")
+        return f"{key}:={literal}"
+
+    @staticmethod
+    def _score(row: Mapping[str, Any]) -> float:
+        distance = row.get("vector_distance")
+        if isinstance(distance, (int, float)) and not isinstance(distance, bool):
+            return 1.0 / (1.0 + max(0.0, float(distance)))
+        text_match = row.get("text_match")
+        if isinstance(text_match, (int, float)) and not isinstance(text_match, bool):
+            return max(0.0, min(1.0, float(text_match)))
+        return 0.0
 
 
 def _algolia_hits(query: str, payload: Mapping[str, Any], limit: int) -> Sequence[SearchHit]:

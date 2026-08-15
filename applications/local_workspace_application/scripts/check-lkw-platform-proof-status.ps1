@@ -7,10 +7,11 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Resolve-Path (Join-Path $scriptDir "..\..\..")
 $dockerDir = Resolve-Path (Join-Path $scriptDir "..\docker")
 $baseCompose = Join-Path $dockerDir "docker-compose.yml"
+$composeProject = "lkw-core-platform-proof"
 
 Set-Location $repoRoot
 
-$composeArgs = @("-f", $baseCompose)
+$composeArgs = @("-p", $composeProject, "-f", $baseCompose)
 Get-ChildItem -Path $dockerDir -Filter "docker-compose.*.yml" | Sort-Object FullName | ForEach-Object {
     $composeArgs += @("-f", $_.FullName)
 }

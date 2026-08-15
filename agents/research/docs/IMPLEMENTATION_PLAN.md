@@ -1,12 +1,12 @@
-# research agents — Implementation Plan
+﻿# research agents — Implementation Plan
 
 **The implementation map** for Tier-2 research + summary agents — phases, status, gaps, and verification.
 
 Status: **Harness baseline Done** — graph/delegation depth optional
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Host: [`applications/research_application/`](../../applications/research_application/)  
-Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-RES
+Host: [`applications/research_application`](../../../applications/research_application/)
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) · Phase AA-RES
 
 ---
 
@@ -16,7 +16,7 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 |-------|--------|
 | Two-agent layout, capabilities, host wiring | **ARCHITECTURE.md** |
 | Task status, phases | **This file** |
-| Orchestration / graph | `docs/guides/AGENT_CREATION_GUIDE.md` Appendix I |
+| Orchestration / graph | `docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix I |
 
 ---
 
@@ -24,10 +24,10 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 
 | ID | Task | Status | Priority | Notes |
 |----|------|--------|----------|-------|
-| RES-1 | UAEP smoke for `ResearchAgent` + `SummaryAgent` | **Done** | High | `agents/research/tests/` |
+| RES-1 | UAEP smoke for `ResearchAgent` + `SummaryAgent` | **Done** | High | `agents/research/tests` |
 | RES-2 | `research_application` manifest + environment | **Done** | High | AA-RESAPP.* |
 | RES-3 | Graph delegation (`research.pipeline`) | Planned | Medium | Nexus graph intent documented in ARCHITECTURE |
-| RES-4 | Skill packs on contracts | Planned | Medium | Per `docs/architecture/SKILLS.md` |
+| RES-4 | Skill packs on contracts | Planned | Medium | Per `docs/project/architecture/SKILLS.md` |
 | RES-5 | Product research features | Deferred | Low | Band 3 unless reprioritized |
 
 ---

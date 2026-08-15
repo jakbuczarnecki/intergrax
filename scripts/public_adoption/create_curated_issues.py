@@ -29,7 +29,7 @@ except ImportError as exc:  # pragma: no cover
     raise SystemExit("PyYAML is required. Install project dependencies first.") from exc
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG_PATH = REPO_ROOT / "docs" / "public-adoption" / "curated_public_issues.yml"
+DEFAULT_CONFIG_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "curated_public_issues.yml"
 DEFAULT_REPOSITORY = "jakbuczarnecki/intergrax"
 DOTENV_CANDIDATES = (REPO_ROOT / ".env", REPO_ROOT / ".env.local")
 

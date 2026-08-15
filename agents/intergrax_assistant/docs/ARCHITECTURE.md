@@ -1,9 +1,9 @@
-# intergrax_assistant agent — architecture
+﻿# intergrax_assistant agent — architecture
 
 **Status:** Scaffold baseline (2026-06-08) — hub / concierge role defined  
-**Tier:** Tier-2 (`agents/intergrax_assistant/`)  
-**Host:** [`applications/intergrax_assistant_application/`](../../applications/intergrax_assistant_application/)  
-**Platform ADR:** [`ADR-INTERGRAX_ASSISTANT-001`](../../applications/intergrax_assistant_application/adr/ADR-INTERGRAX_ASSISTANT-001.md)
+**Tier:** Tier-2 (`agents/intergrax_assistant`)
+**Host:** [`applications/intergrax_assistant_application`](../../../applications/intergrax_assistant_application/)
+**Platform ADR:** [`ADR-INTERGRAX_ASSISTANT-001`](../../../applications/intergrax_assistant_application/docs/adr/ADR-INTERGRAX_ASSISTANT-001.md)
 
 ---
 
@@ -39,7 +39,7 @@
 
 ## Boundaries
 
-- Imports only `intergrax.*` and `agents/intergrax_assistant` — **no** `applications/` imports
+- Imports only `intergrax.*` and `agents/intergrax_assistant` — **no** `applications` imports
 - Must not import or call other Tier-2 agents — request delegation via Nexus plan/handoff
 - Vendor SDK access only through `ToolRuntime` / integrations wired by Tier-3 host
 

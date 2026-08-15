@@ -2,13 +2,21 @@
 # Integrax framework – proprietary and confidential.
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
-
 import importlib
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Any, Callable, Dict, Tuple, Union, cast
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.utils import attribute_access
+
+
+class LLMAdapterDependencyError(RuntimeError):
+    """Raised when a selected LLM provider SDK is not installed."""
+
+
+class LLMAdapterRegistrationError(RuntimeError):
+    """Raised when a builtin LLM provider registration is invalid."""
+
 
 _BUILTIN_ADAPTERS: Dict[str, Tuple[str, str]] = {
     LLMProvider.OPENAI.value: (
@@ -24,8 +32,8 @@ _BUILTIN_ADAPTERS: Dict[str, Tuple[str, str]] = {
         "VertexGeminiChatAdapter",
     ),
     LLMProvider.OLLAMA.value: (
-        "intergrax.llm_adapters.providers.ollama_adapter",
-        "LangChainOllamaAdapter",
+        "intergrax.llm_adapters.providers.native_ollama_adapter",
+        "NativeOllamaAdapter",
     ),
     LLMProvider.CLAUDE.value: (
         "intergrax.llm_adapters.providers.claude_adapter",
@@ -89,6 +97,36 @@ _BUILTIN_ADAPTERS: Dict[str, Tuple[str, str]] = {
     ),
 }
 
+_BUILTIN_OPTIONAL_DEPENDENCIES: Dict[str, Tuple[Tuple[str, ...], str, str]] = {
+    LLMProvider.OPENAI.value: (("openai",), "openai", "llm-openai"),
+    LLMProvider.GEMINI.value: (("google", "google.genai"), "google-genai", "llm-gemini"),
+    LLMProvider.VERTEX_GEMINI.value: (
+        ("google", "google.genai"),
+        "google-genai",
+        "llm-vertex",
+    ),
+    LLMProvider.OLLAMA.value: (("ollama",), "ollama", "llm-ollama"),
+    LLMProvider.CLAUDE.value: (("anthropic",), "anthropic", "llm-anthropic"),
+    LLMProvider.MISTRAL.value: (("mistralai",), "mistralai", "llm-mistral"),
+    LLMProvider.AZURE_OPENAI.value: (("openai",), "openai", "llm-openai"),
+    LLMProvider.AWS_BEDROCK.value: (
+        ("boto3",),
+        "boto3",
+        "llm-bedrock",
+    ),
+    LLMProvider.GROQ.value: (("openai",), "openai", "llm-groq"),
+    LLMProvider.VLLM.value: (("openai",), "openai", "llm-vllm"),
+    LLMProvider.TOGETHER.value: (("openai",), "openai", "llm-compat"),
+    LLMProvider.FIREWORKS.value: (("openai",), "openai", "llm-compat"),
+    LLMProvider.OPENROUTER.value: (("openai",), "openai", "llm-compat"),
+    LLMProvider.DEEPSEEK.value: (("openai",), "openai", "llm-compat"),
+    LLMProvider.XAI.value: (("openai",), "openai", "llm-compat"),
+    LLMProvider.LLAMA_CPP.value: (("openai",), "openai", "llm-compat"),
+    LLMProvider.COHERE.value: (("openai",), "openai", "llm-compat"),
+    LLMProvider.COHERE_NATIVE.value: (("cohere",), "cohere", "llm-cohere-native"),
+    LLMProvider.AZURE_AI_INFERENCE.value: (("openai",), "openai", "llm-compat"),
+}
+
 
 class LLMAdapterRegistry:
     _factories: Dict[str, Callable[..., LLMAdapter]] = {}
@@ -115,8 +153,31 @@ class LLMAdapterRegistry:
         if spec is None:
             return
         module_path, class_name = spec
-        module = importlib.import_module(module_path)
-        adapter_cls = attribute_access.optional(module, class_name)
+        try:
+            module = importlib.import_module(module_path)
+        except ModuleNotFoundError as exc:
+            dependency = _BUILTIN_OPTIONAL_DEPENDENCIES.get(key)
+            if dependency is None or exc.name not in dependency[0]:
+                raise
+            _, dependency_name, extra_name = dependency
+            raise LLMAdapterDependencyError(
+                f"LLM provider '{key}' requires dependency '{dependency_name}'. "
+                f"Install it with 'Intergrax-ai[{extra_name}]' before selecting "
+                "this provider."
+            ) from exc
+        except ImportError:
+            raise
+
+        try:
+            adapter_cls = cast(
+                Callable[..., LLMAdapter],
+                attribute_access.optional(module, class_name),
+            )
+        except AttributeError as exc:
+            raise LLMAdapterRegistrationError(
+                f"LLM provider '{key}' module '{module_path}' does not define "
+                f"expected adapter class '{class_name}'."
+            ) from exc
 
         def factory(**kwargs: Any) -> LLMAdapter:
             return adapter_cls(**kwargs)

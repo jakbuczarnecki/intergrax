@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -31,7 +32,11 @@ _HARD_RESET_LOCAL_DOCKER_ALL_BAT = _SCRIPTS_DIR / "hard-reset-local-docker-all.b
 _HARD_RESET_LOCAL_DOCKER_ALL_PS1 = _SCRIPTS_DIR / "hard-reset-local-docker-all.ps1"
 _RUN_LKW_ES_PROOF_BAT = _SCRIPTS_DIR / "run-lkw-elasticsearch-proof.bat"
 _RUN_LKW_ES_PROOF_SH = _SCRIPTS_DIR / "run-lkw-elasticsearch-proof.sh"
-_BOOTSTRAP_SH = _DOCKER_DIR / "sentry" / "bootstrap" / "bootstrap.sh"
+_CHECK_STATUS_PS1 = _SCRIPTS_DIR / "check-lkw-platform-proof-status.ps1"
+_BUILD_LOCAL_DOCKER_BAT = _SCRIPTS_DIR / "build-local-docker.bat"
+_BUILD_LOCAL_DOCKER_SH = _SCRIPTS_DIR / "build-local-docker.sh"
+_CORE_PROOF_COMPOSE_PROJECT = "lkw-core-platform-proof"
+_PRODUCT_COMPOSE_PROJECT = "intergrax_lkw"
 
 _TOP_LEVEL_OVERLAY_PATTERN = re.compile(r"^docker-compose\..+\.yml$")
 _LOCAL_PROOF_SECRET = "intergrax-local-sentry-proof-secret-key-not-for-production"
@@ -76,6 +81,40 @@ def test_run_local_docker_all_bat_exists() -> None:
     assert _RUN_LOCAL_DOCKER_ALL_BAT.exists()
     script = _RUN_LOCAL_DOCKER_ALL_BAT.read_text(encoding="utf-8")
     assert "docker-compose.*.yml" in script
+    assert f"LKW_COMPOSE_PROJECT={_CORE_PROOF_COMPOSE_PROJECT}" in script
+    assert "'compose', '-p', $env:LKW_COMPOSE_PROJECT" in script
+
+
+def test_run_local_docker_all_sh_uses_explicit_proof_compose_project() -> None:
+    script = _RUN_LOCAL_DOCKER_ALL_SH.read_text(encoding="utf-8")
+    assert f"LKW_COMPOSE_PROJECT:-{_CORE_PROOF_COMPOSE_PROJECT}" in script
+    assert "compose -p" in script
+    assert f'"${{LKW_COMPOSE_PROJECT}}"' in script
+
+
+def test_check_lkw_platform_proof_status_ps1_uses_explicit_proof_compose_project() -> None:
+    script = _CHECK_STATUS_PS1.read_text(encoding="utf-8")
+    assert f'composeProject = "{_CORE_PROOF_COMPOSE_PROJECT}"' in script
+    assert '"-p", $composeProject' in script
+    assert "docker compose @composeArgs ps -a" in script
+
+
+def test_hard_reset_local_docker_all_scopes_destructive_compose_to_proof_project() -> None:
+    """Hard reset delegates down -v to run-local-docker-all.bat, which owns -p."""
+    bat = _RUN_LOCAL_DOCKER_ALL_BAT.read_text(encoding="utf-8")
+    ps1 = _HARD_RESET_LOCAL_DOCKER_ALL_PS1.read_text(encoding="utf-8")
+    assert "down -v --remove-orphans" in ps1
+    assert "'compose', '-p', $env:LKW_COMPOSE_PROJECT" in bat
+    assert f"LKW_COMPOSE_PROJECT={_CORE_PROOF_COMPOSE_PROJECT}" in bat
+
+
+def test_product_quick_start_compose_project_untouched() -> None:
+    bat = _BUILD_LOCAL_DOCKER_BAT.read_text(encoding="utf-8")
+    sh = _BUILD_LOCAL_DOCKER_SH.read_text(encoding="utf-8")
+    assert f"COMPOSE_PROJECT_NAME={_PRODUCT_COMPOSE_PROJECT}" in bat
+    assert f"COMPOSE_PROJECT_NAME=\"{_PRODUCT_COMPOSE_PROJECT}\"" in sh
+    assert _CORE_PROOF_COMPOSE_PROJECT not in bat
+    assert _CORE_PROOF_COMPOSE_PROJECT not in sh
 
 
 def test_hard_reset_local_docker_all_bat_resets_runtime_state_and_starts_stack() -> None:
@@ -270,9 +309,17 @@ def test_sentry_conf_secret_key_not_empty_literal() -> None:
 
 
 def test_docs_mention_canonical_all_in_one_startup() -> None:
-    sentry_doc = (_DOCS_DIR / "SENTRY_OBSERVABILITY.md").read_text(encoding="utf-8")
+    sentry_doc = (
+        _PROJECT_ROOT
+        / "docs"
+        / "project"
+        / "technical"
+        / "applications"
+        / "local_workspace_application"
+        / "SENTRY_OBSERVABILITY.md"
+    ).read_text(encoding="utf-8")
     platform_proof = (
-        _PROJECT_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
+        _PROJECT_ROOT / "docs" / "project" / "proofs" / "LKW_PLATFORM_PROOF.md"
     ).read_text(encoding="utf-8")
     win_cmd = "applications\\local_workspace_application\\scripts\\run-local-docker-all.bat"
     posix_cmd = "applications/local_workspace_application/scripts/run-local-docker-all.sh"
@@ -301,6 +348,97 @@ def test_kafka_overlay_configures_real_background_task_stack() -> None:
     assert "../.proof_docs:/data/user_docs:rw" in text
     assert "PLAINTEXT_HOST://127.0.0.1:9094" in text
     assert '"9094:9094"' in text
+    assert 'INTERGRAX_EMBEDDING_PROVIDER: ollama' in text
+    assert 'INTERGRAX_EMBEDDING_MODEL: nomic-embed-text' in text
+
+
+def _compose_config_json(compose_files: list[Path]) -> dict:
+    args = ["docker", "compose"]
+    for path in compose_files:
+        args.extend(["-f", str(path)])
+    args.extend(["config", "--format", "json"])
+    completed = subprocess.run(
+        args,
+        cwd=_PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr or completed.stdout
+    return json.loads(completed.stdout)
+
+
+def test_mongodb_overlay_extends_local_workspace_without_background_worker() -> None:
+    text = (_DOCKER_DIR / "docker-compose.mongodb.yml").read_text(encoding="utf-8")
+    assert "lkw-background-worker:" not in text
+    assert "INTERGRAX_MONGODB_URI:" in text
+    assert "lkw-mongodb:27017" in text
+    assert "lkw-mongodb:" in text
+
+    resolved = _compose_config_json(
+        [_DOCKER_DIR / "docker-compose.yml", _DOCKER_DIR / "docker-compose.mongodb.yml"]
+    )
+    assert "lkw-background-worker" not in resolved["services"]
+
+
+def test_kafka_overlay_worker_has_durable_mongodb_publication_authority() -> None:
+    text = (_DOCKER_DIR / "docker-compose.kafka.yml").read_text(encoding="utf-8")
+    worker_block = text.split("lkw-background-worker:", 1)[1].split("\n  lkw-redis:", 1)[0]
+    assert "INTERGRAX_MONGODB_URI:" in worker_block
+    assert "lkw-mongodb:27017" in worker_block
+    assert "INTERGRAX_MONGODB_DATABASE:" in worker_block
+    assert "lkw-mongodb:" in worker_block
+    assert "condition: service_healthy" in worker_block
+
+    resolved = _compose_config_json(
+        [_DOCKER_DIR / "docker-compose.yml", _DOCKER_DIR / "docker-compose.kafka.yml"]
+    )
+    worker = resolved["services"]["lkw-background-worker"]
+    environment = worker.get("environment", {})
+    assert environment.get("INTERGRAX_MONGODB_URI", "").startswith("mongodb://")
+    assert "lkw-mongodb:27017" in environment.get("INTERGRAX_MONGODB_URI", "")
+    assert environment.get("INTERGRAX_MONGODB_DATABASE")
+    assert worker.get("image") or worker.get("build")
+    assert "background_worker_main" in str(worker.get("command", ""))
+    assert environment.get("INTERGRAX_QDRANT_URL")
+    assert environment.get("OLLAMA_HOST")
+    assert environment.get("INTERGRAX_KAFKA_BOOTSTRAP_SERVERS")
+    assert environment.get("INTERGRAX_REDIS_URL")
+    depends_on = worker.get("depends_on", {})
+    assert depends_on.get("lkw-mongodb", {}).get("condition") == "service_healthy"
+
+
+def test_compose_matrix_base_mongodb_kafka_and_combined() -> None:
+    base = _DOCKER_DIR / "docker-compose.yml"
+    mongodb = _DOCKER_DIR / "docker-compose.mongodb.yml"
+    kafka = _DOCKER_DIR / "docker-compose.kafka.yml"
+
+    _compose_config_json([base])
+    mongodb_only = _compose_config_json([base, mongodb])
+    kafka_only = _compose_config_json([base, kafka])
+    combined = _compose_config_json([base, kafka, mongodb])
+
+    assert "lkw-background-worker" not in mongodb_only["services"]
+    assert "lkw-mongodb" in mongodb_only["services"]
+
+    worker = kafka_only["services"]["lkw-background-worker"]
+    assert worker.get("image") or worker.get("build")
+    assert worker["environment"]["INTERGRAX_MONGODB_URI"].startswith("mongodb://")
+
+    combined_worker = combined["services"]["lkw-background-worker"]
+    assert combined_worker.get("image") or combined_worker.get("build")
+    assert (
+        combined_worker["environment"]["INTERGRAX_MONGODB_URI"]
+        == worker["environment"]["INTERGRAX_MONGODB_URI"]
+    )
+    assert "lkw-mongodb" in combined["services"]
+
+
+def test_application_hosting_compose_set_is_valid() -> None:
+    """Mirror phase_application_hosting compose_files: base + mongodb only."""
+    _compose_config_json(
+        [_DOCKER_DIR / "docker-compose.yml", _DOCKER_DIR / "docker-compose.mongodb.yml"]
+    )
 
 
 def test_background_task_proof_helper_implements_reviewer_contract() -> None:

@@ -32,7 +32,7 @@ def test_cross_encoder_reranker_basic() -> None:
     assert len(results) == 3
 
     # ensure ranking exists
-    assert results[0].rank == 1
+    assert results[0].rank == 0
 
 
 def test_cross_encoder_limit() -> None:
@@ -47,4 +47,4 @@ def test_cross_encoder_limit() -> None:
 
     assert len(results) == 1
 
-    assert results[0].rank == 1
+    assert results[0].rank == 0

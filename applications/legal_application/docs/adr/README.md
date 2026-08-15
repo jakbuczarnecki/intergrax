@@ -1,10 +1,10 @@
 # Legal — Architecture Decision Records
 
-**Domain:** Tier-3 application host (`applications/legal_application/`)
+**Domain:** Tier-3 application host (`applications/legal_application`)
 
-Architecture: [`../ARCHITECTURE.md`](ARCHITECTURE.md)  
-Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
-Platform ADRs: [`../../docs/adr/README.md`](../../docs/adr/README.md)
+Architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)  
+Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md)  
+Platform ADRs: [`../project/technical/adr/README.md`](../../../../docs/project/technical/adr/README.md)
 
 ---
 
@@ -17,7 +17,7 @@ Create an ADR for **product-environment** decisions, for example:
 - Serving API shape, auth model, deployment topology, or MCP exposure
 - Cross-agent orchestration declared in this application (not Nexus core semantics)
 
-**Not required:** Nexus platform contract changes (use `docs/adr/`), single-agent domain logic (use agent ADRs),
+**Not required:** Nexus platform contract changes (use `docs/project/technical/adr`), single-agent domain logic (use agent ADRs),
 or configuration-only tweaks with no architectural impact.
 
 ## Naming
@@ -29,8 +29,8 @@ ADR-LEGAL-{NNN}.md
 ## Process
 
 1. Copy [`TEMPLATE.md`](TEMPLATE.md) to the next sequential number.
-2. Link from [`ARCHITECTURE.md`](ARCHITECTURE.md) when the decision affects host layout.
-3. Track implementation in [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md).
+2. Link from [`ARCHITECTURE.md`](../ARCHITECTURE.md) when the decision affects host layout.
+3. Track implementation in [`IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md).
 
 ## Index
 

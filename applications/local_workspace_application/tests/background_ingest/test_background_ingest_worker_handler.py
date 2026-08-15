@@ -33,7 +33,7 @@ class _FakeRunner:
             state=TaskState.COMPLETED,
             answer="indexed",
             agent_id=task.agent_id,
-            metadata={"ok": True},
+            metadata={"ingest_summary": {"used": True, "reason": "ingest_complete"}},
         )
 
 

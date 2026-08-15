@@ -43,11 +43,16 @@ def open_typesense_vector_store(
     client_factory: Optional[Callable[[], Any]] = None,
 ) -> VectorStore:
     del client, client_factory
-    if implementation is not None:
-        return implementation
     overrides = config_overrides or {}
-    if store is not None:
-        inner = store
-    else:
-        inner = _open_rag_store(config, config_overrides=overrides, store_factory=store_factory)
+    inner = (
+        implementation
+        if implementation is not None
+        else store
+        if store is not None
+        else _open_rag_store(
+            config,
+            config_overrides=overrides,
+            store_factory=store_factory,
+        )
+    )
     return TypesenseVectorStoreIntegration.from_store(config, inner)

@@ -1,9 +1,9 @@
-# dispute_intake agent — architecture
+﻿# dispute_intake agent — architecture
 
 **Status:** Scaffold baseline (2026-06-07) — DSW product agent
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
-Product architecture: [`applications/dispute_sim_application/ARCHITECTURE.md`](../../applications/dispute_sim_application/ARCHITECTURE.md)
+Product architecture: [`applications/dispute_sim_application/docs/ARCHITECTURE.md`](../../../applications/dispute_sim_application/docs/ARCHITECTURE.md)
 
 ---
 
@@ -33,13 +33,13 @@ When a legal ops user delivers dispute materials, this agent validates sources, 
 | `dispute_intake_agent.py` | UAEP entry |
 | `contract.py` | `AgentContract` |
 | ``on_next_step` / cognitive pattern hooks` | Domain execution (stub → DSW.1) |
-| `schemas/` | Case intake I/O models (DSW.1) |
+| `schemas` | Case intake I/O models (DSW.1) |
 
 ## Runtime
 
 - `Agent` + UAEP pipeline steps
 - Tools via Tier-3 `dispute_sim_application` tool profile (`rag.*`, `workspace.*`)
-- **No** `applications/` imports
+- **No** `applications` imports
 
 ## Registration
 

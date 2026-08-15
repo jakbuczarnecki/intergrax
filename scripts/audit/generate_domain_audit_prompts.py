@@ -1,12 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
-"""Generate docs/audit/<DOMAIN>.md prompt files. Idempotent."""
+"""Generate docs/project/maintainers/audit/<DOMAIN>.md prompt files. Idempotent."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "docs" / "audit"
+OUT = ROOT / "docs" / "project" / "maintainers" / "audit"
 
 # Each domain: canon-aligned audit instruction. Regenerate after architecture/plan contract changes.
 DOMAINS: list[dict] = [
@@ -19,8 +19,8 @@ DOMAINS: list[dict] = [
             "product, agents are replaceable — with enforced four-tier boundaries, 22 domain-pair documentation "
             "governance, gate maintenance discipline, and strategic alignment to IDEAL_HARNESS_AI_ARCHITECTURE."
         ),
-        "code": """docs/intergrax_runtime_architecture.md (hub)
-docs/architecture/PLATFORM_FOUNDATION.md · docs/plan/PLATFORM_FOUNDATION.md
+        "code": """docs/project/architecture/intergrax_runtime_architecture.md (hub)
+docs/project/architecture/PLATFORM_FOUNDATION.md · docs/project/maintainers/plans/PLATFORM_FOUNDATION.md
 AGENTS.md · .cursor/rules/intergrax-iteration.mdc
 scripts/maintenance/check_intergrax_no_applications_imports.py
 scripts/maintenance/check_agents_no_tier3_imports.py
@@ -33,7 +33,7 @@ Sample imports across intergrax/, agents/, applications/ for tier violations""",
         "active_phases": "§6.1 gate maintenance queue · Phase V architecture hardening · Phase K business agents (**deferred** — must not start silently) · §6.3 product backlog",
         "known_gaps": "Phase K / §6.3 deferred product work · long-term §50 marketplace/visual builder · codecraft/ incremental · unified tool model (legacy boolean flags deprecated)",
         "plan_read_scope": (
-            "**Hub only** (`docs/plan/PLATFORM_FOUNDATION.md`): §4 ladder · §6.1 maintenance · §6.3 deferred product · satellite index. "
+            "**Hub only** (`docs/project/maintainers/plans/PLATFORM_FOUNDATION.md`): §4 ladder · §6.1 maintenance · §6.3 deferred product · satellite index. "
             "**On demand:** [`plan/satellites/PLATFORM_FOUNDATION_master_registers.md`](plan/satellites/PLATFORM_FOUNDATION_master_registers.md) (gap IDs) · "
             "[`plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md) (re-validate closed items only)"
         ),
@@ -529,7 +529,7 @@ intergrax/runtime/sandbox/
 intergrax/tools/providers/sandbox/ · intergrax/tools/providers/codecraft/
 intergrax/applications/_shared/codecraft_wiring.py
 intergrax/runtime/critic/ (CVL hooks)
-docs/architecture/CODE_CRAFT.md · docs/plan/CODE_CRAFT.md · ADR-CODECRAFT-001""",
+docs/project/architecture/CODE_CRAFT.md · docs/project/maintainers/plans/CODE_CRAFT.md · ADR-CODECRAFT-001""",
         "key_symbols": "CodeCraftProfile · CodeCraftOrchestrator · CodeCraftSession · CraftResult · IterationRecord · StaticCodeGate · craft modes (disabled|dry_run|assist_only|supervised|autonomous) · EphemeralToolRegistry · wire_application_codecraft",
         "active_phases": "ECC-0…ECC-6 + S7–S11 **Done** (L3+, 2026-06-13) · ADR-CODECRAFT-001",
         "known_gaps": "GAP-ECC-20…23 **Closed** (ECC-MAINT-01..04) · local SandboxSession ≠ OS containment (accepted) · dedicated container runtime backend product opt-in beyond local fallback",
@@ -921,7 +921,7 @@ intergrax/applications/_shared/reference_capability_bundle.py · environment_con
 intergrax/applications/_shared/*_wiring.py (snapshot, migration, package, health_score, recovery, certification, …)
 scripts/gates/check_application_production_gates.py · check_environment_profile_bundle_schema.py
 intergrax/cli/apps.py · envs.py · doctor_health_app.py · doctor_diff_app.py
-docs/guides/APPLICATION_CREATION_GUIDE.md""",
+docs/project/technical/guides/APPLICATION_CREATION_GUIDE.md""",
         "key_symbols": "ApplicationEnvironmentProfile · HostMeta · CapabilityBundle · CognitionBundle · GovernanceBundle · DomainPolicyFragments · ProfileInvariantValidator · ApplicationManifest · EnvironmentSnapshot · bundle_normalized_payload",
         "active_phases": "H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-EVOL-8 M1 Done · APP-OPS-1..4 Done · APP-CON-DX Done",
         "known_gaps": "T3-LC Done · §6.1av T3-MAINT Done · CFG-14 LKW → ORCH-MAINT-02 · marketplace UI §6.3 defer",
@@ -988,7 +988,7 @@ intergrax/runtime/architecture/ (eval, maturity gates, online_evaluation_registr
 intergrax/experiments/ · nexus_eval_runner.py
 scripts/check_*.py (harness gates) · scripts/ci/test.bat
 scripts/release/phase_v_closeout_gate.py · phase_w_ops_evidence.py
-docs/guides/AGENT_CREATION_GUIDE.md · HARNESS_ENVIRONMENT.md""",
+docs/project/technical/guides/AGENT_CREATION_GUIDE.md · HARNESS_ENVIRONMENT.md""",
         "key_symbols": "EvaluationProfile · ExperimentSession · OnlineEvaluationRegistry · maturity gate evidence · TTFRun metric · shadow workspace bindings",
         "active_phases": "EVAL · CRIT-V cross-ref · MVP-EVOL · DX · AA · W-OPS · Phase V G5 Production PRR",
         "known_gaps": "DX-LC Done · §6.1av DX-MAINT Done · GOV-PROD.1 dashboard backlog · polished SaaS UI explicit non-goal",
@@ -1184,7 +1184,7 @@ integrations/providers/message_bus/celery/
 intergrax/runtime/architecture/multi_agent_contention_simulation.py
 intergrax/runtime/observability/harness_slos.py
 target: intergrax/runtime/capacity/ (ECP-DEPTH ECP-1..8)
-docs/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.md""",
+docs/project/technical/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.md""",
         "key_symbols": "ScalingProfile (target) · ScalingPolicy · ScalingAction · ScalingSignal · CapacitySignalCollector · ScalingProvisioner · SIG_QUEUE_DEPTH · GRAPH_BACKPRESSURE",
         "active_phases": "ECP-DOC · ECP-DEPTH (ECP-1..8, ECP-OBS) · ADR-SCALE-001/002 · cross-ref W-OPS.4 SLIs · ORCH GRAPH_BACKPRESSURE",
         "known_gaps": "ECP-LC Done · §6.1av ECP-MAINT Done · live K8s soak manual runbook · ingress slug → INT-MAINT-04",
@@ -1238,7 +1238,7 @@ def _bullets(items: list[str], numbered: bool = False) -> str:
 def _context_budget_block(*, did: str, layers: str) -> str:
     return f"""## 0. Context budget (mandatory)
 
-**Load first:** [`docs/guides/audit_slices/{did}.md`](../guides/audit_slices/{did}.md) — compact slice (layers **{layers}**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+**Load first:** [`docs/project/technical/guides/audit_slices/{did}.md`](../guides/audit_slices/{did}.md) — compact slice (layers **{layers}**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
 - Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
@@ -1275,9 +1275,9 @@ def render(domain: dict) -> str:
     appendix_block = ""
     if appendix != "N/A":
         if "APPLICATION_CREATION_GUIDE" in appendix:
-            appendix_block = "5. `@docs/guides/APPLICATION_CREATION_GUIDE.md` — on demand only (`.cursorignore`)\n"
+            appendix_block = "5. `@docs/project/technical/guides/APPLICATION_CREATION_GUIDE.md` — on demand only (`.cursorignore`)\n"
         else:
-            appendix_block = f"5. `@docs/guides/AGENT_CREATION_GUIDE.md` **{appendix}** — on demand\n"
+            appendix_block = f"5. `@docs/project/technical/guides/AGENT_CREATION_GUIDE.md` **{appendix}** — on demand\n"
 
     adr_block = ""
     if adr:
@@ -1353,16 +1353,16 @@ Perform a **rigorous, evidence-backed audit** of the **{title}** domain. You mus
 
 ## 1. Canonical reads (order)
 
-1. **`docs/guides/audit_slices/{did}.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/architecture/{did}.md` — hub read-scope + one `architecture/satellites/` satellite max
-3. `docs/plan/{did}.md` — hub + one `plan/satellites/` satellite max
-4. `docs/audit/README.md` — shared production Harness checklist
+1. **`docs/project/technical/guides/audit_slices/{did}.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
+2. `docs/project/architecture/{did}.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/project/maintainers/plans/{did}.md` — hub + one `plan/satellites/` satellite max
+4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 {appendix_block}**Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
 ---
 
 ## 2. Code entry (grep first)
 
-See **Code entry** in `docs/guides/audit_slices/{did}.md` — then inspect:
+See **Code entry** in `docs/project/technical/guides/audit_slices/{did}.md` — then inspect:
 
 ```text
 {code}
@@ -1398,7 +1398,7 @@ Confirm overrides are **wired in code**, not documentation-only:
 
 ## 6. Cross-cutting checklist (mandatory)
 
-Apply **every** section in `docs/audit/README.md` §Shared production Harness checklist:
+Apply **every** section in `docs/project/maintainers/audit/README.md` §Shared production Harness checklist:
 
 - Architecture & modularity
 - Configuration & strategy selection

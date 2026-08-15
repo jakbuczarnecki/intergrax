@@ -3,9 +3,9 @@
 **Status:** Architecture baseline v1 (2026-06-07) — scaffold + product design  
 **Tier:** Tier-3 application (`dispute_sim_application`)  
 **Agents:** Tier-2 `dispute_intake`, `dispute_analyst`, `dispute_strategist`, `dispute_scenario`  
-**Canonical plan row:** [`docs/intergrax_runtime_architecture.md` §6.3a DSW.*](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)  
-**Derived plan:** [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)  
-**Decision record:** [`adr/ADR-DISPUTE_SIM-001.md`](docs/adr/ADR-DISPUTE_SIM-001.md)
+**Canonical plan row:** [`docs/project/architecture/intergrax_runtime_architecture.md` §6.3a DSW.*](../../../docs/project/architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
+**Derived plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+**Decision record:** [`adr/ADR-DISPUTE_SIM-001.md`](adr/ADR-DISPUTE_SIM-001.md)
 
 ---
 
@@ -21,7 +21,7 @@
 | Request flows | §10 |
 | Implementation waves | §15 |
 
-**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated).
+**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../../docs/project/architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated).
 
 ---
 
@@ -94,7 +94,7 @@ DSW answers these through **structured agent pipelines** on a **case-scoped RAG 
 | **Correspondence drafts** | HITL mandatory (`dispute.correspondence` skill path — DSW.4) |
 | **PII / retention** | Case data scoped per tenant; retention policy in host settings (DSW.6) |
 | **Audit** | Full Nexus trace + artifact hash for every strategy/scenario output |
-| **CVL (planned)** | L1 critic on argument maps; L2 critic on outbound drafts — see [`docs/architecture/CRITIC_VERIFICATION.md`](../../docs/architecture/CRITIC_VERIFICATION.md) |
+| **CVL (planned)** | L1 critic on argument maps; L2 critic on outbound drafts — see [`docs/project/architecture/CRITIC_VERIFICATION.md`](../../../docs/project/architecture/CRITIC_VERIFICATION.md) |
 
 ---
 
@@ -241,7 +241,7 @@ POST /v1/dispute_sim/run
 
 ## 12. Host layout
 
-Standard Tier-3 product tree — see [`applications/USAGE.md`](../USAGE.md).
+Standard Tier-3 product tree — see [`applications/USAGE.md`](../../USAGE.md).
 
 | Path | Role |
 |------|------|
@@ -293,7 +293,7 @@ No merge — composition via Nexus graph when needed.
 | DSW.6 | Case persistence + retention policy | Planned |
 | DSW.7 | Eval dataset (Polish dispute fixtures) | Planned |
 
-Detail: [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
+Detail: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md).
 
 ---
 
@@ -316,7 +316,7 @@ uv run pytest -m gate -q
 
 | ADR | Title |
 |-----|-------|
-| [ADR-DISPUTE_SIM-001](docs/adr/ADR-DISPUTE_SIM-001.md) | Four-agent dispute simulation product split |
+| [ADR-DISPUTE_SIM-001](adr/ADR-DISPUTE_SIM-001.md) | Four-agent dispute simulation product split |
 
 ---
 

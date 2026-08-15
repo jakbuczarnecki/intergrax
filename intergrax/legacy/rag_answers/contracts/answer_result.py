@@ -5,9 +5,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional
 
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 from intergrax.legacy.rag_answers.pipeline.pipeline_trace import PipelineTrace
 
@@ -20,6 +20,6 @@ class AnswerResult:
 
     answer: str    
 
-    context_documents: List[Document]
+    context_documents: tuple[KnowledgeDocument, ...]
 
     pipeline_trace: Optional[PipelineTrace] = None

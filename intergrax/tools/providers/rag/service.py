@@ -6,13 +6,18 @@
 from __future__ import annotations
 from intergrax.utils import attribute_access
 
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Sequence
 
 from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.knowledge.contracts.validation import knowledge_metadata_to_plain
 from intergrax.rag.retrieval.resolve import resolve_retrieval_service
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataMembershipCondition,
+    VectorStoreScope,
+)
 from intergrax.rag.retrieval.citation import Citation
 from intergrax.tools.providers.rag.contracts import (
     RagChunkResult,
@@ -25,9 +30,28 @@ from intergrax.tools.providers.rag.scope import (
     resolve_tenant_scoped_vectorstore,
     use_wired_retrieval_managers,
 )
+from intergrax.tools.providers.rag.source_scope_transport import (
+    RagRetrievalSourceScopeState,
+    current_rag_retrieval_source_scope,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 RAG_TOOL_ID = "rag.retrieve"
+
+
+def _validate_routing_identifier(
+    value: object | None,
+    *,
+    invalid_reason: str,
+) -> tuple[str | None, str | None]:
+    if value is None:
+        return None, None
+    if not isinstance(value, str):
+        return None, invalid_reason
+    normalized = value.strip()
+    if not normalized:
+        return None, invalid_reason
+    return normalized, None
 
 
 class RagRetrieveConfigurationError(RuntimeError):
@@ -38,9 +62,38 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
     """
     Retrieve document chunks via unified :class:`RetrievalService` (hybrid + rerank per profile).
     """
-    tenant_id, tenant_conflict = authoritative_tenant_id(request_tenant=params.tenant_id)
+    request_tenant, tenant_error = _validate_routing_identifier(
+        params.tenant_id,
+        invalid_reason="tenant_scope_invalid",
+    )
+    if tenant_error:
+        return RagRetrieveOutput(used=False, reason=tenant_error)
+    tenant_id, tenant_conflict = authoritative_tenant_id(request_tenant=request_tenant)
     if tenant_conflict:
         return RagRetrieveOutput(used=False, reason=tenant_conflict)
+
+    workspace_id, workspace_error = _validate_routing_identifier(
+        params.workspace_id,
+        invalid_reason="workspace_scope_invalid",
+    )
+    if workspace_error:
+        return RagRetrieveOutput(used=False, reason=workspace_error)
+
+    configured_scope = attribute_access.optional(ctx.vectorstore_manager, "bound_scope", None)
+    if configured_scope is not None and not isinstance(configured_scope, VectorStoreScope):
+        return RagRetrieveOutput(used=False, reason="tenant_scope_invalid")
+    if configured_scope is not None and tenant_id is None:
+        tenant_id = configured_scope.tenant_id
+        if configured_scope.workspace_id is not None:
+            if (
+                workspace_id is not None
+                and workspace_id != configured_scope.workspace_id
+            ):
+                return RagRetrieveOutput(used=False, reason="workspace_scope_conflict")
+            workspace_id = configured_scope.workspace_id
+
+    if tenant_id is None:
+        return RagRetrieveOutput(used=False, reason="tenant_scope_required")
 
     vectorstore = resolve_tenant_scoped_vectorstore(ctx, tenant_id)
     if vectorstore is None:
@@ -61,13 +114,37 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
     if service is None:
         return RagRetrieveOutput(used=False, reason="retrieval_service_not_configured")
 
-    where = _build_metadata_scope(params, tenant_id=tenant_id)
-    metadata_filter = MetadataFilter(conditions=where) if where else None
+    bound_scope = attribute_access.optional(vectorstore, "bound_scope", None)
+    if bound_scope is not None and not isinstance(bound_scope, VectorStoreScope):
+        return RagRetrieveOutput(used=False, reason="tenant_scope_invalid")
+    if isinstance(bound_scope, VectorStoreScope):
+        if tenant_id is not None and bound_scope.tenant_id != tenant_id:
+            return RagRetrieveOutput(used=False, reason="tenant_scope_conflict")
+        if bound_scope.workspace_id is not None:
+            if workspace_id is not None and workspace_id != bound_scope.workspace_id:
+                return RagRetrieveOutput(used=False, reason="workspace_scope_conflict")
+            workspace_id = bound_scope.workspace_id
+        tenant_id = bound_scope.tenant_id
+    operation_scope = (
+        VectorStoreScope(
+            tenant_id=tenant_id,
+            namespace=bound_scope.namespace if bound_scope is not None else None,
+            workspace_id=workspace_id,
+        )
+        if tenant_id is not None
+        else None
+    )
+    source_scope = current_rag_retrieval_source_scope()
+    if source_scope.is_invalid:
+        return RagRetrieveOutput(used=False, reason=source_scope.error_reason or "source_scope_invalid")
+
+    metadata_filter = _build_metadata_filter(params, source_scope=source_scope)
 
     result = service.retrieve(
         RetrievalRequest(
             query=params.query,
             top_k=int(params.top_k) if params.top_k else None,
+            scope=operation_scope,
             metadata_filter=metadata_filter,
             score_threshold=params.score_threshold,
         )
@@ -82,7 +159,7 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
         return RagRetrieveOutput(
             used=False,
             reason=result.reason,
-            diagnostics=diagnostics or None,
+            diagnostics=diagnostics,
         )
 
     chunks = [_to_rag_chunk(c) for c in result.chunks]
@@ -179,11 +256,19 @@ def _apply_retrieval_poisoning_filter(
 
 
 def _to_rag_chunk(c: RetrievalChunk) -> RagChunkResult:
+    metadata = knowledge_metadata_to_plain(c.metadata or {})
+    metadata.setdefault("document_id", c.id)
     return RagChunkResult(
         id=c.id,
         text=c.text,
         score=c.score,
-        metadata=dict(c.metadata or {}),
+        rank=c.rank,
+        channel=c.channel,
+        vector_id=c.vector_id,
+        scope=dict(c.scope),
+        provenance=dict(c.provenance),
+        user_metadata=knowledge_metadata_to_plain(c.user_metadata or metadata),
+        metadata=metadata,
     )
 
 
@@ -197,22 +282,37 @@ def _to_rag_citation(citation: Citation) -> RagCitationResult:
         page=citation.page,
         score=citation.score,
         excerpt=citation.excerpt,
-        metadata=dict(citation.metadata or {}),
+        metadata=knowledge_metadata_to_plain(citation.metadata or {}),
     )
 
 
-def _build_metadata_scope(params: RagRetrieveInput, *, tenant_id: str | None = None) -> dict[str, Any]:
+def _build_metadata_scope(params: RagRetrieveInput) -> dict[str, Any]:
     where: dict[str, Any] = {}
     if params.session_id is not None:
         where["session_id"] = params.session_id
     if params.user_id is not None:
         where["user_id"] = params.user_id
-    resolved_tenant = tenant_id if tenant_id is not None else params.tenant_id
-    if resolved_tenant is not None:
-        where["tenant_id"] = resolved_tenant
-    if params.workspace_id is not None:
-        where["workspace_id"] = params.workspace_id
     return where
+
+
+def _build_metadata_filter(
+    params: RagRetrieveInput,
+    *,
+    source_scope: RagRetrievalSourceScopeState | None = None,
+) -> MetadataFilter | None:
+    where = _build_metadata_scope(params)
+    membership: tuple[MetadataMembershipCondition, ...] = ()
+    scope_state = source_scope if source_scope is not None else current_rag_retrieval_source_scope()
+    if scope_state.is_present and not scope_state.is_invalid:
+        membership = (
+            MetadataMembershipCondition(
+                field="source_id",
+                allowed_values=scope_state.allowed_source_ids,
+            ),
+        )
+    if not where and not membership:
+        return None
+    return MetadataFilter(conditions=where, membership=membership)
 
 
 def format_rag_context_text(

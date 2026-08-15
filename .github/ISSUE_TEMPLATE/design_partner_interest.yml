@@ -8,7 +8,7 @@ body:
       value: |
         Share your interest in design-partner collaboration for evaluation or co-design.
         Submission does not create a partnership or implementation commitment.
-        See [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/main/COLLABORATION.md) and [ROADMAP.md](https://github.com/jakbuczarnecki/intergrax/blob/main/ROADMAP.md).
+        See [docs/project/community/COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/main/docs/project/community/COLLABORATION.md) and [docs/project/overview/ROADMAP.md](https://github.com/jakbuczarnecki/intergrax/blob/main/docs/project/overview/ROADMAP.md).
 
   - type: textarea
     id: who

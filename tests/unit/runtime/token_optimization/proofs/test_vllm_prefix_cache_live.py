@@ -271,13 +271,13 @@ def _aggregate_result(
 
 
 def test_default_config_uses_canonical_3b_model(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("INTERGRAX_DEFAULT_VLLM_MODEL", raising=False)
+    monkeypatch.delenv("INTERGRAX_LLM_MODEL", raising=False)
     config = build_default_config()
     assert config.model == "Qwen/Qwen2.5-3B-Instruct"
 
 
 def test_explicit_model_override_supported(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("INTERGRAX_DEFAULT_VLLM_MODEL", "Qwen/Qwen2.5-7B-Instruct")
+    monkeypatch.setenv("INTERGRAX_LLM_MODEL", "Qwen/Qwen2.5-7B-Instruct")
     config = build_default_config()
     assert config.model == "Qwen/Qwen2.5-7B-Instruct"
 

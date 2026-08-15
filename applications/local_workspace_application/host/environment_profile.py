@@ -17,6 +17,7 @@ from intergrax.applications.contracts.graph_spec import (
     GraphNode,
 )
 from intergrax.integrations.core.binding import IntegrationBinding
+from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.providers.object_storage.filesystem.manifest import (
     MANIFEST as FILESYSTEM_OBJECT_STORAGE,
 )
@@ -37,7 +38,7 @@ def _env_bool(name: str, default: bool = False) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _local_vector_store_manifest():
+def _local_vector_store_manifest() -> IntegrationManifest:
     raw = (os.getenv("LOCAL_WORKSPACE_VECTOR_STORE") or "qdrant").strip().lower()
     if raw == "inmemory":
         return INMEMORY
@@ -77,7 +78,12 @@ def build_local_workspace_integration_profile(
     enable_message_bus = local_workspace_message_bus_enabled()
     if enable_message_bus:
         enable_redis = True
-    resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
+    resolved_settings = settings
+    if resolved_settings is None:
+        candidate_settings = LocalWorkspaceBackendSettings.from_env()
+        if not isinstance(candidate_settings, LocalWorkspaceBackendSettings):
+            raise TypeError("local workspace settings factory returned an invalid type")
+        resolved_settings = candidate_settings
     options: dict[str, dict[str, object]] = {
         OTEL.slug: {},
         SQLITE.slug: {},
@@ -95,13 +101,17 @@ def build_local_workspace_integration_profile(
         "allowed_read_roots": sorted(resolved_settings.allowed_read_roots),
     }
     profile = IntegrationProfile(
-        relational_store=SQLITE,
-        vector_store=vector_store,
-        key_value_cache=REDIS if enable_redis else None,
-        message_bus=KAFKA if enable_message_bus else None,
-        object_storage=FILESYSTEM_OBJECT_STORAGE,
-        document_parser=DOCLING,
-        observability_backend=OTEL,
+        relational_store=IntegrationBinding.from_manifest(SQLITE),
+        vector_store=IntegrationBinding.from_manifest(vector_store),
+        key_value_cache=(
+            IntegrationBinding.from_manifest(REDIS) if enable_redis else None
+        ),
+        message_bus=(
+            IntegrationBinding.from_manifest(KAFKA) if enable_message_bus else None
+        ),
+        object_storage=IntegrationBinding.from_manifest(FILESYSTEM_OBJECT_STORAGE),
+        document_parser=IntegrationBinding.from_manifest(DOCLING),
+        observability_backend=IntegrationBinding.from_manifest(OTEL),
         options=options,
     )
     return materialize_local_workspace_message_bus_profile(profile)

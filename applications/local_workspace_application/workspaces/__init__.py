@@ -2,6 +2,10 @@
 
 """Managed workspace product domain (LKW-PRODUCT-1)."""
 
+from local_workspace_application.workspaces.materialization_visibility import (
+    KnowledgeMaterializationOwnershipV1,
+    KnowledgeMaterializationVisibilityStatusV1,
+)
 from local_workspace_application.workspaces.models import (
     Workspace,
     WorkspaceDocumentReference,
@@ -15,6 +19,8 @@ from local_workspace_application.workspaces.models import (
 )
 
 __all__ = [
+    "KnowledgeMaterializationOwnershipV1",
+    "KnowledgeMaterializationVisibilityStatusV1",
     "Workspace",
     "WorkspaceDocumentReference",
     "WorkspaceOperation",

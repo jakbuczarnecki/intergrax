@@ -10,6 +10,13 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, field_validator, model_validator
 
+from local_workspace_application.workspaces.knowledge_plugin_configuration_service import (
+    KnowledgePluginConfigurationSnapshotV1,
+)
+from local_workspace_application.workspaces.tenant_connection_conversation_models import (
+    TenantConnectionPlanningSnapshotV1,
+)
+
 _MAX_MESSAGE_TEXT_LEN = 16_000
 _MAX_ATTACHMENTS = 50
 _MAX_WORKSPACES = 100
@@ -23,6 +30,7 @@ _MAX_EVIDENCE_QUOTES = 20
 _MAX_OBJECTS = 50
 _MAX_SOURCE_OBJECT_IDS_PER_ACTION = 50
 _MAX_ATTACHMENT_IDS_PER_ACTION = 50
+_MAX_PAGE_TOKEN_LEN = 4096
 
 _ASCII_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 
@@ -177,6 +185,8 @@ class ConversationPlanningRequest(BaseModel):
     available_workspaces: tuple[ConversationPlanningWorkspace, ...] = ()
     active_workspace_id: OpaqueId | None = Field(default=None, max_length=_MAX_ACTION_ID_LEN)
     available_source_candidates: tuple[ConversationPlanningSourceCandidate, ...] = ()
+    knowledge_plugin_configuration: KnowledgePluginConfigurationSnapshotV1 | None = None
+    tenant_connection_inventory: TenantConnectionPlanningSnapshotV1 | None = None
     recent_turns: tuple[ConversationPlanningTurn, ...] = ()
 
     @model_validator(mode="after")
@@ -214,7 +224,7 @@ class ConversationPlanningRequest(BaseModel):
 
 class WorkspaceReferenceKind(str, Enum):
     active = "active"
-    name = "name"
+    name = "name"  # pyright: ignore[reportIncompatibleMethodOverride, reportAssignmentType]
     ordinal = "ordinal"
     created_by_action = "created_by_action"
 
@@ -365,10 +375,169 @@ class KnowledgeAddSourcesPlannedAction(_PlannedActionBase):
         return self
 
 
+class KnowledgeConnectionsListPlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.connections.list"]
+
+
+class KnowledgeResourcesListPlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.resources.list"]
+    connection_ref: OpaqueId = Field(max_length=128)
+    source_kind: OpaqueId = Field(max_length=64)
+    page_token: str | None = Field(default=None, max_length=_MAX_PAGE_TOKEN_LEN)
+
+    @model_validator(mode="after")
+    def _validate_page_token(self) -> Self:
+        if self.page_token is not None and not self.page_token.strip():
+            raise ValueError("page_token must not be blank")
+        return self
+
+
+class KnowledgeConnectionAttachPlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.connection.attach"]
+    workspace: WorkspaceReference
+    connection_ref: OpaqueId = Field(max_length=128)
+
+
+class KnowledgeIndexedSourceCreatePlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.indexed_source.create"]
+    workspace: WorkspaceReference
+    connection_ref: OpaqueId = Field(max_length=128)
+    source_kind: OpaqueId = Field(max_length=64)
+    remote_resource_id: str = Field(min_length=1, max_length=256)
+
+    @model_validator(mode="after")
+    def _validate_remote_resource_id(self) -> Self:
+        if not self.remote_resource_id.strip():
+            raise ValueError("remote_resource_id must not be blank")
+        return self
+
+
+class KnowledgeCapabilitiesListPlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.capabilities.list"]
+    connection_ref: OpaqueId = Field(max_length=128)
+    remote_resource_id: str | None = Field(default=None, max_length=256)
+
+    @model_validator(mode="after")
+    def _validate_resource_id(self) -> Self:
+        if self.remote_resource_id is not None and not self.remote_resource_id.strip():
+            raise ValueError("remote_resource_id must not be blank")
+        return self
+
+
+class KnowledgeTargetReferenceKind(str, Enum):
+    ordinal = "ordinal"
+    display_label = "display_label"
+    knowledge_item_id = "knowledge_item_id"
+
+
+class KnowledgeAskTargetReference(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    target_reference_kind: KnowledgeTargetReferenceKind
+    target_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+    @model_validator(mode="after")
+    def _validate_target_reference(self) -> Self:
+        if self.target_reference_kind == KnowledgeTargetReferenceKind.ordinal:
+            if not self.target_reference.isdigit() or int(self.target_reference) < 1:
+                raise ValueError("ordinal target_reference must be a positive integer string")
+        return self
+
+
 class WorkspaceAskPlannedAction(_PlannedActionBase):
     action_type: Literal["workspace.ask"]
     workspace: WorkspaceReference
     question: str = Field(min_length=1, max_length=_MAX_MESSAGE_TEXT_LEN)
+    knowledge_targets: tuple[KnowledgeAskTargetReference, ...] | None = None
+
+    @model_validator(mode="after")
+    def _validate_knowledge_targets(self) -> Self:
+        if self.knowledge_targets is not None and not self.knowledge_targets:
+            raise ValueError("knowledge_targets must not be empty when provided")
+        return self
+
+
+class CitationInspectPlannedAction(_PlannedActionBase):
+    action_type: Literal["citation.inspect"]
+    workspace: WorkspaceReference
+    citation_ordinal: int = Field(ge=1, le=50)
+
+
+class KnowledgeInventoryFilter(str, Enum):
+    all = "all"
+    indexed = "indexed"
+    live = "live"
+    active = "active"
+    disabled = "disabled"
+    attention_required = "attention_required"
+
+
+class KnowledgeInventoryListPlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.inventory.list"]
+    workspace: WorkspaceReference
+    inventory_filter: KnowledgeInventoryFilter = KnowledgeInventoryFilter.all
+
+
+class KnowledgeOperationKind(str, Enum):
+    sync = "sync"
+    retry_sync = "retry_sync"
+    disable = "disable"
+    enable = "enable"
+    detach = "detach"
+
+
+class KnowledgeOperationExecutePlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.operation.execute"]
+    workspace: WorkspaceReference
+    operation: KnowledgeOperationKind
+    target_reference_kind: KnowledgeTargetReferenceKind
+    target_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+    confirmation_token: OptionalSafeText = Field(default=None, max_length=4096)
+
+    @model_validator(mode="after")
+    def _validate_target_reference(self) -> Self:
+        if self.target_reference_kind == KnowledgeTargetReferenceKind.ordinal:
+            if not self.target_reference.isdigit() or int(self.target_reference) < 1:
+                raise ValueError("ordinal target_reference must be a positive integer string")
+        return self
+
+
+class DestructiveActionConfirmPlannedAction(_PlannedActionBase):
+    action_type: Literal["destructive.confirm"]
+    confirmation_token: RequiredSafeText = Field(max_length=4096)
+
+
+class TenantConnectionProvidersListPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.providers.list"]
+
+
+class TenantConnectionConnectionsListPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.connections.list"]
+
+
+class TenantConnectionInspectPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.connection.inspect"]
+    connection_ref: OpaqueId = Field(max_length=128)
+
+
+class TenantConnectionBeginAuthorizationPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.authorization.begin"]
+    provider_id: OpaqueId = Field(max_length=64)
+
+
+class TenantConnectionCompleteManualAuthorizationPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.authorization.complete_manual"]
+
+
+class TenantConnectionReconnectPlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.connection.reconnect"]
+    connection_ref: OpaqueId = Field(max_length=128)
+
+
+class TenantConnectionRevokePlannedAction(_PlannedActionBase):
+    action_type: Literal["tenant_connection.connection.revoke"]
+    connection_ref: OpaqueId = Field(max_length=128)
+    confirmation_token: OptionalSafeText = Field(default=None, max_length=4096)
 
 
 PlannedAction = Annotated[
@@ -381,7 +550,23 @@ PlannedAction = Annotated[
     | SourceCandidateAttachPlannedAction
     | KnowledgeAddAttachmentsPlannedAction
     | KnowledgeAddSourcesPlannedAction
-    | WorkspaceAskPlannedAction,
+    | KnowledgeConnectionsListPlannedAction
+    | KnowledgeResourcesListPlannedAction
+    | KnowledgeConnectionAttachPlannedAction
+    | KnowledgeIndexedSourceCreatePlannedAction
+    | KnowledgeCapabilitiesListPlannedAction
+    | WorkspaceAskPlannedAction
+    | CitationInspectPlannedAction
+    | KnowledgeInventoryListPlannedAction
+    | KnowledgeOperationExecutePlannedAction
+    | DestructiveActionConfirmPlannedAction
+    | TenantConnectionProvidersListPlannedAction
+    | TenantConnectionConnectionsListPlannedAction
+    | TenantConnectionInspectPlannedAction
+    | TenantConnectionBeginAuthorizationPlannedAction
+    | TenantConnectionCompleteManualAuthorizationPlannedAction
+    | TenantConnectionReconnectPlannedAction
+    | TenantConnectionRevokePlannedAction,
     Field(discriminator="action_type"),
 ]
 
@@ -478,10 +663,25 @@ class ConversationInteractionPlan(BaseModel):
 
 
 def _extract_workspace_reference(action: PlannedAction) -> WorkspaceReference | None:
-    if hasattr(action, "workspace"):
-        workspace = action.workspace  # type: ignore[attr-defined]
-        if isinstance(workspace, WorkspaceReference):
-            return workspace
+    if isinstance(
+        action,
+        (
+            WorkspaceActivatePlannedAction,
+            WorkspaceDeletePlannedAction,
+            SourceListPlannedAction,
+            SourceCandidateListPlannedAction,
+            SourceCandidateAttachPlannedAction,
+            KnowledgeAddAttachmentsPlannedAction,
+            KnowledgeAddSourcesPlannedAction,
+            KnowledgeConnectionAttachPlannedAction,
+            KnowledgeIndexedSourceCreatePlannedAction,
+            WorkspaceAskPlannedAction,
+            CitationInspectPlannedAction,
+            KnowledgeInventoryListPlannedAction,
+            KnowledgeOperationExecutePlannedAction,
+        ),
+    ):
+        return action.workspace
     return None
 
 

@@ -2,7 +2,7 @@
 
 Indexes user-local files into the Intergrax RAG vector store.
 
-**Architecture:** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)  
+**Architecture:** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 **Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
 **Capability:** `local.workspace.index`
 
@@ -31,6 +31,6 @@ uv run pytest agents/local_indexer/tests -q
 
 1. Implement domain logic in ``on_next_step` / cognitive pattern hooks`
 2. Adjust [`prompts/system.md`](prompts/system.md)
-3. Register tools on contract — see [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
+3. Register tools on contract — see [`../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
 
 **Do not** import from `applications/` — Tier-2 only.

@@ -7,8 +7,7 @@ import logging
 import time
 from typing import Any, List, Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 
 logger = logging.getLogger(__name__)
@@ -20,8 +19,8 @@ class ParserPipeline:
     """
     Deterministic pipeline of document parsers.
 
-    Parsers are executed sequentially until one successfully produces documents.
-    Emits structured trace metadata on returned documents for ingestion observability.
+    Parsers are executed sequentially until one successfully produces fragments.
+    Emits structured trace metadata on returned fragments for ingestion observability.
     """
 
     def __init__(self, parsers: List[BaseDocumentParser]) -> None:
@@ -29,7 +28,7 @@ class ParserPipeline:
             raise ValueError("ParserPipeline requires at least one parser.")
         self._parsers = parsers
 
-    def parse(self, source: str) -> Sequence[Document]:
+    def parse(self, source: str) -> Sequence[ParsedDocumentFragment]:
         last_error: Exception | None = None
         attempts: list[dict[str, Any]] = []
 
@@ -41,19 +40,19 @@ class ParserPipeline:
 
             started = time.perf_counter()
             try:
-                docs = parser.load(source)
+                fragments = parser.load(source)
                 elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
 
-                if docs:
+                if fragments:
                     attempts.append(
                         {
                             "parser_id": parser_id,
                             "status": "success",
                             "latency_ms": elapsed_ms,
-                            "num_documents": len(docs),
+                            "num_documents": len(fragments),
                         }
                     )
-                    return self._attach_trace(source, docs, attempts)
+                    return self._attach_trace(source, fragments, attempts)
 
                 attempts.append(
                     {"parser_id": parser_id, "status": "empty", "latency_ms": elapsed_ms}
@@ -85,9 +84,9 @@ class ParserPipeline:
     @staticmethod
     def _attach_trace(
         source: str,
-        docs: Sequence[Document],
+        fragments: Sequence[ParsedDocumentFragment],
         attempts: list[dict[str, Any]],
-    ) -> Sequence[Document]:
+    ) -> Sequence[ParsedDocumentFragment]:
         winning = attempts[-1] if attempts else {}
         trace = {
             "attempts": attempts,
@@ -97,12 +96,16 @@ class ParserPipeline:
         from intergrax.rag.document_loaders.observability.parser_trace_exporter import export_parser_trace
 
         export_parser_trace(source=source, trace=trace)
-        enriched: list[Document] = []
-        for doc in docs:
-            metadata = dict(doc.metadata or {})
+        enriched: list[ParsedDocumentFragment] = []
+        for fragment in fragments:
+            metadata = dict(fragment.metadata or {})
             metadata[TRACE_METADATA_KEY] = trace
             metadata.setdefault("integration_parser_id", trace.get("parser_id"))
             enriched.append(
-                Document(page_content=doc.page_content, metadata=metadata)
+                ParsedDocumentFragment(
+                    text=fragment.text,
+                    metadata=metadata,
+                    native_handle=fragment.native_handle,
+                )
             )
         return enriched

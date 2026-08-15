@@ -20,7 +20,7 @@ Tier-2 contract review capability (`legal.review`) composed into `legal_applicat
 ## Configuration
 
 - **Capabilities:** `legal.review`
-- **Skills:** `legal.contract_review` (see `intergrax/skills/providers/legal/`)
+- **Skills:** `legal.contract_review` (see `intergrax/skills/providers/legal`)
 - **Tools:** Resolved by Tier-3 `ApplicationEnvironmentProfile` — not imported in this package
 
 ## Runtime

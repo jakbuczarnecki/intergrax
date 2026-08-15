@@ -1,10 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-from langchain_core.documents import Document
 
-from intergrax.rag.graph.indexer.community_report_graph_indexer import CommunityReportGraphIndexer
+from intergrax.rag.graph.indexer.community_report_graph_indexer import (
+    CommunityReportGraphIndexer,
+)
 from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
+from tests.unit.rag.graph.fixtures import knowledge_document
 
 pytestmark = pytest.mark.gate
 
@@ -12,7 +14,9 @@ pytestmark = pytest.mark.gate
 def test_community_report_indexer_creates_summary_node() -> None:
     store = InMemoryGraphStore()
     indexer = CommunityReportGraphIndexer(store)
-    doc = Document(page_content="Orion Analytics partners with Intergrax Harness for GraphRAG.")
+    doc = knowledge_document(
+        "Orion Analytics partners with Intergrax Harness for GraphRAG."
+    )
     count = indexer.index_documents([doc], chunk_ids=["chunk-orion"])
     assert count >= 1
     nodes = store.find_nodes(label_contains="Orion", limit=5)

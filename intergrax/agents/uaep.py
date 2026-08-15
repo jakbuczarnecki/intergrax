@@ -20,8 +20,6 @@ from intergrax.agents.uaep_protocol import (
     UAEPAgent,
     UAEPAgentWithDecide,
     UAEPAgentWithResume,
-    is_uaep_agent,
-    supports_uaep,
 )
 from intergrax.contracts.acp_metadata_keys import AcpStructuredDataKey
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -197,8 +195,11 @@ class UAEPExecutor:
     ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
         contract = contract or agent.get_contract()
         task_options = execution_options_for_request(request)
-        run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or uuid4().hex)
-        task_id = str(request.metadata.get("task_id") or run_id)
+        run_id = str(request.metadata.get("run_id") or uuid4().hex)
+        typed_task_id = request.task_id or run_id
+        if request.task_id is None:
+            request = replace(request, task_id=typed_task_id)
+        task_id = typed_task_id
         node_id = request.metadata.get("graph_node_id")
 
         exec_ctx = RuntimeExecutionContext(
@@ -260,15 +261,21 @@ class UAEPExecutor:
             session_manager=runtime_context.session_manager,
         )
         if self._context_engine is not None and self._llm_adapter is not None:
-            from intergrax.runtime.nexus.context.uaep_assemble import assemble_uaep_session_prompt
+            from intergrax.llm.messages import StructuredModelInputRequiredError, STRUCTURED_MODEL_INPUT_REQUIRED_REASON
+            from intergrax.runtime.nexus.context.graph_assembly import text_from_assembled_messages
+            from intergrax.runtime.nexus.context.uaep_assemble import assemble_uaep_session_messages
 
-            assembled_prompt = await assemble_uaep_session_prompt(
+            assembled_messages = await assemble_uaep_session_messages(
                 request,
                 agent_id=contract.id,
                 engine=self._context_engine,
                 llm_adapter=self._llm_adapter,
                 event_bus=self._event_bus,
             )
+            try:
+                assembled_prompt = text_from_assembled_messages(assembled_messages)
+            except StructuredModelInputRequiredError as exc:
+                raise UAEPBlockedError(STRUCTURED_MODEL_INPUT_REQUIRED_REASON) from exc
             if assembled_prompt and assembled_prompt != (request.message or ""):
                 request = replace(request, message=assembled_prompt)
         exec_ctx.domain_context = runtime_context
@@ -278,6 +285,7 @@ class UAEPExecutor:
             context=runtime_context,
             request=request,
             run_id=run_id,
+            declarative_hitl_grant=request.declarative_hitl_grant,
         )
         from intergrax.runtime.wiring.llm_routing_runtime_bridge import (
             sync_llm_routing_snapshot_for_state,
@@ -344,30 +352,57 @@ class UAEPExecutor:
                 sync_llm_routing_snapshot_for_state(runtime_state)
 
             started = time.perf_counter()
-            if should_skip_uaep_step(
-                step_index=index,
-                step_id=step.step_id,
-                checkpoint=runtime_ckpt,
-                human_approved=human_approved,
-            ):
-                last_output = StepOutput.model_validate(runtime_ckpt.last_step_output)
-                step_result = StepExecutionResult(output=last_output)
-            elif should_resume_uaep_step(
-                step_index=index,
-                step_id=step.step_id,
-                checkpoint=runtime_ckpt,
-                human_approved=human_approved,
-            ):
-                assert runtime_ckpt is not None
-                exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(runtime_ckpt.uaep_step_cursor or {})
-                step_result = await self._execute_step_with_resume(
-                    agent,
-                    step,
-                    exec_ctx,
-                    runtime_ckpt.uaep_step_cursor or {},
+            try:
+                if should_skip_uaep_step(
+                    step_index=index,
+                    step_id=step.step_id,
+                    checkpoint=runtime_ckpt,
+                    human_approved=human_approved,
+                ):
+                    last_output = StepOutput.model_validate(runtime_ckpt.last_step_output)
+                    step_result = StepExecutionResult(output=last_output)
+                elif should_resume_uaep_step(
+                    step_index=index,
+                    step_id=step.step_id,
+                    checkpoint=runtime_ckpt,
+                    human_approved=human_approved,
+                ):
+                    assert runtime_ckpt is not None
+                    exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(runtime_ckpt.uaep_step_cursor or {})
+                    step_result = await self._execute_step_with_resume(
+                        agent,
+                        step,
+                        exec_ctx,
+                        runtime_ckpt.uaep_step_cursor or {},
+                    )
+                else:
+                    step_result = await self.execute_step(agent, step, exec_ctx)
+            except Exception as exc:
+                from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
+                    DeclarativePolicyHitlPauseRequired,
                 )
-            else:
-                step_result = await self.execute_step(agent, step, exec_ctx)
+
+                if not isinstance(exc, DeclarativePolicyHitlPauseRequired):
+                    raise
+                governance = exc.governance.model_copy(
+                    update={"declarative_hitl_pending": exc.pending}
+                )
+                exec_ctx.metadata["governance_resolution"] = governance
+                runtime_snapshot = self._build_runtime_checkpoint(
+                    request=request,
+                    contract_id=contract.id,
+                    step_index=index,
+                    step=step,
+                    last_output=last_output,
+                    resolution=governance,
+                    step_cursor=exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
+                    if isinstance(exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY), dict)
+                    else None,
+                )
+                exec_ctx.metadata[RUNTIME_CHECKPOINT_KEY] = runtime_snapshot
+                answer = self._build_answer(exec_ctx, last_output, run_id)
+                validation = ValidationResult(valid=False, errors=["awaiting human input"])
+                return answer, validation, runtime_context, governance
             step_result.duration_ms = int((time.perf_counter() - started) * 1000)
 
             await self._guard_hook(

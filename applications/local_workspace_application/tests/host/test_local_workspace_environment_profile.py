@@ -112,6 +112,18 @@ def test_lkw_docker_compose_uses_persistent_qdrant_storage_contract() -> None:
     assert "\n  qdrant_data:" in text
 
 
+def test_lkw_docker_compose_uses_persistent_otel_collector_storage_contract() -> None:
+    text = _DOCKER_COMPOSE.read_text(encoding="utf-8")
+
+    assert "\n  otel-collector:" in text
+    assert (
+        "./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro" in text
+    )
+    assert "lkw_otel_data:/var/lib/otelcol" in text
+    assert "\n  lkw_otel_data:" in text
+    assert '"4318:4318"' in text
+
+
 def test_lkw_package_closure_accepts_pipeline_graph_trigger() -> None:
     manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
     env = manifest.resolved_environment()

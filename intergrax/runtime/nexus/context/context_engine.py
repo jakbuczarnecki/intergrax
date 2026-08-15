@@ -30,8 +30,15 @@ from intergrax.runtime.observability.context_counters import get_context_counter
 from intergrax.runtime.policy.context_assembly_policy import run_pre_context_policy_gate
 from intergrax.runtime.nexus.context.compile_service import compile_chat_messages
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
+from intergrax.runtime.nexus.context.context_compiler_models import (
+    DegradationStepKind,
+)
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
+from intergrax.runtime.wiring.context_runtime_bridge import (
+    CONTEXT_OPTIMIZATION_POLICY_HANDLE,
+    resolve_context_optimization_policy,
+)
 from intergrax.runtime.nexus.context.ucl_orchestration import (
     NEXUS_UCL_RUNTIME_HANDLE,
     NexusUCLExecutionError,
@@ -39,12 +46,44 @@ from intergrax.runtime.nexus.context.ucl_orchestration import (
     NexusUCLRuntimeDependencies,
     resolve_ucl_context_plan,
 )
-
 if TYPE_CHECKING:
     from intergrax.llm.messages import ChatMessage
+    from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
     from intergrax.runtime.nexus.config import RuntimeConfig
 
 logger = logging.getLogger("intergrax.context.engine")
+
+_NO_MUTATION_DEGRADATION_STEPS = frozenset(
+    {
+        (),
+        (DegradationStepKind.FULL.value,),
+    }
+)
+
+
+def _compile_preserved_planned_context(
+    *,
+    degradation_steps: tuple[str, ...],
+    planned_hash: str,
+    compiled_hash: str,
+    compiled_budget_tokens: int,
+    planned_budget_tokens: int,
+) -> bool:
+    return (
+        degradation_steps in _NO_MUTATION_DEGRADATION_STEPS
+        and planned_hash == compiled_hash
+        and compiled_budget_tokens == planned_budget_tokens
+    )
+
+
+def _resolve_optimization_policy(
+    ctx: ContextProviderContext,
+    runtime_config: RuntimeConfig,
+) -> ContextOptimizationPolicy | None:
+    return resolve_context_optimization_policy(
+        runtime_config,
+        direct_policy=ctx.handles.get(CONTEXT_OPTIMIZATION_POLICY_HANDLE),
+    )
 
 
 class DefaultNexusContextEngine:
@@ -193,7 +232,7 @@ class DefaultNexusContextEngine:
             max_output_tokens=max_output_tokens,
         )
         session_history = await _load_session_history_snapshot(request, ctx)
-        optimization_policy = ctx.handles.get("context_optimization_policy")
+        optimization_policy = _resolve_optimization_policy(ctx, runtime_config)
         planner = ContextPlanner(count_tokens=self._compiler.count_tokens)
         context_plan = planner.plan(
             request,
@@ -203,7 +242,11 @@ class DefaultNexusContextEngine:
             session_history=session_history,
             resolved_global_budget_tokens=resolved_budget,
             optimization_policy=optimization_policy,
-            model_family=getattr(runtime_config.llm_adapter, "model", None),
+            model_family=(
+                runtime_config.llm_adapter.model
+                if runtime_config.llm_adapter is not None
+                else None
+            ),
         )
 
         ucl_runtime = ctx.handles.get(NEXUS_UCL_RUNTIME_HANDLE)
@@ -235,10 +278,12 @@ class DefaultNexusContextEngine:
             run_preflight=False,
         )
         compiled_hash = compute_model_facing_messages_hash(compile_result.messages)
-        if (
-            compile_result.degradation_steps != ()
-            or planned_hash != compiled_hash
-            or compile_result.budget_tokens != context_plan.resolved_global_budget_tokens
+        if not _compile_preserved_planned_context(
+            degradation_steps=compile_result.degradation_steps,
+            planned_hash=planned_hash,
+            compiled_hash=compiled_hash,
+            compiled_budget_tokens=compile_result.budget_tokens,
+            planned_budget_tokens=context_plan.resolved_global_budget_tokens,
         ):
             raise ValueError(NexusUCLExecutionReason.FINAL_COMPILE_MUTATED_PLAN.value)
 

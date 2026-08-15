@@ -35,11 +35,38 @@ from local_workspace_application.conversation.interaction_planner import (
     PlanRequestValidationError,
     validate_plan_against_request,
 )
+from local_workspace_application.conversation.interaction_execution_models import (
+    ConversationActionExecutionResult,
+    ConversationActionExecutionStatus,
+    ConversationExecutionArtifact,
+    ConversationExecutionClarification,
+    ConversationExecutionError,
+    ConversationInteractionExecutionCommand,
+    ConversationInteractionExecutionResult,
+    ConversationInteractionOverallStatus,
+)
+from local_workspace_application.conversation.interaction_executor import (
+    ConversationInteractionExecutor,
+)
+from local_workspace_application.conversation.interaction_reference_resolver import (
+    ConversationInteractionReferenceResolver,
+    ConversationReferenceResolutionError,
+)
 
 __all__ = [
     "ConversationClarification",
+    "ConversationActionExecutionResult",
+    "ConversationActionExecutionStatus",
+    "ConversationExecutionArtifact",
+    "ConversationExecutionClarification",
+    "ConversationExecutionError",
+    "ConversationInteractionExecutionCommand",
+    "ConversationInteractionExecutionResult",
+    "ConversationInteractionExecutor",
     "ConversationInteractionPlan",
     "ConversationInteractionPlanner",
+    "ConversationInteractionOverallStatus",
+    "ConversationInteractionReferenceResolver",
     "ConversationPlanningAttachment",
     "ConversationPlanningError",
     "ConversationPlanningErrorCode",
@@ -47,6 +74,7 @@ __all__ = [
     "ConversationPlanningSourceCandidate",
     "ConversationPlanningTurn",
     "ConversationPlanningWorkspace",
+    "ConversationReferenceResolutionError",
     "ExtractedObject",
     "KnowledgeAddAttachmentsPlannedAction",
     "KnowledgeAddSourcesPlannedAction",

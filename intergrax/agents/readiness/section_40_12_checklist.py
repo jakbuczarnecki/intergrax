@@ -133,7 +133,7 @@ def build_section_40_12_reference_report(
             item_id="40.7",
             requirement="Threat mitigations verified for agent data classes",
             status=Section4012ItemStatus.PASS,
-            evidence=["scripts/maintenance/check_agent_step_security.py", "docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md §40.7"],
+            evidence=["scripts/maintenance/check_agent_step_security.py", "docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md §40.7"],
         ),
         Section4012CheckItem(
             item_id="40.8",
@@ -177,7 +177,7 @@ def build_section_40_12_reference_report(
             item_id="20",
             requirement="Lifecycle certification recorded",
             status=Section4012ItemStatus.NOT_APPLICABLE,
-            evidence=["docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md §20"],
+            evidence=["docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md §20"],
             notes="Harness acceptance probe — roster lifecycle tracked separately",
         ),
     ]

@@ -6,7 +6,7 @@ This runbook walks through **building the Docker image**, **starting the host**,
 
 **Default manifest:** `host_signing_enabled=true` (signed events, `trust_model.host_attested`). For unsigned v2 regression, set `host_signing_enabled=false` in `manifest.py` or use pytest unsigned tests.
 
-Related docs: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · [`partner_handoff/README.md`](partner_handoff/README.md)
+Related docs: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · [`partner_handoff/README.md`](../partner_handoff/README.md)
 
 ---
 
@@ -34,7 +34,7 @@ Related docs: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · [`partner_handoff/
 | `curl` or PowerShell | For HTTP smoke tests |
 | Optional: [uv](https://docs.astral.sh/uv/) | For automated pytest in Step 10 |
 
-**Build context is always the monorepo root** — not `applications/attestation_demo/` alone.
+**Build context is always the monorepo root** — not `applications/attestation_demo` alone.
 
 ---
 
@@ -207,7 +207,7 @@ $response | ConvertTo-Json -Depth 10
 - `"state": "completed"`
 - `"agent_id": "boundary_demo_agent"`
 - `"boundary_events"` is a non-empty array with **at least 2** elements
-- Compare shape to [`partner_handoff/poc_run_response.v2.json`](partner_handoff/poc_run_response.v2.json)
+- Compare shape to [`partner_handoff/poc_run_response.v2.json`](../partner_handoff/poc_run_response.v2.json)
 
 Save `run_id` from the response for Steps 7–8.
 
@@ -267,11 +267,11 @@ Expect **two** events in `boundary_events[]`, ordered by `event_sequence`.
 | `step_outcome.status` | `"completed"` |
 | `lineage.ref` | contains `run_id` and `:harness_step` |
 
-**Failure path:** if storage fails, event 1 has `action_status: failed`; event 2 may still be `harness_step` / `completed` (separate claims). See [`partner_handoff/poc_run_response.failed.v2.json`](partner_handoff/poc_run_response.failed.v2.json).
+**Failure path:** if storage fails, event 1 has `action_status: failed`; event 2 may still be `harness_step` / `completed` (separate claims). See [`partner_handoff/poc_run_response.failed.v2.json`](../partner_handoff/poc_run_response.failed.v2.json).
 
 ### 6.3 BoundaryAttest mapping readiness (partner-side)
 
-After verifying `host_attestation` (see [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md)), these Intergrax fields must be present for the partner wrapper:
+After verifying `host_attestation` (see [`partner_handoff/EBE-9_HOST_SIGNING.md`](../partner_handoff/EBE-9_HOST_SIGNING.md)), these Intergrax fields must be present for the partner wrapper:
 
 | Intergrax field | Partner use |
 |-----------------|-------------|
@@ -395,7 +395,7 @@ docker compose -f applications/attestation_demo/docker/docker-compose.yml down
 | Connection refused on `:8097` | Container still starting | Wait 30–120 s; check `docker logs attestation-demo` |
 | `boundary_events` empty | EBE profile not wired | Rebuild image from current `main`; run Step 10 pytest |
 | HTTP 401 on `/poc/run` | API key required | Set `X-Api-Key` header or unset `INTERGRAX_HARNESS_API_KEY` for dev |
-| Build fails on Windows path | Wrong build context | Run `docker build` from **repo root**, not `applications/attestation_demo/` |
+| Build fails on Windows path | Wrong build context | Run `docker build` from **repo root**, not `applications/attestation_demo` |
 | `unknown flag: --ignorefile` or buildx error | Local BuildKit / buildx version | Use classic `docker build` (Step 2 — recommended); or `build-docker.bat` on Windows |
 | `jq` not found | Optional formatter | Use `python -m json.tool` or PowerShell `ConvertTo-Json` |
 
@@ -413,4 +413,4 @@ Before sharing with a partner, confirm:
 - [ ] Step 10 — pytest green (recommended)
 - [ ] `INTERGRAX_HARNESS_API_KEY` set if exposing publicly (Step 9)
 
-Handoff package: [`partner_handoff/README.md`](partner_handoff/README.md) · EBE-9 spec: [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md)
+Handoff package: [`partner_handoff/README.md`](../partner_handoff/README.md) · EBE-9 spec: [`partner_handoff/EBE-9_HOST_SIGNING.md`](../partner_handoff/EBE-9_HOST_SIGNING.md)

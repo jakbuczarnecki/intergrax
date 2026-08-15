@@ -1,0 +1,960 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Typed Agent Platform admin orchestration facade (AP-11)."""
+
+from __future__ import annotations
+
+from intergrax.agent_distribution.activation import ActivationService
+from intergrax.agent_distribution.admin_models import (
+    ActivationResultView,
+    ActivationStatusView,
+    ActivateRuntimeRevisionRequest,
+    AgentPlatformAdminBlockedError,
+    AgentStatusView,
+    BindAgentRequest,
+    BindingListResult,
+    BindingMutationResult,
+    BindingView,
+    BuildApplicationRevisionRequest,
+    BuildRevisionResult,
+    CatalogListResult,
+    EffectiveRosterView,
+    InstallAgentRequest,
+    InstallationListResult,
+    InstallationMutationResult,
+    InstallationView,
+    RevisionHistoryView,
+    RollbackResultView,
+    RollbackRuntimeRevisionRequest,
+    RosterEntryView,
+    RuntimeRevisionView,
+    ServingStateView,
+    SetAgentEnablementRequest,
+    UpdateAgentBindingRequest,
+)
+from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadataProvider
+from intergrax.agent_distribution.binding import ApplicationAgentBinding
+from intergrax.agent_distribution.binding_service import BindingService
+from intergrax.agent_distribution.catalog import CatalogEntryFilters, CatalogSourceProvider
+from intergrax.agent_distribution.dependency import DependencyResolverInput
+from intergrax.agent_distribution.dependency_specification import (
+    build_candidate_dependency_specification,
+)
+from intergrax.agent_distribution.effective_roster import (
+    EffectiveRosterBuilder,
+    InstalledAgentRequirementSetBuilder,
+)
+from intergrax.agent_distribution.errors import (
+    AgentDistributionNotFoundError,
+    BindingRevisionConflict,
+    InstallationSlotConflict,
+    RuntimeActivationConflict,
+    RuntimeRevisionConflict,
+    RuntimeRollbackError,
+)
+from intergrax.agent_distribution.events import TransitionResult
+from intergrax.agent_distribution.identity import AgentPackageIdentity
+from intergrax.agent_distribution.installation import (
+    AgentInstallationRecord,
+    installation_state_is_installed,
+)
+from intergrax.agent_distribution.installation_service import InstallationService
+from intergrax.agent_distribution.materialization import (
+    ApplicationBuildContext,
+    MaterializationInput,
+)
+from intergrax.agent_distribution.materialization_service import RuntimeMaterializationService
+from intergrax.agent_distribution.resolver import DependencyResolver
+from intergrax.agent_distribution.roster import EffectiveRoster, ManifestDefaultAgentDeclaration
+from intergrax.agent_distribution.runtime_graph_service import (
+    CandidateRuntimeGraphBuilder,
+    CandidateRuntimeGraphValidator,
+)
+from intergrax.agent_distribution.runtime_lock import MaterializedRuntimeLockService
+from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
+from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
+from intergrax.agent_distribution.stores import (
+    AgentArtifactMetadata,
+    AgentArtifactMetadataStore,
+    AgentInstallationStore,
+    ApplicationAgentBindingStore,
+    ApplicationEnvironmentServingStore,
+    DeploymentInstanceStore,
+    MaterializedRuntimeLockStore,
+    RuntimeRevisionStore,
+)
+
+
+def _event_types(*results: TransitionResult[object]) -> tuple[str, ...]:
+    events: list[str] = []
+    for result in results:
+        for event in result.events:
+            events.append(event.event_type)
+    return tuple(events)
+
+
+def _installation_view(record: AgentInstallationRecord) -> InstallationView:
+    identity = record.package_identity
+    return InstallationView(
+        installation_id=record.installation_id,
+        installation_slot_id=record.installation_slot_id,
+        environment_id=record.environment_id,
+        distribution_package_id=identity.distribution_package_id,
+        package_version=identity.package_version,
+        package_digest=identity.package_digest,
+        installation_state=record.installation_state,
+        active_for_slot=record.active_for_slot,
+        installed=installation_state_is_installed(record.installation_state),
+    )
+
+
+def _binding_view(binding: ApplicationAgentBinding) -> BindingView:
+    return BindingView(
+        application_binding_id=binding.application_binding_id,
+        application_id=binding.application_id,
+        application_environment_id=binding.application_environment_id,
+        logical_agent_id=binding.logical_agent_id,
+        installation_slot_id=binding.installation_slot_id,
+        active_installation_id=binding.active_installation_id,
+        enablement=binding.enablement,
+        binding_revision=binding.binding_revision,
+        tombstone=binding.tombstone,
+    )
+
+
+def _revision_view(revision: RuntimeRevision) -> RuntimeRevisionView:
+    return RuntimeRevisionView(
+        runtime_revision_id=revision.runtime_revision_id,
+        application_environment_id=revision.application_environment_id,
+        application_release_id=revision.application_release_id,
+        revision_state=revision.revision_state,
+        effective_roster_revision_id=revision.effective_roster_revision_id,
+        materialized_runtime_lock_id=revision.materialized_runtime_lock_id,
+        materialized_runtime_lock_digest=revision.materialized_runtime_lock_digest,
+        runtime_graph_digest=revision.runtime_graph_digest,
+        materialization_artifact_digest=revision.materialization_artifact_digest,
+        materialization_topology=revision.materialization_topology,
+        installed_agent_package_digests=revision.installed_agent_package_digests,
+        supersedes_revision_id=revision.supersedes_revision_id,
+        rollback_target_revision_id=revision.rollback_target_revision_id,
+    )
+
+
+class AgentPlatformAdminService:
+    """One control-plane facade over AP-3..AP-10 services — no HTTP concerns."""
+
+    def __init__(
+        self,
+        *,
+        installation_store: AgentInstallationStore,
+        binding_store: ApplicationAgentBindingStore,
+        revision_store: RuntimeRevisionStore,
+        serving_store: ApplicationEnvironmentServingStore,
+        deployment_instance_store: DeploymentInstanceStore,
+        lock_store: MaterializedRuntimeLockStore,
+        artifact_metadata_store: AgentArtifactMetadataStore,
+        installation_service: InstallationService,
+        binding_service: BindingService,
+        revision_service: RuntimeRevisionService,
+        roster_builder: EffectiveRosterBuilder,
+        requirement_set_builder: InstalledAgentRequirementSetBuilder,
+        activation_service: ActivationService,
+        lock_service: MaterializedRuntimeLockService | None = None,
+        graph_builder: CandidateRuntimeGraphBuilder | None = None,
+        graph_validator: CandidateRuntimeGraphValidator | None = None,
+        materialization_service: RuntimeMaterializationService | None = None,
+        metadata_provider: AgentProjectMetadataProvider | None = None,
+        catalog_provider: CatalogSourceProvider | None = None,
+        dependency_resolver: DependencyResolver | None = None,
+        manifest_defaults: tuple[ManifestDefaultAgentDeclaration, ...] = (),
+    ) -> None:
+        self._installation_store = installation_store
+        self._binding_store = binding_store
+        self._revision_store = revision_store
+        self._serving_store = serving_store
+        self._deployment_instance_store = deployment_instance_store
+        self._lock_store = lock_store
+        self._artifact_metadata_store = artifact_metadata_store
+        self._installation_service = installation_service
+        self._binding_service = binding_service
+        self._revision_service = revision_service
+        self._roster_builder = roster_builder
+        self._requirement_set_builder = requirement_set_builder
+        self._activation_service = activation_service
+        if lock_service is not None:
+            self._lock_service = lock_service
+        elif dependency_resolver is not None:
+            self._lock_service = MaterializedRuntimeLockService(dependency_resolver)
+        else:
+            self._lock_service = None
+        self._graph_builder = graph_builder
+        self._graph_validator = graph_validator or CandidateRuntimeGraphValidator()
+        self._materialization_service = materialization_service
+        self._metadata_provider = metadata_provider
+        self._catalog_provider = catalog_provider
+        self._manifest_defaults = manifest_defaults
+
+    def list_catalog(
+        self,
+        filters: CatalogEntryFilters | None = None,
+    ) -> CatalogListResult:
+        provider = self._catalog_provider
+        if provider is None:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_CATALOG_PROVIDER",
+                "catalog list requires an injected CatalogSourceProvider",
+            )
+        return CatalogListResult(entries=tuple(provider.list_entries(filters)))
+
+    def list_installed(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+    ) -> InstallationListResult:
+        del application_id
+        records = self._installation_store.list_installations_for_environment(
+            application_environment_id
+        )
+        return InstallationListResult(
+            installations=tuple(_installation_view(record) for record in records)
+        )
+
+    def inspect_installation(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        installation_id: str,
+    ) -> InstallationView:
+        record = self._installation_store.get_installation(installation_id)
+        if record is None or record.environment_id != application_environment_id:
+            raise AgentDistributionNotFoundError(
+                f"installation {installation_id} was not found"
+            )
+        self._assert_installation_application_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            record=record,
+        )
+        return _installation_view(record)
+
+    def list_bindings(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+    ) -> BindingListResult:
+        bindings = self._binding_service.list_bindings_for_environment(
+            application_id,
+            application_environment_id,
+        )
+        return BindingListResult(bindings=tuple(_binding_view(item) for item in bindings))
+
+    def inspect_effective_roster(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        manifest_release_id: str = "unspecified",
+    ) -> EffectiveRosterView:
+        roster = self._build_roster(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            manifest_release_id=manifest_release_id,
+        )
+        return EffectiveRosterView(
+            application_id=roster.application_id,
+            application_environment_id=roster.application_environment_id,
+            manifest_release_id=roster.manifest_release_id,
+            effective_roster_revision_id=roster.effective_roster_revision_id,
+            entries=tuple(
+                RosterEntryView(
+                    logical_agent_id=entry.logical_agent_id,
+                    installation_slot_id=entry.installation_slot_id,
+                    active_installation_id=entry.active_installation_id,
+                    distribution_package_id=entry.distribution_package_id,
+                    package_digest=entry.package_digest,
+                    effective_enablement=entry.effective_enablement,
+                    application_binding_id=entry.application_binding_id,
+                )
+                for entry in roster.entries
+            ),
+        )
+
+    def inspect_serving(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+    ) -> ServingStateView:
+        serving = self._serving_store.get_serving_record(
+            application_id,
+            application_environment_id,
+        )
+        active = self._revision_service.get_active_revision(
+            application_id,
+            application_environment_id,
+        )
+        return ServingStateView(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            traffic_serving_revision_id=(
+                serving.traffic_serving_revision_id if serving is not None else None
+            ),
+            prior_traffic_revision_id=(
+                serving.prior_traffic_revision_id if serving is not None else None
+            ),
+            serving_pointer_revision=(
+                serving.serving_pointer_revision if serving is not None else 0
+            ),
+            active_revision=_revision_view(active) if active is not None else None,
+        )
+
+    def inspect_revision(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        runtime_revision_id: str,
+    ) -> RuntimeRevisionView:
+        revision = self._revision_store.get_revision(runtime_revision_id)
+        if (
+            revision is None
+            or revision.application_id != application_id
+            or revision.application_environment_id != application_environment_id
+        ):
+            raise AgentDistributionNotFoundError(
+                f"runtime revision {runtime_revision_id} was not found"
+            )
+        return _revision_view(revision)
+
+    def inspect_revision_history(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+    ) -> RevisionHistoryView:
+        serving = self.inspect_serving(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        revisions = self._revision_store.list_revisions_for_environment(
+            application_id,
+            application_environment_id,
+        )
+        return RevisionHistoryView(
+            traffic_serving_revision_id=serving.traffic_serving_revision_id,
+            prior_traffic_revision_id=serving.prior_traffic_revision_id,
+            revisions=tuple(_revision_view(item) for item in revisions),
+        )
+
+    def inspect_activation(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+    ) -> ActivationStatusView:
+        serving = self.inspect_serving(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        pending = self._pending_candidate(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            traffic_serving_revision_id=serving.traffic_serving_revision_id,
+        )
+        instance_state: str | None = None
+        readiness: str | None = None
+        if serving.traffic_serving_revision_id is not None:
+            instance = self._deployment_instance_store.get_instance(
+                application_id,
+                application_environment_id,
+                serving.traffic_serving_revision_id,
+            )
+            if instance is not None:
+                instance_state = instance.instance_state.value
+                readiness = instance.readiness_evidence_ref
+        return ActivationStatusView(
+            serving=serving,
+            candidate_revision=_revision_view(pending) if pending is not None else None,
+            serving_instance_state=instance_state,
+            serving_readiness_evidence_ref=readiness,
+        )
+
+    def inspect_agent_status(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        logical_agent_id: str,
+    ) -> AgentStatusView:
+        bindings = [
+            binding
+            for binding in self._binding_service.list_bindings_for_environment(
+                application_id,
+                application_environment_id,
+            )
+            if binding.logical_agent_id == logical_agent_id
+            and not binding.tombstone
+        ]
+        binding = bindings[0] if bindings else None
+        installed = False
+        package_digest: str | None = None
+        distribution_package_id: str | None = None
+        if binding is not None:
+            active = self._installation_service.resolve_active_for_slot(
+                application_environment_id,
+                binding.installation_slot_id,
+            )
+            installed = active is not None and installation_state_is_installed(
+                active.installation_state
+            )
+            if active is not None:
+                package_digest = active.package_identity.package_digest
+                distribution_package_id = active.package_identity.distribution_package_id
+        serving = self.inspect_serving(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        included = False
+        active_revision = serving.active_revision
+        if (
+            active_revision is not None
+            and package_digest is not None
+            and package_digest in active_revision.installed_agent_package_digests
+        ):
+            included = True
+        pending = self._pending_candidate(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            traffic_serving_revision_id=serving.traffic_serving_revision_id,
+        )
+        available: bool | None = None
+        if self._catalog_provider is not None and distribution_package_id is not None:
+            available = any(
+                entry.package_id_line == distribution_package_id
+                for entry in self._catalog_provider.list_entries()
+            )
+        roster = self._build_roster(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        enabled = any(
+            entry.logical_agent_id == logical_agent_id and entry.effective_enablement
+            for entry in roster.entries
+        )
+        return AgentStatusView(
+            logical_agent_id=logical_agent_id,
+            available=available,
+            installed=installed,
+            bound=binding is not None,
+            enabled_in_desired_state=enabled,
+            included_in_active_revision=included,
+            traffic_serving_revision_id=serving.traffic_serving_revision_id,
+            pending_candidate_revision_id=(
+                pending.runtime_revision_id if pending is not None else None
+            ),
+        )
+
+    def install_agent(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: InstallAgentRequest,
+    ) -> InstallationMutationResult:
+        identity = self._resolve_install_identity(request)
+        existing = self._installation_store.get_installation(request.installation_id)
+        if existing is not None:
+            if (
+                existing.installation_slot_id == request.installation_slot_id
+                and existing.environment_id == application_environment_id
+                and existing.package_identity == identity
+            ):
+                return InstallationMutationResult(
+                    installation=_installation_view(existing),
+                    audit_event_types=(),
+                )
+            raise InstallationSlotConflict(
+                "installation id already used with different identity"
+            )
+
+        created = self._installation_service.create_candidate_installation(
+            installation_id=request.installation_id,
+            installation_slot_id=request.installation_slot_id,
+            environment_id=application_environment_id,
+            package_identity=identity,
+        )
+        verified = self._installation_service.mark_verified(
+            request.installation_id,
+            artifact_store_ref=request.artifact_store_ref,
+            trust_record=request.trust_record,
+        )
+        promoted = self._installation_service.promote_verified_to_active(
+            request.installation_id
+        )
+        self._artifact_metadata_store.persist_metadata(
+            AgentArtifactMetadata(
+                package_digest=identity.package_digest,
+                artifact_store_ref=request.artifact_store_ref,
+                distribution_package_id=identity.distribution_package_id,
+                agent_project_metadata_ref=request.agent_project_metadata_ref,
+            )
+        )
+        return InstallationMutationResult(
+            installation=_installation_view(promoted.value),
+            audit_event_types=_event_types(created, verified, promoted),
+        )
+
+    def bind_agent(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: BindAgentRequest,
+    ) -> BindingMutationResult:
+        existing = self._binding_store.get_binding(request.application_binding_id)
+        if existing is not None:
+            if (
+                existing.application_id == application_id
+                and existing.application_environment_id == application_environment_id
+                and existing.logical_agent_id == request.logical_agent_id
+                and existing.installation_slot_id == request.installation_slot_id
+            ):
+                return BindingMutationResult(
+                    binding=_binding_view(existing),
+                    audit_event_types=(),
+                )
+            raise BindingRevisionConflict("application_binding_id already used")
+        result = self._binding_service.create_binding(
+            application_binding_id=request.application_binding_id,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            logical_agent_id=request.logical_agent_id,
+            installation_slot_id=request.installation_slot_id,
+            config=request.config,
+            secret_refs=request.secret_refs,
+            policy_overrides=request.policy_overrides,
+            factory_reference=request.factory_reference,
+            builtin_package_ref=request.builtin_package_ref,
+            enablement=request.enablement,
+        )
+        return BindingMutationResult(
+            binding=_binding_view(result.value),
+            audit_event_types=_event_types(result),
+        )
+
+    def update_binding_config(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        application_binding_id: str,
+        request: UpdateAgentBindingRequest,
+    ) -> BindingMutationResult:
+        self._require_binding_scope(
+            application_binding_id,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        result = self._binding_service.update_config(
+            application_binding_id,
+            request.config,
+            expected_revision=request.expected_revision,
+        )
+        return BindingMutationResult(
+            binding=_binding_view(result.value),
+            audit_event_types=_event_types(result),
+        )
+
+    def enable_binding(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        application_binding_id: str,
+        request: SetAgentEnablementRequest,
+    ) -> BindingMutationResult:
+        self._require_binding_scope(
+            application_binding_id,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        result = self._binding_service.enable(
+            application_binding_id,
+            expected_revision=request.expected_revision,
+        )
+        return BindingMutationResult(
+            binding=_binding_view(result.value),
+            audit_event_types=_event_types(result),
+        )
+
+    def disable_binding(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        application_binding_id: str,
+        request: SetAgentEnablementRequest,
+    ) -> BindingMutationResult:
+        self._require_binding_scope(
+            application_binding_id,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        result = self._binding_service.disable(
+            application_binding_id,
+            expected_revision=request.expected_revision,
+        )
+        return BindingMutationResult(
+            binding=_binding_view(result.value),
+            audit_event_types=_event_types(result),
+        )
+
+    def build_application_revision(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: BuildApplicationRevisionRequest,
+    ) -> BuildRevisionResult:
+        if self._materialization_service is None or self._graph_builder is None:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_BUILD_APPLY_SERVICE",
+                "build/apply requires graph builder and materialization service",
+            )
+        if self._metadata_provider is None:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_BUILD_APPLY_SERVICE",
+                "build/apply requires AgentProjectMetadataProvider",
+            )
+        if self._lock_service is None:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_DEPENDENCY_RESOLVER",
+                "build/apply requires an injected DependencyResolver",
+            )
+        existing = self._revision_store.get_revision(request.runtime_revision_id)
+        if existing is not None:
+            if (
+                existing.application_id == application_id
+                and existing.application_environment_id == application_environment_id
+                and existing.revision_state
+                in {RuntimeRevisionState.VALIDATED, RuntimeRevisionState.CANDIDATE}
+            ):
+                return BuildRevisionResult(
+                    runtime_revision_id=existing.runtime_revision_id,
+                    revision_state=existing.revision_state,
+                    effective_roster_revision_id=existing.effective_roster_revision_id,
+                    materialized_runtime_lock_id=existing.materialized_runtime_lock_id,
+                    materialized_runtime_lock_digest=existing.materialized_runtime_lock_digest,
+                    runtime_graph_digest=existing.runtime_graph_digest,
+                    materialization_artifact_digest=existing.materialization_artifact_digest,
+                    materialization_topology=existing.materialization_topology,
+                )
+            raise RuntimeRevisionConflict("runtime_revision_id already used")
+
+        roster = self._build_roster(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            manifest_release_id=request.application_release_id,
+        )
+        requirement_set = self._requirement_set_builder.build(roster)
+        specification = build_candidate_dependency_specification(
+            repository_declaration=request.repository_declaration,
+            installed_agent_requirement_set=requirement_set,
+            platform_version=request.platform_version,
+        )
+        resolver_input = DependencyResolverInput(
+            specification=specification,
+            resolver_algorithm_id=request.resolver_algorithm_id,
+            resolver_algorithm_version=request.resolver_algorithm_version,
+        )
+        lock = self._lock_service.produce_lock(resolver_input)
+        persisted_lock = self._lock_store.persist_lock(lock)
+        metadata_refs = {
+            package.distribution_package_id: package.agent_project_metadata_ref
+            for package in requirement_set.agent_packages
+        }
+        graph = self._graph_builder.build(
+            lock=persisted_lock,
+            effective_roster=roster,
+            repository_declaration=request.repository_declaration,
+            agent_metadata_refs=metadata_refs,
+        )
+        graph = self._graph_validator.validate(
+            lock=persisted_lock,
+            effective_roster=roster,
+            graph=graph,
+        )
+        enabled_digests = tuple(
+            sorted(
+                entry.package_digest
+                for entry in roster.entries
+                if entry.effective_enablement
+            )
+        )
+        if roster.effective_roster_revision_id is None:
+            raise AgentDistributionNotFoundError("effective roster lacks revision identity")
+        candidate = RuntimeRevision(
+            runtime_revision_id=request.runtime_revision_id,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            application_release_id=request.application_release_id,
+            platform_version=request.platform_version,
+            effective_roster_revision_id=roster.effective_roster_revision_id,
+            installed_agent_package_digests=enabled_digests,
+            materialized_runtime_lock_id=persisted_lock.lock_id,
+            materialized_runtime_lock_digest=persisted_lock.lock_digest,
+            runtime_graph_digest=graph.runtime_graph_digest,
+            materialization_topology=request.materialization_topology,
+            revision_state=RuntimeRevisionState.CANDIDATE,
+        )
+        persisted = self._revision_service.persist_candidate_revision(candidate)
+        build_context = ApplicationBuildContext(
+            application_id=application_id,
+            application_release_id=request.application_release_id,
+            application_environment_id=application_environment_id,
+            source_context_root=request.source_context_root,
+            platform_version=request.platform_version,
+            python_version=request.python_version,
+            output_root=request.output_root,
+            application_source_root=request.application_source_root,
+            agent_source_roots=request.agent_source_roots,
+        )
+        output = self._materialization_service.materialize(
+            MaterializationInput(
+                runtime_revision=persisted.value,
+                materialized_runtime_lock=persisted_lock,
+                candidate_runtime_graph=graph,
+                effective_roster=roster,
+                application_build_context=build_context,
+            )
+        )
+        validated = persisted.value.model_copy(
+            update={
+                "revision_state": RuntimeRevisionState.VALIDATED,
+                "materialization_artifact_digest": output.materialization_artifact_digest,
+                "materialization_topology": output.topology,
+            }
+        )
+        marked = self._revision_service.mark_validated(
+            request.runtime_revision_id,
+            validated_revision=validated,
+        )
+        serving = self._serving_store.get_serving_record(
+            application_id,
+            application_environment_id,
+        )
+        if (
+            serving is not None
+            and serving.traffic_serving_revision_id == marked.value.runtime_revision_id
+        ):
+            raise RuntimeActivationConflict("build must not activate serving traffic")
+        return BuildRevisionResult(
+            runtime_revision_id=marked.value.runtime_revision_id,
+            revision_state=marked.value.revision_state,
+            effective_roster_revision_id=marked.value.effective_roster_revision_id,
+            materialized_runtime_lock_id=marked.value.materialized_runtime_lock_id,
+            materialized_runtime_lock_digest=marked.value.materialized_runtime_lock_digest,
+            runtime_graph_digest=marked.value.runtime_graph_digest,
+            materialization_artifact_digest=marked.value.materialization_artifact_digest,
+            artifact_locator=output.artifact_locator,
+            materialization_topology=marked.value.materialization_topology,
+            audit_event_types=_event_types(persisted, marked),
+        )
+
+    def activate_revision(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: ActivateRuntimeRevisionRequest,
+    ) -> ActivationResultView:
+        self._require_revision_scope(
+            runtime_revision_id=request.runtime_revision_id,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        prepared = self._activation_service.prepare_candidate(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            runtime_revision_id=request.runtime_revision_id,
+            artifact_locator=request.artifact_locator,
+        )
+        committed = self._activation_service.commit_activation(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            runtime_revision_id=request.runtime_revision_id,
+            expected_prior_traffic_revision_id=request.expected_prior_traffic_revision_id,
+            expected_serving_pointer_revision=request.expected_serving_pointer_revision,
+            expected_artifact_digest=request.expected_artifact_digest,
+        )
+        serving = committed.value.serving_record
+        activated = committed.value.activated_revision
+        return ActivationResultView(
+            traffic_serving_revision_id=serving.traffic_serving_revision_id,
+            serving_pointer_revision=serving.serving_pointer_revision,
+            activated_revision_id=activated.runtime_revision_id,
+            revision_state=activated.revision_state,
+            prior_traffic_revision_id=serving.prior_traffic_revision_id,
+            audit_event_types=_event_types(prepared, committed),
+        )
+
+    def rollback_revision(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: RollbackRuntimeRevisionRequest,
+    ) -> RollbackResultView:
+        serving = self._serving_store.get_serving_record(
+            application_id,
+            application_environment_id,
+        )
+        if serving is None or serving.prior_traffic_revision_id is None:
+            raise RuntimeRollbackError("no prior traffic revision available for rollback")
+        if (
+            request.target_runtime_revision_id is not None
+            and request.target_runtime_revision_id != serving.prior_traffic_revision_id
+        ):
+            raise RuntimeActivationConflict(
+                "rollback target does not match immutable prior traffic revision"
+            )
+        rolled = self._activation_service.rollback(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            expected_current_traffic_revision_id=request.expected_current_traffic_revision_id,
+            expected_serving_pointer_revision=request.expected_serving_pointer_revision,
+        )
+        serving_after = rolled.value.serving_record
+        restored = rolled.value.restored_revision
+        superseded_id: str | None = None
+        if rolled.value.superseded_instance is not None:
+            superseded_id = rolled.value.superseded_instance.runtime_revision_id
+        return RollbackResultView(
+            traffic_serving_revision_id=serving_after.traffic_serving_revision_id,
+            serving_pointer_revision=serving_after.serving_pointer_revision,
+            restored_revision_id=restored.runtime_revision_id,
+            revision_state=restored.revision_state,
+            superseded_revision_id=superseded_id,
+            audit_event_types=_event_types(rolled),
+        )
+
+    def _resolve_install_identity(self, request: InstallAgentRequest) -> AgentPackageIdentity:
+        if request.catalog_entry_id is None:
+            return request.package_identity
+        provider = self._catalog_provider
+        if provider is None:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_CATALOG_PROVIDER",
+                "catalog-backed install requires an injected CatalogSourceProvider",
+            )
+        selector = request.version_selector or request.package_identity.package_version
+        for entry in provider.list_entries():
+            if entry.catalog_entry_id != request.catalog_entry_id:
+                continue
+            resolution = provider.resolve_package(entry, version_selector=selector)
+            return resolution.package_candidate.to_digest_pinned()
+        raise AgentDistributionNotFoundError(
+            f"catalog entry {request.catalog_entry_id} was not found"
+        )
+
+    def _build_roster(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        manifest_release_id: str = "unspecified",
+    ) -> EffectiveRoster:
+        bindings = self._binding_service.list_bindings_for_environment(
+            application_id,
+            application_environment_id,
+        )
+        return self._roster_builder.build(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            manifest_release_id=manifest_release_id,
+            manifest_defaults=self._manifest_defaults,
+            durable_bindings=bindings,
+        )
+
+    def _assert_installation_application_scope(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        record: AgentInstallationRecord,
+    ) -> None:
+        bindings = self._binding_service.list_bindings_for_environment(
+            application_id,
+            application_environment_id,
+        )
+        if not any(
+            binding.installation_slot_id == record.installation_slot_id
+            for binding in bindings
+        ):
+            raise AgentDistributionNotFoundError(
+                f"installation {record.installation_id} was not found"
+            )
+
+    def _require_revision_scope(
+        self,
+        *,
+        runtime_revision_id: str,
+        application_id: str,
+        application_environment_id: str,
+    ) -> RuntimeRevision:
+        revision = self._revision_store.get_revision(runtime_revision_id)
+        if (
+            revision is None
+            or revision.application_id != application_id
+            or revision.application_environment_id != application_environment_id
+        ):
+            raise AgentDistributionNotFoundError(
+                f"runtime revision {runtime_revision_id} was not found"
+            )
+        return revision
+
+    def _require_binding_scope(
+        self,
+        application_binding_id: str,
+        *,
+        application_id: str,
+        application_environment_id: str,
+    ) -> ApplicationAgentBinding:
+        binding = self._binding_store.get_binding(application_binding_id)
+        if (
+            binding is None
+            or binding.application_id != application_id
+            or binding.application_environment_id != application_environment_id
+        ):
+            raise AgentDistributionNotFoundError(
+                f"binding {application_binding_id} was not found"
+            )
+        return binding
+
+    def _pending_candidate(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        traffic_serving_revision_id: str | None,
+    ) -> RuntimeRevision | None:
+        pending: list[RuntimeRevision] = []
+        for revision in self._revision_store.list_revisions_for_environment(
+            application_id,
+            application_environment_id,
+        ):
+            if revision.runtime_revision_id == traffic_serving_revision_id:
+                continue
+            if revision.revision_state in {
+                RuntimeRevisionState.CANDIDATE,
+                RuntimeRevisionState.VALIDATED,
+            }:
+                pending.append(revision)
+        if not pending:
+            return None
+        pending.sort(key=lambda item: item.runtime_revision_id)
+        return pending[-1]

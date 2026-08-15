@@ -3,7 +3,7 @@
 **Task:** MVP-1  
 **Status:** complete  
 **Base commit:** `f290a6113703c65b824f4743ebdea5ee604eb51a`  
-**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md)  
+**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)
 
 ---
@@ -202,7 +202,7 @@ No Slack-specific citation fields exist. MVP-2 should define a surface-neutral A
 | Trace persistence | Nexus/runtime diagnostics, evidence metadata on `TaskResult.metadata` | No — observability, not product Ask history |
 | Task lifecycle | In-process `Task`/`TaskResult` via `UnifiedTaskRunner`; `run_id` == task id for sync execute | Ephemeral for LKW HTTP `/run` and managed search |
 | Operation persistence | `WorkspaceOperation` via `ManagedWorkspaceRepository` + `GET /operations/{operation_id}` | Sync lifecycle only |
-| Platform `RunService` | `intergrax/fastapi_core/runs/` | **Not mounted** by LKW sync execute path |
+| Platform `RunService` | `intergrax/fastapi_core/runs` | **Not mounted** by LKW sync execute path |
 | Product Ask run persistence | **absent** | Required for MVP-2 |
 
 Managed search creates a `run_id` but returns only `WorkspaceSearchResponseV1` (no persisted Ask run, no read-back).
@@ -489,7 +489,7 @@ MVP-2 may keep ask execution synchronous (like search) while still persisting fo
 
 | Concern | Existing owner | Required owner | Reason |
 |---------|----------------|----------------|--------|
-| HTTP request parsing | LKW `serving/` | LKW | Product API schemas |
+| HTTP request parsing | LKW `serving` | LKW | Product API schemas |
 | Identity and tenant context | Intergrax request context + LKW `resolve_tenant_id` | Intergrax + LKW | Propagate identity; LKW resolves for product routes |
 | Workspace authorization | LKW `ManagedWorkspaceService` | LKW | Workspace is product domain |
 | Ask Workspace orchestration | absent | **LKW** | Product capability; surfaces must not own it |
@@ -569,7 +569,7 @@ PRODUCT_BLOCKING
 - Sufficiency gate before any `completed` answer (empty evidence skips the model)
 - Explicit forbid: raw user question must never be used as answer content
 
-**Owner:** LKW application (`serving/`, `workspaces/` or sibling Ask module).
+**Owner:** LKW application (`serving`, `workspaces` or sibling Ask module).
 
 **Explicitly not generalized yet:**
 
@@ -721,7 +721,7 @@ Do not implement these tests in MVP-1.
 
 Governing:
 
-- `docs/plan/PRODUCT_FIRST_MVP.md`
+- `docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md`
 - `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`
 - `applications/local_workspace_application/docs/ARCHITECTURE.md`
 
@@ -751,5 +751,5 @@ Shared (directly referenced):
 
 - `intergrax/rag/retrieval/citation.py`
 - `intergrax/runtime/nexus/responses/response_schema.py` (`Citation`)
-- `intergrax/fastapi_core/runs/` (presence; not mounted by LKW sync Ask path)
+- `intergrax/fastapi_core/runs` (presence; not mounted by LKW sync Ask path)
 - `intergrax/runtime/task/task_run_bridge.py` (`new_run_id`)

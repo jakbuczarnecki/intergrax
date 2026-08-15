@@ -1,0 +1,366 @@
+schema_version = "token-optimization-proof.v1"
+proof_id = "token-optimization-vllm-smoke"
+run_mode = "live_adapter"
+
+[adapter]
+adapter_id = "local-vllm"
+provider = "vllm"
+type = "openai_compatible"
+model = "Qwen/Qwen2.5-3B-Instruct"
+base_url = "http://127.0.0.1:8100/v1"
+timeout_seconds = 120.0
+max_output_tokens = 256
+temperature = 0.0
+
+[router]
+enabled = true
+configuration_id = "exact_only"
+minimum_confidence = 0.6
+allow_structured_output_fallback = true
+require_review_for_protected_lossy_content = true
+
+[pipeline]
+mode = "default"
+layer_ids = []
+failure_policy = "continue"
+
+[output]
+directory = ".artifacts/token_optimization/proof"
+fail_if_exists = true
+
+[[cases]]
+case_id = "short-clean"
+source_type = "prompt"
+content = "Return current deployment status."
+tags = ["synthetic", "short-clean"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "exact-duplicates"
+source_type = "prompt"
+content = "line-a\nline-a\nline-b"
+tags = ["synthetic", "exact-duplicates"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "noisy-tool-output"
+source_type = "tool_output"
+content = """INFO tool=build step=000 status=running
+INFO tool=build step=001 status=running
+INFO tool=build step=002 status=running
+INFO tool=build step=003 status=running
+INFO tool=build step=004 status=running
+INFO tool=build step=005 status=running
+INFO tool=build step=006 status=running
+INFO tool=build step=007 status=running
+INFO tool=build step=008 status=running
+INFO tool=build step=009 status=running
+INFO tool=build step=010 status=running
+INFO tool=build step=011 status=running
+INFO tool=build step=012 status=running
+INFO tool=build step=013 status=running
+INFO tool=build step=014 status=running
+INFO tool=build step=015 status=running
+INFO tool=build step=016 status=running
+INFO tool=build step=017 status=running
+INFO tool=build step=018 status=running
+INFO tool=build step=019 status=running
+WARN tool=build retry=1 reason=transient
+INFO tool=build step=020 status=running
+INFO tool=build step=021 status=running
+INFO tool=build step=022 status=running
+INFO tool=build step=023 status=running
+INFO tool=build step=024 status=running
+INFO tool=build step=025 status=running
+INFO tool=build step=026 status=running
+INFO tool=build step=027 status=running
+INFO tool=build step=028 status=running
+INFO tool=build step=029 status=running
+ERROR tool=build code=E_SYNTHETIC_CHECK
+INFO tool=build step=030 status=running
+INFO tool=build step=031 status=running
+INFO tool=build step=032 status=running
+INFO tool=build step=033 status=running
+INFO tool=build step=034 status=running
+INFO tool=build step=035 status=running
+INFO tool=build step=036 status=running
+INFO tool=build step=037 status=running
+INFO tool=build step=038 status=running
+INFO tool=build step=039 status=running
+INFO tool=build step=040 status=running
+INFO tool=build step=041 status=running
+INFO tool=build step=042 status=running
+INFO tool=build step=043 status=running
+INFO tool=build step=044 status=running
+INFO tool=build step=045 status=running
+INFO tool=build step=046 status=running
+INFO tool=build step=047 status=running
+INFO tool=build step=048 status=running
+INFO tool=build step=049 status=running
+INFO tool=build completed=true"""
+tags = ["synthetic", "noisy-tool-output"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = true
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "terminal-log"
+source_type = "terminal_output"
+content = """$ synthetic-command --phase prepare
+[000] prepare started
+[001] prepare checked manifest
+[002] prepare checked inputs
+[003] prepare checked policy
+[004] prepare checked cache
+[005] prepare checked environment
+[006] prepare checked model
+[007] prepare checked router
+[008] prepare checked pipeline
+[009] prepare checked artifacts
+[010] prepare completed
+[011] execute started
+[012] execute reading fixture
+[013] execute reading fixture
+[014] execute reading fixture
+[015] execute reading fixture
+[016] execute reading fixture
+[017] execute reading fixture
+[018] execute reading fixture
+[019] execute reading fixture
+[020] execute reading fixture
+[021] execute warning=synthetic-warning
+[022] execute reading fixture
+[023] execute reading fixture
+[024] execute reading fixture
+[025] execute reading fixture
+[026] execute reading fixture
+[027] execute reading fixture
+[028] execute reading fixture
+[029] execute reading fixture
+[030] execute reading fixture
+[031] execute error=E_SYNTHETIC_TERMINAL
+[032] execute reading fixture
+[033] execute reading fixture
+[034] execute reading fixture
+[035] execute reading fixture
+[036] execute reading fixture
+[037] execute reading fixture
+[038] execute reading fixture
+[039] execute reading fixture
+[040] execute reading fixture
+[041] execute completed
+[042] cleanup started
+[043] cleanup removed temporary fixture
+[044] cleanup completed"""
+tags = ["synthetic", "terminal-log"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = true
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "rag-context-pack"
+source_type = "rag_context_pack"
+content = """[evidence-001] source=synthetic-doc-a score=0.91 text=deployment uses blue pool
+[evidence-002] source=synthetic-doc-b score=0.88 text=health probe is green
+[evidence-001] source=synthetic-doc-a score=0.91 text=deployment uses blue pool
+[evidence-003] source=synthetic-doc-c score=0.82 text=rollback remains available
+[evidence-004] source=synthetic-doc-d score=0.79 text=region is synthetic-zone
+[evidence-002] source=synthetic-doc-b score=0.88 text=health probe is green"""
+tags = ["synthetic", "rag-context-pack", "duplicate-evidence"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "protected-values"
+source_type = "prompt"
+content = """Validate record SYNTHETIC_RUN_001 at
+https://synthetic.invalid/proof/run.
+The artifact is synthetic/artifacts/fixed-run.json.
+Preserve error code E_SYNTHETIC_PROTECTED exactly.
+This synthetic context marker is repeated.
+This synthetic context marker is repeated."""
+tags = ["synthetic", "protected"]
+protected_regions = [
+  { kind = "url", value = "https://synthetic.invalid/proof/run" },
+  { kind = "path", value = "synthetic/artifacts/fixed-run.json" },
+  { kind = "identifier", value = "SYNTHETIC_RUN_001" },
+  { kind = "exact_error", value = "E_SYNTHETIC_PROTECTED" },
+]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "code-heavy"
+source_type = "structured_data"
+content = """def verify_artifact(path: str, expected_sha256: str) -> bool:
+    with open(path, "rb") as artifact:
+        actual_sha256 = sha256(artifact.read()).hexdigest()
+    return actual_sha256 == expected_sha256
+
+ARTIFACT_PATH = "synthetic/artifacts/fixed-run.json"
+ARTIFACT_MARKER = "sha256:synthetic-proof"""
+tags = ["synthetic", "code-heavy"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "high-risk-protected"
+source_type = "prompt"
+content = "Review SYNTHETIC_SECURITY_WARNING for SYNTHETIC_FINDING_007 without altering exact identifiers."
+tags = ["synthetic", "high-risk", "protected"]
+protected_regions = [
+  { kind = "security_warning", value = "SYNTHETIC_SECURITY_WARNING" },
+  { kind = "identifier", value = "SYNTHETIC_FINDING_007" },
+]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = true
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "policy-disabled"
+source_type = "prompt"
+content = "line-policy\nline-policy\nline-tail"
+tags = ["synthetic", "policy-disabled"]
+
+[cases.policy]
+enabled = false
+profile = "off"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "measure-only"
+source_type = "prompt"
+content = "measure-only duplicate line\nmeasure-only duplicate line\nmeasure-only tail"
+tags = ["synthetic", "measure-only"]
+
+[cases.policy]
+enabled = true
+profile = "measure_only"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "prefix-stable-a"
+source_type = "prompt"
+content = "Stable system contract. Dynamic tail A requests status."
+tags = ["synthetic", "prefix", "stable-a"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "prefix-changed"
+source_type = "system_policy"
+content = "Changed stable policy contract. Dynamic tail requests status."
+tags = ["synthetic", "prefix-changed"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "tools-alpha-beta"
+source_type = "tool_catalog"
+content = """tools=[alpha,beta]
+alpha:{description:"synthetic alpha",parameters:{query:string,limit:integer}}
+beta:{description:"synthetic beta",parameters:{path:string,mode:string}}"""
+tags = ["synthetic", "tools", "alpha-beta"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "tools-beta-alpha"
+source_type = "tool_catalog"
+content = """tools=[beta,alpha]
+beta:{description:"synthetic beta",parameters:{path:string,mode:string}}
+alpha:{description:"synthetic alpha",parameters:{query:string,limit:integer}}"""
+tags = ["synthetic", "tools", "beta-alpha"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "tools-inner-keys-reordered"
+source_type = "tool_catalog"
+content = """tools=[alpha,beta]
+alpha:{parameters:{limit:integer,query:string},description:"synthetic alpha"}
+beta:{parameters:{mode:string,path:string},description:"synthetic beta"}"""
+tags = ["synthetic", "tools", "inner-keys-reordered"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true
+
+[[cases]]
+case_id = "cache-control"
+source_type = "prompt"
+content = "Stable cache contract. Dynamic cache-control tail asks for warm reuse evidence."
+tags = ["synthetic", "cache-control"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true

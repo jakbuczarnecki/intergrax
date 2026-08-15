@@ -7,6 +7,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Protocol
 
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
+
 logger = logging.getLogger(__name__)
 
 _PAGE_SIZE = 200
@@ -97,9 +99,9 @@ class VectorstoreManagerWorkspaceCleanup:
 
     Product ``tenant_id`` may differ from the vector backend's fixed tenant
     (e.g. Slack ``LOCAL_WORKSPACE_SLACK_TENANT_ID`` vs ``INTERGRAX_QDRANT_TENANT_ID``).
-    Search always uses the store-bound tenant when known; otherwise omits tenant
-    so the backend can inject its own. Isolation within the store is by
-    ``workspace_id`` / ``collection_id``.
+    Search uses the store-bound tenant when known, otherwise the cleanup
+    request's tenant. Isolation within the store is by ``workspace_id`` /
+    ``collection_id``.
 
     A missing Qdrant collection is treated as empty (0 vectors), not as failure —
     common for workspaces that never indexed.
@@ -118,21 +120,35 @@ class VectorstoreManagerWorkspaceCleanup:
         # ``tenant_id`` is part of the port for callers; vector backends that bind a
         # fixed tenant use that store tenant instead of the product tenant.
 
-        search, delete, store_tenant = self._resolve_ops(manager)
+        search, delete, scope = self._resolve_ops(
+            manager,
+            tenant_id=tenant_id,
+            workspace_id=workspace,
+        )
         deleted = 0
+        deleted_ids: set[str] = set()
         for field in ("workspace_id", "collection_id"):
             deleted += self._drain_matches(
                 search=search,
                 delete=delete,
-                store_tenant=store_tenant,
+                scope=scope,
                 field=field,
                 value=workspace,
+                deleted_ids=deleted_ids,
             )
         return deleted
 
     def _resolve_ops(
-        self, manager: Any
-    ) -> tuple[Callable[..., list[dict[str, Any]]], Callable[[list[str]], None], str | None]:
+        self,
+        manager: Any,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> tuple[
+        Callable[..., list[dict[str, Any]]],
+        Callable[[list[str]], None],
+        VectorStoreScope,
+    ]:
         candidates: list[Any] = []
         unwrapped = _unwrap_vector_backend(manager)
         # Prefer concrete rag store over VectorstoreManager / integration wrappers:
@@ -142,26 +158,46 @@ class VectorstoreManagerWorkspaceCleanup:
             if item is not None and item not in candidates:
                 candidates.append(item)
 
+        bound_scope = getattr(manager, "bound_scope", None)
+        store_tenant = _bound_store_tenant(unwrapped)
+        resolved_tenant = (
+            getattr(bound_scope, "tenant_id", None)
+            or store_tenant
+            or tenant_id
+        )
+        scope = VectorStoreScope(
+            tenant_id=str(resolved_tenant),
+            namespace=getattr(bound_scope, "namespace", None),
+            workspace_id=workspace_id,
+        )
+        native_delete = getattr(manager, "delete", None)
+        if callable(native_delete):
+            delete = self._make_scoped_delete(native_delete, scope)
+        else:
+            delete = None
+
         last_error: BaseException | None = None
         for target in candidates:
             search = getattr(target, "search_by_metadata", None)
-            delete = getattr(target, "delete", None)
-            if not callable(search) or not callable(delete):
+            target_delete = getattr(target, "delete", None)
+            if not callable(search) or (delete is None and not callable(target_delete)):
                 continue
-            store_tenant = _bound_store_tenant(target) or _bound_store_tenant(unwrapped)
             probe: dict[str, Any] = {"workspace_id": "__probe__"}
-            if store_tenant is not None:
-                probe["tenant_id"] = store_tenant
+            probe["tenant_id"] = scope.tenant_id
             try:
                 search(conditions=probe, limit=1)
-                return search, delete, store_tenant
+                if delete is None:
+                    delete = self._make_scoped_delete(target_delete, scope)
+                return search, delete, scope
             except RuntimeError as exc:
                 # Wrapper without lifecycle binding — try next candidate.
                 last_error = exc
                 continue
             except Exception as exc:  # noqa: BLE001
                 if _is_absent_collection_error(exc):
-                    return search, delete, store_tenant
+                    if delete is None:
+                        delete = self._make_scoped_delete(target_delete, scope)
+                    return search, delete, scope
                 last_error = exc
                 continue
 
@@ -170,19 +206,41 @@ class VectorstoreManagerWorkspaceCleanup:
             raise RuntimeError("vectorstore_workspace_cleanup_not_supported") from last_error
         raise RuntimeError("vectorstore_workspace_cleanup_not_supported")
 
+    def _make_scoped_delete(
+        self,
+        delete: Callable[..., None],
+        scope: VectorStoreScope,
+    ) -> Callable[[list[str]], None]:
+        def invoke(ids: list[str]) -> None:
+            self._delete_scoped(delete, ids, scope=scope)
+
+        return invoke
+
+    @staticmethod
+    def _delete_scoped(
+        delete: Callable[..., None],
+        ids: list[str],
+        *,
+        scope: VectorStoreScope,
+    ) -> None:
+        try:
+            delete(ids, scope=scope)
+        except TypeError as exc:
+            raise RuntimeError("vectorstore_workspace_cleanup_not_supported") from exc
+
     def _drain_matches(
         self,
         *,
         search: Callable[..., list[dict[str, Any]]],
         delete: Callable[[list[str]], None],
-        store_tenant: str | None,
+        scope: VectorStoreScope,
         field: str,
         value: str,
+        deleted_ids: set[str],
     ) -> int:
         deleted = 0
         conditions: dict[str, Any] = {field: value}
-        if store_tenant is not None:
-            conditions["tenant_id"] = store_tenant
+        conditions["tenant_id"] = scope.tenant_id
         for _ in range(_MAX_PAGES):
             try:
                 matches = search(
@@ -210,9 +268,11 @@ class VectorstoreManagerWorkspaceCleanup:
                     if str(match.get("id") or "").strip()
                 }
             )
+            ids = [vector_id for vector_id in ids if vector_id not in deleted_ids]
             if not ids:
                 break
             delete(ids)
+            deleted_ids.update(ids)
             deleted += len(ids)
             if len(matches) < _PAGE_SIZE:
                 break

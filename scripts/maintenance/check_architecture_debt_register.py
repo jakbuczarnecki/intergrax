@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def main() -> int:
-    register = REPO_ROOT / "docs" / "guides" / "ARCHITECTURE_DEBT_REGISTER.md"
+    register = REPO_ROOT / "docs" / "project" / "technical" / "guides" / "ARCHITECTURE_DEBT_REGISTER.md"
     if not register.is_file():
         print(f"missing register: {register}", file=sys.stderr)
         return 1

@@ -1,6 +1,6 @@
 # lab_application — architecture
 
-Implementation tracker: [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ## Purpose
 
@@ -18,7 +18,7 @@ Universal **Harness lab** — multi-agent roster, debug API, interactions, sched
 
 ## Deploy triad
 
-- `docker/`, `BUILD_AND_DEPLOY.md` — see gate `test_application_deploy_triad`
+- `docker`, `BUILD_AND_DEPLOY.md` — see gate `test_application_deploy_triad`
 
 ## Manifest environment
 
@@ -29,11 +29,11 @@ Universal **Harness lab** — multi-agent roster, debug API, interactions, sched
 
 - Full monorepo `uv sync` (torch, integrations catalog)
 - `INTERGRAX_HARNESS_API_KEY` when strict/stage/prod
-- Optional `[dev-ci]` for gate tests under `tests/`
+- Optional `[dev-ci]` for gate tests under `tests`
 
 ## Application dependency project
 
-Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+Canonical packaging: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
 ```bash
 uv sync --project applications/lab_application

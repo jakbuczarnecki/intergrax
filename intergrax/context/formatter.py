@@ -4,7 +4,8 @@
 
 from __future__ import annotations
 
-from intergrax.context.contracts import ContextAssemblyRequest, ContextFragment
+from intergrax.context.contracts import ContextAssemblyRequest, ContextFragment, ContextFragmentSource
+from intergrax.context.session_history import session_history_chat_message_from_fragment
 from intergrax.llm.messages import ChatMessage
 
 
@@ -24,13 +25,18 @@ class DefaultContextFormatter:
         request: ContextAssemblyRequest,
     ) -> list[ChatMessage]:
         _ = request
-        return [
-            ChatMessage(
-                role="system",
-                content=f"[context:{fragment.source.value}:{fragment.source_id}] {fragment.content}",
+        formatted: list[ChatMessage] = []
+        for fragment in fragments:
+            if fragment.source is ContextFragmentSource.SESSION_HISTORY:
+                formatted.append(session_history_chat_message_from_fragment(fragment))
+                continue
+            formatted.append(
+                ChatMessage(
+                    role="system",
+                    content=f"[context:{fragment.source.value}:{fragment.source_id}] {fragment.content}",
+                )
             )
-            for fragment in fragments
-        ]
+        return formatted
 
 
 def merge_fragment_messages(

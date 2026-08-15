@@ -16,7 +16,21 @@ from intergrax.tools.registry.catalog import clear_tool_catalog
 pytestmark = pytest.mark.unit
 
 MIN_FULL_INTEGRATIONS = 95
-MIN_CORE_INTEGRATIONS = 12
+CORE_INTEGRATION_SLUGS = frozenset(
+    {
+        "bing",
+        "google_cse",
+        "inmemory",
+        "log",
+        "otel",
+        "prometheus",
+        "qdrant",
+        "redis",
+        "slack",
+        "sqlite",
+        "webhook",
+    }
+)
 MIN_TOOL_BUNDLES = 13
 MIN_SKILL_BUNDLES = 3
 MIN_SKILL_IDS = 10
@@ -53,5 +67,7 @@ def test_full_catalog_counts() -> None:
 def test_core_integration_preset_count() -> None:
     bootstrap_catalogs(register_shipped=True, integration_preset="core")
     snap = snapshot_catalogs()
-    assert len(snap.integration_slugs) >= MIN_CORE_INTEGRATIONS
+    slug_set = set(snap.integration_slugs)
+    assert CORE_INTEGRATION_SLUGS <= slug_set
+    assert len(snap.integration_slugs) == len(CORE_INTEGRATION_SLUGS)
     assert len(snap.integration_slugs) < MIN_FULL_INTEGRATIONS

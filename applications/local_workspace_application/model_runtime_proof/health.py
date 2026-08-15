@@ -19,7 +19,7 @@ from intergrax.llm_adapters.registry.catalog_capabilities import (
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaModelCapabilityResolver,
 )
-from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.providers.native_ollama_adapter import NativeOllamaAdapter
 from intergrax.llm_adapters.providers.openai_compat_providers import VllmChatAdapter
 
 from local_workspace_application.model_runtime_proof.config import (
@@ -141,7 +141,7 @@ def probe_ollama_health(
             base_url=env["OLLAMA_HOST"],
         )
     )
-    if not isinstance(adapter, LangChainOllamaAdapter):
+    if not isinstance(adapter, NativeOllamaAdapter):
         return (
             None,
             ProofFailureCode.PROVIDER_IDENTITY_MISMATCH,

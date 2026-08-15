@@ -5,13 +5,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
-
-from langchain_core.documents import Document
+from collections.abc import Sequence
+from typing import List
 
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import (
-    Candidates,
+    validate_candidates,
+    validate_limit,
     RerankerCandidate,
     RerankerResult,
 )
@@ -22,63 +22,37 @@ class _APIRerankerBase(BaseReranker, ABC):
     def rerank(
         self,
         *,
-        query: Optional[str],
-        candidates: Candidates,
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
-
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+    ) -> Sequence[RerankerResult]:
+        candidates = validate_candidates(candidates)
+        validate_limit(limit)
         if not candidates:
-            return []
+            return ()
 
-        if query is None or not query.strip():
-            return []
+        if not query.strip():
+            return ()
 
-        normalized: List[RerankerCandidate] = []
-
-        if isinstance(candidates[0], Document):
-
-            for d in candidates:
-                normalized.append(
-                    RerankerCandidate(
-                        id=None,
-                        text=d.page_content or "",
-                        metadata=dict(d.metadata or {}),
-                        original_score=None,
-                    )
-                )
-
-        else:
-            normalized = list(candidates)
-
-        texts: List[str] = [c.text for c in normalized]
+        normalized = candidates
+        texts: List[str] = [c.document.content for c in normalized]
 
         scores = self._score(query, texts)
+        if len(scores) != len(normalized):
+            raise ValueError("reranker returned an invalid score shape")
 
-        results: List[RerankerResult] = []
-
-        for candidate, score in zip(normalized, scores):
-
-            results.append(
-                RerankerResult(
-                    candidate=candidate,
-                    rerank_score=score,
-                    fusion_score=None,
-                    rank=0,
-                )
+        scored = list(zip(normalized, scores))
+        scored.sort(key=lambda item: float(item[1]), reverse=True)
+        selected = scored[:limit] if limit is not None else scored
+        return tuple(
+            RerankerResult(
+                candidate=candidate,
+                rerank_score=score,
+                fusion_score=None,
+                rank=rank,
             )
-
-        results.sort(
-            key=lambda r: r.rerank_score,
-            reverse=True,
+            for rank, (candidate, score) in enumerate(selected)
         )
-
-        if limit:
-            results = results[:limit]
-
-        for i, r in enumerate(results, start=1):
-            r.rank = i
-
-        return results
 
     @abstractmethod
     def _score(

@@ -553,7 +553,7 @@ Accepted media types; file-size limits; batch limits; decompression/archive limi
 
 ## Platform capability audit gate for implementation slices
 
-**Status:** binding process gate from `PLATFORM-CAPABILITY-AUDIT-GATE-1`. Governing rule: [`PRODUCT_FIRST_MVP.md` — Mandatory platform capability audit and architecture decision gate](../../../docs/plan/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate).
+**Status:** binding process gate from `PLATFORM-CAPABILITY-AUDIT-GATE-1`. Governing rule: [`PRODUCT_FIRST_MVP.md` — Mandatory platform capability audit and architecture decision gate](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate).
 
 Every `1B-*` and `1C` implementation scope must be preceded by an evidence-based platform capability audit performed by the architecture/review workflow.
 

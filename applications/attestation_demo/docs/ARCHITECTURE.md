@@ -19,9 +19,9 @@
 | *(base)* | `uv sync` from repo root — harness + FastAPI + records tool bundle |
 | `dev-ci` | Gate tests before partner handoff / deploy |
 
-Tier-2 agent: `agents/boundary_demo/` (on `PYTHONPATH` with `applications/`).
+Tier-2 agent: `agents/boundary_demo` (on `PYTHONPATH` with `applications`).
 
-Deploy triad: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · `docker/` · gate `test_application_deploy_triad.py`.
+Deploy triad: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · `docker` · gate `test_application_deploy_triad.py`.
 
 ---
 
@@ -196,7 +196,7 @@ flowchart TB
 
 ### 7.1 New subsystem: Execution Boundary Export (EBE)
 
-**Location (target):** `intergrax/runtime/attestation/`
+**Location (target):** `intergrax/runtime/attestation`
 
 | Module | Role | PoC v1 |
 |--------|------|--------|
@@ -420,7 +420,7 @@ Single-purpose demo agent. **No receipt logic.**
 
 ### 10.2 Location (target)
 
-`agents/boundary_demo/`
+`agents/boundary_demo`
 
 ### 10.3 Behavior
 
@@ -532,7 +532,7 @@ When `IdempotentToolInvoker` returns cache hit, PoC default: emit once per logic
 |-------|-------|
 | Unit | Emitter policy, schema, memory buffer |
 | Integration | `POST /poc/run` returns `boundary_events[]` with `records.put` |
-| Gate | `tests/unit/runtime/attestation/` |
+| Gate | `tests/unit/runtime/attestation` |
 | Partner | Adapter: receipt verify + chain + journal comparison |
 | Trust | Docs state unsigned events; no `server_attested` claim from Intergrax |
 
@@ -559,12 +559,12 @@ When `IdempotentToolInvoker` returns cache hit, PoC default: emit once per logic
 | Artifact | Action |
 |----------|--------|
 | `applications/attestation_demo/README.md` | Quickstart, trust model, sample payloads |
-| `applications/attestation_demo/partner_handoff/` | Committed request/response JSON + integration guide |
-| `docs/architecture/OBSERVABILITY.md` | §18 Execution Boundary Export; unsigned events; non-goal: receipt product |
-| `docs/plan/OBSERVABILITY.md` | Phase EBE register (EBE-1…EBE-9) |
-| `docs/adr/entries/2026-06-13/ADR-OBS-002.md` | Unsigned boundary export vs host attestation |
+| `applications/attestation_demo/partner_handoff` | Committed request/response JSON + integration guide |
+| `docs/project/architecture/OBSERVABILITY.md` | §18 Execution Boundary Export; unsigned events; non-goal: receipt product |
+| `docs/project/maintainers/plans/OBSERVABILITY.md` | Phase EBE register (EBE-1…EBE-9) |
+| `docs/project/technical/adr/entries/2026-06-13/ADR-OBS-002.md` | Unsigned boundary export vs host attestation |
 | `applications/attestation_demo/docs/IMPLEMENTATION_PLAN.md` | Task checklist |
-| `applications/attestation_demo/docs/adr/` | Application ADRs (ADR-ATTESTATION_DEMO-001) |
+| `project/technical/adr` | Application ADRs (ADR-ATTESTATION_DEMO-001) |
 
 ---
 

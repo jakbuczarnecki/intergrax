@@ -1,11 +1,11 @@
-# ADR-EXTERNAL_CONTRACTOR_ADAPTER-002: Mapping ownership and fake-provider proof (GEC-3)
+﻿# ADR-EXTERNAL_CONTRACTOR_ADAPTER-002: Mapping ownership and fake-provider proof (GEC-3)
 
 | Field | Value |
 |-------|-------|
 | **Status** | Accepted |
 | **Date** | 2026-07-20 |
 | **Deciders** | Platform / GEC |
-| **Related** | [`ARCHITECTURE.md`](../ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) · [ADR-EXTERNAL_CONTRACTOR_ADAPTER-001](ADR-EXTERNAL_CONTRACTOR_ADAPTER-001.md) · [ADR-EXTWORK-002](../../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-002.md) |
+| **Related** | [`ARCHITECTURE.md`](../ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) · [ADR-EXTERNAL_CONTRACTOR_ADAPTER-001](ADR-EXTERNAL_CONTRACTOR_ADAPTER-001.md) · [ADR-EXTWORK-002](../../../../docs/project/technical/adr/entries/2026-07-20/ADR-EXTWORK-002.md) |
 
 ## Context
 
@@ -16,7 +16,7 @@ GEC-1/GEC-2 introduced platform contracts and `ExternalWorkIntegration`. Without
 1. **Tier-2 owns mapping only** — request/snapshot/quote/timeline/deliverables/evidence normalization, correlation preservation, and idempotency forwarding.
 2. **Tier-2 does not own governance** — no quote accept/reject, policy, wallet/payment, ProofReceipt, HITL decisions, retry/poll/resume engines, or Nexus `TaskState` commercial extensions.
 3. **Consume only `ExternalWorkIntegration`** — inject via agent constructor / host settings; never construct providers or branch on provider type/protocol.
-4. **Prove with a deterministic in-memory fake** in agent tests (`tests/fakes/`) — not an A2A/REST stub and not the GEC-8/9 partner stub. No networking.
+4. **Prove with a deterministic in-memory fake** in agent tests (`tests/fakes`) — not an A2A/REST stub and not the GEC-8/9 partner stub. No networking.
 
 ## Consequences
 
@@ -33,7 +33,7 @@ GEC-1/GEC-2 introduced platform contracts and `ExternalWorkIntegration`. Without
 
 ## Compliance
 
-- No `applications/` imports in the agent package
+- No `applications` imports in the agent package
 - No transport libraries in mapping modules
 - Sync Protocol calls only
 

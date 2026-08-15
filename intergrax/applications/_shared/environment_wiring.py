@@ -23,6 +23,7 @@ from intergrax.applications._shared.integration_wiring import (
 )
 from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.rag_runtime_bridge import (
+    resolve_rag_profile_for_environment,
     resolve_rag_stack_for_environment,
 )
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
@@ -53,6 +54,9 @@ from intergrax.applications._shared.memory_vector_wiring import (
     assert_memory_vector_backend_available,
     build_user_profile_manager,
     resolve_rag_stack_for_memory_wiring,
+)
+from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
+    create_default_embedding_manager,
 )
 from intergrax.applications._shared.notify_tool_wiring import (
     wire_scheduled_notification_tool_binding,
@@ -138,6 +142,7 @@ def wire_application_environment(
     *,
     settings: Any = None,
     integration_profile: Any = None,
+    tenant_id: str | None = None,
     runtime_event_bus: RuntimeEventBus | None = None,
     strict_harness: bool = False,
     trace_db_path: Path | None = None,
@@ -163,12 +168,24 @@ def wire_application_environment(
         circuit_breaker_config=reliability_wiring.circuit_breaker_config,
     )
 
-    rag_stack = resolve_rag_stack_for_memory_wiring(
-        env,
-        integration_profile=resolved_integration,
-        llm_adapter=resolve_environment_llm_adapter(env),
-    )
-    assert_memory_vector_backend_available(env, rag_stack)
+    rag_stack = None
+    host_embedding_manager = None
+    host_rag_profile = None
+    if env.context_profile.enable_rag:
+        host_rag_profile = resolve_rag_profile_for_environment(
+            env,
+            integration_profile=resolved_integration,
+        )
+        if tenant_id is None:
+            host_embedding_manager = create_default_embedding_manager()
+    if tenant_id is not None:
+        rag_stack = resolve_rag_stack_for_memory_wiring(
+            env,
+            tenant_id=tenant_id,
+            integration_profile=resolved_integration,
+            llm_adapter=resolve_environment_llm_adapter(env),
+        )
+        assert_memory_vector_backend_available(env, rag_stack)
 
     tool_profile = tool_profile_with_sandbox(env)
     env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
@@ -212,17 +229,25 @@ def wire_application_environment(
         build_session_manager_from_environment,
     )
 
-    session_manager = build_session_manager_from_environment(
-        env,
-        integration_profile=resolved_integration,
-        memory_wiring=memory_wiring,
-        rag_stack=rag_stack,
-    )
-    user_profile_manager = build_user_profile_manager(
-        memory_wiring.user_profile_store,
-        env,
-        rag_stack=rag_stack,
-    )
+    if tenant_id is None:
+        from intergrax.runtime.nexus.session.session_manager import SessionManager
+
+        session_manager = SessionManager(memory_wiring.session_storage)
+        user_profile_manager = None
+    else:
+        session_manager = build_session_manager_from_environment(
+            env,
+            tenant_id=tenant_id,
+            integration_profile=resolved_integration,
+            memory_wiring=memory_wiring,
+            rag_stack=rag_stack,
+        )
+        user_profile_manager = build_user_profile_manager(
+            memory_wiring.user_profile_store,
+            env,
+            tenant_id=tenant_id,
+            rag_stack=rag_stack,
+        )
     if user_profile_manager is not None:
         from dataclasses import replace
 
@@ -267,12 +292,12 @@ def wire_application_environment(
         else None,
         embedding_manager=rag_stack.embedding_manager
         if rag_stack is not None
-        else None,
+        else host_embedding_manager,
         retriever_manager=rag_stack.retriever_manager
         if rag_stack is not None
         else None,
         reranker_manager=rag_stack.reranker_manager if rag_stack is not None else None,
-        rag_profile=rag_stack.profile if rag_stack is not None else None,
+        rag_profile=rag_stack.profile if rag_stack is not None else host_rag_profile,
         retrieval_service=rag_stack.retrieval_service
         if rag_stack is not None
         else None,

@@ -329,12 +329,10 @@ def build_cache_stable_tool_envelope(
         tool_names.append(name)
         canonical_entries.append(copy.deepcopy(dict(entry)))
 
-    canonical_entries.sort(key=lambda item: item["function"]["name"])
-    sorted_names = tuple(item["function"]["name"] for item in canonical_entries)
     envelope_hash = compute_openai_tools_schema_hash(canonical_entries)
     return CacheStableToolEnvelope(
         tools_schema=tuple(canonical_entries),
-        tool_ids=sorted_names,
+        tool_ids=tuple(tool_names),
         envelope_hash=envelope_hash,
     )
 

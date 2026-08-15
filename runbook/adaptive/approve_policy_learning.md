@@ -38,4 +38,4 @@ approval_store.approve(
 ## Related artifacts
 
 - `build/adaptive_harness/proposals.json`
-- [guides/HARNESS_ENVIRONMENT.md](../docs/guides/HARNESS_ENVIRONMENT.md) — Phase V security contracts
+- [guides/HARNESS_ENVIRONMENT.md](../../docs/project/technical/guides/HARNESS_ENVIRONMENT.md) — Phase V security contracts

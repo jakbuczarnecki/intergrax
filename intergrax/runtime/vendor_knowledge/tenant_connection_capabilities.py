@@ -8,9 +8,22 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.live.contracts import (
+    HARD_MAX_CONTENT_BYTES_PER_ITEM,
+    HARD_MAX_PROVIDER_PAGE_SIZE,
+    HARD_MAX_PROVIDER_PAGES,
+    HARD_MAX_PROVIDER_REQUESTS,
+    HARD_MAX_RESULT_BYTES,
+    HARD_MAX_RESULT_ITEMS,
+    HARD_MAX_UPSTREAM_ITEMS,
+)
+from intergrax.runtime.vendor_knowledge.live.identity import (
+    LIVE_CONTRACT_VERSION,
+    validate_capability_identity,
+)
 from intergrax.runtime.vendor_knowledge.tenant_connections import (
     SafeTenantConnectionV1,
     TenantConnectionAdministrativeStatus,
@@ -47,11 +60,13 @@ def _require_non_empty(value: str, *, field_name: str, max_length: int | None = 
 class LiveCapabilityDescriptorV1(BaseModel):
     """Typed descriptor for a provider-declared live capability."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     capability_id: str
     provider_id: str
     integration_kind: IntegrationCategory
+    source_kind: str
+    contract_version: str
 
     effect: CapabilityEffectV1
     read_only: bool
@@ -62,8 +77,13 @@ class LiveCapabilityDescriptorV1(BaseModel):
     request_schema_ref: str
     result_schema_ref: str
 
-    max_result_items: int | None = None
-    max_result_bytes: int | None = None
+    max_result_items: int = HARD_MAX_RESULT_ITEMS
+    max_result_bytes: int = HARD_MAX_RESULT_BYTES
+    max_provider_pages: int = HARD_MAX_PROVIDER_PAGES
+    max_provider_requests: int = HARD_MAX_PROVIDER_REQUESTS
+    max_upstream_items: int = HARD_MAX_UPSTREAM_ITEMS
+    max_provider_page_size: int = HARD_MAX_PROVIDER_PAGE_SIZE
+    max_content_bytes_per_item: int = HARD_MAX_CONTENT_BYTES_PER_ITEM
     available: bool = True
 
     @field_validator("capability_id")
@@ -75,6 +95,18 @@ class LiveCapabilityDescriptorV1(BaseModel):
     @classmethod
     def _valid_provider_id(cls, value: str) -> str:
         return _require_non_empty(value, field_name="provider_id", max_length=64)
+
+    @field_validator("source_kind")
+    @classmethod
+    def _valid_source_kind(cls, value: str) -> str:
+        return _require_non_empty(value, field_name="source_kind", max_length=64)
+
+    @field_validator("contract_version")
+    @classmethod
+    def _valid_contract_version(cls, value: str) -> str:
+        if value != LIVE_CONTRACT_VERSION:
+            raise ValueError("live_contract_version_unsupported")
+        return value
 
     @field_validator("request_schema_ref", "result_schema_ref")
     @classmethod
@@ -94,12 +126,31 @@ class LiveCapabilityDescriptorV1(BaseModel):
                 normalized.append(cleaned)
         return tuple(sorted(normalized))
 
-    @field_validator("max_result_items", "max_result_bytes")
+    @field_validator(
+        "max_result_items",
+        "max_result_bytes",
+        "max_provider_pages",
+        "max_provider_requests",
+        "max_upstream_items",
+        "max_provider_page_size",
+        "max_content_bytes_per_item",
+    )
     @classmethod
     def _valid_positive_limit(cls, value: int | None) -> int | None:
         if value is not None and value < 1:
             raise ValueError("limit must be greater than or equal to 1")
         return value
+
+    @model_validator(mode="after")
+    def _validate_canonical_identity(self) -> LiveCapabilityDescriptorV1:
+        validate_capability_identity(
+            capability_id=self.capability_id,
+            provider_id=self.provider_id,
+            integration_kind=self.integration_kind,
+            source_kind=self.source_kind,
+            contract_version=self.contract_version,
+        )
+        return self
 
 
 def is_bindable_read_only_capability(descriptor: LiveCapabilityDescriptorV1) -> bool:
@@ -109,9 +160,24 @@ def is_bindable_read_only_capability(descriptor: LiveCapabilityDescriptorV1) -> 
         return False
     if not descriptor.available:
         return False
+    try:
+        validate_capability_identity(
+            capability_id=descriptor.capability_id,
+            provider_id=descriptor.provider_id,
+            integration_kind=descriptor.integration_kind,
+            source_kind=descriptor.source_kind,
+            contract_version=descriptor.contract_version,
+        )
+    except ValueError:
+        return False
     normalized_id = descriptor.capability_id.strip()
-    return not any(
+    return (
+        descriptor.effect is CapabilityEffectV1.READ
+        and descriptor.read_only
+        and descriptor.available
+        and not any(
         normalized_id.endswith(suffix) for suffix in _FORBIDDEN_CAPABILITY_SUFFIXES
+        )
     )
 
 
@@ -235,7 +301,7 @@ class TenantLiveCapabilityCatalog:
     def __init__(self, *, connection_port: TenantConnectionPort) -> None:
         self._connection_port = connection_port
         self._registry: dict[
-            tuple[str, IntegrationCategory, str],
+            tuple[str, IntegrationCategory, str, str],
             LiveCapabilityDescriptorV1,
         ] = {}
 
@@ -244,6 +310,7 @@ class TenantLiveCapabilityCatalog:
             descriptor.provider_id,
             descriptor.integration_kind,
             descriptor.capability_id,
+            descriptor.contract_version,
         )
         if key in self._registry:
             raise ValueError("capability descriptor is already registered")

@@ -446,6 +446,7 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
         user_id="test-user",
         session_id="test-session",
         message="test",
+        task_id=run_id,
     )
 
     cfg = RuntimeConfig(
@@ -474,7 +475,6 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
         rag_prompt_builder=None,
         user_longterm_memory_prompt_builder=None,
         websearch_prompt_builder=None,
-        history_prompt_builder=None,
     )
 
     return RuntimeState(context=ctx, run_id=run_id, request=request)

@@ -5,14 +5,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Sequence, Type
+from typing import TYPE_CHECKING, Any
 
 from fastapi import FastAPI
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime, build_harness_host_runtime
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
-from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.graph_builder import AgentGraph
@@ -22,6 +19,9 @@ from intergrax.harness.yaml_loader import merge_manifest_with_files
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+
+if TYPE_CHECKING:
+    from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 
 
 class HarnessApplication:
@@ -145,6 +145,10 @@ class HarnessApplication:
         trace_db_path: Path | None = None,
         runtime_events_db_path: Path | None = None,
     ) -> HarnessHostRuntime:
+        from intergrax.applications._shared.harness_host_runtime import (
+            build_harness_host_runtime,
+        )
+
         manifest = self._build_manifest()
         environment = manifest.environment or self._resolve_environment()
         self._runtime = build_harness_host_runtime(

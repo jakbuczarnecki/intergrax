@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
-"""Generate docs/guides/audit_slices/<DOMAIN>.md — compact audit context + CODE_ENTRY (F5-B)."""
+"""Generate docs/project/technical/guides/audit_slices/<DOMAIN>.md — compact audit context + CODE_ENTRY (F5-B)."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "docs" / "guides" / "audit_slices"
+OUT = ROOT / "docs" / "project" / "technical" / "guides" / "audit_slices"
 
 DOMAIN_CODE_ENTRIES: dict[str, tuple[str, ...]] = {
     "PLATFORM_FOUNDATION": (
@@ -124,9 +124,9 @@ def code_entry_block(domain: str) -> str:
     entries = DOMAIN_CODE_ENTRIES.get(domain)
     if not entries:
         entries = (
-            f"`docs/architecture/{domain}.md` — read-scope block only",
-            f"`docs/plan/{domain}.md` — read-scope block only",
-            "`docs/guides/SYMBOL_INDEX.md` — symbol grep map",
+            f"`docs/project/architecture/{domain}.md` — read-scope block only",
+            f"`docs/project/maintainers/plans/{domain}.md` — read-scope block only",
+            "`docs/project/technical/guides/SYMBOL_INDEX.md` — symbol grep map",
         )
     lines = ["## Code entry (grep first — F5-B)", ""]
     for e in entries:
@@ -140,7 +140,7 @@ def render(domain: str, spec: dict[str, str]) -> str:
 
 **Purpose:** Replace bulk loading of `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`, and full plan/architecture files during **audit-only** sessions.
 
-**Parent audit prompt:** [`docs/audit/{domain}.md`](../../audit/{domain}.md) §0
+**Parent audit prompt:** [`docs/project/maintainers/audit/{domain}.md`](../../audit/{domain}.md) §0
 
 ---
 
@@ -152,11 +152,11 @@ def render(domain: str, spec: dict[str, str]) -> str:
 
 | Source | Read only |
 |--------|-----------|
-| `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | {spec["ideal"]} |
-| `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | {spec["audit_map"]} |
-| `docs/guides/SYSTEM_INVARIANTS.md` | {spec["invariants"]} (grep IDs — do not read full file) |
-| `docs/plan/{domain}.md` | **Read-scope:** {spec["plan_hub"]} |
-| `docs/architecture/{domain}.md` | {spec["architecture"]} |
+| `docs/project/technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | {spec["ideal"]} |
+| `docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | {spec["audit_map"]} |
+| `docs/project/technical/guides/SYSTEM_INVARIANTS.md` | {spec["invariants"]} (grep IDs — do not read full file) |
+| `docs/project/maintainers/plans/{domain}.md` | **Read-scope:** {spec["plan_hub"]} |
+| `docs/project/architecture/{domain}.md` | {spec["architecture"]} |
 
 {code_entry_block(domain)}
 ## Do not load unless cited

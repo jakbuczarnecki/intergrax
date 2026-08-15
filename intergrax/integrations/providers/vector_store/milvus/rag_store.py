@@ -6,10 +6,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, List, Optional, Sequence
 
-from langchain_core.documents import Document
-
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
 
 
@@ -28,35 +31,36 @@ class MilvusVectorStore(BaseVectorStore):
         self._client = client
         self._inner = InMemoryVectorStore(tenant_id=cfg.tenant_id)
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
-        self._inner.add_documents(documents, embeddings, ids=ids)
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        return self._inner.add_records(records, scope=scope)
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
     ) -> List[VectorStoreHit]:
         return self._inner.query(
             query_embedding,
+            scope=scope,
             top_k=top_k,
             metadata_filter=metadata_filter,
             include_embeddings=include_embeddings,
         )
 
-    def delete(self, ids: Sequence[str]) -> None:
-        self._inner.delete(ids)
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
+        self._inner.delete(ids, scope=scope)
 
-    def count(self) -> int:
-        return self._inner.count()
+    def count(self, *, scope: VectorStoreScope) -> int:
+        return self._inner.count(scope=scope)
 
     def list_collections(self) -> List[str]:
         if self._client is None:

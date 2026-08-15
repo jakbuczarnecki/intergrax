@@ -25,7 +25,7 @@ def test_harness_adr_entry_relpath_uses_iso_day() -> None:
 
 def test_harness_adr_entry_path_validates_basename() -> None:
     with pytest.raises(ValueError, match="invalid harness ADR filename"):
-        harness_adr_entry_path(Path("/tmp/docs/adr"), "not-an-adr.md")
+        harness_adr_entry_path(Path("/tmp/docs/project/technical/adr"), "not-an-adr.md")
 
 
 def test_relative_harness_adr_link_same_day() -> None:

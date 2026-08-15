@@ -12,6 +12,18 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel, ValidationError
 
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
+    DeclarativePolicyHitlRequiredError,
+)
+from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
+    DeclarativeHitlCandidateStatus,
+    DeclarativeHitlGrantCandidateMismatch,
+    DeclarativeHitlScopeAssignmentState,
+    maybe_assign_declarative_hitl_scope,
+    raise_hitl_pause_from_tool_invocation,
+    resolve_grant_scope_candidate,
+    unique_candidate_from_resolution,
+)
 from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
@@ -142,15 +154,51 @@ def invoke_catalog_tool_ids(
             dispatched += 1
             continue
 
-        request = ToolExecutionRequest(
+        exec_request = ToolExecutionRequest(
             run_id=state.run_id,
             step_id=step_id,
             tool_id=tool_id,
             input=validated,
             idempotency_key=f"{state.run_id}:{step_id}",
         )
+        assignment_state = (
+            DeclarativeHitlScopeAssignmentState()
+            if state.declarative_hitl_grant is not None
+            else None
+        )
+        unique_candidate = None
+        if state.declarative_hitl_grant is not None:
+            resolution = resolve_grant_scope_candidate(
+                [exec_request],
+                grant=state.declarative_hitl_grant,
+                task_id=state.task_id,
+            )
+            if resolution.status in (
+                DeclarativeHitlCandidateStatus.NO_MATCH,
+                DeclarativeHitlCandidateStatus.AMBIGUOUS,
+            ):
+                raise DeclarativeHitlGrantCandidateMismatch(
+                    status=resolution.status,
+                    task_id=state.task_id,
+                )
+            unique_candidate = unique_candidate_from_resolution(resolution)
+        exec_request = maybe_assign_declarative_hitl_scope(
+            exec_request,
+            state=state,
+            assignment_state=assignment_state,
+            unique_candidate=unique_candidate,
+            request_index=0,
+        )
 
-        result = invoker.invoke(state=state, agent_id=agent_id, request=request)
+        try:
+            result = invoker.invoke(state=state, agent_id=agent_id, request=exec_request)
+        except DeclarativePolicyHitlRequiredError as exc:
+            raise_hitl_pause_from_tool_invocation(
+                exc,
+                state=state,
+                request=exec_request,
+                agent_id=agent_id,
+            )
         state.used_tools = True
         dispatched += 1
 
@@ -224,12 +272,47 @@ def invoke_catalog_tool_request(
         input=validated,
         idempotency_key=request.idempotency_key or f"{state.run_id}:{request.request_id}",
     )
+    assignment_state = (
+        DeclarativeHitlScopeAssignmentState()
+        if state.declarative_hitl_grant is not None
+        else None
+    )
+    unique_candidate = None
+    if state.declarative_hitl_grant is not None:
+        resolution = resolve_grant_scope_candidate(
+            [exec_request],
+            grant=state.declarative_hitl_grant,
+            task_id=state.task_id,
+        )
+        if resolution.status in (
+            DeclarativeHitlCandidateStatus.NO_MATCH,
+            DeclarativeHitlCandidateStatus.AMBIGUOUS,
+        ):
+            raise DeclarativeHitlGrantCandidateMismatch(
+                status=resolution.status,
+                task_id=state.task_id,
+            )
+        unique_candidate = unique_candidate_from_resolution(resolution)
+    exec_request = maybe_assign_declarative_hitl_scope(
+        exec_request,
+        state=state,
+        assignment_state=assignment_state,
+        unique_candidate=unique_candidate,
+        request_index=0,
+    )
 
     try:
         result = invoker.invoke(
             state=state,
             agent_id=request.agent_id,
             request=exec_request,
+        )
+    except DeclarativePolicyHitlRequiredError as exc:
+        raise_hitl_pause_from_tool_invocation(
+            exc,
+            state=state,
+            request=exec_request,
+            agent_id=request.agent_id,
         )
     except Exception as exc:  # noqa: BLE001 — gateway boundary
         return ToolResponse(

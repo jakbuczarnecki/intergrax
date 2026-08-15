@@ -16,12 +16,8 @@ from intergrax.contracts.agent_run import (
     AgentRunResult,
     RequestIdentity,
 )
-from intergrax.contracts.agent_run_enums import (
-    AgentRunStatus,
-    PrincipalType,
-    TerminalReason,
-)
-from intergrax.contracts.memory_scope import MemoryScope
+from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.llm.messages import final_user_message_content, model_input_messages_from_metadata
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 
 
@@ -41,7 +37,10 @@ def runtime_request_to_agent_run(
         principal_type = PrincipalType.USER
 
     input_payload: str | dict[str, Any]
-    if request.message:
+    model_messages = model_input_messages_from_metadata(request.metadata)
+    if model_messages:
+        input_payload = final_user_message_content(model_messages)
+    elif request.message:
         input_payload = request.message
     else:
         input_payload = {"metadata": dict(request.metadata)}

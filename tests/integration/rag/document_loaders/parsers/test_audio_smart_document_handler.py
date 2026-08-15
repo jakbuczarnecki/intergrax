@@ -7,8 +7,8 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
+from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.audio_smart_document_handler import (
     AudioSmartDocumentHandler,
@@ -16,17 +16,19 @@ from intergrax.rag.document_loaders.handlers.audio_smart_document_handler import
 pytestmark = pytest.mark.integration
 
 
-class _DummyAudioLoader:
+class _FakeWhisperBackend:
 
-    def __init__(self, *args, **kwargs):
-        pass
+    def parser_id(self) -> str:
+        return "whisper"
 
-    def load(self):
+    def is_available(self) -> bool:
+        return True
 
+    def parse_file(self, source: str) -> list[ParsedDocumentFragment]:
         return [
-            Document(
-                page_content="dummy audio transcript",
-                metadata={"source": "audio_test"}
+            ParsedDocumentFragment(
+                text="dummy audio transcript",
+                metadata={"source": "audio_test"},
             )
         ]
 
@@ -60,12 +62,9 @@ def test_audio_handler_builds_parser():
 
 def test_audio_handler_load(monkeypatch, tmp_path: Path):
 
-    from intergrax.rag.document_loaders.parsers import audio_smart_parser
-
     monkeypatch.setattr(
-        audio_smart_parser,
-        "AudioSmartLoader",
-        _DummyAudioLoader
+        "intergrax.rag.document_loaders.parsers.audio_smart_parser.resolve_document_parser",
+        lambda slug, **kwargs: _FakeWhisperBackend(),
     )
 
     audio_path = tmp_path / "sample.wav"
@@ -73,8 +72,11 @@ def test_audio_handler_load(monkeypatch, tmp_path: Path):
 
     handler = AudioSmartDocumentHandler()
 
-    docs = handler.load(str(audio_path))
+    docs = handler.load(
+        str(audio_path),
+        scope=KnowledgeDocumentScope(tenant_id="tenant.test"),
+    )
 
     assert docs
-    assert isinstance(docs[0], Document)
-    assert docs[0].page_content == "dummy audio transcript"
+    assert isinstance(docs[0], KnowledgeDocument)
+    assert docs[0].content == "dummy audio transcript"

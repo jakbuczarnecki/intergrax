@@ -1,0 +1,253 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Package-level Platform Plugin coordination contract (PLATFORM-PLUGIN-3)."""
+
+from __future__ import annotations
+
+from typing import Literal, Self
+
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
+from packaging.utils import InvalidName, canonicalize_name
+from packaging.version import InvalidVersion, Version
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from intergrax.core.plugins.errors import PlatformPluginManifestValidationError
+
+MANIFEST_SCHEMA_VERSION: Literal[1] = 1
+
+_SECRET_KEY_FRAGMENTS = frozenset(
+    {
+        "api_key",
+        "apikey",
+        "password",
+        "passwd",
+        "secret",
+        "token",
+        "credential",
+        "credentials",
+        "connection_string",
+        "private_key",
+        "access_key",
+        "client_secret",
+    }
+)
+
+
+def _require_non_empty_text(value: str, *, field_name: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{field_name} must be non-empty")
+    return normalized
+
+
+def _normalize_capability_ids(value: object) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        normalized = _require_non_empty_text(value, field_name="capability_ids")
+        return (normalized,)
+    if isinstance(value, (list, tuple)):
+        normalized_ids: list[str] = []
+        for index, item in enumerate(value):
+            if not isinstance(item, str):
+                raise ValueError(f"capability_ids[{index}] must be a string")
+            normalized_ids.append(_require_non_empty_text(item, field_name="capability_ids"))
+        return tuple(normalized_ids)
+    raise ValueError("capability_ids must be a string or list of strings")
+
+
+def _capability_identity(
+    *,
+    domain: str,
+    entry_point_group: str,
+    entry_point_name: str,
+) -> tuple[str, str, str]:
+    return (domain, entry_point_group, entry_point_name)
+
+
+def reject_secret_like_keys(payload: object, *, path: str = "") -> None:
+    """Reject secret-like manifest keys before model validation."""
+    if not isinstance(payload, dict):
+        return
+    for key, value in payload.items():
+        if not isinstance(key, str):
+            raise PlatformPluginManifestValidationError("manifest keys must be strings")
+        normalized_key = key.strip().lower().replace("-", "_")
+        if any(fragment in normalized_key for fragment in _SECRET_KEY_FRAGMENTS):
+            location = f"{path}.{key}" if path else key
+            raise PlatformPluginManifestValidationError(
+                f"secret-like manifest field is not allowed: {location}"
+            )
+        child_path = f"{path}.{key}" if path else key
+        reject_secret_like_keys(value, path=child_path)
+
+
+class PluginPackageIdentity(BaseModel):
+    """Canonical package-level plugin distribution identity."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str
+    version: str
+
+    @field_validator("name")
+    @classmethod
+    def _validate_name(cls, value: str) -> str:
+        normalized = _require_non_empty_text(value, field_name="package name")
+        try:
+            return canonicalize_name(normalized, validate=True)
+        except InvalidName as exc:
+            raise ValueError(f"invalid package name: {normalized!r}") from exc
+
+    @field_validator("version")
+    @classmethod
+    def _validate_version(cls, value: str) -> str:
+        normalized = _require_non_empty_text(value, field_name="package version")
+        try:
+            return str(Version(normalized))
+        except InvalidVersion as exc:
+            raise ValueError(f"invalid package version: {normalized!r}") from exc
+
+
+class PlatformCompatibility(BaseModel):
+    """Declared Intergrax platform compatibility metadata (checked via PLATFORM-PLUGIN-6 API)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    intergrax_version: str = Field(
+        description="Declared Intergrax platform version specifier range.",
+    )
+
+    @field_validator("intergrax_version")
+    @classmethod
+    def _validate_intergrax_version(cls, value: str) -> str:
+        normalized = _require_non_empty_text(value, field_name="intergrax_version")
+        try:
+            return str(SpecifierSet(normalized))
+        except InvalidSpecifier as exc:
+            raise ValueError(f"invalid intergrax_version specifier: {normalized!r}") from exc
+
+    @property
+    def declared_specifier(self) -> SpecifierSet:
+        """Return the declared compatibility specifier (metadata only)."""
+        return SpecifierSet(self.intergrax_version)
+
+
+class CapabilityDescriptor(BaseModel):
+    """Package-level pointer to one domain capability (not a domain manifest)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    domain: str
+    entry_point_group: str
+    entry_point_name: str
+    capability_ids: tuple[str, ...] = ()
+
+    @field_validator("domain")
+    @classmethod
+    def _validate_domain(cls, value: str) -> str:
+        return _require_non_empty_text(value, field_name="capability domain")
+
+    @field_validator("entry_point_group")
+    @classmethod
+    def _validate_entry_point_group(cls, value: str) -> str:
+        return _require_non_empty_text(value, field_name="entry_point_group")
+
+    @field_validator("entry_point_name")
+    @classmethod
+    def _validate_entry_point_name(cls, value: str) -> str:
+        return _require_non_empty_text(value, field_name="entry_point_name")
+
+    @field_validator("capability_ids", mode="before")
+    @classmethod
+    def _validate_capability_ids(cls, value: object) -> tuple[str, ...]:
+        return _normalize_capability_ids(value)
+
+    @property
+    def identity_key(self) -> tuple[str, str, str]:
+        return _capability_identity(
+            domain=self.domain,
+            entry_point_group=self.entry_point_group,
+            entry_point_name=self.entry_point_name,
+        )
+
+
+class PlatformPluginManifest(BaseModel):
+    """Optional package-level Platform Plugin coordination manifest."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal[1] = MANIFEST_SCHEMA_VERSION
+    package: PluginPackageIdentity
+    platform_compatibility: PlatformCompatibility
+    capabilities: tuple[CapabilityDescriptor, ...] = ()
+    author: str | None = None
+    documentation_uri: str | None = None
+    labels: tuple[str, ...] = ()
+
+    @field_validator("author")
+    @classmethod
+    def _validate_author(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _require_non_empty_text(value, field_name="author")
+
+    @field_validator("documentation_uri")
+    @classmethod
+    def _validate_documentation_uri(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _require_non_empty_text(value, field_name="documentation_uri")
+
+    @field_validator("labels", mode="before")
+    @classmethod
+    def _validate_labels(cls, value: object) -> tuple[str, ...]:
+        if value is None:
+            return ()
+        if isinstance(value, str):
+            return (_require_non_empty_text(value, field_name="labels"),)
+        if isinstance(value, (list, tuple)):
+            normalized: list[str] = []
+            for index, item in enumerate(value):
+                if not isinstance(item, str):
+                    raise ValueError(f"labels[{index}] must be a string")
+                normalized.append(_require_non_empty_text(item, field_name="labels"))
+            return tuple(normalized)
+        raise ValueError("labels must be a string or list of strings")
+
+    @model_validator(mode="after")
+    def _reject_duplicate_capabilities(self) -> Self:
+        seen: set[tuple[str, str, str]] = set()
+        for descriptor in self.capabilities:
+            identity = descriptor.identity_key
+            if identity in seen:
+                raise ValueError(f"duplicate capability descriptor: {identity!r}")
+            seen.add(identity)
+        return self
+
+
+def build_platform_plugin_manifest(
+    *,
+    name: str,
+    version: str,
+    intergrax_version: str,
+    capabilities: tuple[CapabilityDescriptor, ...] | list[CapabilityDescriptor] = (),
+    author: str | None = None,
+    documentation_uri: str | None = None,
+    labels: tuple[str, ...] | list[str] = (),
+    schema_version: Literal[1] = MANIFEST_SCHEMA_VERSION,
+) -> PlatformPluginManifest:
+    """Construct a validated Platform Plugin manifest without side effects."""
+    try:
+        return PlatformPluginManifest(
+            schema_version=schema_version,
+            package=PluginPackageIdentity(name=name, version=version),
+            platform_compatibility=PlatformCompatibility(intergrax_version=intergrax_version),
+            capabilities=tuple(capabilities),
+            author=author,
+            documentation_uri=documentation_uri,
+            labels=tuple(labels),
+        )
+    except ValueError as exc:
+        raise PlatformPluginManifestValidationError(str(exc)) from exc

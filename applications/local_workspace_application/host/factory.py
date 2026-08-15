@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
@@ -59,6 +59,10 @@ from local_workspace_application.host.observability_wiring import (
 )
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
+from local_workspace_application.workspaces.document_store_factory import (
+    resolve_lkw_runtime_document_store,
+)
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.serving.background_task_proof_routes import (
     mount_local_workspace_background_task_proof_routes,
 )
@@ -83,11 +87,13 @@ def create_local_workspace_backend_app(
     runtime_events_db_path: Path | None = None,
     observability_export: ObservabilityExportOperatorConfig | None = None,
     host_readiness: LocalWorkspaceReadinessProvider | None = None,
+    hybrid_ask_service: Any | None = None,
 ) -> FastAPI:
     resolved_settings = cast(
         LocalWorkspaceBackendSettings,
         settings if settings is not None else LocalWorkspaceBackendSettings.from_env(),
     )
+    resolved_settings.validate_for_runtime()
     if observability_export is None:
         observability_export = resolved_settings.build_observability_export_config()
     api_key_config = (
@@ -108,12 +114,15 @@ def create_local_workspace_backend_app(
         agents=manifest.agents,
         app_id=manifest.app_id,
     )
+    lkw_document_store = resolve_lkw_runtime_document_store(resolved_settings)
+    lkw_managed_workspace_repository = ManagedWorkspaceRepository(lkw_document_store)
     runtime = build_harness_host_runtime(
         manifest,
         env,
         settings=resolved_settings,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
+        document_store=lkw_document_store,
     )
     nexus_loop = runtime.nexus_loop
     platform = bootstrap_nexus_platform(
@@ -223,25 +232,91 @@ def create_local_workspace_backend_app(
         prefix=resolved_settings.route_prefix,
         default_agent_id=resolved_settings.default_agent_id,
     )
-    from local_workspace_application.workspaces.connected_source_host_wiring import (
-        build_shared_slack_integration_for_host,
-    )
-
-    shared_slack_integration = None
-    if (
-        resolved_settings.connected_source_opaque_ref_signing_key.strip()
-        or resolved_settings.slack_companion_enabled
-    ):
-        shared_slack_integration = build_shared_slack_integration_for_host()
     mount_managed_workspace_routes(
         app,
         task_executor=lkw_task_executor,
         settings=resolved_settings,
         prefix=resolved_settings.route_prefix,
         vectorstore_manager=runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
+        tenant_vectorstore_cache=(
+            runtime.env_wiring.tool_wiring.wiring_context.extras.get(
+                "tenant_vectorstore_managers"
+            )
+            if isinstance(
+                runtime.env_wiring.tool_wiring.wiring_context.extras.get(
+                    "tenant_vectorstore_managers"
+                ),
+                dict,
+            )
+            else None
+        ),
+        integration_profile=runtime.env_wiring.tool_wiring.wiring_context.integration_profile,
         object_storage=runtime.env_wiring.tool_wiring.wiring_context.object_storage,
-        shared_slack_integration=shared_slack_integration,
+        tenant_connection_secrets_store=(
+            runtime.env_wiring.tool_wiring.wiring_context.secrets_store
+        ),
+        ask_service_v2=hybrid_ask_service,
+        repository=lkw_managed_workspace_repository,
+        host_lifecycle=host_lifecycle,
     )
+    repository = app.state.lkw_managed_workspace_repository
+    try:
+        repository.document_store.query("lkw:startup_probe", limit=1)
+    except Exception:
+        raise RuntimeError("lkw_durable_store_unavailable") from None
+    if host_lifecycle is not None:
+        connected_source_readiness = getattr(
+            app.state,
+            "lkw_connected_source_readiness",
+            None,
+        )
+        live_state = getattr(getattr(connected_source_readiness, "state", None), "value", "")
+        live_enabled = bool(live_state and live_state != "disabled")
+        live_healthy = not live_enabled or live_state == "ready"
+        live_detail = (
+            "disabled"
+            if not live_enabled
+            else ("ready" if live_healthy else f"unavailable:{live_state}")
+        )
+        host_lifecycle.register_component(
+            "durable_store",
+            enabled=True,
+            required=True,
+            healthy=True,
+            detail="ready",
+        )
+        host_lifecycle.register_component(
+            "indexed",
+            enabled=resolved_settings.enable_rag,
+            required=resolved_settings.enable_rag,
+            healthy=True,
+            detail="enabled" if resolved_settings.enable_rag else "disabled",
+        )
+        host_lifecycle.register_component(
+            "live",
+            enabled=live_enabled,
+            required=False,
+            healthy=live_healthy,
+            detail=live_detail,
+        )
+        host_lifecycle.register_component(
+            "nl_administration",
+            enabled=app.state.lkw_knowledge_administration_service is not None,
+            required=False,
+            healthy=True,
+            detail=(
+                "enabled"
+                if app.state.lkw_knowledge_administration_service is not None
+                else "disabled:confirmation_secret_missing"
+            ),
+        )
+        host_lifecycle.register_component(
+            "sync_runtime",
+            enabled=True,
+            required=True,
+            healthy=False,
+            detail="starting",
+        )
     mount_local_workspace_readiness_routes(
         app,
         resolved_readiness,
@@ -329,7 +404,9 @@ def create_local_workspace_backend_app(
             settings=resolved_settings,
             host_lifecycle=host_lifecycle,
             integration_factory=(
-                (lambda: shared_slack_integration) if shared_slack_integration is not None else None
+                (lambda: app.state.lkw_legacy_local_integration)
+                if getattr(app.state, "lkw_legacy_local_integration", None) is not None
+                else None
             ),
         )
     app.state.lkw_host_readiness = resolved_readiness

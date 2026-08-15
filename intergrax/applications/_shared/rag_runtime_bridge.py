@@ -96,6 +96,7 @@ def resolve_rag_profile_for_environment(
 def resolve_rag_stack_for_environment(
     env: ApplicationEnvironmentProfile,
     *,
+    tenant_id: str | None,
     integration_profile: IntegrationProfile | None = None,
     llm_adapter: LLMAdapter | None = None,
 ) -> RagStack | None:
@@ -106,6 +107,7 @@ def resolve_rag_stack_for_environment(
     rag_profile = resolve_rag_profile_for_environment(env, integration_profile=profile)
     return create_default_rag_stack(
         integration_profile=profile,
+        tenant_id=tenant_id,
         llm_for_contextual=llm_adapter,
         profile=rag_profile,
     )
@@ -128,6 +130,7 @@ def apply_rag_for_environment(
         return apply_rag_from_tool_wiring_context(config, tool_wiring_context)
     stack = resolve_rag_stack_for_environment(
         env,
+        tenant_id=config.tenant_id,
         integration_profile=config.integration_profile,
         llm_adapter=config.llm_adapter,
     )

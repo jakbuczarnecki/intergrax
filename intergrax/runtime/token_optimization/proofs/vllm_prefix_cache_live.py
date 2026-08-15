@@ -164,7 +164,7 @@ def build_default_config() -> VllmPrefixCacheLiveProofConfig:
         runs=3,
         output_dir=_DEFAULT_OUTPUT_DIR,
         base_url=_resolve_env("INTERGRAX_DEFAULT_VLLM_BASE_URL", _DEFAULT_BASE_URL),
-        model=_resolve_env("INTERGRAX_DEFAULT_VLLM_MODEL", _DEFAULT_MODEL),
+        model=_resolve_env("INTERGRAX_LLM_MODEL", _DEFAULT_MODEL),
         minimum_prefix_chars=4096,
         connect_timeout_seconds=5.0,
         read_timeout_seconds=120.0,

@@ -2,13 +2,20 @@
 
 Tier-3 product host for a private-by-default, tenant-scoped, deployment-neutral **Hybrid Knowledge Workspace**: indexed knowledge, controlled live provider access (planned), semantic search, grounded Ask, and synthesis.
 
+## PRODUCT QUICKSTART
+
+The supported first-run product path is [applications/local_workspace_application/docs/product/QUICKSTART.md](docs/product/QUICKSTART.md).
+Run the documented OS launcher from the repository root. It performs the
+bounded prerequisite checks, starts or reuses the canonical stack, uploads the
+bundled sample, and proves grounded Ask with a citation.
+
 **Product direction:** provider-neutral frontends (Slack, HTTP, MCP); personal/shared conversation context isolation ([`CONVERSATION_CONTEXT_ARCHITECTURE.md`](docs/CONVERSATION_CONTEXT_ARCHITECTURE.md) — **ACCEPTED**); Ollama/vLLM conversation runtime portability (`LKW-MODEL-RUNTIME-1` — **ACCEPTED**); Google Workspace knowledge architecture frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` — **READY_FOR_REVIEW**, runtime **PLANNED** — starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**); final live platform proof (`LKW-LIVE-PLATFORM-PROOF-1`). Architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) (**ACCEPTED**). Last accepted intake: end-to-end `WEB_URL` Knowledge Intake (`1B-5-2`).
 
 **“Local”** means user-controlled deployment and configuration (full self-hosted / fully local topology remains first-class). It does **not** mean storage must always reside on a single user device. Storage location is selected by configuration and provider wiring — see [ARCHITECTURE.md — Deployment, storage and tenancy model](docs/ARCHITECTURE.md#deployment-storage-and-tenancy-model).
 
-**Architecture (canonical):** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)  
-**Live verification:** [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)  
-**User journey:** [USER_JOURNEY.md](docs/USER_JOURNEY.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)  
+**Architecture (canonical):** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
+**Live verification:** [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)
+**User journey:** [USER_JOURNEY.md](docs/product/USER_JOURNEY.md) · **Product quickstart:** [docs/QUICKSTART.md](docs/product/QUICKSTART.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)
 **Build & deploy:** [BUILD_AND_DEPLOY.md](docs/BUILD_AND_DEPLOY.md)
 
 ## Agents
@@ -19,9 +26,18 @@ Tier-3 product host for a private-by-default, tenant-scoped, deployment-neutral 
 | `LocalSearchAgent` | `local.workspace.search` (default) |
 | `LocalSynthesizerAgent` | `local.workspace.synthesize` |
 
+## Try LKW
+
+**Supported product quickstart:** [docs/QUICKSTART.md](docs/product/QUICKSTART.md)
+
+One command uploads a bundled sample through managed-file intake, waits for indexing, asks a grounded question, shows a citation, and verifies persisted Ask readback. No `INTERGRAX_ALLOWED_READ_ROOTS`, no manual API JSON, and no Platform Proof run required.
+
 ## What LKW proves
 
-For the fastest external evaluation path, start with the public LKW Platform Proof: [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../docs/public-adoption/LKW_PLATFORM_PROOF.md). It shows the Docker-based run path, Elasticsearch/Kibana inspection, expected outputs, and proof-helper PASS criteria.
+For deeper bounded technical review, see the **advanced proof-only path**
+[public LKW Platform Proof](docs/proof/LKW_PLATFORM_PROOF.md).
+The product quickstart above is the normal first evaluation path; Platform
+Proof is separate and is not required for product installation.
 
 LKW is not only a local document assistant. It is the first product proof that Intergrax can repeatedly create, configure, run, package, deploy, observe, and evolve agent applications.
 
@@ -33,7 +49,7 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 
 **LKW.2** (graph pipeline + local workspace skills) is **closed — pipeline proof passed**. **LKW.2.1–LKW.2.4C** and closeout smoke verified direct capabilities (`local.workspace.index`, `local.workspace.search`, `local.workspace.synthesize`) and the pipeline capability (`local.workspace.pipeline`: index → search → synthesize → shadow artifact). **Next platform step:** **OBS-EXPORT-5** — remaining vendor adapters (Langfuse/Arize/Phoenix); LKW uses platform observability export wiring only (**INTEGRATIONS-1D**).
 
-A new user should be able to follow [USER_JOURNEY.md](docs/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
+A new user should be able to follow [USER_JOURNEY.md](docs/product/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 
 Current LKW.2 status: [IMPLEMENTATION_PLAN.md §5](docs/IMPLEMENTATION_PLAN.md#5-lkw2-graph-pipeline--local-workspace-skills). [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md) is the historical LKW.1/H1 live proof record, not the current LKW.2 execution status.
 
@@ -50,7 +66,13 @@ The common self-hosted / developer reference topology (not the product definitio
 
 In-memory vector storage is only for tests or temporary development. It is not the reference product default for durable RAG.
 
-## Docker quickstart
+## Advanced and developer routes
+
+### Supported product quickstart
+
+See [docs/QUICKSTART.md](docs/product/QUICKSTART.md) — one command per OS; managed sample upload; indexed Ask with citation.
+
+### Advanced direct Docker bootstrap
 
 From `applications/local_workspace_application/`:
 
@@ -69,7 +91,7 @@ chmod +x scripts/build-local-docker.sh
 
 The scripts copy `.env.example` to `.env` when needed, build the Docker image, start Ollama, pull the model configured in `.env`, and start the local stack.
 
-## Quickstart
+### Advanced manual uvicorn/API flow
 
 From repository root:
 
@@ -102,7 +124,7 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
   -d '{"message":"find information about project X","capability":"local.workspace.search"}'
 ```
 
-## Developer first run
+## Developer first run (advanced)
 
 This section defines the minimal first-run path for a new developer after LKW.2
 (graph pipeline + local workspace skills are **closed — pipeline proof passed**).
@@ -120,9 +142,9 @@ This section defines the minimal first-run path for a new developer after LKW.2
 | Docker   | Local stack (optional; in-memory mode works) |
 
 > Full configuration reference: [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md).
-> Conceptual user journey: [`USER_JOURNEY.md`](docs/USER_JOURNEY.md).
+> Conceptual user journey: [`USER_JOURNEY.md`](docs/product/USER_JOURNEY.md).
 
-### 1. Start the LKW host
+### 1. Start the LKW host (manual developer flow)
 
 **Local (no Docker):**
 
@@ -384,11 +406,11 @@ LKW uses **platform observability export mechanisms only** — there is no LKW-s
 
 See [docs/README.md](docs/README.md) for the full local documentation index.
 
-- Final user journey: [USER_JOURNEY.md](docs/USER_JOURNEY.md)
+- Final user journey: [USER_JOURNEY.md](docs/product/USER_JOURNEY.md)
 - LKW architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - LKW live verification: [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)
 - LKW hardening: [ARCHITECTURE_HARDENING.md](docs/ARCHITECTURE_HARDENING.md)
 - Platform proof loop: [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)
 - Implementation plan: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
-- Agent workflow: [docs/guides/AGENT_CREATION_GUIDE.md](../../docs/guides/AGENT_CREATION_GUIDE.md)
+- Agent workflow: [docs/project/technical/guides/AGENT_CREATION_GUIDE.md](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
 - Application layout: [applications/USAGE.md](../USAGE.md)

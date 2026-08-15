@@ -6,12 +6,15 @@ from __future__ import annotations
 from intergrax.utils import attribute_access
 
 import uuid
-from typing import Any, Dict, List, Optional, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import List, Union
 
 import numpy as np
 from numpy.typing import NDArray
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.knowledge.contracts.validation import JsonValue
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreRecord
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
 
 
@@ -34,21 +37,25 @@ class BaseVectorStore(VectorStore):
         return [list(map(float, v)) for v in emb]
 
     @staticmethod
-    def _doc_texts(docs: Sequence[Document]) -> List[str]:
-        return [d.page_content or "" for d in docs]
+    def _doc_texts(docs: Sequence[KnowledgeDocument]) -> List[str]:
+        return [d.content for d in docs]
 
     @staticmethod
     def _doc_payloads(
-        docs: Sequence[Document],
-        base: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        docs: Sequence[KnowledgeDocument],
+        base: Mapping[str, JsonValue] | None = None,
+    ) -> List[dict[str, JsonValue]]:
         base = base or {}
-        out: List[Dict[str, Any]] = []
+        out: List[dict[str, JsonValue]] = []
         for d in docs:
             md = dict(base)
             md.update(dict(d.metadata))
             out.append(md)
         return out
+
+    @staticmethod
+    def _record_documents(records: Sequence[VectorStoreRecord]) -> List[KnowledgeDocument]:
+        return [record.document for record in records]
 
     @staticmethod
     def _make_ids(n: int, prefix: str = "doc") -> List[str]:

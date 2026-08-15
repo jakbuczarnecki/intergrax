@@ -4,14 +4,14 @@
 
 from __future__ import annotations
 
-from typing import List
 import numpy as np
+from typing import List
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 
@@ -44,10 +44,10 @@ class MMRRetriever(BaseRetriever):
     def retrieve(
         self,
         query: RetrieverQuery,
-    ) -> List[RetrieverCandidate]:
+    ) -> tuple[RetrievalHit, ...]:
 
         if not query.query_text:
-            return []
+            return ()
 
         q_vec = (
             query.query_embedding
@@ -60,20 +60,29 @@ class MMRRetriever(BaseRetriever):
 
         hits = self._vs.query(
             query_embedding=q_vec,
+            **({"scope": query.scope} if query.scope is not None else {}),
             top_k=prefetch_k,
             metadata_filter=query.metadata_filter,
             include_embeddings=True,
         )
 
         if not hits:
-            return []
+            return ()
 
         query_vec = np.asarray(q_vec, dtype="float32").reshape(-1)
 
-        valid_hits = [h for h in hits if h.embedding is not None]
+        native_hits = tuple(
+            RetrievalHit.from_vector_store_hit(
+                hit,
+                channel="dense",
+                retriever_name=self.name(),
+            )
+            for hit in hits
+        )
+        valid_hits = [h for h in native_hits if h.embedding is not None]
 
         if not valid_hits:
-            return []
+            return ()
 
         embeddings = [
             np.asarray(h.embedding, dtype="float32").reshape(-1)
@@ -122,21 +131,23 @@ class MMRRetriever(BaseRetriever):
             selected.append(best)
             remaining.remove(best)
 
-        candidates: List[RetrieverCandidate] = []
+        candidates: list[RetrievalHit] = []
 
         for rank, idx in enumerate(selected):
 
             hit = valid_hits[idx]
 
             candidates.append(
-                RetrieverCandidate(
-                    id=hit.id,
-                    content=hit.content,
-                    metadata=hit.metadata,
-                    score=hit.similarity_score,
-                    embedding=hit.embedding,
+                RetrievalHit(
+                    document=hit.document,
+                    score=hit.score,
                     rank=rank,
+                    channel=hit.channel,
+                    vector_id=hit.vector_id,
+                    embedding=hit.embedding if query.include_embeddings else None,
+                    source_rank=hit.source_rank,
+                    retriever_name=self.name(),
                 )
             )
 
-        return candidates
+        return tuple(candidates)

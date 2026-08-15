@@ -5,10 +5,15 @@
 
 from __future__ import annotations
 
+import secrets
 import threading
-from typing import Optional
 
-from intergrax.integrations.contracts.document_store import DocumentQueryResult, DocumentRecord
+from intergrax.integrations.contracts.document_store import (
+    DocumentQueryCursorCodec,
+    DocumentQueryPageV1,
+    DocumentRecord,
+    validate_document_query_limit,
+)
 
 
 def _require_matching_keys(*, expected: DocumentRecord, replacement: DocumentRecord) -> None:
@@ -33,11 +38,25 @@ def _data_matches(current: DocumentRecord, expected: DocumentRecord) -> bool:
 class InMemoryDocumentStore:
     """Deterministic document store backing conformance suites."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        cursor_codec: DocumentQueryCursorCodec | None = None,
+        cursor_secret: bytes | None = None,
+    ) -> None:
+        if cursor_codec is not None and cursor_secret is not None:
+            raise TypeError("document_store_cursor_codec_configuration_invalid")
+        self._cursor_codec = cursor_codec or DocumentQueryCursorCodec(
+            secret=(
+                cursor_secret
+                if cursor_secret is not None
+                else secrets.token_bytes(32)
+            )
+        )
         self._rows: dict[tuple[str, str], DocumentRecord] = {}
         self._lock = threading.RLock()
 
-    def get(self, partition_key: str, row_key: str) -> Optional[DocumentRecord]:
+    def get(self, partition_key: str, row_key: str) -> DocumentRecord | None:
         with self._lock:
             return self._rows.get((partition_key, row_key))
 
@@ -54,8 +73,10 @@ class InMemoryDocumentStore:
         partition_key: str,
         *,
         limit: int = 100,
-        row_key_prefix: Optional[str] = None,
-    ) -> DocumentQueryResult:
+        row_key_prefix: str | None = None,
+        cursor: str | None = None,
+    ) -> DocumentQueryPageV1:
+        validate_document_query_limit(limit)
         with self._lock:
             rows: list[DocumentRecord] = []
             for (pk, rk), doc in self._rows.items():
@@ -65,8 +86,27 @@ class InMemoryDocumentStore:
                     continue
                 rows.append(doc)
             rows.sort(key=lambda doc: doc.row_key)
+            if cursor is not None:
+                last_row_key = self._cursor_codec.decode(
+                    cursor,
+                    partition_key=partition_key,
+                    row_key_prefix=row_key_prefix,
+                ).last_row_key
+                rows = [doc for doc in rows if doc.row_key > last_row_key]
             sliced = rows[:limit]
-            return DocumentQueryResult(documents=sliced, total=len(sliced))
+            next_cursor = (
+                self._cursor_codec.encode(
+                    partition_key=partition_key,
+                    row_key_prefix=row_key_prefix,
+                    last_row_key=sliced[-1].row_key,
+                )
+                if len(rows) > limit and sliced
+                else None
+            )
+            return DocumentQueryPageV1(
+                documents=tuple(sliced),
+                next_cursor=next_cursor,
+            )
 
     def close(self) -> None:
         with self._lock:

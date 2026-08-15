@@ -280,4 +280,4 @@ Slack Live Access Binding does not imply durable synchronization or RAG indexing
 
 Enabling the Slack chatbot does not authorize indexing or querying Slack history. Conversation transport events do not automatically become durable knowledge.
 
-Binding architecture: [`docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7.
+Binding architecture: [`docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7.

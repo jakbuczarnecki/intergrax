@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import pytest
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.tools.providers.rag.index_lifecycle_contracts import (
@@ -29,12 +33,81 @@ pytestmark = pytest.mark.unit
 @pytest.fixture
 def vectorstore_ctx() -> ToolWiringContext:
     store = InMemoryVectorStore(tenant_id="t-1")
-    store.add_documents(
-        [Document(page_content="alpha text", metadata={"source": "a.md"})],
-        embeddings=[[1.0, 0.0]],
-        ids=["doc-1"],
+    document = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": "doc-1", "root_document_id": "doc-1"},
+            "scope": {"tenant_id": "t-1"},
+            "content": "alpha text",
+            "metadata": {"source": "a.md"},
+            "provenance": {"source_kind": "test", "source_id": "a.md"},
+        }
+    )
+    scope = VectorStoreScope(tenant_id="t-1")
+    store.add_records(
+        [VectorStoreRecord(document=document, embedding=[1.0, 0.0], vector_id="doc-1")],
+        scope=scope,
     )
     return ToolWiringContext(vectorstore_manager=VectorstoreManager(store))
+
+
+def test_native_workspace_isolation_and_delete_readd() -> None:
+    store = InMemoryVectorStore(tenant_id="t-1")
+    manager = VectorstoreManager(store)
+
+    def _record(workspace_id: str, content: str, vector_id: str) -> VectorStoreRecord:
+        document = KnowledgeDocument.model_validate(
+            {
+                "schema_version": 1,
+                "identity": {"document_id": "logical-doc", "root_document_id": "logical-doc"},
+                "scope": {
+                    "tenant_id": "t-1",
+                    "namespace": "namespace-a",
+                    "workspace_id": workspace_id,
+                },
+                "content": content,
+                "metadata": {},
+                "provenance": {"source_kind": "test", "source_id": vector_id},
+            }
+        )
+        return VectorStoreRecord(
+            document=document,
+            embedding=[1.0, 0.0],
+            vector_id=vector_id,
+        )
+
+    scope_a = VectorStoreScope(
+        tenant_id="t-1",
+        namespace="namespace-a",
+        workspace_id="workspace-a",
+    )
+    scope_b = VectorStoreScope(
+        tenant_id="t-1",
+        namespace="namespace-a",
+        workspace_id="workspace-b",
+    )
+    record_a = _record("workspace-a", "content A", "vector-a")
+    record_b = _record("workspace-b", "content B", "vector-b")
+
+    manager.add_records([record_a], scope=scope_a)
+    manager.add_records([record_b], scope=scope_b)
+
+    assert [hit.content for hit in manager.query([1.0, 0.0], scope=scope_a, top_k=5)] == [
+        "content A"
+    ]
+    assert [hit.content for hit in manager.query([1.0, 0.0], scope=scope_b, top_k=5)] == [
+        "content B"
+    ]
+
+    manager.delete(["vector-a"], scope=scope_a)
+    assert manager.query([1.0, 0.0], scope=scope_a, top_k=5) == []
+    assert manager.count(scope=scope_a) == 0
+    assert manager.count(scope=scope_b) == 1
+
+    manager.add_records([record_a], scope=scope_a)
+    hits_a = manager.query([1.0, 0.0], scope=scope_a, top_k=5)
+    assert [hit.vector_id for hit in hits_a] == ["vector-a"]
+    assert len(hits_a) == 1
 
 
 def test_rag_list_documents(vectorstore_ctx: ToolWiringContext) -> None:

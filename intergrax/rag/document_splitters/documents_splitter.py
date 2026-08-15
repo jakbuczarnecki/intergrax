@@ -7,11 +7,10 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
 from intergrax.rag.document_splitters.engine.chunking_engine import ChunkingEngine
-from intergrax.rag.document_splitters.strategies.langchain_recursive_chunking_strategy import LangChainRecursiveChunkingStrategy
+from intergrax.rag.document_splitters.strategies.recursive_chunking_strategy import RecursiveChunkingStrategy
 
 
 class DocumentsSplitter(BaseDocumentsSplitter):
@@ -28,7 +27,7 @@ class DocumentsSplitter(BaseDocumentsSplitter):
     registered in ChunkingStrategyRegistry and executed by ChunkingEngine.
     """
 
-    DEFAULT_STRATEGY = LangChainRecursiveChunkingStrategy
+    DEFAULT_STRATEGY = RecursiveChunkingStrategy
 
     def __init__(
         self,
@@ -40,15 +39,15 @@ class DocumentsSplitter(BaseDocumentsSplitter):
 
     def split_documents(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
         strategy_id: Optional[str] = None,
-    ) -> Sequence[Document]:
+    ) -> Sequence[KnowledgeDocument]:
         """
         Split documents using a configured chunking strategy.
 
         Parameters
         ----------
-        documents : Sequence[Document]
+        documents : Sequence[KnowledgeDocument]
             Documents produced by the ingestion pipeline.
 
         strategy_id : str
@@ -56,7 +55,7 @@ class DocumentsSplitter(BaseDocumentsSplitter):
 
         Returns
         -------
-        Sequence[Document]
+        Sequence[KnowledgeDocument]
             Chunked documents produced by the selected strategy.
         """
 

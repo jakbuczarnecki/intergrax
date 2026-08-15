@@ -1,19 +1,22 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-from langchain_core.documents import Document
 
 from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
 from intergrax.rag.graph.lifecycle.graph_lifecycle_sync import (
-    sync_graph_delete_documents,
     sync_graph_purge_collection,
 )
 from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
-from intergrax.tools.providers.rag.index_lifecycle_contracts import RagPurgeCollectionInput
+from intergrax.tools.providers.rag.index_lifecycle_contracts import (
+    RagPurgeCollectionInput,
+)
+from intergrax.tools.providers.rag.index_lifecycle_service import (
+    perform_rag_purge_collection,
+)
 from intergrax.tools.providers.rag.lifecycle_contracts import RagDeleteDocumentsInput
 from intergrax.tools.providers.rag.lifecycle_service import perform_rag_delete_documents
-from intergrax.tools.providers.rag.index_lifecycle_service import perform_rag_purge_collection
 from intergrax.tools.registry.wiring import ToolWiringContext
+from tests.unit.rag.graph.fixtures import knowledge_document
 
 
 class _FakeVectorstore:
@@ -48,7 +51,7 @@ class _PurgeVectorstore:
 def test_unlink_chunks_prunes_orphan_entities() -> None:
     store = InMemoryGraphStore()
     indexer = HeuristicGraphIndexer(store)
-    doc = Document(page_content="Acme Corp partners with Beta Labs for enterprise RAG.")
+    doc = knowledge_document("Acme Corp partners with Beta Labs for enterprise RAG.")
     indexer.index_documents([doc], chunk_ids=["chunk-acme"])
     assert store.find_nodes(label_contains="Acme", limit=5)
 
@@ -61,7 +64,7 @@ def test_unlink_chunks_prunes_orphan_entities() -> None:
 def test_delete_documents_tool_syncs_graph() -> None:
     graph = InMemoryGraphStore()
     indexer = HeuristicGraphIndexer(graph)
-    doc = Document(page_content="Gamma Industries uses Intergrax Harness GraphRAG.")
+    doc = knowledge_document("Gamma Industries uses Intergrax Harness GraphRAG.")
     indexer.index_documents([doc], chunk_ids=["chunk-gamma"])
     ctx = ToolWiringContext(
         vectorstore_manager=_FakeVectorstore(),
@@ -77,7 +80,10 @@ def test_delete_documents_tool_syncs_graph() -> None:
 def test_purge_collection_tool_syncs_graph() -> None:
     graph = InMemoryGraphStore(tenant_id="tenant-purge")
     indexer = HeuristicGraphIndexer(graph)
-    doc = Document(page_content="Delta Systems signed with Intergrax Harness.")
+    doc = knowledge_document(
+        "Delta Systems signed with Intergrax Harness.",
+        tenant_id="tenant-purge",
+    )
     indexer.index_documents([doc], chunk_ids=["chunk-delta"])
     ctx = ToolWiringContext(
         vectorstore_manager=_PurgeVectorstore(),

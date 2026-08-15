@@ -49,73 +49,42 @@ dependencies = [
   # -----------------
   # Runtime / Server
   # -----------------
-  "torch==2.2.2",
-  "fastapi>=0.115",
-  "uvicorn>=0.30",
-  "starlette>=0.41",
-  "httpx>=0.27",
-  "python-multipart>=0.0.9",
-  "pydantic>=2.7",
-  "cryptography>=42.0",
-  "python-dotenv>=1.0",
-  "PyYAML>=6.0",
-  "tqdm>=4.66",
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.30,<1",
+  "starlette>=0.41,<1",
+  "httpx>=0.27,<1",
+  "python-multipart>=0.0.9,<1",
+  "pydantic>=2.7,<3",
+  "cryptography>=42.0,<47",
+  "python-dotenv>=1.0,<2",
+  "PyYAML>=6.0,<7",
+  "tqdm>=4.66,<5",
   # -----------------
   # LLM providers
   # -----------------
-  "openai>=1.0",
-  "anthropic>=0.25",
-  "mistralai>=0.4",
-  "ollama>=0.1",
-  "tiktoken>=0.7",
-  "boto3>=1.34",
-  "botocore>=1.34",
-  "mypy-boto3-bedrock-runtime>=1.34",
-  "google-genai>=0.3",
-  "cohere>=5.5",
-  # -----------------
-  # Orchestration
-  # -----------------
-  "langchain-core>=0.3,<2.0",
-  "langchain-community>=0.3,<0.5",
-  "langchain-openai>=0.3,<2.0",
-  "langchain-ollama>=0.2,<2.0",
-  "langchain-text-splitters>=0.3,<2.0",
-  # -----------------
-  # RAG / Vector DBs
-  # -----------------
-  "chromadb==1.4.1",
-  "qdrant-client>=1.9",
-  "pinecone>=3.0",
-  "sentence-transformers>=3.0",
+  "openai>=1.0,<3",
+  "tiktoken>=0.7,<1",
+  "boto3>=1.34,<2",
   # -----------------
   # Data / parsing
   # -----------------
   "numpy==1.26.4",
-  "pandas>=2.1.4,<3.0.0",
-  "beautifulsoup4>=4.12",
-  "trafilatura>=1.8",
-  "python-docx>=1.1",
-  "openpyxl>=3.1",
-  "xlrd>=2.0",
-  "pytesseract>=0.3",
-  "pillow>=11.0",
-  "PyMuPDF>=1.23",
-  "requests-cache>=1.2",
   # -----------------
   # Media / ingestion
   # -----------------
-  "whisper>=1.1",
-  "yt-dlp>=2024.0",
-  "webvtt-py>=0.4",
-  "opencv-python-headless==4.9.0.80",
   "chardet>=5.2,<6",
-  # -----------------
-  # UI
-  # -----------------
-  "streamlit>=1.39",
-  "fastmcp>=3.3.1",
-  "mcp>=1.0",
+]
+
+[dependency-groups]
+# Keep the default test runner self-contained on a fresh checkout.
+# Heavy optional development integrations remain in the explicit ``dev`` extra.
+test = [
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=0.23,<0.24",
+]
+quality = [
+  "ruff",
+  "pyright",
 ]
 
 [tool.uv]
@@ -124,6 +93,8 @@ environments = [
   "sys_platform == 'linux'",
   "sys_platform == 'win32'",
 ]
+# ``uv run pytest`` must not fall through to a globally installed pytest.
+default-groups = ["test", "quality"]
 
 [tool.uv.workspace]
 # Explicit member list — excludes applications/build and non-project folders.
@@ -176,37 +147,109 @@ intergrax = "intergrax.cli.main:main"
 builtin = "intergrax.context.providers.builtin:BuiltinContextPlugin"
 
 [project.optional-dependencies]
+integrations-neo4j = [
+  "neo4j>=5.26,<6",
+]
+vector-chroma = [
+  "chromadb==1.4.1",
+]
+vector-qdrant = [
+  "qdrant-client>=1.9,<2",
+]
+vector-pinecone = [
+  "pinecone>=3.0,<9",
+]
+parsing-web = [
+  "beautifulsoup4>=4.12,<5",
+  "trafilatura>=1.8,<3",
+]
+parsing-office = [
+  "pandas>=2.1.4,<3",
+  "python-docx>=1.1,<2",
+  "openpyxl>=3.1,<4",
+  "xlrd>=2.0,<3",
+  "docx2txt>=0.8,<1",
+  "langchain-community>=0.3,<0.5",
+]
+parsing-pdf = [
+  "PyMuPDF>=1.23,<2",
+  "langchain-community>=0.3,<0.5",
+]
+parsing-ocr = [
+  "pytesseract>=0.3,<1",
+  "pillow>=11.0,<13",
+]
+media-youtube = [
+  "yt-dlp>=2024.0,<2027",
+]
+media-video = [
+  "opencv-python-headless==4.9.0.80",
+  "webvtt-py>=0.4,<1",
+]
+media-image = [
+  "pillow>=11.0,<13",
+]
+media-ocr = [
+  "pytesseract>=0.3,<1",
+  "pillow>=11.0,<13",
+]
+media-whisper = [
+  "openai-whisper>=20240930,<20250626",
+  "webvtt-py>=0.4,<1",
+]
+ui-streamlit = [
+  "streamlit>=1.39,<2",
+]
+mcp = [
+  "fastmcp>=3.3.1,<4",
+]
+rag-local-embeddings = [
+  "torch==2.2.2",
+  "sentence-transformers>=3.0,<6",
+  # Transformers v5 requires newer Torch; keep v4 with the pinned Torch runtime.
+  "transformers>=4.41,<5",
+]
+rag-langchain-loaders = [
+  "langchain-community>=0.3,<0.5",
+]
+rag-langchain-embeddings = [
+  "langchain-ollama>=0.2,<2.0",
+]
+rag-langchain-splitters = [
+  "langchain-text-splitters>=0.3,<2.0",
+]
 harness-author = [
-  "fastapi>=0.115",
-  "uvicorn>=0.30",
-  "python-dotenv>=1.0",
-  "PyYAML>=6.0",
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.30,<1",
+  "python-dotenv>=1.0,<2",
+  "PyYAML>=6.0,<7",
 ]
 # Optional legacy adapters only — not required for Nexus / Harness runtime.
-langgraph-legacy = ["langgraph>=0.0.40"]
-# Minimal LLM provider subsets (core package still installs all providers by default).
-llm-openai = ["openai>=1.0", "tiktoken>=0.7"]
-llm-anthropic = ["anthropic>=0.25", "tiktoken>=0.7"]
-llm-mistral = ["mistralai>=0.4", "tiktoken>=0.7"]
-llm-ollama = ["ollama>=0.1", "langchain-ollama>=0.2,<2.0", "langchain-core>=0.3,<2.0", "tiktoken>=0.7"]
-llm-gemini = ["google-genai>=0.3", "tiktoken>=0.7"]
-llm-bedrock = ["boto3>=1.34", "botocore>=1.34", "mypy-boto3-bedrock-runtime>=1.34", "tiktoken>=0.7"]
-llm-groq = ["openai>=1.0", "tiktoken>=0.7"]
-llm-vllm = ["openai>=1.0", "tiktoken>=0.7"]
-llm-compat = ["openai>=1.0", "tiktoken>=0.7"]
-llm-vertex = ["google-genai>=0.3", "tiktoken>=0.7"]
-llm-cohere-native = ["cohere>=5.5", "tiktoken>=0.7"]
+langgraph-legacy = ["langgraph>=0.0.40,<2"]
+# Explicit native LLM provider ownership boundaries.
+llm-openai = ["openai>=1.0,<3", "tiktoken>=0.7,<1"]
+llm-anthropic = ["anthropic>=0.25,<1", "tiktoken>=0.7,<1"]
+llm-mistral = ["mistralai>=0.4,<2", "tiktoken>=0.7,<1"]
+llm-ollama = ["ollama>=0.1,<1", "tiktoken>=0.7,<1"]
+# Explicit compatibility surface for LangChainOllamaAdapter and its
+# LangChain message types.
+llm-langchain-ollama = ["langchain-core>=0.3,<2.0", "langchain-ollama>=0.2,<2.0"]
+llm-gemini = ["google-genai>=0.3,<2", "tiktoken>=0.7,<1"]
+llm-bedrock = ["boto3>=1.34,<2", "tiktoken>=0.7,<1"]
+llm-groq = ["openai>=1.0,<3", "tiktoken>=0.7,<1"]
+llm-vllm = ["openai>=1.0,<3", "tiktoken>=0.7,<1"]
+llm-compat = ["openai>=1.0,<3", "tiktoken>=0.7,<1"]
+llm-vertex = ["google-genai>=0.3,<2", "tiktoken>=0.7,<1"]
+llm-cohere-native = ["cohere>=5.5,<6", "tiktoken>=0.7,<1"]
 llm-all = [
-  "openai>=1.0",
-  "anthropic>=0.25",
-  "mistralai>=0.4",
-  "ollama>=0.1",
-  "google-genai>=0.3",
-  "boto3>=1.34",
-  "botocore>=1.34",
-  "mypy-boto3-bedrock-runtime>=1.34",
-  "langchain-ollama>=0.2,<2.0",
-  "tiktoken>=0.7",
+  "openai>=1.0,<3",
+  "anthropic>=0.25,<1",
+  "mistralai>=0.4,<2",
+  "ollama>=0.1,<1",
+  "google-genai>=0.3,<2",
+  "boto3>=1.34,<2",
+  "cohere>=5.5,<6",
+  "tiktoken>=0.7,<1",
 ]
 dev = [
   "pytest>=8.4,<9",
@@ -236,12 +279,23 @@ dev-ci = [
   "redis>=5.0",
   "celery>=5.3",
 ]
+# Optional deps required by the RAG guard CI profile (LangChain-free core + gate extras).
+dev-ci-rag = [
+  "langchain-core>=0.3,<2.0",
+  "opentelemetry-api>=1.27,<2",
+  "opentelemetry-sdk>=1.27,<2",
+  "qdrant-client>=1.9,<2",
+]
 integrations-sentry = ["sentry-sdk>=2.0"]
 integrations-kafka = [
   "confluent-kafka>=2.3.0",
   "redis>=5.0",
 ]
 integrations-mongodb = ["pymongo>=4.6"]
+integrations-pgvector = [
+  "psycopg[binary]>=3.1",
+  "pgvector>=0.3",
+]
 integrations-harness = [
   "sentry-sdk>=2.0",
 ]
@@ -270,6 +324,7 @@ addopts = [
   "--strict-markers",
   "--strict-config",
   "--basetemp=build/pytest-basetemp",
+  "--import-mode=importlib",
 ]
 
 markers = [

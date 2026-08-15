@@ -7,9 +7,7 @@ from __future__ import annotations
 import re
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StrictStr, field_validator, model_validator
-
-from local_workspace_application.conversation.interaction_models import WorkspaceReferenceKind
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StrictStr, model_validator
 
 _MAX_ACTIONS = 50
 _MAX_CLARIFICATIONS = 20
@@ -118,17 +116,17 @@ class DraftWorkspaceReferenceBase(BaseModel):
 
 
 class ActiveDraftWorkspaceReference(DraftWorkspaceReferenceBase):
-    kind: Literal[WorkspaceReferenceKind.active]
+    kind: Literal["active"]
     value: None = None
 
 
 class NameDraftWorkspaceReference(DraftWorkspaceReferenceBase):
-    kind: Literal[WorkspaceReferenceKind.name]
+    kind: Literal["name"]
     value: ExactWorkspaceReferenceText
 
 
 class OrdinalDraftWorkspaceReference(DraftWorkspaceReferenceBase):
-    kind: Literal[WorkspaceReferenceKind.ordinal]
+    kind: Literal["ordinal"]
     value: Annotated[
         StrictStr,
         Field(
@@ -140,7 +138,7 @@ class OrdinalDraftWorkspaceReference(DraftWorkspaceReferenceBase):
 
 
 class CreatedByActionDraftWorkspaceReference(DraftWorkspaceReferenceBase):
-    kind: Literal[WorkspaceReferenceKind.created_by_action]
+    kind: Literal["created_by_action"]
     value: ExactWorkspaceReferenceText
 
 
@@ -262,10 +260,158 @@ class KnowledgeAddSourcesDraftAction(_DraftActionBase):
     )
 
 
+class KnowledgeConnectionsListDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.connections.list"]
+
+
+class KnowledgeResourcesListDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.resources.list"]
+    connection_ref: OpaqueId = Field(max_length=128)
+    source_kind: OpaqueId = Field(max_length=64)
+    page_token: str | None = Field(default=None, max_length=4096)
+
+    @model_validator(mode="after")
+    def _validate_page_token(self) -> Self:
+        if self.page_token is not None and not self.page_token.strip():
+            raise ValueError("page_token must not be blank")
+        return self
+
+
+class KnowledgeConnectionAttachDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.connection.attach"]
+    workspace: DraftWorkspaceReference
+    connection_ref: OpaqueId = Field(max_length=128)
+
+
+class KnowledgeIndexedSourceCreateDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.indexed_source.create"]
+    workspace: DraftWorkspaceReference
+    connection_ref: OpaqueId = Field(max_length=128)
+    source_kind: OpaqueId = Field(max_length=64)
+    remote_resource_id: str = Field(min_length=1, max_length=256)
+
+    @model_validator(mode="after")
+    def _validate_remote_resource_id(self) -> Self:
+        if not self.remote_resource_id.strip():
+            raise ValueError("remote_resource_id must not be blank")
+        return self
+
+
+class KnowledgeCapabilitiesListDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.capabilities.list"]
+    connection_ref: OpaqueId = Field(max_length=128)
+    remote_resource_id: str | None = Field(default=None, max_length=256)
+
+    @model_validator(mode="after")
+    def _validate_resource_id(self) -> Self:
+        if self.remote_resource_id is not None and not self.remote_resource_id.strip():
+            raise ValueError("remote_resource_id must not be blank")
+        return self
+
+
+class KnowledgeAskTargetDraftReference(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    target_reference_kind: Literal["ordinal", "display_label", "knowledge_item_id"]
+    target_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+    @model_validator(mode="after")
+    def _validate_target_reference(self) -> Self:
+        if self.target_reference_kind == "ordinal":
+            if not self.target_reference.isdigit() or int(self.target_reference) < 1:
+                raise ValueError("ordinal target_reference must be a positive integer string")
+        return self
+
+
 class WorkspaceAskDraftAction(_DraftActionBase):
     action_type: Literal["workspace.ask"]
     workspace: DraftWorkspaceReference
     question: str = Field(min_length=1, max_length=_MAX_MESSAGE_TEXT_LEN)
+    knowledge_targets: tuple[KnowledgeAskTargetDraftReference, ...] | None = None
+
+    @model_validator(mode="after")
+    def _validate_knowledge_targets(self) -> Self:
+        if self.knowledge_targets is not None and not self.knowledge_targets:
+            raise ValueError("knowledge_targets must not be empty when provided")
+        return self
+
+
+class CitationInspectDraftAction(_DraftActionBase):
+    action_type: Literal["citation.inspect"]
+    workspace: DraftWorkspaceReference
+    citation_reference_kind: Literal["ordinal"]
+    citation_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+    @model_validator(mode="after")
+    def _validate_citation_reference(self) -> Self:
+        if not self.citation_reference.isdigit() or int(self.citation_reference) < 1:
+            raise ValueError("ordinal citation_reference must be a positive integer string")
+        return self
+
+
+class KnowledgeInventoryListDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.inventory.list"]
+    workspace: DraftWorkspaceReference
+    inventory_filter: Literal[
+        "all",
+        "indexed",
+        "live",
+        "active",
+        "disabled",
+        "attention_required",
+    ] = "all"
+
+
+class KnowledgeOperationExecuteDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.operation.execute"]
+    workspace: DraftWorkspaceReference
+    operation: Literal["sync", "retry_sync", "disable", "enable", "detach"]
+    target_reference_kind: Literal["ordinal", "display_label", "knowledge_item_id"]
+    target_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+    @model_validator(mode="after")
+    def _validate_target_reference(self) -> Self:
+        if self.target_reference_kind == "ordinal":
+            if not self.target_reference.isdigit() or int(self.target_reference) < 1:
+                raise ValueError("ordinal target_reference must be a positive integer string")
+        return self
+
+
+class DestructiveActionConfirmDraftAction(_DraftActionBase):
+    action_type: Literal["destructive.confirm"]
+    confirmation_token: RequiredSafeText = Field(max_length=4096)
+
+
+class TenantConnectionProvidersListDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.providers.list"]
+
+
+class TenantConnectionConnectionsListDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.connections.list"]
+
+
+class TenantConnectionInspectDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.connection.inspect"]
+    connection_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+
+class TenantConnectionBeginAuthorizationDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.authorization.begin"]
+    provider_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+
+class TenantConnectionCompleteManualAuthorizationDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.authorization.complete_manual"]
+
+
+class TenantConnectionReconnectDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.connection.reconnect"]
+    connection_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+
+class TenantConnectionRevokeDraftAction(_DraftActionBase):
+    action_type: Literal["tenant_connection.connection.revoke"]
+    connection_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
 
 
 DraftPlannedAction = Annotated[
@@ -278,7 +424,23 @@ DraftPlannedAction = Annotated[
     | SourceCandidateAttachDraftAction
     | KnowledgeAddAttachmentsDraftAction
     | KnowledgeAddSourcesDraftAction
-    | WorkspaceAskDraftAction,
+    | KnowledgeConnectionsListDraftAction
+    | KnowledgeResourcesListDraftAction
+    | KnowledgeConnectionAttachDraftAction
+    | KnowledgeIndexedSourceCreateDraftAction
+    | KnowledgeCapabilitiesListDraftAction
+    | WorkspaceAskDraftAction
+    | CitationInspectDraftAction
+    | KnowledgeInventoryListDraftAction
+    | KnowledgeOperationExecuteDraftAction
+    | DestructiveActionConfirmDraftAction
+    | TenantConnectionProvidersListDraftAction
+    | TenantConnectionConnectionsListDraftAction
+    | TenantConnectionInspectDraftAction
+    | TenantConnectionBeginAuthorizationDraftAction
+    | TenantConnectionCompleteManualAuthorizationDraftAction
+    | TenantConnectionReconnectDraftAction
+    | TenantConnectionRevokeDraftAction,
     Field(discriminator="action_type"),
 ]
 

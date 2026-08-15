@@ -194,3 +194,71 @@ def test_base_crud_still_works() -> None:
     store.put(document)
     store.close()
     assert store.get("p1", "r1") is None
+
+
+def test_cursor_query_returns_1200_rows_without_duplicates() -> None:
+    store = InMemoryDocumentStore()
+    for index in range(1200):
+        store.put(
+            DocumentRecord(
+                partition_key="p1",
+                row_key=f"row-{index:04d}",
+                data={"index": index},
+            )
+        )
+
+    cursor = None
+    rows: list[str] = []
+    while True:
+        page = store.query("p1", limit=137, cursor=cursor)
+        rows.extend(document.row_key for document in page.documents)
+        cursor = page.next_cursor
+        if cursor is None:
+            break
+
+    assert rows == [f"row-{index:04d}" for index in range(1200)]
+    assert len(set(rows)) == 1200
+
+
+def test_cursor_is_bound_to_partition_and_prefix() -> None:
+    store = InMemoryDocumentStore()
+    store.put(DocumentRecord(partition_key="p1", row_key="a:1"))
+    store.put(DocumentRecord(partition_key="p1", row_key="b:1"))
+    cursor = store.query("p1", row_key_prefix="a:", limit=1).next_cursor
+    assert cursor is None
+
+    store.put(DocumentRecord(partition_key="p1", row_key="a:2"))
+    cursor = store.query("p1", row_key_prefix="a:", limit=1).next_cursor
+    assert cursor is not None
+    with pytest.raises(ValueError, match="query_mismatch"):
+        store.query("p2", row_key_prefix="a:", limit=1, cursor=cursor)
+    with pytest.raises(ValueError, match="query_mismatch"):
+        store.query("p1", row_key_prefix="b:", limit=1, cursor=cursor)
+
+
+def test_cursor_rejects_malformed_tokens_and_invalid_limits() -> None:
+    store = InMemoryDocumentStore()
+    with pytest.raises(ValueError, match="cursor_invalid"):
+        store.query("p1", limit=1, cursor="tampered")
+    for limit in (0, -1, 5001):
+        with pytest.raises(ValueError, match="limit_invalid"):
+            store.query("p1", limit=limit)
+
+
+def test_cursor_continues_after_returned_rows_are_deleted() -> None:
+    store = InMemoryDocumentStore()
+    for index in range(5):
+        store.put(DocumentRecord(partition_key="p1", row_key=f"row-{index}"))
+
+    first = store.query("p1", limit=2)
+    assert first.next_cursor is not None
+    for document in first.documents:
+        store.delete(document.partition_key, document.row_key)
+
+    second = store.query("p1", limit=10, cursor=first.next_cursor)
+    assert [document.row_key for document in second.documents] == [
+        "row-2",
+        "row-3",
+        "row-4",
+    ]
+    assert second.next_cursor is None

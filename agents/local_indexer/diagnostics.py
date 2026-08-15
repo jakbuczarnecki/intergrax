@@ -56,7 +56,11 @@ def index_diagnostic_from_output(output: dict[str, object]) -> IndexSummaryDiagn
     accepted_count = len(accepted) if isinstance(accepted, list) else 0
     rejected_count = len(rejected) if isinstance(rejected, list) else 0
     ingested_count = sum(
-        1 for item in ingested if isinstance(item, dict) and item.get("status") == "success"
+        1
+        for item in ingested
+        if isinstance(item, dict)
+        and item.get("status") == "success"
+        and item.get("used") is True
     )
     chunk_count = int(summary.get("num_chunks") or 0)
     source_count = accepted_count + rejected_count

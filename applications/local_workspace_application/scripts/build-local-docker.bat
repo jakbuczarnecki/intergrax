@@ -5,7 +5,6 @@ set "SCRIPT_DIR=%~dp0"
 set "APP_DIR=%SCRIPT_DIR%.."
 set "COMPOSE_FILE=%APP_DIR%\docker\docker-compose.yml"
 set "COMPOSE_PROJECT_NAME=intergrax_lkw"
-set "LEGACY_COMPOSE_PROJECT_NAME=intergrax_local_workspace"
 
 pushd "%APP_DIR%\..\.." >nul
 if errorlevel 1 (
@@ -17,22 +16,17 @@ echo Materializing minimal runtime context for local_workspace_application...
 uv run python scripts/build/build_application_image.py --application local_workspace_application --context-dir applications/local_workspace_application/docker/runtime-context --materialize-only
 if errorlevel 1 goto fail
 
-if /I not "%LEGACY_COMPOSE_PROJECT_NAME%"=="%COMPOSE_PROJECT_NAME%" (
-    echo Cleaning legacy local workspace stack...
-    docker compose -p "%LEGACY_COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" down --remove-orphans
-    if errorlevel 1 goto fail
-)
-
-echo Stopping previous complete LKW stack while preserving named volumes...
-docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" down --remove-orphans
-if errorlevel 1 goto fail
-
 echo Building and starting complete LKW stack...
 docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" up --build -d
 if errorlevel 1 goto fail
 
-echo Ensuring the configured default Ollama model is available...
-docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" exec -T ollama ollama pull llama3.1:latest
+if not defined INTERGRAX_LLM_MODEL for /f "tokens=1,* delims==" %%A in ('docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" config --environment 2^>nul') do if /I "%%A"=="INTERGRAX_LLM_MODEL" set "INTERGRAX_LLM_MODEL=%%B"
+if not defined INTERGRAX_LLM_MODEL set "INTERGRAX_LLM_MODEL=llama3.1:latest"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$model = $env:INTERGRAX_LLM_MODEL; if ($model -notmatch '^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$') { exit 1 }"
+if errorlevel 1 goto fail
+
+echo Ensuring the configured Ollama generation model is available...
+docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" exec -T --env "INTERGRAX_LLM_MODEL=%INTERGRAX_LLM_MODEL%" ollama sh -c "ollama pull \"$INTERGRAX_LLM_MODEL\""
 if errorlevel 1 goto fail
 
 echo Waiting for LKW health...

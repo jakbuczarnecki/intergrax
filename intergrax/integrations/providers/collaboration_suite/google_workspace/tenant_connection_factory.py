@@ -22,6 +22,9 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.integ
     GoogleWorkspaceCollaborationSuiteIntegration,
 )
 from intergrax.runtime.vendor_knowledge.models import JsonValue
+from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+    TenantConnectionIntegrationFactory,
+)
 
 
 class _RuntimeCredentialResolver:
@@ -68,10 +71,12 @@ def _parse_credential_material(credential: str) -> dict[str, str]:
     return material
 
 
-class GoogleWorkspaceTenantConnectionIntegrationFactory:
+class GoogleWorkspaceTenantConnectionIntegrationFactory(TenantConnectionIntegrationFactory):
     """Compose Google Workspace integrations from durable tenant connection material."""
 
     def __init__(self, client_factory: GoogleWorkspaceClientFactory) -> None:
+        if not isinstance(client_factory, GoogleWorkspaceClientFactory):
+            raise TypeError("client_factory must implement GoogleWorkspaceClientFactory")
         self._client_factory = client_factory
 
     def create_integration(
@@ -94,6 +99,8 @@ class GoogleWorkspaceTenantConnectionIntegrationFactory:
             raise ValueError("provider_id does not match google_workspace")
         if integration_kind is not IntegrationCategory.COLLABORATION_SUITE:
             raise ValueError("integration_kind does not match collaboration_suite")
+        if not isinstance(secret_free_config, Mapping):
+            raise ValueError("secret_free_config must be a mapping")
         if secret_free_config:
             raise ValueError("secret_free_config must be empty for google_workspace")
         credential_material = _parse_credential_material(credential)

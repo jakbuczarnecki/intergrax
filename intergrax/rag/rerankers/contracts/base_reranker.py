@@ -5,10 +5,18 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
-from intergrax.rag.rerankers.contracts.reranker_types import RerankerResult, Candidates
+from intergrax.rag.rerankers.contracts.reranker_types import (
+    RerankerCandidate,
+    RerankerResult,
+)
 
+if TYPE_CHECKING:
+    from intergrax.rag.embedding.contracts.base_embedding_manager import (
+        BaseEmbeddingManager,
+    )
 
 
 class BaseReranker(ABC):
@@ -22,10 +30,10 @@ class BaseReranker(ABC):
     def rerank(
         self,
         *,
-        query: Optional[str],
-        candidates: Candidates,
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+    ) -> Sequence[RerankerResult]:
         """
         Re-rank candidate documents for a given query.
         """
@@ -35,13 +43,23 @@ class BaseReranker(ABC):
     def __call__(
         self,
         *,
-        query: Optional[str],
-        candidates: Candidates,
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+    ) -> Sequence[RerankerResult]:
 
         return self.rerank(
             query=query,
             candidates=candidates,
             limit=limit,
         )
+
+
+class BaseRerankerPlugin(ABC):
+    """Typed construction contract for dependency-aware reranker plugins."""
+
+    @classmethod
+    @abstractmethod
+    def create(cls, *, embedding_manager: BaseEmbeddingManager) -> BaseReranker:
+        """Construct a reranker from the normal RAG embedding dependency."""
+        raise NotImplementedError

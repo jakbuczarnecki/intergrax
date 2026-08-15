@@ -10,10 +10,11 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from langchain_core.documents import Document
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from local_workspace_application.host.factory import create_local_workspace_backend_app
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
@@ -173,6 +174,14 @@ def test_delete_cleans_sources_docs_ops_ask_vectors_and_preserves_files(
     ask_repo = WorkspaceAskRepository(store)
     vector_store = InMemoryVectorStore(tenant_id="t-life")
     manager = VectorstoreManager(vector_store)
+    delete_scopes: list[VectorStoreScope] = []
+    native_delete = vector_store.delete
+
+    def record_scoped_delete(ids, *, scope: VectorStoreScope) -> None:
+        delete_scopes.append(scope)
+        native_delete(ids, scope=scope)
+
+    vector_store.delete = record_scoped_delete  # type: ignore[method-assign]
     service = ManagedWorkspaceService(
         repo,
         allowlist_roots=frozenset({str(workspace_root.resolve())}),
@@ -254,30 +263,65 @@ def test_delete_cleans_sources_docs_ops_ask_vectors_and_preserves_files(
         )
     )
     manager.add_documents(
-        [Document(page_content="target chunk", metadata={"workspace_id": target.workspace_id})],
+        [
+            KnowledgeDocument.model_validate(
+                {
+                    "schema_version": 1,
+                    "identity": {
+                        "document_id": "vec-target",
+                        "root_document_id": "vec-target",
+                    },
+                    "scope": {
+                        "tenant_id": "t-life",
+                        "workspace_id": target.workspace_id,
+                    },
+                    "content": "target chunk",
+                    "metadata": {},
+                    "provenance": {
+                        "source_kind": "test",
+                        "source_id": source.source_id,
+                    },
+                }
+            )
+        ],
         [[0.1, 0.2]],
         ids=["vec-target"],
-        base_metadata={
-            "tenant_id": "t-life",
-            "workspace_id": target.workspace_id,
-            "collection_id": target.workspace_id,
-        },
+        scope=VectorStoreScope(tenant_id="t-life", workspace_id=target.workspace_id),
     )
     manager.add_documents(
-        [Document(page_content="keep chunk", metadata={"workspace_id": keep.workspace_id})],
+        [
+            KnowledgeDocument.model_validate(
+                {
+                    "schema_version": 1,
+                    "identity": {
+                        "document_id": "vec-keep",
+                        "root_document_id": "vec-keep",
+                    },
+                    "scope": {
+                        "tenant_id": "t-life",
+                        "workspace_id": keep.workspace_id,
+                    },
+                    "content": "keep chunk",
+                    "metadata": {},
+                    "provenance": {
+                        "source_kind": "test",
+                        "source_id": keep_source.source_id,
+                    },
+                }
+            )
+        ],
         [[0.3, 0.4]],
         ids=["vec-keep"],
-        base_metadata={
-            "tenant_id": "t-life",
-            "workspace_id": keep.workspace_id,
-            "collection_id": keep.workspace_id,
-        },
+        scope=VectorStoreScope(tenant_id="t-life", workspace_id=keep.workspace_id),
     )
 
     assert service.delete_workspace(
         tenant_id="t-life",
         workspace_id=target.workspace_id,
     )
+    assert delete_scopes == [
+        VectorStoreScope(tenant_id="t-life", workspace_id=target.workspace_id)
+    ]
     assert service.get_workspace(tenant_id="t-life", workspace_id=target.workspace_id) is None
     assert repo.list_sources(tenant_id="t-life", workspace_id=target.workspace_id) == []
     assert repo.list_document_refs(tenant_id="t-life", workspace_id=target.workspace_id) == []
@@ -311,14 +355,27 @@ def test_vector_cleanup_uses_store_tenant_when_product_tenant_differs() -> None:
     cleanup = VectorstoreManagerWorkspaceCleanup(manager)
     workspace_id = "ws-product-tenant-mismatch"
     manager.add_documents(
-        [Document(page_content="chunk", metadata={"workspace_id": workspace_id})],
+        [
+            KnowledgeDocument.model_validate(
+                {
+                    "schema_version": 1,
+                    "identity": {"document_id": "vec-mismatch", "root_document_id": "vec-mismatch"},
+                    "scope": {
+                        "tenant_id": "default",
+                        "workspace_id": workspace_id,
+                    },
+                    "content": "chunk",
+                    "metadata": {},
+                    "provenance": {
+                        "source_kind": "test",
+                        "source_id": "source-mismatch",
+                    },
+                }
+            )
+        ],
         [[0.1, 0.2]],
         ids=["vec-mismatch"],
-        base_metadata={
-            "tenant_id": "default",
-            "workspace_id": workspace_id,
-            "collection_id": workspace_id,
-        },
+        scope=VectorStoreScope(tenant_id="default", workspace_id=workspace_id),
     )
 
     deleted = cleanup.delete_workspace_vectors(

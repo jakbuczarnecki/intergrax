@@ -5,9 +5,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from collections.abc import Sequence
 
-from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate, RerankerResult, Candidates
+from intergrax.rag.rerankers.contracts.reranker_types import (
+    RerankerCandidate,
+    RerankerResult,
+)
 
 
 
@@ -17,23 +20,26 @@ class BaseRerankerManager(ABC):
     def rerank(
         self,
         *,
-        query: Optional[str],
-        candidates: List[RerankerCandidate],
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+        reranker_id: str | None = None,
+    ) -> Sequence[RerankerResult]:
         raise NotImplementedError
 
 
     def __call__(
         self,
         *,
-        query: Optional[str],
-        candidates: List[RerankerCandidate],
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+        reranker_id: str | None = None,
+    ) -> Sequence[RerankerResult]:
 
         return self.rerank(
             query=query,
             candidates=candidates,
             limit=limit,
+            reranker_id=reranker_id,
         )

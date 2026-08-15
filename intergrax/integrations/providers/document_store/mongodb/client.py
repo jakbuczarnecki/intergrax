@@ -10,7 +10,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Mapping, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.contracts.document_store import DocumentQueryResult, DocumentRecord
+from intergrax.integrations.contracts.document_store import DocumentRecord, validate_document_query_limit
 from intergrax.integrations.providers.document_store.mongodb.config import MongoDBIntegrationConfig
 
 
@@ -121,21 +121,29 @@ class MongoCollectionClient:
         *,
         limit: int = 100,
         row_key_prefix: Optional[str] = None,
-    ) -> DocumentQueryResult:
-        bounded_limit = max(1, int(limit))
+        after_row_key: Optional[str] = None,
+    ) -> list[DocumentRecord]:
+        bounded_limit = validate_document_query_limit(limit)
         query_filter: dict[str, Any] = {"partition_key": partition_key}
+        row_key_filter: dict[str, Any] = {}
         if row_key_prefix:
-            query_filter["row_key"] = {"$regex": f"^{row_key_prefix}"}
-        cursor = self._collection.find(query_filter).sort("row_key", 1).limit(bounded_limit)
+            row_key_filter["$regex"] = f"^{row_key_prefix}"
+        if after_row_key:
+            row_key_filter["$gt"] = after_row_key
+        if row_key_filter:
+            query_filter["row_key"] = row_key_filter
+        mongo_cursor = (
+            self._collection.find(query_filter).sort("row_key", 1).limit(bounded_limit)
+        )
         documents: list[DocumentRecord] = []
-        for doc in cursor:
+        for doc in mongo_cursor:
             if _is_expired(doc.get("expires_at")):
                 self._collection.delete_one(
                     _document_filter(str(doc.get("partition_key", "")), str(doc.get("row_key", "")))
                 )
                 continue
             documents.append(_row_from_doc(doc))
-        return DocumentQueryResult(documents=documents, total=len(documents))
+        return documents
 
     def put_if_absent(self, document: DocumentRecord) -> bool:
         payload = _payload_from_document(document)

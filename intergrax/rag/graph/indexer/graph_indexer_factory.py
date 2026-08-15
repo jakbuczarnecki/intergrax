@@ -5,13 +5,15 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Protocol, Sequence
+from collections.abc import Sequence
+from typing import Literal, Protocol
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.graph.contracts.graph_store import GraphStore
-from intergrax.rag.graph.indexer.community_report_graph_indexer import CommunityReportGraphIndexer
+from intergrax.rag.graph.indexer.community_report_graph_indexer import (
+    CommunityReportGraphIndexer,
+)
 from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
 from intergrax.rag.graph.indexer.llm_graph_indexer import LlmGraphIndexer
 from intergrax.rag.graph.indexer.plugin_registry import resolve_graph_indexer_plugin
@@ -22,7 +24,10 @@ GraphIndexerMode = Literal["heuristic", "llm", "heuristic_then_llm", "community_
 
 class GraphIndexer(Protocol):
     def index_documents(
-        self, documents: Sequence[Document], *, chunk_ids: Sequence[str] | None = None
+        self,
+        documents: Sequence[KnowledgeDocument],
+        *,
+        chunk_ids: Sequence[str] | None = None,
     ) -> int: ...
 
 
@@ -30,7 +35,7 @@ def resolve_graph_indexer(
     store: GraphStore,
     profile: RagProfile,
     *,
-    llm: Optional[LLMAdapter] = None,
+    llm: LLMAdapter | None = None,
 ) -> GraphIndexer:
     plugin_id = (profile.graph_indexer_plugin_id or "").strip()
     if plugin_id:
@@ -57,7 +62,10 @@ class _CompositeIndexer:
         self._indexers = indexers
 
     def index_documents(
-        self, documents: Sequence[Document], *, chunk_ids: Sequence[str] | None = None
+        self,
+        documents: Sequence[KnowledgeDocument],
+        *,
+        chunk_ids: Sequence[str] | None = None,
     ) -> int:
         total = 0
         for indexer in self._indexers:

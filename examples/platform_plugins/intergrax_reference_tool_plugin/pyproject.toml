@@ -1,0 +1,29 @@
+[project]
+name = "intergrax-reference-tool-plugin"
+version = "0.1.0"
+description = "Reference external ToolPlugin package for PLATFORM-PLUGIN-8 dual-mode E2E proof."
+requires-python = ">=3.12"
+dependencies = ["Intergrax-ai"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.entry-points."intergrax.tools"]
+reference_prefix_echo = "intergrax_reference_tool_plugin.plugin:ReferencePrefixEchoToolPlugin"
+
+[tool.intergrax.plugin]
+name = "intergrax-reference-tool-plugin"
+version = "0.1.0"
+intergrax_version = ">=0.1,<2"
+author = "Intergrax Platform Plugins (reference)"
+documentation_uri = "https://github.com/jakbuczarnecki/intergrax/tree/development/examples/platform_plugins/intergrax_reference_tool_plugin"
+
+[[tool.intergrax.plugin.capabilities]]
+domain = "tools"
+entry_point_group = "intergrax.tools"
+entry_point_name = "reference_prefix_echo"
+capability_ids = ["reference_prefix_echo"]

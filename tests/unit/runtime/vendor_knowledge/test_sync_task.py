@@ -13,7 +13,10 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.queueing.contracts.task_queue import TaskHandle
 from intergrax.queueing.providers.document_store import (
     DocumentStoreTaskQueue,
@@ -26,6 +29,8 @@ from intergrax.runtime.vendor_knowledge.errors import (
 )
 from intergrax.runtime.vendor_knowledge.sync_jobs import (
     VENDOR_KNOWLEDGE_SYNC_TASK_NAME as JOBS_TASK_NAME,
+)
+from intergrax.runtime.vendor_knowledge.sync_jobs import (
     VendorKnowledgeSyncJob as JobsVendorKnowledgeSyncJob,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
@@ -36,13 +41,17 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
 from intergrax.runtime.vendor_knowledge.sync_task import (
     VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
     VendorKnowledgeSyncDispatcher,
+    VendorKnowledgeSyncHandlerRegistry,
     VendorKnowledgeSyncJob,
     VendorKnowledgeSyncWorkerOutput,
     decode_vendor_knowledge_sync_job,
     encode_vendor_knowledge_sync_job,
     make_vendor_knowledge_sync_handler,
     owner_id_for_sync_run,
+    register_vendor_knowledge_indexed_sync_dimension,
+    register_vendor_knowledge_sync_executable,
     register_vendor_knowledge_sync_handler,
+    unregister_vendor_knowledge_sync_handler,
     vendor_knowledge_sync_idempotency_key,
 )
 from intergrax.runtime.vendor_knowledge.sync_worker import (
@@ -100,7 +109,7 @@ def _completed_result(
 
 
 def _job_from_handle(queue: DocumentStoreTaskQueue, handle: TaskHandle) -> VendorKnowledgeSyncJob:
-    row = queue._load(handle)  # noqa: SLF001 - inspect durable queue payload
+    row = queue._load(handle)
     assert row is not None
     return decode_vendor_knowledge_sync_job(base64.b64decode(str(row["payload_base64"])))
 
@@ -207,9 +216,17 @@ def test_handler_incremental_and_reconciliation_dispatch() -> None:
             binding_id: str,
             page_size: int,
             restart: bool,
+            operation_id: str | None = None,
+            trigger_delivery_id: str | None = None,
         ) -> KnowledgeSyncRunResult:
             self.reconcile_calls.append(
-                {"binding_id": binding_id, "page_size": page_size, "restart": restart}
+                {
+                    "binding_id": binding_id,
+                    "page_size": page_size,
+                    "restart": restart,
+                    "operation_id": operation_id,
+                    "trigger_delivery_id": trigger_delivery_id,
+                }
             )
             return _completed_result(mode=KnowledgeSyncMode.RECONCILIATION)
 
@@ -250,7 +267,13 @@ def test_handler_incremental_and_reconciliation_dispatch() -> None:
     )
     assert reconciliation.success is True
     assert coordinator.reconcile_calls == [
-        {"binding_id": "binding-1", "page_size": 10, "restart": True}
+        {
+            "binding_id": "binding-1",
+            "page_size": 10,
+            "restart": True,
+            "operation_id": "op-1",
+            "trigger_delivery_id": None,
+        }
     ]
 
 
@@ -370,3 +393,312 @@ def test_registry_and_worker_schedules_continuation() -> None:
     assert output.continuation_task_id is not None
     assert worker.drain_once() == 1
     assert len(calls) == 2
+
+
+@pytest.mark.unit
+def test_sync_handler_registry_requires_exact_dimensions_and_executable_handler() -> None:
+    registry = VendorKnowledgeSyncHandlerRegistry()
+
+    def handler() -> None:
+        return None
+
+    registry.register(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+        handler=handler,
+        registration_version="registration-7",
+    )
+
+    assert (
+        registry.resolve_handler(
+            provider_id="provider-a",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="issues",
+            handler_ref="synthetic.sync.v1",
+        )
+        is handler
+    )
+    assert (
+        registry.handler_registration_version(
+            provider_id="provider-a",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="issues",
+            handler_ref="synthetic.sync.v1",
+        )
+        == "registration-7"
+    )
+    assert (
+        registry.resolve_handler(
+            provider_id="provider-b",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="issues",
+            handler_ref="synthetic.sync.v1",
+        )
+        is None
+    )
+    assert (
+        registry.resolve_handler(
+            provider_id="provider-a",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="documents",
+            handler_ref="synthetic.sync.v1",
+        )
+        is None
+    )
+
+    inactive_handler = handler
+    registry.register(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="broken",
+        handler_ref="broken.sync.v1",
+        handler=inactive_handler,
+        active=False,
+    )
+    assert (
+        registry.resolve_handler(
+            provider_id="provider-a",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="broken",
+            handler_ref="broken.sync.v1",
+        )
+        is None
+    )
+    assert registry.unregister(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+    )
+
+
+@pytest.mark.unit
+def test_canonical_registration_rolls_back_executable_when_metadata_publish_fails() -> None:
+    class _FailingRegistry(VendorKnowledgeSyncHandlerRegistry):
+        def _publish_metadata(self, key, registration) -> None:
+            raise RuntimeError("metadata publication failed")
+
+    task_registry = TaskExecutionRegistry()
+    handler_registry = _FailingRegistry(task_registry)
+    dispatcher = VendorKnowledgeSyncDispatcher(
+        DocumentStoreTaskQueue(InMemoryDocumentStore())
+    )
+
+    with pytest.raises(RuntimeError, match="metadata publication failed"):
+        register_vendor_knowledge_sync_handler(
+            task_registry,
+            lambda _tenant_id, _owner_id: object(),
+            dispatcher,
+            handler_registry=handler_registry,
+            provider_id="provider-a",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="issues",
+            handler_ref="synthetic.sync.v1",
+            registration_version="registration-1",
+        )
+
+    with pytest.raises(ValueError, match="not registered"):
+        task_registry.get_handler(VENDOR_KNOWLEDGE_SYNC_TASK_NAME)
+    assert handler_registry.resolve_registration(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+    ) is None
+
+
+@pytest.mark.unit
+def test_canonical_registration_does_not_publish_metadata_when_executable_fails() -> None:
+    task_registry = TaskExecutionRegistry()
+
+    def existing_handler(*_args: object, **_kwargs: object) -> None:
+        return None
+
+    task_registry.register(VENDOR_KNOWLEDGE_SYNC_TASK_NAME, existing_handler)
+    handler_registry = VendorKnowledgeSyncHandlerRegistry(task_registry)
+    dispatcher = VendorKnowledgeSyncDispatcher(
+        DocumentStoreTaskQueue(InMemoryDocumentStore())
+    )
+
+    with pytest.raises(ValueError, match="executable_mismatch"):
+        register_vendor_knowledge_sync_handler(
+            task_registry,
+            lambda _tenant_id, _owner_id: object(),
+            dispatcher,
+            handler_registry=handler_registry,
+            provider_id="provider-a",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="issues",
+            handler_ref="synthetic.sync.v1",
+            registration_version="registration-1",
+        )
+
+    assert task_registry.get_handler(VENDOR_KNOWLEDGE_SYNC_TASK_NAME) is existing_handler
+    assert handler_registry.resolve_registration(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+    ) is None
+
+
+@pytest.mark.unit
+def test_duplicate_canonical_registration_changes_neither_store() -> None:
+    task_registry = TaskExecutionRegistry()
+    handler_registry = VendorKnowledgeSyncHandlerRegistry(task_registry)
+    dispatcher = VendorKnowledgeSyncDispatcher(
+        DocumentStoreTaskQueue(InMemoryDocumentStore())
+    )
+    registration = {
+        "handler_registry": handler_registry,
+        "provider_id": "provider-a",
+        "integration_kind": IntegrationCategory.ISSUE_TRACKER,
+        "source_kind": "issues",
+        "handler_ref": "synthetic.sync.v1",
+        "registration_version": "registration-1",
+    }
+    register_vendor_knowledge_sync_handler(
+        task_registry,
+        lambda _tenant_id, _owner_id: object(),
+        dispatcher,
+        **registration,
+    )
+    handler = task_registry.get_handler(VENDOR_KNOWLEDGE_SYNC_TASK_NAME)
+    view = handler_registry.resolve_registration(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+    )
+
+    with pytest.raises(ValueError, match="already_registered"):
+        register_vendor_knowledge_sync_handler(
+            task_registry,
+            lambda _tenant_id, _owner_id: object(),
+            dispatcher,
+            **registration,
+        )
+
+    assert task_registry.get_handler(VENDOR_KNOWLEDGE_SYNC_TASK_NAME) is handler
+    assert handler_registry.resolve_registration(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+    ) == view
+
+
+@pytest.mark.unit
+def test_canonical_executable_configuration_mismatch_preserves_registration() -> None:
+    task_registry = TaskExecutionRegistry()
+    handler_registry = VendorKnowledgeSyncHandlerRegistry(task_registry)
+    dispatcher = VendorKnowledgeSyncDispatcher(
+        DocumentStoreTaskQueue(InMemoryDocumentStore())
+    )
+    first = register_vendor_knowledge_sync_executable(
+        task_registry=task_registry,
+        coordinator_factory=lambda _tenant_id, _owner_id: object(),  # type: ignore[return-value]
+        dispatcher=dispatcher,
+        registration_token="configuration-a",
+        retry_delays_seconds=(),
+        sleeper=lambda _: None,
+    )
+    register_vendor_knowledge_indexed_sync_dimension(
+        handler_registry=handler_registry,
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+        registration_version="registration-a",
+        executable_registration=first,
+    )
+
+    with pytest.raises(ValueError, match="executable_mismatch"):
+        register_vendor_knowledge_sync_handler(
+            task_registry=task_registry,
+            coordinator_factory=lambda _tenant_id, _owner_id: object(),  # type: ignore[return-value]
+            dispatcher=dispatcher,
+            handler_registry=handler_registry,
+            provider_id="provider-b",
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            source_kind="documents",
+            handler_ref="synthetic.sync.v1",
+            registration_version="registration-b",
+            registration_token="configuration-b",
+            retry_delays_seconds=(),
+            sleeper=lambda _: None,
+        )
+
+    assert task_registry.get_handler(VENDOR_KNOWLEDGE_SYNC_TASK_NAME) is first.handler
+    assert handler_registry.resolve_registration(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+    ) is not None
+    assert handler_registry.resolve_registration(
+        provider_id="provider-b",
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind="documents",
+        handler_ref="synthetic.sync.v1",
+    ) is None
+
+
+@pytest.mark.unit
+def test_shared_executable_removal_preserves_other_dimension_then_removes_owned_task() -> None:
+    task_registry = TaskExecutionRegistry()
+    handler_registry = VendorKnowledgeSyncHandlerRegistry(task_registry)
+    dispatcher = VendorKnowledgeSyncDispatcher(
+        DocumentStoreTaskQueue(InMemoryDocumentStore())
+    )
+    first = register_vendor_knowledge_sync_handler(
+        task_registry=task_registry,
+        coordinator_factory=lambda _tenant_id, _owner_id: object(),  # type: ignore[return-value]
+        dispatcher=dispatcher,
+        handler_registry=handler_registry,
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+        registration_version="registration-a",
+        registration_token="configuration-a",
+        retry_delays_seconds=(),
+        sleeper=lambda _: None,
+    )
+    register_vendor_knowledge_sync_handler(
+        task_registry=task_registry,
+        handler_registry=handler_registry,
+        provider_id="provider-b",
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind="documents",
+        handler_ref="synthetic.sync.v1",
+        registration_version="registration-b",
+        executable_registration=first,
+    )
+
+    assert unregister_vendor_knowledge_sync_handler(
+        handler_registry,
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+    )
+    assert task_registry.get_handler(VENDOR_KNOWLEDGE_SYNC_TASK_NAME) is first.handler
+    assert handler_registry.resolve_handler(
+        provider_id="provider-b",
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind="documents",
+        handler_ref="synthetic.sync.v1",
+    ) is first.handler
+
+    assert unregister_vendor_knowledge_sync_handler(
+        handler_registry,
+        provider_id="provider-b",
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind="documents",
+        handler_ref="synthetic.sync.v1",
+    )
+    with pytest.raises(ValueError, match="not registered"):
+        task_registry.get_handler(VENDOR_KNOWLEDGE_SYNC_TASK_NAME)

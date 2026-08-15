@@ -8,7 +8,7 @@ from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.skills.providers.local.manifests import LOCAL_WORKSPACE_SEARCH
 from local_search.capabilities import CAPABILITIES
 
-# Register skill packs on the contract — see docs/architecture/SKILLS.md
+# Register skill packs on the contract — see docs/project/architecture/SKILLS.md
 
 
 def build_agent_contract() -> AgentContract:

@@ -9,6 +9,8 @@ from typing import Any
 
 from intergrax.rag.vectorstore.bootstrap.integration_vectorstore import create_vectorstore_manager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
+from intergrax.tools.providers.rag.source_operation_wiring import bind_source_operation_coordinator
 from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.utils import attribute_access
 
@@ -35,39 +37,13 @@ def authoritative_tenant_id(
     return meta, None
 
 
-def _tenant_id_from_config(config: object | None) -> str | None:
-    if config is None:
-        return None
-    tenant = attribute_access.optional(config, "tenant_id", None)
-    if tenant is not None and str(tenant).strip():
-        return str(tenant).strip()
-    return None
-
-
 def vectorstore_tenant_id(manager: object | None) -> str | None:
     if manager is None:
         return None
 
-    store: object | None = attribute_access.optional(manager, "_store", manager)
-    seen: set[int] = set()
-    while store is not None and id(store) not in seen:
-        seen.add(id(store))
-
-        for config_attr in ("cfg", "store_config", "_store_config", "_config", "config"):
-            tenant = _tenant_id_from_config(attribute_access.optional(store, config_attr, None))
-            if tenant is not None:
-                return tenant
-
-        inner = attribute_access.optional(store, "_inner", None)
-        if inner is None:
-            inner = attribute_access.optional(store, "rag_store", None)
-        if inner is None or inner is store:
-            break
-        store = inner
-
-    tenant = attribute_access.optional(store, "_tenant_id", None)
-    if tenant is not None and str(tenant).strip():
-        return str(tenant).strip()
+    bound_scope = attribute_access.optional(manager, "bound_scope", None)
+    if isinstance(bound_scope, VectorStoreScope):
+        return bound_scope.tenant_id
     return None
 
 
@@ -92,12 +68,14 @@ def resolve_tenant_scoped_vectorstore(
 ) -> BaseVectorstoreManager | None:
     """Return a vectorstore manager whose provider tenant matches ``tenant_id`` when set."""
     manager = ctx.vectorstore_manager
-    if manager is None or not tenant_id:
-        return manager
+    if not tenant_id:
+        return None
 
-    wired_tenant = vectorstore_tenant_id(manager) or "default"
-    if wired_tenant == tenant_id:
-        return manager
+    if manager is not None:
+        wired_tenant = vectorstore_tenant_id(manager)
+        if wired_tenant is not None and wired_tenant == tenant_id:
+            bind_source_operation_coordinator(ctx, manager)
+            return manager
 
     profile = ctx.integration_profile
     if profile is None:
@@ -110,8 +88,10 @@ def resolve_tenant_scoped_vectorstore(
 
     cached = cache_obj.get(tenant_id)
     if cached is not None:
+        bind_source_operation_coordinator(ctx, cached)
         return cached
 
     scoped = create_vectorstore_manager(tenant_id=tenant_id, profile=profile)
+    bind_source_operation_coordinator(ctx, scoped)
     cache_obj[tenant_id] = scoped
     return scoped

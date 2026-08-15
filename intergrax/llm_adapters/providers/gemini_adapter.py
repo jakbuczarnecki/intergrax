@@ -53,8 +53,6 @@ class GeminiChatAdapter(LLMAdapter):
     }
 
     DEFAULT_MODEL = "gemini-2.5-flash"
-
-    ENV_MODEL = "INTERGRAX_DEFAULT_GEMINI_MODEL"
     ENV_API_KEY = "GOOGLE_API_KEY"
 
     def __init__(
@@ -66,10 +64,9 @@ class GeminiChatAdapter(LLMAdapter):
         super().__init__()
         self._apply_defaults_call_config(defaults)
 
-        env_model = os.getenv(self.ENV_MODEL)
         api_key = os.getenv(self.ENV_API_KEY)
 
-        resolved_model = model or env_model or self.DEFAULT_MODEL
+        resolved_model = model or self.DEFAULT_MODEL
 
         if client is None:
 

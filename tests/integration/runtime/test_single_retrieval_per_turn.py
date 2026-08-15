@@ -33,6 +33,7 @@ async def test_context_builder_retrieval_only_when_perform_retrieval_true() -> N
         embedding_manager=MagicMock(),
         vectorstore_manager=MagicMock(),
     )
+    cfg.vectorstore_manager.bound_scope = None
     builder = ContextBuilder(cfg, cfg.vectorstore_manager)
     session = ChatSession(id="s1", user_id="u1", tenant_id="t1")
     request = RuntimeRequest(

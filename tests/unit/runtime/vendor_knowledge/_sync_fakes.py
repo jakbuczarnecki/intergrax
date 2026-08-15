@@ -5,8 +5,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.bindings import (
@@ -33,13 +34,27 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeVisibility,
 )
 from intergrax.runtime.vendor_knowledge.sync_contracts import (
+    KnowledgeReconciliationRunConflict,
     KnowledgeSyncCheckpointConflict,
+    KnowledgeSyncCorruptState,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeReconciliationRun,
+    KnowledgeReconciliationRunCollecting,
+    KnowledgeReconciliationRunPhase,
     KnowledgeRemoteItemState,
+    KnowledgeRemoteItemStateReceipt,
+    KnowledgeRemoteItemStateReceiptStatus,
+    KnowledgeRemoteItemStatus,
     KnowledgeSourceLeaseToken,
     KnowledgeSyncBatch,
     KnowledgeSyncCheckpoint,
+    KnowledgeSyncSinkReceipt,
+    KnowledgeSyncSinkReceiptStatus,
+)
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    KnowledgeSyncPublicationFenceV1,
+    KnowledgeSyncPublicationPermitV1,
 )
 from tests.unit.runtime.vendor_knowledge._fakes import make_content
 
@@ -188,10 +203,16 @@ class InMemoryLeaseRepository:
         if current is not None and current.token == lease.token:
             del self.held[key]
 
+    def is_owned(self, *, lease: KnowledgeSourceLeaseToken) -> bool:
+        current = self.held.get((lease.tenant_id, lease.binding_id))
+        return current == lease
+
 
 @dataclass
 class InMemoryCheckpointRepository:
-    checkpoints: dict[tuple[str, str], KnowledgeSyncCheckpoint] = field(default_factory=dict)
+    checkpoints: dict[tuple[str, str], KnowledgeSyncCheckpoint] = field(
+        default_factory=dict
+    )
     get_calls: list[tuple[str, str]] = field(default_factory=list)
     commit_calls: list[dict[str, Any]] = field(default_factory=list)
     order: list[str] = field(default_factory=list)
@@ -218,9 +239,16 @@ class InMemoryCheckpointRepository:
         checkpoint: KnowledgeSyncCheckpoint,
         *,
         expected_previous: KnowledgeSyncCheckpoint | None,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
+        _ = expected_publication_fence, publication_permit
         self.commit_calls.append(
-            {"checkpoint": checkpoint, "expected_previous": expected_previous}
+            {
+                "checkpoint": checkpoint,
+                "expected_previous": expected_previous,
+                "publication_permit": publication_permit,
+            }
         )
         self.order.append("checkpoint")
         if self.fail_commit_times > 0:
@@ -237,8 +265,13 @@ class InMemoryCheckpointRepository:
 
 @dataclass
 class InMemoryRemoteItemStateRepository:
-    states: dict[tuple[str, str, str], KnowledgeRemoteItemState] = field(default_factory=dict)
+    states: dict[tuple[str, str, str], KnowledgeRemoteItemState] = field(
+        default_factory=dict
+    )
     applied_delivery_ids: set[str] = field(default_factory=set)
+    _delivery_markers: dict[tuple[str, str, str], dict[str, str]] = field(
+        default_factory=dict
+    )
     apply_calls: list[dict[str, Any]] = field(default_factory=list)
     order: list[str] = field(default_factory=list)
     apply_error: Exception | None = None
@@ -262,23 +295,125 @@ class InMemoryRemoteItemStateRepository:
         binding_id: str,
         delivery_id: str,
         states: tuple[KnowledgeRemoteItemState, ...],
+        prepared_state_mutations_fingerprint: str | None = None,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
+        _ = expected_publication_fence, publication_permit
         self.apply_calls.append(
             {
                 "tenant_id": tenant_id,
                 "binding_id": binding_id,
                 "delivery_id": delivery_id,
                 "states": states,
+                "prepared_state_mutations_fingerprint": prepared_state_mutations_fingerprint,
+                "publication_permit": publication_permit,
             }
         )
         self.order.append("state")
         if self.apply_error is not None:
             raise self.apply_error
-        if delivery_id in self.applied_delivery_ids:
+        marker_key = (tenant_id, binding_id, delivery_id)
+        existing = self._delivery_markers.get(marker_key)
+        if existing is not None:
+            if prepared_state_mutations_fingerprint is not None:
+                stored_fp = existing.get("prepared_state_mutations_fingerprint")
+                if stored_fp is None:
+                    raise KnowledgeSyncCorruptState(
+                        "delivery marker cannot prove reconciliation receipt"
+                    )
+                if stored_fp != prepared_state_mutations_fingerprint:
+                    raise KnowledgeSyncCorruptState(
+                        "delivery marker prepared_state_mutations_fingerprint mismatch"
+                    )
+            if delivery_id in self.applied_delivery_ids:
+                return
+        elif delivery_id in self.applied_delivery_ids:
             return
         for state in states:
             self.states[(tenant_id, binding_id, state.remote_id)] = state
         self.applied_delivery_ids.add(delivery_id)
+        if prepared_state_mutations_fingerprint is not None:
+            self._delivery_markers[marker_key] = {
+                "prepared_state_mutations_fingerprint": prepared_state_mutations_fingerprint,
+                "status": "completed",
+            }
+
+    def inspect_delivery_receipt(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        delivery_id: str,
+        prepared_state_mutations_fingerprint: str,
+    ) -> KnowledgeRemoteItemStateReceipt:
+        marker_key = (tenant_id, binding_id, delivery_id)
+        marker = self._delivery_markers.get(marker_key)
+        if marker is None:
+            if delivery_id not in self.applied_delivery_ids:
+                return KnowledgeRemoteItemStateReceipt(
+                    status=KnowledgeRemoteItemStateReceiptStatus.ABSENT
+                )
+            return KnowledgeRemoteItemStateReceipt(
+                status=KnowledgeRemoteItemStateReceiptStatus.CONFLICT,
+                delivery_id=delivery_id,
+                prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
+            )
+        stored_fp = marker.get("prepared_state_mutations_fingerprint")
+        if stored_fp is None or stored_fp != prepared_state_mutations_fingerprint:
+            return KnowledgeRemoteItemStateReceipt(
+                status=KnowledgeRemoteItemStateReceiptStatus.CONFLICT,
+                delivery_id=delivery_id,
+                prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
+            )
+        if marker.get("status") == "applying":
+            return KnowledgeRemoteItemStateReceipt(
+                status=KnowledgeRemoteItemStateReceiptStatus.APPLYING,
+                delivery_id=delivery_id,
+                prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
+            )
+        return KnowledgeRemoteItemStateReceipt(
+            status=KnowledgeRemoteItemStateReceiptStatus.COMPLETED,
+            delivery_id=delivery_id,
+            prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
+        )
+
+
+@dataclass
+class RecordingSinkReceiptInspector:
+    durable: dict[str, str] = field(default_factory=dict)
+    unknown_delivery_ids: set[str] = field(default_factory=set)
+
+    def inspect_receipt(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        delivery_id: str,
+        prepared_batch_payload_fingerprint: str,
+    ) -> KnowledgeSyncSinkReceipt:
+        if delivery_id in self.unknown_delivery_ids:
+            return KnowledgeSyncSinkReceipt(
+                status=KnowledgeSyncSinkReceiptStatus.UNKNOWN,
+                delivery_id=delivery_id,
+                prepared_batch_payload_fingerprint=prepared_batch_payload_fingerprint,
+            )
+        stored = self.durable.get(delivery_id)
+        if stored is None:
+            return KnowledgeSyncSinkReceipt(
+                status=KnowledgeSyncSinkReceiptStatus.ABSENT
+            )
+        if stored != prepared_batch_payload_fingerprint:
+            return KnowledgeSyncSinkReceipt(
+                status=KnowledgeSyncSinkReceiptStatus.CONFLICT,
+                delivery_id=delivery_id,
+                prepared_batch_payload_fingerprint=prepared_batch_payload_fingerprint,
+            )
+        return KnowledgeSyncSinkReceipt(
+            status=KnowledgeSyncSinkReceiptStatus.APPLIED,
+            delivery_id=delivery_id,
+            prepared_batch_payload_fingerprint=prepared_batch_payload_fingerprint,
+        )
 
 
 @dataclass
@@ -417,3 +552,180 @@ def shared_order(
     checkpoint_repo: InMemoryCheckpointRepository,
 ) -> list[str]:
     return [*sink.order, *state_repo.order, *checkpoint_repo.order]
+
+
+@dataclass
+class InMemoryCandidateInventoryRepository:
+    state_repository: InMemoryRemoteItemStateRepository
+    force_incomplete: bool = False
+
+    def list_active_remote_ids(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        binding_configuration_version: int,
+        limit: int,
+    ) -> tuple[str, ...]:
+        if self.force_incomplete:
+            from intergrax.runtime.vendor_knowledge.sync_contracts import (
+                KnowledgeCandidateInventoryIncomplete,
+            )
+
+            raise KnowledgeCandidateInventoryIncomplete("forced incomplete inventory")
+        active: list[str] = []
+        for state in self.state_repository.states.values():
+            if (
+                state.tenant_id == tenant_id
+                and state.binding_id == binding_id
+                and state.binding_configuration_version == binding_configuration_version
+                and state.status is KnowledgeRemoteItemStatus.ACTIVE
+            ):
+                active.append(state.remote_id)
+        ordered = tuple(sorted(set(active)))
+        if len(ordered) > limit:
+            return ordered[:limit]
+        return ordered
+
+
+@dataclass
+class InMemoryReconciliationRunRepository:
+    runs: dict[tuple[str, str], KnowledgeReconciliationRun] = field(
+        default_factory=dict
+    )
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeReconciliationRun | None:
+        return self.runs.get((tenant_id, binding_id))
+
+    def create_initial_run(self, run: KnowledgeReconciliationRun) -> None:
+        key = (run.tenant_id, run.binding_id)
+        if key in self.runs:
+            raise KnowledgeReconciliationRunConflict("create conflict")
+        if run.phase is not KnowledgeReconciliationRunPhase.COLLECTING:
+            raise KnowledgeSyncCorruptState("initial run must be collecting")
+        self.runs[key] = run
+
+    def cas_replace(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRun,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
+    ) -> None:
+        _ = expected_publication_fence, publication_permit
+        if expected.phase is KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED:
+            raise KnowledgeSyncCorruptState(
+                "recovery_required run cannot exit through generic cas_replace"
+            )
+        current = self.runs.get((expected.tenant_id, expected.binding_id))
+        if current != expected:
+            raise KnowledgeReconciliationRunConflict("cas conflict")
+        self.runs[(expected.tenant_id, expected.binding_id)] = replacement
+
+    def cas_supersede_terminal(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRunCollecting,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
+    ) -> None:
+        _ = expected_publication_fence, publication_permit
+        current = self.runs.get((expected.tenant_id, expected.binding_id))
+        if current != expected:
+            raise KnowledgeReconciliationRunConflict("supersede conflict")
+        self.runs[(expected.tenant_id, expected.binding_id)] = replacement
+
+    def cas_recovery(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRun,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
+    ) -> None:
+        _ = expected_publication_fence, publication_permit
+        current = self.runs.get((expected.tenant_id, expected.binding_id))
+        if current != expected:
+            raise KnowledgeReconciliationRunConflict("cas conflict")
+        self.runs[(expected.tenant_id, expected.binding_id)] = replacement
+
+
+def durable_reconciliation_coordinator_kwargs(
+    *,
+    state_repository: InMemoryRemoteItemStateRepository,
+    document_store: object | None = None,
+) -> dict[str, object]:
+    if document_store is not None:
+        from intergrax.runtime.vendor_knowledge.sync_document_store import (
+            DocumentStoreKnowledgeReconciliationCandidateInventoryRepository,
+            DocumentStoreKnowledgeReconciliationRunRepository,
+        )
+
+        candidate_inventory_repository = (
+            DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(
+                document_store  # type: ignore[arg-type]
+            )
+        )
+        reconciliation_run_repository = (
+            DocumentStoreKnowledgeReconciliationRunRepository(
+                document_store  # type: ignore[arg-type]
+            )
+        )
+    else:
+        candidate_inventory_repository = InMemoryCandidateInventoryRepository(
+            state_repository=state_repository
+        )
+        reconciliation_run_repository = InMemoryReconciliationRunRepository()
+    return {
+        "reconciliation_run_repository": reconciliation_run_repository,
+        "candidate_inventory_repository": candidate_inventory_repository,
+        "sink_receipt_inspector": RecordingSinkReceiptInspector(),
+    }
+
+
+async def durable_reconcile_once(
+    coordinator: object,
+    *,
+    binding_id: str,
+    operation_id: str,
+    restart: bool,
+    trigger_delivery_id: str | None = None,
+) -> object:
+    return await coordinator.reconcile_once(  # type: ignore[attr-defined]
+        binding_id=binding_id,
+        restart=restart,
+        operation_id=operation_id,
+        trigger_delivery_id=trigger_delivery_id,
+    )
+
+
+async def durable_reconcile_until_complete(
+    coordinator: object,
+    *,
+    binding_id: str,
+    operation_id: str,
+) -> list[object]:
+    results: list[object] = []
+    restart = True
+    trigger: str | None = None
+    while True:
+        result = await durable_reconcile_once(
+            coordinator,
+            binding_id=binding_id,
+            operation_id=operation_id,
+            restart=restart,
+            trigger_delivery_id=trigger,
+        )
+        results.append(result)
+        if not result.has_more:  # type: ignore[attr-defined]
+            break
+        restart = False
+        trigger = result.delivery_id  # type: ignore[attr-defined]
+    return results

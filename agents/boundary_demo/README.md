@@ -41,4 +41,4 @@ Production PoC mounts the agent via `applications/attestation_demo/host/agent_bu
 - ``boundary_demo_agent.py`` — UAEP agent (`get_steps` / `run_step`)
 - ``capabilities.py`` — capability ids
 - ``tests/`` — contract smoke tests
-- ``docs/`` — architecture, plan, ADRs, journal
+- ``docs`` — architecture, plan, ADRs, journal

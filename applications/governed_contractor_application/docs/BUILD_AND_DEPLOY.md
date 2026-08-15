@@ -1,9 +1,9 @@
 # Build & deploy — Governed Contractor
 
-Tier-3 application package: `applications/governed_contractor_application/`. This document is the **operational runbook** for local development, verification, and container deployment.
+Tier-3 application package: `applications/governed_contractor_application`. This document is the **operational runbook** for local development, verification, and container deployment.
 
 > Vertical: Governed External Contractor (GEC) — architecture [`ARCHITECTURE.md`](ARCHITECTURE.md) · plan [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · partner [`PARTNER_HANDOFF.md`](PARTNER_HANDOFF.md)  
-> Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+> Layout canon: [`applications/USAGE.md`](../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../intergrax/applications/USAGE.md)
 
 **Note:** GEC-0 is scaffold + documentation. Domain proof APIs arrive in later phases. Local `/health` and scaffold `/run` are smoke surfaces only — not a production or partner contract claim.
 
@@ -15,10 +15,10 @@ Tier-3 application package: `applications/governed_contractor_application/`. Thi
 |------|---------|
 | [uv](https://docs.astral.sh/uv/) | Workspace lock + application project `applications/governed_contractor_application/pyproject.toml` |
 | Repo clone | Monorepo; **build context is always repository root** |
-| Docker (optional) | Image build via `docker/` |
+| Docker (optional) | Image build via `docker` |
 | Docker Buildx (recommended) | Per-app `.dockerignore` via `--ignorefile` |
 
-Tier-2 agents used by this host: **external_contractor_adapter** (under `agents/` on `PYTHONPATH`).
+Tier-2 agents used by this host: **external_contractor_adapter** (under `agents` on `PYTHONPATH`).
 
 ---
 
@@ -38,7 +38,7 @@ Edit `.env` (gitignored). Variables use the application prefix **`GOVERNED_CONTR
 
 Agent roster and integrations: `manifest.py`, `host/wiring.py`, `host/integration_wiring.py`.
 
-Partner endpoint credentials (future GEC-10) must stay in env/config — never in `intergrax/` core.
+Partner endpoint credentials (future GEC-10) must stay in env/config — never in `intergrax` core.
 
 ---
 
@@ -64,7 +64,7 @@ curl -s http://127.0.0.1:8000/health
 
 ### Product API
 
-Routes are mounted under `/v1/governed_contractor`. Default capability: `external_contractor.adapt`. See `serving/` and application README.
+Routes are mounted under `/v1/governed_contractor`. Default capability: `external_contractor.adapt`. See `serving` and application README.
 
 ---
 
@@ -182,7 +182,7 @@ applications/governed_contractor_application/scripts/build-local-docker.sh
 | Issue | What to try |
 |-------|-------------|
 | `unknown flag: --ignorefile` | Use **Buildx** or copy `docker/.dockerignore` to repo root |
-| Import errors for agents | Confirm `agents/external_contractor_adapter/` is listed in `docker/.dockerignore` exceptions |
+| Import errors for agents | Confirm `agents/external_contractor_adapter` is listed in `docker/.dockerignore` exceptions |
 | Slow rebuild | Use BuildKit cache; avoid copying whole repo without per-app `.dockerignore` |
 | Wrong capability on `/run` | Use `external_contractor.adapt` (not `<slug>.basic`) |
 
@@ -192,7 +192,7 @@ applications/governed_contractor_application/scripts/build-local-docker.sh
 
 ## Application dependency project
 
-Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+Canonical packaging: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
 ```bash
 uv sync --project applications/governed_contractor_application
@@ -203,7 +203,7 @@ The application `pyproject.toml` selects Intergrax platform extras. Docker uses 
 
 ## Application runtime graph (isolated images)
 
-Canonical packaging and image isolation: [docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
+Canonical packaging and image isolation: [docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
 ```bash
 uv sync --project applications/governed_contractor_application

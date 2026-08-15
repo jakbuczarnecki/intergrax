@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from intergrax.integrations._shared.catalog_object_storage import CatalogObjectStorage
-from intergrax.integrations._shared.cloud_task_queue import CloudTaskQueue
 from intergrax.integrations._shared.p2.clients import SqlRelationalStore
 from intergrax.integrations._shared.p2.configs import HttpIntegrationConfig, QueueIntegrationConfig, SqlIntegrationConfig
 from intergrax.integrations._shared.p2.factories import (
@@ -536,7 +535,7 @@ def _open_temporal_client(config: QueueIntegrationConfig) -> Any:
     if not config.connection_string:
         raise IntegrationConfigurationError("Temporal requires INTERGRAX_TEMPORAL_CONNECTION_STRING")
     try:
-        from temporalio.client import Client
+        __import__("temporalio.client")
     except ImportError as exc:
         raise IntegrationConfigurationError("Temporal requires temporalio") from exc
 
@@ -603,7 +602,13 @@ def create_neo4j_graph_store(
             raise IntegrationConfigurationError("Neo4j requires neo4j driver") from exc
         uri = config.base_url or config.site_url or "bolt://localhost:7687"
         auth = (config.user or "neo4j", config.password or "")
-        driver = GraphDatabase.driver(uri, auth=auth)
+        try:
+            driver = GraphDatabase.driver(uri, auth=auth)
+            driver.verify_connectivity()
+        except Exception as exc:  # noqa: BLE001 - provider-open boundary
+            raise IntegrationConfigurationError(
+                f"Neo4j connection failed for {uri}"
+            ) from exc
 
         class _Facade:
             def __init__(self, drv: Any) -> None:
@@ -611,8 +616,11 @@ def create_neo4j_graph_store(
 
             def run(self, statement: str, parameters: dict[str, Any]) -> list[dict[str, Any]]:
                 with self._drv.session() as session:
-                    result = session.run(statement, parameters)
-                    return [dict(record) for record in result]
+                    def _execute(tx: Any) -> list[dict[str, Any]]:
+                        result = tx.run(statement, parameters)
+                        return [dict(record) for record in result]
+
+                    return session.execute_write(_execute)
 
             def get_node(self, node_id: str) -> Optional[dict[str, Any]]:
                 rows = self.run("MATCH (n) WHERE elementId(n) = $id RETURN n AS node", {"id": node_id})

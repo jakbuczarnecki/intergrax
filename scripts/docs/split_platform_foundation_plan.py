@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Split docs/plan/PLATFORM_FOUNDATION.md into hub + plan/satellites/ satellites."""
+"""Split docs/project/maintainers/plans/PLATFORM_FOUNDATION.md into hub + plan/satellites/ satellites."""
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "docs/plan/PLATFORM_FOUNDATION.md"
-OUT_DIR = ROOT / "docs" / "plan" / "satellites"
+SOURCE = ROOT / "docs/project/maintainers/plans/PLATFORM_FOUNDATION.md"
+OUT_DIR = ROOT / "docs" / "project" / "maintainers" / "plans" / "satellites"
 
 HUB_H3_PREFIXES = (
     "6.1 Harness platform maintenance",

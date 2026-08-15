@@ -4,17 +4,213 @@
 from intergrax.utils.lazy_export import export_from_bundle
 
 __all__ = [
+    "GOOGLE_DOCS_NATIVE_MIME_TYPE",
+    "GOOGLE_DOCS_SOURCE_KIND",
+    "GOOGLE_SHEETS_NATIVE_MIME_TYPE",
+    "GOOGLE_SHEETS_SOURCE_KIND",
+    "GoogleDocsBlock",
+    "GoogleDocsBlockKind",
+    "GoogleDocsBullet",
+    "GoogleDocsDocument",
+    "GoogleDocsInlineElement",
+    "GoogleDocsInlineKind",
+    "GoogleDocsKnowledgeReadClient",
+    "GoogleDocsKnowledgeReader",
+    "GoogleDocsNamedStyleType",
+    "GoogleDocsParagraph",
+    "GoogleDocsSegment",
+    "GoogleDocsSegmentKind",
+    "GoogleDocsTab",
+    "GoogleDocsTable",
+    "GoogleDocsTableCell",
+    "GoogleDocsTableRow",
+    "GoogleSheetsCell",
+    "GoogleSheetsCellError",
+    "GoogleSheetsCellValue",
+    "GoogleSheetsCellValueKind",
+    "GoogleSheetsGridData",
+    "GoogleSheetsGridRange",
+    "GoogleSheetsKnowledgeReadClient",
+    "GoogleSheetsKnowledgeReader",
+    "GoogleSheetsNamedRange",
+    "GoogleSheetsNumberFormat",
+    "GoogleSheetsNumberFormatType",
+    "GoogleSheetsRecalculationInterval",
+    "GoogleSheetsRow",
+    "GoogleSheetsSheet",
+    "GoogleSheetsSheetType",
+    "GoogleSheetsSpreadsheet",
+    "ABSOLUTE_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
+    "DefaultGoogleWorkspaceClientFactory",
+    "DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
+    "GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES",
+    "GOOGLE_DRIVE_SOURCE_KIND",
     "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID",
     "GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS",
+    "GoogleDriveChange",
+    "GoogleDriveChangePage",
+    "GoogleDriveContentChanged",
+    "GoogleDriveContentMode",
+    "GoogleDriveContentReadClient",
+    "GoogleDriveContentReader",
+    "GoogleDriveContentTooLarge",
+    "GoogleDriveContentUnavailable",
+    "GoogleDriveFileContent",
+    "GoogleDriveItem",
+    "GoogleDriveItemKind",
+    "GoogleDriveItemPage",
+    "GoogleDriveKnowledgeReadClient",
+    "GoogleDriveKnowledgeReader",
+    "GoogleDriveScope",
+    "GoogleDriveScopeKind",
+    "GoogleDriveSharedDrive",
+    "GoogleDriveSharedDrivePage",
+    "GoogleDriveUnsupportedContent",
+    "GoogleWorkspaceApiError",
+    "GoogleWorkspaceBinaryPayload",
+    "GoogleWorkspaceBinaryTransport",
     "GoogleWorkspaceClientFactory",
+    "GoogleWorkspaceClientFamily",
+    "GoogleWorkspaceCollectionPage",
     "GoogleWorkspaceCollaborationSuiteIntegration",
     "GoogleWorkspaceCollaborationSuiteIntegrationConfig",
     "GoogleWorkspaceCredentialResolver",
+    "GoogleWorkspaceErrorKind",
+    "GoogleWorkspaceHttpTransport",
+    "GoogleWorkspacePageToken",
+    "GoogleWorkspaceRequestExecutor",
+    "GoogleWorkspaceRequestExecutorFactory",
+    "GoogleWorkspaceRetryPolicy",
     "GoogleWorkspaceSourceKind",
+    "GoogleWorkspaceTransport",
+    "GOOGLE_CALENDAR_SOURCE_KIND",
+    "GoogleCalendarAccessRole",
+    "GoogleCalendarAttendee",
+    "GoogleCalendarAttendeeResponseStatus",
+    "GoogleCalendarConferenceData",
+    "GoogleCalendarConferenceEntryPoint",
+    "GoogleCalendarConferenceSolution",
+    "GoogleCalendarConferenceSolutionType",
+    "GoogleCalendarEvent",
+    "GoogleCalendarEventDateTime",
+    "GoogleCalendarEventPage",
+    "GoogleCalendarEventStatus",
+    "GoogleCalendarEventType",
+    "GoogleCalendarKnowledgeReadClient",
+    "GoogleCalendarKnowledgeReader",
+    "GoogleCalendarPerson",
+    "GoogleCalendarReminder",
+    "GoogleCalendarReminderMethod",
+    "GoogleCalendarReminders",
+    "GoogleCalendarSyncToken",
+    "GoogleCalendarTransparency",
+    "GoogleCalendarVisibility",
     "create_google_workspace_collaboration_suite",
     "create_google_workspace_collaboration_suite_integration",
+    "parse_google_workspace_collection_page",
     "register_google_workspace_integration",
 ]
+
+_DOCS_EXPORTS = frozenset(
+    {
+        "GOOGLE_DOCS_NATIVE_MIME_TYPE",
+        "GOOGLE_DOCS_SOURCE_KIND",
+        "GoogleDocsBlock",
+        "GoogleDocsBlockKind",
+        "GoogleDocsBullet",
+        "GoogleDocsDocument",
+        "GoogleDocsInlineElement",
+        "GoogleDocsInlineKind",
+        "GoogleDocsKnowledgeReadClient",
+        "GoogleDocsKnowledgeReader",
+        "GoogleDocsNamedStyleType",
+        "GoogleDocsParagraph",
+        "GoogleDocsSegment",
+        "GoogleDocsSegmentKind",
+        "GoogleDocsTab",
+        "GoogleDocsTable",
+        "GoogleDocsTableCell",
+        "GoogleDocsTableRow",
+    }
+)
+
+_DRIVE_EXPORTS = frozenset(
+    {
+        "ABSOLUTE_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
+        "DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
+        "GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES",
+        "GOOGLE_DRIVE_SOURCE_KIND",
+        "GoogleDriveChange",
+        "GoogleDriveChangePage",
+        "GoogleDriveContentChanged",
+        "GoogleDriveContentMode",
+        "GoogleDriveContentReadClient",
+        "GoogleDriveContentReader",
+        "GoogleDriveContentTooLarge",
+        "GoogleDriveContentUnavailable",
+        "GoogleDriveFileContent",
+        "GoogleDriveItem",
+        "GoogleDriveItemKind",
+        "GoogleDriveItemPage",
+        "GoogleDriveKnowledgeReadClient",
+        "GoogleDriveKnowledgeReader",
+        "GoogleDriveScope",
+        "GoogleDriveScopeKind",
+        "GoogleDriveSharedDrive",
+        "GoogleDriveSharedDrivePage",
+        "GoogleDriveUnsupportedContent",
+    }
+)
+
+_SHEETS_EXPORTS = frozenset(
+    {
+        "GOOGLE_SHEETS_NATIVE_MIME_TYPE",
+        "GOOGLE_SHEETS_SOURCE_KIND",
+        "GoogleSheetsCell",
+        "GoogleSheetsCellError",
+        "GoogleSheetsCellValue",
+        "GoogleSheetsCellValueKind",
+        "GoogleSheetsGridData",
+        "GoogleSheetsGridRange",
+        "GoogleSheetsKnowledgeReadClient",
+        "GoogleSheetsKnowledgeReader",
+        "GoogleSheetsNamedRange",
+        "GoogleSheetsNumberFormat",
+        "GoogleSheetsNumberFormatType",
+        "GoogleSheetsRecalculationInterval",
+        "GoogleSheetsRow",
+        "GoogleSheetsSheet",
+        "GoogleSheetsSheetType",
+        "GoogleSheetsSpreadsheet",
+    }
+)
+
+_CALENDAR_EXPORTS = frozenset(
+    {
+        "GOOGLE_CALENDAR_SOURCE_KIND",
+        "GoogleCalendarAccessRole",
+        "GoogleCalendarAttendee",
+        "GoogleCalendarAttendeeResponseStatus",
+        "GoogleCalendarConferenceData",
+        "GoogleCalendarConferenceEntryPoint",
+        "GoogleCalendarConferenceSolution",
+        "GoogleCalendarConferenceSolutionType",
+        "GoogleCalendarEvent",
+        "GoogleCalendarEventDateTime",
+        "GoogleCalendarEventPage",
+        "GoogleCalendarEventStatus",
+        "GoogleCalendarEventType",
+        "GoogleCalendarKnowledgeReadClient",
+        "GoogleCalendarKnowledgeReader",
+        "GoogleCalendarPerson",
+        "GoogleCalendarReminder",
+        "GoogleCalendarReminderMethod",
+        "GoogleCalendarReminders",
+        "GoogleCalendarSyncToken",
+        "GoogleCalendarTransparency",
+        "GoogleCalendarVisibility",
+    }
+)
 
 _BUNDLE_EXPORTS = frozenset(
     {
@@ -25,13 +221,27 @@ _BUNDLE_EXPORTS = frozenset(
 
 _FOUNDATION_EXPORTS = frozenset(
     {
+        "DefaultGoogleWorkspaceClientFactory",
         "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID",
         "GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS",
+        "GoogleWorkspaceApiError",
+        "GoogleWorkspaceBinaryPayload",
+        "GoogleWorkspaceBinaryTransport",
         "GoogleWorkspaceClientFactory",
+        "GoogleWorkspaceClientFamily",
+        "GoogleWorkspaceCollectionPage",
         "GoogleWorkspaceCollaborationSuiteIntegration",
         "GoogleWorkspaceCollaborationSuiteIntegrationConfig",
         "GoogleWorkspaceCredentialResolver",
+        "GoogleWorkspaceErrorKind",
+        "GoogleWorkspaceHttpTransport",
+        "GoogleWorkspacePageToken",
+        "GoogleWorkspaceRequestExecutor",
+        "GoogleWorkspaceRequestExecutorFactory",
+        "GoogleWorkspaceRetryPolicy",
         "GoogleWorkspaceSourceKind",
+        "GoogleWorkspaceTransport",
+        "parse_google_workspace_collection_page",
     }
 )
 
@@ -47,6 +257,50 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.collaboration_suite.google_workspace import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name == "DefaultGoogleWorkspaceClientFactory":
+        from intergrax.integrations.providers.collaboration_suite.google_workspace.client_family import (
+            DefaultGoogleWorkspaceClientFactory,
+        )
+
+        return DefaultGoogleWorkspaceClientFactory
+    if name in {
+        "GoogleWorkspaceApiError",
+        "GoogleWorkspaceCollectionPage",
+        "GoogleWorkspaceErrorKind",
+        "GoogleWorkspaceHttpTransport",
+        "GoogleWorkspacePageToken",
+        "GoogleWorkspaceRetryPolicy",
+        "parse_google_workspace_collection_page",
+    }:
+        from intergrax.integrations.providers.collaboration_suite.google_workspace import (
+            transport as _transport,
+        )
+
+        return export_from_bundle(_transport, name, _FOUNDATION_EXPORTS)
+    if name in _DOCS_EXPORTS:
+        from intergrax.integrations.providers.collaboration_suite.google_workspace import (
+            knowledge_read as _knowledge_read,
+        )
+
+        return export_from_bundle(_knowledge_read, name, _DOCS_EXPORTS)
+    if name in _DRIVE_EXPORTS:
+        from intergrax.integrations.providers.collaboration_suite.google_workspace import (
+            knowledge_read as _knowledge_read,
+        )
+
+        return export_from_bundle(_knowledge_read, name, _DRIVE_EXPORTS)
+    if name in _SHEETS_EXPORTS:
+        from intergrax.integrations.providers.collaboration_suite.google_workspace import (
+            knowledge_read as _knowledge_read,
+        )
+
+        return export_from_bundle(_knowledge_read, name, _SHEETS_EXPORTS)
+    if name in _CALENDAR_EXPORTS:
+        from intergrax.integrations.providers.collaboration_suite.google_workspace import (
+            knowledge_read as _knowledge_read,
+        )
+
+        return export_from_bundle(_knowledge_read, name, _CALENDAR_EXPORTS)
     if name in _FOUNDATION_EXPORTS:
         if name == "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID":
             from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
@@ -62,8 +316,14 @@ def __getattr__(name: str):
             return GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS
         if name in {
             "GoogleWorkspaceClientFactory",
+            "GoogleWorkspaceClientFamily",
             "GoogleWorkspaceCredentialResolver",
+            "GoogleWorkspaceRequestExecutor",
+            "GoogleWorkspaceRequestExecutorFactory",
             "GoogleWorkspaceSourceKind",
+            "GoogleWorkspaceTransport",
+            "GoogleWorkspaceBinaryPayload",
+            "GoogleWorkspaceBinaryTransport",
         }:
             from intergrax.integrations.providers.collaboration_suite.google_workspace import (
                 contracts as _contracts,

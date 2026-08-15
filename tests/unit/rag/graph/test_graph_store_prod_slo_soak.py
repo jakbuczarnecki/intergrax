@@ -52,14 +52,14 @@ class _FakeCypherIntegration:
                 elif target_id == node_id and source_id in self._nodes:
                     rows.append(self._nodes[source_id])
             return GraphQueryResult(records=rows, raw={})
-        if "match (n:ragentity)-[:has_chunk]->(c:ragchunk)" in stmt:
+        if "evidences_node" in stmt and "return distinct c.id" in stmt:
             node_ids = set(params.get("node_ids") or [])
             rows = []
             for node_id, chunk_id in self._has_chunk:
                 if node_id in node_ids:
                     rows.append({"chunk_id": chunk_id})
             return GraphQueryResult(records=rows, raw={})
-        if "merge (n)-[:has_chunk]->(c)" in stmt:
+        if "merge (e:ragevidence" in stmt and "node_id" in params:
             node_id = str(params["node_id"])
             chunk_id = str(params["chunk_id"])
             self._chunks[chunk_id] = {"id": chunk_id}
@@ -75,13 +75,18 @@ class _FakeCypherIntegration:
                 if len(rows) >= limit:
                     break
             return GraphQueryResult(records=rows, raw={})
-        if "detach delete c" in stmt and "chunk_ids" in params:
+        if "detach delete e" in stmt and "chunk_ids" in params:
             removed = 0
-            for chunk_id in params["chunk_ids"]:
-                if chunk_id in self._chunks:
-                    del self._chunks[chunk_id]
+            target = set(params["chunk_ids"])
+            remaining = set()
+            for node_id, chunk_id in self._has_chunk:
+                if chunk_id in target:
                     removed += 1
-            return GraphQueryResult(records=[{"removed_chunks": removed}], raw={})
+                    self._chunks.pop(chunk_id, None)
+                else:
+                    remaining.add((node_id, chunk_id))
+            self._has_chunk = remaining
+            return GraphQueryResult(records=[{"removed": removed}], raw={})
         if "pruned_entities" in stmt:
             return GraphQueryResult(records=[{"pruned_entities": 0}], raw={})
         return GraphQueryResult(records=[], raw={})

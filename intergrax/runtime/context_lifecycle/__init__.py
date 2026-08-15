@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.runtime.context_lifecycle.contracts import (
+    assess_durable_compaction_eligibility,
     ArtifactCompatibilityReason,
     ArtifactCompatibilityResult,
     ArtifactCompatibilityStatus,
@@ -19,6 +20,14 @@ from intergrax.runtime.context_lifecycle.contracts import (
     ContextOptimizationMode,
     ContextOptimizationPolicy,
     ContextOptimizationReasonCode,
+    DurableCompactionActivationMode,
+    DurableCompactionActivationRequirements,
+    DurableCompactionEligibilityDecision,
+    DurableCompactionEligibilityReasonCode,
+    DurableCompactionPolicy,
+    DurableCompactionSourceIdentity,
+    DurableCompactionStabilityEvidence,
+    DurableCompactionValidationRequirement,
     EphemeralArtifactPersistencePolicy,
     ModelCallExecutionScope,
     OptimizationArtifactType,
@@ -28,6 +37,9 @@ from intergrax.runtime.context_lifecycle.contracts import (
 )
 from intergrax.runtime.context_lifecycle.in_memory_repository import (
     InMemoryOptimizationArtifactRepository,
+)
+from intergrax.runtime.context_lifecycle.sqlite_repository import (
+    SQLiteOptimizationArtifactRepository,
 )
 from intergrax.runtime.context_lifecycle.repository import (
     ArtifactCreationCoordinationResult,
@@ -44,7 +56,16 @@ from intergrax.runtime.context_lifecycle.serialization import (
     artifact_creation_reservation_to_safe_dict,
     artifact_lookup_key_to_canonical_dict,
     compute_artifact_lookup_key_hash,
+    compute_durable_compaction_policy_hash,
+    compute_durable_compaction_source_identity_hash,
     context_optimization_policy_to_safe_dict,
+    durable_compaction_activation_requirements_to_canonical_dict,
+    durable_compaction_policy_from_canonical_dict,
+    durable_compaction_policy_to_canonical_dict,
+    durable_compaction_source_identity_from_canonical_dict,
+    durable_compaction_source_identity_to_canonical_dict,
+    durable_compaction_stability_evidence_from_canonical_dict,
+    durable_compaction_stability_evidence_to_canonical_dict,
     optimization_artifact_reference_to_safe_dict,
     optimization_artifact_repository_capabilities_to_safe_dict,
     optimization_execution_guard_to_safe_dict,
@@ -53,6 +74,7 @@ from intergrax.runtime.context_lifecycle.serialization import (
 )
 
 __all__ = [
+    "assess_durable_compaction_eligibility",
     "ArtifactCompatibilityReason",
     "ArtifactCompatibilityResult",
     "ArtifactCompatibilityStatus",
@@ -68,8 +90,17 @@ __all__ = [
     "ContextOptimizationMode",
     "ContextOptimizationPolicy",
     "ContextOptimizationReasonCode",
+    "DurableCompactionActivationMode",
+    "DurableCompactionActivationRequirements",
+    "DurableCompactionEligibilityDecision",
+    "DurableCompactionEligibilityReasonCode",
+    "DurableCompactionPolicy",
+    "DurableCompactionSourceIdentity",
+    "DurableCompactionStabilityEvidence",
+    "DurableCompactionValidationRequirement",
     "EphemeralArtifactPersistencePolicy",
     "InMemoryOptimizationArtifactRepository",
+    "SQLiteOptimizationArtifactRepository",
     "ModelCallExecutionScope",
     "OptimizationArtifactReference",
     "OptimizationArtifactRepository",
@@ -86,7 +117,16 @@ __all__ = [
     "build_optimization_artifact_reference",
     "compute_artifact_content_hash",
     "compute_artifact_lookup_key_hash",
+    "compute_durable_compaction_policy_hash",
+    "compute_durable_compaction_source_identity_hash",
     "context_optimization_policy_to_safe_dict",
+    "durable_compaction_activation_requirements_to_canonical_dict",
+    "durable_compaction_policy_from_canonical_dict",
+    "durable_compaction_policy_to_canonical_dict",
+    "durable_compaction_source_identity_from_canonical_dict",
+    "durable_compaction_source_identity_to_canonical_dict",
+    "durable_compaction_stability_evidence_from_canonical_dict",
+    "durable_compaction_stability_evidence_to_canonical_dict",
     "optimization_artifact_reference_to_safe_dict",
     "optimization_artifact_repository_capabilities_to_safe_dict",
     "optimization_execution_guard_to_safe_dict",

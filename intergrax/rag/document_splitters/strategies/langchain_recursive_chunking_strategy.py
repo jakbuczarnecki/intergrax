@@ -4,13 +4,11 @@
 
 from __future__ import annotations
 
-from typing import Sequence, List
+from typing import Sequence
 
-from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
-from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 
 
 class LangChainRecursiveChunkingStrategy(BaseChunkingStrategy):
@@ -30,6 +28,17 @@ class LangChainRecursiveChunkingStrategy(BaseChunkingStrategy):
         if chunk_overlap >= chunk_size:
             raise ValueError("chunk_overlap must be smaller than chunk_size")
 
+        try:
+            from langchain_text_splitters import RecursiveCharacterTextSplitter
+        except ModuleNotFoundError as exc:
+            if exc.name == "langchain_text_splitters":
+                raise RuntimeError(
+                    "LangChain recursive chunking requires the "
+                    "'rag-langchain-splitters' optional dependency. "
+                    "Install Intergrax-ai[rag-langchain-splitters]."
+                ) from exc
+            raise
+
         self._splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
@@ -41,27 +50,22 @@ class LangChainRecursiveChunkingStrategy(BaseChunkingStrategy):
 
     def chunk(
         self,
-        documents: Sequence[Document],
-    ) -> Sequence[Document]:
+        documents: Sequence[KnowledgeDocument],
+    ) -> Sequence[KnowledgeDocument]:
 
-        result_chunks: List[Document] = []
+        result_chunks: list[KnowledgeDocument] = []
 
         for doc in documents:
-
-            splits = self._splitter.split_text(doc.page_content)
+            splits = self._splitter.split_text(doc.content)
 
             for index, text in enumerate(splits):
-
-                metadata = dict(doc.metadata)
-                metadata[ChunkMetadataKey.CHUNK_INDEX] = index                
-                metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
-                metadata[ChunkMetadataKey.CHUNK_SIZE] = len(text)
-
-                chunk = Document(
-                    page_content=text,
-                    metadata=metadata,
+                result_chunks.append(
+                    build_derived_chunk(
+                        doc,
+                        content=text,
+                        strategy_id=self.strategy_id(),
+                        chunk_index=index,
+                    )
                 )
-
-                result_chunks.append(chunk)
 
         return result_chunks

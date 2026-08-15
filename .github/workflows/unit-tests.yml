@@ -2,7 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 #
 # CI profiles:
-#   pull_request, push (main) — ci_smoke unit tests + 3 boundary scripts (~45–90s wall-clock)
+#   pull_request, push (main) — ci_smoke unit tests + Platform Plugin gates (Linux + Windows wheel E2E)
 #   schedule (nightly 03:00 UTC), workflow_dispatch (full) — full gate + governance + closeout
 #   workflow_dispatch (smoke) — same as PR (debug)
 #
@@ -65,6 +65,9 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
+      - name: Environment conformance (CI profile)
+        run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
+
       - name: Workspace lock consistency
         run: uv lock --check
 
@@ -80,16 +83,58 @@ jobs:
           ! grep -qi 'slack-sdk' /tmp/lab-export.txt
 
       - name: CI smoke unit tests
-        run: uv run python scripts/ci/run_ci_smoke_pytest.py
+        run: uv run --frozen python scripts/ci/run_ci_smoke_pytest.py
+
+      - name: Platform Plugin program gate (Linux regression)
+        run: >-
+          uv run --frozen pytest
+          tests/contract/core/plugins/test_platform_plugin_contract.py
+          tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py
+          tests/unit/scaffold/test_scaffold_local_extension_qualification.py
+          tests/unit/core/plugins/
+          tests/unit/runtime/security/test_defense_plugin_admission.py
+          tests/unit/runtime/policy/rules/test_policy_plugin_loader_isolation.py
+          tests/unit/applications/test_policy_wiring.py
+          -q --tb=line
 
       - name: Tier boundary audits (instant)
         env:
           INTERGRAX_CI_TEST_MARKER: ci_smoke
         run: >-
-          uv run python scripts/maintenance/check_harness_no_getattr.py
-          && uv run python scripts/maintenance/check_agents_no_tier3_imports.py
-          && uv run python scripts/ci/check_ci_gate_test_purity.py
-          && uv run python scripts/maintenance/check_langchain_boundary.py
+          uv run --frozen python scripts/maintenance/check_harness_no_getattr.py
+          && uv run --frozen python scripts/maintenance/check_agents_no_tier3_imports.py
+          && uv run --frozen python scripts/ci/check_ci_gate_test_purity.py
+          && uv run --frozen python scripts/maintenance/check_langchain_boundary.py
+          && uv run --frozen python scripts/maintenance/check_dependency_ownership.py
+          && uv run --frozen python scripts/maintenance/check_knowledge_document_conformance.py
+
+  platform-plugin-windows-e2e:
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
+
+      - name: Platform Plugin Windows wheel E2E
+        run: >-
+          uv run --frozen pytest
+          tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py
+          tests/contract/core/plugins/test_platform_plugin_contract.py
+          -q --tb=line
 
   gate-tests:
     if: >-
@@ -114,8 +159,11 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
+      - name: Environment conformance (CI profile)
+        run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
+
       - name: Full unit regression gate
-        run: uv run pytest tests/unit -m "gate and not no_ci" -n auto -q --tb=line
+        run: uv run --frozen pytest tests/unit -m "gate and not no_ci" -n auto -q --tb=line
 
   gate-governance-tier:
     if: >-
@@ -140,34 +188,38 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
+      - name: Environment conformance (CI profile)
+        run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
+
       - name: Tier boundary and registry audits
         env:
           INTERGRAX_CI_TEST_MARKER: "gate and not no_ci"
         run: >-
-          uv run python scripts/maintenance/check_agents_vendor_imports.py
-          && uv run python scripts/maintenance/check_capability_routing.py
-          && uv run python scripts/maintenance/check_agent_step_security.py
-          && uv run python scripts/maintenance/check_agent_threat_model.py
-          && uv run python scripts/gates/check_agent_acp_close_ci.py
-          && uv run python scripts/maintenance/check_contract_schema_versions.py
-          && uv run python scripts/gates/check_acp_ci_conformance_matrix.py --scripts-only
-          && uv run python scripts/maintenance/check_agent_typed_state.py
-          && uv run python scripts/maintenance/check_production_chat_agent_imports.py
-          && uv run python scripts/maintenance/check_integration_vendor_imports.py
-          && uv run python scripts/maintenance/check_harness_no_getattr.py
-          && uv run python scripts/ci/check_ci_gate_test_purity.py
-          && uv run python scripts/gates/check_application_production_gates.py
-          && uv run python scripts/maintenance/check_legacy_modules_removed.py
-          && uv run python scripts/maintenance/check_agent_skill_resolution.py
-          && uv run python scripts/maintenance/check_harness_registry_resolution.py
-          && uv run python scripts/maintenance/check_agent_registry_bypass.py
-          && uv run python scripts/maintenance/check_langgraph_not_required.py
-          && uv run python scripts/maintenance/check_langchain_boundary.py
-          && uv run python scripts/maintenance/check_agents_no_tier3_imports.py
-          && uv run python scripts/audit/check_docs_domain_pairs.py
-          && uv run python scripts/maintenance/check_scaffold_harness_alignment.py
-          && uv run python scripts/maintenance/check_plugin_catalog.py
-          && uv run python scripts/maintenance/check_legacy_tool_plan_booleans.py
+          uv run --frozen python scripts/maintenance/check_agents_vendor_imports.py
+          && uv run --frozen python scripts/maintenance/check_capability_routing.py
+          && uv run --frozen python scripts/maintenance/check_agent_step_security.py
+          && uv run --frozen python scripts/maintenance/check_agent_threat_model.py
+          && uv run --frozen python scripts/gates/check_agent_acp_close_ci.py
+          && uv run --frozen python scripts/maintenance/check_contract_schema_versions.py
+          && uv run --frozen python scripts/gates/check_acp_ci_conformance_matrix.py --scripts-only
+          && uv run --frozen python scripts/maintenance/check_agent_typed_state.py
+          && uv run --frozen python scripts/maintenance/check_production_chat_agent_imports.py
+          && uv run --frozen python scripts/maintenance/check_integration_vendor_imports.py
+          && uv run --frozen python scripts/maintenance/check_harness_no_getattr.py
+          && uv run --frozen python scripts/ci/check_ci_gate_test_purity.py
+          && uv run --frozen python scripts/gates/check_application_production_gates.py
+          && uv run --frozen python scripts/maintenance/check_legacy_modules_removed.py
+          && uv run --frozen python scripts/maintenance/check_agent_skill_resolution.py
+          && uv run --frozen python scripts/maintenance/check_harness_registry_resolution.py
+          && uv run --frozen python scripts/maintenance/check_agent_registry_bypass.py
+          && uv run --frozen python scripts/maintenance/check_langgraph_not_required.py
+          && uv run --frozen python scripts/maintenance/check_langchain_boundary.py
+          && uv run --frozen python scripts/maintenance/check_knowledge_document_conformance.py
+          && uv run --frozen python scripts/maintenance/check_agents_no_tier3_imports.py
+          && uv run --frozen python scripts/audit/check_docs_domain_pairs.py
+          && uv run --frozen python scripts/maintenance/check_scaffold_harness_alignment.py
+          && uv run --frozen python scripts/maintenance/check_plugin_catalog.py
+          && uv run --frozen python scripts/maintenance/check_legacy_tool_plan_booleans.py
 
   gate-governance-wiring:
     if: >-
@@ -192,27 +244,100 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
+      - name: Environment conformance (CI profile)
+        run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
+
       - name: Harness wiring and observability audits
         run: >-
-          uv run python scripts/maintenance/check_harness_capability_graph_wiring.py
-          && uv run python scripts/maintenance/check_harness_observability_wiring.py
-          && uv run python scripts/maintenance/check_observability_gates.py
-          && uv run python scripts/maintenance/check_harness_reliability_wiring.py
-          && uv run python scripts/maintenance/check_harness_security_wiring.py
-          && uv run python scripts/maintenance/check_harness_guardrail_wiring.py
-          && uv run python scripts/gates/check_harness_security_promote_gate.py
-          && uv run python scripts/maintenance/check_harness_security_defense_plugins.py
-          && uv run python scripts/maintenance/check_harness_encryption_policy.py
-          && uv run python scripts/maintenance/check_harness_security_spine_signals.py
-          && uv run python scripts/maintenance/check_harness_cost_wiring.py
-          && uv run python scripts/maintenance/check_harness_evaluation_wiring.py
-          && uv run intergrax doctor --ci
+          uv run --frozen python scripts/maintenance/check_harness_capability_graph_wiring.py
+          && uv run --frozen python scripts/maintenance/check_harness_observability_wiring.py
+          && uv run --frozen python scripts/maintenance/check_observability_gates.py
+          && uv run --frozen python scripts/maintenance/check_harness_reliability_wiring.py
+          && uv run --frozen python scripts/maintenance/check_harness_security_wiring.py
+          && uv run --frozen python scripts/maintenance/check_harness_guardrail_wiring.py
+          && uv run --frozen python scripts/gates/check_harness_security_promote_gate.py
+          && uv run --frozen python scripts/maintenance/check_harness_security_defense_plugins.py
+          && uv run --frozen python scripts/maintenance/check_harness_encryption_policy.py
+          && uv run --frozen python scripts/maintenance/check_harness_security_spine_signals.py
+          && uv run --frozen python scripts/maintenance/check_harness_cost_wiring.py
+          && uv run --frozen python scripts/maintenance/check_harness_evaluation_wiring.py
+          && uv run --frozen intergrax doctor --ci
+
+  langchain-free-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Create isolated clean environment
+        shell: bash
+        run: |
+          gate_env="${RUNNER_TEMP}/intergrax-langchain-free-core"
+          uv venv --python 3.12 "${gate_env}"
+          uv pip install --python "${gate_env}/bin/python" .
+
+      - name: Run LangChain-free core gate
+        env:
+          PYTHONNOUSERSITE: "1"
+        shell: bash
+        run: |
+          gate_env="${RUNNER_TEMP}/intergrax-langchain-free-core"
+          "${gate_env}/bin/python" scripts/ci/check_langchain_free_core_install.py
+          "${gate_env}/bin/python" scripts/ci/check_langchain_compatibility_install.py --missing-extra
+
+  langchain-compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        extra:
+          - llm-langchain-ollama
+          - rag-langchain-loaders
+          - rag-langchain-embeddings
+          - rag-langchain-splitters
+          - langgraph-legacy
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Create isolated compatibility environment
+        shell: bash
+        run: |
+          gate_env="${RUNNER_TEMP}/intergrax-langchain-${{ matrix.extra }}"
+          uv venv --python 3.12 "${gate_env}"
+          uv pip install --python "${gate_env}/bin/python" ".[${{ matrix.extra }}]"
+
+      - name: Run isolated compatibility gate
+        env:
+          PYTHONNOUSERSITE: "1"
+        shell: bash
+        run: |
+          gate_env="${RUNNER_TEMP}/intergrax-langchain-${{ matrix.extra }}"
+          "${gate_env}/bin/python" scripts/ci/check_langchain_compatibility_install.py \
+            --family "${{ matrix.extra }}"
 
   gate-closeout:
     needs:
       - gate-tests
       - gate-governance-tier
       - gate-governance-wiring
+      - langchain-compatibility
     if: >-
       (
         github.event_name == 'schedule' ||
@@ -223,7 +348,8 @@ jobs:
       ) &&
       needs.gate-tests.result == 'success' &&
       needs.gate-governance-tier.result == 'success' &&
-      needs.gate-governance-wiring.result == 'success'
+      needs.gate-governance-wiring.result == 'success' &&
+      needs.langchain-compatibility.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 12
 
@@ -240,20 +366,23 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
+      - name: Environment conformance (CI profile)
+        run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
+
       - name: Phase V architecture closeout gate
-        run: uv run python scripts/release/phase_v_closeout_gate.py --enforce --enforce-l4
+        run: uv run --frozen python scripts/release/phase_v_closeout_gate.py --enforce --enforce-l4
 
       - name: Phase W-ADAPT runtime L4 closeout gate
-        run: uv run python scripts/release/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
+        run: uv run --frozen python scripts/release/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
 
       - name: Phase W-OPS operational evidence (nightly / full dispatch)
-        run: uv run python scripts/release/phase_w_ops_evidence.py
+        run: uv run --frozen python scripts/release/phase_w_ops_evidence.py
 
       - name: RAG load/soak nightly report (RAG-MAINT-02)
-        run: uv run python scripts/release/rag_load_soak_report.py
+        run: uv run --frozen python scripts/release/rag_load_soak_report.py
 
       - name: Export harness spec schemas
-        run: uv run python scripts/release/export_harness_spec_schemas.py
+        run: uv run --frozen python scripts/release/export_harness_spec_schemas.py
 
       - name: Export capability catalog feed
-        run: uv run python scripts/release/export_capability_catalog_feed.py
+        run: uv run --frozen python scripts/release/export_capability_catalog_feed.py

@@ -6,7 +6,7 @@ This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emi
 
 ## External validation: BoundaryAttest
 
-Public case study: [BoundaryAttest Attestation PoC](../../docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — condensed external-facing summary of this integration validation.
+Public case study: [BoundaryAttest Attestation PoC](../../docs/project/overview/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — condensed external-facing summary of this integration validation.
 
 Acknowledgement: this validation involved external integration work with the [BoundaryAttest](https://github.com/cullenmeyers/BoundaryAttest) project.
 

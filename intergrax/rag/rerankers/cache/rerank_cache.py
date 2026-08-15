@@ -5,10 +5,15 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import time
+from collections.abc import Sequence
 from typing import Dict, List, Optional, Tuple
 
-from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
+from intergrax.rag.rerankers.cache.base_rerank_cache import (
+    BaseRerankCache,
+    RerankIdentityKey,
+)
 
 
 class RerankCache(BaseRerankCache):
@@ -35,15 +40,29 @@ class RerankCache(BaseRerankCache):
     def _hash_query(self, query: str) -> str:
         return hashlib.sha256(query.encode("utf-8")).hexdigest()
 
-    def _hash_documents(self, texts: List[str]) -> str:
+    def _hash_documents(
+        self,
+        texts: List[str],
+        identity_keys: Sequence[RerankIdentityKey] | None = None,
+    ) -> str:
         """
         Deterministically hash candidate texts using incremental hashing.
         Avoids delimiter ambiguity and large intermediate strings.
         """
 
         hasher = hashlib.sha256()
+        if identity_keys is not None and len(identity_keys) != len(texts):
+            raise ValueError("identity_keys and texts length mismatch")
 
-        for text in texts:
+        for index, text in enumerate(texts):
+            if identity_keys is not None:
+                identity = json.dumps(
+                    identity_keys[index],
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+                hasher.update(len(identity).to_bytes(8, "big"))
+                hasher.update(identity)
 
             normalized = self._normalize_text(text)
 
@@ -62,10 +81,11 @@ class RerankCache(BaseRerankCache):
         reranker: str,
         query: str,
         texts: List[str],
+        identity_keys: Sequence[RerankIdentityKey] | None = None,
     ) -> str:
 
         q_hash = self._hash_query(query)
-        d_hash = self._hash_documents(texts)
+        d_hash = self._hash_documents(texts, identity_keys)
 
         return f"rerank:{reranker}:{q_hash}:{d_hash}"
 
@@ -75,9 +95,10 @@ class RerankCache(BaseRerankCache):
         reranker: str,
         query: str,
         texts: List[str],
+        identity_keys: Sequence[RerankIdentityKey] | None = None,
     ) -> Optional[List[float]]:
 
-        key = self._build_key(reranker, query, texts)
+        key = self._build_key(reranker, query, texts, identity_keys)
 
         entry = self._store.get(key)
 
@@ -99,9 +120,10 @@ class RerankCache(BaseRerankCache):
         reranker: str,
         query: str,
         texts: List[str],
+        identity_keys: Sequence[RerankIdentityKey] | None = None,
         scores: List[float],
     ) -> None:
 
-        key = self._build_key(reranker, query, texts)
+        key = self._build_key(reranker, query, texts, identity_keys)
 
         self._store[key] = (time.time(), scores)

@@ -1,7 +1,7 @@
-# boundary_demo agent — Implementation Plan
+﻿# boundary_demo agent — Implementation Plan
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/intergrax_runtime_architecture.md`](../../../docs/intergrax_runtime_architecture.md)  
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md)
 Host tracker: [`applications/attestation_demo/docs/IMPLEMENTATION_PLAN.md`](../../../applications/attestation_demo/docs/IMPLEMENTATION_PLAN.md)
 
 Principle: **stable PoC agent** · **no receipt logic in Tier-2** · **no Tier-3 imports in agent code**
@@ -14,8 +14,8 @@ Principle: **stable PoC agent** · **no receipt logic in Tier-2** · **no Tier-3
 |-------|--------|
 | Purpose, contracts, runtime layout | **ARCHITECTURE.md** (this directory) |
 | Task status, phases | **This file** |
-| Agent architecture decisions | **`docs/adr/`** — [`adr/README.md`](adr/README.md) |
-| EBE platform / host work | `applications/attestation_demo/docs/` |
+| Agent architecture decisions | **`docs/project/technical/adr`** — [`adr/README.md`](adr/README.md) |
+| EBE platform / host work | `../../applications/attestation_demo` |
 
 ---
 
@@ -26,8 +26,8 @@ Principle: **stable PoC agent** · **no receipt logic in Tier-2** · **no Tier-3
 | Agent id | `boundary_demo_agent` |
 | Class | `BoundaryDemoAgent` |
 | Primary capability | `attestation.demo` |
-| Tier | Tier-2 (`agents/boundary_demo/`) |
-| Host | `applications/attestation_demo/` |
+| Tier | Tier-2 (`agents/boundary_demo`) |
+| Host | `applications/attestation_demo` |
 
 ---
 
@@ -38,8 +38,8 @@ Principle: **stable PoC agent** · **no receipt logic in Tier-2** · **no Tier-3
 | BOUNDARY-1 | UAEP `records.put` step | **Done** | High | `boundary_demo_agent.py` |
 | BOUNDARY-2 | Registry skill/tool resolution (empty author `allowed_tools`) | **Done** | High | `test_boundary_demo_skill_resolution.py` |
 | BOUNDARY-3 | Attestation demo host wiring | **Done** | High | `attestation_demo/host/tool_wiring.py` |
-| BOUNDARY-4 | Agent smoke tests | **Done** | High | `agents/boundary_demo/tests/` |
-| BOUNDARY-5 | Docs layout (`docs/`) | **Done** | Medium | Scaffold parity |
+| BOUNDARY-4 | Agent smoke tests | **Done** | High | `agents/boundary_demo/tests` |
+| BOUNDARY-5 | Docs layout (`docs`) | **Done** | Medium | Scaffold parity |
 
 ---
 

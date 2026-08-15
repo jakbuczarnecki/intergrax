@@ -1,0 +1,17 @@
+[project]
+name = "intergrax-memory-store-fixture"
+version = "0.0.1"
+description = "Test-only memory store entry-point plugins for Intergrax (ENTERPRISE-5 / BLOCK D)."
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[project.entry-points."intergrax.memory_stores"]
+external_user_profile = "memory_store_plugin.plugin:ExternalInMemoryUserProfileStorePlugin"
+external_session_storage = "memory_store_plugin.plugin:ExternalInMemorySessionStoragePlugin"

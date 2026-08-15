@@ -1,0 +1,43 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Forbidden provider-specific generation model-selection environment names."""
+
+from __future__ import annotations
+
+FORBIDDEN_GENERATION_MODEL_ENV_NAMES: frozenset[str] = frozenset(
+    {
+        "INTERGRAX_DEFAULT_OLLAMA_MODEL",
+        "INTERGRAX_DEFAULT_VLLM_MODEL",
+        "INTERGRAX_DEFAULT_LLAMA_CPP_MODEL",
+        "INTERGRAX_DEFAULT_OPENAI_MODEL",
+        "INTERGRAX_DEFAULT_CLAUDE_MODEL",
+        "INTERGRAX_DEFAULT_GEMINI_MODEL",
+        "INTERGRAX_DEFAULT_MISTRAL_MODEL",
+        "INTERGRAX_DEFAULT_GROQ_MODEL",
+        "INTERGRAX_DEFAULT_TOGETHER_MODEL",
+        "INTERGRAX_DEFAULT_FIREWORKS_MODEL",
+        "INTERGRAX_DEFAULT_OPENROUTER_MODEL",
+        "INTERGRAX_DEFAULT_DEEPSEEK_MODEL",
+        "INTERGRAX_DEFAULT_XAI_MODEL",
+        "INTERGRAX_DEFAULT_COHERE_MODEL",
+        "INTERGRAX_DEFAULT_COHERE_NATIVE_MODEL",
+        "INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_MODEL",
+        "INTERGRAX_DEFAULT_VERTEX_GEMINI_MODEL",
+        "INTERGRAX_DEFAULT_BEDROCK_MODEL_ID",
+    }
+)
+
+BOOTSTRAP_FORBIDDEN_GENERATION_MODEL_ENV_NAMES: frozenset[str] = frozenset(
+    name
+    for name in FORBIDDEN_GENERATION_MODEL_ENV_NAMES
+    if name.endswith(("_OLLAMA_MODEL", "_VLLM_MODEL", "_LLAMA_CPP_MODEL"))
+)
+
+DOC_REFERENCE_FORBIDDEN_GENERATION_MODEL_ENV_NAMES: frozenset[str] = frozenset(
+    name
+    for name in FORBIDDEN_GENERATION_MODEL_ENV_NAMES
+    if any(
+        marker in name
+        for marker in ("_OLLAMA_MODEL", "_VLLM_MODEL", "_OPENAI_MODEL", "_BEDROCK_MODEL_ID")
+    )
+)

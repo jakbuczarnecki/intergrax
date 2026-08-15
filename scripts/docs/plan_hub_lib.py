@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PLAN_DIR = ROOT / "docs" / "plan"
+PLAN_DIR = ROOT / "docs" / "project" / "maintainers" / "plans"
 SAT_DIR = PLAN_DIR / "satellites"
 
 CLOSED_SIGNALS = (

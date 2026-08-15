@@ -153,37 +153,38 @@ def _create_workspace(client: TestClient, tenant: str, name: str = "Ask Case") -
     return created.json()["workspace_id"]
 
 
-def _seed_document_ref(
-    store: InMemoryDocumentStore,
+def _seed_visible_local_document(
+    app: Any,
     *,
     tenant_id: str,
     workspace_id: str,
     source_path: Path,
     document_id: str = "doc-1",
-    source_id: str = "src-1",
-) -> None:
-    from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-
-    repo = ManagedWorkspaceRepository(store)
-    repo.put_document_ref(
-        WorkspaceDocumentReference(
-            document_id=document_id,
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            source_id=source_id,
-            source_path=str(source_path.resolve()),
-            file_name=source_path.name,
-            content_hash="sha256:abc",
-            indexed_at=datetime.now(UTC),
-        )
+) -> WorkspaceDocumentReference:
+    managed = app.state.lkw_managed_workspace_service
+    source = managed.register_local_folder_source(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        path=str(source_path.parent),
     )
+    document_ref = WorkspaceDocumentReference(
+        document_id=document_id,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        source_id=source.source_id,
+        source_path=str(source_path.resolve()),
+        file_name=source_path.name,
+        content_hash="sha256:abc",
+        indexed_at=datetime.now(UTC),
+    )
+    managed.repository.put_document_ref(document_ref)
+    return document_ref
 
 
 def _stub_search(
     app: Any,
     *,
-    workspace_id: str,
-    source_path: Path,
+    document_ref: WorkspaceDocumentReference,
     snippet: str = "Payment is due within 14 days.",
     extra_metadata: dict[str, Any] | None = None,
     evidence_workspace_id: str | None = None,
@@ -193,11 +194,11 @@ def _stub_search(
         metadata.update(extra_metadata)
     evidence = [
         {
-            "document_id": "doc-1",
-            "source_id": "src-1",
-            "workspace_id": evidence_workspace_id or workspace_id,
-            "source_path": str(source_path.resolve()),
-            "file_name": source_path.name,
+            "document_id": document_ref.document_id,
+            "source_id": document_ref.source_id,
+            "workspace_id": evidence_workspace_id or document_ref.workspace_id,
+            "source_path": document_ref.source_path,
+            "file_name": document_ref.file_name,
             "score": 0.95,
             "snippet": snippet,
             "metadata": metadata,
@@ -205,13 +206,15 @@ def _stub_search(
     ]
     executor = app.state.lkw_ask_service._executor
     executor.execute = AsyncMock(
-        return_value=_search_task_result(workspace_id=workspace_id, evidence=evidence)
+        return_value=_search_task_result(
+            workspace_id=document_ref.workspace_id,
+            evidence=evidence,
+        )
     )
 
 
 def test_ask_workspace_search_evidence_to_citations_without_provider_or_slack_leakage(ask_api) -> None:
     client = ask_api["client"]
-    store = ask_api["store"]
     root: Path = ask_api["workspace_root"]
     app = ask_api["app"]
     llm: RecordingFakeLLM = ask_api["llm"]
@@ -220,8 +223,13 @@ def test_ask_workspace_search_evidence_to_citations_without_provider_or_slack_le
     workspace_id = _create_workspace(client, tenant)
     path = root / "invoice.txt"
     path.write_text("Payment is due within 14 days.", encoding="utf-8")
-    _seed_document_ref(store, tenant_id=tenant, workspace_id=workspace_id, source_path=path)
-    _stub_search(app, workspace_id=workspace_id, source_path=path)
+    document_ref = _seed_visible_local_document(
+        app,
+        tenant_id=tenant,
+        workspace_id=workspace_id,
+        source_path=path,
+    )
+    _stub_search(app, document_ref=document_ref)
 
     response = client.post(
         f"{_PREFIX}/workspaces/{workspace_id}/ask",
@@ -255,7 +263,6 @@ def test_ask_workspace_search_evidence_to_citations_without_provider_or_slack_le
 
 def test_ask_happy_path_api(ask_api) -> None:
     client = ask_api["client"]
-    store = ask_api["store"]
     root: Path = ask_api["workspace_root"]
     app = ask_api["app"]
 
@@ -263,8 +270,13 @@ def test_ask_happy_path_api(ask_api) -> None:
     workspace_id = _create_workspace(client, tenant)
     path = root / "terms.txt"
     path.write_text("Payment is due within 14 days.", encoding="utf-8")
-    _seed_document_ref(store, tenant_id=tenant, workspace_id=workspace_id, source_path=path)
-    _stub_search(app, workspace_id=workspace_id, source_path=path)
+    document_ref = _seed_visible_local_document(
+        app,
+        tenant_id=tenant,
+        workspace_id=workspace_id,
+        source_path=path,
+    )
+    _stub_search(app, document_ref=document_ref)
 
     response = client.post(
         f"{_PREFIX}/workspaces/{workspace_id}/ask",
@@ -302,7 +314,6 @@ def test_ask_empty_question_returns_422(ask_api) -> None:
 
 def test_ask_tenant_isolation(ask_api) -> None:
     client = ask_api["client"]
-    store = ask_api["store"]
     root: Path = ask_api["workspace_root"]
     app = ask_api["app"]
 
@@ -311,8 +322,13 @@ def test_ask_tenant_isolation(ask_api) -> None:
     workspace_id = _create_workspace(client, tenant_a)
     path = root / "a.txt"
     path.write_text("Payment is due within 14 days.", encoding="utf-8")
-    _seed_document_ref(store, tenant_id=tenant_a, workspace_id=workspace_id, source_path=path)
-    _stub_search(app, workspace_id=workspace_id, source_path=path)
+    document_ref = _seed_visible_local_document(
+        app,
+        tenant_id=tenant_a,
+        workspace_id=workspace_id,
+        source_path=path,
+    )
+    _stub_search(app, document_ref=document_ref)
 
     foreign_ask = client.post(
         f"{_PREFIX}/workspaces/{workspace_id}/ask",
@@ -339,7 +355,6 @@ def test_ask_tenant_isolation(ask_api) -> None:
 
 def test_ask_workspace_isolation_drops_foreign_evidence(ask_api) -> None:
     client = ask_api["client"]
-    store = ask_api["store"]
     root: Path = ask_api["workspace_root"]
     app = ask_api["app"]
     llm: RecordingFakeLLM = ask_api["llm"]
@@ -348,12 +363,16 @@ def test_ask_workspace_isolation_drops_foreign_evidence(ask_api) -> None:
     workspace_id = _create_workspace(client, tenant)
     path = root / "a.txt"
     path.write_text("secret", encoding="utf-8")
-    _seed_document_ref(store, tenant_id=tenant, workspace_id=workspace_id, source_path=path)
+    document_ref = _seed_visible_local_document(
+        app,
+        tenant_id=tenant,
+        workspace_id=workspace_id,
+        source_path=path,
+    )
     # Evidence claims a different workspace — must be dropped → empty → insufficient.
     _stub_search(
         app,
-        workspace_id=workspace_id,
-        source_path=path,
+        document_ref=document_ref,
         evidence_workspace_id="other-workspace",
     )
 
@@ -362,23 +381,13 @@ def test_ask_workspace_isolation_drops_foreign_evidence(ask_api) -> None:
         headers=_headers(tenant),
         json={"question": "What is secret?"},
     )
-    # Cross-workspace-only evidence becomes unverified → 502 search_evidence_incomplete,
-    # or empty if treated as drop-all. Align with map_search_hits: unverified → incomplete error.
-    assert response.status_code in {200, 502}
-    if response.status_code == 200:
-        body = response.json()
-        assert body["status"] == "insufficient_evidence"
-        assert body["answer"] is None
-        assert body["citations"] == []
-        assert llm.calls == 0
-    else:
-        assert response.json()["detail"] == "search_evidence_incomplete"
-        assert llm.calls == 0
+    assert response.status_code == 502
+    assert response.json()["detail"] == "search_evidence_incomplete"
+    assert llm.calls == 0
 
 
 def test_ask_persisted_completed_run_read(ask_api) -> None:
     client = ask_api["client"]
-    store = ask_api["store"]
     root: Path = ask_api["workspace_root"]
     app = ask_api["app"]
 
@@ -386,8 +395,13 @@ def test_ask_persisted_completed_run_read(ask_api) -> None:
     workspace_id = _create_workspace(client, tenant)
     path = root / "a.txt"
     path.write_text("Payment is due within 14 days.", encoding="utf-8")
-    _seed_document_ref(store, tenant_id=tenant, workspace_id=workspace_id, source_path=path)
-    _stub_search(app, workspace_id=workspace_id, source_path=path)
+    document_ref = _seed_visible_local_document(
+        app,
+        tenant_id=tenant,
+        workspace_id=workspace_id,
+        source_path=path,
+    )
+    _stub_search(app, document_ref=document_ref)
 
     posted = client.post(
         f"{_PREFIX}/workspaces/{workspace_id}/ask",
@@ -413,8 +427,13 @@ def test_ask_restart_persistence_via_repository_reload(ask_api) -> None:
     workspace_id = _create_workspace(client, tenant)
     path = root / "a.txt"
     path.write_text("Payment is due within 14 days.", encoding="utf-8")
-    _seed_document_ref(store, tenant_id=tenant, workspace_id=workspace_id, source_path=path)
-    _stub_search(app, workspace_id=workspace_id, source_path=path)
+    document_ref = _seed_visible_local_document(
+        app,
+        tenant_id=tenant,
+        workspace_id=workspace_id,
+        source_path=path,
+    )
+    _stub_search(app, document_ref=document_ref)
 
     posted = client.post(
         f"{_PREFIX}/workspaces/{workspace_id}/ask",
@@ -436,7 +455,6 @@ def test_ask_restart_persistence_via_repository_reload(ask_api) -> None:
 
 def test_ask_assembly_failure_persisted(ask_api) -> None:
     client = ask_api["client"]
-    store = ask_api["store"]
     root: Path = ask_api["workspace_root"]
     app = ask_api["app"]
     llm: RecordingFakeLLM = ask_api["llm"]
@@ -452,8 +470,13 @@ def test_ask_assembly_failure_persisted(ask_api) -> None:
     workspace_id = _create_workspace(client, tenant)
     path = root / "a.txt"
     path.write_text("Payment is due within 14 days.", encoding="utf-8")
-    _seed_document_ref(store, tenant_id=tenant, workspace_id=workspace_id, source_path=path)
-    _stub_search(app, workspace_id=workspace_id, source_path=path)
+    document_ref = _seed_visible_local_document(
+        app,
+        tenant_id=tenant,
+        workspace_id=workspace_id,
+        source_path=path,
+    )
+    _stub_search(app, document_ref=document_ref)
 
     response = client.post(
         f"{_PREFIX}/workspaces/{workspace_id}/ask",
@@ -536,8 +559,13 @@ def test_listed_workspace_ask_not_404_same_store(ask_api) -> None:
 
     path = root / "policy.txt"
     path.write_text("Payment is due within 14 days.", encoding="utf-8")
-    _seed_document_ref(store, tenant_id=tenant_a, workspace_id=workspace_id, source_path=path)
-    _stub_search(app, workspace_id=workspace_id, source_path=path)
+    document_ref = _seed_visible_local_document(
+        app,
+        tenant_id=tenant_a,
+        workspace_id=workspace_id,
+        source_path=path,
+    )
+    _stub_search(app, document_ref=document_ref)
 
     ask_service = app.state.lkw_ask_service
     managed = app.state.lkw_managed_workspace_service

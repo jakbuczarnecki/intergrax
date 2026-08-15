@@ -7,4 +7,15 @@ services:
       - "7687:7687"
     environment:
       NEO4J_AUTH: neo4j/intergrax
-    restart: unless-stopped
+    restart: "no"
+    volumes:
+      - neo4j-qualification-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p intergrax 'RETURN 1' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  neo4j-qualification-data:

@@ -1,8 +1,8 @@
 # Tier-3 application composition engine — usage
 
 **Package:** `intergrax/applications/`  
-**Canon:** `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10  
-**Dependencies:** [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md)  
+**Canon:** `docs/project/architecture/intergrax_runtime_architecture.md` §7.4.8–§7.4.10
+**Dependencies:** [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md)
 **Host examples:** `applications/lab_application/`, `applications/legal_application/`
 
 > Tier-3 **applications** compose Tier-2 **agents** + Tier-0 **integrations** into a runnable HTTP/Docker environment.  
@@ -177,7 +177,7 @@ Agent factory → agent config → `RuntimeConfig(tool_profile=..., tool_wiring_
 
 MCP hosts pass `tool_registry=tool_wiring.registry` to mount `list_catalog_tools` / `describe_catalog_tool`.
 
-See [`intergrax/tools/USAGE.md`](../tools/USAGE.md) and [`docs/architecture/TOOLS.md`](../../docs/architecture/TOOLS.md).
+See [`intergrax/tools/USAGE.md`](../tools/USAGE.md) and [`docs/project/architecture/TOOLS.md`](../../docs/project/architecture/TOOLS.md).
 
 ---
 
@@ -329,11 +329,11 @@ uv run pytest tests/acceptance/agent_os/test_lab_application.py -q
 
 ## Orchestration configuration (ORCH-CONFIG / §56)
 
-Tier-3 hosts declare multi-agent topology and routing on `ApplicationEnvironmentProfile` (flat §22.1 today · nested bundles §22.6 — [ADR-APP-003](../../docs/adr/entries/2026-06-17/ADR-APP-003.md)):
+Tier-3 hosts declare multi-agent topology and routing on `ApplicationEnvironmentProfile` (flat §22.1 today · nested bundles §22.6 — [ADR-APP-003](../../docs/project/technical/adr/entries/2026-06-17/ADR-APP-003.md)):
 
 | Need | Profile fields | Notes |
 |------|----------------|-------|
-| Fixed pipeline | `graph_spec` (→ `topology.graph_spec` when bundled) + `trigger_capabilities` | Seed graph only for listed orchestration tokens ([ADR-FLOW-004](../../docs/adr/entries/2026-06-09/ADR-FLOW-004.md)) |
+| Fixed pipeline | `graph_spec` (→ `topology.graph_spec` when bundled) + `trigger_capabilities` | Seed graph only for listed orchestration tokens ([ADR-FLOW-004](../../docs/project/technical/adr/entries/2026-06-09/ADR-FLOW-004.md)) |
 | Free-text routing | `orchestration_profile.classifier_kind=rules` + `intent_routes` | Keyword → orchestration token; see `IntentRoute` |
 | LLM routing | `classifier_kind=llm` | Requires host LLM adapter; falls back to rules |
 | Long-running jobs | `orchestration_profile.long_running_enabled` | Apply `apply_long_running_from_profile(task, env)` at intake |
@@ -346,12 +346,12 @@ Tier-3 hosts declare multi-agent topology and routing on `ApplicationEnvironment
 
 **Task control HTTP** (`/v1/tasks/run-async`, `cancel`, `autonomy`, `resume`): `intergrax/applications/_shared/task_control_wiring.py` · enabled when `INCLUDE_TASK_CONTROL=true` (default on reference hosts).
 
-Canon: [`docs/architecture/ORCHESTRATION.md`](../../docs/architecture/ORCHESTRATION.md) §56 · plan: [`docs/plan/ORCHESTRATION.md`](../../docs/plan/ORCHESTRATION.md) Phase ORCH-CONFIG.
+Canon: [`docs/project/architecture/ORCHESTRATION.md`](../../docs/project/architecture/ORCHESTRATION.md) §56 · plan: [`docs/project/maintainers/plans/ORCHESTRATION.md`](../../docs/project/maintainers/plans/ORCHESTRATION.md) Phase ORCH-CONFIG.
 
 ---
 
 ## Related docs
 
 - Repository Tier-3 folder: [`applications/USAGE.md`](../../applications/USAGE.md)
-- Agent workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
-- Implementation plan Phase N: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md)
+- Agent workflow: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
+- Implementation plan Phase N: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md)

@@ -26,11 +26,14 @@ jobs:
           enable-cache: true
           python-version: "3.12"
 
-      - run: uv sync --extra dev-ci --frozen
+      - run: uv sync --extra dev-ci --extra llm-ollama --frozen
+
+      - name: Environment conformance (CI profile)
+        run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
 
       - name: Builtin provider conformance (mocked)
         run: >-
-          uv run pytest
+          uv run --frozen pytest
           tests/unit/llm_adapters/test_builtin_conformance.py
           tests/unit/llm_adapters/test_resilience.py
           tests/unit/llm_adapters/test_metrics_exposition.py

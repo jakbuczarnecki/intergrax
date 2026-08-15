@@ -10,15 +10,21 @@ import importlib
 import inspect
 import re
 from pathlib import Path
-from typing import Any, Callable, Optional, Sequence
+from typing import Any, Callable, Sequence
 from unittest.mock import MagicMock
 
 import pytest
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
+from intergrax.integrations.contracts.vector_store import VectorStore
 from intergrax.integrations.providers.layout import SLUG_CATEGORY
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -152,43 +158,112 @@ def _contract_factory(slug: str, category: str) -> Any:
     return getattr(bundle, f"create_{slug}_{category}_integration")
 
 
+_PRIMARY_VECTOR_STORE_CLASS_NAMES = {
+    "chroma": "ChromaVectorStore",
+    "milvus": "MilvusVectorStore",
+    "pgvector": "PgVectorRagStore",
+    "pinecone": "PineconeVectorStore",
+    "qdrant": "QdrantVectorStore",
+    "weaviate": "WeaviateVectorStore",
+}
+PRIMARY_VECTOR_STORE_CUTOVER_SLUGS = frozenset(_PRIMARY_VECTOR_STORE_CLASS_NAMES)
+
+
+def _native_document(
+    *,
+    document_id: str = "doc-1",
+    scope: VectorStoreScope,
+) -> KnowledgeDocument:
+    document_scope: dict[str, str] = {
+        "tenant_id": scope.tenant_id,
+        "namespace": scope.namespace,
+    }
+    if scope.workspace_id is not None:
+        document_scope["workspace_id"] = scope.workspace_id
+    return KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {
+                "document_id": document_id,
+                "root_document_id": document_id,
+            },
+            "scope": document_scope,
+            "content": "hello",
+            "metadata": {"source": "runtime-cutover-matrix"},
+            "provenance": {
+                "source_kind": "test",
+                "source_id": document_id,
+            },
+        }
+    )
+
+
+def _native_record(
+    *,
+    vector_id: str = "doc-1",
+    scope: VectorStoreScope,
+) -> VectorStoreRecord:
+    return VectorStoreRecord(
+        document=_native_document(document_id=vector_id, scope=scope),
+        embedding=[0.1, 0.2],
+        vector_id=vector_id,
+    )
+
+
 class _FakeVectorStore(VectorStore):
     def __init__(self) -> None:
-        self.documents: list[Document] = []
+        self.records: list[VectorStoreRecord] = []
+        self.add_scopes: list[VectorStoreScope] = []
+        self.query_scopes: list[VectorStoreScope] = []
         self.deleted: list[str] = []
+        self.delete_scopes: list[VectorStoreScope] = []
+        self.count_scopes: list[VectorStoreScope] = []
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
-        self.documents.extend(documents)
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        self.records.extend(records)
+        self.add_scopes.append(scope)
+        return [record.vector_id for record in records]
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
-    ) -> list[VectorStoreHit]:
+    ) -> Sequence[VectorStoreHit]:
+        del query_embedding, top_k, metadata_filter
+        self.query_scopes.append(scope)
         return [
             VectorStoreHit(
-                id="doc-1",
-                content="hello",
-                metadata={},
+                vector_id="doc-1",
+                document=_native_document(scope=scope),
                 similarity_score=0.9,
                 rank=0,
+                embedding=[0.1, 0.2] if include_embeddings else None,
             )
         ]
 
-    def delete(self, ids: Sequence[str]) -> None:
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
         self.deleted.extend(ids)
+        self.delete_scopes.append(scope)
+        deleted_ids = set(ids)
+        self.records = [
+            record
+            for record in self.records
+            if record.vector_id not in deleted_ids
+            or not scope.matches_document(record.document)
+        ]
 
-    def count(self) -> int:
-        return len(self.documents)
+    def count(self, *, scope: VectorStoreScope) -> int:
+        self.count_scopes.append(scope)
+        return sum(scope.matches_document(record.document) for record in self.records)
 
 
 class _FakeClient:
@@ -613,19 +688,54 @@ def test_legacy_factory_vector_store_operations(slug: str) -> None:
     category = SLUG_CATEGORY[slug]
     legacy_factory = getattr(_bundle_module(slug, category), _legacy_factory_name(slug, category))
     fake = _FakeVectorStore()
+    scope = VectorStoreScope(tenant_id="t1", namespace="rag")
+    records = [_native_record(scope=scope)]
 
     def _factory() -> _FakeVectorStore:
         return fake
 
     store = legacy_factory(store_factory=_factory, collection_name="c1", tenant_id="t1")
     assert isinstance(store, VectorStore)
-    store.add_documents([Document(page_content="x")], [[0.1, 0.2]])
-    store.delete(["doc-1"])
-    assert fake.documents
+    assert store.add_records(records, scope=scope) == ["doc-1"]
+    assert fake.records == records
+    assert fake.add_scopes == [scope]
+    hits = store.query([0.1, 0.2], scope=scope, top_k=1, include_embeddings=True)
+    assert hits[0].document.scope == records[0].document.scope
+    assert fake.query_scopes == [scope]
+    assert store.count(scope=scope) == 1
+    assert fake.count_scopes == [scope]
+    store.delete(["doc-1"], scope=scope)
     assert fake.deleted == ["doc-1"]
-    assert store.count() == 1
-    hits = store.query([0.1, 0.2], top_k=1)
-    assert hits[0].content == "hello"
+    assert fake.delete_scopes == [scope]
+    assert store.count(scope=scope) == 0
+
+
+@pytest.mark.parametrize("slug", sorted(PRIMARY_VECTOR_STORE_CUTOVER_SLUGS))
+def test_primary_vector_store_native_method_signatures(slug: str) -> None:
+    module = importlib.import_module(
+        f"intergrax.integrations.providers.vector_store.{slug}.rag_store"
+    )
+    provider_cls = getattr(module, _PRIMARY_VECTOR_STORE_CLASS_NAMES[slug])
+
+    add_records = inspect.signature(provider_cls.add_records)
+    assert "records" in add_records.parameters
+    assert "scope" in add_records.parameters
+    assert add_records.parameters["scope"].kind is inspect.Parameter.KEYWORD_ONLY
+    assert not {"documents", "embeddings", "ids"} & add_records.parameters.keys()
+    assert "add_documents" not in provider_cls.__dict__
+
+    query = inspect.signature(provider_cls.query)
+    assert "scope" in query.parameters
+    assert query.parameters["scope"].kind is inspect.Parameter.KEYWORD_ONLY
+    assert {"top_k", "metadata_filter", "include_embeddings"} <= query.parameters.keys()
+
+    delete = inspect.signature(provider_cls.delete)
+    assert {"ids", "scope"} <= delete.parameters.keys()
+    assert delete.parameters["scope"].kind is inspect.Parameter.KEYWORD_ONLY
+
+    count = inspect.signature(provider_cls.count)
+    assert "scope" in count.parameters
+    assert count.parameters["scope"].kind is inspect.Parameter.KEYWORD_ONLY
 
 
 @pytest.mark.parametrize("slug", sorted(CLIENT_CONTRACT_CUTOVER_SLUGS))

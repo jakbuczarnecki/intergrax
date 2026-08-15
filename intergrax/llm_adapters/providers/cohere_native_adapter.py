@@ -34,7 +34,6 @@ class CohereNativeChatAdapter(LLMAdapter):
     """Cohere ``ClientV2`` chat with optional tool definitions (v2 messages API)."""
 
     ENV_API_KEY = "COHERE_API_KEY"
-    ENV_MODEL = "INTERGRAX_DEFAULT_COHERE_NATIVE_MODEL"
     DEFAULT_MODEL = "command-r-plus-08-2024"
 
     _CONTEXT_WINDOWS: Dict[str, int] = {
@@ -54,7 +53,7 @@ class CohereNativeChatAdapter(LLMAdapter):
         if client is None and not api_key:
             raise RuntimeError(f"{self.ENV_API_KEY} not found in environment variables.")
         self.client = client or cohere.ClientV2(api_key=api_key)
-        self.model = model or os.getenv(self.ENV_MODEL) or self.DEFAULT_MODEL
+        self.model = model or self.DEFAULT_MODEL
         self.provider = LLMProvider.COHERE_NATIVE
         self.defaults = defaults
         self.model_name_for_token_estimation = self.model

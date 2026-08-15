@@ -5,7 +5,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import List, Optional
+
+RerankIdentityKey = tuple[str, str | None, str | None, str, str | None]
 
 
 class BaseRerankCache(ABC):
@@ -22,6 +25,7 @@ class BaseRerankCache(ABC):
         reranker: str,
         query: str,
         texts: List[str],
+        identity_keys: Sequence[RerankIdentityKey] | None = None,
     ) -> Optional[List[float]]:
         """
         Retrieve cached rerank scores.
@@ -35,6 +39,7 @@ class BaseRerankCache(ABC):
         reranker: str,
         query: str,
         texts: List[str],
+        identity_keys: Sequence[RerankIdentityKey] | None = None,
         scores: List[float],
     ) -> None:
         """

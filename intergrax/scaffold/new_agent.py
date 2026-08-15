@@ -488,9 +488,9 @@ def _readme(slug: str, class_name: str, capabilities: list[str], *, pattern: str
 
         Typed **{pattern}** cognitive agent — standalone smoke tests under ``agents/{slug}/tests/``.
 
-        **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/adr/README.md`](docs/adr/README.md)
+        **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/project/technical/adr/README.md`](docs/project/technical/adr/README.md)
 
-        Full process: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
+        Full process: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
 
         ## Standalone verification
 
@@ -512,7 +512,7 @@ def _readme(slug: str, class_name: str, capabilities: list[str], *, pattern: str
         registry.register({class_name}())
         ```
 
-        See **Step 4** in ``docs/guides/AGENT_CREATION_GUIDE.md`` for host wiring.
+        See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md`` for host wiring.
 
         ## Capabilities
 
@@ -650,7 +650,7 @@ def create_acp_pattern_agent(
             # © Artur Czarnecki. All rights reserved.
             # Tier-2 agent dependency project (workspace member).
             # Import path preserved: {slug}
-            # Canonical: docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
+            # Canonical: docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
 
             [project]
             name = "{dist}"

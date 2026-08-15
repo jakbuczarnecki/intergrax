@@ -3,7 +3,8 @@
 import pytest
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.uaep import UAEPExecutor, supports_uaep
+from intergrax.agents import supports_uaep
+from intergrax.agents.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -103,3 +104,56 @@ async def test_uaep_executor_runs_runtime_controlled_steps():
     }
     assert all(event.tenant_id == "t1" for event in bus.history if event.tenant_id is not None)
     assert any(event.tenant_id == "t1" for event in bus.history)
+
+
+class _TaskIdCaptureAgent(_UaepStubAgent):
+  def __init__(self) -> None:
+      super().__init__()
+      self.captured_task_id: str | None = None
+
+  async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+      self.captured_task_id = ctx.task_id
+      return await super().run_step(step, ctx)
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_uaep_executor_typed_task_id_ignores_metadata_task_id():
+    """Metadata task_id must not override typed security identity (REVIEW-FIX-2)."""
+    executor = UAEPExecutor()
+    agent = _TaskIdCaptureAgent()
+    request = RuntimeRequest(
+        tenant_id="t1",
+        user_id="u1",
+        session_id="s1",
+        agent_id="uaep-stub",
+        message="hi",
+        task_id=None,
+        metadata={"run_id": "run-safe", "task_id": "attacker-controlled"},
+    )
+
+    await executor.execute(agent, request)
+
+    assert agent.captured_task_id == "run-safe"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_uaep_executor_typed_task_id_prefers_request_field():
+    executor = UAEPExecutor()
+    agent = _TaskIdCaptureAgent()
+    request = RuntimeRequest(
+        tenant_id="t1",
+        user_id="u1",
+        session_id="s1",
+        agent_id="uaep-stub",
+        message="hi",
+        task_id="task-canonical",
+        metadata={"run_id": "run-1", "task_id": "other"},
+    )
+
+    await executor.execute(agent, request)
+
+    assert agent.captured_task_id == "task-canonical"

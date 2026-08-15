@@ -1,0 +1,8 @@
+Billing operations policy.
+
+Invoices are issued on the first business day of each month.
+Billing disputes must be submitted within 30 days of the invoice date.
+The finance team records the dispute reference in the customer ledger.
+Approved credits require a reviewer and a documented reason.
+This policy is unrelated to deployment protocols, deployment regions, and
+operational handoff codes.

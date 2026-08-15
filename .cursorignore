@@ -49,13 +49,13 @@ temp_documents/
 docs/audit_results/
 
 # Audit control prompts — explicit @ / Read only
-docs/audit/
+docs/project/maintainers/audit/
 
 # ADR archive (load cited ADR only)
-docs/adr/entries/
+docs/project/technical/adr/entries/
 
 # Implementation journal archive
-docs/implementation-journal/entries/
+docs/project/maintainers/implementation-journal/entries/
 
 # Bulky agent test fixtures
 agents/**/tests/fixtures/**
@@ -65,19 +65,19 @@ agents/**/tests/**/snapshots/
 llms-full.txt
 
 # Architecture / plan satellites  —  hub read-scope + explicit Read/@ only (F4 / G1)
-docs/architecture/satellites/
-docs/plan/satellites/
-docs/features/architecture/satellites/
-docs/features/plan/satellites/
+docs/project/architecture/satellites/
+docs/project/maintainers/plans/satellites/
+docs/project/capabilities/architecture/satellites/
+docs/project/capabilities/plan/satellites/
 
 # Bulky guides  —  load with explicit @ / Read only (H2)
-docs/guides/AGENT_CREATION_GUIDE.md
-docs/guides/APPLICATION_CREATION_GUIDE.md
-docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md
-docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md
-docs/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md
-docs/guides/SYSTEM_INVARIANTS.md
-docs/guides/MATURITY_TAXONOMY.md
-docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md
-docs/intergrax_runtime_architecture.md
-docs/plan/AUDIT_IDEAL_2026.md
+docs/project/technical/guides/AGENT_CREATION_GUIDE.md
+docs/project/technical/guides/APPLICATION_CREATION_GUIDE.md
+docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md
+docs/project/technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md
+docs/project/technical/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md
+docs/project/technical/guides/SYSTEM_INVARIANTS.md
+docs/project/technical/guides/MATURITY_TAXONOMY.md
+docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md
+docs/project/architecture/intergrax_runtime_architecture.md
+docs/project/maintainers/plans/AUDIT_IDEAL_2026.md

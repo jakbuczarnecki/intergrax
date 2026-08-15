@@ -58,13 +58,26 @@ services:
       start_period: 20s
     restart: unless-stopped
 
+  otel-collector-data-init:
+    image: alpine:3.21
+    user: "0:0"
+    volumes:
+      - lkw_otel_data:/var/lib/otelcol
+    command: ["chown", "10001:10001", "/var/lib/otelcol"]
+    restart: "no"
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    user: "10001:10001"
     volumes:
       - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+      - lkw_otel_data:/var/lib/otelcol
     ports:
       - "4318:4318"
+    depends_on:
+      otel-collector-data-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   local_workspace:
@@ -85,11 +98,15 @@ services:
       INTERGRAX_MONGODB_URI: mongodb://${LKW_MONGODB_ROOT_USERNAME:-intergrax}:${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}@lkw-mongodb:27017/${LKW_MONGODB_DATABASE:-intergrax_proofs}?authSource=admin
       INTERGRAX_MONGODB_DATABASE: ${LKW_MONGODB_DATABASE:-intergrax_proofs}
       INTERGRAX_MONGODB_COLLECTION: ${LKW_MONGODB_COLLECTION:-proof_receipts}
+      LOCAL_WORKSPACE_VECTOR_STORE: qdrant
       INTERGRAX_QDRANT_URL: http://qdrant:6333
+      INTERGRAX_QDRANT_COLLECTION: local_workspace
       OLLAMA_HOST: http://ollama:11434
+      INTERGRAX_EMBEDDING_PROVIDER: ollama
+      INTERGRAX_EMBEDDING_MODEL: nomic-embed-text
       LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT: http://otel-collector:4318/v1/logs
     volumes:
-      - lkw_application_data:/app/applications/local_workspace_application/build/local_workspace
+      - lkw_application_data:/var/lib/intergrax/lkw
     depends_on:
       lkw-mongodb:
         condition: service_healthy
@@ -106,3 +123,4 @@ volumes:
   qdrant_data:
   ollama_data:
   lkw_application_data:
+  lkw_otel_data:

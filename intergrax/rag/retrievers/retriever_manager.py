@@ -7,12 +7,13 @@ from __future__ import annotations
 from typing import List, Sequence
 
 from intergrax.rag.retrievers.contracts.base_retriever import (
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.retrievers.engine.retriever_execution import RetrieverExecutionMetadata
 from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 
 
 class RetrieverManager(BaseRetrieverManager):
@@ -33,6 +34,10 @@ class RetrieverManager(BaseRetrieverManager):
         self._pipeline = pipeline
 
     @property
+    def supports_scoped_retrieval(self) -> bool:
+        return True
+
+    @property
     def last_execution(self) -> RetrieverExecutionMetadata | None:
         return self._pipeline.last_execution
 
@@ -44,8 +49,9 @@ class RetrieverManager(BaseRetrieverManager):
         query_embedding: Sequence[float] | None = None,
         top_k: int = 5,
         metadata_filter=None,
+        scope: VectorStoreScope | None = None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         """
         Retrieve candidates for query text.
         """
@@ -55,6 +61,7 @@ class RetrieverManager(BaseRetrieverManager):
             query_embedding=query_embedding,
             top_k=top_k,
             metadata_filter=metadata_filter,
+            scope=scope,
             include_embeddings=include_embeddings,
             retriever_id=retriever_id,
         )
@@ -63,7 +70,7 @@ class RetrieverManager(BaseRetrieverManager):
         self,
         query: RetrieverQuery,
         retriever_id: str,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         """
         Retrieve using preconstructed RetrieverQuery.
         """

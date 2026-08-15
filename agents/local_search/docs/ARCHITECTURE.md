@@ -1,9 +1,9 @@
-# LocalSearchAgent — architecture
+﻿# LocalSearchAgent — architecture
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 **Capability:** `local.workspace.search`  
-**Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
+**Host:** [`applications/local_workspace_application`](../../../applications/local_workspace_application/)
 **Default agent** on LKW host roster.  
 **Status:** Scaffold — domain steps pending Wave LKW.1
 
@@ -57,7 +57,7 @@ Answer user questions by retrieving relevant document fragments from the local R
   4. format_evidence     → StepOutput for synthesizer or user
 ```
 
-Implement domain logic in `steps/` — no Tier-3 imports.
+Implement domain logic in `steps` — no Tier-3 imports.
 
 ---
 
@@ -65,9 +65,9 @@ Implement domain logic in `steps/` — no Tier-3 imports.
 
 | Item | Location |
 |------|----------|
-| Generic `invoke_tool` helpers | [`intergrax/agents/authoring/runtime_tool_helpers.py`](../../../intergrax/agents/authoring/runtime_tool_helpers.py) |
-| RAG retrieve tool id | [`intergrax/tools/unified/constants.py`](../../../intergrax/tools/unified/constants.py) |
-| **Implementation point** | [`steps/search_job.py`](steps/search_job.py) — `run_search_job` |
+| Generic `invoke_tool` helpers | [`intergrax/agents/authoring/runtime_tool_helpers.py`(../../../intergrax/agents/authoring/runtime_tool_helpers.py) |
+| RAG retrieve tool id | [`intergrax/tools/unified/constants.py`(../../../intergrax/tools/unified/constants.py) |
+| **Implementation point** | [`steps/search_job.py`](../steps/search_job.py) — `run_search_job` |
 
 Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for this agent.
 
@@ -98,13 +98,13 @@ Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for thi
 |------------|------------|--------|
 | `local.workspace.search` | `rag.retrieve`, `rag.list_collections`, `cache.get`, `cache.set` | Planned |
 
-Host baseline: [`applications/local_workspace_application/host/tool_wiring.py`](../../applications/local_workspace_application/host/tool_wiring.py).
+Host baseline: [`applications/local_workspace_application/host/tool_wiring.py`(../../../applications/local_workspace_application/host/tool_wiring.py).
 
 ---
 
 ## Prompts
 
-[`prompts/system.md`](prompts/system.md)
+[`prompts/system.md`](../prompts/system.md)
 
 ---
 
@@ -118,5 +118,5 @@ uv run pytest agents/local_search/tests -q
 
 ## References
 
-- LKW architecture: [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../applications/local_workspace_application/docs/ARCHITECTURE.md)
-- Retrieval control plane: [`docs/guides/AGENT_CREATION_GUIDE.md` Appendix K](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane)
+- LKW architecture: [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md)
+- Retrieval control plane: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix K](../../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane)

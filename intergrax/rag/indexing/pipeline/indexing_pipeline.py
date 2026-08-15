@@ -4,10 +4,9 @@
 
 from __future__ import annotations
 
-from typing import List
+from collections.abc import Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.indexing.contracts.index_strategy import IndexStrategy
@@ -30,15 +29,15 @@ class IndexingPipeline:
     def run(
         self,
         *,
-        documents: List[Document],
+        documents: Sequence[KnowledgeDocument],
         embed_manager: BaseEmbeddingManager,
         vectorstore: BaseVectorstoreManager,
-    ) -> None:
+    ) -> Sequence[str]:
 
         if not documents:
-            return
+            return []
 
-        self.strategy.build_index(
+        return self.strategy.build_index(
             documents=documents,
             embed_manager=embed_manager,
             vectorstore=vectorstore,

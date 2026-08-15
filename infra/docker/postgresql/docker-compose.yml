@@ -20,5 +20,25 @@ services:
       retries: 5
       start_period: 10s
 
+  pgvector:
+    image: pgvector/pgvector:0.8.0-pg16
+    container_name: intergrax-pgvector
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: intergrax_pgvector
+      POSTGRES_PASSWORD: intergrax_pgvector
+      POSTGRES_DB: intergrax_pgvector
+    volumes:
+      - pgvector_qualification_data:/var/lib/postgresql/data
+    restart: "no"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intergrax_pgvector -d intergrax_pgvector"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
 volumes:
   postgresql_data:
+  pgvector_qualification_data:

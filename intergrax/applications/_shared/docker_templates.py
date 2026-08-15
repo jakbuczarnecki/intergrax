@@ -444,10 +444,7 @@ def render_local_docker_bootstrap_sh(*, pkg: str, short: str, port: int, route_p
             | sed -E "s/^'(.*)'$/\\1/" || true
         }}
 
-        MODEL=$(read_env_value "INTERGRAX_DEFAULT_OLLAMA_MODEL")
-        if [ -z "${{MODEL:-}}" ]; then
-          MODEL=$(read_env_value "INTERGRAX_LLM_MODEL")
-        fi
+        MODEL=$(read_env_value "INTERGRAX_LLM_MODEL")
         if [ -z "${{MODEL:-}}" ]; then
           MODEL="llama3.1:latest"
         fi
@@ -512,15 +509,7 @@ def render_local_docker_bootstrap_bat(*, pkg: str, short: str, port: int, route_
             set "KEY=%%A"
             set "VALUE=%%B"
             set "KEY=!KEY: =!"
-            if /i "!KEY!"=="INTERGRAX_DEFAULT_OLLAMA_MODEL" set "MODEL=!VALUE!"
-        )
-        if "!MODEL!"=="" (
-            for /f "usebackq tokens=1,* delims==" %%A in ("%ENV_FILE%") do (
-                set "KEY=%%A"
-                set "VALUE=%%B"
-                set "KEY=!KEY: =!"
-                if /i "!KEY!"=="INTERGRAX_LLM_MODEL" set "MODEL=!VALUE!"
-            )
+            if /i "!KEY!"=="INTERGRAX_LLM_MODEL" set "MODEL=!VALUE!"
         )
         if "!MODEL!"=="" set "MODEL=llama3.1:latest"
         set "MODEL=!MODEL:"=!"

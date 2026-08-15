@@ -180,7 +180,12 @@ def map_events_api_message(payload: Mapping[str, Any]) -> InboundConversationEve
     thread_ts = _non_blank(event.get("thread_ts"))
     thread_id = thread_ts if thread_ts is not None else ts
 
-    metadata: dict[str, Any] = {"slack_envelope_type": "events_api"}
+    # ``channel_type`` is the authoritative Slack conversation classification.
+    # The application adapter must not infer personal audience from channel ID shape.
+    metadata: dict[str, Any] = {
+        "slack_envelope_type": "events_api",
+        "slack_channel_type": "im",
+    }
     client_msg_id = _non_blank(event.get("client_msg_id"))
     if client_msg_id is not None:
         metadata["client_msg_id"] = client_msg_id

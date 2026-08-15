@@ -238,10 +238,10 @@ def test_vespa_feed_and_query() -> None:
             return _Resp()
 
     from intergrax.integrations.providers.vector_store.vespa.client import VespaRestClient
-    from intergrax.integrations.providers.vector_store.vespa.config import VespaIntegrationConfig
+    from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 
     client = VespaRestClient(VespaIntegrationConfig(), http_client=_FakeHttp())
     client.feed_document(doc_id="doc-1", fields={"content": "hello"})
     assert fed
     store = _VespaVectorStore(VespaIntegrationConfig(), client)
-    assert store.count() >= 0
+    assert store.count(scope=VectorStoreScope(tenant_id="default")) >= 0

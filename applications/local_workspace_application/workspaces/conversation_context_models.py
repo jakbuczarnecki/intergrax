@@ -293,6 +293,78 @@ class PersonalConversationStateV1(BaseModel):
         return _validate_utc_datetime(value)
 
 
+class ConversationCitationContextV1(BaseModel):
+    """Durable citation-reference anchor for grounded Ask follow-ups."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str
+    conversation_context_binding_id: str
+    workspace_id: str
+    last_ask_run_id: str
+    configuration_version: int = Field(..., ge=1)
+    updated_at: datetime
+
+    @field_validator("tenant_id")
+    @classmethod
+    def _validate_tenant_id(cls, value: str) -> str:
+        return _validate_bounded_ref(value, field_name="tenant_id")
+
+    @field_validator("conversation_context_binding_id")
+    @classmethod
+    def _validate_binding_id(cls, value: str) -> str:
+        return _validate_bounded_ref(value, field_name="conversation_context_binding_id")
+
+    @field_validator("workspace_id")
+    @classmethod
+    def _validate_workspace_id(cls, value: str) -> str:
+        return _validate_bounded_ref(value, field_name="workspace_id")
+
+    @field_validator("last_ask_run_id")
+    @classmethod
+    def _validate_last_ask_run_id(cls, value: str) -> str:
+        return _validate_bounded_ref(value, field_name="last_ask_run_id")
+
+    @field_validator("updated_at")
+    @classmethod
+    def _validate_updated_at(cls, value: datetime) -> datetime:
+        return _validate_utc_datetime(value)
+
+
+class ConversationConnectionAuthContextV1(BaseModel):
+    """Durable pending tenant-connection authorization anchor for follow-ups."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str
+    conversation_context_binding_id: str
+    authorization_transaction_ref: str
+    provider_id: str
+    required_user_action: str
+    configuration_version: int = Field(..., ge=1)
+    updated_at: datetime
+
+    @field_validator("tenant_id")
+    @classmethod
+    def _validate_tenant_id(cls, value: str) -> str:
+        return _validate_bounded_ref(value, field_name="tenant_id")
+
+    @field_validator("conversation_context_binding_id")
+    @classmethod
+    def _validate_binding_id(cls, value: str) -> str:
+        return _validate_bounded_ref(value, field_name="conversation_context_binding_id")
+
+    @field_validator("authorization_transaction_ref", "provider_id", "required_user_action")
+    @classmethod
+    def _validate_refs(cls, value: str) -> str:
+        return _validate_bounded_ref(value, field_name="authorization_transaction_ref")
+
+    @field_validator("updated_at")
+    @classmethod
+    def _validate_updated_at(cls, value: datetime) -> datetime:
+        return _validate_utc_datetime(value)
+
+
 class ConversationProductCapability(StrEnum):
     READ_ONLY_ASK = "read_only_ask"
     WORKSPACE_DISCOVERY = "workspace_discovery"
@@ -301,6 +373,8 @@ class ConversationProductCapability(StrEnum):
     SOURCE_DISCOVERY = "source_discovery"
     SOURCE_INTAKE = "source_intake"
     ATTACHMENT_INTAKE = "attachment_intake"
+    KNOWLEDGE_CONFIGURATION_DISCOVERY = "knowledge_configuration_discovery"
+    TENANT_CONNECTION_ADMINISTRATION = "tenant_connection_administration"
 
 
 _SHARED_ONLY_CAPABILITIES = frozenset({ConversationProductCapability.READ_ONLY_ASK})
@@ -313,6 +387,7 @@ _MUTATION_PRODUCT_CAPABILITIES = frozenset(
         ConversationProductCapability.SOURCE_DISCOVERY,
         ConversationProductCapability.SOURCE_INTAKE,
         ConversationProductCapability.ATTACHMENT_INTAKE,
+        ConversationProductCapability.TENANT_CONNECTION_ADMINISTRATION,
     }
 )
 

@@ -40,7 +40,7 @@ LKW lets a user:
 | **Implemented today** | Managed-file upload; Source Candidate intake; end-to-end `WEB_URL` Knowledge Intake (**ACCEPTED**); HTTP Ask Workspace with indexed RAG; Slack thin client for Ask, workspace ops and source inspection; Conversation Interaction Planner contract (`CONV-1A`) |
 | **In progress / under correction** | Slack connected source discovery/create/sync (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED** — `REVIEW-FIX-2` **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction) |
 | **Architecturally available in Intergrax** | `vendor_knowledge` connection resolution; integration/tool execution; RAG ingest/retrieve; `LLMAdapter` provider neutrality; embedding providers separate from conversation LLM; policy and trace; Slack three-mode knowledge architecture frozen (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`) |
-| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs (Google Workspace runtime **PLANNED** — starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**; `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**); Conversation Context Bindings and audience isolation (`LKW-CONVERSATION-CONTEXT-ARCH-1` **ACCEPTED**, `LKW-CONVERSATION-CONTEXT-1` **PLANNED**); Slack knowledge proof (`LKW-SLACK-KNOWLEDGE-PROOF-1` **PLANNED**); Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1` **PLANNED**); live platform proof |
+| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; vendor collaboration and data connector packs (Google Workspace runtime **PLANNED** — starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**; `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**); Conversation Context Bindings and audience isolation (`LKW-CONVERSATION-CONTEXT-ARCH-1` **ACCEPTED**, `LKW-CONVERSATION-CONTEXT-1` **PLANNED**); Slack knowledge proof (`LKW-SLACK-KNOWLEDGE-PROOF-1` **PLANNED**); Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1` **PLANNED**); live platform proof |
 | **Future / not committed** | Write-capable provider actions; unrestricted SQL/DAX/JQL; runtime hot swapping; automatic persistence of live results; MCP as domain model |
 
 Target architecture is **not** evidence of implementation. Public proof claims require checked-in evidence.
@@ -292,6 +292,36 @@ neither
 
 Neither binding automatically grants the other.
 
+#### 4.4.1 Live Access lifecycle authority
+
+The production lifecycle is exposed by the provider-neutral
+`LiveAccessLifecycleService`. `WorkspaceKnowledgeConfigurationV1` and its
+revision/CAS mutation history remain the configuration authority; the
+tenant connection record, workspace attachment and published capability
+catalog are the runtime authority. The lifecycle view is derived from those
+authorities and is therefore reconstructible after restart:
+
+```text
+attach → READY / ACTIVE → disable → enable → detach
+```
+
+`ACTIVE` is reported only when the binding is enabled and the attached
+connection plus all selected read-only capabilities are currently usable.
+An enabled binding with a temporary runtime outage remains configured and is
+reported as `READY` or `ERROR`; it is not implicitly detached. `DISABLED`
+removes the binding from Ask eligibility while preserving its identity and
+connection. `ENABLE` reuses the same binding, connection, capability scope
+and audience policy. `DETACH` records the terminal binding state
+(`REVOKED`, projected as `DETACHED`) and never deletes a tenant connection.
+
+Every live execution performs a fresh binding/attachment/connection/catalog
+authority check immediately before the provider call. Query Policy remains
+the separate authority for whether a caller and capability may be queried;
+it is not duplicated by the lifecycle service. Indexed Source bindings,
+documents, manifests, publication, vectors and purge are not touched by any
+Live Access lifecycle mutation. Sharing one connection across modes,
+workspaces or capabilities therefore does not cascade lifecycle changes.
+
 ### 4.5 Workspace Knowledge Configuration
 
 The aggregate configuration that determines what knowledge one workspace can use.
@@ -524,6 +554,28 @@ Do not claim automatic token refresh or provider-specific authentication behavio
 `RemoteResourceDescriptorV1` is **ephemeral discovery output by default**. Discovering a resource does not make it durable product configuration.
 
 A resource becomes durable only after an explicit operation creates a `KnowledgeSourceBinding`, `WorkspaceIndexedSourceBinding`, `WorkspaceLiveAccessBinding`, or a separately approved `RemoteResourceSnapshot`. Do not add automatic provider inventory mirroring.
+
+### 4.11.1 LKW plugin capability configuration discovery
+
+`LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` is **READY_FOR_REVIEW** for the
+read-only configuration-discovery slice. LKW adapts the existing safe tenant
+connection read service, registered live capability catalog and remote
+resource discovery service into a bounded immutable planner snapshot.
+
+The snapshot is personal, tenant-scoped and dynamically derived from currently
+registered capabilities. LKW does not contain a vendor catalog, branch on
+`provider_id`, `source_kind` or `integration_kind`, instantiate integrations,
+persist discovery results, create Indexed Sources or execute live capabilities.
+Planner actions use only references present in the authoritative snapshot, and
+the deterministic executor calls the LKW configuration service once per
+read-only discovery action.
+
+The shared core currently exposes live capability semantics but no generic
+durable/indexed-source eligibility descriptor. LKW therefore reports indexed
+eligibility as `UNKNOWN`; it does not infer eligibility from capability names or
+source kinds. This is a bounded platform problem-radar finding. Indexed Source
+lifecycle remains the next direct LKW task, while Live Access execution remains
+later work.
 
 ### 4.12 Explicitly rejected configuration designs
 
@@ -924,15 +976,56 @@ Live results must not automatically become durable workspace knowledge. Policy d
 
 ## 12. Model runtime portability
 
-**Task:** `LKW-MODEL-RUNTIME-1` — Ollama / vLLM end-to-end portability (**NEXT**).
+### 12.1 Current accepted proof
 
-**One-sentence outcome:** The same LKW product workflows run through either Ollama or vLLM selected by configuration, with no product-domain branching and with both runtimes qualified for structured planning, tool calling and grounded Ask.
+**Public proof:** `LKW-MODEL-RUNTIME` — **accepted bounded proof**. See [`docs/project/proofs/PROOFS.md`](../../../docs/project/proofs/PROOFS.md).
 
-Planned proof covers: basic generation; structured output; Conversation Interaction Plan generation; tool calling; grounded synthesis; health check; configuration switch; same product contracts.
+**Demonstrates:** The same workspace workflows run on Ollama and vLLM without reindexing.
 
-Provider selection may require application restart in the initial proof. A model visible on Ollama or vLLM is not sufficient — it must pass a bounded LKW qualification matrix. This is a focused LKW product proof, not the deferred broad five-model benchmark.
+**Explicit limitation:** Not complete product parity across all features. Do not infer broader proof coverage from this section.
 
-Existing configuration (not LKW portability proof): `INTERGRAX_LLM_PROVIDER` (`ollama` default; `vllm` optional), `INTERGRAX_LLM_MODEL`, commented vLLM base URL variables in `.env.example`.
+Implementation task `LKW-MODEL-RUNTIME-1` — **ACCEPTED** (see [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)).
+
+### 12.2 Current architecture
+
+Provider selection remains through deployment configuration:
+
+- `INTERGRAX_LLM_PROVIDER` (`ollama` default; `vllm` optional)
+- `INTERGRAX_LLM_MODEL`
+
+Provider endpoint/base URL variables remain a separate connection concern (for example commented vLLM base URL variables in `.env.example`).
+
+LKW product/domain logic remains provider-neutral. LKW receives a ready `LLMAdapter` through application wiring — no product-domain provider branches.
+
+**Conversation LLM and embedding provider remain separate concerns.** Switching chat runtime must not silently change embedding model, vector dimensions or indexed collections.
+
+Provider switch may require **application restart**.
+
+### 12.3 Not established by this proof
+
+`LKW-MODEL-RUNTIME` does **not** establish:
+
+- complete product feature parity;
+- universal provider parity;
+- all-provider certification;
+- runtime hot swapping;
+- no-restart switching;
+- production readiness.
+
+A model visible on Ollama or vLLM is not sufficient for broader qualification without an explicit accepted proof gate.
+
+### 12.4 Broader future qualification scope
+
+The following capabilities may remain architectural intent for future LKW runtime qualification but are **not** part of the current accepted bounded public claim (`LKW-MODEL-RUNTIME`):
+
+- structured output parity across providers;
+- Conversation Interaction Plan generation parity;
+- tool calling and grounded synthesis parity;
+- health-check and configuration-switch matrices beyond the accepted proof;
+- same product contracts across all features and providers;
+- deferred broad multi-model benchmark.
+
+This is a focused LKW product proof boundary, not the deferred broad five-model benchmark.
 
 ---
 
@@ -972,4 +1065,4 @@ Existing configuration (not LKW portability proof): `INTERGRAX_LLM_PROVIDER` (`o
 | [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md) | Planner vs executor |
 | [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md) | Slack thin-client contract |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Runtime configuration |
-| [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) | Public proof honesty |
+| [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md) | Public proof honesty |

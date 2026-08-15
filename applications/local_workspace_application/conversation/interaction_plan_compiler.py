@@ -20,6 +20,11 @@ from local_workspace_application.conversation.interaction_draft_models import (
     DraftWorkspaceReferenceBase,
     KnowledgeAddAttachmentsDraftAction,
     KnowledgeAddSourcesDraftAction,
+    KnowledgeCapabilitiesListDraftAction,
+    KnowledgeConnectionsListDraftAction,
+    KnowledgeConnectionAttachDraftAction,
+    KnowledgeIndexedSourceCreateDraftAction,
+    KnowledgeResourcesListDraftAction,
     SourceCandidateAttachDraftAction,
     SourceCandidateListDraftAction,
     NameDraftWorkspaceReference,
@@ -27,9 +32,20 @@ from local_workspace_application.conversation.interaction_draft_models import (
     SourceListDraftAction,
     WorkspaceActivateDraftAction,
     WorkspaceAskDraftAction,
+    CitationInspectDraftAction,
     WorkspaceCreateDraftAction,
     WorkspaceDeleteDraftAction,
     WorkspaceListDraftAction,
+    KnowledgeInventoryListDraftAction,
+    KnowledgeOperationExecuteDraftAction,
+    DestructiveActionConfirmDraftAction,
+    TenantConnectionProvidersListDraftAction,
+    TenantConnectionConnectionsListDraftAction,
+    TenantConnectionInspectDraftAction,
+    TenantConnectionBeginAuthorizationDraftAction,
+    TenantConnectionCompleteManualAuthorizationDraftAction,
+    TenantConnectionReconnectDraftAction,
+    TenantConnectionRevokeDraftAction,
 )
 from local_workspace_application.conversation.interaction_models import (
     ConversationClarification,
@@ -38,6 +54,12 @@ from local_workspace_application.conversation.interaction_models import (
     ExtractedObject,
     KnowledgeAddAttachmentsPlannedAction,
     KnowledgeAddSourcesPlannedAction,
+    KnowledgeAskTargetReference,
+    KnowledgeCapabilitiesListPlannedAction,
+    KnowledgeConnectionsListPlannedAction,
+    KnowledgeResourcesListPlannedAction,
+    KnowledgeConnectionAttachPlannedAction,
+    KnowledgeIndexedSourceCreatePlannedAction,
     LocalFileReferenceExtractedObject,
     MessageTextEvidenceSpan,
     PlannedAction,
@@ -47,11 +69,29 @@ from local_workspace_application.conversation.interaction_models import (
     WebUrlExtractedObject,
     WorkspaceActivatePlannedAction,
     WorkspaceAskPlannedAction,
+    CitationInspectPlannedAction,
     WorkspaceCreatePlannedAction,
     WorkspaceDeletePlannedAction,
     WorkspaceListPlannedAction,
     WorkspaceReference,
     WorkspaceReferenceKind,
+    KnowledgeInventoryFilter,
+    KnowledgeInventoryListPlannedAction,
+    KnowledgeOperationExecutePlannedAction,
+    KnowledgeOperationKind,
+    KnowledgeTargetReferenceKind,
+    DestructiveActionConfirmPlannedAction,
+    TenantConnectionProvidersListPlannedAction,
+    TenantConnectionConnectionsListPlannedAction,
+    TenantConnectionInspectPlannedAction,
+    TenantConnectionBeginAuthorizationPlannedAction,
+    TenantConnectionCompleteManualAuthorizationPlannedAction,
+    TenantConnectionReconnectPlannedAction,
+    TenantConnectionRevokePlannedAction,
+)
+from local_workspace_application.workspaces.tenant_connection_conversation_resolution import (
+    resolve_connection_reference,
+    resolve_provider_reference,
 )
 
 
@@ -64,6 +104,11 @@ class ConversationDraftCompilationErrorCode(str, Enum):
     invalid_created_workspace_reference = "invalid_created_workspace_reference"
     ambiguous_created_workspace_reference = "ambiguous_created_workspace_reference"
     conflicting_source_declaration = "conflicting_source_declaration"
+    tenant_connection_inventory_unavailable = "tenant_connection_inventory_unavailable"
+    tenant_connection_provider_not_found = "tenant_connection_provider_not_found"
+    tenant_connection_provider_ambiguous = "tenant_connection_provider_ambiguous"
+    tenant_connection_not_found = "tenant_connection_not_found"
+    tenant_connection_ambiguous = "tenant_connection_ambiguous"
 
 
 class ConversationDraftCompilationError(ValueError):
@@ -193,6 +238,7 @@ def compile_interaction_draft(
             depends_on=depends_on,
             workspace=workspace_ref,
             source_object_ids=source_object_ids_by_action[index - 1],
+            request=request,
         )
         compiled_actions.append(compiled)
 
@@ -294,9 +340,25 @@ def _merge_depends_on(
 
 
 def _extract_draft_workspace(action: DraftPlannedAction) -> DraftWorkspaceReferenceBase | None:
-    workspace = getattr(action, "workspace", None)
-    if isinstance(workspace, DraftWorkspaceReferenceBase):
-        return workspace
+    if isinstance(
+        action,
+        (
+            WorkspaceActivateDraftAction,
+            WorkspaceDeleteDraftAction,
+            SourceListDraftAction,
+            SourceCandidateListDraftAction,
+            SourceCandidateAttachDraftAction,
+            KnowledgeAddAttachmentsDraftAction,
+            KnowledgeAddSourcesDraftAction,
+            KnowledgeConnectionAttachDraftAction,
+            KnowledgeIndexedSourceCreateDraftAction,
+            WorkspaceAskDraftAction,
+            CitationInspectDraftAction,
+            KnowledgeInventoryListDraftAction,
+            KnowledgeOperationExecuteDraftAction,
+        ),
+    ):
+        return action.workspace
     return None
 
 
@@ -318,7 +380,7 @@ def _compile_workspace_reference(
     if isinstance(workspace, NameDraftWorkspaceReference):
         return (
             WorkspaceReference(
-                kind=WorkspaceReferenceKind.name,
+                kind=WorkspaceReferenceKind("name"),
                 value=workspace.value,
             ),
             (),
@@ -359,6 +421,7 @@ def _compile_action(
     depends_on: tuple[str, ...],
     workspace: WorkspaceReference | None,
     source_object_ids: tuple[str, ...],
+    request: ConversationPlanningRequest,
 ) -> PlannedAction:
     common = {
         "action_id": action_id,
@@ -423,15 +486,207 @@ def _compile_action(
             source_object_ids=source_object_ids,
             **common,
         )
+    if isinstance(action, KnowledgeConnectionsListDraftAction):
+        return KnowledgeConnectionsListPlannedAction(
+            action_type="knowledge.connections.list",
+            **common,
+        )
+    if isinstance(action, KnowledgeResourcesListDraftAction):
+        return KnowledgeResourcesListPlannedAction(
+            action_type="knowledge.resources.list",
+            connection_ref=action.connection_ref,
+            source_kind=action.source_kind,
+            page_token=action.page_token,
+            **common,
+        )
+    if isinstance(action, KnowledgeConnectionAttachDraftAction):
+        assert workspace is not None
+        return KnowledgeConnectionAttachPlannedAction(
+            action_type="knowledge.connection.attach",
+            workspace=workspace,
+            connection_ref=action.connection_ref,
+            **common,
+        )
+    if isinstance(action, KnowledgeIndexedSourceCreateDraftAction):
+        assert workspace is not None
+        return KnowledgeIndexedSourceCreatePlannedAction(
+            action_type="knowledge.indexed_source.create",
+            workspace=workspace,
+            connection_ref=action.connection_ref,
+            source_kind=action.source_kind,
+            remote_resource_id=action.remote_resource_id.strip(),
+            **common,
+        )
+    if isinstance(action, KnowledgeCapabilitiesListDraftAction):
+        return KnowledgeCapabilitiesListPlannedAction(
+            action_type="knowledge.capabilities.list",
+            connection_ref=action.connection_ref,
+            remote_resource_id=action.remote_resource_id,
+            **common,
+        )
     if isinstance(action, WorkspaceAskDraftAction):
         assert workspace is not None
+        knowledge_targets = None
+        if action.knowledge_targets is not None:
+            knowledge_targets = tuple(
+                KnowledgeAskTargetReference(
+                    target_reference_kind=KnowledgeTargetReferenceKind(
+                        target.target_reference_kind
+                    ),
+                    target_reference=target.target_reference,
+                )
+                for target in action.knowledge_targets
+            )
         return WorkspaceAskPlannedAction(
             action_type="workspace.ask",
             workspace=workspace,
             question=action.question,
+            knowledge_targets=knowledge_targets,
+            **common,
+        )
+    if isinstance(action, CitationInspectDraftAction):
+        assert workspace is not None
+        return CitationInspectPlannedAction(
+            action_type="citation.inspect",
+            workspace=workspace,
+            citation_ordinal=int(action.citation_reference),
+            **common,
+        )
+    if isinstance(action, KnowledgeInventoryListDraftAction):
+        assert workspace is not None
+        return KnowledgeInventoryListPlannedAction(
+            action_type="knowledge.inventory.list",
+            workspace=workspace,
+            inventory_filter=KnowledgeInventoryFilter(action.inventory_filter),
+            **common,
+        )
+    if isinstance(action, KnowledgeOperationExecuteDraftAction):
+        assert workspace is not None
+        return KnowledgeOperationExecutePlannedAction(
+            action_type="knowledge.operation.execute",
+            workspace=workspace,
+            operation=KnowledgeOperationKind(action.operation),
+            target_reference_kind=KnowledgeTargetReferenceKind(action.target_reference_kind),
+            target_reference=action.target_reference,
+            **common,
+        )
+    if isinstance(action, DestructiveActionConfirmDraftAction):
+        return DestructiveActionConfirmPlannedAction(
+            action_type="destructive.confirm",
+            confirmation_token=action.confirmation_token,
+            **common,
+        )
+    if isinstance(action, TenantConnectionProvidersListDraftAction):
+        return TenantConnectionProvidersListPlannedAction(
+            action_type="tenant_connection.providers.list",
+            **common,
+        )
+    if isinstance(action, TenantConnectionConnectionsListDraftAction):
+        return TenantConnectionConnectionsListPlannedAction(
+            action_type="tenant_connection.connections.list",
+            **common,
+        )
+    if isinstance(action, TenantConnectionInspectDraftAction):
+        connection_ref = _resolve_connection_reference_for_compile(
+            request,
+            connection_reference=action.connection_reference,
+        )
+        return TenantConnectionInspectPlannedAction(
+            action_type="tenant_connection.connection.inspect",
+            connection_ref=connection_ref,
+            **common,
+        )
+    if isinstance(action, TenantConnectionBeginAuthorizationDraftAction):
+        provider_id = _resolve_provider_reference_for_compile(
+            request,
+            provider_reference=action.provider_reference,
+        )
+        return TenantConnectionBeginAuthorizationPlannedAction(
+            action_type="tenant_connection.authorization.begin",
+            provider_id=provider_id,
+            **common,
+        )
+    if isinstance(action, TenantConnectionCompleteManualAuthorizationDraftAction):
+        return TenantConnectionCompleteManualAuthorizationPlannedAction(
+            action_type="tenant_connection.authorization.complete_manual",
+            **common,
+        )
+    if isinstance(action, TenantConnectionReconnectDraftAction):
+        connection_ref = _resolve_connection_reference_for_compile(
+            request,
+            connection_reference=action.connection_reference,
+        )
+        return TenantConnectionReconnectPlannedAction(
+            action_type="tenant_connection.connection.reconnect",
+            connection_ref=connection_ref,
+            **common,
+        )
+    if isinstance(action, TenantConnectionRevokeDraftAction):
+        connection_ref = _resolve_connection_reference_for_compile(
+            request,
+            connection_reference=action.connection_reference,
+        )
+        return TenantConnectionRevokePlannedAction(
+            action_type="tenant_connection.connection.revoke",
+            connection_ref=connection_ref,
             **common,
         )
     raise TypeError("unsupported draft action type")
+
+
+def _require_tenant_connection_inventory(
+    request: ConversationPlanningRequest,
+):
+    inventory = request.tenant_connection_inventory
+    if inventory is None:
+        raise ConversationDraftCompilationError(
+            ConversationDraftCompilationErrorCode.tenant_connection_inventory_unavailable
+        )
+    return inventory
+
+
+def _resolve_provider_reference_for_compile(
+    request: ConversationPlanningRequest,
+    *,
+    provider_reference: str,
+) -> str:
+    inventory = _require_tenant_connection_inventory(request)
+    resolution = resolve_provider_reference(
+        inventory.providers,
+        provider_reference=provider_reference,
+    )
+    if resolution.ambiguous:
+        raise ConversationDraftCompilationError(
+            ConversationDraftCompilationErrorCode.tenant_connection_provider_ambiguous
+        )
+    if resolution.provider_id is None:
+        raise ConversationDraftCompilationError(
+            ConversationDraftCompilationErrorCode.tenant_connection_provider_not_found
+        )
+    return resolution.provider_id
+
+
+def _resolve_connection_reference_for_compile(
+    request: ConversationPlanningRequest,
+    *,
+    connection_reference: str,
+    provider_id: str | None = None,
+) -> str:
+    inventory = _require_tenant_connection_inventory(request)
+    resolution = resolve_connection_reference(
+        inventory.connections,
+        connection_reference=connection_reference,
+        provider_id=provider_id,
+    )
+    if resolution.ambiguous:
+        raise ConversationDraftCompilationError(
+            ConversationDraftCompilationErrorCode.tenant_connection_ambiguous
+        )
+    if resolution.connection_ref is None:
+        raise ConversationDraftCompilationError(
+            ConversationDraftCompilationErrorCode.tenant_connection_not_found
+        )
+    return resolution.connection_ref
 
 
 def _compile_clarification(

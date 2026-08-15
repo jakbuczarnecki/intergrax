@@ -8,12 +8,18 @@ from abc import abstractmethod
 from typing import List, Sequence
 
 from intergrax.rag.retrievers.contracts.base_retriever import (
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 
 
 class BaseRetrieverManager:
+
+    @property
+    def supports_scoped_retrieval(self) -> bool:
+        """Whether this manager explicitly supports scoped retrieval."""
+        return False
     
     @abstractmethod
     def retrieve(
@@ -24,8 +30,9 @@ class BaseRetrieverManager:
         query_embedding: Sequence[float] | None = None,
         top_k: int = 5,
         metadata_filter=None,
+        scope: VectorStoreScope | None = None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         """
         Retrieve candidates for query text.
         """
@@ -37,7 +44,7 @@ class BaseRetrieverManager:
         self,
         query: RetrieverQuery,
         retriever_id: str,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         """
         Retrieve using preconstructed RetrieverQuery.
         """

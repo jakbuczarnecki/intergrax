@@ -5,14 +5,33 @@
 
 from __future__ import annotations
 
+from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.integrations.providers.document_parser.pymupdf.config import PymupdfIntegrationConfig
 
 
 def parse_pymupdf_file(config: PymupdfIntegrationConfig, source: str) -> list[ParsedDocumentFragment]:
-    from langchain_community.document_loaders import PyMuPDFLoader
+    try:
+        from langchain_community.document_loaders import PyMuPDFLoader
+    except ModuleNotFoundError as exc:
+        if exc.name == "langchain_community":
+            raise RuntimeError(
+                "Provider 'pymupdf' requires optional dependency group "
+                "'rag-langchain-loaders'. Install Intergrax with "
+                "'rag-langchain-loaders'."
+            ) from exc
+        raise
 
-    docs = PyMuPDFLoader(source).load()
+    try:
+        docs = PyMuPDFLoader(source).load()
+    except ImportError as exc:
+        if exc.name in {"fitz", "pymupdf"} or "pymupdf" in str(exc).lower():
+            raise IntegrationDependencyError(
+                "Provider 'pymupdf' requires optional dependency 'PyMuPDF'. "
+                "Install Intergrax-ai[parsing-pdf].",
+                integration_name="pymupdf",
+            ) from exc
+        raise
     if not docs:
         return []
 
@@ -34,9 +53,18 @@ def parse_pymupdf_file(config: PymupdfIntegrationConfig, source: str) -> list[Pa
 
 
 def _apply_ocr(config: PymupdfIntegrationConfig, source: str, docs: list) -> list:
-    import fitz
-    from PIL import Image
-    import pytesseract
+    try:
+        import fitz
+        from PIL import Image
+        import pytesseract
+    except ModuleNotFoundError as exc:
+        if exc.name in {"fitz", "PIL", "pytesseract"}:
+            raise IntegrationDependencyError(
+                "Provider 'pymupdf' OCR requires optional OCR dependencies. "
+                "Install Intergrax-ai[parsing-ocr].",
+                integration_name="pymupdf",
+            ) from exc
+        raise
 
     pdf = None
     try:

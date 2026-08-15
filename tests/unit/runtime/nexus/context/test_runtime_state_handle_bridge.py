@@ -19,8 +19,14 @@ from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_builder import BuiltContext, RetrievedChunk
+from intergrax.context.session_history import (
+    SESSION_HISTORY_SNAPSHOT_HANDLE,
+    SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON,
+    SessionHistorySnapshotRequiredError,
+)
 from intergrax.runtime.nexus.context.provider_handles import (
     RAG_CHUNKS_METADATA_KEY,
+    SESSION_HISTORY_MESSAGES_METADATA_KEY,
     build_graph_provider_handles,
 )
 from intergrax.runtime.nexus.context.runtime_state_handle_bridge import (
@@ -150,3 +156,47 @@ async def test_synced_request_metadata_enables_rag_provider_collect() -> None:
     fragments = await provider.collect(request, ctx)
     assert fragments
     assert fragments[0].source == ContextFragmentSource.RAG
+
+
+def test_runtime_state_history_emits_only_snapshot() -> None:
+    state = _runtime_state(session_context_revision_id="rev-rs-1")
+    state.request.tenant_id = "tenant-1"
+    state.base_history = [
+        ChatMessage(
+            role="user",
+            content="hello",
+            entry_id="h1",
+            tool_calls=[{"id": "tc1", "type": "function", "function": {"name": "x", "arguments": "{}"}}],
+        ),
+        ChatMessage(role="tool", content="tool out", entry_id="h2", tool_call_id="tc1", name="x"),
+        ChatMessage(role="assistant", content="reply", entry_id="h3"),
+    ]
+    metadata = extract_provider_metadata_from_runtime_state(state)
+    assert SESSION_HISTORY_SNAPSHOT_HANDLE in metadata
+    assert SESSION_HISTORY_MESSAGES_METADATA_KEY not in metadata
+    snapshot = metadata[SESSION_HISTORY_SNAPSHOT_HANDLE]
+    assert len(snapshot.messages) == 3
+    assert snapshot.messages[0].message_id == "h1"
+    assert snapshot.messages[1].tool_call_id == "tc1"
+    assert snapshot.messages[2].message_id == "h3"
+
+
+def test_runtime_state_history_without_revision_fails_closed() -> None:
+    state = _runtime_state()
+    state.request.tenant_id = "tenant-1"
+    state.base_history = [
+        ChatMessage(role="user", content="hello", entry_id="h1"),
+    ]
+    metadata_before = dict(state.request.metadata)
+    with pytest.raises(SessionHistorySnapshotRequiredError) as exc_info:
+        extract_provider_metadata_from_runtime_state(state)
+    assert str(exc_info.value) == SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON
+    assert state.request.metadata == metadata_before
+
+    state2 = _runtime_state()
+    state2.request.tenant_id = "tenant-1"
+    state2.base_history = [ChatMessage(role="user", content="hello", entry_id="h1")]
+    metadata_before_merge = dict(state2.request.metadata)
+    with pytest.raises(SessionHistorySnapshotRequiredError):
+        merge_provider_metadata_into_request(state2)
+    assert state2.request.metadata == metadata_before_merge

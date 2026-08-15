@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="weaviate",
     categories=(IntegrationCategory.VECTOR_STORE,),
-    status=IntegrationStatus.STABLE,
+    status=IntegrationStatus.BETA,
     env_prefix='INTERGRAX_WEAVIATE',
-    description='weaviate integration (Phase M.7)',
+    description='weaviate integration (BETA: native scoped delete is incomplete)',
 )

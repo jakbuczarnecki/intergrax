@@ -8,8 +8,7 @@ import re
 from typing import Sequence
 from pathlib import Path
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_loaders.contracts.base_document_normalizer import (
     BaseDocumentNormalizer,
 )
@@ -25,25 +24,21 @@ class WhitespaceNormalizer(BaseDocumentNormalizer):
 
     def normalize(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
         source: Path | str,
-    ) -> Sequence[Document]:
+    ) -> Sequence[KnowledgeDocument]:
 
-        normalized = []
+        normalized: list[KnowledgeDocument] = []
 
         for doc in documents:
-
-            text = doc.page_content or ""
+            text = doc.content or ""
 
             text = self._multi_space_re.sub(" ", text)
             text = self._multi_newline_re.sub("\n\n", text)
             text = text.strip()
 
-            normalized.append(
-                Document(
-                    page_content=text,
-                    metadata=doc.metadata,
-                )
-            )
+            payload = doc.model_dump(mode="python")
+            payload["content"] = text
+            normalized.append(KnowledgeDocument.model_validate(payload))
 
         return normalized

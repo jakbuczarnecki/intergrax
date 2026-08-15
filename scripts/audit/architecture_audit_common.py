@@ -33,22 +33,22 @@ DOMAIN_ORDER: tuple[str, ...] = (
 )
 
 RESULTS_ROOT = REPO_ROOT / "docs" / "audit_results"
-AUDIT_GUIDES = REPO_ROOT / "docs" / "audit"
+AUDIT_GUIDES = REPO_ROOT / "docs" / "project" / "maintainers" / "audit"
 
 ORCHESTRATOR_BY_MODE: dict[str, str] = {
-    "audit_only": "docs/audit/ORCHESTRATOR.md",
-    "implement_plan": "docs/audit/IMPLEMENT_ORCHESTRATOR.md",
-    "layer_completion": "docs/audit/LAYER_COMPLETION_ORCHESTRATOR.md",
-    "idea_audit": "docs/audit/IDEA_AUDIT_ORCHESTRATOR.md",
+    "audit_only": "docs/project/maintainers/audit/ORCHESTRATOR.md",
+    "implement_plan": "docs/project/maintainers/audit/IMPLEMENT_ORCHESTRATOR.md",
+    "layer_completion": "docs/project/maintainers/audit/LAYER_COMPLETION_ORCHESTRATOR.md",
+    "idea_audit": "docs/project/maintainers/audit/IDEA_AUDIT_ORCHESTRATOR.md",
 }
 
 BOOTSTRAP_BY_MODE: dict[str, str] = {
-    "audit_only": "docs/bootstrap/01_audit_all_domains.txt",
-    "audit_one": "docs/bootstrap/02_audit_one_domain.txt",
-    "implement_plan": "docs/bootstrap/03_implement_plan_all_domains.txt",
-    "implement_one": "docs/bootstrap/04_implement_plan_one_domain.txt",
-    "layer_completion": "docs/bootstrap/05_closeout_all_domains.txt",
-    "idea_audit": "docs/bootstrap/idea_audit.txt",
+    "audit_only": "docs/project/maintainers/bootstrap/01_audit_all_domains.txt",
+    "audit_one": "docs/project/maintainers/bootstrap/02_audit_one_domain.txt",
+    "implement_plan": "docs/project/maintainers/bootstrap/03_implement_plan_all_domains.txt",
+    "implement_one": "docs/project/maintainers/bootstrap/04_implement_plan_one_domain.txt",
+    "layer_completion": "docs/project/maintainers/bootstrap/05_closeout_all_domains.txt",
+    "idea_audit": "docs/project/maintainers/bootstrap/idea_audit.txt",
 }
 
 

@@ -11,9 +11,49 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceReconciliationStateV1,
+    RemoteResourceTypeV1,
+)
+from local_workspace_application.workspaces.connected_source_wiring import (
+    build_connected_source_wiring,
+    register_slack_connection_integration,
+)
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingResult,
+)
+from local_workspace_application.workspaces.knowledge_access_service import (
+    CreateConnectedIndexedSourceRequest,
+)
+from local_workspace_application.workspaces.knowledge_configuration_handlers import (
+    CreateIndexedSourceMutationHandler,
+)
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    WorkspaceConnectionAttachment,
+    WorkspaceConnectionAttachmentStatusV1,
+    WorkspaceKnowledgeMutationOperationV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
+    WorkspaceKnowledgeConfigurationMutationEngine,
+)
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
+)
+from local_workspace_application.workspaces.models import (
+    Workspace,
+    WorkspaceOperationStatus,
+    WorkspaceStatus,
+)
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.service import ManagedWorkspaceService
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.providers.conversation_channel.slack.backend import (
+    SlackConversationChannelBackend,
+)
 from intergrax.integrations.providers.conversation_channel.slack.config import (
     SlackConversationChannelIntegrationConfig,
 )
@@ -29,41 +69,9 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read 
     SlackConversationSummary,
     compute_slack_conversation_message_revision,
 )
-from intergrax.integrations.providers.conversation_channel.slack.mapping import parse_slack_ts
-from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from local_workspace_application.workspaces.connected_source_models import (
-    ConnectedSourceReconciliationStateV1,
-    RemoteResourceTypeV1,
+from intergrax.integrations.providers.conversation_channel.slack.mapping import (
+    parse_slack_ts,
 )
-from local_workspace_application.workspaces.connected_source_wiring import (
-    build_connected_source_wiring,
-    register_slack_connection_integration,
-)
-from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingResult
-from local_workspace_application.workspaces.knowledge_configuration_handlers import (
-    CreateIndexedSourceMutationHandler,
-)
-from local_workspace_application.workspaces.knowledge_configuration_models import (
-    WorkspaceConnectionAttachment,
-    WorkspaceConnectionAttachmentStatusV1,
-    WorkspaceKnowledgeMutationOperationV1,
-)
-from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
-    WorkspaceKnowledgeConfigurationMutationEngine,
-)
-from local_workspace_application.workspaces.knowledge_configuration_service import (
-    WorkspaceKnowledgeConfigurationService,
-)
-from local_workspace_application.workspaces.knowledge_access_service import (
-    CreateConnectedIndexedSourceRequest,
-)
-from local_workspace_application.workspaces.models import (
-    Workspace,
-    WorkspaceOperationStatus,
-    WorkspaceStatus,
-)
-from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.service import ManagedWorkspaceService
 
 pytestmark = pytest.mark.unit
 
@@ -95,8 +103,15 @@ def _message(*, message_ts: str, text: str) -> SlackConversationMessage:
     )
 
 
-class _SlackFakeBackend:
+class _SlackFakeBackend(SlackConversationChannelBackend):
     def __init__(self, *, pages: tuple[SlackConversationMessagePage, ...]) -> None:
+        super().__init__(
+            config=SlackConversationChannelIntegrationConfig(
+                enabled=True,
+                app_token="xapp-test",
+                bot_token="xoxb-test",
+            )
+        )
         self.history_calls = 0
         self._history_pages = list(pages)
         self._content: dict[str, SlackConversationMessage] = {}
@@ -117,7 +132,9 @@ class _SlackFakeBackend:
 
     async def read_conversation_history_page(self, **kwargs: Any) -> SlackConversationMessagePage:
         self.history_calls += 1
-        page = self._history_pages.pop(0)
+        cursor = kwargs.get("cursor")
+        page_index = {"history-2": 1, "history-3": 2}.get(cursor, 0)
+        page = self._history_pages[page_index]
         for item in page.items:
             self._content[item.message_ts] = item
         return page
@@ -165,6 +182,12 @@ class _ConnectedSourceIndexingService:
             document_id=f"doc-{len(self._indexed_paths)}",
             documents_indexed=0 if unchanged else 1,
         )
+
+    async def index_connected_source_one(
+        self,
+        **kwargs: Any,
+    ) -> WorkspaceDocumentIndexingResult:
+        return await self.index_one(**kwargs)
 
 
 @dataclass
@@ -291,10 +314,10 @@ def continuation_env(tmp_path: Path) -> _ContinuationEnv:
         integration=integration,
     )
     connected_sync = wiring.connected_source_sync_service
-    connected_sync._max_pages_per_operation = 1  # noqa: SLF001
+    connected_sync._max_pages_per_operation = 1
 
     restart_calls: list[bool] = []
-    original_build = connected_sync._build_coordinator  # noqa: SLF001
+    original_build = connected_sync._build_coordinator
 
     def _recording_build(*args: Any, **kwargs: Any):
         coordinator = original_build(*args, **kwargs)
@@ -307,7 +330,7 @@ def continuation_env(tmp_path: Path) -> _ContinuationEnv:
         coordinator.reconcile_once = _reconcile_once  # type: ignore[method-assign]
         return coordinator
 
-    connected_sync._build_coordinator = _recording_build  # noqa: SLF001
+    connected_sync._build_coordinator = _recording_build
 
     async def _create_indexed_source() -> str:
         discovery = await wiring.discovery_service.list_remote_resources(

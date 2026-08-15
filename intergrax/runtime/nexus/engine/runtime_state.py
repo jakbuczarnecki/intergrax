@@ -11,6 +11,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 from intergrax.contracts.runtime_cost import tokens_to_cost_units
+from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.runtime.nexus.engine.contracts.agent_state import AgentState
 from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
 from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
@@ -52,6 +53,9 @@ class RuntimeState(RuntimeStateContract):
 
     # Run
     run_id: str
+
+    # Typed declarative HITL grant mirror (transport only; scope is per ToolExecutionRequest).
+    declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
 
     # Utc
     started_at_utc: str = field(
@@ -145,6 +149,14 @@ class RuntimeState(RuntimeStateContract):
             )
         return tenant
 
+    @property
+    def task_id(self) -> str:
+        """Typed task identity for policy/HITL matching; falls back to run_id."""
+        typed = self.request.task_id
+        if typed is not None and typed.strip():
+            return typed
+        return self.run_id
+
 
     def _next_trace_seq(self) -> int:
         self._trace_seq += 1
@@ -154,13 +166,9 @@ class RuntimeState(RuntimeStateContract):
         if self._observability_emitter is None:
             from intergrax.runtime.observability.emitter import ObservabilityEmitter
 
-            meta = self.request.metadata or {}
-            task_id = (
-                meta.get("task_id") if isinstance(meta.get("task_id"), str) else self.run_id
-            )
             self._observability_emitter = ObservabilityEmitter(
                 run_id=self.run_id,
-                task_id=str(task_id or self.run_id),
+                task_id=self.task_id,
                 tenant_id=self.tenant_id,
                 agent_id=self.request.agent_id or "",
                 trace_writer=self.context.trace_writer,

@@ -19,7 +19,6 @@ from intergrax.llm_adapters.providers.openai_chat_completions_adapter import Ope
 class OpenAICompatProviderConfig:
     provider: LLMProvider
     api_key_env: str
-    model_env: str
     base_url_env: str
     default_base_url: str
     default_model: str
@@ -42,7 +41,7 @@ def create_openai_compat_adapter(
         msg = config.missing_api_key_message or f"{config.api_key_env} not found in environment variables."
         raise RuntimeError(msg)
 
-    resolved_model = model or os.getenv(config.model_env) or config.default_model
+    resolved_model = model or config.default_model
     resolved_base = (base_url or os.getenv(config.base_url_env) or config.default_base_url).strip()
 
     if client is None:

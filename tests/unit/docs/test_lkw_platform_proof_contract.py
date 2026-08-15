@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from pathlib import Path
 
 import pytest
@@ -9,9 +11,27 @@ import pytest
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-_LKW_PLATFORM_PROOF = _REPO_ROOT / "docs/public-adoption/LKW_PLATFORM_PROOF.md"
+_LKW_PLATFORM_PROOF = _REPO_ROOT / "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md"
 _SCRIPTS = _REPO_ROOT / "applications/local_workspace_application/scripts"
 _DOCKER = _REPO_ROOT / "applications/local_workspace_application/docker"
+_PROOFS = _REPO_ROOT / "docs/project/proofs/PROOFS.md"
+_MD_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+
+
+def _github_heading_slug(title: str) -> str:
+    normalized = (
+        unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode("ascii")
+    )
+    normalized = re.sub(r"[^\w\s-]", "", normalized.lower().strip())
+    normalized = re.sub(r"[\s_-]+", "-", normalized)
+    return re.sub(r"^-+|-+$", "", normalized)
+
+
+def _lkw_heading_slugs(text: str) -> set[str]:
+    return {
+        _github_heading_slug(match.group(1))
+        for match in re.finditer(r"^#{1,6}\s+(.+)$", text, re.MULTILINE)
+    }
 
 
 def test_lkw_platform_proof_step_4_is_self_contained() -> None:
@@ -171,11 +191,15 @@ def test_sentry_events_consumer_waits_for_kafka_topics() -> None:
 _IMPL_PLAN = (
     _REPO_ROOT / "applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md"
 )
+_IMPL_PLAN_HISTORICAL = (
+    _REPO_ROOT
+    / "applications/local_workspace_application/docs/archive/IMPLEMENTATION_PLAN_2026-07-22.md"
+)
 _LKW_ARCHITECTURE = (
     _REPO_ROOT / "applications/local_workspace_application/docs/ARCHITECTURE.md"
 )
-_PROOF_RECEIPTS = _REPO_ROOT / "docs/architecture/PROOF_RECEIPTS.md"
-_RUNTIME_ARCHITECTURE = _REPO_ROOT / "docs/intergrax_runtime_architecture.md"
+_PROOF_RECEIPTS = _REPO_ROOT / "docs/project/architecture/PROOF_RECEIPTS.md"
+_RUNTIME_ARCHITECTURE = _REPO_ROOT / "docs/project/architecture/intergrax_runtime_architecture.md"
 _FILE_WATCHER_SYNC_DOCS = (
     _IMPL_PLAN,
     _LKW_ARCHITECTURE,
@@ -240,10 +264,28 @@ def _uses_current_file_watcher_public_numbering(text: str) -> bool:
     return "Steps 12–13" in snippet and "Steps 14–15" not in snippet
 
 
+def test_proofs_doc_core_platform_proof_deep_link_resolves() -> None:
+    proofs_text = _PROOFS.read_text(encoding="utf-8")
+    lkw_text = _proof_text()
+    heading_slugs = _lkw_heading_slugs(lkw_text)
+
+    fragments = [
+        target.split("#", 1)[1]
+        for target in _MD_LINK.findall(proofs_text)
+        if "LKW_PLATFORM_PROOF.md#" in target
+    ]
+    assert fragments, "PROOFS.md must link to anchored LKW Platform Proof sections"
+    assert all(fragment in heading_slugs for fragment in fragments), fragments
+
+    core_platform_heading = lkw_text.split("## Core Platform Proof", 1)[1].split("\n", 1)[0]
+    assert core_platform_heading == ""
+    assert "core-platform-proof" in fragments
+
+
 def test_lkw_platform_proof_core_and_optional_headings() -> None:
     text = _proof_text()
     for heading in (
-        "## Core platform claims",
+        "## Core Platform Proof",
         "## Optional operating-system interaction claims",
         "## Choose your operating system",
         "## Operating-system proof status",
@@ -352,7 +394,7 @@ def test_lkw_platform_proof_certification_matrix() -> None:
         _SCRIPTS / "generate-lkw-platform-certification-matrix.py"
     ).is_file()
     matrix_md = (
-        _REPO_ROOT / "docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
+        _REPO_ROOT / "applications/local_workspace_application/docs/proof/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
     )
     assert matrix_md.is_file()
     matrix_text = matrix_md.read_text(encoding="utf-8")
@@ -363,22 +405,35 @@ def test_lkw_platform_proof_certification_matrix() -> None:
     )
 
 
+def _proof_portability_section(text: str, task_id: str) -> str:
+    heading = f"### {task_id}"
+    assert heading in text, f"missing authoritative heading {heading}"
+    start = text.index(heading)
+    next_heading = text.find("\n### ", start + len(heading))
+    end = next_heading if next_heading != -1 else start + 1200
+    return text[start:end]
+
+
 def test_lkw_platform_proof_plan_portability_contract() -> None:
-    text = _IMPL_PLAN.read_text(encoding="utf-8")
-    assert "PROOF-PORTABILITY-1A" in text
-    assert "PROOF-PORTABILITY-1B" in text
-    assert "PROOF-PORTABILITY-1C" in text
-    assert "PROOF-PORTABILITY-1D" in text
-    assert "PROOF-PORTABILITY-1D-MATRIX" in text
-    a_idx = text.index("PROOF-PORTABILITY-1A")
-    b_idx = text.index("PROOF-PORTABILITY-1B")
-    c_idx = text.index("PROOF-PORTABILITY-1C")
-    d_idx = text.index("PROOF-PORTABILITY-1D")
-    assert "**Done**" in text[a_idx : a_idx + 160]
-    assert "**Done**" in text[b_idx : b_idx + 160]
-    assert "**Done**" in text[c_idx : c_idx + 200]
-    assert "**Partial**" in text[d_idx : d_idx + 500]
-    assert "LKW_PLATFORM_CERTIFICATION_MATRIX.md" in text
+    # Current product-first plan points at the historical full plan for the
+    # structured PROOF-PORTABILITY status records; do not bind to coincidental
+    # first-string matches in the active roadmap.
+    current = _IMPL_PLAN.read_text(encoding="utf-8")
+    assert "archive/IMPLEMENTATION_PLAN_2026-07-22.md" in current
+    assert "LKW_PLATFORM_PROOF.md" in current
+
+    text = _IMPL_PLAN_HISTORICAL.read_text(encoding="utf-8")
+    section_1a = _proof_portability_section(text, "PROOF-PORTABILITY-1A")
+    section_1b = _proof_portability_section(text, "PROOF-PORTABILITY-1B")
+    section_1c = _proof_portability_section(text, "PROOF-PORTABILITY-1C")
+    section_1d = _proof_portability_section(text, "PROOF-PORTABILITY-1D")
+    section_matrix = _proof_portability_section(text, "PROOF-PORTABILITY-1D-MATRIX")
+
+    assert "**Status:** **Done**" in section_1a
+    assert "**Status:** **Done**" in section_1b
+    assert "**Status:** **Done**" in section_1c
+    assert "**Status:** **Partial**" in section_1d
+    assert "LKW_PLATFORM_CERTIFICATION_MATRIX.md" in section_matrix
     assert "live-certified on native Windows through current shared runner" in text
     assert "live-certified in Linux Docker runtime" in text
     assert "implemented, not live-certified" in text or (
@@ -489,7 +544,7 @@ def test_lkw_platform_proof_core_numbering() -> None:
 def test_lkw_platform_proof_document_ordering() -> None:
     text = _proof_text()
     markers = [
-        "## Core platform claims",
+        "## Core Platform Proof",
         "## Core prerequisites",
         "## Recommended one-command Core Platform Proof",
         "## Step 1 — Start a clean local proof stack",
@@ -561,3 +616,30 @@ def test_file_watcher_public_reviewer_step_references_are_synchronized() -> None
             assert _uses_current_file_watcher_public_numbering(text), (
                 f"{path.name} lacks current File Watcher Steps 12–13 numbering"
             )
+
+
+def test_lkw_platform_proof_indexed_hybrid_ask_web_url_claim_boundary() -> None:
+    text = _proof_text()
+    assert "indexed evidence branch of production Hybrid Ask" in text
+    assert "real RAG ingest" in text
+    assert "exact tenant/workspace vector scope" in text
+    assert "production Hybrid Ask composition" in text
+    assert (
+        "test_web_url_end_to_end_real_rag_ask_proof" in text
+    ), "Must reference accepted Web URL / real-RAG verification path"
+    assert (
+        "test_count_exact_workspace_scope_does_not_masquerade_as_tenant_only" in text
+    ), "Must reference exact workspace-scope verification path"
+    assert (
+        "This proof does not establish combined indexed + live evidence, "
+        "complete live-provider behavior, or complete Hybrid Ask."
+    ) in text
+    lower = text.lower()
+    assert "complete hybrid ask is complete" not in lower
+    assert "hybrid ask is complete" not in lower
+    # Positive completion claims without the mixed-evidence qualifier are forbidden.
+    assert "complete Hybrid Ask." in text  # limitation sentence only
+    assert "Not claimed today:" in text
+    not_claimed = text[text.index("Not claimed today:") : text.index("Not claimed today:") + 400]
+    assert "Hybrid Ask combining indexed and authorized live evidence" in not_claimed
+    assert not_claimed.count("Hybrid Ask;") == 0

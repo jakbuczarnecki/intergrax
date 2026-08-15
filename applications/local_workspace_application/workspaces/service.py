@@ -8,8 +8,12 @@ import logging
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 
 from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    is_workspace_source_product_visible,
+)
 from local_workspace_application.workspaces.managed_files import ManagedFileCleanupPort
 from local_workspace_application.workspaces.models import (
     Workspace,
@@ -25,17 +29,44 @@ from local_workspace_application.workspaces.path_policy import (
     SourcePathPolicyError,
     validate_local_folder_source_path,
 )
-from local_workspace_application.workspaces.knowledge_configuration_service import (
-    is_workspace_source_product_visible,
-)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.vector_cleanup import WorkspaceVectorCleanupPort
+from local_workspace_application.workspaces.vector_cleanup import (
+    WorkspaceVectorCleanupPort,
+)
 
 logger = logging.getLogger(__name__)
+
+_ORDINARY_MUTABLE_WORKSPACE_STATUSES = frozenset(
+    {
+        WorkspaceStatus.ACTIVE,
+        WorkspaceStatus.ARCHIVED,
+    }
+)
 
 
 def _utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+def _validate_ordinary_workspace_mutation(
+    expected: Workspace,
+    replacement: Workspace,
+) -> bool:
+    if expected.status is WorkspaceStatus.DELETING:
+        return False
+    if replacement.status is WorkspaceStatus.DELETING:
+        return False
+    if expected.status not in _ORDINARY_MUTABLE_WORKSPACE_STATUSES:
+        return False
+    if (
+        replacement.tenant_id != expected.tenant_id
+        or replacement.workspace_id != expected.workspace_id
+    ):
+        return False
+    return replacement.workspace_revision == expected.workspace_revision + 1
+
+
+WorkspaceDeletionClaimOutcome = Literal["deleted", "not_found", "stale"]
 
 
 class ManagedWorkspaceService:
@@ -91,6 +122,62 @@ class ManagedWorkspaceService:
         """Return workspace for tenant or None (fail-closed 404 semantics)."""
         return self.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
 
+    def replace_workspace_if_match(
+        self,
+        expected: Workspace,
+        replacement: Workspace,
+    ) -> bool:
+        if not _validate_ordinary_workspace_mutation(expected, replacement):
+            return False
+        return self._repository.replace_workspace_if_match(expected, replacement)
+
+    def delete_workspace_with_revision_claim(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        expected_revision: int,
+    ) -> tuple[WorkspaceDeletionClaimOutcome, str | None]:
+        """
+        Atomically claim confirmed workspace deletion, then run cleanup.
+
+        Returns (outcome, workspace_name). workspace_name is set only when outcome is
+        ``deleted``.
+        """
+        workspace = self.require_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
+        if workspace is None:
+            return ("not_found", None)
+
+        if workspace.status is WorkspaceStatus.DELETING:
+            if workspace.workspace_revision == expected_revision + 1:
+                self._cleanup_workspace_resources(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                )
+                self._repository.delete_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
+                return ("deleted", workspace.name)
+            return ("stale", None)
+
+        if (
+            workspace.status is not WorkspaceStatus.ACTIVE
+            or workspace.workspace_revision != expected_revision
+        ):
+            return ("stale", None)
+
+        if not self._repository.claim_workspace_deletion_if_match(
+            workspace,
+            claimed_at=_utc_now(),
+        ):
+            return ("stale", None)
+
+        claimed = self.require_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
+        if claimed is None or claimed.status is not WorkspaceStatus.DELETING:
+            return ("stale", None)
+
+        self._cleanup_workspace_resources(tenant_id=tenant_id, workspace_id=workspace_id)
+        self._repository.delete_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
+        return ("deleted", claimed.name)
+
     def delete_workspace(self, *, tenant_id: str, workspace_id: str) -> bool:
         """
         Delete all LKW-owned state for one tenant/workspace.
@@ -104,6 +191,16 @@ class ManagedWorkspaceService:
         if workspace is None:
             return False
 
+        if workspace.status is WorkspaceStatus.DELETING:
+            self._cleanup_workspace_resources(tenant_id=tenant_id, workspace_id=workspace_id)
+            self._repository.delete_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
+            return True
+
+        self._cleanup_workspace_resources(tenant_id=tenant_id, workspace_id=workspace_id)
+        self._repository.delete_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
+        return True
+
+    def _cleanup_workspace_resources(self, *, tenant_id: str, workspace_id: str) -> None:
         # Vectors first while document refs still describe scope; idempotent if empty.
         # Best-effort: missing Qdrant collection / unsupported lifecycle must not
         # block deleting workspace metadata (sources/docs/ops/ask/workspace).
@@ -147,8 +244,6 @@ class ManagedWorkspaceService:
             tenant_id=tenant_id,
             workspace_id=workspace_id,
         )
-        self._repository.delete_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
-        return True
 
     def register_local_folder_source(
         self,
@@ -259,9 +354,7 @@ class ManagedWorkspaceService:
         )
         if source is None:
             raise LookupError("source_not_found")
-        if source.source_type is WorkspaceSourceType.LOCAL_FOLDER:
-            pass
-        elif source.source_type is WorkspaceSourceType.CONNECTED_SOURCE:
+        if source.source_type is WorkspaceSourceType.LOCAL_FOLDER or source.source_type is WorkspaceSourceType.CONNECTED_SOURCE:
             pass
         else:
             raise ValueError("source_sync_unsupported_for_source_type")
@@ -282,11 +375,26 @@ class ManagedWorkspaceService:
             source_id=source_id,
             operation_type=WorkspaceOperationType.SOURCE_SYNC,
             status=WorkspaceOperationStatus.QUEUED,
+            created_at=_utc_now(),
         )
         return self._repository.put_operation(operation)
 
     def get_operation(self, *, tenant_id: str, operation_id: str) -> WorkspaceOperation | None:
         return self._repository.get_operation(tenant_id=tenant_id, operation_id=operation_id)
+
+    def list_workspace_operations(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        limit: int = 50,
+    ) -> list[WorkspaceOperation]:
+        bounded_limit = max(1, min(limit, 100))
+        return self._repository.list_operations_for_workspace(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            limit=bounded_limit,
+        )
 
     def recover_running_operations_for_tenant(
         self,

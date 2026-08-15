@@ -785,17 +785,12 @@ class SlackConversationKnowledgeAdapter:
         source: KnowledgeSourceRef,
     ) -> tuple[str, SlackConversationKind, SlackConversationSourceWindow]:
         try:
-            decoded = _decode_scope_payload(source.scope.remote_scope_id)
+            return decode_slack_conversation_scope_id(source.scope.remote_scope_id)
         except (ValueError, TypeError, AttributeError, ValidationError):
             raise self._invalid_source_scope_error(
                 provider_id=source.provider_id,
                 source_kind=source.source_kind,
             ) from None
-        window = SlackConversationSourceWindow(
-            oldest=decoded.root_oldest,
-            latest=decoded.root_latest,
-        )
-        return decoded.conversation_id, decoded.conversation_kind, window
 
     def _invalid_source_scope_error(
         self,
@@ -1432,6 +1427,22 @@ def _decode_scope_payload(value: str) -> _SlackConversationScope:
     return scope
 
 
+def decode_slack_conversation_scope_id(
+    value: str,
+) -> tuple[str, SlackConversationKind, SlackConversationSourceWindow]:
+    """Decode one canonical Slack conversation scope for live callers."""
+
+    decoded = _decode_scope_payload(value)
+    return (
+        decoded.conversation_id,
+        decoded.conversation_kind,
+        SlackConversationSourceWindow(
+            oldest=decoded.root_oldest,
+            latest=decoded.root_latest,
+        ),
+    )
+
+
 def _decode_cursor_payload(value: str) -> _SlackConversationCursor:
     data = _decode_canonical_payload(value)
     cursor = _SlackConversationCursor.model_validate(data)
@@ -1491,6 +1502,7 @@ __all__ = [
     "SLACK_CONVERSATION_CURSOR_VERSION",
     "SLACK_CONVERSATION_SCOPE_TYPE",
     "SlackConversationKnowledgeAdapter",
+    "decode_slack_conversation_scope_id",
     "encode_slack_conversation_scope_id",
     "register_slack_conversation_knowledge_adapter",
 ]

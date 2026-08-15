@@ -31,7 +31,6 @@ from intergrax.utils.time_provider import SystemTimeProvider
 from intergrax.runtime.nexus.context.context_builder import ContextBuilder
 from intergrax.runtime.nexus.context.engine_history_layer import HistoryLayer
 from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngestionService
-from intergrax.runtime.nexus.prompts.history_prompt_builder import DefaultHistorySummaryPromptBuilder, HistorySummaryPromptBuilder
 from intergrax.runtime.nexus.prompts.rag_prompt_builder import DefaultRagPromptBuilder, RagPromptBuilder
 from intergrax.runtime.nexus.prompts.user_longterm_memory_prompt_builder import DefaultUserLongTermMemoryPromptBuilder, UserLongTermMemoryPromptBuilder
 from intergrax.runtime.nexus.prompts.websearch_prompt_builder import DefaultWebSearchPromptBuilder, WebSearchPromptBuilder
@@ -80,7 +79,6 @@ class RuntimeContext:
     websearch_executor: Optional[WebSearchExecutor] = None
     websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None
 
-    history_prompt_builder: Optional[HistorySummaryPromptBuilder] = None
     history_layer: Optional[HistoryLayer] = None
 
     llm_usage_run_seq: int = 0
@@ -237,7 +235,6 @@ class RuntimeContext:
         rag_prompt_builder: Optional[RagPromptBuilder] = None,
         user_longterm_memory_prompt_builder: Optional[UserLongTermMemoryPromptBuilder] = None,
         websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None,
-        history_prompt_builder: Optional[HistorySummaryPromptBuilder] = None,
         prompt_registry: Optional[YamlPromptRegistry] = None,
         governance_service: Optional["GovernanceService"] = None,
     ) -> "RuntimeContext":
@@ -248,7 +245,7 @@ class RuntimeContext:
         - context_builder defaults to ContextBuilder(...) when enable_rag and not provided
         - prompt builders default to their Default* implementations
         - websearch_executor resolved from config if enabled and provided
-        - history_layer constructed using resolved history_prompt_builder
+        - history_layer constructed as raw compatibility loader (OFF only)
         """
         config.validate()
 
@@ -303,20 +300,9 @@ class RuntimeContext:
             websearch_prompt_builder or DefaultWebSearchPromptBuilder(config)
         )
 
-        # Resolve history prompt builder
-        resolved_history_prompt_builder : HistorySummaryPromptBuilder = (
-            history_prompt_builder or DefaultHistorySummaryPromptBuilder(
-                config=config,
-                prompt_registry=prompt_registry,
-            )
-        )
-        
-
-        # Build HistoryLayer using resolved builder
         resolved_history_layer = HistoryLayer(
             config=config,
             session_manager=session_manager,
-            history_prompt_builder=resolved_history_prompt_builder,
         )
 
         # --- Runtime Tools ---
@@ -398,8 +384,7 @@ class RuntimeContext:
             user_longterm_memory_prompt_builder=resolved_user_ltm_prompt_builder,
             websearch_executor=resolved_websearch_executor,
             websearch_prompt_builder=resolved_websearch_prompt_builder,
-            history_prompt_builder=resolved_history_prompt_builder,
-            history_layer=resolved_history_layer,            
+            history_layer=resolved_history_layer,
             prompt_registry=prompt_registry,
             governance_service=governance_service,
             trace_writer=trace_writer,

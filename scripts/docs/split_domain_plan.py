@@ -97,7 +97,7 @@ def should_keep_h2(title: str, cfg: PlanSplitConfig) -> bool:
 
 
 def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
-    source = ROOT / "docs/plan" / f"{cfg.domain}.md"
+    source = ROOT / "docs/project/maintainers/plans" / f"{cfg.domain}.md"
     raw = source.read_text(encoding="utf-8")
     raw = strip_leading_satellite_index(raw)
     lines = raw.splitlines()

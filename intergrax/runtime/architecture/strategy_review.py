@@ -22,10 +22,10 @@ class QuarterlyStrategyReviewReport(BaseModel):
 
 
 _REQUIRED_DOCS: tuple[str, ...] = (
-    "docs/plan/IDEAL_HARNESS_L3.md",
-    "docs/guides/ARCHITECTURE_DEBT_REGISTER.md",
-    "docs/plan/AUDIT_IDEAL_2026.md",
-    "docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md",
+    "docs/project/maintainers/plans/IDEAL_HARNESS_L3.md",
+    "docs/project/technical/guides/ARCHITECTURE_DEBT_REGISTER.md",
+    "docs/project/maintainers/plans/AUDIT_IDEAL_2026.md",
+    "docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md",
 )
 
 

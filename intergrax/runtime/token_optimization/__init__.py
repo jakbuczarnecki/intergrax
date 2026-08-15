@@ -280,6 +280,15 @@ from intergrax.runtime.token_optimization.message_sequence_artifact import (
     MessageSequenceArtifactExecutionResult,
     MessageSequenceArtifactExecutor,
 )
+from intergrax.runtime.token_optimization.durable_compaction_candidate import (
+    CompactionCandidate,
+    CompactionCandidateStatus,
+    CompactionInputSnapshot,
+    CompactionRequest,
+    CompactionResult,
+    DurableCompactionCandidateBuilder,
+    DurableCompactionCandidateError,
+)
 from intergrax.runtime.token_optimization.protected_regions import (
     BUILT_IN_PROTECTED_TERMS,
     MAX_ENV_PROTECTED_TERMS,
@@ -290,6 +299,16 @@ from intergrax.runtime.token_optimization.protected_regions import (
     parse_protected_terms,
     resolve_protected_terms,
     validate_protected_regions,
+)
+from intergrax.runtime.token_optimization.durable_compaction_validation import (
+    CompactionRollbackMetadata,
+    DurableCompactionReceipt,
+    DurableCompactionValidationCompiler,
+    DurableCompactionValidationError,
+    DurableCompactionValidationOutcome,
+    DurableCompactionValidationReason,
+    DurableCompactionValidationRequest,
+    DurableCompactionValidationStatus,
 )
 
 __all__ = [
@@ -332,6 +351,12 @@ __all__ = [
     "CompressionReceiptRef",
     "CompressionReceiptValidationResult",
     "CompressionReceiptValidationStatus",
+    "CompactionCandidate",
+    "CompactionCandidateStatus",
+    "CompactionInputSnapshot",
+    "CompactionRequest",
+    "CompactionResult",
+    "CompactionRollbackMetadata",
     "cache_aware_orchestration_result_to_safe_dict",
     "cache_aware_runtime_result_to_safe_dict",
     "cache_signal_normalization_result_to_safe_dict",
@@ -343,6 +368,15 @@ __all__ = [
     "MAX_PROTECTED_TERM_LENGTH",
     "PROTECTED_TERMS_ENV_VAR",
     "detect_protected_regions",
+    "DurableCompactionReceipt",
+    "DurableCompactionCandidateBuilder",
+    "DurableCompactionCandidateError",
+    "DurableCompactionValidationCompiler",
+    "DurableCompactionValidationError",
+    "DurableCompactionValidationOutcome",
+    "DurableCompactionValidationReason",
+    "DurableCompactionValidationRequest",
+    "DurableCompactionValidationStatus",
     "hash_content",
     "InternalMessageSequenceModelCall",
     "MessageSequenceArtifactExecutionError",

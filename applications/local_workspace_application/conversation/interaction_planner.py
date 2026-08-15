@@ -13,6 +13,7 @@ from pydantic import ValidationError
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 from local_workspace_application.conversation.interaction_draft_models import ConversationInteractionDraft
 from local_workspace_application.conversation.interaction_models import (
@@ -21,7 +22,20 @@ from local_workspace_application.conversation.interaction_models import (
     ExtractedObject,
     KnowledgeAddAttachmentsPlannedAction,
     KnowledgeAddSourcesPlannedAction,
+    KnowledgeCapabilitiesListPlannedAction,
+    KnowledgeConnectionsListPlannedAction,
+    KnowledgeConnectionAttachPlannedAction,
+    KnowledgeIndexedSourceCreatePlannedAction,
+    KnowledgeResourcesListPlannedAction,
+    TenantConnectionBeginAuthorizationPlannedAction,
+    TenantConnectionCompleteManualAuthorizationPlannedAction,
+    TenantConnectionConnectionsListPlannedAction,
+    TenantConnectionInspectPlannedAction,
+    TenantConnectionProvidersListPlannedAction,
+    TenantConnectionReconnectPlannedAction,
+    TenantConnectionRevokePlannedAction,
     WorkspaceReferenceKind,
+    _extract_workspace_reference,
     collect_user_text_context,
     request_attachment_ids,
 )
@@ -143,7 +157,141 @@ def validate_plan_against_request(
                     raise PlanRequestValidationError("invalid object type for knowledge.add_sources")
                 referenced_object_ids.add(source_id)
 
-        workspace = getattr(action, "workspace", None)
+        configuration = request.knowledge_plugin_configuration
+        if isinstance(
+            action,
+            (
+                KnowledgeConnectionsListPlannedAction,
+                KnowledgeResourcesListPlannedAction,
+                KnowledgeCapabilitiesListPlannedAction,
+            ),
+        ):
+            if configuration is None:
+                raise PlanRequestValidationError(
+                    "knowledge configuration snapshot unavailable"
+                )
+            assert configuration is not None
+        if isinstance(action, KnowledgeResourcesListPlannedAction):
+            if configuration is None:
+                raise PlanRequestValidationError(
+                    "knowledge configuration snapshot unavailable"
+                )
+            connection = next(
+                (
+                    item
+                    for item in configuration.available_connections
+                    if item.connection_ref == action.connection_ref
+                ),
+                None,
+            )
+            if connection is None or connection.administrative_status.value != "active":
+                raise PlanRequestValidationError("unknown knowledge connection reference")
+            if action.source_kind not in connection.available_source_kinds:
+                raise PlanRequestValidationError("unknown knowledge discovery selector")
+            if action.page_token is not None:
+                raise PlanRequestValidationError("unapproved knowledge pagination token")
+        if isinstance(action, KnowledgeConnectionAttachPlannedAction):
+            if configuration is None:
+                raise PlanRequestValidationError(
+                    "knowledge configuration snapshot unavailable"
+                )
+            connection = next(
+                (
+                    item
+                    for item in configuration.available_connections
+                    if item.connection_ref == action.connection_ref
+                ),
+                None,
+            )
+            if connection is None or connection.administrative_status.value != "active":
+                raise PlanRequestValidationError("unknown knowledge connection reference")
+        if isinstance(action, KnowledgeIndexedSourceCreatePlannedAction):
+            if configuration is None:
+                raise PlanRequestValidationError(
+                    "knowledge configuration snapshot unavailable"
+                )
+            connection = next(
+                (
+                    item
+                    for item in configuration.available_connections
+                    if item.connection_ref == action.connection_ref
+                ),
+                None,
+            )
+            if connection is None or connection.administrative_status.value != "active":
+                raise PlanRequestValidationError("unknown knowledge connection reference")
+            if action.source_kind not in connection.available_source_kinds:
+                raise PlanRequestValidationError("unknown knowledge discovery selector")
+            if not any(
+                item.connection_ref == action.connection_ref
+                and item.remote_resource_id == action.remote_resource_id
+                for item in configuration.available_remote_resources
+            ):
+                raise PlanRequestValidationError("unknown knowledge resource reference")
+        if isinstance(action, KnowledgeCapabilitiesListPlannedAction):
+            if configuration is None:
+                raise PlanRequestValidationError(
+                    "knowledge configuration snapshot unavailable"
+                )
+            connection = next(
+                (
+                    item
+                    for item in configuration.available_connections
+                    if item.connection_ref == action.connection_ref
+                ),
+                None,
+            )
+            if connection is None or connection.administrative_status.value != "active":
+                raise PlanRequestValidationError("unknown knowledge connection reference")
+            if action.remote_resource_id is not None and not any(
+                item.connection_ref == action.connection_ref
+                and item.remote_resource_id == action.remote_resource_id
+                for item in configuration.available_remote_resources
+            ):
+                raise PlanRequestValidationError("unknown knowledge resource reference")
+
+        tenant_inventory = request.tenant_connection_inventory
+        if isinstance(
+            action,
+            (
+                TenantConnectionProvidersListPlannedAction,
+                TenantConnectionConnectionsListPlannedAction,
+                TenantConnectionInspectPlannedAction,
+                TenantConnectionBeginAuthorizationPlannedAction,
+                TenantConnectionCompleteManualAuthorizationPlannedAction,
+                TenantConnectionReconnectPlannedAction,
+                TenantConnectionRevokePlannedAction,
+            ),
+        ):
+            if tenant_inventory is None:
+                raise PlanRequestValidationError("tenant connection inventory unavailable")
+        if isinstance(action, TenantConnectionBeginAuthorizationPlannedAction):
+            if tenant_inventory is None:
+                raise PlanRequestValidationError("tenant connection inventory unavailable")
+            if not any(
+                item.provider_id == action.provider_id for item in tenant_inventory.providers
+            ):
+                raise PlanRequestValidationError("unknown tenant connection provider reference")
+        if isinstance(
+            action,
+            (
+                TenantConnectionInspectPlannedAction,
+                TenantConnectionReconnectPlannedAction,
+                TenantConnectionRevokePlannedAction,
+            ),
+        ):
+            if tenant_inventory is None:
+                raise PlanRequestValidationError("tenant connection inventory unavailable")
+            if not any(
+                item.connection_ref == action.connection_ref
+                for item in tenant_inventory.connections
+            ):
+                raise PlanRequestValidationError("unknown tenant connection reference")
+        if isinstance(action, TenantConnectionCompleteManualAuthorizationPlannedAction):
+            if tenant_inventory is None or tenant_inventory.pending_manual_authorization is None:
+                raise PlanRequestValidationError("tenant connection manual authorization unavailable")
+
+        workspace = _extract_workspace_reference(action)
         if workspace is not None and workspace.kind == WorkspaceReferenceKind.name:
             if workspace.value and not _evidence_quote_in_context(workspace.value, user_contexts):
                 if not any(
@@ -288,11 +436,10 @@ class ConversationInteractionPlanner:
         return parsed
 
     def _adapter_identity(self) -> tuple[str, str]:
-        provider = getattr(self._llm_adapter, "provider", "unknown")
-        if hasattr(provider, "value"):
-            provider = provider.value  # type: ignore[union-attr]
-        model = getattr(self._llm_adapter, "model", "unknown")
-        return str(provider), str(model)
+        provider = self._llm_adapter.provider
+        if isinstance(provider, LLMProvider):
+            provider = provider.value
+        return str(provider), str(self._llm_adapter.model)
 
 
 def _compile_draft(

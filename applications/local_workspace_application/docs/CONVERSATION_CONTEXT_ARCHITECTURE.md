@@ -357,7 +357,11 @@ For `PERSONAL_SELECTION`:
 - changing selection must be an explicit authorized product operation;
 - selection does not change another personal conversation automatically.
 
-**Current implementation honesty:** today's in-memory Slack DM workspace selection (`LOCAL_WORKSPACE_SLACK_ACTIVE_WORKSPACE_ID` / companion selection state) is a temporary implementation that will be migrated by `LKW-CONVERSATION-CONTEXT-1` into durable `PERSONAL_SELECTION` state keyed by binding and principal.
+**Current implementation honesty:** the legacy exact-command Slack selection
+state (`LOCAL_WORKSPACE_SLACK_ACTIVE_WORKSPACE_ID` / companion selection state)
+remains temporary. The conversational interaction path resolves its authoritative
+workspace context before loading durable thread memory; migrating the legacy
+selection state is outside `LKW-CONVERSATION-CONTEXT-1C`.
 
 ---
 
@@ -498,6 +502,31 @@ Required for both `PERSONAL` and `SHARED` conversational memory.
 ```text
 PERSONAL context cannot be resolved from a SHARED conversation.
 ```
+
+### 6.3 Runtime integration status
+
+`LKW-CONVERSATION-CONTEXT-1B2` is **ACCEPTED / CLOSED**.
+`LKW-CONVERSATION-CONTEXT-1C` is **READY_FOR_REVIEW**.
+
+The accepted personal Slack conversational flow now resolves the authoritative
+Conversation Execution Context before loading thread memory. The application
+passes only bounded `user`/`assistant` recent turns to the planner and persists
+one safe user/assistant exchange after rendering. The durable lifecycle uses the
+shared conditional `DocumentStore`, with a bounded exchange-identity marker and
+the existing event receipt coordinating recovery and delivery retries.
+
+Default limits are conservative and configuration-driven:
+
+```text
+max_messages: 20
+max_bytes: 16 KiB
+max_age_seconds: 24 hours
+```
+
+Absent, expired or over-budget history becomes an empty `recent_turns` tuple.
+Malformed or unavailable durable memory fails closed before planning. The
+generic partition remains valid for shared execution contexts, but shared Slack
+routing and activation are outside this slice.
 
 ---
 
@@ -705,7 +734,7 @@ does not imply
 live Slack history reads are allowed
 ```
 
-This principle is provider-neutral. Binding detail: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md).
+This principle is provider-neutral. Binding detail: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md).
 
 ---
 
@@ -833,18 +862,19 @@ Slack implementation terms (`app_mention`, `message.im`, `message.channels`, `me
 ```text
 one approved Slack user
 DM-only workflow
-existing temporary personal workspace selection
+authoritative Conversation Context resolution before interaction planning
+bounded durable thread memory and receipt-coordinated exchange persistence
+legacy exact-command selection remains temporary
 existing Ask and command behavior
 ```
 
 **Not implemented:**
 
 ```text
-durable Conversation Context Binding
 observed-audience validation
 durable personal selection
 shared-channel runtime
-shared thread memory
+shared Slack thread-memory transport
 shared capability enforcement
 shared source eligibility
 mention/thread-continuation runtime
@@ -1022,7 +1052,7 @@ GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
 - observed-audience validation runtime
 - durable personal workspace selection
 - workspace audience policy enforcement
-- shared memory store
+- shared Slack memory routing
 - shared capability enforcement
 - shared source eligibility runtime
 - channel mention / thread-continuation runtime
@@ -1033,4 +1063,6 @@ GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
 - Slack history indexing
 - live Slack Ask
 
-This architecture is ACCEPTED. Runtime implementation remains deferred to `LKW-CONVERSATION-CONTEXT-1`.
+This architecture is ACCEPTED. The bounded personal thread-memory runtime
+integration is `LKW-CONVERSATION-CONTEXT-1C`; shared Slack routing and
+administrative Conversation Context runtime remain outside this slice.

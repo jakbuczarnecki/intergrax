@@ -7,10 +7,14 @@ from intergrax.rag.vectorstore.contracts.vector_store import (
     MetadataFilter,
     VectorStore,
     VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
 )
 
 __all__ = [
     "MetadataFilter",
     "VectorStore",
     "VectorStoreHit",
+    "VectorStoreRecord",
+    "VectorStoreScope",
 ]

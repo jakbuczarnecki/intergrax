@@ -16,6 +16,10 @@ from intergrax.scaffold.adr_templates import write_application_adr_scaffold
 from intergrax.scaffold.signal_templates import write_application_signal_scaffold
 from intergrax.scaffold.tracing_templates import write_application_tracing_scaffold
 from intergrax.scaffold.agent_catalog import ScaffoldAgentSpec, resolve_agent_specs
+from intergrax.scaffold.application_configuration_doc import (
+    render_application_configuration_doc,
+    render_application_env_example,
+)
 from intergrax.scaffold.doc_templates import (
     render_application_architecture_doc,
     render_application_implementation_plan,
@@ -23,6 +27,11 @@ from intergrax.scaffold.doc_templates import (
 from intergrax.scaffold.application_layout import (
     write_application_journal_scaffold,
     write_sample_docs_scaffold,
+)
+from intergrax.scaffold.application_extension_templates import (
+    extensions_readme,
+    local_prefix_echo_plugin_py,
+    tool_wiring_local_extension_block,
 )
 from intergrax.scaffold.application_names import (
     ScaffoldApplicationNames,
@@ -236,7 +245,8 @@ def _environment_profile_py(names: ScaffoldApplicationNames) -> str:
 def _tool_wiring_py(names: ScaffoldApplicationNames) -> str:
     pkg = names.pkg
     short = names.short
-    return dedent(
+    local_block = tool_wiring_local_extension_block(names)
+    header = dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
 
@@ -245,23 +255,38 @@ def _tool_wiring_py(names: ScaffoldApplicationNames) -> str:
         from __future__ import annotations
 
         from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
+        from intergrax.core.plugins import PluginQualificationResult
         from intergrax.integrations.registry.profile import IntegrationProfile
         from intergrax.tools.registry.profile import ToolProfile
-
-
+        '''
+    ).strip()
+    footer = dedent(
+        f'''\
         def wire_{short}_tools(
             *,
             integration_profile: IntegrationProfile | None = None,
+            local_prefix_echo_qualification: PluginQualificationResult,
         ) -> ApplicationToolWiring:
+            register_{short}_local_tool_extensions(
+                local_prefix_echo_qualification=local_prefix_echo_qualification,
+            )
             profile = ToolProfile(
-                enabled=["rag.retrieve", "websearch.query", "websearch.read_url", "sandbox.exec"],
+                enabled=[
+                    "rag.retrieve",
+                    "websearch.query",
+                    "websearch.read_url",
+                    "sandbox.exec",
+                    "local_prefix_echo.ping",
+                ],
             )
             return build_application_tool_wiring(
                 profile,
                 integration_profile=integration_profile,
+                extras={{"echo_prefix": "{short}"}},
             )
         '''
-    )
+    ).strip()
+    return f"{header}\n\n{local_block}\n\n{footer}\n"
 
 
 def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
@@ -802,29 +827,12 @@ def _mcp_server_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpe
 
 def _env_example(env_prefix: str, route_prefix: str, port: int, specs: list[ScaffoldAgentSpec]) -> str:
     caps = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
-    return dedent(
-        f'''\
-        # {env_prefix}* — copy to .env (gitignored) in this application directory.
-        INTERGRAX_ENV=dev
-        {env_prefix}BACKEND_HOST=127.0.0.1
-        {env_prefix}BACKEND_PORT={port}
-        {env_prefix}ROUTE_PREFIX={route_prefix}
-        {env_prefix}INCLUDE_INTERACTIONS=true
-        {env_prefix}INCLUDE_SCHEDULER=true
-        {env_prefix}INTERACTION_SURFACE=auto
-        {env_prefix}INCLUDE_MCP=false
-        {env_prefix}MCP_MOUNT_PATH=/mcp
-        {env_prefix}INCLUDE_TASK_CONTROL=true
-        {env_prefix}INCLUDE_QUEUE_WORKER=true
-        {env_prefix}TASK_CONTROL_ROUTE_PREFIX=/v1/tasks
-        # Example run capability for POST {route_prefix}/run
-        # DEFAULT_CAPABILITY={caps}
-        # Optional LLM guardrails (M.12)
-        # {env_prefix}ENABLE_LLM_GUARDRAILS=false
-        # {env_prefix}LLM_GUARDRAIL_PRIMARY=llm_guard
-        # INTERGRAX_LAKERA_API_KEY=
-        # INTERGRAX_OPENGUARDRAILS_BASE_URL=
-        '''
+    return render_application_env_example(
+        env_prefix=env_prefix,
+        route_prefix=route_prefix,
+        port=port,
+        profile="lab",
+        example_capability=caps,
     )
 
 
@@ -847,9 +855,9 @@ def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> 
 
         Scaffolded lab-profile application — debug API + ``POST {route_prefix}/run``.
 
-        **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/adr/README.md`](docs/adr/README.md)
+        **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/project/technical/adr/README.md`](docs/project/technical/adr/README.md)
 
-        **Build & deploy:** [`docs/BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md)
+        **Configuration:** [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) · **Build & deploy:** [`docs/BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md)
 
         ## Three-command quickstart
 
@@ -994,6 +1002,11 @@ def _create_lab_application(
         ),
         force=force,
     )
+    _write(
+        docs_dir / "CONFIGURATION.md",
+        render_application_configuration_doc(names=names, profile=profile),
+        force=force,
+    )
     write_sample_docs_scaffold(target, force=force)
     write_application_journal_scaffold(target, force=force)
     _write(
@@ -1008,6 +1021,13 @@ def _create_lab_application(
     _write(target / "host" / "wiring.py", _wiring_py(names), force=force)
     _write(target / "host" / "environment_profile.py", _environment_profile_py(names), force=force)
     _write(target / "host" / "policy" / "rules" / ".gitkeep", "", force=force)
+    _write(target / "extensions" / "__init__.py", "", force=force)
+    _write(target / "extensions" / "README.md", extensions_readme(names), force=force)
+    _write(
+        target / "extensions" / "local_prefix_echo_plugin.py",
+        local_prefix_echo_plugin_py(names),
+        force=force,
+    )
     if full_scaffold:
         _write(target / "host" / "integration_wiring.py", _integration_wiring_py(names), force=force)
         _write(target / "host" / "tool_wiring.py", _tool_wiring_py(names), force=force)
@@ -1133,11 +1153,22 @@ def _create_product_application(
         ),
         force=force,
     )
+    _write(
+        docs_dir / "CONFIGURATION.md",
+        render_application_configuration_doc(names=names, profile=profile),
+        force=force,
+    )
     write_sample_docs_scaffold(target, force=force)
     write_application_journal_scaffold(target, force=force)
     _write(
         target / ".env.example",
-        product_tpl.env_example(names.env_prefix, names.route_prefix, names.port, specs),
+        render_application_env_example(
+            env_prefix=names.env_prefix,
+            route_prefix=names.route_prefix,
+            port=names.port,
+            profile=profile,
+            example_capability=cap,
+        ),
         force=force,
     )
 
@@ -1148,6 +1179,13 @@ def _create_product_application(
     _write(target / "host" / "wiring.py", product_tpl.wiring_py(names), force=force)
     _write(target / "host" / "environment_profile.py", product_tpl.environment_profile_py(names), force=force)
     _write(target / "host" / "policy" / "rules" / ".gitkeep", "", force=force)
+    _write(target / "extensions" / "__init__.py", "", force=force)
+    _write(target / "extensions" / "README.md", extensions_readme(names), force=force)
+    _write(
+        target / "extensions" / "local_prefix_echo_plugin.py",
+        local_prefix_echo_plugin_py(names),
+        force=force,
+    )
     _write(target / "host" / "integration_wiring.py", product_tpl.integration_wiring_py(names), force=force)
     _write(target / "host" / "tool_wiring.py", product_tpl.tool_wiring_py(names), force=force)
     _write(target / "host" / "factory.py", product_tpl.factory_py(names), force=force)

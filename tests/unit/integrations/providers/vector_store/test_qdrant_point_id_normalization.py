@@ -7,16 +7,22 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from types import SimpleNamespace
 from typing import Any, Dict, List, Sequence
 
 import pytest
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.integrations.providers.vector_store.qdrant.rag_store import (
     QdrantConfig,
     QdrantVectorStore,
     _LOGICAL_ID_METADATA_KEY,
     _normalize_point_id,
+)
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    VectorStoreContractError,
+    VectorStoreRecord,
+    VectorStoreScope,
 )
 
 pytestmark = pytest.mark.unit
@@ -32,15 +38,56 @@ class _FakeQdrantPoint:
 class _FakeQdrantClient:
     def __init__(self) -> None:
         self._collections: Dict[str, List[_FakeQdrantPoint]] = {}
+        self._collection_dims: Dict[str, int] = {}
+        self._collection_point_counts: Dict[str, int | None] = {}
+        self._named_dense_vectors: Dict[str, bool] = {}
         self.last_upsert_points: List[Any] = []
+        self.deleted_collections: list[str] = []
+        self.created_collections: list[str] = []
 
-    def get_collection(self, collection_name: str) -> dict[str, str]:
-        if collection_name not in self._collections:
+    def get_collection(self, collection_name: str) -> Any:
+        if collection_name not in self._collection_dims:
             raise RuntimeError("collection_not_found")
-        return {"name": collection_name}
+        size = self._collection_dims[collection_name]
+        if self._named_dense_vectors.get(collection_name):
+            vectors = {"dense": SimpleNamespace(size=size)}
+        else:
+            vectors = SimpleNamespace(size=size)
+        points_count = self._collection_point_counts.get(collection_name, 0)
+        return SimpleNamespace(
+            config=SimpleNamespace(
+                params=SimpleNamespace(vectors=vectors)
+            ),
+            points_count=points_count,
+        )
 
-    def create_collection(self, *, collection_name: str, vectors_config: Any = None, **_: Any) -> None:
+    def delete_collection(self, collection_name: str) -> None:
+        self.deleted_collections.append(collection_name)
+        self._collection_dims.pop(collection_name, None)
+        self._collections.pop(collection_name, None)
+        self._collection_point_counts.pop(collection_name, None)
+        self._named_dense_vectors.pop(collection_name, None)
+
+    def create_collection(
+        self,
+        *,
+        collection_name: str,
+        vectors_config: Any = None,
+        **_: Any,
+    ) -> None:
+        self.created_collections.append(collection_name)
+        if hasattr(vectors_config, "size"):
+            dim = int(vectors_config.size)
+            self._named_dense_vectors[collection_name] = False
+        elif isinstance(vectors_config, dict):
+            dim = int(next(iter(vectors_config.values())).size)
+            self._named_dense_vectors[collection_name] = True
+        else:
+            dim = 3
+            self._named_dense_vectors[collection_name] = False
+        self._collection_dims[collection_name] = dim
         self._collections.setdefault(collection_name, [])
+        self._collection_point_counts[collection_name] = 0
 
     def upsert(self, *, collection_name: str, points: Sequence[Any]) -> None:
         self.last_upsert_points = list(points)
@@ -61,6 +108,20 @@ def _store_with_fake_client() -> tuple[QdrantVectorStore, _FakeQdrantClient]:
     store._client = client  # type: ignore[attr-defined]
     store._dim = 3  # type: ignore[attr-defined]
     return store, client
+
+
+def _record(vector_id: str) -> VectorStoreRecord:
+    document = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": vector_id, "root_document_id": vector_id},
+            "scope": {"tenant_id": "t1"},
+            "content": "chunk text",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": vector_id},
+        }
+    )
+    return VectorStoreRecord(document=document, embedding=[0.1, 0.2, 0.3], vector_id=vector_id)
 
 
 def test_normalize_point_id_invalid_string_is_deterministic_uuid() -> None:
@@ -85,11 +146,7 @@ def test_upsert_normalizes_invalid_string_id() -> None:
     store, client = _store_with_fake_client()
     logical_id = "ingest-lkw-live-smoke-0"
 
-    store.add_documents(
-        [Document(page_content="chunk text")],
-        [[0.1, 0.2, 0.3]],
-        ids=[logical_id],
-    )
+    store.add_records([_record(logical_id)], scope=VectorStoreScope(tenant_id="t1"))
 
     assert len(client.last_upsert_points) == 1
     point = client.last_upsert_points[0]
@@ -101,11 +158,7 @@ def test_upsert_preserves_logical_id_in_metadata() -> None:
     store, client = _store_with_fake_client()
     logical_id = "ingest-lkw-live-smoke-0"
 
-    store.add_documents(
-        [Document(page_content="chunk text")],
-        [[0.1, 0.2, 0.3]],
-        ids=[logical_id],
-    )
+    store.add_records([_record(logical_id)], scope=VectorStoreScope(tenant_id="t1"))
 
     payload = client.last_upsert_points[0].payload
     assert payload[_LOGICAL_ID_METADATA_KEY] == logical_id
@@ -115,26 +168,176 @@ def test_upsert_valid_uuid_id_remains_valid() -> None:
     store, client = _store_with_fake_client()
     logical_id = "550e8400-e29b-41d4-a716-446655440000"
 
-    store.add_documents(
-        [Document(page_content="chunk text")],
-        [[0.1, 0.2, 0.3]],
-        ids=[logical_id],
-    )
+    store.add_records([_record(logical_id)], scope=VectorStoreScope(tenant_id="t1"))
 
     point = client.last_upsert_points[0]
     assert str(point.id) == logical_id
     assert point.payload[_LOGICAL_ID_METADATA_KEY] == logical_id
 
 
-def test_add_documents_without_ids_generates_valid_uuid() -> None:
+def test_add_records_reuses_collection_when_embedding_dimension_matches() -> None:
     store, client = _store_with_fake_client()
+    collection_name = store.collection_name
+    client._collection_dims[collection_name] = 3
+    client._collections[collection_name] = []
+    client._collection_point_counts[collection_name] = 2
 
-    store.add_documents(
-        [Document(page_content="auto id")],
-        [[0.1, 0.2, 0.3]],
+    store.add_records([_record("doc-match")], scope=VectorStoreScope(tenant_id="t1"))
+
+    assert collection_name not in client.deleted_collections
+    assert collection_name not in client.created_collections
+    assert client._collection_dims[collection_name] == 3
+    assert len(client.last_upsert_points) == 1
+
+
+def test_add_records_recreates_empty_collection_on_embedding_dimension_mismatch() -> None:
+    store, client = _store_with_fake_client()
+    collection_name = store.collection_name
+    client._collection_dims[collection_name] = 384
+    client._collections[collection_name] = []
+    client._collection_point_counts[collection_name] = 0
+    store._dim = 768  # type: ignore[attr-defined]
+
+    record = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": "doc-768", "root_document_id": "doc-768"},
+            "scope": {"tenant_id": "t1"},
+            "content": "dim mismatch",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": "doc-768"},
+        }
+    )
+    vector = VectorStoreRecord(
+        document=record,
+        embedding=[0.1] * 768,
+        vector_id="doc-768",
     )
 
-    point = client.last_upsert_points[0]
-    generated_id = str(point.id)
-    uuid.UUID(generated_id)
-    assert point.payload[_LOGICAL_ID_METADATA_KEY] == generated_id
+    store.add_records([vector], scope=VectorStoreScope(tenant_id="t1"))
+
+    assert client.deleted_collections == [collection_name]
+    assert client._collection_dims[collection_name] == 768
+    assert len(client.last_upsert_points) == 1
+
+
+def test_add_records_fails_on_non_empty_collection_dimension_mismatch() -> None:
+    store, client = _store_with_fake_client()
+    collection_name = store.collection_name
+    client._collection_dims[collection_name] = 384
+    client._collections[collection_name] = [
+        _FakeQdrantPoint(id="p1", payload={}, vector=[0.0] * 384)
+    ]
+    client._collection_point_counts[collection_name] = 1
+    store._dim = 768  # type: ignore[attr-defined]
+
+    record = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": "doc-768", "root_document_id": "doc-768"},
+            "scope": {"tenant_id": "t1"},
+            "content": "dim mismatch",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": "doc-768"},
+        }
+    )
+    vector = VectorStoreRecord(
+        document=record,
+        embedding=[0.1] * 768,
+        vector_id="doc-768",
+    )
+
+    with pytest.raises(VectorStoreContractError, match="qdrant_embedding_dimension_mismatch"):
+        store.add_records([vector], scope=VectorStoreScope(tenant_id="t1"))
+
+    assert collection_name not in client.deleted_collections
+    assert collection_name not in client.created_collections
+    assert client.last_upsert_points == []
+
+
+def test_add_records_fails_closed_when_point_count_unavailable_on_dimension_mismatch() -> None:
+    store, client = _store_with_fake_client()
+    collection_name = store.collection_name
+    client._collection_dims[collection_name] = 384
+    client._collections[collection_name] = []
+    client._collection_point_counts[collection_name] = None
+    store._dim = 768  # type: ignore[attr-defined]
+
+    record = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": "doc-768", "root_document_id": "doc-768"},
+            "scope": {"tenant_id": "t1"},
+            "content": "dim mismatch",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": "doc-768"},
+        }
+    )
+    vector = VectorStoreRecord(
+        document=record,
+        embedding=[0.1] * 768,
+        vector_id="doc-768",
+    )
+
+    with pytest.raises(VectorStoreContractError, match="qdrant_embedding_dimension_mismatch"):
+        store.add_records([vector], scope=VectorStoreScope(tenant_id="t1"))
+
+    assert collection_name not in client.deleted_collections
+    assert collection_name not in client.created_collections
+    assert client.last_upsert_points == []
+
+
+def test_add_records_detects_named_dense_vector_dimension() -> None:
+    store, client = _store_with_fake_client()
+    collection_name = store.collection_name
+    client._collection_dims[collection_name] = 384
+    client._collections[collection_name] = []
+    client._collection_point_counts[collection_name] = 0
+    client._named_dense_vectors[collection_name] = True
+    store._dim = 768  # type: ignore[attr-defined]
+
+    record = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": "doc-768", "root_document_id": "doc-768"},
+            "scope": {"tenant_id": "t1"},
+            "content": "named dense",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": "doc-768"},
+        }
+    )
+    vector = VectorStoreRecord(
+        document=record,
+        embedding=[0.1] * 768,
+        vector_id="doc-768",
+    )
+
+    store.add_records([vector], scope=VectorStoreScope(tenant_id="t1"))
+
+    assert client.deleted_collections == [collection_name]
+    assert client._collection_dims[collection_name] == 768
+
+
+def test_add_records_creates_collection_when_missing() -> None:
+    store, client = _store_with_fake_client()
+
+    store.add_records([_record("doc-new")], scope=VectorStoreScope(tenant_id="t1"))
+
+    assert store.collection_name in client.created_collections
+    assert store.collection_name not in client.deleted_collections
+    assert len(client.last_upsert_points) == 1
+
+
+def test_add_records_requires_explicit_vector_id() -> None:
+    document = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": "doc-1", "root_document_id": "doc-1"},
+            "scope": {"tenant_id": "t1"},
+            "content": "auto id",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": "doc-1"},
+        }
+    )
+    with pytest.raises(ValueError, match="vector_id"):
+        VectorStoreRecord(document=document, embedding=[0.1, 0.2, 0.3], vector_id="")

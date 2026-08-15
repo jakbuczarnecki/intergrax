@@ -12,7 +12,10 @@ Only [`../README.md`](../README.md) lives at the application root. All other LKW
 | [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md) | Hardening decisions |
 | [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) | Channel-neutral intake, upload, source, async operation and notification contract |
 | [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) | Product/platform propagation checklist |
-| [`USER_JOURNEY.md`](USER_JOURNEY.md) | User-facing product journey |
+| [`product/USER_JOURNEY.md`](product/USER_JOURNEY.md) | User-facing product journey |
+| [`product/QUICKSTART.md`](product/QUICKSTART.md) | Supported product quickstart |
+| [`product/LKW_PRODUCT_TOUR.md`](product/LKW_PRODUCT_TOUR.md) | Product tour |
+| [`proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md) | Bounded LKW platform proof |
 | [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Implementation wave plan |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Build/run/deploy instructions |
 | [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md) | Current live verification status |
@@ -22,11 +25,11 @@ Only [`../README.md`](../README.md) lives at the application root. All other LKW
 
 | Path | Purpose |
 |------|---------|
-| [`journal/`](journal/) | Application-local implementation history |
-| [`adr/`](adr/) | Local architecture decision records |
+| [`journal`](journal) | Application-local implementation history |
+| [`adr`](adr) | Local architecture decision records |
 
 ## Global vs application journals
 
-LKW-specific implementation history belongs in [`journal/`](journal/), **not** in the platform-wide [`docs/implementation-journal/`](../../../docs/implementation-journal/).
+LKW-specific implementation history belongs in [`journal`](journal), **not** in the platform-wide [`docs/project/maintainers/implementation-journal`](../../../docs/project/maintainers/implementation-journal).
 
 Use the global implementation journal only for platform-wide milestones that affect multiple tiers or domains.

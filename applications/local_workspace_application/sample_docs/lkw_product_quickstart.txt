@@ -1,0 +1,8 @@
+LKW Product Quickstart
+
+The project codename is AURORA-17.
+
+The quickstart demonstrates managed file intake, indexed retrieval,
+a grounded answer, a source citation, and persisted Ask-run readback.
+
+This document contains no private or production information.

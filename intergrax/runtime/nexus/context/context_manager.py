@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.runtime.nexus.artifacts.models import ArtifactRef
@@ -49,9 +49,15 @@ from intergrax.runtime.nexus.context.context_budget import (
 )
 from intergrax.runtime.nexus.context.graph_assembly import (
     build_graph_assembly_request,
+    compatibility_text_from_assembled_messages,
     graph_messages_from_text,
-    text_from_assembled_messages,
 )
+from intergrax.llm.messages import (
+    build_model_input_messages_envelope,
+    compute_model_facing_messages_hash,
+    MODEL_INPUT_MESSAGES_METADATA_KEY,
+)
+from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.task.task import Task
 
 if TYPE_CHECKING:
@@ -59,11 +65,12 @@ if TYPE_CHECKING:
     from intergrax.context.protocols import ContextEngine
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
     from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-    from intergrax.runtime.nexus.config import RuntimeConfig
 
 
 class AgentContextBundle(BaseModel):
     """Bounded context passed to an agent for a graph node (§28, §42.14)."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     message: str
     prior_outputs: Dict[str, Any] = Field(default_factory=dict)
@@ -75,6 +82,11 @@ class AgentContextBundle(BaseModel):
     provenance: List[ContextProvenance] = Field(default_factory=list)
     summary_tier: ContextSummaryTier = ContextSummaryTier.FULL
     schema_version: str = "agent_context_bundle.v2"
+    model_input_messages: tuple[ChatMessage, ...] = Field(
+        default_factory=tuple,
+        exclude=True,
+        repr=False,
+    )
 
 
 class ContextManager:
@@ -220,7 +232,7 @@ class ContextManager:
             )
         else:
             assembled = await engine.assemble(request, provider_ctx=provider_ctx)
-        final_message = text_from_assembled_messages(assembled.messages)
+        final_message = compatibility_text_from_assembled_messages(assembled.messages)
         original_chars = len(bundle.message)
         final_chars = len(final_message)
         trim = ContextTrimResult(
@@ -237,6 +249,8 @@ class ContextManager:
                 "context_final_chars": trim.final_chars,
                 "engine_id": engine.engine_id,
                 "degradation_steps": list(assembled.degradation_steps),
+                "model_input_message_count": len(assembled.messages),
+                "model_input_messages_hash": compute_model_facing_messages_hash(assembled.messages),
             }
         )
         if self._event_bus is not None:
@@ -260,7 +274,13 @@ class ContextManager:
                 HookPoint.AFTER_CONTEXT_BUILD,
                 hook_base.model_copy(update={"phase": ExecutionPhase.CONTEXT_BUILDING}),
             )
-        return bundle.model_copy(update={"message": trim.message, "metadata": bundle_metadata})
+        return bundle.model_copy(
+            update={
+                "message": trim.message,
+                "metadata": bundle_metadata,
+                "model_input_messages": assembled.messages,
+            }
+        )
 
     def build_agent_context(
         self,
@@ -365,21 +385,26 @@ class ContextManager:
     def apply_to_task(self, task: Task, bundle: AgentContextBundle) -> Task:
         """Return task copy with bounded message, provenance, and shared context for agent execution."""
         shared = bundle.shared_context or self.ensure_shared_context(task)
+        task_metadata = {
+            **task.metadata,
+            AgentContextMetadataKey.AGENT_CONTEXT: bundle.metadata,
+            AgentContextMetadataKey.AGENT_CONTEXT_BUNDLE: bundle.model_dump(mode="json"),
+            AgentContextMetadataKey.CONTEXT_PROVENANCE: [
+                entry.model_dump(mode="json") for entry in bundle.provenance
+            ],
+            ContextAssemblyMetadataKey.SUMMARY_TIER: bundle.summary_tier.value,
+            AgentContextMetadataKey.SHARED_CONTEXT_READS: dict(bundle.shared_reads),
+            AgentContextMetadataKey.PRIOR_AGENT_OUTPUTS: bundle.prior_outputs,
+            TaskMetadataKey.SHARED_TASK_CONTEXT: shared.model_dump(mode="json"),
+        }
+        if bundle.model_input_messages:
+            task_metadata[MODEL_INPUT_MESSAGES_METADATA_KEY] = build_model_input_messages_envelope(
+                bundle.model_input_messages,
+            )
         return task.model_copy(
             update={
                 "message": bundle.message,
-                "metadata": {
-                    **task.metadata,
-                    AgentContextMetadataKey.AGENT_CONTEXT: bundle.metadata,
-                    AgentContextMetadataKey.AGENT_CONTEXT_BUNDLE: bundle.model_dump(mode="json"),
-                    AgentContextMetadataKey.CONTEXT_PROVENANCE: [
-                        entry.model_dump(mode="json") for entry in bundle.provenance
-                    ],
-                    ContextAssemblyMetadataKey.SUMMARY_TIER: bundle.summary_tier.value,
-                    AgentContextMetadataKey.SHARED_CONTEXT_READS: dict(bundle.shared_reads),
-                    AgentContextMetadataKey.PRIOR_AGENT_OUTPUTS: bundle.prior_outputs,
-                    TaskMetadataKey.SHARED_TASK_CONTEXT: shared.model_dump(mode="json"),
-                },
+                "metadata": task_metadata,
             }
         )
 

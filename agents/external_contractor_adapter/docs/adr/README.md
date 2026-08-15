@@ -1,10 +1,10 @@
-# external_contractor_adapter agent — Architecture Decision Records
+﻿# external_contractor_adapter agent — Architecture Decision Records
 
-**Domain:** Tier-2 adapter agent (`agents/external_contractor_adapter/`)
+**Domain:** Tier-2 adapter agent (`agents/external_contractor_adapter`)
 
 Architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)  
 Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md)  
-Platform ADRs: [`../../../../docs/adr/README.md`](../../../../docs/adr/README.md)
+Platform ADRs: [`../../../../docs/project/technical/adr/README.md`](../../../../docs/project/technical/adr/README.md)
 
 ---
 
@@ -17,7 +17,7 @@ Create an ADR for agent-level decisions that affect **domain behavior, contracts
 - External integration consumption choices
 - Idempotency / correlation rules specific to this adapter
 
-**Not required:** harness platform changes (use `docs/adr/`), Tier-3 host wiring (use application ADRs),
+**Not required:** harness platform changes (use `docs/project/technical/adr`), Tier-3 host wiring (use application ADRs),
 or trivial refactors with no behavioral impact.
 
 ## Naming
@@ -41,11 +41,11 @@ ADR-EXTERNAL_CONTRACTOR_ADAPTER-{NNN}.md
 
 Platform ADRs (composition owned by platform — no agent-local ADR):
 
-- [`ADR-GOVERNED-CONTINUATION-001`](../../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)
-- [`ADR-POLICY-SIDE-EFFECT-001`](../../../../docs/adr/entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)
-- [`ADR-GOVERNED-PROOF-001`](../../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)
+- [`ADR-GOVERNED-CONTINUATION-001`](../../../../docs/project/technical/adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)
+- [`ADR-POLICY-SIDE-EFFECT-001`](../../../../docs/project/technical/adr/entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)
+- [`ADR-GOVERNED-PROOF-001`](../../../../docs/project/technical/adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)
 
-**Consolidation:** [`docs/platform/governed_external_execution.md`](../../../../docs/platform/governed_external_execution.md)
+**Consolidation:** [`docs/project/technical/platform/governed_external_execution.md`](../../../../docs/project/technical/platform/governed_external_execution.md)
 
 ---
 

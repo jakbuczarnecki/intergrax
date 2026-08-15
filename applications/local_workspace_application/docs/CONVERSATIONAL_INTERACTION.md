@@ -99,7 +99,7 @@ actions:
 
 Obie wartości trafiają do tego samego target workspace. **`workspace.activate` nie powstaje** — użytkownik wskazał workspace jako cel operacji, nie jako aktywny kontekst.
 
-URL w zwykłym pytaniu (`co sądzisz o https://example.com?`) planowany jest jako `workspace.ask`, chyba że użytkownik wyraźnie prosi o dodanie strony do wiedzy.
+URL w zwykłym pytaniu (`co sądzisz o https:/example.com?`) planowany jest jako `workspace.ask`, chyba że użytkownik wyraźnie prosi o dodanie strony do wiedzy.
 
 ---
 

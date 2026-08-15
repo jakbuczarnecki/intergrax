@@ -25,8 +25,10 @@ from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
 from intergrax.runtime.capacity.contracts import ScalingPolicy
 from intergrax.runtime.events.event_taxonomy import EventCategory
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.policy.compliance_profiles import ComplianceDomainClass
+from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
 
 
 class IdentityProfile(BaseModel):
@@ -50,6 +52,8 @@ class PolicyRulesProfile(BaseModel):
 
     rules_path: Path | None = None
     inline_rules: list[dict[str, Any]] = Field(default_factory=list)
+    policy_enforcement_mode: PolicyEnforcementMode = PolicyEnforcementMode.AUDIT_ONLY
+    allowed_handler_ids: list[str] = Field(default_factory=list)
 
 
 class ApplicationSecurityProfile(BaseModel):
@@ -129,6 +133,7 @@ class ContextProfile(BaseModel):
     enable_websearch: bool = True
     drift_monitoring_enabled: bool = False
     drift_alert_threshold: float = Field(default=0.35, ge=0.0, le=2.0)
+    optimization_policy: ContextOptimizationPolicy | None = None
     semantic_compression_enabled: bool = False
     default_history_compression: Literal["truncate_oldest", "summarize_oldest", "hybrid"] = "truncate_oldest"
 
@@ -165,6 +170,16 @@ class MemoryProfile(BaseModel):
     session_index_score_threshold: float | None = None
     vector_index_namespace: str | None = None
     session_index_roles: tuple[str, ...] = ("user", "assistant")
+    user_profile_store_plugin_id: str | None = None
+    session_storage_plugin_id: str | None = None
+
+    @field_validator("user_profile_store_plugin_id", "session_storage_plugin_id")
+    @classmethod
+    def _strip_memory_store_plugin_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
 
 
 class ReliabilityProfile(BaseModel):

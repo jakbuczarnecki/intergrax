@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from collections.abc import Sequence
 
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.engine.reranker_engine import RerankerEngine
@@ -47,11 +47,11 @@ class ReRankerManager(BaseRerankerManager):
     def rerank(
         self,
         *,
-        query: Optional[str],
-        candidates: List[RerankerCandidate],
-        limit: Optional[int] = None,
-        reranker_id: Optional[str] = None,
-    ) -> List[RerankerResult]:
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+        reranker_id: str | None = None,
+    ) -> Sequence[RerankerResult]:
 
         return self._engine.rerank(
             reranker_name=reranker_id,

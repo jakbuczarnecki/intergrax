@@ -18,20 +18,51 @@ import argparse
 import json
 import secrets
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 _SCRIPT_PATH = Path(__file__).resolve()
+_SCRIPT_DIR = _SCRIPT_PATH.parent
 _APP_DIR = _SCRIPT_PATH.parent.parent
 _REPO_ROOT = _APP_DIR.parent.parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+from lkw_host_port_preflight import (
+    canonical_compose_owned_host_ports,
+    is_loopback_tcp_port_reachable,
+    probe_host_port_available,
+    resolve_compose_published_host_ports,
+)
+from lkw_ollama_embedding_bootstrap import EMBEDDING_PROFILE_RESOLUTION_CODE
+from lkw_runtime_context_materialization import (
+    RuntimeContextMaterializationError,
+    materialize_local_workspace_runtime_context,
+)
+
+LLM_PROFILE_RESOLUTION_CODE = (
+    "from intergrax.llm_adapters.contracts.llm_provider import LLMProvider; "
+    "from intergrax.llm_adapters.registry.profile import llm_profile_from_env; "
+    "profile = llm_profile_from_env(); "
+    "provider = profile.provider; "
+    "print(provider.value if isinstance(provider, LLMProvider) else str(provider)); "
+    "print(profile.model or '')"
+)
 _DOCKER_DIR = _APP_DIR / "docker"
+_RUNTIME_CONTEXT_DIR = _DOCKER_DIR / "runtime-context"
+_APPLICATION_IMAGE_BUILDER = _REPO_ROOT / "scripts" / "build" / "build_application_image.py"
 _BASE_COMPOSE = _DOCKER_DIR / "docker-compose.yml"
 _MONGODB_COMPOSE = _DOCKER_DIR / "docker-compose.mongodb.yml"
+_TRUSTED_ASK_PROOF_COMPOSE = _DOCKER_DIR / "docker-compose.trusted-ask-proof.yml"
 _SAMPLE_DOCS_DIR = _APP_DIR / "sample_docs"
 _DEFAULT_BASE_URL = "http://127.0.0.1:8020"
+_COMPOSE_PROJECT = "lkw-trusted-ask-workspace-proof"
+_PRODUCT_COMPOSE_PROJECT = "intergrax_lkw"
+_CORE_PLATFORM_COMPOSE_PROJECT = "lkw-core-platform-proof"
 _COMPOSE_SERVICES = ("qdrant", "lkw-mongodb", "ollama", "local_workspace")
 _RESTART_SERVICES = ("local_workspace", "qdrant")
 
@@ -85,12 +116,105 @@ def _compose_command(*args: str) -> list[str]:
     return [
         "docker",
         "compose",
+        "-p",
+        _COMPOSE_PROJECT,
         "-f",
         str(_BASE_COMPOSE),
         "-f",
         str(_MONGODB_COMPOSE),
+        "-f",
+        str(_TRUSTED_ASK_PROOF_COMPOSE),
         *args,
     ]
+
+
+def _foreign_compose_command(project: str, *args: str) -> list[str]:
+    return [
+        "docker",
+        "compose",
+        "-p",
+        project,
+        "-f",
+        str(_BASE_COMPOSE),
+        *args,
+    ]
+
+
+def _run_command(
+    command: Sequence[str],
+    *,
+    cwd: Path = _REPO_ROOT,
+    timeout: float | None = 30,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        list(command),
+        cwd=str(cwd),
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+
+
+def check_startup_host_port_preflight() -> None:
+    compose_exec = lambda *command: _compose_command(*command)
+    try:
+        required_ports = resolve_compose_published_host_ports(
+            compose_exec_args=compose_exec,
+            run_command=_run_command,
+            cwd=_REPO_ROOT,
+            timeout=120,
+        )
+    except RuntimeError as exc:
+        raise ProofFailure("port_preflight", "compose_config_failed") from exc
+
+    proof_owned = canonical_compose_owned_host_ports(
+        compose_exec_args=compose_exec,
+        run_command=_run_command,
+        cwd=_REPO_ROOT,
+        timeout=30,
+    )
+    product_owned = canonical_compose_owned_host_ports(
+        compose_exec_args=lambda *command: _foreign_compose_command(
+            _PRODUCT_COMPOSE_PROJECT, *command
+        ),
+        run_command=_run_command,
+        cwd=_REPO_ROOT,
+        timeout=30,
+    )
+    core_platform_owned = canonical_compose_owned_host_ports(
+        compose_exec_args=lambda *command: _foreign_compose_command(
+            _CORE_PLATFORM_COMPOSE_PROJECT, *command
+        ),
+        run_command=_run_command,
+        cwd=_REPO_ROOT,
+        timeout=30,
+    )
+
+    for port in sorted(required_ports):
+        if proof_owned is not None and port in proof_owned:
+            continue
+        if probe_host_port_available(port) and not is_loopback_tcp_port_reachable(port):
+            continue
+        if not is_loopback_tcp_port_reachable(port):
+            continue
+        reason = f"required_port_unavailable:{port}"
+        if product_owned is not None and port in product_owned:
+            reason = (
+                f"required_port_unavailable:{port}:occupied_by=lkw_product_quickstart:"
+                "stop Product Quick Start before Trusted Ask proof"
+            )
+        elif core_platform_owned is not None and port in core_platform_owned:
+            reason = (
+                f"required_port_unavailable:{port}:occupied_by=lkw_core_platform_proof:"
+                "stop Core Platform Proof before Trusted Ask proof"
+            )
+        else:
+            reason = (
+                f"required_port_unavailable:{port}:occupied_by=foreign_process:"
+                "free required host ports before Trusted Ask proof"
+            )
+        raise ProofFailure("port_preflight", reason)
 
 
 def _run_compose(
@@ -114,21 +238,57 @@ def _run_compose(
     return completed
 
 
+def materialize_runtime_context() -> None:
+    try:
+        materialize_local_workspace_runtime_context(
+            repo_root=_REPO_ROOT,
+            application_image_builder=_APPLICATION_IMAGE_BUILDER,
+            runtime_context_dir=_RUNTIME_CONTEXT_DIR,
+            run_command=_run_command,
+        )
+    except RuntimeContextMaterializationError as exc:
+        raise ProofFailure("runtime_context_materialization", exc.reason) from exc
+    _print_kv("runtime_context_materialized", "true")
+
+
 def start_canonical_stack() -> None:
     _run_compose("up", "-d", "--build", *_COMPOSE_SERVICES, timeout=None)
 
 
+def _resolve_typed_profile_from_container(resolution_code: str, *, kind: str) -> tuple[str, str]:
+    completed = _run_compose(
+        "exec",
+        "-T",
+        "local_workspace",
+        "python",
+        "-c",
+        resolution_code,
+        capture=True,
+        timeout=60,
+    )
+    lines = [line.strip() for line in (completed.stdout or "").splitlines() if line.strip()]
+    if len(lines) != 2:
+        raise RuntimeError(f"{kind}_profile_resolution_failed")
+    return lines[0].strip().lower(), lines[1].strip()
+
+
 def ensure_ollama_model() -> None:
-    """Pull the Compose-configured chat model into the ollama service."""
-    config = _run_compose("config", capture=True, timeout=60)
-    model = "llama3.1:latest"
-    for line in (config.stdout or "").splitlines():
-        stripped = line.strip().replace('"', "").replace("'", "")
-        if stripped.startswith("INTERGRAX_LLM_MODEL:"):
-            candidate = stripped.split(":", 1)[1].strip()
-            if candidate:
-                model = candidate
-                break
+    """Pull chat and embedding models only when each typed provider is Ollama."""
+    llm_provider, llm_model = _resolve_typed_profile_from_container(
+        LLM_PROFILE_RESOLUTION_CODE,
+        kind="llm",
+    )
+    embedding_provider, embedding_model = _resolve_typed_profile_from_container(
+        EMBEDDING_PROFILE_RESOLUTION_CODE,
+        kind="embedding",
+    )
+    if llm_provider == "ollama":
+        _ollama_pull(llm_model or "llama3.1:latest")
+    if embedding_provider == "ollama":
+        _ollama_pull(embedding_model or "nomic-embed-text")
+
+
+def _ollama_pull(model: str) -> None:
     completed = _run_compose(
         "exec",
         "-T",
@@ -275,6 +435,10 @@ def main() -> int:
         )
 
         if not args.skip_docker:
+            failing_phase = "port_preflight"
+            check_startup_host_port_preflight()
+            failing_phase = "runtime_context_materialization"
+            materialize_runtime_context()
             failing_phase = "compose_up"
             start_canonical_stack()
             failing_phase = "ollama_model"

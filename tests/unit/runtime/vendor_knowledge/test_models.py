@@ -474,3 +474,54 @@ def test_model_dump_has_no_secret_bearing_fields() -> None:
     ):
         assert forbidden not in serialized
     assert "credential_ref" in dumped["source"]["scope"]["parameters"]
+
+
+@pytest.mark.unit
+def test_json_types_remain_available_from_vendor_models() -> None:
+    from intergrax.runtime.vendor_knowledge.models import JsonObject, JsonValue
+
+    payload: JsonObject = {"region": "eu", "count": 1}
+    value: JsonValue = payload["region"]
+    assert value == "eu"
+
+
+@pytest.mark.unit
+def test_shared_validation_helpers_preserve_vendor_metadata_behavior() -> None:
+    scope = _scope(parameters={"credential_ref": "vault://connection/1", "region": "eu"})
+    descriptor = _descriptor(metadata={"credential_ref": "vault://item/1"})
+    assert scope.parameters["credential_ref"] == "vault://connection/1"
+    assert descriptor.metadata["credential_ref"] == "vault://item/1"
+
+
+@pytest.mark.unit
+def test_shared_validation_helpers_preserve_vendor_secret_rejection() -> None:
+    with pytest.raises(ValidationError):
+        _scope(parameters={"Token": "secret-value"})
+    with pytest.raises(ValidationError):
+        _descriptor(metadata={"authorization": "Bearer x"})
+
+
+@pytest.mark.unit
+def test_shared_validation_helpers_preserve_vendor_unsafe_url_rejection() -> None:
+    with pytest.raises(ValidationError):
+        _provenance(web_url="https://user:pass@example.test/item")
+    with pytest.raises(ValidationError):
+        _descriptor(
+            metadata={
+                "links": [{"href": "https://example.test/item?token=abc"}],
+            }
+        )
+
+
+@pytest.mark.unit
+def test_vendor_public_models_unchanged() -> None:
+    assert KnowledgeItemDescriptor.model_fields.keys() == {
+        "identity",
+        "revision",
+        "title",
+        "item_type",
+        "content_mode",
+        "content_available",
+        "provenance",
+        "metadata",
+    }

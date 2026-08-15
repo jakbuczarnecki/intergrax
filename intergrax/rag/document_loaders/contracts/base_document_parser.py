@@ -7,7 +7,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Sequence
 
-from langchain_core.documents import Document
+from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 
 
 class BaseDocumentParser(ABC):
@@ -28,6 +28,9 @@ class BaseDocumentParser(ABC):
     BaseDocumentParser is an internal delegation mechanism for handler.load(...),
     enabling deterministic backend selection (prefer/fallback) without introducing
     separate handlers per external tool.
+
+    Parser extracts provider-neutral fragments; handler/loader owns mapping into
+    scoped KnowledgeDocument; no tenant or identity fallback at parser stage.
     """
 
     @classmethod
@@ -49,9 +52,9 @@ class BaseDocumentParser(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load(self, source: str) -> Sequence[Document]:
+    def load(self, source: str) -> Sequence[ParsedDocumentFragment]:
         """
-        Parse the source into LangChain Documents.
+        Parse the source into provider-neutral document fragments.
 
         Parameters
         ----------
@@ -60,6 +63,6 @@ class BaseDocumentParser(ABC):
 
         Returns
         -------
-        Sequence[Document]
+        Sequence[ParsedDocumentFragment]
         """
         raise NotImplementedError

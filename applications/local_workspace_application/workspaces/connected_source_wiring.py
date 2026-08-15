@@ -7,26 +7,22 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.conversation_channel.slack.integration import (
-    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
-)
-from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
-    register_slack_conversation_knowledge_adapter,
-)
-from intergrax.runtime.vendor_knowledge.binding_document_store import (
-    DocumentStoreKnowledgeSourceBindingRepository,
-)
-from intergrax.runtime.vendor_knowledge.bindings import (
-    KnowledgeSourceBinding,
-    KnowledgeSourceBindingService,
-)
-from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
-from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
-from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.workspaces.connected_source_discovery import (
     WorkspaceRemoteResourceDiscoveryService,
+)
+from local_workspace_application.workspaces.connected_source_discovery_google_workspace import (
+    GoogleWorkspaceKnownResourceCatalog,
+)
+from local_workspace_application.workspaces.connected_source_discovery_atlassian import (
+    ConfluenceKnownSpaceCatalog,
+    JiraKnownProjectCatalog,
+)
+from local_workspace_application.workspaces.connected_source_discovery_strategy import (
+    RemoteResourceDiscoveryStrategyRegistry,
+)
+from local_workspace_application.workspaces.connected_source_materializer import (
+    ConnectedSourceContentMaterializerRegistry,
 )
 from local_workspace_application.workspaces.connected_source_opaque_ref_codec import (
     RemoteResourceOpaqueRefCodec,
@@ -36,10 +32,15 @@ from local_workspace_application.workspaces.connected_source_sync_service import
     ManagedWorkspaceConnectedSourceSyncService,
 )
 from local_workspace_application.workspaces.connected_source_tenant_binding import (
+    ProviderNeutralConnectedSourceCandidateAdapter,
+    SlackConnectedSourceCandidateAdapter,
     WorkspaceConnectedSourceTenantBindingService,
 )
-from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingService
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingService,
+)
 from local_workspace_application.workspaces.knowledge_access_service import (
+    TenantKnowledgeSourceBindingPort,
     WorkspaceKnowledgeAccessService,
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
@@ -48,22 +49,95 @@ from local_workspace_application.workspaces.knowledge_configuration_mutation_eng
 from local_workspace_application.workspaces.knowledge_configuration_service import (
     WorkspaceKnowledgeConfigurationService,
 )
+from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_service import (
+    WorkspaceIndexedSourceLifecycleService,
+)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
-from local_workspace_application.workspaces.sync_runtime import ManagedWorkspaceSyncRuntime
+from local_workspace_application.workspaces.sync_runtime import (
+    ManagedWorkspaceSyncRuntime,
+)
+
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
+    MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+)
+from intergrax.integrations.providers.conversation_channel.slack.integration import (
+    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+)
+from intergrax.runtime.vendor_knowledge.contribution_catalog import (
+    VendorKnowledgeContributionCatalog,
+    build_vendor_knowledge_adapter_registry,
+)
+# Compatibility boundary retained for callers of build_default_vendor_knowledge_adapter_registry.
+from intergrax.runtime.vendor_knowledge.binding_document_store import (
+    DocumentStoreKnowledgeSourceBindingRepository,
+)
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingService,
+)
+from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError, VendorKnowledgeErrorCode
+from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
+from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
+from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceRef
+from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+    TenantConnectionRehydrator,
+    TenantConnectionRuntimeRegistryReconciler,
+)
+from local_workspace_application.workspaces.vendor_knowledge_extension_composition import (
+    VendorKnowledgeApplicationExtensionContext,
+    build_default_vendor_knowledge_application_contribution_catalog,
+)
 
 
 class _ConnectionAwareResolver:
     def __init__(self, registry: KnowledgeConnectionRegistry) -> None:
         self._registry = registry
 
-    def resolve(self, *, source):
+    def resolve(self, *, source: KnowledgeSourceRef) -> object:
+        if source.connection_ref is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message="Connection-aware source requires a connection_ref",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
         return self._registry.resolve(
             tenant_id=source.tenant_id,
             connection_ref=source.connection_ref,
             provider_id=source.provider_id,
             integration_kind=source.integration_kind,
         )
+
+
+class _RuntimeReconcilingResolver:
+    def __init__(
+        self,
+        *,
+        inner: _ConnectionAwareResolver,
+        reconciler: TenantConnectionRuntimeRegistryReconciler,
+    ) -> None:
+        self._inner = inner
+        self._reconciler = reconciler
+
+    def resolve(self, *, source: KnowledgeSourceRef) -> object:
+        if source.connection_ref is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message="Connection-aware source requires a connection_ref",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+        self._reconciler.ensure_registered(
+            tenant_id=source.tenant_id,
+            connection_ref=source.connection_ref,
+            provider_id=source.provider_id,
+            integration_kind=source.integration_kind,
+        )
+        return self._inner.resolve(source=source)
 
 
 class _TenantBindingPort:
@@ -81,8 +155,13 @@ class _TenantBindingPort:
 class ConnectedSourceWiring:
     connection_registry: KnowledgeConnectionRegistry
     opaque_ref_codec: RemoteResourceOpaqueRefCodec
+    google_known_resource_catalog: GoogleWorkspaceKnownResourceCatalog
+    jira_known_project_catalog: JiraKnownProjectCatalog
+    confluence_known_space_catalog: ConfluenceKnownSpaceCatalog
     discovery_service: WorkspaceRemoteResourceDiscoveryService
     tenant_binding_service: WorkspaceConnectedSourceTenantBindingService
+    tenant_binding_port: TenantKnowledgeSourceBindingPort
+    indexed_source_lifecycle_service: WorkspaceIndexedSourceLifecycleService
     knowledge_access_service: WorkspaceKnowledgeAccessService
     connected_source_sync_service: ManagedWorkspaceConnectedSourceSyncService
 
@@ -93,6 +172,40 @@ def build_connected_source_opaque_ref_codec(
     return RemoteResourceOpaqueRefCodec.from_signing_key_material(
         settings.connected_source_opaque_ref_signing_key
     )
+
+
+def build_default_remote_resource_discovery_registry(
+    *,
+    connection_registry: KnowledgeConnectionRegistry,
+    opaque_ref_codec: RemoteResourceOpaqueRefCodec,
+    google_known_resource_catalog: GoogleWorkspaceKnownResourceCatalog,
+    jira_known_project_catalog: JiraKnownProjectCatalog,
+    confluence_known_space_catalog: ConfluenceKnownSpaceCatalog,
+    msgraph_mailbox_user_id: str | None,
+    msgraph_teams_channel_team_id: str | None = None,
+    contribution_catalog: VendorKnowledgeContributionCatalog | None = None,
+    discover_entry_points: bool = False,
+) -> RemoteResourceDiscoveryStrategyRegistry:
+    """Compose discovery strategies from application-owned contribution hooks."""
+    context = VendorKnowledgeApplicationExtensionContext(
+        connection_registry=connection_registry,
+        opaque_ref_codec=opaque_ref_codec,
+        google_known_resource_catalog=google_known_resource_catalog,
+        jira_known_project_catalog=jira_known_project_catalog,
+        confluence_known_space_catalog=confluence_known_space_catalog,
+        msgraph_mailbox_user_id=msgraph_mailbox_user_id,
+        msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
+    )
+    catalog = contribution_catalog or build_default_vendor_knowledge_application_contribution_catalog(
+        context,
+        discover_entry_points=discover_entry_points,
+    )
+    strategies = tuple(
+        hook.factory(context)
+        for contribution in catalog.list_contributions()
+        for hook in contribution.discovery_contributions
+    )
+    return RemoteResourceDiscoveryStrategyRegistry(strategies)
 
 
 def build_connected_source_wiring(
@@ -106,19 +219,71 @@ def build_connected_source_wiring(
     connection_registry: KnowledgeConnectionRegistry | None = None,
     opaque_ref_codec: RemoteResourceOpaqueRefCodec | None = None,
     sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
+    materializer_registry: ConnectedSourceContentMaterializerRegistry | None = None,
+    google_known_resource_catalog: GoogleWorkspaceKnownResourceCatalog | None = None,
+    jira_known_project_catalog: JiraKnownProjectCatalog | None = None,
+    confluence_known_space_catalog: ConfluenceKnownSpaceCatalog | None = None,
+    msgraph_mailbox_user_id: str | None = None,
+    msgraph_teams_channel_team_id: str | None = None,
+    discover_vendor_knowledge_entry_points: bool = False,
+    tenant_connection_rehydrator: TenantConnectionRehydrator | None = None,
 ) -> ConnectedSourceWiring:
     registry = connection_registry or KnowledgeConnectionRegistry()
     codec = opaque_ref_codec or build_connected_source_opaque_ref_codec(settings)
+    google_resources = google_known_resource_catalog or GoogleWorkspaceKnownResourceCatalog()
+    jira_projects = jira_known_project_catalog or JiraKnownProjectCatalog()
+    confluence_spaces = confluence_known_space_catalog or ConfluenceKnownSpaceCatalog()
+    contribution_context = VendorKnowledgeApplicationExtensionContext(
+        connection_registry=registry,
+        opaque_ref_codec=codec,
+        google_known_resource_catalog=google_resources,
+        jira_known_project_catalog=jira_projects,
+        confluence_known_space_catalog=confluence_spaces,
+        msgraph_mailbox_user_id=msgraph_mailbox_user_id,
+        msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
+    )
+    contribution_catalog = build_default_vendor_knowledge_application_contribution_catalog(
+        contribution_context,
+        discover_entry_points=discover_vendor_knowledge_entry_points,
+    )
+    discovery_strategy_registry = build_default_remote_resource_discovery_registry(
+        connection_registry=registry,
+        opaque_ref_codec=codec,
+        google_known_resource_catalog=google_resources,
+        jira_known_project_catalog=jira_projects,
+        confluence_known_space_catalog=confluence_spaces,
+        msgraph_mailbox_user_id=msgraph_mailbox_user_id,
+        msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
+        contribution_catalog=contribution_catalog,
+        discover_entry_points=discover_vendor_knowledge_entry_points,
+    )
     discovery = WorkspaceRemoteResourceDiscoveryService(
         workspace_lookup=workspace_service,
         configuration_reader=configuration_service,
-        connection_registry=registry,
         opaque_ref_codec=codec,
+        strategy_registry=discovery_strategy_registry,
     )
-    adapter_registry = KnowledgeAdapterRegistry()
-    register_slack_conversation_knowledge_adapter(adapter_registry)
+    candidate_adapter = SlackConnectedSourceCandidateAdapter(
+        codec=codec,
+        discovery_service=discovery,
+    )
+    candidate_dispatcher = ProviderNeutralConnectedSourceCandidateAdapter(
+        slack=candidate_adapter,
+        codec=codec,
+        discovery_service=discovery,
+    )
+    adapter_registry = build_vendor_knowledge_adapter_registry(contribution_catalog)
     binding_repo = DocumentStoreKnowledgeSourceBindingRepository(repository.document_store)
-    resolver = _ConnectionAwareResolver(registry)
+    base_resolver = _ConnectionAwareResolver(registry)
+    resolver = base_resolver
+    if tenant_connection_rehydrator is not None:
+        resolver = _RuntimeReconcilingResolver(
+            inner=base_resolver,
+            reconciler=TenantConnectionRuntimeRegistryReconciler(
+                rehydrator=tenant_connection_rehydrator,
+                connection_registry=registry,
+            ),
+        )
 
     def binding_service_factory(tenant_id: str) -> KnowledgeSourceBindingService:
         return KnowledgeSourceBindingService(
@@ -130,6 +295,12 @@ def build_connected_source_wiring(
 
     tenant_binding_service = WorkspaceConnectedSourceTenantBindingService(binding_service_factory)
     tenant_binding_port = _TenantBindingPort(binding_service_factory)
+    indexed_source_lifecycle = WorkspaceIndexedSourceLifecycleService(
+        repository=repository,
+        configuration_service=configuration_service,
+        mutation_engine=mutation_engine,
+        tenant_binding_port=tenant_binding_port,
+    )
 
     def dependencies_factory(tenant_id: str) -> ConnectedSourceSyncDependencies:
         return ConnectedSourceSyncDependencies(
@@ -148,6 +319,16 @@ def build_connected_source_wiring(
         continuation = _SyncRuntimeContinuation(sync_runtime)
         sync_enqueue_context = sync_runtime.wiring_context
 
+    resolved_materializer_registry = materializer_registry
+    if resolved_materializer_registry is None:
+        from local_workspace_application.workspaces.connected_source_materializer import (
+            default_connected_source_materializer_registry,
+        )
+
+        resolved_materializer_registry = default_connected_source_materializer_registry(
+            discover_entry_points=discover_vendor_knowledge_entry_points,
+        )
+
     connected_sync = ManagedWorkspaceConnectedSourceSyncService(
         repository=repository,
         indexing_service=indexing_service,
@@ -156,20 +337,26 @@ def build_connected_source_wiring(
         dependencies_factory=dependencies_factory,
         continuation=continuation,
         sync_enqueue_context=sync_enqueue_context,
+        materializer_registry=resolved_materializer_registry,
     )
     knowledge_access = WorkspaceKnowledgeAccessService(
         discovery_service=discovery,
         tenant_binding_service=tenant_binding_service,
-        mutation_engine=mutation_engine,
+        indexed_source_lifecycle_service=indexed_source_lifecycle,
         workspace_service=workspace_service,
         tenant_binding_port=tenant_binding_port,
-        opaque_ref_codec=codec,
+        candidate_adapter=candidate_dispatcher,
     )
     return ConnectedSourceWiring(
         connection_registry=registry,
         opaque_ref_codec=codec,
+        google_known_resource_catalog=google_resources,
+        jira_known_project_catalog=jira_projects,
+        confluence_known_space_catalog=confluence_spaces,
         discovery_service=discovery,
         tenant_binding_service=tenant_binding_service,
+        tenant_binding_port=tenant_binding_port,
+        indexed_source_lifecycle_service=indexed_source_lifecycle,
         knowledge_access_service=knowledge_access,
         connected_source_sync_service=connected_sync,
     )
@@ -180,7 +367,9 @@ class _SyncRuntimeContinuation:
         self._runtime = runtime
 
     def requeue(self, job) -> None:
-        from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_workspace_sync
+        from local_workspace_application.workspaces.sync_enqueue import (
+            enqueue_managed_workspace_sync,
+        )
 
         enqueue_managed_workspace_sync(self._runtime.wiring_context, job)
 
@@ -197,5 +386,21 @@ def register_slack_connection_integration(
         connection_ref=connection_ref,
         provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
         integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+        integration=integration,
+    )
+
+
+def register_msgraph_connection_integration(
+    *,
+    wiring: ConnectedSourceWiring,
+    tenant_id: str,
+    connection_ref: str,
+    integration,
+) -> None:
+    wiring.connection_registry.register(
+        tenant_id=tenant_id,
+        connection_ref=connection_ref,
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
         integration=integration,
     )

@@ -15,8 +15,14 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from intergrax.runtime.vendor_knowledge.models import JsonValue
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.errors import (
+    VendorKnowledgeError,
+    VendorKnowledgeErrorCode,
+)
 from intergrax.runtime.vendor_knowledge.tenant_connections import (
     SafeTenantConnectionV1,
+    TenantConnection,
     TenantConnectionAdministrativeStatus,
     TenantConnectionRepository,
     to_safe_tenant_connection,
@@ -54,6 +60,76 @@ class TenantConnectionIntegrationFactory(Protocol):
         ...
 
 
+class TenantConnectionRuntimeRegistryReconciler:
+    """Ensure durable tenant connections are present in the instance-local registry."""
+
+    def __init__(
+        self,
+        *,
+        rehydrator: TenantConnectionRehydrator,
+        connection_registry: KnowledgeConnectionRegistry,
+    ) -> None:
+        self._rehydrator = rehydrator
+        self._connection_registry = connection_registry
+
+    def ensure_registered(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+    ) -> None:
+        cleaned_tenant = tenant_id.strip()
+        cleaned_ref = connection_ref.strip()
+        cleaned_provider = provider_id.strip()
+        if not cleaned_tenant:
+            raise ValueError("tenant_id must be a non-empty string")
+        if not cleaned_ref:
+            raise ValueError("connection_ref must be a non-empty string")
+        if not cleaned_provider:
+            raise ValueError("provider_id must be a non-empty string")
+
+        try:
+            self._connection_registry.resolve(
+                tenant_id=cleaned_tenant,
+                connection_ref=cleaned_ref,
+                provider_id=cleaned_provider,
+                integration_kind=integration_kind,
+            )
+            return
+        except VendorKnowledgeError as exc:
+            if exc.code is not VendorKnowledgeErrorCode.INTEGRATION_NOT_FOUND:
+                raise
+
+        try:
+            result = self._rehydrator.rehydrate_connection(
+                tenant_id=cleaned_tenant,
+                connection_ref=cleaned_ref,
+            )
+        except ValueError:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INTEGRATION_NOT_FOUND,
+                safe_message="Requested connection is not registered for this tenant",
+                provider_id=cleaned_provider,
+                retryable=False,
+            ) from None
+        if result.status is not TenantConnectionRehydrationStatus.REGISTERED:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INTEGRATION_NOT_FOUND,
+                safe_message="Requested connection is not registered for this tenant",
+                provider_id=cleaned_provider,
+                retryable=False,
+            )
+
+        self._connection_registry.resolve(
+            tenant_id=cleaned_tenant,
+            connection_ref=cleaned_ref,
+            provider_id=cleaned_provider,
+            integration_kind=integration_kind,
+        )
+
+
 class TenantConnectionRehydrator:
     """Reconstruct runtime connection registrations from durable tenant catalog."""
 
@@ -83,66 +159,76 @@ class TenantConnectionRehydrator:
         connections = self._repository.list(tenant_id=cleaned_tenant, limit=limit)
         results: list[TenantConnectionRehydrationResult] = []
         for connection in connections:
-            safe = to_safe_tenant_connection(connection)
-            status = connection.administrative_status
-
-            if status is TenantConnectionAdministrativeStatus.DISABLED:
-                results.append(
-                    TenantConnectionRehydrationResult(
-                        connection=safe,
-                        status=TenantConnectionRehydrationStatus.SKIPPED_DISABLED,
-                    )
-                )
-                continue
-
-            if status is TenantConnectionAdministrativeStatus.REVOKED:
-                results.append(
-                    TenantConnectionRehydrationResult(
-                        connection=safe,
-                        status=TenantConnectionRehydrationStatus.SKIPPED_REVOKED,
-                    )
-                )
-                continue
-
-            credential = self._resolve_secret(connection.credential_ref)
-            if credential is None:
-                results.append(
-                    TenantConnectionRehydrationResult(
-                        connection=safe,
-                        status=TenantConnectionRehydrationStatus.UNAVAILABLE,
-                        error_code="tenant_connection_secret_unavailable",
-                    )
-                )
-                continue
-
-            integration = self._construct_integration(connection, credential)
-            if integration is None:
-                results.append(
-                    TenantConnectionRehydrationResult(
-                        connection=safe,
-                        status=TenantConnectionRehydrationStatus.UNAVAILABLE,
-                        error_code="tenant_connection_runtime_unavailable",
-                    )
-                )
-                continue
-
-            if not self._register_integration(connection, integration):
-                results.append(
-                    TenantConnectionRehydrationResult(
-                        connection=safe,
-                        status=TenantConnectionRehydrationStatus.UNAVAILABLE,
-                        error_code="tenant_connection_runtime_unavailable",
-                    )
-                )
-                continue
-
-            results.append(
-                TenantConnectionRehydrationResult(
-                    connection=safe,
-                    status=TenantConnectionRehydrationStatus.REGISTERED,
-                )
-            )
+            results.append(self._rehydrate_connection_record(connection))
         return tuple(results)
+
+    def rehydrate_connection(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+    ) -> TenantConnectionRehydrationResult:
+        cleaned_tenant = tenant_id.strip()
+        cleaned_ref = connection_ref.strip()
+        if not cleaned_tenant:
+            raise ValueError("tenant_id must be a non-empty string")
+        if not cleaned_ref:
+            raise ValueError("connection_ref must be a non-empty string")
+
+        connection = self._repository.get(
+            tenant_id=cleaned_tenant,
+            connection_ref=cleaned_ref,
+        )
+        if connection is None:
+            raise ValueError("connection_ref must reference an existing tenant connection")
+        return self._rehydrate_connection_record(connection)
+
+    def _rehydrate_connection_record(
+        self,
+        connection: TenantConnection,
+    ) -> TenantConnectionRehydrationResult:
+        safe = to_safe_tenant_connection(connection)
+        status = connection.administrative_status
+
+        if status is TenantConnectionAdministrativeStatus.DISABLED:
+            return TenantConnectionRehydrationResult(
+                connection=safe,
+                status=TenantConnectionRehydrationStatus.SKIPPED_DISABLED,
+            )
+
+        if status is TenantConnectionAdministrativeStatus.REVOKED:
+            return TenantConnectionRehydrationResult(
+                connection=safe,
+                status=TenantConnectionRehydrationStatus.SKIPPED_REVOKED,
+            )
+
+        credential = self._resolve_secret(connection.credential_ref)
+        if credential is None:
+            return TenantConnectionRehydrationResult(
+                connection=safe,
+                status=TenantConnectionRehydrationStatus.UNAVAILABLE,
+                error_code="tenant_connection_secret_unavailable",
+            )
+
+        integration = self._construct_integration(connection, credential)
+        if integration is None:
+            return TenantConnectionRehydrationResult(
+                connection=safe,
+                status=TenantConnectionRehydrationStatus.UNAVAILABLE,
+                error_code="tenant_connection_runtime_unavailable",
+            )
+
+        if not self._register_integration(connection, integration):
+            return TenantConnectionRehydrationResult(
+                connection=safe,
+                status=TenantConnectionRehydrationStatus.UNAVAILABLE,
+                error_code="tenant_connection_runtime_unavailable",
+            )
+
+        return TenantConnectionRehydrationResult(
+            connection=safe,
+            status=TenantConnectionRehydrationStatus.REGISTERED,
+        )
 
     def _resolve_secret(self, credential_ref: str) -> str | None:
         try:
@@ -175,7 +261,7 @@ class TenantConnectionRehydrator:
 
     def _register_integration(self, connection, integration: object) -> bool:
         try:
-            self._connection_registry.register(
+            self._connection_registry.refresh(
                 tenant_id=connection.tenant_id,
                 connection_ref=connection.connection_ref,
                 provider_id=connection.provider_id,

@@ -4,18 +4,26 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-import os
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union
-import uuid
+from typing import Any, Literal
 
-import chromadb
-from chromadb.config import Settings as ChromaSettings
-from langchain_core.documents import Document
-import numpy as np
-
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.knowledge.contracts.validation import require_non_empty_str
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
+from intergrax.rag.vectorstore.providers.native_provider_boundary import (
+    native_hit,
+    provider_metadata,
+    validate_query,
+    validate_records,
+    validate_scope,
+)
 
 
 @dataclass(frozen=True)
@@ -23,21 +31,21 @@ class ChromaConfig:
     """
     Configuration model for Chroma vector store provider.
 
-    The provider is responsible for creating and managing
-    the Chroma client instance based on this configuration.
+    The opener creates the client; this store only manages the collection
+    and vector-store contract operations.
     """
 
     collection_name: str
     tenant_id: str
-    persist_directory: Optional[str] = None
-    settings: Optional[ChromaSettings] = None
+    persist_directory: str | None = None
+    settings: Any | None = None
     batch_size: int = 256
     metric: Literal["cosine", "l2"] = "cosine"
 
-    mode: Literal["embedded", "http"] = "embedded"
+    mode: Literal["embedded", "http"] = "http"
     http_host: str = "localhost"
     http_port: int = 8000
-    
+
 
 class ChromaVectorStore(BaseVectorStore):
     """
@@ -45,34 +53,21 @@ class ChromaVectorStore(BaseVectorStore):
     No behavioral changes.
     """
 
-    def __init__(self, cfg: ChromaConfig) -> None:
+    def __init__(self, cfg: ChromaConfig, *, client: Any = None) -> None:
         self.cfg = cfg
         self.collection_name = f"{cfg.collection_name}__tenant__{cfg.tenant_id}"
 
-        self._client = None
+        self._client = client
         self._collection = None
-        self._dim: Optional[int] = None
+        self._dim: int | None = None
 
         self._init_chroma()
 
     def _init_chroma(self) -> None:
-        settings = self.cfg.settings or ChromaSettings()
-
-        if self.cfg.mode == "http":
-            self._client = chromadb.HttpClient(
-                host=self.cfg.http_host,
-                port=self.cfg.http_port,
+        if self._client is None:
+            raise IntegrationConfigurationError(
+                "ChromaVectorStore requires a client built by the Chroma opener",
             )
-        else:
-            persist_dir = self.cfg.persist_directory
-            if persist_dir:
-                os.makedirs(persist_dir, exist_ok=True)
-                self._client = chromadb.PersistentClient(
-                    path=persist_dir,
-                    settings=settings,
-                )
-            else:
-                self._client = chromadb.Client(settings=settings)
 
         space = "cosine" if self.cfg.metric == "cosine" else "l2"
 
@@ -88,106 +83,72 @@ class ChromaVectorStore(BaseVectorStore):
         self,
         ids: Sequence[str],
         embeddings: Sequence[Sequence[float]],
-        metadatas: Sequence[Dict[str, Any]],
+        metadatas: Sequence[dict[str, Any]],
         documents: Sequence[str],
     ) -> None:
-        try:
-            self._collection.upsert(
-                ids=list(ids),
-                embeddings=list(embeddings),
-                metadatas=list(metadatas),
-                documents=list(documents),
-            )
-        except AttributeError:
-            self._collection.add(
-                ids=list(ids),
-                embeddings=list(embeddings),
-                metadatas=list(metadatas),
-                documents=list(documents),
-            )
-
-
-    def add_documents(
-        self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
-        *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
-        if len(documents) == 0:
-            return
-
-        X = self._to_list_of_lists(
-            np.asarray(list(embeddings), dtype=np.float32)
+        self._collection.upsert(
+            ids=list(ids),
+            embeddings=list(embeddings),
+            metadatas=list(metadatas),
+            documents=list(documents),
         )
 
-        if len(X) != len(documents):
-            raise ValueError("Number of documents must match number of embeddings")
+    def add_records(
+        self,
+        records: Sequence[VectorStoreRecord],
+        *,
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        validated = validate_records(records, scope=scope, tenant_id=self.cfg.tenant_id)
+        if not validated:
+            return []
+        ids_list = [record.vector_id for record in validated]
+        X = [record.embedding.tolist() for record in validated]
+        self._dim = self._dim or len(X[0])
 
-        n = len(documents)
-        ids_list = list(ids) if ids else self._make_ids(n)
-
-        if len(ids_list) != n:
-            raise ValueError("Length of `ids` must match number of documents")
-
-        first_dim = len(X[0]) if X and X[0] else None
-        if first_dim is None:
-            raise ValueError(
-                "Embeddings appear empty/corrupt; cannot infer dimension."
-            )
-
-        self._dim = self._dim or first_dim        
-
-        for start in range(0, n, self.cfg.batch_size):
-            end = min(start + self.cfg.batch_size, n)
+        for start in range(0, len(validated), self.cfg.batch_size):
+            end = min(start + self.cfg.batch_size, len(validated))
 
             ids_batch = ids_list[start:end]
             embeddings_batch = X[start:end]
             self._ensure_dim_consistency(embeddings_batch)
 
-            docs_batch = documents[start:end]
-            metas_batch = self._doc_payloads(docs_batch, base=None)
-
-            # tenant enforcement (legacy behavior)
-            for i in range(len(metas_batch)):
-                existing = metas_batch[i].get("tenant_id")
-                if existing is not None and existing != self.cfg.tenant_id:
-                    raise ValueError(
-                        f"Metadata tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
-                    )
-                metas_batch[i]["tenant_id"] = self.cfg.tenant_id
+            records_batch = validated[start:end]
+            metas_batch = [
+                provider_metadata(record.document, scope=scope)
+                for record in records_batch
+            ]
 
             self._upsert_chroma(
                 ids_batch,
                 embeddings_batch,
                 metas_batch,
-                self._doc_texts(docs_batch),
+                [record.document.content for record in records_batch],
             )
+        return ids_list
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
-    ) -> List[VectorStoreHit]:
-        Q = [list(map(float, query_embedding))]
+    ) -> list[VectorStoreHit]:
+        vector, limit = validate_query(query_embedding, top_k=top_k)
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        Q = [vector.tolist()]
 
         include = ["metadatas", "documents", "distances"]
         if include_embeddings:
             include.append("embeddings")
 
-        where = metadata_filter.conditions if metadata_filter else None
-
-        tenant_filter = {"tenant_id": self.cfg.tenant_id}
-        effective_where = dict(where or {})
-        effective_where.update(tenant_filter)
-
+        effective_filter = MetadataFilter.for_scope(scope, metadata_filter)
         res = self._collection.query(
             query_embeddings=Q,
-            n_results=top_k,
-            where=self._normalize_chroma_where(effective_where),
+            n_results=limit,
+            where=self._chroma_where_from_metadata(effective_filter),
             include=include,
         )
 
@@ -197,47 +158,58 @@ class ChromaVectorStore(BaseVectorStore):
             scores = [[1.0 - float(d) for d in row] for row in distances]
         else:
             # L2 normalization
-            scores = [[1.0 / (1.0 + float(d)) for d in row] for row in distances]        
+            scores = [[1.0 / (1.0 + float(d)) for d in row] for row in distances]
 
         ids_out = res.get("ids", [[]])
         metadatas_out = res.get("metadatas", [[]])
         documents_out = res.get("documents", [[]])
-        embeddings_out = (
-            res.get("embeddings", [[]]) if include_embeddings else [[]]
-        )
+        embeddings_out = res.get("embeddings", [[]]) if include_embeddings else [[]]
 
-        hits: List[VectorStoreHit] = []
+        hits: list[VectorStoreHit] = []
 
         row_ids = ids_out[0] if ids_out else []
         row_scores = scores[0] if scores else []
         row_metas = metadatas_out[0] if metadatas_out else []
         row_docs = documents_out[0] if documents_out else []
-        row_embs = (
-            embeddings_out[0] if include_embeddings and embeddings_out else []
-        )
+        row_embs = embeddings_out[0] if include_embeddings and embeddings_out else []
 
         for rank in range(
             min(len(row_ids), len(row_scores), len(row_metas), len(row_docs))
         ):
             hits.append(
-                VectorStoreHit(
-                    id=str(row_ids[rank]),
+                native_hit(
+                    vector_id=str(row_ids[rank]),
                     content=str(row_docs[rank]),
                     metadata=dict(row_metas[rank] or {}),
                     similarity_score=float(row_scores[rank]),
                     rank=rank,
+                    scope=scope,
                     embedding=(
-                        list(row_embs[rank])
-                        if include_embeddings and row_embs
-                        else None
+                        row_embs[rank] if include_embeddings and row_embs else None
                     ),
                 )
             )
 
         return hits
-    
 
-    def _normalize_chroma_where(self, where: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def _chroma_where_from_metadata(
+        self,
+        metadata_filter: MetadataFilter,
+    ) -> dict[str, Any] | None:
+        terms: list[dict[str, Any]] = []
+        for key, value in metadata_filter.conditions.items():
+            terms.append({str(key): {"$eq": value}})
+        for condition in metadata_filter.membership:
+            terms.append({condition.field: {"$in": list(condition.allowed_values)}})
+        if not terms:
+            return None
+        if len(terms) == 1:
+            return terms[0]
+        return {"$and": terms}
+
+    def _normalize_chroma_where(
+        self, where: dict[str, Any] | None
+    ) -> dict[str, Any] | None:
         """
         Chroma expects `where` to have exactly one top-level operator when multiple
         conditions are present. We support a friendly dict form and convert it.
@@ -255,7 +227,7 @@ class ChromaVectorStore(BaseVectorStore):
             return None
 
         # Already operator-based (user may pass {"$and": [...]} etc.)
-        if any(isinstance(k, str) and k.startswith("$") for k in where.keys()):
+        if any(isinstance(k, str) and k.startswith("$") for k in where):
             return where
 
         items = list(where.items())
@@ -268,17 +240,56 @@ class ChromaVectorStore(BaseVectorStore):
         # Multiple conditions -> $and
         and_terms = [{str(k): {"$eq": v}} for k, v in items]
         return {"$and": and_terms}
-    
 
-    def delete(self, ids: Sequence[str]) -> None:
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
         if not ids:
             return
-        self._collection.delete(ids=list(ids))
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        self._collection.delete(
+            ids=list(ids),
+            where=self._normalize_chroma_where(
+                MetadataFilter.for_scope(scope, None).conditions
+            ),
+        )
 
-    def count(self) -> int:
-        return int(self._collection.count())
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope,
+        root_document_id: str | None = None,
+    ) -> Sequence[str]:
+        canonical_source_id = require_non_empty_str(
+            source_id,
+            field_name="source_id",
+        )
+        canonical_root_document_id = (
+            require_non_empty_str(root_document_id, field_name="root_document_id")
+            if root_document_id is not None
+            else None
+        )
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        conditions = dict(MetadataFilter.for_scope(scope, None).conditions)
+        conditions["source_id"] = canonical_source_id
+        if canonical_root_document_id is not None:
+            conditions["root_document_id"] = canonical_root_document_id
+        result = self._collection.get(
+            where=self._normalize_chroma_where(conditions),
+            include=[],
+        )
+        return tuple(sorted(str(vector_id) for vector_id in result.get("ids", [])))
 
-    def list_collections(self) -> List[str]:
+    def count(self, *, scope: VectorStoreScope) -> int:
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        result = self._collection.get(
+            where=self._normalize_chroma_where(
+                MetadataFilter.for_scope(scope, None).conditions
+            ),
+            include=[],
+        )
+        return len(result.get("ids", []))
+
+    def list_collections(self) -> list[str]:
         if self._client is None:
             return [self.collection_name]
         return [collection.name for collection in self._client.list_collections()]

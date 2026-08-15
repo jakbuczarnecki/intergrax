@@ -59,7 +59,7 @@ _SIDECAR_RESULT_SCHEMA = "lkw.file_watcher_sidecar_result.v1"
 _VERIFICATION_DOCUMENT = (
     "applications/local_workspace_application/docs/LKW_7_FILE_WATCHER_VERIFICATION.md"
 )
-_REVIEWER_GUIDE = "docs/public-adoption/LKW_PLATFORM_PROOF.md"
+_REVIEWER_GUIDE = "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md"
 
 _TENANT_ID = "lkw-file-watcher-e2e"
 _WORKSPACE_ID = "lkw-file-watcher-e2e"
@@ -363,19 +363,24 @@ def build_compose_command(
     watcher_compose: Path,
     mongodb_compose: Path,
 ) -> list[str]:
-    return [
-        "docker",
-        "compose",
-        "-f",
-        str(base_compose),
-        "-f",
-        str(kafka_compose),
-        "-f",
-        str(watcher_compose),
-        "-f",
-        str(mongodb_compose),
-        *compose_args,
-    ]
+    command = ["docker", "compose"]
+    compose_project = os.environ.get("COMPOSE_PROJECT_NAME", "").strip()
+    if compose_project:
+        command.extend(["-p", compose_project])
+    command.extend(
+        [
+            "-f",
+            str(base_compose),
+            "-f",
+            str(kafka_compose),
+            "-f",
+            str(watcher_compose),
+            "-f",
+            str(mongodb_compose),
+            *compose_args,
+        ]
+    )
+    return command
 
 
 def run_compose(
@@ -681,6 +686,88 @@ def search_attempt_succeeded(
     if diagnostics.num_results <= 0 and diagnostics.evidence_count <= 0:
         return False
     return expected_source_path in diagnostics.source_refs
+
+
+_PERSISTENCE_PROOF_SCOPE_ID = "lkw-persistence-proof"
+
+
+def _latest_persistence_proof_marker(proof_docs_dir: Path) -> str | None:
+    candidates = sorted(
+        proof_docs_dir.glob("lkw_persistence_proof_*.txt"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    for path in candidates:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.startswith("Unique marker:"):
+                marker = line.split(":", 1)[1].strip()
+                if marker:
+                    return marker
+    return None
+
+
+def run_persistence_embedding_warmup(
+    *,
+    base_url: str,
+    proof_docs_dir: Path,
+    timeout_seconds: float,
+) -> WarmupResult:
+    """Warm retrieve/embed via the persistence proof collection when present."""
+    marker = _latest_persistence_proof_marker(proof_docs_dir)
+    if marker is None:
+        return WarmupResult(
+            completed=False,
+            attempt_count=0,
+            last_reason="persistence_marker_missing",
+            last_raw_tool_reason=None,
+        )
+    deadline = time.monotonic() + timeout_seconds
+    run_url = f"{base_url.rstrip('/')}/v1/local_workspace/run"
+    attempt_count = 0
+    while time.monotonic() < deadline:
+        attempt_count += 1
+        try:
+            response = request_json(
+                run_url,
+                method="POST",
+                payload={
+                    "tenant_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                    "workspace_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                    "message": marker,
+                    "capability": "local.workspace.search",
+                    "metadata": {
+                        "tenant_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                        "workspace_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                        "collection_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                        "query": marker,
+                        "top_k": 1,
+                        "proof_phase": "embedding_warmup",
+                    },
+                },
+                timeout=_WARMUP_REQUEST_TIMEOUT_SECONDS,
+            )
+            diagnostics = extract_search_diagnostics(response)
+            if warmup_attempt_succeeded(diagnostics):
+                reason = (
+                    diagnostics.reason.value
+                    if diagnostics is not None and diagnostics.reason is not None
+                    else SearchSummaryReason.RETRIEVE_COMPLETE.value
+                )
+                return WarmupResult(
+                    completed=True,
+                    attempt_count=attempt_count,
+                    last_reason=reason,
+                    last_raw_tool_reason=diagnostics.raw_tool_reason if diagnostics else None,
+                )
+        except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+            pass
+        time.sleep(_WARMUP_RETRY_SLEEP_SECONDS)
+    return WarmupResult(
+        completed=False,
+        attempt_count=attempt_count,
+        last_reason="persistence_warmup_timeout",
+        last_raw_tool_reason=None,
+    )
 
 
 def run_embedding_warmup(
@@ -1201,10 +1288,16 @@ def main(argv: list[str] | None = None) -> int:
     if not watcher_checkpoint_ready_before_file:
         return fail("watcher_checkpoint_not_ready")
 
-    warmup = run_embedding_warmup(
+    warmup = run_persistence_embedding_warmup(
         base_url=base_url,
+        proof_docs_dir=proof_docs_dir,
         timeout_seconds=warmup_timeout_seconds,
     )
+    if not warmup.completed:
+        warmup = run_embedding_warmup(
+            base_url=base_url,
+            timeout_seconds=warmup_timeout_seconds,
+        )
     if not warmup.completed:
         return fail(
             "embedding_warmup_failed",
@@ -1249,6 +1342,9 @@ def main(argv: list[str] | None = None) -> int:
     ):
         fields: dict[str, object] = {
             "expected_source_path": document.container_source_path,
+            "observed_source_refs": (
+                list(diagnostics.source_refs) if diagnostics is not None else []
+            ),
             "observed_source_ref_count": (
                 len(diagnostics.source_refs) if diagnostics is not None else 0
             ),

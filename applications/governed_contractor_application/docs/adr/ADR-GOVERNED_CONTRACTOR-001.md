@@ -18,14 +18,14 @@ Scaffolding must use canonical CLI paths. Agent slug and application slug differ
 1. Create Tier-2 adapter via `python -m intergrax.scaffold new-agent external_contractor_adapter --capability external_contractor.adapt --pattern reflex`.
 2. Create Tier-3 host via `python -m intergrax.scaffold new-application governed_contractor --profile product --agents external_contractor_adapter --port 8000`.
 3. Treat GEC as a **generic capability** (governed external contractor agents), not a one-off partner product.
-4. Keep reusable quote/contractor contracts and integration surfaces in `intergrax/`; keep partner URLs/identities out of core.
+4. Keep reusable quote/contractor contracts and integration surfaces in `intergrax`; keep partner URLs/identities out of core.
 5. Align host default capability to `external_contractor.adapt` (scaffold `new-application` otherwise defaults custom agents to `<slug>.basic`).
 
 Rejected:
 
 - Copying `attestation_demo` / `boundary_demo` trees by hand
 - Placing orchestration or HITL acceptance inside the adapter
-- Embedding design-partner identity in `intergrax/`
+- Embedding design-partner identity in `intergrax`
 
 ## Consequences
 
@@ -48,6 +48,6 @@ Rejected:
 
 ## Implementation notes
 
-- App: `applications/governed_contractor_application/`
-- Agent: `agents/external_contractor_adapter/`
+- App: `applications/governed_contractor_application`
+- Agent: `agents/external_contractor_adapter`
 - Verify: host + agent pytest smoke; deploy-triad check for `governed_contractor`

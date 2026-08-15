@@ -1,0 +1,45 @@
+"""Slack Vendor Knowledge live capabilities."""
+
+from .conversation import (
+    SLACK_CONVERSATION_LIST_CAPABILITY_ID,
+    SLACK_CONVERSATION_LIST_REQUEST_SCHEMA_REF,
+    SLACK_CONVERSATION_LIST_RESULT_SCHEMA_REF,
+    SLACK_CONVERSATION_READ_CAPABILITY_ID,
+    SLACK_CONVERSATION_READ_REQUEST_SCHEMA_REF,
+    SLACK_CONVERSATION_READ_RESULT_SCHEMA_REF,
+    SLACK_CONVERSATION_THREAD_READ_CAPABILITY_ID,
+    SLACK_CONVERSATION_THREAD_READ_REQUEST_SCHEMA_REF,
+    SLACK_CONVERSATION_THREAD_READ_RESULT_SCHEMA_REF,
+    SlackConversationListLiveHandlerV1,
+    SlackConversationListLiveRequestV1,
+    SlackConversationReadLiveHandlerV1,
+    SlackConversationReadLiveRequestV1,
+    SlackConversationThreadReadLiveHandlerV1,
+    SlackConversationThreadReadLiveRequestV1,
+    build_slack_conversation_list_descriptor,
+    build_slack_conversation_read_descriptor,
+    build_slack_conversation_thread_read_descriptor,
+)
+from .registration import build_slack_live_registration_bundles
+
+__all__ = [
+    "SLACK_CONVERSATION_LIST_CAPABILITY_ID",
+    "SLACK_CONVERSATION_LIST_REQUEST_SCHEMA_REF",
+    "SLACK_CONVERSATION_LIST_RESULT_SCHEMA_REF",
+    "SLACK_CONVERSATION_READ_CAPABILITY_ID",
+    "SLACK_CONVERSATION_READ_REQUEST_SCHEMA_REF",
+    "SLACK_CONVERSATION_READ_RESULT_SCHEMA_REF",
+    "SLACK_CONVERSATION_THREAD_READ_CAPABILITY_ID",
+    "SLACK_CONVERSATION_THREAD_READ_REQUEST_SCHEMA_REF",
+    "SLACK_CONVERSATION_THREAD_READ_RESULT_SCHEMA_REF",
+    "SlackConversationListLiveHandlerV1",
+    "SlackConversationListLiveRequestV1",
+    "SlackConversationReadLiveHandlerV1",
+    "SlackConversationReadLiveRequestV1",
+    "SlackConversationThreadReadLiveHandlerV1",
+    "SlackConversationThreadReadLiveRequestV1",
+    "build_slack_conversation_list_descriptor",
+    "build_slack_conversation_read_descriptor",
+    "build_slack_conversation_thread_read_descriptor",
+    "build_slack_live_registration_bundles",
+]

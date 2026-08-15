@@ -4,10 +4,7 @@
 
 from __future__ import annotations
 
-from typing import List
-
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.legacy.rag_answers.contracts.answer_request import AnswerRequest
@@ -62,6 +59,13 @@ class AnswerPipeline:
         trace.retrieval_latency_ms = timer.stop_ms()
         trace.retrieved_candidates = len(retrieved_candidates)
 
+        documents_by_id: dict[str, KnowledgeDocument] = {}
+        for candidate in retrieved_candidates:
+            document = candidate.document
+            if not isinstance(document, KnowledgeDocument):
+                raise TypeError("retriever must return native documents")
+            documents_by_id[candidate.id] = document
+
         # STEP 2 — convert to reranker candidates
         reranker_candidates = [
             RerankerCandidate(
@@ -83,13 +87,10 @@ class AnswerPipeline:
         trace.reranked_candidates = len(rerank_results)
 
         # STEP 4 — extract documents
-        reranked_docs: List[Document] = [
-            Document(
-                page_content=result.candidate.text,
-                metadata=result.candidate.metadata,
-            )
+        reranked_docs = tuple(
+            documents_by_id[result.candidate.id]
             for result in rerank_results
-        ]
+        )
 
         # STEP 5 — context building
         timer = StepTimer()

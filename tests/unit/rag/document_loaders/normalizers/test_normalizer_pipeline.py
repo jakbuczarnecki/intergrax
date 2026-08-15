@@ -6,101 +6,255 @@ from pathlib import Path
 from typing import Sequence
 
 import pytest
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
+from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+    attach_parser_native_handle,
+)
 from intergrax.rag.document_loaders.pipeline.normalizer_pipeline import NormalizerPipeline
 from intergrax.rag.document_loaders.contracts.base_document_normalizer import BaseDocumentNormalizer
 
 
 pytestmark = pytest.mark.unit
 
+_TENANT = "tenant.test"
 
-class DummyNormalizer(BaseDocumentNormalizer):
+
+def _sample_doc(content: str = "text", **metadata) -> KnowledgeDocument:
+    return KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {
+                "document_id": "docid1234567890ab",
+                "root_document_id": "docid1234567890ab",
+            },
+            "scope": {"tenant_id": _TENANT},
+            "content": content,
+            "metadata": {
+                "source": "file.pdf",
+                "parser": "tests.dummy",
+                "position": 0,
+                **metadata,
+            },
+            "provenance": {
+                "source_kind": "file",
+                "source_id": "file.pdf",
+                "provider_id": "tests.dummy",
+            },
+        }
+    )
+
+
+class _TagNormalizer(BaseDocumentNormalizer):
 
     def __init__(self, tag: str):
         self.tag = tag
 
     def normalize(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
         source: Path | str,
-    ) -> Sequence[Document]:
+    ) -> Sequence[KnowledgeDocument]:
         result = []
-        for d in documents:
-            md = dict(d.metadata or {})
-            md[self.tag] = True
-
-            result.append(
-                Document(
-                    page_content=d.page_content,
-                    metadata=md,
-                )
-            )
+        for doc in documents:
+            payload = doc.model_dump(mode="python")
+            payload["content"] = f"{doc.content}:{self.tag}"
+            result.append(KnowledgeDocument.model_validate(payload))
         return result
+
+
+class _MetadataMutatingNormalizer(BaseDocumentNormalizer):
+
+    def normalize(
+        self,
+        documents: Sequence[KnowledgeDocument],
+        source: Path | str,
+    ) -> Sequence[KnowledgeDocument]:
+        result = []
+        for doc in documents:
+            payload = doc.model_dump(mode="python")
+            payload["metadata"] = {**dict(doc.metadata), "mutated": True}
+            result.append(KnowledgeDocument.model_validate(payload))
+        return result
+
+
+class _IdentityMutatingNormalizer(BaseDocumentNormalizer):
+
+    def normalize(
+        self,
+        documents: Sequence[KnowledgeDocument],
+        source: Path | str,
+    ) -> Sequence[KnowledgeDocument]:
+        result = []
+        for doc in documents:
+            payload = doc.model_dump(mode="python")
+            payload["identity"] = {
+                **payload["identity"],
+                "document_id": "docid99999999999999",
+            }
+            result.append(KnowledgeDocument.model_validate(payload))
+        return result
+
+
+class _ScopeMutatingNormalizer(BaseDocumentNormalizer):
+
+    def normalize(
+        self,
+        documents: Sequence[KnowledgeDocument],
+        source: Path | str,
+    ) -> Sequence[KnowledgeDocument]:
+        result = []
+        for doc in documents:
+            payload = doc.model_dump(mode="python")
+            payload["scope"] = KnowledgeDocumentScope(
+                tenant_id="other.tenant"
+            ).model_dump()
+            result.append(KnowledgeDocument.model_validate(payload))
+        return result
+
+
+class _ProvenanceMutatingNormalizer(BaseDocumentNormalizer):
+
+    def normalize(
+        self,
+        documents: Sequence[KnowledgeDocument],
+        source: Path | str,
+    ) -> Sequence[KnowledgeDocument]:
+        result = []
+        for doc in documents:
+            payload = doc.model_dump(mode="python")
+            payload["provenance"] = {
+                **payload["provenance"],
+                "source_id": "changed.pdf",
+            }
+            result.append(KnowledgeDocument.model_validate(payload))
+        return result
+
+
+class _CountChangingNormalizer(BaseDocumentNormalizer):
+
+    def normalize(
+        self,
+        documents: Sequence[KnowledgeDocument],
+        source: Path | str,
+    ) -> Sequence[KnowledgeDocument]:
+        return list(documents) + list(documents)
+
+
+class _FailingNormalizer(BaseDocumentNormalizer):
+
+    def normalize(
+        self,
+        documents: Sequence[KnowledgeDocument],
+        source: Path | str,
+    ) -> Sequence[KnowledgeDocument]:
+        raise RuntimeError("normalizer failure")
 
 
 def test_pipeline_executes_normalizers_in_order():
 
-    docs = [
-        Document(page_content="text", metadata={"a": 1})
-    ]
+    docs = [_sample_doc()]
 
     pipeline = NormalizerPipeline(
         normalizers=[
-            DummyNormalizer("n1"),
-            DummyNormalizer("n2"),
+            _TagNormalizer("n1"),
+            _TagNormalizer("n2"),
         ]
     )
 
     result = pipeline.normalize(docs, source="file.txt")
 
     assert len(result) == 1
-    assert result[0].metadata["n1"] is True
-    assert result[0].metadata["n2"] is True
+    assert result[0].content == "text:n1:n2"
 
 
-def test_pipeline_preserves_document_count():
+def test_pipeline_output_of_one_is_input_of_next():
 
-    docs = [
-        Document(page_content="a", metadata={}),
-        Document(page_content="b", metadata={}),
-        Document(page_content="c", metadata={}),
-    ]
+    docs = [_sample_doc(content="start")]
 
     pipeline = NormalizerPipeline(
-        normalizers=[DummyNormalizer("tag")]
+        normalizers=[
+            _TagNormalizer("first"),
+            _TagNormalizer("second"),
+        ]
     )
 
     result = pipeline.normalize(docs, source="file.txt")
 
-    assert len(result) == 3
+    assert result[0].content == "start:first:second"
+
+
+def test_pipeline_preserves_parser_runtime_handle():
+
+    handle = object()
+    docs = [attach_parser_native_handle(_sample_doc(), handle)]
+
+    pipeline = NormalizerPipeline(normalizers=[_TagNormalizer("tag")])
+
+    result = pipeline.normalize(docs, source="file.txt")
+
+    from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+        get_parser_native_handle,
+    )
+
+    assert get_parser_native_handle(result[0]) is handle
+
+
+def test_pipeline_rejects_identity_change():
+
+    pipeline = NormalizerPipeline(normalizers=[_IdentityMutatingNormalizer()])
+
+    with pytest.raises(ValueError, match="identity"):
+        pipeline.normalize([_sample_doc()], source="file.txt")
+
+
+def test_pipeline_rejects_scope_change():
+
+    pipeline = NormalizerPipeline(normalizers=[_ScopeMutatingNormalizer()])
+
+    with pytest.raises(ValueError, match="scope"):
+        pipeline.normalize([_sample_doc()], source="file.txt")
+
+
+def test_pipeline_rejects_metadata_change():
+
+    pipeline = NormalizerPipeline(normalizers=[_MetadataMutatingNormalizer()])
+
+    with pytest.raises(ValueError, match="metadata"):
+        pipeline.normalize([_sample_doc()], source="file.txt")
+
+
+def test_pipeline_rejects_provenance_change():
+
+    pipeline = NormalizerPipeline(normalizers=[_ProvenanceMutatingNormalizer()])
+
+    with pytest.raises(ValueError, match="provenance"):
+        pipeline.normalize([_sample_doc()], source="file.txt")
+
+
+def test_pipeline_rejects_document_count_change():
+
+    pipeline = NormalizerPipeline(normalizers=[_CountChangingNormalizer()])
+
+    with pytest.raises(ValueError, match="document count"):
+        pipeline.normalize([_sample_doc()], source="file.txt")
+
+
+def test_pipeline_propagates_normalizer_exception():
+
+    pipeline = NormalizerPipeline(normalizers=[_FailingNormalizer()])
+
+    with pytest.raises(RuntimeError, match="normalizer failure"):
+        pipeline.normalize([_sample_doc()], source="file.txt")
 
 
 def test_pipeline_allows_empty_normalizer_list():
 
-    docs = [
-        Document(page_content="text", metadata={"x": 1})
-    ]
+    docs = [_sample_doc(content="text")]
 
     pipeline = NormalizerPipeline(normalizers=[])
 
     result = pipeline.normalize(docs, source="file.txt")
 
-    assert result[0].page_content == "text"
-    assert result[0].metadata["x"] == 1
-
-
-def test_pipeline_preserves_metadata():
-
-    docs = [
-        Document(page_content="text", metadata={"source": "unit-test"})
-    ]
-
-    pipeline = NormalizerPipeline(
-        normalizers=[DummyNormalizer("normalized")]
-    )
-
-    result = pipeline.normalize(docs, source="file.txt")
-
-    assert result[0].metadata["source"] == "unit-test"
-    assert result[0].metadata["normalized"] is True
+    assert result[0].content == "text"
+    assert result[0].metadata["source"] == "file.pdf"

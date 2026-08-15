@@ -14,6 +14,11 @@ from intergrax.agents.authoring.runtime_tool_helpers import (
 from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RAG_RETRIEVE_TOOL_ID
+from intergrax.tools.providers.rag.source_scope_transport import (
+    bind_rag_retrieval_source_scope,
+    parse_task_metadata_allowed_source_ids,
+    reset_rag_retrieval_source_scope,
+)
 from local_search.diagnostics import SearchSummaryReason
 
 SEARCH_STEP_ID = "local_search_step"
@@ -26,6 +31,7 @@ _LKW_SEARCH_METADATA_KEYS = frozenset(
         "tenant_id",
         "user_id",
         "workspace_id",
+        "allowed_source_ids",
     }
 )
 
@@ -98,6 +104,10 @@ def _format_evidence(
             continue
         metadata = chunk.get("metadata")
         meta: dict[str, Any] = metadata if isinstance(metadata, dict) else {}
+        provenance = chunk.get("provenance")
+        provenance_map: dict[str, Any] = (
+            provenance if isinstance(provenance, dict) else {}
+        )
         source_path = meta.get("source_path") or meta.get("source") or meta.get("file")
         file_name = meta.get("file_name")
         if not file_name and source_path:
@@ -105,6 +115,10 @@ def _format_evidence(
         raw_score = chunk.get("score")
         if not isinstance(raw_score, (int, float)):
             raw_score = meta.get("score")
+        raw_document_id = (
+            provenance_map.get("root_document_id")
+            or meta.get("document_id")
+        )
         item_workspace = (
             str(meta["workspace_id"])
             if meta.get("workspace_id")
@@ -115,8 +129,16 @@ def _format_evidence(
             source_path=str(source_path) if source_path else None,
             chunk_id=str(chunk.get("id")) if chunk.get("id") is not None else None,
             score=float(raw_score) if isinstance(raw_score, (int, float)) else None,
-            document_id=str(meta["document_id"]) if meta.get("document_id") else None,
-            source_id=str(meta["source_id"]) if meta.get("source_id") else None,
+            document_id=str(raw_document_id) if raw_document_id else None,
+            source_id=(
+                str(meta["lkw_source_id"])
+                if meta.get("lkw_source_id")
+                else str(provenance_map["source_id"])
+                if provenance_map.get("source_id")
+                else str(meta["source_id"])
+                if meta.get("source_id")
+                else None
+            ),
             workspace_id=item_workspace,
             file_name=str(file_name) if file_name else None,
             metadata=meta,
@@ -162,6 +184,7 @@ def _output(
     workspace_id: str | None = None,
     evidence: list[dict[str, object]] | None = None,
     num_results: int = 0,
+    raw_tool_reason: str | None = None,
 ) -> dict[str, object]:
     num_results = num_results if used else 0
     evidence = evidence or []
@@ -170,20 +193,23 @@ def _output(
     else:
         answer = f"local_search: search failed — {reason.value}"
     resolved_workspace = workspace_id or collection_id
+    search_summary: dict[str, object] = {
+        "used": used,
+        "reason": reason.value,
+        "query": query,
+        "workspace_id": resolved_workspace,
+        "collection_id": collection_id,
+        "evidence": evidence,
+        "num_results": num_results,
+        "result_count": num_results,
+    }
+    if raw_tool_reason:
+        search_summary["raw_tool_reason"] = raw_tool_reason
     return {
         "summary": answer,
         "answer": answer,
         "run_id": run_id,
-        "search_summary": {
-            "used": used,
-            "reason": reason.value,
-            "query": query,
-            "workspace_id": resolved_workspace,
-            "collection_id": collection_id,
-            "evidence": evidence,
-            "num_results": num_results,
-            "result_count": num_results,
-        },
+        "search_summary": search_summary,
     }
 
 
@@ -249,13 +275,28 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     if workspace_id:
         tool_input["workspace_id"] = workspace_id
 
-    entry = await invoke_catalog_tool(
-        exec_ctx,
-        tool_name=RAG_RETRIEVE_TOOL_ID,
-        agent_id=step_ctx.agent_id,
-        step_id=SEARCH_STEP_ID,
-        tool_input=tool_input,
-    )
+    source_scope = parse_task_metadata_allowed_source_ids(metadata)
+    if source_scope.is_invalid:
+        return _output(
+            run_id=step_ctx.run_id,
+            used=False,
+            reason=SearchSummaryReason.SOURCE_SCOPE_INVALID,
+            query=query,
+            collection_id=collection_id,
+            raw_tool_reason=source_scope.error_reason,
+        )
+
+    scope_token = bind_rag_retrieval_source_scope(source_scope)
+    try:
+        entry = await invoke_catalog_tool(
+            exec_ctx,
+            tool_name=RAG_RETRIEVE_TOOL_ID,
+            agent_id=step_ctx.agent_id,
+            step_id=SEARCH_STEP_ID,
+            tool_input=tool_input,
+        )
+    finally:
+        reset_rag_retrieval_source_scope(scope_token)
 
     if entry.get("status") != "success" or not entry.get("used"):
         summary = _output(

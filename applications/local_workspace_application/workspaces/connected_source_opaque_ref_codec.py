@@ -20,6 +20,18 @@ from local_workspace_application.workspaces.connected_source_models import (
 
 _ENVELOPE_SCHEMA = "lkw.remote_resource_opaque_ref.v1"
 _CANDIDATE_PAYLOAD_SCHEMA = "lkw.slack_conversation_candidate.v1"
+_MSGRAPH_CANDIDATE_PAYLOAD_SCHEMA = "lkw.msgraph_teams_chat_candidate.v1"
+_MSGRAPH_MAIL_CANDIDATE_PAYLOAD_SCHEMA = "lkw.msgraph_mail_folder_candidate.v1"
+_MSGRAPH_TEAMS_CHANNEL_CANDIDATE_PAYLOAD_SCHEMA = (
+    "lkw.msgraph_teams_channel_candidate.v1"
+)
+_MSGRAPH_CALENDAR_CANDIDATE_PAYLOAD_SCHEMA = "lkw.msgraph_calendar_candidate.v1"
+_GOOGLE_WORKSPACE_CANDIDATE_PAYLOAD_SCHEMA = "lkw.google_workspace_candidate.v1"
+_JIRA_PROJECT_CANDIDATE_PAYLOAD_SCHEMA = "lkw.jira_project_candidate.v1"
+_CONFLUENCE_SPACE_CANDIDATE_PAYLOAD_SCHEMA = "lkw.confluence_space_candidate.v1"
+_VENDOR_KNOWLEDGE_SCOPED_SOURCE_CANDIDATE_PAYLOAD_SCHEMA = (
+    "lkw.vendor_knowledge_scoped_source_candidate.v1"
+)
 _PAGINATION_PAYLOAD_SCHEMA = "lkw.remote_resource_pagination.v1"
 _MAX_TOKEN_LEN = 1024
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -50,6 +62,115 @@ class SlackConversationCandidatePayload(BaseModel):
         if _SHA256_HEX_RE.fullmatch(value) is None:
             raise ValueError("snapshot_version_invalid")
         return value
+
+
+class MsGraphTeamsChatCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_MSGRAPH_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    mailbox_user_id: str = Field(..., min_length=1, max_length=256)
+    chat_remote_id: str = Field(..., min_length=1, max_length=256)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class MsGraphMailFolderCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_MSGRAPH_MAIL_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    mailbox_user_id: str = Field(..., min_length=1, max_length=256)
+    folder_id: str = Field(..., min_length=1, max_length=256)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class MsGraphTeamsChannelCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_MSGRAPH_TEAMS_CHANNEL_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    team_remote_id: str = Field(..., min_length=1, max_length=256)
+    channel_remote_id: str = Field(..., min_length=1, max_length=256)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class MsGraphCalendarCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_MSGRAPH_CALENDAR_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    mailbox_user_id: str = Field(..., min_length=1, max_length=256)
+    calendar_remote_id: str = Field(..., min_length=1, max_length=256)
+    is_default_calendar: bool
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class GoogleWorkspaceCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_GOOGLE_WORKSPACE_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    remote_resource_id: str = Field(..., min_length=1, max_length=256)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class JiraProjectCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_JIRA_PROJECT_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    project_key: str = Field(..., min_length=1, max_length=64)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class ConfluenceSpaceCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_CONFLUENCE_SPACE_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    space_id: str = Field(..., min_length=1, max_length=64)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class VendorKnowledgeScopedSourceCandidatePayload(BaseModel):
+    """Provider-neutral opaque candidate for contribution-owned VK scoped sources."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(
+        default=_VENDOR_KNOWLEDGE_SCOPED_SOURCE_CANDIDATE_PAYLOAD_SCHEMA
+    )
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    provider_id: str = Field(..., min_length=1, max_length=128)
+    integration_kind: str = Field(..., min_length=1, max_length=64)
+    source_kind: str = Field(..., min_length=1, max_length=128)
+    scope_id: str = Field(..., min_length=1, max_length=256)
+    scope_type: str = Field(..., min_length=1, max_length=128)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
 
 
 class RemoteResourcePaginationPayload(BaseModel):
@@ -195,6 +316,286 @@ class RemoteResourceOpaqueRefCodec:
         )
         if payload.snapshot_version != expected_snapshot:
             raise ConnectedSourceDiscoveryError("candidate_ref_tampered")
+        return payload
+
+    def encode_msgraph_teams_chat_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        mailbox_user_id: str,
+        chat_remote_id: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = MsGraphTeamsChatCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.MSGRAPH_TEAMS_CHAT,
+            mailbox_user_id=mailbox_user_id,
+            chat_remote_id=chat_remote_id,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_msgraph_teams_chat_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> MsGraphTeamsChatCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = MsGraphTeamsChatCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _MSGRAPH_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_msgraph_mail_folder_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        mailbox_user_id: str,
+        folder_id: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = MsGraphMailFolderCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.MSGRAPH_MAIL_FOLDER,
+            mailbox_user_id=mailbox_user_id,
+            folder_id=folder_id,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_msgraph_mail_folder_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> MsGraphMailFolderCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = MsGraphMailFolderCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _MSGRAPH_MAIL_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_msgraph_teams_channel_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        team_remote_id: str,
+        channel_remote_id: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = MsGraphTeamsChannelCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.MSGRAPH_TEAMS_CHANNEL,
+            team_remote_id=team_remote_id,
+            channel_remote_id=channel_remote_id,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_msgraph_teams_channel_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> MsGraphTeamsChannelCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = MsGraphTeamsChannelCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _MSGRAPH_TEAMS_CHANNEL_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_msgraph_calendar_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        mailbox_user_id: str,
+        calendar_remote_id: str,
+        is_default_calendar: bool,
+        safe_display_label: str,
+    ) -> str:
+        payload = MsGraphCalendarCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.MSGRAPH_CALENDAR,
+            mailbox_user_id=mailbox_user_id,
+            calendar_remote_id=calendar_remote_id,
+            is_default_calendar=is_default_calendar,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_msgraph_calendar_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> MsGraphCalendarCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = MsGraphCalendarCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _MSGRAPH_CALENDAR_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_google_workspace_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        resource_type: RemoteResourceTypeV1,
+        remote_resource_id: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = GoogleWorkspaceCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=resource_type,
+            remote_resource_id=remote_resource_id,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_google_workspace_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> GoogleWorkspaceCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = GoogleWorkspaceCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _GOOGLE_WORKSPACE_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_jira_project_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        project_key: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = JiraProjectCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.JIRA_PROJECT,
+            project_key=project_key,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_jira_project_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> JiraProjectCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = JiraProjectCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _JIRA_PROJECT_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_confluence_space_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        space_id: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = ConfluenceSpaceCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.CONFLUENCE_SPACE,
+            space_id=space_id,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_confluence_space_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> ConfluenceSpaceCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = ConfluenceSpaceCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _CONFLUENCE_SPACE_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_vendor_knowledge_scoped_source_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: str,
+        source_kind: str,
+        scope_id: str,
+        scope_type: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = VendorKnowledgeScopedSourceCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.VENDOR_KNOWLEDGE_SCOPED_SOURCE,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            source_kind=source_kind,
+            scope_id=scope_id,
+            scope_type=scope_type,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_vendor_knowledge_scoped_source_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> VendorKnowledgeScopedSourceCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = VendorKnowledgeScopedSourceCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if (
+            payload.schema_version
+            != _VENDOR_KNOWLEDGE_SCOPED_SOURCE_CANDIDATE_PAYLOAD_SCHEMA
+        ):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        if payload.resource_type is not RemoteResourceTypeV1.VENDOR_KNOWLEDGE_SCOPED_SOURCE:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
         return payload
 
     def encode_pagination_cursor(

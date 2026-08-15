@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ADR_ROOT = ROOT / "docs" / "adr"
+ADR_ROOT = ROOT / "docs" / "project" / "technical" / "adr"
 README = ADR_ROOT / "README.md"
 ENTRIES = ADR_ROOT / "entries"
 
@@ -22,12 +22,12 @@ def main() -> int:
     errors: list[str] = []
 
     if not README.is_file():
-        errors.append("missing docs/adr/README.md")
+        errors.append("missing docs/project/technical/adr/README.md")
         _report(errors)
         return 1
 
     if not ENTRIES.is_dir():
-        errors.append("missing docs/adr/entries/")
+        errors.append("missing docs/project/technical/adr/entries/")
         _report(errors)
         return 1
 

@@ -1,14 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-from langchain_core.documents import Document
 
-from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
+from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
+    InMemoryVectorStore,
+)
 from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
 from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.providers.graph_rag_retriever import GraphRagRetriever
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from tests.unit.rag.graph.fixtures import knowledge_document
 
 
 class _Emb:
@@ -20,9 +22,9 @@ class _Emb:
 def test_graph_rag_uses_chunk_linked_entities_not_substring_only() -> None:
     store = InMemoryVectorStore(tenant_id="g2")
     manager = VectorstoreManager(store=store)
-    doc = Document(
-        page_content="Zephyr Labs partners with Orion Systems for cloud RAG.",
-        metadata={"tenant_id": "g2", "graph_entity_ids": ["ent:zephyr_labs"]},
+    doc = knowledge_document(
+        "Zephyr Labs partners with Orion Systems for cloud RAG.",
+        tenant_id="g2",
     )
     manager.add_documents([doc], [[0.1, 0.2, 0.3]], ids=["chunk-zephyr"])
 
@@ -46,3 +48,15 @@ def test_graph_rag_uses_chunk_linked_entities_not_substring_only() -> None:
 @pytest.mark.gate
 def test_graph_rag_retriever_is_stable() -> None:
     assert GraphRagRetriever.STABILITY == "stable"
+
+
+@pytest.mark.gate
+def test_graph_rag_empty_result_is_native_tuple() -> None:
+    retriever = GraphRagRetriever(object(), object(), object())  # type: ignore[arg-type]
+
+    assert (
+        retriever.retrieve(
+            RetrieverQuery(query_text="", query_embedding=None, top_k=2)
+        )
+        == ()
+    )

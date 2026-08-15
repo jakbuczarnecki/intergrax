@@ -72,6 +72,28 @@ def _parse_api_key_map(raw: Optional[str]) -> Mapping[str, ApiKeyIdentity]:
     return out
 
 
+def _parse_redirect_allowlist(raw: str) -> tuple[str, ...]:
+    seen: set[str] = set()
+    values: list[str] = []
+    for value in raw.split(","):
+        cleaned = value.strip()
+        if cleaned and cleaned not in seen:
+            seen.add(cleaned)
+            values.append(cleaned)
+    return tuple(values)
+
+
+def _parse_tenant_ids(raw: str) -> tuple[str, ...]:
+    seen: set[str] = set()
+    tenant_ids: list[str] = []
+    for value in raw.split(","):
+        tenant_id = value.strip()
+        if tenant_id and tenant_id not in seen:
+            seen.add(tenant_id)
+            tenant_ids.append(tenant_id)
+    return tuple(tenant_ids)
+
+
 @dataclass(frozen=True, kw_only=True)
 class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     """Environment for local_workspace_application (scaffolded product profile)."""
@@ -117,6 +139,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     observability_sentry_debug: bool = False
     observability_sentry_flush_after_capture: bool = False
     data_home: str = _DEFAULT_DATA_HOME
+    document_store_backend: Literal["auto", "mongodb", "inmemory"] = "auto"
     file_watcher_enabled: bool = False
     file_watcher_tenant_id: str = ""
     file_watcher_workspace_id: str = ""
@@ -140,6 +163,19 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     web_url_preflight_timeout_seconds: float = 10.0
     connected_source_opaque_ref_signing_key: str = ""
     connected_source_slack_connection_ref: str = ""
+    tenant_connection_bootstrap_tenant_ids: tuple[str, ...] = ()
+    connection_auth_redirect_allowlist: tuple[str, ...] = ()
+    connection_auth_transaction_ttl_seconds: int = 900
+    connection_auth_completion_claim_ttl_seconds: int = 120
+    google_workspace_oauth_client_id: str = ""
+    google_workspace_oauth_client_secret: str = field(default="", repr=False)
+    ms365_oauth_tenant_id: str = ""
+    ms365_oauth_client_id: str = ""
+    ms365_oauth_client_secret: str = field(default="", repr=False)
+    knowledge_admin_confirmation_secret: str = field(default="", repr=False)
+    conversation_thread_memory_max_messages: int = 20
+    conversation_thread_memory_max_bytes: int = 16 * 1024
+    conversation_thread_memory_max_age_seconds: int = 24 * 60 * 60
 
     @property
     def config_dir(self) -> str:
@@ -180,6 +216,53 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     @property
     def run_dir(self) -> str:
         return _data_home_path(self.data_home, "run")
+
+    def validate_for_runtime(self) -> None:
+        """Reject unsafe or incomplete production configuration before wiring."""
+        if self.environment != ApiEnvironment.PROD:
+            return
+
+        if self.data_home.strip() in {"", _DEFAULT_DATA_HOME}:
+            raise ValueError(
+                "LOCAL_WORKSPACE_DATA_HOME is required for production durable storage."
+            )
+        if self.document_store_backend not in {"auto", "mongodb", "inmemory"}:
+            raise ValueError("local_workspace_document_store_backend_invalid")
+        if self.document_store_backend == "inmemory":
+            raise ValueError(
+                "LOCAL_WORKSPACE_DOCUMENT_STORE_BACKEND=inmemory is development-only."
+            )
+        if not (os.environ.get("INTERGRAX_MONGODB_URI") or "").strip():
+            raise ValueError(
+                "INTERGRAX_MONGODB_URI is required for production durable workspace state."
+            )
+
+        vector_store = (os.environ.get("LOCAL_WORKSPACE_VECTOR_STORE") or "qdrant").strip().lower()
+        if vector_store == "inmemory":
+            raise ValueError(
+                "LOCAL_WORKSPACE_VECTOR_STORE=inmemory is development-only."
+            )
+        if vector_store == "qdrant" and not (
+            os.environ.get("INTERGRAX_QDRANT_URL") or ""
+        ).strip():
+            raise ValueError(
+                "INTERGRAX_QDRANT_URL is required for production indexed storage."
+            )
+
+        live_values = (
+            self.connected_source_opaque_ref_signing_key.strip(),
+            self.slack_tenant_id.strip(),
+            self.connected_source_slack_connection_ref.strip(),
+        )
+        if any(live_values) and not all(live_values):
+            raise ValueError(
+                "connected_source_live_configuration_incomplete"
+            )
+        confirmation_secret = self.knowledge_admin_confirmation_secret.strip()
+        if confirmation_secret and len(confirmation_secret) < 32:
+            raise ValueError(
+                "LOCAL_WORKSPACE_KNOWLEDGE_ADMIN_CONFIRMATION_SECRET is too short."
+            )
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -562,6 +645,72 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "CONNECTED_SOURCE_SLACK_CONNECTION_REF",
             default=cls._field_default("connected_source_slack_connection_ref"),  # type: ignore[arg-type]
         )
+        tenant_connection_bootstrap_tenant_ids = _parse_tenant_ids(
+            env.str(
+                "TENANT_CONNECTION_BOOTSTRAP_TENANT_IDS",
+                default="",
+            )
+        )
+        connection_auth_redirect_allowlist = _parse_redirect_allowlist(
+            env.str(
+                "CONNECTION_AUTH_REDIRECT_ALLOWLIST",
+                default="",
+            )
+        )
+        connection_auth_transaction_ttl_seconds = env.int(
+            "CONNECTION_AUTH_TRANSACTION_TTL_SECONDS",
+            default=cls._field_default("connection_auth_transaction_ttl_seconds"),  # type: ignore[arg-type]
+        )
+        connection_auth_completion_claim_ttl_seconds = env.int(
+            "CONNECTION_AUTH_COMPLETION_CLAIM_TTL_SECONDS",
+            default=cls._field_default("connection_auth_completion_claim_ttl_seconds"),  # type: ignore[arg-type]
+        )
+        google_workspace_oauth_client_id = (
+            env.str(
+                "GOOGLE_WORKSPACE_OAUTH_CLIENT_ID",
+                default=cls._field_default("google_workspace_oauth_client_id"),  # type: ignore[arg-type]
+            ).strip()
+            or os.environ.get("INTERGRAX_GOOGLE_WORKSPACE_OAUTH_CLIENT_ID", "").strip()
+        )
+        google_workspace_oauth_client_secret = (
+            env.str(
+                "GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET",
+                default=cls._field_default("google_workspace_oauth_client_secret"),  # type: ignore[arg-type]
+            ).strip()
+            or os.environ.get("INTERGRAX_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET", "").strip()
+        )
+        ms365_oauth_tenant_id = (
+            env.str(
+                "MS365_OAUTH_TENANT_ID",
+                default=cls._field_default("ms365_oauth_tenant_id"),  # type: ignore[arg-type]
+            ).strip()
+            or os.environ.get("INTERGRAX_MS365_TENANT_ID", "").strip()
+        )
+        ms365_oauth_client_id = (
+            env.str(
+                "MS365_OAUTH_CLIENT_ID",
+                default=cls._field_default("ms365_oauth_client_id"),  # type: ignore[arg-type]
+            ).strip()
+            or os.environ.get("INTERGRAX_MS365_CLIENT_ID", "").strip()
+        )
+        ms365_oauth_client_secret = (
+            env.str(
+                "MS365_OAUTH_CLIENT_SECRET",
+                default=cls._field_default("ms365_oauth_client_secret"),  # type: ignore[arg-type]
+            ).strip()
+            or os.environ.get("INTERGRAX_MS365_CLIENT_SECRET", "").strip()
+        )
+        knowledge_admin_confirmation_secret = env.str(
+            "KNOWLEDGE_ADMIN_CONFIRMATION_SECRET",
+            default=cls._field_default("knowledge_admin_confirmation_secret"),  # type: ignore[arg-type]
+        )
+        document_store_backend = (
+            env.str("DOCUMENT_STORE_BACKEND", default="auto").strip().lower() or "auto"
+        )
+        if document_store_backend not in {"auto", "mongodb", "inmemory"}:
+            raise ValueError(
+                "LOCAL_WORKSPACE_DOCUMENT_STORE_BACKEND must be one of: auto, mongodb, inmemory."
+            )
 
         managed_staging_root = _data_home_path(data_home, "run", "managed_upload_staging")
         web_url_staging_root = _data_home_path(data_home, "run", "web_url_staging")
@@ -607,6 +756,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "observability_sentry_shutdown_timeout_seconds": observability_sentry_shutdown_timeout_seconds,
             "observability_sentry_debug": observability_sentry_debug,
             "observability_sentry_flush_after_capture": observability_sentry_flush_after_capture,
+            "document_store_backend": document_store_backend,
             "file_watcher_enabled": file_watcher_enabled,
             "file_watcher_tenant_id": file_watcher_tenant_id,
             "file_watcher_workspace_id": file_watcher_workspace_id,
@@ -627,4 +777,14 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "managed_file_max_batch_files": managed_file_max_batch_files,
             "connected_source_opaque_ref_signing_key": connected_source_opaque_ref_signing_key,
             "connected_source_slack_connection_ref": connected_source_slack_connection_ref,
+            "tenant_connection_bootstrap_tenant_ids": tenant_connection_bootstrap_tenant_ids,
+            "connection_auth_redirect_allowlist": connection_auth_redirect_allowlist,
+            "connection_auth_transaction_ttl_seconds": connection_auth_transaction_ttl_seconds,
+            "connection_auth_completion_claim_ttl_seconds": connection_auth_completion_claim_ttl_seconds,
+            "google_workspace_oauth_client_id": google_workspace_oauth_client_id,
+            "google_workspace_oauth_client_secret": google_workspace_oauth_client_secret,
+            "ms365_oauth_tenant_id": ms365_oauth_tenant_id,
+            "ms365_oauth_client_id": ms365_oauth_client_id,
+            "ms365_oauth_client_secret": ms365_oauth_client_secret,
+            "knowledge_admin_confirmation_secret": knowledge_admin_confirmation_secret,
         }

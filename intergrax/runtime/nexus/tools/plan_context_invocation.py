@@ -446,6 +446,12 @@ async def run_tools_context(state: RuntimeState) -> None:
                 aggregate=loop_result.aggregate,
             )
     except Exception as exc:
+        from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
+            DeclarativePolicyHitlPauseRequired,
+        )
+
+        if isinstance(exc, DeclarativePolicyHitlPauseRequired):
+            raise
         error_type = type(exc).__name__
         error_message = str(exc)
 

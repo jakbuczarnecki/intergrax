@@ -97,9 +97,17 @@ class _FakeCoordinator:
         binding_id: str,
         page_size: int = 100,
         restart: bool = True,
+        operation_id: str | None = None,
+        trigger_delivery_id: str | None = None,
     ) -> KnowledgeSyncRunResult:
         self.reconcile_calls.append(
-            {"binding_id": binding_id, "page_size": page_size, "restart": restart}
+            {
+                "binding_id": binding_id,
+                "page_size": page_size,
+                "restart": restart,
+                "operation_id": operation_id,
+                "trigger_delivery_id": trigger_delivery_id,
+            }
         )
         if self.error is not None:
             raise self.error

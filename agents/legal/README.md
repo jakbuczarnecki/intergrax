@@ -3,7 +3,7 @@
 Contract review capability — distinct from **DSW** dispute lifecycle agents.
 
 **Host:** [`applications/legal_application/`](../../applications/legal_application/) · **Roster:** [`agents/README.md`](../README.md)  
-Architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) · Guide: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
+Architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) · Guide: [`../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
 
 ## Quick start
 

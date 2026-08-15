@@ -19,7 +19,10 @@ def main() -> int:
     if not profile_uses_hierarchical_index(profile):
         print("hierarchical profile flag not recognized", file=sys.stderr)
         return 1
-    toc_store = resolve_toc_vectorstore_for_profile(profile)
+    toc_store = resolve_toc_vectorstore_for_profile(
+        profile,
+        tenant_id="audit-tenant",
+    )
     if toc_store is None:
         print("toc vectorstore bootstrap returned None", file=sys.stderr)
         return 1

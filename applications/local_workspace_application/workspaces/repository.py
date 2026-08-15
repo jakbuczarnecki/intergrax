@@ -7,28 +7,62 @@ from __future__ import annotations
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TypeVar
+from datetime import UTC, datetime
+from typing import Any, TypeVar, cast
 
-from pydantic import BaseModel
-
-from intergrax.integrations.contracts.document_store import (
-    ConditionalDocumentStore,
-    DocumentRecord,
-    DocumentStore,
-)
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDeliveryReceipt,
+    ConnectedSourceDeliverySequenceAssignment,
+    ConnectedSourceDeliverySequenceHead,
     ConnectedSourceOperationDeliveryAccounting,
     ConnectedSourceSyncEnqueueIntent,
 )
+from local_workspace_application.workspaces.connected_source_purge_completion_contracts import (
+    ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1,
+    ConnectedSourceDeliveryReceiptOwnershipIndexError,
+    ConnectedSourceDeliveryReceiptOwnershipPageV1,
+    ConnectedSourceRecoveryMigrationGateError,
+    ConnectedSourceRecoveryMigrationGateStatusV1,
+    ConnectedSourceRecoveryMigrationGateV1,
+    delivery_receipt_ownership_index_partition,
+    delivery_receipt_ownership_scope_prefix,
+    parse_delivery_receipt_ownership_index_entry,
+    parse_recovery_migration_gate,
+    recovery_migration_gate_partition,
+)
+from local_workspace_application.workspaces.connected_source_recovery_ownership_index import (
+    ConnectedSourceRecoveryOwnershipIndexEntryV1,
+    ConnectedSourceRecoveryOwnershipIndexError,
+    ConnectedSourceRecoveryOwnershipPageV1,
+    RecoveryRecordKindV1,
+    canonical_record_fingerprint,
+    index_entry_for_delivery_accounting,
+    index_entry_for_enqueue_intent,
+    parse_recovery_ownership_index_entry,
+    recovery_ownership_index_partition,
+    recovery_ownership_scope_prefix,
+)
+from local_workspace_application.workspaces.document_ownership_index import (
+    DocumentOwnershipIndexError,
+    DocumentReferenceOwnershipPageV1,
+    WorkspaceDocumentOwnershipIndexEntryV1,
+    ownership_index_partition,
+    parse_index_entry,
+    reference_fingerprint,
+)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
+    WorkspaceCommittedQueryPolicy,
     WorkspaceConnectionAttachment,
     WorkspaceIndexedSourceBinding,
     WorkspaceKnowledgeConfigurationHead,
     WorkspaceKnowledgeMutationOperationV1,
     WorkspaceKnowledgeMutationRecord,
     WorkspaceLiveAccessBinding,
-    WorkspaceQueryPolicy,
+    parse_workspace_query_policy,
+)
+from local_workspace_application.workspaces.materialization_visibility import (
+    KnowledgeMaterializationActivePointerV1,
+    KnowledgeMaterializationOwnershipModeV1,
 )
 from local_workspace_application.workspaces.models import (
     ActiveKnowledgeIngestionLocator,
@@ -39,9 +73,20 @@ from local_workspace_application.workspaces.models import (
     Workspace,
     WorkspaceDocumentReference,
     WorkspaceOperation,
+    WorkspaceOperationIndexEntryV1,
     WorkspaceOperationStatus,
     WorkspaceOperationType,
     WorkspaceSource,
+    WorkspaceStatus,
+)
+from pydantic import BaseModel, ValidationError
+
+from intergrax.integrations.contracts.document_store import (
+    ConditionalDocumentStore,
+    DocumentQueryPageV1,
+    DocumentRecord,
+    DocumentStore,
+    validate_document_query_limit,
 )
 
 T = TypeVar("T", bound=BaseModel)
@@ -64,6 +109,11 @@ _ENTITY_KNOWLEDGE_CONFIGURATION_LIVE_ACCESS = "knowledge_configuration_live_acce
 _ENTITY_KNOWLEDGE_CONFIGURATION_QUERY_POLICY = "knowledge_configuration_query_policy"
 _ENTITY_CONNECTED_SOURCE_DELIVERY = "connected_source_delivery"
 _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE = "connected_source_sync_enqueue"
+_ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_LEGACY = "connected_source_delivery_sequence"
+_ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_HEAD = "connected_source_delivery_sequence_head"
+_ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_ASSIGNMENT = (
+    "connected_source_delivery_sequence_assignment"
+)
 
 
 class WorkspaceKnowledgeConfigurationRepositoryError(RuntimeError):
@@ -81,17 +131,35 @@ class ActiveKnowledgeIngestionLocatorScan:
 _ENTITY_WORKSPACE = "workspace"
 _ENTITY_SOURCE = "source"
 _ENTITY_OPERATION = "operation"
+_ENTITY_WORKSPACE_OPERATION_INDEX = "workspace_operation_index"
+_ENTITY_SOURCE_SYNC_OPERATION_INDEX = "source_sync_operation_index"
 _ENTITY_DOCUMENT = "document"
+_ENTITY_DOCUMENT_OWNERSHIP_INDEX = "document_ownership_index"
 _ENTITY_KNOWLEDGE_INPUT = "knowledge_input"
 _ENTITY_MANAGED_FILE = "managed_file"
 _ENTITY_WEB_URL_LOCATOR = "web_url_locator"
 _ENTITY_INTAKE_BATCH = "intake_batch"
 _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT = "connected_source_delivery_receipt"
+_ENTITY_MATERIALIZATION_ACTIVE_POINTER = "materialization_active_pointer"
 _ACTIVE_KNOWLEDGE_INGESTION_PARTITION = "lkw.managed_workspace:active_knowledge_ingestion"
 
 
 def _partition(tenant_id: str, entity: str) -> str:
     return f"lkw.managed_workspace:{tenant_id}:{entity}"
+
+
+def _source_sync_operation_index_row_key(*, workspace_id: str, source_id: str) -> str:
+    return f"{workspace_id}:{source_id}:latest"
+
+
+def _source_sync_operation_history_row_key(
+    *,
+    workspace_id: str,
+    source_id: str,
+    sort_timestamp: str,
+    operation_id: str,
+) -> str:
+    return f"{workspace_id}:{source_id}:history:{sort_timestamp}:{operation_id}"
 
 
 def _revision_row_key(
@@ -208,11 +276,14 @@ class ManagedWorkspaceRepository:
         record = self._store.get(partition_key, row_key)
         if record is None:
             return None
-        return model_type.model_validate(dict(record.data))
+        return model_type.model_validate(dict(record.data), strict=False)
 
     def _list(self, partition_key: str, model_type: type[T], *, limit: int = 500) -> list[T]:
         result = self._store.query(partition_key, limit=limit)
-        return [model_type.model_validate(dict(doc.data)) for doc in result.documents]
+        return [
+            model_type.model_validate(dict(doc.data), strict=False)
+            for doc in result.documents
+        ]
 
     # --- Workspace ---
 
@@ -223,6 +294,35 @@ class ManagedWorkspaceRepository:
             workspace,
         )
         return workspace
+
+    def replace_workspace_if_match(
+        self,
+        expected: Workspace,
+        replacement: Workspace,
+    ) -> bool:
+        return self._replace_if_match(
+            expected=expected,
+            replacement=replacement,
+            partition_key=_partition(expected.tenant_id, _ENTITY_WORKSPACE),
+            row_key=expected.workspace_id,
+        )
+
+    def claim_workspace_deletion_if_match(
+        self,
+        expected: Workspace,
+        *,
+        claimed_at: datetime,
+    ) -> bool:
+        if expected.status is not WorkspaceStatus.ACTIVE:
+            return False
+        claimed = expected.model_copy(
+            update={
+                "status": WorkspaceStatus.DELETING,
+                "workspace_revision": expected.workspace_revision + 1,
+                "updated_at": claimed_at,
+            }
+        )
+        return self.replace_workspace_if_match(expected, claimed)
 
     def get_workspace(self, *, tenant_id: str, workspace_id: str) -> Workspace | None:
         return self._get(
@@ -319,6 +419,9 @@ class ManagedWorkspaceRepository:
             f"{receipt.workspace_id}:{receipt.source_id}:{receipt.delivery_id}"
         )
         self._put(partition_key, row_key, receipt)
+        self.put_connected_source_delivery_receipt_ownership_index_entry(
+            ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1.for_receipt(receipt)
+        )
         return receipt
 
     def put_connected_source_delivery_receipt_if_absent(
@@ -329,7 +432,24 @@ class ManagedWorkspaceRepository:
         row_key = (
             f"{receipt.workspace_id}:{receipt.source_id}:{receipt.delivery_id}"
         )
-        return self._put_if_absent(receipt, partition_key=partition_key, row_key=row_key)
+        created = self._put_if_absent(
+            receipt, partition_key=partition_key, row_key=row_key
+        )
+        stored = (
+            receipt
+            if created
+            else self.get_connected_source_delivery_receipt(
+                tenant_id=receipt.tenant_id,
+                workspace_id=receipt.workspace_id,
+                source_id=receipt.source_id,
+                delivery_id=receipt.delivery_id,
+            )
+        )
+        if stored is not None:
+            self.put_connected_source_delivery_receipt_ownership_index_entry(
+                ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1.for_receipt(stored)
+            )
+        return created
 
     def complete_connected_source_delivery_receipt_if_in_progress(
         self,
@@ -339,12 +459,19 @@ class ManagedWorkspaceRepository:
     ) -> bool:
         partition_key = _partition(expected.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT)
         row_key = f"{expected.workspace_id}:{expected.source_id}:{expected.delivery_id}"
-        return self._replace_if_match(
+        replaced = self._replace_if_match(
             expected=expected,
             replacement=replacement,
             partition_key=partition_key,
             row_key=row_key,
         )
+        if replaced:
+            self.put_connected_source_delivery_receipt_ownership_index_entry(
+                ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1.for_receipt(
+                    replacement
+                )
+            )
+        return replaced
 
     def get_connected_source_delivery_receipt(
         self,
@@ -360,6 +487,373 @@ class ManagedWorkspaceRepository:
             ConnectedSourceDeliveryReceipt,
         )
 
+    def get_connected_source_delivery_sequence_head(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+    ) -> ConnectedSourceDeliverySequenceHead | None:
+        row_key = self._delivery_sequence_head_key(
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+        )
+        partition_key = _partition(
+            tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_HEAD
+        )
+        record = self._store.get(partition_key, row_key)
+        if record is None:
+            legacy_record = self._store.get(
+                _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_LEGACY),
+                row_key,
+            )
+            if legacy_record is not None:
+                raise WorkspaceKnowledgeConfigurationRepositoryError(
+                    "connected_source_delivery_sequence_migration_required"
+                )
+            return None
+        head = ConnectedSourceDeliverySequenceHead.model_validate(dict(record.data))
+        if (
+            head.tenant_id != tenant_id
+            or head.workspace_id != workspace_id
+            or head.source_id != source_id
+            or head.indexed_source_binding_id != indexed_source_binding_id
+        ):
+            raise ValueError("connected_source_delivery_sequence_identity_mismatch")
+        return head
+
+    def get_connected_source_delivery_sequence_ledger(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+    ) -> ConnectedSourceDeliverySequenceHead | None:
+        """Deprecated compatibility name for the bounded sequence head."""
+        return self.get_connected_source_delivery_sequence_head(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+        )
+
+    def put_connected_source_delivery_sequence_head_if_absent(
+        self,
+        head: ConnectedSourceDeliverySequenceHead,
+    ) -> bool:
+        return self._put_if_absent(
+            head,
+            partition_key=_partition(
+                head.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_HEAD
+            ),
+            row_key=self._delivery_sequence_head_key(
+                workspace_id=head.workspace_id,
+                source_id=head.source_id,
+                indexed_source_binding_id=head.indexed_source_binding_id,
+            ),
+        )
+
+    def replace_connected_source_delivery_sequence_head_if_match(
+        self,
+        *,
+        expected: ConnectedSourceDeliverySequenceHead,
+        replacement: ConnectedSourceDeliverySequenceHead,
+    ) -> bool:
+        if (
+            expected.tenant_id != replacement.tenant_id
+            or expected.workspace_id != replacement.workspace_id
+            or expected.source_id != replacement.source_id
+            or expected.indexed_source_binding_id != replacement.indexed_source_binding_id
+        ):
+            raise ValueError("connected_source_delivery_sequence_identity_mismatch")
+        return self._replace_if_match(
+            expected=expected,
+            replacement=replacement,
+            partition_key=_partition(
+                expected.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_HEAD
+            ),
+            row_key=self._delivery_sequence_head_key(
+                workspace_id=expected.workspace_id,
+                source_id=expected.source_id,
+                indexed_source_binding_id=expected.indexed_source_binding_id,
+            ),
+        )
+
+    def get_connected_source_delivery_sequence_assignment(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        delivery_id: str,
+    ) -> ConnectedSourceDeliverySequenceAssignment | None:
+        if _IDEMPOTENCY_HASH_RE.fullmatch(delivery_id) is None:
+            raise ValueError("connected_source_delivery_id_invalid")
+        row_key = self._delivery_sequence_assignment_key(
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+            delivery_id=delivery_id,
+        )
+        record = self._store.get(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_ASSIGNMENT),
+            row_key,
+        )
+        if record is None:
+            return None
+        assignment = ConnectedSourceDeliverySequenceAssignment.model_validate(
+            dict(record.data)
+        )
+        if (
+            assignment.tenant_id != tenant_id
+            or assignment.workspace_id != workspace_id
+            or assignment.source_id != source_id
+            or assignment.indexed_source_binding_id != indexed_source_binding_id
+            or assignment.delivery_id != delivery_id
+        ):
+            raise ValueError("connected_source_delivery_sequence_identity_mismatch")
+        return assignment
+
+    def put_connected_source_delivery_sequence_assignment_if_absent(
+        self,
+        assignment: ConnectedSourceDeliverySequenceAssignment,
+    ) -> bool:
+        return self._put_if_absent(
+            assignment,
+            partition_key=_partition(
+                assignment.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_ASSIGNMENT
+            ),
+            row_key=self._delivery_sequence_assignment_key(
+                workspace_id=assignment.workspace_id,
+                source_id=assignment.source_id,
+                indexed_source_binding_id=assignment.indexed_source_binding_id,
+                delivery_id=assignment.delivery_id,
+            ),
+        )
+
+    def list_connected_source_delivery_sequence_assignments(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+    ) -> list[ConnectedSourceDeliverySequenceAssignment]:
+        prefix = self._delivery_sequence_head_key(
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+        ) + ":"
+        result = self._store.query(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_ASSIGNMENT),
+            limit=5000,
+            row_key_prefix=prefix,
+        )
+        assignments: list[ConnectedSourceDeliverySequenceAssignment] = []
+        for record in result.documents:
+            assignment = ConnectedSourceDeliverySequenceAssignment.model_validate(
+                dict(record.data)
+            )
+            if (
+                assignment.tenant_id != tenant_id
+                or assignment.workspace_id != workspace_id
+                or assignment.source_id != source_id
+                or assignment.indexed_source_binding_id != indexed_source_binding_id
+                or record.row_key
+                != self._delivery_sequence_assignment_key(
+                    workspace_id=workspace_id,
+                    source_id=source_id,
+                    indexed_source_binding_id=indexed_source_binding_id,
+                    delivery_id=assignment.delivery_id,
+                )
+            ):
+                raise ValueError("connected_source_delivery_sequence_identity_mismatch")
+            assignments.append(assignment)
+        return sorted(assignments, key=lambda item: item.materialization_sequence)
+
+    def allocate_connected_source_delivery_sequence(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        delivery_id: str,
+    ) -> int:
+        if _IDEMPOTENCY_HASH_RE.fullmatch(delivery_id) is None:
+            raise ValueError("connected_source_delivery_id_invalid")
+        while True:
+            assignment = self.get_connected_source_delivery_sequence_assignment(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                delivery_id=delivery_id,
+            )
+            if assignment is not None:
+                return assignment.materialization_sequence
+
+            current = self.get_connected_source_delivery_sequence_head(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+            )
+            if current is None:
+                candidate = ConnectedSourceDeliverySequenceHead(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    source_id=source_id,
+                    indexed_source_binding_id=indexed_source_binding_id,
+                    next_sequence=2,
+                )
+                sequence = 1
+                if not self.put_connected_source_delivery_sequence_head_if_absent(candidate):
+                    continue
+            else:
+                sequence = current.next_sequence
+                replacement = current.model_copy(update={"next_sequence": sequence + 1})
+                if not self.replace_connected_source_delivery_sequence_head_if_match(
+                    expected=current,
+                    replacement=replacement,
+                ):
+                    continue
+
+            assignment = ConnectedSourceDeliverySequenceAssignment(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                delivery_id=delivery_id,
+                materialization_sequence=sequence,
+                assigned_at=datetime.now(UTC),
+            )
+            if self.put_connected_source_delivery_sequence_assignment_if_absent(
+                assignment
+            ):
+                return sequence
+            winner = self.get_connected_source_delivery_sequence_assignment(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                delivery_id=delivery_id,
+            )
+            if winner is not None:
+                return winner.materialization_sequence
+
+    @staticmethod
+    def _delivery_sequence_head_key(
+        *,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+    ) -> str:
+        return f"{workspace_id}:{source_id}:{indexed_source_binding_id}"
+
+    @staticmethod
+    def _delivery_sequence_assignment_key(
+        *,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        delivery_id: str,
+    ) -> str:
+        return (
+            f"{workspace_id}:{source_id}:{indexed_source_binding_id}:"
+            f"{delivery_id}"
+        )
+
+    def put_active_materialization_pointer_if_absent(
+        self,
+        pointer: KnowledgeMaterializationActivePointerV1,
+    ) -> bool:
+        return self._put_if_absent(
+            pointer,
+            partition_key=_partition(
+                pointer.tenant_id, _ENTITY_MATERIALIZATION_ACTIVE_POINTER
+            ),
+            row_key=self._active_materialization_pointer_key(
+                workspace_id=pointer.workspace_id,
+                source_id=pointer.source_id,
+                indexed_source_binding_id=pointer.indexed_source_binding_id,
+                remote_id=pointer.remote_id,
+            ),
+        )
+
+    def get_active_materialization_pointer(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        remote_id: str,
+    ) -> KnowledgeMaterializationActivePointerV1 | None:
+        return self._get(
+            _partition(tenant_id, _ENTITY_MATERIALIZATION_ACTIVE_POINTER),
+            self._active_materialization_pointer_key(
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                remote_id=remote_id,
+            ),
+            KnowledgeMaterializationActivePointerV1,
+        )
+
+    def replace_active_materialization_pointer(
+        self,
+        *,
+        expected: KnowledgeMaterializationActivePointerV1,
+        replacement: KnowledgeMaterializationActivePointerV1,
+    ) -> bool:
+        if (
+            expected.tenant_id != replacement.tenant_id
+            or self._active_materialization_pointer_key(
+                workspace_id=expected.workspace_id,
+                source_id=expected.source_id,
+                indexed_source_binding_id=expected.indexed_source_binding_id,
+                remote_id=expected.remote_id,
+            )
+            != self._active_materialization_pointer_key(
+                workspace_id=replacement.workspace_id,
+                source_id=replacement.source_id,
+                indexed_source_binding_id=replacement.indexed_source_binding_id,
+                remote_id=replacement.remote_id,
+            )
+        ):
+            raise ValueError("active_materialization_pointer_identity_mismatch")
+        return self._replace_if_match(
+            expected=expected,
+            replacement=replacement,
+            partition_key=_partition(
+                expected.tenant_id, _ENTITY_MATERIALIZATION_ACTIVE_POINTER
+            ),
+            row_key=self._active_materialization_pointer_key(
+                workspace_id=expected.workspace_id,
+                source_id=expected.source_id,
+                indexed_source_binding_id=expected.indexed_source_binding_id,
+                remote_id=expected.remote_id,
+            ),
+        )
+
+    @staticmethod
+    def _active_materialization_pointer_key(
+        *,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        remote_id: str,
+    ) -> str:
+        return (
+            f"{workspace_id}:{source_id}:"
+            f"{indexed_source_binding_id}:{remote_id}"
+        )
+
     def delete_connected_source_delivery_receipt(
         self,
         *,
@@ -368,10 +862,254 @@ class ManagedWorkspaceRepository:
         source_id: str,
         delivery_id: str,
     ) -> None:
+        receipt = self.get_connected_source_delivery_receipt(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            delivery_id=delivery_id,
+        )
         self._store.delete(
             _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT),
             f"{workspace_id}:{source_id}:{delivery_id}",
         )
+        if receipt is not None:
+            self.delete_connected_source_delivery_receipt_ownership_index_entry(
+                ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1.for_receipt(receipt)
+            )
+
+    def list_connected_source_delivery_receipts_page(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> DocumentQueryPageV1:
+        validate_document_query_limit(limit)
+        return self._store.query(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT),
+            limit=limit,
+            row_key_prefix=f"{workspace_id}:{source_id}:",
+            cursor=cursor,
+        )
+
+    def put_connected_source_delivery_receipt_ownership_index_entry(
+        self,
+        entry: ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1,
+    ) -> ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1:
+        record = entry.to_document()
+        existing = self._store.get(record.partition_key, record.row_key)
+        if existing is not None:
+            parsed = parse_delivery_receipt_ownership_index_entry(existing)
+            if parsed.ownership_scope != entry.ownership_scope or (
+                parsed.delivery_id != entry.delivery_id
+            ):
+                raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                    "delivery_receipt_ownership_index_conflict"
+                )
+            if parsed != entry:
+                if not isinstance(self._store, ConditionalDocumentStore):
+                    raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                        "delivery_receipt_ownership_index_store_unavailable"
+                    )
+                if not self._store.replace_if_match(
+                    expected=existing,
+                    replacement=record,
+                ):
+                    retry = self._store.get(record.partition_key, record.row_key)
+                    if (
+                        retry is None
+                        or parse_delivery_receipt_ownership_index_entry(retry) != entry
+                    ):
+                        raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                            "delivery_receipt_ownership_index_conflict"
+                        )
+            return entry
+        if not isinstance(self._store, ConditionalDocumentStore):
+            raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                "delivery_receipt_ownership_index_store_unavailable"
+            )
+        if not self._store.put_if_absent(record):
+            retry = self._store.get(record.partition_key, record.row_key)
+            if (
+                retry is None
+                or parse_delivery_receipt_ownership_index_entry(retry) != entry
+            ):
+                raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                    "delivery_receipt_ownership_index_conflict"
+                )
+        return entry
+
+    def delete_connected_source_delivery_receipt_ownership_index_entry(
+        self,
+        entry: ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1,
+    ) -> bool:
+        record = self._store.get(
+            delivery_receipt_ownership_index_partition(entry.tenant_id),
+            entry.row_key,
+        )
+        if record is None:
+            return False
+        if parse_delivery_receipt_ownership_index_entry(record) != entry:
+            raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                "delivery_receipt_ownership_index_delete_conflict"
+            )
+        self._store.delete(record.partition_key, record.row_key)
+        return True
+
+    def list_connected_source_delivery_receipts_by_owner(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        knowledge_source_binding_ref: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ConnectedSourceDeliveryReceiptOwnershipPageV1:
+        """Exact binding-scoped receipt enumeration via derived ownership index."""
+        validate_document_query_limit(limit)
+        scope = (
+            tenant_id,
+            workspace_id,
+            source_id,
+            indexed_source_binding_id,
+            knowledge_source_binding_ref,
+        )
+        prefix = delivery_receipt_ownership_scope_prefix(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+            knowledge_source_binding_ref=knowledge_source_binding_ref,
+        )
+        page = self._store.query(
+            delivery_receipt_ownership_index_partition(tenant_id),
+            limit=limit,
+            row_key_prefix=prefix,
+            cursor=cursor,
+        )
+        documents: list[DocumentRecord] = []
+        orphan_entries: list[ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1] = []
+        for record in page.documents:
+            entry = parse_delivery_receipt_ownership_index_entry(record)
+            if entry.ownership_scope != scope:
+                raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                    "delivery_receipt_ownership_index_scope_mismatch"
+                )
+            canonical = self._store.get(
+                entry.canonical_partition_key,
+                entry.canonical_row_key,
+            )
+            if canonical is None:
+                orphan_entries.append(entry)
+                continue
+            try:
+                receipt = ConnectedSourceDeliveryReceipt.model_validate(
+                    dict(canonical.data), strict=False
+                )
+            except (TypeError, ValueError):
+                raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                    "delivery_receipt_ownership_index_reference_mismatch"
+                ) from None
+            if (
+                receipt.tenant_id != tenant_id
+                or receipt.workspace_id != workspace_id
+                or receipt.source_id != source_id
+                or receipt.indexed_source_binding_id != indexed_source_binding_id
+                or receipt.knowledge_source_binding_ref
+                != knowledge_source_binding_ref
+                or receipt.delivery_id != entry.delivery_id
+                or canonical.partition_key != entry.canonical_partition_key
+                or canonical.row_key != entry.canonical_row_key
+            ):
+                raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                    "delivery_receipt_ownership_index_reference_mismatch"
+                )
+            documents.append(canonical)
+        return ConnectedSourceDeliveryReceiptOwnershipPageV1(
+            documents=tuple(documents),
+            orphan_index_entries=tuple(orphan_entries),
+            next_cursor=page.next_cursor,
+        )
+
+    def put_connected_source_recovery_migration_gate(
+        self,
+        gate: ConnectedSourceRecoveryMigrationGateV1,
+    ) -> ConnectedSourceRecoveryMigrationGateV1:
+        record = gate.to_document()
+        existing = self._store.get(record.partition_key, record.row_key)
+        if existing is not None:
+            parsed = parse_recovery_migration_gate(existing)
+            if parsed.ownership_scope != gate.ownership_scope:
+                raise ConnectedSourceRecoveryMigrationGateError(
+                    "migration_gate_conflict"
+                )
+            if parsed != gate:
+                if not isinstance(self._store, ConditionalDocumentStore):
+                    raise ConnectedSourceRecoveryMigrationGateError(
+                        "migration_gate_store_unavailable"
+                    )
+                if not self._store.replace_if_match(
+                    expected=existing,
+                    replacement=record,
+                ):
+                    retry = self._store.get(record.partition_key, record.row_key)
+                    if retry is None or parse_recovery_migration_gate(retry) != gate:
+                        raise ConnectedSourceRecoveryMigrationGateError(
+                            "migration_gate_conflict"
+                        )
+            return gate
+        if not isinstance(self._store, ConditionalDocumentStore):
+            raise ConnectedSourceRecoveryMigrationGateError(
+                "migration_gate_store_unavailable"
+            )
+        if not self._store.put_if_absent(record):
+            retry = self._store.get(record.partition_key, record.row_key)
+            if retry is None or parse_recovery_migration_gate(retry) != gate:
+                raise ConnectedSourceRecoveryMigrationGateError(
+                    "migration_gate_conflict"
+                )
+        return gate
+
+    def get_connected_source_recovery_migration_gate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        knowledge_source_binding_ref: str,
+    ) -> ConnectedSourceRecoveryMigrationGateV1 | None:
+        probe = ConnectedSourceRecoveryMigrationGateV1(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+            knowledge_source_binding_ref=knowledge_source_binding_ref,
+            status=ConnectedSourceRecoveryMigrationGateStatusV1.REQUIRED,
+            schema_version=1,
+        )
+        record = self._store.get(
+            recovery_migration_gate_partition(tenant_id),
+            probe.row_key,
+        )
+        if record is None:
+            return None
+        gate = parse_recovery_migration_gate(record)
+        if gate.ownership_scope != (
+            tenant_id,
+            workspace_id,
+            source_id,
+            indexed_source_binding_id,
+            knowledge_source_binding_ref,
+        ):
+            raise ConnectedSourceRecoveryMigrationGateError(
+                "migration_gate_identity_mismatch"
+            )
+        return gate
 
     # --- Connected source delivery accounting ---
 
@@ -381,11 +1119,32 @@ class ManagedWorkspaceRepository:
     ) -> bool:
         partition_key = _partition(accounting.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY)
         row_key = f"{accounting.operation_id}:{accounting.delivery_id}"
-        return self._put_if_absent(
+        created = self._put_if_absent(
             accounting,
             partition_key=partition_key,
             row_key=row_key,
         )
+        stored = (
+            accounting
+            if created
+            else self.get_connected_source_delivery_accounting(
+                tenant_id=accounting.tenant_id,
+                operation_id=accounting.operation_id,
+                delivery_id=accounting.delivery_id,
+            )
+        )
+        if (
+            stored is not None
+            and stored.ownership_classification == "COMPLETE_OWNERSHIP"
+        ):
+            self.put_connected_source_recovery_ownership_index_entry(
+                index_entry_for_delivery_accounting(
+                    stored,
+                    canonical_partition_key=partition_key,
+                    canonical_row_key=row_key,
+                )
+            )
+        return created
 
     def get_connected_source_delivery_accounting(
         self,
@@ -429,6 +1188,20 @@ class ManagedWorkspaceRepository:
         ]
         return sorted(items, key=lambda item: (item.accounted_at, item.delivery_id))
 
+    def list_connected_source_delivery_accounting_page(
+        self,
+        *,
+        tenant_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> DocumentQueryPageV1:
+        validate_document_query_limit(limit)
+        return self._store.query(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY),
+            limit=limit,
+            cursor=cursor,
+        )
+
     # --- Connected source sync enqueue intent ---
 
     def put_connected_source_sync_enqueue_intent(
@@ -437,6 +1210,14 @@ class ManagedWorkspaceRepository:
     ) -> ConnectedSourceSyncEnqueueIntent:
         partition_key = _partition(intent.tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE)
         self._put(partition_key, intent.operation_id, intent)
+        if intent.ownership_classification == "COMPLETE_OWNERSHIP":
+            self.put_connected_source_recovery_ownership_index_entry(
+                index_entry_for_enqueue_intent(
+                    intent,
+                    canonical_partition_key=partition_key,
+                    canonical_row_key=intent.operation_id,
+                )
+            )
         return intent
 
     def put_connected_source_sync_enqueue_intent_if_absent(
@@ -444,11 +1225,31 @@ class ManagedWorkspaceRepository:
         intent: ConnectedSourceSyncEnqueueIntent,
     ) -> bool:
         partition_key = _partition(intent.tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE)
-        return self._put_if_absent(
+        created = self._put_if_absent(
             intent,
             partition_key=partition_key,
             row_key=intent.operation_id,
         )
+        stored = (
+            intent
+            if created
+            else self.get_connected_source_sync_enqueue_intent(
+                tenant_id=intent.tenant_id,
+                operation_id=intent.operation_id,
+            )
+        )
+        if (
+            stored is not None
+            and stored.ownership_classification == "COMPLETE_OWNERSHIP"
+        ):
+            self.put_connected_source_recovery_ownership_index_entry(
+                index_entry_for_enqueue_intent(
+                    stored,
+                    canonical_partition_key=partition_key,
+                    canonical_row_key=intent.operation_id,
+                )
+            )
+        return created
 
     def allocate_connected_source_sync_enqueue_generation(
         self,
@@ -457,6 +1258,8 @@ class ManagedWorkspaceRepository:
         workspace_id: str,
         source_id: str,
         operation_id: str,
+        indexed_source_binding_id: str | None = None,
+        knowledge_source_binding_ref: str | None = None,
         max_attempts: int = 3,
     ) -> ConnectedSourceSyncEnqueueIntent:
         from datetime import UTC, datetime
@@ -469,18 +1272,42 @@ class ManagedWorkspaceRepository:
             )
             now = datetime.now(UTC)
             if existing is None:
+                complete_ownership = (
+                    indexed_source_binding_id is not None
+                    and knowledge_source_binding_ref is not None
+                )
                 intent = ConnectedSourceSyncEnqueueIntent(
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
                     source_id=source_id,
+                    indexed_source_binding_id=indexed_source_binding_id,
+                    knowledge_source_binding_ref=knowledge_source_binding_ref,
                     operation_id=operation_id,
                     enqueue_generation=1,
                     last_enqueued_generation=0,
                     updated_at=now,
+                    ownership_classification=(
+                        "COMPLETE_OWNERSHIP"
+                        if complete_ownership
+                        else "LEGACY_MIGRATION_REQUIRED"
+                    ),
                 )
                 if self.put_connected_source_sync_enqueue_intent_if_absent(intent):
                     return intent
                 continue
+            if (
+                (
+                    indexed_source_binding_id is not None
+                    or knowledge_source_binding_ref is not None
+                )
+                and (
+                    existing.ownership_classification != "COMPLETE_OWNERSHIP"
+                    or existing.indexed_source_binding_id != indexed_source_binding_id
+                    or existing.knowledge_source_binding_ref
+                    != knowledge_source_binding_ref
+                )
+            ):
+                raise ValueError("connected_source_enqueue_migration_required")
             updated = existing.model_copy(
                 update={
                     "enqueue_generation": existing.enqueue_generation + 1,
@@ -493,8 +1320,45 @@ class ManagedWorkspaceRepository:
                 partition_key=partition_key,
                 row_key=operation_id,
             ):
+                if updated.ownership_classification == "COMPLETE_OWNERSHIP":
+                    self.put_connected_source_recovery_ownership_index_entry(
+                        index_entry_for_enqueue_intent(
+                            updated,
+                            canonical_partition_key=partition_key,
+                            canonical_row_key=operation_id,
+                        )
+                    )
                 return updated
         raise RuntimeError("connected_source_enqueue_generation_allocation_failed")
+
+    def resolve_connected_source_ownership_for_source(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+    ) -> tuple[str, str] | None:
+        versions = self.list_knowledge_indexed_source_versions(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        matches = [
+            item
+            for item in versions
+            if item.source_id == source_id
+        ]
+        if not matches:
+            return None
+        binding_ids = {
+            (
+                item.indexed_source_binding_id,
+                item.knowledge_source_binding_ref,
+            )
+            for item in matches
+        }
+        if len(binding_ids) != 1:
+            raise ValueError("connected_source_ownership_ambiguous")
+        return next(iter(binding_ids))
 
     def get_connected_source_sync_enqueue_intent(
         self,
@@ -553,15 +1417,252 @@ class ManagedWorkspaceRepository:
             operation_id,
         )
 
+    def list_connected_source_sync_enqueue_intents_page(
+        self,
+        *,
+        tenant_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> DocumentQueryPageV1:
+        validate_document_query_limit(limit)
+        return self._store.query(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE),
+            limit=limit,
+            cursor=cursor,
+        )
+
     # --- Operation ---
 
     def put_operation(self, operation: WorkspaceOperation) -> WorkspaceOperation:
-        self._put(
-            _partition(operation.tenant_id, _ENTITY_OPERATION),
-            operation.operation_id,
-            operation,
+        existing = self.get_operation(
+            tenant_id=operation.tenant_id,
+            operation_id=operation.operation_id,
         )
-        return operation
+        created_at = self._resolve_canonical_operation_created_at(
+            operation=operation,
+            existing=existing,
+        )
+        canonical = operation.model_copy(update={"created_at": created_at})
+        if operation.operation_type is WorkspaceOperationType.SOURCE_SYNC:
+            # Publish derived source indexes before the canonical write.  A
+            # crash before the canonical write leaves only stale evidence,
+            # which readers validate and ignore.
+            is_new_operation = existing is None
+            self._put_source_sync_operation_history_index(canonical)
+            self._put_source_sync_operation_index(
+                canonical,
+                force_latest=is_new_operation,
+            )
+        self._put(
+            _partition(canonical.tenant_id, _ENTITY_OPERATION),
+            canonical.operation_id,
+            canonical,
+        )
+        self._put_workspace_operation_index(canonical)
+        return canonical
+
+    @staticmethod
+    def _normalize_operation_created_at(timestamp: datetime) -> datetime:
+        if timestamp.tzinfo is None:
+            return timestamp.replace(tzinfo=UTC)
+        return timestamp.astimezone(UTC)
+
+    def _resolve_canonical_operation_created_at(
+        self,
+        *,
+        operation: WorkspaceOperation,
+        existing: WorkspaceOperation | None,
+    ) -> datetime:
+        if existing is not None:
+            if (
+                existing.tenant_id != operation.tenant_id
+                or existing.workspace_id != operation.workspace_id
+            ):
+                raise RuntimeError("workspace_operation_identity_conflict")
+            if existing.created_at is not None:
+                canonical = self._normalize_operation_created_at(existing.created_at)
+                if operation.created_at is not None:
+                    incoming = self._normalize_operation_created_at(operation.created_at)
+                    if incoming != canonical:
+                        raise RuntimeError("workspace_operation_created_at_conflict")
+                return canonical
+        if operation.created_at is not None:
+            return self._normalize_operation_created_at(operation.created_at)
+        return datetime.now(UTC)
+
+    def _put_workspace_operation_index(self, operation: WorkspaceOperation) -> None:
+        if operation.created_at is None:
+            raise RuntimeError("workspace_operation_created_at_required")
+        created_at = self._normalize_operation_created_at(operation.created_at)
+        entry = WorkspaceOperationIndexEntryV1(
+            tenant_id=operation.tenant_id,
+            workspace_id=operation.workspace_id,
+            operation_id=operation.operation_id,
+            created_at=created_at,
+        )
+        partition_key = _partition(operation.tenant_id, _ENTITY_WORKSPACE_OPERATION_INDEX)
+        row_key = entry.index_row_key()
+        record = _to_document_record(entry, partition_key=partition_key, row_key=row_key)
+        if isinstance(self._store, ConditionalDocumentStore):
+            if self._store.put_if_absent(record):
+                return
+        else:
+            existing_record = self._store.get(partition_key, row_key)
+            if existing_record is None:
+                self._store.put(record)
+                return
+        existing_record = self._store.get(partition_key, row_key)
+        if existing_record is None:
+            raise RuntimeError("workspace_operation_index_write_conflict")
+        existing_entry = WorkspaceOperationIndexEntryV1.model_validate(
+            dict(existing_record.data),
+            strict=False,
+        )
+        if existing_entry != entry:
+            raise RuntimeError("workspace_operation_index_identity_conflict")
+
+    def list_operations_for_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        limit: int = 50,
+    ) -> list[WorkspaceOperation]:
+        validate_document_query_limit(limit)
+        partition_key = _partition(tenant_id, _ENTITY_WORKSPACE_OPERATION_INDEX)
+        page = self._store.query(
+            partition_key,
+            limit=limit,
+            row_key_prefix=f"{workspace_id}:",
+        )
+        operations: list[WorkspaceOperation] = []
+        for record in page.documents:
+            entry = WorkspaceOperationIndexEntryV1.model_validate(
+                dict(record.data),
+                strict=False,
+            )
+            if entry.tenant_id != tenant_id or entry.workspace_id != workspace_id:
+                raise RuntimeError("workspace_operation_index_scope_mismatch")
+            primary = self.get_operation(
+                tenant_id=tenant_id,
+                operation_id=entry.operation_id,
+            )
+            if primary is None:
+                continue
+            if (
+                primary.tenant_id != tenant_id
+                or primary.workspace_id != workspace_id
+                or primary.operation_id != entry.operation_id
+            ):
+                raise RuntimeError("workspace_operation_index_primary_mismatch")
+            operations.append(primary)
+        return operations
+
+    @staticmethod
+    def _source_sync_operation_sort_key(operation: WorkspaceOperation) -> tuple[str, str]:
+        timestamp = operation.created_at or operation.started_at or operation.completed_at
+        if timestamp is None:
+            return ("", operation.operation_id)
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=UTC)
+        else:
+            timestamp = timestamp.astimezone(UTC)
+        return (timestamp.isoformat(), operation.operation_id)
+
+    def _put_source_sync_operation_index(
+        self,
+        operation: WorkspaceOperation,
+        *,
+        force_latest: bool,
+    ) -> None:
+        partition_key = _partition(operation.tenant_id, _ENTITY_SOURCE_SYNC_OPERATION_INDEX)
+        row_key = _source_sync_operation_index_row_key(
+            workspace_id=operation.workspace_id,
+            source_id=operation.source_id,
+        )
+        sort_timestamp, sort_operation_id = self._source_sync_operation_sort_key(operation)
+        record = DocumentRecord(
+            partition_key=partition_key,
+            row_key=row_key,
+            data={
+                "tenant_id": operation.tenant_id,
+                "workspace_id": operation.workspace_id,
+                "source_id": operation.source_id,
+                "operation_type": operation.operation_type.value,
+                "operation_id": operation.operation_id,
+                "sort_timestamp": sort_timestamp,
+                "sort_operation_id": sort_operation_id,
+            },
+        )
+        for _ in range(4):
+            existing = self._store.get(partition_key, row_key)
+            if existing is None:
+                if not isinstance(self._store, ConditionalDocumentStore):
+                    self._store.put(record)
+                    return
+                if self._store.put_if_absent(record):
+                    return
+                continue
+            existing_data = dict(existing.data)
+            if any(
+                existing_data.get(field) != expected
+                for field, expected in (
+                    ("tenant_id", operation.tenant_id),
+                    ("workspace_id", operation.workspace_id),
+                    ("source_id", operation.source_id),
+                    ("operation_type", WorkspaceOperationType.SOURCE_SYNC.value),
+                )
+            ):
+                raise RuntimeError("source_sync_operation_index_identity_conflict")
+            if existing_data.get("operation_id") == operation.operation_id:
+                return
+            if force_latest:
+                should_replace = True
+            else:
+                existing_sort_key = (
+                    str(existing_data.get("sort_timestamp") or ""),
+                    str(existing_data.get("sort_operation_id") or ""),
+                )
+                should_replace = (
+                    sort_timestamp != existing_sort_key[0]
+                    and (sort_timestamp, sort_operation_id) > existing_sort_key
+                )
+            if not should_replace:
+                return
+            if not isinstance(self._store, ConditionalDocumentStore):
+                raise TypeError("source_sync_operation_index_store_unavailable")
+            if self._store.replace_if_match(expected=existing, replacement=record):
+                return
+        raise RuntimeError("source_sync_operation_index_concurrency_conflict")
+
+    def _put_source_sync_operation_history_index(
+        self,
+        operation: WorkspaceOperation,
+    ) -> None:
+        sort_timestamp, sort_operation_id = self._source_sync_operation_sort_key(operation)
+        self._store.put(
+            DocumentRecord(
+                partition_key=_partition(
+                    operation.tenant_id,
+                    _ENTITY_SOURCE_SYNC_OPERATION_INDEX,
+                ),
+                row_key=_source_sync_operation_history_row_key(
+                    workspace_id=operation.workspace_id,
+                    source_id=operation.source_id,
+                    sort_timestamp=sort_timestamp,
+                    operation_id=sort_operation_id,
+                ),
+                data={
+                    "tenant_id": operation.tenant_id,
+                    "workspace_id": operation.workspace_id,
+                    "source_id": operation.source_id,
+                    "operation_type": operation.operation_type.value,
+                    "operation_id": operation.operation_id,
+                    "sort_timestamp": sort_timestamp,
+                    "sort_operation_id": sort_operation_id,
+                },
+            )
+        )
 
     def replace_operation_if_match(
         self,
@@ -602,8 +1703,39 @@ class ManagedWorkspaceRepository:
 
     def delete_operations_for_workspace(self, *, tenant_id: str, workspace_id: str) -> int:
         deleted = 0
+        deleted_ids: set[str] = set()
+        partition_index = _partition(tenant_id, _ENTITY_WORKSPACE_OPERATION_INDEX)
+        prefix = f"{workspace_id}:"
+        cursor: str | None = None
+        while True:
+            page = self._store.query(
+                partition_index,
+                limit=200,
+                row_key_prefix=prefix,
+                cursor=cursor,
+            )
+            if not page.documents:
+                break
+            for record in page.documents:
+                entry = WorkspaceOperationIndexEntryV1.model_validate(
+                    dict(record.data),
+                    strict=False,
+                )
+                self._store.delete(partition_index, record.row_key)
+                self.delete_operation(
+                    tenant_id=tenant_id,
+                    operation_id=entry.operation_id,
+                )
+                deleted_ids.add(entry.operation_id)
+                deleted += 1
+            if page.next_cursor is None:
+                break
+            cursor = page.next_cursor
+        # Workspace cleanup only: remove historical primaries that predate the index.
         for operation in self.list_operations(tenant_id=tenant_id):
             if operation.workspace_id != workspace_id:
+                continue
+            if operation.operation_id in deleted_ids:
                 continue
             self.delete_operation(tenant_id=tenant_id, operation_id=operation.operation_id)
             deleted += 1
@@ -626,7 +1758,397 @@ class ManagedWorkspaceRepository:
                 data={"document_id": ref.document_id, "content_hash": ref.content_hash},
             )
         )
+        if (
+            ref.materialization_ownership is not None
+            and ref.materialization_ownership.ownership_mode
+            is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+        ):
+            self.put_document_ownership_index_entry(
+                WorkspaceDocumentOwnershipIndexEntryV1.for_reference(ref)
+            )
         return ref
+
+    def put_document_ownership_index_entry(
+        self,
+        entry: WorkspaceDocumentOwnershipIndexEntryV1,
+    ) -> WorkspaceDocumentOwnershipIndexEntryV1:
+        record = entry.to_document()
+        existing = self._store.get(record.partition_key, record.row_key)
+        if existing is not None:
+            parsed = parse_index_entry(existing)
+            same_identity = (
+                parsed.tenant_id == entry.tenant_id
+                and parsed.workspace_id == entry.workspace_id
+                and parsed.source_id == entry.source_id
+                and parsed.indexed_source_binding_id == entry.indexed_source_binding_id
+                and parsed.knowledge_source_binding_ref
+                == entry.knowledge_source_binding_ref
+                and parsed.document_id == entry.document_id
+            )
+            if not same_identity:
+                raise DocumentOwnershipIndexError(
+                    "document_ownership_index_conflict"
+                )
+            if parsed != entry:
+                if not isinstance(self._store, ConditionalDocumentStore):
+                    raise DocumentOwnershipIndexError(
+                        "document_ownership_index_store_unavailable"
+                    )
+                if not self._store.replace_if_match(
+                    expected=existing,
+                    replacement=record,
+                ):
+                    retry = self._store.get(record.partition_key, record.row_key)
+                    if retry is None or parse_index_entry(retry) != entry:
+                        raise DocumentOwnershipIndexError(
+                            "document_ownership_index_conflict"
+                        )
+            return entry
+        if not isinstance(self._store, ConditionalDocumentStore):
+            raise DocumentOwnershipIndexError("document_ownership_index_store_unavailable")
+        if not self._store.put_if_absent(record):
+            retry = self._store.get(record.partition_key, record.row_key)
+            if retry is None or parse_index_entry(retry) != entry:
+                raise DocumentOwnershipIndexError(
+                    "document_ownership_index_conflict"
+                )
+        return entry
+
+    def repair_document_ownership_index_entry(
+        self,
+        reference: WorkspaceDocumentReference,
+    ) -> WorkspaceDocumentOwnershipIndexEntryV1:
+        try:
+            entry = WorkspaceDocumentOwnershipIndexEntryV1.for_reference(reference)
+        except ValueError as exc:
+            raise DocumentOwnershipIndexError(str(exc)) from exc
+        return self.put_document_ownership_index_entry(entry)
+
+    def delete_document_ownership_index_entry(
+        self,
+        entry: WorkspaceDocumentOwnershipIndexEntryV1,
+    ) -> bool:
+        """Delete one validated derived ownership row, idempotently."""
+        record = self._store.get(
+            ownership_index_partition(entry.tenant_id),
+            entry.row_key,
+        )
+        if record is None:
+            return False
+        if parse_index_entry(record) != entry:
+            raise DocumentOwnershipIndexError(
+                "document_ownership_index_delete_conflict"
+            )
+        self._store.delete(record.partition_key, record.row_key)
+        return True
+
+    def list_document_refs_by_materialization_owner(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        knowledge_source_binding_ref: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> DocumentReferenceOwnershipPageV1:
+        scope = {
+            "tenant_id": tenant_id,
+            "workspace_id": workspace_id,
+            "source_id": source_id,
+            "indexed_source_binding_id": indexed_source_binding_id,
+            "knowledge_source_binding_ref": knowledge_source_binding_ref,
+        }
+        prefix_entry = WorkspaceDocumentOwnershipIndexEntryV1(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+            knowledge_source_binding_ref=knowledge_source_binding_ref,
+            document_id="scope-probe",
+            reference_fingerprint="0" * 64,
+            indexed_at=datetime.now(UTC),
+        )
+        page = self._store.query(
+            ownership_index_partition(tenant_id),
+            limit=limit,
+            row_key_prefix=prefix_entry.scope_prefix,
+            cursor=cursor,
+        )
+        references: list[WorkspaceDocumentReference] = []
+        orphan_entries: list[WorkspaceDocumentOwnershipIndexEntryV1] = []
+        for record in page.documents:
+            entry = parse_index_entry(record)
+            if any(
+                getattr(entry, key) != value
+                for key, value in scope.items()
+            ):
+                raise DocumentOwnershipIndexError(
+                    "document_ownership_index_scope_mismatch"
+                )
+            reference = self.get_document_ref(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                document_id=entry.document_id,
+            )
+            if reference is None:
+                orphan_entries.append(entry)
+                continue
+            ownership = reference.materialization_ownership
+            if (
+                ownership is None
+                or ownership.ownership_mode
+                is not KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                or (
+                    ownership.tenant_id,
+                    ownership.workspace_id,
+                    ownership.source_id,
+                    ownership.indexed_source_binding_id,
+                    ownership.knowledge_source_binding_ref,
+                )
+                != (
+                    tenant_id,
+                    workspace_id,
+                    source_id,
+                    indexed_source_binding_id,
+                    knowledge_source_binding_ref,
+                )
+                or reference_fingerprint(reference) != entry.reference_fingerprint
+            ):
+                raise DocumentOwnershipIndexError(
+                    "document_ownership_index_reference_mismatch"
+                )
+            references.append(reference)
+        return DocumentReferenceOwnershipPageV1(
+            references=tuple(references),
+            orphan_index_entries=tuple(orphan_entries),
+            next_cursor=page.next_cursor,
+        )
+
+    def put_connected_source_recovery_ownership_index_entry(
+        self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
+    ) -> ConnectedSourceRecoveryOwnershipIndexEntryV1:
+        record = entry.to_document()
+        existing = self._store.get(record.partition_key, record.row_key)
+        if existing is not None:
+            parsed = parse_recovery_ownership_index_entry(existing)
+            same_identity = (
+                parsed.tenant_id == entry.tenant_id
+                and parsed.workspace_id == entry.workspace_id
+                and parsed.source_id == entry.source_id
+                and parsed.indexed_source_binding_id
+                == entry.indexed_source_binding_id
+                and parsed.knowledge_source_binding_ref
+                == entry.knowledge_source_binding_ref
+                and parsed.record_kind == entry.record_kind
+                and parsed.operation_id == entry.operation_id
+                and parsed.delivery_id == entry.delivery_id
+                and parsed.document_id == entry.document_id
+                and parsed.canonical_partition_key == entry.canonical_partition_key
+                and parsed.canonical_row_key == entry.canonical_row_key
+            )
+            if not same_identity:
+                raise ConnectedSourceRecoveryOwnershipIndexError(
+                    "recovery_ownership_index_conflict"
+                )
+            if parsed == entry:
+                return entry
+            if not isinstance(self._store, ConditionalDocumentStore):
+                raise ConnectedSourceRecoveryOwnershipIndexError(
+                    "recovery_ownership_index_store_unavailable"
+                )
+            if not self._store.replace_if_match(
+                expected=existing,
+                replacement=record,
+            ):
+                retry = self._store.get(record.partition_key, record.row_key)
+                if (
+                    retry is None
+                    or parse_recovery_ownership_index_entry(retry) != entry
+                ):
+                    raise ConnectedSourceRecoveryOwnershipIndexError(
+                        "recovery_ownership_index_conflict"
+                    )
+            return entry
+        if not isinstance(self._store, ConditionalDocumentStore):
+            raise ConnectedSourceRecoveryOwnershipIndexError(
+                "recovery_ownership_index_store_unavailable"
+            )
+        if not self._store.put_if_absent(record):
+            retry = self._store.get(record.partition_key, record.row_key)
+            if retry is None or parse_recovery_ownership_index_entry(retry) != entry:
+                raise ConnectedSourceRecoveryOwnershipIndexError(
+                    "recovery_ownership_index_conflict"
+                )
+        return entry
+
+    def repair_connected_source_recovery_ownership_index_entry(
+        self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
+    ) -> ConnectedSourceRecoveryOwnershipIndexEntryV1:
+        """Idempotent repair from a known complete-ownership canonical record."""
+        return self.put_connected_source_recovery_ownership_index_entry(entry)
+
+    def delete_connected_source_recovery_ownership_index_entry(
+        self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
+    ) -> bool:
+        record = self._store.get(
+            recovery_ownership_index_partition(entry.tenant_id),
+            entry.row_key,
+        )
+        if record is None:
+            return False
+        if parse_recovery_ownership_index_entry(record) != entry:
+            raise ConnectedSourceRecoveryOwnershipIndexError(
+                "recovery_ownership_index_delete_conflict"
+            )
+        self._store.delete(record.partition_key, record.row_key)
+        return True
+
+    def list_connected_source_recovery_records_by_owner(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        knowledge_source_binding_ref: str,
+        record_kind: RecoveryRecordKindV1,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ConnectedSourceRecoveryOwnershipPageV1:
+        validate_document_query_limit(limit)
+        scope = (
+            tenant_id,
+            workspace_id,
+            source_id,
+            indexed_source_binding_id,
+            knowledge_source_binding_ref,
+        )
+        prefix = recovery_ownership_scope_prefix(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+            knowledge_source_binding_ref=knowledge_source_binding_ref,
+            record_kind=record_kind,
+        )
+        page = self._store.query(
+            recovery_ownership_index_partition(tenant_id),
+            limit=limit,
+            row_key_prefix=prefix,
+            cursor=cursor,
+        )
+        index_entries: list[ConnectedSourceRecoveryOwnershipIndexEntryV1] = []
+        orphan_entries: list[ConnectedSourceRecoveryOwnershipIndexEntryV1] = []
+        for record in page.documents:
+            entry = parse_recovery_ownership_index_entry(record)
+            if entry.ownership_scope != scope or entry.record_kind != record_kind:
+                raise ConnectedSourceRecoveryOwnershipIndexError(
+                    "recovery_ownership_index_scope_mismatch"
+                )
+            canonical = self._store.get(
+                entry.canonical_partition_key,
+                entry.canonical_row_key,
+            )
+            if canonical is None:
+                orphan_entries.append(entry)
+                continue
+            if not self._recovery_canonical_matches_index(entry, canonical):
+                raise ConnectedSourceRecoveryOwnershipIndexError(
+                    "recovery_ownership_index_reference_mismatch"
+                )
+            index_entries.append(entry)
+        return ConnectedSourceRecoveryOwnershipPageV1(
+            index_entries=tuple(index_entries),
+            orphan_index_entries=tuple(orphan_entries),
+            next_cursor=page.next_cursor,
+        )
+
+    def _recovery_canonical_matches_index(
+        self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
+        canonical: DocumentRecord,
+    ) -> bool:
+        if (
+            canonical.partition_key != entry.canonical_partition_key
+            or canonical.row_key != entry.canonical_row_key
+        ):
+            return False
+        if entry.record_kind is RecoveryRecordKindV1.ENQUEUE_INTENT:
+            try:
+                item = ConnectedSourceSyncEnqueueIntent.model_validate(
+                    dict(canonical.data), strict=False
+                )
+            except (TypeError, ValueError):
+                return False
+            return (
+                item.ownership_classification == "COMPLETE_OWNERSHIP"
+                and (
+                    item.tenant_id,
+                    item.workspace_id,
+                    item.source_id,
+                    item.indexed_source_binding_id,
+                    item.knowledge_source_binding_ref,
+                )
+                == entry.ownership_scope
+                and item.operation_id == entry.operation_id
+                and canonical_record_fingerprint(item) == entry.canonical_fingerprint
+            )
+        if entry.record_kind is RecoveryRecordKindV1.DELIVERY_ACCOUNTING:
+            try:
+                item = ConnectedSourceOperationDeliveryAccounting.model_validate(
+                    dict(canonical.data), strict=False
+                )
+            except (TypeError, ValueError):
+                return False
+            return (
+                item.ownership_classification == "COMPLETE_OWNERSHIP"
+                and (
+                    item.tenant_id,
+                    item.workspace_id,
+                    item.source_id,
+                    item.indexed_source_binding_id,
+                    item.knowledge_source_binding_ref,
+                )
+                == entry.ownership_scope
+                and item.operation_id == entry.operation_id
+                and item.delivery_id == entry.delivery_id
+                and canonical_record_fingerprint(item) == entry.canonical_fingerprint
+            )
+        if entry.record_kind is RecoveryRecordKindV1.INDEX_RECEIPT:
+            from local_workspace_application.workspaces.document_indexing import (
+                _WorkspaceDocumentIndexReceipt,
+            )
+
+            try:
+                item = _WorkspaceDocumentIndexReceipt.model_validate(
+                    dict(canonical.data), strict=False
+                )
+            except (TypeError, ValueError):
+                return False
+            ownership = item.materialization_ownership
+            if ownership is None:
+                return False
+            return (
+                ownership.ownership_mode
+                is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                and (
+                    ownership.tenant_id,
+                    ownership.workspace_id,
+                    ownership.source_id,
+                    ownership.indexed_source_binding_id,
+                    ownership.knowledge_source_binding_ref,
+                )
+                == entry.ownership_scope
+                and item.operation_id == entry.operation_id
+                and item.document_id == entry.document_id
+                and canonical_record_fingerprint(item) == entry.canonical_fingerprint
+            )
+        return False
 
     def get_document_ref_by_path(
         self,
@@ -662,12 +2184,21 @@ class ManagedWorkspaceRepository:
         )
         refs: list[WorkspaceDocumentReference] = []
         for doc in result.documents:
-            if str(doc.row_key).startswith(f"{workspace_id}:") and not str(doc.row_key).startswith(
-                f"{workspace_id}:path:"
+            if (
+                str(doc.row_key).startswith(f"{workspace_id}:")
+                and not str(doc.row_key).startswith(f"{workspace_id}:path:")
+                and "document_id" in doc.data
+                and "source_path" in doc.data
             ):
-                # skip path index rows which use path: prefix under same partition
-                if "document_id" in doc.data and "source_path" in doc.data:
-                    refs.append(WorkspaceDocumentReference.model_validate(dict(doc.data)))
+                try:
+                    refs.append(
+                        WorkspaceDocumentReference.model_validate(
+                            dict(doc.data),
+                            strict=False,
+                        )
+                    )
+                except ValidationError:
+                    continue
         return refs
 
     def get_document_ref(
@@ -708,6 +2239,45 @@ class ManagedWorkspaceRepository:
 
     def list_operations(self, *, tenant_id: str) -> list[WorkspaceOperation]:
         return self._list(_partition(tenant_id, _ENTITY_OPERATION), WorkspaceOperation)
+
+    def list_source_sync_operations_page(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> DocumentQueryPageV1:
+        """Read the exact latest-operation pointer for one source."""
+        validate_document_query_limit(limit)
+        return self._store.query(
+            _partition(tenant_id, _ENTITY_SOURCE_SYNC_OPERATION_INDEX),
+            limit=limit,
+            row_key_prefix=_source_sync_operation_index_row_key(
+                workspace_id=workspace_id,
+                source_id=source_id,
+            ),
+            cursor=cursor,
+        )
+
+    def list_source_sync_operation_history_page(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> DocumentQueryPageV1:
+        """Read bounded exact-source source-sync operation history."""
+        validate_document_query_limit(limit)
+        return self._store.query(
+            _partition(tenant_id, _ENTITY_SOURCE_SYNC_OPERATION_INDEX),
+            limit=limit,
+            row_key_prefix=f"{workspace_id}:{source_id}:history:",
+            cursor=cursor,
+        )
 
     def list_ingestion_operations(
         self,
@@ -790,19 +2360,49 @@ class ManagedWorkspaceRepository:
         active = {
             WorkspaceOperationStatus.QUEUED,
             WorkspaceOperationStatus.RUNNING,
+            WorkspaceOperationStatus.PROCESSING,
         }
-        candidates = [
-            op
-            for op in self.list_operations(tenant_id=tenant_id)
-            if op.workspace_id == workspace_id
-            and op.source_id == source_id
-            and op.operation_type is WorkspaceOperationType.SOURCE_SYNC
-            and op.status in active
-        ]
-        if not candidates:
-            return None
-        candidates.sort(key=lambda item: item.started_at or item.completed_at or item.operation_id)
-        return candidates[0]
+        cursor: str | None = None
+        while True:
+            page = self.list_source_sync_operation_history_page(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                limit=100,
+                cursor=cursor,
+            )
+            for record in page.documents:
+                data = dict(record.data)
+                if any(
+                    data.get(field) != expected
+                    for field, expected in (
+                        ("tenant_id", tenant_id),
+                        ("workspace_id", workspace_id),
+                        ("source_id", source_id),
+                        ("operation_type", WorkspaceOperationType.SOURCE_SYNC.value),
+                    )
+                ):
+                    continue
+                operation_id = data.get("operation_id")
+                if not isinstance(operation_id, str) or not operation_id.strip():
+                    continue
+                operation = self.get_operation(
+                    tenant_id=tenant_id,
+                    operation_id=operation_id,
+                )
+                if (
+                    operation is not None
+                    and operation.tenant_id == tenant_id
+                    and operation.workspace_id == workspace_id
+                    and operation.source_id == source_id
+                    and operation.operation_type is WorkspaceOperationType.SOURCE_SYNC
+                    and operation.status in active
+                ):
+                    return operation
+            if page.next_cursor is None:
+                break
+            cursor = page.next_cursor
+        return None
 
     def mark_running_operations_failed_for_tenant(
         self,
@@ -1054,8 +2654,8 @@ class ManagedWorkspaceRepository:
                 try:
                     self._store.delete(_ACTIVE_KNOWLEDGE_INGESTION_PARTITION, doc.row_key)
                     malformed_removed += 1
-                except Exception:  # noqa: BLE001 - continue scan after delete failure
-                    pass
+                except Exception:  # noqa: BLE001, S112 - continue scan after delete failure
+                    continue
         locators.sort(key=lambda item: (item.created_at, item.operation_id))
         return ActiveKnowledgeIngestionLocatorScan(
             locators=tuple(locators),
@@ -1134,7 +2734,8 @@ class ManagedWorkspaceRepository:
             )
         items: list[T] = []
         for doc in result.documents:
-            model = model_type.model_validate(dict(doc.data))
+            model = cast(T, model_type.model_validate(dict(doc.data)))
+            model_data = cast(Any, model)
             row_workspace_id, row_entity_id, row_revision = _parse_revision_row_key(doc.row_key)
             if row_workspace_id != workspace_id:
                 raise ValueError("knowledge_configuration_record_identity_mismatch")
@@ -1146,12 +2747,12 @@ class ManagedWorkspaceRepository:
             _assert_record_identity(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
-                model_tenant_id=model.tenant_id,
-                model_workspace_id=model.workspace_id,
+                model_tenant_id=model_data.tenant_id,
+                model_workspace_id=model_data.workspace_id,
                 entity_id=row_entity_id,
                 model_entity_id=model_entity_id,
                 revision=row_revision,
-                model_revision=model.effective_revision,
+                model_revision=model_data.effective_revision,
             )
             items.append(model)
         return sorted(items, key=sort_key)
@@ -1588,7 +3189,7 @@ class ManagedWorkspaceRepository:
 
     def put_knowledge_query_policy_version_if_absent(
         self,
-        policy: WorkspaceQueryPolicy,
+        policy: WorkspaceCommittedQueryPolicy,
     ) -> bool:
         partition_key = _partition(
             policy.tenant_id,
@@ -1607,7 +3208,7 @@ class ManagedWorkspaceRepository:
         tenant_id: str,
         workspace_id: str,
         effective_revision: int,
-    ) -> WorkspaceQueryPolicy | None:
+    ) -> WorkspaceCommittedQueryPolicy | None:
         partition_key = _partition(
             tenant_id,
             _ENTITY_KNOWLEDGE_CONFIGURATION_QUERY_POLICY,
@@ -1620,7 +3221,12 @@ class ManagedWorkspaceRepository:
         record = self._store.get(partition_key, row_key)
         if record is None:
             return None
-        policy = WorkspaceQueryPolicy.model_validate(dict(record.data))
+        try:
+            policy = parse_workspace_query_policy(dict(record.data))
+        except ValueError as exc:
+            raise WorkspaceKnowledgeConfigurationRepositoryError(
+                "query_policy_schema_version_unknown"
+            ) from exc
         _assert_record_identity(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -1636,22 +3242,49 @@ class ManagedWorkspaceRepository:
         *,
         tenant_id: str,
         workspace_id: str,
-    ) -> list[WorkspaceQueryPolicy]:
-        return self._list_revision_versions(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            partition_key=_partition(
-                tenant_id,
-                _ENTITY_KNOWLEDGE_CONFIGURATION_QUERY_POLICY,
-            ),
-            model_type=WorkspaceQueryPolicy,
-            fixed_entity_id=_QUERY_POLICY_ENTITY_ID,
-            sort_key=lambda item: (item.effective_revision,),
+    ) -> list[WorkspaceCommittedQueryPolicy]:
+        partition_key = _partition(
+            tenant_id,
+            _ENTITY_KNOWLEDGE_CONFIGURATION_QUERY_POLICY,
         )
+        result = self._store.query(
+            partition_key,
+            limit=_KNOWLEDGE_CONFIGURATION_REVISION_SCAN_LIMIT + 1,
+            row_key_prefix=f"{workspace_id}:",
+        )
+        if len(result.documents) > _KNOWLEDGE_CONFIGURATION_REVISION_SCAN_LIMIT:
+            raise WorkspaceKnowledgeConfigurationRepositoryError(
+                "knowledge_configuration_revision_scan_limit_exceeded"
+            )
+        items: list[WorkspaceCommittedQueryPolicy] = []
+        for doc in result.documents:
+            try:
+                policy = parse_workspace_query_policy(dict(doc.data))
+            except ValueError as exc:
+                raise WorkspaceKnowledgeConfigurationRepositoryError(
+                    "query_policy_schema_version_unknown"
+                ) from exc
+            row_workspace_id, row_entity_id, row_revision = _parse_revision_row_key(doc.row_key)
+            if row_workspace_id != workspace_id:
+                raise ValueError("knowledge_configuration_record_identity_mismatch")
+            if row_entity_id != _QUERY_POLICY_ENTITY_ID:
+                raise ValueError("knowledge_configuration_record_identity_mismatch")
+            _assert_record_identity(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                model_tenant_id=policy.tenant_id,
+                model_workspace_id=policy.workspace_id,
+                entity_id=row_entity_id,
+                model_entity_id=_QUERY_POLICY_ENTITY_ID,
+                revision=row_revision,
+                model_revision=policy.effective_revision,
+            )
+            items.append(policy)
+        return sorted(items, key=lambda item: (item.effective_revision,))
 
     def delete_knowledge_query_policy_version_if_match(
         self,
-        policy: WorkspaceQueryPolicy,
+        policy: WorkspaceCommittedQueryPolicy,
     ) -> bool:
         partition_key = _partition(
             policy.tenant_id,

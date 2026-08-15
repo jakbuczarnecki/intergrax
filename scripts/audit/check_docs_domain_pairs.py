@@ -7,14 +7,14 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DOCS = ROOT / "docs"
+DOCS = ROOT / "docs" / "project"
 ARCH = DOCS / "architecture"
-PLAN = DOCS / "plan"
-FEATURES = DOCS / "features"
+PLAN = DOCS / "maintainers" / "plans"
+FEATURES = DOCS / "capabilities"
 FEATURE_ARCH = FEATURES / "architecture"
 FEATURE_PLAN = FEATURES / "plan"
-HUB = DOCS / "intergrax_runtime_architecture.md"
-GUIDES = DOCS / "guides"
+HUB = ARCH / "intergrax_runtime_architecture.md"
+GUIDES = DOCS / "technical" / "guides"
 
 REQUIRED_GUIDES = {
     "INTERGRAX_DEVELOPMENT_STRATEGY.md",
@@ -46,6 +46,7 @@ ARCH_ONLY_GOVERNANCE = {
 }
 
 ALLOWED_DOCS_ROOT = {
+    "README.md",
     "intergrax_runtime_architecture.md",
     "DOCUMENTATION_MAP.md",
 }
@@ -66,11 +67,11 @@ def _check_domain_pairs(errors: list[str]) -> int:
         if only_plan:
             errors.append(f"plan without architecture: {only_plan}")
 
-    for name in sorted(arch_names):
+    for name in sorted(arch_names & plan_names):
         arch_text = (ARCH / f"{name}.md").read_text(encoding="utf-8")
         plan_text = (PLAN / f"{name}.md").read_text(encoding="utf-8")
-        if f"plan/{name}.md" not in arch_text:
-            errors.append(f"architecture/{name}.md missing link to plan/{name}.md")
+        if f"maintainers/plans/{name}.md" not in arch_text:
+            errors.append(f"architecture/{name}.md missing link to maintainers/plans/{name}.md")
         if f"architecture/{name}.md" not in plan_text:
             errors.append(f"plan/{name}.md missing link to architecture/{name}.md")
         if "Architecture (1:1)" not in plan_text and "architecture/" not in plan_text:
@@ -78,7 +79,7 @@ def _check_domain_pairs(errors: list[str]) -> int:
 
     hub = HUB.read_text(encoding="utf-8") if HUB.is_file() else ""
     for name in arch_names:
-        if f"architecture/{name}.md" not in hub or f"plan/{name}.md" not in hub:
+        if f"architecture/{name}.md" not in hub or f"maintainers/plans/{name}.md" not in hub:
             errors.append(f"hub missing pair entry for {name}")
 
     return len(arch_names)
@@ -89,11 +90,11 @@ def _check_feature_pairs(errors: list[str]) -> int:
         return 0
 
     if not (FEATURES / "README.md").is_file():
-        errors.append("docs/features exists but docs/features/README.md is missing")
+        errors.append("docs/project/capabilities exists but docs/project/capabilities/README.md is missing")
     if not FEATURE_ARCH.is_dir():
-        errors.append("docs/features exists but docs/features/architecture/ is missing")
+        errors.append("docs/project/capabilities exists but docs/project/capabilities/architecture/ is missing")
     if not FEATURE_PLAN.is_dir():
-        errors.append("docs/features exists but docs/features/plan/ is missing")
+        errors.append("docs/project/capabilities exists but docs/project/capabilities/plan/ is missing")
 
     if not FEATURE_ARCH.is_dir() or not FEATURE_PLAN.is_dir():
         return 0
@@ -116,11 +117,11 @@ def _check_feature_pairs(errors: list[str]) -> int:
         plan_text = (FEATURE_PLAN / f"{name}.md").read_text(encoding="utf-8")
         if f"../plan/{name}.md" not in arch_text and f"plan/{name}.md" not in arch_text:
             errors.append(
-                f"features/architecture/{name}.md missing link to features/plan/{name}.md"
+                f"capabilities/architecture/{name}.md missing link to capabilities/plan/{name}.md"
             )
         if f"../architecture/{name}.md" not in plan_text and f"architecture/{name}.md" not in plan_text:
             errors.append(
-                f"features/plan/{name}.md missing link to features/architecture/{name}.md"
+                f"capabilities/plan/{name}.md missing link to capabilities/architecture/{name}.md"
             )
 
     return len(feature_arch_names)
@@ -130,13 +131,13 @@ def main() -> int:
     errors: list[str] = []
 
     if not HUB.is_file():
-        errors.append("missing docs/intergrax_runtime_architecture.md hub")
+        errors.append("missing docs/project/architecture/intergrax_runtime_architecture.md hub")
 
     extra_docs_root = [
         p.name for p in DOCS.glob("*.md") if p.name not in ALLOWED_DOCS_ROOT
     ]
     if extra_docs_root:
-        errors.append(f"unexpected files in docs/ root: {extra_docs_root}")
+        errors.append(f"unexpected files in docs/project/ root: {extra_docs_root}")
 
     for p in FORBIDDEN:
         if p.exists():

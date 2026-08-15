@@ -4,7 +4,8 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from dataclasses import replace
+from typing import List, Optional
 
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
@@ -12,7 +13,7 @@ from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVec
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 
@@ -45,10 +46,10 @@ class HierarchicalRetriever(BaseRetriever):
     def retrieve(
         self,
         query: RetrieverQuery,
-    ) -> List[RetrieverCandidate]:
+    ) -> tuple[RetrievalHit, ...]:
 
         if not query.query_text:
-            return []
+            return ()
 
         q_vec = (
             query.query_embedding
@@ -61,40 +62,50 @@ class HierarchicalRetriever(BaseRetriever):
         # Step 1: base retrieval from chunks
         base_hits = self._chunks.query(
             query_embedding=q_vec,
+            **({"scope": query.scope} if query.scope is not None else {}),
             top_k=max(top_k, self._k_chunks),
             metadata_filter=query.metadata_filter,
             include_embeddings=query.include_embeddings,
         )
 
-        results: Dict[str, RetrieverCandidate] = {}
+        results: dict[tuple[str, str | None, str | None], RetrievalHit] = {}
 
         for hit in base_hits:
-
-            results[hit.id] = RetrieverCandidate(
-                id=hit.id,
-                content=hit.content,
-                metadata=hit.metadata,
-                score=hit.similarity_score,
-                embedding=hit.embedding,
-                rank=hit.rank,
+            native_hit = RetrievalHit.from_vector_store_hit(
+                hit,
+                channel="dense",
+                retriever_name=self.name(),
             )
+            key = (
+                native_hit.document.scope.tenant_id,
+                native_hit.document.scope.namespace,
+                native_hit.vector_id,
+            )
+            results[key] = native_hit
 
         # Step 2: optional TOC expansion
         if self._toc is not None:
 
             toc_hits = self._toc.query(
                 query_embedding=q_vec,
+                **({"scope": query.scope} if query.scope is not None else {}),
                 top_k=self._k_toc,
                 metadata_filter=query.metadata_filter,
                 include_embeddings=False,
             )
 
             parents: List[str] = []
+            parent_scores: dict[str, float] = {}
             seen = set()
 
             for hit in toc_hits:
 
-                parent = hit.metadata.get(ChunkMetadataKey.PARENT_CHUNK_ID)
+                native_hit = RetrievalHit.from_vector_store_hit(
+                    hit,
+                    channel="dense",
+                    retriever_name=self.name(),
+                )
+                parent = native_hit.document.metadata.get(ChunkMetadataKey.PARENT_CHUNK_ID)
 
                 if not parent:
                     continue
@@ -102,10 +113,12 @@ class HierarchicalRetriever(BaseRetriever):
                 parent = str(parent)
 
                 if parent in seen:
+                    parent_scores[parent] = max(parent_scores[parent], native_hit.score)
                     continue
 
                 seen.add(parent)
                 parents.append(parent)
+                parent_scores[parent] = native_hit.score
 
                 if len(parents) >= self._max_toc_parents:
                     break
@@ -119,6 +132,7 @@ class HierarchicalRetriever(BaseRetriever):
                     parent_filter.update(query.metadata_filter.conditions)
                 local_hits = self._chunks.query(
                     query_embedding=q_vec,
+                    **({"scope": query.scope} if query.scope is not None else {}),
                     top_k=self._k_chunks,
                     metadata_filter=MetadataFilter(conditions=parent_filter),
                     include_embeddings=query.include_embeddings,
@@ -126,22 +140,24 @@ class HierarchicalRetriever(BaseRetriever):
 
                 for hit in local_hits:
 
-                    if hit.id not in results:
+                    native_hit = RetrievalHit.from_vector_store_hit(
+                        hit,
+                        channel="dense",
+                        retriever_name=self.name(),
+                    )
+                    # Preserve provider similarity while allowing the real
+                    # TOC section signal to rank expanded siblings.
+                    native_hit = replace(
+                        native_hit,
+                        score=max(native_hit.score, parent_scores[parent]),
+                    )
+                    key = (
+                        native_hit.document.scope.tenant_id,
+                        native_hit.document.scope.namespace,
+                        native_hit.vector_id,
+                    )
+                    if key not in results:
+                        results[key] = native_hit
 
-                        results[hit.id] = RetrieverCandidate(
-                            id=hit.id,
-                            content=hit.content,
-                            metadata=hit.metadata,
-                            score=hit.similarity_score,
-                            embedding=hit.embedding,
-                            rank=hit.rank,
-                        )
-
-        candidates = list(results.values())
-
-        candidates.sort(
-            key=lambda x: x.score,
-            reverse=True,
-        )
-
-        return candidates[:top_k]
+        candidates = sorted(results.values(), key=lambda x: x.score, reverse=True)
+        return tuple(replace(hit, rank=rank) for rank, hit in enumerate(candidates[:top_k]))

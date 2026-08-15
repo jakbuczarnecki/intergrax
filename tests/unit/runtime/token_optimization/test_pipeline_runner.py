@@ -12,6 +12,7 @@ import pytest
 from intergrax.runtime.token_optimization.contracts import (
     ProtectedRegion,
     ProtectedRegionKind,
+    ProtectedRegionValidationStatus,
     StrategySafetyClass,
     TokenOptimizationBypassReason,
     TokenOptimizationLayerContext,
@@ -30,7 +31,9 @@ from intergrax.runtime.token_optimization.contracts import (
     TokenOptimizationStrategyKind,
     TokenOptimizationStrategyRef,
 )
-from intergrax.runtime.token_optimization.layers.exact_deduplication import ExactDeduplicationLayer
+from intergrax.runtime.token_optimization.layers.exact_deduplication import (
+    ExactDeduplicationLayer,
+)
 from intergrax.runtime.token_optimization.pipeline import (
     TokenOptimizationPipelineRunner,
     resolve_token_optimization_pipeline_layers,
@@ -744,13 +747,14 @@ def test_off_profile_does_not_invoke_layers() -> None:
     assert result.bypassed_layer_ids == ("builtin.any",)
 
 
-def test_measure_only_blocks_mutating_layer() -> None:
+def test_measure_only_executes_strategy_without_replacing_final_content() -> None:
     layer = _RecordingFakeLayer(
         layer_id="builtin.lossless",
         safety_class=StrategySafetyClass.LOSSLESS,
+        requires_validation=True,
         result_factory=lambda request: TokenOptimizationLayerResult(
             layer_id="builtin.lossless",
-            output_content="mutated",
+            output_content="keep SECRET",
             decision=TokenOptimizationLayerDecision.APPLY,
         ),
     )
@@ -763,16 +767,27 @@ def test_measure_only_blocks_mutating_layer() -> None:
 
     result = runner.run(
         request=_request(
-            "same",
+            "keep SECRET\nkeep SECRET",
             policy=_enabled_policy(profile=TokenOptimizationProfile.MEASURE_ONLY),
+            protected_regions=(
+                ProtectedRegion(kind=ProtectedRegionKind.IDENTIFIER, value="SECRET"),
+            ),
         ),
         config=config,
     )
 
-    assert layer.calls == []
-    assert result.bypassed_layer_ids == ("builtin.lossless",)
-    assert result.final_content == "same"
-    assert result.layer_results[0].bypass_reason is TokenOptimizationBypassReason.POLICY_DISALLOWED
+    assert len(layer.calls) == 1
+    assert layer.calls[0].policy.profile is TokenOptimizationProfile.BALANCED
+    assert result.applied_layer_ids == ("builtin.lossless",)
+    assert result.final_content == "keep SECRET\nkeep SECRET"
+    assert result.receipt_metadata["decision"] == "measure_only"
+    assert result.receipt_metadata["final_content_replacement"] is False
+    assert result.receipt_metadata["optimized_character_count"] == len("keep SECRET")
+    assert result.aggregate_measurement is not None
+    assert result.aggregate_measurement.baseline_tokens == len("keep SECRET\nkeep SECRET")
+    assert result.aggregate_measurement.optimized_tokens == len("keep SECRET")
+    assert result.layer_results[0].validation is not None
+    assert result.layer_results[0].validation.status is ProtectedRegionValidationStatus.PASSED
 
 
 def test_lossy_without_allow_lossy_blocked() -> None:

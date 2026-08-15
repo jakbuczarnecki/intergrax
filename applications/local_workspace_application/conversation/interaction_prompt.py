@@ -40,6 +40,44 @@ Rules:
 19. Use occurrence only to distinguish repeated exact values in message_text (one-based: 1 = first occurrence).
 20. Use one-based action numbers in depends_on_action_numbers and blocks_action_numbers
     (1 = first action in the returned actions sequence).
+21. Knowledge plugin discovery actions may use only references present in
+    knowledge_plugin_configuration. Never invent connection refs, resource IDs,
+    discovery selectors, capabilities or pagination tokens.
+22. Use knowledge.connections.list for configured connections,
+    knowledge.resources.list for a registered discovery selector, and
+    knowledge.capabilities.list for a registered connection/resource scope.
+23. Use citation.inspect when the user asks to inspect, show, or open a numbered source
+    or citation from the most recent grounded answer (e.g. "show source 1", "open citation 2").
+    Use citation_reference_kind ordinal with the cited number from the user message.
+    Do not ask the user for document IDs.
+24. Use knowledge.inventory.list for daily knowledge source inventory (e.g. "pokaż źródła",
+    "which sources need attention?"). Use inventory_filter attention_required when the user
+    asks about problems or attention.
+25. Use knowledge.operation.execute for sync, retry, disable, enable, or detach on a numbered
+    or named source (e.g. "odśwież źródło 2", "wyłącz Project Drive").
+26. Use destructive.confirm only when the user explicitly confirms a prior destructive action
+    and a confirmation token is available in recent assistant context.
+27. workspace.delete always requires explicit confirmation — never assume deletion completed
+    in the same turn as the delete request.
+28. When the user asks a question scoped to one or more named or numbered knowledge sources
+    (e.g. "only in Project Drive", "ask source 2", "from HR Drive and Handbook"),
+    include knowledge_targets on workspace.ask using ordinal, display_label, or knowledge_item_id
+    references from inventory context. Multiple targets are allowed. No explicit source means
+    normal whole-workspace Ask without knowledge_targets. Never invent source IDs or raw source_id
+    values.
+29. Use tenant_connection.providers.list when the user asks which integrations or connection
+    providers can be added (e.g. "jakie integracje mogę podłączyć?", "what connections can I add?").
+30. Use tenant_connection.connections.list when the user asks which tenant connections already exist.
+31. Use tenant_connection.connection.inspect when the user asks for details of a named connection.
+32. Use tenant_connection.authorization.begin when the user wants to connect or add a provider.
+    Use provider_reference with the human provider name from the message — never invent provider_id.
+33. Use tenant_connection.connection.reconnect when the user wants to renew authorization.
+34. Use tenant_connection.connection.revoke when the user wants to disconnect or remove a connection.
+35. Use tenant_connection.authorization.complete_manual only when tenant_connection_inventory shows
+    pending_manual_authorization and the user message contains manual credential JSON for Slack.
+    Never echo user-provided secret tokens back.
+36. Tenant connection actions use only provider/connection references grounded in
+    tenant_connection_inventory. Never invent connection_ref or provider_id.
 
 Example — different workspace targets:
 User message:
@@ -134,6 +172,11 @@ def build_safe_planning_context(request: ConversationPlanningRequest) -> dict[st
             }
             for candidate in request.available_source_candidates
         ],
+        "knowledge_plugin_configuration": (
+            request.knowledge_plugin_configuration.model_dump(mode="json")
+            if request.knowledge_plugin_configuration is not None
+            else None
+        ),
         "recent_turns": [
             {"role": turn.role, "text": turn.text} for turn in request.recent_turns
         ],

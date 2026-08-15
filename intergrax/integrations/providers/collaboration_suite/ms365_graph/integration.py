@@ -34,6 +34,8 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphCalendarEventsReadClient,
     MsGraphCalendarFileAttachmentContent,
     MsGraphCalendarPage,
+    MsGraphCalendarReference,
+    MsGraphCalendarReferencePagingReadClient,
     MsGraphCalendarsReadClient,
     MsGraphCalendarViewWindow,
     MsGraphDriveContentReadClient,
@@ -59,9 +61,14 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     validate_msgraph_calendar_attachment_page,
     validate_msgraph_calendar_event_content,
     validate_msgraph_calendar_event_delta_page,
+    validate_msgraph_calendar_event_delta_page_by_reference,
     validate_msgraph_calendar_event_snapshot_page,
+    validate_msgraph_calendar_event_snapshot_page_by_reference,
+    validate_msgraph_calendar_events_continuation,
+    validate_msgraph_calendar_events_snapshot_continuation,
     validate_msgraph_calendar_file_attachment_content,
     validate_msgraph_calendar_page,
+    validate_msgraph_calendar_reference,
     validate_msgraph_mail_attachment_page,
     validate_msgraph_mail_file_attachment_content,
     validate_msgraph_mail_folder_page,
@@ -349,6 +356,104 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             result,
             calendar=calendar,
             window=window,
+            graph_base_url=graph_base_url,
+        )
+
+    def read_calendar_events_delta_page_by_reference(
+        self,
+        *,
+        calendar: MsGraphCalendarReference,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarEventDeltaPage:
+        try:
+            validated_calendar = validate_msgraph_calendar_reference(calendar)
+        except ValueError:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Calendar events request"
+            ) from None
+        try:
+            validated_window = MsGraphCalendarViewWindow.model_validate(
+                window.model_dump(mode="python")
+            )
+        except (ValueError, TypeError, AttributeError):
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Calendar events request"
+            ) from None
+        if type(limit) is not int or limit < 1 or limit > 1000:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Calendar events request"
+            ) from None
+        validated_continuation: MsGraphKnowledgeContinuation | None = None
+        if continuation is not None:
+            graph_base_url = self._graph_base_url_for_calendar_validation()
+            validated_continuation = validate_msgraph_calendar_events_continuation(
+                continuation,
+                mailbox_user_id=validated_calendar.mailbox_user_id,
+                calendar_id=validated_calendar.calendar_remote_id,
+                graph_base_url=graph_base_url,
+            )
+        result = self._require_calendar_reference_paging_client().read_calendar_events_delta_page_by_reference(
+            calendar=validated_calendar,
+            window=validated_window,
+            continuation=validated_continuation,
+            limit=limit,
+        )
+        graph_base_url = self._graph_base_url_for_calendar_validation()
+        return validate_msgraph_calendar_event_delta_page_by_reference(
+            result,
+            calendar=validated_calendar,
+            window=validated_window,
+            graph_base_url=graph_base_url,
+        )
+
+    def read_calendar_events_snapshot_page_by_reference(
+        self,
+        *,
+        calendar: MsGraphCalendarReference,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarEventSnapshotPage:
+        try:
+            validated_calendar = validate_msgraph_calendar_reference(calendar)
+        except ValueError:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Calendar events request"
+            ) from None
+        try:
+            validated_window = MsGraphCalendarViewWindow.model_validate(
+                window.model_dump(mode="python")
+            )
+        except (ValueError, TypeError, AttributeError):
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Calendar events request"
+            ) from None
+        if type(limit) is not int or limit < 1 or limit > 1000:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Calendar events request"
+            ) from None
+        validated_continuation: MsGraphKnowledgeContinuation | None = None
+        if continuation is not None:
+            graph_base_url = self._graph_base_url_for_calendar_validation()
+            validated_continuation = validate_msgraph_calendar_events_snapshot_continuation(
+                continuation,
+                mailbox_user_id=validated_calendar.mailbox_user_id,
+                calendar_id=validated_calendar.calendar_remote_id,
+                graph_base_url=graph_base_url,
+            )
+        result = self._require_calendar_reference_paging_client().read_calendar_events_snapshot_page_by_reference(
+            calendar=validated_calendar,
+            window=validated_window,
+            continuation=validated_continuation,
+            limit=limit,
+        )
+        graph_base_url = self._graph_base_url_for_calendar_validation()
+        return validate_msgraph_calendar_event_snapshot_page_by_reference(
+            result,
+            calendar=validated_calendar,
+            window=validated_window,
             graph_base_url=graph_base_url,
         )
 
@@ -1252,6 +1357,16 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
         if not isinstance(client, MsGraphCalendarEventSnapshotsReadClient):
             raise IntegrationConfigurationError(
                 "Microsoft Graph integration does not expose Calendar events snapshot capability",
+            )
+        return client
+
+    def _require_calendar_reference_paging_client(
+        self,
+    ) -> MsGraphCalendarReferencePagingReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphCalendarReferencePagingReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Calendar reference paging capability",
             )
         return client
 

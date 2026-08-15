@@ -7,7 +7,7 @@ from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from dispute_scenario.capabilities import CAPABILITIES
 
-# Register skill packs on the contract — see docs/architecture/SKILLS.md
+# Register skill packs on the contract — see docs/project/architecture/SKILLS.md
 
 
 def build_agent_contract() -> AgentContract:

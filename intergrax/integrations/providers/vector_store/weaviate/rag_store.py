@@ -4,11 +4,8 @@
 from __future__ import annotations
 from intergrax.utils import attribute_access
 
-import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
-
-from langchain_core.documents import Document
 
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 from intergrax.integrations.providers.vector_store.weaviate.schema import (
@@ -17,8 +14,21 @@ from intergrax.integrations.providers.vector_store.weaviate.schema import (
     ensure_weaviate_collection,
     metadata_filter_to_weaviate,
 )
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
+from intergrax.rag.vectorstore.providers.native_provider_boundary import (
+    native_hit,
+    provider_metadata,
+    require_membership_support,
+    validate_query,
+    validate_records,
+    validate_scope,
+)
 
 
 @dataclass(frozen=True)
@@ -49,6 +59,9 @@ class WeaviateVectorStore(BaseVectorStore):
         if self._native:
             self._collection = self._ensure_collection()
 
+    def supports_native_hybrid_search(self) -> bool:
+        return self._native
+
     def _ensure_collection(self) -> Any:
         assert self._client is not None
         try:
@@ -73,40 +86,41 @@ class WeaviateVectorStore(BaseVectorStore):
             return self._tenant_collection
         return self._collection
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        validated = validate_records(records, scope=scope, tenant_id=self.cfg.tenant_id)
         if self._native and self._active_collection() is not None:
-            n = len(documents)
-            id_list = list(ids) if ids else [str(uuid.uuid4()) for _ in range(n)]
-            for i, doc in enumerate(documents):
+            id_list = [record.vector_id for record in validated]
+            for record in validated:
                 props = {
-                    "text": doc.page_content or "",
-                    "tenant_id": self.cfg.tenant_id,
-                    "doc_id": str((doc.metadata or {}).get("doc_id", id_list[i])),
+                    "text": record.document.content,
+                    **provider_metadata(record.document, scope=scope),
                     "intergrax_schema_version": self.cfg.schema_version,
-                    **(doc.metadata or {}),
                 }
                 try:
                     self._active_collection().data.insert(
                         properties=props,
-                        vector=list(map(float, embeddings[i])),
-                        uuid=id_list[i],
+                        vector=record.embedding.tolist(),
+                        uuid=record.vector_id,
                     )
                 except Exception:
                     self._native = False
                     break
+            if self._native:
+                return id_list
         if not self._native:
-            self._inner.add_documents(documents, embeddings, ids=ids)
+            return self._inner.add_records(validated, scope=scope)
+        return id_list
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
@@ -115,6 +129,7 @@ class WeaviateVectorStore(BaseVectorStore):
             hits = self._native_hybrid(
                 query_embedding,
                 "",
+                scope=scope,
                 top_k=top_k,
                 metadata_filter=metadata_filter,
                 alpha=1.0,
@@ -123,6 +138,7 @@ class WeaviateVectorStore(BaseVectorStore):
                 return hits
         return self._inner.query(
             query_embedding,
+            scope=scope,
             top_k=top_k,
             metadata_filter=metadata_filter,
             include_embeddings=include_embeddings,
@@ -133,6 +149,7 @@ class WeaviateVectorStore(BaseVectorStore):
         query_embedding: Sequence[float],
         query_text: str,
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
@@ -142,6 +159,7 @@ class WeaviateVectorStore(BaseVectorStore):
             hits = self._native_hybrid(
                 query_embedding,
                 query_text,
+                scope=scope,
                 top_k=top_k,
                 metadata_filter=metadata_filter,
                 alpha=alpha,
@@ -162,6 +180,7 @@ class WeaviateVectorStore(BaseVectorStore):
         query_embedding: Sequence[float],
         query_text: str,
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter],
         alpha: float,
@@ -169,16 +188,20 @@ class WeaviateVectorStore(BaseVectorStore):
         try:
             collection = self._active_collection()
             assert collection is not None
-            conditions = dict(metadata_filter.conditions) if metadata_filter else {}
+            vector, limit = validate_query(query_embedding, top_k=top_k)
+            validate_scope(scope, tenant_id=self.cfg.tenant_id)
+            effective_filter = MetadataFilter.for_scope(scope, metadata_filter)
+            require_membership_support(effective_filter, provider="weaviate")
+            conditions = dict(effective_filter.conditions)
             where_filter = metadata_filter_to_weaviate(
                 conditions,
                 default_tenant=self.cfg.tenant_id,
             )
             query_kwargs: Dict[str, Any] = {
                 "query": query_text or " ",
-                "vector": list(map(float, query_embedding)),
+                "vector": vector.tolist(),
                 "alpha": float(alpha),
-                "limit": top_k,
+                "limit": limit,
             }
             if where_filter is not None:
                 query_kwargs["filters"] = where_filter
@@ -187,35 +210,39 @@ class WeaviateVectorStore(BaseVectorStore):
             for rank, obj in enumerate(response.objects):
                 props = obj.properties or {}
                 hits.append(
-                    VectorStoreHit(
-                        id=str(obj.uuid),
+                    native_hit(
+                        vector_id=str(obj.uuid),
                         content=str(props.get("text", "")),
                         metadata=dict(props),
                         similarity_score=float(attribute_access.optional(obj.metadata, "score", 1.0 - rank * 0.01)),
                         rank=rank,
+                        scope=scope,
                     )
                 )
             return hits
         except Exception:
             return None
 
-    def delete(self, ids: Sequence[str]) -> None:
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
         if self._native and self._active_collection() is not None:
+            validate_scope(scope, tenant_id=self.cfg.tenant_id)
+            if scope.namespace is not None or scope.workspace_id is not None:
+                raise RuntimeError("weaviate scoped delete is unsupported")
             for doc_id in ids:
                 try:
                     self._active_collection().data.delete_by_id(doc_id)
                 except Exception:
                     pass
-        self._inner.delete(ids)
+        self._inner.delete(ids, scope=scope)
 
-    def count(self) -> int:
+    def count(self, *, scope: VectorStoreScope) -> int:
         if self._native and self._active_collection() is not None:
             try:
                 agg = self._active_collection().aggregate.over_all(total_count=True)
                 return int(agg.total_count or 0)
             except Exception:
                 pass
-        return self._inner.count()
+        return self._inner.count(scope=scope)
 
     def list_collections(self) -> List[str]:
         if self._client is None:

@@ -23,12 +23,47 @@ _SCRIPTS_DIR = _LKW_ROOT / "scripts"
 _PROOF_SCRIPT = _SCRIPTS_DIR / "run-lkw-file-watcher-e2e-proof.py"
 _PROOF_BAT = _SCRIPTS_DIR / "run-lkw-file-watcher-e2e-proof.bat"
 _PUBLIC_PLATFORM_PROOF = (
-    _PROJECT_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
+    _PROJECT_ROOT
+    / "applications"
+    / "local_workspace_application"
+    / "docs"
+    / "proof"
+    / "LKW_PLATFORM_PROOF.md"
 )
-_VERIFICATION_DOC = _LKW_ROOT / "docs" / "LKW_7_FILE_WATCHER_VERIFICATION.md"
-_ARCHITECTURE = _LKW_ROOT / "docs" / "ARCHITECTURE.md"
-_IMPLEMENTATION_PLAN = _LKW_ROOT / "docs" / "IMPLEMENTATION_PLAN.md"
-_RUNTIME_ARCH = _PROJECT_ROOT / "docs" / "intergrax_runtime_architecture.md"
+_VERIFICATION_DOC = (
+    _PROJECT_ROOT
+    / "docs"
+    / "project"
+    / "technical"
+    / "applications"
+    / "local_workspace_application"
+    / "LKW_7_FILE_WATCHER_VERIFICATION.md"
+)
+_ARCHITECTURE = (
+    _PROJECT_ROOT
+    / "docs"
+    / "project"
+    / "technical"
+    / "applications"
+    / "local_workspace_application"
+    / "ARCHITECTURE.md"
+)
+_IMPLEMENTATION_PLAN = (
+    _PROJECT_ROOT
+    / "docs"
+    / "project"
+    / "technical"
+    / "applications"
+    / "local_workspace_application"
+    / "IMPLEMENTATION_PLAN.md"
+)
+_RUNTIME_ARCH = (
+    _PROJECT_ROOT
+    / "docs"
+    / "project"
+    / "architecture"
+    / "intergrax_runtime_architecture.md"
+)
 
 
 def _read(path: Path) -> str:
@@ -197,10 +232,10 @@ def test_build_file_watcher_e2e_proof_receipt_maps_live_evidence() -> None:
     assert metadata["receipt_task"] == "LKW.7C2"
     assert metadata["mongo_express_url"] == "http://127.0.0.1:8086"
     assert metadata["recorded_from_live_run"] is True
-    assert metadata["reviewer_guide"] == "docs/public-adoption/LKW_PLATFORM_PROOF.md"
+    assert metadata["reviewer_guide"] == "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md"
     assert (
         metadata["verification_document"]
-        == "applications/local_workspace_application/docs/"
+            == "applications/local_workspace_application/docs/"
         "LKW_7_FILE_WATCHER_VERIFICATION.md"
     )
 
@@ -523,7 +558,7 @@ def test_plan_status_documents_agree_lkw7_closed() -> None:
     plan = _read(_IMPLEMENTATION_PLAN)
     runtime = _read(_RUNTIME_ARCH)
 
-    for text in (architecture, plan, runtime):
+    for text in (architecture, runtime):
         assert _table_status_for_milestone(text, "LKW.7") == "Closed", (
             "LKW.7 Closed missing"
         )
@@ -532,6 +567,12 @@ def test_plan_status_documents_agree_lkw7_closed() -> None:
         assert "LKW.7C In progress" not in text
         assert "LKW.7 — **In progress**" not in text
         assert "LKW.7 | File watcher + incremental index | **In progress**" not in text
+
+    # Product-first implementation plan defers LKW.7 milestone status to ARCHITECTURE.md.
+    assert "archive/IMPLEMENTATION_PLAN_2026-07-22.md" in plan
+    assert "LKW-PLUGIN-CAPABILITY-CONFIGURATION-1" in plan
+    assert "LKW.7 — **In progress**" not in plan
+    assert "LKW.7 | File watcher + incremental index | **In progress**" not in plan
 
     # Detailed LKW.7C* status lives in architecture + runtime roadmap tables.
     for text in (architecture, runtime):

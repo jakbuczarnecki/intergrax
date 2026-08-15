@@ -1,0 +1,24 @@
+Aurora deployment operations guide.
+
+The Aurora deployment is maintained by the northern platform team.
+The deployment uses protocol Falcon-17.
+The deployment region is North Ridge.
+Its routine health checks run before every scheduled release window.
+Operators compare the deployment manifest with the approved change record.
+The service is isolated from unrelated billing and customer-support systems.
+The deployment dashboard records capacity, latency, and availability signals.
+Every release is reviewed by two operators before it becomes active.
+The rollback procedure keeps the previous image available for one release.
+The control room records handoff notes in the regional operations journal.
+Routine maintenance is scheduled during the low-traffic observation period.
+The team checks certificate expiry and rotates credentials according to policy.
+The release coordinator verifies the maintenance ticket before opening the window.
+The operations lead compares the latest health report with the previous report.
+The platform journal records each validation step and its responsible operator.
+The deployment checklist includes capacity, latency, availability, and rollback.
+The monitoring team reviews alert routing before the release can proceed.
+The change manager confirms that the approved record has no unresolved comments.
+The service owner signs the readiness note after the checks are complete.
+The release window remains paused when a required verification is incomplete.
+The Aurora boundary handoff uses escalation code Glacier-9.
+The final release note records the owner, timestamp, and approval reference.

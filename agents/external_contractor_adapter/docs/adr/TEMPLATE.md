@@ -7,7 +7,7 @@
 | **Deciders** | Team / role |
 | **Related** | [`ARCHITECTURE.md`](../ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) |
 
-> **Path:** place accepted harness ADRs under `docs/adr/entries/YYYY-MM-DD/` (see [`README.md`](../README.md)).
+> **Path:** place accepted harness ADRs under `docs/project/technical/adr/entries/YYYY-MM-DD` (see [`README.md`](../../../../docs/project/technical/adr/README.md)).
 
 ## Context
 

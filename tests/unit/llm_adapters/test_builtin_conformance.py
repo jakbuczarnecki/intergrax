@@ -132,28 +132,22 @@ def _build_adapter(provider: LLMProvider) -> LLMAdapter:
         kwargs = {"client": _openai_chat_mock(), "deployment": "gpt-test"}
 
     if provider == LLMProvider.OLLAMA:
-        from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+        from intergrax.llm_adapters.providers.native_ollama_adapter import NativeOllamaAdapter
         from intergrax.llm_adapters.providers.ollama_capabilities import (
             OllamaModelCapabilityResolver,
         )
 
-        chat = MagicMock()
-        chat.model = "llama3.1:latest"
-        chat.invoke.return_value = MagicMock(content="ok")
-        bound_chat = MagicMock()
-        bound_chat.invoke.return_value = MagicMock(
-            content="ok",
-            tool_calls=[],
-            invalid_tool_calls=[],
+        client = MagicMock()
+        client.chat.return_value = SimpleNamespace(
+            message=SimpleNamespace(content="ok", tool_calls=[]),
         )
-        chat.bind_tools.return_value = bound_chat
         capability_resolver = OllamaModelCapabilityResolver(
             show_model=lambda _model: SimpleNamespace(
                 capabilities=["tools", "completion"],
             )
         )
-        return LangChainOllamaAdapter(
-            chat=chat,
+        return NativeOllamaAdapter(
+            client=client,
             model="llama3.1:latest",
             capability_resolver=capability_resolver,
         )
@@ -172,9 +166,8 @@ def _build_adapter(provider: LLMProvider) -> LLMAdapter:
         patch_env["INTERGRAX_VERTEX_PROJECT"] = "demo"
     if provider == LLMProvider.AWS_BEDROCK:
         patch_env["INTERGRAX_DEFAULT_AWS_REGION"] = "us-east-1"
-        patch_env["INTERGRAX_DEFAULT_BEDROCK_MODEL_ID"] = kwargs.get(
-            "model_id", "anthropic.claude-3-haiku-20240307-v1:0"
-        )
+        if "model_id" not in kwargs:
+            kwargs["model_id"] = "anthropic.claude-3-haiku-20240307-v1:0"
     if provider == LLMProvider.AZURE_OPENAI:
         patch_env.update(
             {

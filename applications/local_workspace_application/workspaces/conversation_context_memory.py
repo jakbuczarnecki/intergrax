@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Bounded Conversation thread memory adapter over SessionHistorySnapshot (LKW-CONVERSATION-CONTEXT-1B1)."""
+"""Bounded Conversation thread memory adapter over SessionHistorySnapshot (LKW-CONVERSATION-CONTEXT-1C)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import uuid4
 
 from intergrax.context.session_history import (
@@ -17,6 +17,11 @@ from intergrax.context.session_history import (
     session_history_message_from_chat_message,
 )
 from intergrax.llm.messages import ChatMessage
+from intergrax.integrations.contracts.document_store import (
+    ConditionalDocumentStore,
+    DocumentRecord,
+    DocumentStore,
+)
 from local_workspace_application.workspaces.conversation_context_models import (
     ConversationAudienceMode,
     ConversationExecutionContextV1,
@@ -28,6 +33,9 @@ from local_workspace_application.workspaces.conversation_context_models import (
 _PARTITION_SCHEMA_VERSION = 1
 _SESSION_KEY_PREFIX = "lkw-conversation-thread:v1:"
 _REVISION_ID_PREFIX = "lkw-thread-revision:v1:"
+_DOCUMENT_PARTITION = "lkw.conversation_thread_memory:v1"
+_DOCUMENT_TTL_SECONDS = 7 * 24 * 60 * 60
+_MAX_APPLIED_EXCHANGE_IDS = 64
 
 
 class ConversationThreadMemoryError(RuntimeError):
@@ -92,10 +100,21 @@ class ConversationThreadMemorySnapshotV1:
 @dataclass(frozen=True, slots=True)
 class ThreadMemoryLifecycleEnvelopeV1:
     memory_snapshot: ConversationThreadMemorySnapshotV1
+    applied_exchange_ids: tuple[str, ...] = ()
 
     @property
     def revision_id(self) -> str:
         return self.memory_snapshot.snapshot.revision_id
+
+    def __post_init__(self) -> None:
+        normalized = tuple(item.strip() for item in self.applied_exchange_ids)
+        if (
+            len(normalized) > _MAX_APPLIED_EXCHANGE_IDS
+            or any(not item for item in normalized)
+            or len(normalized) != len(set(normalized))
+        ):
+            raise ValueError("invalid applied exchange identity list")
+        object.__setattr__(self, "applied_exchange_ids", normalized)
 
 
 class ThreadMemoryLifecyclePort(Protocol):
@@ -128,6 +147,195 @@ class ThreadMemoryLifecyclePort(Protocol):
         expected_revision_id: str | None,
     ) -> bool:
         ...
+
+
+def _serialize_envelope(envelope: ThreadMemoryLifecycleEnvelopeV1) -> dict[str, Any]:
+    memory_snapshot = envelope.memory_snapshot
+    return {
+        "memory_snapshot": {
+            "schema_version": memory_snapshot.schema_version,
+            "tenant_id": memory_snapshot.tenant_id,
+            "conversation_context_binding_id": memory_snapshot.conversation_context_binding_id,
+            "canonical_thread_ref": memory_snapshot.canonical_thread_ref,
+            "audience_mode": memory_snapshot.audience_mode.value,
+            "workspace_id": memory_snapshot.workspace_id,
+            "snapshot": {
+                "tenant_id": memory_snapshot.snapshot.tenant_id,
+                "context_scope_id": memory_snapshot.snapshot.context_scope_id,
+                "revision_id": memory_snapshot.snapshot.revision_id,
+                "messages": [
+                    {
+                        "message_id": message.message_id,
+                        "sequence": message.sequence,
+                        "role": message.role,
+                        "content": message.content,
+                        "name": message.name,
+                        "tool_call_id": message.tool_call_id,
+                        "tool_calls": list(message.tool_calls),
+                        "content_hash": message.content_hash,
+                    }
+                    for message in memory_snapshot.snapshot.messages
+                ],
+                "source_content_hash": memory_snapshot.snapshot.source_content_hash,
+            },
+            "message_created_at": [list(item) for item in memory_snapshot.message_created_at],
+        },
+        "applied_exchange_ids": list(envelope.applied_exchange_ids),
+    }
+
+
+def _deserialize_envelope(data: object) -> ThreadMemoryLifecycleEnvelopeV1:
+    if not isinstance(data, dict):
+        raise ConversationThreadMemoryError("THREAD_MEMORY_ENVELOPE_MALFORMED")
+    raw_snapshot = data.get("memory_snapshot")
+    if not isinstance(raw_snapshot, dict):
+        raise ConversationThreadMemoryError("THREAD_MEMORY_ENVELOPE_MALFORMED")
+    raw_platform_snapshot = raw_snapshot.get("snapshot")
+    raw_messages = (
+        raw_platform_snapshot.get("messages")
+        if isinstance(raw_platform_snapshot, dict)
+        else None
+    )
+    if not isinstance(raw_platform_snapshot, dict) or not isinstance(raw_messages, list):
+        raise ConversationThreadMemoryError("THREAD_MEMORY_ENVELOPE_MALFORMED")
+    try:
+        platform_messages = tuple(
+            SessionHistoryMessage(
+                **{
+                    **dict(message),
+                    "tool_calls": tuple(dict(call) for call in message.get("tool_calls", ())),
+                }
+            )
+            for message in raw_messages
+            if isinstance(message, dict)
+        )
+        if len(platform_messages) != len(raw_messages):
+            raise ValueError("message must be an object")
+        snapshot = SessionHistorySnapshot(
+            tenant_id=raw_platform_snapshot["tenant_id"],
+            context_scope_id=raw_platform_snapshot["context_scope_id"],
+            revision_id=raw_platform_snapshot["revision_id"],
+            messages=platform_messages,
+            source_content_hash=raw_platform_snapshot.get("source_content_hash", ""),
+        )
+        created_at = tuple(
+            (str(item[0]), str(item[1]))
+            for item in raw_snapshot["message_created_at"]
+        )
+        memory_snapshot = ConversationThreadMemorySnapshotV1(
+            schema_version=int(raw_snapshot["schema_version"]),
+            tenant_id=str(raw_snapshot["tenant_id"]),
+            conversation_context_binding_id=str(
+                raw_snapshot["conversation_context_binding_id"]
+            ),
+            canonical_thread_ref=str(raw_snapshot["canonical_thread_ref"]),
+            audience_mode=ConversationAudienceMode(raw_snapshot["audience_mode"]),
+            workspace_id=str(raw_snapshot["workspace_id"]),
+            snapshot=snapshot,
+            message_created_at=created_at,
+        )
+        return ThreadMemoryLifecycleEnvelopeV1(
+            memory_snapshot=memory_snapshot,
+            applied_exchange_ids=tuple(
+                str(item) for item in data.get("applied_exchange_ids", ())
+            ),
+        )
+    except ConversationThreadMemoryError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - normalized storage boundary
+        raise ConversationThreadMemoryError("THREAD_MEMORY_ENVELOPE_MALFORMED") from exc
+
+
+class DocumentStoreThreadMemoryLifecyclePort:
+    """Durable atomic thread-memory lifecycle over the shared DocumentStore."""
+
+    def __init__(
+        self,
+        document_store: DocumentStore,
+        *,
+        ttl_seconds: int = _DOCUMENT_TTL_SECONDS,
+    ) -> None:
+        if isinstance(ttl_seconds, bool) or ttl_seconds <= 0:
+            raise ValueError("ttl_seconds must be positive")
+        self._store = document_store
+        self._ttl_seconds = ttl_seconds
+
+    def _conditional_store(self) -> ConditionalDocumentStore:
+        if not isinstance(self._store, ConditionalDocumentStore):
+            raise ConversationThreadMemoryError(
+                "THREAD_MEMORY_CONDITIONAL_STORE_REQUIRED"
+            )
+        return self._store
+
+    @staticmethod
+    def _row_key(partition: ConversationThreadMemoryPartitionV1) -> str:
+        return derive_conversation_thread_session_key(
+            tenant_id=partition.tenant_id,
+            conversation_context_binding_id=partition.conversation_context_binding_id,
+            canonical_thread_ref=partition.canonical_thread_ref,
+        )
+
+    def _record(
+        self,
+        *,
+        partition: ConversationThreadMemoryPartitionV1,
+        envelope: ThreadMemoryLifecycleEnvelopeV1,
+    ) -> DocumentRecord:
+        return DocumentRecord(
+            partition_key=_DOCUMENT_PARTITION,
+            row_key=self._row_key(partition),
+            data=_serialize_envelope(envelope),
+            ttl_seconds=self._ttl_seconds,
+        )
+
+    def load_envelope(
+        self,
+        *,
+        partition: ConversationThreadMemoryPartitionV1,
+    ) -> ThreadMemoryLifecycleEnvelopeV1 | None:
+        stored = self._store.get(_DOCUMENT_PARTITION, self._row_key(partition))
+        if stored is None:
+            return None
+        try:
+            envelope = _deserialize_envelope(dict(stored.data))
+            _validate_snapshot_partition(
+                memory_snapshot=envelope.memory_snapshot,
+                partition=partition,
+            )
+            _validate_snapshot_timestamps(envelope.memory_snapshot)
+            return envelope
+        except ConversationThreadMemoryError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - normalized storage boundary
+            raise ConversationThreadMemoryError(
+                "THREAD_MEMORY_ENVELOPE_MALFORMED"
+            ) from exc
+
+    def save_envelope(
+        self,
+        *,
+        partition: ConversationThreadMemoryPartitionV1,
+        envelope: ThreadMemoryLifecycleEnvelopeV1,
+        expected_revision_id: str | None,
+    ) -> bool:
+        replacement = self._record(partition=partition, envelope=envelope)
+        conditional = self._conditional_store()
+        if expected_revision_id is None:
+            return conditional.put_if_absent(replacement)
+
+        current = self._store.get(_DOCUMENT_PARTITION, self._row_key(partition))
+        if current is None:
+            return False
+        try:
+            current_envelope = _deserialize_envelope(dict(current.data))
+        except ConversationThreadMemoryError:
+            raise
+        if current_envelope.revision_id != expected_revision_id:
+            return False
+        return conditional.replace_if_match(
+            expected=current,
+            replacement=replacement,
+        )
 
 
 def _role_to_platform(role: ConversationThreadMemoryMessageRole) -> str:
@@ -380,6 +588,22 @@ class SessionHistorySnapshotConversationThreadMemoryAdapter:
     def __init__(self, *, port: ThreadMemoryLifecyclePort) -> None:
         self._port = port
 
+    def load_bounded_history_from_port(
+        self,
+        *,
+        context: ConversationExecutionContextV1,
+        limits: ConversationThreadMemoryLimitsV1,
+        now: datetime,
+    ) -> tuple[ConversationThreadMemoryMessageV1, ...]:
+        partition = ConversationThreadMemoryPartitionV1.from_execution_context(context)
+        loaded = self._port.load_envelope(partition=partition)
+        return self.load_bounded_history(
+            context=context,
+            memory_snapshot=loaded.memory_snapshot if loaded is not None else None,
+            limits=limits,
+            now=now,
+        )
+
     @staticmethod
     def load_bounded_history(
         *,
@@ -408,10 +632,13 @@ class SessionHistorySnapshotConversationThreadMemoryAdapter:
         *,
         context: ConversationExecutionContextV1,
         messages: tuple[ConversationThreadMemoryMessageV1, ...],
+        exchange_id: str | None = None,
     ) -> ConversationThreadMemorySnapshotV1:
         partition = ConversationThreadMemoryPartitionV1.from_execution_context(context)
         _validate_partition_against_context(partition=partition, context=context)
         loaded = self._port.load_envelope(partition=partition)
+        if loaded is not None and exchange_id in loaded.applied_exchange_ids:
+            return loaded.memory_snapshot
         memory_snapshot = loaded.memory_snapshot if loaded is not None else None
         expected_revision_id = loaded.revision_id if loaded is not None else None
         new_snapshot = _build_appended_snapshot(
@@ -420,6 +647,18 @@ class SessionHistorySnapshotConversationThreadMemoryAdapter:
             messages=messages,
         )
         new_envelope = ThreadMemoryLifecycleEnvelopeV1(memory_snapshot=new_snapshot)
+        applied_exchange_ids = (
+            loaded.applied_exchange_ids if loaded is not None else ()
+        )
+        if exchange_id is not None:
+            applied_exchange_ids = (
+                *applied_exchange_ids,
+                exchange_id,
+            )[-_MAX_APPLIED_EXCHANGE_IDS:]
+            new_envelope = ThreadMemoryLifecycleEnvelopeV1(
+                memory_snapshot=new_snapshot,
+                applied_exchange_ids=applied_exchange_ids,
+            )
         if not self._port.save_envelope(
             partition=partition,
             envelope=new_envelope,
@@ -442,6 +681,7 @@ class SessionHistorySnapshotConversationThreadMemoryAdapter:
         context: ConversationExecutionContextV1,
         user_message: ConversationThreadMemoryMessageV1,
         assistant_message: ConversationThreadMemoryMessageV1,
+        exchange_id: str | None = None,
     ) -> ConversationThreadMemorySnapshotV1:
         if user_message.role is not ConversationThreadMemoryMessageRole.USER:
             raise ConversationThreadMemoryError("THREAD_MEMORY_EXCHANGE_USER_ROLE_REQUIRED")
@@ -450,4 +690,5 @@ class SessionHistorySnapshotConversationThreadMemoryAdapter:
         return self._append_messages(
             context=context,
             messages=(user_message, assistant_message),
+            exchange_id=exchange_id,
         )

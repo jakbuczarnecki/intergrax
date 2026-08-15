@@ -19,8 +19,8 @@ _F = TypeVar("_F", bound=Callable[..., Any])
 
 _MCP_DEPENDENCY_MESSAGE = (
     "Tier-3 MCP surface is enabled (INCLUDE_MCP=true) but the FastMCP runtime is not "
-    "available. Install project dependencies that provide fastmcp, or disable MCP with "
-    "INCLUDE_MCP=false for HTTP-only startup."
+    "available. Install Intergrax-ai[mcp], or disable MCP with INCLUDE_MCP=false for "
+    "HTTP-only startup."
 )
 
 

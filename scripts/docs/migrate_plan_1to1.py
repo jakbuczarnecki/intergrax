@@ -1,5 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
-"""Migrate implementation plan to flat docs/plan/*.md (1:1 with docs/architecture/)."""
+"""Migrate implementation plan to flat docs/project/maintainers/plans/*.md (1:1 with docs/project/architecture/)."""
 
 from __future__ import annotations
 
@@ -543,14 +543,14 @@ def update_hub() -> None:
 
 
 REPLACEMENTS = [
-    (r"docs/INTERGRAX_IMPLEMENTATION_PLAN\.md", "docs/intergrax_runtime_architecture.md"),
+    (r"docs/INTERGRAX_IMPLEMENTATION_PLAN\.md", "docs/project/architecture/intergrax_runtime_architecture.md"),
     (r"INTERGRAX_IMPLEMENTATION_PLAN\.md", "intergrax_runtime_architecture.md"),
     (r"\]\(INTERGRAX_IMPLEMENTATION_PLAN\.md", "](intergrax_runtime_architecture.md"),
-    (r"docs/IDEAL_HARNESS_AI_ARCHITECTURE\.md", "docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md"),
+    (r"docs/IDEAL_HARNESS_AI_ARCHITECTURE\.md", "docs/project/technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md"),
     (r"\]\(IDEAL_HARNESS_AI_ARCHITECTURE\.md\)", "](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)"),
-    (r"docs/INTEGRAX_HARNESS_AUDIT_MAP\.md", "docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md"),
+    (r"docs/INTEGRAX_HARNESS_AUDIT_MAP\.md", "docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md"),
     (r"\]\(INTEGRAX_HARNESS_AUDIT_MAP\.md\)", "](guides/INTEGRAX_HARNESS_AUDIT_MAP.md)"),
-    (r"docs/INTERGRAX_DEVELOPMENT_STRATEGY\.md", "docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md"),
+    (r"docs/INTERGRAX_DEVELOPMENT_STRATEGY\.md", "docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md"),
     (r"\]\(INTERGRAX_DEVELOPMENT_STRATEGY\.md\)", "](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)"),
     (r"architecture/README\.md", "intergrax_runtime_architecture.md"),
     (r"plan/phases/core-runtime\.md", "plan/ORCHESTRATION.md"),

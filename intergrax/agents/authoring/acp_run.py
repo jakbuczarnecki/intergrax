@@ -54,9 +54,8 @@ from intergrax.contracts.agent_run_enums import (
     TerminalReason,
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.kernel.session_reliability import AgentSessionReliability
-from intergrax.runtime.kernel.step_kernel import HarnessKernel, StepKernelContext
+from intergrax.runtime.kernel.step_kernel import StepKernelContext
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 
 
@@ -136,6 +135,26 @@ async def run_acp_session(
 
     run_id = str(request.metadata.get("run_id") or request.correlation_id or f"run_{uuid4().hex}")
     trace_id = str(request.metadata.get("trace_id") or run_id)
+
+    from intergrax.llm.messages import model_input_messages_from_metadata
+
+    try:
+        model_messages = model_input_messages_from_metadata(request.metadata)
+    except ValueError as exc:
+        return AgentRunResult(
+            run_id=run_id,
+            trace_id=trace_id,
+            status=AgentRunStatus.FAILED,
+            terminal_reason=TerminalReason.ERROR,
+            errors=[
+                AgentRunError(
+                    code=AgentRunErrorCode.INTERNAL_ERROR,
+                    message=str(exc),
+                ),
+            ],
+            trace=AgentRunTrace(run_id=run_id),
+            duration_ms=int((time.perf_counter() - started) * 1000),
+        )
 
     await agent.on_run_start(merged)
 
@@ -259,6 +278,7 @@ async def run_acp_session(
             if host is not None and host.runtime_profile is not None
             else False
         ),
+        model_input_messages=model_messages,
     )
     step_ctx_holder: list[AgentStepContext] = []
     llm_router = wrap_budget_enforcing_router(

@@ -7,7 +7,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Sequence
 
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 
 class BaseChunkingStrategy(ABC):
@@ -46,19 +46,19 @@ class BaseChunkingStrategy(ABC):
     @abstractmethod
     def chunk(
         self,
-        documents: Sequence[Document],
-    ) -> Sequence[Document]:
+        documents: Sequence[KnowledgeDocument],
+    ) -> Sequence[KnowledgeDocument]:
         """
         Chunk input documents.
 
         Parameters
         ----------
-        documents : Sequence[Document]
+        documents : Sequence[KnowledgeDocument]
             Documents produced by the ingestion pipeline.
 
         Returns
         -------
-        Sequence[Document]
+        Sequence[KnowledgeDocument]
             Chunked documents.
 
         Requirements

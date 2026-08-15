@@ -19,6 +19,7 @@ from intergrax.context.providers.legacy_bridge import (
     POLICY_OVERLAY_FRAGMENTS_HANDLE,
     PRIOR_OUTPUT_RECORDS_HANDLE,
     RAG_CHUNKS_HANDLE,
+    SESSION_HISTORY_MESSAGES_HANDLE,
     SHARED_CONTEXT_READS_HANDLE,
     SYSTEM_INSTRUCTIONS_HANDLE,
     TOOL_OUTPUT_BLOCKS_HANDLE,
@@ -36,7 +37,9 @@ from intergrax.context.providers.legacy_bridge import (
 )
 from intergrax.context.session_history import (
     HandleSessionHistoryProvider,
+    SessionHistorySnapshotRequiredError,
     fragments_from_session_history_snapshot,
+    require_session_history_messages,
 )
 from intergrax.context.registry import ContextPluginRegistry
 
@@ -93,16 +96,11 @@ async def _collect_session_history(
     if snapshot is not None:
         return fragments_from_session_history_snapshot(snapshot)
 
-    from intergrax.context.providers.legacy_bridge import (
-        SESSION_HISTORY_MESSAGES_HANDLE,
-        fragments_from_session_history,
-    )
-
     raw = ctx.handles.get(SESSION_HISTORY_MESSAGES_HANDLE)
-    if not isinstance(raw, list) or not raw:
+    messages = require_session_history_messages(raw)
+    if not messages:
         return []
-    max_entries = request.decision_profile.max_memory_entries_in_context
-    return fragments_from_session_history(raw, max_entries=max_entries)
+    raise SessionHistorySnapshotRequiredError()
 
 
 async def _collect_rag(

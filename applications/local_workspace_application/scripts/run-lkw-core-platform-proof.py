@@ -27,15 +27,35 @@ from typing import Any, Callable, Mapping, Sequence
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _APP_DIR = _SCRIPT_DIR.parent
 _REPO_ROOT = _APP_DIR.parent.parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+from lkw_host_port_preflight import (
+    canonical_compose_owned_host_ports,
+    is_loopback_tcp_port_reachable,
+    probe_host_port_available,
+    resolve_compose_published_host_ports,
+)
+from lkw_ollama_embedding_bootstrap import (
+    OllamaEmbeddingBootstrapError,
+    ensure_ollama_embedding_model as _ensure_ollama_embedding_model,
+    resolve_ollama_embedding_model as _resolve_ollama_embedding_model,
+)
+from lkw_runtime_context_materialization import (
+    RuntimeContextMaterializationError,
+    materialize_local_workspace_runtime_context,
+)
 _DOCKER_DIR = _APP_DIR / "docker"
 _BASE_COMPOSE = _DOCKER_DIR / "docker-compose.yml"
 _ES_COMPOSE = _DOCKER_DIR / "docker-compose.elasticsearch.yml"
 _KAFKA_COMPOSE = _DOCKER_DIR / "docker-compose.kafka.yml"
 _MONGODB_COMPOSE = _DOCKER_DIR / "docker-compose.mongodb.yml"
+_SENTRY_COMPOSE = _DOCKER_DIR / "docker-compose.sentry.yml"
 _WATCHER_COMPOSE = _DOCKER_DIR / "file-watcher-e2e.compose.yml"
+_RUNTIME_CONTEXT_DIR = _DOCKER_DIR / "runtime-context"
+_APPLICATION_IMAGE_BUILDER = _REPO_ROOT / "scripts" / "build" / "build_application_image.py"
 _SENTRY_PROOF_DIR = _DOCKER_DIR / "sentry-proof"
-_SAMPLE_DOCS_DIR = _APP_DIR / "sample_docs"
 _PROOF_DOCS_DIR = _APP_DIR / ".proof_docs"
+_SAMPLE_DOCS_DIR = _PROOF_DOCS_DIR
 _WATCHER_STATE_DIR = _APP_DIR / ".file_watcher_e2e_state"
 
 _SENTRY_PROOF_PY = _SCRIPT_DIR / "run-sentry-observability-proof.py"
@@ -54,11 +74,33 @@ _DEFAULT_ES_INDEX = "intergrax-lkw-observability"
 _DEFAULT_PHASE_TIMEOUT = 600
 
 _SEARCH_REASON_RETRIEVE_COMPLETE = "retrieve_complete"
+_PERSISTENCE_SEARCH_RETRY_SLEEP_SECONDS = 2.0
 _SAFE_REASON = re.compile(r"^[A-Za-z0-9_.-]+$")
 _KV_LINE = re.compile(r"^([A-Za-z0-9_.-]+)=(.*)$")
+_SECRET_DIAGNOSTIC_PATTERN = re.compile(
+    r"(mongodb(\+srv)?://|password=|token=|secret=|api[_-]?key=)",
+    re.IGNORECASE,
+)
+_BACKGROUND_TASK_CHILD_DIAGNOSTIC_KEYS: tuple[str, ...] = (
+    "task_status",
+    "error_message",
+    "search_results",
+    "search_reason",
+    "search_raw_tool_reason",
+    "search_used",
+    "search_num_results",
+    "receipt_error",
+    "kafka_topic",
+    "kafka_topic_messages",
+)
+_PYTHON_CHILD_IO_ENCODING = "utf-8"
 _FILE_WATCHER_SCOPE_ID = "lkw-file-watcher-e2e"
 _FILE_WATCHER_USER_ID = "lkw.file_watcher"
 _FILE_WATCHER_SEED_NAME = "lkw_core_proof_embed_seed.txt"
+_PERSISTENCE_PROOF_SCOPE_ID = "lkw-persistence-proof"
+_COMPOSE_PROJECT = "lkw-core-platform-proof"
+_PRODUCT_COMPOSE_PROJECT = "intergrax_lkw"
+_PRODUCT_COMPOSE_FILE = _BASE_COMPOSE
 
 ALL_PHASE_ORDER: tuple[str, ...] = (
     "startup",
@@ -99,11 +141,13 @@ class CoreProofError(Exception):
         *,
         phase: str | None = None,
         child_exit_code: int | None = None,
+        child_details: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(reason)
         self.reason = reason
         self.phase = phase
         self.child_exit_code = child_exit_code
+        self.child_details = dict(child_details) if child_details else None
 
 
 @dataclass
@@ -129,6 +173,16 @@ class PhaseOutcome:
     ok: bool
     receipt_id: str | None = None
     details: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class SearchDiagnostics:
+    num_results: int
+    evidence_count: int
+    source_refs: tuple[str, ...]
+    raw_tool_reason: str | None
+    used: bool | None = None
+    reason: str | None = None
 
 
 def detect_os_family(system_name: str | None = None) -> OsFamily:
@@ -192,12 +246,16 @@ def _emit_failure(
     reason: str,
     *,
     child_exit_code: int | None = None,
+    child_details: Mapping[str, str] | None = None,
 ) -> None:
     _print_kv("core_proof_result", "FAIL")
     _print_kv("failed_phase", phase)
     _print_kv("failure_reason", reason)
     if child_exit_code is not None:
         _print_kv("child_exit_code", child_exit_code)
+    if child_details:
+        for key, value in child_details.items():
+            _print_kv(key, value)
 
 
 def _which(command: str) -> str | None:
@@ -211,6 +269,8 @@ def run_command(
     env: Mapping[str, str] | None = None,
     timeout: int | None = None,
     check: bool = False,
+    encoding: str | None = None,
+    errors: str = "strict",
 ) -> subprocess.CompletedProcess[str]:
     merged_env = os.environ.copy()
     if env is not None:
@@ -224,6 +284,11 @@ def run_command(
         text=True,
         capture_output=True,
         timeout=timeout,
+        **(
+            {"encoding": encoding, "errors": errors}
+            if encoding is not None
+            else {}
+        ),
     )
     if check and completed.returncode != 0:
         raise CoreProofError(
@@ -327,17 +392,127 @@ def wait_for_lkw_health(base_url: str, *, timeout_seconds: int) -> None:
 
 
 def discover_compose_files() -> list[Path]:
-    files = [_BASE_COMPOSE]
-    extras = sorted(_DOCKER_DIR.glob("docker-compose.*.yml"))
-    files.extend(extras)
-    return files
+    return [
+        _BASE_COMPOSE,
+        _ES_COMPOSE,
+        _KAFKA_COMPOSE,
+        _MONGODB_COMPOSE,
+        _SENTRY_COMPOSE,
+    ]
 
 
 def compose_args(compose_files: Sequence[Path]) -> list[str]:
-    args = ["docker", "compose"]
+    args = ["docker", "compose", "-p", _COMPOSE_PROJECT]
     for path in compose_files:
         args.extend(["-f", str(path)])
     return args
+
+
+def product_compose_exec_args(*compose_command: str) -> list[str]:
+    return [
+        "docker",
+        "compose",
+        "-p",
+        _PRODUCT_COMPOSE_PROJECT,
+        "-f",
+        str(_PRODUCT_COMPOSE_FILE),
+        *compose_command,
+    ]
+
+
+def check_startup_host_port_preflight(config: ProofConfig) -> None:
+    compose_files = discover_compose_files()
+    proof_compose_exec = lambda *command: compose_exec_args(compose_files, *command)
+    try:
+        required_ports = resolve_compose_published_host_ports(
+            compose_exec_args=proof_compose_exec,
+            run_command=run_command,
+            cwd=_REPO_ROOT,
+            timeout=min(120, config.phase_timeout_seconds),
+        )
+    except RuntimeError as exc:
+        raise CoreProofError("compose_config_failed") from exc
+
+    proof_owned = canonical_compose_owned_host_ports(
+        compose_exec_args=proof_compose_exec,
+        run_command=run_command,
+        cwd=_REPO_ROOT,
+        timeout=30,
+    )
+    product_owned = canonical_compose_owned_host_ports(
+        compose_exec_args=product_compose_exec_args,
+        run_command=run_command,
+        cwd=_REPO_ROOT,
+        timeout=30,
+    )
+
+    for port in sorted(required_ports):
+        if proof_owned is not None and port in proof_owned:
+            continue
+        if probe_host_port_available(port) and not is_loopback_tcp_port_reachable(port):
+            continue
+        if not is_loopback_tcp_port_reachable(port):
+            continue
+        details: dict[str, str] = {
+            "occupied_port": str(port),
+            "recommended_action": (
+                "Free the required Core Platform Proof host ports before starting."
+            ),
+        }
+        if product_owned is not None and port in product_owned:
+            details["occupied_by"] = "lkw_product_quickstart"
+            details["recommended_action"] = (
+                "Stop the LKW Product Quick Start stack using the documented "
+                "non-destructive stop command, then rerun Core Platform Proof."
+            )
+        raise CoreProofError(
+            "required_port_unavailable",
+            phase="startup",
+            child_details=details,
+        )
+
+
+def compose_exec_args(
+    compose_files: Sequence[Path],
+    *compose_command: str,
+) -> list[str]:
+    return [*compose_args(compose_files), *compose_command]
+
+
+def prepare_ollama_embedding_model(
+    compose_files: Sequence[Path],
+    *,
+    cwd: Path,
+    timeout_seconds: int,
+) -> str:
+    def _compose_exec(*compose_command: str) -> list[str]:
+        return compose_exec_args(compose_files, *compose_command)
+
+    docker_run_kwargs = {"encoding": _PYTHON_CHILD_IO_ENCODING, "errors": "replace"}
+    try:
+        model_name = _resolve_ollama_embedding_model(
+            compose_exec_args=_compose_exec,
+            run_command=run_command,
+            cwd=cwd,
+            timeout_seconds=timeout_seconds,
+            run_command_kwargs=docker_run_kwargs,
+        )
+    except OllamaEmbeddingBootstrapError as exc:
+        raise CoreProofError(exc.reason) from exc
+    _print_kv("embedding_model_resolved", model_name)
+    try:
+        _ensure_ollama_embedding_model(
+            model_name,
+            compose_exec_args=_compose_exec,
+            run_command=run_command,
+            cwd=cwd,
+            timeout_seconds=timeout_seconds,
+            run_command_kwargs=docker_run_kwargs,
+        )
+    except OllamaEmbeddingBootstrapError as exc:
+        raise CoreProofError(exc.reason) from exc
+    _print_kv("embedding_model_ready", "true")
+    return model_name
 
 
 def compose_config(compose_files: Sequence[Path], *, cwd: Path) -> None:
@@ -351,6 +526,19 @@ def compose_config(compose_files: Sequence[Path], *, cwd: Path) -> None:
             "compose_config_failed",
             child_exit_code=completed.returncode,
         )
+
+
+def materialize_runtime_context() -> None:
+    try:
+        materialize_local_workspace_runtime_context(
+            repo_root=_REPO_ROOT,
+            application_image_builder=_APPLICATION_IMAGE_BUILDER,
+            runtime_context_dir=_RUNTIME_CONTEXT_DIR,
+            run_command=run_command,
+        )
+    except RuntimeContextMaterializationError as exc:
+        raise CoreProofError(exc.reason) from exc
+    _print_kv("runtime_context_materialized", "true")
 
 
 def compose_up(
@@ -598,11 +786,17 @@ def run_python_child(
 ) -> tuple[int, str]:
     if not script.is_file():
         raise CoreProofError("proof_script_missing")
+    child_env = os.environ.copy()
+    if env is not None:
+        child_env.update(env)
+    child_env["PYTHONIOENCODING"] = _PYTHON_CHILD_IO_ENCODING
     completed = run_command(
         [sys.executable, str(script), *args],
         cwd=cwd,
-        env=env,
+        env=child_env,
         timeout=timeout,
+        encoding=_PYTHON_CHILD_IO_ENCODING,
+        errors="strict",
     )
     combined = (completed.stdout or "") + (
         "\n" + completed.stderr if completed.stderr else ""
@@ -695,7 +889,7 @@ def extract_index_signal_count(response: Mapping[str, Any]) -> int:
     evidence = _as_mapping(response.get("metadata")).get("lkw_evidence.v1")
     diagnostics = _as_mapping(_as_mapping(evidence).get("diagnostics"))
     index_summary = _as_mapping(diagnostics.get("lkw.index_summary.v1"))
-    for field_name in ("ingested_count", "chunk_count", "accepted_count"):
+    for field_name in ("ingested_count", "chunk_count"):
         raw = index_summary.get(field_name)
         if raw is None:
             continue
@@ -761,6 +955,166 @@ def search_retrieve_ready(response: Mapping[str, Any]) -> bool:
     )
 
 
+def extract_search_diagnostics(response: Mapping[str, Any]) -> SearchDiagnostics | None:
+    evidence = _as_mapping(response.get("metadata")).get("lkw_evidence.v1")
+    diagnostics = _as_mapping(_as_mapping(evidence).get("diagnostics"))
+    search_summary = _as_mapping(diagnostics.get("lkw.search_summary.v1"))
+    if not search_summary:
+        return None
+
+    num_results = 0
+    raw_num_results = search_summary.get("num_results", 0)
+    if isinstance(raw_num_results, int):
+        num_results = raw_num_results
+
+    evidence_count = 0
+    raw_evidence_count = search_summary.get("evidence_count", 0)
+    if isinstance(raw_evidence_count, int):
+        evidence_count = raw_evidence_count
+
+    source_refs_raw = search_summary.get("source_refs")
+    if isinstance(source_refs_raw, list):
+        source_refs = tuple(str(item) for item in source_refs_raw)
+    else:
+        source_refs = ()
+
+    raw_tool_reason_value = search_summary.get("raw_tool_reason")
+    raw_tool_reason = (
+        str(raw_tool_reason_value) if raw_tool_reason_value is not None else None
+    )
+    used_value = search_summary.get("used")
+    used = used_value if isinstance(used_value, bool) else None
+    reason_value = search_summary.get("reason")
+    reason = str(reason_value).strip() if isinstance(reason_value, str) else None
+    return SearchDiagnostics(
+        num_results=num_results,
+        evidence_count=evidence_count,
+        source_refs=source_refs,
+        raw_tool_reason=raw_tool_reason,
+        used=used,
+        reason=reason,
+    )
+
+
+def persistence_search_succeeded(
+    diagnostics: SearchDiagnostics | None,
+    *,
+    expected_source_ref: str,
+) -> bool:
+    if diagnostics is None:
+        return False
+    if diagnostics.used is not True:
+        return False
+    if diagnostics.reason != _SEARCH_REASON_RETRIEVE_COMPLETE:
+        return False
+    if diagnostics.num_results <= 0 and diagnostics.evidence_count <= 0:
+        return False
+    return expected_source_ref in diagnostics.source_refs
+
+
+def _emit_search_diagnostics_kv(diagnostics: SearchDiagnostics | None) -> None:
+    if diagnostics is None:
+        return
+    if diagnostics.used is not None:
+        _print_kv("search_used", diagnostics.used)
+    if diagnostics.reason and _SAFE_REASON.fullmatch(diagnostics.reason):
+        _print_kv("search_reason", diagnostics.reason)
+    if diagnostics.raw_tool_reason is not None:
+        _print_kv(
+            "search_raw_tool_reason",
+            json.dumps(diagnostics.raw_tool_reason),
+        )
+    _print_kv("search_num_results", diagnostics.num_results)
+    _print_kv("search_evidence_count", diagnostics.evidence_count)
+    if diagnostics.source_refs:
+        _print_kv("search_source_refs", json.dumps(list(diagnostics.source_refs)))
+
+
+def _raise_persistence_search_failure(
+    *,
+    when: str,
+    diagnostics: SearchDiagnostics | None,
+    expected_source_ref: str,
+    source_ref_found: bool,
+) -> None:
+    _print_kv("persistence_search_when", when)
+    _print_kv("expected_source_ref", expected_source_ref)
+    _print_kv(f"source_ref_found_{when}", "true" if source_ref_found else "false")
+    _emit_search_diagnostics_kv(diagnostics)
+    if diagnostics is None or (
+        diagnostics.num_results <= 0 and diagnostics.evidence_count <= 0
+    ):
+        raise CoreProofError("search_results_missing")
+    if not source_ref_found:
+        raise CoreProofError("expected_source_ref_missing")
+    raise CoreProofError("search_results_missing")
+
+
+def _build_persistence_search_body(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    collection_id: str,
+    marker: str,
+) -> dict[str, Any]:
+    return {
+        "tenant_id": tenant_id,
+        "workspace_id": workspace_id,
+        "message": marker,
+        "capability": "local.workspace.search",
+        "metadata": {
+            "tenant_id": tenant_id,
+            "workspace_id": workspace_id,
+            "collection_id": collection_id,
+            "query": marker,
+            "top_k": 5,
+        },
+    }
+
+
+def poll_persistence_search(
+    config: ProofConfig,
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    collection_id: str,
+    marker: str,
+    expected_source_ref: str,
+    deadline: float,
+) -> tuple[SearchDiagnostics | None, int]:
+    last_diagnostics: SearchDiagnostics | None = None
+    run_url = f"{config.base_url.rstrip('/')}/v1/local_workspace/run"
+    request_body = _build_persistence_search_body(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        collection_id=collection_id,
+        marker=marker,
+    )
+    while time.monotonic() < deadline:
+        try:
+            response = http_post_json(run_url, request_body, timeout=180.0)
+            last_diagnostics = extract_search_diagnostics(response)
+            if persistence_search_succeeded(
+                last_diagnostics,
+                expected_source_ref=expected_source_ref,
+            ):
+                assert last_diagnostics is not None
+                return last_diagnostics, max(
+                    last_diagnostics.num_results,
+                    last_diagnostics.evidence_count,
+                )
+        except (
+            CoreProofError,
+            urllib.error.URLError,
+            TimeoutError,
+            OSError,
+            json.JSONDecodeError,
+        ):
+            pass
+        time.sleep(_PERSISTENCE_SEARCH_RETRY_SLEEP_SECONDS)
+    return last_diagnostics, 0
+
+
 def safe_failure_reason(output: Mapping[str, str], *, fallback: str) -> str:
     reason = str(output.get("failure_reason", "")).strip()
     if reason and _SAFE_REASON.fullmatch(reason):
@@ -768,58 +1122,108 @@ def safe_failure_reason(output: Mapping[str, str], *, fallback: str) -> str:
     return fallback
 
 
-def ensure_file_watcher_retrieve_ready(config: ProofConfig) -> None:
-    """Seed the watcher collection after volume reset so embedding warm-up can pass.
+def _sanitize_background_task_child_diagnostic(
+    key: str,
+    value: str,
+) -> str | None:
+    stripped = value.strip()
+    if not stripped:
+        return None
+    if len(stripped) > 500:
+        return None
+    if _SECRET_DIAGNOSTIC_PATTERN.search(stripped):
+        return None
+    if key == "search_reason" and not _SAFE_REASON.fullmatch(stripped):
+        return None
+    if key in {"search_results", "search_num_results", "kafka_topic_messages"}:
+        try:
+            int(stripped)
+        except ValueError:
+            return None
+    if key == "search_raw_tool_reason":
+        return json.dumps(stripped)
+    if key == "kafka_topic" and not _SAFE_REASON.fullmatch(stripped):
+        return None
+    if key == "receipt_error" and not _SAFE_REASON.fullmatch(stripped):
+        return None
+    if key == "task_status" and not _SAFE_REASON.fullmatch(stripped):
+        return None
+    return stripped
 
-    After ``compose down -v``, the watcher collection is empty. Platform retrieve
-    currently maps empty results to ``used=false`` / ``retrieve_failed`` /
-    ``no_hits``, which makes the accepted file-watcher warm-up fail closed.
-    Indexing one seed document restores a working retrieve path for warm-up.
-    """
-    _PROOF_DOCS_DIR.mkdir(parents=True, exist_ok=True)
-    seed_path = _PROOF_DOCS_DIR / _FILE_WATCHER_SEED_NAME
-    seed_path.write_text(
-        (
-            "Intergrax LKW core proof embedding seed document.\n"
-            "Pre-warms the file-watcher collection after a clean volume reset.\n"
+
+def extract_background_task_child_diagnostics(
+    output: Mapping[str, str],
+) -> dict[str, str]:
+    details: dict[str, str] = {}
+    for key in _BACKGROUND_TASK_CHILD_DIAGNOSTIC_KEYS:
+        raw = output.get(key)
+        if raw is None:
+            continue
+        safe = _sanitize_background_task_child_diagnostic(key, str(raw))
+        if safe is not None:
+            details[key] = safe
+    return details
+
+
+def background_task_child_failure(
+    *,
+    exit_code: int,
+    child_output: str,
+) -> CoreProofError:
+    parsed = parse_kv_output(child_output)
+    return CoreProofError(
+        safe_failure_reason(
+            parsed,
+            fallback="background_task_child_failed",
         ),
-        encoding="utf-8",
+        child_exit_code=exit_code,
+        child_details=extract_background_task_child_diagnostics(parsed),
     )
-    container_path = f"/data/user_docs/{_FILE_WATCHER_SEED_NAME}"
+
+
+def _latest_persistence_proof_marker() -> str:
+    if not _PROOF_DOCS_DIR.is_dir():
+        raise CoreProofError("persistence_proof_marker_missing")
+    candidates = sorted(
+        _PROOF_DOCS_DIR.glob("lkw_persistence_proof_*.txt"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    if not candidates:
+        raise CoreProofError("persistence_proof_marker_missing")
+    for line in candidates[0].read_text(encoding="utf-8").splitlines():
+        if line.startswith("Unique marker:"):
+            marker = line.split(":", 1)[1].strip()
+            if marker:
+                return marker
+    raise CoreProofError("persistence_proof_marker_missing")
+
+
+def ensure_file_watcher_retrieve_ready(config: ProofConfig) -> None:
+    """Verify retrieve readiness without seeding the watcher proof collection.
+
+    Indexing a warm-up document into the watcher collection blocks the first
+    watcher-triggered proof document when vector source lookup is unavailable
+    on a non-empty collection. Probe retrieve against the persistence proof
+    collection instead (already populated earlier in the same run).
+    """
+    marker = _latest_persistence_proof_marker()
     run_url = f"{config.base_url.rstrip('/')}/v1/local_workspace/run"
-    index_response = http_post_json(
-        run_url,
-        {
-            "tenant_id": _FILE_WATCHER_SCOPE_ID,
-            "workspace_id": _FILE_WATCHER_SCOPE_ID,
-            "user_id": _FILE_WATCHER_USER_ID,
-            "message": "index core proof embedding seed",
-            "capability": "local.workspace.index",
-            "metadata": {
-                "source_paths": [container_path],
-                "collection_id": _FILE_WATCHER_SCOPE_ID,
-            },
-        },
-        timeout=300.0,
-    )
-    require_positive_ingest(index_response)
     deadline = time.monotonic() + min(300, config.phase_timeout_seconds)
     while time.monotonic() < deadline:
         try:
             probe = http_post_json(
                 run_url,
                 {
-                    "tenant_id": _FILE_WATCHER_SCOPE_ID,
-                    "workspace_id": _FILE_WATCHER_SCOPE_ID,
-                    "user_id": _FILE_WATCHER_USER_ID,
-                    "message": "core proof retrieve readiness probe",
+                    "tenant_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                    "workspace_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                    "message": marker,
                     "capability": "local.workspace.search",
                     "metadata": {
-                        "tenant_id": _FILE_WATCHER_SCOPE_ID,
-                        "user_id": _FILE_WATCHER_USER_ID,
-                        "workspace_id": _FILE_WATCHER_SCOPE_ID,
-                        "collection_id": _FILE_WATCHER_SCOPE_ID,
-                        "query": "core proof embedding seed",
+                        "tenant_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                        "workspace_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                        "collection_id": _PERSISTENCE_PROOF_SCOPE_ID,
+                        "query": marker,
                         "top_k": 1,
                         "proof_phase": "embedding_warmup",
                     },
@@ -896,6 +1300,8 @@ def phase_startup(config: ProofConfig) -> PhaseOutcome:
     for path in compose_files:
         if not path.is_file():
             raise CoreProofError("required_path_missing")
+    check_startup_host_port_preflight(config)
+    materialize_runtime_context()
     compose_config(compose_files, cwd=_REPO_ROOT)
     compose_down(compose_files, cwd=_REPO_ROOT, volumes=True, remove_orphans=True)
     clear_sentry_runtime_state()
@@ -1014,7 +1420,18 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
         ),
         encoding="utf-8",
     )
+    compose_up(
+        compose_files,
+        ["local_workspace", "qdrant", "ollama"],
+        cwd=_REPO_ROOT,
+        build=False,
+    )
     wait_for_lkw_health(config.base_url, timeout_seconds=config.phase_timeout_seconds)
+    prepare_ollama_embedding_model(
+        compose_files,
+        cwd=_REPO_ROOT,
+        timeout_seconds=config.phase_timeout_seconds,
+    )
     index_response = http_post_json(
         f"{config.base_url.rstrip('/')}/v1/local_workspace/run",
         {
@@ -1023,8 +1440,11 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
             "message": "index persistence proof document",
             "capability": "local.workspace.index",
             "metadata": {
+                "tenant_id": tenant_id,
+                "workspace_id": workspace_id,
                 "source_paths": [container_source_path],
                 "collection_id": collection_id,
+                "chunking_strategy_id": "recursive",
             },
         },
         timeout=300.0,
@@ -1032,25 +1452,34 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
     index_signal = require_positive_ingest(index_response)
     _print_kv("index_signal_count", index_signal)
 
-    def _search() -> dict[str, Any]:
-        return http_post_json(
-            f"{config.base_url.rstrip('/')}/v1/local_workspace/run",
-            {
-                "tenant_id": tenant_id,
-                "workspace_id": workspace_id,
-                "message": marker,
-                "capability": "local.workspace.search",
-                "metadata": {
-                    "collection_id": collection_id,
-                    "query": marker,
-                    "top_k": 5,
-                },
-            },
-            timeout=180.0,
+    poll_budget_seconds = min(300, config.phase_timeout_seconds)
+    before_deadline = time.monotonic() + poll_budget_seconds
+    before_diagnostics, before_count = poll_persistence_search(
+        config,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        collection_id=collection_id,
+        marker=marker,
+        expected_source_ref=container_source_path,
+        deadline=before_deadline,
+    )
+    source_ref_found_before_restart = (
+        before_diagnostics is not None
+        and container_source_path in before_diagnostics.source_refs
+    )
+    if not persistence_search_succeeded(
+        before_diagnostics,
+        expected_source_ref=container_source_path,
+    ):
+        _raise_persistence_search_failure(
+            when="before_restart",
+            diagnostics=before_diagnostics,
+            expected_source_ref=container_source_path,
+            source_ref_found=source_ref_found_before_restart,
         )
-
-    before_count = require_positive_search(_search())
     _print_kv("before_restart_results", before_count)
+    _print_kv("expected_source_ref", container_source_path)
+    _print_kv("source_ref_found_before_restart", "true")
     compose_restart(
         compose_files,
         ["local_workspace", "qdrant"],
@@ -1059,8 +1488,32 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
     _print_kv("restart_mode", "non_destructive")
     _print_kv("volumes_removed", "false")
     wait_for_lkw_health(config.base_url, timeout_seconds=config.phase_timeout_seconds)
-    after_count = require_positive_search(_search())
+    after_deadline = time.monotonic() + poll_budget_seconds
+    after_diagnostics, after_count = poll_persistence_search(
+        config,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        collection_id=collection_id,
+        marker=marker,
+        expected_source_ref=container_source_path,
+        deadline=after_deadline,
+    )
+    source_ref_found_after_restart = (
+        after_diagnostics is not None
+        and container_source_path in after_diagnostics.source_refs
+    )
+    if not persistence_search_succeeded(
+        after_diagnostics,
+        expected_source_ref=container_source_path,
+    ):
+        _raise_persistence_search_failure(
+            when="after_restart",
+            diagnostics=after_diagnostics,
+            expected_source_ref=container_source_path,
+            source_ref_found=source_ref_found_after_restart,
+        )
     _print_kv("after_restart_results", after_count)
+    _print_kv("source_ref_found_after_restart", "true")
     _print_kv("proof_kind", "persistent_vector_storage")
     _print_kv("reindexed_after_restart", "false")
     return PhaseOutcome(
@@ -1069,6 +1522,9 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
         details={
             "before_restart_results": str(before_count),
             "after_restart_results": str(after_count),
+            "expected_source_ref": container_source_path,
+            "source_ref_found_before_restart": "true",
+            "source_ref_found_after_restart": "true",
         },
     )
 
@@ -1082,6 +1538,8 @@ def phase_background_task(config: ProofConfig) -> PhaseOutcome:
         [
             "local_workspace",
             "lkw-background-worker",
+            "qdrant",
+            "ollama",
             "lkw-kafka",
             "lkw-kafka-topics",
             "lkw-kafka-ui",
@@ -1093,6 +1551,11 @@ def phase_background_task(config: ProofConfig) -> PhaseOutcome:
         build=True,
     )
     wait_for_lkw_health(config.base_url, timeout_seconds=config.phase_timeout_seconds)
+    prepare_ollama_embedding_model(
+        compose_files,
+        cwd=_REPO_ROOT,
+        timeout_seconds=config.phase_timeout_seconds,
+    )
     wait_for_compose_health(
         compose_files,
         "lkw-mongodb",
@@ -1116,10 +1579,7 @@ def phase_background_task(config: ProofConfig) -> PhaseOutcome:
         timeout=config.phase_timeout_seconds,
     )
     if exit_code != 0:
-        raise CoreProofError(
-            "background_task_child_failed",
-            child_exit_code=exit_code,
-        )
+        raise background_task_child_failure(exit_code=exit_code, child_output=text)
     receipt_id = validate_background_task_child_output(parse_kv_output(text))
     return PhaseOutcome(
         name="background-task",
@@ -1238,6 +1698,8 @@ def phase_file_watcher(config: ProofConfig) -> PhaseOutcome:
         "LKW_FILE_WATCHER_E2E_KAFKA_BOOTSTRAP",
         "127.0.0.1:9094",
     )
+    file_watcher_env = mongodb_child_env()
+    file_watcher_env["COMPOSE_PROJECT_NAME"] = _COMPOSE_PROJECT
     exit_code, text = run_python_child(
         _FILE_WATCHER_PROOF_PY,
         [
@@ -1263,7 +1725,7 @@ def phase_file_watcher(config: ProofConfig) -> PhaseOutcome:
             config.mongo_express,
         ],
         cwd=_REPO_ROOT,
-        env=mongodb_child_env(),
+        env=file_watcher_env,
         timeout=None,
     )
     parsed_child = parse_kv_output(text)
@@ -1430,7 +1892,12 @@ def run_core_proof(
         phases = resolve_phases(config.phase)
     except CoreProofError as exc:
         phase = exc.phase or "startup"
-        _emit_failure(phase, exc.reason, child_exit_code=exc.child_exit_code)
+        _emit_failure(
+            phase,
+            exc.reason,
+            child_exit_code=exc.child_exit_code,
+            child_details=exc.child_details,
+        )
         return 1
 
     outcomes: dict[str, PhaseOutcome] = {}
@@ -1447,6 +1914,7 @@ def run_core_proof(
                 phase,
                 exc.reason,
                 child_exit_code=exc.child_exit_code,
+                child_details=exc.child_details,
             )
             return 1
         except Exception as exc:  # noqa: BLE001 - fail closed with safe type only

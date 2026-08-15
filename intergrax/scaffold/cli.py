@@ -113,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Created ACP pattern ({pattern_label}) agent scaffold at {path}")
         print(f"  Register: from {slug}.{slug}_agent import {class_name}")
         print(f"  Test:     uv run pytest {path / 'tests'} -q")
-        print(f"  Guide:    docs/guides/AGENT_CREATION_GUIDE.md")
+        print(f"  Guide:    docs/project/technical/guides/AGENT_CREATION_GUIDE.md")
         return 0
 
     if args.command == "new-application":

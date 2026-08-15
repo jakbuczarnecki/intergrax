@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
+import os
 from typing import Callable, Optional
 
 from intergrax.integrations._shared.p3.configs import VectorIntegrationConfig
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations._shared.p2.configs import SqlIntegrationConfig
 from intergrax.integrations.contracts.vector_store import VectorStore
 from intergrax.integrations.providers.vector_store.pgvector.integration import PgvectorVectorStoreIntegration
@@ -24,8 +26,22 @@ def _open_rag_store(
     from intergrax.integrations.providers.vector_store.pgvector.rag_store import PgVectorRagStore
 
     sql_config = SqlIntegrationConfig.from_env("INTERGRAX_PGVECTOR", **config_overrides)
-    dsn = sql_config.dsn.strip() or sql_config.connection_string.strip()
-    return PgVectorRagStore(tenant_id=config.tenant_id, dsn=dsn or None)
+    dsn = sql_config.connection_dsn()
+    raw_dimension = config_overrides.get(
+        "dimension",
+        os.environ.get("INTERGRAX_PGVECTOR_DIMENSION", ""),
+    )
+    try:
+        dimension = int(raw_dimension)
+    except (TypeError, ValueError) as exc:
+        raise IntegrationConfigurationError(
+            "pgvector requires INTERGRAX_PGVECTOR_DIMENSION or dimension override"
+        ) from exc
+    return PgVectorRagStore(
+        tenant_id=config.tenant_id,
+        dsn=dsn,
+        dimension=dimension,
+    )
 
 
 def open_pgvector_vector_store(

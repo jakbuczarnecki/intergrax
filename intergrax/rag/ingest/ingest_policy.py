@@ -8,12 +8,10 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from typing import TYPE_CHECKING, Sequence
+from typing import Sequence
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.profiles.rag_profile import RagProfile
-
-if TYPE_CHECKING:
-    from langchain_core.documents import Document
 
 SYNC_INGEST_SIZE_EXCEEDED_REASON = "sync_ingest_size_exceeded"
 SEMANTIC_CHUNKING_SIZE_EXCEEDED_REASON = "semantic_chunking_size_exceeded"
@@ -42,7 +40,7 @@ def sync_ingest_allowed(*, path: Path, profile: RagProfile) -> tuple[bool, str, 
 
 def semantic_chunking_allowed(
     *,
-    docs: Sequence[Document],
+    docs: Sequence[KnowledgeDocument],
     strategy_id: str,
     profile: RagProfile,
 ) -> tuple[bool, str, int]:
@@ -58,14 +56,14 @@ def semantic_chunking_allowed(
     if max_chars <= 0:
         return True, "ok", 0
     for doc in docs:
-        chars = len(doc.page_content or "")
+        chars = len(doc.content or "")
         if chars > max_chars:
             return (
                 False,
                 f"{SEMANTIC_CHUNKING_SIZE_EXCEEDED_REASON}:{chars}>{max_chars}",
                 chars,
             )
-    largest = max((len(doc.page_content or "") for doc in docs), default=0)
+    largest = max((len(doc.content or "") for doc in docs), default=0)
     return True, "ok", largest
 
 

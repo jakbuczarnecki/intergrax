@@ -7,14 +7,13 @@ from __future__ import annotations
 
 import json
 import re
-import uuid
-from typing import List, Sequence
+from collections.abc import Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.graph.contracts.graph_store import GraphEdge, GraphNode, GraphStore
+from intergrax.rag.graph.indexer.validation import validate_graph_index_batch
 
 
 class LlmGraphIndexer:
@@ -22,15 +21,22 @@ class LlmGraphIndexer:
         self._store = store
         self._llm = llm
 
-    def index_documents(self, documents: Sequence[Document], *, chunk_ids: Sequence[str] | None = None) -> int:
-        ids = list(chunk_ids) if chunk_ids else [str(uuid.uuid4()) for _ in documents]
+    def index_documents(
+        self,
+        documents: Sequence[KnowledgeDocument],
+        *,
+        chunk_ids: Sequence[str] | None = None,
+    ) -> int:
+        validated_documents, resolved_ids = validate_graph_index_batch(
+            self._store, documents, chunk_ids
+        )
         total = 0
-        for doc, chunk_id in zip(documents, ids):
+        for doc, chunk_id in zip(validated_documents, resolved_ids):
             total += self._index_one(doc, chunk_id)
         return total
 
-    def _index_one(self, doc: Document, chunk_id: str) -> int:
-        text = (doc.page_content or "").strip()
+    def _index_one(self, doc: KnowledgeDocument, chunk_id: str) -> int:
+        text = doc.content.strip()
         if len(text) < 20:
             return 0
 
@@ -45,7 +51,7 @@ class LlmGraphIndexer:
                 run_id="rag-graph-index",
             )
             payload = _parse_json_block(response.content or "")
-        except Exception:
+        except Exception:  # noqa: BLE001 - preserve LLM retry/error behavior
             return 0
 
         entities = payload.get("entities") or []
@@ -53,7 +59,7 @@ class LlmGraphIndexer:
         if not entities:
             return 0
 
-        node_ids: List[str] = []
+        node_ids: list[str] = []
         label_to_id: dict[str, str] = {}
         for item in entities[:15]:
             label = str(item.get("label", "")).strip()

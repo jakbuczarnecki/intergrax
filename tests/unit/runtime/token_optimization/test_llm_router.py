@@ -6,24 +6,28 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
+from unittest.mock import patch
 
 import pytest
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+)
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
-from intergrax.llm_adapters.registry.catalog_capabilities import (
-    CatalogCapabilityAdapter,
-    enrich_adapter_with_catalog_capabilities,
-)
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaCapabilityResolutionSource,
     OllamaModelCapabilities,
+)
+from intergrax.llm_adapters.registry.catalog_capabilities import (
+    CatalogCapabilityAdapter,
+    enrich_adapter_with_catalog_capabilities,
 )
 from intergrax.runtime.token_optimization.contracts import (
     PromptCacheInvalidationReason,
@@ -41,11 +45,10 @@ from intergrax.runtime.token_optimization.llm_router import (
     TokenOptimizationLLMRouter,
     token_optimization_router_result_to_safe_dict,
 )
-from intergrax.runtime.token_optimization.prompt_assembly import CacheStablePromptIntegrityError
-from unittest.mock import patch
 from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationLLMRouterPolicy,
     TokenOptimizationLLMRouterRequest,
+    TokenOptimizationPolicyOverrideReason,
     TokenOptimizationRouterConfigurationId,
     TokenOptimizationRouterReason,
     TokenOptimizationRouterReasonCode,
@@ -54,18 +57,21 @@ from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationRouterToolInput,
     TokenOptimizationRouterTransport,
 )
+from intergrax.runtime.token_optimization.prompt_assembly import (
+    CacheStablePromptIntegrityError,
+)
 from tests.fixtures.token_optimization.llm_router_corpus import LLM_ROUTER_CORPUS
 
 pytestmark = pytest.mark.unit
 
 
 def _decision(
-  configuration_id: TokenOptimizationRouterConfigurationId,
-  *,
-  review_required: bool = False,
-  confidence: float = 0.9,
-  reason_code: TokenOptimizationRouterReasonCode = TokenOptimizationRouterReasonCode.EXACT_DUPLICATES,
-  risk: TokenOptimizationRouterRisk = TokenOptimizationRouterRisk.LOW,
+    configuration_id: TokenOptimizationRouterConfigurationId,
+    *,
+    review_required: bool = False,
+    confidence: float = 0.9,
+    reason_code: TokenOptimizationRouterReasonCode = TokenOptimizationRouterReasonCode.EXACT_DUPLICATES,
+    risk: TokenOptimizationRouterRisk = TokenOptimizationRouterRisk.LOW,
 ) -> TokenOptimizationRouterToolInput:
     return TokenOptimizationRouterToolInput(
         configuration_id=configuration_id,
@@ -176,7 +182,9 @@ class _NativeToolsAdapter(LLMAdapter):
         run_id: str | None = None,
     ) -> LLMStructuredResult[Any]:
         self.structured_calls += 1
-        raise AssertionError("structured output must not be used when native tools are available")
+        raise AssertionError(
+            "structured output must not be used when native tools are available"
+        )
 
 
 class _StructuredOutputAdapter(LLMAdapter):
@@ -248,7 +256,9 @@ class _UnsupportedAdapter(LLMAdapter):
 
 
 def test_transport_prefers_native_tools() -> None:
-    adapter = _NativeToolsAdapter(decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY))
+    adapter = _NativeToolsAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
     router = TokenOptimizationLLMRouter(adapter=adapter)
     result = router.route(_router_request())
     assert result.transport is TokenOptimizationRouterTransport.NATIVE_TOOLS
@@ -292,7 +302,9 @@ def test_native_failure_does_not_invoke_structured_fallback() -> None:
 
 
 def test_exactly_one_expected_tool_succeeds() -> None:
-    adapter = _NativeToolsAdapter(decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY))
+    adapter = _NativeToolsAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
     result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request())
     assert result.configuration_id is TokenOptimizationRouterConfigurationId.EXACT_ONLY
     assert result.tool_call_id == "call-router-1"
@@ -305,7 +317,9 @@ def test_no_tool_call_fails_safely() -> None:
 
 
 def test_multiple_tool_calls_fail_safely() -> None:
-    valid = _decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY).model_dump_json()
+    valid = _decision(
+        TokenOptimizationRouterConfigurationId.EXACT_ONLY
+    ).model_dump_json()
     adapter = _NativeToolsAdapter(
         tool_calls=(
             LLMToolCall(id="1", name=ROUTER_TOOL_ID, arguments_json=valid),
@@ -318,9 +332,7 @@ def test_multiple_tool_calls_fail_safely() -> None:
 
 def test_unexpected_tool_fails_safely() -> None:
     adapter = _NativeToolsAdapter(
-        tool_calls=(
-            LLMToolCall(id="1", name="other.tool", arguments_json="{}"),
-        )
+        tool_calls=(LLMToolCall(id="1", name="other.tool", arguments_json="{}"),)
     )
     result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request())
     assert result.reason is TokenOptimizationRouterReason.UNEXPECTED_TOOL
@@ -328,9 +340,7 @@ def test_unexpected_tool_fails_safely() -> None:
 
 def test_malformed_json_fails_safely() -> None:
     adapter = _NativeToolsAdapter(
-        tool_calls=(
-            LLMToolCall(id="1", name=ROUTER_TOOL_ID, arguments_json="{bad"),
-        )
+        tool_calls=(LLMToolCall(id="1", name=ROUTER_TOOL_ID, arguments_json="{bad"),)
     )
     result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request())
     assert result.reason is TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS
@@ -353,20 +363,32 @@ def test_invalid_pydantic_arguments_fail_safely() -> None:
 
 
 def test_disabled_policy_blocked() -> None:
-    adapter = _NativeToolsAdapter(decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY))
+    adapter = _NativeToolsAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
     request = _router_request(
-        policy=TokenOptimizationPolicy(enabled=False, profile=TokenOptimizationProfile.OFF),
+        policy=TokenOptimizationPolicy(
+            enabled=False, profile=TokenOptimizationProfile.OFF
+        ),
     )
     result = TokenOptimizationLLMRouter(adapter=adapter).route(request)
     assert result.status is TokenOptimizationRouterStatus.BLOCKED
     assert result.reason is TokenOptimizationRouterReason.POLICY_DISABLED
     assert result.transport is TokenOptimizationRouterTransport.UNSUPPORTED
+    assert result.risk is None
+    assert result.review_required is None
+    assert result.model_risk is None
+    assert result.model_review_required is None
 
 
 def test_off_profile_blocked() -> None:
-    adapter = _NativeToolsAdapter(decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY))
+    adapter = _NativeToolsAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
     request = _router_request(
-        policy=TokenOptimizationPolicy(enabled=True, profile=TokenOptimizationProfile.OFF),
+        policy=TokenOptimizationPolicy(
+            enabled=True, profile=TokenOptimizationProfile.OFF
+        ),
     )
     result = TokenOptimizationLLMRouter(adapter=adapter).route(request)
     assert result.status is TokenOptimizationRouterStatus.BLOCKED
@@ -406,15 +428,150 @@ def test_protected_lossy_requires_review() -> None:
     adapter = _NativeToolsAdapter(
         decision=_decision(TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY)
     )
-    protected = ProtectedRegion(kind=ProtectedRegionKind.IDENTIFIER, value="SECRET-SYNTH")
+    protected = ProtectedRegion(
+        kind=ProtectedRegionKind.IDENTIFIER, value="SECRET-SYNTH"
+    )
     request = _router_request(
         content="INFO\n" * 200,
         source_type=TokenOptimizationSourceType.TOOL_OUTPUT,
         protected_regions=(protected,),
     )
-    result = TokenOptimizationLLMRouter(adapter=adapter).route(request)
+    result = TokenOptimizationLLMRouter(adapter=adapter).route_and_execute(request)
     assert result.status is TokenOptimizationRouterStatus.REVIEW_REQUIRED
-    assert result.reason is TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW
+    assert (
+        result.reason is TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW
+    )
+    assert result.model_risk is TokenOptimizationRouterRisk.LOW
+    assert result.risk is TokenOptimizationRouterRisk.LOW
+    assert result.review_required is True
+    assert result.executed is False
+
+
+def test_protected_lossless_can_route_without_review() -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    protected = ProtectedRegion(
+        kind=ProtectedRegionKind.IDENTIFIER, value="SECRET-SYNTH"
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.ROUTED
+    assert result.configuration_id is TokenOptimizationRouterConfigurationId.EXACT_ONLY
+    assert result.reason_code is TokenOptimizationRouterReasonCode.EXACT_DUPLICATES
+    assert result.review_required is False
+    assert result.policy_override_applied is False
+    assert result.pipeline_config is not None
+
+
+@pytest.mark.parametrize(
+    "source_type",
+    [
+        TokenOptimizationSourceType.TOOL_OUTPUT,
+        TokenOptimizationSourceType.TERMINAL_OUTPUT,
+    ],
+)
+def test_ordinary_noncritical_lossy_risk_is_medium_across_source_types(
+    source_type: TokenOptimizationSourceType,
+) -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(
+            TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY,
+            reason_code=TokenOptimizationRouterReasonCode.NOISY_TOOL_OUTPUT,
+            risk=TokenOptimizationRouterRisk.MEDIUM,
+        )
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(
+            content="INFO\n" * 200,
+            source_type=source_type,
+        )
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.ROUTED
+    assert result.risk is TokenOptimizationRouterRisk.MEDIUM
+    assert result.review_required is False
+    assert result.model_risk is TokenOptimizationRouterRisk.MEDIUM
+    assert result.model_review_required is False
+
+
+def test_protected_lossless_preserves_explicit_model_review_and_risk() -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(
+            TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+            review_required=True,
+            risk=TokenOptimizationRouterRisk.MEDIUM,
+        )
+    )
+    protected = ProtectedRegion(
+        kind=ProtectedRegionKind.IDENTIFIER, value="SECRET-SYNTH"
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.REVIEW_REQUIRED
+    assert result.review_required is True
+    assert result.risk is TokenOptimizationRouterRisk.MEDIUM
+    assert result.model_review_required is True
+    assert result.model_risk is TokenOptimizationRouterRisk.MEDIUM
+    assert result.policy_override_applied is False
+
+
+@pytest.mark.parametrize(
+    ("configuration_id", "source_type", "expected_layer_ids"),
+    [
+        (
+            TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+            TokenOptimizationSourceType.PROMPT,
+            ("builtin.exact_deduplication",),
+        ),
+        (
+            TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY,
+            TokenOptimizationSourceType.TOOL_OUTPUT,
+            ("builtin.extractive_filtering",),
+        ),
+        (
+            TokenOptimizationRouterConfigurationId.EXACT_THEN_EXTRACTIVE,
+            TokenOptimizationSourceType.TOOL_OUTPUT,
+            ("builtin.exact_deduplication", "builtin.extractive_filtering"),
+        ),
+    ],
+)
+def test_router_compiles_canonical_catalog_layer_order(
+    configuration_id: TokenOptimizationRouterConfigurationId,
+    source_type: TokenOptimizationSourceType,
+    expected_layer_ids: tuple[str, ...],
+) -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(
+            configuration_id,
+            reason_code=(
+                TokenOptimizationRouterReasonCode.NOISY_TOOL_OUTPUT
+                if configuration_id
+                in {
+                    TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY,
+                    TokenOptimizationRouterConfigurationId.EXACT_THEN_EXTRACTIVE,
+                }
+                else TokenOptimizationRouterReasonCode.EXACT_DUPLICATES
+            ),
+        )
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(
+            source_type=source_type,
+            content="INFO\n" * 200,
+        )
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.ROUTED
+    assert result.pipeline_config is not None
+    assert (
+        tuple(layer.layer_id for layer in result.pipeline_config.layers)
+        == expected_layer_ids
+    )
 
 
 def test_model_requested_review_prevents_execution() -> None:
@@ -424,7 +581,9 @@ def test_model_requested_review_prevents_execution() -> None:
             review_required=True,
         )
     )
-    result = TokenOptimizationLLMRouter(adapter=adapter).route_and_execute(_router_request())
+    result = TokenOptimizationLLMRouter(adapter=adapter).route_and_execute(
+        _router_request()
+    )
     assert result.executed is False
     assert result.reason is TokenOptimizationRouterReason.MODEL_REQUESTED_REVIEW
 
@@ -455,8 +614,220 @@ def test_no_optimization_safe_noop() -> None:
     assert result.pipeline_config is None
 
 
+def test_measure_only_no_optimization_decision_is_not_rewritten() -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(
+            TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
+            reason_code=TokenOptimizationRouterReasonCode.CLEAN_NO_OP,
+        )
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(
+            policy=TokenOptimizationPolicy(
+                enabled=True,
+                profile=TokenOptimizationProfile.MEASURE_ONLY,
+                allow_lossy=True,
+            )
+        )
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.NO_OPTIMIZATION
+    assert (
+        result.configuration_id
+        is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION
+    )
+    assert result.reason_code is TokenOptimizationRouterReasonCode.CLEAN_NO_OP
+    assert (
+        result.model_configuration_id
+        is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION
+    )
+    assert result.pipeline_config is None
+
+
+def test_security_warning_applies_typed_fail_closed_override() -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION)
+    )
+    protected = ProtectedRegion(
+        kind=ProtectedRegionKind.SECURITY_WARNING,
+        value="SYNTHETIC_SECURITY_WARNING",
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+
+    assert result.model_risk is TokenOptimizationRouterRisk.LOW
+    assert result.model_review_required is False
+    assert result.policy_override_applied is True
+    assert result.policy_override_reason.value == "security_warning_requires_review"
+    assert result.status is TokenOptimizationRouterStatus.REVIEW_REQUIRED
+    assert result.risk is TokenOptimizationRouterRisk.HIGH
+    assert result.review_required is True
+    assert result.executed is False
+    assert (
+        token_optimization_router_result_to_safe_dict(result)["raw_content_included"]
+        is False
+    )
+
+
+def test_security_warning_high_review_decision_needs_no_override() -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(
+            TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
+            review_required=True,
+            risk=TokenOptimizationRouterRisk.HIGH,
+        )
+    )
+    protected = ProtectedRegion(
+        kind=ProtectedRegionKind.SECURITY_WARNING,
+        value="SYNTHETIC_SECURITY_WARNING",
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+
+    assert result.model_risk is TokenOptimizationRouterRisk.HIGH
+    assert result.model_review_required is True
+    assert result.policy_override_applied is False
+    assert result.policy_override_reason is None
+    assert result.risk is TokenOptimizationRouterRisk.HIGH
+    assert result.review_required is True
+    assert result.executed is False
+
+
+def test_security_warning_invalid_tool_arguments_fail_safe_to_review() -> None:
+    payload = _decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY).model_dump()
+    payload["confidence"] = 2.0
+    adapter = _NativeToolsAdapter(
+        tool_calls=(
+            LLMToolCall(
+                id="call-malformed-1",
+                name=ROUTER_TOOL_ID,
+                arguments_json=json.dumps(payload),
+            ),
+        )
+    )
+    protected = ProtectedRegion(
+        kind=ProtectedRegionKind.SECURITY_WARNING,
+        value="SYNTHETIC_SECURITY_WARNING",
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.REVIEW_REQUIRED
+    assert (
+        result.reason is TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW
+    )
+    assert (
+        result.reason_code is TokenOptimizationRouterReasonCode.PROTECTED_OR_HIGH_RISK
+    )
+    assert result.risk is TokenOptimizationRouterRisk.HIGH
+    assert result.review_required is True
+    assert result.executed is False
+    assert result.pipeline_config is None
+    assert result.configuration_id is None
+    assert result.model_configuration_id is None
+    assert result.model_reason_code is None
+    assert result.model_risk is None
+    assert result.model_review_required is None
+    assert result.policy_override_applied is True
+    assert (
+        result.policy_override_reason
+        is TokenOptimizationPolicyOverrideReason.SECURITY_WARNING_REQUIRES_REVIEW
+    )
+
+
+def test_security_warning_no_tool_call_fail_safe_to_review() -> None:
+    adapter = _NativeToolsAdapter(tool_calls=())
+    protected = ProtectedRegion(
+        kind=ProtectedRegionKind.SECURITY_WARNING,
+        value="SYNTHETIC_SECURITY_WARNING",
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.REVIEW_REQUIRED
+    assert (
+        result.reason is TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW
+    )
+    assert result.risk is TokenOptimizationRouterRisk.HIGH
+    assert result.review_required is True
+    assert result.executed is False
+    assert result.model_risk is None
+    assert result.model_review_required is None
+    assert result.policy_override_applied is True
+
+
+def test_non_security_warning_invalid_tool_arguments_remain_invalid_decision() -> None:
+    payload = _decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY).model_dump()
+    payload["confidence"] = 2.0
+    adapter = _NativeToolsAdapter(
+        tool_calls=(
+            LLMToolCall(
+                id="1",
+                name=ROUTER_TOOL_ID,
+                arguments_json=json.dumps(payload),
+            ),
+        )
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request())
+    assert result.status is TokenOptimizationRouterStatus.INVALID_DECISION
+    assert result.reason is TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS
+    assert result.risk is None
+    assert result.review_required is None
+    assert result.policy_override_applied is False
+
+
+def test_protected_value_without_security_warning_invalid_decision_is_not_high() -> (
+    None
+):
+    payload = _decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY).model_dump()
+    payload["confidence"] = 2.0
+    adapter = _NativeToolsAdapter(
+        tool_calls=(
+            LLMToolCall(
+                id="1",
+                name=ROUTER_TOOL_ID,
+                arguments_json=json.dumps(payload),
+            ),
+        )
+    )
+    protected = ProtectedRegion(
+        kind=ProtectedRegionKind.IDENTIFIER,
+        value="SECRET-SYNTH",
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+    assert result.status is TokenOptimizationRouterStatus.INVALID_DECISION
+    assert result.reason is TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS
+    assert result.risk is None
+    assert result.review_required is None
+    assert result.policy_override_applied is False
+
+
+def test_security_warning_provider_llm_error_preserves_technical_failure() -> None:
+    adapter = _NativeToolsAdapter(raise_on_generate=True)
+    protected = ProtectedRegion(
+        kind=ProtectedRegionKind.SECURITY_WARNING,
+        value="SYNTHETIC_SECURITY_WARNING",
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+    assert result.status is TokenOptimizationRouterStatus.LLM_ERROR
+    assert result.reason is TokenOptimizationRouterReason.LLM_ERROR
+    assert result.risk is None
+    assert result.review_required is None
+    assert result.policy_override_applied is False
+
+
 def test_valid_lossless_decision_compiles() -> None:
-    adapter = _NativeToolsAdapter(decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY))
+    adapter = _NativeToolsAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
     result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request())
     assert result.status is TokenOptimizationRouterStatus.ROUTED
     assert result.pipeline_config is not None
@@ -464,8 +835,12 @@ def test_valid_lossless_decision_compiles() -> None:
 
 
 def test_route_and_execute_runs_pipeline() -> None:
-    adapter = _NativeToolsAdapter(decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY))
-    result = TokenOptimizationLLMRouter(adapter=adapter).route_and_execute(_router_request())
+    adapter = _NativeToolsAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route_and_execute(
+        _router_request()
+    )
     assert result.executed is True
     assert result.pipeline_result is not None
     assert "builtin.exact_deduplication" in result.pipeline_result.applied_layer_ids
@@ -473,7 +848,9 @@ def test_route_and_execute_runs_pipeline() -> None:
 
 def test_packing_route_and_execute_with_typed_input() -> None:
     packing_case = next(
-        case for case in LLM_ROUTER_CORPUS if case.case_id == "router.rag_priority_packing"
+        case
+        for case in LLM_ROUTER_CORPUS
+        if case.case_id == "router.rag_priority_packing"
     )
     packing_input = packing_case.metadata["packing_input"]
     assert isinstance(packing_input, BudgetAwarePackingInput)
@@ -489,12 +866,19 @@ def test_packing_route_and_execute_with_typed_input() -> None:
     )
     result = TokenOptimizationLLMRouter(adapter=adapter).route_and_execute(request)
     assert result.executed is True
-    assert "builtin.budget_aware_context_packing" in result.pipeline_result.applied_layer_ids
+    assert (
+        "builtin.budget_aware_context_packing"
+        in result.pipeline_result.applied_layer_ids
+    )
 
 
 def test_safe_report_has_no_raw_content() -> None:
-    adapter = _NativeToolsAdapter(decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY))
-    result = TokenOptimizationLLMRouter(adapter=adapter).route_and_execute(_router_request())
+    adapter = _NativeToolsAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route_and_execute(
+        _router_request()
+    )
     safe = token_optimization_router_result_to_safe_dict(result)
     dumped = json.dumps(safe)
     assert "SYNTH-ALPHA" not in dumped
@@ -680,7 +1064,9 @@ def _assert_zero_adapter_activity(adapter: _CountingAdapter) -> None:
     ("policy", "expected_reason"),
     [
         (
-            TokenOptimizationPolicy(enabled=False, profile=TokenOptimizationProfile.OFF),
+            TokenOptimizationPolicy(
+                enabled=False, profile=TokenOptimizationProfile.OFF
+            ),
             TokenOptimizationRouterReason.POLICY_DISABLED,
         ),
         (
@@ -742,7 +1128,9 @@ def test_resolved_no_tools_model_uses_structured_fallback() -> None:
             source=OllamaCapabilityResolutionSource.EXPLICIT_TEST_OVERRIDE,
         )
     )
-    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request(content="ok"))
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(content="ok")
+    )
     assert result.transport is TokenOptimizationRouterTransport.STRUCTURED_OUTPUT
     assert adapter.structured_calls == 1
 
@@ -756,7 +1144,9 @@ def test_resolved_tools_model_uses_native_transport() -> None:
             source=OllamaCapabilityResolutionSource.EXPLICIT_TEST_OVERRIDE,
         )
     )
-    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request(content="ok"))
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(content="ok")
+    )
     assert result.transport is TokenOptimizationRouterTransport.NATIVE_TOOLS
     assert adapter.structured_calls == 0
 
@@ -807,7 +1197,9 @@ def test_wrapped_resolved_no_tools_model_uses_structured_fallback() -> None:
         )
     )
     adapter = _wrap_ollama_like_adapter(inner)
-    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request(content="ok"))
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(content="ok")
+    )
     assert result.transport is TokenOptimizationRouterTransport.STRUCTURED_OUTPUT
     assert inner.structured_calls == 1
     assert inner.generate_with_tools_calls == 0
@@ -823,14 +1215,21 @@ def test_wrapped_resolved_tools_model_uses_native_transport() -> None:
         )
     )
     adapter = _wrap_ollama_like_adapter(inner)
-    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request(content="ok"))
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(content="ok")
+    )
     assert result.transport is TokenOptimizationRouterTransport.NATIVE_TOOLS
     assert inner.generate_with_tools_calls == 1
     assert inner.structured_calls == 0
 
 
 @pytest.mark.parametrize(
-    ("capabilities_resolved", "native_tools_supported", "structured_output_supported", "expected"),
+    (
+        "capabilities_resolved",
+        "native_tools_supported",
+        "structured_output_supported",
+        "expected",
+    ),
     [
         (True, True, False, TokenOptimizationRouterTransport.NATIVE_TOOLS.value),
         (True, False, True, TokenOptimizationRouterTransport.STRUCTURED_OUTPUT.value),
@@ -844,7 +1243,9 @@ def test_summary_transport_selection(
     structured_output_supported: bool,
     expected: str,
 ) -> None:
-    from tests.e2e.token_optimization.test_llm_router_ollama_live import _summary_transport
+    from tests.e2e.token_optimization.test_llm_router_ollama_live import (
+        _summary_transport,
+    )
 
     assert (
         _summary_transport(
@@ -858,7 +1259,9 @@ def test_summary_transport_selection(
 
 def test_safe_report_preserves_canonical_executed_order() -> None:
     packing_case = next(
-        case for case in LLM_ROUTER_CORPUS if case.case_id == "router.rag_mixed_dedupe_packing"
+        case
+        for case in LLM_ROUTER_CORPUS
+        if case.case_id == "router.rag_mixed_dedupe_packing"
     )
     packing_input = packing_case.metadata["packing_input"]
     adapter = _NativeToolsAdapter(
@@ -873,7 +1276,9 @@ def test_safe_report_preserves_canonical_executed_order() -> None:
     )
     result = TokenOptimizationLLMRouter(adapter=adapter).route_and_execute(request)
     assert result.pipeline_result is not None
-    canonical_order = list(result.pipeline_result.receipt_metadata["executed_layer_ids"])
+    canonical_order = list(
+        result.pipeline_result.receipt_metadata["executed_layer_ids"]
+    )
     grouped_order = list(result.pipeline_result.applied_layer_ids) + list(
         result.pipeline_result.bypassed_layer_ids
     )
@@ -885,7 +1290,9 @@ def test_safe_report_preserves_canonical_executed_order() -> None:
 
 
 def test_safe_report_includes_required_failure_layer_id() -> None:
-    from intergrax.runtime.token_optimization.contracts import TokenOptimizationPipelineResult
+    from intergrax.runtime.token_optimization.contracts import (
+        TokenOptimizationPipelineResult,
+    )
     from intergrax.runtime.token_optimization.llm_router_contracts import (
         TokenOptimizationLLMRouterResult,
     )
@@ -968,13 +1375,53 @@ def test_router_system_prompt_in_stable_prefix() -> None:
     )
     assert adapter.captured_messages is not None
     assert adapter.captured_messages[0].role == "system"
+    system_prompt = adapter.captured_messages[0].content
+    assert "Require review for protected or high-risk content." not in system_prompt
+    assert "Require review for high-risk content." in system_prompt
+    assert (
+        "When protected regions are present, require review only if the selected"
+        in (system_prompt)
+    )
+    assert (
+        "Protected regions with a lossless configuration may proceed without review"
+        in (system_prompt)
+    )
+    assert (
+        "Do not require review solely because protected regions are present when the"
+        in (system_prompt)
+    )
+    assert (
+        "exact\nprotected-value preservation validation will be performed"
+        in system_prompt
+    )
+    assert "For policy_profile=measure_only" in system_prompt
 
 
 def test_router_facts_and_content_in_dynamic_tail() -> None:
     adapter = _SchemaCapturingNativeAdapter(
         decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
     )
-    request = _router_request(content="SYNTH-ROUTER-CONTENT-MARKER")
+    request = _router_request(
+        content="SYNTH-ROUTER-CONTENT-MARKER",
+        protected_regions=(
+            ProtectedRegion(
+                kind=ProtectedRegionKind.URL,
+                value="https://synthetic.invalid/router",
+            ),
+            ProtectedRegion(
+                kind=ProtectedRegionKind.PATH,
+                value="synthetic/router.json",
+            ),
+            ProtectedRegion(
+                kind=ProtectedRegionKind.IDENTIFIER,
+                value="SYNTHETIC_ROUTER_ID",
+            ),
+            ProtectedRegion(
+                kind=ProtectedRegionKind.EXACT_ERROR,
+                value="E_SYNTHETIC_ROUTER",
+            ),
+        ),
+    )
     TokenOptimizationLLMRouter(adapter=adapter).route(request)
     assert adapter.captured_messages is not None
     assert len(adapter.captured_messages) == 2
@@ -982,6 +1429,52 @@ def test_router_facts_and_content_in_dynamic_tail() -> None:
     assert tail.role == "user"
     assert "source_type:" in tail.content
     assert "SYNTH-ROUTER-CONTENT-MARKER" in tail.content
+    assert "protected_region_count: 4" in tail.content
+    assert "protected_region_kinds: exact_error, identifier, path, url" in tail.content
+    assert "- exact_only:" in tail.content
+    assert "lossy=false" in tail.content
+    assert "protected_review_required: true" not in tail.content
+    assert "protected_review_required: false" not in tail.content
+
+
+def test_protected_dynamic_tail_contains_no_ready_review_decision() -> None:
+    adapter = _SchemaCapturingNativeAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    request = _router_request(
+        protected_regions=(
+            ProtectedRegion(
+                kind=ProtectedRegionKind.IDENTIFIER,
+                value="SYNTHETIC_ROUTER_ID",
+            ),
+        ),
+    )
+
+    TokenOptimizationLLMRouter(adapter=adapter).route(request)
+
+    assert adapter.captured_messages is not None
+    tail = adapter.captured_messages[1].content
+    assert "protected_review_required" not in tail
+    assert "review required" not in tail.lower()
+    assert "review not required" not in tail.lower()
+
+
+def test_router_dynamic_tail_exposes_lossy_catalog_metadata() -> None:
+    adapter = _SchemaCapturingNativeAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY)
+    )
+
+    TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(
+            content="INFO\n" * 200,
+            source_type=TokenOptimizationSourceType.TOOL_OUTPUT,
+        )
+    )
+
+    assert adapter.captured_messages is not None
+    tail = adapter.captured_messages[1].content
+    assert "- extractive_only:" in tail
+    assert "lossy=true" in tail
 
 
 def test_repeated_requests_with_previous_state_stable_prefix() -> None:
@@ -1017,7 +1510,10 @@ def test_different_request_content_preserves_prefix_hash() -> None:
     )
     assert first.prompt_assembly_report is not None
     assert second.prompt_assembly_report is not None
-    assert second.prompt_assembly_report.prefix_hash == first.prompt_assembly_report.prefix_hash
+    assert (
+        second.prompt_assembly_report.prefix_hash
+        == first.prompt_assembly_report.prefix_hash
+    )
 
 
 def test_router_returns_safe_prompt_cache_state() -> None:
@@ -1052,7 +1548,9 @@ def test_structured_fallback_does_not_claim_tool_envelope() -> None:
     adapter = _StructuredOutputAdapter(
         decision=_decision(TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION)
     )
-    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request(content="ok"))
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(content="ok")
+    )
     assert result.transport is TokenOptimizationRouterTransport.STRUCTURED_OUTPUT
     assert result.prompt_assembly_report is not None
     assert result.prompt_assembly_report.tool_envelope_hash is None
@@ -1078,7 +1576,9 @@ def test_safe_router_report_contains_no_raw_content_or_tool_schema() -> None:
 def test_preflight_blocked_returns_no_prompt_cache_state() -> None:
     adapter = _CountingAdapter()
     request = _router_request(
-        policy=TokenOptimizationPolicy(enabled=False, profile=TokenOptimizationProfile.OFF),
+        policy=TokenOptimizationPolicy(
+            enabled=False, profile=TokenOptimizationProfile.OFF
+        ),
     )
     result = TokenOptimizationLLMRouter(adapter=adapter).route(request)
     assert result.prompt_cache_state is None
@@ -1193,7 +1693,9 @@ def test_assembly_integrity_failure_returns_safe_fail_closed_result() -> None:
     ):
         result = router.route(_router_request(content="SYNTH-INTEGRITY"))
     assert result.status is TokenOptimizationRouterStatus.INVALID_DECISION
-    assert result.reason is TokenOptimizationRouterReason.PROMPT_ASSEMBLY_INTEGRITY_FAILED
+    assert (
+        result.reason is TokenOptimizationRouterReason.PROMPT_ASSEMBLY_INTEGRITY_FAILED
+    )
     assert result.executed is False
 
 

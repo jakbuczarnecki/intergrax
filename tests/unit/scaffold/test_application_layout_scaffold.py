@@ -35,6 +35,8 @@ def test_scaffolded_application_docs_layout() -> None:
         assert (docs / "BUILD_AND_DEPLOY.md").is_file()
         assert (docs / "adr" / "README.md").is_file()
         assert (docs / "journal" / ".gitkeep").is_file()
+        assert (target / "extensions" / "README.md").is_file()
+        assert (target / "extensions" / "local_prefix_echo_plugin.py").is_file()
         assert not (target / "ARCHITECTURE.md").exists()
         assert not (target / "IMPLEMENTATION_PLAN.md").exists()
         assert not (target / "BUILD_AND_DEPLOY.md").exists()
@@ -44,7 +46,7 @@ def test_scaffolded_application_docs_layout() -> None:
         assert "docs/ARCHITECTURE.md" in readme
         assert "docs/IMPLEMENTATION_PLAN.md" in readme
         assert "docs/BUILD_AND_DEPLOY.md" in readme
-        assert "docs/adr/README.md" in readme
+        assert "docs/project/technical/adr/README.md" in readme
         assert "`ARCHITECTURE.md`](ARCHITECTURE.md)" not in readme
 
         assert (target / "scripts" / "build-local-docker.sh").is_file()

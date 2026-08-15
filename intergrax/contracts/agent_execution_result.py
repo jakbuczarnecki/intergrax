@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_decision import AgentDecision, HumanRequest
+from intergrax.contracts.declarative_hitl import DeclarativeHitlPendingApproval
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 
 
@@ -42,3 +43,4 @@ class AgentExecutionResult(BaseModel):
     human_request: Optional[HumanRequest] = None
     execution_interrupt: Optional[ExecutionInterrupt] = None
     policy_rule_id: Optional[str] = None
+    declarative_hitl_pending: Optional[DeclarativeHitlPendingApproval] = None

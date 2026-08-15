@@ -9,6 +9,8 @@
 services:
   local_workspace:
     environment:
+      INTERGRAX_ALLOWED_READ_ROOTS: /data/user_docs
+      INTERGRAX_RAG_CHUNKING_STRATEGY: recursive
       LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS: "true"
       LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS: "true"
       LOCAL_WORKSPACE_ENABLE_REDIS: "true"
@@ -51,6 +53,7 @@ services:
       LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS: "true"
       LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS: "true"
       LOCAL_WORKSPACE_ENABLE_REDIS: "true"
+      INTERGRAX_RAG_CHUNKING_STRATEGY: recursive
       LOCAL_WORKSPACE_VECTOR_STORE: qdrant
       INTERGRAX_QDRANT_URL: http://qdrant:6333
       INTERGRAX_QDRANT_COLLECTION: local_workspace
@@ -59,7 +62,8 @@ services:
       INTERGRAX_ALLOWED_READ_ROOTS: /data/user_docs
       INTERGRAX_LLM_PROVIDER: ollama
       INTERGRAX_LLM_MODEL: llama3.1:latest
-      INTERGRAX_DEFAULT_OLLAMA_MODEL: llama3.1:latest
+      INTERGRAX_EMBEDDING_PROVIDER: ollama
+      INTERGRAX_EMBEDDING_MODEL: nomic-embed-text
       OLLAMA_HOST: http://ollama:11434
       INTERGRAX_REDIS_URL: redis://lkw-redis:6379/0
       INTERGRAX_KAFKA_BOOTSTRAP_SERVERS: lkw-kafka:9092
@@ -68,16 +72,25 @@ services:
       INTERGRAX_KAFKA_STATUS_TOPIC: intergrax.task-status
       INTERGRAX_KAFKA_RESULTS_TOPIC: intergrax.task-results
       INTERGRAX_KAFKA_CONSUMER_GROUP: lkw-background-ingest
+      INTERGRAX_MONGODB_URI: mongodb://${LKW_MONGODB_ROOT_USERNAME:-intergrax}:${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}@lkw-mongodb:27017/${LKW_MONGODB_DATABASE:-intergrax_proofs}?authSource=admin
+      INTERGRAX_MONGODB_DATABASE: ${LKW_MONGODB_DATABASE:-intergrax_proofs}
     volumes:
       - lkw_sqlite:/data/sqlite
       - lkw_shadow:/data/shadow_workspaces
       - ../.proof_docs:/data/user_docs:rw
     depends_on:
-      - qdrant
-      - ollama
-      - lkw-redis
-      - lkw-kafka
-      - lkw-kafka-topics
+      qdrant:
+        condition: service_started
+      ollama:
+        condition: service_started
+      lkw-redis:
+        condition: service_started
+      lkw-kafka:
+        condition: service_started
+      lkw-kafka-topics:
+        condition: service_started
+      lkw-mongodb:
+        condition: service_healthy
 
   lkw-redis:
     image: redis:7-alpine
@@ -132,5 +145,7 @@ services:
       - lkw-kafka-topics
 
 volumes:
+  lkw_sqlite:
+  lkw_shadow:
   lkw_redis_data:
   lkw_kafka_data:

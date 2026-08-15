@@ -7,14 +7,15 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Any, Mapping, Protocol, runtime_checkable
+from collections.abc import Mapping
+from datetime import UTC, datetime
+from typing import Any, Protocol, runtime_checkable
 
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.common import (
-    MAX_HISTORY_REPLY_PAGE_LIMIT,
-    MAX_INVENTORY_PAGE_LIMIT,
     _INVENTORY_TYPES,
     _MALFORMED_RESPONSE,
+    MAX_HISTORY_REPLY_PAGE_LIMIT,
+    MAX_INVENTORY_PAGE_LIMIT,
     validate_message_max_chars,
     validate_page_limit,
     validate_provider_cursor,
@@ -43,7 +44,9 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.
     slack_timestamp_in_window,
     validate_slack_timestamp,
 )
-from intergrax.integrations.providers.conversation_channel.slack.mapping import parse_slack_ts
+from intergrax.integrations.providers.conversation_channel.slack.mapping import (
+    parse_slack_ts,
+)
 from intergrax.utils import attribute_access
 
 _LOG = logging.getLogger(__name__)
@@ -58,7 +61,9 @@ _AUTH_ERRORS = frozenset(
     }
 )
 _SCOPE_ERRORS = frozenset({"missing_scope"})
-_NOT_FOUND_ERRORS = frozenset({"channel_not_found", "thread_not_found", "message_not_found"})
+_NOT_FOUND_ERRORS = frozenset(
+    {"channel_not_found", "thread_not_found", "message_not_found"}
+)
 _PERMISSION_ERRORS = frozenset(
     {
         "no_permission",
@@ -74,7 +79,13 @@ _PERMISSION_ERRORS = frozenset(
     }
 )
 _RETRYABLE_ERRORS = frozenset(
-    {"ratelimited", "request_timeout", "service_unavailable", "internal_error", "fatal_error"}
+    {
+        "ratelimited",
+        "request_timeout",
+        "service_unavailable",
+        "internal_error",
+        "fatal_error",
+    }
 )
 
 
@@ -144,15 +155,23 @@ def _normalize_slack_api_error(exc: BaseException) -> BaseException:
     code = _extract_slack_error_code(exc)
     retry_after = _extract_retry_after(exc)
     if code in _AUTH_ERRORS:
-        return SlackConversationReadError(slack_error=code, retry_after_seconds=retry_after)
+        return SlackConversationReadError(
+            slack_error=code, retry_after_seconds=retry_after
+        )
     if code in _SCOPE_ERRORS or code in _PERMISSION_ERRORS:
-        return SlackConversationReadError(slack_error=code, retry_after_seconds=retry_after)
+        return SlackConversationReadError(
+            slack_error=code, retry_after_seconds=retry_after
+        )
     if code in _NOT_FOUND_ERRORS:
         return SlackConversationMessageNotFound()
     if code == "ratelimited":
-        return SlackConversationReadError(slack_error=code, retry_after_seconds=retry_after)
+        return SlackConversationReadError(
+            slack_error=code, retry_after_seconds=retry_after
+        )
     if code in _RETRYABLE_ERRORS:
-        return SlackConversationReadError(slack_error=code, retry_after_seconds=retry_after)
+        return SlackConversationReadError(
+            slack_error=code, retry_after_seconds=retry_after
+        )
     return SlackConversationReadError(slack_error=code, retry_after_seconds=retry_after)
 
 
@@ -164,7 +183,9 @@ def _require_ok_response(data: Mapping[str, Any]) -> None:
     if data.get("ok") is True:
         return
     if data.get("ok") is False:
-        raise SlackConversationReadError(slack_error=str(data.get("error") or "unknown_error"))
+        raise SlackConversationReadError(
+            slack_error=str(data.get("error") or "unknown_error")
+        )
     raise _malformed_provider_response()
 
 
@@ -186,7 +207,9 @@ def _optional_bool(value: object, *, field: str, raw: Mapping[str, Any]) -> bool
     return value
 
 
-def _optional_non_negative_int(value: object, *, field: str, raw: Mapping[str, Any]) -> int | None:
+def _optional_non_negative_int(
+    value: object, *, field: str, raw: Mapping[str, Any]
+) -> int | None:
     if field not in raw:
         return None
     if type(value) is not int or value < 0:
@@ -194,7 +217,9 @@ def _optional_non_negative_int(value: object, *, field: str, raw: Mapping[str, A
     return value
 
 
-def _optional_str_field(value: object, *, field: str, raw: Mapping[str, Any]) -> str | None:
+def _optional_str_field(
+    value: object, *, field: str, raw: Mapping[str, Any]
+) -> str | None:
     if field not in raw:
         return None
     if not isinstance(value, str):
@@ -202,7 +227,9 @@ def _optional_str_field(value: object, *, field: str, raw: Mapping[str, Any]) ->
     return _non_blank_str(value)
 
 
-def _optional_string_field(value: object, *, field: str, raw: Mapping[str, Any]) -> str | None:
+def _optional_string_field(
+    value: object, *, field: str, raw: Mapping[str, Any]
+) -> str | None:
     if field not in raw:
         return None
     if not isinstance(value, str):
@@ -278,11 +305,17 @@ def _parse_created_at(ts: str) -> datetime:
     return parsed
 
 
-def _conversation_kind_from_channel(channel: Mapping[str, Any]) -> SlackConversationKind:
-    is_channel = _optional_bool(channel.get("is_channel"), field="is_channel", raw=channel)
+def _conversation_kind_from_channel(
+    channel: Mapping[str, Any],
+) -> SlackConversationKind:
+    is_channel = _optional_bool(
+        channel.get("is_channel"), field="is_channel", raw=channel
+    )
     is_im = _optional_bool(channel.get("is_im"), field="is_im", raw=channel)
     is_mpim = _optional_bool(channel.get("is_mpim"), field="is_mpim", raw=channel)
-    is_private = _optional_bool(channel.get("is_private"), field="is_private", raw=channel)
+    is_private = _optional_bool(
+        channel.get("is_private"), field="is_private", raw=channel
+    )
     active_kinds = sum(flag is True for flag in (is_channel, is_im, is_mpim))
     if active_kinds != 1:
         raise ValueError(_MALFORMED_RESPONSE)
@@ -303,16 +336,24 @@ def _conversation_kind_from_channel(channel: Mapping[str, Any]) -> SlackConversa
     raise ValueError(_MALFORMED_RESPONSE)
 
 
-def _safe_conversation_name(channel: Mapping[str, Any], *, kind: SlackConversationKind) -> str:
+def _safe_conversation_name(
+    channel: Mapping[str, Any], *, kind: SlackConversationKind
+) -> str:
     if kind is SlackConversationKind.IM:
-        user_id = _non_blank_str(_optional_string_field(channel.get("user"), field="user", raw=channel))
+        user_id = _non_blank_str(
+            _optional_string_field(channel.get("user"), field="user", raw=channel)
+        )
         if user_id is not None:
             return f"Direct message ({user_id[:8]}…)"
         return "Direct message"
     if kind is SlackConversationKind.MPIM:
-        name = _non_blank_str(_optional_string_field(channel.get("name"), field="name", raw=channel))
+        name = _non_blank_str(
+            _optional_string_field(channel.get("name"), field="name", raw=channel)
+        )
         return name or "Group direct message"
-    name = _non_blank_str(_optional_string_field(channel.get("name"), field="name", raw=channel))
+    name = _non_blank_str(
+        _optional_string_field(channel.get("name"), field="name", raw=channel)
+    )
     return name or "Conversation"
 
 
@@ -329,15 +370,21 @@ def _parse_file_reference(raw: Mapping[str, Any]) -> SlackConversationFileRefere
     created_at = None
     created_raw = raw.get("created")
     if "created" in raw:
-        created_value = _optional_non_negative_int(created_raw, field="created", raw=raw)
+        created_value = _optional_non_negative_int(
+            created_raw, field="created", raw=raw
+        )
         if created_value is not None:
-            created_at = datetime.fromtimestamp(created_value, tz=timezone.utc)
+            created_at = datetime.fromtimestamp(created_value, tz=UTC)
     resolved_size = None
     if "size" in raw:
-        resolved_size = _optional_non_negative_int(raw.get("size"), field="size", raw=raw)
+        resolved_size = _optional_non_negative_int(
+            raw.get("size"), field="size", raw=raw
+        )
     is_external = False
     if "is_external" in raw:
-        external_value = _optional_bool(raw.get("is_external"), field="is_external", raw=raw)
+        external_value = _optional_bool(
+            raw.get("is_external"), field="is_external", raw=raw
+        )
         is_external = external_value is True
     return SlackConversationFileReference(
         file_id=file_id,
@@ -352,7 +399,9 @@ def _parse_file_reference(raw: Mapping[str, Any]) -> SlackConversationFileRefere
     )
 
 
-def _normalize_root_thread_ts(*, message_ts: str, raw_thread_ts: str | None) -> str | None:
+def _normalize_root_thread_ts(
+    *, message_ts: str, raw_thread_ts: str | None
+) -> str | None:
     if raw_thread_ts is None:
         return None
     if raw_thread_ts == message_ts:
@@ -426,8 +475,7 @@ class SlackConversationKnowledgeReadClient(Protocol):
         *,
         cursor: str | None,
         limit: int,
-    ) -> SlackConversationInventoryPage:
-        ...
+    ) -> SlackConversationInventoryPage: ...
 
     async def read_conversation_history_page(
         self,
@@ -438,8 +486,18 @@ class SlackConversationKnowledgeReadClient(Protocol):
         cursor: str | None,
         limit: int,
         max_chars_per_message: int,
-    ) -> SlackConversationMessagePage:
-        ...
+    ) -> SlackConversationMessagePage: ...
+
+    async def read_recent_conversation_messages_page(
+        self,
+        *,
+        conversation_id: str,
+        conversation_kind: SlackConversationKind,
+        window: SlackConversationSourceWindow,
+        limit: int,
+        max_chars_per_message: int,
+        cursor: str | None = None,
+    ) -> SlackConversationMessagePage: ...
 
     async def read_thread_replies_page(
         self,
@@ -451,8 +509,7 @@ class SlackConversationKnowledgeReadClient(Protocol):
         cursor: str | None,
         limit: int,
         max_chars_per_message: int,
-    ) -> SlackConversationMessagePage:
-        ...
+    ) -> SlackConversationMessagePage: ...
 
     async def read_exact_message(
         self,
@@ -464,16 +521,14 @@ class SlackConversationKnowledgeReadClient(Protocol):
         window: SlackConversationSourceWindow,
         expected_revision: str | None,
         max_chars_per_message: int,
-    ) -> SlackConversationExactMessageResult:
-        ...
+    ) -> SlackConversationExactMessageResult: ...
 
     async def read_file_info(
         self,
         *,
         file_id: str,
         conversation_kind: SlackConversationKind | None = None,
-    ) -> SlackConversationFileReference:
-        ...
+    ) -> SlackConversationFileReference: ...
 
 
 class SlackConversationKnowledgeReader:
@@ -489,7 +544,9 @@ class SlackConversationKnowledgeReader:
         limit: int,
     ) -> SlackConversationInventoryPage:
         validated_limit = validate_page_limit(limit, maximum=MAX_INVENTORY_PAGE_LIMIT)
-        validated_cursor = validate_provider_cursor(cursor) if cursor is not None else None
+        validated_cursor = (
+            validate_provider_cursor(cursor) if cursor is not None else None
+        )
         params: dict[str, Any] = {
             "types": _INVENTORY_TYPES,
             "exclude_archived": False,
@@ -503,7 +560,9 @@ class SlackConversationKnowledgeReader:
             raise _normalize_slack_api_error(exc) from None
         return self._parse_inventory_response(_response_mapping(response))
 
-    def _parse_inventory_response(self, data: Mapping[str, Any]) -> SlackConversationInventoryPage:
+    def _parse_inventory_response(
+        self, data: Mapping[str, Any]
+    ) -> SlackConversationInventoryPage:
         _require_ok_response(data)
         channels = data.get("channels")
         if not isinstance(channels, list):
@@ -529,7 +588,7 @@ class SlackConversationKnowledgeReader:
                         raw=raw_channel,
                     )
                     if created_value is not None:
-                        created_at = datetime.fromtimestamp(created_value, tz=timezone.utc)
+                        created_at = datetime.fromtimestamp(created_value, tz=UTC)
                 is_archived = _optional_bool(
                     raw_channel.get("is_archived"),
                     field="is_archived",
@@ -550,9 +609,13 @@ class SlackConversationKnowledgeReader:
                     field="purpose",
                     raw=raw_channel,
                 )
-                _optional_string_field(raw_channel.get("name"), field="name", raw=raw_channel)
+                _optional_string_field(
+                    raw_channel.get("name"), field="name", raw=raw_channel
+                )
                 if kind is SlackConversationKind.IM:
-                    _optional_string_field(raw_channel.get("user"), field="user", raw=raw_channel)
+                    _optional_string_field(
+                        raw_channel.get("user"), field="user", raw=raw_channel
+                    )
                 items.append(
                     SlackConversationSummary(
                         conversation_id=validate_slack_conversation_id(conversation_id),
@@ -577,7 +640,9 @@ class SlackConversationKnowledgeReader:
             next_cursor = _parse_next_cursor(data)
         except ValueError as exc:
             raise _malformed_provider_response() from exc
-        return SlackConversationInventoryPage(items=tuple(items), next_cursor=next_cursor)
+        return SlackConversationInventoryPage(
+            items=tuple(items), next_cursor=next_cursor
+        )
 
     async def read_conversation_history_page(
         self,
@@ -590,10 +655,16 @@ class SlackConversationKnowledgeReader:
         max_chars_per_message: int,
     ) -> SlackConversationMessagePage:
         validated_conversation_id = validate_slack_conversation_id(conversation_id)
-        validated_window = SlackConversationSourceWindow.model_validate(window.model_dump())
-        validated_limit = validate_page_limit(limit, maximum=MAX_HISTORY_REPLY_PAGE_LIMIT)
+        validated_window = SlackConversationSourceWindow.model_validate(
+            window.model_dump()
+        )
+        validated_limit = validate_page_limit(
+            limit, maximum=MAX_HISTORY_REPLY_PAGE_LIMIT
+        )
         validated_max_chars = validate_message_max_chars(max_chars_per_message)
-        validated_cursor = validate_provider_cursor(cursor) if cursor is not None else None
+        validated_cursor = (
+            validate_provider_cursor(cursor) if cursor is not None else None
+        )
         params: dict[str, Any] = {
             "channel": validated_conversation_id,
             "oldest": validated_window.oldest,
@@ -603,6 +674,46 @@ class SlackConversationKnowledgeReader:
         }
         if validated_cursor is not None:
             params["cursor"] = validated_cursor
+        try:
+            response = await self._web_client.conversations_history(**params)
+        except Exception as exc:
+            raise _normalize_slack_api_error(exc) from None
+        return self._parse_message_page(
+            data=_response_mapping(response),
+            conversation_id=validated_conversation_id,
+            oldest=validated_window.oldest,
+            latest=validated_window.latest,
+            max_chars=validated_max_chars,
+        )
+
+    async def read_recent_conversation_messages_page(
+        self,
+        *,
+        conversation_id: str,
+        conversation_kind: SlackConversationKind,
+        window: SlackConversationSourceWindow,
+        limit: int,
+        max_chars_per_message: int,
+        cursor: str | None = None,
+    ) -> SlackConversationMessagePage:
+        del conversation_kind
+        if cursor is not None:
+            raise ValueError("recent_conversation_cursor_unsupported")
+        validated_conversation_id = validate_slack_conversation_id(conversation_id)
+        validated_window = SlackConversationSourceWindow.model_validate(
+            window.model_dump()
+        )
+        validated_limit = validate_page_limit(
+            limit, maximum=MAX_HISTORY_REPLY_PAGE_LIMIT
+        )
+        validated_max_chars = validate_message_max_chars(max_chars_per_message)
+        params: dict[str, Any] = {
+            "channel": validated_conversation_id,
+            "oldest": validated_window.oldest,
+            "latest": validated_window.latest,
+            "inclusive": True,
+            "limit": validated_limit,
+        }
         try:
             response = await self._web_client.conversations_history(**params)
         except Exception as exc:
@@ -628,10 +739,16 @@ class SlackConversationKnowledgeReader:
     ) -> SlackConversationMessagePage:
         validated_conversation_id = validate_slack_conversation_id(conversation_id)
         validated_root = validate_slack_timestamp(root_message_ts)
-        validated_window = SlackConversationSourceWindow.model_validate(window.model_dump())
-        validated_limit = validate_page_limit(limit, maximum=MAX_HISTORY_REPLY_PAGE_LIMIT)
+        validated_window = SlackConversationSourceWindow.model_validate(
+            window.model_dump()
+        )
+        validated_limit = validate_page_limit(
+            limit, maximum=MAX_HISTORY_REPLY_PAGE_LIMIT
+        )
         validated_max_chars = validate_message_max_chars(max_chars_per_message)
-        validated_cursor = validate_provider_cursor(cursor) if cursor is not None else None
+        validated_cursor = (
+            validate_provider_cursor(cursor) if cursor is not None else None
+        )
         params: dict[str, Any] = {
             "channel": validated_conversation_id,
             "ts": validated_root,
@@ -673,7 +790,9 @@ class SlackConversationKnowledgeReader:
         validated_conversation_id = validate_slack_conversation_id(conversation_id)
         validated_message_ts = validate_slack_timestamp(message_ts)
         validated_root = (
-            validate_slack_timestamp(root_thread_ts) if root_thread_ts is not None else None
+            validate_slack_timestamp(root_thread_ts)
+            if root_thread_ts is not None
+            else None
         )
         SlackConversationSourceWindow.model_validate(window.model_dump())
         validated_max_chars = validate_message_max_chars(max_chars_per_message)
@@ -770,7 +889,9 @@ class SlackConversationKnowledgeReader:
     ) -> SlackConversationMessagePage:
         validated_root = validate_slack_timestamp(root_message_ts)
         validated_max_chars = validate_message_max_chars(max_chars_per_message)
-        validated_cursor = validate_provider_cursor(cursor) if cursor is not None else None
+        validated_cursor = (
+            validate_provider_cursor(cursor) if cursor is not None else None
+        )
         params: dict[str, Any] = {
             "channel": conversation_id,
             "ts": validated_root,
@@ -958,7 +1079,9 @@ class SlackConversationKnowledgeReader:
         return SlackConversationExactMessageResult(found=True, message=validated)
 
 
-def compute_slack_conversation_message_revision(message: SlackConversationMessage) -> str:
+def compute_slack_conversation_message_revision(
+    message: SlackConversationMessage,
+) -> str:
     """Deterministic adapter-owned revision from canonical safe normalized fields."""
     import hashlib
 
@@ -969,7 +1092,9 @@ def compute_slack_conversation_message_revision(message: SlackConversationMessag
         "actor_provider_id": message.actor_provider_id,
         "text": message.text,
         "subtype": message.subtype,
-        "edited_at": message.edited_at.isoformat() if message.edited_at is not None else None,
+        "edited_at": message.edited_at.isoformat()
+        if message.edited_at is not None
+        else None,
         "reply_count": message.reply_count,
         "files": [
             {
@@ -981,7 +1106,9 @@ def compute_slack_conversation_message_revision(message: SlackConversationMessag
                 "size": file_ref.size,
                 "mode": file_ref.mode,
                 "created_at": (
-                    file_ref.created_at.isoformat() if file_ref.created_at is not None else None
+                    file_ref.created_at.isoformat()
+                    if file_ref.created_at is not None
+                    else None
                 ),
                 "is_external": file_ref.is_external,
             }
@@ -989,7 +1116,9 @@ def compute_slack_conversation_message_revision(message: SlackConversationMessag
         ],
         "provider_metadata": dict(sorted(message.provider_metadata.items())),
     }
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    canonical = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 

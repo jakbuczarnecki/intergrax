@@ -4,66 +4,31 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+import json
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.conversation_channel.slack.config import (
-    SlackConversationChannelIntegrationConfig,
-)
-from intergrax.integrations.providers.conversation_channel.slack.integration import (
-    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
-    SlackConversationChannelIntegration,
-)
-from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
-    SLACK_CONVERSATION_SOURCE_KIND,
-    SlackConversationExactMessageResult,
-    SlackConversationInventoryPage,
-    SlackConversationKind,
-    SlackConversationMessage,
-    SlackConversationMessagePage,
-    SlackConversationSummary,
-    compute_slack_conversation_message_revision,
-)
-from intergrax.integrations.providers.conversation_channel.slack.mapping import parse_slack_ts
-from intergrax.queueing.contracts.task_queue import TaskHandle, TaskRequest
-from intergrax.queueing.providers.document_store.document_store_task_queue import (
-    DocumentStoreTaskQueue,
-)
-from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
-    SLACK_CONVERSATION_SCOPE_TYPE,
-    encode_slack_conversation_scope_id,
-)
-from intergrax.runtime.vendor_knowledge.bindings import (
-    KnowledgeSourceBinding,
-    KnowledgeSourceBindingStatus,
-)
-from intergrax.runtime.vendor_knowledge.binding_document_store import (
-    DocumentStoreKnowledgeSourceBindingRepository,
-)
-from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError, VendorKnowledgeErrorCode
-from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceScope
-from intergrax.runtime.vendor_knowledge.sync_models import (
-    KnowledgeSyncMode,
-    KnowledgeSyncRunResult,
-    KnowledgeSyncRunStatus,
-)
-from intergrax.tools.registry.wiring import ToolWiringContext
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryApplyResult,
+    allocate_delivery_sequence,
     begin_delivery_receipt,
     complete_delivery_receipt,
     delivery_receipt_completed,
 )
+from local_workspace_application.workspaces.connected_source_ids import (
+    connected_source_id,
+    indexed_source_binding_id,
+    workspace_indexed_source_semantic_hash,
+)
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDeliveryReceipt,
+    ConnectedSourceDeliverySequenceHead,
     ConnectedSourceDeliveryStatus,
     ConnectedSourceReconciliationStateV1,
     ConnectedSourceSyncSinkError,
@@ -75,9 +40,13 @@ from local_workspace_application.workspaces.connected_source_wiring import (
     build_connected_source_wiring,
     register_slack_connection_integration,
 )
-from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingResult
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingResult,
+    WorkspaceDocumentIndexingService,
+)
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     CreateIndexedSourceMutationHandler,
+    DisableIndexedSourceMutationHandler,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     IndexedSourceAudienceEligibilityV1,
@@ -85,6 +54,9 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     WorkspaceIndexedSourceBinding,
     WorkspaceIndexedSourceBindingStatusV1,
     WorkspaceKnowledgeMutationOperationV1,
+    WorkspaceKnowledgeMutationOutcomeV1,
+    WorkspaceKnowledgeMutationRecord,
+    WorkspaceKnowledgeMutationStatusV1,
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeConfigurationMutationEngine,
@@ -102,23 +74,93 @@ from local_workspace_application.workspaces.models import (
     WorkspaceSourceType,
     WorkspaceStatus,
 )
-from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.repository import (
+    ManagedWorkspaceRepository,
+    WorkspaceKnowledgeConfigurationRepositoryError,
+)
 from local_workspace_application.workspaces.sync_jobs import (
     LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME,
     ManagedWorkspaceSyncJob,
     encode_managed_workspace_sync_job,
 )
-from local_workspace_application.workspaces.sync_runtime import build_managed_workspace_sync_runtime
-from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
+from local_workspace_application.workspaces.sync_runtime import (
+    build_managed_workspace_sync_runtime,
+)
+from local_workspace_application.workspaces.sync_service import (
+    ManagedWorkspaceSyncService,
+)
+
+from intergrax.compat.langchain.documents import to_langchain_document
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.document_store import DocumentRecord
+from intergrax.integrations.providers.conversation_channel.slack.backend import (
+    SlackConversationChannelBackend,
+)
+from intergrax.integrations.providers.conversation_channel.slack.config import (
+    SlackConversationChannelIntegrationConfig,
+)
+from intergrax.integrations.providers.conversation_channel.slack.integration import (
+    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+    SlackConversationChannelIntegration,
+)
+from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
+    SLACK_CONVERSATION_SOURCE_KIND,
+    SlackConversationExactMessageResult,
+    SlackConversationInventoryPage,
+    SlackConversationKind,
+    SlackConversationMessage,
+    SlackConversationMessagePage,
+    SlackConversationSummary,
+    compute_slack_conversation_message_revision,
+)
+from intergrax.integrations.providers.conversation_channel.slack.mapping import (
+    parse_slack_ts,
+)
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.knowledge.contracts.validation import _FrozenJsonArray
+from intergrax.queueing.contracts.task_queue import TaskHandle, TaskRequest
+from intergrax.queueing.providers.document_store.document_store_task_queue import (
+    DocumentStoreTaskQueue,
+)
+from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
+    SLACK_CONVERSATION_SCOPE_TYPE,
+    encode_slack_conversation_scope_id,
+)
+from intergrax.runtime.vendor_knowledge.binding_document_store import (
+    DocumentStoreKnowledgeSourceBindingRepository,
+)
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+)
+from intergrax.runtime.vendor_knowledge.errors import (
+    VendorKnowledgeError,
+    VendorKnowledgeErrorCode,
+)
+from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceScope
+from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeSyncMode,
+    KnowledgeSyncRunResult,
+    KnowledgeSyncRunStatus,
+)
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    DocumentStoreKnowledgeSyncPublicationFenceRepository,
+    KnowledgeSyncPublicationFenceV1,
+)
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 pytestmark = pytest.mark.unit
 
 _NOW = datetime(2024, 6, 1, 12, 0, tzinfo=UTC)
 _TENANT = "tenant-a"
 _WORKSPACE = "workspace-1"
-_SOURCE = "src:connected:test"
 _BINDING = "ksb-test"
-_INDEXED = "idx-test"
+_SOURCE = connected_source_id(_TENANT, _WORKSPACE, _BINDING)
+_INDEXED = indexed_source_binding_id(_TENANT, _WORKSPACE, _BINDING)
+_SEMANTIC = workspace_indexed_source_semantic_hash(_TENANT, _WORKSPACE, _BINDING)
 _OPERATION = "op-test"
 _OPERATION_OTHER = "op-other"
 _DELIVERY = "a" * 64
@@ -146,8 +188,15 @@ def _message(*, message_ts: str, text: str) -> SlackConversationMessage:
     )
 
 
-class _SlackFakeBackend:
+class _SlackFakeBackend(SlackConversationChannelBackend):
     def __init__(self, *, pages: tuple[SlackConversationMessagePage, ...]) -> None:
+        super().__init__(
+            config=SlackConversationChannelIntegrationConfig(
+                enabled=True,
+                app_token="xapp-test",
+                bot_token="xoxb-test",
+            )
+        )
         self.history_calls = 0
         self._history_pages = list(pages)
         self._content: dict[str, SlackConversationMessage] = {}
@@ -217,6 +266,11 @@ class _ConnectedSourceIndexingService:
             documents_indexed=0 if unchanged else 1,
         )
 
+    async def index_connected_source_one(
+        self, **kwargs: Any
+    ) -> WorkspaceDocumentIndexingResult:
+        return await self.index_one(**kwargs)
+
 
 @dataclass
 class _SyncEnv:
@@ -235,6 +289,7 @@ def _completed_receipt(*, operation_id: str = _OPERATION) -> ConnectedSourceDeli
         knowledge_source_binding_ref=_BINDING,
         delivery_id=_DELIVERY,
         binding_configuration_version=1,
+        materialization_sequence=1,
         operation_id=operation_id,
         status=ConnectedSourceDeliveryStatus.COMPLETED,
         documents_indexed=1,
@@ -242,6 +297,27 @@ def _completed_receipt(*, operation_id: str = _OPERATION) -> ConnectedSourceDeli
         items_failed=0,
         created_at=_NOW,
         completed_at=_NOW,
+    )
+
+
+def _creation_mutation() -> WorkspaceKnowledgeMutationRecord:
+    return WorkspaceKnowledgeMutationRecord(
+        mutation_id="mut-1",
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE,
+        idempotency_key_hash="f" * 64,
+        normalized_request_hash="a" * 64,
+        semantic_identity_hash=_SEMANTIC,
+        target_revision=1,
+        committed_revision=1,
+        status=WorkspaceKnowledgeMutationStatusV1.COMMITTED,
+        outcome=WorkspaceKnowledgeMutationOutcomeV1.APPLIED,
+        result_entity_type="indexed_source_binding",
+        result_entity_id=_INDEXED,
+        created_at=_NOW,
+        updated_at=_NOW,
+        committed_at=_NOW,
     )
 
 
@@ -268,7 +344,7 @@ def _seed_repo(repo: ManagedWorkspaceRepository) -> None:
             audience_eligibility=IndexedSourceAudienceEligibilityV1.PERSONAL_ONLY,
             mutation_id="mut-1",
             effective_revision=1,
-            semantic_identity_hash="a" * 64,
+            semantic_identity_hash=_SEMANTIC,
             created_at=_NOW,
             updated_at=_NOW,
             cached_safe_display_label="#project-orion",
@@ -286,6 +362,7 @@ def _seed_repo(repo: ManagedWorkspaceRepository) -> None:
             updated_at=_NOW,
         )
     )
+    repo.put_knowledge_configuration_mutation_if_absent(_creation_mutation())
     repo.put_source(
         WorkspaceSource(
             source_id=_SOURCE,
@@ -326,6 +403,20 @@ def _seed_repo(repo: ManagedWorkspaceRepository) -> None:
             configuration_version=1,
         )
     )
+    publication_fence = DocumentStoreKnowledgeSyncPublicationFenceRepository(
+        repo.document_store
+    )
+    publication_fence.write_fence(
+        KnowledgeSyncPublicationFenceV1(
+            tenant_id=_TENANT,
+            binding_id=_BINDING,
+            lifecycle_revision=1,
+            lifecycle_token="recovery-test-token",
+            enabled=True,
+            detached=False,
+        ),
+        expected_revision=None,
+    )
 
 
 def _build_sync_env(
@@ -355,6 +446,9 @@ def _build_sync_env(
             WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: (
                 CreateIndexedSourceMutationHandler()
             ),
+            WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: (
+                DisableIndexedSourceMutationHandler()
+            ),
         },
     )
     indexing = _ConnectedSourceIndexingService()
@@ -383,7 +477,7 @@ def _build_sync_env(
         integration=integration,
     )
     connected_sync = wiring.connected_source_sync_service
-    connected_sync._max_pages_per_operation = max_pages_per_operation  # noqa: SLF001
+    connected_sync._max_pages_per_operation = max_pages_per_operation
     executor = MagicMock()
     sync_service = ManagedWorkspaceSyncService(
         repo,
@@ -444,6 +538,280 @@ def test_delivery_identity_without_operation_id_reuses_completed_receipt() -> No
     assert stored.operation_id == _OPERATION
 
 
+def test_delivery_sequence_allocation_is_durable_and_cas_ordered() -> None:
+    store = InMemoryDocumentStore()
+    first_repository = ManagedWorkspaceRepository(store)
+    second_repository = ManagedWorkspaceRepository(store)
+    delivery_b = "b" * 64
+
+    def _allocate(args: tuple[ManagedWorkspaceRepository, str]) -> int:
+        repository, delivery_id = args
+        return allocate_delivery_sequence(
+            repository=repository,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+            delivery_id=delivery_id,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = (
+            executor.submit(_allocate, (first_repository, _DELIVERY)),
+            executor.submit(_allocate, (second_repository, delivery_b)),
+        )
+        sequences = [future.result() for future in futures]
+
+    sequence_by_delivery = {
+        _DELIVERY: sequences[0],
+        delivery_b: sequences[1],
+    }
+    assert sorted(sequence_by_delivery.values()) == [1, 2]
+    replay_sequences = [
+        allocate_delivery_sequence(
+            repository=repository,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+            delivery_id=_DELIVERY,
+        )
+        for repository in (first_repository, second_repository)
+    ]
+    assert replay_sequences == [sequence_by_delivery[_DELIVERY]] * 2
+
+    recovered = begin_delivery_receipt(
+        repository=second_repository,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        knowledge_source_binding_ref=_BINDING,
+        delivery_id=_DELIVERY,
+        binding_configuration_version=1,
+        operation_id=_OPERATION,
+    )
+    assert recovered.materialization_sequence == sequence_by_delivery[_DELIVERY]
+
+    next_delivery = begin_delivery_receipt(
+        repository=first_repository,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        knowledge_source_binding_ref=_BINDING,
+        delivery_id="c" * 64,
+        binding_configuration_version=1,
+        operation_id=_OPERATION,
+    )
+    assert next_delivery.materialization_sequence == 3
+
+    racing_replay_id = "d" * 64
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        replay_futures = (
+            executor.submit(_allocate, (first_repository, racing_replay_id)),
+            executor.submit(_allocate, (second_repository, racing_replay_id)),
+        )
+        racing_replay_sequences = [future.result() for future in replay_futures]
+    assert racing_replay_sequences == [4, 4]
+    head = first_repository.get_connected_source_delivery_sequence_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+    )
+    assert head is not None
+    assert set(head.model_dump()) == {
+        "tenant_id",
+        "workspace_id",
+        "source_id",
+        "indexed_source_binding_id",
+        "next_sequence",
+    }
+    assert "delivery_sequences" not in head.model_dump()
+    assignments = first_repository.list_connected_source_delivery_sequence_assignments(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+    )
+    assert len(assignments) == 4
+    assert len({item.delivery_id for item in assignments}) == 4
+    assert len({item.materialization_sequence for item in assignments}) == 4
+
+
+def test_delivery_sequence_storage_shape_scales_without_growing_head() -> None:
+    repository = ManagedWorkspaceRepository(InMemoryDocumentStore())
+    delivery_ids = tuple(f"{index:064x}" for index in range(750))
+
+    for delivery_id in delivery_ids:
+        assert (
+            allocate_delivery_sequence(
+                repository=repository,
+                tenant_id=_TENANT,
+                workspace_id=_WORKSPACE,
+                source_id=_SOURCE,
+                indexed_source_binding_id=_INDEXED,
+                delivery_id=delivery_id,
+            )
+            > 0
+        )
+
+    head = repository.get_connected_source_delivery_sequence_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+    )
+    assert isinstance(head, ConnectedSourceDeliverySequenceHead)
+    assert head.next_sequence == 751
+    assert "delivery_sequences" not in head.model_dump()
+    assignments = repository.list_connected_source_delivery_sequence_assignments(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+    )
+    assert len(assignments) == 750
+    assert {item.delivery_id for item in assignments} == set(delivery_ids)
+    assert {item.materialization_sequence for item in assignments} == set(range(1, 751))
+
+
+def test_delivery_sequence_crash_gap_is_recoverable() -> None:
+    repository = ManagedWorkspaceRepository(InMemoryDocumentStore())
+    first_delivery = allocate_delivery_sequence(
+        repository=repository,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        delivery_id=_DELIVERY,
+    )
+    head = repository.get_connected_source_delivery_sequence_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+    )
+    assert head is not None
+    assert repository.replace_connected_source_delivery_sequence_head_if_match(
+        expected=head,
+        replacement=head.model_copy(update={"next_sequence": head.next_sequence + 1}),
+    )
+
+    recovered = allocate_delivery_sequence(
+        repository=repository,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        delivery_id="b" * 64,
+    )
+    assert first_delivery == 1
+    assert recovered == 3
+    assert (
+        allocate_delivery_sequence(
+            repository=repository,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+            delivery_id="b" * 64,
+        )
+        == 3
+    )
+
+
+def test_old_delivery_sequence_ledger_requires_explicit_migration() -> None:
+    store = InMemoryDocumentStore()
+    repository = ManagedWorkspaceRepository(store)
+    store.put(
+        DocumentRecord(
+            partition_key=f"lkw.managed_workspace:{_TENANT}:connected_source_delivery_sequence",
+            row_key=f"{_WORKSPACE}:{_SOURCE}:{_INDEXED}",
+            data={
+                "tenant_id": _TENANT,
+                "workspace_id": _WORKSPACE,
+                "source_id": _SOURCE,
+                "indexed_source_binding_id": _INDEXED,
+                "next_sequence": 2,
+                "delivery_sequences": {_DELIVERY: 1},
+            },
+        )
+    )
+
+    with pytest.raises(
+        WorkspaceKnowledgeConfigurationRepositoryError,
+        match="connected_source_delivery_sequence_migration_required",
+    ):
+        repository.get_connected_source_delivery_sequence_head(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+        )
+
+
+def test_langchain_transport_normalizes_frozen_nested_metadata() -> None:
+    metadata = {
+        "nested": {
+            "ordered": [
+                "first",
+                {"provenance": {"events": ["created", "indexed"]}},
+                3,
+            ]
+        }
+    }
+    native = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {
+                "document_id": "slack:message-1",
+                "root_document_id": "slack:message-1",
+            },
+            "scope": {"tenant_id": _TENANT, "namespace": "workspace"},
+            "content": "Slack message",
+            "metadata": metadata,
+            "provenance": {
+                "source_kind": "slack_message",
+                "source_id": _SOURCE,
+                "source_parent_id": "conversation:C01234567",
+                "provider_id": SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+                "source_revision": "rev-1",
+                "source_uri": "slack://C01234567/1704153600.000001",
+                "content_hash": "a" * 64,
+            },
+        }
+    )
+
+    assert isinstance(native.metadata["nested"]["ordered"], _FrozenJsonArray)
+
+    transported = to_langchain_document(native)
+    serialized = json.loads(transported.model_dump_json())
+
+    assert serialized["metadata"]["nested"]["ordered"] == [
+        "first",
+        {"provenance": {"events": ["created", "indexed"]}},
+        3,
+    ]
+    assert serialized["metadata"]["source_kind"] == "slack_message"
+    assert serialized["metadata"]["source_id"] == _SOURCE
+    assert serialized["metadata"]["source_parent_id"] == "conversation:C01234567"
+    assert serialized["metadata"]["provider_id"] == SLACK_CONVERSATION_CHANNEL_PROVIDER_ID
+    assert serialized["metadata"]["source_revision"] == "rev-1"
+    assert serialized["metadata"]["source_uri"] == "slack://C01234567/1704153600.000001"
+    assert serialized["metadata"]["content_hash"] == "a" * 64
+    assert metadata == {
+        "nested": {
+            "ordered": [
+                "first",
+                {"provenance": {"events": ["created", "indexed"]}},
+                3,
+            ]
+        }
+    }
+
+
 def test_delivery_receipt_conflict_on_binding_version_mismatch() -> None:
     store = InMemoryDocumentStore()
     repo = ManagedWorkspaceRepository(store)
@@ -474,6 +842,7 @@ def test_in_progress_delivery_recovery() -> None:
         knowledge_source_binding_ref=_BINDING,
         delivery_id=_DELIVERY,
         binding_configuration_version=1,
+        materialization_sequence=1,
         operation_id=_OPERATION,
         status=ConnectedSourceDeliveryStatus.IN_PROGRESS,
         created_at=_NOW,
@@ -523,7 +892,7 @@ async def test_sink_complete_then_retryable_vendor_error_requeues(tmp_path: Path
         ),
     )
     env.repo.put_operation(_queued_operation())
-    original_build = env.connected_sync._build_coordinator  # noqa: SLF001
+    original_build = env.connected_sync._build_coordinator
 
     def _wrap_coordinator(*args: Any, **kwargs: Any):
         coordinator = original_build(*args, **kwargs)
@@ -539,7 +908,7 @@ async def test_sink_complete_then_retryable_vendor_error_requeues(tmp_path: Path
         coordinator.reconcile_once = _reconcile_once  # type: ignore[method-assign]
         return coordinator
 
-    env.connected_sync._build_coordinator = _wrap_coordinator  # noqa: SLF001
+    env.connected_sync._build_coordinator = _wrap_coordinator
 
     result = await env.connected_sync.run_operation(
         tenant_id=_TENANT,
@@ -556,6 +925,179 @@ async def test_sink_complete_then_retryable_vendor_error_requeues(tmp_path: Path
     )
     assert source is not None
     assert source.status is WorkspaceSourceStatus.SYNCING
+
+
+@pytest.mark.asyncio
+async def test_materialization_receipt_retry_does_not_reread_provider(tmp_path: Path, monkeypatch) -> None:
+    env = _build_sync_env(
+        tmp_path,
+        pages=(
+            SlackConversationMessagePage(
+                conversation_id=_CONVERSATION_ID,
+                oldest=_OLDEST,
+                latest=_LATEST,
+                items=(_message(message_ts="1704153600.000001", text=f"root {_MARKER}"),),
+                next_cursor=None,
+            ),
+        ),
+    )
+    env.repo.put_operation(_queued_operation())
+    import local_workspace_application.workspaces.connected_source_sync_service as sync_module
+
+    original_accounting = sync_module.apply_completed_delivery_accounting
+    fail_once = True
+
+    def _crash_after_materialization(*args: Any, **kwargs: Any):
+        nonlocal fail_once
+        result = original_accounting(*args, **kwargs)
+        if fail_once:
+            fail_once = False
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="crash after materialization receipt",
+            )
+        return result
+
+    monkeypatch.setattr(
+        sync_module,
+        "apply_completed_delivery_accounting",
+        _crash_after_materialization,
+    )
+    first = await env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=_OPERATION,
+    )
+    assert first.status is WorkspaceOperationStatus.QUEUED
+    history_calls = env.backend.history_calls
+    refs_after_materialization = env.repo.list_document_refs(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+
+    second = await env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=_OPERATION,
+    )
+    assert second.status is WorkspaceOperationStatus.COMPLETED
+    assert env.backend.history_calls == history_calls
+    assert env.repo.list_document_refs(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    ) == refs_after_materialization
+
+
+@pytest.mark.asyncio
+async def test_checkpoint_committed_retry_is_noop_without_provider_reread(
+    tmp_path: Path,
+) -> None:
+    env = _build_sync_env(
+        tmp_path,
+        pages=(
+            SlackConversationMessagePage(
+                conversation_id=_CONVERSATION_ID,
+                oldest=_OLDEST,
+                latest=_LATEST,
+                items=(_message(message_ts="1704153600.000001", text=f"root {_MARKER}"),),
+                next_cursor=None,
+            ),
+        ),
+    )
+    env.repo.put_operation(_queued_operation())
+    original_build = env.connected_sync._build_coordinator
+    fail_once = True
+
+    def _build_with_fail_once(*args: Any, **kwargs: Any):
+        coordinator = original_build(*args, **kwargs)
+        original_reconcile = coordinator.reconcile_once
+
+        async def _reconcile_once(**reconcile_kwargs: Any):
+            nonlocal fail_once
+            result = await original_reconcile(**reconcile_kwargs)
+            if fail_once:
+                fail_once = False
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                    safe_message="crash after checkpoint commit",
+                )
+            return result
+
+        coordinator.reconcile_once = _reconcile_once  # type: ignore[method-assign]
+        return coordinator
+
+    env.connected_sync._build_coordinator = _build_with_fail_once
+    first = await env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=_OPERATION,
+    )
+    assert first.status is WorkspaceOperationStatus.QUEUED
+    history_calls = env.backend.history_calls
+
+    second = await env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=_OPERATION,
+    )
+    assert second.status is WorkspaceOperationStatus.COMPLETED
+    assert env.backend.history_calls == history_calls
+
+
+@pytest.mark.asyncio
+async def test_completed_index_receipt_replays_without_duplicate_index_effect(
+    tmp_path: Path,
+) -> None:
+    class _IndexExecutor:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def execute(self, task):
+            self.calls += 1
+            return type(
+                "Result",
+                (),
+                {"metadata": {"ingest_summary": {"used": True, "num_chunks": 2}}},
+            )()
+
+    repo = ManagedWorkspaceRepository(InMemoryDocumentStore())
+    executor = _IndexExecutor()
+    service = WorkspaceDocumentIndexingService(repo, executor)
+    document_path = tmp_path / "slack.md"
+    document_path.write_text("marker", encoding="utf-8")
+    original_put = repo.put_document_ref
+    fail_once = True
+
+    def _crash_before_lifecycle_advance(reference):
+        nonlocal fail_once
+        if fail_once:
+            fail_once = False
+            raise RuntimeError("crash after index receipt")
+        return original_put(reference)
+
+    repo.put_document_ref = _crash_before_lifecycle_advance  # type: ignore[method-assign]
+    with pytest.raises(RuntimeError, match="crash after index receipt"):
+        await service.index_one(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            operation_id=_OPERATION,
+            physical_path=document_path,
+            logical_source_path="connected/slack-message/one.md",
+            safe_file_name="slack.md",
+            content_hash="a" * 64,
+        )
+    repo.put_document_ref = original_put  # type: ignore[method-assign]
+
+    replayed = await service.index_one(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        operation_id=_OPERATION,
+        physical_path=document_path,
+        logical_source_path="connected/slack-message/one.md",
+        safe_file_name="slack.md",
+        content_hash="a" * 64,
+    )
+    assert replayed.reason == "index_replayed"
+    assert replayed.documents_indexed == 1
+    assert executor.calls == 1
 
 
 def test_host_interruption_running_to_queued_for_connected_source() -> None:
@@ -601,7 +1143,7 @@ def test_host_interruption_running_to_queued_for_connected_source() -> None:
     runtime.worker._on_interrupted(
         TaskHandle(task_id="task-1", provider="document_store", tenant_id=_TENANT),
         request,
-    )  # noqa: SLF001
+    )
 
     reloaded = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
     assert reloaded is not None
@@ -643,7 +1185,7 @@ async def test_lease_busy_requeue_leaves_no_orphaned_running(tmp_path: Path) -> 
 
     coordinator = MagicMock()
     coordinator.reconcile_once = AsyncMock(side_effect=_lease_busy)
-    env.connected_sync._build_coordinator = lambda **kwargs: coordinator  # noqa: SLF001
+    env.connected_sync._build_coordinator = lambda **kwargs: coordinator
 
     result = await env.connected_sync.run_operation(
         tenant_id=_TENANT,
@@ -690,7 +1232,6 @@ async def test_durable_counters_no_double_count_on_replay(tmp_path: Path) -> Non
         ),
     ]
     call_index = 0
-    original_build = env.connected_sync._build_coordinator  # noqa: SLF001
 
     def _wrap_coordinator(*args: Any, **kwargs: Any):
         sink = kwargs["sink"]
@@ -699,7 +1240,7 @@ async def test_durable_counters_no_double_count_on_replay(tmp_path: Path) -> Non
         async def _reconcile_once(**reconcile_kwargs: Any) -> KnowledgeSyncRunResult:
             nonlocal call_index
             result = apply_results[min(call_index, len(apply_results) - 1)]
-            sink._on_apply(_DELIVERY, result)  # noqa: SLF001
+            sink._on_apply(_DELIVERY, result)
             call_index += 1
             return KnowledgeSyncRunResult(
                 status=KnowledgeSyncRunStatus.COMPLETED,
@@ -718,7 +1259,7 @@ async def test_durable_counters_no_double_count_on_replay(tmp_path: Path) -> Non
         coordinator.reconcile_once = _reconcile_once
         return coordinator
 
-    env.connected_sync._build_coordinator = _wrap_coordinator  # noqa: SLF001
+    env.connected_sync._build_coordinator = _wrap_coordinator
 
     first = await env.connected_sync.run_operation(
         tenant_id=_TENANT,
@@ -954,12 +1495,17 @@ def test_accounting_record_exists_zero_counters_repaired_on_retry() -> None:
     repo.put_connected_source_delivery_accounting_if_absent(
         ConnectedSourceOperationDeliveryAccounting(
             tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+            knowledge_source_binding_ref=_BINDING,
             operation_id=_OPERATION,
             delivery_id=_DELIVERY,
             documents_indexed=1,
             documents_unchanged=0,
             items_failed=0,
             accounted_at=_NOW,
+            ownership_classification="COMPLETE_OWNERSHIP",
         )
     )
     operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
@@ -990,12 +1536,17 @@ def test_accounting_second_retry_counters_unchanged() -> None:
     repo.put_connected_source_delivery_accounting_if_absent(
         ConnectedSourceOperationDeliveryAccounting(
             tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+            knowledge_source_binding_ref=_BINDING,
             operation_id=_OPERATION,
             delivery_id=_DELIVERY,
             documents_indexed=1,
             documents_unchanged=0,
             items_failed=0,
             accounted_at=_NOW,
+            ownership_classification="COMPLETE_OWNERSHIP",
         )
     )
     operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
@@ -1016,11 +1567,8 @@ def test_accounting_two_deliveries_aggregate_exact_counters() -> None:
     delivery_b = "b" * 64
     repo.put_connected_source_delivery_receipt(_completed_receipt())
     repo.put_connected_source_delivery_receipt(
-        replace(
-            _completed_receipt(),
-            delivery_id=delivery_b,
-            documents_indexed=2,
-            documents_unchanged=1,
+        _completed_receipt().model_copy(
+            update={"delivery_id": delivery_b, "documents_indexed": 2, "documents_unchanged": 1}
         )
     )
     from local_workspace_application.workspaces.connected_source_models import (
@@ -1037,12 +1585,17 @@ def test_accounting_two_deliveries_aggregate_exact_counters() -> None:
         repo.put_connected_source_delivery_accounting_if_absent(
             ConnectedSourceOperationDeliveryAccounting(
                 tenant_id=_TENANT,
+                workspace_id=_WORKSPACE,
+                source_id=_SOURCE,
+                indexed_source_binding_id=_INDEXED,
+                knowledge_source_binding_ref=_BINDING,
                 operation_id=_OPERATION,
                 delivery_id=delivery_id,
                 documents_indexed=indexed,
                 documents_unchanged=unchanged,
                 items_failed=0,
                 accounted_at=_NOW,
+                ownership_classification="COMPLETE_OWNERSHIP",
             )
         )
     operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
@@ -1154,12 +1707,15 @@ def _mark_enqueued(
             tenant_id=operation.tenant_id,
             workspace_id=operation.workspace_id,
             source_id=operation.source_id,
+            indexed_source_binding_id=_INDEXED,
+            knowledge_source_binding_ref=_BINDING,
             operation_id=operation.operation_id,
             enqueue_generation=generation,
             last_enqueued_generation=generation,
             last_task_id=task_id,
             last_queue_provider="document_store",
             updated_at=_NOW,
+            ownership_classification="COMPLETE_OWNERSHIP",
         )
     )
 
@@ -1534,11 +2090,8 @@ def test_accounting_cas_retry_reloads_aggregate_after_concurrent_insert() -> Non
     delivery_b = "b" * 64
     repo.put_connected_source_delivery_receipt(_completed_receipt())
     repo.put_connected_source_delivery_receipt(
-        replace(
-            _completed_receipt(),
-            delivery_id=delivery_b,
-            documents_indexed=2,
-            documents_unchanged=1,
+        _completed_receipt().model_copy(
+            update={"delivery_id": delivery_b, "documents_indexed": 2, "documents_unchanged": 1}
         )
     )
     from local_workspace_application.workspaces.connected_source_models import (
@@ -1591,7 +2144,7 @@ def _seed_many_queue_tasks(
     count: int,
 ) -> None:
     for index in range(count):
-        handle = queue.enqueue(
+        queue.enqueue(
             TaskRequest(
                 tenant_id=_TENANT,
                 run_id=f"older-{index}",
@@ -1837,6 +2390,9 @@ async def test_indexed_binding_not_found_repairs_source_to_error(tmp_path: Path)
         {
             WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: (
                 CreateIndexedSourceMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: (
+                DisableIndexedSourceMutationHandler()
             ),
         },
     )

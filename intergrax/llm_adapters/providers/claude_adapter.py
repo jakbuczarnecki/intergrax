@@ -54,8 +54,6 @@ class ClaudeChatAdapter(LLMAdapter):
     }
 
     DEFAULT_MODEL = "claude-3-5-sonnet-latest"
-
-    ENV_MODEL = "INTERGRAX_DEFAULT_CLAUDE_MODEL"
     ENV_API_KEY = "ANTHROPIC_API_KEY"
 
     def __init__(
@@ -67,10 +65,9 @@ class ClaudeChatAdapter(LLMAdapter):
         super().__init__()
         self._apply_defaults_call_config(defaults)
 
-        env_model = os.getenv(self.ENV_MODEL)
         api_key = os.getenv(self.ENV_API_KEY)
 
-        resolved_model = model or env_model or self.DEFAULT_MODEL
+        resolved_model = model or self.DEFAULT_MODEL
 
         if client is None:
             if not api_key:

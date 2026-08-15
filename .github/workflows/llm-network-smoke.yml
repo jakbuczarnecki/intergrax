@@ -29,18 +29,20 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev-ci --extra llm-all --frozen
 
+      - name: Environment conformance (CI profile)
+        run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
+
       - name: Live LLM smoke (network)
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           INTERGRAX_DEFAULT_AWS_REGION: ${{ secrets.INTERGRAX_DEFAULT_AWS_REGION }}
-          INTERGRAX_DEFAULT_BEDROCK_MODEL_ID: ${{ secrets.INTERGRAX_DEFAULT_BEDROCK_MODEL_ID }}
+          INTERGRAX_LLM_MODEL: ${{ vars.INTERGRAX_LLM_MODEL }}
           INTERGRAX_VERTEX_PROJECT: ${{ secrets.INTERGRAX_VERTEX_PROJECT }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
           INTERGRAX_DEFAULT_VLLM_BASE_URL: ${{ vars.INTERGRAX_DEFAULT_VLLM_BASE_URL }}
-          INTERGRAX_DEFAULT_VLLM_MODEL: ${{ vars.INTERGRAX_DEFAULT_VLLM_MODEL }}
         run: >-
-          uv run pytest
+          uv run --frozen pytest
           tests/unit/llm_adapters/test_network_smoke.py
           -m network -q --tb=line

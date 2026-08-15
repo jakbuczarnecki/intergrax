@@ -1,10 +1,10 @@
 # Governed Contractor — Architecture Decision Records
 
-**Domain:** Tier-3 application host (`applications/governed_contractor_application/`)
+**Domain:** Tier-3 application host (`applications/governed_contractor_application`)
 
 Architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)  
 Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md)  
-Platform ADRs: [`../../../../docs/adr/README.md`](../../../../docs/adr/README.md)
+Platform ADRs: [`../../../../docs/project/technical/adr/README.md`](../../../../docs/project/technical/adr/README.md)
 
 ---
 
@@ -17,7 +17,7 @@ Create an ADR for **product-environment** decisions, for example:
 - Serving API shape, auth model, deployment topology, or MCP exposure
 - Partner handoff contracts for this host (not platform-core partner identity)
 
-**Not required:** Nexus platform contract changes (use `docs/adr/`), single-agent domain logic (use agent ADRs),
+**Not required:** Nexus platform contract changes (use `docs/project/technical/adr`), single-agent domain logic (use agent ADRs),
 or configuration-only tweaks with no architectural impact.
 
 ## Naming

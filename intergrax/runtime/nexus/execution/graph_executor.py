@@ -510,6 +510,13 @@ class GraphExecutor:
 
         async def execute_fn(current_agent: Agent) -> AgentExecutionResult:
             request = node_task.to_runtime_request()
+            from intergrax.runtime.human.declarative_hitl_grant import (
+                DeclarativeHitlGrantCoordinator,
+            )
+
+            request = DeclarativeHitlGrantCoordinator.transfer_persisted_grant_for_resume(
+                task, request
+            )
             inject_acp_checkpoint_metadata(
                 request.metadata,
                 store=self._agent_checkpoint_store,

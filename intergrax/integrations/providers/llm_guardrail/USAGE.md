@@ -40,4 +40,4 @@ uv run pytest tests/unit/integrations/providers/llm_guardrail/ -m gate -q
 python scripts/maintenance/check_harness_guardrail_wiring.py
 ```
 
-Canon: `docs/architecture/INTEGRATIONS.md` §47 · ADR-GR-001
+Canon: `docs/project/architecture/INTEGRATIONS.md` §47 · ADR-GR-001

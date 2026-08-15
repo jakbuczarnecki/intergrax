@@ -68,6 +68,7 @@ class WorkspaceAskRun(BaseModel):
     tenant_id: str = Field(..., min_length=1)
     workspace_id: str = Field(..., min_length=1)
     question: str = Field(..., min_length=1)
+    knowledge_item_ids: tuple[str, ...] | None = None
     status: AskRunStatus
     evidence: list[WorkspaceSearchHitV1] = Field(default_factory=list)
     answer: str | None = None

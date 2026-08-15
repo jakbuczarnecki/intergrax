@@ -4,11 +4,17 @@
 
 from __future__ import annotations
 
+from intergrax.core.plugin_env import discover_plugins_enabled
+from intergrax.core.plugins.discovery import EP_RAG_RETRIEVERS, register_plugins
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.query.query_expander import query_expander_from_profile
+from intergrax.rag.retrievers.contracts.base_retriever import (
+    BaseRetriever,
+    BaseRetrieverPlugin,
+)
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
 from intergrax.rag.retrievers.providers.fusion_retriever import FusionRetriever
@@ -27,6 +33,50 @@ from intergrax.rag.vectorstore.bootstrap.vectorstore_bootstrap import create_def
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
 
+def _register_entry_point_retrievers(
+    registry: RetrieverRegistry,
+    *,
+    vector_store: BaseVectorstoreManager,
+    embedding_manager: BaseEmbeddingManager,
+    toc_vector_store: BaseVectorstoreManager | None,
+    graph_store: GraphStore | None,
+    profile: RagProfile | None,
+    llm_for_query_expansion: LLMAdapter | None,
+    discover_entry_points: bool | None,
+) -> None:
+    if discover_entry_points is None:
+        discover_entry_points = discover_plugins_enabled()
+
+    def _register_entry_point(plugin_type: type) -> None:
+        if issubclass(plugin_type, BaseRetrieverPlugin):
+            retriever = plugin_type.create(
+                vector_store=vector_store,
+                embedding_manager=embedding_manager,
+                toc_vector_store=toc_vector_store,
+                graph_store=graph_store,
+                profile=profile,
+                llm_for_query_expansion=llm_for_query_expansion,
+            )
+        elif issubclass(plugin_type, BaseRetriever):
+            retriever = plugin_type()
+        else:
+            raise TypeError(
+                "RAG retriever plugin must subclass BaseRetriever or "
+                f"BaseRetrieverPlugin: {plugin_type!r}"
+            )
+        if not isinstance(retriever, BaseRetriever):
+            raise TypeError(
+                f"RAG retriever plugin factory must return BaseRetriever: {plugin_type!r}"
+            )
+        registry.register(retriever)
+
+    register_plugins(
+        EP_RAG_RETRIEVERS,
+        _register_entry_point,
+        discover_entry_points=discover_entry_points,
+    )
+
+
 def create_default_retriever_registry(
     *,
     vector_store: BaseVectorstoreManager | None = None,
@@ -36,12 +86,16 @@ def create_default_retriever_registry(
     graph_store: GraphStore | None = None,
     profile: RagProfile | None = None,
     llm_for_query_expansion: LLMAdapter | None = None,
+    discover_entry_points: bool | None = None,
 ) -> RetrieverRegistry:
     """
     Create RetrieverRegistry with built-in retriever providers registered.
 
     Allows dependency override by providing a custom registry.
     """
+
+    if discover_entry_points is None:
+        discover_entry_points = discover_plugins_enabled()
 
     if vector_store is None:
         vector_store = create_default_vectorstore_manager()
@@ -119,6 +173,17 @@ def create_default_retriever_registry(
                 )
             )
 
+    _register_entry_point_retrievers(
+        registry,
+        vector_store=vector_store,
+        embedding_manager=embedding_manager,
+        toc_vector_store=toc_vector_store,
+        graph_store=graph_store,
+        profile=profile,
+        llm_for_query_expansion=llm_for_query_expansion,
+        discover_entry_points=discover_entry_points,
+    )
+
     return registry
 
 
@@ -131,6 +196,7 @@ def create_default_retriever_engine(
     profile: RagProfile | None = None,
     llm_for_query_expansion: LLMAdapter | None = None,
     toc_vector_store: BaseVectorstoreManager | None = None,
+    discover_entry_points: bool | None = None,
 ) -> RetrieverEngine:
     """
     Create RetrieverEngine with default retriever providers registered.
@@ -150,7 +216,19 @@ def create_default_retriever_engine(
             profile=profile,
             llm_for_query_expansion=llm_for_query_expansion,
             toc_vector_store=toc_vector_store,
+            discover_entry_points=False,
         )
+
+    _register_entry_point_retrievers(
+        registry,
+        vector_store=vector_store,
+        embedding_manager=embedding_manager,
+        toc_vector_store=toc_vector_store,
+        graph_store=graph_store,
+        profile=profile,
+        llm_for_query_expansion=llm_for_query_expansion,
+        discover_entry_points=discover_entry_points,
+    )
 
     return RetrieverEngine(
         registry=registry,
@@ -166,6 +244,7 @@ def create_default_retriever_pipeline(
     profile: RagProfile | None = None,
     llm_for_query_expansion: LLMAdapter | None = None,
     toc_vector_store: BaseVectorstoreManager | None = None,
+    discover_entry_points: bool | None = None,
 ) -> RetrieverPipeline:
     """
     Create RetrieverPipeline using the default retriever engine.
@@ -182,6 +261,7 @@ def create_default_retriever_pipeline(
             profile=profile,
             llm_for_query_expansion=llm_for_query_expansion,
             toc_vector_store=toc_vector_store,
+            discover_entry_points=False,
         )
 
     engine = create_default_retriever_engine(
@@ -192,6 +272,7 @@ def create_default_retriever_pipeline(
         profile=profile,
         llm_for_query_expansion=llm_for_query_expansion,
         toc_vector_store=toc_vector_store,
+        discover_entry_points=discover_entry_points,
     )
 
     return RetrieverPipeline(
@@ -209,6 +290,7 @@ def create_default_retriever_manager(
     profile: RagProfile | None = None,
     llm_for_query_expansion: LLMAdapter | None = None,
     toc_vector_store: BaseVectorstoreManager | None = None,
+    discover_entry_points: bool | None = None,
 ) -> BaseRetrieverManager:
     """
     Create RetrieverManager using the default retriever pipeline.
@@ -228,6 +310,7 @@ def create_default_retriever_manager(
         profile=profile,
         llm_for_query_expansion=llm_for_query_expansion,
         toc_vector_store=toc_vector_store,
+        discover_entry_points=discover_entry_points,
     )
 
     return RetrieverManager(

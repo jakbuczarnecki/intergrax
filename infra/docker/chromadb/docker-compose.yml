@@ -1,16 +1,25 @@
 services:
   chroma:
-    image: chromadb/chroma:0.5.0
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: intergrax/chroma-qualification:1.4.1
     container_name: intergrax-chroma
     ports:
       - "8000:8000"
     environment:
-      - IS_PERSISTENT=TRUE
-      - ANONYMIZED_TELEMETRY=False
-      - CHROMA_TELEMETRY_ENABLED=false
+      IS_PERSISTENT: "TRUE"
+      ANONYMIZED_TELEMETRY: "False"
+      CHROMA_TELEMETRY_ENABLED: "false"
     volumes:
-      - chroma_data:/chroma
-    restart: unless-stopped
+      - chroma_qualification_data:/chroma
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:8000/api/v2/heartbeat"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
 
 volumes:
-  chroma_data:
+  chroma_qualification_data:

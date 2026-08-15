@@ -1,8 +1,8 @@
 # Build & deploy — Attestation Demo
 
-Tier-3 application package: `applications/attestation_demo/`. Operational runbook for local development, verification, and container deployment.
+Tier-3 application package: `applications/attestation_demo`. Operational runbook for local development, verification, and container deployment.
 
-> Quick overview: [`README.md`](README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+> Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../intergrax/applications/USAGE.md)
 
 ---
 
@@ -12,10 +12,10 @@ Tier-3 application package: `applications/attestation_demo/`. Operational runboo
 |------|---------|
 | [uv](https://docs.astral.sh/uv/) | Workspace lock + application project `applications/attestation_demo/pyproject.toml` |
 | Repo clone | Monorepo; **build context is always repository root** |
-| Docker (optional) | Image build via `docker/` |
+| Docker (optional) | Image build via `docker` |
 | Docker Buildx (recommended) | Per-app `.dockerignore` via `--ignorefile` |
 
-Tier-2 agents used by this host: **boundary_demo** (under `agents/` on `PYTHONPATH`).
+Tier-2 agents used by this host: **boundary_demo** (under `agents` on `PYTHONPATH`).
 
 ---
 
@@ -79,7 +79,7 @@ MCP is **disabled** by default for this host (`ATTESTATION_DEMO_INCLUDE_MCP=fals
 
 ## 7. Partner deploy (BoundaryAttest)
 
-Handoff package: [`partner_handoff/README.md`](partner_handoff/README.md)
+Handoff package: [`partner_handoff/README.md`](../partner_handoff/README.md)
 
 | Deliverable | Path |
 |-------------|------|
@@ -170,7 +170,7 @@ Platform EBE canon: [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`IMPLEMENTATION_PLA
 
 ## Application dependency project
 
-Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+Canonical packaging: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
 ```bash
 uv sync --project applications/attestation_demo
@@ -181,7 +181,7 @@ The application `pyproject.toml` selects Intergrax platform extras. Docker uses 
 
 ## Application runtime graph (isolated images)
 
-Canonical packaging and image isolation: [docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
+Canonical packaging and image isolation: [docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
 ```bash
 uv sync --project applications/attestation_demo

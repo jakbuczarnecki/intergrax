@@ -8,9 +8,10 @@ from typing import List, Optional, Sequence
 
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import (
-    Candidates,
     RerankerCandidate,
     RerankerResult,
+    validate_candidates,
+    validate_limit,
 )
 
 
@@ -43,16 +44,18 @@ class EnsembleReranker(BaseReranker):
     def rerank(
         self,
         *,
-        query: Optional[str],
-        candidates: Candidates,
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
-
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+    ) -> Sequence[RerankerResult]:
+        candidates = validate_candidates(candidates)
+        validate_limit(limit)
         if not candidates:
-            return []
+            return ()
 
-        aggregated: dict[str, float] = {}
-        candidate_map: dict[str, RerankerCandidate] = {}
+        positions = {id(candidate): position for position, candidate in enumerate(candidates)}
+        aggregated: dict[int, float] = {}
+        candidate_map: dict[int, RerankerCandidate] = {}
 
         for reranker, weight in zip(self._rerankers, self._weights):
 
@@ -64,7 +67,9 @@ class EnsembleReranker(BaseReranker):
 
             for r in results:
 
-                cid = r.candidate.id or r.candidate.text
+                cid = id(r.candidate)
+                if cid not in positions:
+                    raise ValueError("ensemble reranker returned an unknown candidate")
 
                 candidate_map[cid] = r.candidate
 
@@ -73,6 +78,9 @@ class EnsembleReranker(BaseReranker):
                 aggregated[cid] = aggregated.get(cid, 0.0) + weight * score
 
         results: List[RerankerResult] = []
+
+        if set(aggregated) != set(positions):
+            raise ValueError("ensemble reranker returned an incomplete candidate batch")
 
         for cid, score in aggregated.items():
 
@@ -87,15 +95,14 @@ class EnsembleReranker(BaseReranker):
                 )
             )
 
-        results.sort(
-            key=lambda r: r.rerank_score,
-            reverse=True,
+        results.sort(key=lambda r: (-r.rerank_score, positions[id(r.candidate)]))
+        selected = results[:limit] if limit is not None else results
+        return tuple(
+            RerankerResult(
+                candidate=result.candidate,
+                rerank_score=result.rerank_score,
+                fusion_score=result.fusion_score,
+                rank=rank,
+            )
+            for rank, result in enumerate(selected)
         )
-
-        if limit:
-            results = results[:limit]
-
-        for i, r in enumerate(results, start=1):
-            r.rank = i
-
-        return results

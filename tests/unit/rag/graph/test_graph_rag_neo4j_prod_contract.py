@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 import pytest
-from langchain_core.documents import Document
 
-from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
+from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
+    InMemoryVectorStore,
+)
 from intergrax.rag.graph.bootstrap.graph_store_bootstrap import create_rag_graph_store
 from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
 from intergrax.rag.graph.providers.neo4j_rag_graph_store import Neo4jRagGraphStore
@@ -15,6 +16,7 @@ from intergrax.rag.profiles.rag_profile import production_graph_rag_profile
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.providers.graph_rag_retriever import GraphRagRetriever
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from tests.unit.rag.graph.fixtures import knowledge_document
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -23,11 +25,11 @@ class _FakeNeo4jIntegrationGraphStore:
     """Minimal durable-graph stand-in for Neo4jRagGraphStore contract tests."""
 
     def __init__(self) -> None:
-        self._nodes: Dict[str, Any] = {}
-        self._edges: List[Any] = []
-        self._chunks: Dict[str, Set[str]] = {}
+        self._nodes: dict[str, Any] = {}
+        self._edges: list[Any] = []
+        self._chunks: dict[str, set[str]] = {}
 
-    def run_query(self, statement: str, *, parameters: Optional[Dict[str, Any]] = None) -> Any:
+    def run_query(self, statement: str, *, parameters: dict[str, Any] | None = None) -> Any:
         from intergrax.rag.graph.contracts.graph_store import GraphEdge, GraphNode
 
         params = dict(parameters or {})
@@ -89,7 +91,7 @@ class _FakeNeo4jIntegrationGraphStore:
             return type("R", (), {"records": out})()
         if "has_chunk" in stmt and "return distinct c.id" in stmt:
             ids = set(params.get("node_ids") or [])
-            chunk_ids: List[str] = []
+            chunk_ids: list[str] = []
             for node_id, chunks in self._chunks.items():
                 if node_id in ids:
                     chunk_ids.extend(sorted(chunks))
@@ -113,9 +115,9 @@ def test_create_rag_graph_store_uses_neo4j_integration_instance() -> None:
 
 def test_graph_rag_retrieve_through_neo4j_prod_profile() -> None:
     vector = VectorstoreManager(store=InMemoryVectorStore(tenant_id="prod-graph"))
-    doc = Document(
-        page_content="Intergrax legal corpus references contract clause alpha.",
-        metadata={"tenant_id": "prod-graph"},
+    doc = knowledge_document(
+        "Intergrax legal corpus references contract clause alpha.",
+        tenant_id="prod-graph",
     )
     vector.add_documents([doc], [[0.1, 0.2, 0.3]], ids=["chunk-legal-1"])
 

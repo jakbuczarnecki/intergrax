@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.rerankers.cache.rerank_cache import RerankCache
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import (
@@ -44,7 +45,7 @@ class FakeReranker(BaseReranker):
             results.append(
                 RerankerResult(
                     candidate=candidate,
-                    rerank_score=float(len(candidate.text)),
+                    rerank_score=float(len(candidate.document.content)),
                     fusion_score=None,
                     rank=i,
                 )
@@ -60,16 +61,30 @@ def _candidates() -> list[RerankerCandidate]:
 
     return [
         RerankerCandidate(
-            id="1",
-            text="alpha",
-            metadata={},
+            document=KnowledgeDocument(
+                schema_version=1,
+                identity={"document_id": "1", "root_document_id": "1"},
+                scope={"tenant_id": "unit", "namespace": "cache"},
+                content="alpha",
+                provenance={"source_kind": "test", "source_id": "1"},
+            ),
             original_score=0.0,
+            original_rank=0,
+            channel="unit",
+            vector_id="v1",
         ),
         RerankerCandidate(
-            id="2",
-            text="beta",
-            metadata={},
+            document=KnowledgeDocument(
+                schema_version=1,
+                identity={"document_id": "2", "root_document_id": "2"},
+                scope={"tenant_id": "unit", "namespace": "cache"},
+                content="beta",
+                provenance={"source_kind": "test", "source_id": "2"},
+            ),
             original_score=0.0,
+            original_rank=1,
+            channel="unit",
+            vector_id="v2",
         ),
     ]
 
@@ -160,7 +175,8 @@ def test_cache_store_after_miss() -> None:
     result = cache.get(
         reranker="fake",
         query="query",
-        texts=[c.text for c in candidates],
+        texts=[c.document.content for c in candidates],
+        identity_keys=[c.identity_key for c in candidates],
     )
 
     assert result is not None
@@ -197,3 +213,19 @@ def test_limit_on_cache_hit() -> None:
     )
 
     assert len(results) == 1
+
+
+def test_reranker_identity_key_includes_workspace() -> None:
+    first = _candidates()[0]
+    payload = first.document.model_dump(mode="python")
+    payload["scope"]["workspace_id"] = "workspace-b"
+    second_document = KnowledgeDocument.model_validate(payload)
+    second = RerankerCandidate(
+        document=second_document,
+        original_score=first.original_score,
+        original_rank=first.original_rank,
+        channel=first.channel,
+        vector_id=first.vector_id,
+    )
+
+    assert first.identity_key != second.identity_key

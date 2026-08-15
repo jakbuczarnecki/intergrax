@@ -4,14 +4,15 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from dataclasses import replace
+from typing import Optional
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.query.query_expander import DeterministicQueryExpander, QueryExpander
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 
@@ -38,58 +39,59 @@ class MultiQueryRetriever(BaseRetriever):
     def name(cls) -> str:
         return "multiquery"
 
-    def _generate_queries(self, query: str) -> List[str]:
+    def _generate_queries(self, query: str) -> list[str]:
         return self._expander.expand(query, num_queries=self._num_queries)
 
     def retrieve(
         self,
         query: RetrieverQuery,
-    ) -> List[RetrieverCandidate]:
+    ) -> tuple[RetrievalHit, ...]:
 
         if not query.query_text:
-            return []
+            return ()
 
         expanded_queries = self._generate_queries(query.query_text)
 
         top_k = int(query.top_k)
         prefetch_k = max(top_k, top_k * self._prefetch_factor)
 
-        all_hits: Dict[str, RetrieverCandidate] = {}
+        all_hits: dict[
+            tuple[str, str | None, str | None, str | None],
+            RetrievalHit,
+        ] = {}
 
-        for q in expanded_queries:
+        for query_index, q in enumerate(expanded_queries):
 
-            if q == query.query_text and query.query_embedding:
+            if q == query.query_text and query.query_embedding is not None:
                 q_vec = query.query_embedding
             else:
                 q_vec = self._em.embed_one(q)
 
             hits = self._vs.query(
                 query_embedding=q_vec,
+                **({"scope": query.scope} if query.scope is not None else {}),
                 top_k=prefetch_k,
                 metadata_filter=query.metadata_filter,
                 include_embeddings=query.include_embeddings,
             )
 
             for hit in hits:
+                native_hit = RetrievalHit.from_vector_store_hit(
+                    hit,
+                    channel="dense",
+                    query_id=str(query_index),
+                    query_text=q,
+                    retriever_name=self.name(),
+                )
+                key = (
+                    native_hit.document.scope.tenant_id,
+                    native_hit.document.scope.namespace,
+                    native_hit.document.scope.workspace_id,
+                    native_hit.vector_id,
+                )
+                existing = all_hits.get(key)
+                if existing is None or native_hit.score > existing.score:
+                    all_hits[key] = native_hit
 
-                existing = all_hits.get(hit.id)
-
-                if existing is None or hit.similarity_score > existing.score:
-
-                    all_hits[hit.id] = RetrieverCandidate(
-                        id=hit.id,
-                        content=hit.content,
-                        metadata=hit.metadata,
-                        score=hit.similarity_score,
-                        embedding=hit.embedding,
-                        rank=hit.rank,
-                    )
-
-        candidates = list(all_hits.values())
-
-        candidates.sort(
-            key=lambda x: x.score,
-            reverse=True,
-        )
-
-        return candidates[:top_k]
+        candidates = sorted(all_hits.values(), key=lambda x: x.score, reverse=True)
+        return tuple(replace(hit, rank=rank) for rank, hit in enumerate(candidates[:top_k]))

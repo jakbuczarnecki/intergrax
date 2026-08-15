@@ -1,11 +1,11 @@
-# signoff_probe agent — Implementation Plan
+﻿# signoff_probe agent — Implementation Plan
 
 **The implementation map** for this Tier-2 harness probe — phases, status, gaps, and verification.
 
 Status: **Done** (Appendix A sign-off probe)
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-SIG
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) · Phase AA-SIG
 
 ---
 

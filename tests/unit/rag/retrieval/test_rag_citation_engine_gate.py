@@ -8,6 +8,7 @@ from typing import List, Optional, Sequence
 
 import pytest
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.citation import citation_from_chunk, citations_from_chunks
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
@@ -40,6 +41,7 @@ class FakeVectorstoreManager:
         self,
         *,
         query_embedding,
+        scope=None,
         top_k: int,
         metadata_filter=None,
         include_embeddings: bool = False,
@@ -131,13 +133,21 @@ def test_retrieval_service_emits_formal_citations() -> None:
 def test_rag_retrieve_output_preserves_engine_citations() -> None:
     hits = [
         VectorStoreHit(
-            id="chunk-1",
-            content="Intergrax is an agent runtime.",
-            metadata={
-                "doc_id": "readme-1",
-                "source": "readme.md",
-                "page_number": 3,
-            },
+            vector_id="chunk-1",
+            document=KnowledgeDocument.model_validate(
+                {
+                    "schema_version": 1,
+                    "identity": {"document_id": "chunk-1", "root_document_id": "chunk-1"},
+                    "scope": {"tenant_id": "default"},
+                    "content": "Intergrax is an agent runtime.",
+                    "metadata": {
+                        "doc_id": "readme-1",
+                        "source": "readme.md",
+                        "page_number": 3,
+                    },
+                    "provenance": {"source_kind": "test", "source_id": "readme-1"},
+                }
+            ),
             similarity_score=0.91,
             rank=1,
         )
@@ -148,7 +158,10 @@ def test_rag_retrieve_output_preserves_engine_citations() -> None:
         rag_profile=RagProfile(enable_rerank=False, route_mode="off", retriever_id="vector_similarity"),
     )
 
-    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="What is Intergrax?", top_k=3))
+    out = perform_rag_retrieve(
+        ctx,
+        RagRetrieveInput(query="What is Intergrax?", top_k=3, tenant_id="default"),
+    )
 
     assert out.used is True
     assert len(out.citations) == 1

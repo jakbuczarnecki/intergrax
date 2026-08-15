@@ -1,16 +1,15 @@
 ﻿"""Uncommitted LCI-0A inventory validator (not part of LCI-0A commit)."""
 from __future__ import annotations
 
-import re
 import sys
 from collections import Counter
 from pathlib import Path
 
-INVENTORY = Path("docs/features/architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md")
-PLAN = Path("docs/features/plan/LANGCHAIN_INDEPENDENCE.md")
+INVENTORY = Path("docs/project/capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md")
+PLAN = Path("docs/project/capabilities/plan/LANGCHAIN_INDEPENDENCE.md")
 
 VALID_TASKS = {f"LCI-{c}{n}" for c in "012345678" for n in "ABCDEFGH"}
-VALID_TASKS.update({f"LCI-{n}{l}" for n in range(10) for l in "ABCD"})
+VALID_TASKS.update({f"LCI-{n}{letter}" for n in range(10) for letter in "ABCD"})
 
 # Canonical LCI task IDs from roadmap
 ROADMAP_TASKS = {
@@ -29,31 +28,9 @@ ROADMAP_TASKS = {
     for step in steps
 }
 
-SEMANTIC_PATH_TASKS: dict[str, str] = {
-    "intergrax/integrations/contracts/rerank_provider.py": "LCI-4B",
-    "intergrax/rag/document_loaders/contracts/base_document_parser.py": "LCI-2A",
-    "intergrax/rag/document_loaders/contracts/base_document_handler.py": "LCI-2B",
-    "intergrax/rag/document_loaders/contracts/base_document_loader.py": "LCI-2B",
-    "intergrax/rag/document_loaders/contracts/base_document_normalizer.py": "LCI-2C",
-    "intergrax/rag/document_loaders/contracts/metadata_provider.py": "LCI-2C",
-    "intergrax/rag/document_splitters/contracts/base_chunking_strategy.py": "LCI-2D",
-    "intergrax/rag/document_splitters/contracts/base_documents_splitter.py": "LCI-2D",
-    "intergrax/rag/embedding/contracts/base_embedding_manager.py": "LCI-3A",
-    "intergrax/rag/embedding/contracts/embedding_result.py": "LCI-3A",
-    "intergrax/rag/indexing/contracts/index_strategy.py": "LCI-3B",
-    "intergrax/rag/vectorstore/contracts/base_vectorstore_manager.py": "LCI-3C",
-    "intergrax/rag/vectorstore/contracts/vector_store.py": "LCI-3C",
-    "intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py": "LCI-3C",
-    "intergrax/rag/rerankers/contracts/reranker_types.py": "LCI-4B",
-    "intergrax/rag/graph/tenant/graph_isolation_contract.py": "LCI-4C",
-    "intergrax/integrations/providers/rerank_provider/cohere_rerank/adapter.py": "LCI-4B",
-    "intergrax/integrations/providers/rerank_provider/jina_rerank/adapter.py": "LCI-4B",
-}
+SEMANTIC_PATH_TASKS: dict[str, str] = {}
 
-SEMANTIC_PATH_SYMBOL_TASKS: dict[tuple[str, str], str] = {
-    ("intergrax/rag/document_loaders/parsers/text_smart_parser.py", "TextLoader"): "LCI-5A",
-    ("intergrax/rag/document_loaders/parsers/text_smart_parser.py", "Document"): "LCI-2A",
-}
+SEMANTIC_PATH_SYMBOL_TASKS: dict[tuple[str, str], str] = {}
 
 SEMANTIC_TEST_TASKS: dict[str, str] = {
     "tests/integration/rag/answers/test_rag_answer_pipeline.py": "LCI-4D",
@@ -65,6 +42,22 @@ SEMANTIC_TEST_TASKS: dict[str, str] = {
 
 LCI_1D_ALLOWED_TESTS: set[str] = set()  # populated if native document conformance tests exist
 LCI_7B_ALLOWED_TESTS: set[str] = set()  # no inventory TEST_ONLY rows should use LCI-7B
+
+REMOVED_LCI_4B_INVENTORY_IDS = {
+    "LCI-INV-0006",
+    "LCI-INV-0012",
+    "LCI-INV-0013",
+    "LCI-INV-0093",
+    "LCI-INV-0094",
+    "LCI-INV-0095",
+    "LCI-INV-0096",
+}
+
+REMOVED_LCI_5B_INVENTORY_IDS = {
+    "LCI-INV-0074",
+    "LCI-INV-0076",
+    "LCI-INV-0077",
+}
 
 
 def _fix_mojibake(text: str) -> str:
@@ -134,22 +127,6 @@ def apply_inventory_fixes(text: str) -> str:
             "`intergrax/rag/document_loaders/contracts/metadata_provider.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2C |",
         ),
         (
-            "`intergrax/rag/document_splitters/contracts/base_chunking_strategy.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/document_splitters/contracts/base_chunking_strategy.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2D |",
-        ),
-        (
-            "`intergrax/rag/document_splitters/contracts/base_documents_splitter.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/document_splitters/contracts/base_documents_splitter.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2D |",
-        ),
-        (
-            "`intergrax/rag/embedding/contracts/base_embedding_manager.py` | 9 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/embedding/contracts/base_embedding_manager.py` | 9 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3A |",
-        ),
-        (
-            "`intergrax/rag/embedding/contracts/embedding_result.py` | 9 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/embedding/contracts/embedding_result.py` | 9 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3A |",
-        ),
-        (
             "`intergrax/rag/graph/tenant/graph_isolation_contract.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
             "`intergrax/rag/graph/tenant/graph_isolation_contract.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-4C |",
         ),
@@ -160,18 +137,6 @@ def apply_inventory_fixes(text: str) -> str:
         (
             "`intergrax/rag/rerankers/contracts/reranker_types.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
             "`intergrax/rag/rerankers/contracts/reranker_types.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-4B |",
-        ),
-        (
-            "`intergrax/rag/vectorstore/contracts/base_vectorstore_manager.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/vectorstore/contracts/base_vectorstore_manager.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3C |",
-        ),
-        (
-            "`intergrax/rag/vectorstore/contracts/vector_store.py` | 12 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/vectorstore/contracts/vector_store.py` | 12 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3C |",
-        ),
-        (
-            "`intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3C |",
         ),
         (
             "`intergrax/integrations/providers/rerank_provider/cohere_rerank/adapter.py` | 8 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3D |",
@@ -292,7 +257,26 @@ def validate(text: str) -> None:
     rows = parse_rows(text)
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
-    assert len(ids) == 185, f"expected 185 unique inventory IDs, got {len(ids)}"
+    assert not REMOVED_LCI_4B_INVENTORY_IDS.intersection(ids), "closed LCI-4B rows reintroduced"
+    assert not REMOVED_LCI_5B_INVENTORY_IDS.intersection(ids), "closed LCI-5B rows reintroduced"
+    assert "LCI-INV-0075" in ids, "unrelated Ollama embedding row removed"
+    assert "LCI-INV-0054" not in ids
+    assert not any(
+        row["path"] == "intergrax/rag/document_loaders/parsers/text_smart_parser.py"
+        and row["symbol"] == "TextLoader"
+        for row in rows
+    ), "closed LCI-5A TextLoader row reintroduced"
+    assert len(ids) == 69, f"expected 69 unique inventory IDs, got {len(ids)}"
+
+    splitter_packaging_rows = [row for row in rows if row["id"] == "LCI-INV-0180"]
+    assert len(splitter_packaging_rows) == 1
+    splitter_packaging_row = splitter_packaging_rows[0]
+    assert "optional extra: rag-langchain-splitters" in splitter_packaging_row["raw"]
+    assert "[project.optional-dependencies].rag-langchain-splitters" in splitter_packaging_row["raw"]
+
+    splitter_import_rows = [row for row in rows if row["id"] == "LCI-INV-0066"]
+    assert len(splitter_import_rows) == 1
+    assert "Optional provider loaded lazily" in splitter_import_rows[0]["raw"]
 
     keys = [(r["path"], r["line"], r["symbol"]) for r in rows]
     dupes = [k for k, c in Counter(keys).items() if c > 1]
@@ -302,9 +286,19 @@ def validate(text: str) -> None:
     assert not unclassified, f"unclassified rows: {len(unclassified)}"
 
     summary = summary_counts(text)
-    assert summary.get("total detailed inventory rows") == 185
+    assert summary.get("direct production/runtime imports") == 11
+    assert summary.get("direct test imports") == 46
+    assert summary.get("optional provider imports") == 7
+    assert summary.get("compatibility-only imports") == 2
+    assert summary.get("legacy optional imports") == 2
+    assert summary.get("total detailed inventory rows") == 69
     assert summary.get("unclassified occurrences") == 0
+    assert summary.get("core contract leaks") == 0
+    assert summary.get("core implementation dependencies") == 0
     assert classification_counts(rows)["CORE_CONTRACT_LEAK"] == summary.get("core contract leaks")
+    assert classification_counts(rows)["OPTIONAL_PROVIDER"] == summary.get("optional provider imports")
+    assert classification_counts(rows)["COMPATIBILITY_ONLY"] == summary.get("compatibility-only imports")
+    assert classification_counts(rows)["LEGACY_OPTIONAL"] == summary.get("legacy optional imports")
     assert classification_counts(rows)["TEST_ONLY"] == summary.get("test-only")
 
   # all tasks exist
@@ -350,7 +344,7 @@ def validate(text: str) -> None:
                 f"{row['id']}: LCI-7B only for core installation gate tests, got {path}"
             )
 
-    print("185 unique inventory IDs")
+    print("69 unique inventory IDs")
     print("0 duplicate path + line + symbol")
     print("0 unclassified")
     print("summary totals match")

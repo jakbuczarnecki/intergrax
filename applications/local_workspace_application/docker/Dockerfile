@@ -40,7 +40,8 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app:/app/agents:/app/applications \
     INTERGRAX_ENV=prod \
     LOCAL_WORKSPACE_BACKEND_HOST=0.0.0.0 \
-    LOCAL_WORKSPACE_BACKEND_PORT=8020
+    LOCAL_WORKSPACE_BACKEND_PORT=8020 \
+    LOCAL_WORKSPACE_DATA_HOME=/var/lib/intergrax/lkw
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libsqlite3-0 \
@@ -54,6 +55,8 @@ COPY --from=builder /app/pyproject.toml /app/uv.lock /app/README.md /app/
 COPY --from=builder /app/.intergrax-runtime-graph.json /app/.intergrax-runtime-graph.json
 
 ENV PATH="/app/.venv/bin:$PATH"
+
+VOLUME ["/var/lib/intergrax/lkw"]
 
 EXPOSE 8020
 WORKDIR /app/applications/local_workspace_application

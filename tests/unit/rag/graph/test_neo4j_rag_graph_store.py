@@ -50,6 +50,12 @@ class _FakeIntegrationGraphStore:
                 )
             )
             return type("R", (), {"records": []})()
+        if "merge (e:ragevidence" in stmt:
+            if "node_id" in params:
+                self._chunks.setdefault(str(params["node_id"]), set()).add(
+                    str(params["chunk_id"])
+                )
+            return type("R", (), {"records": []})()
         if "merge (c:ragchunk" in stmt:
             nid = str(params["node_id"])
             cid = str(params["chunk_id"])
@@ -68,7 +74,7 @@ class _FakeIntegrationGraphStore:
                 if needle in n.label.lower()
             ][: int(params.get("limit", 20))]
             return type("R", (), {"records": found})()
-        if "-[*1.." in stmt and "return distinct m.id" in stmt:
+        if "match p=" in stmt or "return distinct m.id" in stmt:
             start = str(params["node_id"])
             out = []
             for edge in self._edges:
@@ -88,7 +94,7 @@ class _FakeIntegrationGraphStore:
                         }
                     )
             return type("R", (), {"records": out})()
-        if "has_chunk" in stmt and "return distinct c.id" in stmt:
+        if "evidences_node" in stmt and "return distinct c.id" in stmt:
             ids = set(params.get("node_ids") or [])
             chunk_ids: List[str] = []
             for nid, chunks in self._chunks.items():
@@ -103,7 +109,14 @@ def test_neo4j_rag_graph_store_neighbors_and_chunks() -> None:
     store = Neo4jRagGraphStore(integration)
     store.upsert_node(GraphNode(id="ent:a", label="Alpha", node_type="entity"))
     store.upsert_node(GraphNode(id="ent:b", label="Beta", node_type="entity"))
-    store.upsert_edge(GraphEdge(source_id="ent:a", target_id="ent:b", relation="related_to"))
+    store.upsert_edge(
+        GraphEdge(
+            source_id="ent:a",
+            target_id="ent:b",
+            relation="related_to",
+            metadata={"source_id": "source-a", "chunk_ids": ["chunk-1"]},
+        )
+    )
     store.link_chunk("ent:a", "chunk-1")
 
     found = store.find_nodes(label_contains="Alpha", limit=5)

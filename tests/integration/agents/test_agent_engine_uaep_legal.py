@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.agents.uaep import supports_uaep
+from intergrax.agents import supports_uaep
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from legal.legal_agent import LegalAgent
 

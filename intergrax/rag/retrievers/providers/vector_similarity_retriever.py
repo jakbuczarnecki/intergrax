@@ -4,14 +4,11 @@
 
 from __future__ import annotations
 
-from typing import List
-
-
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 
@@ -37,10 +34,10 @@ class VectorSimilarityRetriever(BaseRetriever):
     def retrieve(
         self,
         query: RetrieverQuery,
-    ) -> List[RetrieverCandidate]:
+    ) -> tuple[RetrievalHit, ...]:
 
         if not query.query_text:
-            return []
+            return ()
 
         q_vec = (
             query.query_embedding
@@ -53,24 +50,19 @@ class VectorSimilarityRetriever(BaseRetriever):
 
         results = self._vs.query(
             query_embedding=q_vec,
+            **({"scope": query.scope} if query.scope is not None else {}),
             top_k=prefetch_k,
             metadata_filter=query.metadata_filter,
             include_embeddings=query.include_embeddings,
         )
 
-        candidates: List[RetrieverCandidate] = []
-
-        for hit in results:
-
-            candidates.append(
-                RetrieverCandidate(
-                    id=hit.id,
-                    content=hit.content,
-                    metadata=hit.metadata,
-                    score=hit.similarity_score,
-                    embedding=hit.embedding,
-                    rank=hit.rank,
-                )
+        candidates = tuple(
+            RetrievalHit.from_vector_store_hit(
+                hit,
+                channel="dense",
+                retriever_name=self.name(),
             )
+            for hit in results
+        )
 
         return candidates[:top_k]

@@ -12,22 +12,39 @@ from typing import Any
 
 import pytest
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.issue_tracker.jira.adapter import _JiraIssueTracker
+from intergrax.integrations.providers.issue_tracker.jira.adapter import (
+    _JiraIssueTracker,
+)
 from intergrax.integrations.providers.issue_tracker.jira.client import JiraRestClient
-from intergrax.integrations.providers.issue_tracker.jira.config import JiraIntegrationConfig
-from intergrax.integrations.providers.issue_tracker.jira.integration import JiraIssueTrackerIntegration
-from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import JIRA_ISSUES_SOURCE_KIND
-from intergrax.runtime.vendor_knowledge.adapters.jira_issues import register_jira_issues_knowledge_adapter
-from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBinding, KnowledgeSourceBindingStatus
+from intergrax.integrations.providers.issue_tracker.jira.config import (
+    JiraIntegrationConfig,
+)
+from intergrax.integrations.providers.issue_tracker.jira.integration import (
+    JiraIssueTrackerIntegration,
+)
+from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import (
+    JIRA_ISSUES_SOURCE_KIND,
+)
+from intergrax.runtime.vendor_knowledge.adapters.jira_issues import (
+    register_jira_issues_knowledge_adapter,
+)
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+)
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeContentMode,
     KnowledgeSourceScope,
 )
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
 from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeRemoteItemStateRepository,
     DocumentStoreKnowledgeSourceLeaseRepository,
@@ -41,6 +58,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncRunStatu
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
     IdempotentRecordingSink,
     RecordingBindingService,
+    durable_reconciliation_coordinator_kwargs,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
@@ -106,7 +124,9 @@ class _JiraHttpFake:
         self.post_calls: list[dict[str, Any]] = []
         self.get_calls: list[dict[str, Any]] = []
 
-    def post(self, path: str, *, json: dict[str, Any] | None = None) -> _FakeHttpResponse:
+    def post(
+        self, path: str, *, json: dict[str, Any] | None = None
+    ) -> _FakeHttpResponse:
         self.post_calls.append({"path": path, "json": json})
         body = json or {}
         token = body.get("nextPageToken")
@@ -127,12 +147,18 @@ class _JiraHttpFake:
             )
         raise AssertionError(f"unexpected nextPageToken: {token}")
 
-    def get(self, path: str, *, params: dict[str, str] | None = None) -> _FakeHttpResponse:
+    def get(
+        self, path: str, *, params: dict[str, str] | None = None
+    ) -> _FakeHttpResponse:
         self.get_calls.append({"path": path, "params": params})
         if path == "/issue/PROJ-1":
-            return _FakeHttpResponse(_payload=_issue_payload(issue_id="10001", key="PROJ-1"))
+            return _FakeHttpResponse(
+                _payload=_issue_payload(issue_id="10001", key="PROJ-1")
+            )
         if path == "/issue/PROJ-2":
-            return _FakeHttpResponse(_payload=_issue_payload(issue_id="10002", key="PROJ-2"))
+            return _FakeHttpResponse(
+                _payload=_issue_payload(issue_id="10002", key="PROJ-2")
+            )
         return _FakeHttpResponse(status_code=404)
 
 
@@ -165,8 +191,12 @@ def _assert_no_secrets(blob: str) -> None:
 def _assert_envelope_safe(envelope) -> None:
     blob = _public_blob(
         {
-            "descriptor": envelope.descriptor.model_dump(mode="json") if envelope.descriptor else None,
-            "content": envelope.content.model_dump(mode="json") if envelope.content else None,
+            "descriptor": envelope.descriptor.model_dump(mode="json")
+            if envelope.descriptor
+            else None,
+            "content": envelope.content.model_dump(mode="json")
+            if envelope.content
+            else None,
         }
     )
     _assert_no_secrets(blob)
@@ -223,10 +253,20 @@ async def test_jira_facade_coordinator_reconciliation_proof() -> None:
         item_state_repository=state_repo,
         sink=sink,
         lease_ttl_seconds=30,
+        **durable_reconciliation_coordinator_kwargs(
+            state_repository=state_repo, document_store=document_store
+        ),
     )
 
-    first = await coordinator.reconcile_once(binding_id="jira-binding", restart=True)
-    second = await coordinator.reconcile_once(binding_id="jira-binding", restart=False)
+    first = await coordinator.reconcile_once(
+        binding_id="jira-binding", restart=True, operation_id="jira-recon"
+    )
+    second = await coordinator.reconcile_once(
+        binding_id="jira-binding",
+        restart=False,
+        operation_id="jira-recon",
+        trigger_delivery_id=first.delivery_id,
+    )
 
     assert first.status is KnowledgeSyncRunStatus.COMPLETED
     assert second.status is KnowledgeSyncRunStatus.COMPLETED
@@ -243,7 +283,10 @@ async def test_jira_facade_coordinator_reconciliation_proof() -> None:
         assert envelope.content is not None
         assert envelope.content.mode is KnowledgeContentMode.STRUCTURED_RECORD
         assert envelope.content.structured_record is not None
-        assert envelope.content.structured_record["schema_version"] == "jira.issue.knowledge.v1"
+        assert (
+            envelope.content.structured_record["schema_version"]
+            == "jira.issue.knowledge.v1"
+        )
         descriptor = envelope.descriptor
         assert descriptor is not None
         assert descriptor.metadata is not None
@@ -251,10 +294,12 @@ async def test_jira_facade_coordinator_reconciliation_proof() -> None:
         logical_key = descriptor.identity.logical_key
         assert logical_key is not None
         assert logical_key.startswith("PROJ-")
-        assert envelope.content.structured_record["remote_id"] == descriptor.identity.remote_id
+        assert (
+            envelope.content.structured_record["remote_id"]
+            == descriptor.identity.remote_id
+        )
         _assert_envelope_safe(envelope)
         assert re.fullmatch(r"^[1-9][0-9]*$", descriptor.identity.remote_id)
-
 
     remote_ids = set()
     for remote_id in ("10001", "10002"):
@@ -285,7 +330,10 @@ async def test_jira_facade_coordinator_reconciliation_proof() -> None:
     assert http.post_calls[0]["json"]["jql"] == _JQL
     assert "nextPageToken" not in http.post_calls[0]["json"]
     assert http.post_calls[1]["json"]["nextPageToken"] == _PAGE_TOKEN
-    assert {call["path"] for call in http.get_calls} == {"/issue/PROJ-1", "/issue/PROJ-2"}
+    assert {call["path"] for call in http.get_calls} == {
+        "/issue/PROJ-1",
+        "/issue/PROJ-2",
+    }
 
     public_proof = _public_blob(
         {
@@ -304,7 +352,9 @@ async def test_jira_facade_coordinator_reconciliation_proof() -> None:
 
 
 class _JiraHttpFakeWrongProjectFirstPage:
-    def post(self, path: str, *, json: dict[str, Any] | None = None) -> _FakeHttpResponse:
+    def post(
+        self, path: str, *, json: dict[str, Any] | None = None
+    ) -> _FakeHttpResponse:
         return _FakeHttpResponse(
             _payload={
                 "issues": [
@@ -319,7 +369,9 @@ class _JiraHttpFakeWrongProjectFirstPage:
             }
         )
 
-    def get(self, path: str, *, params: dict[str, str] | None = None) -> _FakeHttpResponse:
+    def get(
+        self, path: str, *, params: dict[str, str] | None = None
+    ) -> _FakeHttpResponse:
         raise AssertionError("get should not be called")
 
 
@@ -331,7 +383,9 @@ async def test_jira_coordinator_rejects_cross_project_first_page() -> None:
         api_token=_API_TOKEN,
     )
     integration = JiraIssueTrackerIntegration.from_client(
-        _JiraIssueTracker(JiraRestClient(config, http_client=_JiraHttpFakeWrongProjectFirstPage()))
+        _JiraIssueTracker(
+            JiraRestClient(config, http_client=_JiraHttpFakeWrongProjectFirstPage())
+        )
     )
     registry = KnowledgeAdapterRegistry()
     register_jira_issues_knowledge_adapter(registry)
@@ -359,20 +413,30 @@ async def test_jira_coordinator_rejects_cross_project_first_page() -> None:
         status=KnowledgeSourceBindingStatus.ACTIVE,
         configuration_version=1,
     )
+    state_repo = DocumentStoreKnowledgeRemoteItemStateRepository(document_store)
     coordinator = VendorKnowledgeSyncCoordinator(
         tenant_id="tenant-1",
         owner_id="owner-1",
         binding_service=RecordingBindingService(binding=binding),  # type: ignore[arg-type]
         facade=facade,
         lease_repository=DocumentStoreKnowledgeSourceLeaseRepository(document_store),
-        checkpoint_repository=DocumentStoreKnowledgeSyncCheckpointRepository(document_store),
-        item_state_repository=DocumentStoreKnowledgeRemoteItemStateRepository(document_store),
+        checkpoint_repository=DocumentStoreKnowledgeSyncCheckpointRepository(
+            document_store
+        ),
+        item_state_repository=state_repo,
         sink=sink,
         lease_ttl_seconds=30,
+        **durable_reconciliation_coordinator_kwargs(
+            state_repository=state_repo, document_store=document_store
+        ),
     )
 
     with pytest.raises(VendorKnowledgeError) as exc_info:
-        await coordinator.reconcile_once(binding_id="jira-binding", restart=True)
+        await coordinator.reconcile_once(
+            binding_id="jira-binding",
+            restart=True,
+            operation_id="jira-recon-error",
+        )
 
     assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
     assert exc_info.value.retryable is False

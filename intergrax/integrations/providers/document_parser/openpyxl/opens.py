@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 
+from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.integrations.providers.document_parser.openpyxl.config import OpenpyxlIntegrationConfig
 
@@ -70,7 +71,17 @@ class _ExcelLoader:
 
     def _read_excel(self) -> dict:
         kwargs = dict(sheet_name=self.sheet if self.sheet is not None else None, header=self.header, engine=None)
-        dfs = pd.read_excel(self.path, **kwargs)
+        try:
+            dfs = pd.read_excel(self.path, **kwargs)
+        except ImportError as exc:
+            message = str(exc).lower()
+            if "openpyxl" in message or "xlrd" in message:
+                raise IntegrationDependencyError(
+                    "Provider 'openpyxl' requires optional office parser dependencies. "
+                    "Install Intergrax-ai[parsing-office].",
+                    integration_name="openpyxl",
+                ) from exc
+            raise
         if isinstance(dfs, pd.DataFrame):
             return {"Sheet1": dfs}
         return dfs
@@ -123,7 +134,16 @@ class _ExcelLoader:
             return "\n".join([header, sep] + rows)
 
     def load(self) -> list:
-        from langchain_core.documents import Document
+        try:
+            from langchain_core.documents import Document
+        except ModuleNotFoundError as exc:
+            if exc.name == "langchain_core":
+                raise RuntimeError(
+                    "Provider 'openpyxl' requires optional dependency group "
+                    "'rag-langchain-loaders'. Install Intergrax with "
+                    "'rag-langchain-loaders'."
+                ) from exc
+            raise
 
         docs: list[Document] = []
         is_excel = self._is_excel()

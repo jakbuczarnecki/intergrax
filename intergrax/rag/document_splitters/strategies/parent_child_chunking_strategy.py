@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from typing import Sequence, List
+from typing import Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 
@@ -43,51 +43,47 @@ class ParentChildChunkingStrategy(BaseChunkingStrategy):
 
     def chunk(
         self,
-        documents: Sequence[Document],
-    ) -> Sequence[Document]:
+        documents: Sequence[KnowledgeDocument],
+    ) -> Sequence[KnowledgeDocument]:
 
-        chunks: List[Document] = []
+        chunks: list[KnowledgeDocument] = []
 
         for doc in documents:
-
-            text = doc.page_content
-            metadata = dict(doc.metadata)
+            text = doc.content
+            source_id = doc.identity.document_id
 
             parent_start = 0
             parent_index = 0
+            chunk_index = 0
 
             while parent_start < len(text):
-
                 parent_end = parent_start + self._parent_size
                 parent_text = text[parent_start:parent_end]
 
-                parent_id = f"parent_{parent_index}"
+                parent_id = f"{source_id}:parent_{parent_index}"
 
                 child_start = 0
-                child_index = 0
 
                 while child_start < len(parent_text):
-
                     child_end = child_start + self._child_size
                     child_text = parent_text[child_start:child_end]
 
-                    child_metadata = dict(metadata)
-                    child_metadata[ChunkMetadataKey.PARENT_CHUNK_ID] = parent_id
-                    child_metadata[ChunkMetadataKey.SECTION] = parent_id
-                    child_metadata[ChunkMetadataKey.PARENT_CHUNK_INDEX] = parent_index
-                    child_metadata[ChunkMetadataKey.CHUNK_SIZE] = len(text)
-                    child_metadata[ChunkMetadataKey.CHUNK_INDEX] = child_index                
-                    child_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
-
-                    chunk = Document(
-                        page_content=child_text,
-                        metadata=child_metadata,
+                    chunks.append(
+                        build_derived_chunk(
+                            doc,
+                            content=child_text,
+                            strategy_id=self.strategy_id(),
+                            chunk_index=chunk_index,
+                            metadata_updates={
+                                ChunkMetadataKey.PARENT_CHUNK_ID.value: parent_id,
+                                ChunkMetadataKey.SECTION.value: parent_id,
+                                ChunkMetadataKey.PARENT_CHUNK_INDEX.value: parent_index,
+                            },
+                        )
                     )
 
-                    chunks.append(chunk)
-
                     child_start = child_end - self._child_overlap
-                    child_index += 1
+                    chunk_index += 1
 
                 parent_start = parent_end
                 parent_index += 1

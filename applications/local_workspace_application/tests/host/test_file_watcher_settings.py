@@ -15,7 +15,10 @@ from local_workspace_application.file_watcher.sidecar import (
     FileWatcherSidecarConfigurationError,
     build_file_watcher_sidecar_config,
 )
-from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.host.settings import (
+    LocalWorkspaceBackendSettings,
+    _data_home_path,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -110,7 +113,9 @@ def test_file_watcher_env_values_parse() -> None:
     assert settings.file_watcher_debounce_seconds == 3.5
     assert settings.file_watcher_max_batch_wait_seconds == 12.0
     assert settings.file_watcher_priority == "high"
-    assert settings.allowed_read_roots == frozenset({root})
+    assert {root, settings.managed_upload_staging_dir, settings.web_url_staging_dir} <= (
+        settings.allowed_read_roots
+    )
     assert settings.data_home == "custom/lkw"
 
 
@@ -121,7 +126,7 @@ def test_watcher_roots_come_from_intergrax_allowed_read_roots() -> None:
 
     settings = _settings_from_env()
 
-    assert settings.allowed_read_roots == frozenset({root_a, root_b})
+    assert {root_a, root_b} <= settings.allowed_read_roots
 
 
 def test_data_home_resolution_inputs_unchanged() -> None:
@@ -170,6 +175,26 @@ def test_config_builder_rejects_blank_identity(field_name: str, value: str) -> N
         match="file_watcher_identity_not_configured",
     ):
         build_file_watcher_sidecar_config(settings)
+
+
+def test_config_builder_ignores_missing_auto_staging_roots(tmp_path: Path) -> None:
+    user_root = tmp_path / "docs"
+    user_root.mkdir()
+    data_home = str(tmp_path / "home")
+    settings = _enabled_settings(
+        data_home=data_home,
+        allowed_read_roots=frozenset(
+            {
+                str(user_root),
+                _data_home_path(data_home, "run", "managed_upload_staging"),
+                _data_home_path(data_home, "run", "web_url_staging"),
+            }
+        ),
+    )
+    config = build_file_watcher_sidecar_config(settings)
+    assert config.runtime_config.allowed_roots == frozenset(
+        {str(user_root.resolve(strict=False))}
+    )
 
 
 def test_config_builder_rejects_empty_roots() -> None:

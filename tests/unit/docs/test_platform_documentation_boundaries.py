@@ -15,6 +15,13 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
 
+_CANONICAL_PLATFORM_DOC_ROOTS = (
+    REPO / "docs" / "project",
+    REPO / "docs" / "project" / "architecture",
+    REPO / "docs" / "project" / "technical",
+    REPO / "docs" / "project" / "integrations",
+)
+
 # Concrete downward path dependencies (not generic terminology).
 _FORBIDDEN_DOWNWARD_PATHS = (
     re.compile(r"\]\([^)]*applications/"),
@@ -60,16 +67,34 @@ def test_provider_usage_docs_have_no_application_or_agent_paths() -> None:
 
 
 def test_platform_doc_roots_exist_for_boundary_scope() -> None:
-    """Document which platform roots are in scope; enforce providers hard."""
-    roots = [
-        REPO / "intergrax",
-        REPO / "docs" / "architecture",
-        REPO / "docs" / "contracts",
-        REPO / "docs" / "integrations",
-    ]
-    existing = [p for p in roots if p.is_dir()]
-    assert (REPO / "intergrax").is_dir()
-    assert existing
-    # Hard gate remains provider USAGE; architecture/integrations hubs may still
-    # document first-adopter hosts outside this provider-boundary contract.
+    """Enforce canonical documentation roots and reject the pre-migration roots."""
+    missing = [path for path in _CANONICAL_PLATFORM_DOC_ROOTS if not path.is_dir()]
+    assert not missing, f"missing canonical platform documentation roots: {missing}"
+
+    technical_map = (
+        REPO / "docs" / "project" / "technical" / "DOCUMENTATION_MAP.md"
+    ).read_text(encoding="utf-8")
+    public_architecture = (
+        REPO
+        / "docs"
+        / "project"
+        / "maintainers"
+        / "public-adoption"
+        / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
+    ).read_text(encoding="utf-8")
+    stale_topology_language = (
+        "Sole `docs/` root file",
+        "root `PROOFS.md`",
+        "root proof dashboard",
+    )
+    for phrase in stale_topology_language:
+        assert phrase not in technical_map
+        assert phrase not in public_architecture
+
+    assert "docs/project/architecture/" in technical_map
+    assert "applications/*/docs/" in technical_map
+    assert "docs/project/proofs/PROOFS.md" in public_architecture
+    assert "applications/<pkg>/docs/" in public_architecture
+    assert "agents/<agent>/docs/" in public_architecture
+
     assert _provider_usage_files()

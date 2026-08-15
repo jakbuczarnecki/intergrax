@@ -62,6 +62,8 @@ class _FakeRunner:
     def __init__(self) -> None:
         self.tasks: list[Task] = []
         self.raise_error: Exception | None = None
+        self.ingest_used = True
+        self.ingest_reason = "ingest_complete"
 
     async def run_task(self, task: Task) -> RuntimeTaskResult:
         if self.raise_error is not None:
@@ -73,7 +75,12 @@ class _FakeRunner:
             state=TaskState.COMPLETED,
             answer="indexed",
             agent_id=task.agent_id,
-            metadata={"ok": True},
+            metadata={
+                "ingest_summary": {
+                    "used": self.ingest_used,
+                    "reason": self.ingest_reason,
+                }
+            },
         )
 
 
@@ -116,6 +123,7 @@ def test_runtime_task_builder_maps_job_to_local_workspace_index_task() -> None:
     assert task.metadata["source_paths"] == list(job.source_paths)
     assert task.metadata["collection_id"] == job.collection_id
     assert task.metadata["workspace_id"] == job.workspace_id
+    assert task.metadata["chunking_strategy_id"] == "recursive"
     assert task.metadata["background_ingest_task_name"] == LKW_BACKGROUND_INGEST_TASK_NAME
     assert task.metadata["background_ingest_idempotency_key"] == request.idempotency_key
 
@@ -170,6 +178,20 @@ async def test_handler_returns_failed_when_payload_is_invalid() -> None:
     assert queue_result.status == TaskStatus.FAILED
     assert queue_result.error_message is not None
     assert runner.tasks == []
+
+
+@pytest.mark.asyncio
+async def test_handler_returns_failed_when_ingest_did_not_index() -> None:
+    job = _sample_job()
+    request = _sample_request(job)
+    runner = _FakeRunner()
+    runner.ingest_used = False
+    runner.ingest_reason = "source_not_found"
+
+    queue_result = await handle_background_ingest_task_request(request, runner)
+
+    assert queue_result.status == TaskStatus.FAILED
+    assert queue_result.error_message == "source_not_found"
 
 
 @pytest.mark.asyncio

@@ -5,11 +5,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.graph.contracts.graph_store import GraphStore
 from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
 
@@ -43,9 +42,21 @@ def run_graph_isolation_contract(
     store_a = factory(tenant_a)
     store_b = factory(tenant_b)
     indexer = HeuristicGraphIndexer(store_a)
-    secret_doc = Document(
-        page_content="Acme Corp signed a secret partnership with Intergrax Harness.",
-        metadata={"tenant_id": tenant_a},
+    secret_doc = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {
+                "document_id": "graph-secret-doc",
+                "root_document_id": "graph-secret-doc",
+            },
+            "scope": {"tenant_id": tenant_a, "namespace": "graph-isolation"},
+            "content": "Acme Corp signed a secret partnership with Intergrax Harness.",
+            "metadata": {"tenant_hint": tenant_b},
+            "provenance": {
+                "source_kind": "graph-isolation-contract",
+                "source_id": "graph-secret-source",
+            },
+        }
     )
     indexer.index_documents([secret_doc], chunk_ids=["chunk-secret-graph"])
 
@@ -57,8 +68,8 @@ def run_graph_isolation_contract(
             reason="tenant_b_leaked_tenant_a_graph_nodes",
         )
 
-    chunk_ids = store_b.chunk_ids_for_nodes({node.id for node in leaked})
-    if chunk_ids:
+    linked_nodes = store_b.node_ids_for_chunks({"chunk-secret-graph"})
+    if linked_nodes:
         return GraphIsolationContractResult(
             slug=slug,
             cross_query_isolated=False,

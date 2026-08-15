@@ -1,0 +1,189 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Slack manual credential binding auth adapter (PRODUCT-5B/5D)."""
+
+from __future__ import annotations
+
+import json
+import urllib.error
+import urllib.request
+from collections.abc import Mapping
+
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.providers.conversation_channel.slack.integration import (
+    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+)
+from intergrax.runtime.vendor_knowledge.models import JsonValue
+from intergrax.runtime.vendor_knowledge.tenant_connection_auth import (
+    TenantConnectionAuthBeginResult,
+    TenantConnectionAuthExchangeResult,
+    TenantConnectionAuthManualBindResult,
+    TenantConnectionAuthMode,
+    TenantConnectionAuthProviderDescriptor,
+    TenantConnectionAuthQualification,
+    generate_correlation_state,
+)
+
+_SLACK_AUTH_TEST_URL = "https://slack.com/api/auth.test"
+_SLACK_MINIMUM_BOT_SCOPES = (
+    "channels:history",
+    "channels:read",
+    "groups:history",
+    "groups:read",
+    "im:history",
+    "im:read",
+    "mpim:history",
+    "mpim:read",
+    "files:read",
+)
+_SUPPORTED_SCOPES_SUMMARY = (
+    "Bot token scopes: "
+    + ", ".join(_SLACK_MINIMUM_BOT_SCOPES)
+    + ". App token (xapp-) is required for shared runtime construction (Socket Mode); "
+    "knowledge ingestion uses the bot token Web API path only."
+)
+
+
+def _http_post_auth_test(bot_token: str, *, timeout: float = 30.0) -> dict[str, object]:
+    request = urllib.request.Request(
+        _SLACK_AUTH_TEST_URL,
+        data=b"",
+        method="POST",
+        headers={
+            "Accept": "application/json",
+            "Authorization": f"Bearer {bot_token}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            raw = response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        raise ValueError("credential_binding_invalid") from exc
+    except urllib.error.URLError as exc:
+        raise ValueError("provider_unavailable") from exc
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError("provider_response_invalid") from exc
+    if not isinstance(parsed, dict):
+        raise ValueError("provider_response_invalid")
+    return parsed
+
+
+def _derive_connected_principal_ref(payload: Mapping[str, object]) -> str:
+    team_id = payload.get("team_id")
+    if not isinstance(team_id, str) or not team_id.strip():
+        raise ValueError("provider_identity_invalid")
+    return f"slack_team:{team_id.strip()}"
+
+
+def _validate_bot_credentials(bot_token: str) -> str:
+    response = _http_post_auth_test(bot_token)
+    if response.get("ok") is not True:
+        error = response.get("error")
+        if isinstance(error, str) and error in {
+            "invalid_auth",
+            "token_revoked",
+            "account_inactive",
+            "not_authed",
+        }:
+            raise ValueError("credential_binding_invalid")
+        if isinstance(error, str) and error == "missing_scope":
+            raise ValueError("credential_binding_scope_insufficient")
+        raise ValueError("credential_binding_invalid")
+    return _derive_connected_principal_ref(response)
+
+
+class SlackTenantConnectionAuthProvider:
+    """Manual app/bot token binding for Slack knowledge source connections."""
+
+    provider_id = SLACK_CONVERSATION_CHANNEL_PROVIDER_ID
+    integration_kind = IntegrationCategory.CONVERSATION_CHANNEL
+    auth_mode = TenantConnectionAuthMode.MANUAL_CREDENTIAL_BINDING
+    qualification = TenantConnectionAuthQualification.QUALIFIED
+
+    def describe(self) -> TenantConnectionAuthProviderDescriptor:
+        return TenantConnectionAuthProviderDescriptor(
+            provider_id=self.provider_id,
+            integration_kind=self.integration_kind,
+            auth_mode=self.auth_mode,
+            safe_display_name="Slack",
+            supported_scopes_summary=_SUPPORTED_SCOPES_SUMMARY,
+            qualification=self.qualification,
+        )
+
+    def begin_authorization(
+        self,
+        *,
+        tenant_id: str,
+        redirect_uri: str,
+        reconnect_connection_ref: str | None,
+    ) -> TenantConnectionAuthBeginResult:
+        _ = tenant_id, redirect_uri, reconnect_connection_ref
+        return TenantConnectionAuthBeginResult(
+            authorization_url=None,
+            code_verifier=None,
+            correlation_state=generate_correlation_state(),
+            required_user_action="present_manual_instructions",
+            manual_instructions=(
+                "Provide Slack app token (xapp-) and bot token (xoxb-) as JSON: "
+                '{"app_token":"...","bot_token":"..."}'
+            ),
+        )
+
+    def exchange_authorization_code(
+        self,
+        *,
+        tenant_id: str,
+        redirect_uri: str,
+        authorization_code: str,
+        code_verifier: str,
+        correlation_state: str,
+    ) -> TenantConnectionAuthExchangeResult:
+        _ = tenant_id, redirect_uri, authorization_code, code_verifier, correlation_state
+        raise ValueError("Slack knowledge source does not support OAuth code exchange")
+
+    def bind_manual_credentials(
+        self,
+        *,
+        tenant_id: str,
+        credential_payload: Mapping[str, JsonValue],
+    ) -> TenantConnectionAuthManualBindResult:
+        _ = tenant_id
+        app_token = credential_payload.get("app_token")
+        bot_token = credential_payload.get("bot_token")
+        if not isinstance(app_token, str) or not app_token.strip().startswith("xapp-"):
+            raise ValueError("credential_binding_invalid")
+        if not isinstance(bot_token, str) or not bot_token.strip().startswith("xoxb-"):
+            raise ValueError("credential_binding_invalid")
+        principal = _validate_bot_credentials(bot_token.strip())
+        bundle = json.dumps(
+            {"app_token": app_token.strip(), "bot_token": bot_token.strip()},
+            sort_keys=True,
+        )
+        return TenantConnectionAuthManualBindResult(
+            credential_bundle_json=bundle,
+            connected_principal_ref=principal,
+        )
+
+    def build_secret_free_config(
+        self,
+        *,
+        tenant_id: str,
+        reconnect_connection: object | None,
+    ) -> Mapping[str, JsonValue]:
+        _ = tenant_id, reconnect_connection
+        return {}
+
+    def revoke_remote_credentials(
+        self,
+        *,
+        tenant_id: str,
+        credential_bundle_json: str,
+    ) -> None:
+        _ = tenant_id, credential_bundle_json
+
+
+__all__ = ["SlackTenantConnectionAuthProvider"]

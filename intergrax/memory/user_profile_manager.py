@@ -3,12 +3,11 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import json
 from typing import Optional, Dict, Any, List, Union
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.memory.user_profile_memory import (
     UserProfile,
     UserProfileMemoryEntry,
@@ -22,6 +21,11 @@ from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 
 
 class UserProfileManager:
@@ -55,10 +59,12 @@ class UserProfileManager:
             longterm_score_threshold: float = 0.25,
             tenant_id: str = "default",
             vector_index_namespace: str | None = None,
+            workspace_id: str | None = None,
     ) -> None:
         self._store = store
         self._tenant_id = tenant_id
         self._vector_index_namespace = vector_index_namespace
+        self._workspace_id = workspace_id
         self._ltm_collection_name = resolve_memory_index_collection(
             vector_index_namespace=vector_index_namespace,
             tenant_id=tenant_id,
@@ -83,6 +89,13 @@ class UserProfileManager:
 
     async def _delete_store_profile(self, user_id: str) -> None:
         await self._store.delete_profile(tenant_id=self._tenant_id, user_id=user_id)
+
+    def _vector_scope(self) -> VectorStoreScope:
+        return VectorStoreScope(
+            tenant_id=self._tenant_id,
+            namespace=self._vector_index_namespace,
+            workspace_id=self._workspace_id,
+        )
 
 
     def is_longterm_rag_enabled(self) -> bool:
@@ -173,16 +186,40 @@ class UserProfileManager:
             }
         )
         
-        # Create a Document so VectorstoreManager handles provider specifics consistently.
         meta = self._sanitize_vectorstore_metadata(meta)
-        doc = Document(page_content=text, metadata=meta)    
+        scope = self._vector_scope()
+        doc = KnowledgeDocument.model_validate(
+            {
+                "schema_version": 1,
+                "identity": {
+                    "document_id": entry.entry_id,
+                    "root_document_id": entry.entry_id,
+                },
+                "scope": {
+                    "tenant_id": scope.tenant_id,
+                    "namespace": scope.namespace,
+                    "workspace_id": scope.workspace_id,
+                },
+                "content": text,
+                "metadata": meta,
+                "provenance": {
+                    "source_kind": "user_profile_memory",
+                    "source_id": entry.entry_id,
+                    "source_parent_id": user_id,
+                },
+            }
+        )
 
         emb = self._embedding_manager.embed_texts([text])  # np.ndarray [1, D] or list[list[float]]
-        self._vectorstore_manager.add_documents(
-            documents=[doc],
-            embeddings=emb,
-            ids=[entry.entry_id],
-            base_metadata=None,
+        self._vectorstore_manager.add_records(
+            [
+                VectorStoreRecord(
+                    document=doc,
+                    embedding=emb[0],
+                    vector_id=entry.entry_id,
+                )
+            ],
+            scope=scope,
         )
 
     def _sanitize_vectorstore_metadata(self, meta: Dict[str, Any]) -> Dict[str, Any]:
@@ -218,7 +255,7 @@ class UserProfileManager:
             return
         if not entry_id:
             return
-        self._vectorstore_manager.delete([entry_id])
+        self._vectorstore_manager.delete([entry_id], scope=self._vector_scope())
 
     
     async def search_longterm_memory(
@@ -290,8 +327,6 @@ class UserProfileManager:
         embedding = q_emb[0].tolist() if hasattr(q_emb[0], "tolist") else list(q_emb[0])
 
         # Filter strictly to this user, and exclude deleted entries.
-        from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
-
         metadata_filter = MetadataFilter(
             conditions={
                 "user_id": user_id,
@@ -302,16 +337,17 @@ class UserProfileManager:
         )
         raw_hits = self._vectorstore_manager.query(
             embedding,
+            scope=self._vector_scope(),
             top_k=k,
             metadata_filter=metadata_filter,
         )
 
         filtered: List[tuple[str, float]] = []
         for hit in raw_hits:
-            entry_id = str(hit.id or (hit.metadata or {}).get("entry_id") or "")
+            entry_id = hit.document.identity.document_id
             if not entry_id:
                 continue
-            score = float(attribute_access.optional(hit, "similarity_score", None) or attribute_access.optional(hit, "score", 0.0) or 0.0)
+            score = float(hit.similarity_score)
             if thr is None or score >= thr:
                 filtered.append((entry_id, score))
 

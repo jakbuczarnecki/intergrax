@@ -6,6 +6,7 @@
 from __future__ import annotations
 from intergrax.utils import attribute_access
 
+from dataclasses import replace
 import time
 from typing import Any, List, Optional
 
@@ -17,7 +18,9 @@ from intergrax.rag.retrieval.citation import citations_from_chunks
 from intergrax.rag.retrieval.retrieval_errors import RetrievalError
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
+from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit, retrieval_hit_to_chunk
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
+from intergrax.rag.retrievers.contracts.scoped_retrieval_capability import ScopedRetrievalCapability
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
 from intergrax.rag.routing.query_router import QueryRouter
@@ -105,14 +108,28 @@ class RetrievalService:
             prefetch_k = request.resolved_prefetch_k(self._profile.prefetch_top_k, final_k)
 
             t0 = time.perf_counter()
-            try:
-                candidates = self._retriever_manager.retrieve(
-                    query,
-                    retriever_id=retriever_id,
-                    top_k=prefetch_k,
-                    metadata_filter=request.metadata_filter,
-                    include_embeddings=False,
+            if request.scope is not None and not (
+                isinstance(self._retriever_manager, ScopedRetrievalCapability)
+                and self._retriever_manager.supports_scoped_retrieval is True
+            ):
+                trace.retrieval_error_kind = "scoped_retrieval_unsupported"
+                trace.retrieval_latency_ms = (time.perf_counter() - t0) * 1000.0
+                return RetrievalResult(
+                    chunks=[],
+                    used=False,
+                    reason="retriever_failed",
+                    trace=trace,
                 )
+            try:
+                retrieve_kwargs = {
+                    "retriever_id": retriever_id,
+                    "top_k": prefetch_k,
+                    "metadata_filter": request.metadata_filter,
+                    "include_embeddings": False,
+                }
+                if request.scope is not None:
+                    retrieve_kwargs["scope"] = request.scope
+                candidates = self._retriever_manager.retrieve(query, **retrieve_kwargs)
             except RetrievalError as exc:
                 trace.retrieval_error_kind = exc.kind.value
                 trace.attempted_retriever_ids = list(exc.attempted_retriever_ids)
@@ -130,22 +147,23 @@ class RetrievalService:
             if not candidates:
                 return RetrievalResult(chunks=[], used=False, reason="no_hits", trace=trace)
 
-            chunks = _candidates_to_chunks(candidates)
-
             use_rerank = self._profile.enable_rerank and self._reranker_manager is not None
             trace.rerank_enabled = use_rerank
             if use_rerank and self._reranker_manager is not None:
+                if not all(isinstance(candidate, RetrievalHit) for candidate in candidates):
+                    raise TypeError("reranking requires native RetrievalHit candidates")
                 reranker_id = self._profile.reranker_id
                 trace.reranker_id = reranker_id
-                rerank_candidates = [
-                    RerankerCandidate(
-                        id=c.id,
-                        text=c.content,
-                        metadata=c.metadata,
-                        original_score=c.score,
+                rerank_candidates = tuple(
+                    RerankerCandidate.from_retrieval_hit(candidate)
+                    for candidate in candidates
+                )
+                candidate_to_hit = {
+                    id(rerank_candidate): candidate
+                    for rerank_candidate, candidate in zip(
+                        rerank_candidates, candidates
                     )
-                    for c in candidates
-                ]
+                }
                 t1 = time.perf_counter()
                 reranked = self._reranker_manager.rerank(
                     query=query,
@@ -154,17 +172,18 @@ class RetrievalService:
                     reranker_id=reranker_id,
                 )
                 trace.rerank_latency_ms = (time.perf_counter() - t1) * 1000.0
-                chunks = [
-                    RetrievalChunk(
-                        id=r.candidate.id,
-                        text=r.candidate.text,
-                        score=float(r.rerank_score),
-                        metadata=dict(r.candidate.metadata or {}),
+                reranked_hits: list[RetrievalHit] = []
+                for result in reranked:
+                    source = candidate_to_hit.get(id(result.candidate))
+                    if source is None:
+                        raise ValueError("reranker returned an unknown candidate")
+                    reranked_hits.append(
+                        replace(source, score=float(result.rerank_score), rank=result.rank)
                     )
-                    for r in reranked
-                ]
+                chunks = [retrieval_hit_to_chunk(hit) for hit in reranked_hits]
                 trace.candidates_after_rerank = len(chunks)
             else:
+                chunks = _candidates_to_chunks(candidates)
                 chunks = chunks[:final_k]
                 trace.candidates_after_rerank = len(chunks)
 
@@ -254,15 +273,21 @@ def _record_retrieval_metrics(
 def _candidates_to_chunks(candidates: List[Any]) -> List[RetrievalChunk]:
     out: List[RetrievalChunk] = []
     for c in candidates:
+        if isinstance(c, RetrievalHit):
+            out.append(retrieval_hit_to_chunk(c))
+            continue
         text = (attribute_access.optional(c, "content", None) or "").strip()
         if not text:
             continue
+        metadata = dict(attribute_access.optional(c, "metadata", None) or {})
         out.append(
             RetrievalChunk(
                 id=str(attribute_access.optional(c, "id", "unknown")),
                 text=text,
                 score=float(attribute_access.optional(c, "score", 0.0) or 0.0),
-                metadata=dict(attribute_access.optional(c, "metadata", None) or {}),
+                rank=int(attribute_access.optional(c, "rank", 0) or 0),
+                user_metadata=dict(metadata),
+                metadata=metadata,
             )
         )
     return out

@@ -1,4 +1,4 @@
-Before submitting substantial work, read [COLLABORATION.md](../COLLABORATION.md) and [LICENSE](../LICENSE).
+Before submitting substantial work, read [docs/project/community/COLLABORATION.md](../docs/project/community/COLLABORATION.md) and [LICENSE](../LICENSE).
 
 ## Summary
 
@@ -21,24 +21,24 @@ Before submitting substantial work, read [COLLABORATION.md](../COLLABORATION.md)
 <!-- One source of truth per topic — list files updated in docs/ -->
 
 - [ ] No documentation changes needed
-- [ ] docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md
-- [ ] docs/intergrax_runtime_architecture.md
-- [ ] docs/guides/AGENT_CREATION_GUIDE.md
+- [ ] docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md
+- [ ] docs/project/architecture/intergrax_runtime_architecture.md
+- [ ] docs/project/technical/guides/AGENT_CREATION_GUIDE.md
 - [ ] Other: <!-- list -->
 
 ## Harness layer checklist (IDEAL-32.1)
 
 <!-- Mark affected AUDIT_MAP layers (1–32); link IDEAL-* ID when applicable -->
 
-- [ ] Layer impact assessed (see `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`)
-- [ ] Domain plan pair updated when contracts change (`docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md`)
+- [ ] Layer impact assessed (see `docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`)
+- [ ] Domain plan pair updated when contracts change (`docs/project/architecture/<DOMAIN>.md` + `docs/project/maintainers/plans/<DOMAIN>.md`)
 
 ## Architecture compliance
 
 - [ ] Respects tier dependency boundaries (`intergrax/` ↛ `agents/`/`applications/`)
 - [ ] Reuses existing Tier-0 modules (no parallel universal mechanisms)
 - [ ] Does not modify `intergrax/runtime/` for agent-specific needs (if agent PR)
-- [ ] Aligns with [INTERGRAX_DEVELOPMENT_STRATEGY.md](../docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
+- [ ] Aligns with [INTERGRAX_DEVELOPMENT_STRATEGY.md](../docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
 ## Test evidence
 
@@ -62,4 +62,4 @@ uv run pytest -m gate -q
 - [ ] No secrets committed
 - [ ] Copyright header on new files
 - [ ] Follows [CONTRIBUTING.md](../CONTRIBUTING.md) work cycle
-- [ ] Read [COLLABORATION.md](../COLLABORATION.md) and [LICENSE](../LICENSE) for substantial changes
+- [ ] Read [docs/project/community/COLLABORATION.md](../docs/project/community/COLLABORATION.md) and [LICENSE](../LICENSE) for substantial changes

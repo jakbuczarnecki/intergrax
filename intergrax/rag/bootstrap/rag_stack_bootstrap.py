@@ -48,6 +48,7 @@ class RagStack:
 def create_default_rag_stack(
     *,
     integration_profile: Optional[IntegrationProfile] = None,
+    tenant_id: Optional[str] = None,
     vectorstore_manager: Optional[BaseVectorstoreManager] = None,
     embedding_manager: Optional[BaseEmbeddingManager] = None,
     profile: Optional[RagProfile] = None,
@@ -67,7 +68,10 @@ def create_default_rag_stack(
     )
 
     if vectorstore_manager is None:
-        vectorstore_manager = create_vectorstore_manager(profile=integration_profile)
+        vectorstore_manager = create_vectorstore_manager(
+            profile=integration_profile,
+            tenant_id=tenant_id,
+        )
     if embedding_manager is None:
         embedding_manager = create_default_embedding_manager()
 
@@ -85,6 +89,7 @@ def create_default_rag_stack(
     toc_vectorstore_manager = resolve_toc_vectorstore_for_profile(
         profile,
         integration_profile=integration_profile,
+        tenant_id=tenant_id,
         chunks_store=vectorstore_manager,
     )
 

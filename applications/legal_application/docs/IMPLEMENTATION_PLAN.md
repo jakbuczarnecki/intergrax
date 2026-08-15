@@ -2,11 +2,11 @@
 
 **The implementation map** for this Tier-3 product host — phases, status, gaps, and verification.
 
-Status: **Shell Done** — domain steps live in `agents/legal/` (Band 3)
+Status: **Shell Done** — domain steps live in `agents/legal` (Band 3)
 
-Architecture: [`ARCHITECTURE.md`](docs/ARCHITECTURE.md)  
-Agent plan: [`agents/legal/docs/IMPLEMENTATION_PLAN.md`](../../agents/legal/docs/IMPLEMENTATION_PLAN.md)  
-Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-LEGAPP
+Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)
+Agent plan: [`agents/legal/docs/IMPLEMENTATION_PLAN.md`](../../../agents/legal/docs/IMPLEMENTATION_PLAN.md)
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) · Phase AA-LEGAPP
 
 ---
 

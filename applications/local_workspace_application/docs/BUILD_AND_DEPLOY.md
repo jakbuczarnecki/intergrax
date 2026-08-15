@@ -1,8 +1,8 @@
 # Build & deploy — Local Workspace
 
-Tier-3 application package: `applications/local_workspace_application/`. This document is the operational runbook for local development, verification, and container deployment.
+Tier-3 application package: `applications/local_workspace_application`. This document is the operational runbook for local development, verification, and container deployment.
 
-> Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+> Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../USAGE.md)
 
 ---
 
@@ -15,7 +15,7 @@ Tier-3 application package: `applications/local_workspace_application/`. This do
 | Docker | Local stack and image build |
 | Docker Compose | LKW backend + Qdrant + Ollama + optional observability backends |
 
-Tier-2 agents used by this host: **local_indexer, local_search, local_synthesizer** under `agents/` on `PYTHONPATH`.
+Tier-2 agents used by this host: **local_indexer, local_search, local_synthesizer** under `agents` on `PYTHONPATH`.
 
 ---
 
@@ -40,10 +40,59 @@ Minimum local stack variables are documented in `.env.example`:
 | `INTERGRAX_QDRANT_URL` | Qdrant endpoint |
 | `INTERGRAX_QDRANT_COLLECTION` | Default local RAG collection |
 | `INTERGRAX_LLM_PROVIDER` | `ollama` by default |
-| `INTERGRAX_LLM_MODEL` / `INTERGRAX_DEFAULT_OLLAMA_MODEL` | Ollama model pulled by local bootstrap scripts |
+| `INTERGRAX_LLM_MODEL` | Canonical generation model pulled by local bootstrap scripts |
 | `LOCAL_WORKSPACE_ENABLE_REDIS` | Optional; keep false until background ingest / queue work requires Redis |
 
 Agent roster and integrations: `manifest.py`, `host/environment_profile.py`, `host/tool_wiring.py`.
+
+### Production operator contract
+
+The canonical process entry point is:
+
+```text
+local_workspace_application.host.main:app
+```
+
+The host reads `LOCAL_WORKSPACE_*` settings plus the platform `INTERGRAX_*`
+settings. In production (`INTERGRAX_ENV=prod`), configure all of the following:
+
+- `LOCAL_WORKSPACE_DATA_HOME` — explicit operator-owned data root;
+- `INTERGRAX_MONGODB_URI` — durable workspace configuration, lifecycle,
+  publication, operation and recovery state;
+- `LOCAL_WORKSPACE_VECTOR_STORE=qdrant` and `INTERGRAX_QDRANT_URL` — indexed
+  content backend;
+- the production API-key settings already required by the host.
+
+`LOCAL_WORKSPACE_DOCUMENT_STORE_BACKEND=auto` selects MongoDB when
+`INTERGRAX_MONGODB_URI` is present. `inmemory` is development/test-only and
+production startup fails instead of silently downgrading. The LLM/runtime
+provider is configured through the existing `INTERGRAX_LLM_*` contract.
+
+Live Access is optional. A complete connected-source configuration enables it;
+an incomplete production mapping fails configuration validation. Without that
+configuration, Indexed functionality remains available and Live is reported as
+disabled. NL administration is also optional: omit
+`LOCAL_WORKSPACE_KNOWLEDGE_ADMIN_CONFIRMATION_SECRET` to disable it explicitly.
+When configured, keep the same secret across restarts; rotating it immediately
+invalidates tokens signed with the previous key. Secrets are never part of
+health or readiness payloads.
+
+Use `/health` as the process liveness probe,
+`/v1/local_workspace/liveness` as the LKW HTTP liveness probe, and
+`/v1/local_workspace/readiness` as the authoritative readiness/capability
+projection. Readiness reports durable-store, Indexed, Live, NL administration
+and sync-runtime status; transient provider outages do not make an optional
+capability a process outage, while a mandatory durable-store failure blocks
+startup/readiness.
+
+Stop the single LKW process using the normal service/container stop operation.
+Shutdown stops the sync worker and closes host-owned resources without marking
+unfinished durable work successful. MongoDB, Qdrant, and the
+`LOCAL_WORKSPACE_DATA_HOME` volume must survive process/container replacement;
+runtime staging and logs may be ephemeral. On restart, the host reconstructs
+state from those stores and reclaims resumable work. The supported topology is
+one worker-owning LKW process per durable store; multi-instance worker
+coordination is not claimed by this application contract.
 
 ### Model runtime profiles (conversation LLM)
 
@@ -51,8 +100,8 @@ LKW receives a provider-neutral `LLMAdapter` through application wiring. The LKW
 
 | Profile | Existing configuration | Status |
 |---------|------------------------|--------|
-| **Ollama** (default) | `INTERGRAX_LLM_PROVIDER=ollama`, `INTERGRAX_LLM_MODEL`, `INTERGRAX_DEFAULT_OLLAMA_MODEL` | **IMPLEMENTED** — default local stack |
-| **vLLM** | Commented optional block in `.env.example`: `INTERGRAX_LLM_PROVIDER=vllm`, `INTERGRAX_DEFAULT_VLLM_BASE_URL`, `INTERGRAX_DEFAULT_VLLM_MODEL` | **EXISTING CONFIG** — end-to-end LKW product proof **NEXT** (`LKW-MODEL-RUNTIME-1`) |
+| **Ollama** (default) | `INTERGRAX_LLM_PROVIDER=ollama`, `INTERGRAX_LLM_MODEL` | **IMPLEMENTED** — default local stack |
+| **vLLM** | Commented optional block in `.env.example`: `INTERGRAX_LLM_PROVIDER=vllm`, `INTERGRAX_LLM_MODEL`, `INTERGRAX_DEFAULT_VLLM_BASE_URL` | **BOUNDED PROOF** — Ollama/vLLM model runtime portability (`LKW-MODEL-RUNTIME`); see [`PROOFS.md`](../../../docs/project/proofs/PROOFS.md) |
 
 **Embedding provider is separate** from the conversation/reasoning LLM. Switching `INTERGRAX_LLM_PROVIDER` must not silently change embedding model, vector dimensions or indexed collections. Reindexing is not required merely because the chat model changes.
 
@@ -64,7 +113,7 @@ Slack and LKW product HTTP APIs remain unchanged across runtime profiles. Deploy
 
 ## 2. Recommended local Docker bootstrap
 
-From `applications/local_workspace_application/`:
+From `applications/local_workspace_application`:
 
 Windows:
 
@@ -92,7 +141,6 @@ LKW stack start
 Model resolution order:
 
 ```text
-INTERGRAX_DEFAULT_OLLAMA_MODEL
 INTERGRAX_LLM_MODEL
 llama3.1:latest fallback
 ```
@@ -126,7 +174,7 @@ Smoke check:
 curl -s http://127.0.0.1:8020/health
 ```
 
-Routes are mounted under `/v1/local_workspace`. See `serving/` and application README for contract details.
+Routes are mounted under `/v1/local_workspace`. See `serving` and application README for contract details.
 
 ---
 
@@ -173,7 +221,7 @@ Notes:
 
 Explicit `docker compose` commands from repository root are the **cross-platform reference path**. Windows `.bat` helpers below are convenience wrappers around the same stacks.
 
-For the full external reviewer walkthrough (expected outputs, Kibana inspection, proof-helper PASS criteria), see [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md).
+For the full external reviewer walkthrough (expected outputs, Kibana inspection, proof-helper PASS criteria), see [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md).
 
 From repository root:
 
@@ -201,7 +249,7 @@ Ensure `applications/local_workspace_application/.env` exists. The bootstrap scr
 
 ### Windows convenience: all Compose overlays
 
-This helper starts the base stack plus every optional top-level overlay in `applications/local_workspace_application/docker/` without listing each `-f` file:
+This helper starts the base stack plus every optional top-level overlay in `applications/local_workspace_application/docker` without listing each `-f` file:
 
 Windows:
 
@@ -236,7 +284,7 @@ docker compose -f docker-compose.yml -f docker-compose.<overlay>.yml ... up --bu
 
 ### Run with Elasticsearch/OpenSearch-compatible observability backend
 
-Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof. This is the stack used by the public platform proof — step-by-step evaluation: [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md).
+Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof. This is the stack used by the public platform proof — step-by-step evaluation: [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md).
 
 ```bash
 docker compose \
@@ -356,7 +404,7 @@ elasticsearch  → Elasticsearch/OpenSearch-compatible HTTP index API
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS` | `3` | Total delivery attempts including the first one (`1` = no retry) |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_INITIAL_BACKOFF_SECONDS` | `0.25` | Initial sleep before the second attempt |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_BACKOFF_SECONDS` | `2.0` | Maximum sleep between attempts |
-| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` | — | Optional JSONL file for safe Elasticsearch failed-delivery diagnostics; leave empty to disable. Point to a controlled runtime/app data directory (for example under `applications/local_workspace_application/.observability/`) |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` | — | Optional JSONL file for safe Elasticsearch failed-delivery diagnostics; leave empty to disable. Point to a controlled runtime/app data directory (for example under `applications/local_workspace_application/.observability`) |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_NAME` | `intergrax-lkw` | OTLP resource `service.name` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION` | — | OTLP resource `service.version` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT` | — | OTLP resource `deployment.environment` |
@@ -411,7 +459,7 @@ applications\local_workspace_application\scripts\inspect-elasticsearch-observabi
 applications\local_workspace_application\scripts\inspect-elasticsearch-observability.bat --run-id run_... --check-duplicates --check-safety
 ```
 
-Defaults: `--url http://127.0.0.1:9200`, `--index intergrax-lkw-observability`. The inspector queries `/<index>/_search` read-only; it does not create indexes or modify documents. `--check-safety` validates document keys against canonical `FORBIDDEN_EXPORT_CONTENT_FIELDS` from the runtime export boundary; it is a readback guardrail and does not replace upstream export policy.
+Defaults: `--url http:/127.0.0.1:9200`, `--index intergrax-lkw-observability`. The inspector queries `/<index>/_search` read-only; it does not create indexes or modify documents. `--check-safety` validates document keys against canonical `FORBIDDEN_EXPORT_CONTENT_FIELDS` from the runtime export boundary; it is a readback guardrail and does not replace upstream export policy.
 
 Use the proof helper for the repeatable live-proof workflow:
 
@@ -508,7 +556,7 @@ To verify no duplicate export for the same runtime event, group persisted record
 
 ## Application dependency project
 
-Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+Canonical packaging: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
 ```bash
 uv sync --project applications/local_workspace_application
@@ -519,7 +567,7 @@ The application `pyproject.toml` selects Intergrax platform extras. Docker uses 
 
 ## Application runtime graph (isolated images)
 
-Canonical packaging and image isolation: [docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
+Canonical packaging and image isolation: [docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
 ```bash
 uv sync --project applications/local_workspace_application

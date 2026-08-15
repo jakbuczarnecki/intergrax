@@ -16,6 +16,19 @@ from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
+from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
+    DeclarativePolicyHitlRequiredError,
+)
+from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
+    DeclarativeHitlCandidateStatus,
+    DeclarativeHitlGrantCandidateMismatch,
+    DeclarativeHitlScopeAssignmentState,
+    UniqueDeclarativeHitlCandidate,
+    maybe_assign_declarative_hitl_scope,
+    raise_hitl_pause_from_tool_invocation,
+    resolve_grant_scope_candidate,
+    unique_candidate_from_resolution,
+)
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
 from intergrax.runtime.nexus.tools.tool_verify_hooks import run_post_tool_verify
@@ -54,6 +67,22 @@ def _tool_call_openai_dict(tool_call: LLMToolCall) -> dict[str, object]:
     }
 
 
+def _build_planned_request(
+    *,
+    state: RuntimeState,
+    call: PlannedToolCall,
+    index: int,
+    idempotency_prefix: str,
+) -> ToolExecutionRequest[object]:
+    return ToolExecutionRequest(
+        run_id=state.run_id,
+        step_id=call.step_id or f"tool-{index}",
+        tool_id=call.tool_id,
+        input=call.input,
+        idempotency_key=f"{idempotency_prefix}:{call.tool_id}:{index}",
+    )
+
+
 def _invoke_planned_call(
     *,
     state: RuntimeState,
@@ -62,15 +91,31 @@ def _invoke_planned_call(
     index: int,
     idempotency_prefix: str,
     invoke_lock: threading.Lock | None = None,
+    assignment_state: DeclarativeHitlScopeAssignmentState | None = None,
+    unique_candidate: UniqueDeclarativeHitlCandidate | None = None,
 ) -> ToolCallTrace:
-    req = ToolExecutionRequest(
-        run_id=state.run_id,
-        step_id=call.step_id or f"tool-{index}",
-        tool_id=call.tool_id,
-        input=call.input,
-        idempotency_key=f"{idempotency_prefix}:{call.tool_id}:{index}",
+    req = _build_planned_request(
+        state=state,
+        call=call,
+        index=index,
+        idempotency_prefix=idempotency_prefix,
     )
-    result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
+    req = maybe_assign_declarative_hitl_scope(
+        req,
+        state=state,
+        assignment_state=assignment_state,
+        unique_candidate=unique_candidate,
+        request_index=index,
+    )
+    try:
+        result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
+    except DeclarativePolicyHitlRequiredError as exc:
+        raise_hitl_pause_from_tool_invocation(
+            exc,
+            state=state,
+            request=req,
+            agent_id=state.request.agent_id,
+        )
     trace = _trace_from_result(call, result)
     run_post_tool_verify(state=state, invoker=invoker, trace=trace)
     if invoke_lock is not None:
@@ -112,14 +157,49 @@ def execute_planned_tool_calls(
 ) -> list[ToolCallTrace]:
     if not calls:
         return []
-    if max_parallel_read_only <= 1:
-        return [
-            _invoke_planned_call(
+    assignment_state = (
+        DeclarativeHitlScopeAssignmentState()
+        if state.declarative_hitl_grant is not None
+        else None
+    )
+    unique_candidate = None
+    if state.declarative_hitl_grant is not None:
+        built_requests = [
+            _build_planned_request(
                 state=state,
-                invoker=invoker,
                 call=call,
                 index=index,
                 idempotency_prefix=idempotency_prefix,
+            )
+            for index, call in enumerate(calls)
+        ]
+        resolution = resolve_grant_scope_candidate(
+            built_requests,
+            grant=state.declarative_hitl_grant,
+            task_id=state.task_id,
+        )
+        if resolution.status in (
+            DeclarativeHitlCandidateStatus.NO_MATCH,
+            DeclarativeHitlCandidateStatus.AMBIGUOUS,
+        ):
+            raise DeclarativeHitlGrantCandidateMismatch(
+                status=resolution.status,
+                task_id=state.task_id,
+            )
+        unique_candidate = unique_candidate_from_resolution(resolution)
+    invoke_kwargs = {
+        "state": state,
+        "invoker": invoker,
+        "idempotency_prefix": idempotency_prefix,
+        "assignment_state": assignment_state,
+        "unique_candidate": unique_candidate,
+    }
+    if max_parallel_read_only <= 1:
+        return [
+            _invoke_planned_call(
+                call=call,
+                index=index,
+                **invoke_kwargs,
             )
             for index, call in enumerate(calls)
         ]
@@ -136,12 +216,10 @@ def execute_planned_tool_calls(
             futures = {
                 pool.submit(
                     _invoke_planned_call,
-                    state=state,
-                    invoker=invoker,
                     call=call,
                     index=index,
-                    idempotency_prefix=idempotency_prefix,
                     invoke_lock=invoke_lock,
+                    **invoke_kwargs,
                 ): index
                 for index, call in read_only
             }
@@ -150,11 +228,9 @@ def execute_planned_tool_calls(
 
     for index, call in mutating:
         results[index] = _invoke_planned_call(
-            state=state,
-            invoker=invoker,
             call=call,
             index=index,
-            idempotency_prefix=idempotency_prefix,
+            **invoke_kwargs,
         )
 
     return [results[index] for index in range(len(calls))]

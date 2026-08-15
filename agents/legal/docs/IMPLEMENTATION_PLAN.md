@@ -1,4 +1,4 @@
-# legal agent — Implementation Plan
+﻿# legal agent — Implementation Plan
 
 **The implementation map** for this Tier-2 agent — phases, status, gaps, and verification.
 
@@ -6,8 +6,8 @@ Status: **Scaffold Done** — domain UAEP steps **Band 3** (explicit reprioritiz
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Spec input: [`SPEC_FROM_LEGACY.md`](SPEC_FROM_LEGACY.md)  
-Host: [`applications/legal_application/`](../../applications/legal_application/)  
-Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-LEG
+Host: [`applications/legal_application`](../../../applications/legal_application/)
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) · Phase AA-LEG
 
 ---
 

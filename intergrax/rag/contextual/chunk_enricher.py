@@ -9,10 +9,9 @@ Uses an injected ``LLMAdapter`` when configured — never hardcodes a provider.
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence
+from typing import Optional, Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
@@ -31,32 +30,37 @@ class ContextualChunkEnricher:
 
     def enrich(
         self,
-        documents: Sequence[Document],
-        chunks: Sequence[Document],
-    ) -> List[Document]:
+        documents: Sequence[KnowledgeDocument],
+        chunks: Sequence[KnowledgeDocument],
+    ) -> list[KnowledgeDocument]:
         if self._llm is None or not chunks:
             return list(chunks)
 
         source_text = "\n\n".join(
-            (d.page_content or "").strip() for d in documents if (d.page_content or "").strip()
+            document.content.strip()
+            for document in documents
+            if document.content.strip()
         )[:12000]
         if not source_text:
             return list(chunks)
 
-        enriched: List[Document] = []
+        enriched: list[KnowledgeDocument] = []
         for chunk in chunks:
-            body = (chunk.page_content or "").strip()
-            if not body:
+            body = chunk.content
+            if not body.strip():
                 enriched.append(chunk)
                 continue
             context_line = self._situate(source_text, body)
-            if context_line:
-                combined = f"{context_line}\n\n{body}"
-            else:
-                combined = body
-            meta = dict(chunk.metadata or {})
+            if not context_line:
+                enriched.append(chunk)
+                continue
+
+            payload = chunk.model_dump(mode="json")
+            payload["content"] = f"{context_line}\n\n{body}"
+            meta = dict(payload["metadata"])
             meta["contextual_enrich"] = True
-            enriched.append(Document(page_content=combined, metadata=meta))
+            payload["metadata"] = meta
+            enriched.append(KnowledgeDocument.model_validate(payload))
         return enriched
 
     def _situate(self, document_excerpt: str, chunk_text: str) -> str:

@@ -1,0 +1,42 @@
+schema_version = "token-optimization-proof.v1"
+proof_id = "runtime-token-optimization-offline-smoke"
+run_mode = "offline_smoke"
+
+[adapter]
+adapter_id = "offline"
+provider = "vllm"
+type = "openai_compatible"
+model = "offline-model"
+base_url = "offline://local"
+timeout_seconds = 5.0
+max_output_tokens = 32
+temperature = 0.0
+
+[router]
+enabled = true
+configuration_id = "exact_only"
+minimum_confidence = 0.6
+allow_structured_output_fallback = true
+require_review_for_protected_lossy_content = true
+
+[pipeline]
+mode = "replace"
+layer_ids = ["builtin.exact_deduplication"]
+failure_policy = "continue"
+
+[output]
+directory = ".artifacts/proof"
+fail_if_exists = false
+
+[[cases]]
+case_id = "offline-smoke"
+source_type = "prompt"
+content = "Repeat token token token for offline smoke proof."
+tags = ["smoke"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true

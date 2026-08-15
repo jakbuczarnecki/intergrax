@@ -5,9 +5,14 @@
 
 from __future__ import annotations
 
+import threading
+
 from pydantic import PrivateAttr
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import (
+    IntegrationConfigurationError,
+    IntegrationDependencyError,
+)
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.providers.collaboration_suite.google_workspace.config import (
     GoogleWorkspaceCollaborationSuiteCompositionMode,
@@ -15,9 +20,43 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.confi
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
     GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS,
+    GoogleWorkspaceBinaryTransport,
     GoogleWorkspaceClientFactory,
+    GoogleWorkspaceClientFamily,
     GoogleWorkspaceCredentialResolver,
     GoogleWorkspaceSourceKind,
+    GoogleWorkspaceTransport,
+    copy_google_workspace_credential_material,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.docs import (
+    GoogleDocsDocument,
+    GoogleDocsKnowledgeReader,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.sheets import (
+    GoogleSheetsKnowledgeReader,
+    GoogleSheetsSpreadsheet,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
+    GoogleDriveChangePage,
+    GoogleDriveItem,
+    GoogleDriveItemPage,
+    GoogleDriveKnowledgeReader,
+    GoogleDriveScope,
+    GoogleDriveSharedDrivePage,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive_content import (
+    DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES,
+    GoogleDriveContentReader,
+    GoogleDriveFileContent,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.calendar import (
+    GoogleCalendarEvent,
+    GoogleCalendarEventPage,
+    GoogleCalendarKnowledgeReader,
+    GoogleCalendarSyncToken,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
+    GoogleWorkspacePageToken,
 )
 from intergrax.runtime.integrations.categories._base import (
     _CONNECT_READ_WRITE_HEALTH,
@@ -33,7 +72,42 @@ from intergrax.runtime.integrations.contracts import (
 
 GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID = "google_workspace"
 
+_DISABLED_INTEGRATION_MESSAGE = "Google Workspace integration is disabled"
+_CREDENTIAL_RESOLUTION_FAILURE_MESSAGE = "Google Workspace credential resolution failed"
+_CLIENT_FACTORY_FAILURE_MESSAGE = "Google Workspace client family could not be created"
+_INVALID_FACTORY_FAMILY_MESSAGE = (
+    "Google Workspace client factory returned an invalid client family"
+)
+_INVALID_INJECTED_FAMILY_MESSAGE = (
+    "Google Workspace injected client does not expose a valid client family"
+)
+_BINARY_TRANSPORT_REQUIRED_MESSAGE = (
+    "Google Workspace transport does not support binary content"
+)
+
 GoogleWorkspaceCollaborationSuiteClient = CollaborationSuite
+
+
+def _validate_client_family(
+    family: object,
+    *,
+    injected: bool,
+) -> GoogleWorkspaceClientFamily:
+    if not isinstance(family, GoogleWorkspaceClientFamily):
+        if injected:
+            raise IntegrationConfigurationError(_INVALID_INJECTED_FAMILY_MESSAGE)
+        raise IntegrationConfigurationError(_INVALID_FACTORY_FAMILY_MESSAGE)
+    try:
+        transport = family.transport
+    except Exception:
+        if injected:
+            raise IntegrationConfigurationError(_INVALID_INJECTED_FAMILY_MESSAGE) from None
+        raise IntegrationConfigurationError(_INVALID_FACTORY_FAMILY_MESSAGE) from None
+    if not isinstance(transport, GoogleWorkspaceTransport):
+        if injected:
+            raise IntegrationConfigurationError(_INVALID_INJECTED_FAMILY_MESSAGE)
+        raise IntegrationConfigurationError(_INVALID_FACTORY_FAMILY_MESSAGE)
+    return family
 
 
 class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegrationContract):
@@ -50,6 +124,8 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
     _credential_resolver: GoogleWorkspaceCredentialResolver | None = PrivateAttr(default=None)
     _client_factory: GoogleWorkspaceClientFactory | None = PrivateAttr(default=None)
     _client: GoogleWorkspaceCollaborationSuiteClient | None = PrivateAttr(default=None)
+    _client_family: GoogleWorkspaceClientFamily | None = PrivateAttr(default=None)
+    _client_family_lock: threading.Lock = PrivateAttr(default_factory=threading.Lock)
 
     @property
     def supported_source_kinds(self) -> tuple[GoogleWorkspaceSourceKind, ...]:
@@ -85,6 +161,189 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} requires an injected client factory when enabled=True",
             )
+
+    def require_client_family(self) -> GoogleWorkspaceClientFamily:
+        """Materialize and cache the shared client family on first successful request."""
+        if not self.config.enabled:
+            raise IntegrationConfigurationError(_DISABLED_INTEGRATION_MESSAGE)
+
+        if (
+            self.config.composition_mode
+            == GoogleWorkspaceCollaborationSuiteCompositionMode.INJECTED_CLIENT
+        ):
+            client = self._client
+            if client is None:
+                raise IntegrationConfigurationError(
+                    f"{type(self).__name__} requires an injected client when enabled=True "
+                    "in injected_client composition mode",
+                )
+            if isinstance(client, GoogleWorkspaceClientFamily):
+                return _validate_client_family(client, injected=True)
+            raise IntegrationConfigurationError(_INVALID_INJECTED_FAMILY_MESSAGE)
+
+        cached = self._client_family
+        if cached is not None:
+            return cached
+
+        with self._client_family_lock:
+            cached = self._client_family
+            if cached is not None:
+                return cached
+
+            self.validate_runtime()
+            resolver = self._credential_resolver
+            factory = self._client_factory
+            if resolver is None or factory is None:
+                raise IntegrationConfigurationError(
+                    f"{type(self).__name__} requires injected credential resolver and client "
+                    "factory when enabled=True",
+                )
+
+            try:
+                resolved_material = resolver.resolve_credential(self.config.credential_ref)
+            except Exception:
+                raise IntegrationConfigurationError(
+                    _CREDENTIAL_RESOLUTION_FAILURE_MESSAGE,
+                ) from None
+
+            credential_material = copy_google_workspace_credential_material(resolved_material)
+
+            try:
+                family = factory.create_client_family(credential_material=credential_material)
+            except Exception:
+                raise IntegrationDependencyError(_CLIENT_FACTORY_FAILURE_MESSAGE) from None
+
+            validated_family = _validate_client_family(family, injected=False)
+            self._client_family = validated_family
+            return validated_family
+
+    def _drive_reader(self) -> GoogleDriveKnowledgeReader:
+        family = self.require_client_family()
+        return GoogleDriveKnowledgeReader(transport=family.transport)
+
+    def _docs_reader(self) -> GoogleDocsKnowledgeReader:
+        family = self.require_client_family()
+        return GoogleDocsKnowledgeReader(transport=family.transport)
+
+    def _sheets_reader(self) -> GoogleSheetsKnowledgeReader:
+        family = self.require_client_family()
+        return GoogleSheetsKnowledgeReader(transport=family.transport)
+
+    def _calendar_reader(self) -> GoogleCalendarKnowledgeReader:
+        family = self.require_client_family()
+        return GoogleCalendarKnowledgeReader(transport=family.transport)
+
+    def _drive_content_reader(self) -> GoogleDriveContentReader:
+        family = self.require_client_family()
+        transport = family.transport
+        if not isinstance(transport, GoogleWorkspaceBinaryTransport):
+            raise IntegrationConfigurationError(_BINARY_TRANSPORT_REQUIRED_MESSAGE)
+        return GoogleDriveContentReader(transport=transport)
+
+    def read_docs_document(
+        self,
+        *,
+        document_id: str,
+    ) -> GoogleDocsDocument:
+        return self._docs_reader().read_document(document_id=document_id)
+
+    def read_sheets_spreadsheet(
+        self,
+        *,
+        spreadsheet_id: str,
+    ) -> GoogleSheetsSpreadsheet:
+        return self._sheets_reader().read_spreadsheet(
+            spreadsheet_id=spreadsheet_id,
+        )
+
+    def list_calendar_events_page(
+        self,
+        *,
+        calendar_id: str,
+        page_token: GoogleWorkspacePageToken | None = None,
+        sync_token: GoogleCalendarSyncToken | None = None,
+        max_results: int = 250,
+    ) -> GoogleCalendarEventPage:
+        return self._calendar_reader().list_events_page(
+            calendar_id=calendar_id,
+            page_token=page_token,
+            sync_token=sync_token,
+            max_results=max_results,
+        )
+
+    def read_calendar_event(
+        self,
+        *,
+        calendar_id: str,
+        event_id: str,
+    ) -> GoogleCalendarEvent:
+        return self._calendar_reader().read_event(
+            calendar_id=calendar_id,
+            event_id=event_id,
+        )
+
+    def read_drive_file_content(
+        self,
+        *,
+        item: GoogleDriveItem,
+        max_bytes: int = DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES,
+    ) -> GoogleDriveFileContent:
+        return self._drive_content_reader().read_drive_file_content(
+            item=item,
+            max_bytes=max_bytes,
+        )
+
+    def list_drive_shared_drives_page(
+        self,
+        *,
+        page_token: GoogleWorkspacePageToken | None = None,
+        limit: int = 100,
+    ) -> GoogleDriveSharedDrivePage:
+        return self._drive_reader().list_shared_drives_page(
+            page_token=page_token,
+            limit=limit,
+        )
+
+    def read_drive_items_page(
+        self,
+        *,
+        scope: GoogleDriveScope,
+        page_token: GoogleWorkspacePageToken | None = None,
+        limit: int = 200,
+    ) -> GoogleDriveItemPage:
+        return self._drive_reader().read_items_page(
+            scope=scope,
+            page_token=page_token,
+            limit=limit,
+        )
+
+    def read_drive_item(
+        self,
+        *,
+        scope: GoogleDriveScope,
+        file_id: str,
+    ) -> GoogleDriveItem:
+        return self._drive_reader().read_item(scope=scope, file_id=file_id)
+
+    def read_drive_start_page_token(
+        self,
+        *,
+        scope: GoogleDriveScope,
+    ) -> GoogleWorkspacePageToken:
+        return self._drive_reader().read_start_page_token(scope=scope)
+
+    def read_drive_changes_page(
+        self,
+        *,
+        scope: GoogleDriveScope,
+        page_token: GoogleWorkspacePageToken,
+        limit: int = 200,
+    ) -> GoogleDriveChangePage:
+        return self._drive_reader().read_changes_page(
+            scope=scope,
+            page_token=page_token,
+            limit=limit,
+        )
 
     def check_health(self) -> PlatformIntegrationHealth:
         if not self.config.enabled:

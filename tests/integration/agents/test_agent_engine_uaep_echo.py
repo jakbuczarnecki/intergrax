@@ -4,8 +4,13 @@ import pytest
 
 from echo.echo_agent import EchoAgent
 from intergrax.agents.agent_engine import AgentEngine
-from intergrax.agents.uaep import supports_uaep
+from intergrax.agents import supports_uaep
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
+from intergrax.llm.messages import (
+    build_model_input_messages_envelope,
+    MODEL_INPUT_MESSAGES_METADATA_KEY,
+    STRUCTURED_MODEL_INPUT_REQUIRED_REASON,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -55,3 +60,39 @@ async def test_agent_engine_runs_echo_via_uaep():
         assert record.get("task_id") == "task_echo_uaep"
         assert record.get("agent_id") == "echo"
         assert record.get("decision_type")
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.gate
+async def test_legacy_uaep_fails_closed_for_structured_model_input():
+    from intergrax.llm.messages import ChatMessage
+
+    bus = RuntimeEventBus()
+    engine = AgentEngine({"echo": EchoAgent()}, event_bus=bus)
+    envelope = build_model_input_messages_envelope(
+        [
+            ChatMessage(role="user", content="history user", entry_id="h1"),
+            ChatMessage(role="assistant", content="assistant", entry_id="h2"),
+            ChatMessage(role="tool", content="tool out", entry_id="h3", tool_call_id="c1"),
+            ChatMessage(role="user", content="final objective", entry_id="h4"),
+        ]
+    )
+    request = RuntimeRequest(
+        tenant_id="t1",
+        user_id="u1",
+        session_id="s1",
+        agent_id="echo",
+        message="compat text",
+        metadata={
+            "run_id": "run_echo_structured",
+            "task_id": "task_echo_structured",
+            MODEL_INPUT_MESSAGES_METADATA_KEY: envelope,
+        },
+    )
+
+    result = await engine.run_with_result(request)
+
+    assert result.status == AgentExecutionStatus.FAILED
+    assert result.errors == [STRUCTURED_MODEL_INPUT_REQUIRED_REASON]
+    assert not any(e.event_type == RuntimeEventType.STEP_STARTED for e in bus.history)

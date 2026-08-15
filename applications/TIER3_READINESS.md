@@ -1,6 +1,6 @@
 # Tier-3 application layer — readiness checklist
 
-**Status:** Ready to generate new deployable applications (Phase N complete). **Platform maturity:** APP-CON · APP-PROD · APP-EVOL · APP-OPS registers **Done** — see [TIER3 plan §Master backlog](../docs/plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). Enterprise marketplace UI and signed package distribution are **P4** (not required for host authoring).
+**Status:** Ready to generate new deployable applications (Phase N complete). **Platform maturity:** APP-CON · APP-PROD · APP-EVOL · APP-OPS registers **Done** — see [TIER3 plan §Master backlog](../docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). Enterprise marketplace UI and signed package distribution are **P4** (not required for host authoring).
 
 ## Generate a new application
 
@@ -15,7 +15,7 @@ python -m intergrax.scaffold new-application my_feature --profile lab --agents m
 python -m intergrax.scaffold new-application my_product --profile product --agents echo --port 8000
 ```
 
-See [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md) Step **4E**.
+See [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) Step **4E**.
 
 ## What you get
 
@@ -88,7 +88,7 @@ python -m intergrax.scaffold new-tool-bundle acme_ops --tool-id acme_ops.ping
 python -m intergrax.scaffold new-skill legal.contract_review
 ```
 
-See [guides/EXTENSION_AUTHOR_GUIDE.md](../docs/guides/EXTENSION_AUTHOR_GUIDE.md).
+See [guides/EXTENSION_AUTHOR_GUIDE.md](../docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md).
 
 ## Reference hosts
 
@@ -108,4 +108,4 @@ Full index: [`applications/README.md`](README.md) · [`agents/README.md`](../age
 
 Composition API: [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
 
-Plan tracker: [`docs/intergrax_runtime_architecture.md`](../docs/intergrax_runtime_architecture.md) — Phase N + Tier-3 readiness table.
+Plan tracker: [`docs/project/architecture/intergrax_runtime_architecture.md`](../docs/project/architecture/intergrax_runtime_architecture.md) — Phase N + Tier-3 readiness table.

@@ -15,6 +15,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
+from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
+    DeclarativePolicyHitlRequiredError,
+    DeclarativePolicyViolationError,
+)
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.tools.tool_invocation import ToolInvocationEndDiagV1, ToolInvocationErrorDiagV1, ToolInvocationStartDiagV1
 from intergrax.runtime.observability.modality_tool_trace import (
@@ -22,6 +26,10 @@ from intergrax.runtime.observability.modality_tool_trace import (
     modality_metrics_dict,
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.runtime.policy.policy_trace_diagnostics import DeclarativePolicyEvaluationDiagV1
+from intergrax.runtime.policy.declarative_enforcer import resolve_declarative_policy_enforcer
+from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
+from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
@@ -112,7 +120,54 @@ class RuntimeToolInvoker:
                     tool_id=request.tool_id,
                 )
 
-
+        declarative_enforcer = resolve_declarative_policy_enforcer(state)
+        if declarative_enforcer is not None:
+            task_id = state.task_id
+            policy_context = PolicyEvaluationContext(
+                tool_id=request.tool_id,
+                tenant_id=state.tenant_id,
+                agent_id=agent_id,
+                task_id=task_id,
+                run_id=request.run_id,
+                step_id=str(request.step_id),
+                idempotency_key=request.idempotency_key,
+                invocation_scope_id=request.declarative_hitl_invocation_scope_id,
+                approval_grant=state.declarative_hitl_grant,
+            )
+            decision = declarative_enforcer.evaluate_tool_invocation(context=policy_context)
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="declarative_policy_evaluation",
+                message="Declarative policy evaluated for tool invocation.",
+                level=TraceLevel.INFO,
+                payload=DeclarativePolicyEvaluationDiagV1(
+                    tool_id=request.tool_id,
+                    action=decision.action.value,
+                    matched_rule_ids=decision.matched_rule_ids,
+                    enforcement_mode=decision.enforcement_mode.value,
+                    enforced=decision.enforced,
+                    would_deny=decision.would_deny,
+                    reasons=decision.reasons,
+                    unknown_handler_ids=decision.unknown_handler_ids,
+                    provenance_digest=decision.provenance_digest,
+                ),
+            )
+            if decision.should_block_execution:
+                if decision.action is PolicyRuleAction.REQUIRE_HITL:
+                    raise DeclarativePolicyHitlRequiredError(
+                        run_id=state.run_id,
+                        agent_id=agent_id,
+                        tool_id=request.tool_id,
+                        matched_rule_ids=decision.matched_rule_ids,
+                        reasons=decision.reasons,
+                    )
+                raise DeclarativePolicyViolationError(
+                    run_id=state.run_id,
+                    agent_id=agent_id,
+                    tool_id=request.tool_id,
+                    matched_rule_ids=decision.matched_rule_ids,
+                    reasons=decision.reasons,
+                )
 
         # 1) registry check + contract bind
         try:

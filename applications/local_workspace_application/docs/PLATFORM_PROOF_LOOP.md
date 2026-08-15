@@ -46,7 +46,7 @@ For every LKW wave, run this checklist:
 |------|----------|-----------------|
 | 1. LKW implementation | Did the product capability change? | Implement and test the LKW behavior. |
 | 2. Defect/pattern classification | Did the task reveal a bug, workaround, repeated pattern, missing diagnostic, scaffold gap, config mismatch, Docker/build issue, dependency issue, or CI/runbook gap? | Classify it as `LKW-specific`, `Platform-reusable`, or `Platform-reusable deferred`. |
-| 3. Shared platform extraction | Is the solution generic to agent applications? | Move or expose it through `intergrax/`, `intergrax/applications/_shared/`, runtime profiles, or approved shared contracts. |
+| 3. Shared platform extraction | Is the solution generic to agent applications? | Move or expose it through `intergrax`, `intergrax/applications/_shared`, runtime profiles, or approved shared contracts. |
 | 4. Scaffold propagation | Should future agents/apps inherit it? | Update scaffold generators, templates, generated docs, env templates, Docker templates, or tests. |
 | 5. Env/settings contract | Did configuration change? | Update `.env.example`, `host/settings.py`, validation behavior, and config docs. |
 | 6. Packaging contract | Did dependencies or entrypoints change? | Update `pyproject.toml`, optional dependency groups, entrypoints, Dockerfile, `.dockerignore`, or build docs. |
@@ -77,11 +77,11 @@ Use this list before closing any LKW implementation wave:
 
 | Area | Target examples |
 |------|-----------------|
-| Shared application runtime | `intergrax/applications/_shared/` |
-| Runtime/kernel/orchestration | `intergrax/runtime/` |
-| Agent scaffold | `intergrax/scaffold/` agent templates and tests |
+| Shared application runtime | `intergrax/applications/_shared` |
+| Runtime/kernel/orchestration | `intergrax/runtime` |
+| Agent scaffold | `intergrax/scaffold` agent templates and tests |
 | Application scaffold | `intergrax/scaffold/new_application.py`, product app templates, generated docs |
-| Docker/build templates | shared Docker template writers and app `docker/` folders |
+| Docker/build templates | shared Docker template writers and app `docker` folders |
 | Env/settings | `.env.example`, `host/settings.py`, config validation docs |
 | Packaging | `pyproject.toml`, optional dependencies, build docs |
 | CI/CD | GitHub Actions, smoke tests, Docker build/run checks |
@@ -133,7 +133,7 @@ A platform proof may be **closed** when all of the following hold:
 
 - the proof workload exercises the platform path;
 - the result is observable or inspectable;
-- the reusable lesson is captured in platform docs/plans;
+- the reusable lesson is captured in platform docs/project/maintainers/planss;
 - application-specific code did not bypass platform boundaries;
 - known production gaps are explicitly recorded.
 
@@ -179,7 +179,7 @@ Claim production-grade readiness only when applicable items below are **actually
 Rules:
 
 - **`closed proof != production complete`** — a closed platform proof remains valid; production gaps do not reopen proof scope.
-- Record gaps in the owning platform plan (for example [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR for observability vendors).
+- Record gaps in the owning platform plan (for example [`docs/project/maintainers/plans/OBSERVABILITY.md`](../../../docs/project/maintainers/plans/OBSERVABILITY.md) Phase OBS-VENDOR for observability vendors).
 - Future hardening work continues without invalidating or reopening the already-valid platform proof.
 - Do not downgrade closed proof status when adding backlog items.
 
@@ -199,7 +199,7 @@ When closing any LKW-driven platform proof wave:
 | Platform proof | **Closed** | Elasticsearch/OpenSearch export through platform contract (`OBS-VENDOR-4A` … `OBS-VENDOR-5`); LKW proof workload and live readback (`OBS-VENDOR-7` live proof, [`ELASTICSEARCH_OBSERVABILITY_PROOF_2026_06_30.md`](ELASTICSEARCH_OBSERVABILITY_PROOF_2026_06_30.md)). |
 | Operational proof | **Closed** (proof environment) | Operator runbook, inspectors, and controlled local proof documented in [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md). |
 | Production-grade readiness | **Not claimed** | Auth/TLS, retention/rotation, batching policy, dashboards-as-code, CI/live automation, and full operational hardening remain open. |
-| Production hardening backlog | **Planned** | Tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR (`OBS-VENDOR-6`, `OBS-VENDOR-6C`, and related rows). |
+| Production hardening backlog | **Planned** | Tracked in [`docs/project/maintainers/plans/OBSERVABILITY.md`](../../../docs/project/maintainers/plans/OBSERVABILITY.md) Phase OBS-VENDOR (`OBS-VENDOR-6`, `OBS-VENDOR-6C`, and related rows). |
 
 **Preserved distinction:** Elasticsearch/Kibana path is **closed for platform proof**, but **not production-grade**. Full **OBS-VENDOR** production hardening remains **Planned**.
 
@@ -213,7 +213,7 @@ When closing any LKW-driven platform proof wave:
 
 **Purpose:** Define exactly what the LKW Token Optimization proof must demonstrate **before** `TOKEN-1A` code starts. Token Optimization is a **cross-layer platform capability** — not a private LKW feature. Narrative: Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems — not hand-wired demos.
 
-Canonical detail: [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0. Implementation schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout.
+Canonical detail: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0. Implementation schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout.
 
 ### 10.1 Representative LKW workflows
 
@@ -335,7 +335,7 @@ Token savings must be visible through the **Harness Observability Spine** or an 
 
 Proof must later show attribution by: `run_id`, `step_id`, `workflow_id`, `model`, `provider`, `profile`, `source/category`, `strategy`, `baseline_tokens`, `optimized_tokens`, `saved_tokens`, `saved_ratio`, `validation_status`, `fallback_status`.
 
-See [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase TOKEN-OBS.
+See [`docs/project/maintainers/plans/OBSERVABILITY.md`](../../../docs/project/maintainers/plans/OBSERVABILITY.md) Phase TOKEN-OBS.
 
 ### 10.9 Public proof format
 
@@ -399,6 +399,66 @@ Compare baseline and optimized runs: input tokens, content-reduction savings, pr
 
 **Maturity:** LKW-PF6-C closure is product proof — not automatic production-grade readiness. Distinction: proof design → platform proof → operational proof → production-grade readiness.
 
-Canonical detail: [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) §LKW proof phase map; schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6.
+Canonical detail: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6 proof phase map; schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6.
+
+---
+
+## 8. Repository-wide Intergrax proof suite (PUBLIC-PROOF-GATE-1)
+
+The canonical gateway answers: **which Intergrax capabilities can be proven on this exact commit and environment right now?**
+
+| Artifact | Role |
+|----------|------|
+| `scripts/proof/intergrax_proof_manifest.py` | Typed manifest — proof membership, profiles, commands, environment/platform requirements |
+| `scripts/proof/intergrax_proof_runner.py` | Master runner — selection, subprocess execution, aggregation, receipt |
+| `scripts/proof/run-intergrax-proof-suite.py` | Operator entrypoint |
+
+### Commands
+
+```bash
+uv run python scripts/proof/run-intergrax-proof-suite.py --profile quick
+uv run python scripts/proof/run-intergrax-proof-suite.py --profile full
+uv run python scripts/proof/run-intergrax-proof-suite.py --profile live
+```
+
+`--dry-run` resolves manifest selection without executing child proofs. `--allow-external-mutating` opts in to external mutating proofs when registered.
+
+### Profiles
+
+| Profile | Semantics |
+|---------|-----------|
+| `quick` | Fast, deterministic, local proofs — no required external-provider calls |
+| `full` | All locally executable proofs for the current machine (includes `quick`) |
+| `live` | Adds real external-provider proofs (includes `full`) |
+
+### Status interpretation
+
+| Status | Meaning |
+|--------|---------|
+| `PASS` | Child proof exited zero |
+| `FAIL` | Child proof failed or timed out |
+| `BLOCKED_ENVIRONMENT` | Required environment capability absent (not a product defect) |
+| `SKIPPED_PLATFORM` | Manifest declares a different OS requirement |
+| `SKIPPED_PROFILE` | Not selected for the requested profile or dry-run |
+
+`LIVE` profile: missing optional external-provider credentials yields `PASS_WITH_BLOCKED` overall when no proof actually failed.
+
+### Overall suite status
+
+| Status | Meaning |
+|--------|---------|
+| `DRY_RUN` | Manifest selection and dry execution plan validated; child proofs were not executed. Not equivalent to `PASS`. Exit code may be 0 because the dry-run itself succeeded. |
+
+### Receipts
+
+Machine-readable receipts are written to `.artifacts/proof/<timestamp>-<profile>-<short-sha>.json` (gitignored). Receipts include commit SHA, dirty-worktree flag, per-proof status, and safe diagnostics — never tokens, API keys, or environment values.
+
+### Tests vs proofs vs qualification
+
+- **Unit/integration tests** — regression gates in CI; not public evidence by themselves.
+- **Proof scripts** — bounded, operator-runnable evidence workloads referenced by the manifest.
+- **Real-provider qualification** — live `PASS` against Slack/Google/M365 requires credentials and explicit `live` profile execution; implementation `PASS` alone is not external qualification.
+
+Canonical manifest is the source of truth. Individual LKW reviewer guides (for example [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md)) explain how to run domain proofs; the suite orchestrates them without duplicating their implementation.
 
 ---

@@ -4,14 +4,14 @@
 
 from __future__ import annotations
 
-from typing import Dict, List
+from dataclasses import replace
 
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 
@@ -39,10 +39,10 @@ class ParentChildRetriever(BaseRetriever):
     def retrieve(
         self,
         query: RetrieverQuery,
-    ) -> List[RetrieverCandidate]:
+    ) -> tuple[RetrievalHit, ...]:
 
         if not query.query_text:
-            return []
+            return ()
 
         q_vec = (
             query.query_embedding
@@ -55,48 +55,63 @@ class ParentChildRetriever(BaseRetriever):
 
         hits = self._vs.query(
             query_embedding=q_vec,
+            **({"scope": query.scope} if query.scope is not None else {}),
             top_k=prefetch_k,
             metadata_filter=query.metadata_filter,
             include_embeddings=query.include_embeddings,
         )
 
-        parent_counts: Dict[str, int] = {}
+        native_hits = tuple(
+            RetrievalHit.from_vector_store_hit(
+                hit,
+                channel="dense",
+                retriever_name=self.name(),
+            )
+            for hit in hits
+        )
+        parent_counts: dict[tuple[str, str | None, str | None, str], int] = {}
 
-        candidates: List[RetrieverCandidate] = []
+        candidates: list[RetrievalHit] = []
 
-        for hit in hits:
+        for hit in native_hits:
 
-            parent_id = hit.metadata.get(
+            parent_id = hit.document.metadata.get(
                 ChunkMetadataKey.PARENT_CHUNK_ID
             )
 
             if parent_id is None:
-                parent_id = hit.metadata.get(
+                parent_id = hit.document.metadata.get(
                     ChunkMetadataKey.CHUNK_ID
                 )
 
             if parent_id is None:
-                parent_id = hit.id
+                parent_id = hit.vector_id
 
-            count = parent_counts.get(parent_id, 0)
+            parent_id = str(parent_id)
+            parent_key = (
+                hit.document.scope.tenant_id,
+                hit.document.scope.namespace,
+                hit.document.scope.workspace_id,
+                parent_id,
+            )
+            count = parent_counts.get(parent_key, 0)
 
             if count >= self._max_per_parent:
                 continue
 
-            parent_counts[parent_id] = count + 1
+            parent_counts[parent_key] = count + 1
 
             candidates.append(
-                RetrieverCandidate(
-                    id=hit.id,
-                    content=hit.content,
-                    metadata=hit.metadata,
-                    score=hit.similarity_score,
-                    embedding=hit.embedding,
-                    rank=hit.rank,
+                replace(
+                    hit,
+                    parent_vector_id=parent_id,
+                    child_vector_id=hit.vector_id,
+                    rank=len(candidates),
+                    retriever_name=self.name(),
                 )
             )
 
             if len(candidates) >= top_k:
                 break
 
-        return candidates
+        return tuple(candidates)

@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import math
 from collections.abc import Callable, Mapping, Sequence
@@ -28,7 +27,6 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import (
     ArtifactCreationCoordinationStatus,
     ArtifactLookupKey,
-    ArtifactValidationStatus,
     ContextOptimizationDecision,
     ContextOptimizationMode,
     ContextOptimizationPolicy,
@@ -37,7 +35,6 @@ from intergrax.runtime.context_lifecycle.contracts import (
     EphemeralArtifactPersistencePolicy,
     ModelCallExecutionScope,
     OptimizationExecutionGuard,
-    ReusableArtifactStatus,
     ReusableOptimizationArtifact,
 )
 from intergrax.runtime.context_lifecycle.repository import (
@@ -45,13 +42,17 @@ from intergrax.runtime.context_lifecycle.repository import (
     OptimizationArtifactRepository,
     StoredOptimizationArtifact,
     build_optimization_artifact_reference,
-    compute_artifact_content_hash,
 )
 from intergrax.runtime.context_lifecycle.serialization import compute_artifact_lookup_key_hash
 from intergrax.runtime.token_optimization.message_sequence_artifact import (
     MessageSequenceArtifactExecutionRequest,
     MessageSequenceArtifactExecutor,
     MessageSequenceArtifactSourceGroupProof,
+)
+from intergrax.runtime.token_optimization.durable_compaction_candidate import (
+    MessageSequenceArtifactValidationError,
+    validate_message_sequence_payload,
+    validate_stored_message_sequence_artifact,
 )
 
 logger = logging.getLogger("intergrax.nexus.ucl")
@@ -60,20 +61,6 @@ NEXUS_UCL_RUNTIME_HANDLE = "nexus_ucl_runtime"
 
 _MEDIA_TYPE = "application/vnd.intergrax.message-sequence-summary+json"
 _ENCODING = "utf-8"
-_PAYLOAD_SCHEMA_VERSION = "message_sequence_artifact.v1"
-_PAYLOAD_ARTIFACT_TYPE = "message_sequence"
-_REQUIRED_PAYLOAD_KEYS = frozenset(
-    {
-        "schema_version",
-        "artifact_type",
-        "source_refs",
-        "source_content_hash",
-        "strategy_id",
-        "strategy_version",
-        "lossiness_profile",
-        "summary",
-    }
-)
 _PERSIST_POLICIES = frozenset(
     {
         EphemeralArtifactPersistencePolicy.PERSIST_REUSABLE,
@@ -480,50 +467,58 @@ async def resolve_ucl_context_plan(
             execution_result.artifact_content_hash,
             lookup_key=lookup_key,
         )
-        artifact_id = _allocate_artifact_id(runtime.artifact_id_factory)
-
-        metadata = ReusableOptimizationArtifact(
-            artifact_id=artifact_id,
-            lookup_key=lookup_key,
-            artifact_content_hash=execution_result.artifact_content_hash,
-            created_at=execution_result.receipt.created_at,
-            created_by_executor="message_sequence_artifact_executor.v1",
-            validation=execution_result.validation,
-            receipt_ref=execution_result.receipt.receipt_id,
-            safe_metadata={
-                "parent_operation_id": execution_result.receipt.parent_operation_id,
-                "internal_operation_id": execution_result.receipt.internal_operation_id,
-                "source_ref_count": execution_result.receipt.source_ref_count,
-                "input_tokens": execution_result.receipt.input_tokens,
-                "output_tokens": execution_result.receipt.output_tokens,
-                "target_tokens": execution_result.receipt.target_tokens,
-            },
-        )
-        stored = StoredOptimizationArtifact(
-            metadata=metadata,
-            payload=execution_result.payload,
-            media_type=execution_result.media_type,
-            encoding=execution_result.encoding,
-        )
-
-        resolution = _materialize_artifact_messages(
-            prepared=prepared_materialization,
-            decision=ContextOptimizationDecision.CREATE_ARTIFACT,
-            lookup_hash=lookup_hash,
-            summary=summary,
-            artifact_content_hash=artifact_content_hash,
-            artifact_id=artifact_id,
-            count_tokens=count_tokens,
-        )
-
         persistence = optimization_policy.ephemeral_artifact_persistence
-        if persistence in _PERSIST_POLICIES:
+        should_persist = persistence in _PERSIST_POLICIES
+
+        if should_persist:
+            artifact_id = _allocate_artifact_id(runtime.artifact_id_factory)
+            metadata = ReusableOptimizationArtifact(
+                artifact_id=artifact_id,
+                lookup_key=lookup_key,
+                artifact_content_hash=execution_result.artifact_content_hash,
+                created_at=execution_result.receipt.created_at,
+                created_by_executor="message_sequence_artifact_executor.v1",
+                validation=execution_result.validation,
+                receipt_ref=execution_result.receipt.receipt_id,
+                safe_metadata={
+                    "parent_operation_id": execution_result.receipt.parent_operation_id,
+                    "internal_operation_id": execution_result.receipt.internal_operation_id,
+                    "source_ref_count": execution_result.receipt.source_ref_count,
+                    "input_tokens": execution_result.receipt.input_tokens,
+                    "output_tokens": execution_result.receipt.output_tokens,
+                    "target_tokens": execution_result.receipt.target_tokens,
+                },
+            )
+            stored = StoredOptimizationArtifact(
+                metadata=metadata,
+                payload=execution_result.payload,
+                media_type=execution_result.media_type,
+                encoding=execution_result.encoding,
+            )
+            resolution = _materialize_artifact_messages(
+                prepared=prepared_materialization,
+                decision=ContextOptimizationDecision.CREATE_ARTIFACT,
+                lookup_hash=lookup_hash,
+                summary=summary,
+                artifact_content_hash=artifact_content_hash,
+                artifact_id=artifact_id,
+                count_tokens=count_tokens,
+            )
             artifact_reference = await asyncio.to_thread(
                 repository.store_validated_artifact,
                 reservation=coordination.reservation,
                 artifact=stored,
             )
         else:
+            resolution = _materialize_artifact_messages(
+                prepared=prepared_materialization,
+                decision=ContextOptimizationDecision.CREATE_ARTIFACT,
+                lookup_hash=lookup_hash,
+                summary=summary,
+                artifact_content_hash=artifact_content_hash,
+                artifact_id=None,
+                count_tokens=count_tokens,
+            )
             released = await asyncio.to_thread(
                 repository.release_creation_reservation,
                 reservation=coordination.reservation,
@@ -642,6 +637,7 @@ def _materialize_plan_mapping(
     }
     plan_group_ids = {group.group_id for group in context_plan.source_groups}
     message_group_ids: list[str] = []
+    present_source_refs_by_group_id: dict[str, list[str]] = {}
     seen_group_order: list[str] = []
     seen_group_set: set[str] = set()
 
@@ -662,10 +658,15 @@ def _materialize_plan_mapping(
         group_id = group_id_by_source_ref.get(source_ref)
         if group_id is None or group_id not in plan_group_ids:
             raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
+        present_source_refs_by_group_id.setdefault(group_id, []).append(source_ref)
         message_group_ids.append(group_id)
         if group_id not in seen_group_set:
             seen_group_order.append(group_id)
             seen_group_set.add(group_id)
+
+    for group in context_plan.source_groups:
+        if tuple(present_source_refs_by_group_id.get(group.group_id, ())) != group.source_refs:
+            raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
 
     expected_order = [group.group_id for group in context_plan.source_groups]
     if seen_group_order != expected_order:
@@ -962,20 +963,10 @@ def _validate_stored_artifact_payload(
     *,
     lookup_key: ArtifactLookupKey,
 ) -> tuple[str, str]:
-    metadata = stored.metadata
-    if metadata.lookup_key != lookup_key:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if metadata.status is not ReusableArtifactStatus.VALIDATED:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if metadata.validation.status is not ArtifactValidationStatus.PASSED:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    return _validate_message_sequence_payload(
-        payload=stored.payload,
-        media_type=stored.media_type,
-        encoding=stored.encoding,
-        artifact_content_hash=metadata.artifact_content_hash,
-        lookup_key=lookup_key,
-    )
+    try:
+        return validate_stored_message_sequence_artifact(stored, lookup_key=lookup_key)
+    except MessageSequenceArtifactValidationError:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID) from None
 
 
 def _validate_execution_payload(
@@ -984,54 +975,15 @@ def _validate_execution_payload(
     *,
     lookup_key: ArtifactLookupKey,
 ) -> tuple[str, str]:
-    return _validate_message_sequence_payload(
-        payload=payload,
-        media_type=_MEDIA_TYPE,
-        encoding=_ENCODING,
-        artifact_content_hash=artifact_content_hash,
-        lookup_key=lookup_key,
-    )
-
-
-def _validate_message_sequence_payload(
-    *,
-    payload: bytes,
-    media_type: str,
-    encoding: str | None,
-    artifact_content_hash: str,
-    lookup_key: ArtifactLookupKey,
-) -> tuple[str, str]:
-    if media_type != _MEDIA_TYPE:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if encoding != _ENCODING:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if compute_artifact_content_hash(payload) != artifact_content_hash:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-
     try:
-        decoded = payload.decode(_ENCODING)
-        parsed = json.loads(decoded)
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID) from None
-    if not isinstance(parsed, dict) or set(parsed) != _REQUIRED_PAYLOAD_KEYS:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-
-    if parsed["schema_version"] != _PAYLOAD_SCHEMA_VERSION:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if parsed["artifact_type"] != _PAYLOAD_ARTIFACT_TYPE:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    source_refs = parsed["source_refs"]
-    if not isinstance(source_refs, list) or tuple(source_refs) != lookup_key.source_refs:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if parsed["source_content_hash"] != lookup_key.source_content_hash:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if parsed["strategy_id"] != lookup_key.strategy_id:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if parsed["strategy_version"] != lookup_key.strategy_version:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if parsed["lossiness_profile"] != lookup_key.lossiness_profile:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    summary = parsed["summary"]
-    if not isinstance(summary, str) or not summary.strip():
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    return summary.strip(), artifact_content_hash
+        return validate_message_sequence_payload(
+            payload=payload,
+            media_type=_MEDIA_TYPE,
+            encoding=_ENCODING,
+            artifact_content_hash=artifact_content_hash,
+            lookup_key=lookup_key,
+        )
+    except MessageSequenceArtifactValidationError:
+        raise NexusUCLExecutionError(
+            NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID
+        ) from None

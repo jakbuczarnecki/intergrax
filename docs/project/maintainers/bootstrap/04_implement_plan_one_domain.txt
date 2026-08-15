@@ -1,0 +1,14 @@
+SESSION: ONE_DOMAIN_ONE_CHAT — one domain per new chat recommended.
+READ_BUDGET: `@docs/project/technical/guides/audit_slices/<DOMAIN>.md`; plan hub §6 + arch read-scope + one satellite max; grep SYS-INV IDs only; max 1 full read >5k tok/session.
+OUTPUT_BUDGET: terse default (≤12 lines); full report only on operator request or milestone — AGENT_INSTRUCTIONS § Operator communication.
+Harness Architecture Audit — Mode B1 (implement open plan items, one domain).
+DOMAIN=PLATFORM_FOUNDATION
+Canonical orchestrator: docs/project/maintainers/audit/IMPLEMENT_ORCHESTRATOR.md
+Skim: grep SYS-INV IDs from audit slice — do not read full SYSTEM_INVARIANTS.md
+Progress: docs/audit_results/YYYY-MM-DD/progress.json (init: uv run python scripts/audit/init_architecture_audit_run.py --date YYYY-MM-DD --mode implement_plan --domain <DOMAIN>).
+Journal: docs/project/maintainers/implementation-journal/ when behavior changes.
+Edit DOMAIN= line above (e.g. TOOLS, MEMORY).
+Open item rule: Status ≠ Done AND Priority column = P0 or P1 in docs/project/maintainers/plans/<DOMAIN>.md. Wave headers "(P1)" do not qualify child rows — use the row Priority column only.
+Per domain: read plan hub §6 + architecture read-scope block for DOMAIN only; if no open P0/P1 → mark progress.json skipped (verdict no_open_p0_p1), checkpoint, stop; else implement one coherent open P0/P1 item; verify; update plan; journal if needed; update progress.json; checkpoint.
+Rules: no Phase K / §6.3; tier boundaries AGENTS.md; safety fuse → STOP and report; commits only on request.
+Repository artifacts: English.

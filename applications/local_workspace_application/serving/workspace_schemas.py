@@ -9,6 +9,13 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from local_workspace_application.workspaces.hybrid_ask_policy import (
+    LiveCallProposalV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    QueryPolicyModeV2,
+)
+
 
 class CreateWorkspaceRequestV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -91,6 +98,23 @@ class OperationResponseV1(BaseModel):
     started_at: datetime | None = None
     completed_at: datetime | None = None
     error: str | None = None
+    error_code: str | None = None
+
+
+class OperationListResponseV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    operations: list[OperationResponseV1]
+
+
+class KnowledgeItemOperationRequestV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    operation: str = Field(..., min_length=1)
+    expected_revision: int = Field(..., ge=0)
+    operation_id: str | None = None
+    confirmation_token: str | None = None
 
 
 class WorkspaceSearchRequestV1(BaseModel):
@@ -122,12 +146,23 @@ class WorkspaceAskRequestV1(BaseModel):
 
     question: str = Field(..., min_length=1)
     limit: int = Field(default=10, ge=1, le=100)
+    knowledge_item_ids: tuple[str, ...] | None = None
 
     @field_validator("question")
     @classmethod
     def question_must_not_be_whitespace(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("question must not be blank")
+        return value
+
+    @field_validator("knowledge_item_ids")
+    @classmethod
+    def knowledge_item_ids_must_not_be_empty(
+        cls,
+        value: tuple[str, ...] | None,
+    ) -> tuple[str, ...] | None:
+        if value is not None and not value:
+            raise ValueError("knowledge_item_ids must not be empty when provided")
         return value
 
 
@@ -171,6 +206,22 @@ class WorkspaceAskResponseV1(BaseModel):
     created_at: datetime
     completed_at: datetime | None = None
     error: WorkspaceAskErrorV1 | None = None
+
+
+class WorkspaceAskRequestV2(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(..., min_length=1)
+    mode: QueryPolicyModeV2
+    indexed_max_results: int | None = Field(default=None, ge=1, le=500)
+    ordered_live_call_proposals: tuple[LiveCallProposalV1, ...] = ()
+
+    @field_validator("question")
+    @classmethod
+    def question_must_not_be_whitespace(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("question must not be blank")
+        return value
 
 
 class ManagedFileBatchItemAcceptedV1(BaseModel):
@@ -252,3 +303,24 @@ class WebUrlAcceptedV1(BaseModel):
         "failed",
     ]
     safe_display_url: str
+
+
+class DocumentInspectLocationResponseV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    page: int | None = None
+    logical_location: str | None = None
+
+
+class DocumentInspectResponseV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    document_id: str
+    source_id: str
+    display_name: str
+    source_type: str
+    source_label: str
+    logical_location: str | None = None
+    location: DocumentInspectLocationResponseV1 | None = None
+    preview: str | None = None
+    external_url: str | None = None

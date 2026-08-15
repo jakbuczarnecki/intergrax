@@ -1,11 +1,11 @@
-# organization_worker agent — Implementation Plan
+﻿# organization_worker agent — Implementation Plan
 
 **The implementation map** for this Tier-2 agent — phases, status, gaps, and verification.
 
 Status: **Harness baseline Done** — HITL/long-running depth optional
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-ORG
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) · Phase AA-ORG
 
 ---
 
@@ -15,7 +15,7 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 |-------|--------|
 | HITL-oriented purpose, capability | **ARCHITECTURE.md** |
 | Task status | **This file** |
-| HITL authoring | `docs/guides/AGENT_CREATION_GUIDE.md` Appendix H |
+| HITL authoring | `docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix H |
 
 ---
 

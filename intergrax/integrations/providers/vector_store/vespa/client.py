@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Mapping, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.vector_store.vespa.config import VespaIntegrationConfig
@@ -69,15 +69,11 @@ class VespaRestClient:
         if response.status_code not in {200, 404}:
             response.raise_for_status()
 
-    def count_documents(self) -> int:
-        rows = self.query_yql(
-            f"select * from sources {self._config.collection} where true limit 0",
-            hits=0,
-        )
-        _ = rows
+    def count_documents(self, *, yql: str | None = None) -> int:
+        effective_yql = yql or f"select * from sources {self._config.collection} where true"
         response = self._http.post(
             "/search/",
-            json={"yql": f"select * from sources {self._config.collection} where true", "hits": 0},
+            json={"yql": effective_yql, "hits": 0},
         )
         response.raise_for_status()
         payload = response.json()

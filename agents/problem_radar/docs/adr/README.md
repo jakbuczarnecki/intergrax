@@ -1,10 +1,10 @@
 ﻿# problem_radar agent — Architecture Decision Records
 
-**Domain:** Tier-2 business agent (`agents/problem_radar/`)
+**Domain:** Tier-2 business agent (`agents/problem_radar`)
 
 Architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)  
 Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md)  
-Platform ADRs: [`../../docs/adr/README.md`](../../../../docs/adr/README.md)
+Platform ADRs: [`../project/technical/adr/README.md`](../../../../docs/project/technical/adr/README.md)
 
 ---
 
@@ -17,7 +17,7 @@ Create an ADR for agent-level decisions that affect **domain behavior, contracts
 - Prompt strategy, evaluation hooks, or risk classification changes
 - External data sources or vendor choices consumed through Harness tools
 
-**Not required:** harness platform changes (use `docs/adr/`), Tier-3 host wiring (use application ADRs),
+**Not required:** harness platform changes (use `docs/project/technical/adr`), Tier-3 host wiring (use application ADRs),
 or trivial refactors with no behavioral impact.
 
 ## Naming

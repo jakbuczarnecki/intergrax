@@ -119,7 +119,7 @@ uv run python scripts/proof/slack_conversation_channel_live_proof.py
 **Task:** MVP-3  
 **Classification:** docs-only product discovery  
 **Base commit:** `6c9e1eab634852e42d45e086faa78aca71a77016`  
-**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md)  
+**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)
 **Ask contract:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Knowledge Intake:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)
 
@@ -168,9 +168,9 @@ whether we are ready to deploy.
 
 Slack remains a **thin client**. It must not own knowledge configuration, provider credentials, vendor clients, RAG, tool selection or operation state. Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
-**Current implemented slice:** approved-user **DM-only** workflow — temporary in-memory personal workspace selection, Ask over indexed knowledge, inspect sources, managed-file and URL intake via HTTP (planner execution not yet wired for natural language). This is the current MVP, not the final LKW conversational architecture.
+**Current implemented slice:** approved-user **personal DM-only** workflow — Slack DM metadata is mapped to personal Conversation Context, current LKW state is planned through `ConversationInteractionPlanner`, and one canonical plan is executed by `ConversationInteractionExecutor` with a bounded deterministic response. Workspace selection is durable through Conversation Context; managed-file, candidate, URL and indexed Ask actions remain LKW-owned capabilities. This is the current MVP, not the final shared-conversation architecture.
 
-**Future target:** provider-neutral Conversation Context Binding with `ConversationIngressContext` observed-audience validation, durable `PERSONAL_SELECTION` workspace state and `READ_ONLY_ASK` shared capability boundary over the same LKW HTTP/capability layer. Slack channel, private-channel and group-conversation support will arrive through `LKW-CONVERSATION-CONTEXT-1` and `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, not as Slack-specific core product logic. Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md).
+**Future target:** provider-neutral shared-conversation adapters over the same LKW capability layer. Public channels, private shared channels and group DMs remain unavailable and are not passed through the personal flow; shared handling belongs to `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`. Hybrid Ask proposal planning remains unavailable. Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 **Slack observed-audience mapping (adapter examples):** IM/app DM → `PERSONAL`; public/private channel and MPIM/group DM → `SHARED`.
 
@@ -211,7 +211,7 @@ Slack Live Access Binding does not imply durable synchronization or RAG indexing
 
 Enabling the Slack chatbot does not authorize indexing or querying Slack history. Conversation transport events do not automatically become durable knowledge. The LKW Slack companion must not construct Slack SDK clients, call Slack history APIs directly or implement Slack-specific synchronization.
 
-Binding architecture: [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7 · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+Binding architecture: [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7 · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
 **Who is the first user?**  
 One approved knowledge worker who already uses Slack and needs answers from local company documents.
@@ -296,7 +296,7 @@ This posts the same Block Kit selection UI (or auto-selects if only one). Changi
 8. Restart LKW with vLLM; repeat the same product scenario.
 ```
 
-Public claims must distinguish **real provider proof**, **controlled integration proof** and **deterministic fixture proof**. See [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §7.8 and [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md).
+Public claims must distinguish **real provider proof**, **controlled integration proof** and **deterministic fixture proof**. See [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §7.8 and [`LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md).
 
 ---
 
@@ -383,7 +383,7 @@ Not:
 shared platform interaction host
 ```
 
-**Evidence-based reason:** Existing platform Slack pieces provide outbound webhook notifications and slash-command HTTP intake (`POST /v1/interactions/intake` → Task → Nexus). `conversation_channel` + `SlackConversationChannelIntegration` now define the category boundary, but Socket Mode/Web API runtime binding is still missing. Routing Ask through interaction intake would bypass the frozen Ask HTTP product boundary. Transport ownership is platform (`SlackConversationChannelIntegration`); LKW owns only the product conversation handler/workflow.
+**Evidence-based reason:** Existing platform Slack pieces provide the Socket Mode/Web API runtime and slash-command HTTP intake (`POST /v1/interactions/intake` → Task → Nexus). Routing Ask through interaction intake would bypass the frozen Ask capability boundary. Transport ownership is platform (`SlackConversationChannelIntegration`); LKW owns only the product conversation handler/workflow.
 
 ### 5.3 Lifecycle states (`FROZEN`)
 
@@ -1594,7 +1594,7 @@ confirm threaded chat.postMessage behavior in the real test workspace
 
 Governing:
 
-- `docs/plan/PRODUCT_FIRST_MVP.md`
+- `docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md`
 - `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`
 - `applications/local_workspace_application/docs/ARCHITECTURE.md`
 - `applications/local_workspace_application/docs/ASK_WORKSPACE_DISCOVERY.md`

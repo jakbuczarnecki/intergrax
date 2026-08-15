@@ -4,21 +4,17 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
-from langchain_core.documents import Document
-
-from intergrax.multimedia.video_loader import (
-    transcribe_to_vtt,
-    extract_frames_and_metadata,
-)
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 class VideoSmartLoader:
     """
-    Loads video files and converts them into a list of LangChain Documents.
+    Loads video files and converts them into a list of KnowledgeDocuments.
 
     For each subtitle (VTT) segment:
-      - page_content: transcript text
+      - content: transcript text
       - metadata: extracted frame path, mid_time_ms, video_segment_id, etc.
 
     If a .vtt transcript file is missing, it can automatically generate one
@@ -38,6 +34,9 @@ class VideoSmartLoader:
         whisper_model_size: str = "base",
         whisper_language: str | None = None,
         frame_target_height: int = 350,
+        tenant_id: str = "default",
+        namespace: str | None = None,
+        workspace_id: str | None = None,
     ):
         """
         Args:
@@ -62,6 +61,9 @@ class VideoSmartLoader:
         self.whisper_model_size = whisper_model_size
         self.whisper_language = whisper_language
         self.frame_target_height = int(frame_target_height)
+        self.tenant_id = tenant_id
+        self.namespace = namespace
+        self.workspace_id = workspace_id
 
         self.frames_dir.mkdir(parents=True, exist_ok=True)
         self.meta_dir.mkdir(parents=True, exist_ok=True)
@@ -80,6 +82,8 @@ class VideoSmartLoader:
             raise FileNotFoundError(f"Missing transcript: {vtt_path}")
 
         # Generate transcript using your component (Whisper)
+        from intergrax.multimedia.video_loader import transcribe_to_vtt
+
         vtt_path = transcribe_to_vtt(
             input_media_path=str(self._p),
             output_vtt_path=str(vtt_path),
@@ -88,15 +92,17 @@ class VideoSmartLoader:
         )
         return str(vtt_path)
 
-    def load(self) -> list[Document]:
+    def load(self) -> list[KnowledgeDocument]:
         """
         Extracts transcript and representative frames per subtitle segment.
-        Returns a list of LangChain Document objects.
+        Returns native knowledge documents.
         """
         # 1. Ensure transcript exists
         vtt_path = self._ensure_vtt()
 
         # 2. Extract frames and metadata using your helper
+        from intergrax.multimedia.video_loader import extract_frames_and_metadata
+
         metas = extract_frames_and_metadata(
             path_to_video=str(self._p),
             path_to_transcript=str(vtt_path),
@@ -104,11 +110,17 @@ class VideoSmartLoader:
             path_to_save_metadatas=str(self.meta_dir),
         )
 
-        docs: list[Document] = []
-        for m in metas:
+        source_id = str(self._p)
+        root_document_id = "video:" + hashlib.sha256(source_id.encode("utf-8")).hexdigest()
+        docs: list[KnowledgeDocument] = []
+        for index, m in enumerate(metas):
             transcript = (m.get("transcript") or "").strip()
             if not transcript:
                 continue
+            segment_id = str(m.get("video_segment_id") or f"segment-{index}")
+            document_id = "video-segment:" + hashlib.sha256(
+                f"{source_id}:{segment_id}".encode("utf-8")
+            ).hexdigest()
 
             metadata = {
                 "doc_type": "video",
@@ -124,6 +136,29 @@ class VideoSmartLoader:
                 if k in m and m[k] is not None:
                     metadata[k] = m[k]
 
-            docs.append(Document(page_content=transcript, metadata=metadata))
+            docs.append(
+                KnowledgeDocument.model_validate(
+                    {
+                        "schema_version": 1,
+                        "identity": {
+                            "document_id": document_id,
+                            "root_document_id": root_document_id,
+                            "parent_document_id": root_document_id,
+                        },
+                        "scope": {
+                            "tenant_id": self.tenant_id,
+                            "namespace": self.namespace,
+                            "workspace_id": self.workspace_id,
+                        },
+                        "content": transcript,
+                        "metadata": metadata,
+                        "provenance": {
+                            "source_kind": "video_segment",
+                            "source_id": segment_id,
+                            "source_parent_id": source_id,
+                        },
+                    }
+                )
+            )
 
         return docs

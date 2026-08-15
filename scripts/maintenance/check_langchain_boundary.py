@@ -8,7 +8,6 @@ from __future__ import annotations
 import argparse
 import ast
 import json
-import sys
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,7 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_GRANDFATHER_PATH = Path(__file__).with_name("langchain_boundary_grandfather.json")
 DEFAULT_INVENTORY_PATH = (
     REPO_ROOT
-    / "docs/features/architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md"
+    / "docs/project/capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md"
 )
 
 SCAN_ROOTS = ("intergrax", "agents", "applications")
@@ -48,6 +47,8 @@ class ImportRecord:
     kind: str
     module: str
     names: tuple[str, ...]
+    nested: bool = False
+    deferred: bool = False
 
 
 @dataclass(frozen=True)
@@ -190,51 +191,61 @@ def _extract_dunder_import_module(call: ast.Call) -> str | None:
 class _ImportVisitor(ast.NodeVisitor):
     def __init__(self) -> None:
         self.records: list[ImportRecord] = []
+        self._function_depth = 0
+        self._type_checking_depth = 0
+
+    def _record(self, kind: str, module: str, names: Iterable[str]) -> None:
+        self.records.append(
+            ImportRecord(
+                path="",
+                kind=kind,
+                module=module,
+                names=_sorted_names(names),
+                nested=self._function_depth > 0,
+                deferred=self._type_checking_depth > 0,
+            )
+        )
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             if is_langchain_module(alias.name):
-                self.records.append(
-                    ImportRecord(
-                        path="",
-                        kind="import",
-                        module=alias.name,
-                        names=(),
-                    )
-                )
+                self._record("import", alias.name, ())
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module and is_langchain_module(node.module):
-            self.records.append(
-                ImportRecord(
-                    path="",
-                    kind="from",
-                    module=node.module,
-                    names=_sorted_names(alias.name for alias in node.names),
-                )
-            )
+            self._record("from", node.module, (alias.name for alias in node.names))
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._function_depth += 1
+        self.generic_visit(node)
+        self._function_depth -= 1
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._function_depth += 1
+        self.generic_visit(node)
+        self._function_depth -= 1
+
+    def visit_If(self, node: ast.If) -> None:
+        is_type_checking_guard = (
+            isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING"
+        )
+        if is_type_checking_guard:
+            self._type_checking_depth += 1
+            for statement in node.body:
+                self.visit(statement)
+            self._type_checking_depth -= 1
+            for statement in node.orelse:
+                self.visit(statement)
+            return
+        self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
         module = _extract_importlib_module(node)
         if module and is_langchain_module(module):
-            self.records.append(
-                ImportRecord(
-                    path="",
-                    kind="importlib",
-                    module=module,
-                    names=(),
-                )
-            )
+            self._record("importlib", module, ())
         module = _extract_dunder_import_module(node)
         if module and is_langchain_module(module):
-            self.records.append(
-                ImportRecord(
-                    path="",
-                    kind="__import__",
-                    module=module,
-                    names=(),
-                )
-            )
+            self._record("__import__", module, ())
         self.generic_visit(node)
 
 
@@ -267,6 +278,8 @@ def scan_imports(repo_root: Path) -> tuple[int, list[ImportRecord], list[str]]:
                     kind=item.kind,
                     module=item.module,
                     names=item.names,
+                    nested=item.nested,
+                    deferred=item.deferred,
                 )
             )
     return scanned_files, records, parse_errors
@@ -281,6 +294,16 @@ def partition_imports(records: Sequence[ImportRecord]) -> tuple[list[ImportRecor
         else:
             guarded.append(record)
     return allowed, guarded
+
+
+def provider_eager_imports(records: Sequence[ImportRecord]) -> list[ImportRecord]:
+    return [
+        record
+        for record in records
+        if record.path.startswith("intergrax/integrations/providers/")
+        and not record.nested
+        and not record.deferred
+    ]
 
 
 def inventory_rows_for_guarded(
@@ -474,6 +497,12 @@ def audit_repository(
     problems: dict[str, list[str]] = {}
     if parse_errors:
         problems["SOURCE_PARSE_ERROR"] = parse_errors
+    eager_provider_imports = provider_eager_imports(allowed)
+    if eager_provider_imports:
+        problems["EAGER_PROVIDER_IMPORT"] = [
+            format_import_problem("EAGER_PROVIDER_IMPORT", record)
+            for record in eager_provider_imports
+        ]
 
     payload, register_problems = load_grandfather_register(grandfather_path)
     for problem in register_problems:
@@ -575,9 +604,6 @@ def print_report(result: AuditResult, *, verbose: bool) -> None:
         print("grandfathered guarded imports:")
         for record in result.guarded_imports:
             print(f"  {record.path}: {record.kind} {record.module} {list(record.names)}")
-
-    new_count = len(result.problems.get("NEW_FORBIDDEN_IMPORT", []))
-    stale_count = len(result.problems.get("STALE_GRANDFATHER_ENTRY", []))
 
     if result.problems:
         for code in sorted(result.problems):

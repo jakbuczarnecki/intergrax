@@ -1,6 +1,6 @@
 # LLM Adapters — Developer Guide
 
-**Canon:** [`docs/architecture/LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md) · **Plan:** [`docs/plan/LLM_ADAPTERS.md`](../../docs/plan/LLM_ADAPTERS.md) · **ADR:** [`docs/adr/entries/2026-06-14/ADR-LLM-002.md`](../../docs/adr/entries/2026-06-14/ADR-LLM-002.md)
+**Canon:** [`docs/project/architecture/LLM_ADAPTERS.md`](../../docs/project/architecture/LLM_ADAPTERS.md) · **Plan:** [`docs/project/maintainers/plans/LLM_ADAPTERS.md`](../../docs/project/maintainers/plans/LLM_ADAPTERS.md) · **ADR:** [`docs/project/technical/adr/entries/2026-06-14/ADR-LLM-002.md`](../../docs/project/technical/adr/entries/2026-06-14/ADR-LLM-002.md)
 
 Tier-0 module for multi-vendor LLM access. Agents and applications use **`LLMProfile`** + **`LLMAdapter`** — never vendor SDKs directly.
 
@@ -43,27 +43,27 @@ if completion.usage:
 
 ### Built-in providers (19)
 
-| Slug | Primary secret env | Default model env |
+| Slug | Primary secret env | Connection / notes |
 |------|-------------------|-------------------|
-| `openai` | `OPENAI_API_KEY` | `INTERGRAX_DEFAULT_OPENAI_MODEL` |
-| `claude` | `ANTHROPIC_API_KEY` | `INTERGRAX_DEFAULT_CLAUDE_MODEL` |
-| `gemini` | `GOOGLE_API_KEY` | `INTERGRAX_DEFAULT_GEMINI_MODEL` |
-| `mistral` | `MISTRAL_API_KEY` | `INTERGRAX_DEFAULT_MISTRAL_MODEL` |
+| `openai` | `OPENAI_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `claude` | `ANTHROPIC_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `gemini` | `GOOGLE_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `mistral` | `MISTRAL_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
 | `azure_openai` | `AZURE_OPENAI_*` | deployment-specific |
-| `aws_bedrock` | `AWS_*` | `INTERGRAX_DEFAULT_BEDROCK_MODEL_ID` |
-| `ollama` | — | `INTERGRAX_DEFAULT_OLLAMA_MODEL` |
-| `groq` | `GROQ_API_KEY` | `INTERGRAX_DEFAULT_GROQ_MODEL` |
-| `vllm` | `VLLM_API_KEY` (optional) | `INTERGRAX_DEFAULT_VLLM_MODEL` |
-| `together` | `TOGETHER_API_KEY` | `INTERGRAX_DEFAULT_TOGETHER_MODEL` |
-| `fireworks` | `FIREWORKS_API_KEY` | `INTERGRAX_DEFAULT_FIREWORKS_MODEL` |
-| `openrouter` | `OPENROUTER_API_KEY` | `INTERGRAX_DEFAULT_OPENROUTER_MODEL` |
-| `deepseek` | `DEEPSEEK_API_KEY` | `INTERGRAX_DEFAULT_DEEPSEEK_MODEL` |
-| `xai` | `XAI_API_KEY` | `INTERGRAX_DEFAULT_XAI_MODEL` |
-| `llama_cpp` | optional | `INTERGRAX_DEFAULT_LLAMA_CPP_MODEL` |
-| `cohere` | `COHERE_API_KEY` | `INTERGRAX_DEFAULT_COHERE_MODEL` |
-| `cohere_native` | `COHERE_API_KEY` | `INTERGRAX_DEFAULT_COHERE_MODEL` |
-| `vertex_gemini` | `GOOGLE_APPLICATION_CREDENTIALS` | `INTERGRAX_DEFAULT_GEMINI_MODEL` |
-| `azure_ai_inference` | `AZURE_AI_INFERENCE_API_KEY` | `INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_MODEL` |
+| `aws_bedrock` | `AWS_*` | `INTERGRAX_LLM_MODEL` + `INTERGRAX_DEFAULT_AWS_REGION` |
+| `ollama` | — | `OLLAMA_HOST` optional |
+| `groq` | `GROQ_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `vllm` | `VLLM_API_KEY` (optional) | `INTERGRAX_DEFAULT_VLLM_BASE_URL` |
+| `together` | `TOGETHER_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `fireworks` | `FIREWORKS_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `openrouter` | `OPENROUTER_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `deepseek` | `DEEPSEEK_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `xai` | `XAI_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `llama_cpp` | optional | `INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL` |
+| `cohere` | `COHERE_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `cohere_native` | `COHERE_API_KEY` | Set model via `INTERGRAX_LLM_MODEL` |
+| `vertex_gemini` | `GOOGLE_APPLICATION_CREDENTIALS` | `INTERGRAX_VERTEX_PROJECT` |
+| `azure_ai_inference` | `AZURE_AI_INFERENCE_API_KEY` | `INTERGRAX_DEFAULT_AZURE_AI_INFERENCE_BASE_URL` |
 
 Platform defaults: `INTERGRAX_LLM_PROVIDER`, `INTERGRAX_LLM_MODEL`.
 
@@ -183,7 +183,7 @@ groups:
           summary: "Many prefix-heuristic context windows — consider exact catalog entries"
 ```
 
-Cross-ref: [`OBSERVABILITY.md` §7.1.1](../../docs/architecture/OBSERVABILITY.md#711-llm-catalog-miss-slo-m-llm-x-16) for SLO guidance.
+Cross-ref: [`OBSERVABILITY_extended_depth.md` §7.1.1](../../docs/project/architecture/satellites/OBSERVABILITY_extended_depth.md#711-llm-catalog-miss-slo-m-llm-x16) for SLO guidance.
 
 ---
 
@@ -292,7 +292,7 @@ limiter = create_redis_rate_limiter(env.integration_profile.resolve_key_value_ca
 set_llm_distributed_rate_limiter(limiter)
 ```
 
-Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/plan/ELASTIC_CAPACITY_AND_SCALING.md`](../../docs/plan/ELASTIC_CAPACITY_AND_SCALING.md) (platform scaling) · [`docs/plan/TIER3_APPLICATION_ENVIRONMENT.md`](../../docs/plan/TIER3_APPLICATION_ENVIRONMENT.md) (host wiring).
+Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/project/maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md`](../../docs/project/maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md) (platform scaling) · [`docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md`](../../docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) (host wiring).
 
 **Failover profiles (LLM-MAINT-03):** set `LLMProfile.fallback_profiles` on `ApplicationEnvironmentProfile.capabilities.llm` — `resolve_llm_adapter(env)` builds `FailoverLLMAdapter` automatically when fallbacks or routing hints are present.
 
@@ -300,7 +300,7 @@ Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/p
 
 ## LLM routing rules (M-LLM-X.9 · M-LLM-X.10)
 
-**ADR:** [`ADR-LLM-003`](../../docs/adr/entries/2026-06-19/ADR-LLM-003.md) · **Canon:** [`LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md) § LLM routing rules
+**ADR:** [`ADR-LLM-003`](../../docs/project/technical/adr/entries/2026-06-19/ADR-LLM-003.md) · **Canon:** [`LLM_ADAPTERS.md`](../../docs/project/architecture/LLM_ADAPTERS.md) § LLM routing rules
 
 Tier-3 hosts configure dynamic model selection with **`LLMRoutingProfile`** on `ApplicationEnvironmentProfile`. Each rule implements **`LLMRoutingRule`** (`matches` + `resolve`).
 
@@ -459,7 +459,7 @@ env.llm_routing_profile = LLMRoutingProfile(
 - [x] Platform CI umbrella registration (**16.3** · LLM-MAINT-06)
 - [x] Run-scoped dedupe + concurrent isolation test (**16.4**)
 - [x] OBS-BUS emission coverage (**16.5**)
-- [x] SLO canon in OBSERVABILITY §7.1.1 (**16.6**)
+- [x] SLO canon in OBSERVABILITY_extended_depth §7.1.1 (**16.6**)
 
 **Current maturity label:** **L5** (strict mid-run routing on core UAEP/Nexus/ACP paths).
 
@@ -510,7 +510,8 @@ Optional live smoke (not PR gate) — **vLLM only** in GitHub `llm-network-smoke
 ```bash
 cd infra/integration && ./manage.sh start vllm
 export INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
-export INTERGRAX_DEFAULT_VLLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
+export INTERGRAX_LLM_PROVIDER=vllm
+export INTERGRAX_LLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
 uv run pytest tests/unit/llm_adapters/test_network_smoke.py::test_vllm_live_one_shot -m network -q
 ```
 
@@ -538,5 +539,5 @@ Budgeting uses `tiktoken` with `model_name_for_token_estimation` when available.
 ## Related
 
 - Tier-3 wiring: [`applications/USAGE.md`](../../applications/USAGE.md)
-- Agent authoring: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
-- Context preflight: [`docs/architecture/CONTEXT_ENGINEERING.md`](../../docs/architecture/CONTEXT_ENGINEERING.md)
+- Agent authoring: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
+- Context preflight: [`docs/project/architecture/CONTEXT_ENGINEERING.md`](../../docs/project/architecture/CONTEXT_ENGINEERING.md)

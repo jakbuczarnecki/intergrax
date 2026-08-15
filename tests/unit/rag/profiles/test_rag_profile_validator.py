@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import pytest
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
 from intergrax.rag.document_splitters.engine.chunking_engine import ChunkingEngine
 from intergrax.rag.document_splitters.registry.plugin_registry import (
@@ -25,7 +26,15 @@ class _PassthroughPluginStrategy(BaseChunkingStrategy):
         return "plugin_passthrough"
 
     def chunk(self, documents):
-        return list(documents)
+        return [
+            build_derived_chunk(
+                document,
+                content=document.content,
+                strategy_id=self.strategy_id(),
+                chunk_index=0,
+            )
+            for document in documents
+        ]
 
 
 def test_register_chunking_strategy_plugin() -> None:
@@ -35,7 +44,17 @@ def test_register_chunking_strategy_plugin() -> None:
     count = apply_chunking_strategy_plugins(registry)
     assert count >= 1
     engine = ChunkingEngine(registry)
-    out = engine.chunk([Document(page_content="hello")], "plugin_passthrough")
+    document = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": "doc-1", "root_document_id": "doc-1"},
+            "scope": {"tenant_id": "tenant-1"},
+            "content": "hello",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": "doc-1"},
+        }
+    )
+    out = engine.chunk([document], "plugin_passthrough")
     assert len(out) == 1
 
 

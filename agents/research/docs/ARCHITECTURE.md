@@ -20,13 +20,13 @@ Two-agent **research pipeline** for `research_application`: primary research + s
 
 ## Skills
 
-- Skill ids registered on each agent `contract.py` per `docs/architecture/SKILLS.md`
+- Skill ids registered on each agent `contract.py` per `docs/project/architecture/SKILLS.md`
 
 ## Tests
 
-- UAEP smoke under `agents/research/tests/`
-- Application wiring: `tests/`
+- UAEP smoke under `agents/research/tests`
+- Application wiring: `tests`
 
 ## Host
 
-- Composed only in `applications/research_application/` (manifest + `environment` profile)
+- Composed only in `applications/research_application` (manifest + `environment` profile)

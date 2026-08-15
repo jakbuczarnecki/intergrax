@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from collections.abc import Sequence
 
 from intergrax.rag.rerankers.contracts.reranker_types import (
-    Candidates,
+    RerankerCandidate,
     RerankerResult,
 )
 
@@ -29,11 +29,11 @@ class RerankerPipeline:
     def rerank(
         self,
         *,
-        query: Optional[str],
-        candidates: Candidates,
-        reranker_name: Optional[str] = None,
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        reranker_name: str | None = None,
+        limit: int | None = None,
+    ) -> Sequence[RerankerResult]:
 
         return self._engine.rerank(
             reranker_name=reranker_name,

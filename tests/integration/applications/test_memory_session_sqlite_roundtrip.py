@@ -12,7 +12,9 @@ from intergrax.applications._shared.memory_wiring import (
     build_session_manager_from_environment,
     resolve_memory_platform_wiring,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
@@ -34,7 +36,11 @@ def _sqlite_lab_env(tmp_path: Path) -> ApplicationEnvironmentProfile:
 async def test_session_sqlite_persist_and_resume_via_memory_wiring(tmp_path: Path) -> None:
     env = _sqlite_lab_env(tmp_path)
     wiring = resolve_memory_platform_wiring(env)
-    session_manager = build_session_manager_from_environment(env, memory_wiring=wiring)
+    session_manager = build_session_manager_from_environment(
+        env,
+        memory_wiring=wiring,
+        tenant_id="tenant-lab",
+    )
 
     assert isinstance(wiring.session_storage, SQLiteSessionStorage)
 
@@ -56,7 +62,11 @@ async def test_session_sqlite_persist_and_resume_via_memory_wiring(tmp_path: Pat
     )
 
     resumed_wiring = resolve_memory_platform_wiring(env)
-    resumed_manager = build_session_manager_from_environment(env, memory_wiring=resumed_wiring)
+    resumed_manager = build_session_manager_from_environment(
+        env,
+        memory_wiring=resumed_wiring,
+        tenant_id="tenant-lab",
+    )
 
     loaded_session = await resumed_manager.get_session(
         tenant_id="tenant-lab",
@@ -80,7 +90,11 @@ async def test_session_sqlite_persist_and_resume_via_memory_wiring(tmp_path: Pat
 async def test_get_or_create_session_resumes_existing_sqlite_session(tmp_path: Path) -> None:
     env = _sqlite_lab_env(tmp_path)
     wiring = resolve_memory_platform_wiring(env)
-    session_manager = build_session_manager_from_environment(env, memory_wiring=wiring)
+    session_manager = build_session_manager_from_environment(
+        env,
+        memory_wiring=wiring,
+        tenant_id="tenant-lab",
+    )
 
     created = await session_manager.get_or_create_session(
         tenant_id="tenant-lab",
@@ -97,6 +111,7 @@ async def test_get_or_create_session_resumes_existing_sqlite_session(tmp_path: P
     resumed_manager = build_session_manager_from_environment(
         env,
         memory_wiring=resolve_memory_platform_wiring(env),
+        tenant_id="tenant-lab",
     )
     resumed = await resumed_manager.get_or_create_session(
         tenant_id="tenant-lab",

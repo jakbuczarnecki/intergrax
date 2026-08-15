@@ -5,8 +5,8 @@
 Status: **Scaffold Done** — Wave **LKW.1** active (ingest + search smoke)
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Host: [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
-Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · **LKW.1**
+Host: [`applications/local_workspace_application`](../../../applications/local_workspace_application/)
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) · **LKW.1**
 
 ---
 
@@ -15,7 +15,7 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 | Topic | Where |
 |-------|--------|
 | Ingest responsibilities, tools, I/O | **ARCHITECTURE.md** |
-| Wave tasks | **This file** + platform **`docs/plan/PLATFORM_FOUNDATION.md` §6.3a LKW.*** |
+| Wave tasks | **This file** + platform **`docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` §6.3a LKW.*** |
 | LKW product architecture | `applications/local_workspace_application/docs/ARCHITECTURE.md` |
 
 ---

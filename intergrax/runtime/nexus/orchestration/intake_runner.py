@@ -12,6 +12,7 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
+from intergrax.runtime.human.declarative_hitl_grant import DeclarativeHitlGrantCoordinator
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
@@ -62,12 +63,14 @@ class NexusIntakeRunner:
 
         verdict = HumanPauseCoordinator.verdict_from_task(task)
         if verdict == HumanResponseVerdict.REJECT:
+            DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
             return IntakePhaseOutcome(
                 early_result=await self.hitl.handle_human_rejection(
                     task, trace_emitter, lifecycle
                 )
             )
         if verdict == HumanResponseVerdict.ESCALATE:
+            DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
             return IntakePhaseOutcome(
                 early_result=await self.hitl.handle_human_escalation(
                     task, trace_emitter, lifecycle
@@ -94,6 +97,9 @@ class NexusIntakeRunner:
                 task,
                 verdict=HumanResponseVerdict.APPROVE.value,
             )
+            if task.runtime.governance.declarative_hitl_pending is not None:
+                DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
+                task.sync_metadata()
             HumanPauseCoordinator.clear_pause(task)
 
         return IntakePhaseOutcome()

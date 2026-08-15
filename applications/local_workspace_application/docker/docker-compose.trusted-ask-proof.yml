@@ -1,0 +1,17 @@
+# © Artur Czarnecki. All rights reserved.
+# Trusted Ask Workspace live proof overlay — mounts proof sample_docs read-only.
+# Used only by run-lkw-ask-workspace-live-proof.py with project lkw-trusted-ask-workspace-proof.
+# Run from repository root:
+# docker compose \
+#   -p lkw-trusted-ask-workspace-proof \
+#   -f applications/local_workspace_application/docker/docker-compose.yml \
+#   -f applications/local_workspace_application/docker/docker-compose.mongodb.yml \
+#   -f applications/local_workspace_application/docker/docker-compose.trusted-ask-proof.yml \
+#   up --build
+
+services:
+  local_workspace:
+    environment:
+      INTERGRAX_ALLOWED_READ_ROOTS: /data/user_docs
+    volumes:
+      - ../sample_docs:/data/user_docs:ro

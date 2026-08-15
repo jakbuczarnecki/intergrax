@@ -31,12 +31,27 @@ def test_index_summary_schema_id_and_required_fields() -> None:
 
 
 @pytest.mark.unit
+def test_index_diagnostic_ingested_count_requires_used_true() -> None:
+    output = {
+        "ingest_summary": {
+            "accepted_paths": ["a.txt"],
+            "rejected_paths": [],
+            "ingested": [{"status": "success", "used": False, "reason": "ingest_failed"}],
+            "num_chunks": 0,
+        }
+    }
+    payload = index_diagnostic_from_output(output)
+    assert payload.accepted_count == 1
+    assert payload.ingested_count == 0
+
+
+@pytest.mark.unit
 def test_index_diagnostic_from_output_maps_ingest_summary() -> None:
     output = {
         "ingest_summary": {
             "accepted_paths": ["a.txt"],
             "rejected_paths": [{"path": "b.txt", "reason": "source_not_found"}],
-            "ingested": [{"status": "success", "num_chunks": 2}],
+            "ingested": [{"status": "success", "used": True, "num_chunks": 2}],
             "num_chunks": 2,
         }
     }
@@ -70,7 +85,7 @@ async def test_kernel_propagates_typed_diagnostic_payloads() -> None:
         "ingest_summary": {
             "accepted_paths": ["a.txt"],
             "rejected_paths": [],
-            "ingested": [{"status": "success"}],
+            "ingested": [{"status": "success", "used": True}],
             "num_chunks": 1,
         }
     }

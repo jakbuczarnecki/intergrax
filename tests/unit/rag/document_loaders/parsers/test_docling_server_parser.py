@@ -3,10 +3,9 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 import pytest
-from langchain_core.documents import Document
 
+from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.rag.document_loaders.parsers.docling_server_parser import DoclingServerParser
-from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG, DoclingMode
 
 
 pytestmark = pytest.mark.unit
@@ -39,11 +38,11 @@ def test_docling_server_parser_parses_markdown(monkeypatch, tmp_path):
 
     parser = DoclingServerParser()
 
-    docs = parser.load(str(file))
+    fragments = parser.load(str(file))
 
-    assert len(docs) == 1
-    assert isinstance(docs[0], Document)
-    assert "Server doc" in docs[0].page_content
+    assert len(fragments) == 1
+    assert isinstance(fragments[0], ParsedDocumentFragment)
+    assert "Server doc" in fragments[0].text
 
 
 def test_docling_server_parser_fallback_to_text(monkeypatch, tmp_path):
@@ -60,9 +59,9 @@ def test_docling_server_parser_fallback_to_text(monkeypatch, tmp_path):
 
     parser = DoclingServerParser()
 
-    docs = parser.load(str(file))
+    fragments = parser.load(str(file))
 
-    assert docs[0].page_content == "Plain text content"
+    assert fragments[0].text == "Plain text content"
 
 
 def test_docling_server_parser_handles_empty_payload(monkeypatch, tmp_path):
@@ -79,9 +78,9 @@ def test_docling_server_parser_handles_empty_payload(monkeypatch, tmp_path):
 
     parser = DoclingServerParser()
 
-    docs = parser.load(str(file))
+    fragments = parser.load(str(file))
 
-    assert docs[0].page_content == ""
+    assert fragments[0].text == ""
 
 
 def test_docling_server_parser_sets_metadata(monkeypatch, tmp_path):
@@ -98,9 +97,9 @@ def test_docling_server_parser_sets_metadata(monkeypatch, tmp_path):
 
     parser = DoclingServerParser()
 
-    docs = parser.load(str(file))
+    fragments = parser.load(str(file))
 
-    md = docs[0].metadata
+    md = fragments[0].metadata
 
     assert md["parser"] == "docling.server"
     assert md["position"] == 0

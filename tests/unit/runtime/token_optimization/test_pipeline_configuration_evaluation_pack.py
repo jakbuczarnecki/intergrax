@@ -295,12 +295,11 @@ def test_disabled_configuration_preserves_content_without_execution() -> None:
 # --- Test group E: measure-only behavior ---
 
 
-def test_measure_only_configuration_preserves_content_without_execution() -> None:
+def test_measure_only_configuration_executes_without_replacing_content() -> None:
     for result in _results_for_configuration("measure_only"):
         assert result.original_chars == result.final_chars
         assert result.char_delta == 0
-        assert result.applied_layer_ids == ()
-        assert result.executed_layer_ids == ()
+        assert result.executed_layer_ids
         assert result.failed_layer_ids == ()
         assert result.fallback_used is False
 

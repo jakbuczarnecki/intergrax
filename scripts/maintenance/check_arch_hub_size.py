@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ARCH = ROOT / "docs" / "architecture"
+ARCH = ROOT / "docs" / "project" / "architecture"
 
 MAX_HUB_LINES = 500
 MAX_HUB_TOKENS = 6_500

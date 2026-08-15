@@ -5,8 +5,8 @@
 from __future__ import annotations
 
 import pytest
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
@@ -18,12 +18,24 @@ pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 
 def test_retrieval_service_hybrid_path_without_answers_stack() -> None:
-    vectorstore_manager = build_in_memory_vectorstore_manager()
+    vectorstore_manager = build_in_memory_vectorstore_manager(tenant_id="default")
     embedding_manager = build_fake_embedding_manager()
 
     documents = [
-        Document(page_content="Paris is the capital of France.", metadata={}),
-        Document(page_content="Berlin is the capital of Germany.", metadata={}),
+        KnowledgeDocument.model_validate(
+            {
+                "schema_version": 1,
+                "identity": {"document_id": document_id, "root_document_id": document_id},
+                "scope": {"tenant_id": "default"},
+                "content": content,
+                "metadata": {},
+                "provenance": {"source_kind": "test", "source_id": document_id},
+            }
+        )
+        for document_id, content in (
+            ("paris", "Paris is the capital of France."),
+            ("berlin", "Berlin is the capital of Germany."),
+        )
     ]
     result = embedding_manager.embed_documents(documents)
     vectorstore_manager.add_documents(documents=result.documents, embeddings=result.embeddings)

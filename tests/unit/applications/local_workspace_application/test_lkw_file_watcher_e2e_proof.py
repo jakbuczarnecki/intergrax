@@ -212,8 +212,11 @@ def test_proof_script_trigger_guardrails() -> None:
         assert concept in text, concept
 
 
-def test_four_file_compose_command_includes_mongodb() -> None:
+def test_four_file_compose_command_includes_mongodb(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     proof = _load_proof_module()
+    monkeypatch.delenv("COMPOSE_PROJECT_NAME", raising=False)
     command = proof.build_compose_command(
         "ps",
         base_compose=Path("base.yml"),
@@ -233,6 +236,21 @@ def test_four_file_compose_command_includes_mongodb() -> None:
         "-f",
         "mongodb.yml",
         "ps",
+    ]
+    monkeypatch.setenv("COMPOSE_PROJECT_NAME", "lkw-core-platform-proof")
+    command_with_project = proof.build_compose_command(
+        "ps",
+        base_compose=Path("base.yml"),
+        kafka_compose=Path("kafka.yml"),
+        watcher_compose=Path("watcher.yml"),
+        mongodb_compose=Path("mongodb.yml"),
+    )
+    assert command_with_project[:5] == [
+        "docker",
+        "compose",
+        "-p",
+        "lkw-core-platform-proof",
+        "-f",
     ]
     assert "--mongodb-compose" in _read(_PROOF_SCRIPT)
     assert "docker-compose.mongodb.yml" in _read(_PROOF_SCRIPT)

@@ -1,6 +1,6 @@
 # poc_template_application — architecture
 
-Implementation tracker: [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ## Purpose
 
@@ -19,7 +19,7 @@ Implementation tracker: [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 
 | Piece | Location |
 |-------|----------|
-| Docker | `docker/` |
+| Docker | `docker` |
 | Deploy | `BUILD_AND_DEPLOY.md` |
 
 ## Dependencies (pyproject.toml)
@@ -36,7 +36,7 @@ uv run uvicorn poc_template_application.host.main:app --port 8092
 
 ## Application dependency project
 
-Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+Canonical packaging: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
 ```bash
 uv sync --project applications/poc_template_application

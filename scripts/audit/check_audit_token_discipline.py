@@ -8,9 +8,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-AUDIT = ROOT / "docs" / "audit"
-ARCH = ROOT / "docs" / "architecture"
-BOOTSTRAP = ROOT / "docs" / "bootstrap"
+AUDIT = ROOT / "docs" / "project" / "maintainers" / "audit"
+ARCH = ROOT / "docs" / "project" / "architecture"
+BOOTSTRAP = ROOT / "docs" / "project" / "maintainers" / "bootstrap"
 
 DOMAIN_AUDITS = {p.stem for p in ARCH.glob("*.md")}
 

@@ -126,5 +126,5 @@ def run_new_stack(args: argparse.Namespace) -> int:
         print(f"  Start:  uv run uvicorn {names.pkg}.host.main:app --host 127.0.0.1 --port {port}")
         print(f"  Docker: applications/{names.pkg}/docker/build-docker.sh")
     print(f"  Mount:  AgentBinding.mount({class_name}, ...) in {names.pkg}/manifest.py")
-    print("  Guide:  docs/guides/AGENT_CREATION_GUIDE.md — Step 4E")
+    print("  Guide:  docs/project/technical/guides/AGENT_CREATION_GUIDE.md — Step 4E")
     return 0

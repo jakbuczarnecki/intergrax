@@ -39,4 +39,4 @@ See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 - ``schemas/`` — I/O models
 - ``tests/`` — agent smoke tests
 - ``notebooks/`` — interactive experiments
-- ``docs/`` — architecture, plan, ADRs, journal
+- ``docs`` — architecture, plan, ADRs, journal

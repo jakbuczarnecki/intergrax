@@ -1,8 +1,8 @@
-# external_contractor_adapter — architecture
+﻿# external_contractor_adapter — architecture
 
 **Status:** GEC-3…GEC-6 baseline (2026-07-20) — mapping + governed continuation + side-effect policy + descriptive proof profile composition; no transport / partner SDK / receipt persistence  
 **Vertical:** Governed External Contractor (GEC)  
-**Platform reference:** [`docs/platform/governed_external_execution.md`](../../../docs/platform/governed_external_execution.md) — ownership · lifecycle · invariants  
+**Platform reference:** [`docs/project/technical/platform/governed_external_execution.md`](../../../docs/project/technical/platform/governed_external_execution.md) — ownership · lifecycle · invariants
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)  
 **Host architecture:** [`applications/governed_contractor_application/docs/ARCHITECTURE.md`](../../../applications/governed_contractor_application/docs/ARCHITECTURE.md)
@@ -47,9 +47,9 @@ Provider feature tokens (`ExternalWorkCapability`) are discovered at runtime —
 | Out | `ExternalDeliverableRef` | Workspace-safe resource URI |
 | Out | Normalized tool/evidence facts | For receipts — not partner hardcoding |
 
-Canonical modules: `intergrax.contracts.external_work`, `intergrax.contracts.money` ([ADR-EXTWORK-001](../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-001.md)).
+Canonical modules: `intergrax.contracts.external_work`, `intergrax.contracts.money` ([ADR-EXTWORK-001](../../../docs/project/technical/adr/entries/2026-07-20/ADR-EXTWORK-001.md)).
 
-Integration boundary (GEC-2 Done): `intergrax.integrations.contracts.external_work.ExternalWorkIntegration` ([ADR-EXTWORK-002](../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-002.md)).
+Integration boundary (GEC-2 Done): `intergrax.integrations.contracts.external_work.ExternalWorkIntegration` ([ADR-EXTWORK-002](../../../docs/project/technical/adr/entries/2026-07-20/ADR-EXTWORK-002.md)).
 
 ---
 
@@ -83,7 +83,7 @@ Depends only on the **provider-neutral `ExternalWorkIntegration`** Protocol (GEC
 
 ### Governed Continuation (GEC-4 consumer)
 
-External Work is the **first specialization** of platform Governed Continuation ([ADR-GOVERNED-CONTINUATION-001](../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)):
+External Work is the **first specialization** of platform Governed Continuation ([ADR-GOVERNED-CONTINUATION-001](../../../docs/project/technical/adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)):
 
 ```text
 map quote → surface continuation (QUOTE) → Nexus interrupt (existing)
@@ -97,7 +97,7 @@ Adapter APIs: `surface_continuation_blocker` / `with_continuation_surface` / `fo
 
 ### Meaningful side-effect policy (GEC-5 consumer)
 
-Platform contract: `MeaningfulSideEffectRequest` + existing `PolicyDecision` / `PolicyAction` ([ADR-POLICY-SIDE-EFFECT-001](../../../docs/adr/entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)).
+Platform contract: `MeaningfulSideEffectRequest` + existing `PolicyDecision` / `PolicyAction` ([ADR-POLICY-SIDE-EFFECT-001](../../../docs/project/technical/adr/entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)).
 
 | Concept | Rule |
 |---------|------|
@@ -125,7 +125,7 @@ Provider-bound method classification (`PROVIDER_METHOD_SIDE_EFFECT_CLASS`):
 
 **Invariant:** Every successful policy-authorized meaningful side effect produces a `GovernedProofProfile`. Proof composition is mandatory, not best-effort. Proof-required identities (principal / task / run) are validated before the provider-bound call and reused for policy, execution correlation, and proof — a successful side effect must never return without proof.
 
-After a meaningful side effect succeeds under policy ALLOW, the adapter composes `GovernedProofProfile` ([ADR-GOVERNED-PROOF-001](../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)):
+After a meaningful side effect succeeds under policy ALLOW, the adapter composes `GovernedProofProfile` ([ADR-GOVERNED-PROOF-001](../../../docs/project/technical/adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)):
 
 | Included | Rule |
 |----------|------|
@@ -176,7 +176,7 @@ Do **not** build an internal orchestration graph that duplicates Nexus.
 | Agent Card discovery, quote fetch, status sync, deliverable fetch | **This adapter** |
 | Wallet / payment approval | Tier-3 / runtime — **prohibited here** |
 | Workspace escape / external publication approval | Tier-3 / runtime — **prohibited here** |
-| Reusable contracts | `intergrax/` — **not** this package as long-term home |
+| Reusable contracts | `intergrax` — **not** this package as long-term home |
 
 ---
 
@@ -235,8 +235,8 @@ Surface correlation in adapter outputs so Tier-3 receipts and traces can join fa
 | `capabilities.py` | Capability ids |
 | `steps/domain_job.py` | Domain step entry |
 | `schemas/adapt_result.py` | Composed adapter result (platform contracts) |
-| `tests/` + `tests/fakes/` | Agent tests + deterministic fake |
-| `docs/adr/` | Agent ADRs |
+| `tests` + `tests/fakes` | Agent tests + deterministic fake |
+| `docs/project/technical/adr` | Agent ADRs |
 
 ---
 

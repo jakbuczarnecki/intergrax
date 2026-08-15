@@ -61,4 +61,7 @@ def runtime_answer_to_agent_result(
         human_request=governance.human_request if governance else None,
         execution_interrupt=governance.interrupt if governance else None,
         policy_rule_id=governance.policy_decision.policy_rule_id if governance else None,
+        declarative_hitl_pending=(
+            governance.declarative_hitl_pending if governance else None
+        ),
     )

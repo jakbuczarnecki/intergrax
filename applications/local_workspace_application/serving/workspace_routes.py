@@ -6,23 +6,48 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from fastapi import APIRouter, FastAPI, File, Header, HTTPException, Request, UploadFile, status
-
-from intergrax.fastapi_core.context import get_request_context
-from intergrax.integrations.contracts.object_storage import ObjectStorage
-from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import new_run_id
-from intergrax.tools.providers.filesystem.allowlist import read_allowlist_roots_from_env
+from fastapi import (
+    APIRouter,
+    FastAPI,
+    File,
+    Header,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
+from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
-from local_workspace_application.serving.run_metadata import attach_lkw_evidence_metadata
+from local_workspace_application.serving.knowledge_connected_source_routes import (
+    mount_connected_source_knowledge_routes,
+)
+from local_workspace_application.serving.knowledge_connection_attachment_routes import (
+    mount_knowledge_connection_attachment_routes,
+)
+from local_workspace_application.serving.knowledge_live_access_routes import (
+    mount_knowledge_live_access_routes,
+)
+from local_workspace_application.serving.knowledge_query_policy_routes import (
+    mount_knowledge_query_policy_routes,
+)
+from local_workspace_application.serving.knowledge_configuration_http import (
+    hash_knowledge_configuration_idempotency_key,
+    require_knowledge_configuration_idempotency_key,
+)
+from local_workspace_application.serving.run_metadata import (
+    attach_lkw_evidence_metadata,
+)
 from local_workspace_application.serving.source_projection import safe_source_label
 from local_workspace_application.serving.workspace_schemas import (
     CreateWorkspaceRequestV1,
+    KnowledgeItemOperationRequestV1,
     ManagedFileBatchAcceptedV1,
     ManagedFileBatchItemAcceptedV1,
+    OperationListResponseV1,
     OperationResponseV1,
     RegisterSourceRequestV1,
     SourceCandidateAcceptedV1,
@@ -38,37 +63,142 @@ from local_workspace_application.serving.workspace_schemas import (
     WorkspaceAskCitationV1,
     WorkspaceAskErrorV1,
     WorkspaceAskRequestV1,
+    WorkspaceAskRequestV2,
     WorkspaceAskResponseV1,
     WorkspaceListResponseV1,
     WorkspaceResponseV1,
     WorkspaceSearchRequestV1,
     WorkspaceSearchResponseV1,
+    DocumentInspectLocationResponseV1,
+    DocumentInspectResponseV1,
 )
 from local_workspace_application.workspaces.ask_models import WorkspaceAskRun
-from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
+from local_workspace_application.workspaces.ask_repository import (
+    WorkspaceAskRepository,
+    WorkspaceAskRepositoryError,
+)
 from local_workspace_application.workspaces.ask_service import (
     WorkspaceAskLookupError,
     WorkspaceAskNotFoundError,
     WorkspaceAskPersistenceError,
     WorkspaceAskService,
 )
-from local_workspace_application.workspaces.document_store_factory import (
-    resolve_managed_workspace_document_store,
+from local_workspace_application.workspaces.connected_source_wiring import (
+    ConnectedSourceWiring,
 )
 from local_workspace_application.workspaces.document_indexing import (
     WorkspaceDocumentIndexingService,
 )
+from local_workspace_application.workspaces.indexed_vector_verifier import (
+    ManagedWorkspaceIndexedVectorVerifier,
+)
+from local_workspace_application.workspaces.document_inspect_service import (
+    DocumentInspectError,
+    DocumentInspectService,
+)
+from local_workspace_application.workspaces.document_store_factory import (
+    resolve_managed_workspace_document_store,
+)
+from local_workspace_application.workspaces.hybrid_ask_execution import (
+    KnowledgeConnectionRegistryIntegrationResolverV1,
+    KnowledgeQueryOrchestratorV1,
+    LiveCapabilityExecutorV1,
+    WorkspaceIndexedEvidenceRetrieverV1,
+)
+from local_workspace_application.workspaces.hybrid_ask_models import WorkspaceAskRunV2
+from local_workspace_application.workspaces.hybrid_ask_policy import (
+    AudienceContextV1,
+    HybridAskPolicyError,
+    KnowledgeQueryAudienceV1,
+)
+from local_workspace_application.workspaces.hybrid_ask_service import (
+    BindingResourceScopeValidator,
+    SafeCapabilityRequestEnvelopeValidator,
+    UnavailableTenantLiveCapabilityCatalog,
+    WorkspaceAskCommandV2,
+    WorkspaceAskServiceV2,
+    WorkspaceAskV2Error,
+    WorkspaceAskV2LookupError,
+    WorkspaceAskV2PersistenceError,
+)
 from local_workspace_application.workspaces.ingestion_recovery import (
     KnowledgeIngestionRecoveryService,
+)
+from local_workspace_application.workspaces.knowledge_administration_service import (
+    DeterministicKnowledgeAdministrationIntentInterpreter,
+    HmacKnowledgeAdministrationConfirmationCodec,
+    KnowledgeAdministrationConfirmationError,
+    KnowledgeAdministrationConfirmationV1,
+    KnowledgeAdministrationService,
+    Sha256KnowledgeAdministrationIdempotencyKeyFactory,
+)
+from local_workspace_application.workspaces.destructive_action_confirmation import (
+    HmacDestructiveActionConfirmationCodec,
+)
+from local_workspace_application.workspaces.knowledge_configuration_handlers import (
+    AttachConnectionMutationHandler,
+    CreateIndexedSourceMutationHandler,
+    DisableIndexedSourceMutationHandler,
+)
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    WorkspaceKnowledgeMutationOperationV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
+    WorkspaceKnowledgeConfigurationMutationEngine,
+)
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
+    WorkspaceKnowledgeConfigurationServiceError,
+)
+from local_workspace_application.workspaces.knowledge_connection_attachment_service import (
+    WorkspaceConnectionAttachmentService,
+)
+from local_workspace_application.workspaces.knowledge_connection_detachment_handler import (
+    DetachConnectionMutationHandler,
+)
+from local_workspace_application.workspaces.knowledge_connection_detachment_service import (
+    WorkspaceConnectionDetachmentService,
 )
 from local_workspace_application.workspaces.knowledge_ingestion import (
     KnowledgeIngestionProcessorRouter,
     KnowledgeIngestionService,
 )
+from local_workspace_application.workspaces.knowledge_ask_scope_models import KnowledgeAskScopeV1
+from local_workspace_application.workspaces.knowledge_inspection_operations_service import (
+    KnowledgeInspectionService,
+    KnowledgeInventoryError,
+    KnowledgeInventoryV1,
+    KnowledgeOperationCommandV1,
+    KnowledgeOperationError,
+    KnowledgeOperationResultV1,
+    KnowledgeOperationsService,
+    KnowledgeOperationV1,
+)
+from local_workspace_application.workspaces.workspace_setup_snapshot_service import (
+    WorkspaceSetupSnapshotService,
+    WorkspaceSetupSnapshotV1,
+)
 from local_workspace_application.workspaces.knowledge_intake import (
     KnowledgeInputSourceResolverRouter,
     KnowledgeIntakeDispatchError,
     KnowledgeIntakeService,
+)
+from local_workspace_application.workspaces.knowledge_live_access_handlers import (
+    CreateLiveAccessBindingMutationHandler,
+    DetachLiveAccessBindingMutationHandler,
+    DisableLiveAccessBindingMutationHandler,
+)
+from local_workspace_application.workspaces.knowledge_live_access_service import (
+    LiveAccessLifecycleService,
+    LiveAccessRemoteResourceLookupPort,
+    WorkspaceLiveAccessBindingService,
+    WorkspaceLiveAccessRuntimeAuthority,
+)
+from local_workspace_application.workspaces.knowledge_query_policy_handlers import (
+    UpdateQueryPolicyMutationHandler,
+)
+from local_workspace_application.workspaces.knowledge_query_policy_service import (
+    WorkspaceQueryPolicyService,
 )
 from local_workspace_application.workspaces.local_folder_indexing import (
     LocalFolderIndexingService,
@@ -96,6 +226,15 @@ from local_workspace_application.workspaces.models import (
     WorkspaceOperationStatus,
     WorkspaceSource,
 )
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.search_evidence import (
+    SearchEvidenceIncompleteError,
+    map_search_hits,
+)
+from local_workspace_application.workspaces.service import (
+    ConcurrentSyncError,
+    ManagedWorkspaceService,
+)
 from local_workspace_application.workspaces.source_candidates import (
     SourceCandidateAlreadyRegistered,
     SourceCandidateIdempotencyConflict,
@@ -106,20 +245,19 @@ from local_workspace_application.workspaces.source_candidates import (
     SourceCandidateSourceResolver,
     SourceCandidateUnavailable,
 )
-from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.search_evidence import (
-    SearchEvidenceIncompleteError,
-    map_search_hits,
+from local_workspace_application.workspaces.sync_enqueue import (
+    enqueue_managed_workspace_sync,
 )
-from local_workspace_application.workspaces.service import (
-    ConcurrentSyncError,
-    ManagedWorkspaceService,
-)
-from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_workspace_sync
 from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyncJob
 from local_workspace_application.workspaces.sync_runtime import (
     ManagedWorkspaceSyncRuntime,
     build_managed_workspace_sync_runtime,
+)
+from local_workspace_application.workspaces.sync_service import (
+    ManagedWorkspaceSyncService,
+)
+from local_workspace_application.workspaces.vector_cleanup import (
+    VectorstoreManagerWorkspaceCleanup,
 )
 from local_workspace_application.workspaces.web_url_ingestion import (
     WebUrlAlreadyRegistered,
@@ -132,36 +270,22 @@ from local_workspace_application.workspaces.web_url_ingestion import (
     WebUrlValidationError,
     http_status_for_web_url_error,
 )
-from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
-from local_workspace_application.workspaces.knowledge_configuration_handlers import (
-    AttachConnectionMutationHandler,
-    CreateIndexedSourceMutationHandler,
+
+from intergrax.fastapi_core.context import get_request_context
+from intergrax.integrations.contracts.object_storage import ObjectStorage
+from intergrax.runtime.task.task import Task, TaskContext, TaskResult
+from intergrax.runtime.task.task_run_bridge import new_run_id
+from intergrax.runtime.vendor_knowledge.live.bootstrap import (
+    build_vendor_knowledge_live_registration_registry,
 )
-from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
-    WorkspaceKnowledgeConfigurationMutationEngine,
+from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
+    TenantConnectionPort,
+    TenantLiveCapabilityCatalogPort,
 )
-from local_workspace_application.workspaces.knowledge_configuration_models import (
-    WorkspaceKnowledgeMutationOperationV1,
+from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+    TenantConnectionIntegrationFactory,
 )
-from local_workspace_application.workspaces.knowledge_configuration_service import (
-    WorkspaceKnowledgeConfigurationService,
-)
-from local_workspace_application.workspaces.connected_source_wiring import (
-    ConnectedSourceWiring,
-)
-from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import TenantConnectionPort
-from local_workspace_application.workspaces.knowledge_connection_attachment_service import (
-    WorkspaceConnectionAttachmentService,
-)
-from local_workspace_application.serving.knowledge_connected_source_routes import (
-    mount_connected_source_knowledge_routes,
-)
-from local_workspace_application.serving.knowledge_connection_attachment_routes import (
-    mount_knowledge_connection_attachment_routes,
-)
-from local_workspace_application.workspaces.vector_cleanup import (
-    VectorstoreManagerWorkspaceCleanup,
-)
+from intergrax.tools.providers.filesystem.allowlist import read_allowlist_roots_from_env
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +344,65 @@ def _operation_response(operation: WorkspaceOperation) -> OperationResponseV1:
         started_at=operation.started_at,
         completed_at=operation.completed_at,
         error=operation.error,
+        error_code=operation.error_code,
     )
+
+
+def _knowledge_inventory_http_exception(exc: KnowledgeInventoryError) -> HTTPException:
+    code = exc.error_code
+    if code == "knowledge_item_not_found":
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=code)
+    if code == "knowledge_operation_conflict":
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=code)
+    if code in {
+        "knowledge_inventory_unavailable",
+        "indexed_source_unavailable",
+        "live_access_unavailable",
+    }:
+        return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=code)
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=code)
+
+
+def _knowledge_operation_http_exception(exc: KnowledgeOperationError) -> HTTPException:
+    code = exc.error_code
+    if code == "knowledge_item_not_found":
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=code)
+    if code in {
+        "knowledge_operation_conflict",
+        "knowledge_operation_invalid_state",
+    }:
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=code)
+    if code in {
+        "knowledge_operation_not_supported",
+        "knowledge_operation_retry_target_required",
+    }:
+        return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=code)
+    if code in {
+        "indexed_source_unavailable",
+        "live_access_unavailable",
+        "knowledge_operation_unavailable",
+    }:
+        return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=code)
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=code)
+
+
+def _knowledge_confirmation_codec(
+    settings: LocalWorkspaceBackendSettings,
+) -> HmacKnowledgeAdministrationConfirmationCodec | None:
+    secret = settings.knowledge_admin_confirmation_secret.strip()
+    if not secret:
+        return None
+    return HmacKnowledgeAdministrationConfirmationCodec(secret=secret.encode("utf-8"))
+
+
+def _parse_knowledge_operation(value: str) -> KnowledgeOperationV1:
+    try:
+        return KnowledgeOperationV1(value)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="knowledge_operation_not_supported",
+        ) from exc
 
 
 def resolve_tenant_id(
@@ -328,26 +510,51 @@ def mount_managed_workspace_routes(
     ask_service: WorkspaceAskService | None = None,
     llm_adapter: Any | None = None,
     vectorstore_manager: Any | None = None,
+    tenant_vectorstore_cache: dict[str, Any] | None = None,
+    integration_profile: Any | None = None,
     object_storage: ObjectStorage | None = None,
     web_url_access_policy: Any | None = None,
     web_content_capture: Any | None = None,
     indexing_service: WorkspaceDocumentIndexingService | None = None,
     connected_source_wiring: ConnectedSourceWiring | None = None,
+    legacy_local_integration: Any | None = None,
+    # Compatibility alias for callers from the pre-neutral composition boundary.
     shared_slack_integration: Any | None = None,
+    tenant_connection_secrets_store: Any | None = None,
+    tenant_connection_factory_registry: TenantConnectionIntegrationFactory | None = None,
+    msgraph_mailbox_user_id: str | None = None,
+    msgraph_teams_channel_team_id: str | None = None,
     tenant_connection_port: TenantConnectionPort | None = None,
+    tenant_live_capability_catalog: TenantLiveCapabilityCatalogPort | None = None,
+    live_access_remote_resource_lookup_port: LiveAccessRemoteResourceLookupPort | None = None,
+    ask_service_v2: WorkspaceAskServiceV2 | None = None,
+    host_lifecycle: LocalWorkspaceHostLifecycle | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
 
     from intergrax.runtime.wiring.llm_resolver import resolve_llm_adapter
-    from intergrax.websearch.capture import SecureHttpWebContentCapture, WebUrlAccessPolicy
+    from intergrax.websearch.capture import (
+        SecureHttpWebContentCapture,
+        WebUrlAccessPolicy,
+    )
 
     configured = settings.allowed_read_roots or read_allowlist_roots_from_env()
     allowlist = frozenset(
         set(configured) | {settings.managed_upload_staging_dir, settings.web_url_staging_dir}
     )
     shadow_roots = (Path(settings.shadow_workspaces_dir),)
+    owns_repository = repository is None
     if repository is None:
-        repository = ManagedWorkspaceRepository(resolve_managed_workspace_document_store())
+        store = (
+            resolve_managed_workspace_document_store()
+            if settings.document_store_backend == "auto"
+            else resolve_managed_workspace_document_store(
+                backend=settings.document_store_backend,
+            )
+        )
+        repository = ManagedWorkspaceRepository(
+            store
+        )
     ask_repository = WorkspaceAskRepository(repository.document_store)
     vector_cleanup = None
     if vectorstore_manager is not None:
@@ -368,6 +575,15 @@ def mount_managed_workspace_routes(
     indexing_service = indexing_service or WorkspaceDocumentIndexingService(
         repository,
         task_executor,
+        indexed_vector_verifier=(
+            ManagedWorkspaceIndexedVectorVerifier(
+                vectorstore_manager,
+                tenant_vectorstore_cache=tenant_vectorstore_cache,
+                integration_profile=integration_profile,
+            )
+            if vectorstore_manager is not None
+            else None
+        ),
     )
     folder_indexing = LocalFolderIndexingService(
         indexing_service,
@@ -382,14 +598,44 @@ def mount_managed_workspace_routes(
             WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: (
                 CreateIndexedSourceMutationHandler()
             ),
+            WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: (
+                DisableIndexedSourceMutationHandler()
+            ),
             WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION: (
                 AttachConnectionMutationHandler()
             ),
+            WorkspaceKnowledgeMutationOperationV1.DETACH_CONNECTION: (
+                DetachConnectionMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.CREATE_LIVE_ACCESS_BINDING: (
+                CreateLiveAccessBindingMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.DISABLE_LIVE_ACCESS_BINDING: (
+                DisableLiveAccessBindingMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.DETACH_LIVE_ACCESS_BINDING: (
+                DetachLiveAccessBindingMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY: (
+                UpdateQueryPolicyMutationHandler()
+            ),
         },
+    )
+    query_policy_service = WorkspaceQueryPolicyService(
+        repository=repository,
+        configuration_service=configuration_service,
+        mutation_engine=mutation_engine,
+    )
+    mount_knowledge_query_policy_routes(
+        app,
+        query_policy_service=query_policy_service,
+        configuration_service=configuration_service,
+        prefix=prefix,
     )
     connected_wiring = connected_source_wiring
     from local_workspace_application.workspaces.connected_source_host_wiring import (
         build_connected_source_host_bundle,
+        resolve_connected_source_host_mapping,
     )
 
     host_bundle = build_connected_source_host_bundle(
@@ -399,15 +645,107 @@ def mount_managed_workspace_routes(
         configuration_service=configuration_service,
         mutation_engine=mutation_engine,
         indexing_service=indexing_service,
-        slack_integration=shared_slack_integration,
+        legacy_local_integration=legacy_local_integration or shared_slack_integration,
         sync_runtime=sync_runtime,
+        tenant_connection_secrets_store=tenant_connection_secrets_store,
+        tenant_connection_factory_registry=tenant_connection_factory_registry,
+        msgraph_mailbox_user_id=msgraph_mailbox_user_id,
+        msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
     )
     app.state.lkw_connected_source_readiness = host_bundle.readiness
+    app.state.lkw_legacy_local_integration = host_bundle.legacy_local_integration
     if connected_wiring is None:
         connected_wiring = host_bundle.wiring
+    runtime_connection_registry = (
+        connected_wiring.connection_registry
+        if connected_wiring is not None
+        else host_bundle.hybrid_ask_connection_registry
+    )
+    app.state.lkw_tenant_connection_port = host_bundle.tenant_connection_port
+    app.state.lkw_tenant_live_capability_catalog = (
+        host_bundle.tenant_live_capability_catalog
+    )
+    app.state.lkw_tenant_source_catalog = host_bundle.tenant_source_catalog
+    connection_port_for_routes = (
+        tenant_connection_port or host_bundle.tenant_connection_port
+    )
+    if tenant_connection_secrets_store is not None:
+        from intergrax.runtime.vendor_knowledge.provider_composition import (
+            build_default_vendor_knowledge_connection_factory_registry,
+        )
+        from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
+            DocumentStoreTenantConnectionRepository,
+        )
+        from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+            TenantConnectionRehydrator,
+        )
+        from local_workspace_application.serving.tenant_connection_routes import (
+            mount_tenant_connection_routes,
+        )
+        from local_workspace_application.workspaces.tenant_connection_auth_composition import (
+            build_tenant_connection_auth_provider_registry,
+        )
+        from local_workspace_application.workspaces.tenant_connection_authorization_transaction import (
+            TenantConnectionAuthorizationTransactionRepository,
+        )
+        from local_workspace_application.workspaces.tenant_connection_product_orchestration import (
+            TenantConnectionProductOrchestrationConfig,
+            TenantConnectionProductOrchestrationFactory,
+        )
+
+        connection_repository = DocumentStoreTenantConnectionRepository(
+            repository.document_store,
+        )
+        transaction_repository = TenantConnectionAuthorizationTransactionRepository(
+            repository.document_store,
+        )
+        auth_registry = build_tenant_connection_auth_provider_registry(settings)
+        factory_registry = (
+            tenant_connection_factory_registry
+            or build_default_vendor_knowledge_connection_factory_registry()
+        )
+        rehydrator = host_bundle.tenant_connection_rehydrator
+        if rehydrator is None:
+            rehydrator = TenantConnectionRehydrator(
+                repository=connection_repository,
+                secrets_store=tenant_connection_secrets_store,
+                integration_factory=factory_registry,
+                connection_registry=runtime_connection_registry,
+            )
+        orchestration_factory = TenantConnectionProductOrchestrationFactory(
+            connection_repository=connection_repository,
+            transaction_repository=transaction_repository,
+            secrets_store=tenant_connection_secrets_store,
+            auth_provider_registry=auth_registry,
+            rehydrator=rehydrator,
+            connection_registry=runtime_connection_registry,
+            config=TenantConnectionProductOrchestrationConfig(
+                redirect_allowlist=frozenset(settings.connection_auth_redirect_allowlist),
+                transaction_ttl_seconds=settings.connection_auth_transaction_ttl_seconds,
+                completion_claim_ttl_seconds=settings.connection_auth_completion_claim_ttl_seconds,
+            ),
+        )
+        app.state.lkw_tenant_connection_orchestration_factory = orchestration_factory
+        mount_tenant_connection_routes(
+            app,
+            orchestration_factory=orchestration_factory,
+            prefix=prefix,
+        )
+    ask_capability_catalog = (
+        tenant_live_capability_catalog or host_bundle.tenant_live_capability_catalog
+    )
+    hybrid_ask_connection_registry = runtime_connection_registry
     recovery_tenant_ids: tuple[str, ...] = ()
-    if connected_wiring is not None and settings.slack_tenant_id.strip():
-        recovery_tenant_ids = (settings.slack_tenant_id.strip(),)
+    if connected_wiring is not None:
+        legacy_tenant_id, _ = resolve_connected_source_host_mapping(settings)
+        recovery_tenant_ids = tuple(
+            dict.fromkeys(
+                (
+                    *settings.tenant_connection_bootstrap_tenant_ids,
+                    *((legacy_tenant_id,) if legacy_tenant_id else ()),
+                )
+            )
+        )
     sync_service = ManagedWorkspaceSyncService(
         repository,
         task_executor,
@@ -447,17 +785,116 @@ def mount_managed_workspace_routes(
             prefix=prefix,
         )
 
-    if tenant_connection_port is not None:
+    connection_attachment_service: WorkspaceConnectionAttachmentService | None = None
+    if connection_port_for_routes is not None:
         connection_attachment_service = WorkspaceConnectionAttachmentService(
-            connection_port=tenant_connection_port,
+            connection_port=connection_port_for_routes,
             configuration_service=configuration_service,
             mutation_engine=mutation_engine,
         )
+        detachment_service: WorkspaceConnectionDetachmentService | None = None
+        if connected_wiring is not None:
+            detachment_service = WorkspaceConnectionDetachmentService(
+                configuration_service=configuration_service,
+                mutation_engine=mutation_engine,
+                tenant_binding_port=connected_wiring.tenant_binding_port,
+                repository=repository,
+            )
         app.state.lkw_connection_attachment_service = connection_attachment_service
         mount_knowledge_connection_attachment_routes(
             app,
             attachment_service=connection_attachment_service,
+            detachment_service=detachment_service,
             prefix=prefix,
+        )
+
+    live_access_deps = (
+        tenant_connection_port,
+        tenant_live_capability_catalog,
+        live_access_remote_resource_lookup_port,
+    )
+    live_access_lifecycle_service: LiveAccessLifecycleService | None = None
+    live_runtime_authority: WorkspaceLiveAccessRuntimeAuthority | None = None
+    if any(dep is not None for dep in live_access_deps):
+        if not all(dep is not None for dep in live_access_deps):
+            raise RuntimeError("live_access_wiring_incomplete")
+        assert tenant_connection_port is not None
+        assert tenant_live_capability_catalog is not None
+        assert live_access_remote_resource_lookup_port is not None
+        assert connection_attachment_service is not None
+        live_access_service = WorkspaceLiveAccessBindingService(
+            repository=repository,
+            configuration_service=configuration_service,
+            mutation_engine=mutation_engine,
+            tenant_connection_port=tenant_connection_port,
+            capability_catalog=tenant_live_capability_catalog,
+            remote_resource_lookup_port=live_access_remote_resource_lookup_port,
+        )
+        live_access_lifecycle_service = LiveAccessLifecycleService(
+            configuration_service=configuration_service,
+            live_access_binding_service=live_access_service,
+            connection_attachment_service=connection_attachment_service,
+            tenant_connection_port=tenant_connection_port,
+            capability_catalog=tenant_live_capability_catalog,
+        )
+        app.state.lkw_live_access_lifecycle_service = live_access_lifecycle_service
+        live_runtime_authority = WorkspaceLiveAccessRuntimeAuthority(
+            configuration_service=configuration_service,
+            tenant_connection_port=tenant_connection_port,
+            capability_catalog=tenant_live_capability_catalog,
+        )
+        mount_knowledge_live_access_routes(
+            app,
+            live_access_service=live_access_service,
+            repository=repository,
+            prefix=prefix,
+        )
+
+    indexed_source_lifecycle_service = (
+        connected_wiring.indexed_source_lifecycle_service
+        if connected_wiring is not None
+        else (
+            host_bundle.wiring.indexed_source_lifecycle_service
+            if host_bundle.wiring is not None
+            else None
+        )
+    )
+    knowledge_inspection_service = KnowledgeInspectionService(
+        configuration_service=configuration_service,
+        indexed_source_lifecycle_service=indexed_source_lifecycle_service,
+        live_access_lifecycle_service=live_access_lifecycle_service,
+    )
+    knowledge_operations_service = KnowledgeOperationsService(
+        inspection_service=knowledge_inspection_service,
+        indexed_source_lifecycle_service=indexed_source_lifecycle_service,
+        live_access_lifecycle_service=(
+            live_access_lifecycle_service
+            if live_access_lifecycle_service is not None
+            else None
+        ),
+    )
+    setup_snapshot_service = WorkspaceSetupSnapshotService(
+        workspace_service=service,
+        inspection_service=knowledge_inspection_service,
+        readiness_provider=host_bundle.readiness,
+    )
+    document_inspect_service = DocumentInspectService(repository=repository)
+    knowledge_administration_service: KnowledgeAdministrationService | None = None
+    confirmation_secret = settings.knowledge_admin_confirmation_secret.strip()
+    destructive_confirmation_codec: HmacDestructiveActionConfirmationCodec | None = None
+    if confirmation_secret:
+        destructive_confirmation_codec = HmacDestructiveActionConfirmationCodec(
+            secret=confirmation_secret.encode("utf-8")
+        )
+    if confirmation_secret:
+        knowledge_administration_service = KnowledgeAdministrationService(
+            inspection_service=knowledge_inspection_service,
+            operations_service=knowledge_operations_service,
+            interpreter=DeterministicKnowledgeAdministrationIntentInterpreter(),
+            idempotency_key_factory=Sha256KnowledgeAdministrationIdempotencyKeyFactory(),
+            confirmation_port=HmacKnowledgeAdministrationConfirmationCodec(
+                secret=confirmation_secret.encode("utf-8")
+            ),
         )
 
     source_candidate_registry = SourceCandidateRegistry.load(settings.source_candidates_file)
@@ -539,11 +976,45 @@ def mount_managed_workspace_routes(
             import asyncio
 
             sync_runtime.bind_main_loop(asyncio.get_running_loop())
-            sync_runtime.start()
+            try:
+                sync_runtime.start()
+            except Exception as exc:
+                try:
+                    sync_runtime.stop()
+                except Exception:
+                    pass
+                if owns_repository:
+                    try:
+                        repository.document_store.close()
+                    except Exception:
+                        pass
+                if host_lifecycle is not None:
+                    host_lifecycle.update_component(
+                        "sync_runtime",
+                        healthy=False,
+                        detail="startup_failed",
+                    )
+                raise RuntimeError("lkw_sync_runtime_start_failed") from exc
+            if host_lifecycle is not None:
+                host_lifecycle.update_component(
+                    "sync_runtime",
+                    healthy=True,
+                    detail="running",
+                )
 
         @app.on_event("shutdown")
         async def _stop_managed_workspace_sync_runtime() -> None:
-            sync_runtime.stop()
+            try:
+                sync_runtime.stop()
+            finally:
+                if host_lifecycle is not None:
+                    host_lifecycle.update_component(
+                        "sync_runtime",
+                        healthy=False,
+                        detail="stopped",
+                    )
+                if owns_repository:
+                    repository.document_store.close()
 
     if ask_service is None:
         ask_service = WorkspaceAskService(
@@ -553,12 +1024,56 @@ def mount_managed_workspace_routes(
             task_executor=task_executor,
             llm_adapter=llm_adapter,
             llm_adapter_factory=(None if llm_adapter is not None else (lambda: resolve_llm_adapter(None))),
+            knowledge_inspection_service=knowledge_inspection_service,
+        )
+
+    if ask_service_v2 is None:
+        live_registration_registry = build_vendor_knowledge_live_registration_registry()
+        published_live_registration = live_registration_registry.publish()
+        ask_service_v2 = WorkspaceAskServiceV2(
+            workspace_service=service,
+            workspace_repository=repository,
+            ask_repository=ask_repository,
+            configuration_service=configuration_service,
+            capability_catalog=(
+                ask_capability_catalog
+                or UnavailableTenantLiveCapabilityCatalog()
+            ),
+            request_envelope_validator=SafeCapabilityRequestEnvelopeValidator(
+                schema_registry=published_live_registration.schemas
+            ),
+            resource_scope_validator=BindingResourceScopeValidator(),
+            orchestrator=KnowledgeQueryOrchestratorV1(
+                indexed_retriever=WorkspaceIndexedEvidenceRetrieverV1(
+                    task_executor=task_executor,
+                    workspace_repository=repository,
+                ),
+                live_executor=LiveCapabilityExecutorV1(
+                    published_registration=published_live_registration,
+                    integration_resolver=KnowledgeConnectionRegistryIntegrationResolverV1(
+                        hybrid_ask_connection_registry
+                    ),
+                    runtime_authority=live_runtime_authority,
+                ),
+            ),
+            llm_adapter=llm_adapter,
+            llm_adapter_factory=(
+                None if llm_adapter is not None else (lambda: resolve_llm_adapter(None))
+            ),
         )
 
     app.state.lkw_managed_workspace_service = service
     app.state.lkw_managed_workspace_repository = repository
+    app.state.lkw_managed_workspace_repository_owned = owns_repository
     app.state.lkw_managed_workspace_sync_runtime = sync_runtime
     app.state.lkw_ask_service = ask_service
+    app.state.lkw_ask_service_v2 = ask_service_v2
+    app.state.lkw_knowledge_inspection_service = knowledge_inspection_service
+    app.state.lkw_knowledge_operations_service = knowledge_operations_service
+    app.state.lkw_workspace_setup_snapshot_service = setup_snapshot_service
+    app.state.lkw_document_inspect_service = document_inspect_service
+    app.state.lkw_knowledge_administration_service = knowledge_administration_service
+    app.state.lkw_destructive_confirmation_codec = destructive_confirmation_codec
     app.state.lkw_managed_file_intake_service = managed_file_intake_service
     app.state.lkw_knowledge_intake_service = knowledge_intake_service
     app.state.lkw_knowledge_ingestion_service = knowledge_ingestion_service
@@ -626,9 +1141,7 @@ def mount_managed_workspace_routes(
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> None:
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        current: ManagedWorkspaceService = getattr(
-            request.app.state, "lkw_managed_workspace_service", service
-        )
+        current: ManagedWorkspaceService = request.app.state.lkw_managed_workspace_service
         try:
             deleted = current.delete_workspace(
                 tenant_id=tenant_id,
@@ -659,8 +1172,8 @@ def mount_managed_workspace_routes(
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     ) -> ManagedFileBatchAcceptedV1:
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        intake: ManagedFileIntakeService | None = getattr(
-            request.app.state, "lkw_managed_file_intake_service", managed_file_intake_service
+        intake: ManagedFileIntakeService | None = (
+            request.app.state.lkw_managed_file_intake_service
         )
         if intake is None:
             raise HTTPException(
@@ -1024,6 +1537,213 @@ def mount_managed_workspace_routes(
             status=operation.status.value,
         )
 
+    @router.get(
+        "/workspaces/{workspace_id}/knowledge/inventory",
+        response_model=KnowledgeInventoryV1,
+    )
+    async def get_knowledge_inventory(
+        request: Request,
+        workspace_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> KnowledgeInventoryV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        if service.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+        inspection: KnowledgeInspectionService = (
+            request.app.state.lkw_knowledge_inspection_service
+        )
+        try:
+            return inspection.list_items(tenant_id=tenant_id, workspace_id=workspace_id)
+        except KnowledgeInventoryError as exc:
+            raise _knowledge_inventory_http_exception(exc) from exc
+
+    @router.get(
+        "/workspaces/{workspace_id}/setup-snapshot",
+        response_model=WorkspaceSetupSnapshotV1,
+    )
+    async def get_workspace_setup_snapshot(
+        request: Request,
+        workspace_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> WorkspaceSetupSnapshotV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        if service.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+        snapshot_service: WorkspaceSetupSnapshotService = (
+            request.app.state.lkw_workspace_setup_snapshot_service
+        )
+        try:
+            return snapshot_service.derive_snapshot(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+        except KnowledgeInventoryError as exc:
+            raise _knowledge_inventory_http_exception(exc) from exc
+
+    @router.get(
+        "/workspaces/{workspace_id}/documents/{document_id}",
+        response_model=DocumentInspectResponseV1,
+    )
+    async def inspect_workspace_document(
+        request: Request,
+        workspace_id: str,
+        document_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> DocumentInspectResponseV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        if service.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+        inspect_service: DocumentInspectService = (
+            request.app.state.lkw_document_inspect_service
+        )
+        try:
+            view = inspect_service.inspect(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                document_id=document_id,
+            )
+        except DocumentInspectError as exc:
+            if exc.error_code == "document_forbidden":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="document_forbidden",
+                ) from exc
+            raise _not_found() from exc
+        location = None
+        if view.location is not None:
+            location = DocumentInspectLocationResponseV1(
+                page=view.location.page,
+                logical_location=view.location.logical_location,
+            )
+        return DocumentInspectResponseV1(
+            document_id=view.document_id,
+            source_id=view.source_id,
+            display_name=view.display_name,
+            source_type=view.source_type,
+            source_label=view.source_label,
+            logical_location=view.logical_location,
+            location=location,
+            preview=view.preview,
+            external_url=view.external_url,
+        )
+
+    @router.post(
+        "/workspaces/{workspace_id}/knowledge/items/{item_id}/operations",
+        response_model=KnowledgeOperationResultV1,
+    )
+    async def execute_knowledge_item_operation(
+        request: Request,
+        workspace_id: str,
+        item_id: str,
+        body: KnowledgeItemOperationRequestV1,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ) -> KnowledgeOperationResultV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        if service.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+        operation = _parse_knowledge_operation(body.operation)
+        idempotency = require_knowledge_configuration_idempotency_key(idempotency_key)
+        inspection: KnowledgeInspectionService = (
+            request.app.state.lkw_knowledge_inspection_service
+        )
+        operations: KnowledgeOperationsService = (
+            request.app.state.lkw_knowledge_operations_service
+        )
+        expected_revision = body.expected_revision
+        if operation is KnowledgeOperationV1.DETACH:
+            codec = _knowledge_confirmation_codec(settings)
+            if codec is None:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="knowledge_confirmation_unavailable",
+                )
+            if not body.confirmation_token:
+                try:
+                    item = inspection.get_item(
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        knowledge_item_id=item_id,
+                    )
+                except KnowledgeInventoryError as exc:
+                    raise _knowledge_inventory_http_exception(exc) from exc
+                token = codec.issue(
+                    KnowledgeAdministrationConfirmationV1(
+                        token="",
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        knowledge_item_id=item_id,
+                        operation=operation,
+                        expected_revision=item.revision,
+                        expires_at=datetime.now(UTC) + timedelta(minutes=5),
+                    )
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error_code": "knowledge_admin_confirmation_required",
+                        "confirmation_token": token,
+                    },
+                )
+            try:
+                confirmation = codec.verify(body.confirmation_token)
+            except KnowledgeAdministrationConfirmationError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=exc.error_code,
+                ) from exc
+            if (
+                confirmation.tenant_id != tenant_id
+                or confirmation.workspace_id != workspace_id
+                or confirmation.knowledge_item_id != item_id
+                or confirmation.operation is not operation
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="knowledge_admin_confirmation_invalid",
+                )
+            expected_revision = confirmation.expected_revision
+
+        command = KnowledgeOperationCommandV1(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            knowledge_item_id=item_id,
+            operation=operation,
+            expected_revision=expected_revision,
+            idempotency_key_hash=hash_knowledge_configuration_idempotency_key(
+                idempotency
+            ),
+            operation_id=body.operation_id,
+        )
+        try:
+            return await operations.execute(command)
+        except KnowledgeOperationError as exc:
+            raise _knowledge_operation_http_exception(exc) from exc
+
+    @router.get(
+        "/workspaces/{workspace_id}/operations",
+        response_model=OperationListResponseV1,
+    )
+    async def list_workspace_operations(
+        request: Request,
+        workspace_id: str,
+        limit: int = 50,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> OperationListResponseV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        current: ManagedWorkspaceService = request.app.state.lkw_managed_workspace_service
+        if current.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+        operations = current.list_workspace_operations(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            limit=limit,
+        )
+        return OperationListResponseV1(
+            workspace_id=workspace_id,
+            operations=[_operation_response(item) for item in operations],
+        )
+
     @router.get("/operations/{operation_id}", response_model=OperationResponseV1)
     async def get_operation(
         request: Request,
@@ -1068,14 +1788,14 @@ def mount_managed_workspace_routes(
             },
         )
         try:
-            result = await task_executor.execute(task)
+            result: TaskResult = await task_executor.execute(task)
         except Exception as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"search_error: {exc.__class__.__name__}",
             ) from exc
 
-        result_metadata = dict(getattr(result, "metadata", None) or {})
+        result_metadata = dict(result.metadata)
         attach_lkw_evidence_metadata(
             result_metadata,
             task_result=result,
@@ -1119,22 +1839,24 @@ def mount_managed_workspace_routes(
             logger.warning(
                 "ask_tenant_resolution reason=tenant_scope_mismatch"
             )
-        current_ask: WorkspaceAskService = getattr(
-            request.app.state, "lkw_ask_service", ask_service
+        current_ask: WorkspaceAskService = request.app.state.lkw_ask_service
+        managed_service: ManagedWorkspaceService = (
+            request.app.state.lkw_managed_workspace_service
         )
-        managed_service: ManagedWorkspaceService = getattr(
-            request.app.state, "lkw_managed_workspace_service", service
-        )
-        managed_repository: ManagedWorkspaceRepository | None = getattr(
-            request.app.state, "lkw_managed_workspace_repository", None
+        managed_repository: ManagedWorkspaceRepository = (
+            request.app.state.lkw_managed_workspace_repository
         )
         current_ask.use_workspace_authority(managed_service, managed_repository)
+        knowledge_scope = None
+        if body.knowledge_item_ids is not None:
+            knowledge_scope = KnowledgeAskScopeV1(knowledge_item_ids=body.knowledge_item_ids)
         try:
             run = await current_ask.ask(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 question=body.question,
                 limit=body.limit,
+                knowledge_scope=knowledge_scope,
             )
         except WorkspaceAskLookupError as exc:
             reason = exc.reason
@@ -1178,23 +1900,183 @@ def mount_managed_workspace_routes(
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> WorkspaceAskResponseV1:
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        current_ask: WorkspaceAskService = getattr(
-            request.app.state, "lkw_ask_service", ask_service
+        current_ask: WorkspaceAskService = request.app.state.lkw_ask_service
+        managed_service: ManagedWorkspaceService = (
+            request.app.state.lkw_managed_workspace_service
         )
-        managed_service: ManagedWorkspaceService = getattr(
-            request.app.state, "lkw_managed_workspace_service", service
-        )
-        managed_repository: ManagedWorkspaceRepository | None = getattr(
-            request.app.state, "lkw_managed_workspace_repository", None
+        managed_repository: ManagedWorkspaceRepository = (
+            request.app.state.lkw_managed_workspace_repository
         )
         current_ask.use_workspace_authority(managed_service, managed_repository)
         try:
             run = current_ask.get_run(tenant_id=tenant_id, run_id=run_id)
         except WorkspaceAskNotFoundError as exc:
             raise _not_found() from exc
+        except WorkspaceAskRepositoryError as exc:
+            if exc.error_code == "ask_run_schema_version_mismatch":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="ask_run_version_mismatch",
+                ) from exc
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="ask_run_read_failed",
+            ) from exc
         return _ask_response(run)
 
+    v2_prefix = prefix.replace("/v1", "/v2", 1)
+    v2_router = APIRouter(prefix=v2_prefix, tags=["local_workspace_ask_v2"])
+
+    def _v2_http_exception(error_code: str) -> HTTPException:
+        if error_code in {"workspace_not_found", "ask_run_not_found"}:
+            code = status.HTTP_404_NOT_FOUND
+        elif error_code in {
+            "query_policy_required",
+            "configuration_revision_mismatch",
+            "configuration_projection_unstable",
+            "live_binding_unavailable",
+            "ask_run_version_mismatch",
+        }:
+            code = status.HTTP_409_CONFLICT
+        elif error_code == "query_mode_not_allowed":
+            code = status.HTTP_403_FORBIDDEN
+        elif error_code in {
+            "live_binding_not_found",
+        }:
+            code = status.HTTP_404_NOT_FOUND
+        elif error_code in {
+            "evidence_plan_invalid",
+            "live_request_invalid",
+            "live_capability_not_allowed",
+            "audience_mismatch",
+        }:
+            code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        elif error_code == "live_result_too_large":
+            code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+        elif error_code == "live_execution_timeout":
+            code = status.HTTP_504_GATEWAY_TIMEOUT
+        elif error_code in {
+            "live_capability_unavailable",
+            "query_policy_invalid",
+            "configuration_projection_invalid",
+        }:
+            code = status.HTTP_503_SERVICE_UNAVAILABLE
+        elif error_code in {
+            "indexed_retrieval_failed",
+            "live_execution_failed",
+            "live_result_invalid",
+            "assembly_failed",
+            "unknown_evidence_id",
+            "citation_validation_failed",
+        }:
+            code = status.HTTP_502_BAD_GATEWAY
+        elif error_code == "ask_run_persistence_failed":
+            code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        else:
+            code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        return HTTPException(status_code=code, detail=error_code)
+
+    @v2_router.post(
+        "/workspaces/{workspace_id}/ask",
+        response_model=WorkspaceAskRunV2,
+    )
+    async def ask_workspace_v2(
+        request: Request,
+        workspace_id: str,
+        body: WorkspaceAskRequestV2,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> WorkspaceAskRunV2:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        current_v2: WorkspaceAskServiceV2 = request.app.state.lkw_ask_service_v2
+        try:
+            return await current_v2.ask(
+                WorkspaceAskCommandV2(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    question=body.question,
+                    requested_mode=body.mode,
+                    audience_context=AudienceContextV1(
+                        audience=KnowledgeQueryAudienceV1.PERSONAL
+                    ),
+                    indexed_max_results=body.indexed_max_results,
+                    ordered_live_call_proposals=body.ordered_live_call_proposals,
+                )
+            )
+        except WorkspaceAskV2PersistenceError as exc:
+            raise _v2_http_exception("ask_run_persistence_failed") from exc
+        except WorkspaceAskV2LookupError as exc:
+            raise _v2_http_exception(exc.error_code) from exc
+        except WorkspaceAskV2Error as exc:
+            raise _v2_http_exception(exc.error_code) from exc
+        except HybridAskPolicyError as exc:
+            raise _v2_http_exception(exc.error_code) from exc
+        except WorkspaceKnowledgeConfigurationServiceError as exc:
+            raise _v2_http_exception(exc.error_code) from exc
+        except Exception as exc:
+            logger.warning("ask_workspace_v2_failed kind=%s", type(exc).__name__)
+            raise _v2_http_exception("internal_error") from exc
+
+    async def _read_ask_run_v2(
+        request: Request,
+        *,
+        run_id: str,
+        workspace_id: str | None,
+        x_tenant_id: str | None,
+    ) -> WorkspaceAskRunV2:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        managed_service: ManagedWorkspaceService = (
+            request.app.state.lkw_managed_workspace_service
+        )
+        current_v2: WorkspaceAskServiceV2 = request.app.state.lkw_ask_service_v2
+        try:
+            run = current_v2.get_run(tenant_id=tenant_id, run_id=run_id)
+        except WorkspaceAskV2LookupError as exc:
+            raise _v2_http_exception(exc.error_code) from exc
+        except WorkspaceAskRepositoryError as exc:
+            if exc.error_code == "ask_run_schema_version_mismatch":
+                raise _v2_http_exception("ask_run_version_mismatch") from exc
+            raise _v2_http_exception("ask_run_read_failed") from exc
+        if managed_service.get_workspace(
+            tenant_id=tenant_id,
+            workspace_id=run.workspace_id,
+        ) is None:
+            raise _v2_http_exception("workspace_not_found")
+        if workspace_id is not None and run.workspace_id != workspace_id:
+            raise _v2_http_exception("workspace_not_found")
+        return run
+
+    @v2_router.get("/asks/{run_id}", response_model=WorkspaceAskRunV2)
+    async def get_ask_run_v2(
+        request: Request,
+        run_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> WorkspaceAskRunV2:
+        return await _read_ask_run_v2(
+            request,
+            run_id=run_id,
+            workspace_id=None,
+            x_tenant_id=x_tenant_id,
+        )
+
+    @v2_router.get(
+        "/workspaces/{workspace_id}/ask-runs/{run_id}",
+        response_model=WorkspaceAskRunV2,
+    )
+    async def get_workspace_ask_run_v2(
+        request: Request,
+        workspace_id: str,
+        run_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> WorkspaceAskRunV2:
+        return await _read_ask_run_v2(
+            request,
+            run_id=run_id,
+            workspace_id=workspace_id,
+            x_tenant_id=x_tenant_id,
+        )
+
     app.include_router(router)
+    app.include_router(v2_router)
     return service
 
 

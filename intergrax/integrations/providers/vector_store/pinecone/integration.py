@@ -5,13 +5,19 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Protocol, Sequence, runtime_checkable
 
 from pydantic import PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.health_probe import IntegrationHealthProbe
-from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
+from intergrax.integrations.contracts.vector_store import (
+    MetadataFilter,
+    VectorStore,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.integrations.providers.vector_store.pinecone.config import PineconeIntegrationConfig
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.categories.storage import VectorStoreIntegrationContract
@@ -89,35 +95,36 @@ class PineconeVectorStoreIntegration(VectorStoreIntegrationContract):
     def rag_store(self) -> VectorStore:
         return self._require_inner()
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Any],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Sequence[str] | None = None,
-    ) -> None:
-        self._require_inner().add_documents(documents, embeddings, ids=ids)
+        scope: VectorStoreScope,
+    ) -> Sequence[str] | None:
+        return self._require_inner().add_records(records, scope=scope)
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
     ) -> list[VectorStoreHit]:
         return self._require_inner().query(
             query_embedding,
+            scope=scope,
             top_k=top_k,
             metadata_filter=metadata_filter,
             include_embeddings=include_embeddings,
         )
 
-    def delete(self, ids: Sequence[str]) -> None:
-        self._require_inner().delete(ids)
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
+        self._require_inner().delete(ids, scope=scope)
 
-    def count(self) -> int:
-        return self._require_inner().count()
+    def count(self, *, scope: VectorStoreScope) -> int:
+        return self._require_inner().count(scope=scope)
 
     def health(self) -> bool:
         inner = self._inner

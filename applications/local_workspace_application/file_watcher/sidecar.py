@@ -206,6 +206,20 @@ def _is_finite_positive(value: float) -> bool:
     return math.isfinite(value) and value > 0.0
 
 
+def _resolve_file_watcher_watch_roots(
+    settings: LocalWorkspaceBackendSettings,
+) -> frozenset[str]:
+    """Watch only explicit INTERGRAX read roots, not auto staging allowlist dirs."""
+    auto_staging_roots = {
+        settings.managed_upload_staging_dir,
+        settings.web_url_staging_dir,
+    }
+    explicit_roots = frozenset(settings.allowed_read_roots) - auto_staging_roots
+    if explicit_roots:
+        return explicit_roots
+    return frozenset(settings.allowed_read_roots)
+
+
 def _canonical_watch_roots(roots: frozenset[str]) -> frozenset[str]:
     if not roots:
         raise FileWatcherSidecarConfigurationError("file_watcher_roots_not_configured")
@@ -264,7 +278,7 @@ def build_file_watcher_sidecar_config(
             "file_watcher_identity_not_configured"
         )
 
-    roots = _canonical_watch_roots(settings.allowed_read_roots)
+    roots = _canonical_watch_roots(_resolve_file_watcher_watch_roots(settings))
 
     poll_interval = float(settings.file_watcher_poll_interval_seconds)
     if not _is_finite_positive(poll_interval):

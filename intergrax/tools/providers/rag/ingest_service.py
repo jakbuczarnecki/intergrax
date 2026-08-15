@@ -9,6 +9,10 @@ from typing import Any, Optional
 from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.tools.providers.rag.ingest_contracts import RagIngestInput, RagIngestOutput
+from intergrax.tools.providers.rag.source_operation_wiring import (
+    bind_source_operation_coordinator,
+    shared_source_operation_coordinator,
+)
 from intergrax.tools.providers.rag.scope import (
     TENANT_ID_METADATA_CONFLICT,
     authoritative_tenant_id,
@@ -31,6 +35,8 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
     embedding_manager = ctx.embedding_manager
     if vectorstore is None or embedding_manager is None:
         return RagIngestOutput(used=False, reason="vectorstore_or_embedding_not_configured")
+
+    bind_source_operation_coordinator(ctx, vectorstore)
 
     path = Path(params.source_path)
     if not path.exists():
@@ -60,6 +66,7 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
         contextual_enricher=ctx.extras.get("contextual_enricher"),
         graph_store=ctx.extras.get("graph_store"),
         llm_for_graph=ctx.extras.get("llm_adapter"),
+        source_coordinator=shared_source_operation_coordinator(ctx),
     )
 
     base_metadata: dict[str, Any] = dict(params.metadata)
@@ -69,8 +76,6 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
         base_metadata["user_id"] = params.user_id
     if tenant_id is not None:
         base_metadata["tenant_id"] = tenant_id
-    if params.workspace_id is not None:
-        base_metadata["workspace_id"] = params.workspace_id
 
     strategy_id: Optional[str] = base_metadata.pop("chunking_strategy_id", None)
 
@@ -79,6 +84,7 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
             source_path=str(path),
             base_metadata=base_metadata,
             chunking_strategy_id=strategy_id,
+            workspace_id=params.workspace_id,
         )
     )
 
