@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from types import MappingProxyType
 
 from intergrax.core.plugins.admission import (
     DomainPluginLoadReport,
@@ -41,13 +42,14 @@ class MemoryStorePluginDiscoveryResult:
 class MemoryStorePluginCatalog:
     """Indexed Memory store plugin candidates with EP bootstrap evidence."""
 
-    index: dict[str, ClassifiedMemoryStorePlugin]
+    index: Mapping[str, ClassifiedMemoryStorePlugin]
     load_report: DomainPluginLoadReport
 
     @classmethod
     def from_discovery(cls, result: MemoryStorePluginDiscoveryResult) -> MemoryStorePluginCatalog:
+        raw_index = index_classified_memory_store_plugins(result.plugins)
         return cls(
-            index=index_classified_memory_store_plugins(result.plugins),
+            index=MappingProxyType(raw_index),
             load_report=result.load_report,
         )
 
@@ -177,11 +179,6 @@ def find_failed_entry_point_for_plugin_id(
     for item in catalog.load_report.failed:
         if item.spec.name == plugin_id:
             return item
-    for record in catalog.index.values():
-        if record.plugin_id == plugin_id and record.entry_point_name is not None:
-            for item in catalog.load_report.failed:
-                if item.spec.name == record.entry_point_name:
-                    return item
     return None
 
 

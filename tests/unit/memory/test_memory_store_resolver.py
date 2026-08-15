@@ -124,6 +124,38 @@ def _catalog(*plugins: type) -> MemoryStorePluginCatalog:
     )
 
 
+def test_catalog_index_supports_lookup() -> None:
+    catalog = _catalog(ExternalInMemoryUserProfileStorePlugin)
+    record = catalog.index.get("external.in_memory_user_profile")
+    assert record is not None
+    assert record.plugin_id == "external.in_memory_user_profile"
+
+
+def test_catalog_index_rejects_insertion() -> None:
+    catalog = _catalog(ExternalInMemoryUserProfileStorePlugin)
+    with pytest.raises(TypeError):
+        catalog.index["new.plugin"] = ExternalInMemoryUserProfileStorePlugin  # type: ignore[index]
+
+
+def test_catalog_index_rejects_deletion() -> None:
+    catalog = _catalog(ExternalInMemoryUserProfileStorePlugin)
+    with pytest.raises(TypeError):
+        del catalog.index["external.in_memory_user_profile"]
+
+
+def test_catalog_load_report_unchanged_after_index_mutation_attempts() -> None:
+    catalog = _catalog(ExternalInMemoryUserProfileStorePlugin)
+    original_report = catalog.load_report
+    with pytest.raises(TypeError):
+        catalog.index["new.plugin"] = ExternalInMemoryUserProfileStorePlugin  # type: ignore[index]
+    with pytest.raises(TypeError):
+        del catalog.index["external.in_memory_user_profile"]
+    assert catalog.load_report is original_report
+    assert catalog.load_report.accepted == ()
+    assert catalog.load_report.rejected == ()
+    assert catalog.load_report.failed == ()
+
+
 def test_classifier_recognizes_fixture_plugins() -> None:
     assert (
         classify_memory_store_plugin(ExternalInMemoryUserProfileStorePlugin)
