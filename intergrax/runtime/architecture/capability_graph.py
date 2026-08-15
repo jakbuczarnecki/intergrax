@@ -4,18 +4,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from enum import Enum
-from typing import Iterable, Sequence
+from typing import Iterable
 
 from pydantic import BaseModel, Field, model_validator
 
+from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.catalog import list_slugs
-from intergrax.runtime.registry.bootstrap import (
-    build_harness_registry,
-    build_organization_worker_registry,
-    build_research_registry,
-)
+from intergrax.runtime.architecture.harness_capability_catalog import HARNESS_CAPABILITY_CATALOG
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.skills.registry.bootstrap import register_default_skills
 from intergrax.skills.registry.factory import build_registry_from_profile
 from intergrax.skills.registry.profile import SkillProfile
@@ -226,19 +225,19 @@ def _skill_nodes_and_edges() -> tuple[list[CapabilityNode], list[CapabilityEdge]
     return nodes, edges
 
 
-def _agent_nodes_and_edges() -> tuple[list[CapabilityNode], list[CapabilityEdge]]:
-    from intergrax.runtime.registry.bootstrap import build_legal_registry
+def _agent_nodes_and_edges(
+    agent_registries: Sequence[AgentRegistry] | None = None,
+) -> tuple[list[CapabilityNode], list[CapabilityEdge]]:
+    contracts_by_id: dict[str, AgentContract | None] = {}
+    if agent_registries:
+        for registry in agent_registries:
+            for contract in registry.list_contracts():
+                contracts_by_id[contract.id] = contract
 
-    registries = (
-        build_harness_registry(),
-        build_research_registry(),
-        build_legal_registry(),
-        build_organization_worker_registry(),
-    )
-    contracts_by_id: dict[str, object] = {}
-    for registry in registries:
-        for contract in registry.list_contracts():
-            contracts_by_id[contract.id] = contract
+    # Harness reference catalog contract ids only — no Tier-2 import (AGENT-CONSOLIDATION-2).
+    for entry in HARNESS_CAPABILITY_CATALOG:
+        for contract_id in entry.agent_contract_ids:
+            contracts_by_id.setdefault(contract_id, None)
 
     nodes: list[CapabilityNode] = []
     edges: list[CapabilityEdge] = []
@@ -249,9 +248,11 @@ def _agent_nodes_and_edges() -> tuple[list[CapabilityNode], list[CapabilityEdge]
             CapabilityNode(
                 node_id=agent_node_id,
                 node_type=CapabilityNodeType.AGENT,
-                version=contract.version,
+                version=contract.version if contract is not None else "1.0.0",
             )
         )
+        if contract is None:
+            continue
         for skill_id in (manifest.skill_id for manifest in contract.skills):
             edges.append(
                 CapabilityEdge(
@@ -390,12 +391,20 @@ def _merge_nodes(groups: Iterable[Sequence[CapabilityNode]]) -> list[CapabilityN
     return sorted(node_by_id.values(), key=lambda item: item.node_id)
 
 
-def build_catalog_capability_graph() -> CapabilityGraph:
-    """Build a typed baseline capability graph from current catalogs and reference registries."""
+def build_catalog_capability_graph(
+    *,
+    agent_registries: Sequence[AgentRegistry] | None = None,
+) -> CapabilityGraph:
+    """Build a typed baseline capability graph from current catalogs.
+
+    ``agent_registries`` supplies optional reference agent contracts for skill/tool
+    edges. When omitted, agent nodes are seeded from ``HARNESS_CAPABILITY_CATALOG``
+    only (contract-id baseline until AGENT-CONSOLIDATION-2 catalog discovery).
+    """
     integration_nodes = _integration_nodes()
     tool_nodes = _tool_nodes()
     skill_nodes, skill_edges = _skill_nodes_and_edges()
-    agent_nodes, agent_edges = _agent_nodes_and_edges()
+    agent_nodes, agent_edges = _agent_nodes_and_edges(agent_registries)
     system_nodes = _system_nodes()
 
     nodes = _merge_nodes([integration_nodes, tool_nodes, skill_nodes, agent_nodes, system_nodes])

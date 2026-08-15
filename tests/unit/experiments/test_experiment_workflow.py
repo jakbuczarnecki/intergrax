@@ -8,7 +8,7 @@ from intergrax.experiments.workflow import (
     evaluate_against_criteria,
     ensure_repo_root_on_path,
 )
-from intergrax.runtime.registry.bootstrap import build_harness_registry
+from testing_support.agent_registry_bootstrap import build_harness_registry
 from intergrax.runtime.task.task import TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]

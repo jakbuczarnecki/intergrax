@@ -1,17 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
+"""Non-production Tier-2 agent registry bootstrap for lab, tests, and release tooling."""
+
 from __future__ import annotations
 
 import importlib
+from collections.abc import Sequence
 from typing import Any
 
+from intergrax.runtime.architecture.capability_graph import CapabilityGraph, build_catalog_capability_graph
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.utils import attribute_access
 
 
 def _load_agent_class(module_name: str, class_name: str) -> Any:
-    """Load a Tier-2 agent class without a static platform→agent import edge."""
+    """Load a Tier-2 agent class for explicit lab/test bootstrap only."""
     module = importlib.import_module(module_name)
     return attribute_access.optional(module, class_name)
 
@@ -66,3 +70,31 @@ def build_organization_worker_registry(*, include_echo: bool = False) -> AgentRe
         EchoAgent = _load_agent_class("echo.echo_agent", "EchoAgent")
         registry.register(EchoAgent())
     return registry
+
+
+def build_reference_baseline_agent_registries() -> tuple[AgentRegistry, ...]:
+    """Union of harness reference agent families for baseline capability-graph tooling."""
+    return (
+        build_harness_registry(),
+        build_research_registry(),
+        build_legal_registry(),
+        build_organization_worker_registry(),
+    )
+
+
+def build_reference_catalog_capability_graph() -> CapabilityGraph:
+    """Baseline catalog graph with reference agent contracts (non-production adapter)."""
+    return build_catalog_capability_graph(
+        agent_registries=build_reference_baseline_agent_registries(),
+    )
+
+
+def merge_reference_agent_registries(
+    registries: Sequence[AgentRegistry],
+) -> AgentRegistry:
+    """Merge multiple reference registries into one AgentRegistry."""
+    merged = AgentRegistry()
+    for registry in registries:
+        for agent_id in registry.list_agent_ids():
+            merged.register(registry.get(agent_id))
+    return merged

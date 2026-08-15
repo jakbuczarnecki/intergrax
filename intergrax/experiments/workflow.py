@@ -85,6 +85,8 @@ class ExperimentSession:
 
     Example (notebook or script)::
 
+        from testing_support.agent_registry_bootstrap import build_harness_registry
+
         session = ExperimentSession(trace_db=Path("build/notebook_trace.db"))
         record = session.register(RegisterExperimentRequest(...))
         loop = session.build_nexus_loop(build_harness_registry())
