@@ -706,7 +706,16 @@ Canonical identity **MUST NOT** come from metadata. Forbidden patterns include `
 | `EmitContext` | REQUIRED | REQUIRED | REQUIRED |
 | `RuntimeEvent` | REQUIRED | REQUIRED | REQUIRED |
 
-Mint ownership: the spine mints `AttemptId` at run/attempt boundaries; carriers receive identity by construction — not by ad-hoc metadata lookup.
+**Mint ownership (lifecycle boundary, not observability):**
+
+| Identifier | Minted by |
+|------------|-----------|
+| `TaskId` | Task lifecycle owner |
+| `RunId` | Run lifecycle owner |
+| `AttemptId` | Attempt lifecycle owner |
+| `EventId` | RuntimeEvent / event creation owner |
+
+`AttemptId` is minted by the owning attempt lifecycle boundary. The observability spine **receives and propagates** canonical identity by construction — it does **not** mint `TaskId`, `RunId`, or `AttemptId` as lifecycle owner. Observability records and propagates them; carriers receive identity by construction — not by ad-hoc metadata lookup.
 
 ### 5.4 Attempt lifecycle, retry, resume, replay
 
