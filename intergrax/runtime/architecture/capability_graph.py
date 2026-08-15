@@ -10,11 +10,16 @@ from typing import Iterable
 
 from pydantic import BaseModel, Field, model_validator
 
-from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.agent_distribution.agent_capability_metadata import (
+    AgentCapabilityDescriptor,
+    AgentCapabilityMetadataProvider,
+    merge_agent_capability_descriptors,
+)
+from intergrax.agent_distribution.builtin_capability_metadata import (
+    default_agent_capability_metadata_provider,
+)
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.catalog import list_slugs
-from intergrax.runtime.architecture.harness_capability_catalog import HARNESS_CAPABILITY_CATALOG
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.skills.registry.bootstrap import register_default_skills
 from intergrax.skills.registry.factory import build_registry_from_profile
 from intergrax.skills.registry.profile import SkillProfile
@@ -226,34 +231,24 @@ def _skill_nodes_and_edges() -> tuple[list[CapabilityNode], list[CapabilityEdge]
 
 
 def _agent_nodes_and_edges(
-    agent_registries: Sequence[AgentRegistry] | None = None,
+    descriptors: Sequence[AgentCapabilityDescriptor],
 ) -> tuple[list[CapabilityNode], list[CapabilityEdge]]:
-    contracts_by_id: dict[str, AgentContract | None] = {}
-    if agent_registries:
-        for registry in agent_registries:
-            for contract in registry.list_contracts():
-                contracts_by_id[contract.id] = contract
-
-    # Harness reference catalog contract ids only — no Tier-2 import (AGENT-CONSOLIDATION-2).
-    for entry in HARNESS_CAPABILITY_CATALOG:
-        for contract_id in entry.agent_contract_ids:
-            contracts_by_id.setdefault(contract_id, None)
-
     nodes: list[CapabilityNode] = []
     edges: list[CapabilityEdge] = []
-    for contract_id in sorted(contracts_by_id):
-        contract = contracts_by_id[contract_id]
-        agent_node_id = f"agent:{contract_id}"
+    for descriptor in descriptors:
+        agent_node_id = f"agent:{descriptor.contract_id}"
+        metadata: dict[str, str] = {}
+        if descriptor.capabilities:
+            metadata["capabilities"] = ",".join(descriptor.capabilities)
         nodes.append(
             CapabilityNode(
                 node_id=agent_node_id,
                 node_type=CapabilityNodeType.AGENT,
-                version=contract.version if contract is not None else "1.0.0",
+                version=descriptor.agent_version,
+                metadata=metadata,
             )
         )
-        if contract is None:
-            continue
-        for skill_id in (manifest.skill_id for manifest in contract.skills):
+        for skill_id in descriptor.skill_ids:
             edges.append(
                 CapabilityEdge(
                     source_node_id=agent_node_id,
@@ -261,7 +256,7 @@ def _agent_nodes_and_edges(
                     edge_type=CapabilityEdgeType.DEPENDS_ON,
                 )
             )
-        for tool_id in contract.allowed_tools:
+        for tool_id in descriptor.tool_ids:
             edges.append(
                 CapabilityEdge(
                     source_node_id=agent_node_id,
@@ -393,18 +388,21 @@ def _merge_nodes(groups: Iterable[Sequence[CapabilityNode]]) -> list[CapabilityN
 
 def build_catalog_capability_graph(
     *,
-    agent_registries: Sequence[AgentRegistry] | None = None,
+    agent_metadata_provider: AgentCapabilityMetadataProvider | None = None,
 ) -> CapabilityGraph:
     """Build a typed baseline capability graph from current catalogs.
 
-    ``agent_registries`` supplies optional reference agent contracts for skill/tool
-    edges. When omitted, agent nodes are seeded from ``HARNESS_CAPABILITY_CATALOG``
-    only (contract-id baseline until AGENT-CONSOLIDATION-2 catalog discovery).
+    Agent nodes and agent→skill/tool edges are projected from ``agent_metadata_provider``
+    (non-executable declared metadata). When omitted, the platform builtin provider is used.
     """
+    provider = agent_metadata_provider or default_agent_capability_metadata_provider()
+    agent_descriptors = merge_agent_capability_descriptors(
+        provider.list_agent_capability_descriptors(),
+    )
     integration_nodes = _integration_nodes()
     tool_nodes = _tool_nodes()
     skill_nodes, skill_edges = _skill_nodes_and_edges()
-    agent_nodes, agent_edges = _agent_nodes_and_edges(agent_registries)
+    agent_nodes, agent_edges = _agent_nodes_and_edges(agent_descriptors)
     system_nodes = _system_nodes()
 
     nodes = _merge_nodes([integration_nodes, tool_nodes, skill_nodes, agent_nodes, system_nodes])

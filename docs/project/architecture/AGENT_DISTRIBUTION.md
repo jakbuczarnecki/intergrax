@@ -163,6 +163,16 @@ CatalogSourceProvider
   → Nexus capability routing (ROUTABLE subset)
 ```
 
+**Authority separation (AGENT-CONSOLIDATION-2):**
+
+| Surface | Question answered | Authority |
+|---------|-------------------|-----------|
+| `CatalogSourceProvider` | What packages are discoverable/resolvable? | Catalog/discovery index |
+| `AgentCapabilityMetadataProvider` | What non-executable agent contract/capability metadata is known? | Architecture/discovery projection — **not** activation or routing |
+| `RuntimeRevision` + `AgentRegistry` | What is actually running? | Execution truth |
+
+`AgentCapabilityMetadataProvider` MUST NOT become activation, routing, or runtime authority.
+
 **Marketplace** is one **future** `CatalogSourceProvider` implementation only — not a runtime fork.
 
 ---

@@ -1,6 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Static harness reference catalog for runtime capability graph edges."""
+"""Harness application topology compatibility data — NOT agent inventory authority.
+
+Maps reference application hosts to mounted agent contract ids for application→agent
+edges only. Agent existence, versions, and capability metadata come from
+``AgentCapabilityMetadataProvider`` (AGENT-CONSOLIDATION-2).
+"""
 
 from __future__ import annotations
 

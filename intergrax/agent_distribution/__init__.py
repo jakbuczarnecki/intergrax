@@ -3,9 +3,19 @@
 
 """Tier-0 Agent Distribution domain contracts, stores, and services (AP-3/AP-4)."""
 
+from intergrax.agent_distribution.agent_capability_metadata import (
+    AgentCapabilityDescriptor,
+    AgentCapabilityDescriptorConflictError,
+    AgentCapabilityMetadataProvider,
+    merge_agent_capability_descriptors,
+)
 from intergrax.agent_distribution.agent_project_metadata import (
     AgentProjectMetadata,
     AgentProjectMetadataProvider,
+)
+from intergrax.agent_distribution.builtin_capability_metadata import (
+    BuiltinAgentCapabilityMetadataProvider,
+    default_agent_capability_metadata_provider,
 )
 from intergrax.agent_distribution.binding import (
     AgentBindingFactoryReference,
@@ -212,6 +222,9 @@ __all__ = [
     "AgentArtifactMetadataStore",
     "AgentBindingFactoryReference",
     "AgentBindingPolicyOverrides",
+    "AgentCapabilityDescriptor",
+    "AgentCapabilityDescriptorConflictError",
+    "AgentCapabilityMetadataProvider",
     "AgentCatalogEntry",
     "AgentCatalogVersionChannelRef",
     "AgentDeliverySource",
@@ -244,6 +257,7 @@ __all__ = [
     "ApplicationEnvironmentServingRecord",
     "ApplicationEnvironmentServingStore",
     "ArtifactRevalidationHook",
+    "BuiltinAgentCapabilityMetadataProvider",
     "BindingLifecycleError",
     "BindingRevisionConflict",
     "BindingService",
@@ -303,6 +317,7 @@ __all__ = [
     "FakeRuntimeMaterializationAdapter",
     "FakeRuntimeServingProjectionCoordinator",
     "UnsupportedVenvBundleMaterializationAdapter",
+    "default_agent_capability_metadata_provider",
     "default_materialization_adapters",
     "MaterializationTopology",
     "MaterializedAgentClosureEntry",
@@ -315,6 +330,8 @@ __all__ = [
     "MaterializedRuntimeLockProducer",
     "MaterializedRuntimeLockService",
     "MaterializedRuntimeLockStore",
+    "merge_agent_capability_descriptors",
+    "merge_agent_capability_descriptors",
     "PolicyDependencyConstraint",
     "ProviderHealth",
     "ProviderHealthStatus",

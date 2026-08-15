@@ -61,6 +61,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 |-------------|--------|
 | `AgentPackageIdentity` / catalog contracts | done |
 | `CatalogSourceProvider` port | done |
+| `AgentCapabilityMetadataProvider` port (architecture projection) | done (AGENT-CONSOLIDATION-2) |
 | Trust/provenance evidence surface | done |
 | Installation / binding contracts | done |
 | Effective roster projection models | done |
