@@ -182,6 +182,29 @@ selects.
 See the [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md)
 for the complete responsibility model.
 
+## AI execution should not be a black box
+
+Meaningful AI execution should be reconstructable, reviewable, and attributable.
+Intergrax is designed so important actions do not disappear inside an opaque agent loop.
+
+```text
+request → context → agent / plan / decision → policy / approval
+       → model / RAG / tool → validation → result → evidence
+                              ↓
+                 reviewable execution record
+```
+
+A governed run can leave correlated runtime events, typed
+[`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md)
+artifacts, and structured
+[`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence.
+This is execution-level explainability, not hidden model reasoning.
+Universal every-path production observability is not claimed.
+
+[Observability](docs/project/architecture/OBSERVABILITY.md) ·
+[Reasoning / DecisionRecord](docs/project/architecture/REASONING_AND_COGNITION.md) ·
+[Proof Receipts](docs/project/architecture/PROOF_RECEIPTS.md)
+
 ## What exists today
 
 Status is capability-specific; implementation is not blanket proof of the whole
@@ -203,44 +226,21 @@ Token Optimization is a compact reusable platform capability below the product s
 
 ## Multiplayer AI
 
-Intergrax is extending governed execution toward governed multi-principal
-collaboration among humans, agents, services, and eventually external agents.
-The architectural direction covers identity and membership, delegation of
-effective authority, shared work, durable collaborative artifacts, explicit
-decisions, principal-scoped context, activity and provenance, and
-external-agent interoperability.
+Intergrax is extending governed execution toward governed multi-principal collaboration among humans, agents, services, and eventually external agents. The architectural direction covers identity and membership, delegation of effective authority, shared work, durable collaborative artifacts, explicit decisions, principal-scoped context, activity and provenance, and external-agent interoperability.
 
-Multiplayer AI is broader than one agent calling another. It governs who
-participates, what authority is effective, what shared work exists, which
-artifact version is authoritative, what decision was made, what context each
-principal may see, and what evidence remains.
+Multiplayer AI is broader than one agent calling another. It governs who participates, what authority is effective, what shared work exists, which artifact version is authoritative, what decision was made, what context each principal may see, and what evidence remains.
 
-Current status is **architecture / roadmap stage**. Runtime implementation and
-proof are **not yet established**. See the [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md).
+Current status is **architecture / roadmap stage**. Runtime implementation and proof are **not yet established**. See the [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md).
 
 ## Platform Extensibility
 
-Intergrax already exposes extension points across integrations, tools, skills,
-RAG, Vendor Knowledge, security, policy, host composition, and other platform
-domains. The [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md)
-architecture defines how independently packaged extensions can participate
-without collapsing those domain contracts into one universal plugin runtime.
+Intergrax already exposes extension points across integrations, tools, skills, RAG, Vendor Knowledge, security, policy, host composition, and other platform domains. The [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) architecture defines how independently packaged extensions can participate without collapsing those domain contracts into one universal plugin runtime.
 
-The strategic goal is coordinated **package identity**, **discovery**,
-**configuration**, **compatibility**, **trust**, **qualification**,
-**lifecycle**, and **author experience** — while domain-owned contracts still
-govern actual runtime behavior. Extend the platform without modifying its core
-while preserving governed capability boundaries.
+The strategic goal is coordinated **package identity**, **discovery**, **configuration**, **compatibility**, **trust**, **qualification**, **lifecycle**, and **author experience** — while domain-owned contracts still govern actual runtime behavior. Extend the platform without modifying its core while preserving governed capability boundaries.
 
-A basic plugin system answers how code can be loaded. Platform Extensibility
-also must answer what capability a package contributes, how it is discovered,
-whether it is compatible, how it receives configuration and dependencies, what
-trust or qualification state applies, and which domain contract governs
-execution.
+A basic plugin system answers how code can be loaded. Platform Extensibility also must answer what capability a package contributes, how it is discovered, whether it is compatible, how it receives configuration and dependencies, what trust or qualification state applies, and which domain contract governs execution.
 
-Canonical architecture is **frozen**; platform-wide harmonization is **not
-complete**; a complete third-party install-to-runtime E2E proof is **not yet
-established**.
+Canonical architecture is **frozen**; platform-wide harmonization is **not complete**; a complete third-party install-to-runtime E2E proof is **not yet established**.
 
 ## Agent Marketplace — future ecosystem concept
 
