@@ -14,7 +14,7 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine. Token Optimization telemetry must be observable through the same observability spine — do not create a private telemetry bus for token optimization. **TOKEN-6A-lite** is an early telemetry-shape slice for savings attribution through the existing observability spine; it must not create a private telemetry bus. **OBS-HEALTH-lite** is a minimal operator-visible status slice for exporter/token telemetry health, not full observability production hardening. Full **OBS-VENDOR** production hardening remains **Planned**. **LKW-PF6** ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF) is the platform proof workload for token savings telemetry and regression gates.
 
-**Last updated:** 2026-08-15 — **TRACE-ARCH-SYNC-1** execution identity · as-of projection roadmap.
+**Last updated:** 2026-08-15 — **TRACE-BITEMP-ARCH-SYNC** bitemporal historical state roadmap · execution identity · as-of projections.
 
 ---
 
@@ -22,7 +22,7 @@
 
 **Do not read this entire file in one session** (OBSERVABILITY plan).
 
-- **Implement / audit default:** Hub Phase TRACE (§5–§9 arch) · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) (active OECP register), [`plan/satellites/OBSERVABILITY_audit_history.md`](plan/satellites/OBSERVABILITY_audit_history.md) (closed phases). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub Phase TRACE (§5–§10 arch) · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) (active OECP register), [`plan/satellites/OBSERVABILITY_audit_history.md`](plan/satellites/OBSERVABILITY_audit_history.md) (closed phases). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Token Optimization:** read feature pair + rows `TOKEN-OBS-1` / `TOKEN-OBS-2`; use HOS/domain-signal model, do not create private telemetry channel.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
@@ -42,11 +42,11 @@ Architecture: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md#observabi
 
 ---
 
-## Phase TRACE — Execution identity, unified journal strictness, and as-of projections (Planned)
+## Phase TRACE — Execution identity, unified journal strictness, as-of projections, and bitemporal state (Planned)
 
-**Architecture:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §5–§9 · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.1.8  
-**Design:** **TRACE-1** identity + journal + as-of target canon — **Done** (TRACE-ARCH-SYNC-1, 2026-08-15)  
-**Implementation:** **Planned** — code still has legacy identity gaps (`run_id == task_id`, metadata identity, missing `AttemptId`, fallbacks, loose journal adapters). Do **not** mark implementation rows Done until TRACE acceptance gates pass.
+**Architecture:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §5–§10 · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.1.8  
+**Design:** **TRACE-1** identity + journal + as-of + bitemporal target canon — **Done** (TRACE-ARCH-SYNC-1, TRACE-BITEMP-ARCH-SYNC, 2026-08-15)  
+**Implementation:** **Planned** — code still has legacy identity gaps (`run_id == task_id`, metadata identity, missing `AttemptId`, fallbacks, loose journal adapters). Bitemporal historical state is **not implemented**. Do **not** mark implementation rows Done until TRACE acceptance gates pass.
 
 **Delivery rule:** one TRACE row per PR; no runtime work in TRACE-ARCH-SYNC-1 doc-only slice.
 
@@ -63,11 +63,32 @@ Architecture: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md#observabi
 | ID | Priority | Status | Goal | Dependency | Acceptance (summary) |
 |----|----------|--------|------|------------|----------------------|
 | **TRACE-ASOF-1** | P1 | Planned | Resolve deterministic historical boundary: event position / sequence / cursor semantics; typed `AsOfBoundary` contract; no timestamp-only ambiguity | TRACE-1C | Boundary is execution-history position, not datetime alone |
-| **TRACE-ASOF-2** | P1 | Planned | Typed logical projections from Unified Run Journal; deterministic state-as-of reconstruction; attempt-aware; source `RuntimeEvent` references | TRACE-ASOF-1 | Logical projection rebuildable from journal; no new source of truth |
+| **TRACE-ASOF-2** | P1 | Planned | Typed logical projections from Unified Run Journal; deterministic state-as-of reconstruction; attempt-aware; source `RuntimeEvent` references; compatible with bitemporal temporal basis (does not freeze valid/system-time semantics) | TRACE-ASOF-1; TRACE-BITEMP-1 | Logical projection rebuildable from journal; no new source of truth |
 | **TRACE-ASOF-3** | P2 | Planned (**conditional**) | Only if projections are materialized: immutable projection revisions; explicit `revision_id`; explicit `supersedes`; rebuildability | TRACE-ASOF-2 | Skippable if materialization not needed after TRACE-ASOF-2 |
 | **TRACE-ASOF-4** | P1 | Planned | Typed public/internal query contract for as-of; provenance to source events; no dynamic projection registry; operator/debug/audit consumption | TRACE-ASOF-2; TRACE-ASOF-3 only if materialization shipped | Query surface does not treat projection as proof/evidence |
 
-**Non-goals (canon):** full bitemporal valid-time / transaction-time architecture; new event store; mandatory materialization.
+**Non-goals (canon):** new event store; mandatory materialization. Full bitemporal valid-time / system-time architecture is an **accepted target capability** — see TRACE-BITEMP-* (not a non-goal).
+
+### TRACE-BITEMP — First-class bitemporal historical state
+
+**Architecture:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §8  
+**Design:** **Done** (TRACE-BITEMP-ARCH-SYNC, 2026-08-15) · **Implementation:** **Planned** — no runtime code yet.
+
+**Dependency order (semantic):**
+
+```text
+TRACE-1A → TRACE-1B → TRACE-1C → TRACE-ASOF-1 → TRACE-BITEMP-1 → TRACE-ASOF-2
+  → TRACE-BITEMP-2 → TRACE-BITEMP-3 → TRACE-ASOF-3 (conditional) → TRACE-ASOF-4
+  → TRACE-BITEMP-4 → TRACE-BITEMP-5
+```
+
+| ID | Priority | Status | Goal | Dependency | Acceptance (summary) |
+|----|----------|--------|------|------------|----------------------|
+| **TRACE-BITEMP-1** | P1 | Planned | Canonical temporal semantics and contracts: typed temporal basis; valid-time and system-time semantics; interval/boundary rules; ordering and inclusivity; **no** storage implementation | TRACE-1C; TRACE-ASOF-1 | Identity and deterministic execution boundary stable before temporal contracts |
+| **TRACE-BITEMP-2** | P1 | Planned | Bitemporal revision/fact persistence: immutable fact/revision history; preserve system-time belief; support valid-time corrections/backdating/future effectiveness; no destructive overwrite; typed repository/query contract; explicit provenance linkage; **no** database vendor selection | TRACE-BITEMP-1 | Corrections additive; prior belief preserved |
+| **TRACE-BITEMP-3** | P1 | Planned | Bitemporal projection integration: combine `AsOfBoundary` + valid-time basis + system-time basis for deterministic historical reconstruction; distinguish execution knowledge vs current valid-time truth vs historical belief | TRACE-ASOF-2; TRACE-BITEMP-2 | Three query modes semantically distinct |
+| **TRACE-BITEMP-4** | P1 | Planned | Temporal query/audit surface: valid-time as-of; system-time as-of; combined bitemporal basis; correction history; provenance to source revisions/events | TRACE-BITEMP-3 | Typed query API; no vendor lock-in |
+| **TRACE-BITEMP-5** | P1 | Planned | Production proof/invariants: delayed fact arrival; backdated correction; future-effective change; historical belief reconstruction; current-corrected history reconstruction; deterministic repeated query; no history destruction | TRACE-BITEMP-4 | Platform proof scenarios pass |
 
 ### Downstream trace roadmap (reference)
 
@@ -77,9 +98,9 @@ Detailed delivery for later trace phases may live in other canonical plans. OBSE
 |----|--------|----------------------------|-------|
 | **TRACE-2** | Planned | TRACE-1C | Downstream — export/sink alignment with strict identity |
 | **TRACE-3** | Planned | TRACE-1C | Downstream — operator/debug surfaces |
-| **TRACE-4** | Planned | TRACE-ASOF-2 | Downstream — eval/OECP consumption of as-of |
-| **TRACE-5** | Planned | TRACE-1C, TRACE-ASOF-2 | Downstream — cross-tier proof/evidence linkage |
-| **TRACE-DOC** | Planned | TRACE-1, TRACE-ASOF-* | Downstream — operator docs and audit slices |
+| **TRACE-4** | Planned | TRACE-ASOF-2, TRACE-BITEMP-3 | Downstream — eval/OECP consumption of as-of and bitemporal reconstruction |
+| **TRACE-5** | Planned | TRACE-1C, TRACE-ASOF-2, TRACE-BITEMP-3 | Downstream — cross-tier proof/evidence linkage |
+| **TRACE-DOC** | Planned | TRACE-1, TRACE-ASOF-*, TRACE-BITEMP-* | Downstream — operator docs and audit slices |
 
 ---
 

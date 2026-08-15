@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-08-15 — **TRACE-ARCH-SYNC-1** execution identity · unified journal · first-class as-of projections
+**Last updated:** 2026-08-15 — **TRACE-BITEMP-ARCH-SYNC** first-class bitemporal historical state · execution identity · as-of projections
 
 ---
 
@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (OBSERVABILITY canon).
 
-- **Implement / audit default:** trace spine + HOS + signal planes (§1–§4); execution identity + journal + as-of (§5–§9). Extended depth: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md).
+- **Implement / audit default:** trace spine + HOS + signal planes (§1–§4); execution identity + journal + as-of + bitemporal state (§5–§10). Extended depth: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/OBSERVABILITY.md`](../technical/guides/audit_slices/OBSERVABILITY.md).
@@ -66,7 +66,6 @@ For every user interaction (question → answer), an operator MUST be able to re
 - Storing raw prompts/completions in production traces (redaction is mandatory)
 - Per-agent custom SQLite trace databases
 - Raw `dict` payloads without `payload_schema_id` / registry (see §8.2 residual evolution)
-- Full **bitemporal** valid-time / transaction-time architecture — Intergrax needs execution-relative historical reconstruction (§7), not a complete temporal-database framework
 
 ---
 
@@ -777,7 +776,7 @@ query / derived read models
 | Source of truth | **NOT** — persistence of `RuntimeEvent` remains authoritative |
 | Replaces event store | **MUST NOT** |
 | Scope | Composes chronological history per run (attempt-aware ordering) |
-| Execution Story | Canonical foundation for Execution Story read surfaces (§9) |
+| Execution Story | Canonical foundation for Execution Story read surfaces (§10) |
 | Construction | `build_unified_run_journal()` merges spine-normalized events into one timeline |
 
 The journal is a **derived view**. Metrics, external APM, and product summaries subscribe to or export from it — they do not fork a competing timeline.
@@ -786,7 +785,7 @@ The journal is a **derived view**. Metrics, external APM, and product summaries 
 
 ## 7. First-class as-of projections (TRACE-ARCH-SYNC-1)
 
-**Status:** Target canon (**accepted** 2026-08-15) · implementation **Planned** (TRACE-ASOF-1–TRACE-ASOF-4)
+**Status:** Target canon (**accepted** 2026-08-15) · implementation **Planned** (TRACE-ASOF-1–TRACE-ASOF-4) · compatible with bitemporal knowledge basis (§8)
 
 ### 7.1 Capability definition
 
@@ -799,7 +798,8 @@ A **First-Class As-Of Projection** is a typed, deterministic reconstruction of e
 | Surface | Question |
 |---------|----------|
 | **Unified Run Journal** | **WHAT happened?** — chronological facts |
-| **As-Of Projection** | **WHAT was true / known / selected / effective at boundary X?** — state at a historical boundary |
+| **As-Of Projection** | **WHAT did this execution see / do by boundary X?** — execution state at a deterministic journal boundary |
+| **Bitemporal State** (§8) | **WHAT was valid then?** / **WHAT did Intergrax know then?** — domain and knowledge history along valid-time and system-time axes |
 
 Conceptual example (Run R1):
 
@@ -836,7 +836,18 @@ Architecture does **not** freeze a concrete projection schema here — TRACE-ASO
 
 Canonical as-of semantics **MUST** be based on a **deterministic position inside canonical execution history** — prefer **`AsOfBoundary`** over raw `datetime` alone.
 
-TRACE-ASOF-1 will resolve the exact representation from event ordering, `EventId`, sequence/cursor semantics, and persistence guarantees. Timestamp **MAY** later serve as a convenience lookup for locating a boundary, but **MUST NOT** automatically become the sole ordering source.
+`AsOfBoundary` is **execution-history-relative**. It answers where in the run journal the reconstruction stops — it is **not** a replacement for valid-time or system-time basis (§8).
+
+A future combined projection **MAY** therefore carry two independent inputs:
+
+| Basis | Question |
+|-------|----------|
+| **Execution boundary** | Where in the run? |
+| **Temporal knowledge basis** | Valid when? Known by Intergrax when? |
+
+The final combined type belongs to TRACE-BITEMP-1 / TRACE-BITEMP-3 — architecture does **not** freeze it here.
+
+TRACE-ASOF-1 will resolve the exact representation from event ordering, `EventId`, sequence/cursor semantics, and persistence guarantees. Timestamp **MAY** later serve as a convenience lookup for locating a boundary, but **MUST NOT** automatically become the sole ordering source. Timestamp **MUST NOT** be merged with valid-time or system-time into one generic “as-of datetime”.
 
 ### 7.4 Projection properties
 
@@ -891,35 +902,152 @@ ProjectionRevision P3
 
 Goals: projection history is not overwritten; operators can audit which revision was available; the current revision does not destroy earlier ones. Field-level schema is deferred to TRACE-ASOF-3.
 
-### 7.7 Non-goal
+### 7.7 Relationship to bitemporal state (§8)
 
-```text
-Full bitemporal valid-time / transaction-time architecture
-is NOT part of this phase.
-```
-
-Intergrax needs **execution-relative historical reconstruction**, not a complete temporal-database framework.
+As-of projections and bitemporal historical state answer **different questions**. Execution as-of is accepted and planned (this section). Bitemporal valid-time / system-time semantics are also **accepted target capability** with **planned implementation** (§8, TRACE-BITEMP-1–TRACE-BITEMP-5). Neither replaces the other.
 
 ---
 
-## 8. Semantic separation of observability artifacts
+## 8. First-class bitemporal historical state (TRACE-BITEMP-ARCH-SYNC)
+
+**Status:** Target canon (**accepted** 2026-08-15) · implementation **Planned** (TRACE-BITEMP-1–TRACE-BITEMP-5) · **not implemented** in current runtime
+
+### 8.1 Capability definition
+
+**Bitemporal Historical State** (also: **Bitemporal Knowledge Reconstruction**) is a typed, deterministic, immutable-history-oriented capability for selecting and reconstructing facts using **both** temporal axes. It is correction-preserving, queryable across valid-time and system-time, provenance-linked, compatible with as-of projections (§7), rebuildable where derived, and never dependent on mutable current state alone.
+
+Bitemporality is a **semantic model** — not merely two datetime fields. Each axis **may eventually** be represented as a period (`valid_from` / `valid_to`, `system_from` / `system_to`), but architecture does **not** freeze final field schemas here; exact contracts belong to TRACE-BITEMP-1.
+
+### 8.2 Valid time
+
+**Valid time** answers: **when was a fact actually valid / effective in the modeled domain?**
+
+Domain/effective truth — independent of when Intergrax learned or recorded it. Supports retrospective corrections, backdating, and future-effective changes without collapsing “what was true on date D” into “when we wrote it down.”
+
+### 8.3 System time
+
+**System time** answers: **when did Intergrax know, record, or accept that version of the fact?**
+
+Recorded/known-by-Intergrax truth — the knowledge history of the platform. A later correction **must not** destroy what Intergrax previously believed; queries must eventually distinguish **history as currently known** from **history as believed at system-time S1**.
+
+Conceptual example:
+
+```text
+Aug 10 — Intergrax records Policy P1 (valid from Aug 1)
+Aug 15 — correction Policy P2 (actually valid from Jul 28)
+
+A) "What did Intergrax believe on Aug 10?"  → system-time historical truth
+B) "What do we now know was valid on Aug 10?" → valid-time truth using current knowledge
+```
+
+### 8.4 Difference from Execution As-Of (§7)
+
+| Surface | Axis | Question |
+|---------|------|----------|
+| **Execution As-Of** (`AsOfBoundary`) | Execution history | What did this execution see / do by boundary X? |
+| **Valid time** | Domain effectiveness | What was valid / effective at time T? |
+| **System time** | Platform knowledge | What did Intergrax know / record at time S? |
+| **Bitemporal state** | Both | Combined selection using execution boundary + temporal knowledge basis |
+
+```text
+RuntimeEvent history
+        ↓
+deterministic Execution AsOfBoundary
+        ↓
+"What did this execution see / do by boundary X?"
+
+Bitemporal fact history
+        ↓
+Valid-Time + System-Time basis
+        ↓
+"What was valid then?" / "What did we know then?"
+
+ExecutionBoundary + TemporalKnowledgeBasis
+        ↓
+historically reproducible execution state (future Execution Story — §10)
+```
+
+Do **not** merge these into one generic timestamp.
+
+### 8.5 Correction semantics
+
+Corrections are **additive**. A later revision that changes valid-time applicability **must preserve** prior system-time belief. Operators and auditors must be able to reconstruct:
+
+- what Intergrax believed at an earlier system time;
+- what is now known to have been valid at an earlier valid time;
+- what Intergrax believed was valid at an earlier system time.
+
+Destructive overwrite of historical belief is **forbidden** for bitemporal-capable facts.
+
+### 8.6 Relationship to `revision_id` / `supersedes` (§7.6)
+
+Revision lineage and bitemporal semantics are **complementary, not identical**:
+
+| Mechanism | Role |
+|-----------|------|
+| **`revision_id` / `supersedes`** | Causal/version lineage between immutable revisions |
+| **Valid / system time** | Temporal applicability and knowledge history |
+
+A revision **may** carry temporal semantics where appropriate. `supersedes` alone is **not** sufficient for bitemporal queries. Do **not** add `supersedes` to every `RuntimeEvent`.
+
+### 8.7 Relationship to provenance / evidence / proof
+
+| Artifact | Role |
+|----------|------|
+| **Provenance** | Where a fact/revision came from |
+| **Evidence** | Supporting persisted evidence |
+| **Proof / Receipt** | Attested / verifiable claim |
+| **Bitemporal state** | Selected historical truth along valid-time and system-time — **not** proof, **not** evidence |
+
+### 8.8 Opt-in scope — not every `RuntimeEvent`
+
+**Critical:** bitemporality does **not** require every `RuntimeEvent` to carry `valid_from` / `valid_to`.
+
+`RuntimeEvent` remains the canonical fact that an **execution transition** happened. System/event ordering of `RuntimeEvent` is separate from whether the **domain fact** referenced by that event has valid-time semantics.
+
+Bitemporality **should** apply — with explicit opt-in ownership — to facts/revisions where both axes are meaningful, for example potentially:
+
+- policy revisions
+- configuration revisions
+- context / knowledge facts
+- external integration state
+- business-domain facts
+- effective permissions / rules
+- versioned projections where corrections or backdating matter
+
+This list is **not exhaustive**. Do **not** convert every Intergrax persistence model into a temporal table. The capability is reusable with explicit opt-in — not universal.
+
+### 8.9 Persistence vendor neutrality
+
+Architecture defines semantics and capability only. **No** database vendor (XTDB, PostgreSQL temporal extensions, SQL Server temporal tables, Datomic, etc.) is selected here. Storage technology follows contract and query requirements (TRACE-BITEMP-1, TRACE-BITEMP-2).
+
+### 8.10 Implementation status
+
+Accepted architecture · **Planned** implementation · **no** current runtime code implements bitemporal historical state. Delivery: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) TRACE-BITEMP-1–TRACE-BITEMP-5.
+
+---
+
+## 9. Semantic separation of observability artifacts
 
 | Artifact | Role |
 |----------|------|
 | **`RuntimeEvent`** | Canonical fact that something happened |
 | **Unified Run Journal** | Chronological derived execution timeline |
-| **As-Of Projection** | Derived execution state at a historical boundary |
+| **As-Of Projection** | Derived execution state at a deterministic journal boundary |
+| **Valid time** | When a fact is effective in the modeled domain |
+| **System time** | When Intergrax recorded / knew a fact version |
+| **Bitemporal state** | State selected using **both** valid-time and system-time basis |
 | **Provenance** | Origin / lineage of relevant inputs and references |
 | **Evidence** | Persisted supporting evidence |
 | **Proof / Receipt** | Attested / verifiable claim |
 
-Projection is read-side execution history — not proof, not evidence, not a substitute for the event store.
+Projection and bitemporal state are read-side historical reconstruction — not proof, not evidence, not a substitute for the event store.
 
 ---
 
-## 9. Execution Story relationship
+## 10. Execution Story relationship
 
-As-of projections are part of the **read side** of Execution Story — not a new runtime domain. No new Execution Story domain or event store is introduced by TRACE-ARCH-SYNC-1.
+As-of projections and bitemporal historical state are part of the **read side** of Execution Story — not new runtime domains. No new Execution Story domain or event store is introduced by TRACE-ARCH-SYNC-1 or TRACE-BITEMP-ARCH-SYNC.
 
 ```text
 RuntimeEvent history
@@ -929,7 +1057,16 @@ Unified Run Journal
 Execution Story
        │
        ├── chronological narrative
-       └── as-of historical state reconstruction
+       ├── as-of historical state reconstruction (§7)
+       └── bitemporal knowledge reconstruction (§8)
+```
+
+Future combined reconstruction:
+
+```text
+ExecutionBoundary + TemporalKnowledgeBasis
+       ↓
+historically reproducible execution state
 ```
 
 ---

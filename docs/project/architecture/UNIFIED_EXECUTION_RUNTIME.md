@@ -209,7 +209,7 @@ event_category  # derived ops grouping
 
 ### 42.1.8 Execution identity ownership (TRACE-ARCH-SYNC-1)
 
-Runtime lifecycle emits through `RuntimeEvent`; **canonical execution identity** and journal/as-of semantics are owned by [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§9.
+Runtime lifecycle emits through `RuntimeEvent`; **canonical execution identity**, journal/as-of semantics, and bitemporal historical state are owned by [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§10.
 
 | Identifier | Runtime role |
 |------------|----------------|
@@ -217,7 +217,7 @@ Runtime lifecycle emits through `RuntimeEvent`; **canonical execution identity**
 | `RunId` | **WHICH** execution of the task |
 | `AttemptId` | **WHICH** attempt inside the run — minted at attempt boundaries; all events in an attempt share it |
 
-Hierarchy: `Task 1:N Run 1:N Attempt 1:N RuntimeEvent`. Retry: same `TaskId` + `RunId`, new `AttemptId`. Resume without retry: same `AttemptId`. Typed carrier matrix, unified journal, and as-of projections — [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§7. Implementation: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) Phase TRACE.
+Hierarchy: `Task 1:N Run 1:N Attempt 1:N RuntimeEvent`. Retry: same `TaskId` + `RunId`, new `AttemptId`. Resume without retry: same `AttemptId`. Typed carrier matrix, unified journal, as-of projections, and bitemporal historical state — [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§10. Implementation: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) Phase TRACE.
 
 ---
 
