@@ -8,11 +8,13 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.long_running.runtime_checkpoint import (
     PLAN_SNAPSHOT_KEY,
     RUNTIME_CHECKPOINT_KEY,
     RuntimeCheckpoint,
+    RuntimeCheckpointStateView,
     attach_runtime_checkpoint_to_metadata,
     runtime_checkpoint_from_execution_structured,
 )
@@ -28,8 +30,8 @@ from intergrax.runtime.task.task import Task
 def build_runtime_checkpoint(
     task: Task,
     *,
-    run_id: str,
-    attempt_id: str,
+    run_id: RunId,
+    attempt_id: AttemptId,
     plan: Optional[NexusPlan] = None,
     graph: Optional[ExecutionGraph] = None,
     last_execution: Optional[AgentExecutionResult] = None,
@@ -69,8 +71,12 @@ def build_runtime_checkpoint(
     pending_decisions = _collect_pending_decisions(task, last_execution)
 
     if from_execution is not None:
-        merged = from_execution.model_copy(
-            update={
+        merged_fields = from_execution.model_dump(
+            exclude={"run_id", "attempt_id"},
+            exclude_none=False,
+        )
+        merged_fields.update(
+            {
                 "run_id": run_id,
                 "attempt_id": attempt_id,
                 "plan_id": from_execution.plan_id or plan_id,
@@ -83,7 +89,7 @@ def build_runtime_checkpoint(
                 "pending_decisions": from_execution.pending_decisions or pending_decisions,
             }
         )
-        return merged
+        return RuntimeCheckpoint.model_validate(merged_fields)
 
     return RuntimeCheckpoint(
         run_id=run_id,
@@ -120,7 +126,7 @@ def apply_runtime_checkpoint_to_task(task: Task, runtime: RuntimeCheckpoint) -> 
 
 def apply_runtime_checkpoint_to_graph(
     graph: ExecutionGraph,
-    runtime: RuntimeCheckpoint,
+    runtime: RuntimeCheckpointStateView,
     prior_outputs: Dict[str, AgentExecutionResult],
 ) -> None:
     if runtime.graph_snapshot and not runtime.node_states:
@@ -157,7 +163,7 @@ def apply_runtime_checkpoint_to_graph(
 def should_skip_graph_node(
     node: ExecutionNode,
     *,
-    checkpoint: Optional[RuntimeCheckpoint],
+    checkpoint: Optional[RuntimeCheckpointStateView],
     prior_outputs: Dict[str, AgentExecutionResult],
 ) -> bool:
     if checkpoint is None:
@@ -208,7 +214,7 @@ def should_skip_uaep_step(
     *,
     step_index: int,
     step_id: str,
-    checkpoint: Optional[RuntimeCheckpoint],
+    checkpoint: Optional[RuntimeCheckpointStateView],
     human_approved: bool,
 ) -> bool:
     if checkpoint is None or not human_approved:
@@ -226,7 +232,7 @@ def should_resume_uaep_step(
     *,
     step_index: int,
     step_id: str,
-    checkpoint: Optional[RuntimeCheckpoint],
+    checkpoint: Optional[RuntimeCheckpointStateView],
     human_approved: bool,
 ) -> bool:
     if checkpoint is None or not human_approved:

@@ -27,7 +27,7 @@ from intergrax.runtime.task.task_contract import (
 
 def execution_identity_from_checkpoint(checkpoint: TaskCheckpoint) -> tuple[RunId, AttemptId]:
     runtime = checkpoint.runtime
-    if runtime is None or runtime.run_id is None or runtime.attempt_id is None:
+    if runtime is None:
         raise ValueError(
             f"checkpoint {checkpoint.checkpoint_id!r} missing canonical execution identity"
         )

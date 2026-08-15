@@ -60,7 +60,7 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
     RUNTIME_CHECKPOINT_KEY,
     UAEP_STEP_CURSOR_KEY,
     PLAN_SNAPSHOT_KEY,
-    RuntimeCheckpoint,
+    RuntimeCheckpointExecutionState,
     attach_runtime_checkpoint_to_metadata,
     runtime_checkpoint_from_metadata,
 )
@@ -557,7 +557,7 @@ class UAEPExecutor:
                 bridged_kernel
             )
         runtime_snapshot = exec_ctx.metadata.get(RUNTIME_CHECKPOINT_KEY)
-        if isinstance(runtime_snapshot, RuntimeCheckpoint):
+        if isinstance(runtime_snapshot, RuntimeCheckpointExecutionState):
             if answer.route is None:
                 answer.route = RouteInfo(extra={})
             attach_runtime_checkpoint_to_metadata(answer.route.extra, runtime_snapshot)
@@ -665,7 +665,7 @@ class UAEPExecutor:
         last_output: Optional[StepOutput],
         resolution: GovernanceResolution,
         step_cursor: Optional[dict[str, Any]] = None,
-    ) -> RuntimeCheckpoint:
+    ) -> RuntimeCheckpointExecutionState:
         step_completed = last_output is not None and step_cursor is None
         pending_decisions: list[dict[str, Any]] = []
         if resolution.human_request is not None:
@@ -676,7 +676,7 @@ class UAEPExecutor:
                     "payload": resolution.human_request.model_dump(mode="json"),
                 }
             )
-        return RuntimeCheckpoint(
+        return RuntimeCheckpointExecutionState(
             plan_id=str(request.metadata.get("plan_id") or "") or None,
             graph_id=str(request.metadata.get("graph_id") or "") or None,
             graph_node_id=str(request.metadata.get("graph_node_id") or "") or None,
