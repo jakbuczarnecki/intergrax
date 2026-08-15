@@ -214,10 +214,23 @@ platform.
 | Area | Role | Current status |
 | --- | --- | --- |
 | **LKW** | Primary Product Proof | **PARTIAL — Backend Product Alpha / MVP** |
-| **Token Optimization** | Featured platform-capability proof | **PARTIAL — bounded** |
-| **Multiplayer AI** | Strategic platform capability | **Architecture / roadmap stage** — runtime proof not yet established |
-| **Platform Extensibility / Plugins** | Strategic platform capability | **Canonical architecture frozen** — implementation stages planned; complete platform-level third-party E2E proof not yet established |
 | **Other reusable foundations** | Supporting evidence | Varies by capability; inspect [PROOFS](docs/project/proofs/PROOFS.md) |
+
+Platform capability maturity is summarized in
+[Platform capabilities and directions](#platform-capabilities-and-directions) below.
+
+## Platform capabilities and directions
+
+Compact index of strategic platform capabilities. Status is bounded and
+capability-specific; see linked architecture and proof routes for detail.
+
+| Capability | Role | Current status |
+| --- | --- | --- |
+| **Observability & Auditability** | Shared observability spine for reconstructable, reviewable governed execution — runtime events, [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence, and correlated execution records; execution-level explainability, not hidden model chain-of-thought | **IMPLEMENTED CORE + BOUNDED PROOF** — [Observability](docs/project/architecture/OBSERVABILITY.md) · [LKW bounded observability proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Controlled Sentry proof](applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md); universal every-path production observability **not claimed**; broader required-path coverage remains an active program |
+| **Token Optimization** | Featured platform-capability proof — policy-governed context and prompt optimization with receipts, fallback, and bounded offline proof | **PARTIAL — bounded** |
+| **Multiplayer AI** | Strategic platform capability — governed multi-principal collaboration among humans, agents, services, and external agents | **Architecture / roadmap stage** — runtime proof not yet established |
+| **Platform Extensibility** | Strategic platform capability — governed extension packages across domain-owned contracts ([Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md)) | **Canonical architecture frozen** — implementation stages planned; complete platform-level third-party E2E proof not yet established |
+| **Agent Marketplace** | Future ecosystem layer — governed distribution of reusable Tier-2 agents built on Agent Distribution and platform extensibility | **FUTURE PRODUCT** — public marketplace experience **not shipped today**; underlying distribution capabilities have mixed maturity |
 
 ## Token Optimization
 
