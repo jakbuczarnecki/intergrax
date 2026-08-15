@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import errno
 import io
 import json
 import os
@@ -18,7 +17,6 @@ import platform
 import queue
 import re
 import shutil
-import socket
 import subprocess
 import sys
 import threading
@@ -59,6 +57,18 @@ _ENV_KEYS = frozenset(
 )
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
+from lkw_host_port_preflight import (
+    PortOwnershipKind,
+    classify_port_ownership,
+    collect_known_stack_owned_ports_map,
+    find_known_stack,
+    is_loopback_tcp_port_reachable,
+    known_intergrax_stack_definitions,
+    lifecycle_command_is_non_destructive,
+    non_destructive_compose_down_args,
+    parse_compose_ps_services,
+    probe_host_port_available,
+)
 from lkw_ollama_embedding_bootstrap import (
     MAX_EMBEDDING_MODEL_LENGTH,
     OllamaEmbeddingBootstrapError,
@@ -88,6 +98,14 @@ _FAILURE_ACTIONS = {
     "invalid_os_wrapper_pair": "Run the launcher matching the supported operating system.",
     "operating_system_mismatch": "Run the launcher directly on its matching supported operating system.",
     "port_unavailable": "Free the required LKW host port or correct supported product configuration, then rerun.",
+    "foreign_port_conflict": "Close the application using the conflicting port and rerun the LKW Quick Start.",
+    "port_ownership_unknown": "Retry the quickstart; if it persists, inspect the documented advanced Docker status commands.",
+    "known_intergrax_stack_conflict_recovery_failed": (
+        "Stop the conflicting Intergrax evaluation stack using documented commands, then rerun."
+    ),
+    "product_stack_recovery_failed": (
+        "Retry the quickstart; if it persists, inspect the documented advanced Docker status commands."
+    ),
     "insufficient_disk_space": "Free disk space for the first Docker/model bootstrap, then rerun.",
     "invalid_mandatory_configuration": "Correct the supported LKW model/provider or host-port configuration, then rerun.",
     "env_example_missing": "Restore .env.example from the repository and rerun.",
@@ -143,10 +161,19 @@ VALID_OS_WRAPPER_PAIRS: frozenset[tuple[OsFamily, WrapperId]] = frozenset(
 
 
 class QuickstartError(Exception):
-    def __init__(self, reason: str, *, stage: str) -> None:
+    def __init__(
+        self,
+        reason: str,
+        *,
+        stage: str,
+        conflicting_port: int | None = None,
+        detected_stack: str | None = None,
+    ) -> None:
         super().__init__(reason)
         self.reason = reason
         self.stage = stage
+        self.conflicting_port = conflicting_port
+        self.detected_stack = detected_stack
 
 
 @dataclass
@@ -281,19 +308,32 @@ def _print_kv(key: str, value: object) -> None:
     print(f"{key}={value}", flush=True)
 
 
-def _emit_failure(stage: str, reason: str) -> None:
+def _emit_failure(
+    stage: str,
+    reason: str,
+    *,
+    conflicting_port: int | None = None,
+    detected_stack: str | None = None,
+) -> None:
     safe_stage = stage if _SAFE_REASON.fullmatch(stage) else "unknown"
     safe_reason = reason if _SAFE_REASON.fullmatch(reason) else "unsafe_failure_reason"
     _print_kv("lkw_quickstart_result", "FAIL")
     _print_kv("failed_stage", safe_stage)
     _print_kv("failure_reason", safe_reason)
-    _print_kv(
-        "recommended_action",
-        _FAILURE_ACTIONS.get(
-            safe_reason,
-            "Retry the documented LKW product quickstart.",
-        ),
+    if conflicting_port is not None and 1 <= conflicting_port <= 65535:
+        _print_kv("conflicting_port", conflicting_port)
+    if detected_stack and _SAFE_REASON.fullmatch(detected_stack):
+        _print_kv("detected_stack", detected_stack)
+    recommended_action = _FAILURE_ACTIONS.get(
+        safe_reason,
+        "Retry the documented LKW product quickstart.",
     )
+    if safe_reason == "foreign_port_conflict" and conflicting_port is not None:
+        recommended_action = (
+            f"Close the application using port {conflicting_port} "
+            "and rerun the LKW Quick Start."
+        )
+    _print_kv("recommended_action", recommended_action)
 
 
 def _assert_safe_user_text(text: str) -> None:
@@ -513,94 +553,144 @@ def _check_docker_capabilities() -> None:
 
 
 def _parse_compose_ps_services(stdout: str) -> list[dict[str, Any]] | None:
-    raw = stdout[:65536].strip()
-    if not raw:
-        return []
-    try:
-        payload = json.loads(raw)
-    except (TypeError, json.JSONDecodeError):
-        services: list[dict[str, Any]] = []
-        for line in raw.splitlines():
-            stripped = line.strip()
-            if not stripped:
-                continue
-            try:
-                item = json.loads(stripped)
-            except json.JSONDecodeError:
-                return None
-            if isinstance(item, dict):
-                services.append(item)
-        return services
-    if isinstance(payload, dict):
-        return [payload]
-    if isinstance(payload, list):
-        services: list[dict[str, Any]] = []
-        for item in payload:
-            if isinstance(item, dict):
-                services.append(item)
-        return services
-    return None
+    return parse_compose_ps_services(stdout)
 
 
-def _host_ports_from_compose_ports_field(ports_field: str) -> set[int]:
-    ports: set[int] = set()
-    for fragment in str(ports_field).split(","):
-        fragment = fragment.strip()
-        if "->" not in fragment:
-            continue
-        host_mapping = fragment.split("->", 1)[0]
-        host_port_text = host_mapping.rsplit(":", 1)[-1].strip()
-        if not host_port_text.isdecimal():
-            continue
-        port = int(host_port_text)
-        if 1 <= port <= 65535:
-            ports.add(port)
-    return ports
+def _known_intergrax_stacks() -> tuple[Any, ...]:
+    return known_intergrax_stack_definitions(_APP_DIR / "docker")
 
 
-def _host_ports_from_compose_service(service: Mapping[str, Any]) -> set[int]:
-    ports = _host_ports_from_compose_publishers(service)
-    ports_field = service.get("Ports", service.get("ports"))
-    if isinstance(ports_field, str):
-        ports.update(_host_ports_from_compose_ports_field(ports_field))
-    return ports
-
-
-def _host_ports_from_compose_publishers(service: Mapping[str, Any]) -> set[int]:
-    ports: set[int] = set()
-    publishers = service.get("Publishers", service.get("publishers"))
-    if not isinstance(publishers, list):
-        return ports
-    for entry in publishers:
-        if not isinstance(entry, dict):
-            continue
-        published = entry.get("PublishedPort", entry.get("publishedPort"))
-        if isinstance(published, bool):
-            continue
-        try:
-            port = int(published)
-        except (TypeError, ValueError, OverflowError):
-            continue
-        if 1 <= port <= 65535:
-            ports.add(port)
-    return ports
+def _collect_stack_owned_ports_map() -> dict[str, frozenset[int] | None]:
+    stacks = _known_intergrax_stacks()
+    return collect_known_stack_owned_ports_map(
+        stacks,
+        run_command=run_command,
+        cwd=_APP_DIR,
+        timeout=30,
+    )
 
 
 def _canonical_product_owned_host_ports() -> frozenset[int] | None:
+    owned = _collect_stack_owned_ports_map()
+    return owned.get("lkw-product-quickstart")
+
+
+def _probe_host_port(port: int) -> None:
+    if not probe_host_port_available(port):
+        raise QuickstartError(
+            "foreign_port_conflict",
+            stage="preflight",
+            conflicting_port=port,
+        )
+
+
+def _raise_port_preflight_failure(ownership: Any) -> None:
+    if ownership.kind == PortOwnershipKind.FOREIGN_PROCESS:
+        raise QuickstartError(
+            "foreign_port_conflict",
+            stage="preflight",
+            conflicting_port=ownership.port,
+        )
+    raise QuickstartError(
+        "port_ownership_unknown",
+        stage="preflight",
+        conflicting_port=ownership.port,
+    )
+
+
+def _stop_known_intergrax_stack_non_destructively(stack: Any) -> None:
+    command = non_destructive_compose_down_args(stack)
+    if not lifecycle_command_is_non_destructive(command):
+        raise QuickstartError(
+            "known_intergrax_stack_conflict_recovery_failed",
+            stage="preflight",
+            detected_stack=stack.stack_id,
+        )
+    print(
+        "Detected another Intergrax evaluation stack using a required LKW port:",
+        flush=True,
+    )
+    print(f"{stack.display_label} ({stack.stack_id})", flush=True)
+    print("Stopping that evaluation stack safely and continuing...", flush=True)
     completed = run_command(
-        compose_exec_args("ps", "-a", "--format", "json"),
-        timeout=30,
+        command,
+        cwd=_APP_DIR,
+        timeout=300,
         stage="preflight",
     )
     if completed.returncode != 0:
-        return None
-    services = _parse_compose_ps_services(completed.stdout)
-    if services is None:
-        return None
-    owned: set[int] = set()
-    for service in services:
-        owned.update(_host_ports_from_compose_service(service))
-    return frozenset(owned)
+        raise QuickstartError(
+            "known_intergrax_stack_conflict_recovery_failed",
+            stage="preflight",
+            detected_stack=stack.stack_id,
+        )
+
+
+def prepare_product_quickstart_port_preflight(mongodb_host_port: int) -> None:
+    stacks = _known_intergrax_stacks()
+    stack_labels = {stack.stack_id: stack.display_label for stack in stacks}
+    required_ports = {_PRODUCT_HOST_PORT, _OTEL_HOST_PORT, mongodb_host_port}
+
+    def _verify_required_ports(stack_owned: Mapping[str, frozenset[int] | None]) -> set[str]:
+        stacks_to_stop: set[str] = set()
+        for port in sorted(required_ports):
+            ownership = classify_port_ownership(
+                port,
+                stack_owned,
+                product_stack_id="lkw-product-quickstart",
+                stack_labels=stack_labels,
+            )
+            if ownership.kind in {
+                PortOwnershipKind.PRODUCT_STACK,
+                PortOwnershipKind.FREE,
+            }:
+                continue
+            if ownership.kind == PortOwnershipKind.KNOWN_INTERGRAX_STACK:
+                if ownership.stack_id:
+                    stacks_to_stop.add(ownership.stack_id)
+                continue
+            _raise_port_preflight_failure(ownership)
+        return stacks_to_stop
+
+    stack_owned = _collect_stack_owned_ports_map()
+    stacks_to_stop = _verify_required_ports(stack_owned)
+    for stack_id in sorted(stacks_to_stop):
+        stack = find_known_stack(stacks, stack_id)
+        if stack is None or stack.is_product_stack:
+            raise QuickstartError(
+                "known_intergrax_stack_conflict_recovery_failed",
+                stage="preflight",
+                detected_stack=stack_id,
+            )
+        _stop_known_intergrax_stack_non_destructively(stack)
+
+    if stacks_to_stop:
+        stack_owned = _collect_stack_owned_ports_map()
+        remaining = _verify_required_ports(stack_owned)
+        if remaining:
+            raise QuickstartError(
+                "known_intergrax_stack_conflict_recovery_failed",
+                stage="preflight",
+                detected_stack=next(iter(sorted(remaining))),
+            )
+
+
+def _check_required_ports(
+    *,
+    mongodb_host_port: int,
+    allow_running_stack: bool,
+) -> None:
+    if not allow_running_stack:
+        for port in sorted({_PRODUCT_HOST_PORT, _OTEL_HOST_PORT, mongodb_host_port}):
+            _probe_host_port(port)
+            if is_loopback_tcp_port_reachable(port):
+                raise QuickstartError(
+                    "foreign_port_conflict",
+                    stage="preflight",
+                    conflicting_port=port,
+                )
+        return
+    prepare_product_quickstart_port_preflight(mongodb_host_port)
 
 
 def _running_product_stack() -> bool:
@@ -620,88 +710,6 @@ def _running_product_stack() -> bool:
         if name == "local_workspace" and state in {"running", "up"}:
             return True
     return False
-
-
-_IPV6_UNSUPPORTED_ERRNOS = frozenset(
-    error
-    for error in (
-        getattr(errno, "EAFNOSUPPORT", None),
-        getattr(errno, "EPROTONOSUPPORT", None),
-        getattr(errno, "ENOPROTOOPT", None),
-        getattr(errno, "EADDRNOTAVAIL", None),
-        10043,  # WSAEPROTONOSUPPORT
-        10047,  # WSAEAFNOSUPPORT
-        10049,  # WSAEADDRNOTAVAIL
-    )
-    if error is not None
-)
-
-
-def _is_unsupported_ipv6_error(error: OSError) -> bool:
-    return error.errno in _IPV6_UNSUPPORTED_ERRNOS
-
-
-def _is_loopback_tcp_port_reachable(port: int) -> bool:
-    probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    probe.settimeout(1.0)
-    try:
-        return probe.connect_ex(("127.0.0.1", port)) == 0
-    finally:
-        probe.close()
-
-
-def _probe_host_port(port: int) -> None:
-    probes: list[tuple[int, tuple[object, ...]]] = [
-        (socket.AF_INET, ("0.0.0.0", port)),
-    ]
-    ipv6_family = getattr(socket, "AF_INET6", None)
-    if ipv6_family is not None:
-        probes.append((ipv6_family, ("::", port, 0, 0)))
-
-    for family, address in probes:
-        try:
-            probe = socket.socket(family, socket.SOCK_STREAM)
-        except OSError as error:
-            if family == ipv6_family and _is_unsupported_ipv6_error(error):
-                continue
-            raise QuickstartError("port_unavailable", stage="preflight") from None
-        try:
-            exclusive_address_use = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
-            if exclusive_address_use is not None and hasattr(
-                probe, "setsockopt"
-            ):
-                try:
-                    probe.setsockopt(
-                        socket.SOL_SOCKET,
-                        exclusive_address_use,
-                        1,
-                    )
-                except OSError:
-                    pass
-            probe.bind(address)
-        except OSError as error:
-            if family == ipv6_family and _is_unsupported_ipv6_error(error):
-                continue
-            raise QuickstartError("port_unavailable", stage="preflight") from None
-        finally:
-            probe.close()
-
-
-def _check_required_ports(
-    *,
-    mongodb_host_port: int,
-    allow_running_stack: bool,
-) -> None:
-    canonical_owned: frozenset[int] | None = None
-    if allow_running_stack:
-        canonical_owned = _canonical_product_owned_host_ports()
-    required_ports = {_PRODUCT_HOST_PORT, _OTEL_HOST_PORT, mongodb_host_port}
-    for port in sorted(required_ports):
-        if canonical_owned is not None and port in canonical_owned:
-            continue
-        _probe_host_port(port)
-        if _is_loopback_tcp_port_reachable(port):
-            raise QuickstartError("port_unavailable", stage="preflight")
 
 
 def run_product_preflight(config: QuickstartConfig) -> str:
@@ -1296,7 +1304,12 @@ def _run_quickstart(config: QuickstartConfig) -> int:
         emit_success(answer, workspace_id, run_id)
         return 0
     except QuickstartError as exc:
-        _emit_failure(exc.stage, exc.reason)
+        _emit_failure(
+            exc.stage,
+            exc.reason,
+            conflicting_port=exc.conflicting_port,
+            detected_stack=exc.detected_stack,
+        )
         return 1
     except Exception:  # noqa: BLE001 - preserve safe failure contract
         _emit_failure(current_stage, "unexpected_internal_error")

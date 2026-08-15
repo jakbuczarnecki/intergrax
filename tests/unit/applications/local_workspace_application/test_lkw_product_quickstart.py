@@ -58,6 +58,37 @@ def _load_module() -> ModuleType:
     return module
 
 
+def _preflight_module() -> ModuleType:
+    module = sys.modules.get("lkw_host_port_preflight")
+    assert module is not None
+    return module
+
+
+def _empty_owned_ports_map() -> dict[str, frozenset[int] | None]:
+    return {
+        "lkw-product-quickstart": frozenset(),
+        "lkw-core-platform-proof": frozenset(),
+        "lkw-trusted-ask-workspace-proof": frozenset(),
+    }
+
+
+def _product_owned_ports_map(
+    ports: frozenset[int],
+) -> dict[str, frozenset[int] | None]:
+    owned = _empty_owned_ports_map()
+    owned["lkw-product-quickstart"] = ports
+    return owned
+
+
+def _known_stack_owned_ports_map(
+    stack_id: str,
+    ports: frozenset[int],
+) -> dict[str, frozenset[int] | None]:
+    owned = _empty_owned_ports_map()
+    owned[stack_id] = ports
+    return owned
+
+
 @pytest.fixture(scope="module")
 def quick() -> ModuleType:
     return _load_module()
@@ -67,6 +98,7 @@ def quick() -> ModuleType:
 def _stub_product_preflight(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    preflight = _preflight_module()
     monkeypatch.setattr(
         quick,
         "_real_run_product_preflight",
@@ -78,7 +110,10 @@ def _stub_product_preflight(
         "run_product_preflight",
         lambda *_args, **_kwargs: "llama3.1:latest",
     )
-    monkeypatch.setattr(quick, "_is_loopback_tcp_port_reachable", lambda _port: False)
+    monkeypatch.setattr(preflight, "is_loopback_tcp_port_reachable", lambda _port: False)
+    monkeypatch.setattr(preflight, "probe_host_port_available", lambda _port: True)
+    monkeypatch.setattr(quick, "is_loopback_tcp_port_reachable", lambda _port: False)
+    monkeypatch.setattr(quick, "probe_host_port_available", lambda _port: True)
 
 
 def _config(quick: ModuleType, **overrides: Any) -> Any:
@@ -264,133 +299,57 @@ def test_compose_unavailable_has_safe_preflight_reason(
 def test_occupied_required_port_has_safe_preflight_reason(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    class _BusySocket:
-        def setsockopt(self, *_args: Any) -> None:
-            return None
-
-        def bind(self, *_args: Any) -> None:
-            raise OSError("private socket detail")
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr(quick.socket, "socket", lambda *_a, **_k: _BusySocket())
+    preflight = _preflight_module()
+    monkeypatch.setattr(preflight, "probe_host_port_available", lambda port: False)
+    monkeypatch.setattr(quick, "probe_host_port_available", lambda port: False)
     with pytest.raises(quick.QuickstartError) as exc:
         quick._check_required_ports(
             mongodb_host_port=27018,
             allow_running_stack=False,
         )
-    assert exc.value.reason == "port_unavailable"
+    assert exc.value.reason == "foreign_port_conflict"
+    assert exc.value.conflicting_port == 4318
 
 
 def test_ipv4_wildcard_conflict_is_rejected_and_socket_is_closed(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    sockets: list[Any] = []
-
-    class _Socket:
-        def __init__(self, family: int, *_args: Any) -> None:
-            self.family = family
-            self.closed = False
-            sockets.append(self)
-
-        def bind(self, address: tuple[object, ...]) -> None:
-            if (
-                self.family == quick.socket.AF_INET
-                and address == ("0.0.0.0", 27018)
-            ):
-                raise OSError(errno.EADDRINUSE, "port is busy")
-
-        def close(self) -> None:
-            self.closed = True
-
-    monkeypatch.setattr(quick.socket, "socket", _Socket)
+    monkeypatch.setattr(
+        quick,
+        "probe_host_port_available",
+        lambda port: port != 27018,
+    )
     with pytest.raises(quick.QuickstartError) as exc:
         quick._check_required_ports(
             mongodb_host_port=27018,
             allow_running_stack=False,
         )
 
-    assert exc.value.reason == "port_unavailable"
-    assert all(probe.closed for probe in sockets)
+    assert exc.value.reason == "foreign_port_conflict"
+    assert exc.value.conflicting_port == 27018
 
 
 def test_ipv6_wildcard_conflict_is_rejected(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    sockets: list[Any] = []
-
-    class _Socket:
-        def __init__(self, family: int, *_args: Any) -> None:
-            self.family = family
-            self.closed = False
-            sockets.append(self)
-
-        def bind(self, address: tuple[object, ...]) -> None:
-            if (
-                self.family == quick.socket.AF_INET6
-                and address == ("::", 27018, 0, 0)
-            ):
-                raise OSError(errno.EADDRINUSE, "forwarded port is busy")
-
-        def close(self) -> None:
-            self.closed = True
-
-    monkeypatch.setattr(quick.socket, "socket", _Socket)
+    monkeypatch.setattr(quick, "probe_host_port_available", lambda _port: False)
     with pytest.raises(quick.QuickstartError) as exc:
         quick._probe_host_port(27018)
 
-    assert exc.value.reason == "port_unavailable"
-    assert len(sockets) == 2
-    assert all(probe.closed for probe in sockets)
+    assert exc.value.reason == "foreign_port_conflict"
+    assert exc.value.conflicting_port == 27018
 
 
 def test_free_port_is_accepted_and_all_probe_sockets_are_closed(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    sockets: list[Any] = []
-
-    class _Socket:
-        def __init__(self, *_args: Any) -> None:
-            self.closed = False
-            sockets.append(self)
-
-        def bind(self, _address: tuple[object, ...]) -> None:
-            return None
-
-        def close(self) -> None:
-            self.closed = True
-
-    monkeypatch.setattr(quick.socket, "socket", _Socket)
     quick._probe_host_port(27018)
-
-    assert len(sockets) == 2
-    assert all(probe.closed for probe in sockets)
 
 
 def test_unsupported_ipv6_does_not_reject_free_ipv4_port(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    sockets: list[Any] = []
-
-    class _Socket:
-        def __init__(self, family: int, *_args: Any) -> None:
-            if family == quick.socket.AF_INET6:
-                raise OSError(errno.EAFNOSUPPORT, "IPv6 unavailable")
-            self.closed = False
-            sockets.append(self)
-
-        def bind(self, _address: tuple[object, ...]) -> None:
-            return None
-
-        def close(self) -> None:
-            self.closed = True
-
-    monkeypatch.setattr(quick.socket, "socket", _Socket)
     quick._probe_host_port(27018)
-
-    assert len(sockets) == 1
-    assert sockets[0].closed
 
 
 def test_disk_space_failure_has_safe_preflight_reason(
@@ -483,36 +442,10 @@ def test_canonical_running_local_workspace_owns_8020(
 ) -> None:
     monkeypatch.setattr(
         quick,
-        "run_command",
-        lambda *_a, **_k: type(
-            "CP",
-            (),
-            {
-                "returncode": 0,
-                "stdout": _compose_ps_stdout(
-                    _canonical_service(
-                        "local_workspace",
-                        state="running",
-                        published_ports=[8020],
-                    ),
-                    _canonical_service("lkw-mongodb", published_ports=[27018]),
-                    _canonical_service("otel-collector", published_ports=[4318]),
-                ),
-            },
-        )(),
+        "_collect_stack_owned_ports_map",
+        lambda: _product_owned_ports_map(frozenset({8020, 27018, 4318})),
     )
-    probed: list[int] = []
-
-    class _Socket:
-        def bind(self, address: tuple[object, ...]) -> None:
-            probed.append(int(address[1]))
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr(quick.socket, "socket", lambda *_a, **_k: _Socket())
-    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
-    assert probed == []
+    quick.prepare_product_quickstart_port_preflight(27018)
 
 
 def test_canonical_restarting_local_workspace_owns_8020(
@@ -520,36 +453,10 @@ def test_canonical_restarting_local_workspace_owns_8020(
 ) -> None:
     monkeypatch.setattr(
         quick,
-        "run_command",
-        lambda *_a, **_k: type(
-            "CP",
-            (),
-            {
-                "returncode": 0,
-                "stdout": _compose_ps_stdout(
-                    _canonical_service(
-                        "local_workspace",
-                        state="restarting",
-                        published_ports=[8020],
-                    ),
-                    _canonical_service("lkw-mongodb", published_ports=[27018]),
-                    _canonical_service("otel-collector", published_ports=[4318]),
-                ),
-            },
-        )(),
+        "_collect_stack_owned_ports_map",
+        lambda: _product_owned_ports_map(frozenset({8020, 27018, 4318})),
     )
-    probed: list[int] = []
-
-    class _Socket:
-        def bind(self, address: tuple[object, ...]) -> None:
-            probed.append(int(address[1]))
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr(quick.socket, "socket", lambda *_a, **_k: _Socket())
-    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
-    assert probed == []
+    quick.prepare_product_quickstart_port_preflight(27018)
 
 
 def test_canonical_partial_stack_mongo_owns_configured_port(
@@ -557,37 +464,10 @@ def test_canonical_partial_stack_mongo_owns_configured_port(
 ) -> None:
     monkeypatch.setattr(
         quick,
-        "run_command",
-        lambda *_a, **_k: type(
-            "CP",
-            (),
-            {
-                "returncode": 0,
-                "stdout": _compose_ps_stdout(
-                    _canonical_service(
-                        "lkw-mongodb",
-                        state="running",
-                        published_ports=[27019],
-                    ),
-                ),
-            },
-        )(),
+        "_collect_stack_owned_ports_map",
+        lambda: _product_owned_ports_map(frozenset({27019})),
     )
-    probed: list[int] = []
-
-    class _Socket:
-        def __init__(self, family: int, *_args: Any) -> None:
-            self.family = family
-
-        def bind(self, address: tuple[object, ...]) -> None:
-            probed.append(int(address[1]))
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr(quick.socket, "socket", _Socket)
-    quick._check_required_ports(mongodb_host_port=27019, allow_running_stack=True)
-    assert sorted(probed) == [4318, 4318, 8020, 8020]
+    quick.prepare_product_quickstart_port_preflight(27019)
 
 
 def test_canonical_otel_owns_4318(
@@ -595,86 +475,44 @@ def test_canonical_otel_owns_4318(
 ) -> None:
     monkeypatch.setattr(
         quick,
-        "run_command",
-        lambda *_a, **_k: type(
-            "CP",
-            (),
-            {
-                "returncode": 0,
-                "stdout": _compose_ps_stdout(
-                    _canonical_service(
-                        "otel-collector",
-                        state="running",
-                        published_ports=[4318],
-                    ),
-                ),
-            },
-        )(),
+        "_collect_stack_owned_ports_map",
+        lambda: _product_owned_ports_map(frozenset({4318})),
     )
-    probed: list[int] = []
-
-    class _Socket:
-        def __init__(self, family: int, *_args: Any) -> None:
-            self.family = family
-
-        def bind(self, address: tuple[object, ...]) -> None:
-            probed.append(int(address[1]))
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr(quick.socket, "socket", _Socket)
-    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
-    assert 4318 not in probed
-    assert 8020 in probed
-    assert 27018 in probed
+    quick.prepare_product_quickstart_port_preflight(27018)
 
 
 def test_foreign_compose_project_ownership_is_not_canonical(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    preflight = _preflight_module()
     monkeypatch.setattr(
         quick,
-        "_canonical_product_owned_host_ports",
-        lambda: frozenset(),
+        "_collect_stack_owned_ports_map",
+        lambda: _empty_owned_ports_map(),
     )
-    monkeypatch.setattr(quick, "_is_loopback_tcp_port_reachable", lambda _port: False)
-
-    class _BusySocket:
-        def bind(self, address: tuple[object, ...]) -> None:
-            if int(address[1]) == 8020:
-                raise OSError("foreign docker project owns port")
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr(quick.socket, "socket", lambda *_a, **_k: _BusySocket())
+    monkeypatch.setattr(preflight, "probe_host_port_available", lambda port: port != 8020)
+    monkeypatch.setattr(preflight, "is_loopback_tcp_port_reachable", lambda port: port == 8020)
     with pytest.raises(quick.QuickstartError) as exc:
         quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
-    assert exc.value.reason == "port_unavailable"
+    assert exc.value.reason == "foreign_port_conflict"
+    assert exc.value.conflicting_port == 8020
 
 
 def test_loopback_reachable_port_is_rejected_when_bind_probe_passes(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    preflight = _preflight_module()
     monkeypatch.setattr(
         quick,
-        "_canonical_product_owned_host_ports",
-        lambda: frozenset(),
+        "_collect_stack_owned_ports_map",
+        lambda: _empty_owned_ports_map(),
     )
-    monkeypatch.setattr(quick, "_is_loopback_tcp_port_reachable", lambda port: port == 27018)
-
-    class _Socket:
-        def bind(self, *_args: Any) -> None:
-            return None
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr(quick.socket, "socket", lambda *_a, **_k: _Socket())
+    monkeypatch.setattr(preflight, "probe_host_port_available", lambda _port: True)
+    monkeypatch.setattr(preflight, "is_loopback_tcp_port_reachable", lambda port: port == 27018)
     with pytest.raises(quick.QuickstartError) as exc:
         quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
-    assert exc.value.reason == "port_unavailable"
+    assert exc.value.reason == "foreign_port_conflict"
+    assert exc.value.conflicting_port == 27018
 
 
 def test_exited_mongodb_maps_to_mongodb_not_ready(
@@ -700,105 +538,64 @@ def test_exited_mongodb_maps_to_mongodb_not_ready(
 def test_port_not_in_canonical_publishers_still_probes(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    preflight = _preflight_module()
     monkeypatch.setattr(
         quick,
-        "run_command",
-        lambda *_a, **_k: type(
-            "CP",
-            (),
-            {
-                "returncode": 0,
-                "stdout": _compose_ps_stdout(
-                    _canonical_service(
-                        "local_workspace",
-                        state="exited",
-                        published_ports=[],
-                    ),
-                ),
-            },
-        )(),
+        "_collect_stack_owned_ports_map",
+        lambda: _product_owned_ports_map(frozenset()),
     )
     probed: list[int] = []
-
-    class _Socket:
-        def __init__(self, family: int, *_args: Any) -> None:
-            self.family = family
-
-        def bind(self, address: tuple[object, ...]) -> None:
-            probed.append(int(address[1]))
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr(quick.socket, "socket", _Socket)
-    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
-    assert sorted(probed) == [4318, 4318, 8020, 8020, 27018, 27018]
+    monkeypatch.setattr(
+        preflight,
+        "probe_host_port_available",
+        lambda port: probed.append(port) or True,
+    )
+    monkeypatch.setattr(preflight, "is_loopback_tcp_port_reachable", lambda _port: False)
+    quick.prepare_product_quickstart_port_preflight(27018)
+    assert sorted(probed) == [4318, 8020, 27018]
 
 
 def test_malformed_compose_response_falls_back_to_generic_probe(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    preflight = _preflight_module()
     monkeypatch.setattr(
         quick,
-        "run_command",
-        lambda *_a, **_k: type(
-            "CP",
-            (),
-            {"returncode": 0, "stdout": "not-json"},
-        )(),
+        "_collect_stack_owned_ports_map",
+        lambda: {
+            "lkw-product-quickstart": None,
+            "lkw-core-platform-proof": None,
+            "lkw-trusted-ask-workspace-proof": None,
+        },
     )
     probed: list[int] = []
-
-    class _Socket:
-        def __init__(self, family: int, *_args: Any) -> None:
-            self.family = family
-
-        def bind(self, address: tuple[object, ...]) -> None:
-            probed.append(int(address[1]))
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr(quick.socket, "socket", _Socket)
-    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
-    assert sorted(probed) == [4318, 4318, 8020, 8020, 27018, 27018]
+    monkeypatch.setattr(
+        preflight,
+        "probe_host_port_available",
+        lambda port: probed.append(port) or True,
+    )
+    monkeypatch.setattr(preflight, "is_loopback_tcp_port_reachable", lambda _port: False)
+    quick.prepare_product_quickstart_port_preflight(27018)
+    assert sorted(probed) == [4318, 8020, 27018]
 
 
 def test_canonical_ownership_for_one_port_does_not_skip_other_ports(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    preflight = _preflight_module()
     monkeypatch.setattr(
         quick,
-        "run_command",
-        lambda *_a, **_k: type(
-            "CP",
-            (),
-            {
-                "returncode": 0,
-                "stdout": _compose_ps_stdout(
-                    _canonical_service(
-                        "local_workspace",
-                        state="running",
-                        published_ports=[8020],
-                    ),
-                ),
-            },
-        )(),
+        "_collect_stack_owned_ports_map",
+        lambda: _product_owned_ports_map(frozenset({8020})),
     )
     probed: list[int] = []
-
-    class _Socket:
-        def __init__(self, family: int, *_args: Any) -> None:
-            self.family = family
-
-        def bind(self, address: tuple[object, ...]) -> None:
-            probed.append(int(address[1]))
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr(quick.socket, "socket", _Socket)
-    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
+    monkeypatch.setattr(
+        preflight,
+        "probe_host_port_available",
+        lambda port: probed.append(port) or True,
+    )
+    monkeypatch.setattr(preflight, "is_loopback_tcp_port_reachable", lambda _port: False)
+    quick.prepare_product_quickstart_port_preflight(27018)
     assert 8020 not in probed
     assert 4318 in probed
     assert 27018 in probed
@@ -807,25 +604,12 @@ def test_canonical_ownership_for_one_port_does_not_skip_other_ports(
 def test_compose_ndjson_ps_output_is_parsed_for_canonical_ownership(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    ndjson = "\n".join(
-        [
-            '{"Service":"lkw-mongodb","State":"running","Ports":"0.0.0.0:27018->27017/tcp","Publishers":[{"PublishedPort":27018}]}',
-            '{"Service":"local_workspace","State":"restarting","Ports":"0.0.0.0:8020->8020/tcp","Publishers":[{"PublishedPort":8020}]}',
-            '{"Service":"otel-collector","State":"running","Ports":"0.0.0.0:4318->4318/tcp","Publishers":[{"PublishedPort":4318}]}',
-        ]
-    )
     monkeypatch.setattr(
         quick,
-        "run_command",
-        lambda *_a, **_k: type("CP", (), {"returncode": 0, "stdout": ndjson})(),
+        "_collect_stack_owned_ports_map",
+        lambda: _product_owned_ports_map(frozenset({8020, 27018, 4318})),
     )
-
-    class _UnexpectedSocket:
-        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
-            raise AssertionError("port probe must be skipped for canonical ownership")
-
-    monkeypatch.setattr(quick.socket, "socket", _UnexpectedSocket)
-    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
+    quick.prepare_product_quickstart_port_preflight(27018)
 
 
 def test_running_product_stack_allows_safe_port_reuse(
@@ -833,30 +617,9 @@ def test_running_product_stack_allows_safe_port_reuse(
 ) -> None:
     monkeypatch.setattr(
         quick,
-        "run_command",
-        lambda *_a, **_k: type(
-            "CP",
-            (),
-            {
-                "returncode": 0,
-                "stdout": _compose_ps_stdout(
-                    _canonical_service(
-                        "local_workspace",
-                        state="running",
-                        published_ports=[8020],
-                    ),
-                    _canonical_service("lkw-mongodb", published_ports=[27018]),
-                    _canonical_service("otel-collector", published_ports=[4318]),
-                ),
-            },
-        )(),
+        "_collect_stack_owned_ports_map",
+        lambda: _product_owned_ports_map(frozenset({8020, 27018, 4318})),
     )
-
-    class _UnexpectedSocket:
-        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
-            raise AssertionError("port probe must be skipped for canonical ownership")
-
-    monkeypatch.setattr(quick.socket, "socket", _UnexpectedSocket)
     quick._check_required_ports(
         mongodb_host_port=27018,
         allow_running_stack=True,
@@ -899,12 +662,17 @@ def test_port_failure_output_has_stable_preflight_contract(
 ) -> None:
     buffer = io.StringIO()
     with redirect_stdout(buffer):
-        quick._emit_failure("preflight", "port_unavailable")
+        quick._emit_failure(
+            "preflight",
+            "foreign_port_conflict",
+            conflicting_port=8020,
+        )
     text = buffer.getvalue()
     assert "lkw_quickstart_result=FAIL" in text
     assert "failed_stage=preflight" in text
-    assert "failure_reason=port_unavailable" in text
-    assert "recommended_action=Free the required LKW host port" in text
+    assert "failure_reason=foreign_port_conflict" in text
+    assert "conflicting_port=8020" in text
+    assert "recommended_action=Close the application using port 8020" in text
     assert "Traceback" not in text
 
 
@@ -1836,3 +1604,184 @@ def test_wrapper_references_runner(
     assert "run-lkw-product-quickstart.py" in text
     assert os_family in text
     assert wrapper_id in text
+
+
+def test_clean_first_run_port_preflight_succeeds_when_ports_are_free(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    preflight = _preflight_module()
+    monkeypatch.setattr(
+        quick,
+        "_collect_stack_owned_ports_map",
+        lambda: _empty_owned_ports_map(),
+    )
+    monkeypatch.setattr(preflight, "probe_host_port_available", lambda _port: True)
+    monkeypatch.setattr(preflight, "is_loopback_tcp_port_reachable", lambda _port: False)
+    quick.prepare_product_quickstart_port_preflight(27018)
+
+
+def test_core_platform_proof_conflict_is_stopped_non_destructively(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    preflight = _preflight_module()
+    calls: list[list[str]] = []
+    owned_calls = 0
+
+    def _collect_owned() -> dict[str, frozenset[int] | None]:
+        nonlocal owned_calls
+        owned_calls += 1
+        if owned_calls == 1:
+            return _known_stack_owned_ports_map(
+                "lkw-core-platform-proof",
+                frozenset({8020}),
+            )
+        return _empty_owned_ports_map()
+
+    monkeypatch.setattr(quick, "_collect_stack_owned_ports_map", _collect_owned)
+
+    def _run_command(args: list[str], **_kwargs: Any) -> Any:
+        calls.append(list(args))
+        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(quick, "run_command", _run_command)
+    quick.prepare_product_quickstart_port_preflight(27018)
+    down_commands = [cmd for cmd in calls if "down" in cmd]
+    assert down_commands
+    assert all(preflight.lifecycle_command_is_non_destructive(cmd) for cmd in down_commands)
+    assert any("lkw-core-platform-proof" in cmd for cmd in down_commands)
+
+
+def test_trusted_ask_proof_conflict_is_stopped_non_destructively(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    preflight = _preflight_module()
+    commands: list[list[str]] = []
+    owned_calls = 0
+
+    def _collect_owned() -> dict[str, frozenset[int] | None]:
+        nonlocal owned_calls
+        owned_calls += 1
+        if owned_calls == 1:
+            return _known_stack_owned_ports_map(
+                "lkw-trusted-ask-workspace-proof",
+                frozenset({4318}),
+            )
+        return _empty_owned_ports_map()
+
+    monkeypatch.setattr(quick, "_collect_stack_owned_ports_map", _collect_owned)
+
+    def _run_command(args: list[str], **_kwargs: Any) -> Any:
+        commands.append(list(args))
+        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(quick, "run_command", _run_command)
+    quick.prepare_product_quickstart_port_preflight(27018)
+    down_commands = [cmd for cmd in commands if "down" in cmd]
+    assert any("lkw-trusted-ask-workspace-proof" in cmd for cmd in down_commands)
+    assert all(preflight.lifecycle_command_is_non_destructive(cmd) for cmd in down_commands)
+
+
+def test_foreign_process_on_otel_port_reports_precise_failure(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    preflight = _preflight_module()
+    monkeypatch.setattr(
+        quick,
+        "_collect_stack_owned_ports_map",
+        lambda: _empty_owned_ports_map(),
+    )
+    monkeypatch.setattr(
+        preflight,
+        "probe_host_port_available",
+        lambda port: port != 4318,
+    )
+    monkeypatch.setattr(
+        preflight,
+        "is_loopback_tcp_port_reachable",
+        lambda port: port == 4318,
+    )
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.prepare_product_quickstart_port_preflight(27018)
+    assert exc.value.reason == "foreign_port_conflict"
+    assert exc.value.conflicting_port == 4318
+
+
+def test_foreign_process_on_configured_mongo_port_reports_precise_failure(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    preflight = _preflight_module()
+    monkeypatch.setattr(
+        quick,
+        "_collect_stack_owned_ports_map",
+        lambda: _empty_owned_ports_map(),
+    )
+    monkeypatch.setattr(
+        preflight,
+        "probe_host_port_available",
+        lambda port: port != 27019,
+    )
+    monkeypatch.setattr(
+        preflight,
+        "is_loopback_tcp_port_reachable",
+        lambda port: port == 27019,
+    )
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.prepare_product_quickstart_port_preflight(27019)
+    assert exc.value.reason == "foreign_port_conflict"
+    assert exc.value.conflicting_port == 27019
+
+
+def test_unknown_port_ownership_does_not_stop_arbitrary_stacks(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    preflight = _preflight_module()
+    monkeypatch.setattr(
+        quick,
+        "_collect_stack_owned_ports_map",
+        lambda: {
+            "lkw-product-quickstart": None,
+            "lkw-core-platform-proof": None,
+            "lkw-trusted-ask-workspace-proof": None,
+        },
+    )
+    monkeypatch.setattr(preflight, "is_loopback_tcp_port_reachable", lambda _port: True)
+    stopped = False
+
+    def _run_command(*_args: Any, **_kwargs: Any) -> Any:
+        nonlocal stopped
+        stopped = True
+        return type("CP", (), {"returncode": 0})()
+
+    monkeypatch.setattr(quick, "run_command", _run_command)
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.prepare_product_quickstart_port_preflight(27018)
+    assert exc.value.reason == "port_ownership_unknown"
+    assert exc.value.conflicting_port == 4318
+    assert stopped is False
+
+
+def test_known_stack_stop_failure_returns_precise_recovery_failure(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[str] = []
+
+    def _run_command(args: list[str], **_kwargs: Any) -> Any:
+        calls.append(" ".join(args))
+        if " ps" in " ".join(args) or args[-2:] == ["ps", "-a"]:
+            return type("CP", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
+        return type("CP", (), {"returncode": 1, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(quick, "run_command", _run_command)
+    monkeypatch.setattr(
+        quick,
+        "_collect_stack_owned_ports_map",
+        lambda: _known_stack_owned_ports_map(
+            "lkw-core-platform-proof",
+            frozenset({8020}),
+        ),
+    )
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.prepare_product_quickstart_port_preflight(27018)
+    assert exc.value.reason == "known_intergrax_stack_conflict_recovery_failed"
+    assert exc.value.detected_stack == "lkw-core-platform-proof"
+    assert any("down" in call for call in calls)

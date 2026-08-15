@@ -8,6 +8,9 @@ import errno
 import json
 import socket
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
+from enum import Enum
+from pathlib import Path
 from typing import Any
 
 _IPV6_UNSUPPORTED_ERRNOS = frozenset(
@@ -221,3 +224,198 @@ def resolve_compose_published_host_ports(
     if not isinstance(parsed, dict):
         raise RuntimeError("compose_config_not_object")
     return published_host_ports_from_compose_config(parsed)
+
+
+class PortOwnershipKind(str, Enum):
+    PRODUCT_STACK = "product_stack"
+    KNOWN_INTERGRAX_STACK = "known_intergrax_stack"
+    FOREIGN_PROCESS = "foreign_process"
+    FREE = "free"
+    UNKNOWN = "unknown"
+
+
+@dataclass(frozen=True)
+class PortOwnership:
+    port: int
+    kind: PortOwnershipKind
+    stack_id: str | None = None
+    owner_label: str | None = None
+
+
+@dataclass(frozen=True)
+class KnownIntergraxStackDefinition:
+    stack_id: str
+    compose_project: str
+    compose_file_paths: tuple[str, ...]
+    display_label: str
+    is_product_stack: bool = False
+
+
+_PRODUCT_STACK_ID = "lkw-product-quickstart"
+_CORE_PLATFORM_PROOF_STACK_ID = "lkw-core-platform-proof"
+_TRUSTED_ASK_PROOF_STACK_ID = "lkw-trusted-ask-workspace-proof"
+
+_DESTRUCTIVE_LIFECYCLE_MARKERS = frozenset(
+    {
+        "-v",
+        "--volumes",
+        "volume",
+        "prune",
+    }
+)
+
+
+def known_intergrax_stack_definitions(docker_dir: Path) -> tuple[KnownIntergraxStackDefinition, ...]:
+    return (
+        KnownIntergraxStackDefinition(
+            stack_id=_PRODUCT_STACK_ID,
+            compose_project="intergrax_lkw",
+            compose_file_paths=(str(docker_dir / "docker-compose.yml"),),
+            display_label="LKW Product Quick Start",
+            is_product_stack=True,
+        ),
+        KnownIntergraxStackDefinition(
+            stack_id=_CORE_PLATFORM_PROOF_STACK_ID,
+            compose_project="lkw-core-platform-proof",
+            compose_file_paths=tuple(
+                str(docker_dir / name)
+                for name in (
+                    "docker-compose.yml",
+                    "docker-compose.elasticsearch.yml",
+                    "docker-compose.kafka.yml",
+                    "docker-compose.mongodb.yml",
+                    "docker-compose.sentry.yml",
+                )
+            ),
+            display_label="LKW Core Platform Proof",
+        ),
+        KnownIntergraxStackDefinition(
+            stack_id=_TRUSTED_ASK_PROOF_STACK_ID,
+            compose_project="lkw-trusted-ask-workspace-proof",
+            compose_file_paths=tuple(
+                str(docker_dir / name)
+                for name in (
+                    "docker-compose.yml",
+                    "docker-compose.mongodb.yml",
+                    "docker-compose.trusted-ask-proof.yml",
+                )
+            ),
+            display_label="LKW Trusted Ask Workspace Proof",
+        ),
+    )
+
+
+def compose_exec_args_for_stack(
+    stack: KnownIntergraxStackDefinition,
+    *compose_command: str,
+) -> list[str]:
+    args = ["docker", "compose", "-p", stack.compose_project]
+    for path in stack.compose_file_paths:
+        args.extend(["-f", path])
+    args.extend(compose_command)
+    return args
+
+
+def non_destructive_compose_down_args(
+    stack: KnownIntergraxStackDefinition,
+) -> list[str]:
+    return [*compose_exec_args_for_stack(stack, "down"), "--remove-orphans"]
+
+
+def lifecycle_command_is_non_destructive(command: Sequence[str]) -> bool:
+    lowered = [part.lower() for part in command]
+    for index, part in enumerate(lowered):
+        if part in _DESTRUCTIVE_LIFECYCLE_MARKERS:
+            return False
+        if part == "volume" and index + 1 < len(lowered) and lowered[index + 1] == "rm":
+            return False
+        if part == "system" and index + 1 < len(lowered) and lowered[index + 1] == "prune":
+            return False
+    return True
+
+
+def collect_stack_owned_ports(
+    stack: KnownIntergraxStackDefinition,
+    *,
+    run_command: Callable[..., Any],
+    cwd: Any,
+    timeout: int = 30,
+) -> frozenset[int] | None:
+    return canonical_compose_owned_host_ports(
+        compose_exec_args=lambda *command: compose_exec_args_for_stack(stack, *command),
+        run_command=run_command,
+        cwd=cwd,
+        timeout=timeout,
+    )
+
+
+def collect_known_stack_owned_ports_map(
+    stacks: Sequence[KnownIntergraxStackDefinition],
+    *,
+    run_command: Callable[..., Any],
+    cwd: Any,
+    timeout: int = 30,
+) -> dict[str, frozenset[int] | None]:
+    owned: dict[str, frozenset[int] | None] = {}
+    for stack in stacks:
+        owned[stack.stack_id] = collect_stack_owned_ports(
+            stack,
+            run_command=run_command,
+            cwd=cwd,
+            timeout=timeout,
+        )
+    return owned
+
+
+def classify_port_ownership(
+    port: int,
+    stack_owned_ports: Mapping[str, frozenset[int] | None],
+    *,
+    product_stack_id: str = _PRODUCT_STACK_ID,
+    stack_labels: Mapping[str, str] | None = None,
+) -> PortOwnership:
+    labels = stack_labels or {}
+    product_owned = stack_owned_ports.get(product_stack_id)
+    if product_owned is not None and port in product_owned:
+        return PortOwnership(
+            port=port,
+            kind=PortOwnershipKind.PRODUCT_STACK,
+            stack_id=product_stack_id,
+            owner_label=labels.get(product_stack_id),
+        )
+
+    for stack_id, owned in stack_owned_ports.items():
+        if stack_id == product_stack_id:
+            continue
+        if owned is not None and port in owned:
+            return PortOwnership(
+                port=port,
+                kind=PortOwnershipKind.KNOWN_INTERGRAX_STACK,
+                stack_id=stack_id,
+                owner_label=labels.get(stack_id),
+            )
+
+    if probe_host_port_available(port) and not is_loopback_tcp_port_reachable(port):
+        return PortOwnership(port=port, kind=PortOwnershipKind.FREE)
+
+    ownership_unresolved = all(value is None for value in stack_owned_ports.values())
+    if ownership_unresolved and is_loopback_tcp_port_reachable(port):
+        return PortOwnership(port=port, kind=PortOwnershipKind.UNKNOWN)
+
+    if is_loopback_tcp_port_reachable(port):
+        return PortOwnership(port=port, kind=PortOwnershipKind.FOREIGN_PROCESS)
+
+    if not probe_host_port_available(port):
+        return PortOwnership(port=port, kind=PortOwnershipKind.FOREIGN_PROCESS)
+
+    return PortOwnership(port=port, kind=PortOwnershipKind.UNKNOWN)
+
+
+def find_known_stack(
+    stacks: Sequence[KnownIntergraxStackDefinition],
+    stack_id: str,
+) -> KnownIntergraxStackDefinition | None:
+    for stack in stacks:
+        if stack.stack_id == stack_id:
+            return stack
+    return None
