@@ -220,17 +220,17 @@ def test_partner_decision_flow_separates_evaluation_and_authorized_routes(
 ) -> None:
     block = _MERMAID_FENCE.findall(partners_text)[0]
 
+    assert "Short workflow note" in block
     assert block.count("Prepare pilot brief") == 1
-    assert "C -->|Evaluation-only| D[Prepare pilot brief]" in block
-    assert "D -->|Bounded evaluation| E[Evaluation Guide]" in block
-    assert "E --> F[Run bounded evaluation]" in block
-    assert "C -->|Operational or commercial| D" in block
-    assert "D -->|Permission / agreement route| G[Collaboration + LICENSE]" in block
-    assert "G -->|If authorized| H[Run authorized pilot]" in block
-    assert "G --> E" not in block
-    assert "E --> H" not in block
-    assert "F --> I[Review decision and next step]" in block
-    assert "H --> I" in block
+    assert "D -->|Evaluation-only| E[Prepare pilot brief]" in block
+    assert "E -->|Bounded evaluation| F[Evaluation Guide]" in block
+    assert "F --> G[Run bounded evaluation]" in block
+    assert "D -->|Operational or commercial| E" in block
+    assert "E -->|Permission / agreement route| H[Collaboration + LICENSE]" in block
+    assert "H -->|If authorized| I[Run authorized pilot]" in block
+    assert "F --> I" not in block
+    assert "G --> J[Review decision and next step]" in block
+    assert "I --> J" in block
 
 
 def test_partner_pilot_modes(partners_text: str) -> None:
@@ -269,6 +269,27 @@ def test_pilot_brief(partners_text: str) -> None:
         "production or commercial intent",
     ):
         assert phrase in norm, f"PARTNERS pilot brief missing: {phrase}"
+
+
+def test_partner_short_first_contact_and_value_exchange(partners_text: str) -> None:
+    norm = _normalize(partners_text)
+    for phrase in (
+        "start with a short workflow note",
+        "you do not need a completed pilot brief for the first conversation",
+        "what the partner provides",
+        "what intergrax provides",
+        "pilot outcome",
+        "continue",
+        "revise",
+        "stop",
+        "explicit written permission",
+    ):
+        assert phrase in norm, f"PARTNERS missing business-narrative marker: {phrase}"
+
+    start_section = _h2_section(partners_text, "## Start a discussion")
+    start_norm = _normalize(start_section)
+    assert "3–5 sentences" in start_section or "3-5 sentences" in start_section
+    assert "you do not need a completed pilot brief for first contact" in start_norm
 
 
 def test_no_accidental_permission_expansion(

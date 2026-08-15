@@ -68,11 +68,23 @@ The diagram is a responsibility-based evaluation route, not a list of completed 
 
 **User problem:** private or controlled knowledge is distributed across approved sources. People need grounded answers with source references, while access boundaries, persistence, and reviewability remain explicit.
 
+**Who:** internal knowledge workers; expert or operations teams; teams with controlled documentation and reviewer requirements; and the product or IT owner responsible for knowledge access. No existing customer claim is implied.
+
+**Current approach:** manual search across approved sources; separate search or retrieval tools; ad-hoc AI assistants without consistent evidence or access boundaries; and fragmented workflows across files and systems.
+
+**Pain:** difficulty finding trusted current information; weak source traceability; inconsistent access boundaries; repeated manual review; and hard-to-review AI answers.
+
+**Desired outcome:** grounded answers from approved sources; a clear source and evidence trail; reviewable execution; and persistence or repeatability where relevant.
+
+**Success signal:** representative questions completed correctly; expected source references present; forbidden or unauthorized sources not used; evidence retained; workflow repeatable; and target users judge answers useful enough to reuse.
+
 **Responsibility fit:** Intergrax can provide reusable mechanisms around approved indexed sources, grounded Ask execution, evidence and provenance, controlled access context, persistence, and reviewable execution. The product team still defines the workspace workflow, source approval, user experience, business permissions, deployment, and acceptance criteria.
 
 **Current evidence class:** **STRONGEST CURRENT FIT**
 
-LKW is the **Primary Product Proof**, **Backend Product Alpha / MVP**, with **PARTIAL** proof status. Bounded indexed Ask evidence exists, including the indexed path through production Hybrid Ask. Indexed Ask through production Hybrid Ask is boundedly demonstrated; authorized live evidence combined with indexed evidence is not yet established. Mixed indexed + authorized live Hybrid Ask remains incomplete, and complete live-provider access is incomplete. This is not a finished SaaS claim.
+**Current proof:** LKW is the **Primary Product Proof**, **Backend Product Alpha / MVP**, with **PARTIAL** proof status. Bounded indexed Ask evidence exists, including the indexed path through production Hybrid Ask. Indexed Ask through production Hybrid Ask is boundedly demonstrated.
+
+**Validation gap:** Indexed Ask through production Hybrid Ask is boundedly demonstrated; authorized live evidence combined with indexed evidence is not yet established. Mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access is incomplete; real-user validation and commercial validation are incomplete. This is not a finished SaaS claim.
 
 Canonical verification route: [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) via [PROOFS — LKW Primary Product Proof](../proofs/PROOFS.md#lkw--primary-product-proof).
 
@@ -80,29 +92,69 @@ Canonical verification route: [LKW Platform Proof](../../../applications/local_w
 
 ### Governed knowledge application
 
-**Need:** controlled sources, grounded answers, evidence, and explicit access boundaries in a specialized application.
+**Who:** enterprise product team, AI engineering team, or solution team building a specialized knowledge application.
+
+**Current approach:** product-specific retrieval and governance plumbing combined with custom access and evidence handling.
+
+**Pain:** duplicated platform work and inconsistent evidence or access contracts across products.
+
+**Desired outcome:** controlled sources, grounded answers, evidence, and explicit access boundaries in a specialized application the team owns.
+
+**Success signal:** bounded workflow runs; required controls and evidence present; product-specific behavior remains application-owned.
 
 **Fit:** **BOUNDED TECHNICAL FIT** when the product team can validate its own sources, permissions, user workflow, and acceptance criteria. The LKW evidence is the closest current product reference, but it does not automatically validate another product.
 
+**Validation gap:** product-specific outcome and repeated use remain to be proven.
+
 ### Specialized agent application
 
-**Need:** reusable policy, tool boundaries, knowledge and context controls, human approval, and evidence or provenance around model-driven behavior.
+**Who:** enterprise product team, AI engineering team, or solution or integration team.
 
-**Fit:** **BOUNDED TECHNICAL FIT**. Intergrax supplies reusable application operating mechanisms; the adopting team builds and validates the specialized product. Start with [Build With Intergrax](../builders/BUILD_WITH_INTERGRAX.md).
+**Current approach:** build product-specific governance, integration, and runtime plumbing; combine multiple frameworks and custom controls.
+
+**Pain:** duplicated platform work; inconsistent contracts and evidence; product engineers spending time on reusable infrastructure rather than domain workflow.
+
+**Desired outcome:** build specialized product behavior on reusable governed foundations.
+
+**Success signal:** bounded application workflow runs; required controls and evidence present; product-specific code remains application-owned; reusable mechanisms are reused rather than rebuilt; and the team can identify remaining platform gaps.
+
+**Fit:** **BOUNDED TECHNICAL FIT**. Intergrax supplies reusable application operating mechanisms; the adopting team builds and validates the specialized product.
+
+**Current proof:** builder scaffold and current architecture evidence support a reasonable technical evaluation. Start with [Build With Intergrax](../builders/BUILD_WITH_INTERGRAX.md).
+
+**Validation gap:** product-specific outcome remains to be proven.
 
 ### Evidence-aware automation or integration workflow
 
-**Need:** controlled external actions, receipts, trace, reviewability, and clear failure or recovery boundaries.
+**Who:** teams where automated actions require reviewability or policy boundaries.
+
+**Current approach:** actions distributed across integrations without one consistent evidence or approval trail.
+
+**Pain:** hard to reconstruct what ran, what was allowed, and what failed across systems.
+
+**Desired outcome:** controlled action with reviewable evidence and explicit failure or recovery boundaries.
+
+**Success signal:** allowed action executes; forbidden action is blocked or rejected as designed; receipt or trace exists; a reviewer can reconstruct the outcome; and the failure path is understandable.
 
 **Fit:** **BOUNDED TECHNICAL FIT** for a bounded technical evaluation. Supporting evidence does not amount to certification, compliance approval, legal attestation, or universal operational readiness. See the [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) for the responsibility boundary.
 
-Supporting verification route: [BoundaryAttest case study](case-studies/BOUNDARYATTEST_ATTESTATION_POC.md).
+**Current proof:** supporting verification route — [BoundaryAttest case study](case-studies/BOUNDARYATTEST_ATTESTATION_POC.md).
+
+**Validation gap:** product-specific integration outcome and operational evidence remain to be proven.
 
 ### Governed context and prompt optimization
 
-**Need:** deterministic, policy-bounded optimization with receipts or evidence and protected regions.
+**Who:** teams needing deterministic, policy-bounded context handling with reviewable receipts.
 
-**Fit:** **BOUNDED TECHNICAL FIT**. Token Optimization is a **Featured platform-capability proof**, **PARTIAL**, with bounded evidence; universal token or cost reduction is not claimed. See the [Token Optimization guide](../capabilities/token_optimization/README.md).
+**Pain:** unnecessary context or prompt material may be included while protected regions and policy constraints must remain intact.
+
+**Desired outcome:** reduce unnecessary context or prompt material while preserving protected regions and producing evidence. Universal savings are not claimed.
+
+**Success signal:** policy constraints preserved; protected regions remain intact; deterministic optimization behavior; receipts produced; and bounded offline proof passes.
+
+**Fit:** **BOUNDED TECHNICAL FIT**. Token Optimization is a **Featured platform-capability proof**, **PARTIAL**, with bounded evidence. See the [Token Optimization guide](../capabilities/token_optimization/README.md).
+
+**Validation gap:** universal token or cost reduction remains unproven.
 
 ## Not yet proven
 
@@ -125,13 +177,13 @@ Intergrax is a reusable foundation, not a universal replacement for a finished p
 
 ## Fit matrix
 
-| Workflow need | Fit class | Decision implication |
-|--------------|-----------|----------------------|
-| Private governed knowledge workspace | **STRONGEST CURRENT FIT** | Inspect the LKW proof and its limits |
-| Specialized governed application | **BOUNDED TECHNICAL FIT** | A reasonable technical evaluation may be appropriate |
-| Shared foundations across multiple applications | **BOUNDED TECHNICAL FIT** | Product-specific validation remains required |
-| Indexed knowledge combined with authorized live evidence | **NOT YET PROVEN** | Defer unless the bounded evidence is sufficient for evaluation |
-| Generic prototype or finished SaaS needed immediately | **NOT A FIT** | Another approach may fit better |
+| Workflow need | Fit class | Evaluation question | Decision implication |
+|--------------|-----------|---------------------|----------------------|
+| Private governed knowledge workspace | **STRONGEST CURRENT FIT** | Can representative questions be answered from approved sources with evidence retained? | Inspect the LKW proof and its limits |
+| Specialized governed application | **BOUNDED TECHNICAL FIT** | Can the team reuse foundations instead of rebuilding governance and runtime plumbing? | A reasonable technical evaluation may be appropriate |
+| Shared foundations across multiple applications | **BOUNDED TECHNICAL FIT** | Would a second application reuse existing governed capabilities? | Product-specific validation remains required |
+| Indexed knowledge combined with authorized live evidence | **NOT YET PROVEN** | Is bounded indexed evidence sufficient without mixed live provenance? | Defer unless the bounded evidence is sufficient for evaluation |
+| Generic prototype or finished SaaS needed immediately | **NOT A FIT** | Is owning a specialized governed application required? | Another approach may fit better |
 
 ## What Intergrax does not currently offer
 

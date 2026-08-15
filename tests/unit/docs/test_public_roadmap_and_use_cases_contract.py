@@ -339,6 +339,7 @@ def test_use_case_classifications(use_cases_text: str) -> None:
         "bounded technical fit",
         "not yet proven",
         "not a fit",
+        "evaluation question",
     ):
         assert phrase in normalized, f"USE_CASES fit matrix missing class: {phrase}"
 

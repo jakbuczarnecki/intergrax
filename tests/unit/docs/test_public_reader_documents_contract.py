@@ -916,6 +916,35 @@ def test_why_problem_category_and_reader_fit(why_text: str) -> None:
         assert phrase in normalized, f"WHY missing reader-fit invariant: {phrase}"
 
 
+def test_why_business_strategic_thesis(why_text: str) -> None:
+    normalized = _normalize(why_text)
+    for phrase in (
+        "business and strategic thesis",
+        "duplication and fragmentation",
+        "potential adopter or sponsor profiles",
+        "lkw is the current product path used to test this thesis",
+        "compounding value hypothesis",
+        "commercialization gates",
+        "real-user validation",
+        "commercial validation",
+    ):
+        assert phrase in normalized, f"WHY missing business thesis marker: {phrase}"
+
+    forbidden_promotional = (
+        "tam",
+        "market share",
+        "revenue",
+        "traction",
+        "proven at scale",
+        "enterprise-ready",
+        "production-ready",
+        "guaranteed savings",
+        "roi",
+    )
+    for phrase in forbidden_promotional:
+        assert phrase not in normalized, f"WHY contains promotional claim phrase: {phrase!r}"
+
+
 def test_use_cases_workflow_fit_and_ownership_contract() -> None:
     normalized = " ".join(_normalize(_read(USE_CASES_PATH)).split())
     for phrase in (
@@ -939,6 +968,29 @@ def test_use_cases_workflow_fit_and_ownership_contract() -> None:
     assert "mixed indexed + authorized live hybrid ask" in normalized
     assert "remains incomplete" in normalized
     assert "complete live-provider access is incomplete" in normalized
+
+
+def test_use_cases_business_evaluation_framing() -> None:
+    normalized = " ".join(_normalize(_read(USE_CASES_PATH)).split())
+    for phrase in (
+        "who:",
+        "current approach:",
+        "pain:",
+        "desired outcome:",
+        "success signal:",
+        "validation gap:",
+        "evaluation question",
+    ):
+        assert phrase in normalized, f"USE_CASES missing business evaluation marker: {phrase}"
+
+    for phrase in (
+        "strongest current fit",
+        "bounded technical fit",
+        "not yet proven",
+        "not a fit",
+        "real-user validation and commercial validation are incomplete",
+    ):
+        assert phrase in normalized, f"USE_CASES missing fit taxonomy marker: {phrase}"
 
 
 def test_use_cases_does_not_track_provider_rollouts() -> None:
