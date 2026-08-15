@@ -28,6 +28,8 @@ from intergrax.runtime.task.task import Task
 def build_runtime_checkpoint(
     task: Task,
     *,
+    run_id: str,
+    attempt_id: str,
     plan: Optional[NexusPlan] = None,
     graph: Optional[ExecutionGraph] = None,
     last_execution: Optional[AgentExecutionResult] = None,
@@ -69,6 +71,8 @@ def build_runtime_checkpoint(
     if from_execution is not None:
         merged = from_execution.model_copy(
             update={
+                "run_id": run_id,
+                "attempt_id": attempt_id,
                 "plan_id": from_execution.plan_id or plan_id,
                 "graph_id": from_execution.graph_id or graph_id,
                 "graph_node_id": from_execution.graph_node_id or graph_node_id,
@@ -82,6 +86,8 @@ def build_runtime_checkpoint(
         return merged
 
     return RuntimeCheckpoint(
+        run_id=run_id,
+        attempt_id=attempt_id,
         plan_id=plan_id,
         graph_id=graph_id,
         graph_node_id=graph_node_id,

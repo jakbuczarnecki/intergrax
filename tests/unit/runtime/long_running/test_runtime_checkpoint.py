@@ -3,6 +3,7 @@
 import pytest
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_graph,
     build_runtime_checkpoint,
@@ -112,7 +113,13 @@ def test_build_runtime_checkpoint_includes_plan_and_graph_snapshots():
             ExecutionNode(node_id="n2", agent_id="a2"),
         ],
     )
-    runtime = build_runtime_checkpoint(task, plan=plan, graph=graph)
+    runtime = build_runtime_checkpoint(
+        task,
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        plan=plan,
+        graph=graph,
+    )
     assert runtime.plan_snapshot is not None
     assert runtime.plan_snapshot["plan_id"] == plan.plan_id
     assert runtime.graph_snapshot is not None
@@ -137,7 +144,12 @@ def test_build_runtime_checkpoint_merges_execution_structured():
             }
         },
     )
-    runtime = build_runtime_checkpoint(task, last_execution=execution)
+    runtime = build_runtime_checkpoint(
+        task,
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        last_execution=execution,
+    )
     assert runtime.uaep_step_index == 0
     assert runtime.uaep_step_id == "review"
     assert runtime.last_step_output is not None

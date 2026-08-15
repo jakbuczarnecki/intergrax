@@ -17,7 +17,7 @@ pytestmark = pytest.mark.unit
 async def test_unified_task_runner_sets_llm_tenant_scope() -> None:
     captured: list[str] = []
 
-    async def _handle(task: Task):
+    async def _handle(task: Task, *, run_id, attempt_id=None):
         captured.append(get_llm_tenant_id())
         return MagicMock()
 

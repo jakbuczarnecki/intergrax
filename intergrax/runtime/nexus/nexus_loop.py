@@ -14,6 +14,7 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
     mint_attempt_id,
+    validate_attempt_id,
     validate_run_id,
 )
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
@@ -360,15 +361,25 @@ class NexusLoop:
     def policy_engine(self) -> PolicyEngine:
         return self._policy_engine
 
-    async def handle_task(self, task: Task, *, run_id: RunId) -> TaskResult:
+    async def handle_task(
+        self,
+        task: Task,
+        *,
+        run_id: RunId,
+        attempt_id: Optional[AttemptId] = None,
+    ) -> TaskResult:
         resolved_run_id = validate_run_id(run_id)
-        attempt_id = mint_attempt_id()
+        resolved_attempt_id = (
+            validate_attempt_id(attempt_id)
+            if attempt_id is not None
+            else mint_attempt_id()
+        )
         self._current_task = task
         self._current_run_id = resolved_run_id
-        self._current_attempt_id = attempt_id
+        self._current_attempt_id = resolved_attempt_id
         self._graph_executor.set_execution_identity(
             run_id=resolved_run_id,
-            attempt_id=attempt_id,
+            attempt_id=resolved_attempt_id,
         )
         try:
             return await self._handle_task_impl(task)
@@ -515,11 +526,13 @@ class NexusLoop:
     ) -> None:
         if self._evaluation_registry is None or len(executions) < 2:
             return
+        if self._current_run_id is None:
+            raise RuntimeError("active run identity required for multi-agent evaluation")
         passed = all(item.status == AgentExecutionStatus.COMPLETED for item in executions)
         self._evaluation_registry.append(
             OnlineEvaluationObservation(
                 observation_id=f"obs_{task_id}_multi_agent",
-                run_id=self._current_run_id or task_id,
+                run_id=self._current_run_id,
                 agent_id=",".join(item.agent_id for item in executions if item.agent_id),
                 mode=OnlineEvaluationMode.SHADOW,
                 scenario_id="multi_agent_fan_in",
@@ -569,11 +582,14 @@ class NexusLoop:
         return result
 
     async def _maybe_restore_long_running(self, task: Task) -> None:
+        if self._current_run_id is None:
+            raise RuntimeError("active run identity required for long-running restore")
         await maybe_restore_long_running(
             task,
             checkpoint_store=self._checkpoint_store,
             publish=self._publish_runtime_event,
             notification_adapter=self._notification_adapter,
+            run_id=self._current_run_id,
         )
 
     async def _maybe_checkpoint_long_running(
@@ -585,12 +601,16 @@ class NexusLoop:
         graph: Optional[ExecutionGraph] = None,
         last_execution: Optional[AgentExecutionResult] = None,
     ) -> None:
+        if self._current_run_id is None or self._current_attempt_id is None:
+            raise RuntimeError("active execution identity required for long-running checkpoint")
         await maybe_checkpoint_long_running(
             task,
             checkpoint_store=self._checkpoint_store,
             publish=self._publish_runtime_event,
             notification_adapter=self._notification_adapter,
             progress_message=progress_message,
+            run_id=self._current_run_id,
+            attempt_id=self._current_attempt_id,
             plan=plan,
             graph=graph,
             last_execution=last_execution,

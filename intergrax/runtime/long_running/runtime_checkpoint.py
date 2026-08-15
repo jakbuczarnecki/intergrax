@@ -22,6 +22,8 @@ class GraphNodeCheckpoint(BaseModel):
 
 class RuntimeCheckpoint(BaseModel):
     schema_version: str = "runtime_checkpoint.v1"
+    run_id: Optional[str] = None
+    attempt_id: Optional[str] = None
     plan_id: Optional[str] = None
     graph_id: Optional[str] = None
     graph_node_id: Optional[str] = None

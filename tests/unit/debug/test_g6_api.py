@@ -14,6 +14,7 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.debug.app import create_debug_app
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -129,6 +130,8 @@ def checkpoints_client(checkpoint_store):
     LongRunningCoordinator.persist_checkpoint(
         task,
         checkpoint_store,
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
         progress_message="awaiting human input",
     )
     app = create_debug_app(checkpoint_store=checkpoint_store)
@@ -195,7 +198,8 @@ async def test_debug_api_human_response_resume(tmp_path):
             options=TaskExecutionOptions(
                 long_running=TaskLongRunningOptions(enabled=True),
             ),
-        )
+        ),
+        run_id=mint_run_id(),
     )
     assert paused.state == TaskState.WAITING_FOR_HUMAN
     assert checkpoint_store.get_latest(paused.task_id, "t1") is not None

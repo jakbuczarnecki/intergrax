@@ -4,6 +4,7 @@ import pytest
 
 pytestmark = pytest.mark.no_ci
 
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.task.task import Task
@@ -25,6 +26,8 @@ def test_checkpoint_store_roundtrip(tmp_path):
     checkpoint = LongRunningCoordinator.persist_checkpoint(
         task,
         store,
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
         progress_message="step 1 complete",
     )
     assert checkpoint.resume_token
@@ -48,6 +51,8 @@ def test_restore_if_resuming_merges_snapshot(tmp_path):
     checkpoint = LongRunningCoordinator.persist_checkpoint(
         original,
         store,
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
         progress_message="awaiting human input",
     )
 

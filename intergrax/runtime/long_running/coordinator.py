@@ -101,6 +101,8 @@ class LongRunningCoordinator:
         task: Task,
         store: SQLiteTaskCheckpointStore,
         *,
+        run_id: str,
+        attempt_id: str,
         progress_message: str = "",
         plan: Optional[NexusPlan] = None,
         graph: Optional[ExecutionGraph] = None,
@@ -108,6 +110,8 @@ class LongRunningCoordinator:
     ) -> TaskCheckpoint:
         runtime = build_runtime_checkpoint(
             task,
+            run_id=run_id,
+            attempt_id=attempt_id,
             plan=plan,
             graph=graph,
             last_execution=last_execution,

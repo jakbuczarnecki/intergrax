@@ -8,6 +8,7 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.debug.app import create_debug_app
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
@@ -31,6 +32,8 @@ def progress_client(tmp_path):
     LongRunningCoordinator.persist_checkpoint(
         task,
         checkpoint_store,
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
         progress_message="awaiting human input",
     )
     event_store.append(

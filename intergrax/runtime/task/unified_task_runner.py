@@ -6,7 +6,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Optional
 
-from intergrax.contracts.execution_identity import RunId, mint_run_id
+from intergrax.contracts.execution_identity import AttemptId, RunId, mint_run_id
+from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import Task, TaskResult
@@ -35,14 +37,33 @@ class UnifiedTaskRunner:
     def nexus_loop(self) -> NexusLoop:
         return self._nexus_loop
 
-    async def run_task(self, task: Task, *, run_id: Optional[RunId] = None) -> TaskResult:
+    async def run_task(
+        self,
+        task: Task,
+        *,
+        run_id: Optional[RunId] = None,
+        attempt_id: Optional[AttemptId] = None,
+        resume_checkpoint: Optional[TaskCheckpoint] = None,
+    ) -> TaskResult:
         if self._task_enricher is not None:
             task = self._task_enricher(task)
         await ActiveTaskRegistry.register(task)
-        resolved_run_id = run_id or mint_run_id()
+        if resume_checkpoint is not None:
+            checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
+                resume_checkpoint
+            )
+            resolved_run_id = run_id or checkpoint_run_id
+            resolved_attempt_id = attempt_id or checkpoint_attempt_id
+        else:
+            resolved_run_id = run_id or mint_run_id()
+            resolved_attempt_id = attempt_id
         try:
             with llm_tenant_scope(task.tenant_id):
-                return await self._nexus_loop.handle_task(task, run_id=resolved_run_id)
+                return await self._nexus_loop.handle_task(
+                    task,
+                    run_id=resolved_run_id,
+                    attempt_id=resolved_attempt_id,
+                )
         finally:
             await ActiveTaskRegistry.unregister(task.task_id)
 

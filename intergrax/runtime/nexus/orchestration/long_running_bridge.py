@@ -31,6 +31,7 @@ async def maybe_restore_long_running(
     checkpoint_store: Optional[SQLiteTaskCheckpointStore],
     publish: RuntimeEventPublisher,
     notification_adapter: Optional[NotificationAdapter],
+    run_id: str,
 ) -> None:
     if checkpoint_store is None:
         return
@@ -40,7 +41,7 @@ async def maybe_restore_long_running(
     await publish(
         runtime_event_from_task_state(
             task,
-            run_id=task.task_id,
+            run_id=run_id,
             message="long-running task restored from checkpoint",
         ).model_copy(
             update={
@@ -69,6 +70,8 @@ async def maybe_checkpoint_long_running(
     publish: RuntimeEventPublisher,
     notification_adapter: Optional[NotificationAdapter],
     progress_message: str,
+    run_id: str,
+    attempt_id: str,
     plan: Optional[NexusPlan] = None,
     graph: Optional[object] = None,
     last_execution: Optional[AgentExecutionResult] = None,
@@ -79,6 +82,8 @@ async def maybe_checkpoint_long_running(
     checkpoint = LongRunningCoordinator.persist_checkpoint(
         task,
         checkpoint_store,
+        run_id=run_id,
+        attempt_id=attempt_id,
         progress_message=progress_message,
         plan=plan,
         graph=graph_obj,
@@ -90,7 +95,7 @@ async def maybe_checkpoint_long_running(
     await publish(
         runtime_event_from_task_state(
             task,
-            run_id=task.task_id,
+            run_id=run_id,
             message="long-running checkpoint saved",
         ).model_copy(
             update={
@@ -108,7 +113,7 @@ async def maybe_checkpoint_long_running(
     await publish(
         runtime_event_from_task_state(
             task,
-            run_id=task.task_id,
+            run_id=run_id,
             message=progress_message or "task progress",
         ).model_copy(
             update={
