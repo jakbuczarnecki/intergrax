@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-07-05 — **OBS-PROBLEM-3** problem signal emission boundary canon
+**Last updated:** 2026-08-15 — **TRACE-ARCH-SYNC-1** execution identity · unified journal · first-class as-of projections
 
 ---
 
@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (OBSERVABILITY canon).
 
-- **Implement / audit default:** trace spine + HOS + signal planes (§1–§4). Extended §5+: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md).
+- **Implement / audit default:** trace spine + HOS + signal planes (§1–§4); execution identity + journal + as-of (§5–§9). Extended depth: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/OBSERVABILITY.md`](../technical/guides/audit_slices/OBSERVABILITY.md).
@@ -66,6 +66,7 @@ For every user interaction (question → answer), an operator MUST be able to re
 - Storing raw prompts/completions in production traces (redaction is mandatory)
 - Per-agent custom SQLite trace databases
 - Raw `dict` payloads without `payload_schema_id` / registry (see §8.2 residual evolution)
+- Full **bitemporal** valid-time / transaction-time architecture — Intergrax needs execution-relative historical reconstruction (§7), not a complete temporal-database framework
 
 ---
 
@@ -77,10 +78,10 @@ For every user interaction (question → answer), an operator MUST be able to re
 | **Event-first** | `RuntimeEvent` is the primary audit signal (canon §42.1). Traces and metrics are derived views. |
 | **Typed extension** | Platform steps use `DiagnosticPayload` subclasses with stable `schema_id`. Domain extensions inherit the same contract. |
 | **Emit at the boundary** | Signals are recorded where the Harness enforces policy (ToolRuntime, AgentRouter, GraphExecutor) — not inside ad-hoc agent helpers. |
-| **Correlation by construction** | `task_id`, `run_id`, `correlation_id`, `parent_event_id` are set by the spine — not passed manually in business code. |
+| **Correlation by construction** | `TaskId`, `RunId`, `AttemptId`, `EventId`, `correlation_id`, `parent_event_id` are set by the spine — not passed manually in business code. |
 | **Redact before persist** | `DiagnosticPayload.redact()` + `production_mode` run before any store append. |
 | **Pluggable persistence** | SQLite default; Cassandra/Elasticsearch/OTLP as integration profiles — same API, different backend. |
-| **Read-model unification** | Operators consume **one chronological journal** per run (`build_unified_run_journal`). |
+| **Read-model unification** | Operators consume **one chronological journal** per run (`build_unified_run_journal`) — a derived read model, not the persistence source of truth (§6). |
 | **Modular sinks** | Metrics, logs, and external trace UIs subscribe to the bus or journal — they do not fork emission. |
 
 ---
@@ -392,15 +393,16 @@ Meaningful runtime events **SHOULD** preserve all correlation identifiers availa
 
 | Field | Purpose |
 |-------|---------|
-| `task_id` | User-facing work unit |
-| `run_id` | Single execution attempt / trace timeline |
+| `task_id` (`TaskId`) | User-facing work unit / intent — **WHAT** task |
+| `run_id` (`RunId`) | Single execution of the task — **WHICH** run |
+| `attempt_id` (`AttemptId`) | Attempt within the run — **WHICH** attempt (target canon §5) |
 | `node_id` | Graph node placement |
 | `agent_id` | Responsible agent |
 | `step_id` | UAEP / pipeline step |
 | `tool_call_id` | Tool invocation chain (when applicable) |
 | `correlation_id` | Cross-agent/tool chain (default: `task_id`) |
 | `parent_event_id` | Causal parent in the spine tree |
-| `event_id` | Unique event identity |
+| `event_id` (`EventId`) | Unique runtime event identity — **WHICH** event |
 | `timestamp` | UTC ordering |
 | `schema_version` | Envelope version (e.g. `runtime_event.v1`) |
 
@@ -452,8 +454,9 @@ Intergrax observability deliberately separates three planes (pattern: event sour
 | `event_category` | Derived ops grouping (`tool`, `agent`, `plan`, …) — §4.4.2 |
 | `phase` | `ExecutionPhase` — where in the Nexus lifecycle |
 | `severity` | `EventSeverity` — alert routing |
-| `task_id` | Logical work unit (user request scope) |
-| `run_id` | Single execution attempt (retries → new run or branch per policy) |
+| `task_id` | Logical work unit (user request scope) — **target:** `TaskId` |
+| `run_id` | Single execution of the task — **target:** `RunId`; retries mint new `AttemptId` under the same `RunId` (§5.4) |
+| `attempt_id` | Attempt within the run — **target:** `AttemptId` on every canonical `RuntimeEvent` (§5) |
 | `correlation_id` | Cross-agent/tool chain (default: `task_id`) |
 | `parent_event_id` | Causal parent in the spine tree (**target:** populated by `TraceScope`) |
 | `node_id` / `agent_id` / `step_id` | Graph and UAEP placement |
@@ -588,7 +591,7 @@ Each spine type is described by a single **`EventCatalogEntry`** in `event_catal
 
 #### 4.4.8 `EmitContext` (OBS-EVOL-9.3)
 
-All public emit APIs accept a typed **`EmitContext`** carrying `task_id`, `run_id`, `tenant_id`, `correlation_id`, and active `TraceScope` — correlation by construction (SAR-01).
+All public emit APIs accept a typed **`EmitContext`** carrying `task_id`, `run_id`, `attempt_id` (target), `tenant_id`, `correlation_id`, and active `TraceScope` — correlation by construction (SAR-01). **Target:** `TaskId`/`RunId`/`AttemptId` typed carriers (§5.3).
 
 #### 4.4.9 Domain signal redaction (OBS-EVOL-9.3)
 
@@ -643,5 +646,281 @@ Fine-grained, append-only timeline optimized for **reconstruction** and **evalua
 | Modality metrics | Vision/audio/tool modality counters | Trace payload aggregation |
 
 Metrics are **third** in priority (canon §42.24): derived from events/trace, not a substitute for the journal.
+
+---
+
+## 5. Canonical execution identity (TRACE-ARCH-SYNC-1)
+
+**Status:** Target canon (**accepted** 2026-08-15) · implementation **Planned** (TRACE-1A–TRACE-1C)  
+**Plan:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) — Phase TRACE  
+**Cross-layer:** [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1.8 (identity ownership cross-ref)
+
+### 5.1 Identity hierarchy
+
+Canonical execution identity is a **frozen** four-level hierarchy:
+
+```text
+Task
+  1:N
+Run
+  1:N
+Attempt
+  1:N
+RuntimeEvent
+```
+
+| Identifier | Meaning |
+|------------|---------|
+| `TaskId` | **WHAT** task / intent |
+| `RunId` | **WHICH** execution of the task |
+| `AttemptId` | **WHICH** attempt inside the run |
+| `EventId` | **WHICH** runtime event |
+
+Every canonical `RuntimeEvent` **MUST** carry all four: `TaskId`, `RunId`, `AttemptId`, `EventId` — without exception.
+
+### 5.2 Strong typing (target canon)
+
+Canonical in-process identifiers **`TaskId`**, **`RunId`**, **`AttemptId`** **MUST** be non-interchangeable typed identifiers.
+
+**Normative implementation pattern:**
+
+```python
+TaskId = typing.NewType("TaskId", str)
+RunId = typing.NewType("RunId", str)
+AttemptId = typing.NewType("AttemptId", str)
+```
+
+Wire representation remains a flat string. Architecture describes this as the normative target; the plan marks it **planned until implementation exists** (TRACE-1A).
+
+`EventId` is the unique identity of a single persisted runtime event.
+
+### 5.3 Identity carrier matrix (target canon)
+
+Canonical identity **MUST NOT** come from metadata. Forbidden patterns include `metadata["run_id"]`, `task_id or run_id`, `run_id or task_id`, fallback of one identity into another, dynamic identity binding, and `dict[str, Any]` as the canonical identity carrier.
+
+| Carrier | `TaskId` | `RunId` | `AttemptId` |
+|---------|----------|---------|-------------|
+| Task | REQUIRED | NOT PRESENT | NOT PRESENT |
+| `RuntimeRequest` execute boundary | REQUIRED | REQUIRED | NOT PRESENT |
+| `RuntimeExecutionContext` | REQUIRED | REQUIRED | REQUIRED |
+| `EmitContext` | REQUIRED | REQUIRED | REQUIRED |
+| `RuntimeEvent` | REQUIRED | REQUIRED | REQUIRED |
+
+Mint ownership: the spine mints `AttemptId` at run/attempt boundaries; carriers receive identity by construction — not by ad-hoc metadata lookup.
+
+### 5.4 Attempt lifecycle, retry, resume, replay
+
+```text
+Run starts
+  ↓
+AttemptId A1 minted
+  ↓
+all RuntimeEvents belong to A1
+  ↓
+retry
+  ↓
+same TaskId
+same RunId
+new AttemptId A2
+```
+
+| Scenario | `TaskId` | `RunId` | `AttemptId` |
+|----------|----------|---------|-------------|
+| **Retry** | same | same | **new** |
+| **Resume** (without retry) | same | same | **same** |
+| **Explicit new execution** of same task | same | **new** | **new** A1 |
+
+Replay semantics are attempt-scoped: reconstruction and as-of projections respect attempt boundaries (§7).
+
+### 5.5 `TASK_CREATED` semantics
+
+`TASK_CREATED` is the **first runtime journal event** inside Run R1 / Attempt A1. It does **not** denote the moment the `Task` object was created in memory or registered in a product store.
+
+### 5.6 Implementation gap (documentation truth)
+
+The **target canon** above is **not** fully implemented. Known legacy gaps in code today include:
+
+- `run_id == task_id` aliasing
+- identity carried in metadata instead of typed carriers
+- missing `AttemptId` on emit paths and persisted events
+- identity fallbacks (`task_id or run_id`, `run_id or task_id`)
+- loose journal adapters that tolerate missing or aliased identity
+
+TRACE-1A–TRACE-1C close these gaps. Do **not** treat current runtime behavior as satisfying §5.
+
+---
+
+## 6. Unified Run Journal (canonical run read model)
+
+The **Unified Run Journal** is the canonical **run-scoped read model** for operator reconstruction and downstream narrative surfaces.
+
+```text
+RuntimeEvent / persistence
+        ↓
+Unified Run Journal
+        ↓
+query / derived read models
+```
+
+| Property | Requirement |
+|----------|-------------|
+| Role | Chronological derived execution timeline — **WHAT happened** |
+| Source of truth | **NOT** — persistence of `RuntimeEvent` remains authoritative |
+| Replaces event store | **MUST NOT** |
+| Scope | Composes chronological history per run (attempt-aware ordering) |
+| Execution Story | Canonical foundation for Execution Story read surfaces (§9) |
+| Construction | `build_unified_run_journal()` merges spine-normalized events into one timeline |
+
+The journal is a **derived view**. Metrics, external APM, and product summaries subscribe to or export from it — they do not fork a competing timeline.
+
+---
+
+## 7. First-class as-of projections (TRACE-ARCH-SYNC-1)
+
+**Status:** Target canon (**accepted** 2026-08-15) · implementation **Planned** (TRACE-ASOF-1–TRACE-ASOF-4)
+
+### 7.1 Capability definition
+
+A **First-Class As-Of Projection** is a typed, deterministic reconstruction of execution state at an explicit historical execution boundary.
+
+> Typowana, deterministyczna rekonstrukcja stanu wykonania dokładnie na wskazanej granicy historycznej.
+
+### 7.2 Journal vs as-of
+
+| Surface | Question |
+|---------|----------|
+| **Unified Run Journal** | **WHAT happened?** — chronological facts |
+| **As-Of Projection** | **WHAT was true / known / selected / effective at boundary X?** — state at a historical boundary |
+
+Conceptual example (Run R1):
+
+```text
+Attempt A1
+  E1 intake
+  E2 agent = Agent-A
+  E3 context revision = C12
+  E4 policy = ALLOW
+  E5 tool
+  E6 validation = FAILED
+  E7 retry
+
+Attempt A2
+  E8 agent = Agent-B
+  E9 validation = PASS
+```
+
+`as-of(E6)` may represent:
+
+```text
+Task = T1
+Run = R1
+Attempt = A1
+Agent = Agent-A
+ContextRevision = C12
+Policy = ALLOW
+Validation = FAILED
+```
+
+Architecture does **not** freeze a concrete projection schema here — TRACE-ASOF-2 defines the logical projection engine.
+
+### 7.3 As-of boundary (`AsOfBoundary`)
+
+Canonical as-of semantics **MUST** be based on a **deterministic position inside canonical execution history** — prefer **`AsOfBoundary`** over raw `datetime` alone.
+
+TRACE-ASOF-1 will resolve the exact representation from event ordering, `EventId`, sequence/cursor semantics, and persistence guarantees. Timestamp **MAY** later serve as a convenience lookup for locating a boundary, but **MUST NOT** automatically become the sole ordering source.
+
+### 7.4 Projection properties
+
+Canonical as-of projection **MUST** be:
+
+- derived
+- deterministic
+- typed
+- run-scoped
+- attempt-aware
+- immutable as a historical result
+- reconstructable from canonical history
+- traceable back to source `RuntimeEvent` references
+- free from metadata identity fallback
+
+**MUST NOT** be:
+
+- a new source of truth
+- a new event store
+- an arbitrary mutable snapshot
+- `dict[str, Any]`
+- dynamic projection binding
+
+Projection **MUST NOT** be named or classified as proof or evidence. Projection **SHOULD** contain or enable resolution to source event references.
+
+### 7.5 Logical vs materialized projection
+
+| Kind | Meaning |
+|------|---------|
+| **Logical projection** | Deterministically derived from `RuntimeEvent` history |
+| **Materialized projection** | Optional performance optimization — **MUST NOT** change semantics; **MUST** be rebuildable; **MUST NOT** become a competing source of truth |
+
+Materialization is **not** mandatory for as-of capability (TRACE-ASOF-3 is conditional).
+
+### 7.6 Revision / supersedes (materialized only)
+
+For **persisted / materialized** projection revisions only (not every `RuntimeEvent`):
+
+```text
+If an as-of projection is persisted/materialized,
+each materialized revision SHOULD have explicit immutable revision identity
+and MAY reference the revision it supersedes.
+```
+
+```text
+ProjectionRevision P1
+   ↓ superseded by
+ProjectionRevision P2
+   ↓ superseded by
+ProjectionRevision P3
+```
+
+Goals: projection history is not overwritten; operators can audit which revision was available; the current revision does not destroy earlier ones. Field-level schema is deferred to TRACE-ASOF-3.
+
+### 7.7 Non-goal
+
+```text
+Full bitemporal valid-time / transaction-time architecture
+is NOT part of this phase.
+```
+
+Intergrax needs **execution-relative historical reconstruction**, not a complete temporal-database framework.
+
+---
+
+## 8. Semantic separation of observability artifacts
+
+| Artifact | Role |
+|----------|------|
+| **`RuntimeEvent`** | Canonical fact that something happened |
+| **Unified Run Journal** | Chronological derived execution timeline |
+| **As-Of Projection** | Derived execution state at a historical boundary |
+| **Provenance** | Origin / lineage of relevant inputs and references |
+| **Evidence** | Persisted supporting evidence |
+| **Proof / Receipt** | Attested / verifiable claim |
+
+Projection is read-side execution history — not proof, not evidence, not a substitute for the event store.
+
+---
+
+## 9. Execution Story relationship
+
+As-of projections are part of the **read side** of Execution Story — not a new runtime domain. No new Execution Story domain or event store is introduced by TRACE-ARCH-SYNC-1.
+
+```text
+RuntimeEvent history
+       ↓
+Unified Run Journal
+       ↓
+Execution Story
+       │
+       ├── chronological narrative
+       └── as-of historical state reconstruction
+```
 
 ---

@@ -14,7 +14,7 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine. Token Optimization telemetry must be observable through the same observability spine — do not create a private telemetry bus for token optimization. **TOKEN-6A-lite** is an early telemetry-shape slice for savings attribution through the existing observability spine; it must not create a private telemetry bus. **OBS-HEALTH-lite** is a minimal operator-visible status slice for exporter/token telemetry health, not full observability production hardening. Full **OBS-VENDOR** production hardening remains **Planned**. **LKW-PF6** ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF) is the platform proof workload for token savings telemetry and regression gates.
 
-**Last updated:** 2026-07-05 — **OBS-ROUTING-0** problem signal routing/fanout contract.
+**Last updated:** 2026-08-15 — **TRACE-ARCH-SYNC-1** execution identity · as-of projection roadmap.
 
 ---
 
@@ -22,7 +22,7 @@
 
 **Do not read this entire file in one session** (OBSERVABILITY plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) (active OECP register), [`plan/satellites/OBSERVABILITY_audit_history.md`](plan/satellites/OBSERVABILITY_audit_history.md) (closed phases). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub Phase TRACE (§5–§9 arch) · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) (active OECP register), [`plan/satellites/OBSERVABILITY_audit_history.md`](plan/satellites/OBSERVABILITY_audit_history.md) (closed phases). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Token Optimization:** read feature pair + rows `TOKEN-OBS-1` / `TOKEN-OBS-2`; use HOS/domain-signal model, do not create private telemetry channel.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
@@ -39,6 +39,47 @@
 | **P2-ARCH-07** | Clarify observability event spine and event ownership | **Done** (2026-06-20) |
 
 Architecture: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md#observability-event-spine).
+
+---
+
+## Phase TRACE — Execution identity, unified journal strictness, and as-of projections (Planned)
+
+**Architecture:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §5–§9 · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.1.8  
+**Design:** **TRACE-1** identity + journal + as-of target canon — **Done** (TRACE-ARCH-SYNC-1, 2026-08-15)  
+**Implementation:** **Planned** — code still has legacy identity gaps (`run_id == task_id`, metadata identity, missing `AttemptId`, fallbacks, loose journal adapters). Do **not** mark implementation rows Done until TRACE acceptance gates pass.
+
+**Delivery rule:** one TRACE row per PR; no runtime work in TRACE-ARCH-SYNC-1 doc-only slice.
+
+### TRACE-1 — Identity contracts and journal strictness
+
+| ID | Priority | Status | Goal | Dependency | Acceptance (summary) |
+|----|----------|--------|------|------------|----------------------|
+| **TRACE-1A** | P1 | Planned | Typed `TaskId`/`RunId`/`AttemptId` via `typing.NewType(..., str)`; strict validation; correct mint ownership; `RuntimeRequest.task_id`/`run_id`; remove canonical identity from metadata | TRACE-1 design complete | No `metadata["run_id"]`; no `task_id or run_id` fallbacks; wire strings only on boundary |
+| **TRACE-1B** | P1 | Planned | `AttemptId` through `RuntimeExecutionContext`, `EmitContext`, `RuntimeEvent`; attempt-aware emit paths; `TASK_CREATED` as first journal event in A1 | TRACE-1A | Every canonical `RuntimeEvent` carries `TaskId`, `RunId`, `AttemptId`, `EventId` |
+| **TRACE-1C** | P1 | Planned | Zero identity fallback in journal build; legacy aliased identity explicitly recognized; strict journal reconstruction; no `Any`/dynamic adapters on identity boundary | TRACE-1B | `build_unified_run_journal` rejects or flags legacy aliasing per strict contract |
+
+### TRACE-ASOF — First-class as-of projections
+
+| ID | Priority | Status | Goal | Dependency | Acceptance (summary) |
+|----|----------|--------|------|------------|----------------------|
+| **TRACE-ASOF-1** | P1 | Planned | Resolve deterministic historical boundary: event position / sequence / cursor semantics; typed `AsOfBoundary` contract; no timestamp-only ambiguity | TRACE-1C | Boundary is execution-history position, not datetime alone |
+| **TRACE-ASOF-2** | P1 | Planned | Typed logical projections from Unified Run Journal; deterministic state-as-of reconstruction; attempt-aware; source `RuntimeEvent` references | TRACE-ASOF-1 | Logical projection rebuildable from journal; no new source of truth |
+| **TRACE-ASOF-3** | P2 | Planned (**conditional**) | Only if projections are materialized: immutable projection revisions; explicit `revision_id`; explicit `supersedes`; rebuildability | TRACE-ASOF-2 | Skippable if materialization not needed after TRACE-ASOF-2 |
+| **TRACE-ASOF-4** | P1 | Planned | Typed public/internal query contract for as-of; provenance to source events; no dynamic projection registry; operator/debug/audit consumption | TRACE-ASOF-2; TRACE-ASOF-3 only if materialization shipped | Query surface does not treat projection as proof/evidence |
+
+**Non-goals (canon):** full bitemporal valid-time / transaction-time architecture; new event store; mandatory materialization.
+
+### Downstream trace roadmap (reference)
+
+Detailed delivery for later trace phases may live in other canonical plans. OBSERVABILITY retains cross-layer observability ownership; add dependency links only — do not duplicate full phase specs here.
+
+| ID | Status | Depends on (observability) | Notes |
+|----|--------|----------------------------|-------|
+| **TRACE-2** | Planned | TRACE-1C | Downstream — export/sink alignment with strict identity |
+| **TRACE-3** | Planned | TRACE-1C | Downstream — operator/debug surfaces |
+| **TRACE-4** | Planned | TRACE-ASOF-2 | Downstream — eval/OECP consumption of as-of |
+| **TRACE-5** | Planned | TRACE-1C, TRACE-ASOF-2 | Downstream — cross-tier proof/evidence linkage |
+| **TRACE-DOC** | Planned | TRACE-1, TRACE-ASOF-* | Downstream — operator docs and audit slices |
 
 ---
 

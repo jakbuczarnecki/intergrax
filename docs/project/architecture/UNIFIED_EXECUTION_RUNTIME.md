@@ -203,6 +203,18 @@ event_category  # derived ops grouping
 
 **Code (target):** `intergrax/runtime/events/event_catalog.py`, `signals.py`
 
+### 42.1.8 Execution identity ownership (TRACE-ARCH-SYNC-1)
+
+Runtime lifecycle emits through `RuntimeEvent`; **canonical execution identity** and journal/as-of semantics are owned by [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§9.
+
+| Identifier | Runtime role |
+|------------|----------------|
+| `TaskId` | **WHAT** task / intent |
+| `RunId` | **WHICH** execution of the task |
+| `AttemptId` | **WHICH** attempt inside the run — minted at attempt boundaries; all events in an attempt share it |
+
+Hierarchy: `Task 1:N Run 1:N Attempt 1:N RuntimeEvent`. Retry: same `TaskId` + `RunId`, new `AttemptId`. Resume without retry: same `AttemptId`. Typed carrier matrix, unified journal, and as-of projections — [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§7. Implementation: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) Phase TRACE.
+
 ---
 
 ## 42.2 Event Bus Architecture
