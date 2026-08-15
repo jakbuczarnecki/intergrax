@@ -8,7 +8,7 @@
 
 ## Purpose
 
-Sequentially run **Layer Completion Mode** on all 22 domain pairs until each reaches **Architecturally Mature** or **Frozen** (no open P0/P1 in domain scope).
+Sequentially run **Layer Completion Mode** on all 24 domain pairs until each reaches **Architecturally Mature** or **Frozen** (no open P0/P1 in domain scope).
 
 This is the English canonical equivalent of the operator workflow previously kept under `docs/_external`.
 
@@ -16,7 +16,7 @@ This is the English canonical equivalent of the operator workflow previously kep
 
 ## Domain order
 
-Same 22-pair order as [`ORCHESTRATOR.md`](ORCHESTRATOR.md).
+Same 24-pair order as [`ORCHESTRATOR.md`](ORCHESTRATOR.md).
 
 ---
 

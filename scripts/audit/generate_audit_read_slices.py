@@ -51,6 +51,14 @@ DOMAIN_CODE_ENTRIES: dict[str, tuple[str, ...]] = {
         "`applications/` — Tier-3 hosts",
         "`intergrax/runtime/nexus/application/` — HarnessApplication",
     ),
+    "APPLICATION_HOSTING": (
+        "`intergrax/hosting/` — HostedApplicationEngine / supervisor",
+        "`intergrax/hosting/runner.py` — run_hosted_application",
+    ),
+    "UNIFIED_CONTEXT_LIFECYCLE": (
+        "`intergrax/runtime/context_lifecycle/` — artifact repository contracts",
+        "`intergrax/runtime/nexus/context/ucl_orchestration.py` — resolve_ucl_context_plan",
+    ),
     "OBSERVABILITY": (
         "`intergrax/runtime/nexus/observability/` — trace spine",
         "`intergrax/runtime/nexus/events/` — RuntimeEvent",
@@ -117,6 +125,22 @@ DOMAIN_SLICES: dict[str, dict[str, str]] = {
         "plan_hub": "Phase INT / H-INT hub · satellites on demand",
         "architecture": "wiring + design principles hub · [`satellites/INTEGRATIONS_provider_catalog.md`](../architecture/satellites/INTEGRATIONS_provider_catalog.md) on demand",
     },
+    "APPLICATION_HOSTING": {
+        "layers": "HOST",
+        "ideal": "Hosting lifecycle around a configured Tier-3 application",
+        "audit_map": "HOST · maturity four-axis A/I/P/E in domain pair",
+        "invariants": "HOST-INV-01..12",
+        "plan_hub": "APP-HOST waves · gates §6 · fidelity matrix §9",
+        "architecture": "§1 purpose · §3 invariants · §6–§12 engine/lifecycle/OS",
+    },
+    "UNIFIED_CONTEXT_LIFECYCLE": {
+        "layers": "UCL",
+        "ideal": "One ledger · one budget · one executor · Nexus coordinator",
+        "audit_map": "UCL · EPHEMERAL_ASSEMBLY · DURABLE_COMPACTION",
+        "invariants": "UCL §21 explicit invariants · ADR-UCL-001",
+        "plan_hub": "CTX-UCL-CLOSEOUT-1 closed · TOKEN-10E-1 READY_FOR_REVIEW",
+        "architecture": "§2 purpose · §5 ownership · §6 lifecycle · §21 invariants",
+    },
 }
 
 
@@ -175,7 +199,7 @@ Audit quality requires **code paths + gate scripts + tests** — this slice redu
 def main() -> None:
     import runpy
 
-    gen = runpy.run_path(str(ROOT / "scripts" / "generate_domain_audit_prompts.py"))
+    gen = runpy.run_path(str(ROOT / "scripts" / "audit" / "generate_domain_audit_prompts.py"))
     for entry in gen["DOMAINS"]:
         did = entry["id"]
         layers = entry["layers"]

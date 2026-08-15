@@ -1,8 +1,8 @@
 # Adaptive Harness Intelligence (L4) — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) · [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../plans/ADAPTIVE_HARNESS_INTELLIGENCE.md)
-**Audit map layers:** L4 AHI · compact slice: [`audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../technical/guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md)
+**Domain pair:** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) · [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
+**Audit map layers:** L4 AHI · compact slice: [`audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -60,11 +60,11 @@ AHI-LC Done · §6.1av AHI-MAINT Done · L4 auto-apply requires explicit product
 
 ## 0. Context budget (mandatory)
 
-**Load first:** [`docs/project/technical/guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../technical/guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md) — compact slice (layers **L4 AHI**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+**Load first:** [`docs/project/technical/guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md) — compact slice (layers **L4 AHI**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ AHI-LC Done · §6.1av AHI-MAINT Done · L4 auto-apply requires explicit product
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — hub read-scope + one `architecture/satellites` satellite max
-3. `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` — hub + one `plan/satellites` satellite max
+2. `docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` — hub + one `plan/satellites/` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
 ---
@@ -90,7 +90,7 @@ runtime_governance_bridge.py
 scripts/release/phase_w_adapt_report.py · scripts/release/phase_v_closeout_gate.py
 ```
 
-Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 

@@ -1,8 +1,8 @@
 # Modality (Vision, Audio, ML) — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/MODALITY.md`](../../architecture/MODALITY.md) · [`plan/MODALITY.md`](../plans/MODALITY.md)
-**Audit map layers:** 29 · compact slice: [`audit_slices/MODALITY.md`](../../technical/guides/audit_slices/MODALITY.md)
+**Domain pair:** [`architecture/MODALITY.md`](../architecture/MODALITY.md) · [`plan/MODALITY.md`](../plan/MODALITY.md)  
+**Audit map layers:** 29 · compact slice: [`audit_slices/MODALITY.md`](../guides/audit_slices/MODALITY.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -60,11 +60,11 @@ model_inference/ partial · remote serving incremental · Plane A vs C boundary 
 
 ## 0. Context budget (mandatory)
 
-**Load first:** [`docs/project/technical/guides/audit_slices/MODALITY.md`](../../technical/guides/audit_slices/MODALITY.md) — compact slice (layers **29**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+**Load first:** [`docs/project/technical/guides/audit_slices/MODALITY.md`](../guides/audit_slices/MODALITY.md) — compact slice (layers **29**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ model_inference/ partial · remote serving incremental · Plane A vs C boundary 
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/MODALITY.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/MODALITY.md` — hub read-scope + one `architecture/satellites` satellite max
-3. `docs/project/maintainers/plans/MODALITY.md` — hub + one `plan/satellites` satellite max
+2. `docs/project/architecture/MODALITY.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/project/maintainers/plans/MODALITY.md` — hub + one `plan/satellites/` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
 ---
@@ -92,7 +92,7 @@ modality_celery_wiring.py · ThreadPoolModalityInferenceExecutor
 intergrax/runtime/observability/modality_counters.py
 ```
 
-Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 

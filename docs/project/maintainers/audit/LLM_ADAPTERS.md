@@ -1,8 +1,8 @@
 # LLM Adapters — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md) · [`plan/LLM_ADAPTERS.md`](../plans/LLM_ADAPTERS.md)
-**Audit map layers:** 6 · compact slice: [`audit_slices/LLM_ADAPTERS.md`](../../technical/guides/audit_slices/LLM_ADAPTERS.md)
+**Domain pair:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) · [`plan/LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md)  
+**Audit map layers:** 6 · compact slice: [`audit_slices/LLM_ADAPTERS.md`](../guides/audit_slices/LLM_ADAPTERS.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -60,11 +60,11 @@ Planner LLM ≠ producer discipline incomplete at Nexus boundary · distributed 
 
 ## 0. Context budget (mandatory)
 
-**Load first:** [`docs/project/technical/guides/audit_slices/LLM_ADAPTERS.md`](../../technical/guides/audit_slices/LLM_ADAPTERS.md) — compact slice (layers **6**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+**Load first:** [`docs/project/technical/guides/audit_slices/LLM_ADAPTERS.md`](../guides/audit_slices/LLM_ADAPTERS.md) — compact slice (layers **6**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ Planner LLM ≠ producer discipline incomplete at Nexus boundary · distributed 
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/LLM_ADAPTERS.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/LLM_ADAPTERS.md` — hub read-scope + one `architecture/satellites` satellite max
-3. `docs/project/maintainers/plans/LLM_ADAPTERS.md` — hub + one `plan/satellites` satellite max
+2. `docs/project/architecture/LLM_ADAPTERS.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/project/maintainers/plans/LLM_ADAPTERS.md` — hub + one `plan/satellites/` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
 ---
@@ -90,7 +90,7 @@ intergrax/runtime/adaptive/llm_call_summary.py
 scripts/maintenance/check_llm_adapter_typed_returns.py · scripts/maintenance/check_agents_llm_adapter_response.py
 ```
 
-Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 

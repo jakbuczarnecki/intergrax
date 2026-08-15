@@ -53,7 +53,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--domain",
         default=None,
-        help="Single domain basename (e.g. MEMORY). Omit for all 22 pairs.",
+        help="Single domain basename (e.g. MEMORY). Omit for all 24 pairs.",
     )
     parser.add_argument("--force", action="store_true", help="Overwrite existing progress.json")
     return parser.parse_args()

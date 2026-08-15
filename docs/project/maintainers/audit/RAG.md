@@ -1,8 +1,8 @@
 # RAG and Retrieval Engine — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/RAG.md`](../../architecture/RAG.md) · [`plan/RAG.md`](../plans/RAG.md)
-**Audit map layers:** 14 · compact slice: [`audit_slices/RAG.md`](../../technical/guides/audit_slices/RAG.md)
+**Domain pair:** [`architecture/RAG.md`](../architecture/RAG.md) · [`plan/RAG.md`](../plan/RAG.md)  
+**Audit map layers:** 14 · compact slice: [`audit_slices/RAG.md`](../guides/audit_slices/RAG.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -60,11 +60,11 @@ GAP-RAG-01..40 **Closed** (LC) · GAP-RAG-15/34 Frozen · §6.1av RAG-MAINT **Do
 
 ## 0. Context budget (mandatory)
 
-**Load first:** [`docs/project/technical/guides/audit_slices/RAG.md`](../../technical/guides/audit_slices/RAG.md) — compact slice (layers **14**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+**Load first:** [`docs/project/technical/guides/audit_slices/RAG.md`](../guides/audit_slices/RAG.md) — compact slice (layers **14**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ GAP-RAG-01..40 **Closed** (LC) · GAP-RAG-15/34 Frozen · §6.1av RAG-MAINT **Do
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/RAG.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/RAG.md` — hub read-scope + one `architecture/satellites` satellite max
-3. `docs/project/maintainers/plans/RAG.md` — hub + one `plan/satellites` satellite max
+2. `docs/project/architecture/RAG.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/project/maintainers/plans/RAG.md` — hub + one `plan/satellites/` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 5. `@docs/project/technical/guides/AGENT_CREATION_GUIDE.md` **Appendix K §K.5** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
@@ -98,7 +98,7 @@ intergrax/tools/providers/rag/
 .github/workflows/rag-guard.yml · tests/fixtures/rag_golden/
 ```
 
-Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 

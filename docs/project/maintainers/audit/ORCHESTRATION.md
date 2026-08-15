@@ -1,8 +1,8 @@
 # Orchestration — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md) · [`plan/ORCHESTRATION.md`](../plans/ORCHESTRATION.md)
-**Audit map layers:** 3, 9 · compact slice: [`audit_slices/ORCHESTRATION.md`](../../technical/guides/audit_slices/ORCHESTRATION.md)
+**Domain pair:** [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) · [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md)  
+**Audit map layers:** 3, 9 · compact slice: [`audit_slices/ORCHESTRATION.md`](../guides/audit_slices/ORCHESTRATION.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -60,11 +60,11 @@ CFG-14 LKW hybrid E2E deferred · active-active node redundancy L0 · QueuedNexu
 
 ## 0. Context budget (mandatory)
 
-**Load first:** [`docs/project/technical/guides/audit_slices/ORCHESTRATION.md`](../../technical/guides/audit_slices/ORCHESTRATION.md) — compact slice (layers **3, 9**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+**Load first:** [`docs/project/technical/guides/audit_slices/ORCHESTRATION.md`](../guides/audit_slices/ORCHESTRATION.md) — compact slice (layers **3, 9**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ CFG-14 LKW hybrid E2E deferred · active-active node redundancy L0 · QueuedNexu
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/ORCHESTRATION.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/ORCHESTRATION.md` — hub read-scope + one `architecture/satellites` satellite max
-3. `docs/project/maintainers/plans/ORCHESTRATION.md` — hub + one `plan/satellites` satellite max
+2. `docs/project/architecture/ORCHESTRATION.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/project/maintainers/plans/ORCHESTRATION.md` — hub + one `plan/satellites/` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 5. `@docs/project/technical/guides/AGENT_CREATION_GUIDE.md` **Appendix I (orchestration control plane)** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
@@ -94,7 +94,7 @@ applications/contracts/graph_builder.py (AgentGraph)
 scripts/maintenance/check_orchestration_config_docs.py
 ```
 
-Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 

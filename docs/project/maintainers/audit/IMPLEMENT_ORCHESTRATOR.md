@@ -8,7 +8,7 @@
 
 ## Purpose
 
-Iterate all 22 domain pairs and **implement accepted backlog items** already registered in `docs/project/maintainers/plans/<DOMAIN>.md`.
+Iterate all 24 domain pairs and **implement accepted backlog items** already registered in `docs/project/maintainers/plans/<DOMAIN>.md`.
 
 - Does **not** start with a full layer audit.
 - Does **not** expand scope to Phase K / §6.3 without operator reprioritization.
@@ -68,7 +68,7 @@ For current `<DOMAIN>`:
 
 ## Resume across Cursor sessions
 
-A single agent turn may not cover all 22 domains. That is expected — use resume, not restart.
+A single agent turn may not cover all 24 domains. That is expected — use resume, not restart.
 
 1. Paste the **same** bootstrap file (`03_implement_plan_all_domains.txt`).
 2. Add one line: `RESUME: docs/audit_results/YYYY-MM-DD/progress.json`

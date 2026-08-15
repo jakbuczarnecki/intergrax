@@ -24,7 +24,7 @@ The goal is not merely to implement existing architecture. The goal is to bring 
 |-------------|-------------|------|
 | [`.cursor/rules/intergrax-iteration.mdc`](../../../../.cursor/rules/intergrax-iteration.mdc) | One coherent plan item | Default Cursor sessions |
 | **This guide (Layer Completion Mode)** | Full domain layer → maturity | Deep layer closeout (journal: “Layer Completion Mode”) |
-| [audit/LAYER_COMPLETION_ORCHESTRATOR.md](../../maintainers/audit/LAYER_COMPLETION_ORCHESTRATOR.md) | All 22 pairs sequentially | Paste [`../../maintainers/bootstrap/05_closeout_all_domains.txt`](../../maintainers/bootstrap/05_closeout_all_domains.txt) |
+| [audit/LAYER_COMPLETION_ORCHESTRATOR.md](../../maintainers/audit/LAYER_COMPLETION_ORCHESTRATOR.md) | All 24 pairs sequentially | Paste [`../../maintainers/bootstrap/05_closeout_all_domains.txt`](../../maintainers/bootstrap/05_closeout_all_domains.txt) |
 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | Cross-domain never-violate rules | Skim **before every** Step 1 and Step 6 |
 | [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) | Hard repo rules, verification bundle | On demand (`@docs/project/technical/guides/AGENT_INSTRUCTIONS.md`) |
 | [AGENTS.md](../../../../AGENTS.md) | Cursor auto-load stub (tiers, boundaries) | Always (Cursor) |

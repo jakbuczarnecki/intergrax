@@ -1,8 +1,8 @@
 # Experimentation and Developer Experience — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) · [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)
-**Audit map layers:** 25–27, 30 · compact slice: [`audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../../technical/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)
+**Domain pair:** [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) · [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
+**Audit map layers:** 25–27, 30 · compact slice: [`audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -60,11 +60,11 @@ DX-LC Done · §6.1av DX-MAINT Done · GOV-PROD.1 dashboard backlog · polished 
 
 ## 0. Context budget (mandatory)
 
-**Load first:** [`docs/project/technical/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../../technical/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) — compact slice (layers **25–27, 30**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+**Load first:** [`docs/project/technical/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) — compact slice (layers **25–27, 30**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ DX-LC Done · §6.1av DX-MAINT Done · GOV-PROD.1 dashboard backlog · polished 
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — hub read-scope + one `architecture/satellites` satellite max
-3. `docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — hub + one `plan/satellites` satellite max
+2. `docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — hub + one `plan/satellites/` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 5. `@docs/project/technical/guides/AGENT_CREATION_GUIDE.md` **EXTENSION_AUTHOR_GUIDE** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
@@ -92,7 +92,7 @@ scripts/release/phase_v_closeout_gate.py · phase_w_ops_evidence.py
 docs/project/technical/guides/AGENT_CREATION_GUIDE.md · HARNESS_ENVIRONMENT.md
 ```
 
-Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
@@ -104,7 +104,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 2. new-application emits profile+wiring+docker+ADR per Phase N.
 3. intergrax doctor diagnoses lab stack accurately.
 4. Gate scripts pass after harness change (mandatory verification set).
-5. check_docs_domain_pairs enforces 22 pairs.
+5. check_docs_domain_pairs enforces 24 pairs.
 6. Eval registry trends before promotion (require_baseline_for_release).
 7. Shadow workspace observe-only compare path works.
 8. Acceptance agent_os suite covers OS claims.
