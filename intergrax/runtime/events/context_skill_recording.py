@@ -13,6 +13,7 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
     TaskId,
+    peek_active_execution_identity,
     require_active_execution_identity,
     validate_run_id,
     validate_task_id,
@@ -51,6 +52,8 @@ def record_skill_resolved(
     run_id: str = "",
     correlation_id: str = "",
 ) -> None:
+    if peek_active_execution_identity() is None:
+        return
     resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
         task_id=task_id,
         run_id=run_id,

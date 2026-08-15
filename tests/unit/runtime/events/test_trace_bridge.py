@@ -228,3 +228,25 @@ def test_trace_bridge_maps_llm_catalog_miss_schema() -> None:
     assert event.event_type == RuntimeEventType.LLM_CALL
     assert event.payload["model"] == "vendor/unknown"
     assert event.payload["resolution_tier"] == "fallback_default"
+
+
+def test_trace_bridge_ignores_noncanonical_task_id_tag() -> None:
+    task, task_id, run_id, attempt_id = _task_with_identity()
+    trace = TraceEvent(
+        event_id="diag-1",
+        run_id=run_id,
+        seq=8,
+        ts_utc="2026-06-19T10:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="local_indexer_step",
+        message="index diagnostic",
+        tags={"task_id": "local_indexer", "tenant_id": "tenant"},
+    )
+    event = trace_event_to_runtime_event(
+        trace,
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
+    assert event.task_id == task_id

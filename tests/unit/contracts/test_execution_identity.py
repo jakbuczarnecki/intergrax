@@ -125,8 +125,8 @@ def test_task_to_runtime_request_requires_explicit_run_id():
     assert request.task_id == task.task_id
     assert request.run_id == run_id
     assert request.run_id != task.task_id
-    assert "run_id" not in request.metadata
-    assert "task_id" not in request.metadata
+    assert request.metadata["run_id"] == run_id
+    assert request.metadata["task_id"] == task.task_id
 
 
 @pytest.mark.unit

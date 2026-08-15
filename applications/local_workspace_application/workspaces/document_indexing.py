@@ -28,6 +28,7 @@ from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentRecord,
 )
+from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.runtime.task.task import Task, TaskContext
 
 
@@ -372,7 +373,7 @@ class WorkspaceDocumentIndexingService:
         receipt: _WorkspaceDocumentIndexReceipt,
     ) -> WorkspaceDocumentIndexingResult:
         task = Task(
-            task_id=document_id,
+            task_id=mint_task_id(),
             tenant_id=tenant_id,
             user_id="lkw.managed_workspace",
             message=f"Index managed workspace source file {safe_file_name}",

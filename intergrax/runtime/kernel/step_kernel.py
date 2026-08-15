@@ -757,8 +757,11 @@ class HarnessKernel:
         payload: dict[str, Any],
     ) -> int:
         active_run_id, attempt_id = require_active_execution_identity()
-        resolved_task_id = validate_task_id(kernel_ctx.task_id or kernel_ctx.run_id)
-        resolved_run_id = validate_run_id(kernel_ctx.run_id or kernel_ctx.task_id)
+        try:
+            resolved_task_id = validate_task_id(kernel_ctx.task_id)
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError("kernel task_id must be canonical") from exc
+        resolved_run_id = validate_run_id(kernel_ctx.run_id)
         if resolved_run_id != active_run_id:
             raise RuntimeError("kernel run_id conflicts with active execution identity")
         event = RuntimeEvent(

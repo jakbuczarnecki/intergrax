@@ -15,7 +15,17 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Union
 
 from intergrax.contracts.event_severity import EventSeverity
-from intergrax.contracts.execution_identity import AttemptId, RunId, validate_attempt_id, validate_run_id
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    RunId,
+    mint_attempt_id,
+    mint_run_id,
+    mint_task_id,
+    peek_active_execution_identity,
+    validate_attempt_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.payload_registry import merge_payload_envelope
 from intergrax.runtime.events.payloads import (
@@ -397,17 +407,63 @@ def _attach_typed_bridge_payload(
     return merged
 
 
+def _resolve_bridge_task_id(trace: TraceEvent, subject: TraceBridgeSubject) -> str:
+    for candidate in (subject.task_id, trace.tags.get("task_id")):
+        if candidate is None:
+            continue
+        try:
+            return str(validate_task_id(candidate))
+        except (TypeError, ValueError):
+            continue
+    return str(mint_task_id())
+
+
+def _resolve_bridge_execution_identity(
+    *,
+    run_id: RunId | str | None,
+    attempt_id: AttemptId | str | None,
+    trace: TraceEvent,
+) -> tuple[RunId, AttemptId]:
+    active = peek_active_execution_identity()
+    if active is not None:
+        return active
+
+    resolved_run_id: RunId | None = None
+    for candidate in (run_id, trace.run_id):
+        if candidate is None:
+            continue
+        try:
+            resolved_run_id = validate_run_id(candidate)
+            break
+        except (TypeError, ValueError):
+            continue
+    if resolved_run_id is None:
+        resolved_run_id = mint_run_id()
+
+    if attempt_id is not None:
+        try:
+            return resolved_run_id, validate_attempt_id(attempt_id)
+        except (TypeError, ValueError):
+            pass
+    return resolved_run_id, mint_attempt_id()
+
+
 def trace_event_to_runtime_event(
     trace: TraceEvent,
     subject: TraceBridgeSubject,
     *,
-    run_id: RunId,
-    attempt_id: AttemptId,
+    run_id: RunId | None = None,
+    attempt_id: AttemptId | None = None,
     correlation_id: Optional[str] = None,
     payload_schema_id: Optional[str] = None,
     payload_dict: Optional[Dict[str, Any]] = None,
 ) -> RuntimeEvent:
     """Map a persisted ``TraceEvent`` to canonical ``RuntimeEvent``."""
+    resolved_run_id, resolved_attempt_id = _resolve_bridge_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        trace=trace,
+    )
     event_type, phase = _resolve_event_type_from_trace(
         trace,
         payload_schema_id=payload_schema_id,
@@ -451,9 +507,9 @@ def trace_event_to_runtime_event(
 
     return RuntimeEvent(
         tenant_id=str(trace.tags.get("tenant_id") or subject.tenant_id),
-        task_id=str(trace.tags.get("task_id") or subject.task_id),
-        run_id=validate_run_id(run_id),
-        attempt_id=validate_attempt_id(attempt_id),
+        task_id=_resolve_bridge_task_id(trace, subject),
+        run_id=resolved_run_id,
+        attempt_id=resolved_attempt_id,
         agent_id=trace.tags.get("agent_id") or subject.agent_id or None,
         node_id=str(node_id) if node_id else None,
         step_id=str(step_id) if step_id else None,

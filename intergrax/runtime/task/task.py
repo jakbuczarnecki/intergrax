@@ -143,6 +143,8 @@ class Task(BaseModel):
             raise ValueError("Task.agent_id must be set before execution.")
 
         metadata = task_to_request_metadata(self)
+        metadata.setdefault("task_id", self.task_id)
+        metadata.setdefault("run_id", run_id)
 
         return RuntimeRequest(
             agent_id=self.agent_id,

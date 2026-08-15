@@ -134,6 +134,7 @@ class ObservabilityEmitter:
         }
         if tags:
             merged_tags.update(tags)
+        merged_tags["task_id"] = self.task_id
         if scope is not None:
             if scope.step_id:
                 merged_tags.setdefault("step_id", scope.step_id)

@@ -131,6 +131,10 @@ class ContextManager:
         """Attach hook pipeline for graph context assembly (CE-HOOKS-GRAPH)."""
         self._middleware = middleware
 
+    def use_execution_identity(self, execution_identity: ActiveExecutionIdentity) -> None:
+        """Share the Nexus loop execution identity for context assembly events."""
+        self._execution_identity = execution_identity
+
     @property
     def context_engine(self) -> Optional["ContextEngine"]:
         return self._context_engine

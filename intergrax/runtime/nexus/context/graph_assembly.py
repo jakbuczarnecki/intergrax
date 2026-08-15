@@ -10,6 +10,7 @@ from intergrax.context.contracts import (
     ContextDecisionSnapshot,
 )
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
+from intergrax.contracts.execution_identity import require_active_execution_identity
 from intergrax.llm.messages import (
     ChatMessage,
     StructuredModelInputRequiredError,
@@ -29,9 +30,10 @@ def build_graph_assembly_request(
     trace_id: str = "",
 ) -> ContextAssemblyRequest:
     """Build a CE assembly request for one execution-graph node."""
+    active_run_id, _ = require_active_execution_identity()
     return ContextAssemblyRequest(
         trace_id=trace_id or task.task_id,
-        run_id=task.task_id,
+        run_id=active_run_id,
         task_id=task.task_id,
         tenant_id=task.tenant_id,
         assembly_scope="graph_node",

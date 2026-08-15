@@ -151,11 +151,11 @@ class RuntimeState(RuntimeStateContract):
 
     @property
     def task_id(self) -> str:
-        """Typed task identity for policy/HITL matching; falls back to run_id."""
+        """Typed task identity for policy/HITL matching."""
         typed = self.request.task_id
-        if typed is not None and typed.strip():
-            return typed
-        return self.run_id
+        if typed is not None and str(typed).strip():
+            return str(typed)
+        raise RuntimeError("RuntimeRequest.task_id must be set before RuntimeState is used.")
 
 
     def _next_trace_seq(self) -> int:

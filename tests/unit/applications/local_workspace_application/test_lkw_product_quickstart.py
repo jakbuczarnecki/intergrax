@@ -1785,3 +1785,104 @@ def test_known_stack_stop_failure_returns_precise_recovery_failure(
     assert exc.value.reason == "known_intergrax_stack_conflict_recovery_failed"
     assert exc.value.detected_stack == "lkw-core-platform-proof"
     assert any("down" in call for call in calls)
+
+
+def test_record_skill_resolved_skips_without_execution_identity() -> None:
+    from intergrax.runtime.events.context_skill_recording import record_skill_resolved
+    from intergrax.runtime.events.event_bus import RuntimeEventBus
+    from intergrax.skills.core.contracts import SkillManifest, SkillRiskTier
+    from intergrax.skills.registry.runtime import SkillRegistry
+    from intergrax.skills.resolver import SkillResolver
+
+    bus = RuntimeEventBus(record_history=True)
+    skills = SkillRegistry()
+    skills.register(
+        SkillManifest(
+            skill_id="demo",
+            description="demo",
+            tool_ids=("t1",),
+            risk_tier=SkillRiskTier.LOW,
+        )
+    )
+    pack = SkillResolver(skills).resolve(["demo"])
+    record_skill_resolved(bus, agent_id="local_indexer", pack=pack)
+    assert bus.history == []
+
+
+def test_docker_compose_pins_data_home_to_persistent_volume() -> None:
+    compose = (
+        _REPO_ROOT
+        / "applications/local_workspace_application/docker/docker-compose.yml"
+    )
+    text = compose.read_text(encoding="utf-8")
+    assert "LOCAL_WORKSPACE_DATA_HOME: /var/lib/intergrax/lkw" in text
+    assert "lkw_application_data:/var/lib/intergrax/lkw" in text
+
+
+def test_managed_index_task_uses_canonical_task_id() -> None:
+    source = (
+        _REPO_ROOT
+        / "applications/local_workspace_application/workspaces/document_indexing.py"
+    ).read_text(encoding="utf-8")
+    assert "task_id=mint_task_id()" in source
+    assert "task_id=document_id" not in source
+
+
+def test_nexus_loop_wires_shared_context_manager_execution_identity() -> None:
+    source = (_REPO_ROOT / "intergrax/runtime/nexus/nexus_loop.py").read_text(encoding="utf-8")
+    assert "use_execution_identity(self._execution_identity)" in source
+
+
+def test_graph_assembly_request_uses_active_run_id() -> None:
+    source = (_REPO_ROOT / "intergrax/runtime/nexus/context/graph_assembly.py").read_text(
+        encoding="utf-8"
+    )
+    assert "require_active_execution_identity()" in source
+    assert "run_id=active_run_id" in source
+
+
+def test_uaep_task_stub_prefers_runtime_request_task_id() -> None:
+    from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+    from intergrax.runtime.nexus.context.uaep_assemble import _task_stub_from_request
+    from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    request = RuntimeRequest(
+        agent_id="local_indexer",
+        user_id="u1",
+        session_id="sess_test",
+        message="index",
+        task_id=task_id,
+        run_id=run_id,
+        metadata={"tenant_id": "t1"},
+    )
+    task = _task_stub_from_request(request)
+    assert task.task_id == task_id
+
+
+def test_ask_search_task_uses_canonical_task_id() -> None:
+    source = (
+        _REPO_ROOT / "applications/local_workspace_application/workspaces/ask_service.py"
+    ).read_text(encoding="utf-8")
+    assert "task_id=mint_task_id()" in source
+    assert "task_id=new_run_id()" not in source
+
+
+def test_task_to_runtime_request_propagates_task_id_in_metadata() -> None:
+    from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+    from intergrax.runtime.task.task import Task, TaskContext
+
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    task = Task(
+        task_id=task_id,
+        tenant_id="t1",
+        user_id="u1",
+        agent_id="local_indexer",
+        message="index",
+        context=TaskContext(capability="local.workspace.index"),
+    )
+    request = task.to_runtime_request(run_id=run_id)
+    assert request.metadata["task_id"] == task_id
+    assert request.metadata["run_id"] == run_id

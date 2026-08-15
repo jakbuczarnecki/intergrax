@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
@@ -316,7 +317,7 @@ class WorkspaceAskService:
         if allowed_source_ids:
             metadata["allowed_source_ids"] = list(allowed_source_ids)
         task = Task(
-            task_id=new_run_id(),
+            task_id=mint_task_id(),
             tenant_id=tenant_id,
             user_id="lkw.managed_workspace",
             message=question,

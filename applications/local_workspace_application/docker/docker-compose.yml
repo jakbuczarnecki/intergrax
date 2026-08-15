@@ -92,6 +92,7 @@ services:
     environment:
       INTERGRAX_ENV: dev
       LOCAL_WORKSPACE_BACKEND_ENV: dev
+      LOCAL_WORKSPACE_DATA_HOME: /var/lib/intergrax/lkw
       LOCAL_WORKSPACE_BACKEND_HOST: "0.0.0.0"
       LOCAL_WORKSPACE_BACKEND_PORT: "8020"
       LOCAL_WORKSPACE_INCLUDE_MCP: "false"

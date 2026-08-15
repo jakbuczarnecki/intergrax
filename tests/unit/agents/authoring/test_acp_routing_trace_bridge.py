@@ -14,6 +14,7 @@ from intergrax.llm_adapters.routing import (
     RoutingContext,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.kernel.step_kernel import StepKernelContext
 
 
@@ -22,8 +23,8 @@ from intergrax.runtime.kernel.step_kernel import StepKernelContext
 def test_record_acp_routing_rule_evaluation_emits_plane_a_event() -> None:
     kernel_ctx = StepKernelContext(
         agent_id="agent-1",
-        run_id="run-1",
-        task_id="task-1",
+        run_id=mint_run_id(),
+        task_id=mint_task_id(),
         tenant_id="tenant-1",
     )
     evaluation = LLMRoutingEvaluator().evaluate(

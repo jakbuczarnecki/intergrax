@@ -28,13 +28,8 @@ def build_uaep_assembly_request(
     assembly_options: TaskContextAssemblyOptions | None = None,
 ) -> ContextAssemblyRequest:
     options = assembly_options or TaskContextAssemblyOptions()
-    run_id = str(
-        request.metadata.get("run_id")
-        or request.metadata.get("task_id")
-        or request.session_id
-        or agent_id
-    )
-    task_id = str(request.metadata.get("task_id") or run_id)
+    run_id = str(request.metadata.get("run_id") or request.run_id)
+    task_id = str(request.metadata.get("task_id") or request.task_id)
     return ContextAssemblyRequest(
         trace_id=run_id,
         run_id=run_id,
@@ -113,7 +108,7 @@ def _task_stub_from_request(request: RuntimeRequest):
     """Minimal task view for provider handle extraction."""
     from intergrax.runtime.task.task import Task, TaskContext
 
-    task_id = str(request.metadata.get("task_id") or request.run_id or "uaep")
+    task_id = str(request.metadata.get("task_id") or request.task_id)
     metadata = {
         k: v
         for k, v in request.metadata.items()

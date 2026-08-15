@@ -172,6 +172,20 @@ async def run_acp_session(
         state_root = seed_state_root_budget_limits(state_root, merged.resolved_budget_limits)
 
     task_id = str(request.metadata.get("task_id") or run_id)
+    from intergrax.contracts.execution_identity import (
+        mint_task_id,
+        validate_run_id,
+        validate_task_id,
+    )
+
+    try:
+        run_id = validate_run_id(run_id)
+    except (TypeError, ValueError):
+        run_id = validate_run_id(f"run_{uuid4().hex}")
+    try:
+        task_id = validate_task_id(task_id)
+    except (TypeError, ValueError):
+        task_id = mint_task_id()
     run_trace = AgentRunTrace(run_id=run_id)
     reliability: AgentSessionReliability | None = None
     if host is not None and host.runtime_profile is not None:
