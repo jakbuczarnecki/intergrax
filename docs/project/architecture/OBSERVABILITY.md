@@ -137,6 +137,8 @@ The Harness Observability Spine (§3) is the write/read/export path; this sectio
 | **Metrics** | Aggregated operational signals (Prometheus, OTLP counters, SLO ratios) derived from events or counters | A substitute for the unified run journal |
 | **External sinks** | Destinations for normalized events, logs, or metrics (Langfuse, Sentry, Datadog, OTLP export) | Semantic owners of Intergrax event vocabulary |
 | **`DiagnosticPayload`** | Typed payload detail carried by Plane B trace rows or domain-signal envelopes (`payload_schema_id` + `redact()`) | An independent lifecycle channel with its own persistence contract |
+| **`PlatformProblemSignal`** | Vendor-neutral problem/error plane for classified failures requiring operator attention; exported via `ObservabilityExportPolicy` | A substitute for `RuntimeEvent` execution history or a generic lifecycle channel |
+| **Platform observability signal** | Non-execution platform/domain lifecycle signal on HOS (application instance, component, infrastructure) with its own identity and correlation — **no** `TaskId`/`RunId`/`AttemptId` | A `RuntimeEvent` with synthetic execution identity |
 
 **Implementation detail:** Plane A/B/C breakdown, field catalog, and bridge mechanics — §4. Correlation identifiers — §6 and [Required correlation fields](.#required-correlation-fields) below. Layered `event_type` / `event_kind` governance — §4.4 and [Event type governance](.#event-type-governance) below.
 
@@ -170,6 +172,91 @@ OECP transforms spine data into eval-grade artifacts: **evidence ledger** record
 | Domain extension | Domain-specific events **SHOULD** use namespaced `event_kind` / payload schemas instead of expanding platform lifecycle enums unnecessarily (§4.4). |
 
 Audit stores (`RuntimeEventPersistence`, `RunTraceWriter`) persist spine-normalized records — they are **not** alternate semantic owners. Custom `RuntimeEventBus` handlers and journal export plugins are subscribers/sinks, not parallel buses.
+
+---
+
+## Execution-scoped vs non-execution observability signals
+
+**Normative rule:** `RuntimeEvent` is **execution-scoped only**. Every canonical `RuntimeEvent` **MUST** carry full execution identity: `TaskId`, `RunId`, `AttemptId`, and `EventId` — all required, none optional, no synthetic placeholders to admit unrelated signals.
+
+The Harness Observability Spine (HOS) is **broader** than `RuntimeEvent`. HOS is the single approved write/read/export path; it carries **multiple semantic envelope families** through the same spine infrastructure. Semantic contract and transport/storage/export mechanism are separate concerns — **one spine, not two buses**.
+
+```text
+Harness Observability Spine (HOS)
+├── Execution event          → RuntimeEvent (TaskId + RunId + AttemptId + EventId)
+├── Platform observability   → non-execution platform/domain lifecycle signal
+├── Problem plane            → PlatformProblemSignal (failures / operator attention)
+├── Diagnostic detail        → DiagnosticPayload (payload on trace or domain-signal envelopes)
+├── Read model               → TraceEvent (Plane B compatibility / reconstruction)
+└── Export projection        → ObservabilityExportEnvelope (policy-safe export record)
+```
+
+### A. Execution-scoped signals (`RuntimeEvent`)
+
+| Property | Requirement |
+|----------|-------------|
+| Scope | Meaningful **execution** transitions inside a Task → Run → Attempt lifecycle |
+| Identity | `event_id`, `task_id`, `run_id`, `attempt_id` — all required |
+| `AttemptId` semantics | One concrete execution try inside a Run; **one arbitrary observable event ≠ one Attempt** |
+| Source of execution truth | `RuntimeEvent` persistence is canonical execution history; Unified Run Journal reconstructs execution from `RuntimeEvent` only |
+| Forbidden | Optional execution identity; multiplexed identity modes; synthetic `TaskId`/`RunId`/`AttemptId` for non-execution events |
+
+`emit_domain_signal()` and `RuntimeEventType.DOMAIN_SIGNAL` are **execution-attached** in practice: both require `EmitContext` with validated `TaskId`, `RunId`, and `AttemptId`. A domain signal on the bus is a `RuntimeEvent` carrying a namespaced `event_kind` and typed payload **within an active execution correlation** — not a generic non-execution lifecycle channel. Platform lifecycle facts that occur **during** execution (for example `platform.adaptive.*` on `DOMAIN_SIGNAL`) remain execution-scoped because they are correlated to a real attempt.
+
+### B. Non-execution platform observability signals
+
+**Platform observability signal** is the canonical semantic family for observable platform/domain lifecycle facts that do **not** belong to Task/Run/Attempt execution history.
+
+| Property | Requirement |
+|----------|-------------|
+| Scope | Application hosting lifecycle, component health, instance acquisition/release, infrastructure lifecycle, and similar platform facts **outside** execution attempt boundaries |
+| Identity | Signal-local `event_id` (or equivalent), `correlation_id`, `causation_id`, source/component identity (`application_id`, `instance_id`, … as applicable), typed payload, severity/category |
+| Execution identity | **MUST NOT** include `TaskId`, `RunId`, or `AttemptId`; **MUST NOT** mint `AttemptId` per signal |
+| Source of truth | Describes platform/application observability — **not** execution history; does not replace Unified Run Journal reconstruction |
+| Transport | Published through the **existing HOS spine/export path** — not a second bus, not `RuntimeEventBus.record()` with fake execution identity |
+
+`ObservabilityExportEnvelope` is an **export projection / transport envelope** only (`record_kind`, sanitized fields). It is **not** the semantic owner of platform lifecycle facts — do not promote it to domain semantics.
+
+`DiagnosticPayload` is **payload detail** (`schema_id`, `redact()`) carried by Plane B `TraceEvent` rows or execution-attached `DOMAIN_SIGNAL` envelopes. It is **not** an independent non-execution lifecycle channel.
+
+`TraceEvent` remains a **compatibility / read-model / diagnostic view** (Plane B). It **MUST NOT** become the canonical non-execution signal bus or execution truth source.
+
+`PlatformProblemSignal` remains the specialized **problem/error plane** (`what broke / requires attention`). It **MUST NOT** be abused for routine hosting lifecycle events.
+
+### C. Application hosting classification
+
+`HostedApplicationEvent` (`intergrax/hosting/contracts/events.py`) is the typed authoring envelope for **application-hosting platform observability signals**. Its semantics are:
+
+| Lifecycle | Examples |
+|-----------|----------|
+| Application instance | `APPLICATION_STARTING`, `APPLICATION_READY`, `APPLICATION_STOPPED`, `APPLICATION_FAILED` |
+| Component | `COMPONENT_STARTED`, `COMPONENT_HEALTH_CHANGED`, `COMPONENT_FAILED` |
+| Instance guard | `INSTANCE_ACQUIRED`, `INSTANCE_RELEASED`, `INSTANCE_STALE_RECOVERED` |
+| Restart / hooks / plugins | `RESTART_*`, `HOOK_*`, `PLUGIN_*` |
+
+These events describe **hosted application/platform lifecycle** — not Intergrax Task, Run, or Attempt lifecycle. `HostedApplicationEvent` already carries the correct non-execution identity (`event_id`, `correlation_id`, `causation_id`, `application_id`, `instance_id`).
+
+**Target (canonical):**
+
+```text
+HostedApplicationEvent
+  → platform observability signal (hosting domain)
+  → existing HOS spine / export infrastructure
+```
+
+**Architecture debt (implementation status: Planned — TRACE-1B-HOS-FIX):** `RuntimeSpineHostedApplicationEventPublisher` (`intergrax/hosting/eventing.py`) currently adapts hosting events into `RuntimeEvent` via `emit_domain_signal()` after synthesizing `TaskId`, `RunId`, and a fresh `AttemptId` (`mint_attempt_id()`) per event. This is **architecturally invalid** under TRACE-1B: it falsely equates each hosting event with a new execution attempt. Pre-production clean-cut: **remove/replace** this adapter in the implementation slice — no compatibility alias, dual path, or historical migration.
+
+### D. Author decision supplement (see also §4.4.1)
+
+```text
+Need a new signal?
+├── No Task/Run/Attempt lifecycle (hosting, infra, app instance)?
+│     → platform observability signal on HOS (not RuntimeEvent)
+├── Debug / reconstruction only?     → DiagnosticPayload (Plane B)
+├── Product/domain fact during execution? → emit_domain_signal (requires real EmitContext)
+├── Nexus lifecycle transition?      → emit_platform_event (requires real EmitContext)
+└── Classified failure / operator attention? → PlatformProblemSignal (problem plane)
+```
 
 ---
 

@@ -10,11 +10,11 @@
 
 **Cross-plan — Event catalog (OBS-EVOL-9 · P1-ARCH-02):** Layered spine + `event_kind` (architecture §4.4 · ADR-OBS-003). Developers extend via `emit_domain_signal`, not new `RuntimeEventType`. Pre-release spine consolidation before publication.
 
-**Cross-plan — Application Hosting (APP-HOST-3B):** Application Hosting publishes typed hosting events through the existing HOS domain-signal path using `applications.hosting.event` and `ExecutionPhase.APPLICATION_HOSTING`. No new `RuntimeEventType`, event bus, persistence store or exporter is introduced.
+**Cross-plan — Application Hosting (APP-HOST-3B):** Application Hosting publishes typed `HostedApplicationEvent` signals through the **platform observability signal** path on the existing HOS spine/export infrastructure (architecture § Execution-scoped vs non-execution observability signals). Hosting lifecycle signals **MUST NOT** synthesize `TaskId`/`RunId`/`AttemptId` or mint per-event `AttemptId`. Corrective implementation: **TRACE-1B-HOS-FIX**. No second event bus.
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine. Token Optimization telemetry must be observable through the same observability spine — do not create a private telemetry bus for token optimization. **TOKEN-6A-lite** is an early telemetry-shape slice for savings attribution through the existing observability spine; it must not create a private telemetry bus. **OBS-HEALTH-lite** is a minimal operator-visible status slice for exporter/token telemetry health, not full observability production hardening. Full **OBS-VENDOR** production hardening remains **Planned**. **LKW-PF6** ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF) is the platform proof workload for token savings telemetry and regression gates.
 
-**Last updated:** 2026-08-15 — **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes correction · pre-production clean-cut policy · TRACE-1C legacy removal target.
+**Last updated:** 2026-08-15 — **TRACE-1B-ARCH-HOS** execution vs platform observability signal split · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes correction · pre-production clean-cut policy · TRACE-1C legacy removal target.
 
 ---
 
@@ -58,7 +58,11 @@ Architecture: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md#observabi
 |----|----------|--------|------|------------|----------------------|
 | **TRACE-1A** | P1 | Done / Closed (`3eee3a860cd852e833fa3f2dd3d190ce9d96de08`) | Typed `TaskId`/`RunId`/`AttemptId` via `typing.NewType(..., str)`; strict validation; correct mint ownership; `RuntimeRequest.task_id`/`run_id`; remove canonical identity from metadata | TRACE-1 design complete | No `metadata["run_id"]`; no `task_id or run_id` fallbacks; wire strings only on boundary |
 | **TRACE-1B** | P1 | Planned / In Review | `AttemptId` through `RuntimeExecutionContext`, `EmitContext`, `RuntimeEvent`; attempt-aware emit paths; `TASK_CREATED` as first journal event in A1 | TRACE-1A | Every canonical `RuntimeEvent` carries `TaskId`, `RunId`, `AttemptId`, `EventId` |
-| **TRACE-1C** | P1 | Planned | **Strict journal + legacy removal:** zero identity fallback in journal build; migrate live code to canonical identity; delete unused legacy aliases/fallbacks/adapters; strict journal reconstruction; no `Any`/dynamic adapters on identity boundary; **no** permanent compatibility layer | TRACE-1B | `build_unified_run_journal` enforces strict contract; legacy aliased identity **removed** from canonical runtime (not merely recognized or flagged) |
+| **TRACE-1B-ARCH-HOS** | P1 | **Done** | Freeze execution-scoped `RuntimeEvent` vs non-execution platform observability signals; resolve hosting target; one HOS spine, no second bus | TRACE-1A | Architecture canon in [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) § Execution-scoped vs non-execution observability signals |
+| **TRACE-1B-HOS-FIX** | P1 | Planned | Remove synthetic execution identity from hosting platform signals; route `HostedApplicationEvent` through canonical platform observability path on existing HOS spine/export — no `mint_attempt_id()` per hosting event, no synthetic `TaskId`/`RunId` | TRACE-1B-ARCH-HOS; TRACE-1B (in progress) | `RuntimeSpineHostedApplicationEventPublisher` adapter removed/replaced; no second bus; no compatibility alias or historical migration |
+| **TRACE-1C** | P1 | Planned | **Strict journal + legacy removal:** zero identity fallback in journal build; migrate live code to canonical identity; delete unused legacy aliases/fallbacks/adapters; strict journal reconstruction; no `Any`/dynamic adapters on identity boundary; **no** permanent compatibility layer | TRACE-1B; TRACE-1B-HOS-FIX | `build_unified_run_journal` enforces strict contract; legacy aliased identity **removed** from canonical runtime (not merely recognized or flagged) |
+
+**TRACE-1B final gate:** TRACE-1B **MUST NOT** be marked Done until **TRACE-1B-HOS-FIX** is complete.
 
 ### TRACE-ASOF — First-class as-of projections
 
@@ -79,10 +83,12 @@ Architecture: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md#observabi
 **Dependency order (semantic):**
 
 ```text
-TRACE-1A → TRACE-1B → TRACE-1C → TRACE-ASOF-1 → TRACE-BITEMP-1 → TRACE-ASOF-2
+TRACE-1A → TRACE-1B → TRACE-1B-HOS-FIX → TRACE-1C → TRACE-ASOF-1 → TRACE-BITEMP-1 → TRACE-ASOF-2
   → TRACE-BITEMP-2 → TRACE-BITEMP-3 → TRACE-ASOF-3 (conditional) → TRACE-ASOF-4
   → TRACE-BITEMP-4 → TRACE-BITEMP-5
 ```
+
+(Architecture-only prerequisite **TRACE-1B-ARCH-HOS** is Done; it does not block runtime sequencing beyond informing **TRACE-1B-HOS-FIX**.)
 
 | ID | Priority | Status | Goal | Dependency | Acceptance (summary) |
 |----|----------|--------|------|------------|----------------------|
