@@ -9,7 +9,14 @@ from uuid import NAMESPACE_URL, uuid5
 
 from pydantic import Field, JsonValue
 
-from intergrax.contracts.execution_identity import AttemptId, RunId, TaskId, mint_attempt_id
+from intergrax.contracts.execution_identity import (
+    EventId,
+    RunId,
+    TaskId,
+    mint_attempt_id,
+    validate_event_id,
+)
+from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.hosting.contracts.context import HostedApplicationEventPublisher
 from intergrax.hosting.contracts.events import (
     HostedApplicationEvent,
@@ -20,6 +27,7 @@ from intergrax.hosting.engine.definition import ResolvedEventSubscription
 from intergrax.hosting.engine.diagnostics import DiagnosticsRecorder, HostedApplicationFailurePhase
 from intergrax.hosting.engine.observer_tasks import ObserverTaskRegistry
 from intergrax.runtime.events.emit_context import EmitContext
+from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.event_kind_registry import register_event_kind
 from intergrax.runtime.events.payload_registry import register_payload_schema
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
@@ -80,7 +88,7 @@ def hosted_event_to_payload(event: HostedApplicationEvent) -> HostedApplicationE
 
 def build_hosting_emit_context(
     event: HostedApplicationEvent,
-    bus: object | None,
+    bus: RuntimeEventBus | None,
     *,
     production_mode: bool = False,
 ) -> EmitContext:
@@ -89,13 +97,16 @@ def build_hosting_emit_context(
     The synthetic ``task_id`` is a legacy spine correlation field and is not an
     Intergrax application ``Task``.
     """
+    parent_event_id: EventId | None = (
+        validate_event_id(event.causation_id) if event.causation_id else None
+    )
     return EmitContext(
         task_id=TaskId(_hosting_canonical_id("task", event.application_id)),
         run_id=RunId(_hosting_canonical_id("run", event.instance_id)),
         attempt_id=mint_attempt_id(),
         correlation_id=event.correlation_id or event.event_id,
-        parent_event_id=event.causation_id or None,
-        bus=bus,  # type: ignore[arg-type]
+        parent_event_id=parent_event_id,
+        bus=bus,
         production_mode=production_mode,
     )
 
@@ -103,7 +114,7 @@ def build_hosting_emit_context(
 class RuntimeSpineHostedApplicationEventPublisher:
     """Publish hosting events through the existing runtime event spine."""
 
-    def __init__(self, bus: object | None = None, *, production_mode: bool = False) -> None:
+    def __init__(self, bus: RuntimeEventBus | None = None, *, production_mode: bool = False) -> None:
         register_hosting_domain_signal()
         self._bus = bus
         self._production_mode = production_mode

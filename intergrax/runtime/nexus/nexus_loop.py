@@ -14,7 +14,10 @@ from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
     AttemptId,
     RunId,
+    bind_active_execution_identity,
     mint_attempt_id,
+    require_active_execution_identity,
+    reset_active_execution_identity,
     validate_attempt_id,
     validate_run_id,
 )
@@ -188,10 +191,14 @@ class NexusLoop:
         self._declarative_tool_invoker = declarative_tool_invoker
         self._notification_adapter = notification_adapter
         self._execution_identity = ActiveExecutionIdentity()
-        self._context_manager = context_manager or ContextManager(
-            event_bus=self._event_bus,
-            execution_identity=self._execution_identity,
-        )
+        if context_manager is None:
+            self._context_manager = ContextManager(
+                event_bus=self._event_bus,
+                execution_identity=self._execution_identity,
+            )
+        else:
+            self._context_manager = context_manager
+            self._context_manager.use_execution_identity(self._execution_identity)
         self._engine = AgentEngine(
             registry,
             production_mode=production_mode,
@@ -382,7 +389,7 @@ class NexusLoop:
             else mint_attempt_id()
         )
         self._current_task = task
-        self._execution_identity.bind(
+        identity_token = bind_active_execution_identity(
             run_id=resolved_run_id,
             attempt_id=resolved_attempt_id,
         )
@@ -390,8 +397,7 @@ class NexusLoop:
             return await self._handle_task_impl(task)
         finally:
             self._current_task = None
-            self._execution_identity.clear()
-            self._graph_executor.clear_execution_identity()
+            reset_active_execution_identity(identity_token)
 
     async def _handle_task_impl(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
@@ -530,13 +536,12 @@ class NexusLoop:
     ) -> None:
         if self._evaluation_registry is None or len(executions) < 2:
             return
-        if self._execution_identity.run_id is None:
-            raise RuntimeError("active run identity required for multi-agent evaluation")
+        active_run_id, _ = require_active_execution_identity()
         passed = all(item.status == AgentExecutionStatus.COMPLETED for item in executions)
         self._evaluation_registry.append(
             OnlineEvaluationObservation(
                 observation_id=f"obs_{task_id}_multi_agent",
-                run_id=self._execution_identity.run_id,
+                run_id=active_run_id,
                 agent_id=",".join(item.agent_id for item in executions if item.agent_id),
                 mode=OnlineEvaluationMode.SHADOW,
                 scenario_id="multi_agent_fan_in",
@@ -581,19 +586,18 @@ class NexusLoop:
             event_bus=self._event_bus,
             shadow_manager=self._shadow_manager,
             sandbox_manager=self._sandbox_manager,
-            run_id=self._execution_identity.run_id,
+            run_id=require_active_execution_identity()[0],
         )
         return result
 
     async def _maybe_restore_long_running(self, task: Task) -> None:
-        if self._execution_identity.run_id is None:
-            raise RuntimeError("active run identity required for long-running restore")
+        active_run_id, _ = require_active_execution_identity()
         await maybe_restore_long_running(
             task,
             checkpoint_store=self._checkpoint_store,
             publish=self._publish_runtime_event,
             notification_adapter=self._notification_adapter,
-            run_id=self._execution_identity.run_id,
+            run_id=active_run_id,
         )
 
     async def _maybe_checkpoint_long_running(

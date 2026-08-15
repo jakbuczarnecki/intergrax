@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import re
 from contextvars import ContextVar, Token
-from dataclasses import dataclass
 from typing import NewType
 from uuid import uuid4
 
@@ -81,45 +80,52 @@ def reset_active_execution_identity(token: Token) -> None:
     _active_execution_identity.reset(token)
 
 
+def peek_active_execution_identity() -> tuple[RunId, AttemptId] | None:
+    return _active_execution_identity.get()
+
+
 def require_active_execution_identity() -> tuple[RunId, AttemptId]:
-    bound = _active_execution_identity.get()
+    bound = peek_active_execution_identity()
     if bound is None:
         raise RuntimeError("active execution identity required")
     return bound
 
 
-@dataclass
+def transition_active_execution_identity() -> AttemptId:
+    run_id, _ = require_active_execution_identity()
+    new_attempt_id = mint_attempt_id()
+    _active_execution_identity.set((run_id, new_attempt_id))
+    return new_attempt_id
+
+
 class ActiveExecutionIdentity:
-    """Mutable run/attempt binding for a single Nexus execution scope."""
+    """Stateless facade; canonical active identity lives in ContextVar."""
 
-    run_id: RunId | None = None
-    attempt_id: AttemptId | None = None
-    _context_token: Token | None = None
+    __slots__ = ()
 
-    def bind(self, *, run_id: RunId, attempt_id: AttemptId) -> None:
-        self.run_id = validate_run_id(run_id)
-        self.attempt_id = validate_attempt_id(attempt_id)
-        if self._context_token is not None:
-            reset_active_execution_identity(self._context_token)
-        self._context_token = bind_active_execution_identity(
-            run_id=self.run_id,
-            attempt_id=self.attempt_id,
-        )
+    def bind(self, *, run_id: RunId, attempt_id: AttemptId) -> Token:
+        return bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
 
-    def clear(self) -> None:
-        if self._context_token is not None:
-            reset_active_execution_identity(self._context_token)
-            self._context_token = None
-        self.run_id = None
-        self.attempt_id = None
+    def reset(self, token: Token) -> None:
+        reset_active_execution_identity(token)
+
+    @property
+    def run_id(self) -> RunId | None:
+        bound = peek_active_execution_identity()
+        return bound[0] if bound is not None else None
+
+    @property
+    def attempt_id(self) -> AttemptId | None:
+        bound = peek_active_execution_identity()
+        return bound[1] if bound is not None else None
 
     def require(self) -> tuple[RunId, AttemptId]:
-        if self.run_id is None or self.attempt_id is None:
-            raise RuntimeError("active execution identity required")
-        return self.run_id, self.attempt_id
+        return require_active_execution_identity()
 
     def transition_retry(self) -> AttemptId:
-        run_id, _ = self.require()
-        new_attempt_id = mint_attempt_id()
-        self.bind(run_id=run_id, attempt_id=new_attempt_id)
-        return new_attempt_id
+        return transition_active_execution_identity()
+
+    def clear(self) -> None:
+        raise RuntimeError(
+            "ActiveExecutionIdentity.clear() is forbidden; reset the bind token instead",
+        )

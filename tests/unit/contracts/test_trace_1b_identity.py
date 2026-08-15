@@ -7,11 +7,12 @@ import re
 import pytest
 
 from intergrax.contracts.execution_identity import (
-    ActiveExecutionIdentity,
+    bind_active_execution_identity,
     mint_attempt_id,
     mint_event_id,
     mint_run_id,
     mint_task_id,
+    reset_active_execution_identity,
     validate_event_id,
 )
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
@@ -251,12 +252,44 @@ def test_retry_coordinator_scheduled_and_started_attempt_ids() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+def test_graph_runner_critic_trace_emitter_uses_active_run_id() -> None:
+    from intergrax.runtime.nexus.orchestration.graph_runner import _build_critic_trace_emitter
+    from intergrax.runtime.task.task_trace import TaskTraceEmitter
+
+    class _Hooks:
+        verify_node_partial = True
+        verify_graph_final = False
+
+    task = Task(tenant_id="t", user_id="u", message="x")
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        emitter = _build_critic_trace_emitter(
+            task=task,
+            trace_emitter=TaskTraceEmitter(run_id=run_id, attempt_id=attempt_id),
+            hooks=_Hooks(),
+        )
+        assert emitter is not None
+        assert emitter._run_id == run_id
+        assert emitter._run_id != task.task_id
+    finally:
+        reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
 def test_active_execution_identity_transition_retry_mints_new_attempt() -> None:
+    from intergrax.contracts.execution_identity import ActiveExecutionIdentity
+
     identity = ActiveExecutionIdentity()
     run_id = mint_run_id()
     attempt_a1 = mint_attempt_id()
-    identity.bind(run_id=run_id, attempt_id=attempt_a1)
+    token = identity.bind(run_id=run_id, attempt_id=attempt_a1)
     attempt_a2 = identity.transition_retry()
     assert attempt_a2 != attempt_a1
     assert identity.run_id == run_id
     assert identity.attempt_id == attempt_a2
+    identity.reset(token)
+    with pytest.raises(RuntimeError, match="active execution identity required"):
+        identity.require()

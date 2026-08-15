@@ -21,7 +21,13 @@ from intergrax.agents.persistence.declarative_tool_executor import DeclarativeTo
 from intergrax.agents.persistence.tool_invoker_wiring import inject_acp_tool_invoker_metadata
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.contracts.execution_identity import ActiveExecutionIdentity, AttemptId, RunId
+from intergrax.contracts.execution_identity import (
+    ActiveExecutionIdentity,
+    AttemptId,
+    RunId,
+    peek_active_execution_identity,
+    require_active_execution_identity,
+)
 from intergrax.contracts.agent_handoff import AgentHandoff, resolve_handoff_from_execution
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -113,6 +119,7 @@ class GraphExecutor:
         runtime_config: Optional["RuntimeConfig"] = None,
         execution_identity: ActiveExecutionIdentity | None = None,
     ) -> None:
+        del execution_identity
         self._registry = registry
         self._agent_checkpoint_store = agent_checkpoint_store
         self._compensation_queue_store = compensation_queue_store
@@ -136,24 +143,22 @@ class GraphExecutor:
         self._event_bus = event_bus
         self._middleware = middleware or MiddlewarePipeline()
         self._critic_graph_hooks = critic_graph_hooks
-        self._execution_identity = execution_identity or ActiveExecutionIdentity()
-
-    def set_execution_identity(self, *, run_id: RunId, attempt_id: AttemptId) -> None:
-        self._execution_identity.bind(run_id=run_id, attempt_id=attempt_id)
-
-    def clear_execution_identity(self) -> None:
-        self._execution_identity.clear()
 
     @property
     def execution_identity(self) -> ActiveExecutionIdentity:
-        return self._execution_identity
+        return ActiveExecutionIdentity()
 
     @property
     def execution_attempt_id(self) -> AttemptId | None:
-        return self._execution_identity.attempt_id
+        bound = peek_active_execution_identity()
+        return bound[1] if bound is not None else None
+
+    def _require_run_id(self) -> RunId:
+        run_id, _ = require_active_execution_identity()
+        return run_id
 
     def _runtime_event_for_task(self, task: Task, **kwargs: object) -> RuntimeEvent:
-        run_id, attempt_id = self._execution_identity.require()
+        run_id, attempt_id = require_active_execution_identity()
         return RuntimeEvent(
             tenant_id=task.tenant_id,
             task_id=task.task_id,
@@ -194,7 +199,7 @@ class GraphExecutor:
         except ExecutionGraphCycleError as exc:
             failed = AgentExecutionResult(
                 agent_id="",
-                run_id=task.task_id,
+                run_id=self._require_run_id(),
                 status=AgentExecutionStatus.FAILED,
                 summary="",
                 errors=[str(exc)],
@@ -239,7 +244,7 @@ class GraphExecutor:
                     except SwarmCoordinationError as exc:
                         failed = AgentExecutionResult(
                             agent_id="",
-                            run_id=task.task_id,
+                            run_id=self._require_run_id(),
                             status=AgentExecutionStatus.FAILED,
                             summary="",
                             errors=[str(exc)],
@@ -399,7 +404,7 @@ class GraphExecutor:
             return (
                 AgentExecutionResult(
                     agent_id=node.agent_id or "",
-                    run_id=task.task_id,
+                    run_id=self._require_run_id(),
                     status=AgentExecutionStatus.FAILED,
                     summary="",
                     errors=["task_cancelled"],
@@ -427,7 +432,7 @@ class GraphExecutor:
         if delegation_error is not None:
             failed = AgentExecutionResult(
                 agent_id=node.agent_id or "",
-                run_id=task.task_id,
+                run_id=self._require_run_id(),
                 status=AgentExecutionStatus.FAILED,
                 summary="",
                 errors=[delegation_error],
@@ -454,7 +459,7 @@ class GraphExecutor:
 
         selection_ctx = HookContext(
             task_id=task.task_id,
-            run_id=task.task_id,
+            run_id=self._require_run_id(),
             node_id=node.node_id,
             agent_id=node.agent_id,
             phase=ExecutionPhase.AGENT_SELECTION,
@@ -467,7 +472,7 @@ class GraphExecutor:
         if before_selection.action != HookAction.ALLOW:
             failed = AgentExecutionResult(
                 agent_id=node.agent_id or "",
-                run_id=task.task_id,
+                run_id=self._require_run_id(),
                 status=AgentExecutionStatus.FAILED,
                 summary="",
                 errors=[before_selection.reason or "agent_selection_blocked_by_hook"],
@@ -478,11 +483,10 @@ class GraphExecutor:
                 on_node_complete(node)
             return failed, [], True, False, []
 
-        if self._execution_identity.run_id is None:
-            raise RuntimeError("GraphExecutor execution identity is not bound")
+        active_run_id = self._require_run_id()
         agent = self._router.route(
             node_task,
-            run_id=self._execution_identity.run_id,
+            run_id=active_run_id,
             node_id=node.node_id,
         )
         contract = agent.get_contract()
@@ -521,7 +525,7 @@ class GraphExecutor:
                     execution,
                     contract=contract,
                     hooks=self._critic_graph_hooks,
-                    run_id=execution.run_id or task.task_id,
+                    run_id=self._require_run_id(),
                     tenant_id=task.tenant_id,
                     capability=cap,
                     plan_criteria=plan_criteria,
@@ -539,9 +543,8 @@ class GraphExecutor:
             )
 
         async def execute_fn(current_agent: Agent) -> AgentExecutionResult:
-            if self._execution_identity.run_id is None:
-                raise RuntimeError("GraphExecutor execution identity is not bound")
-            request = node_task.to_runtime_request(run_id=self._execution_identity.run_id)
+            active_run_id = self._require_run_id()
+            request = node_task.to_runtime_request(run_id=active_run_id)
             from intergrax.runtime.human.declarative_hitl_grant import (
                 DeclarativeHitlGrantCoordinator,
             )
@@ -552,13 +555,13 @@ class GraphExecutor:
             inject_acp_checkpoint_metadata(
                 request.metadata,
                 store=self._agent_checkpoint_store,
-                run_id=self._execution_identity.run_id,
+                run_id=active_run_id,
                 tenant_id=task.tenant_id,
             )
             inject_acp_tool_invoker_metadata(
                 request.metadata,
                 self._declarative_tool_invoker,
-                run_id=self._execution_identity.run_id,
+                run_id=active_run_id,
                 agent_id=current_agent.get_contract().id,
                 tenant_id=task.tenant_id,
             )
@@ -811,7 +814,7 @@ class GraphExecutor:
                         current_execution,
                         contract=contract,
                         hooks=self._critic_graph_hooks,
-                        run_id=current_execution.run_id or task.task_id,
+                        run_id=self._require_run_id(),
                         tenant_id=task.tenant_id,
                         capability=cap,
                         plan_criteria=plan_criteria,
@@ -864,7 +867,7 @@ class GraphExecutor:
 
         hook_ctx = HookContext(
             task_id=task.task_id,
-            run_id=task.task_id,
+            run_id=self._require_run_id(),
             node_id=node.node_id,
             agent_id=execution.agent_id,
             phase=ExecutionPhase.STEP_EXECUTION,

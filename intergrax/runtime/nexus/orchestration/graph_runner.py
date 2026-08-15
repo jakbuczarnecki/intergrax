@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Awaitable, Callable, List, Optional
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.execution_identity import require_active_execution_identity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
@@ -232,11 +233,12 @@ class NexusGraphRunner:
             ):
                 from intergrax.runtime.critic.critic_wiring import validate_final_with_critic
 
+                active_run_id, _ = require_active_execution_identity()
                 final_validation = validate_final_with_critic(
                     executions[-1],
                     contract=final_contract,
                     hooks=self.critic_graph_hooks,
-                    run_id=executions[-1].run_id or task.task_id,
+                    run_id=active_run_id,
                     tenant_id=task.tenant_id,
                     capability=task.context.capability,
                     plan_criteria=plan.validation_criteria,
@@ -431,8 +433,9 @@ def _build_critic_trace_emitter(
         if isinstance(trace_emitter, PersistingTaskTraceEmitter)
         else None
     )
+    active_run_id, _ = require_active_execution_identity()
     return build_critic_trace_emitter(
-        run_id=task.task_id,
+        run_id=active_run_id,
         trace_writer=trace_writer,
         event_bus=trace_emitter.event_bus,
         seq_offset=len(trace_emitter.events),

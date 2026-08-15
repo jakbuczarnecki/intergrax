@@ -1,5 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
+import asyncio
 import re
 
 import pytest
@@ -8,9 +9,14 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
     TaskId,
+    bind_active_execution_identity,
     mint_attempt_id,
     mint_run_id,
     mint_task_id,
+    peek_active_execution_identity,
+    require_active_execution_identity,
+    reset_active_execution_identity,
+    transition_active_execution_identity,
     validate_attempt_id,
     validate_run_id,
     validate_task_id,
@@ -166,11 +172,11 @@ async def test_unified_task_runner_mints_attempt_at_run_boundary():
         ):
             nonlocal minted_attempt
             resolved_attempt_id = attempt_id or mint_attempt_id()
-            self._graph_executor.set_execution_identity(
+            bind_active_execution_identity(
                 run_id=run_id,
                 attempt_id=resolved_attempt_id,
             )
-            minted_attempt = self._graph_executor.execution_attempt_id
+            minted_attempt = resolved_attempt_id
             from intergrax.runtime.task.task import TaskResult, TaskState
 
             return TaskResult(
@@ -222,8 +228,9 @@ async def test_handle_task_initial_execution_mints_attempt_id(monkeypatch):
     run_id = mint_run_id()
 
     async def _fake_impl(task: Task) -> TaskResult:
-        captured["run_id"] = loop._execution_identity.run_id
-        captured["attempt_id"] = loop._execution_identity.attempt_id
+        run_id, attempt_id = require_active_execution_identity()
+        captured["run_id"] = run_id
+        captured["attempt_id"] = attempt_id
         return TaskResult(
             task_id=task.task_id,
             run_id=run_id,
@@ -255,8 +262,9 @@ async def test_handle_task_resume_preserves_run_and_attempt_id(monkeypatch):
     attempt_id = mint_attempt_id()
 
     async def _fake_impl(task: Task) -> TaskResult:
-        captured["run_id"] = loop._execution_identity.run_id
-        captured["attempt_id"] = loop._execution_identity.attempt_id
+        run_id, attempt_id = require_active_execution_identity()
+        captured["run_id"] = run_id
+        captured["attempt_id"] = attempt_id
         return TaskResult(
             task_id=task.task_id,
             run_id=run_id,
@@ -317,7 +325,6 @@ def test_multi_agent_evaluation_requires_active_run_id():
 
     loop = NexusLoop(AgentRegistry())
     loop._evaluation_registry = InMemoryOnlineEvaluationRegistry()
-    loop._execution_identity.run_id = None
     execution = AgentExecutionResult(
         agent_id="a1",
         run_id=mint_run_id(),
@@ -325,7 +332,7 @@ def test_multi_agent_evaluation_requires_active_run_id():
         summary="ok",
     )
 
-    with pytest.raises(RuntimeError, match="active run identity required"):
+    with pytest.raises(RuntimeError, match="active execution identity required"):
         loop._maybe_record_multi_agent_evaluation(
             [execution, execution],
             task_id="task_0123456789abcdef0123456789abcdef",
@@ -377,3 +384,116 @@ async def test_unified_task_runner_resume_uses_checkpoint_identity(monkeypatch):
 
     assert captured["run_id"] == run_id
     assert captured["attempt_id"] == attempt_id
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_bind_require_reset_execution_identity() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    assert require_active_execution_identity() == (run_id, attempt_id)
+    reset_active_execution_identity(token)
+    with pytest.raises(RuntimeError, match="active execution identity required"):
+        require_active_execution_identity()
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_nested_execution_identity_binding() -> None:
+    run_id = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    attempt_a2 = mint_attempt_id()
+    outer_token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_a1)
+    assert require_active_execution_identity() == (run_id, attempt_a1)
+    inner_token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_a2)
+    assert require_active_execution_identity() == (run_id, attempt_a2)
+    reset_active_execution_identity(inner_token)
+    assert require_active_execution_identity() == (run_id, attempt_a1)
+    reset_active_execution_identity(outer_token)
+    assert peek_active_execution_identity() is None
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_transition_retry_preserves_run_id() -> None:
+    run_id = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_a1)
+    attempt_a2 = transition_active_execution_identity()
+    assert attempt_a2 != attempt_a1
+    bound_run_id, bound_attempt_id = require_active_execution_identity()
+    assert bound_run_id == run_id
+    assert bound_attempt_id == attempt_a2
+    reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_concurrent_execution_identity_isolation() -> None:
+    run_r1 = mint_run_id()
+    run_r2 = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    attempt_b1 = mint_attempt_id()
+    gate = asyncio.Event()
+    results: dict[str, tuple[RunId, AttemptId]] = {}
+
+    async def coroutine_a() -> None:
+        token = bind_active_execution_identity(run_id=run_r1, attempt_id=attempt_a1)
+        try:
+            gate.set()
+            await asyncio.sleep(0.05)
+            results["a"] = require_active_execution_identity()
+        finally:
+            reset_active_execution_identity(token)
+
+    async def coroutine_b() -> None:
+        await gate.wait()
+        token = bind_active_execution_identity(run_id=run_r2, attempt_id=attempt_b1)
+        try:
+            await asyncio.sleep(0.05)
+            results["b"] = require_active_execution_identity()
+        finally:
+            reset_active_execution_identity(token)
+
+    await asyncio.gather(coroutine_a(), coroutine_b())
+    assert results["a"] == (run_r1, attempt_a1)
+    assert results["b"] == (run_r2, attempt_b1)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_concurrent_retry_transition_isolation() -> None:
+    run_r1 = mint_run_id()
+    run_r2 = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    attempt_b1 = mint_attempt_id()
+    gate = asyncio.Event()
+    results: dict[str, AttemptId | tuple[RunId, AttemptId]] = {}
+
+    async def coroutine_a() -> None:
+        token = bind_active_execution_identity(run_id=run_r1, attempt_id=attempt_a1)
+        try:
+            gate.set()
+            await asyncio.sleep(0.05)
+            results["a"] = transition_active_execution_identity()
+        finally:
+            reset_active_execution_identity(token)
+
+    async def coroutine_b() -> None:
+        await gate.wait()
+        token = bind_active_execution_identity(run_id=run_r2, attempt_id=attempt_b1)
+        try:
+            await asyncio.sleep(0.05)
+            results["b_before"] = require_active_execution_identity()[1]
+            await asyncio.sleep(0.05)
+            results["b_after"] = require_active_execution_identity()[1]
+        finally:
+            reset_active_execution_identity(token)
+
+    await asyncio.gather(coroutine_a(), coroutine_b())
+    assert results["a"] != attempt_a1
+    assert results["b_before"] == attempt_b1
+    assert results["b_after"] == attempt_b1
