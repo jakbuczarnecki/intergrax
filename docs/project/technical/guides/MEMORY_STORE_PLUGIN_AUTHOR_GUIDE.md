@@ -325,28 +325,38 @@ index = build_session_turn_index_store(
 
 ```text
 MemoryProfile.user_profile_store_plugin_id / session_storage_plugin_id (optional)
-  → resolve_memory_platform_wiring(env)
-      → discover_classified_memory_store_plugins (when discovery enabled)
-      → MemoryStoreResolverRegistry.materialize_user_profile_store / materialize_session_storage
+  → resolve_memory_platform_wiring(env, discover_entry_points=…, explicit_memory_plugins=…)
+      → discover_classified_memory_store_plugins (EP discovery)
+        OR explicit_memory_plugins candidates (local delivery)
+      → materialize_user_profile_store(plugin_id, ctx, …)
+        / materialize_session_storage(plugin_id, ctx, …)
       → MemoryStoreMaterializationContext (tenant_id, integration_profile, …)
-  → else IntegrationProfile baseline (SQLite / MongoDB / in-memory)
+  → IntegrationProfile baseline (SQLite / MongoDB / in-memory) for unselected slots
   → MemoryPlatformWiring(session_storage, user_profile_store, …)
   → build_session_manager_from_environment(env, memory_wiring=wiring, tenant_id=…, rag_stack=…)
 ```
 
-Explicit local override (same resolver):
+Selection is explicit via `MemoryProfile` plugin ids — registering explicit candidates alone does not choose the store.
+
+Explicit local override (same resolver; EP discovery or explicit candidates):
 
 ```python
 from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
 
+# MemoryProfile must select plugin ids matching explicit candidates.
 wiring = resolve_memory_platform_wiring(
     env,
-    user_profile_store_plugins=[MyUserProfilePlugin],
-    session_storage_plugins=[MySessionStoragePlugin],
+    discover_entry_points=False,
+    explicit_memory_plugins=(
+        MyUserProfilePlugin,
+        MySessionStoragePlugin,
+    ),
 )
+# env.memory_profile.user_profile_store_plugin_id = MyUserProfilePlugin.plugin_id
+# env.memory_profile.session_storage_plugin_id = MySessionStoragePlugin.plugin_id
 ```
 
-Configuration failures (unknown plugin id, wrong kind, duplicate id, materialization error) are **fail-closed** (`MemoryStorePluginResolutionError`).
+Configuration failures (unknown plugin id, wrong kind, duplicate id, materialization error, invalid factory return) are **fail-closed** (`MemoryStorePluginResolutionError`).
 
 **Historical baseline (ENTERPRISE-1):** user/session EPs were counted only; no Tier-3 resolver. Closed by ENTERPRISE-5.
 
@@ -373,7 +383,7 @@ If a factory returns a persistent client pool, the host owns closing it on appli
 | Materialization failure | `MemoryStorePluginResolutionError` |
 | `enable_session_vector_index` without tenant | `MemoryVectorBackendUnavailableError(reason="tenant_required")` |
 | Vector flags without RAG stack | `MemoryVectorBackendUnavailableError(reason="vector_backend_unavailable")` |
-| Wrong factory return type | `TypeError` / attribute errors at wiring time |
+| Wrong factory return type | `MemoryStorePluginResolutionError` (invalid `UserProfileStore` / `SessionStorage`) |
 | Multiple turn-index EPs | First discovered plugin wins in `build_session_turn_index_store` |
 
 ---

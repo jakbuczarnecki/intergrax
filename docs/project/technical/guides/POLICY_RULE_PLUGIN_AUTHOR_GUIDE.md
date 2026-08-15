@@ -377,7 +377,7 @@ assert action == PolicyRuleAction.DENY
 | Tool not blocked despite deny YAML | `AUDIT_ONLY` mode, or no matching rule/handler |
 | `DENY` despite expected allow | Unknown handler fail-closed, or handler exception |
 | `TypeError` at load | EP target not `PolicyRuleHandler` |
-| `PluginLoadError` | Broken EP import — blocks entire policy EP load |
+| `PluginLoadError` on broken EP import | Enterprise/policy-governed load (`PolicyRuleLoadPolicy`, default `on_load_failure="isolate"`) records failure; siblings may continue. Legacy `load_policy_rule_plugins(registry)` without policy → fail-fast blocks remaining EPs |
 | Custom handler not used | `rule_id` mismatch with YAML |
 
 ---

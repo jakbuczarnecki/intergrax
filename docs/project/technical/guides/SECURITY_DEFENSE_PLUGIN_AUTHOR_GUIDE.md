@@ -193,7 +193,7 @@ Entry-point **name** is metadata; **enablement** uses `plugin_id` on the class (
 2. INTERGRAX_DISCOVER_PLUGINS=1               # or bootstrap_catalogs(discover_entry_points=True)
 3. bootstrap_catalogs() / bootstrap_security_providers(discover_entry_points=True)  # discovered → registry
 4. ApplicationSecurityProfile.defense_plugin_ids = ["acme.block_jailbreak"]  # enabled on host
-5. register_application_security_hooks(nexus, profile, …)   # production-qualified wiring
+5. register_application_security_hooks(nexus, profile, …)   # host runtime wiring
 ```
 
 ---
