@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-08-15 — **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
+**Last updated:** 2026-08-15 — **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
 
 ---
 
@@ -1041,27 +1041,95 @@ Historically Reproducible Execution State
 
 Do **not** merge these into one generic timestamp. Do **not** call the three-coordinate combined result “bitemporal state”.
 
+#### Knowledge / revision ordering (distinct from execution ordering)
+
+For **bitemporal-capable immutable fact/revision history**, every accepted correction/revision that participates in bitemporal historical state **MUST** have a deterministic position in an **authoritative knowledge/revision ordering**.
+
+The purpose of this ordering is to make the **history of corrections itself auditable**. It must support deterministic answers when:
+
+- two services have clock skew;
+- several corrections arrive close together;
+- corrections are ingested concurrently;
+- an old domain fact is corrected after its effective date;
+- several corrections supersede or refine the same prior fact;
+- system-time timestamps are equal, ambiguous, or not trustworthy for total ordering.
+
+**Critical semantic rule:** **System time is a temporal axis, not sufficient by itself as authoritative correction ordering.** Architecture **MUST NOT** define correction ordering as timestamp-only semantics (e.g. `ORDER BY system_time` or equivalent). A stable ordering position / cursor / sequence / revision position is required; the exact typed contract belongs to **TRACE-BITEMP-1**.
+
+Knowledge/revision ordering is **not** a third bitemporal time axis. Bitemporal state remains **valid time + system time** only (§8.2–§8.3).
+
+Conceptually, three orderings/axes are **independent**:
+
+```text
+Execution history ordering          Knowledge / revision ordering          Valid-time domain axis
+E1 → E2 → E3 → E4                   K1 → K2 → K3 → K4                    V
+```
+
+A correction accepted after execution **E42**:
+
+- **MUST NOT** be retroactively inserted into E42's original execution sequence;
+- **MUST NOT** rewrite what execution E42 actually knew at that boundary;
+- **MUST** receive its own deterministic position in knowledge/revision history;
+- **MAY** alter what the platform **now knows** was valid at an earlier valid time;
+- **MUST** preserve the previous system-time belief.
+
+Higher-level historically reproducible execution reconstruction may therefore conceptually combine:
+
+```text
+Execution AsOfBoundary
++ KnowledgeRevisionPosition (conceptual — TRACE-BITEMP-1 owns exact contract)
++ Valid-Time Basis
++ System-Time Basis
+```
+
+Do **not** prematurely freeze a concrete runtime type or field name here unless current architecture already owns one. Terms such as **KnowledgeRevisionPosition** are **conceptual only**.
+
+#### Semantic questions (extended)
+
+| # | Question |
+|---|----------|
+| 5 | Which correction/revision was accepted before/after knowledge/revision position K? |
+| 6 | In what authoritative order were corrections K1 → K2 → K3 accepted? |
+| 7 | What do we now know was valid at the time of execution E42? |
+| 8 | What did the system believe was valid when E42 executed? |
+
+Questions 5–6 require knowledge/revision ordering — **not** timestamp replay alone. Questions 7–8 require combined reconstruction (execution boundary + bitemporal knowledge basis) without mutating E42's execution history.
+
 ### 8.5 Correction semantics
 
-Corrections are **additive**. A later revision that changes valid-time applicability **must preserve** prior system-time belief. Operators and auditors must be able to reconstruct:
+Corrections are **additive** and **immutable-history-preserving**:
+
+- correction history is **immutable** — accepted corrections are never destructively overwritten;
+- corrections do **not** destructively overwrite previous belief;
+- every accepted correction is **independently addressable**;
+- every accepted correction has **deterministic authoritative ordering** relative to other accepted revisions/corrections;
+- ordering does **not** depend solely on wall-clock timestamps;
+- causal lineage (`revision_id`, `supersedes`) and authoritative ordering are **complementary** — `supersedes` alone does **not** define total correction ordering;
+- valid time, system time, and ordering position are **distinct semantics**.
+
+A later revision that changes valid-time applicability **must preserve** prior system-time belief. Operators and auditors must be able to reconstruct:
 
 - what Intergrax believed at an earlier system time;
 - what is now known to have been valid at an earlier valid time;
-- what Intergrax believed was valid at an earlier system time.
+- what Intergrax believed was valid at an earlier system time;
+- in what authoritative order corrections were accepted.
 
 Destructive overwrite of historical belief is **forbidden** for bitemporal-capable facts.
 
-### 8.6 Relationship to `revision_id` / `supersedes` (§7.6)
+### 8.6 Relationship to `revision_id` / `supersedes` / ordering position (§7.6)
 
-Revision lineage and bitemporal semantics are **complementary, not identical**:
+Revision lineage, temporal axes, execution boundary, and knowledge/revision ordering are **complementary, not identical**:
 
-| Mechanism | Role |
-|-----------|------|
-| **`revision_id` / `supersedes`** | Causal/version lineage between immutable revisions |
-| **Valid / system time** | Temporal applicability and knowledge history |
-| **Execution boundary** | Run/journal reconstruction position |
+| Mechanism | Responsibility |
+|-----------|----------------|
+| **`revision_id`** | Immutable revision identity |
+| **`supersedes`** | Causal/version lineage between revisions |
+| **Knowledge/revision position** | Deterministic authoritative ordering of accepted revisions/corrections |
+| **Valid time** | Domain effectiveness |
+| **System time** | When the platform knew/recorded the revision |
+| **Execution AsOfBoundary** | Position inside execution history |
 
-A revision **may** carry temporal semantics where appropriate. `supersedes` alone is **not** sufficient for bitemporal queries. Do **not** add `supersedes` to every `RuntimeEvent`.
+A revision **may** carry temporal semantics where appropriate. `supersedes` alone is **not** sufficient for bitemporal queries or total correction ordering. Do **not** add `supersedes` to every `RuntimeEvent`.
 
 ### 8.7 Relationship to provenance / evidence / proof
 
@@ -1110,7 +1178,8 @@ Accepted architecture · **Planned** implementation · **no** current runtime co
 | **Valid time** | When a fact is effective in the modeled domain |
 | **System time** | When Intergrax recorded / knew a fact version |
 | **Bitemporal state** | State selected using valid-time + system-time basis only |
-| **Historically reproducible execution state** | Combined reconstruction: execution boundary + bitemporal knowledge basis |
+| **Knowledge/revision ordering** | Deterministic authoritative ordering of accepted corrections/revisions — **not** a bitemporal axis; **not** execution ordering |
+| **Historically reproducible execution state** | Combined reconstruction: execution boundary + bitemporal knowledge basis (+ knowledge/revision position where correction history matters) |
 | **Provenance** | Origin / lineage of relevant inputs and references |
 | **Evidence** | Persisted supporting evidence |
 | **Proof / Receipt** | Attested / verifiable claim |
@@ -1126,7 +1195,9 @@ As-of projections and bitemporal historical state are part of the **read side** 
 ```text
 RuntimeEvent history
        ↓
-Execution AsOfBoundary                    Bitemporal fact history
+Execution AsOfBoundary                    Bitemporal fact / revision history
+       │                                          ↓
+       │                              Knowledge/revision ordering (K1 → K2 → K3)
        │                                          ↓
        │                              Valid-Time Basis + System-Time Basis
        │                                          ↓
@@ -1135,10 +1206,12 @@ Execution AsOfBoundary                    Bitemporal fact history
        └── Unified Run Journal → Execution Story (chronological narrative)
 ```
 
+Execution ordering and knowledge/revision ordering are **independent**. A correction accepted after E42 does **not** rewrite E42's execution sequence.
+
 Combined historical execution reconstruction (not “bitemporal state”):
 
 ```text
-Execution AsOfBoundary + BitemporalKnowledgeBasis
+Execution AsOfBoundary + BitemporalKnowledgeBasis (+ KnowledgeRevisionPosition where needed)
        ↓
 Historically Reproducible Execution State
 ```
