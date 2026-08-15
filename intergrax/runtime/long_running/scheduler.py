@@ -43,7 +43,7 @@ TIMEOUT_LEDGER_PREFIX = "timeout:"
 class TaskResumeExecutor(Protocol):
     """Resume paused tasks through the unified execution entry (§41)."""
 
-    async def resume_task(self, task: Task) -> TaskResult: ...
+    async def resume_task(self, task: Task, *, checkpoint: TaskCheckpoint) -> TaskResult: ...
 
 
 class LongRunningScheduler:
@@ -220,7 +220,7 @@ class LongRunningScheduler:
                 "scheduler_action": ledger_action,
             },
         )
-        result = await self._resume_executor.resume_task(task)
+        result = await self._resume_executor.resume_task(task, checkpoint=checkpoint)
         if self._ledger is not None:
             self._ledger.record_action(ledger_key, action=ledger_action)
         return result
@@ -232,8 +232,8 @@ class UnifiedTaskResumeExecutor:
     def __init__(self, task_runner) -> None:
         self._task_runner = task_runner
 
-    async def resume_task(self, task: Task) -> TaskResult:
-        return await self._task_runner.run_task(task)
+    async def resume_task(self, task: Task, *, checkpoint: TaskCheckpoint) -> TaskResult:
+        return await self._task_runner.run_task(task, resume_checkpoint=checkpoint)
 
 
 def _ensure_utc(value: datetime) -> datetime:
