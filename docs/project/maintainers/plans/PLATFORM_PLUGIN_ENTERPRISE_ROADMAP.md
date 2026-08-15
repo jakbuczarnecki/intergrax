@@ -976,7 +976,7 @@ Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](
 | **Reason** | Production qualification not wired |
 | **Implementation program** | **COMPLETE** (`ENTERPRISE_IMPLEMENTATION_COMPLETE`) |
 | **Readiness status** | `ENTERPRISE_READINESS_PENDING_QUALIFICATION` |
-| **Final review fix** | *(commit SHA after PLATFORM-PLUGIN-ENTERPRISE-FINAL-CLOSEOUT-REVIEW-FIX-1)* |
+| **Final review fix** | `2b8bbfeb4857861e2341de39292fd9641c2781a2` |
 
 ### Final verdict
 
