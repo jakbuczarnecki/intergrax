@@ -35,9 +35,9 @@ LKW_DARK_PATH = (
 )
 
 _SECTION_HEADINGS_ORDER = (
+    "## Choose your path",
     "## Local Knowledge Workspace (LKW)",
     "## Try LKW",
-    "## Choose your path",
     "## Why this matters",
     "## Responsibility model",
     "## What exists today",
@@ -65,11 +65,7 @@ _REQUIRED_PUBLIC_LINKS = (
 )
 
 _COMPATIBILITY_ANCHORS = (
-    "quick-start",
-    "proof-of-platform",
     "start-here",
-    "harness-ai--the-core-idea",
-    "the-agent-model--why-architects-choose-intergrax",
 )
 
 _FORBIDDEN_SAVINGS_PHRASES = (

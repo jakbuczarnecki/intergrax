@@ -24,6 +24,33 @@ references and persisted evidence.
 
 ---
 
+<a id="start-here"></a>
+## Choose your path
+
+| You want to… | Start here |
+| --- | --- |
+| Try the product | [LKW Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md) |
+| Understand the product first | [LKW Product Tour](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) |
+| Verify bounded platform behavior | [Core Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
+| Check whether your workflow fits | [Use Cases](docs/project/overview/USE_CASES.md) |
+| Review current evidence | [PROOFS](docs/project/proofs/PROOFS.md) |
+| Evaluate as an investor or business decision maker | [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md) |
+| Evaluate one claim fairly | [Evaluation Guide](docs/project/builders/EVALUATION_GUIDE.md) |
+| Start building | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
+| Plan deeper application composition | [Build With Intergrax](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
+| Review architecture | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
+| Configure the platform | [Platform Configuration](docs/project/technical/guides/PLATFORM_CONFIGURATION.md) |
+| Discuss a pilot or design partnership | [Partners](docs/project/community/PARTNERS.md) |
+| Contribute, give feedback, or ask about permissions | [Collaboration](docs/project/community/COLLABORATION.md) |
+| Perform a deep technical review | [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
+
+Questions? See the [FAQ](docs/project/overview/FAQ.md). For the complete public route map, use the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
+The [project documentation hub](docs/project/README.md) is the secondary
+all-docs entry point. The [public roadmap](docs/project/overview/ROADMAP.md)
+describes outcome direction.
+
+---
+
 ## Local Knowledge Workspace (LKW)
 
 ### Product workflow
@@ -125,32 +152,6 @@ and watched-folder indexing — not production readiness, commercial validation,
 or all-provider certification.
 
 **Proof families:** Product evaluation (`LKW-PRODUCT-QUICKSTART-*`), Core platform (`LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`), Indexed Hybrid Ask (`LKW-HYBRID-ASK-INDEXED`), Trusted Ask (`LKW-ASK-WORKSPACE-LIVE`).
-
----
-
-## Choose your path
-
-| You want to… | Start here |
-| --- | --- |
-| Try the product | [LKW Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md) |
-| Understand the product first | [LKW Product Tour](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) |
-| Verify bounded platform behavior | [Core Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
-| Check whether your workflow fits | [Use Cases](docs/project/overview/USE_CASES.md) |
-| Review current evidence | [PROOFS](docs/project/proofs/PROOFS.md) |
-| Evaluate as an investor or business decision maker | [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md) |
-| Evaluate one claim fairly | [Evaluation Guide](docs/project/builders/EVALUATION_GUIDE.md) |
-| Start building | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
-| Plan deeper application composition | [Build With Intergrax](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
-| Review architecture | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
-| Configure the platform | [Platform Configuration](docs/project/technical/guides/PLATFORM_CONFIGURATION.md) |
-| Discuss a pilot or design partnership | [Partners](docs/project/community/PARTNERS.md) |
-| Contribute, give feedback, or ask about permissions | [Collaboration](docs/project/community/COLLABORATION.md) |
-| Perform a deep technical review | [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
-
-Questions? See the [FAQ](docs/project/overview/FAQ.md). For the complete public route map, use the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
-The [project documentation hub](docs/project/README.md) is the secondary
-all-docs entry point. The [public roadmap](docs/project/overview/ROADMAP.md)
-describes outcome direction.
 
 ---
 
@@ -276,13 +277,6 @@ Example reusable capability patterns: Research · Legal · Project Management ·
 UX Research · Private Enterprise
 
 [Explore the Agent Marketplace concept and reference architecture →](docs/project/product/AGENT_MARKETPLACE.md)
-
-<!-- Compatibility anchors for inbound documentation links -->
-<a id="quick-start"></a>
-<a id="proof-of-platform"></a>
-<a id="start-here"></a>
-<a id="harness-ai--the-core-idea"></a>
-<a id="the-agent-model--why-architects-choose-intergrax"></a>
 
 ---
 

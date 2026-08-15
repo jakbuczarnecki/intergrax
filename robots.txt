@@ -12,7 +12,7 @@ Allow: /AGENTS.md
 # Primary map: /llms.txt
 # Extended map: /llms-full.txt
 # Agent instructions: /AGENTS.md
-# Documentation canon: /README.md#documentation-index
+# Documentation canon: /docs/project/technical/DOCUMENTATION_MAP.md
 
 # Test fixtures and build artifacts are not useful for indexing
 Disallow: /tests/fixtures/
