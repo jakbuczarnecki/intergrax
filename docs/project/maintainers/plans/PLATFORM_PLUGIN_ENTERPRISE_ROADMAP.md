@@ -2,9 +2,9 @@
 
 **Task:** PLATFORM-PLUGIN-ENTERPRISE-1 — ENTERPRISE ARCHITECTURE, DEPENDENCY GRAPH & IMPLEMENTATION ROADMAP
 
-**Status:** ACTIVE — ENTERPRISE-4 / BLOCK B **CLOSED** (closeout 2026-08-14)
+**Status:** ACTIVE — ENTERPRISE-6 / BLOCK E **READY_FOR_REVIEW** (CAND-003 Context scaffold DX)
 
-**Date:** 2026-08-12 (ENTERPRISE-1) · **ENTERPRISE-4 closeout:** 2026-08-14
+**Date:** 2026-08-12 (ENTERPRISE-1) · **ENTERPRISE-4 closeout:** 2026-08-14 · **ENTERPRISE-6 implementation:** 2026-08-15
 
 **Branch:** `development`
 
@@ -27,10 +27,10 @@ Enterprise Platform Plugin work is **architecturally bounded, dependency-ordered
 | Verdict | Detail |
 |---------|--------|
 | **Candidates** | CAND-001…008 **CONFIRMED** as enterprise; CAND-009 remains **non-enterprise** (hardening, resolved) |
-| **Critical path** | BLOCK C → BLOCK A → BLOCK B **CLOSED** → **BLOCK D (READY_FOR_REVIEW)** → BLOCK E |
+| **Critical path** | BLOCK C → BLOCK A → BLOCK B **CLOSED** → BLOCK D **READY_FOR_REVIEW** → BLOCK E **READY_FOR_REVIEW** |
 | **Parallel track** | BLOCK D (Memory typed resolution) — **READY_FOR_REVIEW** |
-| **Low priority** | BLOCK E (Context scaffold DX) — no runtime architecture |
-| **Not enterprise-ready today** | BLOCK D evidence pending independent review; Context DX, production qualification, and remaining exit gates still open |
+| **Low priority** | BLOCK E (Context scaffold DX) — **READY_FOR_REVIEW** — no runtime architecture |
+| **Not enterprise-ready today** | BLOCK D/E evidence pending independent review; production qualification and remaining exit gates still open |
 | **Migration debt** | `memory_bootstrap.py` method-shape `hasattr` probing — **resolved in BLOCK D** |
 
 **Recommended implementation order:** BLOCK C → BLOCK A → BLOCK B → BLOCK D → BLOCK E
@@ -43,7 +43,7 @@ Enterprise Platform Plugin work is **architecturally bounded, dependency-ordered
 | **BLOCK A** | ENTERPRISE-3 | **CLOSED** | Policy plugin runtime wiring finished |
 | **BLOCK B** | ENTERPRISE-4 | **CLOSED** | Policy enforcement + HITL governance finished |
 | **BLOCK D** | ENTERPRISE-5 | **READY_FOR_REVIEW** | External Memory plugins materialize (CAND-001 + CAND-002) |
-| **BLOCK E** | ENTERPRISE-6 | **PLANNED** | Context plugin scaffold DX (CAND-003) |
+| **BLOCK E** | ENTERPRISE-6 | **READY_FOR_REVIEW** | Context plugin scaffold DX (CAND-003) |
 
 **Qualification seam (not a BLOCK B blocker):** `QUALIFICATION_STILL_DEFERRED` — production package/version compatibility admission remains a deferred ENTERPRISE gap; BLOCK B governance requirements are closed without claiming full enterprise-ready status.
 
@@ -125,7 +125,7 @@ Evidence: `memory_wiring.py:resolve_memory_platform_wiring` — SQLite/MongoDB/i
 |----|---------|-------------|-----------------|----------|-----------------|------------|-------------------|
 | **CAND-001** | **READY_FOR_REVIEW** | No (implemented) | `memory_wiring.py`, `intergrax/memory/resolver/` | Medium | External user-profile store EPs materialize when `MemoryProfile.user_profile_store_plugin_id` set and discovery enabled | Explicit `MemoryPlatformWiring(user_profile_store=...)` | **Supported** — opt-in profile field + EP discovery |
 | **CAND-002** | **READY_FOR_REVIEW** | No (implemented) | Same as CAND-001 | Medium | External session storage EPs materialize when `MemoryProfile.session_storage_plugin_id` set | Explicit `MemoryPlatformWiring(session_storage=...)` | **Supported** — opt-in profile field + EP discovery |
-| **CAND-003** | **CONFIRMED** | Yes | `intergrax/scaffold/` (Tools only) | Low | No `new-context-bundle` / `extensions/` hook for Context | Manual `register_context_plugin()` or EP wheel | **Supported** — documented in CONTEXT_PLUGIN_AUTHOR_GUIDE §5 |
+| **CAND-003** | **READY_FOR_REVIEW** | No (implemented) | `intergrax/scaffold/new_context_bundle.py` | Low | Context local/third-party authoring uses `new-context-bundle` | Manual `register_context_plugin()` or EP wheel | **Supported** — scaffold + CONTEXT_PLUGIN_AUTHOR_GUIDE §5 |
 | **CAND-004** | **CONFIRMED** | Yes | `defense_plugin_loader.py`, `defense_registry.py` | **High** | Malicious/misconfigured EP can silently replace shipped defense (`override=True`) | Disable EP discovery; host-only registration | **Supported** — `discover_entry_points=False` default |
 | **CAND-005** | **CONFIRMED** | Yes | Security + Policy loaders; primitive in `discovery.py` | Medium | One broken EP aborts entire domain load | Disable discovery; fix broken package | **Supported** — documented fail-fast |
 | **CAND-006** | **CONFIRMED** | Yes | `policy_wiring.py`, `plugin_loader.py` | **High** | EP policy handlers never loaded in shipped hosts | Manual `load_policy_rule_plugins(registry)` in custom composition | **Accidental** — advanced host glue, not product path |
@@ -424,11 +424,11 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 
 | Aspect | Status |
 |--------|--------|
-| Still needed? | **Yes** — no `new-context-bundle` scaffold (`scaffold/` has `new_tool_bundle.py` only) |
+| Still needed? | **Implemented** — `new-context-bundle` scaffold (`intergrax/scaffold/new_context_bundle.py`) |
 | Runtime architecture impact? | **None** — template/CLI only |
 | Reuse Tools scaffold? | **Yes** — thin `new_context_bundle.py` mirroring tool bundle layout |
 | Priority | **P2** — lowest enterprise priority |
-| Resolved by concurrent work? | **No** — CONTEXT_PLUGIN_AUTHOR_GUIDE §5 still documents gap |
+| Resolved by concurrent work? | **READY_FOR_REVIEW** — CONTEXT_PLUGIN_AUTHOR_GUIDE §5 documents `new-context-bundle` |
 
 ---
 
@@ -632,11 +632,11 @@ Public plugin contracts (`memory_store_plugin.py`) — **unchanged**.
 | **Order** | **5** |
 
 **Acceptance gates:**
-- [ ] `uv run python -m intergrax.scaffold new-context-bundle` creates valid skeleton
-- [ ] Generated code uses typed `register_context_plugin` / EP template only
-- [ ] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0`
-- [ ] Unit test for scaffold output structure
-- [ ] No runtime behavior change in Context registry
+- [x] `uv run python -m intergrax.scaffold new-context-bundle` creates valid skeleton
+- [x] Generated code uses typed `register_context_plugin` / EP template only
+- [x] `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0`
+- [x] Unit test for scaffold output structure
+- [x] No runtime behavior change in Context registry
 
 ---
 
@@ -748,7 +748,7 @@ Platform Plugin system is **enterprise-ready** when **all** are measurable:
 | **ENTERPRISE-4** | BLOCK B — Policy enforcement & governance — **CLOSED** |
 | **ENTERPRISE-4-CLOSEOUT** | BLOCK B evidence, status & roadmap closure — **CLOSED** |
 | **ENTERPRISE-5** | BLOCK D — Memory typed external store resolution — **READY_FOR_REVIEW** |
-| **ENTERPRISE-6** | BLOCK E — Context scaffold DX parity — **NEXT** |
+| **ENTERPRISE-6** | BLOCK E — Context scaffold DX parity — **READY_FOR_REVIEW** |
 | **ENTERPRISE-INV-1** (optional, later) | F006 unified operator inventory — only if OPEN_ARCH-004 resolves to option B |
 
 ---
@@ -774,7 +774,7 @@ Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](
 | F009 | **RESOLVED** | HARDENING-1: `load_tool_invocation_pattern` uses `get_entry_point_spec` O(1) lookup (`tool_invocation_registry.py`) |
 | F010 | **RESOLVED_BY_DOCS** | `MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md` §9–§13: bootstrap discovers/classifies/counts only; does not register catalog, activate, or materialize stores |
 | F011 | **RESOLVED** | HARDENING-1: typed `conflict_kind` / `result` on public exceptions (`errors.py`) |
-| F012 | **PLANNED_BLOCK** | CAND-003 Context scaffold DX — BLOCK E (`ENTERPRISE-6`); not in cleanup scope |
+| F012 | **READY_FOR_REVIEW** | CAND-003 Context scaffold DX — BLOCK E (`ENTERPRISE-6`); `new-context-bundle` implemented |
 | F013 | **RESOLVED** | HARDENING-1: `test_plugin_catalog_counts.py` recalibrated (`MIN_FULL_INTEGRATIONS = 95`) |
 | F014 | **RESOLVED** | Linux gate expanded + `platform-plugin-windows-e2e` job on `windows-latest` (PR / main / workflow_dispatch smoke+full) in `.github/workflows/unit-tests.yml` |
 | F015 | **RESOLVED** | HARDENING-1: `_EP_SPECS_CACHE` / `get_entry_point_spec` in `discovery.py` |
@@ -806,7 +806,7 @@ Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](
 | Session turn index wired | `intergrax/applications/_shared/memory_vector_wiring.py:121-128` |
 | Shared conflict/isolation primitives | `intergrax/core/plugins/discovery.py:19-20, 61-66, 161-196` |
 | Context configurable conflict (reference) | `intergrax/context/bootstrap.py:45-59` |
-| Context scaffold gap | `docs/project/technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md:32,238` |
+| Context scaffold | `intergrax/scaffold/new_context_bundle.py`; `docs/project/technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md` §5 |
 | Policy author guide gaps | `docs/project/technical/guides/POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md:375-382` — may be stale post-BLOCK-B; gate 15 not evaluated |
 | Security author guide gaps | `docs/project/technical/guides/SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md:265-327` |
 | Memory author guide gaps | `docs/project/technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md:335-339` |
@@ -832,7 +832,7 @@ Historical audit observations remain in [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](
 | **Canonical HITL** | **PASS** |
 | **Ambiguous/no-match** | **FAIL-CLOSED PASS** |
 | **Typed task identity** | **PASS** |
-| **Next block** | ENTERPRISE-6 / BLOCK E |
+| **Next block** | FINAL ENTERPRISE CLOSEOUT AUDIT |
 
 **Committed test evidence (not re-run in closeout):**
 
