@@ -72,8 +72,23 @@ _CAPABILITIES = CollaborativeWorkRepositoryCapabilities(
     durable=True,
     reference_only=False,
 )
+_WORKSPACE_MEMBERSHIPS_REBUILD_TABLE = "workspace_memberships_rebuild"
+_WORKSPACE_MEMBERSHIPS_TABLE_BODY = """
+                    tenant_id TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    membership_id TEXT NOT NULL,
+                    principal_id TEXT NOT NULL,
+                    record_json TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    PRIMARY KEY (tenant_id, workspace_id, membership_id),
+                    UNIQUE (tenant_id, workspace_id, principal_id)
+"""
 
 TRecord = TypeVar("TRecord")
+
+
+class WorkspaceMembershipSchemaMigrationError(RuntimeError):
+    """Raised when legacy workspace_memberships cannot be rebuilt to canonical schema."""
 
 
 class SQLiteCollaborativeWorkStore:
@@ -92,7 +107,14 @@ class SQLiteCollaborativeWorkStore:
         self._connection.execute("PRAGMA busy_timeout = 30000")
         self._lock = threading.RLock()
         self._closed = False
-        self._initialize_schema()
+        try:
+            self._initialize_schema()
+        except Exception:
+            try:
+                self._connection.close()
+            except Exception:
+                pass
+            raise
 
     def close(self) -> None:
         with self._lock:
@@ -113,16 +135,9 @@ class SQLiteCollaborativeWorkStore:
         with self._lock:
             self._ensure_open()
             self._connection.executescript(
-                """
+                f"""
                 CREATE TABLE IF NOT EXISTS workspace_memberships (
-                    tenant_id TEXT NOT NULL,
-                    workspace_id TEXT NOT NULL,
-                    membership_id TEXT NOT NULL,
-                    principal_id TEXT NOT NULL,
-                    record_json TEXT NOT NULL,
-                    revision INTEGER NOT NULL,
-                    PRIMARY KEY (tenant_id, workspace_id, membership_id),
-                    UNIQUE (tenant_id, workspace_id, principal_id)
+                    {_WORKSPACE_MEMBERSHIPS_TABLE_BODY}
                 );
 
                 CREATE TABLE IF NOT EXISTS authority_delegations (
@@ -188,42 +203,124 @@ class SQLiteCollaborativeWorkStore:
             self._migrate_workspace_memberships_principal_column()
 
     def _migrate_workspace_memberships_principal_column(self) -> None:
-        rows = self._connection.execute("PRAGMA table_info(workspace_memberships)").fetchall()
-        if not rows:
+        columns = self._connection.execute("PRAGMA table_info(workspace_memberships)").fetchall()
+        if not columns:
             return
-        column_names = {row[1] for row in rows}
-        if "principal_id" in column_names:
+        if not self._workspace_memberships_requires_canonical_rebuild(columns):
             return
-        self._connection.execute(
-            "ALTER TABLE workspace_memberships ADD COLUMN principal_id TEXT"
-        )
-        for row in self._connection.execute(
-            """
-            SELECT tenant_id, workspace_id, membership_id, record_json
-            FROM workspace_memberships
-            """
-        ):
-            membership = workspace_membership_from_json(row["record_json"])
-            self._connection.execute(
-                """
-                UPDATE workspace_memberships
-                SET principal_id = ?
-                WHERE tenant_id = ? AND workspace_id = ? AND membership_id = ?
-                """,
+        self._rebuild_workspace_memberships_canonical_schema()
+
+    def _workspace_memberships_requires_canonical_rebuild(
+        self,
+        columns: list[sqlite3.Row],
+    ) -> bool:
+        for column in columns:
+            if column["name"] == "principal_id":
+                return int(column["notnull"]) != 1
+        return True
+
+    def _rebuild_workspace_memberships_canonical_schema(self) -> None:
+        previous_isolation = self._connection.isolation_level
+        self._connection.isolation_level = None
+        try:
+            self._connection.execute("BEGIN IMMEDIATE")
+            try:
+                self._connection.execute(
+                    f"DROP TABLE IF EXISTS {_WORKSPACE_MEMBERSHIPS_REBUILD_TABLE}"
+                )
+                self._connection.execute(
+                    f"""
+                    CREATE TABLE {_WORKSPACE_MEMBERSHIPS_REBUILD_TABLE} (
+                        {_WORKSPACE_MEMBERSHIPS_TABLE_BODY}
+                    )
+                    """
+                )
+                source_rows = self._connection.execute(
+                    """
+                    SELECT tenant_id, workspace_id, membership_id, record_json, revision
+                    FROM workspace_memberships
+                    """
+                ).fetchall()
+                migrated_rows = self._canonical_membership_rows(source_rows)
+                self._connection.executemany(
+                    f"""
+                    INSERT INTO {_WORKSPACE_MEMBERSHIPS_REBUILD_TABLE} (
+                        tenant_id, workspace_id, membership_id, principal_id,
+                        record_json, revision
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    migrated_rows,
+                )
+                inserted = self._connection.execute(
+                    f"SELECT COUNT(*) AS row_count FROM {_WORKSPACE_MEMBERSHIPS_REBUILD_TABLE}"
+                ).fetchone()
+                if inserted is None or int(inserted["row_count"]) != len(source_rows):
+                    raise WorkspaceMembershipSchemaMigrationError(
+                        "workspace_memberships migration failed: row count mismatch"
+                    )
+                self._connection.execute("DROP TABLE workspace_memberships")
+                self._connection.execute(
+                    "ALTER TABLE "
+                    f"{_WORKSPACE_MEMBERSHIPS_REBUILD_TABLE} "
+                    "RENAME TO workspace_memberships"
+                )
+                self._connection.execute("COMMIT")
+            except Exception as exc:
+                self._connection.execute("ROLLBACK")
+                if isinstance(exc, WorkspaceMembershipSchemaMigrationError):
+                    raise
+                raise WorkspaceMembershipSchemaMigrationError(
+                    "workspace_memberships migration failed: canonical rebuild could not complete"
+                ) from exc
+        finally:
+            self._connection.isolation_level = previous_isolation
+
+    def _canonical_membership_rows(
+        self,
+        source_rows: list[sqlite3.Row],
+    ) -> list[tuple[str, str, str, str, str, int]]:
+        migrated_rows: list[tuple[str, str, str, str, str, int]] = []
+        seen_principals: set[tuple[str, str, str]] = set()
+        for row in source_rows:
+            try:
+                membership = workspace_membership_from_json(row["record_json"])
+            except Exception as exc:
+                raise WorkspaceMembershipSchemaMigrationError(
+                    "workspace_memberships migration failed: record_json could not be deserialized"
+                ) from exc
+            tenant_id = membership.tenant_id.strip()
+            workspace_id = membership.workspace_id.strip()
+            membership_id = membership.membership_id.strip()
+            principal_id = membership.principal_id.strip()
+            if tenant_id != row["tenant_id"] or workspace_id != row["workspace_id"]:
+                raise WorkspaceMembershipSchemaMigrationError(
+                    "workspace_memberships migration failed: record identity does not match table keys"
+                )
+            if membership_id != row["membership_id"]:
+                raise WorkspaceMembershipSchemaMigrationError(
+                    "workspace_memberships migration failed: record identity does not match table keys"
+                )
+            if principal_id == "":
+                raise WorkspaceMembershipSchemaMigrationError(
+                    "workspace_memberships migration failed: canonical principal_id is empty"
+                )
+            principal_key = (tenant_id, workspace_id, principal_id)
+            if principal_key in seen_principals:
+                raise WorkspaceMembershipSchemaMigrationError(
+                    "workspace_memberships migration failed: duplicate canonical principal membership"
+                )
+            seen_principals.add(principal_key)
+            migrated_rows.append(
                 (
-                    membership.principal_id.strip(),
-                    row["tenant_id"],
-                    row["workspace_id"],
-                    row["membership_id"],
-                ),
+                    tenant_id,
+                    workspace_id,
+                    membership_id,
+                    principal_id,
+                    row["record_json"],
+                    int(row["revision"]),
+                )
             )
-        self._connection.execute(
-            """
-            CREATE UNIQUE INDEX IF NOT EXISTS uq_workspace_memberships_principal
-            ON workspace_memberships (tenant_id, workspace_id, principal_id)
-            """
-        )
-        self._connection.commit()
+        return migrated_rows
 
 
 def _scope_matches_tenant_workspace(

@@ -189,6 +189,21 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Proof requirements** | `tests/unit/collaborative_work/test_canonical_membership_closure.py`; `tests/unit/collaborative_work/test_typed_wiring_architecture.py`; authority and repository regressions |
 | **Next step** | MP-1 CORE FINAL REVIEW |
 
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1H-R3 |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | SQLite canonical membership migration closure — schema parity with fresh databases |
+| **Dependencies** | COLLAB-WORK-1H-R2 canonical membership semantics; durable SQLite adapter |
+| **Exact scope** | Transactional rebuild of legacy `workspace_memberships` to `principal_id TEXT NOT NULL` plus unique principal membership |
+| **REUSED** | Canonical `WorkspaceMembership` `record_json`; SQLite adapter `BEGIN IMMEDIATE` conventions |
+| **NEW** | Legacy table rebuild; explicit duplicate/identity/deserialisation failure with rollback |
+| **Explicit out of scope** | Authority semantics; LKW integration; MP-2+; Alembic/SQLAlchemy |
+| **Acceptance** | Migrated schema matches fresh constraints; duplicates fail closed; original legacy table intact on failure; reopen is idempotent |
+| **Proof requirements** | `tests/unit/collaborative_work/test_sqlite_membership_migration.py`; repository, canonical membership, authority, typed-wiring, vendor-neutrality regressions |
+| **Next step** | MP-1 CORE FINAL REVIEW |
+
 ---
 
 ## 4. Out of scope (current phase)
