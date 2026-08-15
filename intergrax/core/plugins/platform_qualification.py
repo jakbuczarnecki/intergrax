@@ -8,8 +8,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from intergrax.core.distribution import PlatformCompatibilityResult
 from intergrax.core.plugins.errors import ProductionQualificationRequiredError
-from intergrax.core.plugins.platform_semantics import PlatformCompatibilityResult
+from intergrax.core.qualification import QualificationEvidence, QualificationStatus
 
 
 class PlatformPluginTrustModel(StrEnum):
@@ -40,15 +41,6 @@ class PluginQualificationLevel(StrEnum):
     DOMAIN = "domain"
 
 
-class PluginQualificationStatus(StrEnum):
-    """Qualification outcome — distinct from lifecycle/discovery states."""
-
-    NOT_QUALIFIED = "not_qualified"
-    QUALIFIED = "qualified"
-    PRODUCTION_QUALIFIED = "production_qualified"
-    REJECTED = "rejected"
-
-
 class PluginQualificationEvidenceKind(StrEnum):
     """Auditable evidence categories; domains own required thresholds."""
 
@@ -57,16 +49,6 @@ class PluginQualificationEvidenceKind(StrEnum):
     FOCUSED_AUTOMATED_TESTS = "focused_automated_tests"
     DOMAIN_QUALIFICATION = "domain_qualification"
     LIVE_QUALIFICATION = "live_qualification"
-
-
-@dataclass(frozen=True, slots=True)
-class PluginQualificationEvidence:
-    """Safe, immutable evidence metadata (no secrets or raw test logs)."""
-
-    kind: PluginQualificationEvidenceKind
-    code: str
-    ref: str | None = None
-    label: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,14 +73,14 @@ class PluginQualificationResult:
     """Immutable qualification record suitable for audit and observability."""
 
     subject: PluginQualificationSubject
-    status: PluginQualificationStatus
-    evidence: tuple[PluginQualificationEvidence, ...]
+    status: QualificationStatus
+    evidence: tuple[QualificationEvidence[PluginQualificationEvidenceKind], ...]
     reason: str
     domain_qualification_label: str | None = None
 
     @property
     def production_allowed(self) -> bool:
-        return self.status is PluginQualificationStatus.PRODUCTION_QUALIFIED
+        return self.status is QualificationStatus.PRODUCTION_QUALIFIED
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,9 +95,9 @@ class PackageProductionAdmission:
 
 def compatibility_evidence(
     compatibility: PlatformCompatibilityResult,
-) -> PluginQualificationEvidence:
+) -> QualificationEvidence[PluginQualificationEvidenceKind]:
     """Map a PLUGIN-6 compatibility result to qualification evidence metadata."""
-    return PluginQualificationEvidence(
+    return QualificationEvidence(
         kind=PluginQualificationEvidenceKind.PLATFORM_COMPATIBILITY,
         code=compatibility.reason.value,
         ref=(
@@ -172,8 +154,8 @@ def build_host_embedded_capability_subject(
 def build_qualification_result(
     *,
     subject: PluginQualificationSubject,
-    status: PluginQualificationStatus,
-    evidence: tuple[PluginQualificationEvidence, ...],
+    status: QualificationStatus,
+    evidence: tuple[QualificationEvidence[PluginQualificationEvidenceKind], ...],
     reason: str,
     domain_qualification_label: str | None = None,
 ) -> PluginQualificationResult:

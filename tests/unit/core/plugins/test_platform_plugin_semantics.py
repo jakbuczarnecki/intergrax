@@ -8,24 +8,22 @@ import pytest
 from packaging.version import Version
 
 from intergrax.core.plugins.discovery import load_entry_point_plugins
-from intergrax.core.plugins.errors import (
+from intergrax.core.distribution import (
+    DistributionPackageIdentity,
     InvalidPlatformVersionError,
-    PlatformIncompatibilityError,
-)
-from intergrax.core.plugins.package_contract import (
     PlatformCompatibility,
-    PluginPackageIdentity,
-    build_platform_plugin_manifest,
-)
-from intergrax.core.plugins.platform_semantics import (
     PlatformCompatibilityReason,
-    PlatformPluginConflictKind,
-    PlatformPluginLifecycleState,
-    check_manifest_platform_compatibility,
+    PlatformIncompatibilityError,
     check_platform_compatibility,
     normalize_platform_version,
     package_identities_conflict,
     require_platform_compatibility,
+)
+from intergrax.core.plugins.package_contract import build_platform_plugin_manifest
+from intergrax.core.plugins.platform_semantics import (
+    PlatformPluginConflictKind,
+    PlatformPluginLifecycleState,
+    check_manifest_platform_compatibility,
 )
 
 pytestmark = pytest.mark.unit
@@ -152,14 +150,14 @@ def test_manifest_compatibility_check_is_package_level() -> None:
 
 
 def test_package_identities_conflict_same_name_different_version() -> None:
-    left = PluginPackageIdentity(name="acme-intergrax", version="1.0.0")
-    right = PluginPackageIdentity(name="acme-intergrax", version="2.0.0")
+    left = DistributionPackageIdentity(name="acme-intergrax", version="1.0.0")
+    right = DistributionPackageIdentity(name="acme-intergrax", version="2.0.0")
     assert package_identities_conflict(left, right) is True
 
 
 def test_package_identities_no_conflict_for_different_names() -> None:
-    left = PluginPackageIdentity(name="acme-intergrax", version="1.0.0")
-    right = PluginPackageIdentity(name="other-plugin", version="1.0.0")
+    left = DistributionPackageIdentity(name="acme-intergrax", version="1.0.0")
+    right = DistributionPackageIdentity(name="other-plugin", version="1.0.0")
     assert package_identities_conflict(left, right) is False
 
 

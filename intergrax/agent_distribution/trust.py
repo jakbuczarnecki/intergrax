@@ -15,6 +15,11 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.catalog import CatalogProviderKind
 from intergrax.agent_distribution.identity import AgentPackageIdentity
+from intergrax.core.qualification import (
+    QualificationEvidence,
+    QualificationStatus,
+    qualification_status_satisfies,
+)
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -37,15 +42,6 @@ class AgentDeliverySource(StrEnum):
     LOCAL_DEVELOPER = "local_developer"
 
 
-class AgentQualificationStatus(StrEnum):
-    """Qualification outcome — distinct from installation lifecycle."""
-
-    NOT_QUALIFIED = "not_qualified"
-    QUALIFIED = "qualified"
-    PRODUCTION_QUALIFIED = "production_qualified"
-    REJECTED = "rejected"
-
-
 class AgentQualificationEvidenceKind(StrEnum):
     """Auditable evidence categories for agent packages."""
 
@@ -55,16 +51,6 @@ class AgentQualificationEvidenceKind(StrEnum):
     REVOCATION_CHECK = "revocation_check"
     ORG_POLICY_DECISION = "org_policy_decision"
     DOMAIN_QUALIFICATION = "domain_qualification"
-
-
-@dataclass(frozen=True, slots=True)
-class AgentQualificationEvidence:
-    """Safe, immutable evidence metadata (no secrets or raw payloads)."""
-
-    kind: AgentQualificationEvidenceKind
-    code: str
-    ref: str | None = None
-    label: str | None = None
 
 
 class AgentPublisherIdentity(BaseModel):
@@ -106,14 +92,14 @@ class AgentPackageQualificationResult:
     """Immutable qualification record for audit and later trust coordinator."""
 
     publisher: AgentPublisherIdentity
-    status: AgentQualificationStatus
-    evidence: tuple[AgentQualificationEvidence, ...]
+    status: QualificationStatus
+    evidence: tuple[QualificationEvidence[AgentQualificationEvidenceKind], ...]
     reason: str
     delivery_source: AgentDeliverySource
 
     @property
     def production_allowed(self) -> bool:
-        return self.status is AgentQualificationStatus.PRODUCTION_QUALIFIED
+        return self.status is QualificationStatus.PRODUCTION_QUALIFIED
 
 
 class AgentInstallationTrustRecord(BaseModel):
@@ -122,7 +108,7 @@ class AgentInstallationTrustRecord(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     trust_evidence_refs: tuple[AgentTrustEvidenceRef, ...] = ()
-    qualification_status: AgentQualificationStatus
+    qualification_status: QualificationStatus
     package_digest: str = _NON_EMPTY
     publisher_identity_ref: str = _NON_EMPTY
     source_provider_id: str = _NON_EMPTY
@@ -183,22 +169,6 @@ class AgentPackageTrustReasonCode(StrEnum):
     VERSION_LABEL_WITHOUT_DIGEST = "version_label_without_digest"
 
 
-_QUALIFICATION_STATUS_RANK: dict[AgentQualificationStatus, int] = {
-    AgentQualificationStatus.NOT_QUALIFIED: 0,
-    AgentQualificationStatus.REJECTED: 0,
-    AgentQualificationStatus.QUALIFIED: 1,
-    AgentQualificationStatus.PRODUCTION_QUALIFIED: 2,
-}
-
-
-def qualification_status_satisfies(
-    actual: AgentQualificationStatus,
-    required: AgentQualificationStatus,
-) -> bool:
-    """Return whether ``actual`` meets or exceeds ``required`` qualification."""
-    return _QUALIFICATION_STATUS_RANK[actual] >= _QUALIFICATION_STATUS_RANK[required]
-
-
 class AgentPackageTrustPolicy(BaseModel):
     """Deterministic, serializable trust policy input for package qualification."""
 
@@ -213,7 +183,7 @@ class AgentPackageTrustPolicy(BaseModel):
     denied_publisher_ids: frozenset[str] = frozenset()
     denied_catalog_source_ids: frozenset[str] = frozenset()
     denied_package_digests: frozenset[str] = frozenset()
-    required_qualification_status: AgentQualificationStatus | None = None
+    required_qualification_status: QualificationStatus | None = None
     required_evidence_kinds: frozenset[AgentQualificationEvidenceKind] = frozenset()
     forbid_unsigned_or_unqualified: bool = True
 
@@ -225,12 +195,12 @@ class AgentPackageTrustPolicy(BaseModel):
         return _strip_required(value)
 
     @property
-    def effective_required_qualification_status(self) -> AgentQualificationStatus:
+    def effective_required_qualification_status(self) -> QualificationStatus:
         if self.required_qualification_status is not None:
             return self.required_qualification_status
         if self.posture is AgentPackageTrustPosture.PRODUCTION:
-            return AgentQualificationStatus.PRODUCTION_QUALIFIED
-        return AgentQualificationStatus.QUALIFIED
+            return QualificationStatus.PRODUCTION_QUALIFIED
+        return QualificationStatus.QUALIFIED
 
 
 class AgentPackageTrustRevocationState(BaseModel):

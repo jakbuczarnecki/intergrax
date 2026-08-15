@@ -11,12 +11,11 @@ from pathlib import Path
 import pytest
 
 from intergrax.core.plugins import (
-    PluginQualificationEvidence,
     PluginQualificationEvidenceKind,
-    PluginQualificationStatus,
     build_host_embedded_capability_subject,
     build_qualification_result,
 )
+from intergrax.core.qualification import QualificationEvidence, QualificationStatus
 from intergrax.core.plugins.errors import ProductionQualificationRequiredError
 from intergrax.tools.registry.bootstrap import reset_default_tools_bootstrap
 from intergrax.tools.registry.catalog import clear_tool_catalog, is_tool_bundle_registered
@@ -63,7 +62,7 @@ def _prepare_tool_wiring_scaffold(
     return target, pkg, short
 
 
-def _host_embedded_result(*, status: PluginQualificationStatus):
+def _host_embedded_result(*, status: QualificationStatus):
     subject = build_host_embedded_capability_subject(
         domain="tools",
         capability_id=_LOCAL_BUNDLE_ID,
@@ -73,7 +72,7 @@ def _host_embedded_result(*, status: PluginQualificationStatus):
         subject=subject,
         status=status,
         evidence=(
-            PluginQualificationEvidence(
+            QualificationEvidence(
                 kind=PluginQualificationEvidenceKind.DOMAIN_QUALIFICATION,
                 code="tools.scaffold.tests.passed",
                 ref="tests/unit/scaffold/test_scaffold_local_extension_qualification.py",
@@ -135,7 +134,7 @@ def test_production_qualified_result_allows_explicit_registration(tmp_path) -> N
     )
     tool_wiring = _import_tool_wiring(pkg)
     register_fn = tool_wiring.__dict__[f"register_{short}_local_tool_extensions"]
-    register_fn(local_prefix_echo_qualification=_host_embedded_result(status=PluginQualificationStatus.PRODUCTION_QUALIFIED))
+    register_fn(local_prefix_echo_qualification=_host_embedded_result(status=QualificationStatus.PRODUCTION_QUALIFIED))
     assert is_tool_bundle_registered(_LOCAL_BUNDLE_ID)
 
     ctx = ToolWiringContext(extras={"echo_prefix": "scaffold"})
@@ -159,7 +158,7 @@ def test_qualified_only_result_blocks_scaffold_registration(tmp_path) -> None:
     register_fn = tool_wiring.__dict__[f"register_{short}_local_tool_extensions"]
     with pytest.raises(ProductionQualificationRequiredError):
         register_fn(
-            local_prefix_echo_qualification=_host_embedded_result(status=PluginQualificationStatus.QUALIFIED),
+            local_prefix_echo_qualification=_host_embedded_result(status=QualificationStatus.QUALIFIED),
         )
     assert not is_tool_bundle_registered(_LOCAL_BUNDLE_ID)
 
@@ -176,7 +175,7 @@ def test_wire_tools_composes_qualification_registration_and_materialization(tmp_
     wire_fn = tool_wiring.__dict__[f"wire_{short}_tools"]
     wiring = wire_fn(
         local_prefix_echo_qualification=_host_embedded_result(
-            status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+            status=QualificationStatus.PRODUCTION_QUALIFIED,
         ),
     )
     plugin_mod = importlib.import_module(f"{pkg}.extensions.local_prefix_echo_plugin")

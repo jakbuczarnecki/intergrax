@@ -402,7 +402,7 @@ Reuse **evidence pipeline patterns** from [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGI
 | Delivery source | `PluginDeliverySource` pattern | `AgentDeliverySource` (+ marketplace, org registry, workspace) |
 | Immutable digest | Required evidence | On `AgentPackageIdentity` |
 | Signature verification | Evidence pipeline | Agent package signing contract |
-| Qualification | `PluginQualificationStatus` shape | `AgentPackageQualificationResult` |
+| Qualification | `QualificationStatus` (`intergrax/core/qualification`) | `AgentPackageQualificationResult` |
 | Platform compatibility | `PLATFORM_COMPATIBILITY` kind | + runtime graph simulation |
 | Revocation | Deny policy pattern | Global list + org deny |
 | Org allow/deny | Policy bundle | Org agent allowlist |

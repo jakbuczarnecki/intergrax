@@ -7,11 +7,9 @@ from __future__ import annotations
 
 from typing import Literal, Self
 
-from packaging.specifiers import InvalidSpecifier, SpecifierSet
-from packaging.utils import InvalidName, canonicalize_name
-from packaging.version import InvalidVersion, Version
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.core.distribution import DistributionPackageIdentity, PlatformCompatibility
 from intergrax.core.plugins.errors import PlatformPluginManifestValidationError
 
 MANIFEST_SCHEMA_VERSION: Literal[1] = 1
@@ -83,57 +81,6 @@ def reject_secret_like_keys(payload: object, *, path: str = "") -> None:
         reject_secret_like_keys(value, path=child_path)
 
 
-class PluginPackageIdentity(BaseModel):
-    """Canonical package-level plugin distribution identity."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    name: str
-    version: str
-
-    @field_validator("name")
-    @classmethod
-    def _validate_name(cls, value: str) -> str:
-        normalized = _require_non_empty_text(value, field_name="package name")
-        try:
-            return canonicalize_name(normalized, validate=True)
-        except InvalidName as exc:
-            raise ValueError(f"invalid package name: {normalized!r}") from exc
-
-    @field_validator("version")
-    @classmethod
-    def _validate_version(cls, value: str) -> str:
-        normalized = _require_non_empty_text(value, field_name="package version")
-        try:
-            return str(Version(normalized))
-        except InvalidVersion as exc:
-            raise ValueError(f"invalid package version: {normalized!r}") from exc
-
-
-class PlatformCompatibility(BaseModel):
-    """Declared Intergrax platform compatibility metadata (checked via PLATFORM-PLUGIN-6 API)."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    intergrax_version: str = Field(
-        description="Declared Intergrax platform version specifier range.",
-    )
-
-    @field_validator("intergrax_version")
-    @classmethod
-    def _validate_intergrax_version(cls, value: str) -> str:
-        normalized = _require_non_empty_text(value, field_name="intergrax_version")
-        try:
-            return str(SpecifierSet(normalized))
-        except InvalidSpecifier as exc:
-            raise ValueError(f"invalid intergrax_version specifier: {normalized!r}") from exc
-
-    @property
-    def declared_specifier(self) -> SpecifierSet:
-        """Return the declared compatibility specifier (metadata only)."""
-        return SpecifierSet(self.intergrax_version)
-
-
 class CapabilityDescriptor(BaseModel):
     """Package-level pointer to one domain capability (not a domain manifest)."""
 
@@ -179,7 +126,7 @@ class PlatformPluginManifest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     schema_version: Literal[1] = MANIFEST_SCHEMA_VERSION
-    package: PluginPackageIdentity
+    package: DistributionPackageIdentity
     platform_compatibility: PlatformCompatibility
     capabilities: tuple[CapabilityDescriptor, ...] = ()
     author: str | None = None
@@ -242,7 +189,7 @@ def build_platform_plugin_manifest(
     try:
         return PlatformPluginManifest(
             schema_version=schema_version,
-            package=PluginPackageIdentity(name=name, version=version),
+            package=DistributionPackageIdentity(name=name, version=version),
             platform_compatibility=PlatformCompatibility(intergrax_version=intergrax_version),
             capabilities=tuple(capabilities),
             author=author,

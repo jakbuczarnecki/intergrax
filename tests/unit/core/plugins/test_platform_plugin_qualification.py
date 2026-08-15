@@ -4,16 +4,14 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.core.distribution import PlatformCompatibility
 from intergrax.core.plugins.errors import ProductionQualificationRequiredError
-from intergrax.core.plugins.package_contract import PlatformCompatibility
 from intergrax.core.plugins.platform_qualification import (
     PlatformPluginTrustModel,
     PluginDeliverySource,
-    PluginQualificationEvidence,
     PluginQualificationEvidenceKind,
     PluginQualificationLevel,
     PluginQualificationResult,
-    PluginQualificationStatus,
     PluginQualificationSubject,
     build_external_package_subject,
     build_host_embedded_capability_subject,
@@ -25,8 +23,10 @@ from intergrax.core.plugins.platform_qualification import (
 )
 from intergrax.core.plugins.platform_semantics import (
     PlatformPluginLifecycleState,
-    check_platform_compatibility,
+    check_manifest_platform_compatibility,
 )
+from intergrax.core.distribution import check_platform_compatibility
+from intergrax.core.qualification import QualificationEvidence, QualificationStatus
 
 pytestmark = pytest.mark.unit
 
@@ -42,7 +42,7 @@ def _package_subject() -> PluginQualificationSubject:
 def _capability_subject(
     *,
     capability_id: str,
-    status: PluginQualificationStatus,
+    status: QualificationStatus,
 ) -> PluginQualificationResult:
     subject = build_external_package_subject(
         level=PluginQualificationLevel.CAPABILITY,
@@ -57,7 +57,7 @@ def _capability_subject(
         subject=subject,
         status=status,
         evidence=(
-            PluginQualificationEvidence(
+            QualificationEvidence(
                 kind=PluginQualificationEvidenceKind.DOMAIN_QUALIFICATION,
                 code="domain.tests.passed",
                 ref="tests/unit/acme/test_tool.py",
@@ -75,11 +75,11 @@ def test_compatible_does_not_imply_qualified() -> None:
     assert compatibility.compatible is True
     result = build_qualification_result(
         subject=_package_subject(),
-        status=PluginQualificationStatus.NOT_QUALIFIED,
+        status=QualificationStatus.NOT_QUALIFIED,
         evidence=(compatibility_evidence(compatibility),),
         reason="platform compatible; qualification evidence pending",
     )
-    assert result.status is PluginQualificationStatus.NOT_QUALIFIED
+    assert result.status is QualificationStatus.NOT_QUALIFIED
     assert result.production_allowed is False
 
 
@@ -91,16 +91,16 @@ def test_enabled_lifecycle_state_is_not_qualification() -> None:
 def test_qualified_is_not_production_qualified() -> None:
     result = build_qualification_result(
         subject=_package_subject(),
-        status=PluginQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
         evidence=(
-            PluginQualificationEvidence(
+            QualificationEvidence(
                 kind=PluginQualificationEvidenceKind.FOCUSED_AUTOMATED_TESTS,
                 code="ci.package.install",
             ),
         ),
         reason="package qualified for non-production use",
     )
-    assert result.status is PluginQualificationStatus.QUALIFIED
+    assert result.status is QualificationStatus.QUALIFIED
     assert result.production_allowed is False
     assert is_production_qualified(result) is False
 
@@ -108,7 +108,7 @@ def test_qualified_is_not_production_qualified() -> None:
 def test_production_gate_rejects_merely_qualified_result() -> None:
     result = build_qualification_result(
         subject=_package_subject(),
-        status=PluginQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
         evidence=(),
         reason="qualified only",
     )
@@ -120,9 +120,9 @@ def test_production_gate_rejects_merely_qualified_result() -> None:
 def test_production_gate_accepts_production_qualified_result() -> None:
     result = build_qualification_result(
         subject=_package_subject(),
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(
-            PluginQualificationEvidence(
+            QualificationEvidence(
                 kind=PluginQualificationEvidenceKind.DOMAIN_QUALIFICATION,
                 code="domain.production_gate.passed",
             ),
@@ -136,7 +136,7 @@ def test_production_gate_accepts_production_qualified_result() -> None:
 def test_package_level_result() -> None:
     result = build_qualification_result(
         subject=_package_subject(),
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(),
         reason="package production gate",
     )
@@ -146,7 +146,7 @@ def test_package_level_result() -> None:
 def test_capability_level_result() -> None:
     result = _capability_subject(
         capability_id="acme_tool",
-        status=PluginQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
     )
     assert result.subject.level is PluginQualificationLevel.CAPABILITY
     assert result.subject.capability_id == "acme_tool"
@@ -162,9 +162,9 @@ def test_domain_level_result_with_label() -> None:
     )
     result = build_qualification_result(
         subject=subject,
-        status=PluginQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
         evidence=(
-            PluginQualificationEvidence(
+            QualificationEvidence(
                 kind=PluginQualificationEvidenceKind.LIVE_QUALIFICATION,
                 code="vk.live_rollout.passed",
                 label="live-qualified",
@@ -180,19 +180,19 @@ def test_domain_level_result_with_label() -> None:
 def test_mixed_capability_outcomes_in_same_package() -> None:
     integration = _capability_subject(
         capability_id="acme_integration",
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
     )
     tool = _capability_subject(
         capability_id="acme_tool",
-        status=PluginQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
     )
     skill = _capability_subject(
         capability_id="acme_skill",
-        status=PluginQualificationStatus.REJECTED,
+        status=QualificationStatus.REJECTED,
     )
     assert integration.production_allowed is True
     assert tool.production_allowed is False
-    assert skill.status is PluginQualificationStatus.REJECTED
+    assert skill.status is QualificationStatus.REJECTED
     assert integration.subject.package_name == tool.subject.package_name == skill.subject.package_name
 
 
@@ -217,13 +217,13 @@ def test_host_embedded_production_qualification_without_entry_point() -> None:
     )
     result = build_qualification_result(
         subject=subject,
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(
-            PluginQualificationEvidence(
+            QualificationEvidence(
                 kind=PluginQualificationEvidenceKind.CONTRACT_VALIDATION,
                 code="tool.contract.valid",
             ),
-            PluginQualificationEvidence(
+            QualificationEvidence(
                 kind=PluginQualificationEvidenceKind.DOMAIN_QUALIFICATION,
                 code="host.production_gate.passed",
             ),
@@ -245,19 +245,19 @@ def test_trust_model_is_truthful_in_process_only() -> None:
 
 
 def test_evidence_result_immutable_and_explicit() -> None:
-    evidence = PluginQualificationEvidence(
+    evidence = QualificationEvidence(
         kind=PluginQualificationEvidenceKind.CONTRACT_VALIDATION,
         code="integration.contract.valid",
         ref="manifest:acme_foo",
     )
     result = build_qualification_result(
         subject=_package_subject(),
-        status=PluginQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
         evidence=(evidence,),
         reason="contract validation passed",
     )
     with pytest.raises(AttributeError):
-        result.status = PluginQualificationStatus.PRODUCTION_QUALIFIED  # type: ignore[misc]
+        result.status = QualificationStatus.PRODUCTION_QUALIFIED  # type: ignore[misc]
     assert result.evidence[0].code == "integration.contract.valid"
     assert "secret" not in result.reason.lower()
 
@@ -265,7 +265,7 @@ def test_evidence_result_immutable_and_explicit() -> None:
 def test_external_package_missing_compatibility_blocks_production_admission() -> None:
     result = build_qualification_result(
         subject=_package_subject(),
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(),
         reason="production-qualified without compatibility evidence",
     )
@@ -282,7 +282,7 @@ def test_compatible_external_package_admitted_when_production_qualified() -> Non
     )
     result = build_qualification_result(
         subject=_package_subject(),
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(compatibility_evidence(compatibility),),
         reason="production-qualified with compatible platform metadata",
     )
@@ -298,7 +298,7 @@ def test_incompatible_external_package_blocks_package_production_admission() -> 
     )
     result = build_qualification_result(
         subject=_package_subject(),
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(compatibility_evidence(compatibility),),
         reason="would be production-qualified without compatibility check",
     )
@@ -315,7 +315,7 @@ def test_compatible_external_package_requires_production_status() -> None:
     )
     result = build_qualification_result(
         subject=_package_subject(),
-        status=PluginQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
         evidence=(compatibility_evidence(compatibility),),
         reason="compatible but not production-qualified",
     )
@@ -332,7 +332,7 @@ def test_host_embedded_package_admission_skips_compatibility_metadata() -> None:
     )
     result = build_qualification_result(
         subject=subject,
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(),
         reason="host-local production qualification",
     )
@@ -343,9 +343,9 @@ def test_host_embedded_package_admission_skips_compatibility_metadata() -> None:
 def test_live_qualification_is_optional_domain_metadata() -> None:
     result = build_qualification_result(
         subject=_package_subject(),
-        status=PluginQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
         evidence=(
-            PluginQualificationEvidence(
+            QualificationEvidence(
                 kind=PluginQualificationEvidenceKind.LIVE_QUALIFICATION,
                 code="rag.live.backend.passed",
                 label="live-qualified",
@@ -354,5 +354,5 @@ def test_live_qualification_is_optional_domain_metadata() -> None:
         reason="domain recorded live qualification",
         domain_qualification_label="live-qualified",
     )
-    assert result.status is PluginQualificationStatus.QUALIFIED
+    assert result.status is QualificationStatus.QUALIFIED
     assert result.domain_qualification_label == "live-qualified"

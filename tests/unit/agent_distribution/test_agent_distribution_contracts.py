@@ -9,6 +9,8 @@ import inspect
 from pathlib import Path
 
 import pytest
+
+from intergrax.core.qualification import QualificationStatus
 from pydantic import ValidationError
 
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
@@ -43,7 +45,6 @@ from intergrax.agent_distribution.stores import (
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
     AgentQualificationEvidenceKind,
-    AgentQualificationStatus,
     AgentTrustEvidenceRef,
 )
 
@@ -58,7 +59,7 @@ _PACKAGE = AgentPackageIdentity(
 
 def _trust_record(digest: str = _DIGEST) -> AgentInstallationTrustRecord:
     return AgentInstallationTrustRecord(
-        qualification_status=AgentQualificationStatus.PRODUCTION_QUALIFIED,
+        qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
         package_digest=digest,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",
@@ -77,6 +78,16 @@ def test_package_identity_rejects_blank_digest() -> None:
             distribution_package_id="intergrax-local-search-agent",
             package_version="1.0.0",
             package_digest="   ",
+        )
+
+
+@pytest.mark.parametrize("version", ["", "   ", "not-a-version"])
+def test_agent_package_identity_rejects_invalid_pep440_version(version: str) -> None:
+    with pytest.raises(ValidationError):
+        AgentPackageIdentity(
+            distribution_package_id="intergrax-local-search-agent",
+            package_version=version,
+            package_digest=_DIGEST,
         )
 
 

@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import re
 from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -14,9 +13,12 @@ from intergrax.agent_distribution._digest import (
     normalize_optional_package_digest,
     normalize_package_digest,
 )
+from intergrax.core.distribution import (
+    normalize_distribution_package_name,
+    normalize_package_version,
+)
 
 _NON_EMPTY = Field(min_length=1)
-_PACKAGE_NAME_RE = re.compile(r"^[a-z][a-z0-9_]*(-[a-z0-9_]+)*$")
 
 SCHEMA_AGENT_PACKAGE_IDENTITY_V1: Final = "agent_package_identity.v1"
 SCHEMA_AGENT_PACKAGE_CANDIDATE_V1: Final = "agent_package_candidate.v1"
@@ -26,15 +28,6 @@ def _strip_required(value: str) -> str:
     normalized = value.strip()
     if not normalized:
         raise ValueError("must be non-empty")
-    return normalized
-
-
-def _normalize_package_name(value: str) -> str:
-    normalized = _strip_required(value)
-    if not _PACKAGE_NAME_RE.match(normalized):
-        raise ValueError(
-            "distribution_package_id must be a normalized PyPI-style package name"
-        )
     return normalized
 
 
@@ -55,9 +48,14 @@ class AgentPackageCandidate(BaseModel):
     @field_validator("distribution_package_id")
     @classmethod
     def _validate_package_id(cls, value: str) -> str:
-        return _normalize_package_name(value)
+        return normalize_distribution_package_name(value)
 
-    @field_validator("package_version", "artifact_locator", "contract_id", "platform_compatibility_spec", "python_requires")
+    @field_validator("package_version")
+    @classmethod
+    def _validate_version(cls, value: str) -> str:
+        return normalize_package_version(value)
+
+    @field_validator("artifact_locator", "contract_id", "platform_compatibility_spec", "python_requires")
     @classmethod
     def _strip_optional(cls, value: str | None) -> str | None:
         if value is None:
@@ -103,12 +101,12 @@ class AgentPackageIdentity(BaseModel):
     @field_validator("distribution_package_id")
     @classmethod
     def _validate_package_id(cls, value: str) -> str:
-        return _normalize_package_name(value)
+        return normalize_distribution_package_name(value)
 
     @field_validator("package_version")
     @classmethod
     def _validate_version(cls, value: str) -> str:
-        return _strip_required(value)
+        return normalize_package_version(value)
 
     @field_validator("package_digest")
     @classmethod

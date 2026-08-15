@@ -21,9 +21,12 @@ from intergrax.agent_distribution.trust import (
     AgentPackageTrustReasonCode,
     AgentPackageTrustRevocationState,
     AgentPublisherIdentity,
-    AgentQualificationEvidence,
-    AgentQualificationStatus,
+    AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
+)
+from intergrax.core.qualification import (
+    QualificationEvidence,
+    QualificationStatus,
     qualification_status_satisfies,
 )
 
@@ -224,7 +227,7 @@ class AgentPackageTrustCoordinator:
                 reason="qualification delivery source does not match evaluation input",
             )
 
-        if qualification.status is AgentQualificationStatus.REJECTED:
+        if qualification.status is QualificationStatus.REJECTED:
             return self._deny(
                 package_identity=package_identity,
                 publisher=publisher,
@@ -450,7 +453,7 @@ class AgentPackageTrustCoordinator:
 
     @staticmethod
     def _build_evidence_refs(
-        evidence: tuple[AgentQualificationEvidence, ...],
+        evidence: tuple[QualificationEvidence[AgentQualificationEvidenceKind], ...],
         *,
         evidence_id: str | None,
     ) -> tuple[AgentTrustEvidenceRef, ...]:
@@ -503,8 +506,8 @@ def assert_installation_trust_record_acceptable(
 ) -> None:
     """Validate trust evidence before candidate → verified installation transition."""
     if trust_record.qualification_status in {
-        AgentQualificationStatus.NOT_QUALIFIED,
-        AgentQualificationStatus.REJECTED,
+        QualificationStatus.NOT_QUALIFIED,
+        QualificationStatus.REJECTED,
     }:
         raise AgentPackageTrustError(
             "installation verification requires qualified trust evidence; "
@@ -512,7 +515,7 @@ def assert_installation_trust_record_acceptable(
         )
     if not qualification_status_satisfies(
         trust_record.qualification_status,
-        AgentQualificationStatus.QUALIFIED,
+        QualificationStatus.QUALIFIED,
     ):
         raise AgentPackageTrustError(
             "installation verification requires at least qualified trust status"

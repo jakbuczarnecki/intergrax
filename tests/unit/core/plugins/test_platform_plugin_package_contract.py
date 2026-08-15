@@ -11,10 +11,9 @@ from intergrax.core.plugins.manifest_io import (
     parse_platform_plugin_pyproject,
     parse_platform_plugin_pyproject_toml,
 )
+from intergrax.core.distribution import DistributionPackageIdentity, PlatformCompatibility
 from intergrax.core.plugins.package_contract import (
     CapabilityDescriptor,
-    PlatformCompatibility,
-    PluginPackageIdentity,
     build_platform_plugin_manifest,
     reject_secret_like_keys,
 )
@@ -23,7 +22,7 @@ pytestmark = pytest.mark.unit
 
 
 def test_plugin_package_identity_normalizes_name_and_version() -> None:
-    identity = PluginPackageIdentity(name="Acme-Intergrax", version="1.0.0")
+    identity = DistributionPackageIdentity(name="Acme-Intergrax", version="1.0.0")
     assert identity.name == "acme-intergrax"
     assert identity.version == "1.0.0"
 
@@ -31,13 +30,13 @@ def test_plugin_package_identity_normalizes_name_and_version() -> None:
 @pytest.mark.parametrize("name", ["", "   ", "!!!"])
 def test_plugin_package_identity_rejects_invalid_name(name: str) -> None:
     with pytest.raises(ValidationError):
-        PluginPackageIdentity(name=name, version="1.0.0")
+        DistributionPackageIdentity(name=name, version="1.0.0")
 
 
 @pytest.mark.parametrize("version", ["", "   ", "not-a-version"])
 def test_plugin_package_identity_rejects_invalid_version(version: str) -> None:
     with pytest.raises(ValidationError):
-        PluginPackageIdentity(name="acme-intergrax", version=version)
+        DistributionPackageIdentity(name="acme-intergrax", version=version)
 
 
 def test_platform_compatibility_accepts_valid_specifier() -> None:
@@ -347,7 +346,7 @@ def test_manifest_models_are_immutable() -> None:
         intergrax_version=">=1.0,<2",
     )
     with pytest.raises(ValidationError):
-        manifest.package = PluginPackageIdentity(name="other", version="2.0.0")  # type: ignore[misc]
+        manifest.package = DistributionPackageIdentity(name="other", version="2.0.0")  # type: ignore[misc]
 
 
 def test_manifest_construction_has_no_registration_side_effects(
