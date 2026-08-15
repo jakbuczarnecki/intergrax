@@ -14,7 +14,7 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine. Token Optimization telemetry must be observable through the same observability spine — do not create a private telemetry bus for token optimization. **TOKEN-6A-lite** is an early telemetry-shape slice for savings attribution through the existing observability spine; it must not create a private telemetry bus. **OBS-HEALTH-lite** is a minimal operator-visible status slice for exporter/token telemetry health, not full observability production hardening. Full **OBS-VENDOR** production hardening remains **Planned**. **LKW-PF6** ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF) is the platform proof workload for token savings telemetry and regression gates.
 
-**Last updated:** 2026-08-15 — **TRACE-BITEMP-ARCH-SYNC** bitemporal historical state roadmap · execution identity · as-of projections.
+**Last updated:** 2026-08-15 — **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes correction · pre-production clean-cut policy · TRACE-1C legacy removal target.
 
 ---
 
@@ -48,6 +48,8 @@ Architecture: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md#observabi
 **Design:** **TRACE-1** identity + journal + as-of + bitemporal target canon — **Done** (TRACE-ARCH-SYNC-1, TRACE-BITEMP-ARCH-SYNC, 2026-08-15)  
 **Implementation:** **Planned** — code still has legacy identity gaps (`run_id == task_id`, metadata identity, missing `AttemptId`, fallbacks, loose journal adapters). Bitemporal historical state is **not implemented**. Do **not** mark implementation rows Done until TRACE acceptance gates pass.
 
+**Pre-production clean-cut (canon):** Intergrax has no active production users. TRACE implementation **removes** unused legacy paths rather than preserving them. No permanent compatibility aliases, dual canonical schemas, or migrations for unused persisted formats (including old checkpoint shapes). Migrate live code to the canonical contract, then delete the old path. See architecture [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §5.7.
+
 **Delivery rule:** one TRACE row per PR; no runtime work in TRACE-ARCH-SYNC-1 doc-only slice.
 
 ### TRACE-1 — Identity contracts and journal strictness
@@ -56,7 +58,7 @@ Architecture: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md#observabi
 |----|----------|--------|------|------------|----------------------|
 | **TRACE-1A** | P1 | Planned | Typed `TaskId`/`RunId`/`AttemptId` via `typing.NewType(..., str)`; strict validation; correct mint ownership; `RuntimeRequest.task_id`/`run_id`; remove canonical identity from metadata | TRACE-1 design complete | No `metadata["run_id"]`; no `task_id or run_id` fallbacks; wire strings only on boundary |
 | **TRACE-1B** | P1 | Planned | `AttemptId` through `RuntimeExecutionContext`, `EmitContext`, `RuntimeEvent`; attempt-aware emit paths; `TASK_CREATED` as first journal event in A1 | TRACE-1A | Every canonical `RuntimeEvent` carries `TaskId`, `RunId`, `AttemptId`, `EventId` |
-| **TRACE-1C** | P1 | Planned | Zero identity fallback in journal build; legacy aliased identity explicitly recognized; strict journal reconstruction; no `Any`/dynamic adapters on identity boundary | TRACE-1B | `build_unified_run_journal` rejects or flags legacy aliasing per strict contract |
+| **TRACE-1C** | P1 | Planned | **Strict journal + legacy removal:** zero identity fallback in journal build; migrate live code to canonical identity; delete unused legacy aliases/fallbacks/adapters; strict journal reconstruction; no `Any`/dynamic adapters on identity boundary; **no** permanent compatibility layer | TRACE-1B | `build_unified_run_journal` enforces strict contract; legacy aliased identity **removed** from canonical runtime (not merely recognized or flagged) |
 
 ### TRACE-ASOF — First-class as-of projections
 
@@ -86,7 +88,7 @@ TRACE-1A → TRACE-1B → TRACE-1C → TRACE-ASOF-1 → TRACE-BITEMP-1 → TRACE
 |----|----------|--------|------|------------|----------------------|
 | **TRACE-BITEMP-1** | P1 | Planned | Canonical temporal semantics and contracts: typed temporal basis; valid-time and system-time semantics; interval/boundary rules; ordering and inclusivity; **no** storage implementation | TRACE-1C; TRACE-ASOF-1 | Identity and deterministic execution boundary stable before temporal contracts |
 | **TRACE-BITEMP-2** | P1 | Planned | Bitemporal revision/fact persistence: immutable fact/revision history; preserve system-time belief; support valid-time corrections/backdating/future effectiveness; no destructive overwrite; typed repository/query contract; explicit provenance linkage; **no** database vendor selection | TRACE-BITEMP-1 | Corrections additive; prior belief preserved |
-| **TRACE-BITEMP-3** | P1 | Planned | Bitemporal projection integration: combine `AsOfBoundary` + valid-time basis + system-time basis for deterministic historical reconstruction; distinguish execution knowledge vs current valid-time truth vs historical belief | TRACE-ASOF-2; TRACE-BITEMP-2 | Three query modes semantically distinct |
+| **TRACE-BITEMP-3** | P1 | Planned | Historical execution reconstruction integration: combine `AsOfBoundary` + valid-time basis + system-time basis; distinguish execution-boundary queries, valid-time queries, system-time queries, and combined historical execution reconstruction; do **not** label the three-coordinate result “bitemporal state” | TRACE-ASOF-2; TRACE-BITEMP-2 | Four semantic query modes distinct; bitemporal state remains valid-time + system-time only |
 | **TRACE-BITEMP-4** | P1 | Planned | Temporal query/audit surface: valid-time as-of; system-time as-of; combined bitemporal basis; correction history; provenance to source revisions/events | TRACE-BITEMP-3 | Typed query API; no vendor lock-in |
 | **TRACE-BITEMP-5** | P1 | Planned | Production proof/invariants: delayed fact arrival; backdated correction; future-effective change; historical belief reconstruction; current-corrected history reconstruction; deterministic repeated query; no history destruction | TRACE-BITEMP-4 | Platform proof scenarios pass |
 

@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-08-15 — **TRACE-BITEMP-ARCH-SYNC** first-class bitemporal historical state · execution identity · as-of projections
+**Last updated:** 2026-08-15 — **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
 
 ---
 
@@ -756,6 +756,28 @@ The **target canon** above is **not** fully implemented. Known legacy gaps in co
 
 TRACE-1A–TRACE-1C close these gaps. Do **not** treat current runtime behavior as satisfying §5.
 
+### 5.7 Pre-production clean-cut policy
+
+Intergrax is **pre-production** — there are no active production platform users. Canonical TRACE delivery therefore uses a **clean cut** to target architecture:
+
+```text
+Unused legacy contracts are removed rather than preserved.
+```
+
+**Consequences for identity, journal, and checkpoint paths:**
+
+- no compatibility aliases for unused legacy identity
+- no dual canonical schemas (old + new)
+- no deprecated-but-supported identity contracts kept indefinitely
+- no migrations for unused persisted formats (including old `RuntimeCheckpoint` shapes)
+- no fallback to old metadata identity
+- no silent interpretation of old identity semantics
+- no permanent parallel old/new ownership
+
+If an old capability is still genuinely used by the current repo runtime, tests, or product path: migrate that live code directly to the canonical contract, then **delete** the old path. Do **not** preserve both.
+
+Temporary recognition of legacy shapes is acceptable only during a bounded implementation step when technically unavoidable — it is **not** target architecture.
+
 ---
 
 ## 6. Unified Run Journal (canonical run read model)
@@ -799,7 +821,7 @@ A **First-Class As-Of Projection** is a typed, deterministic reconstruction of e
 |---------|----------|
 | **Unified Run Journal** | **WHAT happened?** — chronological facts |
 | **As-Of Projection** | **WHAT did this execution see / do by boundary X?** — execution state at a deterministic journal boundary |
-| **Bitemporal State** (§8) | **WHAT was valid then?** / **WHAT did Intergrax know then?** — domain and knowledge history along valid-time and system-time axes |
+| **Bitemporal State** (§8) | **WHAT was valid, according to knowledge recorded by system time S?** — valid-time + system-time basis only (execution boundary is separate, §7) |
 
 Conceptual example (Run R1):
 
@@ -940,34 +962,84 @@ A) "What did Intergrax believe on Aug 10?"  → system-time historical truth
 B) "What do we now know was valid on Aug 10?" → valid-time truth using current knowledge
 ```
 
-### 8.4 Difference from Execution As-Of (§7)
+### 8.4 Three independent reconstruction coordinates
+
+Architecture distinguishes **three independent coordinates** — do **not** collapse them:
+
+| Coordinate | Question |
+|------------|----------|
+| **Execution AsOfBoundary** (§7) | **WHERE** in this run / journal are we reconstructing? (e.g. event E42, journal position P42 — exact contract deferred to TRACE-ASOF-1) |
+| **Valid time** | **WHEN** was this fact actually effective / true in the modeled domain? |
+| **System time** | **WHEN** did Intergrax know / record / accept this version of the fact? |
+
+**Bitemporal state** means **only** valid-time + system-time — **two** temporal axes. It does **not** include execution boundary.
+
+Conceptual structure (names are **conceptual only** — TRACE-BITEMP-1 owns exact typed contracts):
+
+```text
+BitemporalKnowledgeBasis
+    ├── Valid-Time Basis
+    └── System-Time Basis
+```
+
+and separately:
+
+```text
+Execution AsOfBoundary
+```
+
+Higher-level historical reconstruction may combine:
+
+```text
+HistoricalExecutionBasis (conceptual)
+    ├── Execution AsOfBoundary
+    └── BitemporalKnowledgeBasis
+        ↓
+Historically Reproducible Execution State
+```
+
+The three-coordinate result is **not** “bitemporal state”.
+
+#### Semantic questions (distinct)
+
+| # | Question |
+|---|----------|
+| 1 | What happened by execution boundary E42? |
+| 2 | What was valid at domain time V? |
+| 3 | What did Intergrax know at system time S? |
+| 4 | What did execution E42 operate against, using facts valid at V and known by S? |
+
+Question 4 is **combined historical execution reconstruction** — not bitemporal state alone.
+
+#### Difference from Execution As-Of (§7)
 
 | Surface | Axis | Question |
 |---------|------|----------|
 | **Execution As-Of** (`AsOfBoundary`) | Execution history | What did this execution see / do by boundary X? |
 | **Valid time** | Domain effectiveness | What was valid / effective at time T? |
 | **System time** | Platform knowledge | What did Intergrax know / record at time S? |
-| **Bitemporal state** | Both | Combined selection using execution boundary + temporal knowledge basis |
+| **Bitemporal state** | Valid time + System time | What was valid, according to knowledge recorded by system time S? |
+| **Historically reproducible execution state** | Execution boundary + bitemporal knowledge basis | What did execution E42 operate against, using facts valid at V and known by S? |
 
 ```text
 RuntimeEvent history
         ↓
-deterministic Execution AsOfBoundary
+Execution AsOfBoundary
         ↓
 "What did this execution see / do by boundary X?"
 
 Bitemporal fact history
         ↓
-Valid-Time + System-Time basis
+Valid-Time Basis + System-Time Basis
         ↓
-"What was valid then?" / "What did we know then?"
+"What was valid, according to knowledge recorded by system time S?"
 
-ExecutionBoundary + TemporalKnowledgeBasis
+Execution AsOfBoundary + BitemporalKnowledgeBasis
         ↓
-historically reproducible execution state (future Execution Story — §10)
+Historically Reproducible Execution State
 ```
 
-Do **not** merge these into one generic timestamp.
+Do **not** merge these into one generic timestamp. Do **not** call the three-coordinate combined result “bitemporal state”.
 
 ### 8.5 Correction semantics
 
@@ -987,6 +1059,7 @@ Revision lineage and bitemporal semantics are **complementary, not identical**:
 |-----------|------|
 | **`revision_id` / `supersedes`** | Causal/version lineage between immutable revisions |
 | **Valid / system time** | Temporal applicability and knowledge history |
+| **Execution boundary** | Run/journal reconstruction position |
 
 A revision **may** carry temporal semantics where appropriate. `supersedes` alone is **not** sufficient for bitemporal queries. Do **not** add `supersedes` to every `RuntimeEvent`.
 
@@ -1036,7 +1109,8 @@ Accepted architecture · **Planned** implementation · **no** current runtime co
 | **As-Of Projection** | Derived execution state at a deterministic journal boundary |
 | **Valid time** | When a fact is effective in the modeled domain |
 | **System time** | When Intergrax recorded / knew a fact version |
-| **Bitemporal state** | State selected using **both** valid-time and system-time basis |
+| **Bitemporal state** | State selected using valid-time + system-time basis only |
+| **Historically reproducible execution state** | Combined reconstruction: execution boundary + bitemporal knowledge basis |
 | **Provenance** | Origin / lineage of relevant inputs and references |
 | **Evidence** | Persisted supporting evidence |
 | **Proof / Receipt** | Attested / verifiable claim |
@@ -1052,21 +1126,21 @@ As-of projections and bitemporal historical state are part of the **read side** 
 ```text
 RuntimeEvent history
        ↓
-Unified Run Journal
-       ↓
-Execution Story
+Execution AsOfBoundary                    Bitemporal fact history
+       │                                          ↓
+       │                              Valid-Time Basis + System-Time Basis
+       │                                          ↓
+       ├── as-of execution reconstruction (§7)    └── bitemporal knowledge reconstruction (§8)
        │
-       ├── chronological narrative
-       ├── as-of historical state reconstruction (§7)
-       └── bitemporal knowledge reconstruction (§8)
+       └── Unified Run Journal → Execution Story (chronological narrative)
 ```
 
-Future combined reconstruction:
+Combined historical execution reconstruction (not “bitemporal state”):
 
 ```text
-ExecutionBoundary + TemporalKnowledgeBasis
+Execution AsOfBoundary + BitemporalKnowledgeBasis
        ↓
-historically reproducible execution state
+Historically Reproducible Execution State
 ```
 
 ---
