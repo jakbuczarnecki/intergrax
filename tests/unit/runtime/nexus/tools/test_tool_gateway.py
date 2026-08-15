@@ -164,6 +164,8 @@ class _GatewayHandler(ToolHandler[_GatewayIn, _GatewayOut]):
 
 
 GATEWAY_CATALOG_TOOL = "jira.get_issue"
+_GATEWAY_TASK_ID = "task_00000000000000000000000000000001"
+_GATEWAY_RUN_ID = "run_00000000000000000000000000000001"
 
 
 def _state_with_catalog_invoker() -> RuntimeState:
@@ -194,8 +196,10 @@ def _state_with_catalog_invoker() -> RuntimeState:
             session_id="session-1",
             tenant_id="tenant-1",
             message="issue",
+            task_id=_GATEWAY_TASK_ID,
+            run_id=_GATEWAY_RUN_ID,
         ),
-        run_id="run-gw-catalog",
+        run_id=_GATEWAY_RUN_ID,
         tool_traces=[],
     )
 
