@@ -30,6 +30,19 @@ DEFAULT_DATABASE = "intergrax"
 DEFAULT_SSLMODE = "prefer"
 
 _SCHEMA_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_SCHEMA_VALIDATION_MESSAGE = (
+    "tenant_schema must be a simple SQL identifier (letters, digits, underscore)"
+)
+
+
+def validate_schema_identifier(value: str) -> str:
+    """Canonical SQL schema identifier validation shared by config and session provider."""
+    stripped = value.strip()
+    if stripped == "public":
+        return stripped
+    if not _SCHEMA_PATTERN.match(stripped):
+        raise ValueError(_SCHEMA_VALIDATION_MESSAGE)
+    return stripped
 
 
 class PostgreSQLIntegrationConfig(BaseIntegrationConfig):
@@ -53,9 +66,7 @@ class PostgreSQLIntegrationConfig(BaseIntegrationConfig):
     def _validate_tenant_schema(cls, value: Optional[str]) -> Optional[str]:
         if value is None or value == "":
             return None
-        if not _SCHEMA_PATTERN.match(value):
-            raise ValueError("tenant_schema must be a simple SQL identifier (letters, digits, underscore)")
-        return value
+        return validate_schema_identifier(value)
 
     def connection_string(self) -> str:
         if self.dsn:

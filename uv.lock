@@ -1704,6 +1704,9 @@ integrations-pgvector = [
     { name = "pgvector", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "psycopg", extra = ["binary"], marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+integrations-postgresql = [
+    { name = "psycopg", extra = ["binary"], marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 integrations-sentry = [
     { name = "sentry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -1920,6 +1923,7 @@ requires-dist = [
     { name = "presidio-anonymizer", marker = "extra == 'integrations-guardrails'", specifier = ">=2.2" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'dev'", specifier = ">=3.1" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'integrations-pgvector'", specifier = ">=3.1" },
+    { name = "psycopg", extras = ["binary"], marker = "extra == 'integrations-postgresql'", specifier = ">=3.1,<4" },
     { name = "pydantic", specifier = ">=2.7,<3" },
     { name = "pymongo", marker = "extra == 'dev'", specifier = ">=4.6" },
     { name = "pymongo", marker = "extra == 'integrations-mongodb'", specifier = ">=4.6" },
@@ -1976,7 +1980,7 @@ requires-dist = [
     { name = "xlrd", marker = "extra == 'parsing-office'", specifier = ">=2.0,<3" },
     { name = "yt-dlp", marker = "extra == 'media-youtube'", specifier = ">=2024.0,<2027" },
 ]
-provides-extras = ["integrations-neo4j", "vector-chroma", "vector-qdrant", "vector-pinecone", "parsing-web", "parsing-office", "parsing-pdf", "parsing-ocr", "media-youtube", "media-video", "media-image", "media-ocr", "media-whisper", "ui-streamlit", "mcp", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "dev-ci-rag", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-pgvector", "integrations-harness", "integrations-guardrails", "integrations-slack"]
+provides-extras = ["integrations-neo4j", "vector-chroma", "vector-qdrant", "vector-pinecone", "parsing-web", "parsing-office", "parsing-pdf", "parsing-ocr", "media-youtube", "media-video", "media-image", "media-ocr", "media-whisper", "ui-streamlit", "mcp", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "dev-ci-rag", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-postgresql", "integrations-pgvector", "integrations-harness", "integrations-guardrails", "integrations-slack"]
 
 [package.metadata.requires-dev]
 quality = [

@@ -12,6 +12,13 @@ from typing import Any, TypeVar
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.postgresql.config import (
     PostgreSQLIntegrationConfig,
+    validate_schema_identifier,
+)
+from intergrax.integrations.providers.relational_store.postgresql.session import (
+    PostgreSQLConnectionProvider,
+    PostgreSQLIsolationLevel,
+    PostgreSQLSession,
+    is_postgresql_unique_violation,
 )
 from intergrax.collaborative_work.repository import (
     AuthorityDelegationAlreadyExists,
@@ -75,22 +82,9 @@ _CAPABILITIES = CollaborativeWorkRepositoryCapabilities(
     durable=True,
     reference_only=False,
 )
-_ISOLATION_LEVEL = "READ COMMITTED"
+_ISOLATION_LEVEL = PostgreSQLIsolationLevel.READ_COMMITTED
 
 TRecord = TypeVar("TRecord")
-
-
-def _import_psycopg() -> tuple[Any, Any, Any]:
-    try:
-        import psycopg
-        from psycopg import errors
-        from psycopg.rows import dict_row
-    except ImportError as exc:
-        raise IntegrationConfigurationError(
-            "PostgreSQL Collaborative Work adapter requires psycopg. "
-            "Install with: uv sync --extra dev"
-        ) from exc
-    return psycopg, errors, dict_row
 
 
 class PostgreSQLCollaborativeWorkStore:
@@ -103,19 +97,23 @@ class PostgreSQLCollaborativeWorkStore:
         connection_factory: Callable[[], Any] | None = None,
         schema_name: str | None = None,
     ) -> None:
+        resolved_schema = validate_schema_identifier(
+            (schema_name or config.tenant_schema or "public").strip()
+        )
         self._config = config
-        self._connection_factory = connection_factory
-        self._schema_name = (schema_name or config.tenant_schema or "public").strip()
+        self._schema_name = resolved_schema
+        self._provider = PostgreSQLConnectionProvider(
+            config,
+            connection_factory=connection_factory,
+            tenant_schema=resolved_schema,
+        )
         self._closed = False
         self._init_lock = threading.Lock()
         self._schema_ready = False
-        psycopg, _, dict_row = _import_psycopg()
-        self._psycopg = psycopg
-        self._dict_row = dict_row
         try:
-            with self._connection() as conn:
-                self._initialize_schema(conn)
-                conn.commit()
+            with self._provider.connection() as session:
+                self._initialize_schema(session)
+                session.commit()
         except IntegrationConfigurationError:
             self._closed = True
             raise
@@ -143,42 +141,18 @@ class PostgreSQLCollaborativeWorkStore:
         if self._closed:
             raise RuntimeError(_CLOSED_ERROR)
 
-    def _open_raw_connection(self) -> Any:
+    @contextmanager
+    def transaction(self) -> Generator[PostgreSQLSession, None, None]:
         self._ensure_open()
-        if self._connection_factory is not None:
-            return self._connection_factory()
-        return self._psycopg.connect(
-            self._config.connection_string(),
-            row_factory=self._dict_row,
-        )
+        with self._provider.transaction(isolation_level=_ISOLATION_LEVEL) as session:
+            yield session
 
-    @contextmanager
-    def _connection(self) -> Generator[Any, None, None]:
-        conn = self._open_raw_connection()
-        try:
-            conn.execute(f"SET search_path TO {self._schema_name}, public")
-            yield conn
-        finally:
-            conn.close()
-
-    @contextmanager
-    def transaction(self) -> Generator[Any, None, None]:
-        with self._connection() as conn:
-            conn.execute(f"SET TRANSACTION ISOLATION LEVEL {_ISOLATION_LEVEL}")
-            try:
-                yield conn
-                conn.commit()
-            except Exception:
-                conn.rollback()
-                raise
-
-    def _initialize_schema(self, conn: Any) -> None:
+    def _initialize_schema(self, session: PostgreSQLSession) -> None:
         with self._init_lock:
             if self._schema_ready:
                 return
-            if self._schema_name != "public":
-                conn.execute(f"CREATE SCHEMA IF NOT EXISTS {self._schema_name}")
-            conn.execute(
+            self._provider.ensure_schema_exists(session, self._schema_name)
+            session.execute(
                 """
                 CREATE TABLE IF NOT EXISTS workspace_memberships (
                     tenant_id TEXT NOT NULL,
@@ -270,8 +244,7 @@ class PostgreSQLCollaborativeWorkStore:
 
 
 def _unique_violation(exc: BaseException) -> bool:
-    _, errors, _ = _import_psycopg()
-    return isinstance(exc, errors.UniqueViolation)
+    return is_postgresql_unique_violation(exc)
 
 
 def _scope_matches_tenant_workspace(

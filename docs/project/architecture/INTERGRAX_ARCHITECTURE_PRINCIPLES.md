@@ -478,6 +478,30 @@ A new abstraction is justified only when:
 - the new abstraction has clear ownership,
 - the decision is documented.
 
+### PLATFORM-REUSE-1 — No parallel infrastructure
+
+A domain may not create a parallel implementation of an existing platform infrastructure capability.
+
+Existing capability must be reused or extended.
+
+New infrastructure requires an explicit architecture decision proving that reuse or extension is not viable.
+
+### PLATFORM-REUSE-2 — Infrastructure ownership remains platform-level
+
+Generic persistence connectivity, transaction/session lifecycle, observability, messaging, configuration, and similar cross-cutting capabilities belong to platform infrastructure, not feature/domain packages.
+
+### PLATFORM-REUSE-3 — Domain owns semantics, platform owns mechanics
+
+Domain adapters own domain-specific persistence semantics and queries.
+
+Platform infrastructure owns generic connectivity, lifecycle, and mechanics.
+
+PostgreSQL transactional session infrastructure lives in
+``intergrax/integrations/providers/relational_store/postgresql/session.py`` as
+``PostgreSQLConnectionProvider``. It is consumed by the existing ``RelationalStore`` opener and
+Collaborative Work authoritative repositories. Cross-domain reusable SQLite session capability is
+not yet extracted to platform infrastructure.
+
 ---
 
 ## 14. Platform domain creation process

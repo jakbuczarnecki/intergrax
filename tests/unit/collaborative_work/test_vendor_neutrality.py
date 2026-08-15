@@ -56,11 +56,9 @@ def test_domain_core_imports_no_database_or_observability_vendors() -> None:
     assert not imported.intersection(_FORBIDDEN_IMPORT_PREFIXES)
 
 
-def test_postgresql_imports_limited_to_adapter_layer() -> None:
+def test_postgresql_adapter_does_not_import_psycopg_driver() -> None:
     imported = _import_names(_ADAPTER_FILES[0])
-    assert "psycopg" in imported or "psycopg" in {
-        name.split(".")[0] for name in imported
-    }
+    assert "psycopg" not in imported
 
 
 def test_durable_adapter_is_replaceable_behind_port(tmp_path: Path) -> None:

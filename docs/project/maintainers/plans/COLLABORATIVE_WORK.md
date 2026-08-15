@@ -219,6 +219,21 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Proof requirements** | `tests/integration/collaborative_work/test_postgresql_repository.py`; repository/authority/enforcement/typed-wiring/vendor-neutrality regressions |
 | **Next step** | MP-1 CORE FINAL REVIEW |
 
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1J-R2 |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | Platform PostgreSQL transactional session provider and Collaborative Work infrastructure reuse |
+| **Dependencies** | COLLAB-WORK-1J; platform PostgreSQL integration (`PostgreSQLIntegrationConfig`) |
+| **Exact scope** | `PostgreSQLConnectionProvider` / session API; refactor `opens.py` and CW PostgreSQL store to consume platform provider; remove duplicated psycopg/connect/search_path/transaction mechanics from CW; production `integrations-postgresql` extra |
+| **REUSED** | `PostgreSQLIntegrationConfig`; canonical schema validation; existing RelationalStore opener |
+| **NEW** | Platform transactional session provider; platform reuse architecture proofs; safe identifier search_path |
+| **Explicit out of scope** | LKW integration; MP-2+; CW SQLite refactor; CI platform redesign unless narrow gate fits file budget |
+| **Acceptance** | CW no longer owns generic PostgreSQL mechanics; platform owns driver/session/transaction/search_path; real PostgreSQL CW tests pass; RelationalStore regressions pass; PLATFORM-REUSE invariants preserved |
+| **Proof requirements** | `tests/unit/integrations/providers/relational_store/test_postgresql_session.py`; `tests/unit/collaborative_work/test_postgresql_platform_reuse.py`; `tests/integration/collaborative_work/test_postgresql_repository.py`; existing PostgreSQL + CW regressions |
+| **Next step** | MP-1 CORE FINAL REVIEW |
+
 ---
 
 ## 4. Out of scope (current phase)
