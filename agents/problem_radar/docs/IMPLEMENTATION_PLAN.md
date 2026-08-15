@@ -5,7 +5,7 @@
 Status: **Frozen** — Band 3 (K.1) until explicit product reprioritization
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../../docs/project/architecture/intergrax_runtime_architecture.md) · K.1 · §6.3
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) · K.1 · §6.3
 
 ---
 

@@ -3,7 +3,7 @@
 **Task:** MVP-1  
 **Status:** complete  
 **Base commit:** `f290a6113703c65b824f4743ebdea5ee604eb51a`  
-**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)
+**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)
 
 ---

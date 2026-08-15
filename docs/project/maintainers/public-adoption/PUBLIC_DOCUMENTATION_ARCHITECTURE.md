@@ -392,7 +392,8 @@ agents/<agent>/docs/
 
 This layer serves developers, architects, reviewers, and implementation agents.
 Application-owned technical canon (architecture, plan, build/deploy, ADRs, evidence)
-lives under `applications/<pkg>/docs/`. Code-local README files and workflow-adjacent
+lives under `applications/<pkg>/docs/`. Agent-owned technical canon (architecture, plan, ADRs)
+lives under `agents/<agent>/docs/`. Code-local README files and workflow-adjacent
 artifacts may remain at the application or agent root when required by tooling; these
 are narrow exceptions, not competing canonical documentation roots.
 

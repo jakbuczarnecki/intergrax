@@ -2,9 +2,9 @@
 
 **Domain:** Tier-3 application host (`applications/local_workspace_application`)
 
-Architecture: [`../ARCHITECTURE.md`](ARCHITECTURE.md)  
-Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
-Platform ADRs: [`../../../docs/project/technical/adr/README.md`](../../../adr/README.md)
+Architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)  
+Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md)  
+Platform ADRs: [`../../../docs/project/technical/adr/README.md`](../../../../docs/project/technical/adr/README.md)
 
 ---
 
@@ -29,8 +29,8 @@ ADR-LOCAL_WORKSPACE-{NNN}.md
 ## Process
 
 1. Copy [`TEMPLATE.md`](TEMPLATE.md) to the next sequential number.
-2. Link from [`ARCHITECTURE.md`](ARCHITECTURE.md) when the decision affects host layout.
-3. Track implementation in [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md).
+2. Link from [`ARCHITECTURE.md`](../ARCHITECTURE.md) when the decision affects host layout.
+3. Track implementation in [`IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md).
 
 ## Index
 

@@ -30,6 +30,6 @@ Only [`../README.md`](../README.md) lives at the application root. All other LKW
 
 ## Global vs application journals
 
-LKW-specific implementation history belongs in [`journal`](journal), **not** in the platform-wide [`docs/project/maintainers/implementation-journal`](../../../../docs/project/maintainers/implementation-journal).
+LKW-specific implementation history belongs in [`journal`](journal), **not** in the platform-wide [`docs/project/maintainers/implementation-journal`](../../../docs/project/maintainers/implementation-journal).
 
 Use the global implementation journal only for platform-wide milestones that affect multiple tiers or domains.

@@ -5,8 +5,8 @@
 Status: **Done** (harness reference baseline) — maintenance only
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../../docs/project/architecture/intergrax_runtime_architecture.md) · Phase AA-ECHO
-Agent workflow: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) · Phase AA-ECHO
+Agent workflow: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
 
 Principle: **stable harness reference** · **gate smoke must stay green** · **no Tier-3 imports**
 

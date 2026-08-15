@@ -3,7 +3,7 @@
 Tier-3 application package: `applications/governed_contractor_application`. This document is the **operational runbook** for local development, verification, and container deployment.
 
 > Vertical: Governed External Contractor (GEC) — architecture [`ARCHITECTURE.md`](ARCHITECTURE.md) · plan [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · partner [`PARTNER_HANDOFF.md`](PARTNER_HANDOFF.md)  
-> Layout canon: [`applications/USAGE.md`](../../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../intergrax/applications/USAGE.md)
+> Layout canon: [`applications/USAGE.md`](../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../intergrax/applications/USAGE.md)
 
 **Note:** GEC-0 is scaffold + documentation. Domain proof APIs arrive in later phases. Local `/health` and scaffold `/run` are smoke surfaces only — not a production or partner contract claim.
 

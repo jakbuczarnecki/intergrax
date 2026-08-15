@@ -29,7 +29,7 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | Cursor token budget (F2 / F3) | [CURSOR_TOKEN_SETUP.md](guides/CURSOR_TOKEN_SETUP.md) |
 | Audit procedure | [audit/README.md](../maintainers/audit/README.md) |
 | Audit session paste (first chat message) | [bootstrap/README.md](../maintainers/bootstrap/README.md) |
-| Audit run artifacts | [audit_results/](audit_results/) — load only with `RESUME:` |
+| Audit run artifacts | [audit_results/](../../audit_results/) — load only with `RESUME:` |
 | Layer closeout (LCM 1–6) | [LAYER_COMPLETION_MODE.md](guides/LAYER_COMPLETION_MODE.md) |
 | Milestone narrative log | [implementation-journal/README.md](../maintainers/implementation-journal/README.md) |
 | Architectural decisions | [adr/README.md](adr/README.md) |
@@ -63,12 +63,12 @@ Domain pair index (22 names): [audit/README.md § Domain index](../maintainers/a
 | [.cursor/rules/](../../../.cursor/rules/README.md) | Always-on / triggered Cursor rules | Replacement for AGENT_INSTRUCTIONS |
 | [bootstrap/*.txt](../maintainers/bootstrap/README.md) | Copy-paste **first message** for a new agent chat | Stored audit results |
 | [audit/<DOMAIN>.md](../maintainers/audit/README.md) | Per-domain audit prompts (generated) | Implementation plan |
-| [audit_results/](audit_results/) | Run output (`progress.json`, reports) | Load in Cursor unless `RESUME:` cites path |
+| [audit_results/](../../audit_results/) | Run output (`progress.json`, reports) | Load in Cursor unless `RESUME:` cites path |
 | [LAYER_COMPLETION_MODE.md](guides/LAYER_COMPLETION_MODE.md) | **When/how** deep domain closeout (LCM steps) | Bootstrap paste file |
 | `docs/project/maintainers/audit/*_ORCHESTRATOR.md` | Mode-specific procedure (A / B / C / I) | General onboarding |
 | [implementation-journal/](../maintainers/implementation-journal/README.md) | Milestone narrative (optional) | Plan source of truth or ADR store |
 
-**One source of truth per topic.** Canonical platform, product, and agent technical documentation lives under `docs/project/`. Application-owned technical canon lives under `applications/*/docs/` (architecture, implementation plan, build/deploy, ADRs, application evidence). Code-local README files and workflow-adjacent artifacts may remain at the application or agent root when required by tooling; those are not competing documentation roots.
+**One source of truth per topic.** Canonical platform and cross-cutting documentation lives under `docs/project/`. Application-owned technical canon lives under `applications/*/docs/` (architecture, implementation plan, build/deploy, ADRs, application evidence). Agent-owned technical canon lives under `agents/*/docs/` (architecture, implementation plan, ADRs). Code-local README files and workflow-adjacent artifacts may remain at the application or agent root when required by tooling; those are not competing documentation roots.
 
 ---
 

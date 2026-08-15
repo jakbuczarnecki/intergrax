@@ -159,8 +159,8 @@ The [External Reader Validation Protocol](EXTERNAL_READER_VALIDATION_PROTOCOL.md
 
 | Route | Classification | Entry point |
 |-------|----------------|-------------|
-| Product Tour | Product orientation | `../product/LKW_PRODUCT_TOUR.md` |
-| Product Quick Start | Supported executable product evaluation | `docs/product/QUICKSTART.md` |
+| Product Tour | Product orientation | `../../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md` |
+| Product Quick Start | Supported executable product evaluation | `../../../../applications/local_workspace_application/docs/product/QUICKSTART.md` |
 | Builder Quick Start | First bounded builder orientation | `../../builders/BUILDER_QUICKSTART.md` |
 | Deeper builder planning | Builder route selection and deeper planning | `../../builders/BUILD_WITH_INTERGRAX.md` |
 | Broader evaluation | Bounded evaluation execution | `../../builders/EVALUATION_GUIDE.md` |

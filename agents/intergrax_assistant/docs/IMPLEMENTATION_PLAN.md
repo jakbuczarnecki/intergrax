@@ -5,8 +5,8 @@
 Status: Working draft (2026-06-08) — **Scaffold baseline**
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../../docs/project/architecture/intergrax_runtime_architecture.md)
-Agent workflow: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md)
+Agent workflow: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
 
 Principle: **evolve, not rewrite** · **reuse Tier-0** · **no Tier-3 imports in agent code**
 
@@ -68,4 +68,4 @@ uv run pytest applications/<app>_application/tests -q
 ## 3. Platform alignment
 
 Business agents and product-only work remain **end of plan** unless explicitly reprioritized —
-see platform [`§6.3`](../../../../docs/project/maintainers/plans/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
+see platform [`§6.3`](../../../docs/project/maintainers/plans/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).

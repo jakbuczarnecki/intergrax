@@ -1,7 +1,7 @@
 ﻿# boundary_demo agent — Implementation Plan
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../../docs/project/architecture/intergrax_runtime_architecture.md)
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md)
 Host tracker: [`applications/attestation_demo/docs/IMPLEMENTATION_PLAN.md`](../../../applications/attestation_demo/docs/IMPLEMENTATION_PLAN.md)
 
 Principle: **stable PoC agent** · **no receipt logic in Tier-2** · **no Tier-3 imports in agent code**

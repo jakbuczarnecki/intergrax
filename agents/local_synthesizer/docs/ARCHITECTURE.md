@@ -72,7 +72,7 @@ Task(..., metadata={"shadow_workspace": True})
 |------|----------|
 | Generic `invoke_tool` helpers | [`intergrax/agents/authoring/runtime_tool_helpers.py`(../../../intergrax/agents/authoring/runtime_tool_helpers.py) |
 | Workspace write tool id | [`intergrax/tools/providers/workspace/service.py`(../../../intergrax/tools/providers/workspace/service.py) |
-| **Implementation point** | [`steps/synthesize_job.py`](steps/synthesize_job.py) — `run_synthesize_job` |
+| **Implementation point** | [`steps/synthesize_job.py`](../steps/synthesize_job.py) — `run_synthesize_job` |
 
 Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for this agent.
 
@@ -110,7 +110,7 @@ Requires task `metadata={"shadow_workspace": True}`.
 
 ## Prompts
 
-[`prompts/system.md`](prompts/system.md)
+[`prompts/system.md`](../prompts/system.md)
 
 ---
 
@@ -124,5 +124,5 @@ uv run pytest agents/local_synthesizer/tests -q
 
 ## References
 
-- Shadow workspace: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix B](../../../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox)
+- Shadow workspace: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix B](../../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox)
 - LKW architecture: [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md)

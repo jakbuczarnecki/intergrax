@@ -229,7 +229,7 @@ flowchart TD
 
 ### 7.1 Application env (`INTERGRAX_ASSISTANT_*`)
 
-See [`.env.example`](.env.example).
+See [`.env.example`](../.env.example).
 
 ### 7.2 LLM env (`INTERGRAX_LLM_*`)
 

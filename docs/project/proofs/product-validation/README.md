@@ -8,4 +8,4 @@ They are **not** SaaS commitments, production guarantees, or license grants. Tec
 
 | Document | Description |
 |----------|-------------|
-| [Local Knowledge Workspace Alpha](../../../applications/local_workspace_application/docs/proof/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) | Alpha narrative for local governed knowledge workflows over user-controlled files |
+| [Local Knowledge Workspace Alpha](../../../../applications/local_workspace_application/docs/proof/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) | Alpha narrative for local governed knowledge workflows over user-controlled files |

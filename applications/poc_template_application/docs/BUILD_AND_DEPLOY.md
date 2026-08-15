@@ -2,7 +2,7 @@
 
         Tier-3 application package: ``applications/poc_template_application``. This document is the **operational runbook** for local development, verification, and container deployment.
 
-        > Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../intergrax/applications/USAGE.md)
+        > Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../intergrax/applications/USAGE.md)
 
         ---
 

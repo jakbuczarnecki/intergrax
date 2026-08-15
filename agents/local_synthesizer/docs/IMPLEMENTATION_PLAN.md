@@ -6,7 +6,7 @@ Status: **Scaffold Done** — Wave **LKW.2** (after LKW.1 ingest/search)
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Host: [`applications/local_workspace_application`](../../../applications/local_workspace_application/)
-Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../../docs/project/architecture/intergrax_runtime_architecture.md) · **LKW.2**
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) · **LKW.2**
 
 ---
 

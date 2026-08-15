@@ -2,7 +2,7 @@
 
 Tier-3 application package: `applications/local_workspace_application`. This document is the operational runbook for local development, verification, and container deployment.
 
-> Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../../USAGE.md)
+> Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../USAGE.md)
 
 ---
 
@@ -101,7 +101,7 @@ LKW receives a provider-neutral `LLMAdapter` through application wiring. The LKW
 | Profile | Existing configuration | Status |
 |---------|------------------------|--------|
 | **Ollama** (default) | `INTERGRAX_LLM_PROVIDER=ollama`, `INTERGRAX_LLM_MODEL` | **IMPLEMENTED** — default local stack |
-| **vLLM** | Commented optional block in `.env.example`: `INTERGRAX_LLM_PROVIDER=vllm`, `INTERGRAX_LLM_MODEL`, `INTERGRAX_DEFAULT_VLLM_BASE_URL` | **BOUNDED PROOF** — Ollama/vLLM model runtime portability (`LKW-MODEL-RUNTIME`); see [`PROOFS.md`](../../../../docs/project/proofs/PROOFS.md) |
+| **vLLM** | Commented optional block in `.env.example`: `INTERGRAX_LLM_PROVIDER=vllm`, `INTERGRAX_LLM_MODEL`, `INTERGRAX_DEFAULT_VLLM_BASE_URL` | **BOUNDED PROOF** — Ollama/vLLM model runtime portability (`LKW-MODEL-RUNTIME`); see [`PROOFS.md`](../../../docs/project/proofs/PROOFS.md) |
 
 **Embedding provider is separate** from the conversation/reasoning LLM. Switching `INTERGRAX_LLM_PROVIDER` must not silently change embedding model, vector dimensions or indexed collections. Reindexing is not required merely because the chat model changes.
 
@@ -556,7 +556,7 @@ To verify no duplicate export for the same runtime event, group persisted record
 
 ## Application dependency project
 
-Canonical packaging: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+Canonical packaging: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
 ```bash
 uv sync --project applications/local_workspace_application
@@ -567,7 +567,7 @@ The application `pyproject.toml` selects Intergrax platform extras. Docker uses 
 
 ## Application runtime graph (isolated images)
 
-Canonical packaging and image isolation: [docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../../docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
+Canonical packaging and image isolation: [docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
 ```bash
 uv sync --project applications/local_workspace_application

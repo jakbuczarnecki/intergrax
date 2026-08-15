@@ -734,7 +734,7 @@ does not imply
 live Slack history reads are allowed
 ```
 
-This principle is provider-neutral. Binding detail: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md).
+This principle is provider-neutral. Binding detail: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md).
 
 ---
 

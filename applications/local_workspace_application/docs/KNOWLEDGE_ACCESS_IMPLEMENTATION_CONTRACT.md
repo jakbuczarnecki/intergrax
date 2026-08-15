@@ -45,7 +45,7 @@
 
 **Architecture:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)
 **Implementation plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
-**Platform integration canon:** [`../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
+**Platform integration canon:** [`../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
 
 ---
 

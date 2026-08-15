@@ -4,13 +4,13 @@
 
 | Reader goal | Route |
 |-------------|-------|
-| Understand the product without running it | [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) |
-| Run the supported indexed product evaluation | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) |
+| Understand the product without running it | [LKW Product Tour](../product/LKW_PRODUCT_TOUR.md) |
+| Run the supported indexed product evaluation | [LKW Quick Start](../product/QUICKSTART.md) |
 | Inspect bounded technical evidence | This LKW Platform Proof |
 
 **Product Tour ≠ Product Quick Start ≠ Platform Proof.**
 
-**Prerequisite:** For the supported first LKW product run, use the [LKW Quickstart](../../../applications/local_workspace_application/docs/product/QUICKSTART.md). This document is the deeper bounded technical reviewer proof. It is not required to complete the product quickstart.
+**Prerequisite:** For the supported first LKW product run, use the [LKW Quickstart](../product/QUICKSTART.md). This document is the deeper bounded technical reviewer proof. It is not required to complete the product quickstart.
 
 **Product quickstart ≠ platform proof.** The quickstart demonstrates managed upload, indexed Ask, citation, and persisted read for product evaluation. This proof document remains the authoritative bounded technical certification path.
 
@@ -53,7 +53,7 @@ Markdown is execution and inspection guidance.
 
 A reviewer should not need to inspect raw Docker output or infer what to check from long logs.
 
-**Public proof dashboard:** [`PROOFS.md`](PROOFS.md)
+**Public proof dashboard:** [`PROOFS.md`](../../../../docs/project/proofs/PROOFS.md)
 
 ---
 
@@ -421,7 +421,7 @@ stack non-destructively, then rerun the path you want.
 
 Before running the one-command Core Platform Proof below, stop the Product Quick
 Start stack with the supported non-destructive lifecycle command documented in
-[LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md#stop-the-stack).
+[LKW Quick Start](../product/QUICKSTART.md#stop-the-stack).
 
 ---
 
@@ -1795,7 +1795,7 @@ Inspect the Windows Interaction receipt using `proof_receipt_id` / `proof_receip
 
 ## Token optimization claim guardrails
 
-For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZATION_CLAIMS.md`](../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
+For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZATION_CLAIMS.md`](../../../../docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
 
 ---
 

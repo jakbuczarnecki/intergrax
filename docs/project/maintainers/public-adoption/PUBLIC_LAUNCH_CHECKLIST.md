@@ -47,7 +47,7 @@ The internal route review explicitly covered:
 
 - [Public Documentation Map](../../community/PUBLIC_DOCUMENTATION_MAP.md)
 - [root README](../../../../README.md)
-- [LKW Product Tour](../product/LKW_PRODUCT_TOUR.md)
+- [LKW Product Tour](../../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)
 - [LKW Quick Start](../../../../applications/local_workspace_application/docs/product/QUICKSTART.md)
 - [LKW Platform Proof](../../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md)
 - [Builder Quick Start](../../builders/BUILDER_QUICKSTART.md)

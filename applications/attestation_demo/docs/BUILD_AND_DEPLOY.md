@@ -2,7 +2,7 @@
 
 Tier-3 application package: `applications/attestation_demo`. Operational runbook for local development, verification, and container deployment.
 
-> Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../intergrax/applications/USAGE.md)
+> Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../intergrax/applications/USAGE.md)
 
 ---
 
@@ -79,7 +79,7 @@ MCP is **disabled** by default for this host (`ATTESTATION_DEMO_INCLUDE_MCP=fals
 
 ## 7. Partner deploy (BoundaryAttest)
 
-Handoff package: [`partner_handoff/README.md`](partner_handoff/README.md)
+Handoff package: [`partner_handoff/README.md`](../partner_handoff/README.md)
 
 | Deliverable | Path |
 |-------------|------|

@@ -67,7 +67,7 @@ exercises **indexed Ask V1** — not Hybrid Ask certification, Trusted Ask
 durability, or Core Platform Proof.
 
 **Separate bounded technical evidence:** indexed Hybrid Ask branch
-(`LKW-HYBRID-ASK-INDEXED`) validates indexed retrieval and boundary behavior.
+(`LKW-HYBRID-ASK-INDEXED`) is a **real application code path** for indexed retrieval.
 Hybrid Ask combining indexed and authorized live evidence is **not yet proven**.
 
 **Separate live durability evidence:** [Trusted Ask](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)

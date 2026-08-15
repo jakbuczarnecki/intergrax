@@ -69,7 +69,7 @@ remain incomplete. Detailed evidence and claim boundaries belong in
 ## Browse by documentation area
 
 - `overview/` — project context, use cases, FAQ, roadmap, and positioning.
-- `product/` — product reader routes, including LKW.
+- `product/` — cross-cutting product concepts (Agent Marketplace). LKW product docs live under `applications/local_workspace_application/docs/product/`.
 - `builders/` — build and evaluation routes.
 - `architecture/` — project architecture canon.
 - `proofs/` — bounded evidence and proof status.

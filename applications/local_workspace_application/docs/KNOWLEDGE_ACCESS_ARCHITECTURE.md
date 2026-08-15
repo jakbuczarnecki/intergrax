@@ -978,7 +978,7 @@ Live results must not automatically become durable workspace knowledge. Policy d
 
 ### 12.1 Current accepted proof
 
-**Public proof:** `LKW-MODEL-RUNTIME` — **accepted bounded proof**. See [`docs/project/proofs/PROOFS.md`](../../../../docs/project/proofs/PROOFS.md).
+**Public proof:** `LKW-MODEL-RUNTIME` — **accepted bounded proof**. See [`docs/project/proofs/PROOFS.md`](../../../docs/project/proofs/PROOFS.md).
 
 **Demonstrates:** The same workspace workflows run on Ollama and vLLM without reindexing.
 

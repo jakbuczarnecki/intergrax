@@ -67,7 +67,7 @@ Implement domain logic in `steps` — no Tier-3 imports.
 |------|----------|
 | Generic `invoke_tool` helpers | [`intergrax/agents/authoring/runtime_tool_helpers.py`(../../../intergrax/agents/authoring/runtime_tool_helpers.py) |
 | RAG retrieve tool id | [`intergrax/tools/unified/constants.py`(../../../intergrax/tools/unified/constants.py) |
-| **Implementation point** | [`steps/search_job.py`](steps/search_job.py) — `run_search_job` |
+| **Implementation point** | [`steps/search_job.py`](../steps/search_job.py) — `run_search_job` |
 
 Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for this agent.
 
@@ -104,7 +104,7 @@ Host baseline: [`applications/local_workspace_application/host/tool_wiring.py`(.
 
 ## Prompts
 
-[`prompts/system.md`](prompts/system.md)
+[`prompts/system.md`](../prompts/system.md)
 
 ---
 
@@ -119,4 +119,4 @@ uv run pytest agents/local_search/tests -q
 ## References
 
 - LKW architecture: [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md)
-- Retrieval control plane: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix K](../../../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane)
+- Retrieval control plane: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix K](../../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane)
