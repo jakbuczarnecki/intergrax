@@ -11,6 +11,7 @@ from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.contracts.execution_identity import (
+    ActiveExecutionIdentity,
     AttemptId,
     RunId,
     mint_attempt_id,
@@ -186,7 +187,11 @@ class NexusLoop:
         self._idempotency_store = idempotency_store
         self._declarative_tool_invoker = declarative_tool_invoker
         self._notification_adapter = notification_adapter
-        self._context_manager = context_manager or ContextManager(event_bus=self._event_bus)
+        self._execution_identity = ActiveExecutionIdentity()
+        self._context_manager = context_manager or ContextManager(
+            event_bus=self._event_bus,
+            execution_identity=self._execution_identity,
+        )
         self._engine = AgentEngine(
             registry,
             production_mode=production_mode,
@@ -234,14 +239,13 @@ class NexusLoop:
             compensation_queue_store=compensation_queue_store,
             idempotency_store=idempotency_store,
             declarative_tool_invoker=declarative_tool_invoker,
+            execution_identity=self._execution_identity,
         )
         self._composer = FinalResponseComposer(merge_strategy=merge_strategy)
         self._lifecycle = lifecycle
         self._trace_emitter = trace_emitter
         self._trace_store = trace_store
         self._current_task: Optional[Task] = None
-        self._current_run_id: Optional["RunId"] = None
-        self._current_attempt_id: Optional["AttemptId"] = None
         self._signal_collector = signal_collector
         self._evaluation_registry = evaluation_registry
         self._run_budget = run_budget
@@ -249,6 +253,7 @@ class NexusLoop:
         self._events = NexusRuntimeEventPublisher(
             self._event_bus,
             current_task=lambda: self._current_task,
+            execution_identity=self._execution_identity,
             trace_reader=trace_reader,
             runtime_event_store=self._runtime_event_store,
         )
@@ -281,6 +286,7 @@ class NexusLoop:
             human_hooks=self._human_hooks,
             publish=self._publish_runtime_event,
             restore_long_running=self._maybe_restore_long_running,
+            execution_identity=self._execution_identity,
         )
         self._planning_runner = NexusPlanningRunner(
             classifier=self._classifier,
@@ -294,6 +300,7 @@ class NexusLoop:
             emit_coordination_advisory=emit_coordination_advisory,
             denied_planner_model_ids=denied_planner_model_ids,
             planner_model_id=planner_model_id,
+            execution_identity=self._execution_identity,
         )
 
     @property
@@ -375,9 +382,7 @@ class NexusLoop:
             else mint_attempt_id()
         )
         self._current_task = task
-        self._current_run_id = resolved_run_id
-        self._current_attempt_id = resolved_attempt_id
-        self._graph_executor.set_execution_identity(
+        self._execution_identity.bind(
             run_id=resolved_run_id,
             attempt_id=resolved_attempt_id,
         )
@@ -385,8 +390,7 @@ class NexusLoop:
             return await self._handle_task_impl(task)
         finally:
             self._current_task = None
-            self._current_run_id = None
-            self._current_attempt_id = None
+            self._execution_identity.clear()
             self._graph_executor.clear_execution_identity()
 
     async def _handle_task_impl(self, task: Task) -> TaskResult:
@@ -526,13 +530,13 @@ class NexusLoop:
     ) -> None:
         if self._evaluation_registry is None or len(executions) < 2:
             return
-        if self._current_run_id is None:
+        if self._execution_identity.run_id is None:
             raise RuntimeError("active run identity required for multi-agent evaluation")
         passed = all(item.status == AgentExecutionStatus.COMPLETED for item in executions)
         self._evaluation_registry.append(
             OnlineEvaluationObservation(
                 observation_id=f"obs_{task_id}_multi_agent",
-                run_id=self._current_run_id,
+                run_id=self._execution_identity.run_id,
                 agent_id=",".join(item.agent_id for item in executions if item.agent_id),
                 mode=OnlineEvaluationMode.SHADOW,
                 scenario_id="multi_agent_fan_in",
@@ -577,19 +581,19 @@ class NexusLoop:
             event_bus=self._event_bus,
             shadow_manager=self._shadow_manager,
             sandbox_manager=self._sandbox_manager,
-            run_id=self._current_run_id,
+            run_id=self._execution_identity.run_id,
         )
         return result
 
     async def _maybe_restore_long_running(self, task: Task) -> None:
-        if self._current_run_id is None:
+        if self._execution_identity.run_id is None:
             raise RuntimeError("active run identity required for long-running restore")
         await maybe_restore_long_running(
             task,
             checkpoint_store=self._checkpoint_store,
             publish=self._publish_runtime_event,
             notification_adapter=self._notification_adapter,
-            run_id=self._current_run_id,
+            run_id=self._execution_identity.run_id,
         )
 
     async def _maybe_checkpoint_long_running(
@@ -601,16 +605,15 @@ class NexusLoop:
         graph: Optional[ExecutionGraph] = None,
         last_execution: Optional[AgentExecutionResult] = None,
     ) -> None:
-        if self._current_run_id is None or self._current_attempt_id is None:
-            raise RuntimeError("active execution identity required for long-running checkpoint")
+        run_id, attempt_id = self._execution_identity.require()
         await maybe_checkpoint_long_running(
             task,
             checkpoint_store=self._checkpoint_store,
             publish=self._publish_runtime_event,
             notification_adapter=self._notification_adapter,
             progress_message=progress_message,
-            run_id=self._current_run_id,
-            attempt_id=self._current_attempt_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
             plan=plan,
             graph=graph,
             last_execution=last_execution,
@@ -633,6 +636,7 @@ class NexusLoop:
     def _resolve_lifecycle(self, task: Task) -> tuple[TaskLifecycle, TaskTraceEmitter]:
         return resolve_nexus_lifecycle(
             task,
+            execution_identity=self._execution_identity,
             lifecycle=self._lifecycle,
             trace_emitter=self._trace_emitter,
             trace_store=self._trace_store,

@@ -23,7 +23,7 @@ from intergrax.runtime.task.task_run_bridge import (
 )
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
-_CANONICAL_ID = re.compile(r"^(task|run|attempt)_[0-9a-f]{32}$")
+_CANONICAL_ID = re.compile(r"^(task|run|attempt|evt)_[0-9a-f]{32}$")
 
 
 @pytest.mark.unit
@@ -222,8 +222,8 @@ async def test_handle_task_initial_execution_mints_attempt_id(monkeypatch):
     run_id = mint_run_id()
 
     async def _fake_impl(task: Task) -> TaskResult:
-        captured["run_id"] = loop._current_run_id
-        captured["attempt_id"] = loop._current_attempt_id
+        captured["run_id"] = loop._execution_identity.run_id
+        captured["attempt_id"] = loop._execution_identity.attempt_id
         return TaskResult(
             task_id=task.task_id,
             run_id=run_id,
@@ -255,8 +255,8 @@ async def test_handle_task_resume_preserves_run_and_attempt_id(monkeypatch):
     attempt_id = mint_attempt_id()
 
     async def _fake_impl(task: Task) -> TaskResult:
-        captured["run_id"] = loop._current_run_id
-        captured["attempt_id"] = loop._current_attempt_id
+        captured["run_id"] = loop._execution_identity.run_id
+        captured["attempt_id"] = loop._execution_identity.attempt_id
         return TaskResult(
             task_id=task.task_id,
             run_id=run_id,
@@ -317,7 +317,7 @@ def test_multi_agent_evaluation_requires_active_run_id():
 
     loop = NexusLoop(AgentRegistry())
     loop._evaluation_registry = InMemoryOnlineEvaluationRegistry()
-    loop._current_run_id = None
+    loop._execution_identity.run_id = None
     execution = AgentExecutionResult(
         agent_id="a1",
         run_id=mint_run_id(),

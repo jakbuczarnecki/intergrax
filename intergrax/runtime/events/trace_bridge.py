@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Union
 
 from intergrax.contracts.event_severity import EventSeverity
+from intergrax.contracts.execution_identity import AttemptId, RunId, validate_attempt_id, validate_run_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.payload_registry import merge_payload_envelope
 from intergrax.runtime.events.payloads import (
@@ -154,18 +155,22 @@ def _parse_timestamp(ts_utc: str) -> datetime:
 def runtime_event_from_task_state(
     task: Task,
     *,
-    run_id: str,
+    run_id: RunId,
+    attempt_id: AttemptId,
     message: str = "",
     correlation_id: Optional[str] = None,
 ) -> RuntimeEvent:
     from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 
+    validated_run_id = validate_run_id(run_id)
+    validated_attempt_id = validate_attempt_id(attempt_id)
     event_type = _TASK_STATE_TO_EVENT.get(task.state, RuntimeEventType.STEP_STARTED)
     phase = _TASK_STATE_TO_PHASE.get(task.state, ExecutionPhase.STEP_EXECUTION)
     base = RuntimeEvent(
         tenant_id=task.tenant_id,
         task_id=task.task_id,
-        run_id=run_id,
+        run_id=validated_run_id,
+        attempt_id=validated_attempt_id,
         agent_id=task.agent_id,
         event_type=event_type,
         phase=phase,
@@ -396,6 +401,8 @@ def trace_event_to_runtime_event(
     trace: TraceEvent,
     subject: TraceBridgeSubject,
     *,
+    run_id: RunId,
+    attempt_id: AttemptId,
     correlation_id: Optional[str] = None,
     payload_schema_id: Optional[str] = None,
     payload_dict: Optional[Dict[str, Any]] = None,
@@ -443,10 +450,10 @@ def trace_event_to_runtime_event(
         step_id = step_id or extra_payload.get("step_name")
 
     return RuntimeEvent(
-        event_id=f"rt_{trace.event_id}",
         tenant_id=str(trace.tags.get("tenant_id") or subject.tenant_id),
         task_id=str(trace.tags.get("task_id") or subject.task_id),
-        run_id=trace.run_id,
+        run_id=validate_run_id(run_id),
+        attempt_id=validate_attempt_id(attempt_id),
         agent_id=trace.tags.get("agent_id") or subject.agent_id or None,
         node_id=str(node_id) if node_id else None,
         step_id=str(step_id) if step_id else None,

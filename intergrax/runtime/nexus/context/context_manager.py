@@ -36,6 +36,7 @@ from intergrax.runtime.nexus.context.shared_task_context import (
     load_shared_task_context,
     save_shared_task_context,
 )
+from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.hooks.hook_context import HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
@@ -107,6 +108,7 @@ class ContextManager:
         context_orchestrator: Optional["ContextOrchestrator"] = None,
         llm_adapter: Optional["LLMAdapter"] = None,
         middleware: Optional["MiddlewarePipeline"] = None,
+        execution_identity: ActiveExecutionIdentity | None = None,
     ) -> None:
         self._default_policy = default_policy or TaskContextAssemblyOptions(
             max_prior_chars=max_prior_chars,
@@ -119,6 +121,11 @@ class ContextManager:
         self._context_orchestrator = context_orchestrator
         self._llm_adapter = llm_adapter
         self._middleware = middleware
+        self._execution_identity = execution_identity or ActiveExecutionIdentity()
+
+    def _active_run_id(self) -> str:
+        run_id, _ = self._execution_identity.require()
+        return run_id
 
     def bind_middleware(self, middleware: "MiddlewarePipeline") -> None:
         """Attach hook pipeline for graph context assembly (CE-HOOKS-GRAPH)."""
@@ -182,7 +189,7 @@ class ContextManager:
 
         hook_base = HookContext(
             task_id=task.task_id,
-            run_id=task.task_id,
+            run_id=self._active_run_id(),
             node_id=node.node_id,
             agent_id=node.agent_id,
             phase=ExecutionPhase.CONTEXT_BUILDING,
@@ -257,7 +264,7 @@ class ContextManager:
             record_context_assembly(
                 self._event_bus,
                 task_id=task.task_id,
-                run_id=task.task_id,
+                run_id=self._active_run_id(),
                 node_id=node.node_id,
                 agent_id=node.agent_id,
                 trim=trim,
@@ -359,7 +366,7 @@ class ContextManager:
             record_context_assembly(
                 self._event_bus,
                 task_id=task.task_id,
-                run_id=task.task_id,
+                run_id=self._active_run_id(),
                 node_id=node.node_id,
                 agent_id=node.agent_id,
                 trim=trim,

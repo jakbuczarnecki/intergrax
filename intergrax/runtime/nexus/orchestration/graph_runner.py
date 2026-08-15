@@ -107,11 +107,25 @@ class NexusGraphRunner:
 
         async def on_retry(record: RetryRecord) -> None:
             callbacks.on_retry(record)
+            run_id, attempt_id = self.graph_executor.execution_identity.require()
             await self.events.publish(
                 coordinator.scheduled_event_for_agent_retry(
                     task,
-                    run_id=task.task_id,
+                    run_id=run_id,
+                    attempt_id=attempt_id,
                     record=record,
+                ),
+                task=task,
+            )
+            new_attempt_id = self.graph_executor.execution_identity.transition_retry()
+            await self.events.publish(
+                RetryCoordinator.build_started_event(
+                    task,
+                    run_id=run_id,
+                    attempt_id=new_attempt_id,
+                    scope="agent",
+                    retry_ordinal=record.attempt,
+                    reason=record.reason,
                 ),
                 task=task,
             )
@@ -141,12 +155,26 @@ class NexusGraphRunner:
                 error_code=RuntimeErrorCode.VALIDATION_ERROR,
             ):
                 break
+            run_id, attempt_id = self.graph_executor.execution_identity.require()
             await self.events.publish(
                 coordinator.scheduled_event_for_run_retry(
                     task,
-                    run_id=task.task_id,
+                    run_id=run_id,
+                    attempt_id=attempt_id,
                     attempt=run_attempt + 1,
                     error_code=RuntimeErrorCode.VALIDATION_ERROR,
+                ),
+                task=task,
+            )
+            new_attempt_id = self.graph_executor.execution_identity.transition_retry()
+            await self.events.publish(
+                RetryCoordinator.build_started_event(
+                    task,
+                    run_id=run_id,
+                    attempt_id=new_attempt_id,
+                    scope="run",
+                    retry_ordinal=run_attempt + 1,
+                    reason=RuntimeErrorCode.VALIDATION_ERROR.value,
                 ),
                 task=task,
             )

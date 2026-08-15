@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
+from uuid import NAMESPACE_URL, uuid5
+
 from pydantic import Field, JsonValue
 
-from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.execution_identity import AttemptId, RunId, TaskId, mint_attempt_id
 from intergrax.hosting.contracts.context import HostedApplicationEventPublisher
 from intergrax.hosting.contracts.events import (
     HostedApplicationEvent,
@@ -25,6 +27,10 @@ from intergrax.runtime.events.signals import emit_domain_signal
 
 HOSTING_DOMAIN_EVENT_KIND = "applications.hosting.event"
 HOSTING_EVENT_PAYLOAD_SCHEMA_ID = "intergrax.hosting.event.v1"
+
+
+def _hosting_canonical_id(prefix: str, key: str) -> str:
+    return f"{prefix}_{uuid5(NAMESPACE_URL, key).hex}"
 
 
 class HostedApplicationEventPayloadV1(RuntimeEventPayload):
@@ -84,8 +90,9 @@ def build_hosting_emit_context(
     Intergrax application ``Task``.
     """
     return EmitContext(
-        task_id=f"hosting_{event.application_id}",
-        run_id=event.instance_id,
+        task_id=TaskId(_hosting_canonical_id("task", event.application_id)),
+        run_id=RunId(_hosting_canonical_id("run", event.instance_id)),
+        attempt_id=mint_attempt_id(),
         correlation_id=event.correlation_id or event.event_id,
         parent_event_id=event.causation_id or None,
         bus=bus,  # type: ignore[arg-type]

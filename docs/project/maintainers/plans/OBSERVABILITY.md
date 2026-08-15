@@ -56,8 +56,8 @@ Architecture: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md#observabi
 
 | ID | Priority | Status | Goal | Dependency | Acceptance (summary) |
 |----|----------|--------|------|------------|----------------------|
-| **TRACE-1A** | P1 | Planned | Typed `TaskId`/`RunId`/`AttemptId` via `typing.NewType(..., str)`; strict validation; correct mint ownership; `RuntimeRequest.task_id`/`run_id`; remove canonical identity from metadata | TRACE-1 design complete | No `metadata["run_id"]`; no `task_id or run_id` fallbacks; wire strings only on boundary |
-| **TRACE-1B** | P1 | Planned | `AttemptId` through `RuntimeExecutionContext`, `EmitContext`, `RuntimeEvent`; attempt-aware emit paths; `TASK_CREATED` as first journal event in A1 | TRACE-1A | Every canonical `RuntimeEvent` carries `TaskId`, `RunId`, `AttemptId`, `EventId` |
+| **TRACE-1A** | P1 | Done / Closed (`3eee3a860cd852e833fa3f2dd3d190ce9d96de08`) | Typed `TaskId`/`RunId`/`AttemptId` via `typing.NewType(..., str)`; strict validation; correct mint ownership; `RuntimeRequest.task_id`/`run_id`; remove canonical identity from metadata | TRACE-1 design complete | No `metadata["run_id"]`; no `task_id or run_id` fallbacks; wire strings only on boundary |
+| **TRACE-1B** | P1 | Planned / In Review | `AttemptId` through `RuntimeExecutionContext`, `EmitContext`, `RuntimeEvent`; attempt-aware emit paths; `TASK_CREATED` as first journal event in A1 | TRACE-1A | Every canonical `RuntimeEvent` carries `TaskId`, `RunId`, `AttemptId`, `EventId` |
 | **TRACE-1C** | P1 | Planned | **Strict journal + legacy removal:** zero identity fallback in journal build; migrate live code to canonical identity; delete unused legacy aliases/fallbacks/adapters; strict journal reconstruction; no `Any`/dynamic adapters on identity boundary; **no** permanent compatibility layer | TRACE-1B | `build_unified_run_journal` enforces strict contract; legacy aliased identity **removed** from canonical runtime (not merely recognized or flagged) |
 
 ### TRACE-ASOF — First-class as-of projections

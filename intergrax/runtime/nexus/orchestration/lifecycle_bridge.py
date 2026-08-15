@@ -11,6 +11,7 @@ from typing import List, Optional
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.runtime_cost import aggregate_execution_metrics
+from intergrax.contracts.execution_identity import ActiveExecutionIdentity, AttemptId, RunId
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_hook_pair
 from intergrax.runtime.hooks.hook_point import HookPoint
@@ -29,27 +30,35 @@ from intergrax.runtime.task.task_trace import (
 def resolve_nexus_lifecycle(
     task: Task,
     *,
+    execution_identity: ActiveExecutionIdentity,
     lifecycle: Optional[TaskLifecycle],
     trace_emitter: Optional[TaskTraceEmitter],
     trace_store: Optional[RunTraceWriter],
     event_bus: RuntimeEventBus,
 ) -> tuple[TaskLifecycle, TaskTraceEmitter]:
+    run_id, attempt_id = execution_identity.require()
     if lifecycle is not None:
         emitter = trace_emitter or TaskTraceEmitter(
-            run_id=task.task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
             event_bus=event_bus,
         )
         return lifecycle, emitter
     if trace_store is not None:
         return lifecycle_with_persisting_trace(
-            run_id=task.task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
             trace_store=trace_store,
             tenant_id=task.tenant_id,
             user_id=task.user_id,
             session_id=task.session_id or "",
             event_bus=event_bus,
         )
-    return lifecycle_with_trace(run_id=task.task_id, event_bus=event_bus)
+    return lifecycle_with_trace(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_bus=event_bus,
+    )
 
 
 async def finalize_persisting_trace(

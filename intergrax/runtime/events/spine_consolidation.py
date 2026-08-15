@@ -10,6 +10,11 @@ from dataclasses import dataclass
 from typing import Final
 
 from intergrax.contracts.event_severity import EventSeverity
+from intergrax.contracts.execution_identity import (
+    require_active_execution_identity,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_taxonomy import EventCategory, RetentionClass
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
@@ -219,10 +224,15 @@ def build_platform_signal_event(
         raise ValueError(f"unknown platform event_kind: {kind!r}")
     body = dict(payload or {})
     body.setdefault("legacy_spine_type", entry.legacy_spine_value)
+    active_run_id, attempt_id = require_active_execution_identity()
+    resolved_run_id = validate_run_id(run_id)
+    if resolved_run_id != active_run_id:
+        raise RuntimeError("run_id conflicts with active execution identity")
     return RuntimeEvent(
         tenant_id=tenant_id,
-        task_id=task_id,
-        run_id=run_id,
+        task_id=validate_task_id(task_id),
+        run_id=resolved_run_id,
+        attempt_id=attempt_id,
         node_id=node_id,
         agent_id=agent_id,
         step_id=step_id,

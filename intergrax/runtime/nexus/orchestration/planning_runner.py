@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
 from intergrax.contracts.decision_record import DecisionRecord
+from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.reasoning_failure import ReasoningFailureKind
 from intergrax.contracts.validation import ValidationResult
@@ -63,6 +64,7 @@ class NexusPlanningRunner:
     emit_coordination_advisory: bool = False
     denied_planner_model_ids: tuple[str, ...] = ()
     planner_model_id: str | None = None
+    execution_identity: ActiveExecutionIdentity | None = None
 
     async def run(
         self,
@@ -82,10 +84,14 @@ class NexusPlanningRunner:
         if hook_failure is not None:
             return PlanningPhaseOutcome(early_result=hook_failure)
 
+        if self.execution_identity is None:
+            raise RuntimeError("active execution identity required for planning emission")
+        run_id, attempt_id = self.execution_identity.require()
         await self.publish(
             runtime_event_from_task_state(
                 task,
-                run_id=task.task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
                 message="task intake",
             ).model_copy(
                 update={
@@ -271,9 +277,13 @@ class NexusPlanningRunner:
             "decision_record": decision.model_dump(mode="json"),
         }
         plan_payload.update(plan.plan_metadata)
+        run_id, attempt_id = self.execution_identity.require()
         await self.publish(
             runtime_event_from_task_state(
-                task, run_id=task.task_id, message="plan created"
+                task,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                message="plan created",
             ).model_copy(
                 update={
                     "event_type": RuntimeEventType.PLAN_CREATED,

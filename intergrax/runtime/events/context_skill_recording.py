@@ -9,6 +9,14 @@ from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.context.context_budget import ContextTrimResult
 
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    RunId,
+    TaskId,
+    require_active_execution_identity,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
@@ -25,6 +33,15 @@ if TYPE_CHECKING:
     from intergrax.context.contracts import AssembledContext
 
 
+def _canonical_event_identity(*, task_id: str, run_id: str) -> tuple[TaskId, RunId, AttemptId]:
+    active_run_id, attempt_id = require_active_execution_identity()
+    resolved_task_id = validate_task_id(task_id)
+    resolved_run_id = validate_run_id(run_id)
+    if resolved_run_id != active_run_id:
+        raise RuntimeError("run_id conflicts with active execution identity")
+    return resolved_task_id, resolved_run_id, attempt_id
+
+
 def record_skill_resolved(
     bus: RuntimeEventBus,
     *,
@@ -34,6 +51,10 @@ def record_skill_resolved(
     run_id: str = "",
     correlation_id: str = "",
 ) -> None:
+    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+        task_id=task_id,
+        run_id=run_id,
+    )
     typed = SkillResolvedPayloadV1(
         skill_ids=tuple(pack.skill_ids),
         tool_ids=tuple(sorted(pack.tool_ids)),
@@ -44,8 +65,9 @@ def record_skill_resolved(
     bus.record(
         runtime_event_with_payload(
             RuntimeEvent(
-                task_id=task_id or agent_id,
-                run_id=run_id or task_id or agent_id,
+                task_id=resolved_task_id,
+                run_id=resolved_run_id,
+                attempt_id=attempt_id,
                 agent_id=agent_id,
                 event_type=RuntimeEventType.SKILL_RESOLVED,
                 phase=ExecutionPhase.AGENT_SELECTION,
@@ -65,10 +87,17 @@ def record_skill_import_failed(
     run_id: str = "",
     correlation_id: str = "",
 ) -> None:
+    if not task_id or not run_id:
+        raise RuntimeError("task_id and run_id required for skill import failure events")
+    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+        task_id=task_id,
+        run_id=run_id,
+    )
     bus.record(
         RuntimeEvent(
-            task_id=task_id or "skill-import",
-            run_id=run_id or task_id or "skill-import",
+            task_id=resolved_task_id,
+            run_id=resolved_run_id,
+            attempt_id=attempt_id,
             event_type=RuntimeEventType.SKILL_IMPORT_FAILED,
             phase=ExecutionPhase.AGENT_SELECTION,
             correlation_id=correlation_id or source,
@@ -89,6 +118,10 @@ def record_context_candidate_collected(
     engine_id: str = "",
     correlation_id: str = "",
 ) -> None:
+    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+        task_id=task_id,
+        run_id=run_id,
+    )
     typed = ContextCandidatePayloadV1(
         provider_id=provider_id,
         fragment_count=fragment_count,
@@ -97,8 +130,9 @@ def record_context_candidate_collected(
     bus.record(
         runtime_event_with_payload(
             RuntimeEvent(
-                task_id=task_id,
-                run_id=run_id,
+                task_id=resolved_task_id,
+                run_id=resolved_run_id,
+                attempt_id=attempt_id,
                 node_id=node_id,
                 agent_id=agent_id,
                 event_type=RuntimeEventType.CONTEXT_CANDIDATE_COLLECTED,
@@ -127,6 +161,10 @@ def record_context_candidate_dropped(
     engine_id: str = "",
     correlation_id: str = "",
 ) -> None:
+    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+        task_id=task_id,
+        run_id=run_id,
+    )
     typed = ContextCandidatePayloadV1(
         provider_id=provider_id,
         fragment_count=1,
@@ -136,8 +174,9 @@ def record_context_candidate_dropped(
     bus.record(
         runtime_event_with_payload(
             RuntimeEvent(
-                task_id=task_id,
-                run_id=run_id,
+                task_id=resolved_task_id,
+                run_id=resolved_run_id,
+                attempt_id=attempt_id,
                 node_id=node_id,
                 agent_id=agent_id,
                 event_type=RuntimeEventType.CONTEXT_CANDIDATE_DROPPED,
@@ -166,6 +205,10 @@ def record_context_validation_failed(
     engine_id: str = "",
     correlation_id: str = "",
 ) -> None:
+    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+        task_id=task_id,
+        run_id=run_id,
+    )
     typed = ValidationPayloadV1(
         valid=False,
         error_count=len(errors),
@@ -175,8 +218,9 @@ def record_context_validation_failed(
     bus.record(
         runtime_event_with_payload(
             RuntimeEvent(
-                task_id=task_id,
-                run_id=run_id,
+                task_id=resolved_task_id,
+                run_id=resolved_run_id,
+                attempt_id=attempt_id,
                 node_id=node_id,
                 agent_id=agent_id,
                 event_type=RuntimeEventType.CONTEXT_VALIDATION_FAILED,
@@ -207,6 +251,10 @@ def record_context_assembly(
     step_kind: str | None = None,
     emit_assembled: bool = True,
 ) -> None:
+    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+        task_id=task_id,
+        run_id=run_id,
+    )
     base_payload: dict[str, Any] = {
         "node_id": node_id,
         "summary_tier": metadata.get("summary_tier"),
@@ -219,8 +267,9 @@ def record_context_assembly(
             runtime_event_with_payload(
                 RuntimeEvent(
                     tenant_id=metadata.get("tenant_id") if isinstance(metadata.get("tenant_id"), str) else None,
-                    task_id=task_id,
-                    run_id=run_id,
+                    task_id=resolved_task_id,
+                    run_id=resolved_run_id,
+                    attempt_id=attempt_id,
                     node_id=node_id,
                     agent_id=agent_id,
                     event_type=RuntimeEventType.CONTEXT_ASSEMBLED,
@@ -246,8 +295,9 @@ def record_context_assembly(
         bus.record(
             runtime_event_with_payload(
                 RuntimeEvent(
-                    task_id=task_id,
-                    run_id=run_id,
+                    task_id=resolved_task_id,
+                    run_id=resolved_run_id,
+                    attempt_id=attempt_id,
                     node_id=node_id,
                     agent_id=agent_id,
                     event_type=RuntimeEventType.CONTEXT_TRIMMED,
@@ -284,6 +334,12 @@ def record_context_assembled_from_engine(
     step_kind: str | None = None,
 ) -> None:
     """Record CONTEXT_ASSEMBLED with per-fragment cost attribution (CE-MAINT-02)."""
+    if not run_id:
+        raise RuntimeError("run_id required for context assembled events")
+    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+        task_id=task_id,
+        run_id=run_id,
+    )
     from intergrax.context.tracking.assembly_cost import assembly_cost_from_assembled
 
     original_chars = sum(len(fragment.content) for fragment in assembled.fragments_included)
@@ -300,8 +356,9 @@ def record_context_assembled_from_engine(
     bus.record(
         runtime_event_with_payload(
             RuntimeEvent(
-                task_id=task_id,
-                run_id=run_id or task_id,
+                task_id=resolved_task_id,
+                run_id=resolved_run_id,
+                attempt_id=attempt_id,
                 node_id=node_id,
                 agent_id=agent_id,
                 event_type=RuntimeEventType.CONTEXT_ASSEMBLED,

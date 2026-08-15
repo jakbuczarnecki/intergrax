@@ -8,11 +8,21 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, Optional
-from uuid import uuid4
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from intergrax.contracts.event_severity import EventSeverity
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    EventId,
+    RunId,
+    TaskId,
+    mint_event_id,
+    validate_attempt_id,
+    validate_event_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_taxonomy import EventCategory, category_for_event_kind
 
@@ -77,10 +87,11 @@ class RuntimeEventType(str, Enum):
 
 
 class RuntimeEvent(BaseModel):
-    event_id: str = Field(default_factory=lambda: f"evt_{uuid4().hex}")
+    event_id: EventId = Field(default_factory=mint_event_id)
     tenant_id: Optional[str] = None
-    task_id: str
-    run_id: str
+    task_id: TaskId
+    run_id: RunId
+    attempt_id: AttemptId
     node_id: Optional[str] = None
     agent_id: Optional[str] = None
     step_id: Optional[str] = None
@@ -93,10 +104,37 @@ class RuntimeEvent(BaseModel):
     payload: Dict[str, Any] = Field(default_factory=dict)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     correlation_id: str = ""
-    parent_event_id: Optional[str] = None
+    parent_event_id: EventId | None = None
     traceparent: Optional[str] = None
     tracestate: Optional[str] = None
     schema_version: str = "runtime_event.v1"
+
+    @field_validator("event_id", mode="before")
+    @classmethod
+    def _validate_event_id_field(cls, value: object) -> EventId:
+        return validate_event_id(value)
+
+    @field_validator("task_id", mode="before")
+    @classmethod
+    def _validate_task_id_field(cls, value: object) -> TaskId:
+        return validate_task_id(value)
+
+    @field_validator("run_id", mode="before")
+    @classmethod
+    def _validate_run_id_field(cls, value: object) -> RunId:
+        return validate_run_id(value)
+
+    @field_validator("attempt_id", mode="before")
+    @classmethod
+    def _validate_attempt_id_field(cls, value: object) -> AttemptId:
+        return validate_attempt_id(value)
+
+    @field_validator("parent_event_id", mode="before")
+    @classmethod
+    def _validate_parent_event_id_field(cls, value: object | None) -> EventId | None:
+        if value is None:
+            return None
+        return validate_event_id(value)
 
     @field_validator("traceparent")
     @classmethod
@@ -119,13 +157,6 @@ class RuntimeEvent(BaseModel):
         if not is_valid_tracestate(value):
             raise ValueError(f"invalid W3C tracestate: {value!r}")
         return value.strip()
-
-    @model_validator(mode="before")
-    @classmethod
-    def _migrate_legacy_spine(cls, data: Any) -> Any:
-        from intergrax.runtime.events.spine_consolidation import migrate_legacy_spine_payload
-
-        return migrate_legacy_spine_payload(data)
 
     def model_post_init(self, __context: Any) -> None:
         from intergrax.runtime.events.event_catalog import get_catalog_entry
