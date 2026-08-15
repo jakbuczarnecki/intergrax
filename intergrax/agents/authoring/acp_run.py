@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import time
 from typing import Any
-from uuid import uuid4
 
 from intergrax.agents.authoring.acp_session_host import (
     ACP_HOST_CONTEXT_KEY,
@@ -90,6 +89,30 @@ def _resolve_acp_session_identity(request: AgentRunRequest) -> tuple[TaskId, Run
     return task_id, run_id, mint_attempt_id()
 
 
+def _malformed_identity_failure(
+    request: AgentRunRequest,
+    exc: TypeError | ValueError,
+    *,
+    started: float,
+) -> AgentRunResult:
+    """Terminal ingress failure — do not publish malformed or replacement execution identity."""
+    trace_id = str(request.metadata.get("trace_id") or "")
+    return AgentRunResult(
+        run_id="",
+        trace_id=trace_id,
+        status=AgentRunStatus.FAILED,
+        terminal_reason=TerminalReason.ERROR,
+        errors=[
+            AgentRunError(
+                code=AgentRunErrorCode.INTERNAL_ERROR,
+                message=f"malformed execution identity: {exc}",
+            ),
+        ],
+        trace=AgentRunTrace(),
+        duration_ms=int((time.perf_counter() - started) * 1000),
+    )
+
+
 def _host_context_from_metadata(metadata: dict[str, Any]) -> ACPSessionHostContext | None:
     raw = metadata.get(ACP_HOST_CONTEXT_KEY)
     if isinstance(raw, ACPSessionHostContext):
@@ -128,6 +151,11 @@ async def run_acp_session(
 ) -> AgentRunResult:
     """Execute typed agent session loop until terminal outcome."""
     started = time.perf_counter()
+    try:
+        task_id, run_id, attempt_id = _resolve_acp_session_identity(request)
+    except (TypeError, ValueError) as exc:
+        return _malformed_identity_failure(request, exc, started=started)
+
     contract = agent.get_contract()
     host = _host_context_from_metadata(request.metadata)
     base_merged = merge_environment(
@@ -146,10 +174,6 @@ async def run_acp_session(
             configure_run_overlay=overlay,
         )
     except ConfigureRunStrictViolation as exc:
-        try:
-            _, run_id, _ = _resolve_acp_session_identity(request)
-        except (TypeError, ValueError):
-            run_id = mint_run_id()
         trace_id = str(request.metadata.get("trace_id") or run_id)
         return AgentRunResult(
             run_id=str(run_id),
@@ -164,27 +188,6 @@ async def run_acp_session(
                 ),
             ],
             trace=AgentRunTrace(run_id=str(run_id)),
-            duration_ms=int((time.perf_counter() - started) * 1000),
-        )
-
-    try:
-        task_id, run_id, attempt_id = _resolve_acp_session_identity(request)
-    except (TypeError, ValueError) as exc:
-        fallback_run = str(
-            request.metadata.get("run_id") or request.correlation_id or f"run_{uuid4().hex}"
-        )
-        return AgentRunResult(
-            run_id=fallback_run,
-            trace_id=str(request.metadata.get("trace_id") or fallback_run),
-            status=AgentRunStatus.FAILED,
-            terminal_reason=TerminalReason.ERROR,
-            errors=[
-                AgentRunError(
-                    code=AgentRunErrorCode.INTERNAL_ERROR,
-                    message=f"malformed execution identity: {exc}",
-                ),
-            ],
-            trace=AgentRunTrace(run_id=fallback_run),
             duration_ms=int((time.perf_counter() - started) * 1000),
         )
 
