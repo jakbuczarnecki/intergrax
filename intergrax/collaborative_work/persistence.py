@@ -4,9 +4,19 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
+from intergrax.collaborative_work.postgresql_repository import (
+    PostgreSQLAuthorityDelegationRepository,
+    PostgreSQLCollaborativeOperationPolicyProfileRepository,
+    PostgreSQLCollaborativePolicyRepository,
+    PostgreSQLCollaborativeWorkStore,
+    PostgreSQLPrincipalAuthorityRepository,
+    PostgreSQLWorkspaceMembershipRepository,
+)
 from intergrax.collaborative_work.repository import (
     AuthorityDelegationRepository,
     CollaborativeOperationPolicyProfileRepository,
@@ -15,12 +25,16 @@ from intergrax.collaborative_work.repository import (
     WorkspaceMembershipRepository,
 )
 from intergrax.collaborative_work.sqlite_repository import (
-    SQLiteCollaborativeWorkStore,
     SQLiteAuthorityDelegationRepository,
     SQLiteCollaborativeOperationPolicyProfileRepository,
     SQLiteCollaborativePolicyRepository,
+    SQLiteCollaborativeWorkStore,
     SQLitePrincipalAuthorityRepository,
     SQLiteWorkspaceMembershipRepository,
+)
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.relational_store.postgresql.config import (
+    PostgreSQLIntegrationConfig,
 )
 
 
@@ -33,7 +47,7 @@ class CollaborativeWorkRepositories:
     principal_authority: PrincipalAuthorityRepository
     policy: CollaborativePolicyRepository
     operation_profile: CollaborativeOperationPolicyProfileRepository
-    store: SQLiteCollaborativeWorkStore
+    store: SQLiteCollaborativeWorkStore | PostgreSQLCollaborativeWorkStore
 
     def close(self) -> None:
         self.store.close()
@@ -50,5 +64,35 @@ def open_sqlite_collaborative_work_repositories(db_path: str) -> CollaborativeWo
         principal_authority=SQLitePrincipalAuthorityRepository(store),
         policy=SQLiteCollaborativePolicyRepository(store),
         operation_profile=SQLiteCollaborativeOperationPolicyProfileRepository(store),
+        store=store,
+    )
+
+
+def open_postgresql_collaborative_work_repositories(
+    *,
+    config: PostgreSQLIntegrationConfig | None = None,
+    connection_factory: Callable[[], Any] | None = None,
+    schema_name: str | None = None,
+) -> CollaborativeWorkRepositories:
+    """Open production-grade Collaborative Work repositories backed by PostgreSQL."""
+    resolved = config or PostgreSQLIntegrationConfig.from_env()
+    try:
+        store = PostgreSQLCollaborativeWorkStore(
+            resolved,
+            connection_factory=connection_factory,
+            schema_name=schema_name,
+        )
+    except IntegrationConfigurationError:
+        raise
+    except Exception as exc:
+        raise IntegrationConfigurationError(
+            "PostgreSQL Collaborative Work repositories could not be opened"
+        ) from exc
+    return CollaborativeWorkRepositories(
+        membership=PostgreSQLWorkspaceMembershipRepository(store),
+        delegation=PostgreSQLAuthorityDelegationRepository(store),
+        principal_authority=PostgreSQLPrincipalAuthorityRepository(store),
+        policy=PostgreSQLCollaborativePolicyRepository(store),
+        operation_profile=PostgreSQLCollaborativeOperationPolicyProfileRepository(store),
         store=store,
     )

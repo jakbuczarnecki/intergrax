@@ -19,6 +19,7 @@ _SCOPED_PRODUCTION_FILES = (
     "intergrax/collaborative_work/repository.py",
     "intergrax/collaborative_work/in_memory_repository.py",
     "intergrax/collaborative_work/sqlite_repository.py",
+    "intergrax/collaborative_work/postgresql_repository.py",
     "intergrax/collaborative_work/persistence.py",
     "intergrax/collaborative_work/authority.py",
     "intergrax/collaborative_work/policy_source.py",

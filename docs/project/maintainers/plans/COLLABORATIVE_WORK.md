@@ -5,7 +5,7 @@
 **Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md)
 
-**Status:** Domain registered — **MP-1 core runtime CLOSED pending final review**
+**Status:** Domain registered — **MP-1 core — production persistence gate OPEN** (final review pending)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -202,6 +202,21 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Authority semantics; LKW integration; MP-2+; Alembic/SQLAlchemy |
 | **Acceptance** | Migrated schema matches fresh constraints; duplicates fail closed; original legacy table intact on failure; reopen is idempotent |
 | **Proof requirements** | `tests/unit/collaborative_work/test_sqlite_membership_migration.py`; repository, canonical membership, authority, typed-wiring, vendor-neutrality regressions |
+| **Next step** | MP-1 CORE FINAL REVIEW |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1J |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | PostgreSQL durable backend and production parity — cross-process transactional concurrency proof |
+| **Dependencies** | COLLAB-WORK-1H durable SQLite adapter; platform PostgreSQL integration (`psycopg`, `PostgreSQLIntegrationConfig`) |
+| **Exact scope** | `PostgreSQLCollaborativeWorkStore` + typed repositories for all MP-1 authoritative ports; `open_postgresql_collaborative_work_repositories`; real PostgreSQL parity/concurrency/integration tests |
+| **REUSED** | Repository ports; serialization; SQLite semantic reference; `infra/docker/postgresql/docker-compose.yml` |
+| **NEW** | Production PostgreSQL adapter; schema constraints/indexes; multi-connection CAS/uniqueness/idempotency proofs; CW-INV-19 |
+| **Explicit out of scope** | LKW integration; MP-2+; Alembic unless platform canon changes; CI platform redesign |
+| **Acceptance** | Semantic parity with InMemory/SQLite; real PostgreSQL tests pass; no production fallback to SQLite; vendor neutrality and typed-wiring gates hold |
+| **Proof requirements** | `tests/integration/collaborative_work/test_postgresql_repository.py`; repository/authority/enforcement/typed-wiring/vendor-neutrality regressions |
 | **Next step** | MP-1 CORE FINAL REVIEW |
 
 ---

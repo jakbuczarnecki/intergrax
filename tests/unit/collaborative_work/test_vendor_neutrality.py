@@ -23,6 +23,9 @@ _DOMAIN_FILES = (
     _REPO_ROOT / "intergrax" / "collaborative_work" / "authority.py",
     _REPO_ROOT / "intergrax" / "collaborative_work" / "policy_source.py",
 )
+_ADAPTER_FILES = (
+    _REPO_ROOT / "intergrax" / "collaborative_work" / "postgresql_repository.py",
+)
 _FORBIDDEN_IMPORT_PREFIXES = (
     "boto3",
     "psycopg",
@@ -51,6 +54,13 @@ def test_domain_core_imports_no_database_or_observability_vendors() -> None:
     for path in _DOMAIN_FILES:
         imported |= _import_names(path)
     assert not imported.intersection(_FORBIDDEN_IMPORT_PREFIXES)
+
+
+def test_postgresql_imports_limited_to_adapter_layer() -> None:
+    imported = _import_names(_ADAPTER_FILES[0])
+    assert "psycopg" in imported or "psycopg" in {
+        name.split(".")[0] for name in imported
+    }
 
 
 def test_durable_adapter_is_replaceable_behind_port(tmp_path: Path) -> None:
