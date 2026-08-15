@@ -30,7 +30,7 @@ from intergrax.hosting.engine.definition import (
 from intergrax.hosting.engine.engine import HostedApplicationEngine
 from intergrax.hosting.engine.ports import HostedApplicationInstanceGuardPort
 from intergrax.hosting.errors import HostedApplicationConfigurationError, HostedApplicationInstanceOwnershipError
-from intergrax.hosting.eventing import RuntimeSpineHostedApplicationEventPublisher
+from intergrax.hosting.eventing import ObservabilityHostedApplicationEventPublisher
 from intergrax.hosting.instance.contracts import (
     HostedApplicationInstanceAcquisitionResult,
     HostedApplicationInstanceIdentity,
@@ -197,7 +197,7 @@ def _default_runner_factories() -> _RunnerFactories:
         create_clock=_SystemWallClock,
         create_monotonic_clock=SystemMonotonicClock,
         create_logger=lambda application_id: _StandardHostedApplicationLogger(application_id),
-        create_event_publisher=RuntimeSpineHostedApplicationEventPublisher,
+        create_event_publisher=ObservabilityHostedApplicationEventPublisher,
         create_process_identity=lambda clock: HostedApplicationProcessIdentity(
             process_id=os.getpid(),
             started_at=clock.now(),

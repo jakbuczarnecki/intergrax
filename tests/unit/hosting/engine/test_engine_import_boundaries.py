@@ -20,9 +20,7 @@ _FORBIDDEN_FRAGMENTS = (
     "nexus_loop",
 )
 
-_RUNTIME_SPINE_ALLOWED = (
-    "intergrax.hosting.eventing",
-)
+_RUNTIME_SPINE_ALLOWED: tuple[str, ...] = ()
 
 
 def test_engine_modules_do_not_import_forbidden_packages() -> None:
@@ -46,6 +44,6 @@ def test_public_engine_exports_present() -> None:
         "HostedApplicationRuntime",
         "HostedApplicationDefinition",
         "resolve_hosted_application_definition",
-        "RuntimeSpineHostedApplicationEventPublisher",
+        "ObservabilityHostedApplicationEventPublisher",
     ):
         assert hasattr(hosting, name)

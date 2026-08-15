@@ -1,22 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Hosting event dispatcher and runtime event-spine bridge (APP-HOST-3B)."""
+"""Hosting event dispatcher and platform observability export bridge (TRACE-1B-HOS-FIX)."""
 
 from __future__ import annotations
 
-from uuid import NAMESPACE_URL, uuid5
-
-from pydantic import Field, JsonValue
-
-from intergrax.contracts.execution_identity import (
-    EventId,
-    RunId,
-    TaskId,
-    mint_attempt_id,
-    validate_event_id,
-)
-from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.hosting.contracts.context import HostedApplicationEventPublisher
 from intergrax.hosting.contracts.events import (
     HostedApplicationEvent,
@@ -26,112 +14,73 @@ from intergrax.hosting.engine.callbacks import invoke_callback
 from intergrax.hosting.engine.definition import ResolvedEventSubscription
 from intergrax.hosting.engine.diagnostics import DiagnosticsRecorder, HostedApplicationFailurePhase
 from intergrax.hosting.engine.observer_tasks import ObserverTaskRegistry
-from intergrax.runtime.events.emit_context import EmitContext
-from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.events.event_kind_registry import register_event_kind
-from intergrax.runtime.events.payload_registry import register_payload_schema
-from intergrax.runtime.events.payloads.base import RuntimeEventPayload
-from intergrax.runtime.events.signals import emit_domain_signal
-
-HOSTING_DOMAIN_EVENT_KIND = "applications.hosting.event"
-HOSTING_EVENT_PAYLOAD_SCHEMA_ID = "intergrax.hosting.event.v1"
-
-
-def _hosting_canonical_id(prefix: str, key: str) -> str:
-    return f"{prefix}_{uuid5(NAMESPACE_URL, key).hex}"
+from intergrax.runtime.observability.export_attributes import ApplicationObservabilityAttributes
+from intergrax.runtime.observability.export_boundary import (
+    NoOpObservabilityExporter,
+    ObservabilityExporter,
+    PlatformObservabilityExportSource,
+    envelope_from_platform_observability_source,
+)
+from intergrax.runtime.observability.export_policy import (
+    ObservabilityExportPolicy,
+    try_export_observability_envelope,
+)
 
 
-class HostedApplicationEventPayloadV1(RuntimeEventPayload):
-    """Typed runtime payload preserving the safe hosting event envelope."""
+class HostingObservabilityAttributes(ApplicationObservabilityAttributes):
+    """Typed safe hosting metadata for platform observability export."""
 
-    schema_id = HOSTING_EVENT_PAYLOAD_SCHEMA_ID
-
-    hosted_event_id: str
-    hosted_event_schema_id: str
-    hosted_event_schema_version: str
-    hosted_event_type: str
-    occurred_at: str
+    namespace: str = "hosting"
     application_id: str
     instance_id: str
     lifecycle_state: str
     severity: str
-    correlation_id: str = ""
+    occurred_at: str
     causation_id: str = ""
-    safe_payload: dict[str, JsonValue] = Field(default_factory=dict)
-
-    def redact(self) -> HostedApplicationEventPayloadV1:
-        return self
 
 
-def register_hosting_domain_signal() -> None:
-    """Register hosting payload schema and domain event kind (idempotent)."""
-    register_payload_schema(HostedApplicationEventPayloadV1, extension=True)
-    register_event_kind(HOSTING_DOMAIN_EVENT_KIND, HOSTING_EVENT_PAYLOAD_SCHEMA_ID)
-
-
-def hosted_event_to_payload(event: HostedApplicationEvent) -> HostedApplicationEventPayloadV1:
-    return HostedApplicationEventPayloadV1(
-        hosted_event_id=event.event_id,
-        hosted_event_schema_id=event.schema_id,
-        hosted_event_schema_version=event.schema_version,
-        hosted_event_type=event.event_type.value,
-        occurred_at=event.occurred_at.isoformat(),
+def hosted_event_to_platform_export_source(
+    event: HostedApplicationEvent,
+) -> PlatformObservabilityExportSource:
+    """Project a hosting authoring envelope to a typed non-execution export source."""
+    attributes = HostingObservabilityAttributes(
         application_id=event.application_id,
         instance_id=event.instance_id,
         lifecycle_state=event.lifecycle_state.value,
         severity=event.severity.value,
-        correlation_id=event.correlation_id,
+        occurred_at=event.occurred_at.isoformat(),
         causation_id=event.causation_id,
-        safe_payload=dict(event.payload),
     )
-
-
-def build_hosting_emit_context(
-    event: HostedApplicationEvent,
-    bus: RuntimeEventBus | None,
-    *,
-    production_mode: bool = False,
-) -> EmitContext:
-    """Build synthetic spine correlation fields for hosting domain signals.
-
-    The synthetic ``task_id`` is a legacy spine correlation field and is not an
-    Intergrax application ``Task``.
-    """
-    parent_event_id: EventId | None = (
-        validate_event_id(event.causation_id) if event.causation_id else None
-    )
-    return EmitContext(
-        task_id=TaskId(_hosting_canonical_id("task", event.application_id)),
-        run_id=RunId(_hosting_canonical_id("run", event.instance_id)),
-        attempt_id=mint_attempt_id(),
+    return PlatformObservabilityExportSource(
+        event_id=event.event_id,
+        source_schema_id=event.schema_id,
+        event_type=event.event_type.value,
+        occurred_at=event.occurred_at,
         correlation_id=event.correlation_id or event.event_id,
-        parent_event_id=parent_event_id,
-        bus=bus,
-        production_mode=production_mode,
+        application_attributes=attributes,
     )
 
 
-class RuntimeSpineHostedApplicationEventPublisher:
-    """Publish hosting events through the existing runtime event spine."""
+class ObservabilityHostedApplicationEventPublisher:
+    """Publish hosting events through the existing observability export path."""
 
-    def __init__(self, bus: RuntimeEventBus | None = None, *, production_mode: bool = False) -> None:
-        register_hosting_domain_signal()
-        self._bus = bus
-        self._production_mode = production_mode
+    def __init__(
+        self,
+        exporter: ObservabilityExporter | None = None,
+        *,
+        policy: ObservabilityExportPolicy | None = None,
+    ) -> None:
+        self._exporter = exporter or NoOpObservabilityExporter()
+        self._policy = policy or ObservabilityExportPolicy()
 
     async def publish(self, event: HostedApplicationEvent) -> None:
-        payload = hosted_event_to_payload(event)
-        ctx = build_hosting_emit_context(event, self._bus, production_mode=self._production_mode)
-        try:
-            emit_domain_signal(
-                ctx,
-                kind=HOSTING_DOMAIN_EVENT_KIND,
-                payload=payload,
-                severity=event.severity,
-                phase=ExecutionPhase.APPLICATION_HOSTING,
-            )
-        except Exception as exc:
-            raise RuntimeError("hosting spine publication failed") from exc
+        source = hosted_event_to_platform_export_source(event)
+        envelope = envelope_from_platform_observability_source(source)
+        await try_export_observability_envelope(
+            envelope,
+            exporter=self._exporter,
+            policy=self._policy,
+        )
 
 
 class HostingEventDispatcher:
