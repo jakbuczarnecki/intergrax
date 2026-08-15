@@ -19,6 +19,7 @@ from intergrax.core.plugins.discovery import (
     load_entry_point_value,
     load_plugin_types,
     register_plugins,
+    resolve_entry_point_plugin_type,
 )
 from intergrax.core.plugins.errors import (
     PlatformPluginContractError,
@@ -113,4 +114,5 @@ __all__ = [
     "parse_platform_plugin_pyproject_toml",
     "register_plugins",
     "require_production_qualification",
+    "resolve_entry_point_plugin_type",
 ]

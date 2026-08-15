@@ -8,7 +8,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from typing import Optional
 
-from intergrax.applications._shared.entity_graph_wiring import resolve_entity_graph_memory_store
+from intergrax.core.plugins.admission import DomainPluginLoadReport
+from intergrax.core.plugins.discovery import EP_MEMORY_STORES
 from intergrax.applications._shared.memory_vector_wiring import (
     build_session_turn_index_store,
     build_user_profile_manager,
@@ -34,14 +35,19 @@ from intergrax.runtime.nexus.session.document_store_session_storage import Docum
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
-from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
-from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
 from intergrax.memory.resolver import (
     MemoryStoreMaterializationContext,
     MemoryStorePluginResolutionError,
     materialize_session_storage,
     materialize_user_profile_store,
 )
+from intergrax.memory.resolver.discovery import (
+    MemoryStorePluginCatalog,
+    discover_classified_memory_store_plugins,
+)
+from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
+from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
+from intergrax.applications._shared.entity_graph_wiring import resolve_entity_graph_memory_store
 
 
 @dataclass(frozen=True)
@@ -55,6 +61,9 @@ class MemoryPlatformWiring:
     sqlite_bundle: SQLiteIntegrationBundle | None = None
     mongodb_bundle: MongoDBIntegrationBundle | None = None
     entity_graph_store: object | None = None
+    memory_store_plugin_load_report: DomainPluginLoadReport = DomainPluginLoadReport.empty(
+        EP_MEMORY_STORES
+    )
 
 
 def _sqlite_enabled(profile: IntegrationProfile) -> bool:
@@ -154,6 +163,12 @@ def _apply_external_memory_store_overlay(
             "or explicit_memory_plugins candidates"
         )
 
+    discovery = discover_classified_memory_store_plugins(
+        discover_entry_points=discover_entry_points,
+        explicit_plugins=explicit_memory_plugins,
+    )
+    catalog = MemoryStorePluginCatalog.from_discovery(discovery)
+
     materialization_ctx = MemoryStoreMaterializationContext(
         env=env,
         tenant_id=tenant_id,
@@ -164,19 +179,17 @@ def _apply_external_memory_store_overlay(
         user_profile_store = materialize_user_profile_store(
             user_plugin_id,
             materialization_ctx,
-            discover_entry_points=discover_entry_points,
-            explicit_plugins=explicit_memory_plugins,
+            catalog=catalog,
         )
         updated = replace(updated, user_profile_store=user_profile_store)
     if session_plugin_id is not None:
         session_storage = materialize_session_storage(
             session_plugin_id,
             materialization_ctx,
-            discover_entry_points=discover_entry_points,
-            explicit_plugins=explicit_memory_plugins,
+            catalog=catalog,
         )
         updated = replace(updated, session_storage=session_storage)
-    return updated
+    return replace(updated, memory_store_plugin_load_report=catalog.load_report)
 
 
 def resolve_memory_platform_wiring(

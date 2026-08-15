@@ -275,6 +275,9 @@ result = bootstrap_memory_stores(
 - Classifies each loaded class via typed `MemoryStorePluginKind` classifier (Protocol conformance — no method-shape `hasattr`)
 - Returns **counts** (discovered + explicit sequences)
 - Exposes `discover_classified_memory_store_plugins()` for resolver/registry construction
+- Returns `MemoryStorePluginDiscoveryResult` with canonical `DomainPluginLoadReport` EP evidence (`accepted`, `rejected`, `failed`, `registered_count`)
+- Isolated EP import/factory failures are recorded in `failed`; unsupported loaded targets in `rejected`
+- Explicit/local candidates use the same classifier/resolver path with empty EP evidence rows (no fabricated accepted EP metadata)
 
 ### What it does NOT do
 
@@ -328,11 +331,11 @@ MemoryProfile.user_profile_store_plugin_id / session_storage_plugin_id (optional
   → resolve_memory_platform_wiring(env, discover_entry_points=…, explicit_memory_plugins=…)
       → discover_classified_memory_store_plugins (EP discovery)
         OR explicit_memory_plugins candidates (local delivery)
-      → materialize_user_profile_store(plugin_id, ctx, …)
-        / materialize_session_storage(plugin_id, ctx, …)
+      → materialize_user_profile_store(plugin_id, ctx, catalog=…)
+        / materialize_session_storage(plugin_id, ctx, catalog=…)
       → MemoryStoreMaterializationContext (tenant_id, integration_profile, …)
   → IntegrationProfile baseline (SQLite / MongoDB / in-memory) for unselected slots
-  → MemoryPlatformWiring(session_storage, user_profile_store, …)
+  → MemoryPlatformWiring(session_storage, user_profile_store, memory_store_plugin_load_report, …)
   → build_session_manager_from_environment(env, memory_wiring=wiring, tenant_id=…, rag_stack=…)
 ```
 
@@ -426,6 +429,8 @@ assert result.user_profile_plugins == 1
 | Symptom | Check |
 |---------|-------|
 | EP installed but store unchanged | No `plugin_id` on `MemoryProfile`; discovery disabled; check `INTERGRAX_DISCOVER_PLUGINS` |
+| Selected plugin fails to load | Inspect `MemoryPlatformWiring.memory_store_plugin_load_report.failed`; selected id fails closed with precise error |
+| Unsupported EP target | Appears in `memory_store_plugin_load_report.rejected`; materialized stores validated via canonical `UserProfileStore` / `SessionStorage` |
 | Bootstrap count > 0 but no effect | Bootstrap only counts — configure profile `plugin_id` or explicit wiring (§9) |
 | Episodic index always default | No turn-index EP discovered; pass `session_turn_index_plugins=` explicitly |
 | `tenant_required` | Pass non-empty `tenant_id` to session manager wiring |

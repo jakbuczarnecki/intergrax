@@ -4,11 +4,12 @@
 
 from __future__ import annotations
 
-from typing import Protocol, Optional, List
+from typing import List, Optional, Protocol, runtime_checkable
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.session.chat_session import ChatSession
 
 
+@runtime_checkable
 class SessionStorage(Protocol):
     """
     Low-level storage interface for chat sessions and their conversation
