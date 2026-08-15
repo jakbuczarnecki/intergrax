@@ -238,6 +238,7 @@ class NexusGraphRunner:
                     executions[-1],
                     contract=final_contract,
                     hooks=self.critic_graph_hooks,
+                    task_id=task.task_id,
                     run_id=active_run_id,
                     tenant_id=task.tenant_id,
                     capability=task.context.capability,

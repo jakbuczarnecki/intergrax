@@ -9,8 +9,7 @@ from datetime import datetime, timezone
 from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
 from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
 from intergrax.contracts.execution_identity import (
-    mint_attempt_id,
-    peek_active_execution_identity,
+    require_active_execution_identity,
     validate_run_id,
     validate_task_id,
 )
@@ -55,16 +54,13 @@ def record_acp_routing_rule_evaluation(
         task_id=resolved_task_id,
         agent_id=kernel_ctx.agent_id,
     )
-    active_identity = peek_active_execution_identity()
-    if active_identity is not None:
-        event_run_id, attempt_id = active_identity
-    else:
-        event_run_id = resolved_run_id
-        attempt_id = mint_attempt_id()
+    active_run_id, attempt_id = require_active_execution_identity()
+    if validate_run_id(kernel_ctx.run_id) != active_run_id:
+        raise RuntimeError("kernel run_id conflicts with active execution identity")
     event = trace_event_to_runtime_event(
         trace,
         task,
-        run_id=event_run_id,
+        run_id=active_run_id,
         attempt_id=attempt_id,
         payload_schema_id=LLMRoutingRuleDiagV1.schema_id(),
         payload_dict=diag.to_dict(),

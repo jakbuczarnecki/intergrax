@@ -7,6 +7,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.execution_identity import bind_active_execution_identity, mint_attempt_id, mint_run_id
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.critic.contracts import CriticScope, CriticVerdict, LayerVerdict, CriticLayer
@@ -82,11 +83,14 @@ def test_validate_node_with_critic_delegates_to_orchestrator() -> None:
         status=AgentExecutionStatus.COMPLETED,
         summary="ok",
     )
+    run_id = mint_run_id()
+    task = Task(tenant_id="tenant-1", user_id="u1", message="ok")
     first = validate_node_with_critic(
         execution,
         contract=contract,
         hooks=hooks,
-        run_id="run-1",
+        task_id=task.task_id,
+        run_id=run_id,
         tenant_id="tenant-1",
     )
     assert first.valid is False
@@ -131,7 +135,15 @@ async def test_graph_executor_critic_partial_l0_fail_triggers_retry() -> None:
         critic_graph_hooks=hooks,
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=1)),
     )
-    executions, retries, graph_out, _ = await executor.execute(graph, task)
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        executions, retries, graph_out, _ = await executor.execute(graph, task)
+    finally:
+        from intergrax.contracts.execution_identity import reset_active_execution_identity
+
+        reset_active_execution_identity(token)
 
     assert len(retries) == 1
     assert retries[0].alternate_agent_id == "agent_b"
@@ -158,11 +170,14 @@ def test_validate_final_with_critic_uses_graph_final_scope() -> None:
         status=AgentExecutionStatus.COMPLETED,
         summary="done",
     )
+    run_id = mint_run_id()
+    task = Task(tenant_id="tenant-1", user_id="u1", message="done")
     result = validate_final_with_critic(
         execution,
         contract=contract,
         hooks=hooks,
-        run_id="run-final",
+        task_id=task.task_id,
+        run_id=run_id,
         tenant_id="tenant-1",
     )
     assert result.valid is True

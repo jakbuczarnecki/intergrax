@@ -525,6 +525,7 @@ class GraphExecutor:
                     execution,
                     contract=contract,
                     hooks=self._critic_graph_hooks,
+                    task_id=task.task_id,
                     run_id=self._require_run_id(),
                     tenant_id=task.tenant_id,
                     capability=cap,
@@ -561,6 +562,7 @@ class GraphExecutor:
             inject_acp_tool_invoker_metadata(
                 request.metadata,
                 self._declarative_tool_invoker,
+                task_id=task.task_id,
                 run_id=active_run_id,
                 agent_id=current_agent.get_contract().id,
                 tenant_id=task.tenant_id,
@@ -814,6 +816,7 @@ class GraphExecutor:
                         current_execution,
                         contract=contract,
                         hooks=self._critic_graph_hooks,
+                        task_id=task.task_id,
                         run_id=self._require_run_id(),
                         tenant_id=task.tenant_id,
                         capability=cap,

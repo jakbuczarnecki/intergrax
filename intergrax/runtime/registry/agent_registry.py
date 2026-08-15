@@ -12,7 +12,6 @@ from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.runtime.registry.agent_assembly_resolver import assert_agent_assembly_valid
 from intergrax.runtime.registry.agent_routing_policy import evaluate_agent_routing
 from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.runtime.events.context_skill_recording import record_skill_resolved
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.skills.integration.contract_resolution import resolve_contract_tools
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -63,8 +62,8 @@ class AgentRegistry:
                 skill_resolver=resolver,
                 tool_registry=tool_registry,
             )
-            if event_bus is not None:
-                record_skill_resolved(event_bus, agent_id=meta.id, pack=resolved_pack)
+            # Skill catalog assembly at registration is bootstrap — not a runtime execution event.
+            _ = resolved_pack
         if meta.id in self._agents:
             raise ValueError(f"Agent already registered: {meta.id}")
         self._agents[meta.id] = agent

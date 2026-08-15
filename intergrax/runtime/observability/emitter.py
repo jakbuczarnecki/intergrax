@@ -8,6 +8,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, List, Optional, Protocol
 
+from intergrax.contracts.execution_identity import (
+    peek_active_execution_identity,
+    validate_attempt_id,
+    validate_run_id,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import RuntimeEventPayload, runtime_event_with_payload
 from intergrax.runtime.events.runtime_event import RuntimeEvent
@@ -60,6 +65,7 @@ class ObservabilityEmitter:
     task_id: str
     tenant_id: str
     agent_id: str = ""
+    attempt_id: str = ""
     trace_writer: Optional[RunTraceWriter] = None
     event_bus: Optional[RuntimeEventBus] = None
     trace_events: Optional[List[TraceEvent]] = None
@@ -193,7 +199,26 @@ class ObservabilityEmitter:
             agent_id=self.agent_id,
         )
         correlation_id = scope.correlation_id if scope is not None else self.task_id
-        runtime = trace_event_to_runtime_event(trace, subject, correlation_id=correlation_id)
+        active = peek_active_execution_identity()
+        if active is not None:
+            bridge_run_id, bridge_attempt_id = active
+            emitter_run_id = validate_run_id(self.run_id)
+            if emitter_run_id != bridge_run_id:
+                raise RuntimeError("emitter run_id conflicts with active execution identity")
+        elif self.attempt_id:
+            bridge_run_id = validate_run_id(self.run_id)
+            bridge_attempt_id = validate_attempt_id(self.attempt_id)
+        else:
+            raise RuntimeError(
+                "active execution identity or emitter attempt_id required for trace bridge",
+            )
+        runtime = trace_event_to_runtime_event(
+            trace,
+            subject,
+            run_id=bridge_run_id,
+            attempt_id=bridge_attempt_id,
+            correlation_id=correlation_id,
+        )
         runtime = self._apply_scope(runtime, scope)
         if scope is not None:
             if scope.step_id and runtime.step_id is None:

@@ -1787,7 +1787,7 @@ def test_known_stack_stop_failure_returns_precise_recovery_failure(
     assert any("down" in call for call in calls)
 
 
-def test_record_skill_resolved_skips_without_execution_identity() -> None:
+def test_record_skill_resolved_requires_active_execution_identity() -> None:
     from intergrax.runtime.events.context_skill_recording import record_skill_resolved
     from intergrax.runtime.events.event_bus import RuntimeEventBus
     from intergrax.skills.core.contracts import SkillManifest, SkillRiskTier
@@ -1805,7 +1805,8 @@ def test_record_skill_resolved_skips_without_execution_identity() -> None:
         )
     )
     pack = SkillResolver(skills).resolve(["demo"])
-    record_skill_resolved(bus, agent_id="local_indexer", pack=pack)
+    with pytest.raises(RuntimeError, match="active execution identity required"):
+        record_skill_resolved(bus, agent_id="local_indexer", pack=pack)
     assert bus.history == []
 
 

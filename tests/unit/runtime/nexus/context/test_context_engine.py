@@ -15,6 +15,13 @@ from intergrax.context.contracts import (
     ContextProviderContext,
 )
 from intergrax.context.registry import ContextPluginRegistry
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
@@ -126,37 +133,44 @@ async def test_engine_emits_candidate_bus_events() -> None:
     registry.add_provider(_CollectOnceProvider())
     engine = DefaultNexusContextEngine(engine_id="default", registry=registry)
     bus = RuntimeEventBus(record_history=True)
-    request = ContextAssemblyRequest(
-        trace_id="t1",
-        run_id="r1",
-        task_id="task1",
-        tenant_id="tenant1",
-        assembly_scope="graph_node",
-        objective="test",
-        decision_profile=ContextDecisionSnapshot(),
-        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
-        assembly_options=TaskContextAssemblyOptions(),
-        graph_node_id="node-1",
-    )
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
-        handles={
-            "runtime_config": config,
-            "messages": [ChatMessage(role="user", content="short prompt")],
-            "max_output_tokens": 64,
-            "event_bus": bus,
-            "node_id": "node-1",
-            "agent_id": "agent-1",
-        },
-    )
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        request = ContextAssemblyRequest(
+            trace_id="t1",
+            run_id=run_id,
+            task_id=task_id,
+            tenant_id="tenant1",
+            assembly_scope="graph_node",
+            objective="test",
+            decision_profile=ContextDecisionSnapshot(),
+            budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
+            assembly_options=TaskContextAssemblyOptions(),
+            graph_node_id="node-1",
+        )
+        provider_ctx = ContextProviderContext(
+            engine_id="default",
+            handles={
+                "runtime_config": config,
+                "messages": [ChatMessage(role="user", content="short prompt")],
+                "max_output_tokens": 64,
+                "event_bus": bus,
+                "node_id": "node-1",
+                "agent_id": "agent-1",
+            },
+        )
 
-    assembled = await engine.assemble(request, provider_ctx=provider_ctx)
+        assembled = await engine.assemble(request, provider_ctx=provider_ctx)
 
-    types = [event.event_type for event in bus.history]
-    assert RuntimeEventType.CONTEXT_CANDIDATE_COLLECTED in types
-    assert RuntimeEventType.CONTEXT_CANDIDATE_DROPPED in types
-    assert len(assembled.fragments_included) == 1
-    assert assembled.fragments_excluded
+        types = [event.event_type for event in bus.history]
+        assert RuntimeEventType.CONTEXT_CANDIDATE_COLLECTED in types
+        assert RuntimeEventType.CONTEXT_CANDIDATE_DROPPED in types
+        assert len(assembled.fragments_included) == 1
+        assert assembled.fragments_excluded
+    finally:
+        reset_active_execution_identity(token)
 
 
 @pytest.mark.asyncio

@@ -56,7 +56,38 @@ from intergrax.contracts.agent_run_enums import (
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.runtime.kernel.session_reliability import AgentSessionReliability
 from intergrax.runtime.kernel.step_kernel import StepKernelContext
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    RunId,
+    TaskId,
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.runtime.policy.policy_engine import PolicyEngine
+
+
+def _resolve_acp_session_identity(request: AgentRunRequest) -> tuple[TaskId, RunId, AttemptId]:
+    """Canonical ACP session identity boundary — mint once when absent; validate when supplied."""
+    metadata_run_id = request.metadata.get("run_id")
+    if metadata_run_id is not None:
+        run_id = validate_run_id(metadata_run_id)
+    elif request.correlation_id is not None:
+        run_id = validate_run_id(request.correlation_id)
+    else:
+        run_id = mint_run_id()
+
+    metadata_task_id = request.metadata.get("task_id")
+    if metadata_task_id is not None:
+        task_id = validate_task_id(metadata_task_id)
+    else:
+        task_id = mint_task_id()
+
+    return task_id, run_id, mint_attempt_id()
 
 
 def _host_context_from_metadata(metadata: dict[str, Any]) -> ACPSessionHostContext | None:
@@ -115,10 +146,13 @@ async def run_acp_session(
             configure_run_overlay=overlay,
         )
     except ConfigureRunStrictViolation as exc:
-        run_id = str(request.metadata.get("run_id") or request.correlation_id or f"run_{uuid4().hex}")
+        try:
+            _, run_id, _ = _resolve_acp_session_identity(request)
+        except (TypeError, ValueError):
+            run_id = mint_run_id()
         trace_id = str(request.metadata.get("trace_id") or run_id)
         return AgentRunResult(
-            run_id=run_id,
+            run_id=str(run_id),
             trace_id=trace_id,
             status=AgentRunStatus.FAILED,
             terminal_reason=TerminalReason.POLICY_DENIED,
@@ -129,11 +163,31 @@ async def run_acp_session(
                     details={"violations": exc.violations},
                 ),
             ],
-            trace=AgentRunTrace(run_id=run_id),
+            trace=AgentRunTrace(run_id=str(run_id)),
             duration_ms=int((time.perf_counter() - started) * 1000),
         )
 
-    run_id = str(request.metadata.get("run_id") or request.correlation_id or f"run_{uuid4().hex}")
+    try:
+        task_id, run_id, attempt_id = _resolve_acp_session_identity(request)
+    except (TypeError, ValueError) as exc:
+        fallback_run = str(
+            request.metadata.get("run_id") or request.correlation_id or f"run_{uuid4().hex}"
+        )
+        return AgentRunResult(
+            run_id=fallback_run,
+            trace_id=str(request.metadata.get("trace_id") or fallback_run),
+            status=AgentRunStatus.FAILED,
+            terminal_reason=TerminalReason.ERROR,
+            errors=[
+                AgentRunError(
+                    code=AgentRunErrorCode.INTERNAL_ERROR,
+                    message=f"malformed execution identity: {exc}",
+                ),
+            ],
+            trace=AgentRunTrace(run_id=fallback_run),
+            duration_ms=int((time.perf_counter() - started) * 1000),
+        )
+
     trace_id = str(request.metadata.get("trace_id") or run_id)
 
     from intergrax.llm.messages import model_input_messages_from_metadata
@@ -142,7 +196,7 @@ async def run_acp_session(
         model_messages = model_input_messages_from_metadata(request.metadata)
     except ValueError as exc:
         return AgentRunResult(
-            run_id=run_id,
+            run_id=str(run_id),
             trace_id=trace_id,
             status=AgentRunStatus.FAILED,
             terminal_reason=TerminalReason.ERROR,
@@ -152,10 +206,41 @@ async def run_acp_session(
                     message=str(exc),
                 ),
             ],
-            trace=AgentRunTrace(run_id=run_id),
+            trace=AgentRunTrace(run_id=str(run_id)),
             duration_ms=int((time.perf_counter() - started) * 1000),
         )
 
+    identity_token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        return await _run_acp_session_bound(
+            agent=agent,
+            request=request,
+            merged=merged,
+            host=host,
+            contract=contract,
+            task_id=task_id,
+            run_id=run_id,
+            trace_id=trace_id,
+            model_messages=model_messages,
+            started=started,
+        )
+    finally:
+        reset_active_execution_identity(identity_token)
+
+
+async def _run_acp_session_bound(
+    *,
+    agent: object,
+    request: AgentRunRequest,
+    merged: EffectiveAgentRunEnvironment,
+    host: ACPSessionHostContext | None,
+    contract: object,
+    task_id: TaskId,
+    run_id: RunId,
+    trace_id: str,
+    model_messages: object,
+    started: float,
+) -> AgentRunResult:
     await agent.on_run_start(merged)
 
     persistence, resume = resolve_session_persistence(
@@ -171,22 +256,7 @@ async def run_acp_session(
     else:
         state_root = seed_state_root_budget_limits(state_root, merged.resolved_budget_limits)
 
-    task_id = str(request.metadata.get("task_id") or run_id)
-    from intergrax.contracts.execution_identity import (
-        mint_task_id,
-        validate_run_id,
-        validate_task_id,
-    )
-
-    try:
-        run_id = validate_run_id(run_id)
-    except (TypeError, ValueError):
-        run_id = validate_run_id(f"run_{uuid4().hex}")
-    try:
-        task_id = validate_task_id(task_id)
-    except (TypeError, ValueError):
-        task_id = mint_task_id()
-    run_trace = AgentRunTrace(run_id=run_id)
+    run_trace = AgentRunTrace(run_id=str(run_id))
     reliability: AgentSessionReliability | None = None
     if host is not None and host.runtime_profile is not None:
         reliability = AgentSessionReliability.from_wiring_options(
@@ -202,6 +272,7 @@ async def run_acp_session(
     if isinstance(declarative_invoker, CatalogDeclarativeToolInvoker):
         declarative_invoker.bind_run(
             run_id=run_id,
+            task_id=task_id,
             agent_id=merged.agent_id,
             tenant_id=merged.tenant_id,
             user_id=str(request.identity.user_id or ""),

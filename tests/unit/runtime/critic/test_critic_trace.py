@@ -15,6 +15,7 @@ from intergrax.runtime.critic.contracts import (
     LayerVerdict,
     build_critic_request,
 )
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
 from intergrax.runtime.critic.trace import (
     CRITIC_STEP_FINAL_VERDICT,
     CRITIC_STEP_L0_FAILED,
@@ -98,17 +99,20 @@ def test_critic_trace_emitter_skips_passed_l0_layer() -> None:
 
 
 def test_trace_bridge_maps_critic_l0_failed() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
     task = Task(
-        task_id="task-1",
+        task_id=task_id,
         tenant_id="tenant-1",
         user_id="user-1",
         agent_id="worker",
         message="q",
     )
-    emitter = CriticTraceEmitter(run_id="run-critic-3")
+    emitter = CriticTraceEmitter(run_id=run_id)
     request = build_critic_request(
         scope=CriticScope.NODE_PARTIAL,
-        run_id="run-critic-3",
+        run_id=run_id,
         agent_id="worker",
     )
     verdict = CriticVerdict(
@@ -127,26 +131,34 @@ def test_trace_bridge_maps_critic_l0_failed() -> None:
         request,
         verdict,
         tenant_id="tenant-1",
-        task_id="task-1",
+        task_id=task_id,
         agent_id="worker",
     )
-    runtime_event = trace_event_to_runtime_event(events[0], task)
+    runtime_event = trace_event_to_runtime_event(
+        events[0],
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
     assert runtime_event.event_type == RuntimeEventType.VALIDATION_FAILED
     assert runtime_event.phase == ExecutionPhase.VALIDATION
 
 
 def test_trace_bridge_maps_critic_final_verdict_pass() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
     task = Task(
-        task_id="task-1",
+        task_id=task_id,
         tenant_id="tenant-1",
         user_id="user-1",
         agent_id="worker",
         message="q",
     )
-    emitter = CriticTraceEmitter(run_id="run-critic-4")
+    emitter = CriticTraceEmitter(run_id=run_id)
     request = build_critic_request(
         scope=CriticScope.GRAPH_FINAL,
-        run_id="run-critic-4",
+        run_id=run_id,
         agent_id="worker",
     )
     verdict = CriticVerdict(
@@ -158,11 +170,16 @@ def test_trace_bridge_maps_critic_final_verdict_pass() -> None:
         request,
         verdict,
         tenant_id="tenant-1",
-        task_id="task-1",
+        task_id=task_id,
         agent_id="worker",
     )
     final_evt = next(evt for evt in events if evt.step == CRITIC_STEP_FINAL_VERDICT)
-    runtime_event = trace_event_to_runtime_event(final_evt, task)
+    runtime_event = trace_event_to_runtime_event(
+        final_evt,
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
     assert runtime_event.event_type == RuntimeEventType.STEP_COMPLETED
     from intergrax.runtime.events.phase_coverage import phase_for_event
 

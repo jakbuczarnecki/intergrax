@@ -26,7 +26,7 @@ def tool_hook_context(
     step_id: Optional[str] = None,
 ) -> HookContext:
     return HookContext(
-        task_id=state.run_id,
+        task_id=state.task_id,
         run_id=state.run_id,
         step_id=step_id,
         phase=ExecutionPhase.STEP_EXECUTION,

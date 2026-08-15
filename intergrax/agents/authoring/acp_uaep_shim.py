@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
-from uuid import uuid4
-
 from intergrax.agents.authoring.state_merge import extract_acp_state_blob
 from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.contracts.acp_state import ACP_STATE_KEY
@@ -86,23 +84,13 @@ def attach_acp_catalog_exec_ctx(
 
     from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
 
-    run_id = step_ctx.run_id
-    task_id = str(step_ctx.task_id or run_id)
-    try:
-        resolved_run_id = validate_run_id(run_id)
-    except (TypeError, ValueError):
-        resolved_run_id = validate_run_id(f"run_{uuid4().hex}")
-    try:
-        resolved_task_id = validate_task_id(task_id)
-    except (TypeError, ValueError):
-        from intergrax.contracts.execution_identity import mint_task_id
-
-        resolved_task_id = mint_task_id()
+    resolved_run_id = validate_run_id(step_ctx.run_id)
+    resolved_task_id = validate_task_id(step_ctx.task_id)
     runtime_request = RuntimeRequest(
         agent_id=contract.id,
         tenant_id=str(request.identity.tenant_id or step_ctx.tenant_id or "default"),
         user_id=str(request.identity.user_id or ""),
-        session_id=str(request.session_id or run_id),
+        session_id=str(request.session_id or resolved_run_id),
         message=str(request.input or step_ctx.message or ""),
         task_id=resolved_task_id,
         run_id=resolved_run_id,

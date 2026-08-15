@@ -8,7 +8,10 @@ from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id,
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
+from intergrax.runtime.events.trace_bridge import (
+    trace_bridge_subject_from_tags,
+    trace_event_to_runtime_event,
+)
 from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
     LLMRoutingAttemptDiagV1,
@@ -250,3 +253,57 @@ def test_trace_bridge_ignores_noncanonical_task_id_tag() -> None:
         attempt_id=attempt_id,
     )
     assert event.task_id == task_id
+
+
+def test_trace_bridge_rejects_malformed_supplied_run_id() -> None:
+    task, task_id, _, attempt_id = _task_with_identity()
+    trace = TraceEvent(
+        event_id="malformed-run",
+        run_id="run-bad",
+        seq=9,
+        ts_utc="2026-06-19T10:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="diag",
+        message="bad run",
+        tags={"task_id": task_id},
+    )
+    with pytest.raises(ValueError, match="malformed run_id"):
+        trace_event_to_runtime_event(
+            trace,
+            task,
+            run_id="run-bad",
+            attempt_id=attempt_id,
+        )
+
+
+def test_trace_bridge_does_not_mint_task_id_from_malformed_tag() -> None:
+    task_id, run_id, attempt_id = _trace_identity()
+    task = Task(
+        task_id=task_id,
+        tenant_id="tenant",
+        user_id="user",
+        agent_id="agent",
+        message="q",
+    )
+    trace = TraceEvent(
+        event_id="malformed-task",
+        run_id=run_id,
+        seq=10,
+        ts_utc="2026-06-19T10:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="diag",
+        message="bad task tag only",
+        tags={"task_id": "not-canonical"},
+    )
+    with pytest.raises(ValueError, match="TaskId must start with"):
+        trace_event_to_runtime_event(
+            trace,
+            trace_bridge_subject_from_tags(
+                tenant_id="tenant",
+                task_id="also-not-canonical",
+            ),
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )

@@ -623,6 +623,7 @@ class UAEPExecutor:
             execution,
             contract=contract,
             hooks=self._critic_hooks,
+            task_id=exec_ctx.task_id,
             run_id=run_id,
             tenant_id=tenant_id,
             step_id=step.step_id,

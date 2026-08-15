@@ -10,6 +10,13 @@ import pytest
 
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
@@ -70,18 +77,29 @@ def test_agent_router_emits_agent_selected() -> None:
         message="hello",
         context=TaskContext(capability="demo.basic"),
     )
-    router.route(task, run_id="run-1")
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        router.route(task, run_id=run_id)
+    finally:
+        reset_active_execution_identity(token)
     events = store.list_for_task(task.task_id, tenant_id="t1")
     assert len(events) == 1
     assert events[0].event_type == RuntimeEventType.AGENT_SELECTED
     assert events[0].payload["payload_schema_id"] == "agent_selection.v1"
     assert events[0].payload["data"]["selected_agent_id"] == "active"
+    assert events[0].run_id == run_id
+    assert events[0].attempt_id == attempt_id
 
 
 def test_trace_bridge_maps_runtime_step_failed() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
     trace = TraceEvent(
         event_id="te-1",
-        run_id="run-1",
+        run_id=run_id,
         seq=1,
         ts_utc="2026-06-08T12:00:00+00:00",
         level=TraceLevel.ERROR,
@@ -94,19 +112,27 @@ def test_trace_bridge_maps_runtime_step_failed() -> None:
             error_message="boom",
             error_repr="ValueError('boom')",
         ),
-        tags={"tenant_id": "t1", "task_id": "task-1", "agent_id": "a1"},
+        tags={"tenant_id": "t1", "task_id": task_id, "agent_id": "a1"},
     )
-    task = Task(tenant_id="t1", user_id="u1", message="x")
-    runtime = trace_event_to_runtime_event(trace, task)
+    task = Task(task_id=task_id, tenant_id="t1", user_id="u1", message="x")
+    runtime = trace_event_to_runtime_event(
+        trace,
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
     assert runtime.event_type == RuntimeEventType.STEP_FAILED
     assert runtime.payload["payload_schema_id"] == "validation.v1"
     assert runtime.step_id == "HistoryStep"
 
 
 def test_trace_bridge_maps_graph_node_typed_payload() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
     trace = TraceEvent(
         event_id="te-2",
-        run_id="run-1",
+        run_id=run_id,
         seq=2,
         ts_utc="2026-06-08T12:00:00+00:00",
         level=TraceLevel.INFO,
@@ -119,10 +145,15 @@ def test_trace_bridge_maps_graph_node_typed_payload() -> None:
             agent_id="a1",
             capability="cap.a",
         ),
-        tags={"tenant_id": "t1", "task_id": "task-1", "node_id": "n1"},
+        tags={"tenant_id": "t1", "task_id": task_id, "node_id": "n1"},
     )
-    task = Task(tenant_id="t1", user_id="u1", message="x")
-    runtime = trace_event_to_runtime_event(trace, task)
+    task = Task(task_id=task_id, tenant_id="t1", user_id="u1", message="x")
+    runtime = trace_event_to_runtime_event(
+        trace,
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
     assert runtime.event_type == RuntimeEventType.STEP_STARTED
     assert runtime.payload["payload_schema_id"] == "graph_node.v1"
     assert runtime.node_id == "n1"
@@ -135,26 +166,34 @@ def test_trace_bridge_catalog_includes_evaluator_loop() -> None:
 
 
 def test_trace_bridge_maps_llm_catalog_miss_schema() -> None:
-    task = Task(tenant_id="t1", user_id="u1", message="x")
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    task = Task(task_id=task_id, tenant_id="t1", user_id="u1", message="x")
     trace = TraceEvent(
         event_id="llm-miss-cov",
-        run_id="run-1",
+        run_id=run_id,
         seq=8,
         ts_utc="2026-06-19T12:00:00+00:00",
         level=TraceLevel.WARNING,
         component=TraceComponent.ENGINE,
         step="llm_catalog_miss",
         message="Model catalog miss — context window resolved without exact catalog entry.",
-        tags={"tenant_id": "t1", "task_id": "task-1"},
+        tags={"tenant_id": "t1", "task_id": task_id},
         payload=ModelCatalogMissTraceDiagV1(
             provider_slug="openrouter",
             model_id="vendor/obs-cov",
             resolved_tokens=128_000,
             resolution_tier="provider_default",
-            run_id="run-1",
+            run_id=run_id,
         ),
     )
-    runtime = trace_event_to_runtime_event(trace, task)
+    runtime = trace_event_to_runtime_event(
+        trace,
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
     assert runtime.event_type == RuntimeEventType.LLM_CALL
     assert runtime.payload["model"] == "vendor/obs-cov"
     assert runtime.payload["resolution_tier"] == "provider_default"

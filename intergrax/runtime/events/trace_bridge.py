@@ -19,8 +19,6 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
     mint_attempt_id,
-    mint_run_id,
-    mint_task_id,
     peek_active_execution_identity,
     validate_attempt_id,
     validate_run_id,
@@ -77,7 +75,7 @@ def trace_bridge_subject_from_tags(
 ) -> TraceBridgeSubjectView:
     return TraceBridgeSubjectView(
         tenant_id=tenant_id.strip() or "default",
-        task_id=task_id.strip() or "unknown",
+        task_id=str(validate_task_id(task_id)),
         agent_id=agent_id.strip(),
     )
 
@@ -415,7 +413,7 @@ def _resolve_bridge_task_id(trace: TraceEvent, subject: TraceBridgeSubject) -> s
             return str(validate_task_id(candidate))
         except (TypeError, ValueError):
             continue
-    return str(mint_task_id())
+    raise RuntimeError("canonical task_id required for trace bridge")
 
 
 def _resolve_bridge_execution_identity(
@@ -426,7 +424,16 @@ def _resolve_bridge_execution_identity(
 ) -> tuple[RunId, AttemptId]:
     active = peek_active_execution_identity()
     if active is not None:
-        return active
+        active_run_id, active_attempt_id = active
+        if run_id is not None:
+            resolved_run_id = validate_run_id(run_id)
+            if resolved_run_id != active_run_id:
+                raise RuntimeError("run_id conflicts with active execution identity")
+        if attempt_id is not None:
+            resolved_attempt_id = validate_attempt_id(attempt_id)
+            if resolved_attempt_id != active_attempt_id:
+                raise RuntimeError("attempt_id conflicts with active execution identity")
+        return active_run_id, active_attempt_id
 
     resolved_run_id: RunId | None = None
     for candidate in (run_id, trace.run_id):
@@ -435,17 +442,13 @@ def _resolve_bridge_execution_identity(
         try:
             resolved_run_id = validate_run_id(candidate)
             break
-        except (TypeError, ValueError):
-            continue
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"malformed run_id for trace bridge: {candidate!r}") from exc
     if resolved_run_id is None:
-        resolved_run_id = mint_run_id()
-
-    if attempt_id is not None:
-        try:
-            return resolved_run_id, validate_attempt_id(attempt_id)
-        except (TypeError, ValueError):
-            pass
-    return resolved_run_id, mint_attempt_id()
+        raise RuntimeError("active execution identity or explicit run_id required for trace bridge")
+    if attempt_id is None:
+        raise RuntimeError("active execution identity or explicit attempt_id required for trace bridge")
+    return resolved_run_id, validate_attempt_id(attempt_id)
 
 
 def trace_event_to_runtime_event(

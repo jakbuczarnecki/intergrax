@@ -497,3 +497,86 @@ async def test_concurrent_retry_transition_isolation() -> None:
     assert results["a"] != attempt_a1
     assert results["b_before"] == attempt_b1
     assert results["b_after"] == attempt_b1
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_trace_bridge_rejects_malformed_run_id_without_active_identity() -> None:
+    from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
+    from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent, TraceLevel
+
+    task = Task(tenant_id="t1", user_id="u1", message="q")
+    trace = TraceEvent(
+        event_id="evt-malformed-run",
+        run_id="run-not-canonical",
+        seq=1,
+        ts_utc="2026-06-01T00:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="diag",
+        message="malformed run",
+        tags={"task_id": task.task_id},
+    )
+    with pytest.raises(ValueError, match="malformed run_id"):
+        trace_event_to_runtime_event(trace, task)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_trace_bridge_preserves_active_attempt_id() -> None:
+    from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
+    from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent, TraceLevel
+
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        task = Task(task_id=task_id, tenant_id="t1", user_id="u1", message="q")
+        trace = TraceEvent(
+            event_id="evt-active-attempt",
+            run_id=run_id,
+            seq=1,
+            ts_utc="2026-06-01T00:00:00Z",
+            level=TraceLevel.INFO,
+            component=TraceComponent.ENGINE,
+            step="diag",
+            message="active attempt",
+            tags={"task_id": task_id},
+        )
+        event = trace_event_to_runtime_event(trace, task)
+        assert event.run_id == run_id
+        assert event.attempt_id == attempt_id
+        assert event.task_id == task_id
+    finally:
+        reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_emitter_tags_cannot_override_canonical_task_id() -> None:
+    from intergrax.runtime.observability.emitter import ObservabilityEmitter
+    from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        emitter = ObservabilityEmitter(
+            run_id=run_id,
+            task_id=task_id,
+            tenant_id="tenant",
+            agent_id="agent-1",
+        )
+        diagnostic = emitter.emit_diagnostic(
+            component=TraceComponent.ENGINE,
+            step="override_probe",
+            message="probe",
+            level=TraceLevel.INFO,
+            tags={"task_id": "task_override0123456789abcdef0123456789"},
+        )
+        assert diagnostic.trace.tags["task_id"] == task_id
+        assert diagnostic.runtime.task_id == task_id
+    finally:
+        reset_active_execution_identity(token)
