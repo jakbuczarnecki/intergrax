@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-08-16 — **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
+**Last updated:** 2026-08-16 — **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
 
 ---
 
@@ -1019,7 +1019,7 @@ As-of projections and bitemporal historical state answer **different questions**
 
 ## 8. First-class bitemporal historical state (TRACE-BITEMP-ARCH-SYNC)
 
-**Status:** Target canon (**accepted** 2026-08-15; watermark / serialization-boundary refinement **TRACE-BITEMP-ARCH-SYNC-R3** 2026-08-16) · implementation **Planned** (TRACE-BITEMP-1–TRACE-BITEMP-5) · **not implemented** in current runtime
+**Status:** Target canon (**accepted** 2026-08-15; revision-ordering authority / provider contract **TRACE-BITEMP-ARCH-SYNC-R4** 2026-08-16) · implementation **Planned** (TRACE-BITEMP-1–TRACE-BITEMP-5) · **not implemented** in current runtime
 
 ### 8.1 Capability definition
 
@@ -1245,27 +1245,152 @@ The query model **MUST** allow bounded, indexable, or materializable resolution 
 
 Architecture does **not** promise O(1), O(log n), database-index complexity, or any other specific performance bound before implementation design exists.
 
-#### Serialization authority (open design decision)
+#### Revision ordering authority — domain-owned semantic contract (TRACE-BITEMP-ARCH-SYNC-R4)
 
-Deterministic knowledge/revision ordering **requires** an authoritative serialization mechanism at the **acceptance/ingestion boundary**. Architecture **does not** select that mechanism here.
+Revision-ordering **semantics** are canonical platform/domain invariants. They are **not** configurable per application and **MUST NOT** be delegated to application business logic or to Platform Plugin runtime wrappers.
 
-Viable alternatives remain open, including:
+The Observability / Bitemporal domain **MUST** own the authoritative revision-ordering semantic contract. Use the conceptual name **RevisionOrderingAuthority** until **TRACE-BITEMP-1** freezes the exact public type/name.
 
-- single writer
+The contract owns semantic guarantees such as:
+
+- allocate / accept an authoritative revision position
+- preserve monotonic ordering within the declared scope
+- expose / reconstruct **KnowledgeRevisionWatermark**
+- deterministic concurrent acceptance
+- atomic association of acceptance and position
+- idempotent retry semantics
+- failure-safe acceptance semantics
+- auditability
+- deterministic historical reads
+
+The contract **MUST NOT** delegate semantic ownership to an application, agent/model, or plugin runtime layer.
+
+Concrete serialization **implementation** is provided behind this domain-owned typed provider contract. Provider variation is **implementation** variation — **not** semantic variation.
+
+```text
+RevisionOrderingAuthority (conceptual — domain-owned semantic contract)
+        |
+        +-- CanonicalRevisionOrderingProvider      <-- Intergrax first-party default
+        |
+        +-- QualifiedAlternativeProvider
+        |
+        +-- QualifiedAlternativeProvider
+```
+
+#### Canonical production default provider
+
+Intergrax **MUST** ship one canonical first-party production-grade default provider (conceptually **CanonicalRevisionOrderingProvider**).
+
+Architecture **does not** select which algorithm or infrastructure that provider uses. **TRACE-BITEMP-1** owns explicit trade-off comparison and canonical strategy selection; **TRACE-BITEMP-2** implements it.
+
+The canonical default **MUST**:
+
+- give operators a safe out-of-the-box baseline
+- avoid requiring applications to design distributed revision serialization
+- serve as the reference implementation of **RevisionOrderingAuthority**
+- be the recommended baseline for documentation and proof gates
+
+Canonical default **≠** hardcoded implementation lock-in. Intergrax remains **opinionated enough to work out of the box** while preserving a stable extension boundary for environments with different scale, availability, persistence, or infrastructure characteristics:
+
+```text
+OPINIONATED DEFAULT
++
+CONTRACT-DRIVEN EXTENSIBILITY
++
+SEMANTIC INVARIANCE
+```
+
+#### Qualified alternative providers
+
+A host/deployment **MAY** select a qualified alternative provider when deployment requirements differ. Every alternative **MUST** implement the **same** **RevisionOrderingAuthority** contract and preserve exactly the same ordering, watermark, concurrency, audit, failure, and reconstruction semantics.
+
+Examples of future implementation strategies **MAY** include (unselected here):
+
+- transactional / storage-native sequencing
 - dedicated sequencer
-- storage-native monotonic sequence
-- transactionally allocated revision position
+- distributed sequencer
 - scoped sequencer
-- optimistic concurrency / compare-and-swap with deterministic allocation
+- optimistic concurrency / CAS-backed allocator
 - another equivalent production-grade mechanism
 
-The chosen mechanism **MUST** satisfy the serialization contract below. **TRACE-BITEMP-1** owns explicit comparison of viable strategies and the subsequent selection. **TRACE-BITEMP-2** implements persistence of the selected contract — it does **not** choose the mechanism.
+Provider extensibility **MUST NOT** allow:
 
-Do **not** treat this list as a selection. Kafka partitions, PostgreSQL sequences, Redis counters, Snowflake-like IDs, Lamport/vector/HLC clocks, a specific transaction model, and a specific database are likewise **unselected**.
+- timestamp-based ordering instead of authoritative ordering
+- disabling monotonicity
+- weakening concurrency guarantees
+- changing **KnowledgeRevisionWatermark** semantics
+- weakening failure atomicity
+- destructive historical overwrite
+- changing bitemporal valid-time / system-time semantics
+- application-specific interpretation of acceptance order
 
-#### Serialization contract (TRACE-BITEMP-1 selection criteria)
+Do **not** treat the list above as a selection. Kafka partitions, PostgreSQL sequences, Redis counters, Snowflake-like IDs, Lamport/vector/HLC clocks, a specific transaction model, and a specific database are likewise **unselected**.
 
-TRACE-BITEMP-1 **MUST** choose the mechanism against these invariants:
+#### Host / deployment provider selection
+
+Provider selection is **host/deployment configuration + dependency injection** — **not** per-request behavior and **not** arbitrary application business logic.
+
+```text
+Application / Deployment Host
+        |
+        +-- configuration / profile
+        |
+        +-- DI / composition
+        |
+        v
+RevisionOrderingAuthority
+        |
+        v
+Selected qualified provider
+```
+
+Provider selection **MUST NOT** be:
+
+- chosen dynamically per request
+- selected by agents/models
+- scattered across business application code
+- independently selected by arbitrary features
+- changed in a way that changes historical semantics
+
+A specialized application **MAY** cause its deployment/host configuration to select a qualified provider for infrastructural reasons. An application **MUST NOT** define its own revision-ordering semantics.
+
+**Forbidden model:**
+
+```text
+App A -> timestamp ordering
+App B -> sequencer
+App C -> weak custom ordering
+```
+
+**Correct model:**
+
+```text
+App/host deployment chooses provider P
+        ↓
+P implements the same RevisionOrderingAuthority contract
+        ↓
+same KnowledgeRevisionPosition / KnowledgeRevisionWatermark semantics everywhere
+```
+
+Applications consume the canonical semantic contract. The variation is infrastructural; the contract remains interoperable.
+
+#### Provider vs ordering scope — independent decisions
+
+Ordering **scope** and provider **implementation** are separate architecture decisions. **TRACE-BITEMP-1** **MUST** select them separately.
+
+Do **not** encode scope into provider identity. Do **not** assume one provider supports only one scope unless future implementation evidence requires it.
+
+| Ordering scope (example) | Provider (example) | Decision |
+|--------------------------|-------------------|----------|
+| TENANT | CanonicalTransactionalProvider | scope decision A + provider decision X |
+| TENANT | DistributedSequencerProvider | scope decision A + provider decision Y |
+| GLOBAL | DistributedSequencerProvider | scope decision B + provider decision Y |
+
+#### Serialization contract (provider qualification criteria)
+
+Every provider used for production-capable bitemporal ordering **MUST** be qualified against canonical invariant tests/proofs. **Qualified** **MUST NOT** mean merely loadable/discoverable.
+
+**TRACE-BITEMP-1** **MUST** choose the canonical default mechanism against these invariants. Canonical and alternative providers **MUST** pass the same semantic suite:
 
 1. **Uniqueness** — every accepted bitemporal correction/revision gets one unambiguous authoritative position within its ordering scope.
 2. **Monotonicity** — later accepted revisions cannot appear before earlier accepted revisions within that scope.
@@ -1273,10 +1398,15 @@ TRACE-BITEMP-1 **MUST** choose the mechanism against these invariants:
 4. **Clock independence** — producer/service wall-clock timestamps cannot define authoritative ordering.
 5. **Atomic acceptance** — a revision must not become "accepted" without its authoritative position being durably associated with that acceptance.
 6. **Retry / idempotency** — retrying the same logical acceptance must not create duplicate accepted revisions or consume semantically different positions incorrectly.
-7. **Failure semantics** — partial failure between persistence and ordering allocation must not create ambiguous accepted history.
+7. **Failure semantics** — partial failure between persistence and ordering allocation must not create ambiguous accepted history; no half-accepted revision.
 8. **Auditability** — auditors can determine the acceptance order without reconstructing it from timestamps.
 9. **Lineage independence** — `supersedes` remains causal lineage and does **not** substitute for total/order position.
-10. **Scope definition** — the exact ordering scope **MUST** be explicitly selected (global, tenant, domain, aggregate/fact stream, or another defined scope). This architecture-sync **does not** choose the scope.
+10. **Deterministic watermark resolution** — wall-clock system-time queries resolve deterministically to the correct authoritative knowledge boundary.
+11. **Deterministic repeated reconstruction** — same E/K/temporal basis returns deterministic equivalent state.
+12. **Scope definition** — the exact ordering scope **MUST** be explicitly selected (global, tenant, domain, aggregate/fact stream, or another defined scope). This architecture-sync **does not** choose the scope.
+13. **Selected ordering-scope correctness** — proof matches the scope chosen in TRACE-BITEMP-1.
+14. **Cross-scope semantics** — where ordering is partitioned, composition semantics are deterministic and documented.
+15. **Historical immutability** — accepted corrections are never destructively overwritten.
 
 #### Ordering scope / scalability decision boundary
 
@@ -1289,7 +1419,7 @@ A **narrower** ordering scope may scale better but affects the semantics of:
 - cross-tenant isolation
 - global audit questions
 
-Therefore TRACE-BITEMP-1 **MUST** explicitly decide:
+Therefore TRACE-BITEMP-1 **MUST** explicitly decide **separately from provider selection**:
 
 - ordering scope
 - authority owner
@@ -1298,6 +1428,40 @@ Therefore TRACE-BITEMP-1 **MUST** explicitly decide:
 - how multiple scoped watermarks compose if ordering is partitioned
 
 Architecture does **not** assume global sequencing is required. Architecture does **not** assume per-fact sequencing is sufficient. The decision follows Intergrax query and invariant requirements.
+
+#### Relationship to Platform Plugins
+
+This follows canonical **COMMON PLATFORM COORDINATION + DOMAIN-OWNED CAPABILITY CONTRACTS** (see [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md)).
+
+Platform Plugin infrastructure **MAY** eventually coordinate for externally packaged **RevisionOrderingAuthority** implementations:
+
+- package identity
+- discovery
+- compatibility metadata
+- trust
+- qualification metadata
+
+Platform Plugin **MUST NOT** own:
+
+- revision ordering semantics
+- acceptance semantics
+- watermark semantics
+- temporal semantics
+- provider runtime contract
+
+There is **no** `PlatformPlugin.execute()` or universal plugin runtime abstraction for revision ordering.
+
+```text
+Platform package / discovery coordination
+        ↓
+domain-owned RevisionOrderingAuthority provider
+        ↓
+host composition / DI
+        ↓
+governed bitemporal runtime
+```
+
+Runtime execution flows through **domain contracts and host composition** — not through a Platform Plugin runtime wrapper.
 
 ### 8.5 Correction semantics
 
@@ -1366,7 +1530,7 @@ This list is **not exhaustive**. Do **not** convert every Intergrax persistence 
 
 ### 8.9 Persistence vendor neutrality
 
-Architecture defines semantics and capability only. **No** database vendor (XTDB, PostgreSQL temporal extensions, SQL Server temporal tables, Datomic, etc.) is selected here. **No** serialization mechanism and **no** ordering scope (global / tenant / domain / aggregate) are selected here. Storage technology, serialization authority, and ordering scope follow contract and query requirements decided in TRACE-BITEMP-1, then persisted in TRACE-BITEMP-2.
+Architecture defines semantics and capability only. **No** database vendor (XTDB, PostgreSQL temporal extensions, SQL Server temporal tables, Datomic, etc.) is selected here. **No** canonical serialization algorithm, **no** qualified alternative provider, and **no** ordering scope (global / tenant / domain / aggregate) are selected here. Storage technology, **RevisionOrderingAuthority** provider implementation, and ordering scope follow contract and query requirements decided in TRACE-BITEMP-1, then implemented in TRACE-BITEMP-2.
 
 ### 8.10 Implementation status
 
@@ -1385,6 +1549,8 @@ Accepted architecture · **Planned** implementation · **no** current runtime co
 | **System time** | When Intergrax recorded / knew a fact version |
 | **Bitemporal state** | State selected using valid-time + system-time basis only |
 | **Knowledge/revision ordering** | Deterministic authoritative ordering of accepted corrections/revisions — **not** a bitemporal axis; **not** execution ordering |
+| **RevisionOrderingAuthority** (conceptual) | Domain-owned semantic contract for authoritative revision ordering; TRACE-BITEMP-1 owns exact typed contract; semantics **not** per-application configurable |
+| **CanonicalRevisionOrderingProvider** (conceptual) | Intergrax first-party default provider implementing **RevisionOrderingAuthority**; canonical algorithm unselected until TRACE-BITEMP-1 |
 | **KnowledgeRevisionWatermark** (conceptual) | Stable authoritative upper bound in knowledge/revision ordering; TRACE-BITEMP-1 owns the exact typed contract |
 | **Historically reproducible execution state** | Combined reconstruction: execution boundary E + knowledge watermark K + bitemporal knowledge basis — **not** “bitemporal state” |
 | **Provenance** | Origin / lineage of relevant inputs and references |
