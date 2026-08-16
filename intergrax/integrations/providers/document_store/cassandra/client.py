@@ -7,7 +7,7 @@ from __future__ import annotations
 from intergrax.utils import attribute_access
 
 import json
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Protocol
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentQueryResult, DocumentRecord
@@ -47,22 +47,15 @@ def _require_matching_keys(*, expected: DocumentRecord, replacement: DocumentRec
         )
 
 
-def _was_applied(result: object) -> bool:
-    applied = attribute_access.optional(result, "was_applied", default=None)
-    if applied is not None:
-        return bool(applied)
-    if not attribute_access.is_callable_attr(result, "one"):
-        raise IntegrationConfigurationError("Cassandra conditional result missing applied flag")
-    one = attribute_access.optional(result, "one")
-    if not callable(one):
-        raise IntegrationConfigurationError("Cassandra conditional result missing applied flag")
-    row = one()
-    if row is None:
-        return False
-    row_applied = attribute_access.optional(row, "[applied]", default=None)
-    if row_applied is not None:
-        return bool(row_applied)
-    raise IntegrationConfigurationError("Cassandra conditional result missing applied flag")
+class _CassandraConditionalResult(Protocol):
+    """Provider-local LWT result contract (cassandra-driver ``ResultSet.was_applied``)."""
+
+    @property
+    def was_applied(self) -> bool: ...
+
+
+def _was_applied(result: _CassandraConditionalResult) -> bool:
+    return result.was_applied
 
 
 class CassandraCqlClient:
@@ -107,6 +100,10 @@ class CassandraCqlClient:
         )
         self._update_if_payload = session.prepare(
             f"UPDATE {table} SET payload = ? "
+            f"WHERE partition_key = ? AND row_key = ? IF payload = ?"
+        )
+        self._update_if_payload_ttl = session.prepare(
+            f"UPDATE {table} SET payload = ? USING TTL ? "
             f"WHERE partition_key = ? AND row_key = ? IF payload = ?"
         )
         self._delete_if_payload = session.prepare(
@@ -185,15 +182,27 @@ class CassandraCqlClient:
         _require_matching_keys(expected=expected, replacement=replacement)
         expected_payload = _encode_payload(expected.data)
         replacement_payload = _encode_payload(replacement.data)
-        result = self._session.execute(
-            self._update_if_payload,
-            (
-                replacement_payload,
-                replacement.partition_key,
-                replacement.row_key,
-                expected_payload,
-            ),
-        )
+        if replacement.ttl_seconds is not None and replacement.ttl_seconds > 0:
+            result = self._session.execute(
+                self._update_if_payload_ttl,
+                (
+                    replacement_payload,
+                    int(replacement.ttl_seconds),
+                    replacement.partition_key,
+                    replacement.row_key,
+                    expected_payload,
+                ),
+            )
+        else:
+            result = self._session.execute(
+                self._update_if_payload,
+                (
+                    replacement_payload,
+                    replacement.partition_key,
+                    replacement.row_key,
+                    expected_payload,
+                ),
+            )
         return _was_applied(result)
 
     def delete_if_match(self, *, expected: DocumentRecord) -> bool:
