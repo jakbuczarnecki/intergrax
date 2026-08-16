@@ -113,6 +113,19 @@ def test_new_run_id_mints_independent_run_id():
 
 @pytest.mark.unit
 @pytest.mark.gate
+def test_mint_intake_execution_identity_mints_distinct_task_and_run_ids():
+    from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
+
+    task_id, run_id = mint_intake_execution_identity()
+    assert _CANONICAL_ID.fullmatch(task_id)
+    assert _CANONICAL_ID.fullmatch(run_id)
+    assert task_id.startswith("task_")
+    assert run_id.startswith("run_")
+    assert task_id != run_id
+
+
+@pytest.mark.unit
+@pytest.mark.gate
 def test_task_to_runtime_request_requires_explicit_run_id():
     task = Task(
         tenant_id="t1",

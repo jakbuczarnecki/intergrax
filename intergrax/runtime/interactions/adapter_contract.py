@@ -6,10 +6,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Dict, Optional, Protocol, runtime_checkable
 
 from intergrax.runtime.interactions.models import InboundInteraction
-from intergrax.runtime.task.task import Task
+
+if TYPE_CHECKING:
+    from intergrax.runtime.task.task import Task
 
 
 @runtime_checkable

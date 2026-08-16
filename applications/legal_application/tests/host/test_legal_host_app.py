@@ -8,7 +8,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from intergrax.fastapi_core.config import ApiEnvironment
-from intergrax.runtime.task.task import TaskResult, TaskState
 from legal_application.host.factory import create_legal_backend_app
 from legal_application.tests.legal_ac3_projection import build_legal_test_registry_projection
 from legal_application.host.settings import LegalBackendSettings
@@ -58,6 +57,8 @@ def test_legal_backend_chat_with_unified_task_runner(
     product_harness_api_key: str,
     harness_auth_headers: dict[str, str],
 ) -> None:
+    from intergrax.runtime.task.task import TaskResult, TaskState
+
     app = create_legal_backend_app(registry_projection=build_legal_test_registry_projection(dev_settings), settings=dev_settings)
     client = TestClient(app, headers=harness_auth_headers)
     task_result = TaskResult(
