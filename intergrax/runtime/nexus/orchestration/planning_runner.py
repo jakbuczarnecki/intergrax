@@ -32,6 +32,7 @@ from intergrax.runtime.nexus.planning.plan_validator import validate_nexus_plan
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
 from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.contracts.runtime_policy_context import PreModelPhase, PreModelPolicyContext
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -186,12 +187,11 @@ class NexusPlanningRunner:
                 tenant_id=task.tenant_id,
                 agent_id=task.agent_id or "",
                 message_count=1,
-                context={
-                    "phase": "nexus_planning",
-                    "classification": classification,
-                    "planner_model_id": self.planner_model_id or "",
-                    "denied_planner_model_ids": self.denied_planner_model_ids,
-                },
+                context=PreModelPolicyContext(
+                    phase=PreModelPhase.NEXUS_PLANNING,
+                    planner_model_id=self.planner_model_id or "",
+                    denied_planner_model_ids=self.denied_planner_model_ids,
+                ),
             )
             planning_policy_action = policy_decision.action.value
             if policy_decision.action is PolicyAction.DENY:

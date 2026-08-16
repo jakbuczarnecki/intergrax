@@ -24,7 +24,6 @@ def test_adversarial_prompts_reach_pre_llm_policy_hook(prompt: str) -> None:
         tenant_id="tenant-test",
         agent_id="echo",
         message_count=1,
-        context={"user_message": prompt, "risk_tier": "high"},
     )
     assert decision is not None
     assert decision.action is not None

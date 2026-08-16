@@ -5,6 +5,12 @@ import pytest
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.contracts.runtime_policy_context import (
+    AgentDecisionPolicyContext,
+    CriticPolicyContext,
+    PreModelPhase,
+    PreModelPolicyContext,
+)
 from intergrax.runtime.policy.policy_engine import (
     PolicyEngine,
     coerce_policy_engine,
@@ -34,8 +40,162 @@ def test_policy_engine_evaluate_decision_delegates_to_runtime():
         reason="critical",
         severity=EventSeverity.CRITICAL,
     )
-    result = engine.evaluate_decision(decision, context={"require_human_on_critical": True})
+    result = engine.evaluate_decision(
+        decision,
+        context=AgentDecisionPolicyContext(require_human_on_critical=True),
+    )
     assert result.action == PolicyAction.REQUIRE_HUMAN
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_decision_critical_interrupt_default_requires_human():
+    engine = PolicyEngine()
+    decision = AgentDecision(
+        type=AgentDecisionType.INTERRUPT,
+        reason="critical",
+        severity=EventSeverity.CRITICAL,
+    )
+    result = engine.evaluate_decision(decision)
+    assert result.action == PolicyAction.REQUIRE_HUMAN
+    assert result.reason == "critical_interrupt_requires_human"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_decision_critical_interrupt_opt_out_allows():
+    engine = PolicyEngine()
+    decision = AgentDecision(
+        type=AgentDecisionType.INTERRUPT,
+        reason="critical",
+        severity=EventSeverity.CRITICAL,
+    )
+    result = engine.evaluate_decision(
+        decision,
+        context=AgentDecisionPolicyContext(require_human_on_critical=False),
+    )
+    assert result.action == PolicyAction.ALLOW
+    assert result.reason == "default_allow"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_decision_complete_with_unresolved_critical_requires_human():
+    engine = PolicyEngine()
+    decision = AgentDecision(type=AgentDecisionType.COMPLETE, reason="done")
+    result = engine.evaluate_decision(
+        decision,
+        context=AgentDecisionPolicyContext(has_unresolved_critical_interrupt=True),
+    )
+    assert result.action == PolicyAction.REQUIRE_HUMAN
+    assert result.reason == "unresolved_critical_interrupt"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_decision_normal_allows():
+    engine = PolicyEngine()
+    decision = AgentDecision(type=AgentDecisionType.CONTINUE, reason="ok")
+    result = engine.evaluate_decision(decision)
+    assert result.action == PolicyAction.ALLOW
+    assert result.reason == "default_allow"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_pre_llm_empty_context_denies():
+    engine = PolicyEngine()
+    result = engine.evaluate_pre_llm(tenant_id="t1", agent_id="a1", message_count=0)
+    assert result.action == PolicyAction.DENY
+    assert result.reason == "pre_llm_empty_context"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_pre_llm_denied_planning_model():
+    engine = PolicyEngine()
+    result = engine.evaluate_pre_llm(
+        tenant_id="t1",
+        agent_id="a1",
+        message_count=1,
+        context=PreModelPolicyContext(
+            phase=PreModelPhase.NEXUS_PLANNING,
+            planner_model_id="blocked-model",
+            denied_planner_model_ids=("blocked-model",),
+        ),
+    )
+    assert result.action == PolicyAction.DENY
+    assert result.reason == "planner_model_denied"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_pre_llm_allowed_planning_model():
+    engine = PolicyEngine()
+    result = engine.evaluate_pre_llm(
+        tenant_id="t1",
+        agent_id="a1",
+        message_count=1,
+        context=PreModelPolicyContext(
+            phase=PreModelPhase.NEXUS_PLANNING,
+            planner_model_id="allowed-model",
+            denied_planner_model_ids=("blocked-model",),
+        ),
+    )
+    assert result.action == PolicyAction.ALLOW
+    assert result.reason == "pre_llm_default_allow"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_critic_verdict_escalate_hitl():
+    engine = PolicyEngine()
+    result = engine.evaluate_critic_verdict(
+        passed=False,
+        recommended_action="escalate_hitl",
+    )
+    assert result.action == PolicyAction.REQUIRE_HUMAN
+    assert result.reason == "critic_escalate_hitl"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_critic_verdict_required_and_failed_denies():
+    engine = PolicyEngine()
+    result = engine.evaluate_critic_verdict(
+        passed=False,
+        recommended_action="fail",
+        context=CriticPolicyContext(require_critic_on_completion=True),
+    )
+    assert result.action == PolicyAction.DENY
+    assert result.reason == "critic_completion_required"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_critic_verdict_normal_allows():
+    engine = PolicyEngine()
+    result = engine.evaluate_critic_verdict(passed=True, recommended_action="continue")
+    assert result.action == PolicyAction.ALLOW
+    assert result.reason == "critic_default_allow"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_pre_output_empty_denies():
+    engine = PolicyEngine()
+    result = engine.evaluate_pre_output(tenant_id="t1", agent_id="a1", output_chars=0)
+    assert result.action == PolicyAction.DENY
+    assert result.reason == "pre_output_empty"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluate_pre_output_non_empty_allows():
+    engine = PolicyEngine()
+    result = engine.evaluate_pre_output(tenant_id="t1", agent_id="a1", output_chars=12)
+    assert result.action == PolicyAction.ALLOW
+    assert result.reason == "pre_output_default_allow"
 
 
 @pytest.mark.unit

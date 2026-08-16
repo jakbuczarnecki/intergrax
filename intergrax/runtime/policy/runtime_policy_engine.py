@@ -16,6 +16,12 @@ from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+from intergrax.contracts.runtime_policy_context import (
+    AgentDecisionPolicyContext,
+    CriticPolicyContext,
+    PreModelPhase,
+    PreModelPolicyContext,
+)
 
 
 class RuntimePolicyEngine:
@@ -111,18 +117,18 @@ class RuntimePolicyEngine:
         self,
         decision: AgentDecision,
         *,
-        context: Optional[Dict[str, Any]] = None,
+        context: AgentDecisionPolicyContext | None = None,
     ) -> PolicyDecision:
-        ctx = context or {}
+        ctx = context or AgentDecisionPolicyContext()
         if decision.type == AgentDecisionType.INTERRUPT and decision.severity.value == "critical":
-            if ctx.get("require_human_on_critical", True):
+            if ctx.require_human_on_critical:
                 return PolicyDecision(
                     action=PolicyAction.REQUIRE_HUMAN,
                     reason="critical_interrupt_requires_human",
                     enforcement_level=EnforcementLevel.MANDATORY,
                     policy_rule_id="default.critical_interrupt",
                 )
-        if decision.type == AgentDecisionType.COMPLETE and ctx.get("has_unresolved_critical_interrupt"):
+        if decision.type == AgentDecisionType.COMPLETE and ctx.has_unresolved_critical_interrupt:
             return PolicyDecision(
                 action=PolicyAction.REQUIRE_HUMAN,
                 reason="unresolved_critical_interrupt",
@@ -141,22 +147,18 @@ class RuntimePolicyEngine:
         tenant_id: str,
         agent_id: str,
         message_count: int,
-        context: dict[str, Any] | None = None,
+        context: PreModelPolicyContext | None = None,
     ) -> PolicyDecision:
-        ctx = context or {}
+        ctx = context or PreModelPolicyContext()
         if message_count < 1:
             return PolicyDecision(
                 action=PolicyAction.DENY,
                 reason="pre_llm_empty_context",
                 policy_rule_id="default.pre_llm_context",
             )
-        if ctx.get("phase") == "nexus_planning":
-            planner_model_id = str(ctx.get("planner_model_id", "")).strip()
-            denied = {
-                str(item).strip()
-                for item in ctx.get("denied_planner_model_ids", ())
-                if str(item).strip()
-            }
+        if ctx.phase is PreModelPhase.NEXUS_PLANNING:
+            planner_model_id = ctx.planner_model_id.strip()
+            denied = {item.strip() for item in ctx.denied_planner_model_ids if item.strip()}
             if planner_model_id and planner_model_id in denied:
                 return PolicyDecision(
                     action=PolicyAction.DENY,
@@ -180,9 +182,7 @@ class RuntimePolicyEngine:
         tenant_id: str,
         agent_id: str,
         output_chars: int,
-        context: dict[str, Any] | None = None,
     ) -> PolicyDecision:
-        _ = context
         if output_chars <= 0:
             return PolicyDecision(
                 action=PolicyAction.DENY,
@@ -216,10 +216,9 @@ class RuntimePolicyEngine:
         *,
         passed: bool,
         recommended_action: str,
-        context: dict[str, Any] | None = None,
+        context: CriticPolicyContext | None = None,
     ) -> PolicyDecision:
-        ctx = context or {}
-        governance = ctx.get("critic_governance") or {}
+        ctx = context or CriticPolicyContext()
         if recommended_action == "escalate_hitl":
             return PolicyDecision(
                 action=PolicyAction.REQUIRE_HUMAN,
@@ -227,7 +226,7 @@ class RuntimePolicyEngine:
                 enforcement_level=EnforcementLevel.MANDATORY,
                 policy_rule_id="critic.l2_escalation",
             )
-        if governance.get("require_critic_on_completion") and not passed:
+        if ctx.require_critic_on_completion and not passed:
             return PolicyDecision(
                 action=PolicyAction.DENY,
                 reason="critic_completion_required",

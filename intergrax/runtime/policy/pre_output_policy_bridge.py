@@ -20,7 +20,6 @@ def evaluate_pre_output_for_task(
         tenant_id=task.tenant_id,
         agent_id=agent_id,
         output_chars=len(answer or ""),
-        context={"phase": "nexus_finalization", "task_id": task.task_id},
     )
 
 

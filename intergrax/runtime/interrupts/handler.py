@@ -20,6 +20,7 @@ from intergrax.contracts.agent_decision import (
 from intergrax.contracts.declarative_hitl import DeclarativeHitlPendingApproval
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
 from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+from intergrax.contracts.runtime_policy_context import AgentDecisionPolicyContext
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
 if TYPE_CHECKING:
@@ -88,9 +89,11 @@ class ExecutionInterruptHandler:
         agent_id: str,
         step_id: Optional[str] = None,
         context: Optional[Dict[str, Any]] = None,
+        decision_policy_context: AgentDecisionPolicyContext | None = None,
     ) -> GovernanceResolution:
         interrupt: Optional[ExecutionInterrupt] = None
         policy_ctx = dict(context or {})
+        decision_ctx = decision_policy_context or AgentDecisionPolicyContext()
 
         if decision.type == AgentDecisionType.INTERRUPT:
             budget_decision = self._interrupt_budget_decision(policy_ctx)
@@ -129,9 +132,9 @@ class ExecutionInterruptHandler:
                         policy_rule_id="modify_plan_not_supported",
                     )
             else:
-                policy = self._policy.evaluate_decision(decision, context=policy_ctx)
+                policy = self._policy.evaluate_decision(decision, context=decision_ctx)
         else:
-            policy = self._policy.evaluate_decision(decision, context=policy_ctx)
+            policy = self._policy.evaluate_decision(decision, context=decision_ctx)
 
         human_request = decision.human_request
         if human_request is None and (
