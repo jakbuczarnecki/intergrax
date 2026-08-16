@@ -135,6 +135,34 @@ These classes describe **where policy may apply** in the platform model. **Curre
 
 ---
 
+## Governance Evaluation Points and ownership
+
+Frozen architecture (G1A): [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md).
+
+A **Governance Evaluation Point** is a named execution boundary at which Intergrax evaluates configured governance state before, during, or after a meaningful execution operation and produces an explicit governance outcome according to that boundary's contract. It is **not** one class, method, enum, or middleware stack.
+
+**One governance plane, multiple enforcement owners.** Governed Execution composes specialized owners — authorization (`ToolAccessPolicy`, `ToolScopePolicy`), live policy (`RuntimePolicyEngine`, `PolicyEngine` facade for live + replay evaluators), declarative tool policy (`DeclarativePolicyEnforcer`), canonical HITL, post-run governance (`GovernanceService`, `ExecutionGuard`), and evidence/observability — without a universal `GovernanceEngine`.
+
+| Concern | Question |
+| ------- | -------- |
+| **Authorization** | May this principal / capability reach this execution surface? |
+| **Policy enforcement** | Given this request, may this execution proceed, change, escalate, or require human approval? |
+| **Post-run governance** | Was completed execution acceptable, and what follow-up is required? |
+
+These compose sequentially; they are **not** interchangeable. Authorization ALLOW does not imply policy ALLOW; post-run BLOCK is not retroactive pre-execution DENY.
+
+**Typed context rule:** critical live evaluation points must move toward explicit typed request/context contracts. Opaque `dict[str, Any]` semantic bags are not the target architecture for security-sensitive enforcement. Plugin/domain extension payloads may exist at ingestion boundaries only behind domain-owned validation ([Platform Plugins](PLATFORM_PLUGINS.md)).
+
+**Failure posture:** security-sensitive indeterminate outcomes at meaningful external side effects and explicitly restricted authorization paths **fail closed**. Declarative `AUDIT_ONLY` may record would-deny without blocking. Other boundaries are evaluation-point-specific (see ADR).
+
+**Reference pattern (not universal topology):** `DeclarativePolicyEnforcer` at `RuntimeToolInvoker` — typed context, deterministic precedence, provenance, enforcement mode, block before handler, scoped HITL. Other boundaries should match this contract quality where critical, not necessarily this implementation path.
+
+**PolicyEngine** is a facade over live `RuntimePolicyEngine` and optional replay `ExecutionPolicyEngine` — **not** the whole of Governed Execution. It does not own tool access/scope, declarative enforcer, HITL, or evidence.
+
+Contract hardening (**G1B**): typed runtime contexts, rule representation, bundle fragment validation, side-effect domain payloads, facade terminology, provenance on critical paths — backlog in ADR-GOVERNED-EXECUTION-001.
+
+---
+
 ## Human-in-the-loop
 
 Intergrax has **one canonical HITL system**. `REQUIRE_HUMAN` connects conceptually to:
@@ -197,8 +225,9 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 | Canonical HITL integration | **Implemented** — bounded paths; not every evaluation point |
 | Policy plugin / handler infrastructure | **Implemented slices** — admission / provenance partial |
 | Post-run governance | **Implemented mechanisms** — `GovernanceService` / `ExecutionGuard` |
-| One hardened typed governance contract across all critical paths | **Open** — consolidation ongoing |
-| Uniform evaluation-point model | **Open** |
+| Governance Evaluation Point architecture (G1A) | **Accepted** — [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) |
+| Contract hardening across critical paths (G1B) | **Open** — typed contexts, rules, provenance per ADR backlog |
+| Uniform evaluation-point runtime enum / god engine | **Rejected** — multiple owners preserved |
 | Canonical built-in policy catalog | **Open** |
 | Complete platform-wide coverage | **Not claimed** |
 | Dedicated accepted public Governed Execution proof | **Not established** |
@@ -225,6 +254,7 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 | Topic | Canonical owner |
 | ----- | ---------------- |
 | Failure, retry, HITL, governed continuation | [RELIABILITY_FAILURE_AND_HITL.md](RELIABILITY_FAILURE_AND_HITL.md) |
+| Governance Evaluation Points and enforcement ownership | [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) |
 | Platform plugins and policy handler admission | [PLATFORM_PLUGINS.md](PLATFORM_PLUGINS.md) · [ADR-PLATFORM-PLUGIN-001](../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) |
 | Observability and evidence spine | [OBSERVABILITY.md](OBSERVABILITY.md) · [PROOF_RECEIPTS.md](PROOF_RECEIPTS.md) |
 | Public architecture overview | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
