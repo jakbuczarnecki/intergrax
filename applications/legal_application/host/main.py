@@ -9,12 +9,27 @@ import os
 
 from dotenv import load_dotenv
 
+from intergrax.applications._shared.production_host_composition import (
+    bootstrap_production_registry_projection,
+)
 from legal_application.host.factory import create_legal_backend_app
+from legal_application.host.settings import LegalBackendSettings
+from legal_application.host.wiring import build_legal_environment_profile, build_legal_manifest
 
 # Load `.env` when present (does not override existing process env).
 load_dotenv()
 
-app = create_legal_backend_app()
+_settings = LegalBackendSettings.from_env()
+_manifest = build_legal_manifest(_settings)
+_env = _manifest.environment or build_legal_environment_profile(_settings)
+
+app = create_legal_backend_app(
+    registry_projection=bootstrap_production_registry_projection(
+        application_id=_manifest.app_id,
+        application_environment_id=_env.profile_id,
+    ),
+    settings=_settings,
+)
 
 
 def run() -> None:

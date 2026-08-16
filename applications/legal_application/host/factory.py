@@ -18,8 +18,8 @@ from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
@@ -44,6 +44,7 @@ from legal_application.host.wiring import build_legal_environment_profile, build
 
 def create_legal_backend_app(
     *,
+    registry_projection: MaterializedRegistryProjection,
     settings: Optional[LegalBackendSettings] = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
@@ -69,6 +70,7 @@ def create_legal_backend_app(
         settings=settings,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
+        registry_projection=registry_projection,
     )
     nexus_loop = runtime.nexus_loop
     registry = runtime.registry

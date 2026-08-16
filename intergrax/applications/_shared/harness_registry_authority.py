@@ -42,10 +42,14 @@ def resolve_registry_assembly_mode(
     explicit: RegistryAssemblyMode | None = None,
 ) -> RegistryAssemblyMode:
     """Infer assembly mode from explicit override or environment execution posture."""
+    if environment.execution_mode == ExecutionMode.STRICT:
+        if explicit is RegistryAssemblyMode.MANIFEST_DEVELOPMENT:
+            raise HarnessHostRegistryAuthorityError(
+                "STRICT execution mode requires revision-bound registry authority"
+            )
+        return RegistryAssemblyMode.REVISION_BOUND
     if explicit is not None:
         return explicit
-    if environment.execution_mode == ExecutionMode.STRICT:
-        return RegistryAssemblyMode.REVISION_BOUND
     return RegistryAssemblyMode.MANIFEST_DEVELOPMENT
 
 

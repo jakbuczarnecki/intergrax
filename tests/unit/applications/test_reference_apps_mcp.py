@@ -31,11 +31,12 @@ def test_research_application_exposes_mcp_mount(
     harness_auth_headers: dict[str, str],
 ) -> None:
     from research_application.host.factory import create_research_backend_app
+from research_application.tests.research_ac3_projection import build_research_test_registry_projection
     from research_application.host.settings import ResearchBackendSettings
 
     monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "gate-test-harness-key")
     settings = ResearchBackendSettings(include_mcp=True)
-    app = create_research_backend_app(settings=settings)
+    app = create_research_backend_app(registry_projection=build_research_test_registry_projection(settings), settings=settings)
     client = TestClient(app, headers=harness_auth_headers)
     assert client.get("/health").status_code == 200
     assert any(attribute_access.optional(r, "path", None) in {"/mcp", "/mcp/"} for r in app.routes if hasattr(r, "path"))

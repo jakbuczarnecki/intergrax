@@ -87,7 +87,8 @@ def test_legal_factory_exposes_interaction_intake_route(monkeypatch: pytest.Monk
     monkeypatch.setenv("LEGAL_INCLUDE_MCP", "false")
     monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "gate-test-harness-key")
     from legal_application.host.factory import create_legal_backend_app
+from legal_application.tests.legal_ac3_projection import build_legal_test_registry_projection
 
-    app = create_legal_backend_app()
+    app = create_legal_backend_app(registry_projection=build_legal_test_registry_projection())
     paths = {attribute_access.optional(route, "path", "") for route in app.routes}
     assert "/v1/interactions/intake" in paths

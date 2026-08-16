@@ -232,3 +232,31 @@ def test_strict_environment_infers_revision_bound_without_silent_manifest_fallba
             builders=ECHO_BUILDERS,
             use_in_memory_trace=True,
         )
+
+
+def test_strict_explicit_manifest_development_override_fails_closed() -> None:
+    env = _strict_environment()
+    with pytest.raises(
+        HarnessHostRegistryAuthorityError,
+        match="STRICT execution mode requires revision-bound registry authority",
+    ):
+        resolve_registry_assembly_mode(
+            env,
+            explicit=RegistryAssemblyMode.MANIFEST_DEVELOPMENT,
+        )
+
+
+def test_strict_explicit_manifest_development_host_build_fails_without_manifest_builder() -> None:
+    manifest = _manifest()
+    environment = _strict_environment()
+    with patch(
+        "intergrax.applications._shared.harness_registry_authority.build_manifest_development_registry",
+    ) as manifest_builder:
+        with pytest.raises(HarnessHostRegistryAuthorityError):
+            build_harness_host_runtime(
+                manifest,
+                environment,
+                registry_assembly_mode=RegistryAssemblyMode.MANIFEST_DEVELOPMENT,
+                use_in_memory_trace=True,
+            )
+    manifest_builder.assert_not_called()

@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from local_workspace_application.host.factory import create_local_workspace_backend_app
+from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.slack_companion.companion import COMPONENT_NAME
 from local_workspace_application.workspaces.connected_source_host_wiring import (
@@ -490,7 +491,7 @@ def test_create_local_workspace_backend_app_wires_connected_source(
         include_mcp=False,
         include_scheduler=False,
     )
-    app = create_local_workspace_backend_app(settings=settings)
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
 
     with TestClient(app):
         wiring = app.state.lkw_connected_source_wiring
@@ -710,7 +711,7 @@ def test_create_local_workspace_backend_app_connected_source_readiness_states(
         include_mcp=False,
         include_scheduler=False,
     )
-    app = create_local_workspace_backend_app(settings=settings)
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
 
     with TestClient(app):
         readiness = app.state.lkw_connected_source_readiness

@@ -20,6 +20,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from local_workspace_application.host.factory import create_local_workspace_backend_app
+from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 
 pytestmark = [pytest.mark.unit]
 
@@ -74,7 +75,7 @@ def lkw_smoke_client(
     monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_RAG", "true")
     monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_RAG_INGEST", "true")
 
-    with TestClient(create_local_workspace_backend_app()) as client:
+    with TestClient(create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection())) as client:
         yield client
 
 

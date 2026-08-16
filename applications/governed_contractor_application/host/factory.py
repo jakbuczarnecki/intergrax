@@ -19,6 +19,7 @@ from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.runtime.interactions.router import create_interaction_intake_router
@@ -37,6 +38,7 @@ from governed_contractor_application.serving.fastapi_router import mount_governe
 
 def create_governed_contractor_backend_app(
     *,
+    registry_projection: MaterializedRegistryProjection,
     settings: Optional[GovernedContractorBackendSettings] = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
@@ -55,6 +57,7 @@ def create_governed_contractor_backend_app(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
         use_in_memory_trace=trace_db_path is None,
+        registry_projection=registry_projection,
     )
     nexus_loop = runtime.nexus_loop
     registry = runtime.registry

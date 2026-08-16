@@ -4,11 +4,26 @@ import os
 
 from dotenv import load_dotenv
 
+from intergrax.applications._shared.production_host_composition import (
+    bootstrap_production_registry_projection,
+)
+from governed_contractor_application.host.environment_profile import (
+    build_governed_contractor_environment_profile,
+)
 from governed_contractor_application.host.factory import create_governed_contractor_backend_app
+from governed_contractor_application.manifest import build_governed_contractor_manifest
 
 load_dotenv()
 
-app = create_governed_contractor_backend_app()
+_manifest = build_governed_contractor_manifest()
+_env = _manifest.environment or build_governed_contractor_environment_profile()
+
+app = create_governed_contractor_backend_app(
+    registry_projection=bootstrap_production_registry_projection(
+        application_id=_manifest.app_id,
+        application_environment_id=_env.profile_id,
+    ),
+)
 
 
 def run() -> None:

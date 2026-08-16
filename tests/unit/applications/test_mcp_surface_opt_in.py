@@ -13,6 +13,7 @@ import pytest
 
 from intergrax.applications._shared.mcp_import_guard import MCPDependencyError, ensure_mcp_dependencies
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -82,7 +83,7 @@ def test_http_only_factory_does_not_import_fastmcp(monkeypatch: pytest.MonkeyPat
 
     from local_workspace_application.host.factory import create_local_workspace_backend_app
 
-    create_local_workspace_backend_app(settings=_http_only_settings())
+    create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(_http_only_settings(), settings=_http_only_settings())
     blocked = {"fastmcp", "mcp"}
     assert not any(
         module in blocked or module.startswith("fastmcp.") or module.startswith("mcp.")
@@ -118,7 +119,7 @@ def test_mcp_enabled_factory_raises_when_fastmcp_missing() -> None:
         side_effect=MCPDependencyError("INCLUDE_MCP=true"),
     ):
         with pytest.raises(MCPDependencyError, match="INCLUDE_MCP=true"):
-            create_local_workspace_backend_app(settings=settings)
+            create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
 
 
 def test_scaffold_defaults_mcp_to_opt_in(tmp_path: Path) -> None:

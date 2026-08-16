@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi import FastAPI
 
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.applications._shared.workspace_cleanup_wiring import (
@@ -27,13 +28,14 @@ from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from research_application.host.settings import ResearchBackendSettings
-from research_application.host.wiring import build_research_environment_profile, build_research_registry
+from research_application.host.wiring import build_research_environment_profile
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 from research_application.serving.fastapi_router import mount_research_routes
 
 
 def create_research_backend_app(
     *,
+    registry_projection: MaterializedRegistryProjection,
     settings: Optional[ResearchBackendSettings] = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
@@ -54,8 +56,8 @@ def create_research_backend_app(
         settings=settings,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
+        registry_projection=registry_projection,
     )
-    registry = runtime.registry
     nexus = runtime.nexus_loop
     platform = bootstrap_nexus_platform(
         nexus,
