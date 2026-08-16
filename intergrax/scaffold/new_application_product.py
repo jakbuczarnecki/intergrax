@@ -528,6 +528,8 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
 
             manifest = build_{short}_manifest()
             env = manifest.environment or build_{short}_environment_profile(settings)
+            # Production hosts require revision-bound registry_projection (AC-3).
+            # Scaffold uses product_defaults (STRICT); pass registry_projection before deploy.
             runtime = build_harness_host_runtime(
                 manifest,
                 env,

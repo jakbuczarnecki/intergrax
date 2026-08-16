@@ -12,6 +12,7 @@ from intergrax.applications._shared.environment_wiring import (
     _merge_integration_read_allowlist_roots,
 )
 from intergrax.applications._shared.harness_host_runtime import (
+    RegistryAssemblyMode,
     build_harness_host_runtime,
 )
 from intergrax.integrations.registry.catalog_manifests import OTEL, SQLITE
@@ -101,6 +102,8 @@ def test_lkw_factory_runtime_includes_staging_and_user_read_roots(
         LOCAL_WORKSPACE_APPLICATION_MANIFEST,
         env,
         settings=settings,
+        registry_assembly_mode=RegistryAssemblyMode.MANIFEST_DEVELOPMENT,
+        use_in_memory_trace=True,
     )
     roots = runtime.env_wiring.tool_wiring.wiring_context.read_allowlist_roots
     assert settings.managed_upload_staging_dir in roots
@@ -131,6 +134,8 @@ def test_lkw_factory_runtime_merges_multiple_option_blocks(
         LOCAL_WORKSPACE_APPLICATION_MANIFEST,
         env,
         settings=settings,
+        registry_assembly_mode=RegistryAssemblyMode.MANIFEST_DEVELOPMENT,
+        use_in_memory_trace=True,
     )
     roots = runtime.env_wiring.tool_wiring.wiring_context.read_allowlist_roots
     assert settings.managed_upload_staging_dir in roots
