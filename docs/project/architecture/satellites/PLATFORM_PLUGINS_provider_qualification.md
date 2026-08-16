@@ -462,14 +462,16 @@ No new enums, no qualification-core edits, no per-vendor CI job added to default
 - persistence assigning `qualification_run_id` (identity is execution-owned; persistence preserves it)
 - GitHub Actions or other executor implementations
 
-**Also deferred:**
+## 15. PROVIDER-QUAL-3 (evidence persistence/integration — deferred)
 
-- evidence persistence and qualification index wiring
-- recording the PostgreSQL template as a live `ProofReceipt`
+- qualification run persistence/index integration
+- mapping to existing `ProofReceipt` where appropriate
+- recording the PostgreSQL template as a live `ProofReceipt` (already accepted PostgreSQL 16.6 bounded qualification evidence)
+- query/discovery surface for qualification evidence as already architected
 
 ---
 
-## 15. References
+## 16. References
 
 - [`PLATFORM_PLUGINS.md`](../PLATFORM_PLUGINS.md) section 18
 - [`PROOF_RECEIPTS.md`](../PROOF_RECEIPTS.md)

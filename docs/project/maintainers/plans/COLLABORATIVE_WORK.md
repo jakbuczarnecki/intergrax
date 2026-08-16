@@ -239,7 +239,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | Field | Value |
 |-------|-------|
 | **PostgreSQL live qualification** | **Accepted** — CW PostgreSQL repository suite: 15 passed / 0 skipped / 0 failed; `real_backend=true`; bounded local Docker qualification host; capability `collaborative_work.persistence.v1`; provider version `16.6` only |
-| **MP-1 final closure** | Depends on **provider qualification architecture/evidence integration** ([`PROVIDER-QUAL-2`](PLATFORM_PLUGINS.md#provider-qual-track-post-plugin-9)), **not** vendor-specific CI jobs or per-provider workflow changes |
+| **MP-1 final closure** | Depends on **provider qualification evidence integration** ([`PROVIDER-QUAL-3`](PLATFORM_PLUGINS.md#provider-qual-track-post-plugin-9)), **not** vendor-specific CI jobs or per-provider workflow changes |
 | **Architecture** | [`satellites/PLATFORM_PLUGINS_provider_qualification.md`](../../architecture/satellites/PLATFORM_PLUGINS_provider_qualification.md) |
 
 ---

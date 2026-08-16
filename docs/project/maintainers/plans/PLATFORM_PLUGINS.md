@@ -156,9 +156,12 @@ Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qu
 |----|------|--------|---------|
 | **PROVIDER-QUAL-0** | Architecture decision | **Done** | `EXTEND_EXISTING` — reuse core qualification + platform coordination + ProofReceipt |
 | **PROVIDER-QUAL-1** | Architecture freeze + contract design | **READY_FOR_REVIEW** | Subject/run/status/evidence/admission/CI boundary freeze; PostgreSQL template; Oracle extensibility proof |
-| **PROVIDER-QUAL-2** | Typed contracts + evidence integration | Planned | Implement `ProviderQualificationSubject`, `ProviderQualificationRun`, `QualificationEvidenceValidity`, typed validity/admission view; execution-owned `qualification_run_id`; record CW PostgreSQL proof; no global admission engine |
+| **PROVIDER-QUAL-2** | Typed contracts | Planned | Implement `ProviderQualificationSubject`, `ProviderQualificationRun`, `QualificationEvidenceValidity`, typed validity/admission view or record if ownership remains frozen; reusable evidence kind contracts as required; unit/contract tests; vendor-neutrality invariants |
+| **PROVIDER-QUAL-3** | Evidence persistence/integration | Planned | Qualification run persistence/index integration; mapping to existing `ProofReceipt` where appropriate; record the already accepted PostgreSQL 16.6 bounded qualification evidence; query/discovery surface for qualification evidence as already architected |
 
 **Explicit out of scope (PROVIDER-QUAL-1):** runtime Python changes, GHA vendor jobs, LKW integration, MP-2, admission policy engine, automatic staleness engine.
+
+**Explicit out of scope (PROVIDER-QUAL-2):** persistence/index integration, `ProofReceipt` persistence, recording PostgreSQL 16.6 evidence, qualification runner/harness, admission policy engine, automatic staleness engine, GitHub Actions vendor execution.
 
 ---
 
