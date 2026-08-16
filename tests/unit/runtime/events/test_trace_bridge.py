@@ -307,3 +307,52 @@ def test_trace_bridge_does_not_mint_task_id_from_malformed_tag() -> None:
             run_id=run_id,
             attempt_id=attempt_id,
         )
+
+
+def test_trace_bridge_does_not_use_run_id_as_task_id() -> None:
+    from intergrax.runtime.events.trace_bridge import TraceBridgeSubjectView
+
+    task_id, run_id, attempt_id = _trace_identity()
+    trace = TraceEvent(
+        event_id="missing-task",
+        run_id=run_id,
+        seq=11,
+        ts_utc="2026-06-19T10:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="diag",
+        message="no task",
+        tags={"task_id": task_id},
+    )
+    with pytest.raises(ValueError, match="TaskId must start with"):
+        trace_event_to_runtime_event(
+            trace,
+            TraceBridgeSubjectView(tenant_id="tenant", task_id=run_id),
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
+
+
+def test_trace_bridge_requires_attempt_id_without_active_identity() -> None:
+    task, task_id, run_id, _attempt_id = _task_with_identity()
+    trace = TraceEvent(
+        event_id="missing-attempt",
+        run_id=run_id,
+        seq=12,
+        ts_utc="2026-06-19T10:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="diag",
+        message="no attempt",
+        tags={"task_id": task_id},
+    )
+    with pytest.raises(RuntimeError, match="explicit attempt_id required"):
+        trace_event_to_runtime_event(trace, task, run_id=run_id)
+
+
+def test_trace_bridge_subject_requires_tenant_id() -> None:
+    with pytest.raises(ValueError, match="tenant_id is required"):
+        trace_bridge_subject_from_tags(
+            tenant_id="",
+            task_id=mint_task_id(),
+        )

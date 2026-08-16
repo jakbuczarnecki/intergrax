@@ -4,6 +4,7 @@ import pytest
 
 pytestmark = pytest.mark.no_ci
 
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_event_id, mint_run_id, mint_task_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import NullRuntimeEventPersistence
@@ -21,16 +22,19 @@ from intergrax.runtime.events.stores.validating_runtime_event_store import (
 from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
 
 
-def _sample_event(**updates) -> RuntimeEvent:
-    base = RuntimeEvent(
-        tenant_id="t1",
-        task_id="task_1",
-        run_id="run_1",
-        event_type=RuntimeEventType.HUMAN_APPROVAL_REQUESTED,
-        phase=ExecutionPhase.HUMAN_APPROVAL,
-        payload={"human_request": {"urgency": "critical"}},
-    )
-    return base.model_copy(update=updates)
+def _sample_event(**updates: object) -> RuntimeEvent:
+    payload: dict[str, object] = {"human_request": {"urgency": "critical"}}
+    fields: dict[str, object] = {
+        "tenant_id": "t1",
+        "task_id": mint_task_id(),
+        "run_id": mint_run_id(),
+        "attempt_id": mint_attempt_id(),
+        "event_type": RuntimeEventType.HUMAN_APPROVAL_REQUESTED,
+        "phase": ExecutionPhase.HUMAN_APPROVAL,
+        "payload": payload,
+    }
+    fields.update(updates)
+    return RuntimeEvent.model_validate(fields)
 
 
 @pytest.mark.unit
@@ -76,9 +80,10 @@ def test_memory_runtime_event_store_roundtrip():
     store = InMemoryRuntimeEventStore()
     event = _sample_event()
     store.append(event, tenant_id="t1")
-    loaded = store.list_for_run("run_1", tenant_id="t1")
+    loaded = store.list_for_run(event.run_id, tenant_id="t1")
     assert len(loaded) == 1
     assert loaded[0].event_id == event.event_id
+    assert loaded[0].attempt_id == event.attempt_id
     assert loaded[0].payload["human_request"]["urgency"] == "critical"
 
 
@@ -88,9 +93,10 @@ def test_sqlite_runtime_event_store_roundtrip(tmp_path):
     store = open_runtime_event_store(tmp_path / "events.db")
     event = _sample_event()
     store.append(event, tenant_id="t1")
-    by_task = store.list_for_task("task_1", tenant_id="t1")
+    by_task = store.list_for_task(event.task_id, tenant_id="t1")
     assert len(by_task) == 1
     assert by_task[0].tenant_id == "t1"
+    assert by_task[0].attempt_id == event.attempt_id
 
 
 @pytest.mark.asyncio
@@ -102,11 +108,13 @@ async def test_event_bus_persists_on_publish_and_record():
     event = _sample_event(event_type=RuntimeEventType.PAUSED)
     await bus.publish(event)
     assert len(bus.history) == 1
-    assert len(store.list_for_run("run_1", tenant_id="t1")) == 1
+    assert len(store.list_for_run(event.run_id, tenant_id="t1")) == 1
 
     recorded = _sample_event(
-        event_id="evt_record_only",
+        event_id=mint_event_id(),
+        run_id=event.run_id,
+        task_id=event.task_id,
         event_type=RuntimeEventType.RESUMED,
     )
     bus.record(recorded, tenant_id="t1")
-    assert len(store.list_for_run("run_1", tenant_id="t1")) == 2
+    assert len(store.list_for_run(event.run_id, tenant_id="t1")) == 2

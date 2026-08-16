@@ -18,7 +18,7 @@ from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
-    mint_attempt_id,
+    TaskId,
     peek_active_execution_identity,
     validate_attempt_id,
     validate_run_id,
@@ -73,8 +73,11 @@ def trace_bridge_subject_from_tags(
     task_id: str,
     agent_id: str = "",
 ) -> TraceBridgeSubjectView:
+    resolved_tenant = tenant_id.strip()
+    if not resolved_tenant:
+        raise ValueError("tenant_id is required for trace bridge")
     return TraceBridgeSubjectView(
-        tenant_id=tenant_id.strip() or "default",
+        tenant_id=resolved_tenant,
         task_id=str(validate_task_id(task_id)),
         agent_id=agent_id.strip(),
     )
@@ -405,15 +408,8 @@ def _attach_typed_bridge_payload(
     return merged
 
 
-def _resolve_bridge_task_id(trace: TraceEvent, subject: TraceBridgeSubject) -> str:
-    for candidate in (subject.task_id, trace.tags.get("task_id")):
-        if candidate is None:
-            continue
-        try:
-            return str(validate_task_id(candidate))
-        except (TypeError, ValueError):
-            continue
-    raise RuntimeError("canonical task_id required for trace bridge")
+def _resolve_bridge_task_id(subject: TraceBridgeSubject) -> TaskId:
+    return validate_task_id(subject.task_id)
 
 
 def _resolve_bridge_execution_identity(
@@ -508,9 +504,12 @@ def trace_event_to_runtime_event(
     }:
         step_id = step_id or extra_payload.get("step_name")
 
+    tenant_id = subject.tenant_id.strip()
+    if not tenant_id:
+        raise ValueError("tenant_id is required for trace bridge")
     return RuntimeEvent(
-        tenant_id=str(trace.tags.get("tenant_id") or subject.tenant_id),
-        task_id=_resolve_bridge_task_id(trace, subject),
+        tenant_id=tenant_id,
+        task_id=_resolve_bridge_task_id(subject),
         run_id=resolved_run_id,
         attempt_id=resolved_attempt_id,
         agent_id=trace.tags.get("agent_id") or subject.agent_id or None,
