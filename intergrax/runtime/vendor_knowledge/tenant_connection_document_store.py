@@ -9,6 +9,12 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from intergrax.core.security import (
+    CREDENTIAL_IN_URL,
+    FORBIDDEN_KEY,
+    SecretSafetyValidationError,
+    validate_secret_safe_value,
+)
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentRecord,
@@ -21,7 +27,7 @@ from intergrax.runtime.vendor_knowledge.tenant_connections import (
     TenantConnectionCorruptRecord,
     TenantConnectionNotFound,
     TenantConnectionVersionConflict,
-    _assert_secret_free_config,
+    VENDOR_KNOWLEDGE_CONNECTION_SECRET_POLICY,
 )
 
 _PARTITION_PREFIX = "vendor_knowledge_connections"
@@ -44,12 +50,37 @@ def connection_row_key(connection_ref: str) -> str:
     return f"{_ROW_PREFIX}:{cleaned}"
 
 
+def _validate_connection_secret_free_config(
+    value: dict[str, object],
+    *,
+    field_name: str,
+) -> None:
+    try:
+        validate_secret_safe_value(
+            value,
+            policy=VENDOR_KNOWLEDGE_CONNECTION_SECRET_POLICY,
+            context_label=field_name,
+        )
+    except SecretSafetyValidationError as exc:
+        if exc.reason_code == FORBIDDEN_KEY:
+            raise ValueError(
+                f"{field_name} contains forbidden secret-bearing key at {exc.path}"
+            ) from exc
+        if exc.reason_code == CREDENTIAL_IN_URL:
+            raise ValueError(
+                f"{field_name} contains credential-bearing URL at {exc.path}"
+            ) from exc
+        raise ValueError(str(exc)) from exc
+
+
 def connection_to_document(connection: TenantConnection) -> DocumentRecord:
     data = connection.model_dump(mode="json")
-    _assert_secret_free_config(
-        data.get("validated_secret_free_config", {}),
-        field_name="validated_secret_free_config",
-    )
+    config_raw = data.get("validated_secret_free_config", {})
+    if isinstance(config_raw, dict):
+        _validate_connection_secret_free_config(
+            config_raw,
+            field_name="validated_secret_free_config",
+        )
     return DocumentRecord(
         partition_key=connection_partition_key(connection.tenant_id),
         row_key=connection_row_key(connection.connection_ref),
@@ -82,7 +113,7 @@ def connection_from_document(document: DocumentRecord) -> TenantConnection:
     try:
         config_raw = data.get("validated_secret_free_config")
         if isinstance(config_raw, dict):
-            _assert_secret_free_config(
+            _validate_connection_secret_free_config(
                 config_raw,
                 field_name="validated_secret_free_config",
             )

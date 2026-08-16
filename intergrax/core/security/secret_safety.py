@@ -46,6 +46,7 @@ class SecretSafeValidationPolicy:
     normalize_hyphens: bool = True
     split_key_segments: bool = False
     scan_string_values: bool = False
+    scan_embedded_url_credentials: bool = False
     traverse_sequences: bool = True
 
 
@@ -84,6 +85,13 @@ def is_secret_like_value(value: str, *, policy: SecretSafeValidationPolicy) -> b
         return False
     stripped = value.strip()
     return any(pattern.match(stripped) is not None for pattern in policy.forbidden_value_patterns)
+
+
+def _string_has_embedded_url_credentials(value: str) -> bool:
+    parsed = urlparse(value.strip())
+    if not parsed.scheme or not parsed.hostname:
+        return False
+    return parsed.username is not None or parsed.password is not None
 
 
 def _child_path(path: str, key: str) -> str:
@@ -159,6 +167,15 @@ def validate_secret_safe_value(
                 path=_sequence_path(path, index),
                 context_label=context_label,
             )
+        return
+    if isinstance(value, str) and policy.scan_embedded_url_credentials:
+        if _string_has_embedded_url_credentials(value):
+            _raise(
+                path=path,
+                reason_code=CREDENTIAL_IN_URL,
+                context_label=context_label,
+                message=f"{context_label} contains credential-bearing URL at {path}",
+            )
 
 
 def validate_secret_safe_url(
@@ -170,7 +187,7 @@ def validate_secret_safe_url(
     """Reject embedded URL credentials and secret-like query parameter names."""
     cleaned = url.strip()
     parsed = urlparse(cleaned)
-    if parsed.username is not None or parsed.password is not None:
+    if _string_has_embedded_url_credentials(cleaned):
         _raise(
             path=field_name,
             reason_code=CREDENTIAL_IN_URL,

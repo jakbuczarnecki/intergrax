@@ -186,6 +186,69 @@ def test_credential_bearing_url_rejected() -> None:
 
 
 @pytest.mark.unit
+def test_access_token_key_rejected() -> None:
+    with pytest.raises(ValidationError):
+        _connection(config={"access_token": "leak"})
+
+
+@pytest.mark.unit
+def test_nested_forbidden_suffix_rejected() -> None:
+    with pytest.raises(ValidationError):
+        _connection(config={"nested": {"client_secret": "leak"}})
+
+
+@pytest.mark.unit
+def test_safe_nested_mapping_accepted() -> None:
+    connection = _connection(
+        config={
+            "token_endpoint": "https://auth.example.test/oauth2/token",
+            "nested": {"region": "eu-west-1"},
+        }
+    )
+    assert connection.validated_secret_free_config["nested"]["region"] == "eu-west-1"
+
+
+@pytest.mark.unit
+def test_safe_list_traversal_accepted() -> None:
+    connection = _connection(
+        config={
+            "endpoints": [
+                "https://api.example.test/v1",
+                {"host": "backup.example.test"},
+            ]
+        }
+    )
+    assert len(connection.validated_secret_free_config["endpoints"]) == 2
+
+
+@pytest.mark.unit
+def test_url_without_credentials_accepted() -> None:
+    connection = _connection(config={"endpoint": "https://example.test/item?page=1"})
+    assert connection.validated_secret_free_config["endpoint"].startswith("https://")
+
+
+@pytest.mark.unit
+def test_url_secret_query_parameter_accepted() -> None:
+    connection = _connection(
+        config={"endpoint": "https://example.com/?access_token=abc"}
+    )
+    assert "access_token=abc" in connection.validated_secret_free_config["endpoint"]
+
+
+@pytest.mark.unit
+def test_secret_like_scalar_value_accepted() -> None:
+    connection = _connection(config={"note": "sk-live-example"})
+    assert connection.validated_secret_free_config["note"] == "sk-live-example"
+
+
+@pytest.mark.unit
+def test_secret_free_config_error_excludes_literal() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        _connection(config={"endpoint": "https://user:super-secret@example.test/path"})
+    assert "super-secret" not in str(exc_info.value)
+
+
+@pytest.mark.unit
 def test_benign_token_endpoint_accepted() -> None:
     connection = _connection()
     assert connection.validated_secret_free_config["token_endpoint"].startswith("https://")

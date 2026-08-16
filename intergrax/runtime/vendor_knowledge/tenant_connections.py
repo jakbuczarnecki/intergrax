@@ -10,7 +10,6 @@ from collections.abc import Mapping
 from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
-from urllib.parse import urlparse
 
 from pydantic import (
     BaseModel,
@@ -21,34 +20,44 @@ from pydantic import (
     model_validator,
 )
 
+from intergrax.core.security import (
+    CREDENTIAL_IN_URL,
+    FORBIDDEN_KEY,
+    SecretSafetyValidationError,
+    SecretSafeValidationPolicy,
+    validate_secret_safe_value,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.models import JsonValue
 
 _CONNECTION_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
-_FORBIDDEN_EXACT_KEYS: frozenset[str] = frozenset(
-    {
-        "password",
-        "passphrase",
-        "secret",
-        "client_secret",
-        "access_token",
-        "refresh_token",
-        "id_token",
-        "api_key",
-        "authorization",
-        "authorization_header",
-        "private_key",
-    }
-)
-_FORBIDDEN_SUFFIXES: tuple[str, ...] = (
-    "_password",
-    "_passphrase",
-    "_client_secret",
-    "_access_token",
-    "_refresh_token",
-    "_api_key",
-    "_private_key",
+VENDOR_KNOWLEDGE_CONNECTION_SECRET_POLICY = SecretSafeValidationPolicy(
+    forbidden_key_names=frozenset(
+        {
+            "password",
+            "passphrase",
+            "secret",
+            "client_secret",
+            "access_token",
+            "refresh_token",
+            "id_token",
+            "api_key",
+            "authorization",
+            "authorization_header",
+            "private_key",
+        }
+    ),
+    forbidden_key_suffixes=(
+        "_password",
+        "_passphrase",
+        "_client_secret",
+        "_access_token",
+        "_refresh_token",
+        "_api_key",
+        "_private_key",
+    ),
+    scan_embedded_url_credentials=True,
 )
 
 
@@ -85,47 +94,6 @@ def _require_non_empty(value: str, *, field_name: str, max_length: int | None = 
     if max_length is not None and len(cleaned) > max_length:
         raise ValueError(f"{field_name} exceeds maximum length {max_length}")
     return cleaned
-
-
-def _is_forbidden_secret_key(key: str) -> bool:
-    normalized = key.strip().lower()
-    if normalized in _FORBIDDEN_EXACT_KEYS:
-        return True
-    return any(normalized.endswith(suffix) for suffix in _FORBIDDEN_SUFFIXES)
-
-
-def _url_has_embedded_credentials(value: str) -> bool:
-    parsed = urlparse(value.strip())
-    if not parsed.scheme or not parsed.hostname:
-        return False
-    return bool(parsed.username or parsed.password)
-
-
-def _assert_secret_free_config(
-    value: Mapping[str, JsonValue],
-    *,
-    field_name: str,
-) -> dict[str, JsonValue]:
-    def _walk(node: JsonValue, path: str) -> None:
-        if isinstance(node, dict):
-            for key, child in node.items():
-                child_path = f"{path}.{key}" if path else key
-                if _is_forbidden_secret_key(key):
-                    raise ValueError(
-                        f"{field_name} contains forbidden secret-bearing key at {child_path}"
-                    )
-                _walk(child, child_path)
-        elif isinstance(node, list):
-            for index, child in enumerate(node):
-                _walk(child, f"{path}[{index}]")
-        elif isinstance(node, str) and _url_has_embedded_credentials(node):
-            raise ValueError(
-                f"{field_name} contains credential-bearing URL at {path}"
-            )
-
-    result = dict(value)
-    _walk(result, "")
-    return result
 
 
 def _assert_utc_aware(value: datetime, *, field_name: str) -> datetime:
@@ -205,7 +173,25 @@ class TenantConnection(BaseModel):
         cls,
         value: Mapping[str, JsonValue],
     ) -> dict[str, JsonValue]:
-        return _assert_secret_free_config(value, field_name="validated_secret_free_config")
+        field_name = "validated_secret_free_config"
+        result = dict(value)
+        try:
+            validate_secret_safe_value(
+                result,
+                policy=VENDOR_KNOWLEDGE_CONNECTION_SECRET_POLICY,
+                context_label=field_name,
+            )
+        except SecretSafetyValidationError as exc:
+            if exc.reason_code == FORBIDDEN_KEY:
+                raise ValueError(
+                    f"{field_name} contains forbidden secret-bearing key at {exc.path}"
+                ) from exc
+            if exc.reason_code == CREDENTIAL_IN_URL:
+                raise ValueError(
+                    f"{field_name} contains credential-bearing URL at {exc.path}"
+                ) from exc
+            raise ValueError(str(exc)) from exc
+        return result
 
     @model_validator(mode="after")
     def _updated_at_not_before_created(self) -> TenantConnection:
