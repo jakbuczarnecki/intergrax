@@ -21,6 +21,12 @@ from intergrax.runtime.events.event_kind_registry import (
     require_registered_event_kind,
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.execution_position import (
+    AsOfBoundary,
+    ExecutionEventPosition,
+    PositionedRuntimeEvent,
+    as_of_boundary_for_positioned,
+)
 from intergrax.runtime.events.persistence_contract import (
     NullRuntimeEventPersistence,
     RuntimeEventPersistence,
@@ -57,6 +63,7 @@ from intergrax.runtime.events.unified_run_journal import (
 )
 
 __all__ = [
+    "AsOfBoundary",
     "DEFAULT_RUNTIME_EVENTS_DB",
     "ENV_RUNTIME_EVENTS_DB",
     "EVENT_CATALOG",
@@ -65,10 +72,12 @@ __all__ = [
     "EventCatalogEntry",
     "EventCategory",
     "EventKindRegistryEntry",
+    "ExecutionEventPosition",
     "ExecutionPhase",
     "InMemoryRuntimeEventStore",
     "JOURNAL_SCHEMA_VERSION",
     "NullRuntimeEventPersistence",
+    "PositionedRuntimeEvent",
     "RetentionClass",
     "RuntimeEvent",
     "RuntimeEventBus",
@@ -90,6 +99,7 @@ __all__ = [
     "should_persist_event",
     "validate_payload_envelope",
     "SQLiteRuntimeEventStore",
+    "as_of_boundary_for_positioned",
     "build_unified_run_journal",
     "open_runtime_event_store",
     "query_journal",

@@ -42,17 +42,23 @@ _JOURNAL_SOURCE = (
 class _RecordingStore(InMemoryRuntimeEventStore):
     def __init__(self) -> None:
         super().__init__()
-        self.list_for_run_calls: list[tuple[str, str, int]] = []
+        self.list_positioned_for_run_calls: list[tuple[str, str, int]] = []
 
-    def list_for_run(
+    def list_positioned_for_run(
         self,
         run_id: str,
         *,
         tenant_id: str,
         limit: int = 1000,
-    ) -> list[RuntimeEvent]:
-        self.list_for_run_calls.append((run_id, tenant_id, limit))
-        return super().list_for_run(run_id, tenant_id=tenant_id, limit=limit)
+        through=None,
+    ):
+        self.list_positioned_for_run_calls.append((run_id, tenant_id, limit))
+        return super().list_positioned_for_run(
+            run_id,
+            tenant_id=tenant_id,
+            limit=limit,
+            through=through,
+        )
 
 
 def _persisted_run(
@@ -357,7 +363,7 @@ def test_unified_journal_queries_exact_persisted_tenant() -> None:
     )
     journal = build_unified_run_journal(_persisted_run(run_id=run_id), runtime_store=store)
     assert len(journal) == 1
-    assert store.list_for_run_calls == [(run_id, _TENANT, 2000)]
+    assert store.list_positioned_for_run_calls == [(run_id, _TENANT, 2000)]
 
 
 def test_unified_journal_rejects_empty_tenant() -> None:

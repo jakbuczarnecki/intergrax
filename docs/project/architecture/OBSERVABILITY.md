@@ -894,7 +894,7 @@ The journal is a **derived view**. Metrics, external APM, and product summaries 
 
 ## 7. First-class as-of projections (TRACE-ARCH-SYNC-1)
 
-**Status:** Target canon (**accepted** 2026-08-15) · implementation **Planned** (TRACE-ASOF-1–TRACE-ASOF-4) · compatible with bitemporal knowledge basis (§8)
+**Status:** Target canon (**accepted** 2026-08-15) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done** (2026-08-16) · logical projections **Planned** (TRACE-ASOF-2–TRACE-ASOF-4) · compatible with bitemporal knowledge basis (§8)
 
 ### 7.1 Capability definition
 
@@ -941,22 +941,36 @@ Validation = FAILED
 
 Architecture does **not** freeze a concrete projection schema here — TRACE-ASOF-2 defines the logical projection engine.
 
-### 7.3 As-of boundary (`AsOfBoundary`)
+### 7.3 Execution position and as-of boundary (`AsOfBoundary`)
 
-Canonical as-of semantics **MUST** be based on a **deterministic position inside canonical execution history** — prefer **`AsOfBoundary`** over raw `datetime` alone.
+Canonical execution-history ordering is **not** timestamp-based. For one accepted `RunId`, every persisted `RuntimeEvent` receives exactly one **execution position** at the persistence acceptance boundary.
 
-`AsOfBoundary` is **execution-history-relative**. It answers where in the run journal the reconstruction stops — it is **not** a replacement for valid-time or system-time basis (§8).
+| Concept | Type | Owner | Semantics |
+|---------|------|-------|-----------|
+| **Execution position** | `ExecutionEventPosition` | `RuntimeEventPersistence.append` | Positive, immutable, run-scoped, monotonic acceptance order |
+| **Positioned event** | `PositionedRuntimeEvent` | persistence read APIs | Semantic `RuntimeEvent` + authoritative position — position is **not** stored on `RuntimeEvent` |
+| **As-of boundary** | `AsOfBoundary` | query / projection callers | `RunId` + inclusive execution position (`<= position`) |
 
-A future combined projection **MAY** therefore carry two independent inputs:
+**Rules (TRACE-ASOF-1):**
 
-| Basis | Question |
-|-------|----------|
-| **Execution boundary** | Where in the run? |
-| **Temporal knowledge basis** | Valid when? Known by Intergrax when? |
+1. Scope is **per `RunId`** (tenant-scoped store partition) — not global across runs.
+2. Producers own `EventId`, identity fields, and semantic `timestamp`; persistence owns position allocation.
+3. Idempotent append on the same `EventId` returns the **same** position — no duplicate allocation.
+4. Concurrent acceptance for the same run yields one total order with distinct positions (store-level transaction/lock semantics).
+5. `AttemptId` does **not** reset position — retries and resumes continue the run-level sequence.
+6. `EventId` is identity only — **not** ordering authority.
+7. `RuntimeEvent.timestamp` remains diagnostic/display — it does **not** define canonical execution order.
+8. Execution position is independent of valid-time and system-time (§8) — do **not** call it bitemporal.
 
-The final combined type belongs to TRACE-BITEMP-1 / TRACE-BITEMP-3 — architecture does **not** freeze it here.
+**Persistence contract (minimum):**
 
-TRACE-ASOF-1 will resolve the exact representation from event ordering, `EventId`, sequence/cursor semantics, and persistence guarantees. Timestamp **MAY** later serve as a convenience lookup for locating a boundary, but **MUST NOT** automatically become the sole ordering source. Timestamp **MUST NOT** be merged with valid-time or system-time into one generic “as-of datetime”.
+- `append(...) -> PositionedRuntimeEvent`
+- `list_positioned_for_run(..., through: ExecutionEventPosition | None = None)` — oldest position first; `through` selects the inclusive prefix for `AsOfBoundary`
+- `list_for_run` derives event order from positioned reads
+
+**Forbidden:** `AsOfBoundary(timestamp=...)`, `ORDER BY RuntimeEvent.timestamp`, `(timestamp, event_id)` tie-break as authoritative order, producer-side position minting, exposing backend row ids as the public position type.
+
+Logical state reconstruction at a boundary belongs to **TRACE-ASOF-2** — not implemented here.
 
 ### 7.4 Projection properties
 
