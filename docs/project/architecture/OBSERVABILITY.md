@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-08-15 — **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
+**Last updated:** 2026-08-16 — **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
 
 ---
 
@@ -1019,7 +1019,7 @@ As-of projections and bitemporal historical state answer **different questions**
 
 ## 8. First-class bitemporal historical state (TRACE-BITEMP-ARCH-SYNC)
 
-**Status:** Target canon (**accepted** 2026-08-15) · implementation **Planned** (TRACE-BITEMP-1–TRACE-BITEMP-5) · **not implemented** in current runtime
+**Status:** Target canon (**accepted** 2026-08-15; watermark / serialization-boundary refinement **TRACE-BITEMP-ARCH-SYNC-R3** 2026-08-16) · implementation **Planned** (TRACE-BITEMP-1–TRACE-BITEMP-5) · **not implemented** in current runtime
 
 ### 8.1 Capability definition
 
@@ -1049,17 +1049,20 @@ A) "What did Intergrax believe on Aug 10?"  → system-time historical truth
 B) "What do we now know was valid on Aug 10?" → valid-time truth using current knowledge
 ```
 
-### 8.4 Three independent reconstruction coordinates
+Where deterministic knowledge ordering is required, a wall-clock system-time question **SHOULD** resolve to an authoritative knowledge/revision watermark (§8.4) **before** reconstruction. Wall-clock time remains the query input / temporal basis; it does **not** define acceptance order.
 
-Architecture distinguishes **three independent coordinates** — do **not** collapse them:
+### 8.4 Independent reconstruction coordinates and ordering primitives
 
-| Coordinate | Question |
-|------------|----------|
-| **Execution AsOfBoundary** (§7) | **WHERE** in this run / journal are we reconstructing? (e.g. event E42, journal position P42 — exact contract deferred to TRACE-ASOF-1) |
-| **Valid time** | **WHEN** was this fact actually effective / true in the modeled domain? |
-| **System time** | **WHEN** did Intergrax know / record / accept this version of the fact? |
+Architecture distinguishes **independent reconstruction coordinates and ordering primitives** — do **not** collapse them:
 
-**Bitemporal state** means **only** valid-time + system-time — **two** temporal axes. It does **not** include execution boundary.
+| Primitive | Kind | Question |
+|-----------|------|----------|
+| **Execution AsOfBoundary** (§7) | Execution-history position | **WHERE** in this run / journal are we reconstructing? (e.g. event E42, journal position P42 — exact contract deferred to TRACE-ASOF-1) |
+| **Valid time** | Bitemporal temporal axis | **WHEN** was this fact actually effective / true in the modeled domain? |
+| **System time** | Bitemporal temporal axis | **WHEN** did Intergrax know / record / accept this version of the fact? |
+| **KnowledgeRevisionWatermark** (conceptual) | Authoritative knowledge-order upper bound | Reconstruct using accepted knowledge/revisions **up to** knowledge position K |
+
+**Bitemporal state** means **only** valid-time + system-time — **two** temporal axes. It does **not** include execution boundary. **KnowledgeRevisionWatermark** / **KnowledgeRevisionPosition** is **not** a third temporal axis. **Execution AsOfBoundary** is **not** part of bitemporality. Ordering positions and watermarks are deterministic reconstruction/order primitives.
 
 Conceptual structure (names are **conceptual only** — TRACE-BITEMP-1 owns exact typed contracts):
 
@@ -1079,13 +1082,14 @@ Higher-level historical reconstruction may combine:
 
 ```text
 HistoricalExecutionBasis (conceptual)
-    ├── Execution AsOfBoundary
+    ├── Execution AsOfBoundary E
+    ├── KnowledgeRevisionWatermark K (conceptual — TRACE-BITEMP-1 owns exact contract)
     └── BitemporalKnowledgeBasis
         ↓
 Historically Reproducible Execution State
 ```
 
-The three-coordinate result is **not** “bitemporal state”.
+The combined result is **not** “bitemporal state”. **E** and **K** remain different semantic coordinates/boundaries.
 
 #### Semantic questions (distinct)
 
@@ -1093,20 +1097,21 @@ The three-coordinate result is **not** “bitemporal state”.
 |---|----------|
 | 1 | What happened by execution boundary E42? |
 | 2 | What was valid at domain time V? |
-| 3 | What did Intergrax know at system time S? |
-| 4 | What did execution E42 operate against, using facts valid at V and known by S? |
+| 3 | What did Intergrax know at system time S? (wall-clock query input — resolve to watermark K where deterministic knowledge ordering is required) |
+| 4 | What did execution E42 operate against, using facts valid at V and known by S (at watermark K)? |
 
 Question 4 is **combined historical execution reconstruction** — not bitemporal state alone.
 
 #### Difference from Execution As-Of (§7)
 
-| Surface | Axis | Question |
-|---------|------|----------|
+| Surface | Axis / primitive | Question |
+|---------|------------------|----------|
 | **Execution As-Of** (`AsOfBoundary`) | Execution history | What did this execution see / do by boundary X? |
-| **Valid time** | Domain effectiveness | What was valid / effective at time T? |
-| **System time** | Platform knowledge | What did Intergrax know / record at time S? |
+| **Valid time** | Domain effectiveness (bitemporal axis) | What was valid / effective at time T? |
+| **System time** | Platform knowledge (bitemporal axis) | What did Intergrax know / record at time S? |
+| **Knowledge/revision watermark** (conceptual) | Authoritative knowledge-order upper bound | Reconstruct using accepted revisions **up to** K — **not** “all records whose producer timestamp ≤ T” |
 | **Bitemporal state** | Valid time + System time | What was valid, according to knowledge recorded by system time S? |
-| **Historically reproducible execution state** | Execution boundary + bitemporal knowledge basis | What did execution E42 operate against, using facts valid at V and known by S? |
+| **Historically reproducible execution state** | Execution boundary + knowledge watermark + bitemporal knowledge basis | What did execution E42 operate against, using facts valid at V and known by S at watermark K? |
 
 ```text
 RuntimeEvent history
@@ -1117,16 +1122,20 @@ Execution AsOfBoundary
 
 Bitemporal fact history
         ↓
+authoritative knowledge/revision ordering (K1 → K2 → K3)
+        ↓
+KnowledgeRevisionWatermark K (conceptual)
+        ↓
 Valid-Time Basis + System-Time Basis
         ↓
-"What was valid, according to knowledge recorded by system time S?"
+"What was valid, according to knowledge recorded by system time S, reconstructed at K?"
 
-Execution AsOfBoundary + BitemporalKnowledgeBasis
+Execution AsOfBoundary E + KnowledgeRevisionWatermark K + BitemporalKnowledgeBasis
         ↓
 Historically Reproducible Execution State
 ```
 
-Do **not** merge these into one generic timestamp. Do **not** call the three-coordinate combined result “bitemporal state”.
+Do **not** merge **Execution AsOfBoundary E** with **KnowledgeRevisionWatermark K**. Do **not** merge these into one generic timestamp. Do **not** call the combined result “bitemporal state”.
 
 #### Knowledge / revision ordering (distinct from execution ordering)
 
@@ -1145,14 +1154,16 @@ The purpose of this ordering is to make the **history of corrections itself audi
 
 Knowledge/revision ordering is **not** a third bitemporal time axis. Bitemporal state remains **valid time + system time** only (§8.2–§8.3).
 
-Conceptually, three orderings/axes are **independent**:
+Conceptually, execution ordering, knowledge/revision ordering, and the two bitemporal temporal axes are **independent**:
 
 ```text
-Execution history ordering          Knowledge / revision ordering          Valid-time domain axis
-E1 → E2 → E3 → E4                   K1 → K2 → K3 → K4                    V
+Execution history:   E1 → E2 → E3 → E4
+Knowledge history:   K1 → K2 → K3 → K4
+Valid time:          V
+System time:         S
 ```
 
-A correction accepted after execution **E42**:
+A correction accepted at knowledge position **K20** after execution **E42**:
 
 - **MUST NOT** be retroactively inserted into E42's original execution sequence;
 - **MUST NOT** rewrite what execution E42 actually knew at that boundary;
@@ -1163,13 +1174,13 @@ A correction accepted after execution **E42**:
 Higher-level historically reproducible execution reconstruction may therefore conceptually combine:
 
 ```text
-Execution AsOfBoundary
-+ KnowledgeRevisionPosition (conceptual — TRACE-BITEMP-1 owns exact contract)
+Execution AsOfBoundary E
++ KnowledgeRevisionWatermark K (conceptual — TRACE-BITEMP-1 owns exact contract)
 + Valid-Time Basis
 + System-Time Basis
 ```
 
-Do **not** prematurely freeze a concrete runtime type or field name here unless current architecture already owns one. Terms such as **KnowledgeRevisionPosition** are **conceptual only**.
+Do **not** prematurely freeze a concrete runtime type or field name here unless current architecture already owns one. Terms such as **KnowledgeRevisionPosition** and **KnowledgeRevisionWatermark** are **conceptual only**. Do **not** merge **E** with **K**.
 
 #### Semantic questions (extended)
 
@@ -1179,8 +1190,114 @@ Do **not** prematurely freeze a concrete runtime type or field name here unless 
 | 6 | In what authoritative order were corrections K1 → K2 → K3 accepted? |
 | 7 | What do we now know was valid at the time of execution E42? |
 | 8 | What did the system believe was valid when E42 executed? |
+| 9 | What was the authoritative knowledge watermark at system time S? |
+| 10 | What revisions were accepted up to watermark K, and what was known at K? |
+| 11 | What did execution E operate against using knowledge watermark K? |
 
-Questions 5–6 require knowledge/revision ordering — **not** timestamp replay alone. Questions 7–8 require combined reconstruction (execution boundary + bitemporal knowledge basis) without mutating E42's execution history.
+Questions 5–6 and 9–10 require knowledge/revision ordering — **not** timestamp replay alone. Questions 7–8 and 11 require combined reconstruction (execution boundary + watermark + bitemporal knowledge basis) without mutating E42's execution history.
+
+#### Knowledge / revision watermark (conceptual)
+
+**KnowledgeRevisionWatermark** is a **conceptual** name only — TRACE-BITEMP-1 owns the exact typed definition. It represents a **stable authoritative upper boundary** in accepted knowledge/revision ordering.
+
+Conceptually:
+
+```text
+K1 → K2 → K3 → K4 → K5
+```
+
+Watermark **K3** means: reconstruct using knowledge/revisions accepted **up to the authoritative knowledge position K3**.
+
+It **MUST NOT** mean: all records whose producer timestamp `<=` some timestamp.
+
+The watermark is based on **authoritative accepted revision ordering**, not producer/service wall-clock timestamps.
+
+#### Wall-clock query vs reconstruction boundary
+
+Architecture distinguishes:
+
+| | Surface | Role |
+|---|----------|------|
+| **A** | Auditor/user wall-clock question | Query input / temporal basis. Example: "What did the platform know at 2026-08-10T14:00?" |
+| **B** | Canonical reconstruction boundary | Authoritative `KnowledgeRevisionWatermark` K in accepted knowledge/revision order |
+
+```text
+Wall-clock system-time query T
+        ↓
+resolve authoritative KnowledgeRevisionWatermark K
+        ↓
+reconstruct knowledge state at K
+        ↓
+optionally combine with Execution AsOfBoundary E
+        ↓
+historically reproducible execution state
+```
+
+Wall-clock time is a **query input / temporal basis**. It **MUST NOT** replace deterministic revision ordering. Where deterministic knowledge ordering is required, historical reads **SHOULD** resolve time-oriented questions onto an authoritative revision boundary **before** combining with execution reconstruction.
+
+This resolution is **semantic**. Architecture does **not** claim that materialization, indexes, or a runtime resolver already exist.
+
+#### Bounded resolution vs unbounded full-history replay
+
+Historical audit queries **SHOULD NOT** require replaying an unbounded complete event/revision history merely because the user supplied wall-clock time.
+
+The query model **MUST** allow bounded, indexable, or materializable resolution strategies **without changing canonical semantics**. Logical reconstruction remains **authoritative and rebuildable**. Materialization, indexes, and checkpoints remain **implementation/performance** concerns — not a competing source of truth, and **not** claimed to exist yet.
+
+Architecture does **not** promise O(1), O(log n), database-index complexity, or any other specific performance bound before implementation design exists.
+
+#### Serialization authority (open design decision)
+
+Deterministic knowledge/revision ordering **requires** an authoritative serialization mechanism at the **acceptance/ingestion boundary**. Architecture **does not** select that mechanism here.
+
+Viable alternatives remain open, including:
+
+- single writer
+- dedicated sequencer
+- storage-native monotonic sequence
+- transactionally allocated revision position
+- scoped sequencer
+- optimistic concurrency / compare-and-swap with deterministic allocation
+- another equivalent production-grade mechanism
+
+The chosen mechanism **MUST** satisfy the serialization contract below. **TRACE-BITEMP-1** owns explicit comparison of viable strategies and the subsequent selection. **TRACE-BITEMP-2** implements persistence of the selected contract — it does **not** choose the mechanism.
+
+Do **not** treat this list as a selection. Kafka partitions, PostgreSQL sequences, Redis counters, Snowflake-like IDs, Lamport/vector/HLC clocks, a specific transaction model, and a specific database are likewise **unselected**.
+
+#### Serialization contract (TRACE-BITEMP-1 selection criteria)
+
+TRACE-BITEMP-1 **MUST** choose the mechanism against these invariants:
+
+1. **Uniqueness** — every accepted bitemporal correction/revision gets one unambiguous authoritative position within its ordering scope.
+2. **Monotonicity** — later accepted revisions cannot appear before earlier accepted revisions within that scope.
+3. **Concurrency determinism** — concurrent accepted corrections resolve to deterministic distinct positions.
+4. **Clock independence** — producer/service wall-clock timestamps cannot define authoritative ordering.
+5. **Atomic acceptance** — a revision must not become "accepted" without its authoritative position being durably associated with that acceptance.
+6. **Retry / idempotency** — retrying the same logical acceptance must not create duplicate accepted revisions or consume semantically different positions incorrectly.
+7. **Failure semantics** — partial failure between persistence and ordering allocation must not create ambiguous accepted history.
+8. **Auditability** — auditors can determine the acceptance order without reconstructing it from timestamps.
+9. **Lineage independence** — `supersedes` remains causal lineage and does **not** substitute for total/order position.
+10. **Scope definition** — the exact ordering scope **MUST** be explicitly selected (global, tenant, domain, aggregate/fact stream, or another defined scope). This architecture-sync **does not** choose the scope.
+
+#### Ordering scope / scalability decision boundary
+
+A **globally** monotonic revision position gives stronger/simpler global watermark semantics but may introduce unnecessary coordination.
+
+A **narrower** ordering scope may scale better but affects the semantics of:
+
+- wall-clock → watermark resolution
+- cross-domain reconstruction
+- cross-tenant isolation
+- global audit questions
+
+Therefore TRACE-BITEMP-1 **MUST** explicitly decide:
+
+- ordering scope
+- authority owner
+- consistency guarantees
+- whether one watermark can represent the whole reconstruction domain
+- how multiple scoped watermarks compose if ordering is partitioned
+
+Architecture does **not** assume global sequencing is required. Architecture does **not** assume per-fact sequencing is sufficient. The decision follows Intergrax query and invariant requirements.
 
 ### 8.5 Correction semantics
 
@@ -1190,31 +1307,33 @@ Corrections are **additive** and **immutable-history-preserving**:
 - corrections do **not** destructively overwrite previous belief;
 - every accepted correction is **independently addressable**;
 - every accepted correction has **deterministic authoritative ordering** relative to other accepted revisions/corrections;
+- a revision **MUST NOT** become accepted without its authoritative position being durably associated with that acceptance;
 - ordering does **not** depend solely on wall-clock timestamps;
 - causal lineage (`revision_id`, `supersedes`) and authoritative ordering are **complementary** — `supersedes` alone does **not** define total correction ordering;
-- valid time, system time, and ordering position are **distinct semantics**.
+- valid time, system time, and ordering position / watermark are **distinct semantics** — position and watermark are **not** temporal axes.
 
 A later revision that changes valid-time applicability **must preserve** prior system-time belief. Operators and auditors must be able to reconstruct:
 
-- what Intergrax believed at an earlier system time;
+- what Intergrax believed at an earlier system time (resolved to an authoritative knowledge/revision watermark where deterministic ordering is required);
 - what is now known to have been valid at an earlier valid time;
 - what Intergrax believed was valid at an earlier system time;
-- in what authoritative order corrections were accepted.
+- in what authoritative order corrections were accepted — without reconstructing that order from timestamps.
 
 Destructive overwrite of historical belief is **forbidden** for bitemporal-capable facts.
 
 ### 8.6 Relationship to `revision_id` / `supersedes` / ordering position (§7.6)
 
-Revision lineage, temporal axes, execution boundary, and knowledge/revision ordering are **complementary, not identical**:
+Revision lineage, temporal axes, execution boundary, knowledge/revision ordering, and watermark are **complementary, not identical**:
 
 | Mechanism | Responsibility |
 |-----------|----------------|
 | **`revision_id`** | Immutable revision identity |
-| **`supersedes`** | Causal/version lineage between revisions |
+| **`supersedes`** | Causal/version lineage between revisions — **not** total/order position |
 | **Knowledge/revision position** | Deterministic authoritative ordering of accepted revisions/corrections |
-| **Valid time** | Domain effectiveness |
-| **System time** | When the platform knew/recorded the revision |
-| **Execution AsOfBoundary** | Position inside execution history |
+| **KnowledgeRevisionWatermark** (conceptual) | Stable authoritative upper bound in that ordering; TRACE-BITEMP-1 owns the exact typed contract |
+| **Valid time** | Domain effectiveness (bitemporal axis) |
+| **System time** | When the platform knew/recorded the revision (bitemporal axis) |
+| **Execution AsOfBoundary** | Position inside execution history — independent of knowledge ordering |
 
 A revision **may** carry temporal semantics where appropriate. `supersedes` alone is **not** sufficient for bitemporal queries or total correction ordering. Do **not** add `supersedes` to every `RuntimeEvent`.
 
@@ -1243,15 +1362,15 @@ Bitemporality **should** apply — with explicit opt-in ownership — to facts/r
 - effective permissions / rules
 - versioned projections where corrections or backdating matter
 
-This list is **not exhaustive**. Do **not** convert every Intergrax persistence model into a temporal table. The capability is reusable with explicit opt-in — not universal.
+This list is **not exhaustive**. Do **not** convert every Intergrax persistence model into a temporal table. Do **not** turn `RuntimeEvent` into a bitemporal or revision-sequenced universal row. The capability is reusable with explicit opt-in — not universal.
 
 ### 8.9 Persistence vendor neutrality
 
-Architecture defines semantics and capability only. **No** database vendor (XTDB, PostgreSQL temporal extensions, SQL Server temporal tables, Datomic, etc.) is selected here. Storage technology follows contract and query requirements (TRACE-BITEMP-1, TRACE-BITEMP-2).
+Architecture defines semantics and capability only. **No** database vendor (XTDB, PostgreSQL temporal extensions, SQL Server temporal tables, Datomic, etc.) is selected here. **No** serialization mechanism and **no** ordering scope (global / tenant / domain / aggregate) are selected here. Storage technology, serialization authority, and ordering scope follow contract and query requirements decided in TRACE-BITEMP-1, then persisted in TRACE-BITEMP-2.
 
 ### 8.10 Implementation status
 
-Accepted architecture · **Planned** implementation · **no** current runtime code implements bitemporal historical state. Delivery: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) TRACE-BITEMP-1–TRACE-BITEMP-5.
+Accepted architecture · **Planned** implementation · **no** current runtime code implements bitemporal historical state, revision watermarks, or serialization of knowledge/revision positions. Delivery: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) TRACE-BITEMP-1–TRACE-BITEMP-5.
 
 ---
 
@@ -1266,7 +1385,8 @@ Accepted architecture · **Planned** implementation · **no** current runtime co
 | **System time** | When Intergrax recorded / knew a fact version |
 | **Bitemporal state** | State selected using valid-time + system-time basis only |
 | **Knowledge/revision ordering** | Deterministic authoritative ordering of accepted corrections/revisions — **not** a bitemporal axis; **not** execution ordering |
-| **Historically reproducible execution state** | Combined reconstruction: execution boundary + bitemporal knowledge basis (+ knowledge/revision position where correction history matters) |
+| **KnowledgeRevisionWatermark** (conceptual) | Stable authoritative upper bound in knowledge/revision ordering; TRACE-BITEMP-1 owns the exact typed contract |
+| **Historically reproducible execution state** | Combined reconstruction: execution boundary E + knowledge watermark K + bitemporal knowledge basis — **not** “bitemporal state” |
 | **Provenance** | Origin / lineage of relevant inputs and references |
 | **Evidence** | Persisted supporting evidence |
 | **Proof / Receipt** | Attested / verifiable claim |
@@ -1282,9 +1402,11 @@ As-of projections and bitemporal historical state are part of the **read side** 
 ```text
 RuntimeEvent history
        ↓
-Execution AsOfBoundary                    Bitemporal fact / revision history
+Execution AsOfBoundary E               Bitemporal fact / revision history
        │                                          ↓
        │                              Knowledge/revision ordering (K1 → K2 → K3)
+       │                                          ↓
+       │                              KnowledgeRevisionWatermark K (conceptual)
        │                                          ↓
        │                              Valid-Time Basis + System-Time Basis
        │                                          ↓
@@ -1293,12 +1415,16 @@ Execution AsOfBoundary                    Bitemporal fact / revision history
        └── Unified Run Journal → Execution Story (chronological narrative)
 ```
 
-Execution ordering and knowledge/revision ordering are **independent**. A correction accepted after E42 does **not** rewrite E42's execution sequence.
+Execution ordering and knowledge/revision ordering are **independent**. A correction accepted at **K20** after **E42** does **not** rewrite E42's execution sequence and is **not** retroactively inserted into E42 execution history.
+
+Wall-clock audit questions that require deterministic knowledge ordering resolve **T → K** first, then optionally combine with **E**. Wall-clock time does **not** replace revision ordering.
 
 Combined historical execution reconstruction (not “bitemporal state”):
 
 ```text
-Execution AsOfBoundary + BitemporalKnowledgeBasis (+ KnowledgeRevisionPosition where needed)
+Execution AsOfBoundary E
++ KnowledgeRevisionWatermark K
++ BitemporalKnowledgeBasis (valid time + system time)
        ↓
 Historically Reproducible Execution State
 ```
