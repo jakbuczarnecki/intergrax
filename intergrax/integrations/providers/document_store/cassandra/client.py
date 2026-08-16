@@ -36,6 +36,35 @@ def _encode_payload(data: Mapping[str, Any]) -> str:
     return json.dumps(dict(data), separators=(",", ":"), sort_keys=True)
 
 
+def _require_matching_keys(*, expected: DocumentRecord, replacement: DocumentRecord) -> None:
+    if (
+        expected.partition_key != replacement.partition_key
+        or expected.row_key != replacement.row_key
+    ):
+        raise ValueError(
+            "replace_if_match requires expected and replacement to share "
+            "partition_key and row_key"
+        )
+
+
+def _was_applied(result: object) -> bool:
+    applied = attribute_access.optional(result, "was_applied", default=None)
+    if applied is not None:
+        return bool(applied)
+    if not attribute_access.is_callable_attr(result, "one"):
+        raise IntegrationConfigurationError("Cassandra conditional result missing applied flag")
+    one = attribute_access.optional(result, "one")
+    if not callable(one):
+        raise IntegrationConfigurationError("Cassandra conditional result missing applied flag")
+    row = one()
+    if row is None:
+        return False
+    row_applied = attribute_access.optional(row, "[applied]", default=None)
+    if row_applied is not None:
+        return bool(row_applied)
+    raise IntegrationConfigurationError("Cassandra conditional result missing applied flag")
+
+
 class CassandraCqlClient:
     """Minimal CQL client for partition-scoped document CRUD."""
 
@@ -67,6 +96,22 @@ class CassandraCqlClient:
         )
         self._delete = session.prepare(
             f"DELETE FROM {table} WHERE partition_key = ? AND row_key = ?"
+        )
+        self._insert_if_absent = session.prepare(
+            f"INSERT INTO {table} (partition_key, row_key, payload) "
+            f"VALUES (?, ?, ?) IF NOT EXISTS"
+        )
+        self._insert_if_absent_ttl = session.prepare(
+            f"INSERT INTO {table} (partition_key, row_key, payload) "
+            f"VALUES (?, ?, ?) USING TTL ? IF NOT EXISTS"
+        )
+        self._update_if_payload = session.prepare(
+            f"UPDATE {table} SET payload = ? "
+            f"WHERE partition_key = ? AND row_key = ? IF payload = ?"
+        )
+        self._delete_if_payload = session.prepare(
+            f"DELETE FROM {table} "
+            f"WHERE partition_key = ? AND row_key = ? IF payload = ?"
         )
         self._select_partition = session.prepare(
             f"SELECT row_key, payload FROM {table} WHERE partition_key = ? LIMIT ?"
@@ -111,6 +156,57 @@ class CassandraCqlClient:
 
     def delete(self, partition_key: str, row_key: str) -> None:
         self._session.execute(self._delete, (partition_key, row_key))
+
+    def put_if_absent(self, document: DocumentRecord) -> bool:
+        payload = _encode_payload(document.data)
+        if document.ttl_seconds is not None and document.ttl_seconds > 0:
+            result = self._session.execute(
+                self._insert_if_absent_ttl,
+                (
+                    document.partition_key,
+                    document.row_key,
+                    payload,
+                    int(document.ttl_seconds),
+                ),
+            )
+            return _was_applied(result)
+        result = self._session.execute(
+            self._insert_if_absent,
+            (document.partition_key, document.row_key, payload),
+        )
+        return _was_applied(result)
+
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        _require_matching_keys(expected=expected, replacement=replacement)
+        expected_payload = _encode_payload(expected.data)
+        replacement_payload = _encode_payload(replacement.data)
+        result = self._session.execute(
+            self._update_if_payload,
+            (
+                replacement_payload,
+                replacement.partition_key,
+                replacement.row_key,
+                expected_payload,
+            ),
+        )
+        return _was_applied(result)
+
+    def delete_if_match(self, *, expected: DocumentRecord) -> bool:
+        expected_payload = _encode_payload(expected.data)
+        result = self._session.execute(
+            self._delete_if_payload,
+            (
+                expected.partition_key,
+                expected.row_key,
+                expected_payload,
+            ),
+        )
+        return _was_applied(result)
 
     def query(
         self,

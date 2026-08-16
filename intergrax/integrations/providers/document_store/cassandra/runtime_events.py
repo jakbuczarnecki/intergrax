@@ -1,11 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Cassandra-backed ``RuntimeEventPersistence`` via ``DocumentStore`` (OBS-BUS-5)."""
+"""Cassandra-backed ``RuntimeEventPersistence`` via ``ConditionalDocumentStore`` (OBS-BUS-5)."""
 
 from __future__ import annotations
 
-from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
 from intergrax.integrations.providers.document_store.cassandra.adapter import _CassandraDocumentStore
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.stores.document_backed_runtime_event_store import (
@@ -14,9 +14,9 @@ from intergrax.runtime.events.stores.document_backed_runtime_event_store import 
 
 
 def runtime_event_persistence_from_document_store(
-    store: DocumentStore,
+    store: ConditionalDocumentStore,
 ) -> RuntimeEventPersistence:
-    """Wrap any ``DocumentStore`` (including Cassandra) as canonical runtime event persistence."""
+    """Wrap any ``ConditionalDocumentStore`` as canonical runtime event persistence."""
     return DocumentBackedRuntimeEventStore(store)
 
 

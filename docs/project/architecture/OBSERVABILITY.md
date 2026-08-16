@@ -947,7 +947,7 @@ Canonical execution-history ordering is **not** timestamp-based. For one accepte
 
 | Concept | Type | Owner | Semantics |
 |---------|------|-------|-----------|
-| **Execution position** | `ExecutionEventPosition` | `RuntimeEventPersistence.append` | Positive, immutable, run-scoped, monotonic acceptance order |
+| **Execution position** | `ExecutionEventPosition` | `RuntimeEventPersistence.append` | Positive, immutable, tenant + run-scoped, unique among accepted events, strictly monotonic acceptance order, stable after acceptance, gap-tolerant, non-recyclable |
 | **Positioned event** | `PositionedRuntimeEvent` | persistence read APIs | Semantic `RuntimeEvent` + authoritative position — position is **not** stored on `RuntimeEvent` |
 | **As-of boundary** | `AsOfBoundary` | query / projection callers | `RunId` + inclusive execution position (`<= position`) |
 
@@ -961,6 +961,8 @@ Canonical execution-history ordering is **not** timestamp-based. For one accepte
 6. `EventId` is identity only — **not** ordering authority.
 7. `RuntimeEvent.timestamp` remains diagnostic/display — it does **not** define canonical execution order.
 8. Execution position is independent of valid-time and system-time (§8) — do **not** call it bitemporal.
+9. **Monotonic** means strictly increasing for accepted events — it does **not** mean contiguous. Positions **may** contain gaps (for example P1 → accepted event, P2 → unused reservation, P3 → accepted event). An unused position is **never** recycled.
+10. Gaps may occur when concurrent duplicate `EventId` acceptance races allocate a candidate position before one writer wins, when candidate acceptance fails after allocation, or when backend retries/reservations consume sequence slots without producing an accepted event.
 
 **Persistence contract (minimum):**
 

@@ -13,7 +13,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from intergrax.integrations._shared.conformance import assert_document_store
+from intergrax.integrations._shared.conformance import (
+    assert_conditional_document_store,
+    assert_document_store,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentRecord
 from intergrax.integrations.providers.document_store.cassandra.integration import CassandraDocumentStoreIntegration
@@ -22,6 +25,12 @@ from intergrax.integrations.providers.document_store.cassandra.bundle import (
     create_cassandra_document_store,
     create_cassandra_document_store_integration,
     create_cassandra_integration,
+)
+from intergrax.integrations.providers.document_store.cassandra.runtime_events import (
+    runtime_event_persistence_from_cassandra,
+)
+from intergrax.runtime.events.stores.document_backed_runtime_event_store import (
+    DocumentBackedRuntimeEventStore,
 )
 from intergrax.integrations.providers.document_store.cassandra.config import (
     ENV_CASSANDRA_CONTACT_POINTS,
@@ -71,6 +80,14 @@ class _FakeRow:
     row_key: str = ""
 
 
+class _FakeLwtResult:
+    def __init__(self, *, was_applied: bool) -> None:
+        self.was_applied = was_applied
+
+    def one(self) -> dict[str, bool]:
+        return {"[applied]": self.was_applied}
+
+
 class _FakeResult:
     def __init__(self, rows: Iterable[_FakeRow] | _FakeRow | None) -> None:
         if rows is None:
@@ -109,16 +126,42 @@ class _FakeSession:
                 return _FakeResult(None)
             return _FakeResult(_FakeRow(payload=payload))
         if query.startswith("INSERT INTO"):
+            if "IF NOT EXISTS" in query:
+                if "USING TTL" in query:
+                    partition_key, row_key, payload, _ttl = params
+                else:
+                    partition_key, row_key, payload = params
+                key = (str(partition_key), str(row_key))
+                if key in self.storage:
+                    return _FakeLwtResult(was_applied=False)
+                self.storage[key] = str(payload)
+                return _FakeLwtResult(was_applied=True)
             if "USING TTL" in query:
                 partition_key, row_key, payload, _ttl = params
             else:
                 partition_key, row_key, payload = params
             self.storage[(str(partition_key), str(row_key))] = str(payload)
             return _FakeResult([])
+        if query.startswith("DELETE FROM") and " IF payload = " in query:
+            partition_key, row_key, expected_payload = params
+            key = (str(partition_key), str(row_key))
+            current = self.storage.get(key)
+            if current != str(expected_payload):
+                return _FakeLwtResult(was_applied=False)
+            self.storage.pop(key, None)
+            return _FakeLwtResult(was_applied=True)
         if query.startswith("DELETE FROM"):
             partition_key, row_key = params
             self.storage.pop((str(partition_key), str(row_key)), None)
             return _FakeResult([])
+        if query.startswith("UPDATE") and " IF payload = " in query:
+            replacement_payload, partition_key, row_key, expected_payload = params
+            key = (str(partition_key), str(row_key))
+            current = self.storage.get(key)
+            if current != str(expected_payload):
+                return _FakeLwtResult(was_applied=False)
+            self.storage[key] = str(replacement_payload)
+            return _FakeLwtResult(was_applied=True)
         if "row_key >=" in query:
             partition_key, prefix, end_key, limit = params
             rows = []
@@ -380,3 +423,83 @@ def test_payload_json_encoding() -> None:
     _, params = next(item for item in session.executions if item[0].startswith("INSERT INTO"))
     payload = params[2]
     assert json.loads(payload) == {"nested": {"a": 1}}
+
+
+def test_put_if_absent_inserts_missing_row() -> None:
+    factory, _ = _session_factory()
+    store = create_cassandra_document_store(**_cassandra_config().model_dump(), session_factory=factory)
+    document = DocumentRecord(partition_key="t1", row_key="r1", data={"x": 1})
+
+    assert store.put_if_absent(document) is True
+    assert store.get("t1", "r1") == document
+
+
+def test_put_if_absent_returns_false_for_existing_row() -> None:
+    factory, _ = _session_factory()
+    store = create_cassandra_document_store(**_cassandra_config().model_dump(), session_factory=factory)
+    document = DocumentRecord(partition_key="t1", row_key="r1", data={"x": 1})
+    store.put(document)
+
+    assert store.put_if_absent(document) is False
+
+
+def test_replace_if_match_updates_exact_record() -> None:
+    factory, _ = _session_factory()
+    store = create_cassandra_document_store(**_cassandra_config().model_dump(), session_factory=factory)
+    expected = DocumentRecord(partition_key="t1", row_key="r1", data={"x": 1})
+    store.put(expected)
+    replacement = DocumentRecord(partition_key="t1", row_key="r1", data={"x": 2})
+
+    assert store.replace_if_match(expected=expected, replacement=replacement) is True
+    assert store.get("t1", "r1") == replacement
+
+
+def test_replace_if_match_returns_false_for_payload_mismatch() -> None:
+    factory, _ = _session_factory()
+    store = create_cassandra_document_store(**_cassandra_config().model_dump(), session_factory=factory)
+    store.put(DocumentRecord(partition_key="t1", row_key="r1", data={"x": 1}))
+    expected = DocumentRecord(partition_key="t1", row_key="r1", data={"x": 99})
+    replacement = DocumentRecord(partition_key="t1", row_key="r1", data={"x": 2})
+
+    assert store.replace_if_match(expected=expected, replacement=replacement) is False
+    assert store.get("t1", "r1") == DocumentRecord(partition_key="t1", row_key="r1", data={"x": 1})
+
+
+def test_delete_if_match_deletes_exact_record() -> None:
+    factory, _ = _session_factory()
+    store = create_cassandra_document_store(**_cassandra_config().model_dump(), session_factory=factory)
+    expected = DocumentRecord(partition_key="t1", row_key="r1", data={"x": 1})
+    store.put(expected)
+
+    assert store.delete_if_match(expected=expected) is True
+    assert store.get("t1", "r1") is None
+
+
+def test_delete_if_match_returns_false_for_payload_mismatch() -> None:
+    factory, _ = _session_factory()
+    store = create_cassandra_document_store(**_cassandra_config().model_dump(), session_factory=factory)
+    store.put(DocumentRecord(partition_key="t1", row_key="r1", data={"x": 1}))
+    expected = DocumentRecord(partition_key="t1", row_key="r1", data={"x": 99})
+
+    assert store.delete_if_match(expected=expected) is False
+    assert store.get("t1", "r1") is not None
+
+
+def test_conditional_operations_propagate_transport_failures() -> None:
+    factory, session = _session_factory()
+    store = create_cassandra_document_store(**_cassandra_config().model_dump(), session_factory=factory)
+    document = DocumentRecord(partition_key="t1", row_key="r1", data={"x": 1})
+
+    with patch.object(session, "execute", side_effect=RuntimeError("cassandra transport failure")):
+        with pytest.raises(RuntimeError, match="cassandra transport failure"):
+            store.put_if_absent(document)
+
+
+def test_cassandra_store_satisfies_conditional_document_store_and_runtime_wiring() -> None:
+    factory, _ = _session_factory()
+    store = create_cassandra_document_store(**_cassandra_config().model_dump(), session_factory=factory)
+
+    assert_conditional_document_store(store)
+    persistence = runtime_event_persistence_from_cassandra(store)
+
+    assert isinstance(persistence, DocumentBackedRuntimeEventStore)

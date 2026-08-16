@@ -27,9 +27,28 @@ from intergrax.runtime.events.stores.document_backed_runtime_event_store import 
     DocumentBackedRuntimeEventStore,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _TENANT = "tenant-distributed"
+_SEQUENCE_ROW_KEY = "__run_sequence__"
+
+
+class _GapInducingDocumentStore(InMemoryDocumentStore):
+    """Blocks the first event put_if_absent so a concurrent writer can consume a gap."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._first_event_put_started = threading.Event()
+        self._release_first_event_put = threading.Event()
+
+    def put_if_absent(self, document: DocumentRecord) -> bool:
+        if document.row_key != _SEQUENCE_ROW_KEY and not self._first_event_put_started.is_set():
+            self._first_event_put_started.set()
+            self._release_first_event_put.wait(timeout=5)
+        return super().put_if_absent(document)
+
+    def release_first_event_put(self) -> None:
+        self._release_first_event_put.set()
 
 
 def _event(
@@ -205,3 +224,61 @@ def test_multi_writer_stress_unique_strictly_increasing_positions() -> None:
     ordered_positions = [row.position.value for row in ordered]
     assert ordered_positions == sorted(ordered_positions)
     assert len(set(ordered_positions)) == event_count
+
+
+def test_concurrent_same_event_id_may_leave_unused_position_gap() -> None:
+    backend = _GapInducingDocumentStore()
+    store_a = DocumentBackedRuntimeEventStore(backend)
+    store_b = DocumentBackedRuntimeEventStore(backend)
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    event_id = mint_event_id()
+    event = _event(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_id=event_id,
+    )
+    follow_up = _event(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
+    accepted_positions: list[int] = []
+    lock = threading.Lock()
+    append_error: list[BaseException] = []
+
+    def _append_a() -> None:
+        try:
+            position = store_a.append(event, tenant_id=_TENANT).position.value
+            with lock:
+                accepted_positions.append(position)
+        except BaseException as exc:
+            append_error.append(exc)
+
+    def _append_b() -> None:
+        try:
+            position = store_b.append(event, tenant_id=_TENANT).position.value
+            with lock:
+                accepted_positions.append(position)
+        except BaseException as exc:
+            append_error.append(exc)
+
+    thread_a = threading.Thread(target=_append_a)
+    thread_b = threading.Thread(target=_append_b)
+    thread_a.start()
+    backend._first_event_put_started.wait(timeout=5)
+    thread_b.start()
+    backend.release_first_event_put()
+    thread_a.join()
+    thread_b.join()
+
+    assert append_error == []
+    assert len(accepted_positions) == 2
+    assert accepted_positions[0] == accepted_positions[1]
+    accepted_position = accepted_positions[0]
+    assert accepted_position >= 2
+    next_position = store_a.append(follow_up, tenant_id=_TENANT).position.value
+    assert next_position > accepted_position
+    ordered = store_a.list_positioned_for_run(run_id, tenant_id=_TENANT, limit=10)
+    ordered_positions = sorted(row.position.value for row in ordered)
+    assert ordered_positions == sorted({accepted_position, next_position})
+    assert len(ordered_positions) == 2
+    assert ordered_positions[0] != 1

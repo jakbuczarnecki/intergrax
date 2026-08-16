@@ -42,6 +42,10 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
 
     Used by Cassandra and other wide-column backends without forking the bus contract.
     Requires ``ConditionalDocumentStore`` for distributed-safe position allocation.
+
+    Accepted execution positions are strictly monotonic, unique, stable, and
+    gap-tolerant: unused reservations are never recycled. Monotonic order does not
+    require contiguous numbering (for example P1, P3, P8 is valid).
     """
 
     def __init__(self, document_store: ConditionalDocumentStore) -> None:
