@@ -17,7 +17,7 @@ from intergrax.core.plugins.package_contract import (
     MANIFEST_SCHEMA_VERSION,
     CapabilityDescriptor,
     PlatformPluginManifest,
-    reject_secret_like_keys,
+    validate_platform_plugin_manifest_secrets,
 )
 
 _PYPROJECT_TOOL_PATH = ("tool", "intergrax", "plugin")
@@ -184,7 +184,7 @@ def _coerce_capabilities(value: object) -> tuple[CapabilityDescriptor, ...]:
 
 
 def _normalize_manifest_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
-    reject_secret_like_keys(payload)
+    validate_platform_plugin_manifest_secrets(payload)
     _reject_unknown_manifest_keys(payload)
 
     schema_version = payload.get("schema_version", MANIFEST_SCHEMA_VERSION)

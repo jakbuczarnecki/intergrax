@@ -402,7 +402,7 @@ It **must not** duplicate full domain contract payloads (tool schemas, integrati
 |---|---------------|---------------------|
 | Secret storage | Integration `env_prefix`; host secret stores; ad hoc per domain | Unchanged storage diversity, clarified ownership (§12.3) |
 | Plugin access | Full process privileges; no platform sandbox | **Capabilities receive only required credentials/bindings** resolved by host/domain |
-| Metadata | Secrets must not appear in manifests or EP targets; `reject_secret_like_keys` enforces Platform Plugin manifest | **Frozen** |
+| Metadata | Secrets must not appear in manifests or EP targets; `PLATFORM_PLUGIN_MANIFEST_SECRET_POLICY` on the canonical secret-safe engine enforces the package manifest | **Frozen** |
 | Default | No unrestricted global secret API for plugins | **Frozen** |
 
 Installation of a plugin package is a **trust decision** (§16). Secret scope limiting is a **host/domain responsibility**, not something plugin metadata can safely enforce alone.
@@ -446,7 +446,7 @@ plugin capability (consumes explicit bindings only)
 
 | Layer | Configuration responsibility | Secret responsibility |
 |-------|------------------------------|----------------------|
-| **Platform Plugin package manifest** (`[tool.intergrax.plugin]`) | Coordination metadata only — package id, compatibility, capability pointers | **Prohibited** — validated by `reject_secret_like_keys` (PLUGIN-3) |
+| **Platform Plugin package manifest** (`[tool.intergrax.plugin]`) | Coordination metadata only — package id, compatibility, capability pointers | **Prohibited** — `PLATFORM_PLUGIN_MANIFEST_SECRET_POLICY` via `intergrax.core.security` (PLUGIN-3). Detection only; not a secret manager. |
 | **Setuptools entry points** | Identify import target only | **Prohibited** in EP values |
 | **Domain manifests** (`IntegrationManifest`, tool/skill bundles, …) | Domain-specific non-secret fields (e.g. `env_prefix` name, not value) | **Prohibited** as manifest field values |
 | **Application / host** | Selects capabilities, environment/profile, feature flags | Resolves credentials into domain bindings |

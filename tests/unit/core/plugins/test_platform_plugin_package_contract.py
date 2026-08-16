@@ -15,7 +15,6 @@ from intergrax.core.distribution import DistributionPackageIdentity, PlatformCom
 from intergrax.core.plugins.package_contract import (
     CapabilityDescriptor,
     build_platform_plugin_manifest,
-    reject_secret_like_keys,
 )
 
 pytestmark = pytest.mark.unit
@@ -182,7 +181,56 @@ def test_unknown_manifest_fields_fail_closed() -> None:
 
 def test_secret_like_fields_rejected() -> None:
     with pytest.raises(PlatformPluginManifestValidationError, match="secret-like manifest field"):
-        reject_secret_like_keys({"client_secret": "value"})
+        parse_platform_plugin_manifest_data({"client_secret": "value"})
+
+
+@pytest.mark.parametrize("key", ["api_key", "password", "token", "api-key"])
+def test_secret_like_keys_rejected(key: str) -> None:
+    with pytest.raises(PlatformPluginManifestValidationError, match="secret-like manifest field"):
+        parse_platform_plugin_manifest_data({key: "value"})
+
+
+def test_nested_credential_like_key_rejected() -> None:
+    with pytest.raises(PlatformPluginManifestValidationError, match="options.api_key"):
+        parse_platform_plugin_manifest_data({"options": {"api_key": "x"}})
+
+
+def test_safe_non_secret_manifest_accepted() -> None:
+    manifest = parse_platform_plugin_manifest_data(
+        {
+            "name": "acme-intergrax",
+            "version": "1.0.0",
+            "intergrax_version": ">=1.0,<2",
+            "author": "Acme",
+            "labels": ["community"],
+        }
+    )
+    assert manifest.package.name == "acme-intergrax"
+    assert manifest.labels == ("community",)
+
+
+def test_plugin_does_not_scan_secret_looking_scalar_values() -> None:
+    manifest = parse_platform_plugin_manifest_data(
+        {
+            "name": "acme-intergrax",
+            "version": "1.0.0",
+            "intergrax_version": ">=1.0,<2",
+            "documentation_uri": "sk-live-not-a-manifest-key",
+        }
+    )
+    assert manifest.documentation_uri == "sk-live-not-a-manifest-key"
+
+
+def test_secret_key_inside_capability_list_rejected() -> None:
+    with pytest.raises(PlatformPluginManifestValidationError, match="secret-like manifest field"):
+        parse_platform_plugin_manifest_data(
+            {
+                "name": "acme-intergrax",
+                "version": "1.0.0",
+                "intergrax_version": ">=1.0,<2",
+                "capabilities": [{"api_key": "x"}],
+            }
+        )
 
 
 def test_parse_platform_plugin_pyproject_toml_valid() -> None:

@@ -1279,6 +1279,7 @@ Marketplace = **catalog provider + publisher onboarding** — not execution fork
 - Org allow/deny intersects before `INSTALLED`.
 - Revocation re-check at enable and activation.
 - Secrets never in catalog or lock artifacts — binding `secret_refs` only.
+- Binding and manifest config is validated by Agent Distribution policy on the canonical secret-safe engine (`intergrax.core.security`): forbidden keys and secret-like literals are rejected. This is detection/validation only — not a secret manager.
 - Materialization fail-closed on secret-like payloads (existing graph builder behavior).
 - No hot arbitrary Python in production process.
 - Audit tombstones retained on uninstall — artifacts removed per policy, records persist.

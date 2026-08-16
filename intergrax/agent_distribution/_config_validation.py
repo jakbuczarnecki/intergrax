@@ -13,46 +13,37 @@ from intergrax.agent_distribution._immutable_json import (
     DistributionJsonValue,
     assert_distribution_json_object,
 )
-
-_SECRET_CONFIG_KEY_RE = re.compile(
-    r"(password|secret|api[_-]?key|token|credential|private[_-]?key)",
-    re.IGNORECASE,
-)
-_SECRET_VALUE_RE = re.compile(
-    r"^(sk-|xox[baprs]-|Bearer\s|eyJ[A-Za-z0-9_-]+\.)",
-    re.IGNORECASE,
+from intergrax.core.security import (
+    FORBIDDEN_KEY,
+    SECRET_LIKE_VALUE,
+    SecretSafetyValidationError,
+    SecretSafeValidationPolicy,
+    validate_secret_safe_value,
 )
 
-
-def reject_secret_like_distribution_config_value(
-    value: Any,
-    *,
-    path: str = "",
-    context_label: str = "config",
-) -> None:
-    if isinstance(value, Mapping):
-        for key, child in value.items():
-            key_str = str(key)
-            label = f"{path}.{key_str}" if path else key_str
-            if _SECRET_CONFIG_KEY_RE.search(key_str):
-                raise ValueError(
-                    f"{context_label} key '{label}' must use secret_refs, not config values"
-                )
-            if isinstance(child, str) and _SECRET_VALUE_RE.match(child.strip()):
-                raise ValueError(
-                    f"{context_label} value for '{label}' resembles a secret literal"
-                )
-            reject_secret_like_distribution_config_value(
-                child, path=label, context_label=context_label
-            )
-        return
-    if isinstance(value, list):
-        for index, child in enumerate(value):
-            reject_secret_like_distribution_config_value(
-                child,
-                path=f"{path}[{index}]",
-                context_label=context_label,
-            )
+AGENT_DISTRIBUTION_SECRET_POLICY = SecretSafeValidationPolicy(
+    forbidden_key_fragments=frozenset(
+        {
+            "password",
+            "secret",
+            "token",
+            "credential",
+            "api_key",
+            "apikey",
+            "private_key",
+            "privatekey",
+        }
+    ),
+    forbidden_value_patterns=(
+        re.compile(
+            r"^(sk-|xox[baprs]-|Bearer\s|eyJ[A-Za-z0-9_-]+\.)",
+            re.IGNORECASE,
+        ),
+    ),
+    scan_string_values=True,
+    split_key_segments=False,
+    traverse_sequences=True,
+)
 
 
 def validate_non_secret_distribution_config(
@@ -61,5 +52,20 @@ def validate_non_secret_distribution_config(
     field_name: str = "config",
     context_label: str = "config",
 ) -> dict[str, DistributionJsonValue]:
-    reject_secret_like_distribution_config_value(config, context_label=context_label)
+    try:
+        validate_secret_safe_value(
+            config,
+            policy=AGENT_DISTRIBUTION_SECRET_POLICY,
+            context_label=context_label,
+        )
+    except SecretSafetyValidationError as exc:
+        if exc.reason_code == FORBIDDEN_KEY:
+            raise ValueError(
+                f"{context_label} key '{exc.path}' must use secret_refs, not config values"
+            ) from exc
+        if exc.reason_code == SECRET_LIKE_VALUE:
+            raise ValueError(
+                f"{context_label} value for '{exc.path}' resembles a secret literal"
+            ) from exc
+        raise ValueError(str(exc)) from exc
     return assert_distribution_json_object(config, field_name=field_name)

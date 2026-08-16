@@ -11,24 +11,35 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from intergrax.core.distribution import DistributionPackageIdentity, PlatformCompatibility
 from intergrax.core.plugins.errors import PlatformPluginManifestValidationError
+from intergrax.core.security import (
+    FORBIDDEN_KEY,
+    SecretSafetyValidationError,
+    SecretSafeValidationPolicy,
+    validate_secret_safe_value,
+)
 
 MANIFEST_SCHEMA_VERSION: Literal[1] = 1
 
-_SECRET_KEY_FRAGMENTS = frozenset(
-    {
-        "api_key",
-        "apikey",
-        "password",
-        "passwd",
-        "secret",
-        "token",
-        "credential",
-        "credentials",
-        "connection_string",
-        "private_key",
-        "access_key",
-        "client_secret",
-    }
+PLATFORM_PLUGIN_MANIFEST_SECRET_POLICY = SecretSafeValidationPolicy(
+    forbidden_key_fragments=frozenset(
+        {
+            "api_key",
+            "apikey",
+            "password",
+            "passwd",
+            "secret",
+            "token",
+            "credential",
+            "credentials",
+            "connection_string",
+            "private_key",
+            "access_key",
+            "client_secret",
+        }
+    ),
+    scan_string_values=False,
+    split_key_segments=False,
+    traverse_sequences=True,
 )
 
 
@@ -64,21 +75,22 @@ def _capability_identity(
     return (domain, entry_point_group, entry_point_name)
 
 
-def reject_secret_like_keys(payload: object, *, path: str = "") -> None:
-    """Reject secret-like manifest keys before model validation."""
-    if not isinstance(payload, dict):
-        return
-    for key, value in payload.items():
-        if not isinstance(key, str):
-            raise PlatformPluginManifestValidationError("manifest keys must be strings")
-        normalized_key = key.strip().lower().replace("-", "_")
-        if any(fragment in normalized_key for fragment in _SECRET_KEY_FRAGMENTS):
-            location = f"{path}.{key}" if path else key
+def validate_platform_plugin_manifest_secrets(payload: object, *, path: str = "") -> None:
+    """Reject secret-like Platform Plugin manifest keys using the domain policy."""
+    try:
+        validate_secret_safe_value(
+            payload,
+            policy=PLATFORM_PLUGIN_MANIFEST_SECRET_POLICY,
+            path=path,
+            context_label="manifest",
+        )
+    except SecretSafetyValidationError as exc:
+        if exc.reason_code == FORBIDDEN_KEY:
+            location = exc.path or "manifest"
             raise PlatformPluginManifestValidationError(
                 f"secret-like manifest field is not allowed: {location}"
-            )
-        child_path = f"{path}.{key}" if path else key
-        reject_secret_like_keys(value, path=child_path)
+            ) from exc
+        raise PlatformPluginManifestValidationError(str(exc)) from exc
 
 
 class CapabilityDescriptor(BaseModel):

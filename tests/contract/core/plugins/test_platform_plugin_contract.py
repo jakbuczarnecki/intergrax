@@ -32,6 +32,7 @@ from intergrax.core.plugins import (
     evaluate_package_production_admission,
     iter_entry_point_specs,
     load_entry_point_value,
+    parse_platform_plugin_manifest_data,
     parse_platform_plugin_pyproject_toml,
 )
 from intergrax.core.qualification import QualificationStatus
@@ -47,7 +48,6 @@ from intergrax.core.plugins.errors import PlatformPluginManifestValidationError
 from intergrax.core.distribution import PlatformCompatibility
 from intergrax.core.plugins.package_contract import (
     CapabilityDescriptor,
-    reject_secret_like_keys,
 )
 from intergrax.core.distribution import (
     PlatformCompatibilityReason,
@@ -148,7 +148,7 @@ def test_package_identity_must_agree_with_python_project_metadata() -> None:
 
 def test_manifest_cannot_carry_runtime_config_or_secrets() -> None:
     with pytest.raises(PlatformPluginManifestValidationError, match="secret-like manifest field"):
-        reject_secret_like_keys({"api_token": "value"})
+        parse_platform_plugin_manifest_data({"api_token": "value"})
 
 
 def test_multi_capability_packages_remain_supported() -> None:
