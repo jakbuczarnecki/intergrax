@@ -1115,7 +1115,7 @@ def test_lkw_quickstart_progressive_disclosure_structure() -> None:
 
     assert before_run < run_cmd < success < what_happened < what_proves < current_boundary < config
     assert text.index("AURORA-17") < config
-    assert "### Expected result" in text
+    assert "### Verified Quick Start" in text
     assert "lkw_product_quickstart.txt" in text
     assert "persisted_run_verified=true" in text
 

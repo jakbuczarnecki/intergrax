@@ -32,55 +32,35 @@ The launcher does not install software or use elevated installers.
 
 `AURORA-17` is the expected success marker for this quickstart.
 
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="../assets/lkw-grounded-result-dark.svg"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="../assets/lkw-grounded-result-light.svg"
-  >
-  <img
-    alt="LKW quickstart flow showing the approved sample file lkw_product_quickstart.txt, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification."
-    src="../assets/lkw-grounded-result-light.svg"
-  >
-</picture>
+### Verified Quick Start
 
-The visual summarizes the documented result shape. The table and text block below are the exact reviewable output contract.
+This section documents **one verified local run** on a developer machine. Workspace and Ask run IDs vary between runs; results below match that run's transcript.
 
-### Expected result
+A real local run completed the supported Product Quick Start end to end: environment setup, stack startup, knowledge ingestion, grounded Ask, citation, and persisted Ask verification.
 
-| Check | Expected |
-|---|---|
-| Overall status | `LKW quickstart: PASS` |
-| Grounded answer marker | `AURORA-17` |
-| Source citation file | `lkw_product_quickstart.txt` |
-| Persisted Ask run | `persisted_run_verified=yes` |
+| Verification | Result |
+| --- | --- |
+| LKW stack and services | ✅ Ready |
+| Sample knowledge | ✅ Uploaded and indexed |
+| Grounded Ask | ✅ Completed |
+| Expected answer | `AURORA-17` |
+| Grounding source | `lkw_product_quickstart.txt` |
+| Persisted Ask result | ✅ Verified |
+| Final Quick Start result | **PASS** |
 
-```text
-LKW quickstart: PASS
+All 10 launcher stages completed successfully in this run (see transcript below).
 
-Question:
-What is the project codename?
+**Question**
 
-Answer:
-<grounded answer containing AURORA-17>
+> What is the project codename?
 
-Source:
-lkw_product_quickstart.txt
+**Answer**
 
-Workspace:
-<workspace_id>
+> `AURORA-17`
 
-Ask run:
-<run_id>
+**Grounding source**
 
-Persisted Ask run verified:
-yes
-```
-
-Stable machine-readable lines:
+`lkw_product_quickstart.txt`
 
 ```text
 lkw_quickstart_result=PASS
@@ -89,6 +69,58 @@ citation_file=lkw_product_quickstart.txt
 persisted_run_verified=true
 stack_left_running=true
 ```
+
+<details>
+<summary>Raw run transcript (verified local run)</summary>
+
+Volatile workspace and run IDs were redacted as `<generated workspace id>` and `<generated run id>` for readability.
+
+```text
+[1/10] Checking prerequisites...
+Prerequisites ready (4s).
+[2/10] Starting local LKW stack...
+Still starting local LKW stack... 15s
+Still starting local LKW stack... 30s
+Local LKW stack started (30s).
+[3/10] Waiting for LKW services...
+LKW services are ready (0s).
+[4/10] Preparing embedding model...
+Embedding model is ready (5s).
+[5/10] Creating evaluation workspace...
+Evaluation workspace is ready (0s).
+[6/10] Uploading sample knowledge...
+Sample knowledge upload accepted (0s).
+[7/10] Indexing sample knowledge...
+Sample knowledge is indexed (3s).
+[8/10] Asking a grounded question...
+Still asking a grounded question... 15s
+Grounded answer is ready (22s).
+[9/10] Verifying saved Ask result...
+Saved Ask result is verified (0s).
+[10/10] Finalizing Quick Start...
+Quick Start completed successfully (0s).
+LKW quickstart: PASS
+Question:
+What is the project codename?
+Answer:
+AURORA-17
+Source:
+lkw_product_quickstart.txt
+Workspace:
+<generated workspace id>
+Ask run:
+<generated run id>
+Persisted Ask run verified:
+yes
+lkw_quickstart_result=PASS
+answer_marker=AURORA-17
+citation_file=lkw_product_quickstart.txt
+persisted_run_verified=true
+stack_left_running=true
+Stack remains running for inspection. See applications/local_workspace_application/docs/product/QUICKSTART.md for stop and troubleshooting commands.
+```
+
+</details>
 
 ## 3. What just happened
 
