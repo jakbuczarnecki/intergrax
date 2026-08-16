@@ -58,15 +58,12 @@ _REQUIRED_PUBLIC_LINKS = (
     "docs/project/capabilities/token_optimization/README.md",
     "PROOFS.md",
     "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
-    "docs/project/technical/DOCUMENTATION_MAP.md",
-    "EVALUATION_GUIDE.md",
-    "PARTNERS.md",
-    "COLLABORATION.md",
-    "LICENSE",
     "WHY_INTERGRAX.md",
     "ARCHITECTURE_OVERVIEW.md",
-    "BUILD_WITH_INTERGRAX.md",
     "LKW_PRODUCT_TOUR.md",
+    "applications/local_workspace_application/docs/product/QUICKSTART.md",
+    "PARTNERS.md",
+    "LICENSE",
 )
 
 _COMPATIBILITY_ANCHORS = (
@@ -94,10 +91,14 @@ def readme_text() -> str:
 def test_canonical_positioning(readme_text: str) -> None:
     """Product-first first screen: Intergrax/LKW purpose and reusable foundations."""
     assert "Local Knowledge Workspace" in readme_text
-    assert "primary product path" in readme_text.lower() or "Try LKW" in readme_text
-    assert "reusable" in readme_text.lower()
-    assert "policy" in readme_text.lower()
-    assert "evidence" in readme_text.lower()
+    normalized = re.sub(r"[*_`]", "", readme_text).lower()
+    assert (
+        "primary daily-use conversational interface" in normalized
+        or "try lkw" in normalized
+    )
+    assert "reusable" in normalized
+    assert "policy" in normalized
+    assert "evidence" in normalized
     assert "Intergrax helps teams build" in readme_text
 
 

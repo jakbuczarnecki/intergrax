@@ -135,7 +135,7 @@ _REQUIRED_LINKS_USE_CASES = (
 _README_PRESERVED_LINKS = (
     "WHY_INTERGRAX.md",
     "ARCHITECTURE_OVERVIEW.md",
-    "BUILD_WITH_INTERGRAX.md",
+    "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
 )
 
 
@@ -436,7 +436,7 @@ def test_relative_link_integrity() -> None:
 
 def test_readme_routing(readme_text: str) -> None:
     assert "USE_CASES.md" in readme_text
-    assert "ROADMAP.md" in readme_text
+    assert "PUBLIC_DOCUMENTATION_MAP.md" in readme_text
     for link in _README_PRESERVED_LINKS:
         assert link in readme_text, f"README missing preserved link: {link}"
 

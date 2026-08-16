@@ -7,16 +7,21 @@ It is a reusable governed foundation—an application operating layer around
 execution boundaries—so product teams do not rebuild policy, approvals,
 integrations, recovery, and evidence mechanisms for every workflow.
 
-**Local Knowledge Workspace (LKW)** is the primary product path: add an approved
-source, ask over indexed knowledge, and inspect a grounded answer with source
-references and persisted evidence.
+**Local Knowledge Workspace (LKW)** is a private, governed AI knowledge workspace
+with **Slack as its primary daily-use conversational interface** for LKW 1.0.
+Add approved sources, ask over indexed knowledge from Slack or other supported
+clients, and inspect grounded answers with source references and persisted
+evidence. Reusable LKW HTTP and application APIs remain the backend boundary —
+Slack is the familiar work-surface direction, not the only client. A bounded
+Slack DM Ask path is live-verified today; the broader Slack-first daily-use
+experience remains under productization.
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Source-available](https://img.shields.io/badge/source--available-evaluation-6c5ce7.svg)](LICENSE)
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
 [![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44e.svg)](docs/project/proofs/PROOFS.md)
 
-**[Try LKW](#try-lkw)** · [See the LKW workflow](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) · [Review proof](docs/project/proofs/PROOFS.md)
+**[See LKW](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)** · **[Run LKW locally](applications/local_workspace_application/docs/product/QUICKSTART.md)** · **[Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)**
 
 > Intergrax is **source-available** and under **active R&D**. LKW is a
 > **Backend Product Alpha / MVP**. **Real-user validation** and **commercial
@@ -27,27 +32,20 @@ references and persisted evidence.
 <a id="start-here"></a>
 ## Choose your path
 
-| You want to… | Start here |
-| --- | --- |
-| Try the product | [LKW Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md) |
-| Understand the product first | [LKW Product Tour](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) |
-| Verify bounded platform behavior | [Core Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
-| Check whether your workflow fits | [Use Cases](docs/project/overview/USE_CASES.md) |
-| Review current evidence | [PROOFS](docs/project/proofs/PROOFS.md) |
-| Evaluate as an investor or business decision maker | [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md) |
-| Evaluate one claim fairly | [Evaluation Guide](docs/project/builders/EVALUATION_GUIDE.md) |
-| Start building | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
-| Plan deeper application composition | [Build With Intergrax](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
-| Review architecture | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
-| Configure the platform | [Platform Configuration](docs/project/technical/guides/PLATFORM_CONFIGURATION.md) |
-| Discuss a pilot or design partnership | [Partners](docs/project/community/PARTNERS.md) |
-| Contribute, give feedback, or ask about permissions | [Collaboration](docs/project/community/COLLABORATION.md) |
-| Perform a deep technical review | [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
+| If you are… | Start here | What this gives you |
+| --- | --- | --- |
+| AI Engineer / Builder | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) | Build a runnable agent + application stack |
+| Architect / Principal Engineer | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) | Understand responsibilities, boundaries, and system design |
+| CTO / Engineering Leader | [Use Cases](docs/project/overview/USE_CASES.md) | Decide whether Intergrax fits a concrete workflow |
+| Technical Reviewer | [PROOFS](docs/project/proofs/PROOFS.md) | Inspect what is actually implemented / boundedly proven |
+| Investor / Strategic Evaluator | [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md) | Understand the platform thesis, LKW wedge, and open validation gates |
+| Design Partner / Integrator | [Partners](docs/project/community/PARTNERS.md) | Explore a bounded evaluation or pilot around a concrete workflow |
 
-Questions? See the [FAQ](docs/project/overview/FAQ.md). For the complete public route map, use the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
-The [project documentation hub](docs/project/README.md) is the secondary
-all-docs entry point. The [public roadmap](docs/project/overview/ROADMAP.md)
-describes outcome direction.
+Looking for configuration, evaluation guidance, roadmap, collaboration,
+permissions, capability-specific material, or deeper technical documentation?
+Explore the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
+
+Questions? See the [FAQ](docs/project/overview/FAQ.md).
 
 ---
 
@@ -56,15 +54,20 @@ describes outcome direction.
 ### Product workflow
 
 ```text
-approved source
-→ ingest / index
-→ Ask
+approved knowledge
+→ LKW workspace
+→ ask from Slack / supported client
 → grounded answer
-→ source / evidence
+→ sources / persisted evidence
 ```
 
-`AURORA-17` is the expected success marker used by the canonical LKW
-quick-start proof.
+**Product Quick Start** is the easiest supported local executable proof path:
+indexed Ask V1 over a bundled sample document (`AURORA-17` is the expected
+success marker). It does **not** require Slack setup.
+
+**Slack** is the primary daily-use conversational interface direction for LKW
+1.0. A bounded DM Ask path is live-verified today; broader Slack workspace,
+source-management, and daily-use flows remain under productization.
 
 <picture>
   <source
@@ -109,7 +112,8 @@ restart without resync/reindex.
 ## Try LKW
 
 One supported command takes you from the repository root to a grounded answer
-with a source citation over indexed knowledge. Detailed prerequisites and
+with a source citation over indexed knowledge — the canonical **Product Quick
+Start** path, separate from Slack DM setup. Detailed prerequisites and
 troubleshooting live in the [LKW Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md).
 
 **Windows:**

@@ -503,21 +503,31 @@ def test_readme_routing(readme_text: str) -> None:
         "ARCHITECTURE_OVERVIEW.md",
         "USE_CASES.md",
         "PROOFS.md",
-        "EVALUATION_GUIDE.md",
         "BUILDER_QUICKSTART.md",
-        "BUILD_WITH_INTERGRAX.md",
         "LKW_PRODUCT_TOUR.md",
         "PARTNERS.md",
-        "COLLABORATION.md",
         "FAQ.md",
-        "ROADMAP.md",
-        "DOCUMENTATION_MAP.md",
         "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
-        "docs/project/README.md",
         "docs/project/capabilities/architecture/MULTIPLAYER_AI.md",
         "docs/project/architecture/PLATFORM_PLUGINS.md",
     ):
         assert link in readme_text, f"README missing link: {link}"
+    normalized = " ".join(_normalize(readme_text).split())
+    for phrase in (
+        "see lkw",
+        "run lkw locally",
+        "why intergrax",
+        "ai engineer / builder",
+        "architect / principal engineer",
+        "cto / engineering leader",
+        "technical reviewer",
+        "investor / strategic evaluator",
+        "design partner / integrator",
+        "primary daily-use conversational interface",
+        "slack dm ask path is live-verified",
+        "broader slack-first daily-use experience remains under productization",
+    ):
+        assert phrase in normalized, f"README missing routing marker: {phrase!r}"
     assert "Local Knowledge Workspace" in readme_text
     assert "Intergrax helps teams build" in readme_text
     assert "Try LKW" in readme_text

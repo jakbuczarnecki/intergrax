@@ -72,7 +72,7 @@ def test_builder_quickstart_linked_files_resolve(quickstart_text: str) -> None:
 
 def test_readme_start_building_routes_to_builder_quickstart() -> None:
     readme = README_PATH.read_text(encoding="utf-8")
-    assert "Start building" in readme
+    assert "AI Engineer / Builder" in readme
     assert "docs/project/builders/BUILDER_QUICKSTART.md" in readme
 
 
