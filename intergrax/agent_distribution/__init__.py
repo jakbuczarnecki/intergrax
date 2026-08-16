@@ -18,8 +18,12 @@ from intergrax.agent_distribution.agent_project_metadata import (
     project_agent_capability_descriptors,
 )
 from intergrax.agent_distribution.builtin_capability_metadata import (
-    BuiltinAgentCapabilityMetadataProvider,
     PackageAgentCapabilityMetadataProvider,
+)
+from intergrax.agent_distribution.contract_metadata_parity import (
+    AgentContractMetadataParityError,
+    AgentContractMetadataParityMismatch,
+    validate_agent_contract_metadata_parity,
 )
 from intergrax.agent_distribution.binding import (
     AgentBindingFactoryReference,
@@ -263,7 +267,8 @@ __all__ = [
     "ApplicationEnvironmentServingRecord",
     "ApplicationEnvironmentServingStore",
     "ArtifactRevalidationHook",
-    "BuiltinAgentCapabilityMetadataProvider",
+    "AgentContractMetadataParityError",
+    "AgentContractMetadataParityMismatch",
     "PackageAgentCapabilityMetadataProvider",
     "BindingLifecycleError",
     "BindingRevisionConflict",
@@ -337,6 +342,7 @@ __all__ = [
     "MaterializedRuntimeLockService",
     "MaterializedRuntimeLockStore",
     "merge_agent_capability_descriptors",
+    "validate_agent_contract_metadata_parity",
     "parse_agent_project_pyproject",
     "project_agent_capability_descriptors",
     "PolicyDependencyConstraint",

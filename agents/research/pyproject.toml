@@ -31,12 +31,14 @@ Intergrax-ai = { workspace = true }
 
 [[tool.intergrax.agent.contracts]]
 contract_id = "research"
+contract_version = "0.1.0"
 capabilities = ["research.web_search", "research.pipeline"]
 skill_ids = ["research.literature_scan"]
 tool_ids = []
 
 [[tool.intergrax.agent.contracts]]
 contract_id = "research-summary"
+contract_version = "0.1.0"
 capabilities = ["research.summarize"]
 skill_ids = []
 tool_ids = []

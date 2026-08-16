@@ -46,6 +46,3 @@ class PackageAgentCapabilityMetadataProvider:
                 project_agent_capability_descriptors(parse_agent_project_pyproject(text))
             )
         return merge_agent_capability_descriptors(collected)
-
-
-BuiltinAgentCapabilityMetadataProvider = PackageAgentCapabilityMetadataProvider

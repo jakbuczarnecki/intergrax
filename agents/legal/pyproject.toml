@@ -31,6 +31,7 @@ Intergrax-ai = { workspace = true }
 
 [[tool.intergrax.agent.contracts]]
 contract_id = "legal"
+contract_version = "0.1.0"
 capabilities = ["legal.review"]
 skill_ids = ["legal.contract_review"]
 tool_ids = []

@@ -34,11 +34,12 @@ class AgentPackageContractDeclaration(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     contract_id: str = _NON_EMPTY
+    contract_version: str = _NON_EMPTY
     capabilities: tuple[str, ...] = ()
     skill_ids: tuple[str, ...] = ()
     tool_ids: tuple[str, ...] = ()
 
-    @field_validator("contract_id")
+    @field_validator("contract_id", "contract_version")
     @classmethod
     def _strip_contract_id(cls, value: str) -> str:
         return _strip_required(value)
@@ -133,7 +134,8 @@ def parse_agent_project_pyproject(source: str) -> AgentProjectMetadata:
     """Parse agent package metadata from a pyproject.toml document.
 
     Canonical capability rows live in ``[[tool.intergrax.agent.contracts]]``.
-    ``agent_version`` is projected from ``[project].version`` — never synthesized.
+    Each row requires ``contract_version`` (AgentContract version). ``[project].version``
+    is the distribution package version only — never projected as contract version.
     ``[project].dependencies`` are PEP 621 install deps and are not runtime-graph
     agent dependencies; those remain the ``dependencies`` field supplied by the
     installation metadata provider.
@@ -171,7 +173,10 @@ def parse_agent_project_pyproject(source: str) -> AgentProjectMetadata:
             for index, item in enumerate(raw_contracts):
                 prefix = f"tool.intergrax.agent.contracts[{index}]"
                 mapping = _require_mapping(item, field_name=prefix)
-                unknown = sorted(set(mapping) - {"contract_id", "capabilities", "skill_ids", "tool_ids"})
+                unknown = sorted(
+                    set(mapping)
+                    - {"contract_id", "contract_version", "capabilities", "skill_ids", "tool_ids"}
+                )
                 if unknown:
                     raise AgentProjectMetadataParseError(
                         f"{prefix} unknown field(s): {', '.join(unknown)}"
@@ -179,10 +184,17 @@ def parse_agent_project_pyproject(source: str) -> AgentProjectMetadata:
                 contract_id = _optional_str(mapping.get("contract_id"), field_name=f"{prefix}.contract_id")
                 if contract_id is None:
                     raise AgentProjectMetadataParseError(f"{prefix} missing contract_id")
+                contract_version = _optional_str(
+                    mapping.get("contract_version"),
+                    field_name=f"{prefix}.contract_version",
+                )
+                if contract_version is None:
+                    raise AgentProjectMetadataParseError(f"{prefix} missing contract_version")
                 try:
                     parsed.append(
                         AgentPackageContractDeclaration(
                             contract_id=contract_id,
+                            contract_version=contract_version,
                             capabilities=_parse_string_tuple(
                                 mapping.get("capabilities"),
                                 field_name=f"{prefix}.capabilities",
@@ -216,18 +228,17 @@ def parse_agent_project_pyproject(source: str) -> AgentProjectMetadata:
 def project_agent_capability_descriptors(
     metadata: AgentProjectMetadata,
 ) -> tuple[AgentCapabilityDescriptor, ...]:
-    """Project package-owned declarations into architecture descriptors."""
+    """Project package-owned declarations into architecture descriptors.
+
+    ``agent_version`` is projected from each row's ``contract_version`` only.
+    ``package_version`` is distribution identity metadata and is never used here.
+    """
     if not metadata.declared_contracts:
         return ()
-    if metadata.package_version is None:
-        raise AgentProjectMetadataParseError(
-            f"package {metadata.distribution_package_id!r} declares contracts but has no "
-            "package_version; no synthetic version fallback"
-        )
     return tuple(
         AgentCapabilityDescriptor(
             contract_id=declaration.contract_id,
-            agent_version=metadata.package_version,
+            agent_version=declaration.contract_version,
             capabilities=declaration.capabilities,
             skill_ids=declaration.skill_ids,
             tool_ids=declaration.tool_ids,

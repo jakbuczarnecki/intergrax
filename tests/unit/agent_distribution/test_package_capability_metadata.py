@@ -76,6 +76,7 @@ version = "4.5.6"
 
 [[tool.intergrax.agent.contracts]]
 contract_id = "sample-contract"
+contract_version = "4.5.6"
 capabilities = ["sample.cap"]
 skill_ids = ["sample.skill"]
 tool_ids = ["sample.tool"]
@@ -95,7 +96,21 @@ tool_ids = ["sample.tool"]
     )
 
 
-def test_declared_contracts_without_project_version_have_no_synthetic_fallback() -> None:
+def test_declared_contracts_without_contract_version_fail_closed() -> None:
+    with pytest.raises(AgentProjectMetadataParseError, match="missing contract_version"):
+        parse_agent_project_pyproject(
+            """
+[project]
+name = "intergrax-sample-agent"
+version = "1.0.0"
+
+[[tool.intergrax.agent.contracts]]
+contract_id = "sample-contract"
+"""
+        )
+
+
+def test_declared_contracts_without_project_version_fail_closed() -> None:
     with pytest.raises(AgentProjectMetadataParseError, match="no synthetic version fallback"):
         parse_agent_project_pyproject(
             """
@@ -104,17 +119,24 @@ name = "intergrax-sample-agent"
 
 [[tool.intergrax.agent.contracts]]
 contract_id = "sample-contract"
+contract_version = "2.0.0"
 """
         )
 
 
-def test_project_agent_capability_descriptors_requires_package_version() -> None:
+def test_project_agent_capability_descriptors_uses_contract_version_not_package_version() -> None:
     metadata = AgentProjectMetadata(
         distribution_package_id="intergrax-sample-agent",
-        declared_contracts=(AgentPackageContractDeclaration(contract_id="sample-contract"),),
+        package_version="9.9.9",
+        declared_contracts=(
+            AgentPackageContractDeclaration(
+                contract_id="sample-contract",
+                contract_version="2.0.0",
+            ),
+        ),
     )
-    with pytest.raises(AgentProjectMetadataParseError, match="no synthetic version fallback"):
-        project_agent_capability_descriptors(metadata)
+    descriptors = project_agent_capability_descriptors(metadata)
+    assert descriptors[0].agent_version == "2.0.0"
 
 
 def test_package_provider_preserves_exact_version_in_capability_graph(tmp_path: Path) -> None:
@@ -125,6 +147,7 @@ def test_package_provider_preserves_exact_version_in_capability_graph(tmp_path: 
         contracts=(
             "[[tool.intergrax.agent.contracts]]\n"
             'contract_id = "versioned-contract"\n'
+            'contract_version = "9.8.7"\n'
             'capabilities = ["versioned.cap"]\n'
             'skill_ids = ["harness.tool_smoke"]\n'
             'tool_ids = ["rag.retrieve"]\n'
@@ -148,6 +171,7 @@ def test_new_package_metadata_requires_no_platform_core_edit(tmp_path: Path) -> 
         contracts=(
             "[[tool.intergrax.agent.contracts]]\n"
             'contract_id = "external-new"\n'
+            'contract_version = "2.0.0"\n'
         ),
     )
     provider = PackageAgentCapabilityMetadataProvider(package_roots=(package_dir,))
@@ -160,20 +184,20 @@ def test_conflicting_package_contract_descriptors_fail_closed(tmp_path: Path) ->
         tmp_path,
         name="left-agent",
         version="1.0.0",
-        contracts='[[tool.intergrax.agent.contracts]]\ncontract_id = "shared-id"\n',
+        contracts='[[tool.intergrax.agent.contracts]]\ncontract_id = "shared-id"\ncontract_version = "1.0.0"\n',
     )
     right = _write_package(
         tmp_path,
         name="right-agent",
         version="2.0.0",
-        contracts='[[tool.intergrax.agent.contracts]]\ncontract_id = "shared-id"\n',
+        contracts='[[tool.intergrax.agent.contracts]]\ncontract_id = "shared-id"\ncontract_version = "2.0.0"\n',
     )
     provider = PackageAgentCapabilityMetadataProvider(package_roots=(left, right))
     with pytest.raises(AgentCapabilityDescriptorConflictError, match="conflicting"):
         provider.list_agent_capability_descriptors()
 
 
-def test_representative_package_pyproject_version_is_not_python_contract_version() -> None:
+def test_representative_package_contract_versions_match_runtime_not_package_version() -> None:
     provider = PackageAgentCapabilityMetadataProvider(
         package_roots=(
             REPO_ROOT / "agents" / "echo",
@@ -184,13 +208,41 @@ def test_representative_package_pyproject_version_is_not_python_contract_version
     descriptors = {
         item.contract_id: item for item in provider.list_agent_capability_descriptors()
     }
-    assert descriptors["echo"].agent_version == "0.1.0"
+    assert descriptors["echo"].agent_version == "1.0.0"
     assert descriptors["echo"].capabilities == ("echo.basic",)
     assert descriptors["echo"].skill_ids == ("harness.tool_smoke",)
     assert descriptors["legal"].agent_version == "0.1.0"
     assert descriptors["legal"].capabilities == ("legal.review",)
+    assert descriptors["research"].agent_version == "0.1.0"
     assert descriptors["research"].capabilities == ("research.web_search", "research.pipeline")
+    assert descriptors["research-summary"].agent_version == "0.1.0"
     assert descriptors["research-summary"].capabilities == ("research.summarize",)
+
+
+def test_multi_contract_package_preserves_distinct_contract_versions(tmp_path: Path) -> None:
+    package_dir = _write_package(
+        tmp_path,
+        name="multi-contract-agent",
+        version="0.1.0",
+        contracts=(
+            "[[tool.intergrax.agent.contracts]]\n"
+            'contract_id = "contract-a"\n'
+            'contract_version = "3.4.5"\n'
+            'capabilities = ["alpha.cap"]\n'
+            "\n"
+            "[[tool.intergrax.agent.contracts]]\n"
+            'contract_id = "contract-b"\n'
+            'contract_version = "6.7.8"\n'
+            'capabilities = ["beta.cap"]\n'
+        ),
+    )
+    provider = PackageAgentCapabilityMetadataProvider(package_roots=(package_dir,))
+    descriptors = {
+        item.contract_id: item for item in provider.list_agent_capability_descriptors()
+    }
+    assert descriptors["contract-a"].agent_version == "3.4.5"
+    assert descriptors["contract-b"].agent_version == "6.7.8"
+    assert descriptors["contract-a"].agent_version != descriptors["contract-b"].agent_version
 
 
 def test_empty_package_provider_does_not_seed_known_inventory() -> None:
