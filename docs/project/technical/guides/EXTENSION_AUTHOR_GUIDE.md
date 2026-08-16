@@ -1027,12 +1027,12 @@ Local modules (e.g. `applications/my_app/extensions/my_tool.py`) may implement d
 ```python
 from intergrax.core.plugins import (
     PluginQualificationLevel,
-    PluginQualificationStatus,
     build_external_package_subject,
     build_host_embedded_capability_subject,
     build_qualification_result,
     require_production_qualification,
 )
+from intergrax.core.qualification import QualificationStatus
 ```
 
 Evidence records are immutable and safe to log — never include secrets or raw credential-bearing payloads.

@@ -50,6 +50,10 @@ def runtime_request_to_agent_run(
     if isinstance(raw_options, dict):
         execution_options = AgentExecutionOptions.model_validate(raw_options)
 
+    metadata = dict(request.metadata)
+    metadata.setdefault("task_id", request.task_id)
+    metadata.setdefault("run_id", request.run_id)
+
     return AgentRunRequest(
         input=input_payload,
         identity=RequestIdentity(
@@ -59,9 +63,9 @@ def runtime_request_to_agent_run(
             auth_subject=str(request.metadata.get("auth_subject") or "") or None,
         ),
         session_id=str(request.session_id or "") or None,
-        correlation_id=str(request.metadata.get("correlation_id") or "") or None,
+        correlation_id=str(request.metadata.get("correlation_id") or request.run_id) or None,
         agent_id=contract.id,
-        metadata=dict(request.metadata),
+        metadata=metadata,
         state=(
             dict(request.metadata[ACP_STATE_KEY])
             if isinstance(request.metadata.get(ACP_STATE_KEY), dict)

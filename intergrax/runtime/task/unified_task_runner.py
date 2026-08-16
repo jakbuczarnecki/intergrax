@@ -6,23 +6,22 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Optional
 
+from intergrax.contracts.execution_identity import AttemptId, RunId, mint_run_id
+from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.llm_adapters.tracking.context import llm_tenant_scope
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
-from intergrax.runtime.task.task_run_bridge import (
-    new_run_id,
-    runtime_request_with_run_id,
-    task_from_runtime_request,
-)
+from intergrax.runtime.task.task_run_bridge import task_from_runtime_request
 
 
 class UnifiedTaskRunner:
     """
     Single entry point for Task execution via NexusLoop (§41).
 
-    Used by HTTP serving and eval paths; aligns task_id with run_id.
+    Used by HTTP serving and eval paths.
     """
 
     def __init__(
@@ -38,13 +37,43 @@ class UnifiedTaskRunner:
     def nexus_loop(self) -> NexusLoop:
         return self._nexus_loop
 
-    async def run_task(self, task: Task) -> TaskResult:
+    async def run_task(
+        self,
+        task: Task,
+        *,
+        run_id: Optional[RunId] = None,
+        attempt_id: Optional[AttemptId] = None,
+        resume_checkpoint: Optional[TaskCheckpoint] = None,
+    ) -> TaskResult:
         if self._task_enricher is not None:
             task = self._task_enricher(task)
         await ActiveTaskRegistry.register(task)
+        if resume_checkpoint is not None:
+            checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
+                resume_checkpoint
+            )
+            if run_id is not None and run_id != checkpoint_run_id:
+                raise ValueError(
+                    "explicit run_id conflicts with resume checkpoint identity: "
+                    f"{run_id!r} != {checkpoint_run_id!r}"
+                )
+            if attempt_id is not None and attempt_id != checkpoint_attempt_id:
+                raise ValueError(
+                    "explicit attempt_id conflicts with resume checkpoint identity: "
+                    f"{attempt_id!r} != {checkpoint_attempt_id!r}"
+                )
+            resolved_run_id = checkpoint_run_id
+            resolved_attempt_id = checkpoint_attempt_id
+        else:
+            resolved_run_id = run_id or mint_run_id()
+            resolved_attempt_id = attempt_id
         try:
             with llm_tenant_scope(task.tenant_id):
-                return await self._nexus_loop.handle_task(task)
+                return await self._nexus_loop.handle_task(
+                    task,
+                    run_id=resolved_run_id,
+                    attempt_id=resolved_attempt_id,
+                )
         finally:
             await ActiveTaskRegistry.unregister(task.task_id)
 
@@ -54,15 +83,12 @@ class UnifiedTaskRunner:
         *,
         tenant_id: str,
         user_id: str,
-        run_id: Optional[str] = None,
         capability: Optional[str] = None,
     ) -> TaskResult:
-        resolved_run_id = run_id or new_run_id()
         task = task_from_runtime_request(
             request,
             tenant_id=tenant_id,
             user_id=user_id,
-            run_id=resolved_run_id,
             capability=capability,
         )
-        return await self.run_task(task)
+        return await self.run_task(task, run_id=request.run_id)

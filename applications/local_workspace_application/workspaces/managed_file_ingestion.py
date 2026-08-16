@@ -85,7 +85,7 @@ class ManagedObjectMaterializer:
             yield target
         except KnowledgeIngestionProcessorError:
             raise
-        except Exception as exc:  # noqa: BLE001 - map to stable code
+        except OSError as exc:
             raise KnowledgeIngestionProcessorError(
                 "managed_object_materialization_failed"
             ) from exc

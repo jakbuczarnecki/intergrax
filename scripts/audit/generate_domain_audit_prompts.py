@@ -16,7 +16,7 @@ DOMAINS: list[dict] = [
         "layers": "1–2, 32",
         "mission": (
             "Verify Intergrax is developed as a **Harness AI / Agent OS** — the runtime is the durable "
-            "product, agents are replaceable — with enforced four-tier boundaries, 22 domain-pair documentation "
+            "product, agents are replaceable — with enforced four-tier boundaries, 24 domain-pair documentation "
             "governance, gate maintenance discipline, and strategic alignment to IDEAL_HARNESS_AI_ARCHITECTURE."
         ),
         "code": """docs/project/architecture/intergrax_runtime_architecture.md (hub)
@@ -44,7 +44,7 @@ Sample imports across intergrax/, agents/, applications/ for tier violations""",
             "Tier-2 agents consume Tier-0 via policy/ToolRuntime — no vendor SDK imports.",
             "Tier-3 applications compose runtime+agents+profiles — no duplicated agent pipelines.",
             "Import boundaries enforced: `intergrax/` ↛ `agents/`/`applications/`; agents ↛ applications.",
-            "Documentation model: hub-only `docs/` root; 22 architecture↔plan pairs 1:1; no monolithic plan.",
+            "Documentation model: hub-only `docs/` root; 24 architecture↔plan pairs 1:1; no monolithic plan.",
             "New capabilities reuse Tier-0 (§5.2.2) — no parallel universal mechanisms.",
             "LLM calls via `llm_adapters/` — not Integration Library vendor wrappers.",
             "Integrations register via manifest/`register_from_manifest` — not ad-hoc SDK in agents.",
@@ -997,7 +997,7 @@ docs/project/technical/guides/AGENT_CREATION_GUIDE.md · HARNESS_ENVIRONMENT.md"
             "new-application emits profile+wiring+docker+ADR per Phase N.",
             "intergrax doctor diagnoses lab stack accurately.",
             "Gate scripts pass after harness change (mandatory verification set).",
-            "check_docs_domain_pairs enforces 22 pairs.",
+            "check_docs_domain_pairs enforces 24 pairs.",
             "Eval registry trends before promotion (require_baseline_for_release).",
             "Shadow workspace observe-only compare path works.",
             "Acceptance agent_os suite covers OS claims.",
@@ -1219,6 +1219,103 @@ docs/project/technical/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.
         "production_baseline": "Kubernetes HPA/VPA · Celery autoscale · nginx upstream scaling · cloud autoscaler APIs · Prometheus SLI runbooks",
         "anti_patterns": "Nexus hot-path synchronous provisioning · conflating backpressure with autoscale · missing cooldown · scale without tenant bounds",
         "appendix": "N/A — cross-ref OBSERVABILITY (SLIs) and ORCHESTRATION (backpressure)",
+    },
+    {
+        "id": "APPLICATION_HOSTING",
+        "title": "Application Hosting",
+        "layers": "HOST",
+        "mission": (
+            "Audit the **platform-owned Application Hosting subsystem**: turn any configured Tier-3 "
+            "application into a continuously running, managed, observable, extensible instance — "
+            "lifecycle, readiness, typed hooks/components/events, graceful shutdown, restart "
+            "supervision, and OS adapters — without cognition, Nexus orchestration, or product-owned "
+            "generic hosting."
+        ),
+        "code": """intergrax/hosting/ (contracts, engine, supervisor, instance, control, runner)
+intergrax/hosting/engine/ · intergrax/hosting/supervisor/ · intergrax/hosting/instance/
+intergrax/applications/_shared/hosting_wiring.py
+applications/local_workspace_application/hosting/  # LKW adoption/proof only — not generic engine
+tests/unit/hosting/""",
+        "key_symbols": "HostedApplicationProfile · HostedApplicationContext · HostedApplicationEngine · HostedApplicationComponent · HostedApplicationHooks · HostedApplicationSupervisor · HOST-INV-01..12",
+        "active_phases": "APP-HOST-0..2 Done · APP-HOST-W1/W2/W3 Done · APP-HOST-8A..8E LKW proof Done · APP-HOST-9A Done",
+        "known_gaps": "APP-HOST-3D Planned · APP-HOST-5D/5E Planned · APP-HOST-6A..6D Planned · APP-HOST-7A..7F Planned · APP-HOST-9B..9F Planned",
+        "dimensions": [
+            "HOST-INV-01: Application Hosting is platform-owned; products adopt it.",
+            "HOST-INV-02: Hosting never performs cognition or orchestration.",
+            "HOST-INV-03: Supervisor has no dependency on Task, NexusLoop, agents, tools, or product capabilities.",
+            "HOST-INV-04: Application code contains no standard Windows/Linux/macOS branching.",
+            "HOST-INV-05: HostedApplicationProfile is the primary public composition surface.",
+            "HOST-INV-11: ApplicationHost.on_hook and HostedApplicationHooks MUST NOT be merged.",
+            "HOST-INV-12: Restart creates a new instance/process lifecycle; hosted app does not exec itself.",
+            "No private hosting event bus — reuse Intergrax event/observability spine.",
+            "Required unhealthy components block readiness; optional components do not.",
+            "LKW is a proof workload, never the owner of generic hosting contracts.",
+            "Generic contracts/engine MUST NOT live under applications/local_workspace_application.",
+            "Existing FastAPI/Tier-3 applications continue without adopting hosting.",
+        ],
+        "scale_probes": [
+            "Single-instance rejection (INSTANCE_CONFLICT) under concurrent start.",
+            "Supervisor restart creates new instance_id with preserved profile digest.",
+            "LKW live request succeeds after restart (APP-HOST-8D).",
+        ],
+        "overrides": "HostedApplicationProfile · run_hosted_application(profile) · OS adapters (APP-HOST-7 target) · LKW hosted profile",
+        "ci_scripts": [
+            "uv run pytest tests/unit/hosting/ -q",
+            "uv run pytest tests/unit/hosting/test_hosting_import_boundaries.py -q",
+            "uv run pytest tests/unit/hosting/engine/test_engine_import_boundaries.py -q",
+        ],
+        "production_baseline": "OS service managers (systemd/launchd/Windows Service) · process supervisors with restart policy · readiness/health aggregation on long-running hosts",
+        "anti_patterns": "Product-owned generic daemon framework · supervisor calling Nexus/tasks/tools · private hosting event bus · restart via os.exec · LKW proof as sole platform contract test",
+        "appendix": "N/A",
+    },
+    {
+        "id": "UNIFIED_CONTEXT_LIFECYCLE",
+        "title": "Unified Context Lifecycle",
+        "layers": "UCL",
+        "mission": (
+            "Audit the **Unified Context Lifecycle**: one durable conversation ledger (Memory/Session), "
+            "one global input budget (Context Engineering), one transformation executor (Token Optimization), "
+            "and Nexus as lifecycle coordinator for EPHEMERAL_ASSEMBLY and DURABLE_COMPACTION — "
+            "no parallel compression engines and no application-local summary caches."
+        ),
+        "code": """intergrax/runtime/context_lifecycle/ (contracts, repository, InMemoryOptimizationArtifactRepository)
+intergrax/runtime/nexus/context/ucl_orchestration.py · context_engine.py
+intergrax/runtime/token_optimization/message_sequence_artifact.py
+intergrax/runtime/wiring/context_runtime_bridge.py
+docs/project/technical/adr/entries/2026-08-01/ADR-UCL-001.md
+tests/unit/runtime/context_lifecycle/""",
+        "key_symbols": "ModelCallExecutionScope · OptimizationExecutionGuard · ContextOptimizationDecision · ArtifactLookupKey · ReusableOptimizationArtifact · OptimizationArtifactRepository · InMemoryOptimizationArtifactRepository · EPHEMERAL_ASSEMBLY · DURABLE_COMPACTION · PRIMARY_MODEL_CALL · INTERNAL_OPTIMIZATION_CALL",
+        "active_phases": "CTX-UCL-ARCH-1 through CTX-UCL-6D ACCEPTED/CLOSED · CTX-UCL-CLOSEOUT-1 ACCEPTED/CLOSED · ADR-UCL-001 Accepted · TOKEN-10E-1 READY_FOR_REVIEW",
+        "known_gaps": "TOKEN-10E-1 READY_FOR_REVIEW (durable safety contracts; candidate flow not implemented) · TOKEN-10E-2..4 Blocked · durable production OptimizationArtifactRepository adapter",
+        "dimensions": [
+            "One durable ledger owner (Memory/Session) — compaction does not rewrite ConversationLedger.",
+            "One global input budget owner per model call (CE) — no second independent global budget.",
+            "One optimization executor (TO) — no parallel application compression engines.",
+            "Nexus coordinates; does not implement algorithms or storage.",
+            "Every PRIMARY_MODEL_CALL traverses the canonical UCL optimization decision point.",
+            "EPHEMERAL_ASSEMBLY never mutates active revision.",
+            "Durable compaction never mutates active revision in place.",
+            "Internal optimization calls do not recursively traverse full UCL for the same target.",
+            "Same-key concurrent artifact creation is single-flight coordinated.",
+            "Lookup-before-create: REUSE_ARTIFACT skips transform execution.",
+            "MessageSequenceArtifactExecutor only on CREATE_ARTIFACT.",
+            "Application host does not own a private summary cache or parallel compression engine.",
+            "Retention is not token optimization; LTM consolidation is a separate concern.",
+            "HistoryLayer independent summarizer disabled; legacy non-OFF strategies fail-closed.",
+        ],
+        "scale_probes": [
+            "Two sequential unchanged calls: first creates artifact, second reuses.",
+            "Two concurrent unchanged calls: one summarizer invocation (single-flight).",
+            "Different-key concurrency preserved.",
+        ],
+        "overrides": "ContextOptimizationPolicy via ApplicationEnvironmentProfile → RuntimeEnvironmentProfile · context_runtime_bridge · InMemoryOptimizationArtifactRepository (reference, not production fallback)",
+        "ci_scripts": [
+            "uv run pytest tests/unit/runtime/context_lifecycle/ -q",
+            "uv run pytest tests/unit/runtime/nexus/context/ -q -k ucl",
+        ],
+        "production_baseline": "Single conversation-ledger + compiler budget + optional durable compaction with reuse-before-create — not per-application summarizer caches",
+        "anti_patterns": "Second universal compression engine · dual global budgets · in-place active history overwrite · application-local summary cache · recursive full UCL on summarizer calls · Token Optimization-owned artifact persistence",
+        "appendix": "N/A",
     },
 ]
 

@@ -10,59 +10,51 @@ import re
 from collections.abc import Iterator, Mapping, Sequence
 from enum import Enum
 from typing import Any
-from urllib.parse import parse_qsl, urlparse
+
+from intergrax.core.security import (
+    CREDENTIAL_IN_URL,
+    SECRET_QUERY_PARAMETER,
+    SecretSafetyValidationError,
+    SecretSafeValidationPolicy,
+    is_secret_like_key,
+    validate_secret_safe_url,
+)
 
 type JsonPrimitive = str | int | float | bool | None
 type JsonValue = JsonPrimitive | list[JsonValue] | dict[str, JsonValue]
 type JsonObject = dict[str, JsonValue]
 
-_SECRET_KEY_NAMES: frozenset[str] = frozenset(
-    {
-        "token",
-        "access_token",
-        "refresh_token",
-        "password",
-        "secret",
-        "api_key",
-        "authorization",
-        "credential",
-        "bearer",
-    }
+KNOWLEDGE_SECRET_POLICY = SecretSafeValidationPolicy(
+    forbidden_key_names=frozenset(
+        {
+            "token",
+            "access_token",
+            "refresh_token",
+            "password",
+            "secret",
+            "api_key",
+            "authorization",
+            "credential",
+            "bearer",
+        }
+    ),
+    forbidden_key_suffixes=(
+        "_token",
+        "_password",
+        "_secret",
+        "_api_key",
+        "_authorization",
+        "_credential",
+        "_bearer",
+    ),
+    allowed_keys=frozenset({"credential_ref"}),
+    split_key_segments=True,
+    scan_string_values=False,
 )
 
 _URL_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*$")
 
-_SECRET_KEY_SUFFIXES: tuple[str, ...] = (
-    "_token",
-    "_password",
-    "_secret",
-    "_api_key",
-    "_authorization",
-    "_credential",
-    "_bearer",
-)
-
-_ALLOWED_SECRET_LIKE_KEYS: frozenset[str] = frozenset({"credential_ref"})
-
 _MUTATION_ERROR = "knowledge metadata is immutable"
-
-
-def _normalize_key(key: str) -> str:
-    return str(key).strip().lower()
-
-
-def is_forbidden_secret_key(key: str) -> bool:
-    normalized = _normalize_key(key)
-    if not normalized:
-        return False
-    if normalized in _ALLOWED_SECRET_LIKE_KEYS:
-        return False
-    if normalized in _SECRET_KEY_NAMES:
-        return True
-    if any(normalized.endswith(suffix) for suffix in _SECRET_KEY_SUFFIXES):
-        return True
-    segments = [segment for segment in normalized.replace("-", "_").split("_") if segment]
-    return any(segment in _SECRET_KEY_NAMES for segment in segments)
 
 
 def is_url_like(value: str) -> bool:
@@ -94,15 +86,20 @@ def validate_safe_url(url: str, *, field_name: str) -> str:
     cleaned = url.strip()
     if not cleaned:
         raise ValueError(f"{field_name} must be a non-empty string when provided")
-    parsed = urlparse(cleaned)
-    if parsed.username is not None or parsed.password is not None:
-        raise ValueError(f"{field_name} must not embed credentials")
-    for raw_key, _raw_value in parse_qsl(parsed.query, keep_blank_values=True):
-        if is_forbidden_secret_key(raw_key):
+    try:
+        return validate_secret_safe_url(
+            cleaned,
+            field_name=field_name,
+            policy=KNOWLEDGE_SECRET_POLICY,
+        )
+    except SecretSafetyValidationError as exc:
+        if exc.reason_code == CREDENTIAL_IN_URL:
+            raise ValueError(f"{field_name} must not embed credentials") from exc
+        if exc.reason_code == SECRET_QUERY_PARAMETER:
             raise ValueError(
-                f"{field_name} must not include secret-bearing query parameter '{raw_key}'"
-            )
-    return cleaned
+                f"{field_name} must not include secret-bearing query parameter '{exc.path}'"
+            ) from exc
+        raise ValueError(str(exc)) from exc
 
 
 def _validate_finite_float(value: float, *, field_name: str, path: str) -> float:
@@ -134,7 +131,7 @@ def validate_json_value(value: object, *, field_name: str, path: str = "") -> Js
                 child_path = path or field_name
                 raise ValueError(f"{field_name} keys must be strings at '{child_path}'")
             key = raw_key
-            if is_forbidden_secret_key(key):
+            if is_secret_like_key(key, policy=KNOWLEDGE_SECRET_POLICY):
                 raise ValueError(
                     f"{field_name} must not contain secret-bearing key '{path + key}'"
                 )

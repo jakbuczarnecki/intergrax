@@ -19,6 +19,11 @@ from intergrax.contracts.agent_run_enums import (
     StepNextAction,
     TerminalReason,
 )
+from intergrax.contracts.execution_identity import (
+    require_active_execution_identity,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.privacy_redaction import redact_pii_text
 from intergrax.contracts.agent_run_trace import (
     AgentRunTrace,
@@ -751,14 +756,23 @@ class HarnessKernel:
         event_type: RuntimeEventType,
         payload: dict[str, Any],
     ) -> int:
+        active_run_id, attempt_id = require_active_execution_identity()
+        try:
+            resolved_task_id = validate_task_id(kernel_ctx.task_id)
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError("kernel task_id must be canonical") from exc
+        resolved_run_id = validate_run_id(kernel_ctx.run_id)
+        if resolved_run_id != active_run_id:
+            raise RuntimeError("kernel run_id conflicts with active execution identity")
         event = RuntimeEvent(
             event_type=event_type,
             phase=ExecutionPhase.STEP_EXECUTION,
             payload=payload,
             agent_id=kernel_ctx.agent_id,
             tenant_id=kernel_ctx.tenant_id,
-            task_id=kernel_ctx.task_id or kernel_ctx.run_id or "task",
-            run_id=kernel_ctx.run_id or "run",
+            task_id=resolved_task_id,
+            run_id=resolved_run_id,
+            attempt_id=attempt_id,
         )
         kernel_ctx.events.append(event)
         if kernel_ctx.emit_event is not None:

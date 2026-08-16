@@ -8,9 +8,13 @@ from pathlib import Path
 
 import pytest
 
+from echo.echo_agent import EchoAgent
+
+from intergrax.agent_distribution.activation import FakeRuntimeServingProjectionCoordinator
 from intergrax.agent_distribution.admin_models import (
     ActivateRuntimeRevisionRequest,
     AgentPlatformAdminBlockedError,
+    RollbackRuntimeRevisionRequest,
     SetAgentEnablementRequest,
 )
 from intergrax.agent_distribution.errors import (
@@ -26,15 +30,31 @@ from intergrax.agent_distribution.runtime_revision import (
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.in_memory_stores import InMemoryRuntimeRevisionStore
 from intergrax.applications._shared.registry_projection import (
+    ApplicationRegistryProjectionCoordinator,
+    InMemoryRegistryProjectionInputStore,
+    InMemoryRuntimeRegistryProjectionStore,
     RegistryProjectionError,
+    RegistryProjectionInputBundle,
     build_registry_projection,
 )
+from intergrax.applications._shared.runtime_agent_factory_resolver import (
+    InMemoryRuntimeAgentFactoryResolver,
+)
+from intergrax.applications._shared.wiring import (
+    _index_manifest_bindings,
+    factory_reference_for_roster_entry,
+)
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from tests.unit.agent_distribution.test_agent_platform_admin_service import (
+    AdminStack,
     _APP,
     _ARTIFACT,
     _ENV,
+    _bind_request,
     _build_request,
     _install_bind,
+    _install_request,
     build_admin_stack,
 )
 from tests.unit.applications.test_registry_projection_ap10 import (
@@ -46,6 +66,102 @@ from tests.unit.applications.test_registry_projection_ap10 import (
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+_PROOF_APP = "app_a"
+_RESEARCHER_CONTRACT_ID = "researcher"
+
+
+def _echo_factory(_ctx: ApplicationBuildContext, _binding: AgentBinding) -> EchoAgent:
+    return EchoAgent()
+
+
+def _wire_real_projection_coordinator(stack: AdminStack) -> tuple[
+    ApplicationRegistryProjectionCoordinator,
+    InMemoryRegistryProjectionInputStore,
+    InMemoryRuntimeRegistryProjectionStore,
+]:
+    input_store = InMemoryRegistryProjectionInputStore()
+    projection_store = InMemoryRuntimeRegistryProjectionStore()
+    coordinator = ApplicationRegistryProjectionCoordinator(
+        revision_store=stack.service._revision_store,
+        input_store=input_store,
+        projection_store=projection_store,
+    )
+    stack.service._activation_service._projection_coordinator = coordinator
+    return coordinator, input_store, projection_store
+
+
+def _install_enable_build(stack: AdminStack, revision_id: str):
+    stack.service.install_agent(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        request=_install_request(),
+    )
+    stack.service.bind_agent(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        request=_bind_request(),
+    )
+    stack.service.enable_binding(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        application_binding_id="bind-search",
+        request=SetAgentEnablementRequest(expected_revision=0),
+    )
+    return stack.service.build_application_revision(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        request=_build_request(revision_id),
+    )
+
+
+def _exact_projection_manifest() -> ApplicationManifest:
+    return ApplicationManifest.lab(
+        app_id=_PROOF_APP,
+        name="App A",
+        agents=[
+            AgentBinding.mount(
+                EchoAgent,
+                contract_id=_RESEARCHER_CONTRACT_ID,
+                builder_key="researcher",
+            )
+        ],
+    )
+
+
+def _freeze_registry_projection_bundle(
+    stack: AdminStack,
+    runtime_revision_id: str,
+) -> RegistryProjectionInputBundle:
+    revision = stack.service._revision_store.get_revision(runtime_revision_id)
+    assert revision is not None
+    roster = stack.service._build_roster(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        manifest_release_id=revision.application_release_id,
+    )
+    assert roster.effective_roster_revision_id == revision.effective_roster_revision_id
+    manifest = _exact_projection_manifest()
+    build_context = ApplicationBuildContext.for_manifest(manifest)
+    enabled = next(entry for entry in roster.entries if entry.effective_enablement)
+    factory_reference = factory_reference_for_roster_entry(
+        enabled,
+        _index_manifest_bindings(manifest),
+    )
+    resolver = InMemoryRuntimeAgentFactoryResolver()
+    resolver.register(
+        package_digest=enabled.package_digest,
+        factory_reference=factory_reference,
+        factory=_echo_factory,
+    )
+    return RegistryProjectionInputBundle(
+        runtime_revision=revision,
+        effective_roster=roster,
+        manifest=manifest,
+        build_context=build_context,
+        factory_resolver=resolver,
+        materialization_artifact_digest=revision.materialization_artifact_digest,
+    )
 
 
 def test_cross_layer_identity_chain_through_admin_serving_state() -> None:
@@ -171,3 +287,168 @@ def test_cross_layer_mark_validated_rejects_lock_digest_mutation() -> None:
     )
     with pytest.raises(RuntimeRevisionLifecycleError, match="materialized_runtime_lock_digest"):
         revision_service.mark_validated("rev-mut", validated_revision=mutated)
+
+
+def test_real_registry_projection_composition_before_serving_cutover() -> None:
+    stack = build_admin_stack()
+    coordinator, input_store, projection_store = _wire_real_projection_coordinator(stack)
+    assert isinstance(coordinator, ApplicationRegistryProjectionCoordinator)
+    assert not isinstance(
+        stack.service._activation_service._projection_coordinator,
+        FakeRuntimeServingProjectionCoordinator,
+    )
+
+    built = _install_enable_build(stack, "rev-proof-1")
+    revision = stack.service._revision_store.get_revision("rev-proof-1")
+    assert revision is not None
+    assert revision.revision_state is RuntimeRevisionState.VALIDATED
+    bundle = _freeze_registry_projection_bundle(stack, "rev-proof-1")
+    input_store.register(bundle)
+
+    serving_before = stack.service.inspect_serving(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+    )
+    assert serving_before.traffic_serving_revision_id is None
+    activation = stack.service._activation_service
+    activation.prepare_candidate(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id="rev-proof-1",
+        artifact_locator=built.artifact_locator or "test://artifact",
+    )
+    serving_after_prepare = stack.service.inspect_serving(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+    )
+    assert serving_after_prepare.traffic_serving_revision_id is None
+    activation.commit_activation(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id="rev-proof-1",
+        expected_prior_traffic_revision_id=None,
+        expected_serving_pointer_revision=0,
+        expected_artifact_digest=built.materialization_artifact_digest or _ARTIFACT,
+    )
+
+    serving = stack.service.inspect_serving(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+    )
+    projection = projection_store.get("rev-proof-1")
+    assert projection is not None
+    evidence = projection.evidence
+    assert serving.traffic_serving_revision_id == "rev-proof-1"
+    assert evidence.runtime_revision_id == serving.traffic_serving_revision_id
+    assert evidence.application_id == _PROOF_APP
+    assert evidence.application_environment_id == _ENV
+    assert evidence.effective_roster_revision_id == revision.effective_roster_revision_id
+    assert evidence.materialized_runtime_lock_id == revision.materialized_runtime_lock_id
+    assert evidence.materialized_runtime_lock_digest == revision.materialized_runtime_lock_digest
+    assert evidence.runtime_graph_digest == revision.runtime_graph_digest
+    assert evidence.materialization_artifact_digest == revision.materialization_artifact_digest
+    assert projection.agent_registry.has(_RESEARCHER_CONTRACT_ID)
+    active = stack.service._revision_store.get_revision("rev-proof-1")
+    assert active is not None
+    assert active.revision_state is RuntimeRevisionState.ACTIVE
+
+
+def test_missing_projection_inputs_block_serving_pointer_cutover() -> None:
+    stack = build_admin_stack()
+    _wire_real_projection_coordinator(stack)
+    built = _install_enable_build(stack, "rev-proof-fail")
+    serving_before = stack.service.inspect_serving(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+    )
+    activation = stack.service._activation_service
+    activation.prepare_candidate(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id="rev-proof-fail",
+        artifact_locator=built.artifact_locator or "test://artifact",
+    )
+    with pytest.raises(RegistryProjectionError, match="missing frozen projection inputs"):
+        activation.commit_activation(
+            application_id=_PROOF_APP,
+            application_environment_id=_ENV,
+            runtime_revision_id="rev-proof-fail",
+            expected_prior_traffic_revision_id=None,
+            expected_serving_pointer_revision=0,
+            expected_artifact_digest=built.materialization_artifact_digest or _ARTIFACT,
+        )
+    serving_after = stack.service.inspect_serving(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+    )
+    revision = stack.service._revision_store.get_revision("rev-proof-fail")
+    assert revision is not None
+    assert serving_after.traffic_serving_revision_id == serving_before.traffic_serving_revision_id
+    assert serving_after.serving_pointer_revision == serving_before.serving_pointer_revision
+    assert serving_after.traffic_serving_revision_id is None
+    assert revision.revision_state is RuntimeRevisionState.VALIDATED
+    assert serving_after.active_revision is None
+
+
+def test_real_projection_rollback_reuses_frozen_registry_n() -> None:
+    stack = build_admin_stack()
+    coordinator, input_store, projection_store = _wire_real_projection_coordinator(stack)
+    first = _install_enable_build(stack, "rev-proof-n")
+    input_store.register(_freeze_registry_projection_bundle(stack, "rev-proof-n"))
+    activation = stack.service._activation_service
+    activation.prepare_candidate(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id="rev-proof-n",
+        artifact_locator=first.artifact_locator or "test://artifact",
+    )
+    activation.commit_activation(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id="rev-proof-n",
+        expected_prior_traffic_revision_id=None,
+        expected_serving_pointer_revision=0,
+        expected_artifact_digest=first.materialization_artifact_digest or _ARTIFACT,
+    )
+    projection_n = projection_store.get("rev-proof-n")
+    assert projection_n is not None
+    token_n = projection_n.evidence.readiness_token
+
+    second = stack.service.build_application_revision(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        request=_build_request("rev-proof-n1"),
+    )
+    input_store.register(_freeze_registry_projection_bundle(stack, "rev-proof-n1"))
+    activation.prepare_candidate(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id="rev-proof-n1",
+        artifact_locator=second.artifact_locator or "test://artifact",
+    )
+    activation.commit_activation(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id="rev-proof-n1",
+        expected_prior_traffic_revision_id="rev-proof-n",
+        expected_serving_pointer_revision=1,
+        expected_artifact_digest=second.materialization_artifact_digest or _ARTIFACT,
+    )
+    stack.service.rollback_revision(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+        request=RollbackRuntimeRevisionRequest(
+            expected_current_traffic_revision_id="rev-proof-n1",
+            expected_serving_pointer_revision=2,
+            target_runtime_revision_id="rev-proof-n",
+        ),
+    )
+    restored = projection_store.get("rev-proof-n")
+    serving = stack.service.inspect_serving(
+        application_id=_PROOF_APP,
+        application_environment_id=_ENV,
+    )
+    assert restored is projection_n
+    assert restored.evidence.readiness_token == token_n
+    assert serving.traffic_serving_revision_id == "rev-proof-n"
+    assert coordinator.get_projection("rev-proof-n") is projection_n

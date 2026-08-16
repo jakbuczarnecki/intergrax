@@ -2,7 +2,7 @@
 
 import pytest
 
-from intergrax.runtime.registry.bootstrap import build_organization_worker_registry
+from testing_support.agent_registry_bootstrap import build_organization_worker_registry
 from intergrax.runtime.task.task import Task, TaskContext
 from organization_worker.organization_worker_agent import (
     ORG_VENDOR_REPORT_CAPABILITY,

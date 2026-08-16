@@ -19,4 +19,3 @@ class MemoryStoreMaterializationContext:
     tenant_id: str | None
     integration_profile: IntegrationProfile
     rag_stack: RagStack | None = None
-    selected_plugin_id: str | None = None

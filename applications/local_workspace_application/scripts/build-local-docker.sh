@@ -54,7 +54,7 @@ echo "Materializing minimal runtime context for local_workspace_application..."
 uv run python scripts/build/build_application_image.py           --application "local_workspace_application"           --context-dir "applications/local_workspace_application/docker/runtime-context"           --materialize-only
 
 echo "Building and starting local workspace via Docker Compose..."
-docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" up --build -d
+docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" up --build -d --wait --wait-timeout 240
 
 echo "Ensuring the configured Ollama generation model is available..."
 docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" exec -T \

@@ -45,12 +45,12 @@ def bootstrap_memory_stores(
         explicit_plugins=explicit,
     )
     return MemoryStoreBootstrapResult(
-        user_profile_plugins=_count_by_kind(discovered, MemoryStorePluginKind.USER_PROFILE_STORE)
-        + _count_by_kind(explicit_classified, MemoryStorePluginKind.USER_PROFILE_STORE),
-        session_storage_plugins=_count_by_kind(discovered, MemoryStorePluginKind.SESSION_STORAGE)
-        + _count_by_kind(explicit_classified, MemoryStorePluginKind.SESSION_STORAGE),
-        session_turn_index_plugins=_count_by_kind(discovered, MemoryStorePluginKind.SESSION_TURN_INDEX)
-        + _count_by_kind(explicit_classified, MemoryStorePluginKind.SESSION_TURN_INDEX),
+        user_profile_plugins=_count_by_kind(discovered.plugins, MemoryStorePluginKind.USER_PROFILE_STORE)
+        + _count_by_kind(explicit_classified.plugins, MemoryStorePluginKind.USER_PROFILE_STORE),
+        session_storage_plugins=_count_by_kind(discovered.plugins, MemoryStorePluginKind.SESSION_STORAGE)
+        + _count_by_kind(explicit_classified.plugins, MemoryStorePluginKind.SESSION_STORAGE),
+        session_turn_index_plugins=_count_by_kind(discovered.plugins, MemoryStorePluginKind.SESSION_TURN_INDEX)
+        + _count_by_kind(explicit_classified.plugins, MemoryStorePluginKind.SESSION_TURN_INDEX),
     )
 
 
@@ -59,6 +59,6 @@ def discover_session_turn_index_plugin_types() -> list[type]:
     classified = discover_classified_memory_store_plugins(discover_entry_points=True)
     return [
         item.plugin_type
-        for item in classified
+        for item in classified.plugins
         if item.kind is MemoryStorePluginKind.SESSION_TURN_INDEX
     ]

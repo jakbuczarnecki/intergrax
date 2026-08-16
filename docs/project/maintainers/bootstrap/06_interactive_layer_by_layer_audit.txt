@@ -23,7 +23,7 @@ Perform a **rigorous, evidence-backed, interactive audit** — **one domain pair
 
 The goal is the same depth as a live pair-programming architecture review: compare the **ideal modular plugin harness** against canon, plan, and code; surface gaps, ambiguities, and improvements **with arguments**; reconcile the **implementation plan** with **actual code**; propose concrete backlog tasks; optionally add approved tasks to the plan and commit **only when the operator asks**.
 
-**Do not** audit all 22 domains in one turn unless the operator explicitly says to batch.
+**Do not** audit all 24 domains in one turn unless the operator explicitly says to batch.
 **Do not** declare the whole platform complete after one domain.
 **Do not** implement code in this mode unless the operator explicitly requests a separate implement step.
 
@@ -35,7 +35,7 @@ The goal is the same depth as a live pair-programming architecture review: compa
 - Layer index (grep only): domain list in bootstrap 01/06 or `@docs/project/architecture/intergrax_runtime_architecture.md` — do not load `INTEGRAX_HARNESS_AUDIT_MAP.md` or full runtime hub unless cited.
 - Tier boundaries: AGENTS.md — safety fuse on plan/architecture/ideal conflict → STOP and report in operator language.
 
-## Domain order (22 pairs — one stop per domain)
+## Domain order (24 pairs — one stop per domain)
 
 1. PLATFORM_FOUNDATION
 2. UNIFIED_EXECUTION_RUNTIME
@@ -59,6 +59,8 @@ The goal is the same depth as a live pair-programming architecture review: compa
 20. ELASTIC_CAPACITY_AND_SCALING
 21. EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
 22. TIER3_APPLICATION_ENVIRONMENT
+23. APPLICATION_HOSTING
+24. UNIFIED_CONTEXT_LIFECYCLE
 
 ## Before the first domain
 
@@ -160,7 +162,7 @@ Update progress.json when the run folder exists:
 - "Whole platform is complete" after one domain
 - Starting Phase K / §6.3 product work silently
 - Implementing fixes without operator request in this mode
-- Loading all 22 architecture/plan pairs at once
+- Loading all 24 architecture/plan pairs at once
 - Loading full multi-thousand-line plan files or bulky guides (use audit slice + hub read-scope)
 - Loading `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` whole (use audit slice scope lines)
 - Proceeding to the next domain without operator confirmation or without a new chat (F3)

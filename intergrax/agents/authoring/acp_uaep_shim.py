@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
-
 from intergrax.agents.authoring.state_merge import extract_acp_state_blob
 from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.contracts.acp_state import ACP_STATE_KEY
@@ -83,22 +82,26 @@ def attach_acp_catalog_exec_ctx(
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway
 
-    run_id = step_ctx.run_id
-    task_id = str(step_ctx.task_id or run_id)
+    from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
+
+    resolved_run_id = validate_run_id(step_ctx.run_id)
+    resolved_task_id = validate_task_id(step_ctx.task_id)
     runtime_request = RuntimeRequest(
         agent_id=contract.id,
         tenant_id=str(request.identity.tenant_id or step_ctx.tenant_id or "default"),
         user_id=str(request.identity.user_id or ""),
-        session_id=str(request.session_id or run_id),
+        session_id=str(request.session_id or resolved_run_id),
         message=str(request.input or step_ctx.message or ""),
+        task_id=resolved_task_id,
+        run_id=resolved_run_id,
         metadata=dict(request.metadata),
     )
-    runtime_request.metadata.setdefault("run_id", run_id)
-    runtime_request.metadata.setdefault("task_id", task_id)
+    runtime_request.metadata.setdefault("run_id", resolved_run_id)
+    runtime_request.metadata.setdefault("task_id", resolved_task_id)
 
     exec_ctx = RuntimeExecutionContext(
-        task_id=task_id,
-        run_id=run_id,
+        task_id=resolved_task_id,
+        run_id=resolved_run_id,
         agent_id=contract.id,
         contract=contract,
         request=runtime_request,
@@ -111,7 +114,7 @@ def attach_acp_catalog_exec_ctx(
     exec_ctx.metadata["runtime_state"] = RuntimeState(
         context=runtime_context,
         request=runtime_request,
-        run_id=run_id,
+        run_id=resolved_run_id,
     )
     allowed_tools_raw = step_ctx.metadata.get("allowed_tools")
     if isinstance(allowed_tools_raw, list) and allowed_tools_raw:
@@ -125,7 +128,7 @@ def attach_acp_catalog_exec_ctx(
         )
     from intergrax.runtime.workspace.exec_ctx_isolation import attach_isolation_to_exec_ctx
 
-    attach_isolation_to_exec_ctx(exec_ctx, runtime_request, task_id=task_id)
+    attach_isolation_to_exec_ctx(exec_ctx, runtime_request, task_id=resolved_task_id)
     step_ctx.metadata["uaep_exec_ctx"] = exec_ctx
 
 

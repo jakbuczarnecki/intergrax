@@ -439,6 +439,17 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
     Minimal RuntimeState builder for unit tests that only need tracing.
     No engine, no pipeline, no planner — just state + trace_event support.
     """
+    from hashlib import sha256
+
+    from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
+
+    if run_id.startswith("run_") and len(run_id) == 36:
+        canonical_run_id = validate_run_id(run_id)
+        canonical_task_id = validate_task_id(f"task_{run_id[4:]}")
+    else:
+        digest = sha256(run_id.encode()).hexdigest()
+        canonical_run_id = validate_run_id(f"run_{digest}")
+        canonical_task_id = validate_task_id(f"task_{digest}")
 
     request = RuntimeRequest(
         tenant_id="test-tenant",
@@ -446,7 +457,8 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
         user_id="test-user",
         session_id="test-session",
         message="test",
-        task_id=run_id,
+        task_id=canonical_task_id,
+        run_id=canonical_run_id,
     )
 
     cfg = RuntimeConfig(
@@ -477,7 +489,7 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
         websearch_prompt_builder=None,
     )
 
-    return RuntimeState(context=ctx, run_id=run_id, request=request)
+    return RuntimeState(context=ctx, run_id=canonical_run_id, request=request)
 
 
 class DummyRunStore(RunStore):

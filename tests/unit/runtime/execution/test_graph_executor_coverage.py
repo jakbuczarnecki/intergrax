@@ -6,7 +6,7 @@ import pytest
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.runtime.long_running.checkpoint_builder import should_skip_graph_node
-from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
+from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpointExecutionState
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode, ExecutionNodeStatus
 
 pytestmark = pytest.mark.gate
@@ -22,7 +22,7 @@ def test_should_skip_completed_node_when_prior_output_exists() -> None:
             summary="done",
         )
     }
-    checkpoint = RuntimeCheckpoint(
+    checkpoint = RuntimeCheckpointExecutionState(
         node_states={"n1": ExecutionNodeStatus.COMPLETED.value},
     )
     assert should_skip_graph_node(node, checkpoint=checkpoint, prior_outputs=prior) is True

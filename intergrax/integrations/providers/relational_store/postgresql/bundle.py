@@ -4,7 +4,7 @@
 """
 Complete PostgreSQL integration bundle — the single composition root for PostgreSQL in Intergrax.
 
-Connections are opened only in ``opens.py`` (``psycopg.connect``). Tier-3 code MUST use
+Connections are opened only in ``session.PostgreSQLConnectionProvider``. Tier-3 code MUST use
 ``create_postgresql_relational_store()``, ``create_postgresql_integration()``, or
 ``profile.resolve(IntegrationCategory.RELATIONAL_STORE)``.
 """

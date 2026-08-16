@@ -7,7 +7,11 @@ from intergrax.memory.resolver.classifier import (
     MemoryStorePluginKind,
     classify_memory_store_plugin,
 )
-from intergrax.memory.resolver.discovery import discover_classified_memory_store_plugins
+from intergrax.memory.resolver.discovery import (
+    MemoryStorePluginCatalog,
+    MemoryStorePluginDiscoveryResult,
+    discover_classified_memory_store_plugins,
+)
 from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
 from intergrax.memory.resolver.materialization import MemoryStoreMaterializationContext
 from intergrax.memory.resolver.resolver import (
@@ -18,6 +22,8 @@ from intergrax.memory.resolver.resolver import (
 __all__ = [
     "ClassifiedMemoryStorePlugin",
     "MemoryStoreMaterializationContext",
+    "MemoryStorePluginCatalog",
+    "MemoryStorePluginDiscoveryResult",
     "MemoryStorePluginKind",
     "MemoryStorePluginResolutionError",
     "classify_memory_store_plugin",

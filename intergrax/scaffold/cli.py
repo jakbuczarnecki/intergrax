@@ -21,6 +21,8 @@ from intergrax.scaffold.new_integration import register_parser as register_new_i
 from intergrax.scaffold.new_integration import run_new_integration
 from intergrax.scaffold.new_skill import register_parser as register_new_skill_parser
 from intergrax.scaffold.new_skill import run_new_skill
+from intergrax.scaffold.new_context_bundle import register_parser as register_new_context_bundle_parser
+from intergrax.scaffold.new_context_bundle import run_new_context_bundle
 from intergrax.scaffold.new_tool_bundle import register_parser as register_new_tool_bundle_parser
 from intergrax.scaffold.new_tool_bundle import run_new_tool_bundle
 from intergrax.scaffold.new_stack import register_parser as register_new_stack_parser
@@ -74,6 +76,7 @@ def register_scaffold_commands(sub: argparse._SubParsersAction) -> None:
     register_new_skill_parser(sub)
     register_new_integration_parser(sub)
     register_new_tool_bundle_parser(sub)
+    register_new_context_bundle_parser(sub)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -133,6 +136,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "new-tool-bundle":
         return run_new_tool_bundle(args)
+
+    if args.command == "new-context-bundle":
+        return run_new_context_bundle(args)
 
     parser.error(f"Unknown command: {args.command}")
     return 2

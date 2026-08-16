@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-07-05 — **OBS-PROBLEM-3** problem signal emission boundary canon
+**Last updated:** 2026-08-16 — **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
 
 ---
 
@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (OBSERVABILITY canon).
 
-- **Implement / audit default:** trace spine + HOS + signal planes (§1–§4). Extended §5+: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md).
+- **Implement / audit default:** trace spine + HOS + signal planes (§1–§4); execution identity + journal + as-of + bitemporal state (§5–§10). Extended depth: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/OBSERVABILITY.md`](../technical/guides/audit_slices/OBSERVABILITY.md).
@@ -77,10 +77,10 @@ For every user interaction (question → answer), an operator MUST be able to re
 | **Event-first** | `RuntimeEvent` is the primary audit signal (canon §42.1). Traces and metrics are derived views. |
 | **Typed extension** | Platform steps use `DiagnosticPayload` subclasses with stable `schema_id`. Domain extensions inherit the same contract. |
 | **Emit at the boundary** | Signals are recorded where the Harness enforces policy (ToolRuntime, AgentRouter, GraphExecutor) — not inside ad-hoc agent helpers. |
-| **Correlation by construction** | `task_id`, `run_id`, `correlation_id`, `parent_event_id` are set by the spine — not passed manually in business code. |
+| **Correlation by construction** | `TaskId`, `RunId`, `AttemptId`, `EventId`, `correlation_id`, `parent_event_id` are set by the spine — not passed manually in business code. |
 | **Redact before persist** | `DiagnosticPayload.redact()` + `production_mode` run before any store append. |
 | **Pluggable persistence** | SQLite default; Cassandra/Elasticsearch/OTLP as integration profiles — same API, different backend. |
-| **Read-model unification** | Operators consume **one chronological journal** per run (`build_unified_run_journal`). |
+| **Read-model unification** | Operators consume **one chronological journal** per run (`build_unified_run_journal`) — a derived read model, not the persistence source of truth (§6). |
 | **Modular sinks** | Metrics, logs, and external trace UIs subscribe to the bus or journal — they do not fork emission. |
 
 ---
@@ -137,6 +137,8 @@ The Harness Observability Spine (§3) is the write/read/export path; this sectio
 | **Metrics** | Aggregated operational signals (Prometheus, OTLP counters, SLO ratios) derived from events or counters | A substitute for the unified run journal |
 | **External sinks** | Destinations for normalized events, logs, or metrics (Langfuse, Sentry, Datadog, OTLP export) | Semantic owners of Intergrax event vocabulary |
 | **`DiagnosticPayload`** | Typed payload detail carried by Plane B trace rows or domain-signal envelopes (`payload_schema_id` + `redact()`) | An independent lifecycle channel with its own persistence contract |
+| **`PlatformProblemSignal`** | Vendor-neutral problem/error plane for classified failures requiring operator attention; exported via `ObservabilityExportPolicy` | A substitute for `RuntimeEvent` execution history or a generic lifecycle channel |
+| **Platform observability signal** | Non-execution platform/domain lifecycle signal on HOS (application instance, component, infrastructure) with its own identity and correlation — **no** `TaskId`/`RunId`/`AttemptId` | A `RuntimeEvent` with synthetic execution identity |
 
 **Implementation detail:** Plane A/B/C breakdown, field catalog, and bridge mechanics — §4. Correlation identifiers — §6 and [Required correlation fields](.#required-correlation-fields) below. Layered `event_type` / `event_kind` governance — §4.4 and [Event type governance](.#event-type-governance) below.
 
@@ -170,6 +172,91 @@ OECP transforms spine data into eval-grade artifacts: **evidence ledger** record
 | Domain extension | Domain-specific events **SHOULD** use namespaced `event_kind` / payload schemas instead of expanding platform lifecycle enums unnecessarily (§4.4). |
 
 Audit stores (`RuntimeEventPersistence`, `RunTraceWriter`) persist spine-normalized records — they are **not** alternate semantic owners. Custom `RuntimeEventBus` handlers and journal export plugins are subscribers/sinks, not parallel buses.
+
+---
+
+## Execution-scoped vs non-execution observability signals
+
+**Normative rule:** `RuntimeEvent` is **execution-scoped only**. Every canonical `RuntimeEvent` **MUST** carry full execution identity: `TaskId`, `RunId`, `AttemptId`, and `EventId` — all required, none optional, no synthetic placeholders to admit unrelated signals.
+
+The Harness Observability Spine (HOS) is **broader** than `RuntimeEvent`. HOS is the single approved write/read/export path; it carries **multiple semantic envelope families** through the same spine infrastructure. Semantic contract and transport/storage/export mechanism are separate concerns — **one spine, not two buses**.
+
+```text
+Harness Observability Spine (HOS)
+├── Execution event          → RuntimeEvent (TaskId + RunId + AttemptId + EventId)
+├── Platform observability   → non-execution platform/domain lifecycle signal
+├── Problem plane            → PlatformProblemSignal (failures / operator attention)
+├── Diagnostic detail        → DiagnosticPayload (payload on trace or domain-signal envelopes)
+├── Read model               → TraceEvent (Plane B compatibility / reconstruction)
+└── Export projection        → ObservabilityExportEnvelope (policy-safe export record)
+```
+
+### A. Execution-scoped signals (`RuntimeEvent`)
+
+| Property | Requirement |
+|----------|-------------|
+| Scope | Meaningful **execution** transitions inside a Task → Run → Attempt lifecycle |
+| Identity | `event_id`, `task_id`, `run_id`, `attempt_id` — all required |
+| `AttemptId` semantics | One concrete execution try inside a Run; **one arbitrary observable event ≠ one Attempt** |
+| Source of execution truth | `RuntimeEvent` persistence is canonical execution history; Unified Run Journal reconstructs execution from `RuntimeEvent` only |
+| Forbidden | Optional execution identity; multiplexed identity modes; synthetic `TaskId`/`RunId`/`AttemptId` for non-execution events |
+
+`emit_domain_signal()` and `RuntimeEventType.DOMAIN_SIGNAL` are **execution-attached** in practice: both require `EmitContext` with validated `TaskId`, `RunId`, and `AttemptId`. A domain signal on the bus is a `RuntimeEvent` carrying a namespaced `event_kind` and typed payload **within an active execution correlation** — not a generic non-execution lifecycle channel. Platform lifecycle facts that occur **during** execution (for example `platform.adaptive.*` on `DOMAIN_SIGNAL`) remain execution-scoped because they are correlated to a real attempt.
+
+### B. Non-execution platform observability signals
+
+**Platform observability signal** is the canonical semantic family for observable platform/domain lifecycle facts that do **not** belong to Task/Run/Attempt execution history.
+
+| Property | Requirement |
+|----------|-------------|
+| Scope | Application hosting lifecycle, component health, instance acquisition/release, infrastructure lifecycle, and similar platform facts **outside** execution attempt boundaries |
+| Identity | Signal-local `event_id` (or equivalent), `correlation_id`, `causation_id`, source/component identity (`application_id`, `instance_id`, … as applicable), typed payload, severity/category |
+| Execution identity | **MUST NOT** include `TaskId`, `RunId`, or `AttemptId`; **MUST NOT** mint `AttemptId` per signal |
+| Source of truth | Describes platform/application observability — **not** execution history; does not replace Unified Run Journal reconstruction |
+| Transport | Published through the **existing HOS spine/export path** — not a second bus, not `RuntimeEventBus.record()` with fake execution identity |
+
+`ObservabilityExportEnvelope` is an **export projection / transport envelope** only (`record_kind`, sanitized fields). It is **not** the semantic owner of platform lifecycle facts — do not promote it to domain semantics.
+
+`DiagnosticPayload` is **payload detail** (`schema_id`, `redact()`) carried by Plane B `TraceEvent` rows or execution-attached `DOMAIN_SIGNAL` envelopes. It is **not** an independent non-execution lifecycle channel.
+
+`TraceEvent` remains a **compatibility / read-model / diagnostic view** (Plane B). It **MUST NOT** become the canonical non-execution signal bus or execution truth source.
+
+`PlatformProblemSignal` remains the specialized **problem/error plane** (`what broke / requires attention`). It **MUST NOT** be abused for routine hosting lifecycle events.
+
+### C. Application hosting classification
+
+`HostedApplicationEvent` (`intergrax/hosting/contracts/events.py`) is the typed authoring envelope for **application-hosting platform observability signals**. Its semantics are:
+
+| Lifecycle | Examples |
+|-----------|----------|
+| Application instance | `APPLICATION_STARTING`, `APPLICATION_READY`, `APPLICATION_STOPPED`, `APPLICATION_FAILED` |
+| Component | `COMPONENT_STARTED`, `COMPONENT_HEALTH_CHANGED`, `COMPONENT_FAILED` |
+| Instance guard | `INSTANCE_ACQUIRED`, `INSTANCE_RELEASED`, `INSTANCE_STALE_RECOVERED` |
+| Restart / hooks / plugins | `RESTART_*`, `HOOK_*`, `PLUGIN_*` |
+
+These events describe **hosted application/platform lifecycle** — not Intergrax Task, Run, or Attempt lifecycle. `HostedApplicationEvent` already carries the correct non-execution identity (`event_id`, `correlation_id`, `causation_id`, `application_id`, `instance_id`).
+
+**Target (canonical):**
+
+```text
+HostedApplicationEvent
+  → platform observability signal (hosting domain)
+  → existing HOS spine / export infrastructure
+```
+
+**Architecture debt (implementation status: Planned — TRACE-1B-HOS-FIX):** `RuntimeSpineHostedApplicationEventPublisher` (`intergrax/hosting/eventing.py`) currently adapts hosting events into `RuntimeEvent` via `emit_domain_signal()` after synthesizing `TaskId`, `RunId`, and a fresh `AttemptId` (`mint_attempt_id()`) per event. This is **architecturally invalid** under TRACE-1B: it falsely equates each hosting event with a new execution attempt. Pre-production clean-cut: **remove/replace** this adapter in the implementation slice — no compatibility alias, dual path, or historical migration.
+
+### D. Author decision supplement (see also §4.4.1)
+
+```text
+Need a new signal?
+├── No Task/Run/Attempt lifecycle (hosting, infra, app instance)?
+│     → platform observability signal on HOS (not RuntimeEvent)
+├── Debug / reconstruction only?     → DiagnosticPayload (Plane B)
+├── Product/domain fact during execution? → emit_domain_signal (requires real EmitContext)
+├── Nexus lifecycle transition?      → emit_platform_event (requires real EmitContext)
+└── Classified failure / operator attention? → PlatformProblemSignal (problem plane)
+```
 
 ---
 
@@ -392,15 +479,16 @@ Meaningful runtime events **SHOULD** preserve all correlation identifiers availa
 
 | Field | Purpose |
 |-------|---------|
-| `task_id` | User-facing work unit |
-| `run_id` | Single execution attempt / trace timeline |
+| `task_id` (`TaskId`) | User-facing work unit / intent — **WHAT** task |
+| `run_id` (`RunId`) | Single execution of the task — **WHICH** run |
+| `attempt_id` (`AttemptId`) | Attempt within the run — **WHICH** attempt (target canon §5) |
 | `node_id` | Graph node placement |
 | `agent_id` | Responsible agent |
 | `step_id` | UAEP / pipeline step |
 | `tool_call_id` | Tool invocation chain (when applicable) |
 | `correlation_id` | Cross-agent/tool chain (default: `task_id`) |
 | `parent_event_id` | Causal parent in the spine tree |
-| `event_id` | Unique event identity |
+| `event_id` (`EventId`) | Unique runtime event identity — **WHICH** event |
 | `timestamp` | UTC ordering |
 | `schema_version` | Envelope version (e.g. `runtime_event.v1`) |
 
@@ -452,8 +540,9 @@ Intergrax observability deliberately separates three planes (pattern: event sour
 | `event_category` | Derived ops grouping (`tool`, `agent`, `plan`, …) — §4.4.2 |
 | `phase` | `ExecutionPhase` — where in the Nexus lifecycle |
 | `severity` | `EventSeverity` — alert routing |
-| `task_id` | Logical work unit (user request scope) |
-| `run_id` | Single execution attempt (retries → new run or branch per policy) |
+| `task_id` | Logical work unit (user request scope) — **target:** `TaskId` |
+| `run_id` | Single execution of the task — **target:** `RunId`; retries mint new `AttemptId` under the same `RunId` (§5.4) |
+| `attempt_id` | Attempt within the run — **target:** `AttemptId` on every canonical `RuntimeEvent` (§5) |
 | `correlation_id` | Cross-agent/tool chain (default: `task_id`) |
 | `parent_event_id` | Causal parent in the spine tree (**target:** populated by `TraceScope`) |
 | `node_id` / `agent_id` / `step_id` | Graph and UAEP placement |
@@ -588,7 +677,7 @@ Each spine type is described by a single **`EventCatalogEntry`** in `event_catal
 
 #### 4.4.8 `EmitContext` (OBS-EVOL-9.3)
 
-All public emit APIs accept a typed **`EmitContext`** carrying `task_id`, `run_id`, `tenant_id`, `correlation_id`, and active `TraceScope` — correlation by construction (SAR-01).
+All public emit APIs accept a typed **`EmitContext`** carrying `task_id`, `run_id`, `attempt_id` (target), `tenant_id`, `correlation_id`, and active `TraceScope` — correlation by construction (SAR-01). **Target:** `TaskId`/`RunId`/`AttemptId` typed carriers (§5.3).
 
 #### 4.4.9 Domain signal redaction (OBS-EVOL-9.3)
 
@@ -643,5 +732,867 @@ Fine-grained, append-only timeline optimized for **reconstruction** and **evalua
 | Modality metrics | Vision/audio/tool modality counters | Trace payload aggregation |
 
 Metrics are **third** in priority (canon §42.24): derived from events/trace, not a substitute for the journal.
+
+---
+
+## 5. Canonical execution identity (TRACE-ARCH-SYNC-1)
+
+**Status:** Target canon (**accepted** 2026-08-15) · implementation **Planned** (TRACE-1A–TRACE-1C)  
+**Plan:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) — Phase TRACE  
+**Cross-layer:** [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1.8 (identity ownership cross-ref)
+
+### 5.1 Identity hierarchy
+
+Canonical execution identity is a **frozen** four-level hierarchy:
+
+```text
+Task
+  1:N
+Run
+  1:N
+Attempt
+  1:N
+RuntimeEvent
+```
+
+| Identifier | Meaning |
+|------------|---------|
+| `TaskId` | **WHAT** task / intent |
+| `RunId` | **WHICH** execution of the task |
+| `AttemptId` | **WHICH** attempt inside the run |
+| `EventId` | **WHICH** runtime event |
+
+Every canonical `RuntimeEvent` **MUST** carry all four: `TaskId`, `RunId`, `AttemptId`, `EventId` — without exception.
+
+### 5.2 Strong typing (target canon)
+
+Canonical in-process identifiers **`TaskId`**, **`RunId`**, **`AttemptId`** **MUST** be non-interchangeable typed identifiers.
+
+**Normative implementation pattern:**
+
+```python
+TaskId = typing.NewType("TaskId", str)
+RunId = typing.NewType("RunId", str)
+AttemptId = typing.NewType("AttemptId", str)
+```
+
+Wire representation remains a flat string. Architecture describes this as the normative target; the plan marks it **planned until implementation exists** (TRACE-1A).
+
+`EventId` is the unique identity of a single persisted runtime event.
+
+### 5.3 Identity carrier matrix (target canon)
+
+Canonical identity **MUST NOT** come from metadata. Forbidden patterns include `metadata["run_id"]`, `task_id or run_id`, `run_id or task_id`, fallback of one identity into another, dynamic identity binding, and `dict[str, Any]` as the canonical identity carrier.
+
+| Carrier | `TaskId` | `RunId` | `AttemptId` |
+|---------|----------|---------|-------------|
+| Task | REQUIRED | NOT PRESENT | NOT PRESENT |
+| `RuntimeRequest` execute boundary | REQUIRED | REQUIRED | NOT PRESENT |
+| `RuntimeExecutionContext` | REQUIRED | REQUIRED | REQUIRED |
+| `EmitContext` | REQUIRED | REQUIRED | REQUIRED |
+| `RuntimeEvent` | REQUIRED | REQUIRED | REQUIRED |
+
+**Mint ownership (lifecycle boundary, not observability):**
+
+| Identifier | Minted by |
+|------------|-----------|
+| `TaskId` | Task lifecycle owner |
+| `RunId` | Run lifecycle owner |
+| `AttemptId` | Attempt lifecycle owner |
+| `EventId` | RuntimeEvent / event creation owner |
+
+`AttemptId` is minted by the owning attempt lifecycle boundary. The observability spine **receives and propagates** canonical identity by construction — it does **not** mint `TaskId`, `RunId`, or `AttemptId` as lifecycle owner. Observability records and propagates them; carriers receive identity by construction — not by ad-hoc metadata lookup.
+
+### 5.4 Attempt lifecycle, retry, resume, replay
+
+```text
+Run starts
+  ↓
+AttemptId A1 minted
+  ↓
+all RuntimeEvents belong to A1
+  ↓
+retry
+  ↓
+same TaskId
+same RunId
+new AttemptId A2
+```
+
+| Scenario | `TaskId` | `RunId` | `AttemptId` |
+|----------|----------|---------|-------------|
+| **Retry** | same | same | **new** |
+| **Resume** (without retry) | same | same | **same** |
+| **Explicit new execution** of same task | same | **new** | **new** A1 |
+
+Replay semantics are attempt-scoped: reconstruction and as-of projections respect attempt boundaries (§7).
+
+### 5.5 `TASK_CREATED` semantics
+
+`TASK_CREATED` is the **first runtime journal event** inside Run R1 / Attempt A1. It does **not** denote the moment the `Task` object was created in memory or registered in a product store.
+
+### 5.6 Implementation gap (documentation truth)
+
+The **target canon** above is **not** fully implemented. Known legacy gaps in code today include:
+
+- `run_id == task_id` aliasing
+- identity carried in metadata instead of typed carriers
+- missing `AttemptId` on emit paths and persisted events
+- identity fallbacks (`task_id or run_id`, `run_id or task_id`)
+- loose journal adapters that tolerate missing or aliased identity
+
+TRACE-1A–TRACE-1C close these gaps. Do **not** treat current runtime behavior as satisfying §5.
+
+### 5.7 Pre-production clean-cut policy
+
+Intergrax is **pre-production** — there are no active production platform users. Canonical TRACE delivery therefore uses a **clean cut** to target architecture:
+
+```text
+Unused legacy contracts are removed rather than preserved.
+```
+
+**Consequences for identity, journal, and checkpoint paths:**
+
+- no compatibility aliases for unused legacy identity
+- no dual canonical schemas (old + new)
+- no deprecated-but-supported identity contracts kept indefinitely
+- no migrations for unused persisted formats (including old `RuntimeCheckpoint` shapes)
+- no fallback to old metadata identity
+- no silent interpretation of old identity semantics
+- no permanent parallel old/new ownership
+
+If an old capability is still genuinely used by the current repo runtime, tests, or product path: migrate that live code directly to the canonical contract, then **delete** the old path. Do **not** preserve both.
+
+Temporary recognition of legacy shapes is acceptable only during a bounded implementation step when technically unavoidable — it is **not** target architecture.
+
+---
+
+## 6. Unified Run Journal (canonical run read model)
+
+The **Unified Run Journal** is the canonical **run-scoped read model** for operator reconstruction and downstream narrative surfaces.
+
+```text
+RuntimeEvent / persistence
+        ↓
+Unified Run Journal
+        ↓
+query / derived read models
+```
+
+| Property | Requirement |
+|----------|-------------|
+| Role | Chronological derived execution timeline — **WHAT happened** |
+| Source of truth | **NOT** — persistence of `RuntimeEvent` remains authoritative |
+| Replaces event store | **MUST NOT** |
+| Scope | Composes chronological history per run (attempt-aware ordering) |
+| Execution Story | Canonical foundation for Execution Story read surfaces (§10) |
+| Construction | `build_unified_run_journal()` merges spine-normalized events into one timeline |
+
+The journal is a **derived view**. Metrics, external APM, and product summaries subscribe to or export from it — they do not fork a competing timeline.
+
+---
+
+## 7. First-class as-of projections (TRACE-ARCH-SYNC-1)
+
+**Status:** Target canon (**accepted** 2026-08-15) · implementation **Planned** (TRACE-ASOF-1–TRACE-ASOF-4) · compatible with bitemporal knowledge basis (§8)
+
+### 7.1 Capability definition
+
+A **First-Class As-Of Projection** is a typed, deterministic reconstruction of execution state at an explicit historical execution boundary.
+
+> Typowana, deterministyczna rekonstrukcja stanu wykonania dokładnie na wskazanej granicy historycznej.
+
+### 7.2 Journal vs as-of
+
+| Surface | Question |
+|---------|----------|
+| **Unified Run Journal** | **WHAT happened?** — chronological facts |
+| **As-Of Projection** | **WHAT did this execution see / do by boundary X?** — execution state at a deterministic journal boundary |
+| **Bitemporal State** (§8) | **WHAT was valid, according to knowledge recorded by system time S?** — valid-time + system-time basis only (execution boundary is separate, §7) |
+
+Conceptual example (Run R1):
+
+```text
+Attempt A1
+  E1 intake
+  E2 agent = Agent-A
+  E3 context revision = C12
+  E4 policy = ALLOW
+  E5 tool
+  E6 validation = FAILED
+  E7 retry
+
+Attempt A2
+  E8 agent = Agent-B
+  E9 validation = PASS
+```
+
+`as-of(E6)` may represent:
+
+```text
+Task = T1
+Run = R1
+Attempt = A1
+Agent = Agent-A
+ContextRevision = C12
+Policy = ALLOW
+Validation = FAILED
+```
+
+Architecture does **not** freeze a concrete projection schema here — TRACE-ASOF-2 defines the logical projection engine.
+
+### 7.3 As-of boundary (`AsOfBoundary`)
+
+Canonical as-of semantics **MUST** be based on a **deterministic position inside canonical execution history** — prefer **`AsOfBoundary`** over raw `datetime` alone.
+
+`AsOfBoundary` is **execution-history-relative**. It answers where in the run journal the reconstruction stops — it is **not** a replacement for valid-time or system-time basis (§8).
+
+A future combined projection **MAY** therefore carry two independent inputs:
+
+| Basis | Question |
+|-------|----------|
+| **Execution boundary** | Where in the run? |
+| **Temporal knowledge basis** | Valid when? Known by Intergrax when? |
+
+The final combined type belongs to TRACE-BITEMP-1 / TRACE-BITEMP-3 — architecture does **not** freeze it here.
+
+TRACE-ASOF-1 will resolve the exact representation from event ordering, `EventId`, sequence/cursor semantics, and persistence guarantees. Timestamp **MAY** later serve as a convenience lookup for locating a boundary, but **MUST NOT** automatically become the sole ordering source. Timestamp **MUST NOT** be merged with valid-time or system-time into one generic “as-of datetime”.
+
+### 7.4 Projection properties
+
+Canonical as-of projection **MUST** be:
+
+- derived
+- deterministic
+- typed
+- run-scoped
+- attempt-aware
+- immutable as a historical result
+- reconstructable from canonical history
+- traceable back to source `RuntimeEvent` references
+- free from metadata identity fallback
+
+**MUST NOT** be:
+
+- a new source of truth
+- a new event store
+- an arbitrary mutable snapshot
+- `dict[str, Any]`
+- dynamic projection binding
+
+Projection **MUST NOT** be named or classified as proof or evidence. Projection **SHOULD** contain or enable resolution to source event references.
+
+### 7.5 Logical vs materialized projection
+
+| Kind | Meaning |
+|------|---------|
+| **Logical projection** | Deterministically derived from `RuntimeEvent` history |
+| **Materialized projection** | Optional performance optimization — **MUST NOT** change semantics; **MUST** be rebuildable; **MUST NOT** become a competing source of truth |
+
+Materialization is **not** mandatory for as-of capability (TRACE-ASOF-3 is conditional).
+
+### 7.6 Revision / supersedes (materialized only)
+
+For **persisted / materialized** projection revisions only (not every `RuntimeEvent`):
+
+```text
+If an as-of projection is persisted/materialized,
+each materialized revision SHOULD have explicit immutable revision identity
+and MAY reference the revision it supersedes.
+```
+
+```text
+ProjectionRevision P1
+   ↓ superseded by
+ProjectionRevision P2
+   ↓ superseded by
+ProjectionRevision P3
+```
+
+Goals: projection history is not overwritten; operators can audit which revision was available; the current revision does not destroy earlier ones. Field-level schema is deferred to TRACE-ASOF-3.
+
+### 7.7 Relationship to bitemporal state (§8)
+
+As-of projections and bitemporal historical state answer **different questions**. Execution as-of is accepted and planned (this section). Bitemporal valid-time / system-time semantics are also **accepted target capability** with **planned implementation** (§8, TRACE-BITEMP-1–TRACE-BITEMP-5). Neither replaces the other.
+
+---
+
+## 8. First-class bitemporal historical state (TRACE-BITEMP-ARCH-SYNC)
+
+**Status:** Target canon (**accepted** 2026-08-15; revision-ordering authority / provider contract **TRACE-BITEMP-ARCH-SYNC-R4** 2026-08-16) · implementation **Planned** (TRACE-BITEMP-1–TRACE-BITEMP-5) · **not implemented** in current runtime
+
+### 8.1 Capability definition
+
+**Bitemporal Historical State** (also: **Bitemporal Knowledge Reconstruction**) is a typed, deterministic, immutable-history-oriented capability for selecting and reconstructing facts using **both** temporal axes. It is correction-preserving, queryable across valid-time and system-time, provenance-linked, compatible with as-of projections (§7), rebuildable where derived, and never dependent on mutable current state alone.
+
+Bitemporality is a **semantic model** — not merely two datetime fields. Each axis **may eventually** be represented as a period (`valid_from` / `valid_to`, `system_from` / `system_to`), but architecture does **not** freeze final field schemas here; exact contracts belong to TRACE-BITEMP-1.
+
+### 8.2 Valid time
+
+**Valid time** answers: **when was a fact actually valid / effective in the modeled domain?**
+
+Domain/effective truth — independent of when Intergrax learned or recorded it. Supports retrospective corrections, backdating, and future-effective changes without collapsing “what was true on date D” into “when we wrote it down.”
+
+### 8.3 System time
+
+**System time** answers: **when did Intergrax know, record, or accept that version of the fact?**
+
+Recorded/known-by-Intergrax truth — the knowledge history of the platform. A later correction **must not** destroy what Intergrax previously believed; queries must eventually distinguish **history as currently known** from **history as believed at system-time S1**.
+
+Conceptual example:
+
+```text
+Aug 10 — Intergrax records Policy P1 (valid from Aug 1)
+Aug 15 — correction Policy P2 (actually valid from Jul 28)
+
+A) "What did Intergrax believe on Aug 10?"  → system-time historical truth
+B) "What do we now know was valid on Aug 10?" → valid-time truth using current knowledge
+```
+
+Where deterministic knowledge ordering is required, a wall-clock system-time question **SHOULD** resolve to an authoritative knowledge/revision watermark (§8.4) **before** reconstruction. Wall-clock time remains the query input / temporal basis; it does **not** define acceptance order.
+
+### 8.4 Independent reconstruction coordinates and ordering primitives
+
+Architecture distinguishes **independent reconstruction coordinates and ordering primitives** — do **not** collapse them:
+
+| Primitive | Kind | Question |
+|-----------|------|----------|
+| **Execution AsOfBoundary** (§7) | Execution-history position | **WHERE** in this run / journal are we reconstructing? (e.g. event E42, journal position P42 — exact contract deferred to TRACE-ASOF-1) |
+| **Valid time** | Bitemporal temporal axis | **WHEN** was this fact actually effective / true in the modeled domain? |
+| **System time** | Bitemporal temporal axis | **WHEN** did Intergrax know / record / accept this version of the fact? |
+| **KnowledgeRevisionWatermark** (conceptual) | Authoritative knowledge-order upper bound | Reconstruct using accepted knowledge/revisions **up to** knowledge position K |
+
+**Bitemporal state** means **only** valid-time + system-time — **two** temporal axes. It does **not** include execution boundary. **KnowledgeRevisionWatermark** / **KnowledgeRevisionPosition** is **not** a third temporal axis. **Execution AsOfBoundary** is **not** part of bitemporality. Ordering positions and watermarks are deterministic reconstruction/order primitives.
+
+Conceptual structure (names are **conceptual only** — TRACE-BITEMP-1 owns exact typed contracts):
+
+```text
+BitemporalKnowledgeBasis
+    ├── Valid-Time Basis
+    └── System-Time Basis
+```
+
+and separately:
+
+```text
+Execution AsOfBoundary
+```
+
+Higher-level historical reconstruction may combine:
+
+```text
+HistoricalExecutionBasis (conceptual)
+    ├── Execution AsOfBoundary E
+    ├── KnowledgeRevisionWatermark K (conceptual — TRACE-BITEMP-1 owns exact contract)
+    └── BitemporalKnowledgeBasis
+        ↓
+Historically Reproducible Execution State
+```
+
+The combined result is **not** “bitemporal state”. **E** and **K** remain different semantic coordinates/boundaries.
+
+#### Semantic questions (distinct)
+
+| # | Question |
+|---|----------|
+| 1 | What happened by execution boundary E42? |
+| 2 | What was valid at domain time V? |
+| 3 | What did Intergrax know at system time S? (wall-clock query input — resolve to watermark K where deterministic knowledge ordering is required) |
+| 4 | What did execution E42 operate against, using facts valid at V and known by S (at watermark K)? |
+
+Question 4 is **combined historical execution reconstruction** — not bitemporal state alone.
+
+#### Difference from Execution As-Of (§7)
+
+| Surface | Axis / primitive | Question |
+|---------|------------------|----------|
+| **Execution As-Of** (`AsOfBoundary`) | Execution history | What did this execution see / do by boundary X? |
+| **Valid time** | Domain effectiveness (bitemporal axis) | What was valid / effective at time T? |
+| **System time** | Platform knowledge (bitemporal axis) | What did Intergrax know / record at time S? |
+| **Knowledge/revision watermark** (conceptual) | Authoritative knowledge-order upper bound | Reconstruct using accepted revisions **up to** K — **not** “all records whose producer timestamp ≤ T” |
+| **Bitemporal state** | Valid time + System time | What was valid, according to knowledge recorded by system time S? |
+| **Historically reproducible execution state** | Execution boundary + knowledge watermark + bitemporal knowledge basis | What did execution E42 operate against, using facts valid at V and known by S at watermark K? |
+
+```text
+RuntimeEvent history
+        ↓
+Execution AsOfBoundary
+        ↓
+"What did this execution see / do by boundary X?"
+
+Bitemporal fact history
+        ↓
+authoritative knowledge/revision ordering (K1 → K2 → K3)
+        ↓
+KnowledgeRevisionWatermark K (conceptual)
+        ↓
+Valid-Time Basis + System-Time Basis
+        ↓
+"What was valid, according to knowledge recorded by system time S, reconstructed at K?"
+
+Execution AsOfBoundary E + KnowledgeRevisionWatermark K + BitemporalKnowledgeBasis
+        ↓
+Historically Reproducible Execution State
+```
+
+Do **not** merge **Execution AsOfBoundary E** with **KnowledgeRevisionWatermark K**. Do **not** merge these into one generic timestamp. Do **not** call the combined result “bitemporal state”.
+
+#### Knowledge / revision ordering (distinct from execution ordering)
+
+For **bitemporal-capable immutable fact/revision history**, every accepted correction/revision that participates in bitemporal historical state **MUST** have a deterministic position in an **authoritative knowledge/revision ordering**.
+
+The purpose of this ordering is to make the **history of corrections itself auditable**. It must support deterministic answers when:
+
+- two services have clock skew;
+- several corrections arrive close together;
+- corrections are ingested concurrently;
+- an old domain fact is corrected after its effective date;
+- several corrections supersede or refine the same prior fact;
+- system-time timestamps are equal, ambiguous, or not trustworthy for total ordering.
+
+**Critical semantic rule:** **System time is a temporal axis, not sufficient by itself as authoritative correction ordering.** Architecture **MUST NOT** define correction ordering as timestamp-only semantics (e.g. `ORDER BY system_time` or equivalent). A stable ordering position / cursor / sequence / revision position is required; the exact typed contract belongs to **TRACE-BITEMP-1**.
+
+Knowledge/revision ordering is **not** a third bitemporal time axis. Bitemporal state remains **valid time + system time** only (§8.2–§8.3).
+
+Conceptually, execution ordering, knowledge/revision ordering, and the two bitemporal temporal axes are **independent**:
+
+```text
+Execution history:   E1 → E2 → E3 → E4
+Knowledge history:   K1 → K2 → K3 → K4
+Valid time:          V
+System time:         S
+```
+
+A correction accepted at knowledge position **K20** after execution **E42**:
+
+- **MUST NOT** be retroactively inserted into E42's original execution sequence;
+- **MUST NOT** rewrite what execution E42 actually knew at that boundary;
+- **MUST** receive its own deterministic position in knowledge/revision history;
+- **MAY** alter what the platform **now knows** was valid at an earlier valid time;
+- **MUST** preserve the previous system-time belief.
+
+Higher-level historically reproducible execution reconstruction may therefore conceptually combine:
+
+```text
+Execution AsOfBoundary E
++ KnowledgeRevisionWatermark K (conceptual — TRACE-BITEMP-1 owns exact contract)
++ Valid-Time Basis
++ System-Time Basis
+```
+
+Do **not** prematurely freeze a concrete runtime type or field name here unless current architecture already owns one. Terms such as **KnowledgeRevisionPosition** and **KnowledgeRevisionWatermark** are **conceptual only**. Do **not** merge **E** with **K**.
+
+#### Semantic questions (extended)
+
+| # | Question |
+|---|----------|
+| 5 | Which correction/revision was accepted before/after knowledge/revision position K? |
+| 6 | In what authoritative order were corrections K1 → K2 → K3 accepted? |
+| 7 | What do we now know was valid at the time of execution E42? |
+| 8 | What did the system believe was valid when E42 executed? |
+| 9 | What was the authoritative knowledge watermark at system time S? |
+| 10 | What revisions were accepted up to watermark K, and what was known at K? |
+| 11 | What did execution E operate against using knowledge watermark K? |
+
+Questions 5–6 and 9–10 require knowledge/revision ordering — **not** timestamp replay alone. Questions 7–8 and 11 require combined reconstruction (execution boundary + watermark + bitemporal knowledge basis) without mutating E42's execution history.
+
+#### Knowledge / revision watermark (conceptual)
+
+**KnowledgeRevisionWatermark** is a **conceptual** name only — TRACE-BITEMP-1 owns the exact typed definition. It represents a **stable authoritative upper boundary** in accepted knowledge/revision ordering.
+
+Conceptually:
+
+```text
+K1 → K2 → K3 → K4 → K5
+```
+
+Watermark **K3** means: reconstruct using knowledge/revisions accepted **up to the authoritative knowledge position K3**.
+
+It **MUST NOT** mean: all records whose producer timestamp `<=` some timestamp.
+
+The watermark is based on **authoritative accepted revision ordering**, not producer/service wall-clock timestamps.
+
+#### Wall-clock query vs reconstruction boundary
+
+Architecture distinguishes:
+
+| | Surface | Role |
+|---|----------|------|
+| **A** | Auditor/user wall-clock question | Query input / temporal basis. Example: "What did the platform know at 2026-08-10T14:00?" |
+| **B** | Canonical reconstruction boundary | Authoritative `KnowledgeRevisionWatermark` K in accepted knowledge/revision order |
+
+```text
+Wall-clock system-time query T
+        ↓
+resolve authoritative KnowledgeRevisionWatermark K
+        ↓
+reconstruct knowledge state at K
+        ↓
+optionally combine with Execution AsOfBoundary E
+        ↓
+historically reproducible execution state
+```
+
+Wall-clock time is a **query input / temporal basis**. It **MUST NOT** replace deterministic revision ordering. Where deterministic knowledge ordering is required, historical reads **SHOULD** resolve time-oriented questions onto an authoritative revision boundary **before** combining with execution reconstruction.
+
+This resolution is **semantic**. Architecture does **not** claim that materialization, indexes, or a runtime resolver already exist.
+
+#### Bounded resolution vs unbounded full-history replay
+
+Historical audit queries **SHOULD NOT** require replaying an unbounded complete event/revision history merely because the user supplied wall-clock time.
+
+The query model **MUST** allow bounded, indexable, or materializable resolution strategies **without changing canonical semantics**. Logical reconstruction remains **authoritative and rebuildable**. Materialization, indexes, and checkpoints remain **implementation/performance** concerns — not a competing source of truth, and **not** claimed to exist yet.
+
+Architecture does **not** promise O(1), O(log n), database-index complexity, or any other specific performance bound before implementation design exists.
+
+#### Revision ordering authority — domain-owned semantic contract (TRACE-BITEMP-ARCH-SYNC-R4)
+
+Revision-ordering **semantics** are canonical platform/domain invariants. They are **not** configurable per application and **MUST NOT** be delegated to application business logic or to Platform Plugin runtime wrappers.
+
+The Observability / Bitemporal domain **MUST** own the authoritative revision-ordering semantic contract. Use the conceptual name **RevisionOrderingAuthority** until **TRACE-BITEMP-1** freezes the exact public type/name.
+
+The contract owns semantic guarantees such as:
+
+- allocate / accept an authoritative revision position
+- preserve monotonic ordering within the declared scope
+- expose / reconstruct **KnowledgeRevisionWatermark**
+- deterministic concurrent acceptance
+- atomic association of acceptance and position
+- idempotent retry semantics
+- failure-safe acceptance semantics
+- auditability
+- deterministic historical reads
+
+The contract **MUST NOT** delegate semantic ownership to an application, agent/model, or plugin runtime layer.
+
+Concrete serialization **implementation** is provided behind this domain-owned typed provider contract. Provider variation is **implementation** variation — **not** semantic variation.
+
+```text
+RevisionOrderingAuthority (conceptual — domain-owned semantic contract)
+        |
+        +-- CanonicalRevisionOrderingProvider      <-- Intergrax first-party default
+        |
+        +-- QualifiedAlternativeProvider
+        |
+        +-- QualifiedAlternativeProvider
+```
+
+#### Canonical production default provider
+
+Intergrax **MUST** ship one canonical first-party production-grade default provider (conceptually **CanonicalRevisionOrderingProvider**).
+
+Architecture **does not** select which algorithm or infrastructure that provider uses. **TRACE-BITEMP-1** owns explicit trade-off comparison and canonical strategy selection; **TRACE-BITEMP-2** implements it.
+
+The canonical default **MUST**:
+
+- give operators a safe out-of-the-box baseline
+- avoid requiring applications to design distributed revision serialization
+- serve as the reference implementation of **RevisionOrderingAuthority**
+- be the recommended baseline for documentation and proof gates
+
+Canonical default **≠** hardcoded implementation lock-in. Intergrax remains **opinionated enough to work out of the box** while preserving a stable extension boundary for environments with different scale, availability, persistence, or infrastructure characteristics:
+
+```text
+OPINIONATED DEFAULT
++
+CONTRACT-DRIVEN EXTENSIBILITY
++
+SEMANTIC INVARIANCE
+```
+
+#### Qualified alternative providers
+
+A host/deployment **MAY** select a qualified alternative provider when deployment requirements differ. Every alternative **MUST** implement the **same** **RevisionOrderingAuthority** contract and preserve exactly the same ordering, watermark, concurrency, audit, failure, and reconstruction semantics.
+
+Examples of future implementation strategies **MAY** include (unselected here):
+
+- transactional / storage-native sequencing
+- dedicated sequencer
+- distributed sequencer
+- scoped sequencer
+- optimistic concurrency / CAS-backed allocator
+- another equivalent production-grade mechanism
+
+Provider extensibility **MUST NOT** allow:
+
+- timestamp-based ordering instead of authoritative ordering
+- disabling monotonicity
+- weakening concurrency guarantees
+- changing **KnowledgeRevisionWatermark** semantics
+- weakening failure atomicity
+- destructive historical overwrite
+- changing bitemporal valid-time / system-time semantics
+- application-specific interpretation of acceptance order
+
+Do **not** treat the list above as a selection. Kafka partitions, PostgreSQL sequences, Redis counters, Snowflake-like IDs, Lamport/vector/HLC clocks, a specific transaction model, and a specific database are likewise **unselected**.
+
+#### Host / deployment provider selection
+
+Provider selection is **host/deployment configuration + dependency injection** — **not** per-request behavior and **not** arbitrary application business logic.
+
+```text
+Application / Deployment Host
+        |
+        +-- configuration / profile
+        |
+        +-- DI / composition
+        |
+        v
+RevisionOrderingAuthority
+        |
+        v
+Selected qualified provider
+```
+
+Provider selection **MUST NOT** be:
+
+- chosen dynamically per request
+- selected by agents/models
+- scattered across business application code
+- independently selected by arbitrary features
+- changed in a way that changes historical semantics
+
+A specialized application **MAY** cause its deployment/host configuration to select a qualified provider for infrastructural reasons. An application **MUST NOT** define its own revision-ordering semantics.
+
+**Forbidden model:**
+
+```text
+App A -> timestamp ordering
+App B -> sequencer
+App C -> weak custom ordering
+```
+
+**Correct model:**
+
+```text
+App/host deployment chooses provider P
+        ↓
+P implements the same RevisionOrderingAuthority contract
+        ↓
+same KnowledgeRevisionPosition / KnowledgeRevisionWatermark semantics everywhere
+```
+
+Applications consume the canonical semantic contract. The variation is infrastructural; the contract remains interoperable.
+
+#### Provider vs ordering scope — independent decisions
+
+Ordering **scope** and provider **implementation** are separate architecture decisions. **TRACE-BITEMP-1** **MUST** select them separately.
+
+Do **not** encode scope into provider identity. Do **not** assume one provider supports only one scope unless future implementation evidence requires it.
+
+| Ordering scope (example) | Provider (example) | Decision |
+|--------------------------|-------------------|----------|
+| TENANT | CanonicalTransactionalProvider | scope decision A + provider decision X |
+| TENANT | DistributedSequencerProvider | scope decision A + provider decision Y |
+| GLOBAL | DistributedSequencerProvider | scope decision B + provider decision Y |
+
+#### Serialization contract (provider qualification criteria)
+
+Every provider used for production-capable bitemporal ordering **MUST** be qualified against canonical invariant tests/proofs. **Qualified** **MUST NOT** mean merely loadable/discoverable.
+
+**TRACE-BITEMP-1** **MUST** choose the canonical default mechanism against these invariants. Canonical and alternative providers **MUST** pass the same semantic suite:
+
+1. **Uniqueness** — every accepted bitemporal correction/revision gets one unambiguous authoritative position within its ordering scope.
+2. **Monotonicity** — later accepted revisions cannot appear before earlier accepted revisions within that scope.
+3. **Concurrency determinism** — concurrent accepted corrections resolve to deterministic distinct positions.
+4. **Clock independence** — producer/service wall-clock timestamps cannot define authoritative ordering.
+5. **Atomic acceptance** — a revision must not become "accepted" without its authoritative position being durably associated with that acceptance.
+6. **Retry / idempotency** — retrying the same logical acceptance must not create duplicate accepted revisions or consume semantically different positions incorrectly.
+7. **Failure semantics** — partial failure between persistence and ordering allocation must not create ambiguous accepted history; no half-accepted revision.
+8. **Auditability** — auditors can determine the acceptance order without reconstructing it from timestamps.
+9. **Lineage independence** — `supersedes` remains causal lineage and does **not** substitute for total/order position.
+10. **Deterministic watermark resolution** — wall-clock system-time queries resolve deterministically to the correct authoritative knowledge boundary.
+11. **Deterministic repeated reconstruction** — same E/K/temporal basis returns deterministic equivalent state.
+12. **Scope definition** — the exact ordering scope **MUST** be explicitly selected (global, tenant, domain, aggregate/fact stream, or another defined scope). This architecture-sync **does not** choose the scope.
+13. **Selected ordering-scope correctness** — proof matches the scope chosen in TRACE-BITEMP-1.
+14. **Cross-scope semantics** — where ordering is partitioned, composition semantics are deterministic and documented.
+15. **Historical immutability** — accepted corrections are never destructively overwritten.
+
+#### Ordering scope / scalability decision boundary
+
+A **globally** monotonic revision position gives stronger/simpler global watermark semantics but may introduce unnecessary coordination.
+
+A **narrower** ordering scope may scale better but affects the semantics of:
+
+- wall-clock → watermark resolution
+- cross-domain reconstruction
+- cross-tenant isolation
+- global audit questions
+
+Therefore TRACE-BITEMP-1 **MUST** explicitly decide **separately from provider selection**:
+
+- ordering scope
+- authority owner
+- consistency guarantees
+- whether one watermark can represent the whole reconstruction domain
+- how multiple scoped watermarks compose if ordering is partitioned
+
+Architecture does **not** assume global sequencing is required. Architecture does **not** assume per-fact sequencing is sufficient. The decision follows Intergrax query and invariant requirements.
+
+#### Relationship to Platform Plugins
+
+This follows canonical **COMMON PLATFORM COORDINATION + DOMAIN-OWNED CAPABILITY CONTRACTS** (see [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md)).
+
+Platform Plugin infrastructure **MAY** eventually coordinate for externally packaged **RevisionOrderingAuthority** implementations:
+
+- package identity
+- discovery
+- compatibility metadata
+- trust
+- qualification metadata
+
+Platform Plugin **MUST NOT** own:
+
+- revision ordering semantics
+- acceptance semantics
+- watermark semantics
+- temporal semantics
+- provider runtime contract
+
+There is **no** `PlatformPlugin.execute()` or universal plugin runtime abstraction for revision ordering.
+
+```text
+Platform package / discovery coordination
+        ↓
+domain-owned RevisionOrderingAuthority provider
+        ↓
+host composition / DI
+        ↓
+governed bitemporal runtime
+```
+
+Runtime execution flows through **domain contracts and host composition** — not through a Platform Plugin runtime wrapper.
+
+### 8.5 Correction semantics
+
+Corrections are **additive** and **immutable-history-preserving**:
+
+- correction history is **immutable** — accepted corrections are never destructively overwritten;
+- corrections do **not** destructively overwrite previous belief;
+- every accepted correction is **independently addressable**;
+- every accepted correction has **deterministic authoritative ordering** relative to other accepted revisions/corrections;
+- a revision **MUST NOT** become accepted without its authoritative position being durably associated with that acceptance;
+- ordering does **not** depend solely on wall-clock timestamps;
+- causal lineage (`revision_id`, `supersedes`) and authoritative ordering are **complementary** — `supersedes` alone does **not** define total correction ordering;
+- valid time, system time, and ordering position / watermark are **distinct semantics** — position and watermark are **not** temporal axes.
+
+A later revision that changes valid-time applicability **must preserve** prior system-time belief. Operators and auditors must be able to reconstruct:
+
+- what Intergrax believed at an earlier system time (resolved to an authoritative knowledge/revision watermark where deterministic ordering is required);
+- what is now known to have been valid at an earlier valid time;
+- what Intergrax believed was valid at an earlier system time;
+- in what authoritative order corrections were accepted — without reconstructing that order from timestamps.
+
+Destructive overwrite of historical belief is **forbidden** for bitemporal-capable facts.
+
+### 8.6 Relationship to `revision_id` / `supersedes` / ordering position (§7.6)
+
+Revision lineage, temporal axes, execution boundary, knowledge/revision ordering, and watermark are **complementary, not identical**:
+
+| Mechanism | Responsibility |
+|-----------|----------------|
+| **`revision_id`** | Immutable revision identity |
+| **`supersedes`** | Causal/version lineage between revisions — **not** total/order position |
+| **Knowledge/revision position** | Deterministic authoritative ordering of accepted revisions/corrections |
+| **KnowledgeRevisionWatermark** (conceptual) | Stable authoritative upper bound in that ordering; TRACE-BITEMP-1 owns the exact typed contract |
+| **Valid time** | Domain effectiveness (bitemporal axis) |
+| **System time** | When the platform knew/recorded the revision (bitemporal axis) |
+| **Execution AsOfBoundary** | Position inside execution history — independent of knowledge ordering |
+
+A revision **may** carry temporal semantics where appropriate. `supersedes` alone is **not** sufficient for bitemporal queries or total correction ordering. Do **not** add `supersedes` to every `RuntimeEvent`.
+
+### 8.7 Relationship to provenance / evidence / proof
+
+| Artifact | Role |
+|----------|------|
+| **Provenance** | Where a fact/revision came from |
+| **Evidence** | Supporting persisted evidence |
+| **Proof / Receipt** | Attested / verifiable claim |
+| **Bitemporal state** | Selected historical truth along valid-time and system-time — **not** proof, **not** evidence |
+
+### 8.8 Opt-in scope — not every `RuntimeEvent`
+
+**Critical:** bitemporality does **not** require every `RuntimeEvent` to carry `valid_from` / `valid_to`.
+
+`RuntimeEvent` remains the canonical fact that an **execution transition** happened. System/event ordering of `RuntimeEvent` is separate from whether the **domain fact** referenced by that event has valid-time semantics.
+
+Bitemporality **should** apply — with explicit opt-in ownership — to facts/revisions where both axes are meaningful, for example potentially:
+
+- policy revisions
+- configuration revisions
+- context / knowledge facts
+- external integration state
+- business-domain facts
+- effective permissions / rules
+- versioned projections where corrections or backdating matter
+
+This list is **not exhaustive**. Do **not** convert every Intergrax persistence model into a temporal table. Do **not** turn `RuntimeEvent` into a bitemporal or revision-sequenced universal row. The capability is reusable with explicit opt-in — not universal.
+
+### 8.9 Persistence vendor neutrality
+
+Architecture defines semantics and capability only. **No** database vendor (XTDB, PostgreSQL temporal extensions, SQL Server temporal tables, Datomic, etc.) is selected here. **No** canonical serialization algorithm, **no** qualified alternative provider, and **no** ordering scope (global / tenant / domain / aggregate) are selected here. Storage technology, **RevisionOrderingAuthority** provider implementation, and ordering scope follow contract and query requirements decided in TRACE-BITEMP-1, then implemented in TRACE-BITEMP-2.
+
+### 8.10 Implementation status
+
+Accepted architecture · **Planned** implementation · **no** current runtime code implements bitemporal historical state, revision watermarks, or serialization of knowledge/revision positions. Delivery: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) TRACE-BITEMP-1–TRACE-BITEMP-5.
+
+---
+
+## 9. Semantic separation of observability artifacts
+
+| Artifact | Role |
+|----------|------|
+| **`RuntimeEvent`** | Canonical fact that something happened |
+| **Unified Run Journal** | Chronological derived execution timeline |
+| **As-Of Projection** | Derived execution state at a deterministic journal boundary |
+| **Valid time** | When a fact is effective in the modeled domain |
+| **System time** | When Intergrax recorded / knew a fact version |
+| **Bitemporal state** | State selected using valid-time + system-time basis only |
+| **Knowledge/revision ordering** | Deterministic authoritative ordering of accepted corrections/revisions — **not** a bitemporal axis; **not** execution ordering |
+| **RevisionOrderingAuthority** (conceptual) | Domain-owned semantic contract for authoritative revision ordering; TRACE-BITEMP-1 owns exact typed contract; semantics **not** per-application configurable |
+| **CanonicalRevisionOrderingProvider** (conceptual) | Intergrax first-party default provider implementing **RevisionOrderingAuthority**; canonical algorithm unselected until TRACE-BITEMP-1 |
+| **KnowledgeRevisionWatermark** (conceptual) | Stable authoritative upper bound in knowledge/revision ordering; TRACE-BITEMP-1 owns the exact typed contract |
+| **Historically reproducible execution state** | Combined reconstruction: execution boundary E + knowledge watermark K + bitemporal knowledge basis — **not** “bitemporal state” |
+| **Provenance** | Origin / lineage of relevant inputs and references |
+| **Evidence** | Persisted supporting evidence |
+| **Proof / Receipt** | Attested / verifiable claim |
+
+Projection and bitemporal state are read-side historical reconstruction — not proof, not evidence, not a substitute for the event store.
+
+---
+
+## 10. Execution Story relationship
+
+As-of projections and bitemporal historical state are part of the **read side** of Execution Story — not new runtime domains. No new Execution Story domain or event store is introduced by TRACE-ARCH-SYNC-1 or TRACE-BITEMP-ARCH-SYNC.
+
+```text
+RuntimeEvent history
+       ↓
+Execution AsOfBoundary E               Bitemporal fact / revision history
+       │                                          ↓
+       │                              Knowledge/revision ordering (K1 → K2 → K3)
+       │                                          ↓
+       │                              KnowledgeRevisionWatermark K (conceptual)
+       │                                          ↓
+       │                              Valid-Time Basis + System-Time Basis
+       │                                          ↓
+       ├── as-of execution reconstruction (§7)    └── bitemporal knowledge reconstruction (§8)
+       │
+       └── Unified Run Journal → Execution Story (chronological narrative)
+```
+
+Execution ordering and knowledge/revision ordering are **independent**. A correction accepted at **K20** after **E42** does **not** rewrite E42's execution sequence and is **not** retroactively inserted into E42 execution history.
+
+Wall-clock audit questions that require deterministic knowledge ordering resolve **T → K** first, then optionally combine with **E**. Wall-clock time does **not** replace revision ordering.
+
+Combined historical execution reconstruction (not “bitemporal state”):
+
+```text
+Execution AsOfBoundary E
++ KnowledgeRevisionWatermark K
++ BitemporalKnowledgeBasis (valid time + system time)
+       ↓
+Historically Reproducible Execution State
+```
 
 ---

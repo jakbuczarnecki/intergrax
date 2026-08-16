@@ -7,6 +7,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    RunId,
+    validate_attempt_id,
+    validate_run_id,
+)
 from intergrax.contracts.agent_decision import AgentDecisionType
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.long_running.models import TaskCheckpoint
@@ -17,6 +23,15 @@ from intergrax.runtime.task.task_contract import (
     TaskHumanInput,
     TaskLongRunningOptions,
 )
+
+
+def execution_identity_from_checkpoint(checkpoint: TaskCheckpoint) -> tuple[RunId, AttemptId]:
+    runtime = checkpoint.runtime
+    if runtime is None:
+        raise ValueError(
+            f"checkpoint {checkpoint.checkpoint_id!r} missing canonical execution identity"
+        )
+    return validate_run_id(runtime.run_id), validate_attempt_id(runtime.attempt_id)
 
 
 def timeout_action_to_verdict(action: AgentDecisionType) -> HumanResponseVerdict:

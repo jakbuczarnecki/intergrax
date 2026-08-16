@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import Field
 
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
 from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.event_catalog import EventCategory
@@ -38,9 +39,24 @@ def _register_legal_domain_kind() -> None:
     clear_event_kind_registry()
 
 
-def test_emit_domain_signal_records_on_bus() -> None:
+@pytest.fixture
+def emit_ctx() -> EmitContext:
+    return EmitContext(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+
+
+def test_emit_domain_signal_records_on_bus(emit_ctx: EmitContext) -> None:
     bus = RuntimeEventBus(record_history=True)
-    ctx = EmitContext(task_id="task-1", run_id="run-1", tenant_id="tenant-a", bus=bus)
+    ctx = EmitContext(
+        task_id=emit_ctx.task_id,
+        run_id=emit_ctx.run_id,
+        attempt_id=emit_ctx.attempt_id,
+        tenant_id="tenant-a",
+        bus=bus,
+    )
     event = emit_domain_signal(
         ctx,
         kind="agents.legal.clause_flagged",
@@ -53,7 +69,7 @@ def test_emit_domain_signal_records_on_bus() -> None:
     assert event.payload["payload_schema_id"] == _LegalClauseFlaggedV1.schema_id
 
 
-def test_emit_domain_signal_redacts_in_production_mode() -> None:
+def test_emit_domain_signal_redacts_in_production_mode(emit_ctx: EmitContext) -> None:
     class _SecretPayload(RuntimeEventPayload):
         schema_id = "agents.legal.secret.v1"
         secret: str = Field(...)
@@ -66,8 +82,9 @@ def test_emit_domain_signal_redacts_in_production_mode() -> None:
         event_kind="agents.legal.secret_flagged",
     )
     ctx = EmitContext(
-        task_id="task-1",
-        run_id="run-1",
+        task_id=emit_ctx.task_id,
+        run_id=emit_ctx.run_id,
+        attempt_id=emit_ctx.attempt_id,
         production_mode=True,
     )
     event = emit_domain_signal(
@@ -78,9 +95,14 @@ def test_emit_domain_signal_redacts_in_production_mode() -> None:
     assert event.payload["data"]["secret"] == "[REDACTED]"
 
 
-def test_emit_platform_event_uses_catalog_defaults() -> None:
+def test_emit_platform_event_uses_catalog_defaults(emit_ctx: EmitContext) -> None:
     bus = RuntimeEventBus(record_history=True)
-    ctx = EmitContext(task_id="task-1", run_id="run-1", bus=bus)
+    ctx = EmitContext(
+        task_id=emit_ctx.task_id,
+        run_id=emit_ctx.run_id,
+        attempt_id=emit_ctx.attempt_id,
+        bus=bus,
+    )
     event = emit_platform_event(
         ctx,
         event_type=RuntimeEventType.TOOL_COMPLETED,
@@ -91,8 +113,8 @@ def test_emit_platform_event_uses_catalog_defaults() -> None:
     assert len(bus.history) == 1
 
 
-def test_emit_domain_signal_rejects_invalid_kind() -> None:
-    ctx = EmitContext(task_id="task-1", run_id="run-1")
+def test_emit_domain_signal_rejects_invalid_kind(emit_ctx: EmitContext) -> None:
+    ctx = emit_ctx
     with pytest.raises(DomainSignalError):
         emit_domain_signal(
             ctx,

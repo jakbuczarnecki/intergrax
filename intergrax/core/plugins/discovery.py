@@ -196,8 +196,8 @@ def load_entry_point_targets(
     return loaded
 
 
-def _resolve_tier0_plugin_type(target: object, value: str) -> type:
-    """Resolve a Tier-0 plugin class, invoking callable factories when needed."""
+def resolve_entry_point_plugin_type(target: object, value: str) -> type:
+    """Resolve a plugin class from an entry-point target, invoking factories when needed."""
     if isinstance(target, type):
         return target
     if callable(target):
@@ -212,7 +212,7 @@ def _resolve_tier0_plugin_type(target: object, value: str) -> type:
 
 
 def _load_target(value: str) -> type:
-    return _resolve_tier0_plugin_type(load_entry_point_value(value), value)
+    return resolve_entry_point_plugin_type(load_entry_point_value(value), value)
 
 
 def load_entry_point_plugins(
@@ -234,7 +234,7 @@ def load_entry_point_plugins(
     ):
         if result.error is not None:
             raise result.error
-        plugin_type = _resolve_tier0_plugin_type(result.target, result.spec.value)
+        plugin_type = resolve_entry_point_plugin_type(result.target, result.spec.value)
         loaded.append(
             LoadedPlugin(
                 name=result.spec.name,

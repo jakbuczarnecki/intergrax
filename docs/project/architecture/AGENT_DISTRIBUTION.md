@@ -163,6 +163,34 @@ CatalogSourceProvider
   → Nexus capability routing (ROUTABLE subset)
 ```
 
+**Authority separation (AGENT-CONSOLIDATION-2):**
+
+| Surface | Question answered | Authority |
+|---------|-------------------|-----------|
+| `CatalogSourceProvider` | What packages are discoverable/resolvable? | Catalog/discovery index |
+| `AgentCapabilityMetadataProvider` | What non-executable agent contract/capability metadata is known? | Architecture/discovery projection — **not** activation or routing |
+| `RuntimeRevision` + `AgentRegistry` | What is actually running? | Execution truth |
+
+Capability metadata authority chain:
+
+```text
+Tier-2 package metadata (`[[tool.intergrax.agent.contracts]]` in agent pyproject.toml)
+  → AgentProjectMetadata (parse; `agent_version` = `[project].version`)
+  → AgentCapabilityDescriptor
+  → AgentCapabilityMetadataProvider
+  → Capability Graph
+```
+
+Agent Distribution MUST NOT centrally mirror first-party agent contracts. The platform parses and projects package-owned declarations only.
+
+`AgentCapabilityMetadataProvider` MUST NOT become activation, routing, or runtime authority. `build_catalog_capability_graph()` has no default agent inventory and no default package discovery root — callers pass a package-metadata provider, otherwise agent nodes are omitted.
+
+Runtime execution remains a separate chain:
+
+```text
+AgentInstallation → EffectiveRoster → RuntimeRevision → RegistryProjection → AgentRegistry → Nexus
+```
+
 **Marketplace** is one **future** `CatalogSourceProvider` implementation only — not a runtime fork.
 
 ---
@@ -402,7 +430,7 @@ Reuse **evidence pipeline patterns** from [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGI
 | Delivery source | `PluginDeliverySource` pattern | `AgentDeliverySource` (+ marketplace, org registry, workspace) |
 | Immutable digest | Required evidence | On `AgentPackageIdentity` |
 | Signature verification | Evidence pipeline | Agent package signing contract |
-| Qualification | `PluginQualificationStatus` shape | `AgentPackageQualificationResult` |
+| Qualification | `QualificationStatus` (`intergrax/core/qualification`) | `AgentPackageQualificationResult` |
 | Platform compatibility | `PLATFORM_COMPATIBILITY` kind | + runtime graph simulation |
 | Revocation | Deny policy pattern | Global list + org deny |
 | Org allow/deny | Policy bundle | Org agent allowlist |
@@ -1251,6 +1279,7 @@ Marketplace = **catalog provider + publisher onboarding** — not execution fork
 - Org allow/deny intersects before `INSTALLED`.
 - Revocation re-check at enable and activation.
 - Secrets never in catalog or lock artifacts — binding `secret_refs` only.
+- Binding and manifest config is validated by Agent Distribution policy on the canonical secret-safe engine (`intergrax.core.security`): forbidden keys and secret-like literals are rejected. This is detection/validation only — not a secret manager.
 - Materialization fail-closed on secret-like payloads (existing graph builder behavior).
 - No hot arbitrary Python in production process.
 - Audit tombstones retained on uninstall — artifacts removed per policy, records persist.

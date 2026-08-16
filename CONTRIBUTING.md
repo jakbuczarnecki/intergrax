@@ -2,7 +2,7 @@
 
 Thank you for your interest in Intergrax. This document explains how to contribute effectively to the **Agent OS and Harness AI** platform.
 
-**Canonical documentation:** [`docs/`](docs/) — navigation and update rules in [README.md — Documentation index](README.md#documentation-index).
+**Canonical documentation:** [`docs/`](docs/) — navigation and update rules in [DOCUMENTATION_MAP.md](docs/project/technical/DOCUMENTATION_MAP.md).
 
 ---
 

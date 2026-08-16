@@ -3,6 +3,7 @@
 import pytest
 
 from intergrax.agents.agent_contract import Agent  # noqa: F401 — stabilize import order
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.partial_results import (
@@ -28,6 +29,8 @@ def test_partial_result_from_checkpoint_extracts_runtime_fields(tmp_path) -> Non
     LongRunningCoordinator.persist_checkpoint(
         task,
         store,
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
         progress_message="step 1 complete",
     )
     checkpoint = store.get_latest(task.task_id, "t1")

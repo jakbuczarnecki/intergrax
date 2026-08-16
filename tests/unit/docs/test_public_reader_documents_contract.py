@@ -529,14 +529,13 @@ def test_readme_routing(readme_text: str) -> None:
 def test_readme_multiplayer_positioning(readme_text: str) -> None:
     normalized = " ".join(_normalize(readme_text).split())
     for phrase in (
-        "strategic platform capability",
+        "multiplayer ai",
         "architecture / roadmap stage",
         "runtime proof not yet established",
         "governed multi-principal collaboration",
         "not yet established",
     ):
         assert phrase in normalized, f"README missing Multiplayer marker: {phrase}"
-    assert "multiplayer ai" in normalized
     assert "featured platform-capability proof" in normalized
     assert "primary product proof" in normalized
     forbidden_positive = (
@@ -577,14 +576,11 @@ def test_readme_platform_extensibility_positioning(readme_text: str) -> None:
     normalized = " ".join(_normalize(readme_text).split())
     for phrase in (
         "platform extensibility",
-        "strategic platform capability",
+        "governed extension/package model",
+        "domain-owned contracts",
         "canonical architecture frozen",
         "implementation stages planned",
-        "complete platform-level third-party e2e proof not yet established",
-        "without collapsing those domain contracts into one universal plugin runtime",
-        "extend the platform without modifying its core",
-        "governed capability boundaries",
-        "domain-owned contracts still govern actual runtime behavior",
+        "complete third-party install-to-runtime e2e proof not yet established",
     ):
         assert phrase in normalized, f"README missing Platform Extensibility marker: {phrase}"
     assert "primary product proof" in normalized
@@ -852,10 +848,13 @@ def test_builder_quickstart_first_checkpoint_contract(builder_quickstart_text: s
         "build with intergrax",
         "evaluation guide",
         "lkw quick start",
+        "python -m intergrax.scaffold new-stack",
+        "uv run pytest applications/",
+        "domain job",
     ):
         assert phrase in normalized, f"BUILDER_QUICKSTART missing semantic marker: {phrase}"
 
-    assert "sibling evaluation route, not a mandatory step for every builder" in normalized
+    assert "not mandatory" in normalized
     assert "not to begin builder onboarding" in normalized
     assert "no generic project scaffold" in normalized
     assert "universal application template" in normalized
@@ -917,6 +916,35 @@ def test_why_problem_category_and_reader_fit(why_text: str) -> None:
         assert phrase in normalized, f"WHY missing reader-fit invariant: {phrase}"
 
 
+def test_why_business_strategic_thesis(why_text: str) -> None:
+    normalized = _normalize(why_text)
+    for phrase in (
+        "business and strategic thesis",
+        "duplication and fragmentation",
+        "potential adopter or sponsor profiles",
+        "lkw is the current product path used to test this thesis",
+        "compounding value hypothesis",
+        "commercialization gates",
+        "real-user validation",
+        "commercial validation",
+    ):
+        assert phrase in normalized, f"WHY missing business thesis marker: {phrase}"
+
+    forbidden_promotional = (
+        "tam",
+        "market share",
+        "revenue",
+        "traction",
+        "proven at scale",
+        "enterprise-ready",
+        "production-ready",
+        "guaranteed savings",
+        "roi",
+    )
+    for phrase in forbidden_promotional:
+        assert phrase not in normalized, f"WHY contains promotional claim phrase: {phrase!r}"
+
+
 def test_use_cases_workflow_fit_and_ownership_contract() -> None:
     normalized = " ".join(_normalize(_read(USE_CASES_PATH)).split())
     for phrase in (
@@ -940,6 +968,29 @@ def test_use_cases_workflow_fit_and_ownership_contract() -> None:
     assert "mixed indexed + authorized live hybrid ask" in normalized
     assert "remains incomplete" in normalized
     assert "complete live-provider access is incomplete" in normalized
+
+
+def test_use_cases_business_evaluation_framing() -> None:
+    normalized = " ".join(_normalize(_read(USE_CASES_PATH)).split())
+    for phrase in (
+        "who:",
+        "current approach:",
+        "pain:",
+        "desired outcome:",
+        "success signal:",
+        "validation gap:",
+        "evaluation question",
+    ):
+        assert phrase in normalized, f"USE_CASES missing business evaluation marker: {phrase}"
+
+    for phrase in (
+        "strongest current fit",
+        "bounded technical fit",
+        "not yet proven",
+        "not a fit",
+        "real-user validation and commercial validation are incomplete",
+    ):
+        assert phrase in normalized, f"USE_CASES missing fit taxonomy marker: {phrase}"
 
 
 def test_use_cases_does_not_track_provider_rollouts() -> None:
@@ -1050,3 +1101,35 @@ def test_public_reader_correction_wave_maturity_disclaimers_preserved(
     assert "partial" in readme_norm
     quickstart_norm = " ".join(_normalize(_read(LKW_QUICKSTART_PATH)).split())
     assert "commercial validation" in quickstart_norm
+
+
+def test_lkw_quickstart_progressive_disclosure_structure() -> None:
+    text = _read(LKW_QUICKSTART_PATH)
+    before_run = text.index("## Before you run")
+    run_cmd = text.index("## 1. Run one command")
+    success = text.index("## 2. Success looks like this")
+    what_happened = text.index("## 3. What just happened")
+    what_proves = text.index("## What this proves")
+    current_boundary = text.index("## Current boundary")
+    config = text.index("## Configuration and first-run downloads")
+
+    assert before_run < run_cmd < success < what_happened < what_proves < current_boundary < config
+    assert text.index("AURORA-17") < config
+    assert "### Verified Quick Start" in text
+    assert "lkw_product_quickstart.txt" in text
+    assert "persisted_run_verified=true" in text
+
+
+def test_lkw_product_tour_presentation_contract() -> None:
+    text = _read(LKW_PRODUCT_TOUR_PATH)
+    normalized = " ".join(_normalize(text).split())
+
+    assert "<picture>" in text
+    assert "lkw-grounded-result-light.svg" in text
+    assert "lkw-grounded-result-dark.svg" in text
+    assert "## The LKW experience" in text
+    assert "## What this proves" in text
+    assert "## Current boundary" in text
+    assert "not a screenshot of a finished application ui" in normalized
+    assert "[LKW Quick Start](QUICKSTART.md)" in text
+    assert normalized.index("## the lkw experience") < normalized.index("## current boundary")

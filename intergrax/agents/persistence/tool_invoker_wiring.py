@@ -37,6 +37,7 @@ def inject_acp_tool_invoker_metadata(
     metadata: dict[str, Any],
     invoker: DeclarativeToolInvoker | None,
     *,
+    task_id: str,
     run_id: str,
     agent_id: str,
     tenant_id: str,
@@ -45,7 +46,12 @@ def inject_acp_tool_invoker_metadata(
     if invoker is None:
         return
     if isinstance(invoker, CatalogDeclarativeToolInvoker):
-        invoker.bind_run(run_id=run_id, agent_id=agent_id, tenant_id=tenant_id)
+        invoker.bind_run(
+            run_id=run_id,
+            task_id=task_id,
+            agent_id=agent_id,
+            tenant_id=tenant_id,
+        )
     metadata[AcpMetadataKey.DECLARATIVE_TOOL_INVOKER] = invoker
 
 

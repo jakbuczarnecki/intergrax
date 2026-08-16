@@ -3,7 +3,7 @@
 import pytest
 
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.registry.bootstrap import build_research_registry
+from testing_support.agent_registry_bootstrap import build_research_registry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 
 

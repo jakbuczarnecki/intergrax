@@ -7,6 +7,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
+
+from intergrax.core.qualification import QualificationStatus
 from pydantic import ValidationError
 
 from intergrax.agent_distribution.catalog import CatalogProviderKind, CatalogSourceIdentity
@@ -19,6 +21,7 @@ from intergrax.agent_distribution.in_memory_stores import (
 from intergrax.agent_distribution.installation import InstallationState
 from intergrax.agent_distribution.installation_service import InstallationService
 from intergrax.agent_distribution.package_trust import AgentPackageTrustCoordinator
+from intergrax.core.qualification import QualificationEvidence, QualificationStatus
 from intergrax.agent_distribution.trust import (
     AgentDeliverySource,
     AgentInstallationTrustRecord,
@@ -29,9 +32,7 @@ from intergrax.agent_distribution.trust import (
     AgentPackageTrustReasonCode,
     AgentPackageTrustRevocationState,
     AgentPublisherIdentity,
-    AgentQualificationEvidence,
     AgentQualificationEvidenceKind,
-    AgentQualificationStatus,
     AgentTrustEvidenceRef,
 )
 
@@ -88,7 +89,7 @@ def _development_policy(**overrides: object) -> AgentPackageTrustPolicy:
         "required_evidence_kinds": frozenset(
             {AgentQualificationEvidenceKind.CONTRACT_VALIDATION}
         ),
-        "required_qualification_status": AgentQualificationStatus.QUALIFIED,
+        "required_qualification_status": QualificationStatus.QUALIFIED,
     }
     base.update(overrides)
     return AgentPackageTrustPolicy(**base)
@@ -96,7 +97,7 @@ def _development_policy(**overrides: object) -> AgentPackageTrustPolicy:
 
 def _qualification(
     *,
-    status: AgentQualificationStatus = AgentQualificationStatus.PRODUCTION_QUALIFIED,
+    status: QualificationStatus = QualificationStatus.PRODUCTION_QUALIFIED,
     publisher: AgentPublisherIdentity = _PUBLISHER,
     delivery_source: AgentDeliverySource = AgentDeliverySource.BUILTIN,
 ) -> AgentPackageQualificationResult:
@@ -104,12 +105,12 @@ def _qualification(
         publisher=publisher,
         status=status,
         evidence=(
-            AgentQualificationEvidence(
+            QualificationEvidence(
                 kind=AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
                 code="signature_ok",
                 ref="sig-ref",
             ),
-            AgentQualificationEvidence(
+            QualificationEvidence(
                 kind=AgentQualificationEvidenceKind.REVOCATION_CHECK,
                 code="revocation_ok",
                 ref="rev-ref",
@@ -144,7 +145,7 @@ def test_trust_happy_path_produces_installable_record() -> None:
     assert decision.installable is True
     assert decision.trust_record is not None
     assert decision.trust_record.package_digest == _DIGEST_A
-    assert decision.trust_record.qualification_status is AgentQualificationStatus.PRODUCTION_QUALIFIED
+    assert decision.trust_record.qualification_status is QualificationStatus.PRODUCTION_QUALIFIED
     assert decision.trust_record.publisher_identity_ref == "publisher:acme"
     assert len(decision.trust_evidence_refs) == 2
 
@@ -223,9 +224,9 @@ def test_trust_development_source_accepted_only_when_policy_permits() -> None:
     coordinator = AgentPackageTrustCoordinator()
     dev_qualification = AgentPackageQualificationResult(
         publisher=_PUBLISHER,
-        status=AgentQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
         evidence=(
-            AgentQualificationEvidence(
+            QualificationEvidence(
                 kind=AgentQualificationEvidenceKind.CONTRACT_VALIDATION,
                 code="contract_ok",
             ),
@@ -266,7 +267,7 @@ def test_trust_missing_required_qualification_fails_closed() -> None:
 
 def test_trust_insufficient_qualification_status_fails_closed() -> None:
     decision = _evaluate(
-        qualification=_qualification(status=AgentQualificationStatus.QUALIFIED),
+        qualification=_qualification(status=QualificationStatus.QUALIFIED),
     )
     assert decision.reason_code is AgentPackageTrustReasonCode.INSUFFICIENT_QUALIFICATION_STATUS
 
@@ -314,7 +315,7 @@ def test_installation_service_rejects_unacceptable_trust_record() -> None:
             "inst-1",
             artifact_store_ref="store://artifacts/1",
             trust_record=AgentInstallationTrustRecord(
-                qualification_status=AgentQualificationStatus.NOT_QUALIFIED,
+                qualification_status=QualificationStatus.NOT_QUALIFIED,
                 package_digest=_DIGEST_A,
                 publisher_identity_ref="publisher:acme",
                 source_provider_id="builtin",
@@ -331,7 +332,7 @@ def test_installation_service_rejects_unacceptable_trust_record() -> None:
 def test_malformed_trust_record_digest_rejected() -> None:
     with pytest.raises(ValidationError):
         AgentInstallationTrustRecord(
-            qualification_status=AgentQualificationStatus.PRODUCTION_QUALIFIED,
+            qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
             package_digest="not-a-digest",
             publisher_identity_ref="publisher:acme",
             source_provider_id="builtin",

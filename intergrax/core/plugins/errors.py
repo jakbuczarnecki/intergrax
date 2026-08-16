@@ -9,10 +9,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from intergrax.core.plugins.platform_qualification import PluginQualificationResult
-    from intergrax.core.plugins.platform_semantics import (
-        PlatformCompatibilityResult,
-        PlatformPluginConflictKind,
-    )
+    from intergrax.core.plugins.platform_semantics import PlatformPluginConflictKind
 
 
 class PluginError(Exception):
@@ -46,18 +43,6 @@ class PlatformPluginContractError(PluginError):
 
 class PlatformPluginManifestValidationError(PlatformPluginContractError):
     """Platform Plugin manifest or package metadata failed validation."""
-
-
-class InvalidPlatformVersionError(PlatformPluginContractError):
-    """Platform version string is not a valid PEP 440 version."""
-
-
-class PlatformIncompatibilityError(PlatformPluginContractError):
-    """Declared platform compatibility range does not include the tested version."""
-
-    def __init__(self, message: str, *, result: PlatformCompatibilityResult | None = None) -> None:
-        super().__init__(message)
-        self.result = result
 
 
 class ProductionQualificationRequiredError(PlatformPluginContractError):

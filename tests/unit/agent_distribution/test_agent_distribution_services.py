@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.core.qualification import QualificationStatus
+
 from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.errors import (
     BindingLifecycleError,
@@ -24,7 +26,6 @@ from intergrax.agent_distribution.installation_service import InstallationServic
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
     AgentQualificationEvidenceKind,
-    AgentQualificationStatus,
     AgentTrustEvidenceRef,
 )
 
@@ -42,7 +43,7 @@ _PACKAGE_B = _PACKAGE_A.model_copy(
 
 def _trust_record(digest: str = _DIGEST_A) -> AgentInstallationTrustRecord:
     return AgentInstallationTrustRecord(
-        qualification_status=AgentQualificationStatus.PRODUCTION_QUALIFIED,
+        qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
         package_digest=digest,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",

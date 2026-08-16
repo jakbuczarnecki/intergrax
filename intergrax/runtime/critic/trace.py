@@ -256,17 +256,30 @@ class CriticTraceEmitter:
         if self._trace_writer is not None:
             self._trace_writer.append_event(evt)
         if self._event_bus is not None:
+            from intergrax.contracts.execution_identity import (
+                require_active_execution_identity,
+                validate_task_id,
+            )
             from intergrax.runtime.events.trace_bridge import (
                 trace_bridge_subject_from_tags,
                 trace_event_to_runtime_event,
             )
 
+            resolved_task_id = validate_task_id(tags.get("task_id"))
+            active_run_id, attempt_id = require_active_execution_identity()
             subject = trace_bridge_subject_from_tags(
                 tenant_id=str(tags.get("tenant_id", "default")),
-                task_id=str(tags.get("task_id", self._run_id)),
+                task_id=resolved_task_id,
                 agent_id=str(tags.get("agent_id", "")),
             )
-            self._event_bus.record(trace_event_to_runtime_event(evt, subject))
+            self._event_bus.record(
+                trace_event_to_runtime_event(
+                    evt,
+                    subject,
+                    run_id=active_run_id,
+                    attempt_id=attempt_id,
+                )
+            )
         return evt
 
 

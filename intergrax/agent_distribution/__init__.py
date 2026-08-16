@@ -3,9 +3,27 @@
 
 """Tier-0 Agent Distribution domain contracts, stores, and services (AP-3/AP-4)."""
 
+from intergrax.agent_distribution.agent_capability_metadata import (
+    AgentCapabilityDescriptor,
+    AgentCapabilityDescriptorConflictError,
+    AgentCapabilityMetadataProvider,
+    merge_agent_capability_descriptors,
+)
 from intergrax.agent_distribution.agent_project_metadata import (
+    AgentPackageContractDeclaration,
     AgentProjectMetadata,
+    AgentProjectMetadataParseError,
     AgentProjectMetadataProvider,
+    parse_agent_project_pyproject,
+    project_agent_capability_descriptors,
+)
+from intergrax.agent_distribution.builtin_capability_metadata import (
+    PackageAgentCapabilityMetadataProvider,
+)
+from intergrax.agent_distribution.contract_metadata_parity import (
+    AgentContractMetadataParityError,
+    AgentContractMetadataParityMismatch,
+    validate_agent_contract_metadata_parity,
 )
 from intergrax.agent_distribution.binding import (
     AgentBindingFactoryReference,
@@ -194,11 +212,8 @@ from intergrax.agent_distribution.trust import (
     AgentPackageTrustReasonCode,
     AgentPackageTrustRevocationState,
     AgentPublisherIdentity,
-    AgentQualificationEvidence,
     AgentQualificationEvidenceKind,
-    AgentQualificationStatus,
     AgentTrustEvidenceRef,
-    qualification_status_satisfies,
 )
 
 __all__ = [
@@ -215,6 +230,9 @@ __all__ = [
     "AgentArtifactMetadataStore",
     "AgentBindingFactoryReference",
     "AgentBindingPolicyOverrides",
+    "AgentCapabilityDescriptor",
+    "AgentCapabilityDescriptorConflictError",
+    "AgentCapabilityMetadataProvider",
     "AgentCatalogEntry",
     "AgentCatalogVersionChannelRef",
     "AgentDeliverySource",
@@ -225,7 +243,9 @@ __all__ = [
     "AgentInstallationRecord",
     "AgentInstallationStore",
     "AgentInstallationTrustRecord",
+    "AgentPackageContractDeclaration",
     "AgentProjectMetadata",
+    "AgentProjectMetadataParseError",
     "AgentProjectMetadataProvider",
     "AgentPackageCandidate",
     "AgentPackageIdentity",
@@ -239,9 +259,7 @@ __all__ = [
     "AgentPackageTrustReasonCode",
     "AgentPackageTrustRevocationState",
     "AgentPublisherIdentity",
-    "AgentQualificationEvidence",
     "AgentQualificationEvidenceKind",
-    "AgentQualificationStatus",
     "AgentTrustEvidenceRef",
     "ApplicationAgentBinding",
     "ApplicationAgentBindingStore",
@@ -249,6 +267,9 @@ __all__ = [
     "ApplicationEnvironmentServingRecord",
     "ApplicationEnvironmentServingStore",
     "ArtifactRevalidationHook",
+    "AgentContractMetadataParityError",
+    "AgentContractMetadataParityMismatch",
+    "PackageAgentCapabilityMetadataProvider",
     "BindingLifecycleError",
     "BindingRevisionConflict",
     "BindingService",
@@ -320,6 +341,10 @@ __all__ = [
     "MaterializedRuntimeLockProducer",
     "MaterializedRuntimeLockService",
     "MaterializedRuntimeLockStore",
+    "merge_agent_capability_descriptors",
+    "validate_agent_contract_metadata_parity",
+    "parse_agent_project_pyproject",
+    "project_agent_capability_descriptors",
     "PolicyDependencyConstraint",
     "ProviderHealth",
     "ProviderHealthStatus",
@@ -351,5 +376,4 @@ __all__ = [
     "assert_installation_trust_record_acceptable",
     "build_candidate_dependency_specification",
     "installation_state_is_installed",
-    "qualification_status_satisfies",
 ]

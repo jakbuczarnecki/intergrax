@@ -17,7 +17,7 @@ from intergrax.runtime.interactions.verification.factory import create_inbound_v
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.registry.bootstrap import build_organization_worker_registry
+from testing_support.agent_registry_bootstrap import build_organization_worker_registry
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import TaskLongRunningOptions
 

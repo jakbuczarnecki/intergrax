@@ -4,15 +4,7 @@
 """Agent discovery and registration."""
 
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.registry.bootstrap import (
-    build_harness_registry,
-    build_organization_worker_registry,
-    build_research_registry,
-)
 
 __all__ = [
     "AgentRegistry",
-    "build_harness_registry",
-    "build_organization_worker_registry",
-    "build_research_registry",
 ]

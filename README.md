@@ -24,6 +24,33 @@ references and persisted evidence.
 
 ---
 
+<a id="start-here"></a>
+## Choose your path
+
+| You want to… | Start here |
+| --- | --- |
+| Try the product | [LKW Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md) |
+| Understand the product first | [LKW Product Tour](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) |
+| Verify bounded platform behavior | [Core Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
+| Check whether your workflow fits | [Use Cases](docs/project/overview/USE_CASES.md) |
+| Review current evidence | [PROOFS](docs/project/proofs/PROOFS.md) |
+| Evaluate as an investor or business decision maker | [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md) |
+| Evaluate one claim fairly | [Evaluation Guide](docs/project/builders/EVALUATION_GUIDE.md) |
+| Start building | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
+| Plan deeper application composition | [Build With Intergrax](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
+| Review architecture | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
+| Configure the platform | [Platform Configuration](docs/project/technical/guides/PLATFORM_CONFIGURATION.md) |
+| Discuss a pilot or design partnership | [Partners](docs/project/community/PARTNERS.md) |
+| Contribute, give feedback, or ask about permissions | [Collaboration](docs/project/community/COLLABORATION.md) |
+| Perform a deep technical review | [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
+
+Questions? See the [FAQ](docs/project/overview/FAQ.md). For the complete public route map, use the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
+The [project documentation hub](docs/project/README.md) is the secondary
+all-docs entry point. The [public roadmap](docs/project/overview/ROADMAP.md)
+describes outcome direction.
+
+---
+
 ## Local Knowledge Workspace (LKW)
 
 ### Product workflow
@@ -128,32 +155,6 @@ or all-provider certification.
 
 ---
 
-## Choose your path
-
-| You want to… | Start here |
-| --- | --- |
-| Try the product | [LKW Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md) |
-| Understand the product first | [LKW Product Tour](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) |
-| Verify bounded platform behavior | [Core Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
-| Check whether your workflow fits | [Use Cases](docs/project/overview/USE_CASES.md) |
-| Review current evidence | [PROOFS](docs/project/proofs/PROOFS.md) |
-| Evaluate as an investor or business decision maker | [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md) |
-| Evaluate one claim fairly | [Evaluation Guide](docs/project/builders/EVALUATION_GUIDE.md) |
-| Start building | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
-| Plan deeper application composition | [Build With Intergrax](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
-| Review architecture | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
-| Configure the platform | [Platform Configuration](docs/project/technical/guides/PLATFORM_CONFIGURATION.md) |
-| Discuss a pilot or design partnership | [Partners](docs/project/community/PARTNERS.md) |
-| Contribute, give feedback, or ask about permissions | [Collaboration](docs/project/community/COLLABORATION.md) |
-| Perform a deep technical review | [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
-
-Questions? See the [FAQ](docs/project/overview/FAQ.md). For the complete public route map, use the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
-The [project documentation hub](docs/project/README.md) is the secondary
-all-docs entry point. The [public roadmap](docs/project/overview/ROADMAP.md)
-describes outcome direction.
-
----
-
 ## Why this matters
 
 Building an impressive AI demo is easier than operating a controlled AI
@@ -182,6 +183,29 @@ selects.
 See the [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md)
 for the complete responsibility model.
 
+## AI execution should not be a black box
+
+Meaningful AI execution should be reconstructable, reviewable, and attributable.
+Intergrax is designed so important actions do not disappear inside an opaque agent loop.
+
+```text
+request → context → agent / plan / decision → policy / approval
+       → model / RAG / tool → validation → result → evidence
+                              ↓
+                 reviewable execution record
+```
+
+A governed run can leave correlated runtime events, typed [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, and structured [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence.
+This is execution-level explainability, not hidden model reasoning.
+Universal every-path production observability is not claimed.
+
+[Observability](docs/project/architecture/OBSERVABILITY.md) ·
+[Reasoning / DecisionRecord](docs/project/architecture/REASONING_AND_COGNITION.md) ·
+[Proof Receipts](docs/project/architecture/PROOF_RECEIPTS.md)
+
+**Runnable evidence:** Inspect the current bounded LKW observability proof, including independently inspectable Elasticsearch/Kibana records, controlled Sentry problem signals, and persisted execution evidence.
+[LKW bounded observability proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Controlled Sentry proof](applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md)
+
 ## What exists today
 
 Status is capability-specific; implementation is not blanket proof of the whole
@@ -190,101 +214,23 @@ platform.
 | Area | Role | Current status |
 | --- | --- | --- |
 | **LKW** | Primary Product Proof | **PARTIAL — Backend Product Alpha / MVP** |
-| **Token Optimization** | Featured platform-capability proof | **PARTIAL — bounded** |
-| **Multiplayer AI** | Strategic platform capability | **Architecture / roadmap stage** — runtime proof not yet established |
-| **Platform Extensibility / Plugins** | Strategic platform capability | **Canonical architecture frozen** — implementation stages planned; complete platform-level third-party E2E proof not yet established |
 | **Other reusable foundations** | Supporting evidence | Varies by capability; inspect [PROOFS](docs/project/proofs/PROOFS.md) |
 
-## Token Optimization
+Platform capability maturity is summarized in
+[Platform capabilities and directions](#platform-capabilities-and-directions) below.
 
-Token Optimization is a compact reusable platform capability below the product surface: policy-governed context and prompt optimization with protected-region validation, receipts, fallback, and a bounded offline smoke proof path. Its current status is **PARTIAL**; live provider-wide proof, production rollout, final cross-provider proof, universal savings, and **production-proven savings** are **not established**. The canonical manifest proof_id is offline_smoke only; vLLM prefix-cache reuse is a separate manual live path. Details: [Token Optimization guide](docs/project/capabilities/token_optimization/README.md) and [claim guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
+## Platform capabilities and directions
 
-**Proof:** `RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`
+Compact index of strategic platform capabilities. Status is bounded and
+capability-specific; see linked architecture and proof routes for detail.
 
-## Multiplayer AI
-
-Intergrax is extending governed execution toward governed multi-principal
-collaboration among humans, agents, services, and eventually external agents.
-The architectural direction covers identity and membership, delegation of
-effective authority, shared work, durable collaborative artifacts, explicit
-decisions, principal-scoped context, activity and provenance, and
-external-agent interoperability.
-
-Multiplayer AI is broader than one agent calling another. It governs who
-participates, what authority is effective, what shared work exists, which
-artifact version is authoritative, what decision was made, what context each
-principal may see, and what evidence remains.
-
-Current status is **architecture / roadmap stage**. Runtime implementation and
-proof are **not yet established**. See the [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md).
-
-## Platform Extensibility
-
-Intergrax already exposes extension points across integrations, tools, skills,
-RAG, Vendor Knowledge, security, policy, host composition, and other platform
-domains. The [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md)
-architecture defines how independently packaged extensions can participate
-without collapsing those domain contracts into one universal plugin runtime.
-
-The strategic goal is coordinated **package identity**, **discovery**,
-**configuration**, **compatibility**, **trust**, **qualification**,
-**lifecycle**, and **author experience** — while domain-owned contracts still
-govern actual runtime behavior. Extend the platform without modifying its core
-while preserving governed capability boundaries.
-
-A basic plugin system answers how code can be loaded. Platform Extensibility
-also must answer what capability a package contributes, how it is discovered,
-whether it is compatible, how it receives configuration and dependencies, what
-trust or qualification state applies, and which domain contract governs
-execution.
-
-Canonical architecture is **frozen**; platform-wide harmonization is **not
-complete**; a complete third-party install-to-runtime E2E proof is **not yet
-established**.
-
-## Agent Marketplace — future ecosystem concept
-
-**Future product concept — not shipped today.**
-
-**Build once. Govern centrally. Install reusable AI capabilities into any
-Intergrax application.**
-
-Intergrax is building a governed distribution model for reusable Tier-2 agents
-across built-in sources, local and developer sources, private enterprise
-catalogs, and future public catalogs. Every source converges on the same
-governed lifecycle:
-
-```text
-Discover → Trust → Install → Configure → Materialize → Activate → Route
-```
-
-Apps install capabilities. Nexus routes work. Intergrax governs execution.
-
-> **Status — FUTURE PRODUCT:** The public marketplace experience, publisher
-> portal, catalog product, billing layer, and LKW marketplace UI are **not
-> shipped today**. Underlying distribution and platform capabilities — Agent
-> Distribution, package verification, application binding, immutable
-> materialization, RuntimeRevision activation, AgentRegistry, and Nexus
-> capability routing — have mixed **AVAILABLE TODAY** / **ARCHITECTURE FROZEN**
-> / **UNDER IMPLEMENTATION** maturity.
-
-Platform Extensibility / Agent Distribution is the governed technical substrate;
-Agent Marketplace is the future discovery, distribution, and ecosystem layer
-built on that substrate — not an independent execution engine.
-
-Example reusable capability patterns: Research · Legal · Project Management ·
-UX Research · Private Enterprise
-
-[Explore the Agent Marketplace concept and reference architecture →](docs/project/product/AGENT_MARKETPLACE.md)
-
-<!-- Compatibility anchors for inbound documentation links -->
-<a id="quick-start"></a>
-<a id="proof-of-platform"></a>
-<a id="start-here"></a>
-<a id="harness-ai--the-core-idea"></a>
-<a id="the-agent-model--why-architects-choose-intergrax"></a>
-
----
+| Capability / direction | What it adds | Current maturity | Explore |
+| --- | --- | --- | --- |
+| **Observability & Auditability** | Shared observability spine for reconstructable, reviewable governed execution — runtime events, [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence; execution-level explainability, not hidden chain-of-thought | **IMPLEMENTED CORE + BOUNDED PROOF** — universal every-path production observability **not claimed** | [Observability](docs/project/architecture/OBSERVABILITY.md) · [LKW bounded observability proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Controlled Sentry proof](applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md) |
+| **Token Optimization** | Featured platform-capability proof — policy-governed context and prompt optimization with receipts, fallback, and bounded offline proof | **PARTIAL — bounded** — universal savings and production-proven savings **not established** | [Token Optimization guide](docs/project/capabilities/token_optimization/README.md) · [Claim guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md) |
+| **Multiplayer AI** | Governed multi-principal collaboration among humans, agents, services, and external agents | **Architecture / roadmap stage** — runtime proof **not yet established** | [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) |
+| **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** — implementation stages planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
+| **Agent Marketplace** | Future ecosystem layer — discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT — NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/product/AGENT_MARKETPLACE.md) |
 
 ## License and collaboration
 

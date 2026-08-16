@@ -9,11 +9,11 @@ Copy **entire file** into a **new** Cursor agent chat as the first message.
 | File | Mode | Scope |
 |------|------|-------|
 | [`micro_implement.txt`](micro_implement.txt) | MICRO — bounded implementation | One small task; explicit read/edit scope; max 8 reads; no semantic search |
-| [`01_audit_all_domains.txt`](01_audit_all_domains.txt) | A — audit-only | All 22 domain pairs |
+| [`01_audit_all_domains.txt`](01_audit_all_domains.txt) | A — audit-only | All 24 domain pairs |
 | [`02_audit_one_domain.txt`](02_audit_one_domain.txt) | A1 — audit-only | Single domain (`DOMAIN=` line) |
-| [`03_implement_plan_all_domains.txt`](03_implement_plan_all_domains.txt) | B — implement plan | All 22 |
+| [`03_implement_plan_all_domains.txt`](03_implement_plan_all_domains.txt) | B — implement plan | All 24 |
 | [`04_implement_plan_one_domain.txt`](04_implement_plan_one_domain.txt) | B1 — implement plan | Single domain |
-| [`05_closeout_all_domains.txt`](05_closeout_all_domains.txt) | C — layer completion | All 22 (LCM 1–6) |
+| [`05_closeout_all_domains.txt`](05_closeout_all_domains.txt) | C — layer completion | All 24 (LCM 1–6) |
 | [`06_interactive_layer_by_layer_audit.txt`](06_interactive_layer_by_layer_audit.txt) | **A2 — interactive audit** | One domain per stop; operator confirms before next |
 | [`idea_audit.txt`](idea_audit.txt) | **I — idea intake audit** | Single idea in chat — live audit; Cursor rule auto-triggers; on approval update domain pair or multi-layer feature pair |
 | [`07_ci_preflight.txt`](07_ci_preflight.txt) | **CI — preflight before push/merge** | Run local parity with `.github/workflows/unit-tests.yml` (`--profile all`) |
@@ -35,6 +35,6 @@ uv run python scripts/audit/init_architecture_audit_run.py --date YYYY-MM-DD --m
 
 **Resume:** paste same file + line `RESUME: docs/audit_results/YYYY-MM-DD/progress.json`
 
-**Mode B iteration:** one P0/P1 item per domain (or skip); agent continues through all 22 domains without asking between pairs unless operator writes `pause` / `stop`. See [`IMPLEMENT_ORCHESTRATOR.md`](../audit/IMPLEMENT_ORCHESTRATOR.md) §Iteration discipline.
+**Mode B iteration:** one P0/P1 item per domain (or skip); agent continues through all 24 domains without asking between pairs unless operator writes `pause` / `stop`. See [`IMPLEMENT_ORCHESTRATOR.md`](../audit/IMPLEMENT_ORCHESTRATOR.md) §Iteration discipline.
 
 **Canonical procedure docs:** [`../audit/README.md`](../audit/README.md) · [`../audit/ORCHESTRATOR.md`](../audit/ORCHESTRATOR.md)

@@ -16,24 +16,6 @@ from intergrax.runtime.nexus.tracing.persistence_models import (
 )
 
 
-class _TaskView:
-    """Minimal duck type for trace_bridge (avoids heavy task package import)."""
-
-    __slots__ = ("task_id", "tenant_id", "agent_id", "context")
-
-    def __init__(
-        self,
-        task_id: str,
-        tenant_id: str,
-        agent_id: str | None,
-        capability: Any,
-    ) -> None:
-        self.task_id = task_id
-        self.tenant_id = tenant_id
-        self.agent_id = agent_id
-        self.context = type("Ctx", (), {"capability": capability})()
-
-
 def format_run_list(runs: List[RunSummary]) -> str:
     if not runs:
         return "No runs found for tenant."
@@ -68,15 +50,6 @@ def format_run_show(persisted: PersistedRun) -> str:
     return "\n".join(lines)
 
 
-def _task_from_trace_tags(tags: Dict[str, Any], run_id: str, *, tenant_id: str = "") -> _TaskView:
-    return _TaskView(
-        task_id=str(tags.get("task_id") or run_id),
-        tenant_id=str(tags.get("tenant_id") or tenant_id or "default"),
-        agent_id=tags.get("agent_id"),
-        capability=tags.get("capability"),
-    )
-
-
 def _normalize_trace_event(raw: Any) -> Dict[str, Any]:
     if isinstance(raw, dict):
         return raw
@@ -99,7 +72,7 @@ def build_trace_payload(
         "tenant_id": persisted.metadata.tenant_id,
         "trace_events": trace_events,
     }
-    if not include_runtime:
+    if not include_runtime or runtime_store is None:
         return payload
 
     from intergrax.runtime.events.unified_run_journal import (

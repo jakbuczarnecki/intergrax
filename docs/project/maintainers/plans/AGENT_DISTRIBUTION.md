@@ -4,7 +4,7 @@
 **Architecture (1:1):** [`architecture/AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md)  
 **ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../../technical/adr/entries/2026-08-12/ADR-AGENT-004.md)  
 **Evidence:** [`audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md)  
-**Last updated:** 2026-08-14
+**Last updated:** 2026-08-16
 
 ---
 
@@ -61,6 +61,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 |-------------|--------|
 | `AgentPackageIdentity` / catalog contracts | done |
 | `CatalogSourceProvider` port | done |
+| `AgentCapabilityMetadataProvider` port (architecture projection) | done (AGENT-CONSOLIDATION-2-FIX-1: package pyproject → descriptor; no central inventory) |
 | Trust/provenance evidence surface | done |
 | Installation / binding contracts | done |
 | Effective roster projection models | done |

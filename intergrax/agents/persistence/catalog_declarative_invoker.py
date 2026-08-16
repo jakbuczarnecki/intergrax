@@ -56,6 +56,7 @@ class CatalogDeclarativeRunBinding:
     """Mutable run scope rebound before each ACP session or graph node."""
 
     run_id: str = ""
+    task_id: str = ""
     agent_id: str = ""
     tenant_id: str = "default"
     user_id: str = ""
@@ -72,16 +73,19 @@ class CatalogDeclarativeToolInvoker:
         self,
         *,
         run_id: str,
+        task_id: str,
         agent_id: str,
         tenant_id: str = "default",
         user_id: str = "",
     ) -> None:
         self.binding.run_id = run_id
+        self.binding.task_id = task_id
         self.binding.agent_id = agent_id
         self.binding.tenant_id = tenant_id
         self.binding.user_id = user_id
 
     def _runtime_state(self) -> RuntimeState:
+        from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
         from intergrax.prompts.registry.prompt_registry_resolver import (
             resolve_yaml_prompt_registry,
         )
@@ -108,6 +112,8 @@ class CatalogDeclarativeToolInvoker:
                 catalog_path=config.prompt_catalog_path,
             ),
         )
+        resolved_run_id = validate_run_id(self.binding.run_id)
+        resolved_task_id = validate_task_id(self.binding.task_id)
         return RuntimeState(
             context=context,
             request=RuntimeRequest(
@@ -116,8 +122,10 @@ class CatalogDeclarativeToolInvoker:
                 session_id=self.binding.run_id or "session",
                 tenant_id=self.binding.tenant_id,
                 message="acp.declarative",
+                task_id=resolved_task_id,
+                run_id=resolved_run_id,
             ),
-            run_id=self.binding.run_id or "run",
+            run_id=resolved_run_id,
             tool_traces=[],
         )
 

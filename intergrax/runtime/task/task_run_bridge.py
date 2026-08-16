@@ -4,8 +4,14 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
-from uuid import uuid4
 
+from intergrax.contracts.execution_identity import (
+    RunId,
+    mint_run_id,
+    mint_task_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
@@ -13,8 +19,9 @@ from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 TASK_PAYLOAD_VERSION = 1
 
 
-def new_run_id() -> str:
-    return f"run_{uuid4().hex}"
+def new_run_id() -> RunId:
+    """Mint a canonical RunId (legacy alias for run lifecycle helpers)."""
+    return mint_run_id()
 
 
 def task_from_runtime_request(
@@ -22,11 +29,9 @@ def task_from_runtime_request(
     *,
     tenant_id: str,
     user_id: str,
-    run_id: Optional[str] = None,
     capability: Optional[str] = None,
 ) -> Task:
     """Build a Nexus Task from a RuntimeRequest (HTTP / eval intake)."""
-    resolved_run_id = run_id or runtime_req.metadata.get("run_id") or new_run_id()
     cap = capability or runtime_req.metadata.get("capability")
     flat_metadata = {
         "source": "runtime_request",
@@ -34,7 +39,7 @@ def task_from_runtime_request(
         **dict(runtime_req.metadata),
     }
     return Task(
-        task_id=resolved_run_id,
+        task_id=runtime_req.task_id,
         tenant_id=tenant_id,
         user_id=user_id,
         session_id=runtime_req.session_id,
@@ -58,7 +63,7 @@ def task_from_execution_request(request: ExecutionRequest) -> Task:
     session_id = payload.get("session_id")
 
     return Task(
-        task_id=request.run_id,
+        task_id=mint_task_id(),
         tenant_id=request.tenant_id,
         user_id=request.user_id or "",
         session_id=str(session_id) if session_id else None,
@@ -96,19 +101,21 @@ def task_result_to_payload(result: TaskResult) -> Dict[str, Any]:
     return payload
 
 
-def runtime_request_with_run_id(request: RuntimeRequest, run_id: str) -> RuntimeRequest:
-    """Attach unified run_id to RuntimeRequest metadata for AgentEngine runs."""
-    meta = dict(request.metadata)
-    meta["run_id"] = run_id
+def runtime_request_with_run_id(request: RuntimeRequest, run_id: RunId) -> RuntimeRequest:
+    """Return RuntimeRequest with an updated canonical run_id (execute boundary field)."""
+    validated_run_id = validate_run_id(run_id)
     return RuntimeRequest(
         agent_id=request.agent_id,
         user_id=request.user_id,
         session_id=request.session_id,
         message=request.message,
+        task_id=request.task_id,
+        run_id=validated_run_id,
         attachments=list(request.attachments),
         workspace_id=request.workspace_id,
         tenant_id=request.tenant_id,
-        metadata=meta,
+        metadata=dict(request.metadata),
+        declarative_hitl_grant=request.declarative_hitl_grant,
         instructions=request.instructions,
         history_compression_strategy=request.history_compression_strategy,
         max_output_tokens=request.max_output_tokens,

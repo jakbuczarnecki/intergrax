@@ -1,11 +1,22 @@
 # Try Local Knowledge Workspace
 
-Want to understand the product experience before running it? See the [LKW Product Tour](LKW_PRODUCT_TOUR.md).
+Run one command to upload an approved sample, ask a grounded question, and verify the persisted result on your machine.
 
-## PRODUCT QUICKSTART — supported entry point
+Want to understand the experience before running it? See the [LKW Product Tour](LKW_PRODUCT_TOUR.md).
 
-**Prerequisite:** Clone or open this repository locally. Commands below assume
-the repository root as the working directory.
+## Before you run
+
+| Requirement | Notes |
+|---|---|
+| Repository | Clone or open this repository locally; commands assume the **repository root** as the working directory |
+| Git | Needed to obtain the repository, not for each subsequent rerun |
+| Docker | Docker Desktop or Docker Engine with Compose |
+| `uv` | Installed and available on `PATH` |
+| Disk space | Keep at least **20 GiB free** for the bounded first-bootstrap check — a safety floor, not a download-size prediction |
+
+First-run duration depends on image downloads, model download, network speed, and machine performance. A 15-minute target is not yet externally validated.
+
+## 1. Run one command
 
 Run exactly one command from the repository root:
 
@@ -15,113 +26,41 @@ Run exactly one command from the repository root:
 | Linux | `./applications/local_workspace_application/scripts/run-lkw-product-quickstart-linux.sh` |
 | macOS | `./applications/local_workspace_application/scripts/run-lkw-product-quickstart-macos.sh` |
 
-This is the supported zero-to-value path. Docker Desktop/Engine with Compose and
-`uv` must already be installed by the user; the launcher does not install
-software or use elevated installers. Git is needed to obtain the repository, not
-for each subsequent rerun. Keep at least **20 GiB free** for the bounded
-first-bootstrap check; this is a safety floor, not a prediction of download
-size.
+The launcher does not install software or use elevated installers.
 
-## What this does
+## 2. Success looks like this
 
-This quickstart is a supported local product-evaluation path. One command starts the canonical local stack (unless you already have it running), uploads a bundled non-sensitive sample document through managed-file Knowledge Intake, waits for indexing, asks a grounded question over indexed knowledge, shows the answer with a source citation, and verifies the persisted Ask run.
+`AURORA-17` is the expected success marker for this quickstart.
 
-The canonical stack includes: `local_workspace`, MongoDB, Qdrant, Ollama, and
-the OTEL collector. Optional proof overlays are not started by this quickstart.
+### Verified Quick Start
 
-Workflow:
+This section documents **one verified local run** on a developer machine. Workspace and Ask run IDs vary between runs; results below match that run's transcript.
 
-```text
-start canonical local stack
-→ create workspace
-→ upload managed sample file
-→ wait for indexing
-→ ask a question
-→ receive grounded answer
-→ inspect source citation
-→ verify persisted Ask run
-```
+A real local run completed the supported Product Quick Start end to end: environment setup, stack startup, knowledge ingestion, grounded Ask, citation, and persisted Ask verification.
 
-This Quick Start exercises the indexed **Ask V1** product path — real application
-boundaries, indexed knowledge only. It is **not** the separate Hybrid Ask
-proof/certification path, not a platform certification run, and not a production
-deployment. Accepted public evidence for the bounded indexed Hybrid Ask branch
-lives in [PROOFS](../../../../docs/project/proofs/PROOFS.md) and
-[LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md); mixed indexed +
-authorized-live Hybrid Ask in one answer remains **not proven**.
+| Verification | Result |
+| --- | --- |
+| LKW stack and services | ✅ Ready |
+| Sample knowledge | ✅ Uploaded and indexed |
+| Grounded Ask | ✅ Completed |
+| Expected answer | `AURORA-17` |
+| Grounding source | `lkw_product_quickstart.txt` |
+| Persisted Ask result | ✅ Verified |
+| Final Quick Start result | **PASS** |
 
-## After the run
+All 10 launcher stages completed successfully in this run (see transcript below).
 
-The quickstart is **script-driven**: one command uploads, asks, cites, and
-verifies the persisted Ask run. There is no polished end-user UI on this path.
-On success the stack stays running for inspection — health check
-(`http://127.0.0.1:8020/health`), Docker logs, and persisted run read. For
-deeper bounded platform verification, see [Core Platform Proof](../proof/LKW_PLATFORM_PROOF.md).
+**Question**
 
-Product Quick Start and Core Platform Proof use separate execution lifecycles.
-Stop this quickstart stack before starting the isolated Core Platform Proof; see
-[Stop the stack](#stop-the-stack) and the proof document's
-[After Product Quick Start](../proof/LKW_PLATFORM_PROOF.md#after-product-quick-start)
-section.
+> What is the project codename?
 
-**Proofs:** `LKW-PRODUCT-QUICKSTART-WINDOWS`, `LKW-PRODUCT-QUICKSTART-LINUX`, `LKW-PRODUCT-QUICKSTART-MACOS`
+**Answer**
 
-## Prerequisites
+> `AURORA-17`
 
-- Git
-- Docker Desktop or Docker Engine with Compose
-- `uv` installed and available on `PATH`
-- Sufficient disk space for Docker images and configured models when the
-  selected generation or embedding provider is Ollama (model pull on first run)
+**Grounding source**
 
-First-run duration depends on image downloads, model download, network speed, and machine performance. A 15-minute target is not yet externally validated.
-
-## What you should see
-
-`AURORA-17` is the expected success marker for this quickstart proof.
-
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="../assets/lkw-grounded-result-dark.svg"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="../assets/lkw-grounded-result-light.svg"
-  >
-  <img
-    alt="LKW quickstart flow showing the approved sample file lkw_product_quickstart.txt, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification."
-    src="../assets/lkw-grounded-result-light.svg"
-  >
-</picture>
-
-The visual summarizes the documented result shape. The text block below remains the exact reviewable output contract.
-
-A successful run ends with a concise summary like:
-
-```text
-LKW quickstart: PASS
-
-Question:
-What is the project codename?
-
-Answer:
-<grounded answer containing AURORA-17>
-
-Source:
-lkw_product_quickstart.txt
-
-Workspace:
-<workspace_id>
-
-Ask run:
-<run_id>
-
-Persisted Ask run verified:
-yes
-```
-
-Stable machine-readable lines:
+`lkw_product_quickstart.txt`
 
 ```text
 lkw_quickstart_result=PASS
@@ -131,7 +70,69 @@ persisted_run_verified=true
 stack_left_running=true
 ```
 
-## What actually happened
+<details>
+<summary>Raw run transcript (verified local run)</summary>
+
+Volatile workspace and run IDs were redacted as `<generated workspace id>` and `<generated run id>` for readability.
+
+```text
+[1/10] Checking prerequisites...
+Prerequisites ready (4s).
+[2/10] Starting local LKW stack...
+Still starting local LKW stack... 15s
+Still starting local LKW stack... 30s
+Local LKW stack started (30s).
+[3/10] Waiting for LKW services...
+LKW services are ready (0s).
+[4/10] Preparing embedding model...
+Embedding model is ready (5s).
+[5/10] Creating evaluation workspace...
+Evaluation workspace is ready (0s).
+[6/10] Uploading sample knowledge...
+Sample knowledge upload accepted (0s).
+[7/10] Indexing sample knowledge...
+Sample knowledge is indexed (3s).
+[8/10] Asking a grounded question...
+Still asking a grounded question... 15s
+Grounded answer is ready (22s).
+[9/10] Verifying saved Ask result...
+Saved Ask result is verified (0s).
+[10/10] Finalizing Quick Start...
+Quick Start completed successfully (0s).
+LKW quickstart: PASS
+Question:
+What is the project codename?
+Answer:
+AURORA-17
+Source:
+lkw_product_quickstart.txt
+Workspace:
+<generated workspace id>
+Ask run:
+<generated run id>
+Persisted Ask run verified:
+yes
+lkw_quickstart_result=PASS
+answer_marker=AURORA-17
+citation_file=lkw_product_quickstart.txt
+persisted_run_verified=true
+stack_left_running=true
+Stack remains running for inspection. See applications/local_workspace_application/docs/product/QUICKSTART.md for stop and troubleshooting commands.
+```
+
+</details>
+
+## 3. What just happened
+
+```text
+approved sample
+→ managed upload
+→ indexing
+→ Ask
+→ grounded answer
+→ source citation
+→ persisted Ask run verified
+```
 
 The runner reused existing production-shaped boundaries:
 
@@ -144,26 +145,44 @@ The runner reused existing production-shaped boundaries:
 
 You did not need to write API JSON, copy operation IDs manually, or configure `INTERGRAX_ALLOWED_READ_ROOTS`.
 
-## First-run downloads
+## What this proves
+
+This Quick Start exercises the indexed **Ask V1** product path — a bounded real application path over indexed knowledge only. One command starts the canonical local stack (unless you already have it running), uploads a bundled non-sensitive sample document through managed-file Knowledge Intake, waits for indexing, asks a grounded question, shows the answer with a source citation, and verifies the persisted Ask run.
+
+The canonical stack includes: `local_workspace`, MongoDB, Qdrant, Ollama, and the OTEL collector. Optional proof overlays are not started by this quickstart.
+
+**Proofs:** `LKW-PRODUCT-QUICKSTART-WINDOWS`, `LKW-PRODUCT-QUICKSTART-LINUX`, `LKW-PRODUCT-QUICKSTART-MACOS`
+
+## Current boundary
+
+This path is **not** the separate Hybrid Ask proof/certification path, not a platform certification run, and not a production deployment. It does **not** prove:
+
+- mixed indexed + authorized-live Hybrid Ask in one answer (**not proven**)
+- Live-provider access
+- Production readiness or security/compliance certification
+- Real-user validation
+- Commercial validation
+- Full LKW platform certification ([LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md) remains the deeper technical path)
+- Linux or macOS live certification unless you actually run the quickstart on those systems
+
+Accepted public evidence for the bounded indexed Hybrid Ask branch lives in [PROOFS](../../../../docs/project/proofs/PROOFS.md) and [LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md).
+
+---
+
+## Configuration and first-run downloads
 
 - Docker images for the LKW stack may be downloaded on first run.
-- When the selected **generation** provider is Ollama, the configured generation
-  model may be downloaded.
-- When the selected **embedding** provider is Ollama, the configured embedding
-  model may be downloaded.
+- When the selected **generation** provider is Ollama, the configured generation model may be downloaded.
+- When the selected **embedding** provider is Ollama, the configured embedding model may be downloaded.
 
-**Canonical model-selection contract** (see
-[Platform Configuration](../../../../docs/project/technical/guides/PLATFORM_CONFIGURATION.md)):
+**Canonical model-selection contract** (see [Platform Configuration](../../../../docs/project/technical/guides/PLATFORM_CONFIGURATION.md)):
 
 | Role | Provider variable | Model variable |
 | --- | --- | --- |
 | Generation | `INTERGRAX_LLM_PROVIDER` | `INTERGRAX_LLM_MODEL` |
 | Embedding | `INTERGRAX_EMBEDDING_PROVIDER` | `INTERGRAX_EMBEDDING_MODEL` |
 
-`PROVIDER` selects the adapter; `MODEL` selects the configured model.
-Generation model selection uses only `INTERGRAX_LLM_PROVIDER` and
-`INTERGRAX_LLM_MODEL`. Provider-specific `INTERGRAX_DEFAULT_*_MODEL` variables
-are not supported.
+`PROVIDER` selects the adapter; `MODEL` selects the configured model. Generation model selection uses only `INTERGRAX_LLM_PROVIDER` and `INTERGRAX_LLM_MODEL`. Provider-specific `INTERGRAX_DEFAULT_*_MODEL` variables are not supported.
 
 Canonical local LKW example:
 
@@ -175,11 +194,10 @@ INTERGRAX_EMBEDDING_MODEL=nomic-embed-text
 ```
 
 - An existing `applications/local_workspace_application/.env` is not modified; a missing `applications/local_workspace_application/.env` is created once from `applications/local_workspace_application/.env.example`.
-- Operational failures return `failed_stage`, `failure_reason`, and
-  `recommended_action` instead of raw Docker, HTTP or subprocess logs.
+- Operational failures return `failed_stage`, `failure_reason`, and `recommended_action` instead of raw Docker, HTTP or subprocess logs.
 - Duration varies by environment; timing is not claimed as validated until external sessions confirm it.
 
-## Safety
+## Safety and reruns
 
 - The sample file is bundled and non-sensitive (`applications/local_workspace_application/sample_docs/lkw_product_quickstart.txt`).
 - Managed upload is used; no arbitrary local folder is read.
@@ -188,13 +206,10 @@ INTERGRAX_EMBEDDING_MODEL=nomic-embed-text
 - If `applications/local_workspace_application/.env` is missing, it is created from `applications/local_workspace_application/.env.example` once; an existing `.env` is never overwritten.
 - The stack remains running after success for inspection.
 - Local Docker volumes may retain evaluation data.
-- Rerunning preserves `.env`, downloaded models, and named volumes. A healthy
-  existing stack is reused; a partial start can be retried without deleting
-  volumes or application data.
-- `--skip-stack-start` is an advanced rerun option for an already-running
-  canonical stack; the normal OS launcher starts or reuses the stack.
+- Rerunning preserves `.env`, downloaded models, and named volumes. A healthy existing stack is reused; a partial start can be retried without deleting volumes or application data.
+- `--skip-stack-start` is an advanced rerun option for an already-running canonical stack; the normal OS launcher starts or reuses the stack.
 
-### Stop the stack
+## Stop the stack
 
 From `applications/local_workspace_application`:
 
@@ -206,31 +221,21 @@ On Windows, from the repository root, run `cd /d applications\local_workspace_ap
 
 ## Troubleshooting
 
-- For a normal failure, follow `failed_stage`, `failure_reason`, and
-  `recommended_action`. Docker, Compose, and `uv` remain user-managed
-  prerequisites.
-- **Port already in use (for example `8020`):** another documented LKW stack or
-  process may already own the port. Common Compose project names are
-  `intergrax_lkw` (Product Quick Start), `lkw-core-platform-proof` (Core
-  Platform Proof), and `lkw-trusted-ask-workspace-proof` (Trusted Ask proof).
-  Do not delete volumes or reset data by default — stop the conflicting
-  documented stack non-destructively (see [Stop the stack](#stop-the-stack)
-  or the proof document's stop guidance), then rerun the path you want.
-- From `applications/local_workspace_application`, inspect service status with `docker compose -p intergrax_lkw -f docker/docker-compose.yml ps`.
-- From `applications/local_workspace_application`, inspect logs with `docker compose -p intergrax_lkw -f docker/docker-compose.yml logs --tail 200 local_workspace`.
-- Health check: `http://127.0.0.1:8020/health` should return `status: ok`.
-- Advanced troubleshooting commands above may show Docker details; they are
-  not part of the normal product failure output.
+| Problem | Likely cause | Recommended action |
+|---|---|---|
+| `failed_stage` / `failure_reason` output | Environment or prerequisite issue | Follow `failed_stage`, `failure_reason`, and `recommended_action`. Docker, Compose, and `uv` remain user-managed prerequisites. |
+| Port already in use (for example `8020`) | Another documented LKW stack or process owns the port | Stop the conflicting documented stack non-destructively. Common Compose project names: `intergrax_lkw` (Product Quick Start), `lkw-core-platform-proof` (Core Platform Proof), `lkw-trusted-ask-workspace-proof` (Trusted Ask proof). Do not delete volumes or reset data by default — see [Stop the stack](#stop-the-stack) or the proof document's stop guidance, then rerun the path you want. |
+| Service unhealthy | Container or bootstrap issue | From `applications/local_workspace_application`, inspect service status with `docker compose -p intergrax_lkw -f docker/docker-compose.yml ps`. |
+| Unexpected runtime behavior | Application or dependency failure | From `applications/local_workspace_application`, inspect logs with `docker compose -p intergrax_lkw -f docker/docker-compose.yml logs --tail 200 local_workspace`. |
+| Health check fails | Stack not ready or wrong port | `http://127.0.0.1:8020/health` should return `status: ok`. |
 
-## What this does not prove
+Advanced troubleshooting commands above may show Docker details; they are not part of the normal product failure output.
 
-- the separate Hybrid Ask proof/certification path (see [PROOFS](../../../../docs/project/proofs/PROOFS.md))
-- mixed indexed + authorized-live Hybrid Ask in one answer
-- Live-provider access
-- Production readiness or security/compliance certification
-- Commercial validation
-- Full LKW platform certification ([LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md) remains the deeper technical path)
-- Linux or macOS live certification unless you actually run the quickstart on those systems
+## Deeper technical routes
+
+The quickstart is **script-driven**: one command uploads, asks, cites, and verifies the persisted Ask run. There is no polished end-user UI on this path. On success the stack stays running for inspection — health check (`http://127.0.0.1:8020/health`), Docker logs, and persisted run read.
+
+Product Quick Start and Core Platform Proof use separate execution lifecycles. Stop this quickstart stack before starting the isolated Core Platform Proof; see [Stop the stack](#stop-the-stack) and the proof document's [After Product Quick Start](../proof/LKW_PLATFORM_PROOF.md#after-product-quick-start) section.
 
 ## Primary next action
 

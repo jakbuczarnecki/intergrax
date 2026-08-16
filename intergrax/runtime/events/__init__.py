@@ -53,7 +53,6 @@ from intergrax.runtime.events.trace_bridge import (
 )
 from intergrax.runtime.events.unified_run_journal import (
     JOURNAL_SCHEMA_VERSION,
-    bridge_persisted_trace_events,
     build_unified_run_journal,
 )
 
@@ -91,7 +90,6 @@ __all__ = [
     "should_persist_event",
     "validate_payload_envelope",
     "SQLiteRuntimeEventStore",
-    "bridge_persisted_trace_events",
     "build_unified_run_journal",
     "open_runtime_event_store",
     "query_journal",

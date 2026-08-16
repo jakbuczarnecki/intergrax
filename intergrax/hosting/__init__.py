@@ -73,7 +73,7 @@ from intergrax.hosting.errors import (
     HostedApplicationStartupError,
     HostedApplicationSupervisorError,
 )
-from intergrax.hosting.eventing import RuntimeSpineHostedApplicationEventPublisher
+from intergrax.hosting.eventing import ObservabilityHostedApplicationEventPublisher
 from intergrax.hosting.services import HostedApplicationServiceRegistry
 from intergrax.hosting.control import (
     HostedApplicationControlCoordinator,
@@ -183,7 +183,7 @@ __all__ = [
     "InstancePolicy",
     "LifecyclePolicy",
     "RestartPolicy",
-    "RuntimeSpineHostedApplicationEventPublisher",
+    "ObservabilityHostedApplicationEventPublisher",
     "ShutdownPolicy",
     "resolve_hosted_application_definition",
     "run_hosted_application",

@@ -25,7 +25,6 @@ from intergrax.core.plugins import (
     PlatformPluginTrustModel,
     PluginDeliverySource,
     PluginQualificationEvidenceKind,
-    PluginQualificationStatus,
     build_external_package_subject,
     build_host_embedded_capability_subject,
     build_platform_plugin_manifest,
@@ -33,8 +32,10 @@ from intergrax.core.plugins import (
     evaluate_package_production_admission,
     iter_entry_point_specs,
     load_entry_point_value,
+    parse_platform_plugin_manifest_data,
     parse_platform_plugin_pyproject_toml,
 )
+from intergrax.core.qualification import QualificationStatus
 from intergrax.core.plugins.discovery import (
     EP_CONTEXT,
     EP_MEMORY_STORES,
@@ -44,12 +45,11 @@ from intergrax.core.plugins.discovery import (
     instantiate_entry_point_target,
 )
 from intergrax.core.plugins.errors import PlatformPluginManifestValidationError
+from intergrax.core.distribution import PlatformCompatibility
 from intergrax.core.plugins.package_contract import (
     CapabilityDescriptor,
-    PlatformCompatibility,
-    reject_secret_like_keys,
 )
-from intergrax.core.plugins.platform_semantics import (
+from intergrax.core.distribution import (
     PlatformCompatibilityReason,
     check_platform_compatibility,
 )
@@ -148,7 +148,7 @@ def test_package_identity_must_agree_with_python_project_metadata() -> None:
 
 def test_manifest_cannot_carry_runtime_config_or_secrets() -> None:
     with pytest.raises(PlatformPluginManifestValidationError, match="secret-like manifest field"):
-        reject_secret_like_keys({"api_token": "value"})
+        parse_platform_plugin_manifest_data({"api_token": "value"})
 
 
 def test_multi_capability_packages_remain_supported() -> None:
@@ -243,7 +243,7 @@ def test_scaffold_qualification_precedes_registration() -> None:
 
 def test_discovery_distinct_from_qualification_states() -> None:
     lifecycle = {state.value for state in PlatformPluginLifecycleState}
-    qualification = {status.value for status in PluginQualificationStatus}
+    qualification = {status.value for status in QualificationStatus}
     assert lifecycle.isdisjoint(qualification)
 
 
@@ -259,11 +259,11 @@ def test_compatible_does_not_imply_qualified() -> None:
             package_name="acme-intergrax",
             package_version="1.0.0",
         ),
-        status=PluginQualificationStatus.NOT_QUALIFIED,
+        status=QualificationStatus.NOT_QUALIFIED,
         evidence=(),
         reason="compatible only",
     )
-    assert result.status is PluginQualificationStatus.NOT_QUALIFIED
+    assert result.status is QualificationStatus.NOT_QUALIFIED
 
 
 def test_qualified_does_not_imply_production_qualified() -> None:
@@ -273,7 +273,7 @@ def test_qualified_does_not_imply_production_qualified() -> None:
             package_name="acme-intergrax",
             package_version="1.0.0",
         ),
-        status=PluginQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
         evidence=(),
         reason="domain qualified",
     )
@@ -287,7 +287,7 @@ def test_external_package_missing_compatibility_fails_closed() -> None:
             package_name="acme-intergrax",
             package_version="1.0.0",
         ),
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(),
         reason="production qualified",
     )
@@ -302,7 +302,7 @@ def test_host_embedded_package_compatibility_not_fabricated() -> None:
             capability_id="local_prefix_echo",
             host_registration_path="extensions/local_prefix_echo_plugin.py",
         ),
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(),
         reason="host embedded",
     )
@@ -321,7 +321,7 @@ def test_no_sandbox_signing_or_isolation_states_claimed() -> None:
     trust_values = {item.value for item in PlatformPluginTrustModel}
     forbidden = {"sandboxed", "signed", "verified", "isolated", "process_isolated"}
     assert trust_values.isdisjoint(forbidden)
-    qualification_values = {item.value for item in PluginQualificationStatus}
+    qualification_values = {item.value for item in QualificationStatus}
     assert qualification_values.isdisjoint(forbidden)
 
 
@@ -369,6 +369,16 @@ def test_runtime_invocation_path_is_shared_registry_invoker() -> None:
 
 def test_no_platform_plugin_execute_universal_runtime_api() -> None:
     assert not hasattr(core_plugins, "PlatformPlugin")
+    removed_plugin_exports = (
+        "PluginPackageIdentity",
+        "PluginQualificationStatus",
+        "PlatformCompatibility",
+        "PlatformCompatibilityResult",
+        "InvalidPlatformVersionError",
+        "PlatformIncompatibilityError",
+    )
+    for name in removed_plugin_exports:
+        assert not hasattr(core_plugins, name), name
     plugin_modules = [
         "intergrax.core.plugins.discovery",
         "intergrax.core.plugins.platform_qualification",
@@ -448,7 +458,7 @@ def test_incompatible_external_package_fails_closed_at_admission() -> None:
             package_name="acme-intergrax",
             package_version="1.0.0",
         ),
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(),
         reason="production qualified",
     )

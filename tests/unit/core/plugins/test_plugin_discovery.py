@@ -15,6 +15,7 @@ from intergrax.core.plugins.discovery import (
     load_entry_point_value,
     load_plugin_types,
     reset_entry_point_spec_cache_for_tests,
+    resolve_entry_point_plugin_type,
 )
 from intergrax.core.plugins.errors import PluginConflictError, PluginLoadError
 from intergrax.integrations.examples.custom_memory_kv import CustomMemoryKvPlugin
@@ -74,6 +75,35 @@ def _factory_invocation_probe() -> type:
 
 _FACTORY_WAS_INVOKED = False
 _CALLABLE_OBJECT_PROBE = _CallableObject()
+
+
+def test_resolve_entry_point_plugin_type_class_target() -> None:
+    assert resolve_entry_point_plugin_type(_DiscoveredPlugin, "mod:Cls") is _DiscoveredPlugin
+
+
+def test_resolve_entry_point_plugin_type_factory_returns_class() -> None:
+    assert resolve_entry_point_plugin_type(_plugin_factory, "mod:factory") is _DiscoveredPlugin
+
+
+def test_resolve_entry_point_plugin_type_factory_raises() -> None:
+    def _broken_factory() -> type:
+        raise RuntimeError("boom")
+
+    with pytest.raises(PluginLoadError, match="Failed to call entry point factory"):
+        resolve_entry_point_plugin_type(_broken_factory, "mod:broken")
+
+
+def test_resolve_entry_point_plugin_type_factory_returns_non_class() -> None:
+    def _bad_factory() -> object:
+        return object()
+
+    with pytest.raises(PluginLoadError, match="must return a plugin class"):
+        resolve_entry_point_plugin_type(_bad_factory, "mod:bad")
+
+
+def test_resolve_entry_point_plugin_type_invalid_target() -> None:
+    with pytest.raises(PluginLoadError, match="is not a class or factory"):
+        resolve_entry_point_plugin_type(42, "mod:bad")
 
 
 def test_load_entry_point_value_class_returns_class_not_instance() -> None:

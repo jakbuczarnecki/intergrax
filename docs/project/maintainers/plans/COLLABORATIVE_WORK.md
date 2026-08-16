@@ -5,7 +5,7 @@
 **Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md)
 
-**Status:** Domain registered — **MP-1 core runtime CLOSED pending final review**
+**Status:** Domain registered — **MP-1 core — production persistence gate OPEN** (final review pending)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -187,6 +187,51 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | LKW integration; MP-2+; observability; Postgres |
 | **Acceptance** | One membership per principal/workspace; delegator must remain active member; no `getattr`/`setattr` family in scoped production paths; docs synchronized |
 | **Proof requirements** | `tests/unit/collaborative_work/test_canonical_membership_closure.py`; `tests/unit/collaborative_work/test_typed_wiring_architecture.py`; authority and repository regressions |
+| **Next step** | MP-1 CORE FINAL REVIEW |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1H-R3 |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | SQLite canonical membership migration closure — schema parity with fresh databases |
+| **Dependencies** | COLLAB-WORK-1H-R2 canonical membership semantics; durable SQLite adapter |
+| **Exact scope** | Transactional rebuild of legacy `workspace_memberships` to `principal_id TEXT NOT NULL` plus unique principal membership |
+| **REUSED** | Canonical `WorkspaceMembership` `record_json`; SQLite adapter `BEGIN IMMEDIATE` conventions |
+| **NEW** | Legacy table rebuild; explicit duplicate/identity/deserialisation failure with rollback |
+| **Explicit out of scope** | Authority semantics; LKW integration; MP-2+; Alembic/SQLAlchemy |
+| **Acceptance** | Migrated schema matches fresh constraints; duplicates fail closed; original legacy table intact on failure; reopen is idempotent |
+| **Proof requirements** | `tests/unit/collaborative_work/test_sqlite_membership_migration.py`; repository, canonical membership, authority, typed-wiring, vendor-neutrality regressions |
+| **Next step** | MP-1 CORE FINAL REVIEW |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1J |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | PostgreSQL durable backend and production parity — cross-process transactional concurrency proof |
+| **Dependencies** | COLLAB-WORK-1H durable SQLite adapter; platform PostgreSQL integration (`psycopg`, `PostgreSQLIntegrationConfig`) |
+| **Exact scope** | `PostgreSQLCollaborativeWorkStore` + typed repositories for all MP-1 authoritative ports; `open_postgresql_collaborative_work_repositories`; real PostgreSQL parity/concurrency/integration tests |
+| **REUSED** | Repository ports; serialization; SQLite semantic reference; `infra/docker/postgresql/docker-compose.yml` |
+| **NEW** | Production PostgreSQL adapter; schema constraints/indexes; multi-connection CAS/uniqueness/idempotency proofs; CW-INV-19 |
+| **Explicit out of scope** | LKW integration; MP-2+; Alembic unless platform canon changes; CI platform redesign |
+| **Acceptance** | Semantic parity with InMemory/SQLite; real PostgreSQL tests pass; no production fallback to SQLite; vendor neutrality and typed-wiring gates hold |
+| **Proof requirements** | `tests/integration/collaborative_work/test_postgresql_repository.py`; repository/authority/enforcement/typed-wiring/vendor-neutrality regressions |
+| **Next step** | MP-1 CORE FINAL REVIEW |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-1J-R2 |
+| **Priority** | P0 |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | Platform PostgreSQL transactional session provider and Collaborative Work infrastructure reuse |
+| **Dependencies** | COLLAB-WORK-1J; platform PostgreSQL integration (`PostgreSQLIntegrationConfig`) |
+| **Exact scope** | `PostgreSQLConnectionProvider` / session API; refactor `opens.py` and CW PostgreSQL store to consume platform provider; remove duplicated psycopg/connect/search_path/transaction mechanics from CW; production `integrations-postgresql` extra |
+| **REUSED** | `PostgreSQLIntegrationConfig`; canonical schema validation; existing RelationalStore opener |
+| **NEW** | Platform transactional session provider; platform reuse architecture proofs; safe identifier search_path |
+| **Explicit out of scope** | LKW integration; MP-2+; CW SQLite refactor; CI platform redesign unless narrow gate fits file budget |
+| **Acceptance** | CW no longer owns generic PostgreSQL mechanics; platform owns driver/session/transaction/search_path; real PostgreSQL CW tests pass; RelationalStore regressions pass; PLATFORM-REUSE invariants preserved |
+| **Proof requirements** | `tests/unit/integrations/providers/relational_store/test_postgresql_session.py`; `tests/unit/collaborative_work/test_postgresql_platform_reuse.py`; `tests/integration/collaborative_work/test_postgresql_repository.py`; existing PostgreSQL + CW regressions |
 | **Next step** | MP-1 CORE FINAL REVIEW |
 
 ---

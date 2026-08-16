@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
+from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
@@ -37,6 +38,7 @@ class NexusIntakeRunner:
     human_hooks: HumanApprovalHookCoordinator
     publish: PublishFn
     restore_long_running: RestoreFn
+    execution_identity: ActiveExecutionIdentity | None = None
 
     async def run(
         self,
@@ -78,10 +80,14 @@ class NexusIntakeRunner:
             )
 
         if HumanPauseCoordinator.is_resumed(task):
+            if self.execution_identity is None:
+                raise RuntimeError("active execution identity required for intake emission")
+            run_id, attempt_id = self.execution_identity.require()
             await self.publish(
                 runtime_event_from_task_state(
                     task,
-                    run_id=task.task_id,
+                    run_id=run_id,
+                    attempt_id=attempt_id,
                     message="human approval received",
                 ).model_copy(
                     update={

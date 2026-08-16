@@ -1,8 +1,8 @@
 # Skill Library — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/SKILLS.md`](../../architecture/SKILLS.md) · [`plan/SKILLS.md`](../plans/SKILLS.md)
-**Audit map layers:** 12 · compact slice: [`audit_slices/SKILLS.md`](../../technical/guides/audit_slices/SKILLS.md)
+**Domain pair:** [`architecture/SKILLS.md`](../architecture/SKILLS.md) · [`plan/SKILLS.md`](../plan/SKILLS.md)  
+**Audit map layers:** 12 · compact slice: [`audit_slices/SKILLS.md`](../guides/audit_slices/SKILLS.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -60,11 +60,11 @@ prompt_instruction_ids not auto-injected to ContextManager · policy_fragment_id
 
 ## 0. Context budget (mandatory)
 
-**Load first:** [`docs/project/technical/guides/audit_slices/SKILLS.md`](../../technical/guides/audit_slices/SKILLS.md) — compact slice (layers **12**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+**Load first:** [`docs/project/technical/guides/audit_slices/SKILLS.md`](../guides/audit_slices/SKILLS.md) — compact slice (layers **12**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ prompt_instruction_ids not auto-injected to ContextManager · policy_fragment_id
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/SKILLS.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/SKILLS.md` — hub read-scope + one `architecture/satellites` satellite max
-3. `docs/project/maintainers/plans/SKILLS.md` — hub + one `plan/satellites` satellite max
+2. `docs/project/architecture/SKILLS.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/project/maintainers/plans/SKILLS.md` — hub + one `plan/satellites/` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 5. `@docs/project/technical/guides/AGENT_CREATION_GUIDE.md` **Appendix J** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
@@ -91,7 +91,7 @@ applications/_shared/skill_wiring.py · skill_tool_profile.py · catalog_runtime
 intergrax/runtime/registry/agent_registry.py (skill resolution at register)
 ```
 
-Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 

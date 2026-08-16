@@ -47,9 +47,10 @@ Events are the **primary audit and orchestration signal**. Hooks, observability,
 
 ```text
 RuntimeEvent:
-    event_id: str              # UUID, globally unique
-    task_id: str               # Nexus task identifier
-    run_id: str                # execution run (may span retries)
+    event_id: EventId          # UUID, globally unique
+    task_id: TaskId            # Nexus task identifier
+    run_id: RunId               # execution run (may span retries)
+    attempt_id: AttemptId      # attempt within the run
     node_id: str | null        # ExecutionGraph node, if applicable
     agent_id: str | null       # agent responsible for this event
     step_id: str | null        # AgentStep identifier, if applicable
@@ -62,6 +63,8 @@ RuntimeEvent:
     parent_event_id: str | null # causal chain
     schema_version: str         # e.g. "runtime_event.v1"
 ```
+
+**Target canon** — strongly typed `TaskId` / `RunId` / `AttemptId` / `EventId`; wire representation remains flat string. Implementation planned in TRACE-1A / TRACE-1B. Do not treat current runtime wire types as satisfying this contract.
 
 ### 42.1.2 RuntimeEventType (minimum set)
 
@@ -94,6 +97,7 @@ TASK_COMPLETED | TASK_FAILED
   "event_id": "evt_8f3a2b1c-...",
   "task_id": "task_legal_review_001",
   "run_id": "run_20260527_001",
+  "attempt_id": "attempt_...",
   "node_id": "node_legal_review",
   "agent_id": "legal",
   "step_id": "step_clause_analysis",
@@ -202,6 +206,18 @@ event_category  # derived ops grouping
 | Bus subscription | Prefer `event_category` / `kind_prefix` over enum lists |
 
 **Code (target):** `intergrax/runtime/events/event_catalog.py`, `signals.py`
+
+### 42.1.8 Execution identity ownership (TRACE-ARCH-SYNC-1)
+
+Runtime lifecycle emits through `RuntimeEvent`; **canonical execution identity**, journal/as-of semantics, and bitemporal historical state are owned by [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§10.
+
+| Identifier | Runtime role |
+|------------|----------------|
+| `TaskId` | **WHAT** task / intent |
+| `RunId` | **WHICH** execution of the task |
+| `AttemptId` | **WHICH** attempt inside the run — minted at attempt boundaries; all events in an attempt share it |
+
+Hierarchy: `Task 1:N Run 1:N Attempt 1:N RuntimeEvent`. Retry: same `TaskId` + `RunId`, new `AttemptId`. Resume without retry: same `AttemptId`. Typed carrier matrix, unified journal, as-of projections, and bitemporal historical state — [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§10. Implementation: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) Phase TRACE.
 
 ---
 

@@ -19,6 +19,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
+from intergrax.contracts.execution_identity import (
+    RunId,
+    TaskId,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.llm.messages import AttachmentRef
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageReport
@@ -140,7 +146,10 @@ class RuntimeRequest:
 
     user_id: str
     session_id: str
-    message: str    
+    message: str
+
+    task_id: TaskId
+    run_id: RunId
 
     attachments: List[AttachmentRef] = field(default_factory=list)
 
@@ -154,8 +163,9 @@ class RuntimeRequest:
     # Typed declarative HITL grant transport (approval evidence only).
     declarative_hitl_grant: Optional[DeclarativeHitlApprovalGrant] = None
 
-    # Typed task identity for grant scope / policy matching (not metadata fallback).
-    task_id: Optional[str] = None
+    def __post_init__(self) -> None:
+        self.task_id = validate_task_id(self.task_id)
+        self.run_id = validate_run_id(self.run_id)
 
     def to_envelope(self) -> TaskEnvelope:
         tenant = self.tenant_id or self.metadata.get("tenant_id") or "default"
@@ -170,13 +180,21 @@ class RuntimeRequest:
         )
 
     @classmethod
-    def from_envelope(cls, envelope: TaskEnvelope) -> RuntimeRequest:
-        """Materialize runtime request from canonical intake envelope (AUDIT-IDEAL-3.1)."""
+    def from_envelope(
+        cls,
+        envelope: TaskEnvelope,
+        *,
+        task_id: TaskId,
+        run_id: RunId,
+    ) -> RuntimeRequest:
+        """Materialize execute-boundary runtime request from intake envelope."""
         return cls(
             agent_id=envelope.agent_id or "",
             user_id=envelope.user_id,
             session_id=envelope.session_id or f"sess_{envelope.tenant_id}",
             message=envelope.message,
+            task_id=task_id,
+            run_id=run_id,
             workspace_id=envelope.workspace_id,
             tenant_id=envelope.tenant_id,
             metadata=dict(envelope.metadata),

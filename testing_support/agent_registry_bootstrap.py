@@ -1,6 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
+"""Non-production Tier-2 agent registry bootstrap for lab, tests, and release tooling."""
+
 from __future__ import annotations
 
 import importlib
@@ -11,7 +13,7 @@ from intergrax.utils import attribute_access
 
 
 def _load_agent_class(module_name: str, class_name: str) -> Any:
-    """Load a Tier-2 agent class without a static platform→agent import edge."""
+    """Load a Tier-2 agent class for explicit lab/test bootstrap only."""
     module = importlib.import_module(module_name)
     return attribute_access.optional(module, class_name)
 

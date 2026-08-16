@@ -75,6 +75,7 @@ def verify_reflection_draft(
         execution,
         contract=contract,
         hooks=hooks,
+        task_id=step_ctx.task_id,
         run_id=step_ctx.run_id,
         tenant_id=_resolve_tenant_id(step_ctx),
         step_id=step_id,

@@ -3,6 +3,7 @@
 import pytest
 
 from echo.echo_agent import EchoAgent
+from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -25,7 +26,7 @@ async def test_nexus_loop_runs_echo_agent():
         context=TaskContext(capability="echo.basic"),
     )
 
-    result = await loop.handle_task(task)
+    result = await loop.handle_task(task, run_id=mint_run_id())
 
     assert result.state == TaskState.COMPLETED
     assert "hello harness" in result.answer
@@ -54,7 +55,7 @@ async def test_nexus_loop_echo_emits_lifecycle_trace():
         context=TaskContext(capability="echo.basic"),
     )
 
-    await loop.handle_task(task)
+    await loop.handle_task(task, run_id=mint_run_id())
 
     emitter = loop.trace_emitter
     assert emitter is not None
@@ -88,9 +89,10 @@ async def test_nexus_loop_persists_cost_in_trace(tmp_path):
         message="cost trace",
         context=TaskContext(capability="echo.basic"),
     )
-    result = await loop.handle_task(task)
+    run_id = mint_run_id()
+    result = await loop.handle_task(task, run_id=run_id)
 
-    persisted = trace_store.read_run(task.task_id, "t1")
+    persisted = trace_store.read_run(run_id, "t1")
     assert persisted.metadata.stats.llm_usage.get("cost") == 0.0
     assert "total_tokens" in persisted.metadata.stats.llm_usage
     assert result.metadata.get("execution_cost") == 0.0

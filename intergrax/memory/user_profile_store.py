@@ -4,11 +4,12 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from intergrax.memory.user_profile_memory import UserProfile
 
 
+@runtime_checkable
 class UserProfileStore(Protocol):
     """
     Persistent storage interface for user profiles.

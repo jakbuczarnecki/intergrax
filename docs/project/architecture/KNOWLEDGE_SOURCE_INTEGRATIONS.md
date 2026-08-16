@@ -734,7 +734,7 @@ configuration_version
 
 The durable Connection catalog is **platform-owned**. Raw secrets remain in `SecretsStore`. `connection_ref` remains the correlation identity across bindings, workspace attachments and runtime resolution. The instance-local `KnowledgeConnectionRegistry` is reconstructed from durable state at startup — it is runtime projection only, not the administrative source of truth.
 
-The connection record contains references and safe metadata, never secret values. One provider integration is still reused across indexed RAG, durable materialization and live access (three consumption modes).
+The connection record contains references and safe metadata, never secret values. Knowledge metadata/URL secret-safe detection uses the canonical engine with a Knowledge-owned policy: `credential_ref` is an allowed opaque reference; raw secret keys and credential-bearing URLs are rejected. This is not a secret manager. One provider integration is still reused across indexed RAG, durable materialization and live access (three consumption modes).
 
 ### 7.2 Source binding
 

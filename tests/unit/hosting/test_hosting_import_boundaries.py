@@ -54,7 +54,7 @@ _EXPECTED_PUBLIC_NAMES = (
     "HostedApplicationRuntime",
     "HostedApplicationDefinition",
     "resolve_hosted_application_definition",
-    "RuntimeSpineHostedApplicationEventPublisher",
+    "ObservabilityHostedApplicationEventPublisher",
 )
 
 

@@ -151,11 +151,11 @@ class RuntimeState(RuntimeStateContract):
 
     @property
     def task_id(self) -> str:
-        """Typed task identity for policy/HITL matching; falls back to run_id."""
+        """Typed task identity for policy/HITL matching."""
         typed = self.request.task_id
-        if typed is not None and typed.strip():
-            return typed
-        return self.run_id
+        if typed is not None and str(typed).strip():
+            return str(typed)
+        raise RuntimeError("RuntimeRequest.task_id must be set before RuntimeState is used.")
 
 
     def _next_trace_seq(self) -> int:
@@ -164,13 +164,17 @@ class RuntimeState(RuntimeStateContract):
 
     def _get_observability_emitter(self) -> ObservabilityEmitter:
         if self._observability_emitter is None:
+            from intergrax.contracts.execution_identity import mint_attempt_id, peek_active_execution_identity
             from intergrax.runtime.observability.emitter import ObservabilityEmitter
 
+            active = peek_active_execution_identity()
+            attempt_id = active[1] if active is not None else mint_attempt_id()
             self._observability_emitter = ObservabilityEmitter(
                 run_id=self.run_id,
                 task_id=self.task_id,
                 tenant_id=self.tenant_id,
                 agent_id=self.request.agent_id or "",
+                attempt_id=str(attempt_id),
                 trace_writer=self.context.trace_writer,
                 event_bus=self.context.config.runtime_event_bus,
                 trace_events=self.trace_events,

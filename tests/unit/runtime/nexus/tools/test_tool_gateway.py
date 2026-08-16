@@ -27,13 +27,17 @@ from intergrax.tools.tool_executor import ToolHandler
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, tools_agent_make_contract
 
+_GATEWAY_TASK_ID = "task_00000000000000000000000000000001"
+_GATEWAY_RUN_ID = "run_00000000000000000000000000000001"
+
 
 @pytest.mark.asyncio
 @pytest.mark.unit
 @pytest.mark.gate
 async def test_tool_gateway_capability_plan_invokes_runtime():
     state = MagicMock()
-    state.run_id = "run_1"
+    state.run_id = _GATEWAY_RUN_ID
+    state.task_id = _GATEWAY_TASK_ID
     state.used_rag = False
     state.used_websearch = False
     state.used_tools = False
@@ -71,7 +75,8 @@ async def test_tool_gateway_capability_plan_invokes_runtime():
 @pytest.mark.gate
 async def test_tool_gateway_denies_unknown_tool_when_not_allowed():
     state = MagicMock()
-    state.run_id = "run_2"
+    state.run_id = _GATEWAY_RUN_ID
+    state.task_id = _GATEWAY_TASK_ID
 
     gateway = RuntimeToolGateway.for_state(state, allowed_tools=["allowed_only"])
     response = await gateway.invoke(
@@ -91,7 +96,8 @@ async def test_tool_gateway_denies_unknown_tool_when_not_allowed():
 @pytest.mark.gate
 async def test_tool_gateway_single_rag_capability():
     state = MagicMock()
-    state.run_id = "run_3"
+    state.run_id = _GATEWAY_RUN_ID
+    state.task_id = _GATEWAY_TASK_ID
     state.used_rag = True
     state.used_websearch = False
     state.used_tools = False
@@ -119,7 +125,8 @@ async def test_tool_gateway_single_rag_capability():
 @pytest.mark.gate
 async def test_tool_gateway_capability_plan_prefers_tool_ids_without_legacy_flags():
     state = MagicMock()
-    state.run_id = "run_4"
+    state.run_id = _GATEWAY_RUN_ID
+    state.task_id = _GATEWAY_TASK_ID
     state.used_rag = False
     state.used_websearch = False
     state.used_tools = False
@@ -194,8 +201,10 @@ def _state_with_catalog_invoker() -> RuntimeState:
             session_id="session-1",
             tenant_id="tenant-1",
             message="issue",
+            task_id=_GATEWAY_TASK_ID,
+            run_id=_GATEWAY_RUN_ID,
         ),
-        run_id="run-gw-catalog",
+        run_id=_GATEWAY_RUN_ID,
         tool_traces=[],
     )
 

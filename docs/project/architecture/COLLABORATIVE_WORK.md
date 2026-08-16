@@ -115,6 +115,7 @@ It does not answer:
 - **CW-INV-16:** Within `tenant_id + workspace_id`, each `principal_id` has at most one authoritative `WorkspaceMembership`; `membership_id` is immutable record identity, not a duplicate-membership selector.
 - **CW-INV-17:** Delegated authority requires both delegate and delegator to hold active workspace membership; revoked/suspended/missing delegator membership fails closed.
 - **CW-INV-18:** Authoritative Collaborative Work production paths must not use dynamic attribute access (`getattr`, `setattr`, `hasattr`, `vars`, `object.__setattr__`, direct `.__dict__`).
+- **CW-INV-19:** Production durable backend — production multi-instance Collaborative Work deployments require a repository backend proven for cross-process transactional concurrency. PostgreSQL is the first production-qualified adapter; SQLite remains a lightweight/local durable adapter. Future production-qualified adapters may implement the same port after equivalent qualification.
 
 ### Policy composition boundary (COLLAB-WORK-1E)
 
@@ -157,13 +158,20 @@ Collaborative Work owns authoritative operation → policy-layer classification 
 - **Gate orchestrates existing owners** — ``CollaborativeWorkAuthorityResolver``, ``CollaborativePolicyEvaluator``, and ``RuntimePolicyEngine`` / ``PolicyEngine`` meaningful-side-effect path; no duplicated composition or runtime evaluator.
 - **Missing or inactive profile fails closed** — classification unresolved yields DENY; no operation executes inside the gate.
 
-### Durable authoritative state and production adoption (COLLAB-WORK-1H)
+### Durable authoritative state and production adoption (COLLAB-WORK-1H / COLLAB-WORK-1J)
 
 Collaborative Work owns durable persistence for MP-1 authoritative security/configuration state behind existing repository ports:
 
-    repository ports → SQL durable adapter → configured SQL database
+```text
+Repository Ports
+├── InMemory — reference
+├── SQLite — local/dev durable
+└── PostgreSQL — production scalable durable
+```
 
-- **Vendor-neutral domain** — contracts and enforcement gate import no database or observability vendor SDKs; concrete storage is selected at composition root (`open_sqlite_collaborative_work_repositories`).
+    repository ports → durable adapter → configured database (composition root)
+
+- **Vendor-neutral domain** — contracts and enforcement gate import no database or observability vendor SDKs; concrete storage is selected at composition root (`open_sqlite_collaborative_work_repositories`, `open_postgresql_collaborative_work_repositories`).
 - **Semantic parity** — durable adapters preserve tenant/workspace isolation, revision-0 create, ``expected_revision`` CAS, idempotency replay snapshots, and database-enforced uniqueness for membership (including one membership per principal per workspace), delegation, principal authority, policy exact keys, operation profiles, and idempotency scope/key.
 - **Fail closed** — production must not silently fall back to in-memory authority state when durable storage is configured but unavailable.
 - **Canonical side-effect boundary** — ``MeaningfulSideEffectAuthorizationBoundary`` invokes ``CollaborativeWorkEnforcementGate`` immediately before a meaningful side effect may proceed; only ``ALLOW`` permits continuation; ``REQUIRE_HUMAN`` / ``ESCALATE`` return upstream without execution.

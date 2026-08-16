@@ -7,6 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pytest
+
+from intergrax.core.qualification import QualificationStatus
 from pydantic import ValidationError
 
 from intergrax.agent_distribution.activation import (
@@ -67,7 +69,6 @@ from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisio
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
     AgentQualificationEvidenceKind,
-    AgentQualificationStatus,
     AgentTrustEvidenceRef,
 )
 from testing_support.agent_platform_dependency_resolver import make_identity_dependency_resolver
@@ -134,7 +135,7 @@ class _FakeCatalog:
 
 def _trust() -> AgentInstallationTrustRecord:
     return AgentInstallationTrustRecord(
-        qualification_status=AgentQualificationStatus.PRODUCTION_QUALIFIED,
+        qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
         package_digest=_DIGEST,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",

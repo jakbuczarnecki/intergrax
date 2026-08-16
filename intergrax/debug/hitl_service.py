@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
@@ -72,13 +73,19 @@ class DebugHitlResumeService:
         )
         HumanPauseCoordinator.record_human_response(task, response)
 
+        run_id, attempt_id = execution_identity_from_checkpoint(checkpoint)
+
         loop = NexusLoop(
             self._registry,
             checkpoint_store=self._checkpoint_store,
             runtime_event_store=self._runtime_event_store,
             human_decision_store=self._human_decision_store,
         )
-        return await loop.handle_task(task)
+        return await loop.handle_task(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
 
     def _resolve_checkpoint(
         self,

@@ -18,13 +18,13 @@ import tomllib
 
 from intergrax.core.catalog_bootstrap import bootstrap_catalogs, reset_tier0_catalog_bootstrap_for_tests
 from intergrax.core.plugins.discovery import reset_entry_point_spec_cache_for_tests
+from intergrax.core.plugins.errors import ProductionQualificationRequiredError
+from intergrax.core.distribution import PlatformCompatibility, check_platform_compatibility
 from intergrax.core.plugins import (
     EP_TOOLS,
     PluginDeliverySource,
-    PluginQualificationEvidence,
     PluginQualificationEvidenceKind,
     PluginQualificationLevel,
-    PluginQualificationStatus,
     build_external_package_subject,
     build_host_embedded_capability_subject,
     build_qualification_result,
@@ -35,9 +35,7 @@ from intergrax.core.plugins import (
     parse_platform_plugin_pyproject,
     require_production_qualification,
 )
-from intergrax.core.plugins.errors import ProductionQualificationRequiredError
-from intergrax.core.plugins.package_contract import PlatformCompatibility
-from intergrax.core.plugins.platform_semantics import check_platform_compatibility
+from intergrax.core.qualification import QualificationEvidence, QualificationStatus
 from intergrax.tools.core.plugin import ToolPlugin
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry.bootstrap import reset_default_tools_bootstrap
@@ -163,10 +161,10 @@ def _production_package_result(*, compatibility) -> Any:
     )
     return build_qualification_result(
         subject=subject,
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(
             compatibility_evidence(compatibility),
-            PluginQualificationEvidence(
+            QualificationEvidence(
                 kind=PluginQualificationEvidenceKind.DOMAIN_QUALIFICATION,
                 code="tools.reference.tests.passed",
                 ref="tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py",
@@ -195,9 +193,9 @@ def _production_capability_result(*, capability_id: str, host_path: str | None =
         )
     return build_qualification_result(
         subject=subject,
-        status=PluginQualificationStatus.PRODUCTION_QUALIFIED,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(
-            PluginQualificationEvidence(
+            QualificationEvidence(
                 kind=PluginQualificationEvidenceKind.DOMAIN_QUALIFICATION,
                 code="tools.capability.tests.passed",
                 ref="tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py",
@@ -352,7 +350,7 @@ def test_negative_production_gates() -> None:
 
     qualified_only = build_qualification_result(
         subject=package_result.subject,
-        status=PluginQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
         evidence=(compatibility_evidence(compatibility),),
         reason="compatible but qualified only",
     )
@@ -367,7 +365,7 @@ def test_negative_production_gates() -> None:
             capability_id="local_prefix_echo",
             host_registration_path="extensions/local_prefix_echo_plugin.py",
         ),
-        status=PluginQualificationStatus.QUALIFIED,
+        status=QualificationStatus.QUALIFIED,
         evidence=(),
         reason="host-embedded qualified only",
     )

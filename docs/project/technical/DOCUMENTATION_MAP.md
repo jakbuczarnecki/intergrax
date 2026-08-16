@@ -20,7 +20,7 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | **Token Optimization main guide** | [capabilities/token_optimization/README.md](../capabilities/token_optimization/README.md) |
 | **This map** (roles and workflows) | `docs/project/technical/DOCUMENTATION_MAP.md` |
 | **Extend Intergrax / build plugins** | [EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md) → surface matrix → domain guide · design: [PLATFORM_PLUGINS.md](../architecture/PLATFORM_PLUGINS.md) |
-| Architecture hub + 22 domain pairs | [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) |
+| Architecture hub + 24 domain pairs | [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) |
 | Multi-layer capability docs | [capabilities/README.md](../capabilities/README.md) — includes `TOKEN_OPTIMIZATION`, `LANGCHAIN_INDEPENDENCE` |
 | Domain architecture canon | `docs/project/architecture/<DOMAIN>.md` |
 | Implementation status / backlog | `docs/project/maintainers/plans/<DOMAIN>.md` |
@@ -37,7 +37,7 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | **Partner validation readiness** (GEC / ImpeachmentRight five-point matrix) | [integrations/impeachmentright_validation_readiness.md](../integrations/impeachmentright_validation_readiness.md) |
 | Contributing / PR process | [CONTRIBUTING.md](../../../CONTRIBUTING.md) |
 
-Domain pair index (22 names): [audit/README.md § Domain index](../maintainers/audit/README.md#domain-index-22-pairs) or [architecture hub](../architecture/intergrax_runtime_architecture.md).
+Domain pair index (24 names): [architecture hub § Domain pair index](../architecture/intergrax_runtime_architecture.md#domain-pair-index-24).
 
 ---
 
@@ -49,7 +49,7 @@ Domain pair index (22 names): [audit/README.md § Domain index](../maintainers/a
 | [PUBLIC_DOCUMENTATION_MAP.md](../community/PUBLIC_DOCUMENTATION_MAP.md) | Public reader navigation — intent routes, proof paths, maturity boundary | Technical domain pairs, Cursor workflow |
 | [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) | Maintainer-owned public information architecture | Implementation plans, detailed claims |
 | [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) | Navigation only — Szukasz → Czytaj | Canon, plan rows, audit prompts |
-| [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) | Architecture hub indexing 22 architecture ↔ plan pairs | Per-domain deep spec (use pair files) |
+| [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) | Architecture hub indexing 24 architecture ↔ plan pairs | Per-domain deep spec (use pair files) |
 | `docs/project/architecture/<DOMAIN>.md` | **What** the harness should do (contracts, design) | Implementation tracker |
 | `docs/project/maintainers/plans/<DOMAIN>.md` | **What is done / next** (phases, rows, gates) | Architecture spec |
 | `docs/project/capabilities/architecture/<FEATURE>.md` | **Cross-layer feature architecture** — coordinates domain pairs | Domain canon replacement |
@@ -141,7 +141,7 @@ AGENTS.md (stub)  →  AGENT_INSTRUCTIONS.md  →  .cursor/rules/intergrax-itera
     CONTRIBUTING       audit/README        AGENT_INSTRUCTIONS
          │                  │                  │
          └──────────►  architecture ↔ plan  ◄─┘
-                    (22 domain pairs via hub)
+                    (24 domain pairs via hub)
                     capabilities/architecture ↔ capabilities/plan
                     (multi-layer feature pairs)
 ```

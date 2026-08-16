@@ -94,7 +94,7 @@ class AgentEngine:
     async def run_with_result(self, request: RuntimeRequest) -> AgentExecutionResult:
         agent = self._resolve_agent(request)
         contract = self._resolve_agent_contract(agent)
-        run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or "")
+        run_id = request.run_id
         try:
             answer, validation, _context, governance, structured_data = (
                 await self._execute_agent_impl(
@@ -187,7 +187,7 @@ class AgentEngine:
         contract = agent.get_contract()
         if registry is not None and registry.has(contract.id):
             contract = registry.get_contract(contract.id)
-        run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or "")
+        run_id = request.run_id
         try:
             answer, validation, _context, governance, structured_data = (
                 await AgentEngine._execute_agent_impl(

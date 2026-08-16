@@ -2,7 +2,7 @@
 
 import pytest
 
-from intergrax.contracts.agent_execution_result import AgentExecutionStatus
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.long_running.checkpoint_builder import build_runtime_checkpoint
 from intergrax.runtime.long_running.runtime_checkpoint import attach_runtime_checkpoint_to_metadata
@@ -126,7 +126,13 @@ async def test_graph_executor_skips_completed_nodes_on_resume():
     assert graph.node_by_id("n2").status == ExecutionNodeStatus.FAILED
     assert UaepPipelineStubAgent.run_count == 2
 
-    runtime = build_runtime_checkpoint(task, graph=graph, last_execution=executions[-1])
+    runtime = build_runtime_checkpoint(
+        task,
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        graph=graph,
+        last_execution=executions[-1],
+    )
     attach_runtime_checkpoint_to_metadata(task.metadata, runtime)
     task.sync_metadata()
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from intergrax.contracts.execution_identity import validate_run_id
 from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.runs.service import RunService
@@ -50,7 +51,10 @@ class NexusTaskExecutionAdapter(ExecutionAdapter):
 
         try:
             task = task_from_execution_request(request)
-            result = await self._task_runner.run_task(task)
+            result = await self._task_runner.run_task(
+                task,
+                run_id=validate_run_id(request.run_id),
+            )
             self._run_service.mark_completed(
                 run_id,
                 result_payload=task_result_to_payload(result),

@@ -11,14 +11,13 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from intergrax.core.distribution import DistributionPackageIdentity, PlatformCompatibility
 from intergrax.core.plugins.errors import PlatformPluginManifestValidationError
 from intergrax.core.plugins.package_contract import (
     MANIFEST_SCHEMA_VERSION,
     CapabilityDescriptor,
     PlatformPluginManifest,
-    PluginPackageIdentity,
-    PlatformCompatibility,
-    reject_secret_like_keys,
+    validate_platform_plugin_manifest_secrets,
 )
 
 _PYPROJECT_TOOL_PATH = ("tool", "intergrax", "plugin")
@@ -58,7 +57,7 @@ def _reject_unknown_manifest_keys(payload: Mapping[str, Any]) -> None:
         raise _validation_error(f"unknown manifest field(s): {', '.join(unknown)}")
 
 
-def _coerce_package_identity(payload: Mapping[str, Any]) -> PluginPackageIdentity:
+def _coerce_package_identity(payload: Mapping[str, Any]) -> DistributionPackageIdentity:
     flat_name = payload.get("name")
     flat_version = payload.get("version")
     package_payload = payload.get("package")
@@ -75,9 +74,9 @@ def _coerce_package_identity(payload: Mapping[str, Any]) -> PluginPackageIdentit
         raise _validation_error("manifest must include package.name and package.version")
 
     if has_flat and has_nested:
-        flat_identity = PluginPackageIdentity(name=str(flat_name), version=str(flat_version))
+        flat_identity = DistributionPackageIdentity(name=str(flat_name), version=str(flat_version))
         package_mapping = _require_mapping(package_payload, field_name="package")
-        nested_identity = PluginPackageIdentity.model_validate(package_mapping)
+        nested_identity = DistributionPackageIdentity.model_validate(package_mapping)
         if flat_identity.name != nested_identity.name:
             raise _validation_error(
                 "conflicting manifest package name: flat name and package.name disagree "
@@ -91,10 +90,10 @@ def _coerce_package_identity(payload: Mapping[str, Any]) -> PluginPackageIdentit
         return flat_identity
 
     if has_flat:
-        return PluginPackageIdentity(name=str(flat_name), version=str(flat_version))
+        return DistributionPackageIdentity(name=str(flat_name), version=str(flat_version))
 
     package_mapping = _require_mapping(package_payload, field_name="package")
-    return PluginPackageIdentity.model_validate(package_mapping)
+    return DistributionPackageIdentity.model_validate(package_mapping)
 
 
 def _coerce_platform_compatibility(payload: Mapping[str, Any]) -> PlatformCompatibility:
@@ -147,7 +146,7 @@ def _validate_project_identity_against_manifest(
     if project_name is None or project_version is None:
         return
     try:
-        project_identity = PluginPackageIdentity(
+        project_identity = DistributionPackageIdentity(
             name=str(project_name),
             version=str(project_version),
         )
@@ -185,7 +184,7 @@ def _coerce_capabilities(value: object) -> tuple[CapabilityDescriptor, ...]:
 
 
 def _normalize_manifest_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
-    reject_secret_like_keys(payload)
+    validate_platform_plugin_manifest_secrets(payload)
     _reject_unknown_manifest_keys(payload)
 
     schema_version = payload.get("schema_version", MANIFEST_SCHEMA_VERSION)

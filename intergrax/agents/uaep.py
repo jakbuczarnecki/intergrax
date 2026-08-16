@@ -27,6 +27,7 @@ from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.uaep_bridge_keys import UaepBridgeMetadataKey
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepOutput
+from intergrax.contracts.execution_identity import require_active_execution_identity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.validation import ValidationResult
@@ -60,7 +61,7 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
     RUNTIME_CHECKPOINT_KEY,
     UAEP_STEP_CURSOR_KEY,
     PLAN_SNAPSHOT_KEY,
-    RuntimeCheckpoint,
+    RuntimeCheckpointExecutionState,
     attach_runtime_checkpoint_to_metadata,
     runtime_checkpoint_from_metadata,
 )
@@ -195,16 +196,14 @@ class UAEPExecutor:
     ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
         contract = contract or agent.get_contract()
         task_options = execution_options_for_request(request)
-        run_id = str(request.metadata.get("run_id") or uuid4().hex)
-        typed_task_id = request.task_id or run_id
-        if request.task_id is None:
-            request = replace(request, task_id=typed_task_id)
-        task_id = typed_task_id
+        run_id, attempt_id = require_active_execution_identity()
+        task_id = request.task_id
         node_id = request.metadata.get("graph_node_id")
 
         exec_ctx = RuntimeExecutionContext(
             task_id=task_id,
             run_id=run_id,
+            attempt_id=attempt_id,
             node_id=str(node_id) if node_id else None,
             agent_id=contract.id,
             correlation_id=task_id,
@@ -557,7 +556,7 @@ class UAEPExecutor:
                 bridged_kernel
             )
         runtime_snapshot = exec_ctx.metadata.get(RUNTIME_CHECKPOINT_KEY)
-        if isinstance(runtime_snapshot, RuntimeCheckpoint):
+        if isinstance(runtime_snapshot, RuntimeCheckpointExecutionState):
             if answer.route is None:
                 answer.route = RouteInfo(extra={})
             attach_runtime_checkpoint_to_metadata(answer.route.extra, runtime_snapshot)
@@ -624,6 +623,7 @@ class UAEPExecutor:
             execution,
             contract=contract,
             hooks=self._critic_hooks,
+            task_id=exec_ctx.task_id,
             run_id=run_id,
             tenant_id=tenant_id,
             step_id=step.step_id,
@@ -665,7 +665,7 @@ class UAEPExecutor:
         last_output: Optional[StepOutput],
         resolution: GovernanceResolution,
         step_cursor: Optional[dict[str, Any]] = None,
-    ) -> RuntimeCheckpoint:
+    ) -> RuntimeCheckpointExecutionState:
         step_completed = last_output is not None and step_cursor is None
         pending_decisions: list[dict[str, Any]] = []
         if resolution.human_request is not None:
@@ -676,7 +676,7 @@ class UAEPExecutor:
                     "payload": resolution.human_request.model_dump(mode="json"),
                 }
             )
-        return RuntimeCheckpoint(
+        return RuntimeCheckpointExecutionState(
             plan_id=str(request.metadata.get("plan_id") or "") or None,
             graph_id=str(request.metadata.get("graph_id") or "") or None,
             graph_node_id=str(request.metadata.get("graph_node_id") or "") or None,
@@ -951,6 +951,7 @@ class UAEPExecutor:
             RuntimeEvent(
                 task_id=ctx.task_id,
                 run_id=ctx.run_id,
+                attempt_id=ctx.attempt_id,
                 node_id=ctx.node_id,
                 agent_id=agent_id,
                 tenant_id=_tenant_id_from_ctx(ctx),
@@ -980,6 +981,7 @@ class UAEPExecutor:
         event = RuntimeEvent(
             task_id=ctx.task_id,
             run_id=ctx.run_id,
+            attempt_id=ctx.attempt_id,
             node_id=ctx.node_id,
             agent_id=ctx.agent_id,
             tenant_id=_tenant_id_from_ctx(ctx),

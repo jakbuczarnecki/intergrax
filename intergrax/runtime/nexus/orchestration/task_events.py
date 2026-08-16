@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Callable, Optional
 
+from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
@@ -26,11 +27,13 @@ class NexusRuntimeEventPublisher:
         event_bus: RuntimeEventBus,
         *,
         current_task: Callable[[], Optional[Task]],
+        execution_identity: ActiveExecutionIdentity,
         trace_reader: RunTraceReader | None = None,
         runtime_event_store: RuntimeEventPersistence | None = None,
     ) -> None:
         self._event_bus = event_bus
         self._current_task = current_task
+        self._execution_identity = execution_identity
         self._trace_reader = trace_reader
         self._runtime_event_store = runtime_event_store
 
@@ -45,7 +48,13 @@ class NexusRuntimeEventPublisher:
         await self._event_bus.publish(event)
 
     async def publish_terminal(self, task: Task) -> None:
-        base = runtime_event_from_task_state(task, run_id=task.task_id, message="task terminal")
+        run_id, attempt_id = self._execution_identity.require()
+        base = runtime_event_from_task_state(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            message="task terminal",
+        )
         terminal_payload = self._terminal_payload_for_task(task)
         if terminal_payload:
             merged = {**base.payload, **terminal_payload}
@@ -68,12 +77,13 @@ class NexusRuntimeEventPublisher:
         modality_payload = build_task_completed_modality_payload(persisted.events)
         if modality_payload is not None:
             fragments.update(modality_payload)
-        journal_ref = build_journal_ref_payload(
-            persisted,
-            runtime_store=self._runtime_event_store,
-        )
-        if journal_ref is not None:
-            fragments["journal_ref"] = journal_ref
+        if self._runtime_event_store is not None:
+            journal_ref = build_journal_ref_payload(
+                persisted,
+                runtime_store=self._runtime_event_store,
+            )
+            if journal_ref is not None:
+                fragments["journal_ref"] = journal_ref
         return fragments
 
     async def publish_from_task_state(
@@ -85,7 +95,13 @@ class NexusRuntimeEventPublisher:
         phase: ExecutionPhase,
         payload: Optional[dict] = None,
     ) -> None:
-        base = runtime_event_from_task_state(task, run_id=task.task_id, message=message)
+        run_id, attempt_id = self._execution_identity.require()
+        base = runtime_event_from_task_state(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            message=message,
+        )
         update: dict = {
             "event_type": event_type,
             "phase": phase,

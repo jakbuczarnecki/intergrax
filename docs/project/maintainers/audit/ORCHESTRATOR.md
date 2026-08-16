@@ -9,7 +9,7 @@
 
 ## Purpose
 
-Run a **repeatable, evidence-backed audit** across all **22 harness domain pairs** without pasting per-domain instructions.
+Run a **repeatable, evidence-backed audit** across all **24 harness domain pairs** without pasting per-domain instructions.
 
 - **One Cursor session bootstrap** → agent iterates domain-by-domain.
 - **One iteration unit** = one domain pair (full audit + result artifact + optional plan row updates).
@@ -27,12 +27,12 @@ Run a **repeatable, evidence-backed audit** across all **22 harness domain pairs
 | **B — Implement plans all** | `03_implement_plan_all_domains.txt` | [`IMPLEMENT_ORCHESTRATOR.md`](IMPLEMENT_ORCHESTRATOR.md) | Yes | Already in plan |
 | **B1 — Implement one** | `04_implement_plan_one_domain.txt` | [`IMPLEMENT_ORCHESTRATOR.md`](IMPLEMENT_ORCHESTRATOR.md) | Yes | Already in plan |
 
-Mode **B** uses the same iteration discipline as Mode A (atomic domain unit, no micro-pauses, continue without asking between domains) — see [`IMPLEMENT_ORCHESTRATOR.md`](IMPLEMENT_ORCHESTRATOR.md) §Iteration discipline. Resume across sessions when one Cursor turn does not finish all 22 pairs.
+Mode **B** uses the same iteration discipline as Mode A (atomic domain unit, no micro-pauses, continue without asking between domains) — see [`IMPLEMENT_ORCHESTRATOR.md`](IMPLEMENT_ORCHESTRATOR.md) §Iteration discipline. Resume across sessions when one Cursor turn does not finish all 24 pairs.
 | **C — Layer closeout** | `05_closeout_all_domains.txt` | [`LAYER_COMPLETION_ORCHESTRATOR.md`](LAYER_COMPLETION_ORCHESTRATOR.md) | If P0/P1 | Yes + architecture |
 
 ---
 
-## Domain order (22 pairs — do not reorder without reason)
+## Domain order (24 pairs — do not reorder without reason)
 
 1. `PLATFORM_FOUNDATION`
 2. `UNIFIED_EXECUTION_RUNTIME`
@@ -56,6 +56,8 @@ Mode **B** uses the same iteration discipline as Mode A (atomic domain unit, no 
 20. `ELASTIC_CAPACITY_AND_SCALING`
 21. `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
 22. `TIER3_APPLICATION_ENVIRONMENT`
+23. `APPLICATION_HOSTING`
+24. `UNIFIED_CONTEXT_LIFECYCLE`
 
 Audit map (32 layers) → domain: [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md).
 

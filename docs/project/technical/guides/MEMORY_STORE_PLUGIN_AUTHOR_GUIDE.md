@@ -16,20 +16,20 @@ This guide documents **three separate public memory plugin surfaces**. There is 
 | D2 | Public contract | COMPLETE | §2 |
 | D3 | Minimal implementation | COMPLETE | §3 |
 | D4 | External package | COMPLETE | §4 |
-| D5 | Local / host path | PARTIAL | §5 |
+| D5 | Local / host path | COMPLETE | §5 |
 | D6 | Configuration | COMPLETE | §6 |
 | D7 | Secrets / credentials | COMPLETE | §7 |
 | D8 | DI / composition | COMPLETE | §8 |
 | D9 | Registration / discovery | COMPLETE | §9 |
 | D10 | Qualification | COMPLETE | §10 |
-| D11 | Runtime use | PARTIAL | §11 |
+| D11 | Runtime use | COMPLETE | §11 |
 | D12 | Lifecycle / cleanup | COMPLETE | §12 |
 | D13 | Failure behavior | COMPLETE | §13 |
 | D14 | Testing | COMPLETE | §14 |
 | D15 | Production checklist | COMPLETE | §15 |
 | D16 | Troubleshooting | COMPLETE | §16 |
 
-**Overall:** **PARTIAL** — `SessionTurnIndexStorePlugin` has a wired host path; `UserProfileStorePlugin` and `SessionStoragePlugin` have public contracts and EP discovery counting but **no shipped Tier-3 factory resolution** (see `RUNTIME_CAPABILITY_GAP` in §11).
+**Overall:** **COMPLETE** — all three surfaces have shipped Tier-3 resolution paths. User-profile and session-storage materialize via `MemoryProfile` plugin selection + typed resolver; session turn index via shared classifier. Bootstrap counting alone does not activate stores (§9).
 
 ---
 
@@ -201,12 +201,12 @@ Discovery is **opt-in** (`discover_entry_points=True` or `INTERGRAX_DISCOVER_PLU
 | Surface | Local path | Status |
 |---------|------------|--------|
 | Session turn index | Pass `session_turn_index_plugins=[MyPlugin]` to `build_session_turn_index_store(...)` | **Supported** |
-| User profile store | Compose `MemoryPlatformWiring(user_profile_store=...)` and pass to `build_session_manager_from_environment(memory_wiring=...)` | **Host composition** — no EP resolver |
-| Session storage | Same `MemoryPlatformWiring(session_storage=...)` pattern | **Host composition** — no EP resolver |
+| User profile store | `MemoryProfile.user_profile_store_plugin_id` + EP discovery, or explicit `MemoryPlatformWiring(user_profile_store=...)` | **Supported** |
+| Session storage | `MemoryProfile.session_storage_plugin_id` + EP discovery, or explicit `MemoryPlatformWiring(session_storage=...)` | **Supported** |
+
+EP and explicit/local delivery use the same typed resolver (`intergrax/memory/resolver/`). Explicit `MemoryPlatformWiring` overrides profile selection.
 
 There is **no** `register_memory_store_plugin()` and **no** scaffold CLI.
-
-Default Tier-3 path (`resolve_memory_platform_wiring`) selects SQLite, MongoDB, or in-memory backends from `IntegrationProfile` — **not** from `intergrax.memory_stores` EP discovery.
 
 ---
 
@@ -224,6 +224,8 @@ Default Tier-3 path (`resolve_memory_platform_wiring`) selects SQLite, MongoDB, 
 | `vector_index_namespace` | Collection namespace for vector indexes |
 | `session_index_roles` | Roles indexed for episodic search |
 | `include_cross_session_episodic` | Cross-session episodic recall |
+| `user_profile_store_plugin_id` | Select external `UserProfileStorePlugin` by `plugin_id` (EP or explicit candidates) |
+| `session_storage_plugin_id` | Select external `SessionStoragePlugin` by `plugin_id` |
 | `retention_days`, `scope_boundary`, `consolidation_mode` | Policy fields |
 
 Vector memory flags require a resolvable RAG stack with vector backends (`assert_memory_vector_backend_available`).
@@ -270,17 +272,20 @@ result = bootstrap_memory_stores(
 ### What `bootstrap_memory_stores` does
 
 - Scans `intergrax.memory_stores` entry points when `discover_entry_points=True`
-- Classifies each loaded class by factory method presence
+- Classifies each loaded class via typed `MemoryStorePluginKind` classifier (Protocol conformance — no method-shape `hasattr`)
 - Returns **counts** (discovered + explicit sequences)
-- Exposes `discover_session_turn_index_plugin_types()` for turn-index classes
+- Exposes `discover_classified_memory_store_plugins()` for resolver/registry construction
+- Returns `MemoryStorePluginDiscoveryResult` with canonical `DomainPluginLoadReport` EP evidence (`accepted`, `rejected`, `failed`, `registered_count`)
+- Isolated EP import/factory failures are recorded in `failed`; unsupported loaded targets in `rejected`
+- Explicit/local candidates use the same classifier/resolver path with empty EP evidence rows (no fabricated accepted EP metadata)
 
 ### What it does NOT do
 
 - Does **not** create a universal registered catalog of active stores
 - Does **not** select which plugin backs a running host
-- Does **not** materialize `UserProfileStore` or `SessionStorage` for Tier-3 wiring today
+- Does **not** materialize stores — resolver materialization is separate (`resolve_memory_platform_wiring`)
 
-**Calling bootstrap alone does not activate a memory provider.**
+**Calling bootstrap alone does not activate a memory provider.** Use `MemoryProfile` plugin selection or explicit `MemoryPlatformWiring` for materialization.
 
 ---
 
@@ -319,24 +324,44 @@ index = build_session_turn_index_store(
 )
 ```
 
-### User profile + session storage (default host path)
+### User profile + session storage (shipped path)
 
 ```text
-IntegrationProfile (sqlite | mongodb | none)
-  → resolve_memory_platform_wiring(env)
-  → MemoryPlatformWiring(session_storage, user_profile_store, …)
-  → build_session_manager_from_environment(env, memory_wiring=wiring, rag_stack=…)
+MemoryProfile.user_profile_store_plugin_id / session_storage_plugin_id (optional)
+  → resolve_memory_platform_wiring(env, discover_entry_points=…, explicit_memory_plugins=…)
+      → discover_classified_memory_store_plugins (EP discovery)
+        OR explicit_memory_plugins candidates (local delivery)
+      → materialize_user_profile_store(plugin_id, ctx, catalog=…)
+        / materialize_session_storage(plugin_id, ctx, catalog=…)
+      → MemoryStoreMaterializationContext (tenant_id, integration_profile, …)
+  → IntegrationProfile baseline (SQLite / MongoDB / in-memory) for unselected slots
+  → MemoryPlatformWiring(session_storage, user_profile_store, memory_store_plugin_load_report, …)
+  → build_session_manager_from_environment(env, memory_wiring=wiring, tenant_id=…, rag_stack=…)
 ```
 
-### RUNTIME_CAPABILITY_GAP
+Selection is explicit via `MemoryProfile` plugin ids — registering explicit candidates alone does not choose the store.
 
-| Surface | Gap |
-|---------|-----|
-| `UserProfileStorePlugin` | Public contract + EP counting exist; **no shipped resolver** invokes `create_user_profile_store` from discovered EPs in `memory_wiring.py` |
-| `SessionStoragePlugin` | Same — **no shipped resolver** invokes `create_session_storage` from EPs |
-| `SessionTurnIndexStorePlugin` | **Wired** via `build_session_turn_index_store` |
+Explicit local override (same resolver; EP discovery or explicit candidates):
 
-Until a host resolver ships, user profile and session storage plugins require **explicit host composition** (`MemoryPlatformWiring`) or custom Tier-3 wiring.
+```python
+from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
+
+# MemoryProfile must select plugin ids matching explicit candidates.
+wiring = resolve_memory_platform_wiring(
+    env,
+    discover_entry_points=False,
+    explicit_memory_plugins=(
+        MyUserProfilePlugin,
+        MySessionStoragePlugin,
+    ),
+)
+# env.memory_profile.user_profile_store_plugin_id = MyUserProfilePlugin.plugin_id
+# env.memory_profile.session_storage_plugin_id = MySessionStoragePlugin.plugin_id
+```
+
+Configuration failures (unknown plugin id, wrong kind, duplicate id, materialization error, invalid factory return) are **fail-closed** (`MemoryStorePluginResolutionError`).
+
+**Historical baseline (ENTERPRISE-1):** user/session EPs were counted only; no Tier-3 resolver. Closed by ENTERPRISE-5.
 
 ---
 
@@ -354,11 +379,14 @@ If a factory returns a persistent client pool, the host owns closing it on appli
 
 | Failure | Result |
 |---------|--------|
-| EP not discovered | Count stays 0; default wiring used |
+| EP not discovered | Baseline integration wiring used when no `plugin_id` selected |
 | Misunderstanding bootstrap counts | Stores not active — bootstrap is diagnostic/counting only |
+| Unknown / wrong-kind `plugin_id` | `MemoryStorePluginResolutionError` (fail-closed) |
+| Duplicate plugin id in resolver | `MemoryStorePluginResolutionError` |
+| Materialization failure | `MemoryStorePluginResolutionError` |
 | `enable_session_vector_index` without tenant | `MemoryVectorBackendUnavailableError(reason="tenant_required")` |
 | Vector flags without RAG stack | `MemoryVectorBackendUnavailableError(reason="vector_backend_unavailable")` |
-| Wrong factory return type | `TypeError` / attribute errors at wiring time |
+| Wrong factory return type | `MemoryStorePluginResolutionError` (invalid `UserProfileStore` / `SessionStorage`) |
 | Multiple turn-index EPs | First discovered plugin wins in `build_session_turn_index_store` |
 
 ---
@@ -388,8 +416,8 @@ assert result.user_profile_plugins == 1
 - [ ] Correct protocol for your surface (do not mix factory method names)
 - [ ] Stable `plugin_id` per class
 - [ ] For episodic index: handle `embedding_manager`, `vectorstore_manager`, `tenant_id` kwargs
-- [ ] Do not assume `bootstrap_memory_stores()` activates your store
-- [ ] For user/session stores today: plan explicit `MemoryPlatformWiring` until resolver ships
+- [ ] Do not assume `bootstrap_memory_stores()` activates your store — use profile `plugin_id` or explicit wiring
+- [ ] For user/session stores: set `user_profile_store_plugin_id` / `session_storage_plugin_id` or pass explicit plugin candidates
 - [ ] Tombstone semantics for vector indexes when primary store deletes entries
 - [ ] Tenant isolation enforced in store implementation
 - [ ] No secrets in plugin metadata
@@ -400,8 +428,10 @@ assert result.user_profile_plugins == 1
 
 | Symptom | Check |
 |---------|-------|
-| EP installed but store unchanged | Expected for user/session plugins — no resolver yet; use `MemoryPlatformWiring` |
-| Bootstrap count > 0 but no effect | Bootstrap only counts; see §9 |
+| EP installed but store unchanged | No `plugin_id` on `MemoryProfile`; discovery disabled; check `INTERGRAX_DISCOVER_PLUGINS` |
+| Selected plugin fails to load | Inspect `MemoryPlatformWiring.memory_store_plugin_load_report.failed`; selected id fails closed with precise error |
+| Unsupported EP target | Appears in `memory_store_plugin_load_report.rejected`; materialized stores validated via canonical `UserProfileStore` / `SessionStorage` |
+| Bootstrap count > 0 but no effect | Bootstrap only counts — configure profile `plugin_id` or explicit wiring (§9) |
 | Episodic index always default | No turn-index EP discovered; pass `session_turn_index_plugins=` explicitly |
 | `tenant_required` | Pass non-empty `tenant_id` to session manager wiring |
 | `vector_backend_unavailable` | Enable integration vector store; resolve `rag_stack` before memory wiring |

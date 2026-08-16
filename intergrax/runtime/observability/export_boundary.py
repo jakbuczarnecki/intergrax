@@ -82,6 +82,7 @@ class ExportRecordKind(StrEnum):
     DIAGNOSTIC = "diagnostic"
     JOURNAL_REF = "journal_ref"
     PROBLEM_SIGNAL = "problem_signal"
+    PLATFORM_SIGNAL = "platform_signal"
 
 
 class ExportStatus(StrEnum):
@@ -146,6 +147,22 @@ class RuntimeEventExportSource(BaseModel):
     tenant_id: str = ""
     correlation_id: str = ""
     safe_payload: dict[str, str | int] = Field(default_factory=dict)
+
+
+class PlatformObservabilityExportSource(BaseModel):
+    """Typed non-execution platform signal source for observability export (TRACE-1B-HOS-FIX)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["platform_observability_export_source.v1"] = (
+        "platform_observability_export_source.v1"
+    )
+    event_id: str
+    source_schema_id: str
+    event_type: str
+    occurred_at: datetime
+    correlation_id: str = ""
+    application_attributes: ApplicationObservabilityAttributes | None = None
 
 
 class GatewayCallExportSource(BaseModel):
@@ -292,6 +309,23 @@ def gateway_call_export_source_from_rag_call(
         latency_ms=record.latency_ms,
         hit_count=record.hit_count,
         policy_rule_id=record.policy_rule_id,
+    )
+
+
+def envelope_from_platform_observability_source(
+    source: PlatformObservabilityExportSource,
+) -> ObservabilityExportEnvelope:
+    """Map a non-execution platform observability source to an export envelope."""
+    return ObservabilityExportEnvelope(
+        record_kind=ExportRecordKind.PLATFORM_SIGNAL,
+        recorded_at=_utc_now(),
+        event_type=source.event_type,
+        status=ExportStatus.UNKNOWN,
+        schema_id=source.schema_version,
+        source_schema_id=source.source_schema_id,
+        correlation_id=source.correlation_id,
+        event_id=source.event_id,
+        application_attributes=source.application_attributes,
     )
 
 

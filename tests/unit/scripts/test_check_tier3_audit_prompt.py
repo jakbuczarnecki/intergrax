@@ -15,7 +15,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 def test_check_tier3_audit_prompt_passes() -> None:
     repo_root = Path(__file__).resolve().parents[3]
-    script = repo_root / "scripts" / "check_tier3_audit_prompt.py"
+    script = repo_root / "scripts" / "audit" / "check_tier3_audit_prompt.py"
     completed = subprocess.run(
         [sys.executable, str(script)],
         cwd=repo_root,

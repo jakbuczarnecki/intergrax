@@ -193,7 +193,7 @@ Entry-point **name** is metadata; **enablement** uses `plugin_id` on the class (
 2. INTERGRAX_DISCOVER_PLUGINS=1               # or bootstrap_catalogs(discover_entry_points=True)
 3. bootstrap_catalogs() / bootstrap_security_providers(discover_entry_points=True)  # discovered → registry
 4. ApplicationSecurityProfile.defense_plugin_ids = ["acme.block_jailbreak"]  # enabled on host
-5. register_application_security_hooks(nexus, profile, …)   # production-qualified wiring
+5. register_application_security_hooks(nexus, profile, …)   # host runtime wiring
 ```
 
 ---
@@ -216,7 +216,7 @@ register_application_security_hooks(
 )
 ```
 
-`register_security_defense_plugin(..., override=True)` is required to replace a **shipped** bundle id. EP loader always passes `override=True` (§13).
+`register_security_defense_plugin(..., override=True)` is required to replace a **shipped** bundle id on explicit host registration. EP loader uses `SecurityDefenseAdmissionPolicy` — shipped-id override denied by default (`shipped_id_override="error"`); authorized override requires explicit policy (`allow` / `warn_override`) or `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` (§9).
 
 There is **no** `register_security_defense_plugin` helper exposed as a first-class local-plugin scaffold — parity with Tools is intentionally absent.
 
@@ -262,24 +262,30 @@ Defense plugins are **stateless or self-contained** instances. The host does not
 
 Default production posture: `discover_entry_points=False` until `INTERGRAX_DISCOVER_PLUGINS` is set (same as other Tier-0 catalogs).
 
-### Conflict semantics — `override=True` (AUDIT F005)
+### Conflict semantics — `SecurityDefenseAdmissionPolicy`
 
-`defense_plugin_loader.py` registers every EP plugin with:
+`load_security_defense_plugin_report` uses configurable `SecurityDefenseAdmissionPolicy` (production default: fail-closed):
 
 ```python
-register_security_defense_plugin(plugin, override=True)
+@dataclass(frozen=True)
+class SecurityDefenseAdmissionPolicy:
+    ep_name_conflict: ConflictPolicy = "error"
+    plugin_id_conflict: ConflictPolicy = "error"
+    shipped_id_override: Literal["error", "warn_override", "allow"] = "error"
+    on_load_failure: LoadIsolation = "isolate"
 ```
 
-| Scenario | Current behavior |
-|----------|------------------|
-| Duplicate EP `plugin_id` | Last EP processed wins (deterministic EP sort order) |
-| EP `plugin_id` collides with **shipped** bundle (e.g. `harness.strict_injection`) | EP **overwrites** shipped definition |
+| Scenario | Current behavior (production default) |
+|----------|--------------------------------------|
+| Duplicate EP name | `PluginConflictError` (`ep_name_conflict="error"`) |
+| Duplicate EP `plugin_id` | `error` (`plugin_id_conflict="error"`) |
+| EP `plugin_id` collides with **shipped** bundle | **Denied** unless `shipped_id_override="allow"` or `"warn_override"` |
 | Host `register_security_defense_plugin` without `override` on shipped id | `ValueError: cannot override shipped defense plugin` |
 | Host duplicate dynamic id without `override` | `ValueError: defense plugin already registered` |
 
-**Operator implication:** a malicious or misconfigured EP package can silently replace a shipped defense. There is no configurable deny-by-default conflict policy today.
+**Legacy migration:** `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` restores pre-ENTERPRISE-2 unconditional EP override + fail-fast load semantics for lab hosts only.
 
-`ENTERPRISE_ROADMAP_CANDIDATE`: configurable defense registration conflict policy — see audit ledger §DOCS-5.
+Discovery remains **opt-in** (`discover_entry_points=False` default; `INTERGRAX_DISCOVER_PLUGINS` opt-in).
 
 ---
 
@@ -287,7 +293,9 @@ register_security_defense_plugin(plugin, override=True)
 
 `installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`.
 
-Host applications should gate third-party defense plugins through the same semantic qualification flow as other Platform Plugins (`evaluate_package_production_admission` / `require_production_qualification` where the host applies it). Qualification is **not** cryptographic attestation.
+Host applications should gate third-party defense plugins through semantic qualification where the host applies it (`evaluate_package_production_admission` / `require_production_qualification`). Qualification is **not** cryptographic attestation.
+
+**Production package/version qualification:** `QUALIFICATION_STILL_DEFERRED` on the standard host path — automatic production admission is not wired. Semantic host approval remains operator-owned.
 
 ---
 
@@ -312,19 +320,22 @@ No unload API. Dynamic registry can be cleared in tests via `reset_security_defe
 
 ---
 
-## 13. Failure behavior and loader isolation (AUDIT F004)
+## 13. Failure behavior and loader isolation
 
-`load_security_defense_plugins` uses **fail-fast** semantics:
+`load_security_defense_plugin_report` uses `SecurityDefenseAdmissionPolicy.on_load_failure` (production default: **`isolate`**):
 
-| Failure | Behavior |
-|---------|----------|
-| `discover_entry_points=False` | Returns `0`; no EP scan |
-| `load_entry_point_value` error | `PluginLoadError` — **aborts entire security EP load** |
-| Target not `SecurityDefensePlugin` | `TypeError` — **aborts entire load** |
+| Failure | Behavior (default policy) |
+|---------|---------------------------|
+| `discover_entry_points=False` | Returns empty report; no EP scan |
+| `load_entry_point_value` error | Recorded in `DomainPluginLoadReport.failed`; siblings continue |
+| Target not `SecurityDefensePlugin` | `rejected` in load report |
+| Shipped-id collision without authorized override | `rejected` |
 | Profile references unknown `defense_plugin_id` | Plugin skipped at resolve time; **STRICT** execution mode may fail assembly validation |
 | Profile enables bundle id with no registry entry | Silently skipped in `resolve_security_defense_plugins` |
 
-There is **no** `on_load_failure="isolate"` on the security loader. One broken EP prevents registration of subsequent EP plugins in the same bootstrap call.
+**Legacy:** `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` uses fail-fast load (`on_load_failure="fail_fast"`).
+
+`load_security_defense_plugins` int wrapper preserves production admission defaults; report API preferred for operator visibility.
 
 ---
 
@@ -358,8 +369,8 @@ assert get_security_defense_plugin("fixture_ep.defense") is not None
 - [ ] `inspect` completes within inspection timeout (default 100 ms)
 - [ ] `INTERGRAX_DISCOVER_PLUGINS` documented for deployment
 - [ ] `ApplicationSecurityProfile.defense_plugin_ids` / `defense_bundle_ids` list only intended plugins
-- [ ] Qualification recorded for third-party wheels
-- [ ] Override semantics understood — EP can replace shipped defenses
+- [ ] Qualification recorded for third-party wheels (package qualification deferred)
+- [ ] Shipped-id override policy understood — EP cannot silently replace shipped defenses by default
 - [ ] No secrets in EP metadata or `pyproject.toml` plugin tables
 
 ---
@@ -370,9 +381,8 @@ assert get_security_defense_plugin("fixture_ep.defense") is not None
 |---------|----------------|
 | Plugin never runs | Not in `defense_plugin_ids` / `defense_bundle_ids`, or `register_application_security_hooks` not called |
 | Plugin not in registry | Discovery disabled; run `bootstrap_security_providers(discover_entry_points=True)` |
-| Wrong plugin behavior | EP `override=True` replaced shipped bundle — check `get_security_defense_plugin` |
-| `TypeError` at bootstrap | EP target does not implement `SecurityDefensePlugin` |
-| `PluginLoadError` at bootstrap | Broken import in EP package — blocks **all** security EPs in that bootstrap |
+| Wrong plugin behavior | Check `SecurityDefenseAdmissionPolicy` — shipped override denied by default |
+| `PluginLoadError` at bootstrap | Broken EP import — with default policy, isolated in `failed` report; legacy fail-fast if `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` |
 | Always blocked before `inspect` | Tenant scope mismatch in `runtime_state` |
 | Timeout blocks | `inspect` too slow — optimize or reduce work |
 | `ValueError: cannot override shipped` | Host registration without `override=True` on shipped id |

@@ -29,7 +29,7 @@ This guide is the **implementation workflow** for third-party Context plugins. [
 | D15 | Production checklist | COMPLETE | §15 |
 | D16 | Troubleshooting | COMPLETE | §16 |
 
-**Overall:** **COMPLETE** for the external-EP author path. Local registration is supported but has no scaffold CLI parity with Tools (documented in §5).
+**Overall:** **COMPLETE** for the external-EP author path. Local registration uses `register_context_plugin()`; scaffold CLI is `new-context-bundle` (§5).
 
 ---
 
@@ -235,7 +235,33 @@ context_profile = ContextProfile(
 
 ## 5. Local / host path
 
-Context supports **explicit in-process registration** without a separate wheel. There is **no** scaffold CLI hook equivalent to Tools `extensions/` (unlike `register_tool_plugin` + `new-tool-bundle`).
+Context supports **explicit in-process registration** without a separate wheel. Scaffold a repository-local plugin (same public `ContextPlugin` contract as an external wheel):
+
+```text
+uv run python -m intergrax.scaffold new-context-bundle acme_context
+```
+
+Output: `intergrax/context/providers/acme_context/` (`plugin.py`, `bundle.py`, `USAGE.md`).
+
+**Canonical local registration** (generated helper uses this path):
+
+```python
+from intergrax.context.plugin import register_context_plugin
+from intergrax.context.providers.acme_context.plugin import AcmeContextContextPlugin
+
+register_context_plugin(AcmeContextContextPlugin)
+```
+
+**Entry-point delivery** is optional packaging, not a second contract. Wheel install does not enable the plugin. Example:
+
+```toml
+[project.entry-points."intergrax.context"]
+acme_context = "intergrax.context.providers.acme_context.plugin:AcmeContextContextPlugin"
+```
+
+For EP mode: install the package, enable discovery (`discover_entry_points=True` / `INTERGRAX_DISCOVER_PLUGINS=true`), **and** list the plugin id on `ContextProfile`. `installed` ≠ `enabled`.
+
+Manual composition below remains valid for hosts that do not use the scaffold.
 
 ### Option A — register before bootstrap
 
@@ -272,7 +298,7 @@ bootstrap_application_context_catalog(discover_entry_points=True)
 registry = resolve_context_plugin_registry_from_environment(env)
 ```
 
-**Do not claim scaffold parity with Tools.** Local Context authoring is host-composition: call `register_context_plugin()` or pass `context_plugins=` explicitly.
+Local Context authoring is host-composition: scaffold with `new-context-bundle`, then call `register_context_plugin()` or pass `context_plugins=` explicitly. There is no separate local plugin contract and no `extensions/` runtime mechanism.
 
 ---
 

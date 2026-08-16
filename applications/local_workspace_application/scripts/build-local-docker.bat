@@ -17,7 +17,7 @@ uv run python scripts/build/build_application_image.py --application local_works
 if errorlevel 1 goto fail
 
 echo Building and starting complete LKW stack...
-docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" up --build -d
+docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" up --build -d --wait --wait-timeout 240
 if errorlevel 1 goto fail
 
 if not defined INTERGRAX_LLM_MODEL for /f "tokens=1,* delims==" %%A in ('docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" config --environment 2^>nul') do if /I "%%A"=="INTERGRAX_LLM_MODEL" set "INTERGRAX_LLM_MODEL=%%B"

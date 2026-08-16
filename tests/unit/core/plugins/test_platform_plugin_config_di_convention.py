@@ -8,7 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.core.plugins.package_contract import reject_secret_like_keys
+from intergrax.core.plugins.errors import PlatformPluginManifestValidationError
+from intergrax.core.plugins.manifest_io import parse_platform_plugin_manifest_data
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -64,6 +65,6 @@ def test_roadmap_marks_plugin_5_done() -> None:
     assert "**Done**" in text.split("PLATFORM-PLUGIN-5")[1].split("PLATFORM-PLUGIN-6")[0]
 
 
-def test_reject_secret_like_keys_blocks_nested_runtime_credentials() -> None:
-    with pytest.raises(Exception, match="secret-like manifest field"):
-        reject_secret_like_keys({"options": {"api_key": "x"}})
+def test_nested_runtime_credentials_rejected_in_manifest() -> None:
+    with pytest.raises(PlatformPluginManifestValidationError, match="secret-like manifest field"):
+        parse_platform_plugin_manifest_data({"options": {"api_key": "x"}})

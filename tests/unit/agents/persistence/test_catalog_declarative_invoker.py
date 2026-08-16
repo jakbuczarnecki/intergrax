@@ -3,6 +3,7 @@
 import pytest
 from pydantic import BaseModel
 
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.agents.persistence.catalog_declarative_invoker import (
     CatalogDeclarativeToolInvoker,
     build_catalog_declarative_invoker_from_registry,
@@ -44,7 +45,12 @@ def _registry_with_tool() -> ToolRegistry:
 async def test_catalog_declarative_invoker_routes_through_catalog() -> None:
     registry = _registry_with_tool()
     invoker = build_catalog_declarative_invoker_from_registry(registry)
-    invoker.bind_run(run_id="run-acp", agent_id="agent-a", tenant_id="tenant-1")
+    invoker.bind_run(
+        run_id=mint_run_id(),
+        task_id=mint_task_id(),
+        agent_id="agent-a",
+        tenant_id="tenant-1",
+    )
     result = await invoker.invoke(
         tool_id=TOOL_ID,
         args={"value": 4},
@@ -57,7 +63,12 @@ async def test_catalog_declarative_invoker_routes_through_catalog() -> None:
 def test_catalog_declarative_invoker_builds_real_runtime_context() -> None:
     registry = _registry_with_tool()
     invoker = build_catalog_declarative_invoker_from_registry(registry)
-    invoker.bind_run(run_id="run-ctx", agent_id="agent-a", tenant_id="tenant-1")
+    invoker.bind_run(
+        run_id=mint_run_id(),
+        task_id=mint_task_id(),
+        agent_id="agent-a",
+        tenant_id="tenant-1",
+    )
     state = invoker._runtime_state()  # noqa: SLF001 — wiring verification
     assert isinstance(state.context.session_manager, SessionManager)
     assert isinstance(state.context.config.llm_adapter, LLMAdapter)
@@ -69,6 +80,12 @@ async def test_catalog_declarative_invoker_bind_run_updates_scope() -> None:
     invoker = CatalogDeclarativeToolInvoker(
         tool_invoker=build_catalog_declarative_invoker_from_registry(registry).tool_invoker,
     )
-    invoker.bind_run(run_id="run-2", agent_id="agent-b", tenant_id="tenant-2")
-    assert invoker.binding.run_id == "run-2"
+    bound_run_id = mint_run_id()
+    invoker.bind_run(
+        run_id=bound_run_id,
+        task_id=mint_task_id(),
+        agent_id="agent-b",
+        tenant_id="tenant-2",
+    )
+    assert invoker.binding.run_id == bound_run_id
     assert invoker.binding.agent_id == "agent-b"

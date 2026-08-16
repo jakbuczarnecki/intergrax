@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import FrozenSet, Optional
 
+from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
@@ -35,7 +36,8 @@ class RetryCoordinator:
     def build_scheduled_event(
         task: Task,
         *,
-        run_id: str,
+        run_id: RunId,
+        attempt_id: AttemptId,
         attempt: int,
         max_retries: int,
         reason: str,
@@ -45,6 +47,7 @@ class RetryCoordinator:
         return runtime_event_from_task_state(
             task,
             run_id=run_id,
+            attempt_id=attempt_id,
             message=f"retry scheduled ({scope}): {reason}",
         ).model_copy(
             update={
@@ -60,17 +63,46 @@ class RetryCoordinator:
             }
         )
 
+    @staticmethod
+    def build_started_event(
+        task: Task,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        scope: str,
+        retry_ordinal: int,
+        reason: str = "",
+    ) -> RuntimeEvent:
+        return runtime_event_from_task_state(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            message=f"retry started ({scope})",
+        ).model_copy(
+            update={
+                "event_type": RuntimeEventType.RETRY_STARTED,
+                "phase": ExecutionPhase.RETRY_HANDLING,
+                "payload": {
+                    "scope": scope,
+                    "retry_ordinal": retry_ordinal,
+                    "reason": reason,
+                },
+            }
+        )
+
     def scheduled_event_for_run_retry(
         self,
         task: Task,
         *,
-        run_id: str,
+        run_id: RunId,
+        attempt_id: AttemptId,
         attempt: int,
         error_code: RuntimeErrorCode,
     ) -> RuntimeEvent:
         return self.build_scheduled_event(
             task,
             run_id=run_id,
+            attempt_id=attempt_id,
             attempt=attempt,
             max_retries=self.max_run_retries,
             reason=error_code.value,
@@ -81,12 +113,14 @@ class RetryCoordinator:
         self,
         task: Task,
         *,
-        run_id: str,
+        run_id: RunId,
+        attempt_id: AttemptId,
         record: RetryRecord,
     ) -> RuntimeEvent:
         return self.build_scheduled_event(
             task,
             run_id=run_id,
+            attempt_id=attempt_id,
             attempt=record.attempt,
             max_retries=0,
             reason=record.reason,

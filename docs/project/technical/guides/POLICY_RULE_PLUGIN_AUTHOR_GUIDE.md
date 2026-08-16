@@ -20,16 +20,16 @@ This guide documents the **author contract** for `PolicyRuleHandler` plugins and
 | D6 | Configuration | COMPLETE | §6 |
 | D7 | Secrets / credentials | N/A | §7 |
 | D8 | DI / composition | COMPLETE | §8 |
-| D9 | Registration / discovery | PARTIAL | §9 |
+| D9 | Registration / discovery | COMPLETE | §9 |
 | D10 | Qualification | COMPLETE | §10 |
-| D11 | Runtime use | PARTIAL | §11 |
+| D11 | Runtime use | COMPLETE | §11 |
 | D12 | Lifecycle / cleanup | N/A | §12 |
 | D13 | Failure behavior | COMPLETE | §13 |
 | D14 | Testing | COMPLETE | §14 |
 | D15 | Production checklist | COMPLETE | §15 |
 | D16 | Troubleshooting | COMPLETE | §16 |
 
-**Overall:** **PARTIAL** — contract, packaging, YAML schema, and local `PolicyRuleRegistry.register` are documented; **shipped Tier-3 wiring does not call `load_policy_rule_plugins`**, and declarative rules in `RuntimePolicyBundle.domain_fragments` are **not yet consumed by runtime enforcement** (see §11, RUNTIME_CAPABILITY_GAPS in audit ledger).
+**Overall:** **COMPLETE** — contract, packaging, YAML schema, EP discovery, typed `DeclarativePolicyRuntime` composition, and declarative enforcement at the standard tool boundary are shipped. Production package/version qualification remains **deferred** (§10).
 
 **Shared truths:** `installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified` · trusted in-process Python · host-owned qualification · no secrets in EP metadata · no sandbox.
 
@@ -92,8 +92,9 @@ class PolicyRuleRegistry:
     ) -> PolicyRuleAction: ...
 ```
 
-- Unknown `rule_id` → `PolicyRuleAction.ALLOW` (fail-open for missing handler).
-- Duplicate `rule_id` on `register()` → **silent overwrite** (last wins).
+- Unknown `rule_id` → `PolicyRuleAction.DENY` (fail-closed; `unknown_handler=True` on outcome).
+- Duplicate `rule_id` on `register()` → governed by admission policy (`error` default; shipped handler collision denied).
+- Handler allowlist enforced at registration when configured on `PolicyRulesProfile`.
 
 ### EP loader
 
@@ -224,11 +225,14 @@ There is no `register_policy_rule_plugin()` catalog helper analogous to Tools.
 ## 6. Configuration / DI
 
 ```text
-PolicyRulesProfile (rules_path + inline_rules)
-  → _resolve_policy_rules() in policy_wiring.py
-  → domain_fragments["policy_rules"]: list[DeclarativePolicyRule]
-  → domain_fragments["policy_rule_registry"]: PolicyRuleRegistry (shipped wiring: empty of EP handlers)
-  → RuntimePolicyBundle on ApplicationEnvironmentProfile
+PolicyRulesProfile (rules_path + inline_rules + enforcement_mode + handler_allowlist)
+  → policy_wiring.build_runtime_policy_bundle / wire_policy_bundle
+  → DeclarativePolicyRuntime on RuntimePolicyBundle.declarative_policy_runtime:
+       registry = PolicyRuleRegistry (shipped deny_tool + EP handlers when discovery enabled)
+       rules = tuple[DeclarativePolicyRule, ...]
+       provenance = PolicyBundleProvenance | None
+       enforcement_mode = PolicyEnforcementMode
+  → DeclarativePolicyEnforcer at standard tool invocation boundary
 ```
 
 Tenant / application policy configuration belongs on **`ApplicationEnvironmentProfile.policy_rules`** (and domain-specific fragments), not in EP metadata.
@@ -251,19 +255,22 @@ Handlers are stateless instances. Host may register the same handler class once.
 
 | Mechanism | Called from shipped Tier-3 wiring? |
 |-----------|-----------------------------------|
-| `load_policy_rule_plugins(registry)` | **No** — host must call |
-| `PolicyRuleRegistry.register(handler)` | Host / tests only |
+| `load_policy_rule_plugin_report(registry, ...)` | **Yes** — when `policy_rules` set and `INTERGRAX_DISCOVER_PLUGINS` enabled |
+| `load_policy_rule_plugins(registry)` | Legacy int wrapper; report API preferred |
+| `PolicyRuleRegistry.register(handler)` | Host / tests; EP path via loader |
 | `load_policy_rules_from_path` | Yes — via `PolicyRulesProfile` when `wire_policy_bundle` runs |
 
-EP discovery uses the same `INTERGRAX_DISCOVER_PLUGINS` / explicit `discover_entry_points` posture as other catalogs when the host invokes the loader.
+EP discovery uses the same `INTERGRAX_DISCOVER_PLUGINS` / explicit `discover_entry_points` posture as other catalogs.
 
-### Loader failure isolation (AUDIT F004)
+When `policy_rules` is set but discovery is disabled, typed runtime is built with shipped `deny_tool` handler only and an empty load report.
 
-`load_policy_rule_plugins` is **fail-fast**:
+### Loader failure isolation
 
-- `PluginLoadError` on import failure → aborts entire handler load loop
-- `TypeError` if target is not `PolicyRuleHandler` → aborts entire load
-- No `on_load_failure="isolate"`
+Standard policy wiring uses `PolicyRuleLoadPolicy` with `on_load_failure="isolate"`:
+
+- Broken EP → recorded in `DomainPluginLoadReport.failed`; siblings continue loading
+- Invalid handler type → `rejected` in load report
+- Legacy `load_policy_rule_plugins` without policy → fail-fast preserved for compatibility
 
 ---
 
@@ -271,29 +278,29 @@ EP discovery uses the same `INTERGRAX_DISCOVER_PLUGINS` / explicit `discover_ent
 
 Semantic host approval for third-party handler packages. Installing a handler wheel does not imply rules in YAML reference it or that the host enabled evaluation.
 
+**Production package/version qualification:** `QUALIFICATION_STILL_DEFERRED` — `evaluate_package_production_admission` requires caller-supplied package version and platform compatibility evidence not wired on the standard host path. Handler allowlist and provenance are shipped; automatic production qualification is **not** claimed.
+
 ---
 
 ## 11. Runtime evaluation path (current)
 
-**Intended flow:**
+**Shipped flow:**
 
 ```text
-Runtime event / tool request
-  → host selects applicable DeclarativePolicyRule list
-  → for each rule: registry.evaluate_rule(rule, context={"tool_id": ...})
-  → PolicyRuleAction (ALLOW | DENY | REQUIRE_HITL)
-  → enforcement owner (ToolRuntime / PolicyEngine / HITL) applies decision
+Tool invocation request
+  → DeclarativePolicyEnforcer (tool gateway boundary)
+  → bundle.declarative_policy_runtime.rules
+  → for each matching rule: registry.evaluate_rule(rule, context=PolicyEvaluationContext)
+  → aggregate PolicyRuleAction (ALLOW | DENY | REQUIRE_HITL)
+  → PolicyEnforcementMode.ENFORCE: DENY blocks tool; REQUIRE_HITL → canonical Nexus HITL lifecycle
+  → PolicyEnforcementMode.AUDIT_ONLY: non-blocking audit trace only
 ```
 
-**Current shipped wiring:**
+Typed runtime is on `RuntimePolicyBundle.declarative_policy_runtime` — not `domain_fragments` string-key lookup.
 
-- `domain_fragments["policy_rules"]` is populated when `PolicyRulesProfile` is set.
-- `domain_fragments["policy_rule_registry"]` holds a registry with **shipped `deny_tool` handler only**.
-- **No production code** calls `evaluate_rule` on that registry or iterates `policy_rules` fragments for enforcement.
+Unknown handler → **DENY** fail-closed. `REQUIRE_HITL` reaches canonical Nexus pause/approve/resume (`WAITING_FOR_HUMAN`).
 
-Authors can unit-test evaluation today; end-to-end runtime enforcement through `PolicyEngine` for declarative EP/YAML rules is **not wired**. Document as `RUNTIME_CAPABILITY_GAP` — see audit §DOCS-5.
-
-Evaluation is **separate from enforcement**: returning `DENY` from a handler has no effect until a host subscriber applies it.
+**Historical baseline (ENTERPRISE-1):** rules lived in `domain_fragments`; EP handlers were not loaded; unknown handler was fail-open. Closed by ENTERPRISE-3/4.
 
 ---
 
@@ -307,10 +314,11 @@ No unload API. Registry is per-bundle instance.
 
 | Condition | Behavior |
 |-----------|----------|
-| Unknown `rule_id` | `evaluate_rule` → `ALLOW` |
-| Handler missing for YAML `rule_id` | Same — fail-open |
+| Unknown `rule_id` | `evaluate_rule` → `DENY` (`unknown_handler=True`) |
+| Handler missing for YAML `rule_id` | Same — fail-closed |
 | Malformed YAML / JSON | `ValueError` or `ValidationError` at load time |
-| Duplicate handler `rule_id` | Silent overwrite on `register()` |
+| Duplicate handler `rule_id` | Admission policy governs (`error` default; shipped handler collision denied) |
+| Non-allowlisted handler EP | Rejected at registration when allowlist configured |
 | Handler raises in `evaluate` | Exception propagates to caller |
 | `policy_rules` profile unset | No rules fragment; default registry still created when other fragments set |
 | Disabled / empty policy bundle | No rules in fragments |
@@ -350,11 +358,12 @@ assert action == PolicyRuleAction.DENY
 
 - [ ] Handler `rule_id` matches YAML `rule_id` values
 - [ ] YAML validated in CI (`load_policy_rules_from_path`)
-- [ ] Host calls `load_policy_rule_plugins` if using EP handlers
-- [ ] Host wires `evaluate_rule` + enforcement (not provided by shipped wiring alone)
-- [ ] Understand fail-open on unknown handlers
-- [ ] Duplicate handler ids audited — last `register` wins
-- [ ] Qualification for third-party handler wheels
+- [ ] `INTERGRAX_DISCOVER_PLUGINS` enabled when using EP handlers
+- [ ] `PolicyEnforcementMode` set (`audit_only` vs `enforce`) per deployment profile
+- [ ] Handler allowlist configured for production when required
+- [ ] Understand fail-closed on unknown handlers
+- [ ] Duplicate handler / shipped-handler collision policy understood
+- [ ] Semantic qualification recorded for third-party wheels (package qualification deferred)
 - [ ] Policy config separated from handler package install
 
 ---
@@ -363,24 +372,24 @@ assert action == PolicyRuleAction.DENY
 
 | Symptom | Likely cause |
 |---------|----------------|
-| Handler never invoked | Shipped wiring does not call `load_policy_rule_plugins` or `evaluate_rule` |
-| YAML rules ignored at runtime | Rules in `domain_fragments` only — no consumer wired |
-| `ALLOW` despite deny YAML | No handler for `rule_id`, or `evaluate_rule` not called |
+| Handler never invoked | Discovery disabled; EP handler not in registry |
+| YAML rules ignored at runtime | `PolicyEnforcementMode.AUDIT_ONLY` (audit-only, non-blocking) |
+| Tool not blocked despite deny YAML | `AUDIT_ONLY` mode, or no matching rule/handler |
+| `DENY` despite expected allow | Unknown handler fail-closed, or handler exception |
 | `TypeError` at load | EP target not `PolicyRuleHandler` |
-| `PluginLoadError` | Broken EP import — blocks entire policy EP load |
+| `PluginLoadError` on broken EP import | Enterprise/policy-governed load (`PolicyRuleLoadPolicy`, default `on_load_failure="isolate"`) records failure; siblings may continue. Legacy `load_policy_rule_plugins(registry)` without policy → fail-fast blocks remaining EPs |
 | Custom handler not used | `rule_id` mismatch with YAML |
 
 ---
 
-## Enterprise gaps (documented, not implemented)
+## Historical baseline (ENTERPRISE-1 audit — closed)
 
-| Gap | Category |
-|-----|----------|
-| EP handler bootstrap not in `wire_policy_bundle` | EXTENSIBILITY / DX |
-| Declarative rules not evaluated at runtime | GOVERNANCE |
-| No centrally governed handler allowlist | GOVERNANCE / OPERATOR_CONTROL |
-| No signed / provenance-tracked policy bundles | GOVERNANCE |
-
-See `PLATFORM_PLUGIN_DOCUMENTATION_AUDIT.md` §DOCS-5 `ENTERPRISE_ROADMAP_CANDIDATES`.
+| Gap (baseline) | Status |
+|----------------|--------|
+| EP handler bootstrap not in `wire_policy_bundle` | **CLOSED** (ENTERPRISE-3) |
+| Declarative rules not evaluated at runtime | **CLOSED** (ENTERPRISE-4) |
+| No centrally governed handler allowlist | **CLOSED** (ENTERPRISE-4) |
+| No provenance-tracked policy bundles | **CLOSED** — `PolicyBundleProvenance` shipped; signing not required |
+| Production package/version qualification | **DEFERRED** — `QUALIFICATION_STILL_DEFERRED` |
 
 **Reference example gap (DOCS-6):** no installable example under `examples/platform_plugins/`.

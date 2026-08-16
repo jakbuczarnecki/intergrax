@@ -2,8 +2,11 @@
 
 import pytest
 
-from intergrax.agents.persistence.declarative_tool_executor import CallableDeclarativeToolInvoker
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvokeResult
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
+from intergrax.agents.persistence.declarative_tool_executor import (
+    CallableDeclarativeToolInvoker,
+    DeclarativeToolInvokeResult,
+)
 from intergrax.agents.persistence.tool_invoker_wiring import (
     attach_declarative_tool_invoker,
     inject_acp_tool_invoker_metadata,
@@ -52,7 +55,8 @@ def test_inject_acp_tool_invoker_metadata_wires_host_invoker() -> None:
     inject_acp_tool_invoker_metadata(
         metadata,
         invoker,
-        run_id="run-1",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
         agent_id="agent-1",
         tenant_id="tenant-1",
     )
@@ -71,8 +75,9 @@ async def test_runtime_execution_context_records_catalog_tool_calls() -> None:
             )
 
     exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
         agent_id="local_indexer",
         tool_gateway=_Gateway(),
     )

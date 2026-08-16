@@ -26,3 +26,10 @@ packages = [
 
 [tool.uv.sources]
 Intergrax-ai = { workspace = true }
+
+[[tool.intergrax.agent.contracts]]
+contract_id = "echo"
+contract_version = "1.0.0"
+capabilities = ["echo.basic"]
+skill_ids = ["harness.tool_smoke"]
+tool_ids = []

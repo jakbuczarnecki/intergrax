@@ -7,30 +7,39 @@ from __future__ import annotations
 
 from typing import Literal, Self
 
-from packaging.specifiers import InvalidSpecifier, SpecifierSet
-from packaging.utils import InvalidName, canonicalize_name
-from packaging.version import InvalidVersion, Version
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.core.distribution import DistributionPackageIdentity, PlatformCompatibility
 from intergrax.core.plugins.errors import PlatformPluginManifestValidationError
+from intergrax.core.security import (
+    FORBIDDEN_KEY,
+    SecretSafetyValidationError,
+    SecretSafeValidationPolicy,
+    validate_secret_safe_value,
+)
 
 MANIFEST_SCHEMA_VERSION: Literal[1] = 1
 
-_SECRET_KEY_FRAGMENTS = frozenset(
-    {
-        "api_key",
-        "apikey",
-        "password",
-        "passwd",
-        "secret",
-        "token",
-        "credential",
-        "credentials",
-        "connection_string",
-        "private_key",
-        "access_key",
-        "client_secret",
-    }
+PLATFORM_PLUGIN_MANIFEST_SECRET_POLICY = SecretSafeValidationPolicy(
+    forbidden_key_fragments=frozenset(
+        {
+            "api_key",
+            "apikey",
+            "password",
+            "passwd",
+            "secret",
+            "token",
+            "credential",
+            "credentials",
+            "connection_string",
+            "private_key",
+            "access_key",
+            "client_secret",
+        }
+    ),
+    scan_string_values=False,
+    split_key_segments=False,
+    traverse_sequences=True,
 )
 
 
@@ -66,72 +75,22 @@ def _capability_identity(
     return (domain, entry_point_group, entry_point_name)
 
 
-def reject_secret_like_keys(payload: object, *, path: str = "") -> None:
-    """Reject secret-like manifest keys before model validation."""
-    if not isinstance(payload, dict):
-        return
-    for key, value in payload.items():
-        if not isinstance(key, str):
-            raise PlatformPluginManifestValidationError("manifest keys must be strings")
-        normalized_key = key.strip().lower().replace("-", "_")
-        if any(fragment in normalized_key for fragment in _SECRET_KEY_FRAGMENTS):
-            location = f"{path}.{key}" if path else key
+def validate_platform_plugin_manifest_secrets(payload: object, *, path: str = "") -> None:
+    """Reject secret-like Platform Plugin manifest keys using the domain policy."""
+    try:
+        validate_secret_safe_value(
+            payload,
+            policy=PLATFORM_PLUGIN_MANIFEST_SECRET_POLICY,
+            path=path,
+            context_label="manifest",
+        )
+    except SecretSafetyValidationError as exc:
+        if exc.reason_code == FORBIDDEN_KEY:
+            location = exc.path or "manifest"
             raise PlatformPluginManifestValidationError(
                 f"secret-like manifest field is not allowed: {location}"
-            )
-        child_path = f"{path}.{key}" if path else key
-        reject_secret_like_keys(value, path=child_path)
-
-
-class PluginPackageIdentity(BaseModel):
-    """Canonical package-level plugin distribution identity."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    name: str
-    version: str
-
-    @field_validator("name")
-    @classmethod
-    def _validate_name(cls, value: str) -> str:
-        normalized = _require_non_empty_text(value, field_name="package name")
-        try:
-            return canonicalize_name(normalized, validate=True)
-        except InvalidName as exc:
-            raise ValueError(f"invalid package name: {normalized!r}") from exc
-
-    @field_validator("version")
-    @classmethod
-    def _validate_version(cls, value: str) -> str:
-        normalized = _require_non_empty_text(value, field_name="package version")
-        try:
-            return str(Version(normalized))
-        except InvalidVersion as exc:
-            raise ValueError(f"invalid package version: {normalized!r}") from exc
-
-
-class PlatformCompatibility(BaseModel):
-    """Declared Intergrax platform compatibility metadata (checked via PLATFORM-PLUGIN-6 API)."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    intergrax_version: str = Field(
-        description="Declared Intergrax platform version specifier range.",
-    )
-
-    @field_validator("intergrax_version")
-    @classmethod
-    def _validate_intergrax_version(cls, value: str) -> str:
-        normalized = _require_non_empty_text(value, field_name="intergrax_version")
-        try:
-            return str(SpecifierSet(normalized))
-        except InvalidSpecifier as exc:
-            raise ValueError(f"invalid intergrax_version specifier: {normalized!r}") from exc
-
-    @property
-    def declared_specifier(self) -> SpecifierSet:
-        """Return the declared compatibility specifier (metadata only)."""
-        return SpecifierSet(self.intergrax_version)
+            ) from exc
+        raise PlatformPluginManifestValidationError(str(exc)) from exc
 
 
 class CapabilityDescriptor(BaseModel):
@@ -179,7 +138,7 @@ class PlatformPluginManifest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     schema_version: Literal[1] = MANIFEST_SCHEMA_VERSION
-    package: PluginPackageIdentity
+    package: DistributionPackageIdentity
     platform_compatibility: PlatformCompatibility
     capabilities: tuple[CapabilityDescriptor, ...] = ()
     author: str | None = None
@@ -242,7 +201,7 @@ def build_platform_plugin_manifest(
     try:
         return PlatformPluginManifest(
             schema_version=schema_version,
-            package=PluginPackageIdentity(name=name, version=version),
+            package=DistributionPackageIdentity(name=name, version=version),
             platform_compatibility=PlatformCompatibility(intergrax_version=intergrax_version),
             capabilities=tuple(capabilities),
             author=author,

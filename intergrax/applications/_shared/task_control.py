@@ -88,4 +88,4 @@ async def resume_task_with_token(
         response_text = operator_input.get("response_text")
         if response_text:
             task.options.human.response_text = str(response_text)
-    return await runner.run_task(task)
+    return await runner.run_task(task, resume_checkpoint=checkpoint)

@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.core.qualification import QualificationStatus
+
 from intergrax.agent_distribution.effective_roster import EffectiveRosterBuilder
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.in_memory_stores import (
@@ -17,7 +19,6 @@ from intergrax.agent_distribution.roster import ManifestDefaultAgentDeclaration
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
     AgentQualificationEvidenceKind,
-    AgentQualificationStatus,
     AgentTrustEvidenceRef,
 )
 
@@ -33,7 +34,7 @@ _DIGEST_PROD = "sha256:" + ("b" * 64)
 
 def _trust(digest: str) -> AgentInstallationTrustRecord:
     return AgentInstallationTrustRecord(
-        qualification_status=AgentQualificationStatus.PRODUCTION_QUALIFIED,
+        qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
         package_digest=digest,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, List, Optional
 
+from intergrax.contracts.execution_identity import AttemptId, RunId
+
 if TYPE_CHECKING:
     from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.tracing.trace_models import (
@@ -27,8 +29,15 @@ class TaskTraceEmitter:
     via ``trace_bridge`` (§42.1, P4.1) — without replacing trace persistence.
     """
 
-    def __init__(self, *, run_id: str, event_bus: Optional[RuntimeEventBus] = None) -> None:
+    def __init__(
+        self,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        event_bus: Optional[RuntimeEventBus] = None,
+    ) -> None:
         self._run_id = run_id
+        self._attempt_id = attempt_id
         self._seq = 0
         self.events: List[TraceEvent] = []
         self._event_bus = event_bus
@@ -76,7 +85,14 @@ class TaskTraceEmitter:
         if self._event_bus is not None:
             from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
 
-            self._event_bus.record(trace_event_to_runtime_event(evt, task))
+            self._event_bus.record(
+                trace_event_to_runtime_event(
+                    evt,
+                    task,
+                    run_id=self._run_id,
+                    attempt_id=self._attempt_id,
+                )
+            )
         return evt
 
     def emit(self, task: Task, *, message: str) -> TraceEvent:
@@ -101,7 +117,14 @@ class TaskTraceEmitter:
         if self._event_bus is not None:
             from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
 
-            self._event_bus.record(trace_event_to_runtime_event(evt, task))
+            self._event_bus.record(
+                trace_event_to_runtime_event(
+                    evt,
+                    task,
+                    run_id=self._run_id,
+                    attempt_id=self._attempt_id,
+                )
+            )
         return evt
 
     def as_transition_handler(self) -> Callable[[Task], None]:
@@ -117,14 +140,15 @@ class PersistingTaskTraceEmitter(TaskTraceEmitter):
     def __init__(
         self,
         *,
-        run_id: str,
+        run_id: RunId,
+        attempt_id: AttemptId,
         trace_store: RunTraceWriter,
         tenant_id: str,
         user_id: str,
         session_id: str = "",
         event_bus: Optional[RuntimeEventBus] = None,
     ) -> None:
-        super().__init__(run_id=run_id, event_bus=event_bus)
+        super().__init__(run_id=run_id, attempt_id=attempt_id, event_bus=event_bus)
         self._trace_store = trace_store
         self._tenant_id = tenant_id
         self._user_id = user_id
@@ -193,7 +217,8 @@ class PersistingTaskTraceEmitter(TaskTraceEmitter):
 
 def lifecycle_with_persisting_trace(
     *,
-    run_id: str,
+    run_id: RunId,
+    attempt_id: AttemptId,
     trace_store: RunTraceWriter,
     tenant_id: str,
     user_id: str,
@@ -203,6 +228,7 @@ def lifecycle_with_persisting_trace(
 ) -> tuple[TaskLifecycle, PersistingTaskTraceEmitter]:
     emitter = PersistingTaskTraceEmitter(
         run_id=run_id,
+        attempt_id=attempt_id,
         trace_store=trace_store,
         tenant_id=tenant_id,
         user_id=user_id,
@@ -219,13 +245,14 @@ def lifecycle_with_persisting_trace(
 
 
 def lifecycle_with_trace(
-    run_id: str,
+    run_id: RunId,
+    attempt_id: AttemptId,
     *,
     event_bus: Optional[RuntimeEventBus] = None,
     on_transition: Optional[Callable[[Task], None]] = None,
 ) -> tuple[TaskLifecycle, TaskTraceEmitter]:
     """Build TaskLifecycle wired to a TaskTraceEmitter."""
-    emitter = TaskTraceEmitter(run_id=run_id, event_bus=event_bus)
+    emitter = TaskTraceEmitter(run_id=run_id, attempt_id=attempt_id, event_bus=event_bus)
 
     def _combined(task: Task) -> None:
         emitter.as_transition_handler()(task)

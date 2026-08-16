@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.retry.coordinator import RetryCoordinator
@@ -37,7 +38,8 @@ def test_scheduled_event_for_agent_retry() -> None:
     coordinator = RetryCoordinator(max_run_retries=0, retry_run_on=frozenset())
     event = coordinator.scheduled_event_for_agent_retry(
         task,
-        run_id="run-1",
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
         record=RetryRecord(
             attempt=1,
             agent_id="a1",

@@ -27,7 +27,7 @@ from intergrax.runtime.architecture import (
     compute_architecture_metrics,
     evaluate_agent_certification,
 )
-from intergrax.runtime.registry.bootstrap import (
+from testing_support.agent_registry_bootstrap import (
     build_harness_registry,
     build_organization_worker_registry,
     build_research_registry,

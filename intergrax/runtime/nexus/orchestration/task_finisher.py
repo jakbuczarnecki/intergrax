@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.runtime_cost import aggregate_execution_metrics
@@ -43,6 +43,9 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
 from intergrax.utils.time_provider import SystemTimeProvider
 
+if TYPE_CHECKING:
+    from intergrax.contracts.execution_identity import RunId
+
 
 def build_nexus_task_result(
     task: Task,
@@ -58,6 +61,7 @@ def build_nexus_task_result(
     event_bus: RuntimeEventBus,
     shadow_manager: ShadowWorkspaceManager,
     sandbox_manager: SandboxSessionManager,
+    run_id: Optional["RunId"] = None,
 ) -> TaskResult:
     primary = executions[-1] if executions else None
     composer_meta = composer.compose_metadata(
@@ -151,7 +155,7 @@ def build_nexus_task_result(
     task.sync_metadata()
     result = TaskResult(
         task_id=task.task_id,
-        run_id=primary.run_id if primary else task.task_id,
+        run_id=run_id or (primary.run_id if primary else None),
         state=task.state,
         answer=answer,
         agent_id=primary.agent_id if primary else task.agent_id,

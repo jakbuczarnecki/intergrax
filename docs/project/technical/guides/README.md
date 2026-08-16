@@ -19,6 +19,6 @@ Authoring guides, strategic context, and audit methodology.
 | [PLATFORM_CONFIGURATION.md](PLATFORM_CONFIGURATION.md) | Canonical platform configuration reference (env, LLM, embeddings) |
 | [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) | Lab stack, OTLP, presets |
 | [HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) | Multi-layer / full-platform audit prompt |
-| [audit/](../../maintainers/audit) | **Architecture audit orchestration** — 22 per-domain prompts (Modes A/B/C/I) |
+| [audit/](../../maintainers/audit) | **Architecture audit orchestration** — 24 per-domain prompts (Modes A/B/C/I) |
 | [bootstrap/](../../maintainers/bootstrap) | **Cursor session paste files** — copy into new agent chat |
 | [implementation-journal/README.md](../../maintainers/implementation-journal/README.md) | **Implementation journal** — chronological episode log (Tier-0–3) |

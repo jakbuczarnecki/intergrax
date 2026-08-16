@@ -119,7 +119,7 @@ Read **only** what the classification requires:
 4. Relevant authoring guide (agent / application / extension) when Tier-2/3
 5. `docs/project/technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — sections for mapped audit-map layers only
 
-Do **not** load all 22 domain pairs unless `cross_cutting` truly requires it.
+Do **not** load all 24 domain pairs unless `cross_cutting` truly requires it.
 
 ### Step 3 — Inspect implementation (evidence required)
 

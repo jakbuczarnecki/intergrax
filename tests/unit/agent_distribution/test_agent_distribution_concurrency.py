@@ -8,6 +8,8 @@ import threading
 
 import pytest
 
+from intergrax.core.qualification import QualificationStatus
+
 from intergrax.agent_distribution.errors import InstallationSlotConflict
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.in_memory_stores import (
@@ -21,7 +23,6 @@ from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisio
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
     AgentQualificationEvidenceKind,
-    AgentQualificationStatus,
     AgentTrustEvidenceRef,
 )
 
@@ -31,7 +32,7 @@ _DIGEST_B = "sha256:" + ("b" * 64)
 
 def _trust_record(digest: str = _DIGEST_A) -> AgentInstallationTrustRecord:
     return AgentInstallationTrustRecord(
-        qualification_status=AgentQualificationStatus.PRODUCTION_QUALIFIED,
+        qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
         package_digest=digest,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",
@@ -55,7 +56,7 @@ def _prepare_verified(
         environment_id="env-prod",
         package_identity=AgentPackageIdentity(
             distribution_package_id="intergrax-local-search-agent",
-            package_version=installation_id,
+            package_version="1.0.0",
             package_digest=digest,
         ),
     )

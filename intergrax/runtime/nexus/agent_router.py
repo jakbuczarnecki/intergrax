@@ -8,6 +8,7 @@ from typing import Optional
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.execution_identity import require_active_execution_identity, validate_run_id
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -103,7 +104,7 @@ class AgentRouter:
         self._emit_agent_selected(
             task,
             selection,
-            run_id=run_id or task.task_id,
+            run_id=run_id,
             node_id=node_id,
         )
         return agent
@@ -164,10 +165,15 @@ class AgentRouter:
     ) -> None:
         if self._event_bus is None:
             return
+        active_run_id, attempt_id = require_active_execution_identity()
+        resolved_run_id = validate_run_id(run_id) if run_id else active_run_id
+        if resolved_run_id != active_run_id:
+            raise RuntimeError("run_id conflicts with active execution identity")
         base = RuntimeEvent(
             tenant_id=task.tenant_id,
             task_id=task.task_id,
-            run_id=run_id,
+            run_id=resolved_run_id,
+            attempt_id=attempt_id,
             agent_id=selection.selected_agent_id,
             node_id=node_id,
             event_type=RuntimeEventType.AGENT_SELECTED,

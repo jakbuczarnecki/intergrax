@@ -402,7 +402,7 @@ It **must not** duplicate full domain contract payloads (tool schemas, integrati
 |---|---------------|---------------------|
 | Secret storage | Integration `env_prefix`; host secret stores; ad hoc per domain | Unchanged storage diversity, clarified ownership (§12.3) |
 | Plugin access | Full process privileges; no platform sandbox | **Capabilities receive only required credentials/bindings** resolved by host/domain |
-| Metadata | Secrets must not appear in manifests or EP targets; `reject_secret_like_keys` enforces Platform Plugin manifest | **Frozen** |
+| Metadata | Secrets must not appear in manifests or EP targets; `PLATFORM_PLUGIN_MANIFEST_SECRET_POLICY` on the canonical secret-safe engine enforces the package manifest | **Frozen** |
 | Default | No unrestricted global secret API for plugins | **Frozen** |
 
 Installation of a plugin package is a **trust decision** (§16). Secret scope limiting is a **host/domain responsibility**, not something plugin metadata can safely enforce alone.
@@ -446,7 +446,7 @@ plugin capability (consumes explicit bindings only)
 
 | Layer | Configuration responsibility | Secret responsibility |
 |-------|------------------------------|----------------------|
-| **Platform Plugin package manifest** (`[tool.intergrax.plugin]`) | Coordination metadata only — package id, compatibility, capability pointers | **Prohibited** — validated by `reject_secret_like_keys` (PLUGIN-3) |
+| **Platform Plugin package manifest** (`[tool.intergrax.plugin]`) | Coordination metadata only — package id, compatibility, capability pointers | **Prohibited** — `PLATFORM_PLUGIN_MANIFEST_SECRET_POLICY` via `intergrax.core.security` (PLUGIN-3). Detection only; not a secret manager. |
 | **Setuptools entry points** | Identify import target only | **Prohibited** in EP values |
 | **Domain manifests** (`IntegrationManifest`, tool/skill bundles, …) | Domain-specific non-secret fields (e.g. `env_prefix` name, not value) | **Prohibited** as manifest field values |
 | **Application / host** | Selects capabilities, environment/profile, feature flags | Resolves credentials into domain bindings |
@@ -521,7 +521,7 @@ plugin capability (consumes explicit bindings only)
 - Domain contracts keep **their own** version fields and breaking-change policy.
 - **No** single global semver for all extension surfaces.
 
-**CURRENT STATE (PLUGIN-6):** `intergrax/core/plugins/platform_semantics.py` exposes deterministic, explicit-version compatibility checking against `PlatformCompatibility.intergrax_version`. Returns immutable `PlatformCompatibilityResult` (`declared_specifier`, `tested_platform_version`, `compatible`, `reason`). Invalid platform version → `InvalidPlatformVersionError` (via `require_platform_compatibility`) or `reason=invalid_platform_version` (via `check_platform_compatibility`). **Activation blocking** at host boundaries is deferred to PLUGIN-8 reference host — callers must pass platform version explicitly; no authoritative runtime Intergrax distribution version helper exists yet (`importlib.metadata` distribution name not standardized for gating).
+**CURRENT STATE (PLUGIN-6):** `intergrax/core/distribution/platform_compatibility.py` exposes deterministic, explicit-version compatibility checking against `PlatformCompatibility.intergrax_version`. Returns immutable `PlatformCompatibilityResult` (`declared_specifier`, `tested_platform_version`, `compatible`, `reason`). Invalid platform version → `InvalidPlatformVersionError` (via `require_platform_compatibility`) or `reason=invalid_platform_version` (via `check_platform_compatibility`). **Activation blocking** at host boundaries is deferred to PLUGIN-8 reference host — callers must pass platform version explicitly; no authoritative runtime Intergrax distribution version helper exists yet (`importlib.metadata` distribution name not standardized for gating).
 
 ---
 
@@ -563,7 +563,7 @@ Future isolated execution (subprocess, WASM, remote worker) would be a **separat
 
 **TARGET:** Shared **conceptual** conflict vocabulary across domains. **Unified default policy across all surfaces is rejected** — security override semantics and VK publication conflicts must remain domain-owned.
 
-**CURRENT STATE (PLUGIN-6):** Shared enum `PlatformPluginConflictKind` (`package_identity`, `entry_point_name`, `capability_identity`, `domain_resource_id`) in `platform_semantics.py`. Tier-0 duplicate entry-point errors attach `conflict_kind=entry_point_name` to `PluginConflictError` without changing `ConflictPolicy` behavior (`error` / `skip` / `override` / `warn_override`). Package identity conflict helper `package_identities_conflict` available; capability and domain-resource conflicts remain domain-owned.
+**CURRENT STATE (PLUGIN-6):** Shared enum `PlatformPluginConflictKind` (`package_identity`, `entry_point_name`, `capability_identity`, `domain_resource_id`) in `platform_semantics.py`. Tier-0 duplicate entry-point errors attach `conflict_kind=entry_point_name` to `PluginConflictError` without changing `ConflictPolicy` behavior (`error` / `skip` / `override` / `warn_override`). Package identity conflict helper `package_identities_conflict` lives in `intergrax/core/distribution/package_identity.py`; capability and domain-resource conflicts remain domain-owned.
 
 ---
 
@@ -600,7 +600,7 @@ A package may be installed but carry **mixed** qualification across capabilities
 **CURRENT STATE (PLUGIN-7):** Shared contracts in `intergrax/core/plugins/platform_qualification.py`:
 
 - `PluginQualificationLevel` — `package`, `capability`, `domain`
-- `PluginQualificationStatus` — `not_qualified`, `qualified`, `production_qualified`, `rejected` (distinct from lifecycle states in §14)
+- `QualificationStatus` (`intergrax/core/qualification/status.py`) — `not_qualified`, `qualified`, `production_qualified`, `rejected` (distinct from lifecycle states in §14)
 - `PluginQualificationSubject` + `PluginQualificationResult` + `PluginQualificationEvidence` — immutable audit records; no persistence or global registry
 - `PluginDeliverySource` — `external_package` vs `host_embedded_extension` (both converge on domain qualification; wheel/entry-point not required for host-embedded path)
 - `require_production_qualification` / `evaluate_package_production_admission` — pure production gates; compatible/enabled alone insufficient
