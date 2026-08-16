@@ -280,6 +280,8 @@ Runtime execution always flows through **domain contracts and host composition**
 
 **Rule:** The Platform Plugin layer **must not bypass** domain validation, policy, or security gates.
 
+**Tier-3 adoption (APP-ADOPTION-1):** `wire_application_environment()` collects per-domain `DomainPluginLoadReport` evidence from the same domain bootstrap pass into `ApplicationPlatformPluginEvidence` on `ApplicationEnvironmentWiring.platform_plugin_evidence`. Applications consume resolved capabilities and this bootstrap snapshot; they **must not** run duplicate discovery or maintain a global installed-plugin inventory. Evidence is discovery/admission only — not `PRODUCTION_QUALIFIED` (package gate 10 remains separate).
+
 ---
 
 ## 8. Package and capability model
@@ -638,7 +640,7 @@ PLUGIN-8 proves executable E2E for both modes. PLUGIN-7 does not wire gates into
 | **CI** | Contract/schema/harness tests only — not live all-vendor-on-every-PR |
 | **Scale** | 5/20/50+ providers via shared contracts + linear per-vendor adapter/setup/evidence |
 
-**Implementation:** PROVIDER-QUAL-2 (typed contracts, persistence, PostgreSQL evidence recording).
+**Implementation:** PROVIDER-QUAL-2 (typed contracts only); PROVIDER-QUAL-3 (evidence persistence/integration, including PostgreSQL 16.6 bounded qualification evidence recording).
 
 ## 19. Observability expectations
 

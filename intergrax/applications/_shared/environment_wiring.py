@@ -86,6 +86,10 @@ from intergrax.applications._shared.tool_wiring import (
     build_application_tool_wiring,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.platform_plugin_evidence import (
+    ApplicationPlatformPluginEvidence,
+    build_application_platform_plugin_evidence,
+)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -107,6 +111,7 @@ class ApplicationEnvironmentWiring:
     skill_wiring: ApplicationSkillWiring
     policy_bundle: Any
     build_context: ApplicationBuildContext
+    platform_plugin_evidence: ApplicationPlatformPluginEvidence
     shadow_manager: ShadowWorkspaceManager | None
     sandbox_manager: SandboxSessionManager | None
     integration_health: tuple[HealthStatus, ...] = ()
@@ -370,6 +375,11 @@ def wire_application_environment(
             capability_graph=capability_graph,
         )
 
+    platform_plugin_evidence = build_application_platform_plugin_evidence(
+        memory_report=memory_wiring.memory_store_plugin_load_report,
+        policy_bundle=policy_bundle,
+    )
+
     return ApplicationEnvironmentWiring(
         profile=env,
         tool_wiring=tool_wiring,
@@ -382,4 +392,5 @@ def wire_application_environment(
         prompt_registry=prompt_registry,
         registry_snapshot=registry_snapshot,
         capability_graph=capability_graph,
+        platform_plugin_evidence=platform_plugin_evidence,
     )
