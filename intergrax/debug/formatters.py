@@ -72,7 +72,7 @@ def build_trace_payload(
         "tenant_id": persisted.metadata.tenant_id,
         "trace_events": trace_events,
     }
-    if not include_runtime:
+    if not include_runtime or runtime_store is None:
         return payload
 
     from intergrax.runtime.events.unified_run_journal import (

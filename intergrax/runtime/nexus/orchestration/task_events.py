@@ -77,12 +77,13 @@ class NexusRuntimeEventPublisher:
         modality_payload = build_task_completed_modality_payload(persisted.events)
         if modality_payload is not None:
             fragments.update(modality_payload)
-        journal_ref = build_journal_ref_payload(
-            persisted,
-            runtime_store=self._runtime_event_store,
-        )
-        if journal_ref is not None:
-            fragments["journal_ref"] = journal_ref
+        if self._runtime_event_store is not None:
+            journal_ref = build_journal_ref_payload(
+                persisted,
+                runtime_store=self._runtime_event_store,
+            )
+            if journal_ref is not None:
+                fragments["journal_ref"] = journal_ref
         return fragments
 
     async def publish_from_task_state(

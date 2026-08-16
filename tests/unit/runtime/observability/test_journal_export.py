@@ -20,6 +20,7 @@ from intergrax.runtime.nexus.tracing.persistence_models import (
 )
 from intergrax.runtime.observability.journal_export import (
     build_journal_export_snapshot,
+    build_journal_ref,
     build_journal_ref_payload,
     count_parser_traces_in_trace_events,
     render_journal_otlp_json,
@@ -208,3 +209,57 @@ def test_count_parser_traces_in_trace_events() -> None:
         ),
     ]
     assert count_parser_traces_in_trace_events(events) == 1
+
+
+class _RecordingStore(InMemoryRuntimeEventStore):
+    def __init__(self) -> None:
+        super().__init__()
+        self.list_for_run_calls: list[tuple[str, str, int]] = []
+
+    def list_for_run(
+        self,
+        run_id: str,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+    ) -> list[RuntimeEvent]:
+        self.list_for_run_calls.append((run_id, tenant_id, limit))
+        return super().list_for_run(run_id, tenant_id=tenant_id, limit=limit)
+
+
+def test_journal_ref_empty_canonical_store_keeps_parser_trace_count() -> None:
+    run_id = mint_run_id()
+    parser_trace = SerializedTraceEvent(
+        event_id="trace-parser",
+        run_id=run_id,
+        seq=1,
+        ts_utc="2026-06-07T10:00:01+00:00",
+        level="info",
+        component="pipeline",
+        step="document_ingest",
+        message="parsed",
+        payload_schema_id=None,
+        payload_schema_version=None,
+        payload=None,
+        tags={"integration_parser_trace": {"parser_id": "pdf", "attempts": []}},
+        artifact_refs=[],
+    )
+    store = _RecordingStore()
+    persisted = _persisted_run(parser_trace, run_id=run_id)
+
+    ref = build_journal_ref(persisted, runtime_store=store)
+
+    assert ref is not None
+    assert ref.event_count == 0
+    assert ref.parser_trace_count == 1
+    assert store.list_for_run_calls == [(run_id, _TENANT, 2000)]
+
+
+def test_journal_export_snapshot_requires_actual_runtime_store() -> None:
+    run_id = mint_run_id()
+    store = _RecordingStore()
+    snapshot = build_journal_export_snapshot(_persisted_run(run_id=run_id), runtime_store=store)
+    assert snapshot.event_count == 0
+    assert snapshot.events == []
+    assert snapshot.parser_trace_count == 0
+    assert store.list_for_run_calls == [(run_id, _TENANT, 2000)]

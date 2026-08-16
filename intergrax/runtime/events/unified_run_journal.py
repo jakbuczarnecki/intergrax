@@ -24,7 +24,7 @@ JOURNAL_SCHEMA_VERSION = "unified_run_journal.v1"
 def build_unified_run_journal(
     persisted: PersistedRun,
     *,
-    runtime_store: RuntimeEventPersistence | None = None,
+    runtime_store: RuntimeEventPersistence,
     limit: int = 2000,
 ) -> list[RuntimeEvent]:
     """
@@ -36,10 +36,6 @@ def build_unified_run_journal(
     _validate_journal_limit(limit)
     tenant_id = _require_tenant_id(persisted.metadata.tenant_id)
     run_id = validate_run_id(persisted.metadata.run_id)
-
-    if runtime_store is None:
-        return []
-
     stored = runtime_store.list_for_run(run_id, tenant_id=tenant_id, limit=limit)
     return _sort_journal(list(stored))[:limit]
 

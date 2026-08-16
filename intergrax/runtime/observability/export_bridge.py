@@ -50,7 +50,8 @@ def make_journal_export_runtime_plugin(
         _hook_registry: HookRegistry,
         _policy_engine: PolicyEngineLike,
     ) -> None:
-        if trace_store is None or not is_journal_export_enabled():
+        reader = trace_store
+        if reader is None or not is_journal_export_enabled():
             return
 
         async def _export_journal(event: RuntimeEvent) -> None:
@@ -59,8 +60,12 @@ def make_journal_export_runtime_plugin(
             tenant = event.tenant_id or "default"
             run_id = event.run_id or event.task_id
             try:
-                persisted = trace_store.read_run(run_id, tenant)
+                persisted = reader.read_run(run_id, tenant)
             except (KeyError, ValueError):
+                return
+
+            export_parser_traces_from_events(persisted.events)
+            if runtime_event_store is None:
                 return
 
             snapshot = build_journal_export_snapshot(
@@ -68,7 +73,6 @@ def make_journal_export_runtime_plugin(
                 runtime_store=runtime_event_store,
             )
             otlp = render_journal_otlp_json(snapshot)
-            export_parser_traces_from_events(persisted.events)
 
             logger.info(
                 "journal_export tenant=%s run_id=%s task_id=%s events=%s parser_traces=%s",

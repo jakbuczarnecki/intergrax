@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from intergrax.contracts.event_severity import EventSeverity
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_event_id, mint_run_id, mint_task_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.nexus.tracing.persistence_models import RunMetadata, RunStats, SerializedTraceEvent
@@ -51,17 +55,41 @@ def _seed_trace(store: InMemoryRunTraceStore, *, run_id: str, tenant_id: str) ->
 @pytest.mark.asyncio
 async def test_journal_export_plugin_handles_task_completed() -> None:
     store = InMemoryRunTraceStore()
-    run_id = "run-bridge-1"
+    task_id = mint_task_id()
+    run_id = mint_run_id()
     tenant_id = "tenant-a"
     _seed_trace(store, run_id=run_id, tenant_id=tenant_id)
 
+    runtime_store = InMemoryRuntimeEventStore()
+    runtime_store.append(
+        RuntimeEvent(
+            event_id=mint_event_id(),
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=mint_attempt_id(),
+            event_type=RuntimeEventType.TASK_COMPLETED,
+            phase=ExecutionPhase.COMPLETION,
+            severity=EventSeverity.INFO,
+            payload={},
+            timestamp=datetime(2026, 6, 7, 10, 0, 0, tzinfo=timezone.utc),
+            correlation_id=run_id,
+        ),
+        tenant_id=tenant_id,
+    )
+
     bus = RuntimeEventBus(record_history=False)
-    plugin = make_journal_export_runtime_plugin(trace_store=store)
+    plugin = make_journal_export_runtime_plugin(
+        trace_store=store,
+        runtime_event_store=runtime_store,
+    )
     plugin.register(bus, HookRegistry(), MagicMock())
 
     event = RuntimeEvent(
-        task_id=run_id,
+        event_id=mint_event_id(),
+        task_id=task_id,
         run_id=run_id,
+        attempt_id=mint_attempt_id(),
         tenant_id=tenant_id,
         agent_id="agent-1",
         event_type=RuntimeEventType.TASK_COMPLETED,

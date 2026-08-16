@@ -73,7 +73,7 @@ class JournalExportSnapshot:
 def build_journal_ref(
     persisted: PersistedRun,
     *,
-    runtime_store: RuntimeEventPersistence | None = None,
+    runtime_store: RuntimeEventPersistence,
     limit: int = 2000,
 ) -> JournalRef | None:
     """Build a lightweight journal reference for terminal runtime events."""
@@ -92,7 +92,7 @@ def build_journal_ref(
 def build_journal_ref_payload(
     persisted: PersistedRun,
     *,
-    runtime_store: RuntimeEventPersistence | None = None,
+    runtime_store: RuntimeEventPersistence,
     limit: int = 2000,
 ) -> Dict[str, Any] | None:
     """``TASK_COMPLETED`` payload fragment with unified journal metadata."""
@@ -105,7 +105,7 @@ def build_journal_ref_payload(
 def build_journal_export_snapshot(
     persisted: PersistedRun,
     *,
-    runtime_store: RuntimeEventPersistence | None = None,
+    runtime_store: RuntimeEventPersistence,
     limit: int = 2000,
 ) -> JournalExportSnapshot:
     """Serialize the unified journal for export sinks."""

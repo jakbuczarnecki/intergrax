@@ -141,16 +141,14 @@ def test_unified_journal_preserves_canonical_identity() -> None:
     assert journal[0] is stored
 
 
-def test_unified_journal_does_not_convert_trace_rows_without_store() -> None:
+def test_unified_journal_empty_canonical_store_returns_empty() -> None:
     run_id = mint_run_id()
-    journal = build_unified_run_journal(
-        _persisted_run(_trace(run_id=run_id), run_id=run_id),
-        runtime_store=None,
-    )
+    store = InMemoryRuntimeEventStore()
+    journal = build_unified_run_journal(_persisted_run(run_id=run_id), runtime_store=store)
     assert journal == []
 
 
-def test_unified_journal_does_not_substitute_run_id_for_missing_task_id() -> None:
+def test_unified_journal_does_not_use_plane_b_as_canonical_fallback() -> None:
     run_id = mint_run_id()
     journal = build_unified_run_journal(
         _persisted_run(_trace(run_id=run_id), run_id=run_id),
@@ -167,12 +165,18 @@ def test_unified_journal_rejects_task_id_as_run_id() -> None:
 
 def test_unified_journal_rejects_attempt_id_as_run_id() -> None:
     with pytest.raises(ValueError, match="RunId must start with"):
-        build_unified_run_journal(_persisted_run(run_id=mint_attempt_id()), runtime_store=None)
+        build_unified_run_journal(
+            _persisted_run(run_id=mint_attempt_id()),
+            runtime_store=InMemoryRuntimeEventStore(),
+        )
 
 
 def test_unified_journal_rejects_event_id_as_run_id() -> None:
     with pytest.raises(ValueError, match="RunId must start with"):
-        build_unified_run_journal(_persisted_run(run_id=mint_event_id()), runtime_store=None)
+        build_unified_run_journal(
+            _persisted_run(run_id=mint_event_id()),
+            runtime_store=InMemoryRuntimeEventStore(),
+        )
 
 
 def test_malformed_identity_prefixes_fail_validators() -> None:
@@ -413,5 +417,8 @@ def test_unified_journal_source_has_no_dynamic_identity_adapters() -> None:
         "mint_attempt_id",
         "peek_active_execution_identity",
         "bridge_persisted_trace_events",
+        "runtime_store is None",
+        "runtime_store=None",
+        "RuntimeEventPersistence | None",
     ):
         assert forbidden not in source, forbidden
