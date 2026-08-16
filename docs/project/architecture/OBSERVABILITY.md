@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-08-16 — **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
+**Last updated:** 2026-08-16 — **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
 
 ---
 
@@ -1019,7 +1019,7 @@ As-of projections and bitemporal historical state answer **different questions**
 
 ## 8. First-class bitemporal historical state (TRACE-BITEMP-ARCH-SYNC)
 
-**Status:** Target canon (**accepted** 2026-08-15; revision-ordering authority / provider contract **TRACE-BITEMP-ARCH-SYNC-R4** 2026-08-16) · implementation **Planned** (TRACE-BITEMP-1–TRACE-BITEMP-5) · **not implemented** in current runtime
+**Status:** Target canon (**accepted** 2026-08-15; watermark finality / gap semantics **TRACE-BITEMP-ARCH-SYNC-R5** 2026-08-16; revision-ordering authority / provider contract **TRACE-BITEMP-ARCH-SYNC-R4** 2026-08-16) · implementation **Planned** (TRACE-BITEMP-1–TRACE-BITEMP-5) · **not implemented** in current runtime
 
 ### 8.1 Capability definition
 
@@ -1060,7 +1060,7 @@ Architecture distinguishes **independent reconstruction coordinates and ordering
 | **Execution AsOfBoundary** (§7) | Execution-history position | **WHERE** in this run / journal are we reconstructing? (e.g. event E42, journal position P42 — exact contract deferred to TRACE-ASOF-1) |
 | **Valid time** | Bitemporal temporal axis | **WHEN** was this fact actually effective / true in the modeled domain? |
 | **System time** | Bitemporal temporal axis | **WHEN** did Intergrax know / record / accept this version of the fact? |
-| **KnowledgeRevisionWatermark** (conceptual) | Authoritative knowledge-order upper bound | Reconstruct using accepted knowledge/revisions **up to** knowledge position K |
+| **KnowledgeRevisionWatermark** (conceptual) | Authoritative **finalized contiguous** knowledge-order upper bound | Reconstruct using accepted knowledge/revisions **up to** finalized watermark K; not highest allocated |
 
 **Bitemporal state** means **only** valid-time + system-time — **two** temporal axes. It does **not** include execution boundary. **KnowledgeRevisionWatermark** / **KnowledgeRevisionPosition** is **not** a third temporal axis. **Execution AsOfBoundary** is **not** part of bitemporality. Ordering positions and watermarks are deterministic reconstruction/order primitives.
 
@@ -1198,7 +1198,7 @@ Questions 5–6 and 9–10 require knowledge/revision ordering — **not** times
 
 #### Knowledge / revision watermark (conceptual)
 
-**KnowledgeRevisionWatermark** is a **conceptual** name only — TRACE-BITEMP-1 owns the exact typed definition. It represents a **stable authoritative upper boundary** in accepted knowledge/revision ordering.
+**KnowledgeRevisionWatermark** is a **conceptual** name only — TRACE-BITEMP-1 owns the exact typed definition. It represents a **stable authoritative finalized contiguous upper boundary** in knowledge/revision ordering (see §8 revision position lifecycle).
 
 Conceptually:
 
@@ -1211,6 +1211,84 @@ Watermark **K3** means: reconstruct using knowledge/revisions accepted **up to t
 It **MUST NOT** mean: all records whose producer timestamp `<=` some timestamp.
 
 The watermark is based on **authoritative accepted revision ordering**, not producer/service wall-clock timestamps.
+
+#### Revision position lifecycle and watermark finality (TRACE-BITEMP-ARCH-SYNC-R5)
+
+Revision-order positions have a **provider-independent conceptual lifecycle**. Exact runtime enum/type names remain owned by **TRACE-BITEMP-1**; the semantic distinctions below are **canonical**.
+
+| Conceptual state | Meaning |
+|------------------|---------|
+| **ALLOCATED** | An authoritative position has been reserved/assigned but is **not** yet known to be safely visible as accepted knowledge |
+| **COMMITTED / ACCEPTED** | The revision has reached the canonical accepted state and is durably associated with its authoritative position |
+| **UNRESOLVED / IN_FLIGHT** | The position may still become committed/accepted; readers **cannot** safely advance a stable knowledge watermark past it |
+| **TERMINAL_NON_COMMITTED** | The position can **never** become an accepted revision and has reached a durable terminal outcome (e.g. explicit VOID / ABORTED / RETIRED semantics) |
+
+**Allocated position ≠ accepted revision.** Revision position allocation and revision acceptance **may** be separate internal provider steps. Canonical semantics expose acceptance only after the contract's atomic acceptance requirements are satisfied. An allocated-but-unaccepted position **MUST NOT** appear as accepted knowledge — regardless of whether the canonical implementation later uses one DB transaction, sequencer + durable acceptance, CAS, or another mechanism.
+
+**KnowledgeRevisionWatermark MUST NOT mean highest allocated position.** A provider may allocate **K** before the corresponding revision is durably accepted. Examples: transaction allocates a sequence value then rolls back; external sequencer allocates **K** but the acceptance write fails; process crashes between allocation and durable acceptance; concurrent acceptance remains unresolved. Highest-allocated may therefore expose a boundary that contains unresolved knowledge history. Canonical readers **MUST NOT** infer completeness from allocation alone.
+
+**Finalized contiguous watermark semantics.** **KnowledgeRevisionWatermark K** represents the highest authoritative position such that **every position ≤ K** within the applicable ordering scope has reached a **durable terminal outcome** and **no unresolved/in-flight allocation remains below K**.
+
+A terminal outcome may be:
+
+- **accepted/committed** revision, **or**
+- **explicit durable terminal non-committed** outcome
+
+Do **not** define the watermark as "highest contiguous committed" if that would make a permanent rollback gap block advancement forever. Instead:
+
+```text
+FINALIZED = COMMITTED/ACCEPTED  OR  DURABLY TERMINAL-NON-COMMITTED
+```
+
+Example — watermark **may** advance across a permanent terminal gap:
+
+```text
+K1 COMMITTED
+K2 TERMINAL_NON_COMMITTED
+K3 COMMITTED
+K4 COMMITTED
+→ watermark MAY advance to K4
+```
+
+Example — unresolved gap **blocks** advancement:
+
+```text
+K1 COMMITTED
+K2 UNRESOLVED
+K3 COMMITTED
+K4 COMMITTED
+→ watermark MUST NOT advance beyond K1
+```
+
+**No invisible gaps below watermark.** There **MUST NOT** be an unresolved or semantically unknown gap below a published **KnowledgeRevisionWatermark**. Every position ≤ watermark **MUST** be deterministically classifiable. Readers **MUST** be able to distinguish accepted revision positions from terminal non-committed positions without reconstructing provider-specific allocation behavior. A provider-specific "missing row" is **not** sufficient canonical semantics — absence alone **MUST NOT** ambiguously mean rolled back, still pending, never allocated, lost write, or provider bug. **TRACE-BITEMP-1** **MUST** define how terminal non-committed positions are represented semantically; **TRACE-BITEMP-2** chooses physical persistence representation. Architecture freezes terminal-non-committed **semantics**, not necessarily a physical "void record" implementation — future providers may use tombstone/void revision state, allocator ledger, transactional status row, sequencer finalization metadata, or another provider-specific representation behind the canonical contract.
+
+**Idempotent acceptance / dedup identity.** Every logical revision acceptance **MUST** have a stable idempotency/dedup identity. Conceptually:
+
+```text
+accept(revision R, acceptance_key A) → position K
+
+retry accept(same logical revision R, same acceptance_key A)
+  → same accepted semantic result
+  → same authoritative position K
+```
+
+A retry **MUST NOT** create a second accepted revision merely because the original caller did not receive the response. A retry **MUST NOT** consume a semantically different authoritative position for the same already-accepted logical operation. Exact typed key/name and ownership/scope belong to **TRACE-BITEMP-1** — architecture does **not** assume the key is generated by the client.
+
+**Failure / crash semantics (contract requirements).** **TRACE-BITEMP-1** **MUST** define behavior for at least:
+
+| Scenario | Required eventual outcome |
+|----------|---------------------------|
+| **A** Position allocated; acceptance succeeds | Accepted/committed at **K** |
+| **B** Position allocated; acceptance rolls back | Terminal non-committed or explicit unresolved until resolved |
+| **C** Position allocated; process crashes before acceptance outcome is known | Remains explicitly unresolved until classified, or becomes accepted/terminal non-committed |
+| **D** Acceptance durably commits; caller times out before response | Accepted at **K**; retry returns same semantic result |
+| **E** Retry occurs after **D** | Same semantic **K** — no duplicate accepted revision |
+| **F** Sequencer/provider issued **K** but durable revision write never commits | Terminal non-committed or explicitly unresolved — watermark cannot advance past unresolved **K** |
+| **G** Provider recovers after restart with unresolved positions | Each position eventually becomes accepted/committed **or** terminal non-committed, or remains explicitly unresolved such that watermark cannot advance past it |
+
+No silent ambiguous state.
+
+**Production-derived decision input (not selected architecture).** Transactional allocation is a strong **candidate** for the canonical default because revision position allocation and durable acceptance may be coordinated within the same transactional boundary, simplifying monotonic ordering, acceptance atomicity, retry behavior, deduplication, and failure reasoning. **TRACE-BITEMP-ARCH-SYNC-R5 does not select transactional allocation.** **TRACE-BITEMP-1** **MUST** still compare it against dedicated sequencer, distributed/scoped sequencer, transactional/storage-native allocation, CAS/optimistic approaches, and other viable strategies using the frozen invariant set above — including explicit comparison of highest-allocated vs highest-committed vs highest-contiguous-committed vs highest-contiguous-finalized — and document why the selected semantics satisfy provider independence and failure safety.
 
 #### Wall-clock query vs reconstruction boundary
 
@@ -1235,6 +1313,8 @@ historically reproducible execution state
 
 Wall-clock time is a **query input / temporal basis**. It **MUST NOT** replace deterministic revision ordering. Where deterministic knowledge ordering is required, historical reads **SHOULD** resolve time-oriented questions onto an authoritative revision boundary **before** combining with execution reconstruction.
 
+A wall-clock system-time query ("What did the system know at time **T**?") **MAY** resolve to a **KnowledgeRevisionWatermark K** only if **K** satisfies the **finalized contiguous boundary** semantics (§8 revision position lifecycle). The resolver **MUST NOT** return a highest-allocated position containing unresolved gaps. If knowledge positions beyond the safe watermark were already allocated or even partially processed, they remain outside the canonical stable boundary until their lower gaps are finalized.
+
 This resolution is **semantic**. Architecture does **not** claim that materialization, indexes, or a runtime resolver already exist.
 
 #### Bounded resolution vs unbounded full-history replay
@@ -1254,14 +1334,16 @@ The Observability / Bitemporal domain **MUST** own the authoritative revision-or
 The contract owns semantic guarantees such as:
 
 - allocate / accept an authoritative revision position
+- classify position lifecycle state (allocated, accepted, unresolved, terminal non-committed)
 - preserve monotonic ordering within the declared scope
-- expose / reconstruct **KnowledgeRevisionWatermark**
+- expose / reconstruct **KnowledgeRevisionWatermark** using finalized contiguous boundary semantics
 - deterministic concurrent acceptance
 - atomic association of acceptance and position
-- idempotent retry semantics
+- idempotent retry semantics keyed by stable acceptance/dedup identity
 - failure-safe acceptance semantics
 - auditability
 - deterministic historical reads
+- provider-independent observational equivalence for all qualified providers
 
 The contract **MUST NOT** delegate semantic ownership to an application, agent/model, or plugin runtime layer.
 
@@ -1303,6 +1385,8 @@ SEMANTIC INVARIANCE
 #### Qualified alternative providers
 
 A host/deployment **MAY** select a qualified alternative provider when deployment requirements differ. Every alternative **MUST** implement the **same** **RevisionOrderingAuthority** contract and preserve exactly the same ordering, watermark, concurrency, audit, failure, and reconstruction semantics.
+
+**Provider-independent observational equivalence.** Provider A may allocate transactionally; Provider B may use a dedicated sequencer; Provider C may use another production-grade allocator. Canonical readers **MUST** see the same semantics for revision acceptance, authoritative position, position finality, gaps, watermark, historical reconstruction, retry/idempotency, and failure visibility. Provider swap **MUST NOT** change the meaning of **KnowledgeRevisionWatermark**. Implementation-specific allocation gaps **MUST** remain below the semantic abstraction.
 
 Examples of future implementation strategies **MAY** include (unselected here):
 
@@ -1396,12 +1480,12 @@ Every provider used for production-capable bitemporal ordering **MUST** be quali
 2. **Monotonicity** — later accepted revisions cannot appear before earlier accepted revisions within that scope.
 3. **Concurrency determinism** — concurrent accepted corrections resolve to deterministic distinct positions.
 4. **Clock independence** — producer/service wall-clock timestamps cannot define authoritative ordering.
-5. **Atomic acceptance** — a revision must not become "accepted" without its authoritative position being durably associated with that acceptance.
-6. **Retry / idempotency** — retrying the same logical acceptance must not create duplicate accepted revisions or consume semantically different positions incorrectly.
-7. **Failure semantics** — partial failure between persistence and ordering allocation must not create ambiguous accepted history; no half-accepted revision.
+5. **Atomic acceptance** — a revision must not become "accepted" without its authoritative position being durably associated with that acceptance; allocated-but-unaccepted positions must not appear as accepted knowledge.
+6. **Retry / idempotency** — retrying the same logical acceptance (same stable acceptance/dedup identity) must not create duplicate accepted revisions or consume semantically different positions incorrectly; retry must return the same semantic accepted result and authoritative position.
+7. **Failure semantics** — partial failure between persistence and ordering allocation must not create ambiguous accepted history; no half-accepted revision; each position must eventually become accepted/committed, terminal non-committed, or remain explicitly unresolved blocking watermark advancement.
 8. **Auditability** — auditors can determine the acceptance order without reconstructing it from timestamps.
 9. **Lineage independence** — `supersedes` remains causal lineage and does **not** substitute for total/order position.
-10. **Deterministic watermark resolution** — wall-clock system-time queries resolve deterministically to the correct authoritative knowledge boundary.
+10. **Deterministic watermark resolution** — wall-clock system-time queries resolve deterministically to the correct **finalized contiguous** knowledge boundary; watermark must not mean highest allocated; no unresolved gaps below published watermark; permanent terminal gaps may be crossed.
 11. **Deterministic repeated reconstruction** — same E/K/temporal basis returns deterministic equivalent state.
 12. **Scope definition** — the exact ordering scope **MUST** be explicitly selected (global, tenant, domain, aggregate/fact stream, or another defined scope). This architecture-sync **does not** choose the scope.
 13. **Selected ordering-scope correctness** — proof matches the scope chosen in TRACE-BITEMP-1.
@@ -1494,7 +1578,7 @@ Revision lineage, temporal axes, execution boundary, knowledge/revision ordering
 | **`revision_id`** | Immutable revision identity |
 | **`supersedes`** | Causal/version lineage between revisions — **not** total/order position |
 | **Knowledge/revision position** | Deterministic authoritative ordering of accepted revisions/corrections |
-| **KnowledgeRevisionWatermark** (conceptual) | Stable authoritative upper bound in that ordering; TRACE-BITEMP-1 owns the exact typed contract |
+| **KnowledgeRevisionWatermark** (conceptual) | Stable authoritative **finalized contiguous** upper bound in that ordering; not highest allocated; TRACE-BITEMP-1 owns the exact typed contract |
 | **Valid time** | Domain effectiveness (bitemporal axis) |
 | **System time** | When the platform knew/recorded the revision (bitemporal axis) |
 | **Execution AsOfBoundary** | Position inside execution history — independent of knowledge ordering |
@@ -1551,7 +1635,7 @@ Accepted architecture · **Planned** implementation · **no** current runtime co
 | **Knowledge/revision ordering** | Deterministic authoritative ordering of accepted corrections/revisions — **not** a bitemporal axis; **not** execution ordering |
 | **RevisionOrderingAuthority** (conceptual) | Domain-owned semantic contract for authoritative revision ordering; TRACE-BITEMP-1 owns exact typed contract; semantics **not** per-application configurable |
 | **CanonicalRevisionOrderingProvider** (conceptual) | Intergrax first-party default provider implementing **RevisionOrderingAuthority**; canonical algorithm unselected until TRACE-BITEMP-1 |
-| **KnowledgeRevisionWatermark** (conceptual) | Stable authoritative upper bound in knowledge/revision ordering; TRACE-BITEMP-1 owns the exact typed contract |
+| **KnowledgeRevisionWatermark** (conceptual) | Stable authoritative **finalized contiguous** upper bound in knowledge/revision ordering; not highest allocated; TRACE-BITEMP-1 owns the exact typed contract |
 | **Historically reproducible execution state** | Combined reconstruction: execution boundary E + knowledge watermark K + bitemporal knowledge basis — **not** “bitemporal state” |
 | **Provenance** | Origin / lineage of relevant inputs and references |
 | **Evidence** | Persisted supporting evidence |
