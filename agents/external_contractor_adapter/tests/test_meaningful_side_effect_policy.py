@@ -288,7 +288,7 @@ def test_missing_policy_and_indeterminate_fail_closed() -> None:
     # RuntimePolicyEngine default (no matching rule) is indeterminate → DENY.
     from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
-    engine = RuntimePolicyEngine(rules=[])
+    engine = RuntimePolicyEngine()
     adapter = ExternalWorkAdapter(fake, side_effect_policy=engine)
     indeterminate = adapter.create_and_map(
         adapter.build_create_request(

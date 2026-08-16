@@ -40,6 +40,7 @@ from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
 )
+from intergrax.contracts.meaningful_side_effect_policy import MeaningfulSideEffectPolicyRule
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
@@ -146,40 +147,37 @@ def _seed_resource_allow(repo: InMemoryCollaborativePolicyRepository) -> None:
 
 def _runtime_engine_allow() -> RuntimePolicyEngine:
     return RuntimePolicyEngine(
-        rules=[
-            {
-                "type": "meaningful_side_effect",
-                "action": _OPERATION,
-                "decision": "allow",
-                "id": "runtime.allow",
-            }
-        ]
+        meaningful_side_effect_rules=(
+            MeaningfulSideEffectPolicyRule(
+                rule_id="runtime.allow",
+                action=_OPERATION,
+                decision=PolicyAction.ALLOW,
+            ),
+        )
     )
 
 
 def _runtime_engine_deny() -> RuntimePolicyEngine:
     return RuntimePolicyEngine(
-        rules=[
-            {
-                "type": "meaningful_side_effect",
-                "action": _OPERATION,
-                "decision": "deny",
-                "id": "runtime.deny",
-            }
-        ]
+        meaningful_side_effect_rules=(
+            MeaningfulSideEffectPolicyRule(
+                rule_id="runtime.deny",
+                action=_OPERATION,
+                decision=PolicyAction.DENY,
+            ),
+        )
     )
 
 
 def _runtime_engine_require_human() -> RuntimePolicyEngine:
     return RuntimePolicyEngine(
-        rules=[
-            {
-                "type": "meaningful_side_effect",
-                "action": _OPERATION,
-                "decision": "require_human",
-                "id": "runtime.hitl",
-            }
-        ]
+        meaningful_side_effect_rules=(
+            MeaningfulSideEffectPolicyRule(
+                rule_id="runtime.hitl",
+                action=_OPERATION,
+                decision=PolicyAction.REQUIRE_HUMAN,
+            ),
+        )
     )
 
 

@@ -40,6 +40,7 @@ from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
 )
+from intergrax.contracts.meaningful_side_effect_policy import MeaningfulSideEffectPolicyRule
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
@@ -137,14 +138,13 @@ def _seed_gate(
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=runtime_policy
         or RuntimePolicyEngine(
-            rules=[
-                {
-                    "type": "meaningful_side_effect",
-                    "action": _OPERATION,
-                    "decision": "allow",
-                    "id": "runtime.allow",
-                }
-            ]
+            meaningful_side_effect_rules=(
+                MeaningfulSideEffectPolicyRule(
+                    rule_id="runtime.allow",
+                    action=_OPERATION,
+                    decision=PolicyAction.ALLOW,
+                ),
+            )
         ),
     )
     return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate), membership
@@ -199,14 +199,13 @@ def test_boundary_deny_blocks_execution() -> None:
 def test_boundary_require_human_does_not_become_allow() -> None:
     boundary, membership = _seed_gate(
         runtime_policy=RuntimePolicyEngine(
-            rules=[
-                {
-                    "type": "meaningful_side_effect",
-                    "action": _OPERATION,
-                    "decision": "require_human",
-                    "id": "runtime.hitl",
-                }
-            ]
+            meaningful_side_effect_rules=(
+                MeaningfulSideEffectPolicyRule(
+                    rule_id="runtime.hitl",
+                    action=_OPERATION,
+                    decision=PolicyAction.REQUIRE_HUMAN,
+                ),
+            )
         )
     )
     authorization = boundary.authorize(_enforcement_request(membership))
