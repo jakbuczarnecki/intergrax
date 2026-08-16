@@ -894,7 +894,7 @@ The journal is a **derived view**. Metrics, external APM, and product summaries 
 
 ## 7. First-class as-of projections (TRACE-ARCH-SYNC-1)
 
-**Status:** Target canon (**accepted** 2026-08-15) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done** (2026-08-16) · logical projections **Planned** (TRACE-ASOF-2–TRACE-ASOF-4) · compatible with bitemporal knowledge basis (§8)
+**Status:** Target canon (**accepted** 2026-08-15) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Planned / In Review** (implementation acceptance pending) · logical projections **Planned** (TRACE-ASOF-2–TRACE-ASOF-4) · compatible with bitemporal knowledge basis (§8)
 
 ### 7.1 Capability definition
 

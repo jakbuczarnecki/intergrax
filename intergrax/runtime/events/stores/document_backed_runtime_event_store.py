@@ -6,12 +6,13 @@
 from __future__ import annotations
 from intergrax.utils import attribute_access
 
-from collections import defaultdict
 from collections.abc import Sequence
-from threading import Lock
-from typing import DefaultDict, List, Protocol, runtime_checkable
+from typing import List
 
-from intergrax.integrations.contracts.document_store import DocumentRecord
+from intergrax.integrations.contracts.document_store import (
+    ConditionalDocumentStore,
+    DocumentRecord,
+)
 from intergrax.runtime.events.execution_position import (
     ExecutionEventPosition,
     PositionedRuntimeEvent,
@@ -23,23 +24,6 @@ from intergrax.runtime.events.persistence_contract import (
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 
-@runtime_checkable
-class DocumentStoreLike(Protocol):
-    def get(self, partition_key: str, row_key: str) -> DocumentRecord | None: ...
-
-    def put(self, document: DocumentRecord) -> None: ...
-
-    def query(
-        self,
-        partition_key: str,
-        *,
-        limit: int = 100,
-        row_key_prefix: str | None = None,
-    ) -> object: ...
-
-    def close(self) -> None: ...
-
-
 def _run_partition(tenant_id: str, run_id: str) -> str:
     return f"{tenant_id}|run|{run_id}"
 
@@ -49,6 +33,7 @@ def _task_partition(tenant_id: str, task_id: str) -> str:
 
 
 _SEQUENCE_ROW_KEY = "__run_sequence__"
+_MAX_SEQUENCE_CAS_ATTEMPTS = 16
 
 
 class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
@@ -56,39 +41,48 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
     Maps canonical runtime events onto a ``DocumentStore`` partition model.
 
     Used by Cassandra and other wide-column backends without forking the bus contract.
+    Requires ``ConditionalDocumentStore`` for distributed-safe position allocation.
     """
 
-    def __init__(self, document_store: DocumentStoreLike) -> None:
+    def __init__(self, document_store: ConditionalDocumentStore) -> None:
+        if not isinstance(document_store, ConditionalDocumentStore):
+            raise TypeError(
+                "DocumentBackedRuntimeEventStore requires ConditionalDocumentStore"
+            )
         self._store = document_store
-        self._run_locks: DefaultDict[str, Lock] = defaultdict(Lock)
 
     def append(self, event: RuntimeEvent, *, tenant_id: str) -> PositionedRuntimeEvent:
         scope = tenant_id or event.tenant_id or ""
         run_partition = _run_partition(scope, event.run_id)
-        with self._run_locks[run_partition]:
-            existing = self._get_positioned(run_partition, event.event_id)
-            if existing is not None:
-                return existing
-            position = self._allocate_position(run_partition)
-            payload = event.model_dump(mode="json")
-            document_data = {
-                "event": payload,
-                "execution_position": position.value,
-            }
-            for partition in (
-                run_partition,
-                _task_partition(scope, event.task_id),
-            ):
-                if self._store.get(partition, event.event_id) is not None:
-                    continue
-                self._store.put(
-                    DocumentRecord(
-                        partition_key=partition,
-                        row_key=event.event_id,
-                        data=document_data,
-                    )
+        existing = self._get_positioned(run_partition, event.event_id)
+        if existing is not None:
+            return existing
+        position = self._allocate_position(run_partition)
+        payload = event.model_dump(mode="json")
+        document_data = {
+            "event": payload,
+            "execution_position": position.value,
+        }
+        run_document = DocumentRecord(
+            partition_key=run_partition,
+            row_key=event.event_id,
+            data=document_data,
+        )
+        if not self._store.put_if_absent(run_document):
+            accepted = self._get_positioned(run_partition, event.event_id)
+            if accepted is None:
+                raise RuntimeError("execution_position_allocation_conflict")
+            return accepted
+        task_partition = _task_partition(scope, event.task_id)
+        if self._store.get(task_partition, event.event_id) is None:
+            self._store.put(
+                DocumentRecord(
+                    partition_key=task_partition,
+                    row_key=event.event_id,
+                    data=document_data,
                 )
-            return PositionedRuntimeEvent(event=event, position=position)
+            )
+        return PositionedRuntimeEvent(event=event, position=position)
 
     def list_positioned_for_run(
         self,
@@ -125,29 +119,32 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
         self._store.close()
 
     def _allocate_position(self, run_partition: str) -> ExecutionEventPosition:
-        record = self._store.get(run_partition, _SEQUENCE_ROW_KEY)
-        if record is None or not isinstance(record.data, dict):
-            position = ExecutionEventPosition(1)
-            self._store.put(
-                DocumentRecord(
+        for _ in range(_MAX_SEQUENCE_CAS_ATTEMPTS):
+            record = self._store.get(run_partition, _SEQUENCE_ROW_KEY)
+            if record is None or not isinstance(record.data, dict):
+                if self._store.put_if_absent(
+                    DocumentRecord(
+                        partition_key=run_partition,
+                        row_key=_SEQUENCE_ROW_KEY,
+                        data={"next_position": 2},
+                    )
+                ):
+                    return ExecutionEventPosition(1)
+                continue
+            raw_next = record.data.get("next_position")
+            if type(raw_next) is not int or isinstance(raw_next, bool) or raw_next < 1:
+                raise RuntimeError("invalid run sequence state in document store")
+            position = ExecutionEventPosition(raw_next)
+            if self._store.replace_if_match(
+                expected=record,
+                replacement=DocumentRecord(
                     partition_key=run_partition,
                     row_key=_SEQUENCE_ROW_KEY,
-                    data={"next_position": 2},
-                )
-            )
-            return position
-        raw_next = record.data.get("next_position")
-        if type(raw_next) is not int or isinstance(raw_next, bool) or raw_next < 1:
-            raise RuntimeError("invalid run sequence state in document store")
-        position = ExecutionEventPosition(raw_next)
-        self._store.put(
-            DocumentRecord(
-                partition_key=run_partition,
-                row_key=_SEQUENCE_ROW_KEY,
-                data={"next_position": raw_next + 1},
-            )
-        )
-        return position
+                    data={"next_position": raw_next + 1},
+                ),
+            ):
+                return position
+        raise RuntimeError("execution_position_allocation_conflict")
 
     def _get_positioned(
         self,
