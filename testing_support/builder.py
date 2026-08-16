@@ -447,7 +447,7 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
         canonical_run_id = validate_run_id(run_id)
         canonical_task_id = validate_task_id(f"task_{run_id[4:]}")
     else:
-        digest = sha256(run_id.encode()).hexdigest()
+        digest = sha256(run_id.encode()).hexdigest()[:32]
         canonical_run_id = validate_run_id(f"run_{digest}")
         canonical_task_id = validate_task_id(f"task_{digest}")
 
