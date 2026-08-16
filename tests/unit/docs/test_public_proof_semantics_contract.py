@@ -93,8 +93,10 @@ def test_proofs_surface_lkw_product_quickstart_taxonomy(proofs_text: str) -> Non
     )
     assert quickstart_row is not None
     row = quickstart_row.group(0).lower()
-    assert "not hybrid ask certification" in row
-    assert "hybrid ask certification" not in row.replace("not hybrid ask certification", "")
+    assert "not the hybrid ask verification path" in row
+    assert "hybrid ask verification path" not in row.replace(
+        "not the hybrid ask verification path", ""
+    )
 
     assert "🟡 **PARTIAL**" in proofs_text
     assert "**Trusted Ask / durable indexed workspace Ask**" in lkw_section
@@ -106,6 +108,17 @@ def test_proofs_surface_lkw_product_quickstart_taxonomy(proofs_text: str) -> Non
     trusted_pos = lkw_section.index("| **Trusted Ask / durable indexed workspace Ask** |")
     core_pos = lkw_section.index("| **Core Platform Proof** |")
     assert quickstart_pos < hybrid_pos < trusted_pos < core_pos
+
+
+def test_proofs_additional_bounded_lkw_proof_table_structure(proofs_text: str) -> None:
+    lkw_section = proofs_text.split("## LKW — Primary product proof", 1)[1].split(
+        "\n---\n", 1
+    )[0]
+    assert "### Additional bounded LKW proof paths" in lkw_section
+    supporting_table = lkw_section.split("### Additional bounded LKW proof paths", 1)[1]
+    assert "| Capability | Status | What it demonstrates | Limitation |" in supporting_table
+    assert "| Web URL knowledge intake |" in supporting_table
+    assert "| Ollama / vLLM model runtime portability |" in supporting_table
 
 
 def test_maintainer_contract_contains_executable_binding_rules(

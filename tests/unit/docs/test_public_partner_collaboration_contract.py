@@ -399,7 +399,7 @@ def test_faq_hybrid_ask_reader_route(faq_text: str) -> None:
     assert "is hybrid ask proven?" in faq_norm
     for phrase in (
         "ask v1",
-        "not the hybrid ask certification path",
+        "not the hybrid ask verification path",
         "bounded indexed branch through hybrid ask",
         "mixed indexed + authorized-live hybrid ask",
         "not proven",
@@ -409,6 +409,27 @@ def test_faq_hybrid_ask_reader_route(faq_text: str) -> None:
         "lkw platform proof",
     ):
         assert phrase in faq_norm, f"FAQ Hybrid Ask route missing marker: {phrase!r}"
+
+
+def test_faq_pilot_first_contact_matches_partners_lightweight_flow(faq_text: str) -> None:
+    faq_norm = " ".join(_normalize(faq_text).split())
+    pilot_section = _h2_section(faq_text, "## How do I discuss a pilot?")
+    pilot_norm = " ".join(_normalize(pilot_section).split())
+    for phrase in (
+        "partners.md",
+        "short",
+        "workflow note",
+        "sentence workflow note",
+        "users",
+        "workflow",
+        "current problem",
+        "desired result",
+        "intent",
+        "detailed pilot brief",
+        "after mutual fit",
+    ):
+        assert phrase in pilot_norm, f"FAQ pilot route missing marker: {phrase!r}"
+    assert "prepare a concrete pilot brief" not in pilot_norm
 
 
 def test_no_internal_architecture_language(

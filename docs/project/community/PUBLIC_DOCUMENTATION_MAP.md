@@ -68,7 +68,7 @@ with Try LKW as the repository’s primary product action.
 
 ---
 
-## Featured proof paths
+## Current product / proof paths
 
 ### Local Knowledge Workspace
 
@@ -91,6 +91,24 @@ Start with the [LKW Product Tour](../../../applications/local_workspace_applicat
 Intergrax includes a deterministic, policy-governed Token Optimization Engine with protected-region validation, receipts, cache-stable prompt assembly, cache-aware execution, and bounded proof paths.
 
 [Open the Token Optimization Engine guide](../capabilities/token_optimization/README.md)
+
+---
+
+## Strategic directions
+
+Future ecosystem and platform directions — **not** current product proofs. These remain lower priority than accepted evidence above.
+
+### Multiplayer AI
+
+**Future collaborative-AI direction — architecture concept**
+
+[Open the Multiplayer AI architecture concept](../capabilities/architecture/MULTIPLAYER_AI.md)
+
+### Platform Extensibility / Plugins
+
+**Future platform-extensibility direction — architecture concept**
+
+[Open the Platform Extensibility / Plugins architecture](../architecture/PLATFORM_PLUGINS.md)
 
 ### Agent Marketplace
 
