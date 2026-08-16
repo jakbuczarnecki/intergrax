@@ -42,6 +42,7 @@
 16. [Trust and security model](#16-trust-and-security-model)
 17. [Conflict semantics](#17-conflict-semantics)
 18. [Qualification model](#18-qualification-model)
+    - [18.3 Provider-scoped qualification (PROVIDER-QUAL-1)](#183-provider-scoped-qualification-provider-qual-1)
 19. [Observability expectations](#19-observability-expectations)
 20. [Third-party public API boundary](#20-third-party-public-api-boundary)
 21. [Multi-capability package model](#21-multi-capability-package-model)
@@ -614,6 +615,30 @@ A package may be installed but carry **mixed** qualification across capabilities
 | **B. Host-embedded extension** | explicit `register_*_plugin()` / host wiring | Not required | Same capability/domain qualification model; `host_registration_path` identity; compatibility N/A at package boundary |
 
 PLUGIN-8 proves executable E2E for both modes. PLUGIN-7 does not wire gates into every host bootstrap.
+
+### 18.3 Provider-scoped qualification (PROVIDER-QUAL-1)
+
+**Status:** Architecture freeze — **READY_FOR_REVIEW** (contract design only; no runtime implementation).
+
+**Decision (PROVIDER-QUAL-0):** **EXTEND_EXISTING** — reuse `intergrax/core/qualification/`, PLUGIN-7 coordination, `QualificationEvidence`, `ProofReceipt`, and domain-owned suites. **No** parallel `ProviderQualificationEngine`.
+
+**Canonical satellite:** [`satellites/PLATFORM_PLUGINS_provider_qualification.md`](satellites/PLATFORM_PLUGINS_provider_qualification.md)
+
+**Frozen highlights:**
+
+| Topic | Freeze |
+|-------|--------|
+| **Subject** | `ProviderQualificationSubject` — `provider_id`, `provider_version`, `capability_id`, `domain`, adapter identity, `intergrax_revision`, `qualification_suite_id` / `version`, `environment_id`; string/data-driven `provider_id` only |
+| **Run** | `ProviderQualificationRun` — immutable `qualification_run_id`, outcome, executor-neutral metadata, evidence refs, reproducibility, limitations, `source_revision` |
+| **Outcome vs validity** | `QualificationStatus` = historical outcome (`NOT_QUALIFIED` … `REJECTED` only); separate `QualificationEvidenceValidity` (`CURRENT` / `STALE` / `REVOKED`); compatibility separate |
+| **Admission** | `PRODUCTION_QUALIFIED` + `CURRENT` validity + compatibility + domain policy; no admission policy engine in PROVIDER-QUAL-1 |
+| **Evidence** | `QualificationEvidence` in-run canonical; optional `ProofReceipt` persistence via `ref` mapping — no second vocabulary |
+| **Capability scope** | Never globally qualified per provider; identity is provider + version + capability + suite + environment |
+| **Suite semantics** | Domain-owned; platform coordinates identity/index only |
+| **CI** | Contract/schema/harness tests only — not live all-vendor-on-every-PR |
+| **Scale** | 5/20/50+ providers via shared contracts + linear per-vendor adapter/setup/evidence |
+
+**Implementation:** PROVIDER-QUAL-2 (typed contracts, persistence, PostgreSQL evidence recording).
 
 ## 19. Observability expectations
 

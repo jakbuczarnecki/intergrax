@@ -148,6 +148,20 @@ Before the Platform Plugin program can be marked **CLOSED**, a final audit must 
 
 ---
 
+## PROVIDER-QUAL track (post PLUGIN-9)
+
+Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qualification engine. Architecture: [`satellites/PLATFORM_PLUGINS_provider_qualification.md`](../../architecture/satellites/PLATFORM_PLUGINS_provider_qualification.md).
+
+| ID | Task | Status | Purpose |
+|----|------|--------|---------|
+| **PROVIDER-QUAL-0** | Architecture decision | **Done** | `EXTEND_EXISTING` — reuse core qualification + platform coordination + ProofReceipt |
+| **PROVIDER-QUAL-1** | Architecture freeze + contract design | **READY_FOR_REVIEW** | Subject/run/status/evidence/admission/CI boundary freeze; PostgreSQL template; Oracle extensibility proof |
+| **PROVIDER-QUAL-2** | Typed contracts + evidence integration | Planned | Implement `ProviderQualificationSubject`, `ProviderQualificationRun`, `QualificationEvidenceValidity`; record CW PostgreSQL proof |
+
+**Explicit out of scope (PROVIDER-QUAL-1):** runtime Python changes, GHA vendor jobs, LKW integration, MP-2, admission policy engine, automatic staleness engine.
+
+---
+
 ## Explicit boundaries
 
 | Track | Boundary |
