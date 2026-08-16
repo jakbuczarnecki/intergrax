@@ -82,6 +82,17 @@ _MAX_EMBEDDING_MODEL_LENGTH = MAX_EMBEDDING_MODEL_LENGTH
 
 _DEFAULT_BASE_URL = "http://127.0.0.1:8020"
 _DEFAULT_TIMEOUT = 600
+_STACK_START_WAIT_SECONDS = 240
+_STACK_READY_POLL_SECONDS = 2.0
+_REQUIRED_PRODUCT_SERVICES = ("lkw-mongodb", "qdrant", "ollama", "local_workspace")
+_SERVICE_NOT_READY_REASONS = {
+    "lkw-mongodb": "mongodb_not_ready",
+    "qdrant": "qdrant_not_ready",
+    "ollama": "ollama_not_ready",
+    "local_workspace": "lkw_host_not_ready",
+}
+_FAILED_CONTAINER_STATES = frozenset({"exited", "dead"})
+_RUNNING_CONTAINER_STATES = frozenset({"running", "up"})
 _API_PREFIX = "/v1/local_workspace"
 _TENANT_ID = "lkw-product-quickstart"
 _QUESTION = "What is the project codename?"
@@ -149,6 +160,26 @@ class WrapperId(str, Enum):
     WINDOWS_BAT = "windows_bat"
     LINUX_SH = "linux_sh"
     MACOS_SH = "macos_sh"
+
+
+class StackStartupState(str, Enum):
+    ABSENT = "absent"
+    CREATED_NOT_READY = "created_not_ready"
+    STARTING = "starting"
+    HEALTHY = "healthy"
+    PARTIAL = "partial"
+    RESTARTING = "restarting"
+    FAILED = "failed"
+
+
+_RECOVERABLE_STACK_STATES = frozenset(
+    {
+        StackStartupState.CREATED_NOT_READY,
+        StackStartupState.STARTING,
+        StackStartupState.PARTIAL,
+        StackStartupState.RESTARTING,
+    }
+)
 
 
 VALID_OS_WRAPPER_PAIRS: frozenset[tuple[OsFamily, WrapperId]] = frozenset(
@@ -751,34 +782,188 @@ def compose_exec_args(*compose_command: str) -> list[str]:
     ]
 
 
-def _stack_failure_reason() -> str:
+def _compose_service_identity(service: Mapping[str, Any]) -> tuple[str, str, str]:
+    name = str(service.get("Service", service.get("service", ""))).strip()
+    state = str(service.get("State", service.get("state", ""))).strip().lower()
+    health = str(service.get("Health", service.get("health", ""))).strip().lower()
+    return name, state, health
+
+
+def _read_product_stack_services() -> list[dict[str, Any]] | None:
     completed = run_command(
         compose_exec_args("ps", "-a", "--format", "json"),
         timeout=30,
         stage="stack_start",
     )
     if completed.returncode != 0:
-        return "stack_start_failed"
-    services = _parse_compose_ps_services(completed.stdout)
+        return None
+    return _parse_compose_ps_services(completed.stdout)
+
+
+def classify_product_stack_startup(
+    services: Sequence[Mapping[str, Any]] | None,
+) -> StackStartupState:
+    if services is None:
+        return StackStartupState.FAILED
+    required: dict[str, tuple[str, str]] = {}
+    for service in services:
+        if not isinstance(service, Mapping):
+            continue
+        name, state, health = _compose_service_identity(service)
+        if name in _SERVICE_NOT_READY_REASONS:
+            required[name] = (state, health)
+    if not required:
+        return StackStartupState.ABSENT
+    if any(
+        state in _FAILED_CONTAINER_STATES or health == "unhealthy"
+        for state, health in required.values()
+    ):
+        return StackStartupState.FAILED
+    missing = [name for name in _REQUIRED_PRODUCT_SERVICES if name not in required]
+    created = [
+        name
+        for name, (state, _health) in required.items()
+        if state == "created"
+    ]
+    restarting = [
+        name
+        for name, (state, _health) in required.items()
+        if state == "restarting"
+    ]
+    healthy = [
+        name
+        for name, (state, health) in required.items()
+        if state in _RUNNING_CONTAINER_STATES and health == "healthy"
+    ]
+    starting = [
+        name
+        for name, (state, health) in required.items()
+        if state in _RUNNING_CONTAINER_STATES and health != "healthy"
+    ]
+    if (
+        not missing
+        and not created
+        and not restarting
+        and not starting
+        and len(healthy) == len(_REQUIRED_PRODUCT_SERVICES)
+    ):
+        return StackStartupState.HEALTHY
+    if restarting:
+        return StackStartupState.RESTARTING
+    if missing or created:
+        if healthy or starting:
+            return StackStartupState.PARTIAL if healthy else StackStartupState.CREATED_NOT_READY
+        return StackStartupState.CREATED_NOT_READY
+    if healthy and starting:
+        return StackStartupState.PARTIAL
+    return StackStartupState.STARTING
+
+
+def _stack_failure_reason(
+    services: Sequence[Mapping[str, Any]] | None = None,
+) -> str:
+    if services is None:
+        services = _read_product_stack_services()
     if services is None:
         return "stack_start_failed"
-    service_reasons = {
-        "lkw-mongodb": "mongodb_not_ready",
-        "qdrant": "qdrant_not_ready",
-        "ollama": "ollama_not_ready",
-        "local_workspace": "lkw_host_not_ready",
-    }
     for service in services:
-        if not isinstance(service, dict):
+        if not isinstance(service, Mapping):
             continue
-        name = str(service.get("Service", service.get("service", ""))).strip()
-        state = str(service.get("State", service.get("state", ""))).strip().lower()
-        health = str(service.get("Health", service.get("health", ""))).strip().lower()
-        if name in service_reasons and (
+        name, state, health = _compose_service_identity(service)
+        if name in _SERVICE_NOT_READY_REASONS and (
             state in {"exited", "dead", "created"} or health == "unhealthy"
         ):
-            return service_reasons[name]
+            return _SERVICE_NOT_READY_REASONS[name]
     return "stack_start_failed"
+
+
+def wait_for_product_stack_ready(
+    *,
+    timeout_seconds: int,
+    progress: ProgressReporter | None = None,
+    sleep: Callable[[float], None] | None = None,
+    clock: Callable[[], float] | None = None,
+) -> StackStartupState:
+    sleep_fn = time.sleep if sleep is None else sleep
+    clock_fn = time.monotonic if clock is None else clock
+    deadline = clock_fn() + max(1, timeout_seconds)
+    last_state = StackStartupState.ABSENT
+    while clock_fn() < deadline:
+        services = _read_product_stack_services()
+        last_state = classify_product_stack_startup(services)
+        if last_state is StackStartupState.HEALTHY:
+            return last_state
+        if last_state is StackStartupState.FAILED:
+            raise QuickstartError(_stack_failure_reason(services), stage="stack_start")
+        if last_state is StackStartupState.ABSENT:
+            raise QuickstartError("stack_start_failed", stage="stack_start")
+        if last_state not in _RECOVERABLE_STACK_STATES:
+            raise QuickstartError(_stack_failure_reason(services), stage="stack_start")
+        if progress is not None:
+            progress.heartbeat()
+        sleep_fn(_STACK_READY_POLL_SECONDS)
+    raise QuickstartError("stack_start_failed", stage="stack_start")
+
+
+def ensure_generation_model(
+    model_name: str,
+    *,
+    timeout_seconds: int,
+    progress: ProgressReporter | None = None,
+) -> None:
+    if _MODEL_PATTERN.fullmatch(model_name) is None:
+        raise QuickstartError("invalid_mandatory_configuration", stage="stack_start")
+    completed = run_command(
+        compose_exec_args(
+            "exec",
+            "-T",
+            "--env",
+            f"INTERGRAX_LLM_MODEL={model_name}",
+            "ollama",
+            "sh",
+            "-c",
+            'ollama pull "$INTERGRAX_LLM_MODEL"',
+        ),
+        cwd=_APP_DIR,
+        timeout=timeout_seconds,
+        stage="stack_start",
+        progress=progress,
+    )
+    if completed.returncode != 0:
+        raise QuickstartError("generation_model_pull_failed", stage="stack_start")
+
+
+def recover_product_stack_after_bootstrap_failure(
+    *,
+    generation_model: str,
+    timeout_seconds: int,
+    progress: ProgressReporter | None = None,
+    sleep: Callable[[float], None] | None = None,
+    clock: Callable[[], float] | None = None,
+) -> StackStartupState:
+    services = _read_product_stack_services()
+    state = classify_product_stack_startup(services)
+    if state is StackStartupState.HEALTHY:
+        ensure_generation_model(
+            generation_model,
+            timeout_seconds=timeout_seconds,
+            progress=progress,
+        )
+        return state
+    if state in _RECOVERABLE_STACK_STATES:
+        wait_for_product_stack_ready(
+            timeout_seconds=timeout_seconds,
+            progress=progress,
+            sleep=sleep,
+            clock=clock,
+        )
+        ensure_generation_model(
+            generation_model,
+            timeout_seconds=timeout_seconds,
+            progress=progress,
+        )
+        return StackStartupState.HEALTHY
+    raise QuickstartError(_stack_failure_reason(services), stage="stack_start")
 
 
 def resolve_ollama_embedding_model(
@@ -1241,9 +1426,13 @@ def _run_quickstart(config: QuickstartConfig) -> int:
                 },
             )
             if completed.returncode != 0:
-                raise QuickstartError(
-                    _stack_failure_reason(),
-                    stage="stack_start",
+                recover_product_stack_after_bootstrap_failure(
+                    generation_model=generation_model,
+                    timeout_seconds=min(
+                        config.timeout_seconds,
+                        _STACK_START_WAIT_SECONDS,
+                    ),
+                    progress=progress,
                 )
             progress.complete("Local LKW stack started")
         else:

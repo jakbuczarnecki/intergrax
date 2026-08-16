@@ -423,6 +423,7 @@ def _canonical_service(
     name: str,
     *,
     state: str = "running",
+    health: str = "",
     published_ports: list[int] | None = None,
 ) -> dict[str, Any]:
     publishers = [
@@ -434,7 +435,12 @@ def _canonical_service(
         }
         for port in (published_ports or [])
     ]
-    return {"Service": name, "State": state, "Publishers": publishers}
+    return {
+        "Service": name,
+        "State": state,
+        "Health": health,
+        "Publishers": publishers,
+    }
 
 
 def test_canonical_running_local_workspace_owns_8020(
@@ -644,6 +650,264 @@ def test_dependency_state_maps_without_forwarding_raw_output(
     assert quick._stack_failure_reason() == "qdrant_not_ready"
 
 
+def _required_stack(
+    *,
+    mongodb: tuple[str, str] = ("running", "healthy"),
+    qdrant: tuple[str, str] = ("running", "healthy"),
+    ollama: tuple[str, str] = ("running", "healthy"),
+    local_workspace: tuple[str, str] = ("running", "healthy"),
+    include_init_exited: bool = True,
+) -> list[dict[str, Any]]:
+    services = [
+        _canonical_service("lkw-mongodb", state=mongodb[0], health=mongodb[1]),
+        _canonical_service("qdrant", state=qdrant[0], health=qdrant[1]),
+        _canonical_service("ollama", state=ollama[0], health=ollama[1]),
+        _canonical_service("local_workspace", state=local_workspace[0], health=local_workspace[1]),
+    ]
+    if include_init_exited:
+        services.append(_canonical_service("otel-collector-data-init", state="exited"))
+    return services
+
+
+def test_classify_absent_stack(quick: ModuleType) -> None:
+    assert quick.classify_product_stack_startup([]) is quick.StackStartupState.ABSENT
+
+
+def test_classify_created_not_ready_first_start(quick: ModuleType) -> None:
+    services = _required_stack(
+        mongodb=("running", "starting"),
+        qdrant=("running", "starting"),
+        ollama=("running", "starting"),
+        local_workspace=("created", ""),
+    )
+    assert (
+        quick.classify_product_stack_startup(services)
+        is quick.StackStartupState.CREATED_NOT_READY
+    )
+
+
+def test_classify_starting_transition(quick: ModuleType) -> None:
+    services = _required_stack(
+        mongodb=("running", "healthy"),
+        qdrant=("running", "healthy"),
+        ollama=("running", "healthy"),
+        local_workspace=("running", "starting"),
+    )
+    assert (
+        quick.classify_product_stack_startup(services)
+        is quick.StackStartupState.PARTIAL
+    )
+    assert (
+        quick.classify_product_stack_startup(
+            _required_stack(
+                mongodb=("running", "starting"),
+                qdrant=("running", "starting"),
+                ollama=("running", "starting"),
+                local_workspace=("running", "starting"),
+            )
+        )
+        is quick.StackStartupState.STARTING
+    )
+
+
+def test_classify_healthy_stack_ignores_oneshot_init(quick: ModuleType) -> None:
+    assert (
+        quick.classify_product_stack_startup(_required_stack())
+        is quick.StackStartupState.HEALTHY
+    )
+
+
+def test_classify_restarting_is_recoverable(quick: ModuleType) -> None:
+    services = _required_stack(local_workspace=("restarting", ""))
+    assert (
+        quick.classify_product_stack_startup(services)
+        is quick.StackStartupState.RESTARTING
+    )
+    assert quick.StackStartupState.RESTARTING in quick._RECOVERABLE_STACK_STATES
+
+
+def test_classify_unhealthy_service_is_failed(quick: ModuleType) -> None:
+    services = _required_stack(mongodb=("running", "unhealthy"))
+    assert quick.classify_product_stack_startup(services) is quick.StackStartupState.FAILED
+    assert quick._stack_failure_reason(services) == "mongodb_not_ready"
+
+
+def test_starting_state_is_recoverable(quick: ModuleType) -> None:
+    services = _required_stack(local_workspace=("running", "starting"))
+    assert quick.classify_product_stack_startup(services) in quick._RECOVERABLE_STACK_STATES
+
+
+def test_wait_recovers_starting_to_healthy(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    snapshots = [
+        _compose_ps_stdout(*_required_stack(local_workspace=("running", "starting"))),
+        _compose_ps_stdout(*_required_stack()),
+    ]
+    calls: list[list[str]] = []
+
+    def _run(args: list[str], **_kwargs: Any) -> Any:
+        calls.append(list(args))
+        stdout = snapshots.pop(0) if snapshots else _compose_ps_stdout(*_required_stack())
+        return type("CP", (), {"returncode": 0, "stdout": stdout, "stderr": ""})()
+
+    now = 0.0
+
+    def _sleep(seconds: float) -> None:
+        nonlocal now
+        now += seconds
+
+    monkeypatch.setattr(quick, "run_command", _run)
+    monkeypatch.setattr(quick.time, "monotonic", lambda: now)
+    monkeypatch.setattr(quick.time, "sleep", _sleep)
+    state = quick.wait_for_product_stack_ready(timeout_seconds=30)
+    assert state is quick.StackStartupState.HEALTHY
+    assert all("down" not in cmd and "prune" not in cmd and "-v" not in cmd for cmd in calls)
+
+
+def test_wait_fails_immediately_on_genuine_service_failure(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {
+                "returncode": 0,
+                "stdout": _compose_ps_stdout(*_required_stack(mongodb=("exited", ""))),
+                "stderr": "",
+            },
+        )(),
+    )
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.wait_for_product_stack_ready(timeout_seconds=30)
+    assert exc.value.reason == "mongodb_not_ready"
+
+
+def test_wait_exhausts_bounded_starting_recovery(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {
+                "returncode": 0,
+                "stdout": _compose_ps_stdout(
+                    *_required_stack(local_workspace=("running", "starting"))
+                ),
+                "stderr": "",
+            },
+        )(),
+    )
+    now = 0.0
+
+    def _sleep(seconds: float) -> None:
+        nonlocal now
+        now += seconds
+
+    monkeypatch.setattr(quick.time, "monotonic", lambda: now)
+    monkeypatch.setattr(quick.time, "sleep", _sleep)
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.wait_for_product_stack_ready(timeout_seconds=3)
+    assert exc.value.reason == "stack_start_failed"
+
+
+def test_bootstrap_failure_recovers_healthy_stack(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _patch_success_flow(quick, monkeypatch, tmp_path)
+    calls: list[list[str]] = []
+
+    def _run(args: list[str], **_kwargs: Any) -> Any:
+        calls.append(list(args))
+        joined = " ".join(args)
+        if "build-local-docker" in joined:
+            return type("CP", (), {"returncode": 1, "stdout": "", "stderr": ""})()
+        if "ps" in args:
+            return type(
+                "CP",
+                (),
+                {
+                    "returncode": 0,
+                    "stdout": _compose_ps_stdout(*_required_stack()),
+                    "stderr": "",
+                },
+            )()
+        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(quick, "run_command", _run)
+    code = quick.run_quickstart(_config(quick, skip_stack_start=False))
+    assert code == 0
+    assert all("down" not in cmd and "prune" not in cmd for cmd in calls)
+    assert any("ollama" in cmd and "pull" in " ".join(cmd) for cmd in calls)
+
+
+def test_bootstrap_failure_recovers_created_then_healthy(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _patch_success_flow(quick, monkeypatch, tmp_path)
+    snapshots = [
+        _compose_ps_stdout(
+            *_required_stack(
+                mongodb=("running", "starting"),
+                qdrant=("running", "starting"),
+                ollama=("running", "starting"),
+                local_workspace=("created", ""),
+            )
+        ),
+        _compose_ps_stdout(*_required_stack(local_workspace=("running", "starting"))),
+        _compose_ps_stdout(*_required_stack()),
+    ]
+
+    def _run(args: list[str], **_kwargs: Any) -> Any:
+        joined = " ".join(args)
+        if "build-local-docker" in joined:
+            return type("CP", (), {"returncode": 1, "stdout": "", "stderr": ""})()
+        if "ps" in args:
+            stdout = snapshots.pop(0) if snapshots else _compose_ps_stdout(*_required_stack())
+            return type("CP", (), {"returncode": 0, "stdout": stdout, "stderr": ""})()
+        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    now = 0.0
+
+    def _sleep(seconds: float) -> None:
+        nonlocal now
+        now += seconds
+
+    monkeypatch.setattr(quick, "run_command", _run)
+    monkeypatch.setattr(quick.time, "monotonic", lambda: now)
+    monkeypatch.setattr(quick.time, "sleep", _sleep)
+    code = quick.run_quickstart(_config(quick, skip_stack_start=False, timeout_seconds=30))
+    assert code == 0
+
+
+def test_bootstrap_failure_absent_stack_stays_failed(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sample = tmp_path / "lkw_product_quickstart.txt"
+    sample.write_text("AURORA-17", encoding="utf-8")
+    monkeypatch.setattr(quick, "_SAMPLE_FILE", sample)
+    monkeypatch.setattr(quick, "ensure_env_file", lambda: False)
+
+    def _run(args: list[str], **_kwargs: Any) -> Any:
+        joined = " ".join(args)
+        if "build-local-docker" in joined:
+            return type("CP", (), {"returncode": 1, "stdout": "", "stderr": ""})()
+        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(quick, "run_command", _run)
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = quick.run_quickstart(_config(quick, skip_stack_start=False))
+    assert code == 1
+    assert "failure_reason=stack_start_failed" in buffer.getvalue()
+
+
 def test_failure_output_includes_stable_action_without_raw_details(
     quick: ModuleType,
 ) -> None:
@@ -704,10 +968,18 @@ def test_bootstrap_compose_and_generation_model_contracts(quick: ModuleType) -> 
     )
     assert 'COMPOSE_PROJECT_NAME="intergrax_lkw"' in shell_source
     assert (
-        'docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" up --build -d'
+        'docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" '
+        "up --build -d --wait --wait-timeout 240"
         in shell_source
     )
-    assert 'docker compose -f "$COMPOSE_FILE"' not in shell_source
+    assert "--wait --wait-timeout 240" in windows_source
+    assert f"--wait-timeout {quick._STACK_START_WAIT_SECONDS}" in windows_source
+    assert f"--wait-timeout {quick._STACK_START_WAIT_SECONDS}" in shell_source
+    assert "down -v" not in windows_source
+    assert "down -v" not in shell_source
+    assert "prune" not in windows_source.lower()
+    assert "prune" not in shell_source.lower()
+    assert "docker compose -f \"$COMPOSE_FILE\"" not in shell_source
     assert "INTERGRAX_LLM_MODEL" in windows_source
     assert "INTERGRAX_LLM_MODEL" in shell_source
     assert "ollama pull" in windows_source
