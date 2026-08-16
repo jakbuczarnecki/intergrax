@@ -51,6 +51,7 @@ with Try LKW as the repository’s primary product action.
 | Assess fit as a CTO, product lead or technical buyer | [Use Cases](../overview/USE_CASES.md) |
 | Evaluate as an investor, business decision maker or strategic evaluator | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) — then [PROOFS](../proofs/PROOFS.md) for evidence |
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
+| Explore Governed Execution | [Governed Execution](../architecture/GOVERNED_EXECUTION.md) |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore multi-agent / collaborative AI direction | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) |
 | Explore platform extensibility / governed plugins | [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) |
@@ -83,6 +84,14 @@ Product Tour
 ```
 
 Start with the [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) to understand the experience without running anything. From there, choose the [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) to run the supported indexed path or the [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) to inspect bounded technical evidence.
+
+### Governed Execution
+
+**Platform capability — implemented mechanisms; consolidation / qualification ongoing**
+
+Intergrax provides reusable policy and approval enforcement around agent decisions, tool and action boundaries, meaningful side effects, canonical HITL, and plugin-extensible policy rules. Meaningful enforcement slices exist on bounded paths; a dedicated accepted public Governed Execution proof is **not yet established**.
+
+[Open the Governed Execution architecture](../architecture/GOVERNED_EXECUTION.md)
 
 ### Token Optimization Engine
 
@@ -131,6 +140,7 @@ publisher portal, or commercial catalog today.
 | [README](../../../README.md) | First-contact landing — problem, value, quick start, maturity snapshot |
 | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) | Problem, value, audience, category fit and fair comparison with common approaches |
 | [ARCHITECTURE_OVERVIEW](../architecture/ARCHITECTURE_OVERVIEW.md) | Public architecture overview — responsibility boundaries and system flow |
+| [GOVERNED_EXECUTION](../architecture/GOVERNED_EXECUTION.md) | Governed Execution platform capability — policy definition, enforcement, HITL, and maturity boundary |
 | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md) | First bounded builder orientation and progressive-disclosure route |
 | [BUILD_WITH_INTERGRAX](../builders/BUILD_WITH_INTERGRAX.md) | Deeper application composition planning |
 | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) | Bounded evaluation method for one selected claim/workflow using a pinned revision, canonical path, evidence and PROCEED / DEFER / STOP decision |
@@ -168,6 +178,7 @@ and deep technical reviewers should use the technical map — not this public ma
 
 - Intergrax is **source-available** and under **active R&D**.
 - LKW is **Backend Product Alpha / MVP**.
+- Governed Execution has **implemented mechanisms** on bounded paths; **consolidation / qualification ongoing**; no dedicated accepted public proof yet.
 - Token Optimization has **implemented mechanisms** and **bounded proof paths**.
 - Real-user and commercial validation are **incomplete**.
 - Proof status and claim boundaries: [Intergrax Proofs](../proofs/PROOFS.md).

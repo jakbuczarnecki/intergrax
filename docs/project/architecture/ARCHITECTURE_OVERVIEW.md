@@ -79,6 +79,22 @@ flowchart LR
 
 The lifecycle is conceptual: the operating layer selects the resources needed for the request, then returns the result with evidence/provenance that can be inspected for debugging, review, and governance. Evidence is a first-class execution output, not an afterthought or an inference reconstructed from ad hoc logs.
 
+## Governed Execution as a platform capability
+
+**Governed Execution** (Governance & Policy Enforcement) is the platform capability that controls what execution may proceed under configured policy.
+
+```text
+agent / model proposes
+→ configured policy evaluates
+→ allow / deny / require human / other supported outcome
+→ authorized execution
+→ evidence
+```
+
+The application defines what the business rule means. Intergrax provides reusable enforcement mechanisms — policy evaluation, boundary enforcement, canonical HITL, and governance evidence on wired paths. Complete platform-wide coverage and production qualification are **not** claimed.
+
+Details belong in the owning [Governed Execution architecture](GOVERNED_EXECUTION.md).
+
 ## LKW as a product example
 
 Local Knowledge Workspace (LKW) is the **Primary product proof** at **Backend Product Alpha / MVP** with **PARTIAL** public proof status.

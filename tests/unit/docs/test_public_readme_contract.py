@@ -55,6 +55,7 @@ _REMOVED_STANDALONE_CAPABILITY_HEADINGS = (
 
 _REQUIRED_PUBLIC_LINKS = (
     "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
+    "docs/project/architecture/GOVERNED_EXECUTION.md",
     "docs/project/capabilities/token_optimization/README.md",
     "PROOFS.md",
     "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
@@ -110,6 +111,7 @@ def test_section_order(readme_text: str) -> None:
 def test_platform_capabilities_table_contract(readme_text: str) -> None:
     assert "## Platform capabilities and directions" in readme_text
     for capability in (
+        "Governed Execution",
         "Observability & Auditability",
         "Token Optimization",
         "Multiplayer AI",
@@ -124,6 +126,8 @@ def test_platform_capabilities_table_contract(readme_text: str) -> None:
 def test_platform_capability_claim_boundaries(readme_text: str) -> None:
     normalized = re.sub(r"[*_`]", "", readme_text).lower()
     for phrase in (
+        "implemented slices — consolidation / qualification ongoing",
+        "complete platform-wide governance and production qualification not established",
         "implemented core + bounded proof",
         "universal every-path production observability not claimed",
         "partial — bounded",
