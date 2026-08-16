@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -108,3 +109,144 @@ async def test_journal_export_plugin_handles_task_completed() -> None:
     extra = mock_logger.info.call_args.kwargs["extra"]
     assert extra["journal_otlp"]["resourceSpans"]
     assert extra["journal_export"]["event_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_journal_export_queries_trace_reader_with_canonical_run_id() -> None:
+    store = InMemoryRunTraceStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    assert task_id != run_id
+    tenant_id = "tenant-a"
+    _seed_trace(store, run_id=run_id, tenant_id=tenant_id)
+
+    bus = RuntimeEventBus(record_history=False)
+    plugin = make_journal_export_runtime_plugin(trace_store=store)
+    plugin.register(bus, HookRegistry(), MagicMock())
+
+    event = RuntimeEvent(
+        event_id=mint_event_id(),
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        tenant_id=tenant_id,
+        event_type=RuntimeEventType.TASK_COMPLETED,
+        phase=ExecutionPhase.COMPLETION,
+        payload={},
+    )
+
+    with patch.object(store, "read_run", wraps=store.read_run) as mock_read_run:
+        with patch("intergrax.runtime.observability.export_bridge.export_parser_traces_from_events"):
+            await bus.publish(event)
+
+    mock_read_run.assert_called_once_with(run_id, tenant_id)
+
+
+@pytest.mark.asyncio
+async def test_journal_export_uses_exact_tenant_id() -> None:
+    store = InMemoryRunTraceStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    tenant_id = "tenant-a"
+    _seed_trace(store, run_id=run_id, tenant_id=tenant_id)
+
+    bus = RuntimeEventBus(record_history=False)
+    plugin = make_journal_export_runtime_plugin(trace_store=store)
+    plugin.register(bus, HookRegistry(), MagicMock())
+
+    event = RuntimeEvent(
+        event_id=mint_event_id(),
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        tenant_id=tenant_id,
+        event_type=RuntimeEventType.TASK_COMPLETED,
+        phase=ExecutionPhase.COMPLETION,
+        payload={},
+    )
+
+    with patch.object(store, "read_run", wraps=store.read_run) as mock_read_run:
+        with patch("intergrax.runtime.observability.export_bridge.export_parser_traces_from_events"):
+            await bus.publish(event)
+
+    _args, kwargs = mock_read_run.call_args
+    assert _args == (run_id, "tenant-a")
+    assert kwargs == {}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("tenant_id", [None, "", "   "])
+async def test_journal_export_skips_missing_tenant_without_default(tenant_id: str | None) -> None:
+    store = InMemoryRunTraceStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    _seed_trace(store, run_id=run_id, tenant_id="tenant-a")
+
+    bus = RuntimeEventBus(record_history=False)
+    plugin = make_journal_export_runtime_plugin(trace_store=store)
+    plugin.register(bus, HookRegistry(), MagicMock())
+
+    event = RuntimeEvent(
+        event_id=mint_event_id(),
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        tenant_id=tenant_id,
+        event_type=RuntimeEventType.TASK_COMPLETED,
+        phase=ExecutionPhase.COMPLETION,
+        payload={},
+    )
+
+    with patch.object(store, "read_run", wraps=store.read_run) as mock_read_run:
+        with patch(
+            "intergrax.runtime.observability.export_bridge.export_parser_traces_from_events"
+        ) as mock_parser_export:
+            await bus.publish(event)
+
+    mock_read_run.assert_not_called()
+    mock_parser_export.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_journal_export_parser_traces_without_runtime_event_store() -> None:
+    store = InMemoryRunTraceStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    tenant_id = "tenant-a"
+    _seed_trace(store, run_id=run_id, tenant_id=tenant_id)
+
+    bus = RuntimeEventBus(record_history=False)
+    plugin = make_journal_export_runtime_plugin(trace_store=store, runtime_event_store=None)
+    plugin.register(bus, HookRegistry(), MagicMock())
+
+    event = RuntimeEvent(
+        event_id=mint_event_id(),
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        tenant_id=tenant_id,
+        event_type=RuntimeEventType.TASK_COMPLETED,
+        phase=ExecutionPhase.COMPLETION,
+        payload={},
+    )
+
+    with patch("intergrax.runtime.observability.export_bridge.logger") as mock_logger:
+        with patch(
+            "intergrax.runtime.observability.export_bridge.export_parser_traces_from_events"
+        ) as mock_parser_export:
+            await bus.publish(event)
+
+    mock_parser_export.assert_called_once()
+    mock_logger.info.assert_not_called()
+
+
+def test_journal_export_source_has_no_identity_fallbacks() -> None:
+    source = Path("intergrax/runtime/observability/export_bridge.py").read_text(encoding="utf-8")
+    forbidden = [
+        "event.run_id or event.task_id",
+        "event.task_id or event.run_id",
+        'event.tenant_id or "default"',
+        'tenant_id or "default"',
+    ]
+    for pattern in forbidden:
+        assert pattern not in source
