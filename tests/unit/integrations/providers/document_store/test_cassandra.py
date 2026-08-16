@@ -157,7 +157,7 @@ class _FakeSession:
             return _FakeResult([])
         if query.startswith("UPDATE") and " IF payload = " in query:
             if "USING TTL" in query:
-                replacement_payload, _ttl, partition_key, row_key, expected_payload = params
+                _ttl, replacement_payload, partition_key, row_key, expected_payload = params
             else:
                 replacement_payload, partition_key, row_key, expected_payload = params
             key = (str(partition_key), str(row_key))
@@ -517,10 +517,11 @@ def test_replace_if_match_with_ttl_uses_conditional_update_with_ttl() -> None:
     ]
     assert len(update_executions) == 1
     query, params = update_executions[0]
-    assert "USING TTL" in query
+    assert query.index("USING TTL") < query.index("SET payload")
+    assert "SET payload = ? USING TTL ?" not in query
     assert params == (
-        '{"x":2}',
         300,
+        '{"x":2}',
         "t1",
         "r1",
         '{"x":1}',
@@ -550,8 +551,8 @@ def test_replace_if_match_payload_mismatch_with_replacement_ttl_leaves_record_un
     ]
     assert len(update_executions) == 1
     query, params = update_executions[0]
-    assert "USING TTL" in query
-    assert params[1] == 300
+    assert query.index("USING TTL") < query.index("SET payload")
+    assert params[0] == 300
 
 
 def test_delete_if_match_deletes_exact_record() -> None:

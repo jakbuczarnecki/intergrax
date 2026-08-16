@@ -103,7 +103,7 @@ class CassandraCqlClient:
             f"WHERE partition_key = ? AND row_key = ? IF payload = ?"
         )
         self._update_if_payload_ttl = session.prepare(
-            f"UPDATE {table} SET payload = ? USING TTL ? "
+            f"UPDATE {table} USING TTL ? SET payload = ? "
             f"WHERE partition_key = ? AND row_key = ? IF payload = ?"
         )
         self._delete_if_payload = session.prepare(
@@ -186,8 +186,8 @@ class CassandraCqlClient:
             result = self._session.execute(
                 self._update_if_payload_ttl,
                 (
-                    replacement_payload,
                     int(replacement.ttl_seconds),
+                    replacement_payload,
                     replacement.partition_key,
                     replacement.row_key,
                     expected_payload,
