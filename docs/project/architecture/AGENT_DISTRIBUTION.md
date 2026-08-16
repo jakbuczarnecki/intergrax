@@ -171,7 +171,25 @@ CatalogSourceProvider
 | `AgentCapabilityMetadataProvider` | What non-executable agent contract/capability metadata is known? | Architecture/discovery projection — **not** activation or routing |
 | `RuntimeRevision` + `AgentRegistry` | What is actually running? | Execution truth |
 
-`AgentCapabilityMetadataProvider` MUST NOT become activation, routing, or runtime authority.
+Capability metadata authority chain:
+
+```text
+Tier-2 package metadata (`[[tool.intergrax.agent.contracts]]` in agent pyproject.toml)
+  → AgentProjectMetadata (parse; `agent_version` = `[project].version`)
+  → AgentCapabilityDescriptor
+  → AgentCapabilityMetadataProvider
+  → Capability Graph
+```
+
+Agent Distribution MUST NOT centrally mirror first-party agent contracts. The platform parses and projects package-owned declarations only.
+
+`AgentCapabilityMetadataProvider` MUST NOT become activation, routing, or runtime authority. `build_catalog_capability_graph()` has no default agent inventory and no default package discovery root — callers pass a package-metadata provider, otherwise agent nodes are omitted.
+
+Runtime execution remains a separate chain:
+
+```text
+AgentInstallation → EffectiveRoster → RuntimeRevision → RegistryProjection → AgentRegistry → Nexus
+```
 
 **Marketplace** is one **future** `CatalogSourceProvider` implementation only — not a runtime fork.
 

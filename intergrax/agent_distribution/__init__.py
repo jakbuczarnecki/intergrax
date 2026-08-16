@@ -10,12 +10,16 @@ from intergrax.agent_distribution.agent_capability_metadata import (
     merge_agent_capability_descriptors,
 )
 from intergrax.agent_distribution.agent_project_metadata import (
+    AgentPackageContractDeclaration,
     AgentProjectMetadata,
+    AgentProjectMetadataParseError,
     AgentProjectMetadataProvider,
+    parse_agent_project_pyproject,
+    project_agent_capability_descriptors,
 )
 from intergrax.agent_distribution.builtin_capability_metadata import (
     BuiltinAgentCapabilityMetadataProvider,
-    default_agent_capability_metadata_provider,
+    PackageAgentCapabilityMetadataProvider,
 )
 from intergrax.agent_distribution.binding import (
     AgentBindingFactoryReference,
@@ -235,7 +239,9 @@ __all__ = [
     "AgentInstallationRecord",
     "AgentInstallationStore",
     "AgentInstallationTrustRecord",
+    "AgentPackageContractDeclaration",
     "AgentProjectMetadata",
+    "AgentProjectMetadataParseError",
     "AgentProjectMetadataProvider",
     "AgentPackageCandidate",
     "AgentPackageIdentity",
@@ -258,6 +264,7 @@ __all__ = [
     "ApplicationEnvironmentServingStore",
     "ArtifactRevalidationHook",
     "BuiltinAgentCapabilityMetadataProvider",
+    "PackageAgentCapabilityMetadataProvider",
     "BindingLifecycleError",
     "BindingRevisionConflict",
     "BindingService",
@@ -317,7 +324,6 @@ __all__ = [
     "FakeRuntimeMaterializationAdapter",
     "FakeRuntimeServingProjectionCoordinator",
     "UnsupportedVenvBundleMaterializationAdapter",
-    "default_agent_capability_metadata_provider",
     "default_materialization_adapters",
     "MaterializationTopology",
     "MaterializedAgentClosureEntry",
@@ -331,7 +337,8 @@ __all__ = [
     "MaterializedRuntimeLockService",
     "MaterializedRuntimeLockStore",
     "merge_agent_capability_descriptors",
-    "merge_agent_capability_descriptors",
+    "parse_agent_project_pyproject",
+    "project_agent_capability_descriptors",
     "PolicyDependencyConstraint",
     "ProviderHealth",
     "ProviderHealthStatus",

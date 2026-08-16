@@ -1,11 +1,25 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+from intergrax.agent_distribution.builtin_capability_metadata import (
+    PackageAgentCapabilityMetadataProvider,
+)
 from intergrax.runtime.architecture.capability_graph import build_catalog_capability_graph
 from intergrax.runtime.architecture.capability_graph_applications import application_capability_node_id
 
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+_PACKAGE_METADATA_PROVIDER = PackageAgentCapabilityMetadataProvider(
+    package_roots=(
+        _REPO_ROOT / "agents" / "echo",
+        _REPO_ROOT / "agents" / "legal",
+        _REPO_ROOT / "agents" / "research",
+    )
+)
+
 
 def test_application_agent_edges_are_scoped_per_manifest() -> None:
-    graph = build_catalog_capability_graph()
+    graph = build_catalog_capability_graph(agent_metadata_provider=_PACKAGE_METADATA_PROVIDER)
     edge_keys = {
         (edge.source_node_id, edge.target_node_id)
         for edge in graph.edges
@@ -22,7 +36,7 @@ def test_application_agent_edges_are_scoped_per_manifest() -> None:
 
 
 def test_research_agents_link_to_research_application_not_lab() -> None:
-    graph = build_catalog_capability_graph()
+    graph = build_catalog_capability_graph(agent_metadata_provider=_PACKAGE_METADATA_PROVIDER)
     edge_keys = {
         (edge.source_node_id, edge.target_node_id)
         for edge in graph.edges

@@ -28,3 +28,9 @@ packages = [
 
 [tool.uv.sources]
 Intergrax-ai = { workspace = true }
+
+[[tool.intergrax.agent.contracts]]
+contract_id = "legal"
+capabilities = ["legal.review"]
+skill_ids = ["legal.contract_review"]
+tool_ids = []

@@ -25,6 +25,8 @@ _FORBIDDEN_FRAGMENTS = (
     "legal.legal_agent",
     "importlib.import_module",
     "contract.version if contract is not None else",
+    "default_agent_capability_metadata_provider",
+    "_BUILTIN_AGENT_CAPABILITY_DESCRIPTORS",
 )
 
 

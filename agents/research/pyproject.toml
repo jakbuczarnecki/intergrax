@@ -28,3 +28,15 @@ packages = [
 
 [tool.uv.sources]
 Intergrax-ai = { workspace = true }
+
+[[tool.intergrax.agent.contracts]]
+contract_id = "research"
+capabilities = ["research.web_search", "research.pipeline"]
+skill_ids = ["research.literature_scan"]
+tool_ids = []
+
+[[tool.intergrax.agent.contracts]]
+contract_id = "research-summary"
+capabilities = ["research.summarize"]
+skill_ids = []
+tool_ids = []

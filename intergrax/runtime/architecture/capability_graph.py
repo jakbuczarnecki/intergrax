@@ -15,9 +15,6 @@ from intergrax.agent_distribution.agent_capability_metadata import (
     AgentCapabilityMetadataProvider,
     merge_agent_capability_descriptors,
 )
-from intergrax.agent_distribution.builtin_capability_metadata import (
-    default_agent_capability_metadata_provider,
-)
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.catalog import list_slugs
 from intergrax.skills.registry.bootstrap import register_default_skills
@@ -393,12 +390,15 @@ def build_catalog_capability_graph(
     """Build a typed baseline capability graph from current catalogs.
 
     Agent nodes and agent→skill/tool edges are projected from ``agent_metadata_provider``
-    (non-executable declared metadata). When omitted, the platform builtin provider is used.
+    (non-executable declared package metadata). When omitted, no agent inventory is
+    assumed — there is no platform hardcoded agent list and no default discovery root.
     """
-    provider = agent_metadata_provider or default_agent_capability_metadata_provider()
-    agent_descriptors = merge_agent_capability_descriptors(
-        provider.list_agent_capability_descriptors(),
-    )
+    if agent_metadata_provider is None:
+        agent_descriptors: tuple[AgentCapabilityDescriptor, ...] = ()
+    else:
+        agent_descriptors = merge_agent_capability_descriptors(
+            agent_metadata_provider.list_agent_capability_descriptors(),
+        )
     integration_nodes = _integration_nodes()
     tool_nodes = _tool_nodes()
     skill_nodes, skill_edges = _skill_nodes_and_edges()
