@@ -107,7 +107,7 @@ It must **not** require changes to `QualificationStatus`, qualification core enu
 
 | Field | Semantics |
 |-------|-----------|
-| `qualification_run_id` | Stable unique run id (UUID or deterministic idempotency key). |
+| `qualification_run_id` | Stable unique run id **created at qualification run creation/execution time** (UUID or deterministic idempotency key). Optional persistence **preserves** this identity; it must not assign or replace the authoritative run id. |
 | `subject` | `ProviderQualificationSubject` (section 3). |
 | `status` | `QualificationStatus` — **historical outcome only** (section 5.1). |
 | `executed_at` | UTC timestamp of run completion. |
@@ -131,7 +131,31 @@ GitHub Actions is **one possible** `executor_kind=ci_runner` implementation. Qua
 
 ### 4.3 Immutability
 
-Once recorded, `status`, `subject`, `result_summary`, and `evidence` refs for a given `qualification_run_id` are **immutable**. Later drift is modeled only via `QualificationEvidenceValidity` (section 5.2), superseding runs, or explicit revocation records — never by rewriting historical outcome.
+Once recorded, `status`, `subject`, `result_summary`, and `evidence` refs for a given `qualification_run_id` are **immutable**. **`validity` is not a field of `ProviderQualificationRun`.** Later drift is modeled only via separate `QualificationEvidenceValidity` evaluation (section 5.2), superseding runs, or explicit revocation records — never by rewriting historical outcome or mutating the run to change validity.
+
+### 4.4 Run identity lifecycle (FROZEN)
+
+```text
+qualification trigger
+        |
+        v
+qualification_run_id created (execution-owned identity)
+        |
+        v
+ProviderQualificationRun produced (immutable historical fact)
+        |
+        v
+optional ProofReceipt / index persistence (preserves qualification_run_id)
+```
+
+**Why execution-owned run identity matters:**
+
+- stable audit lineage before and after optional persistence
+- evidence correlation across executor, harness, and external systems prior to storage
+- external executors can emit a stable run id without waiting for persistence
+- retry/idempotency handling keyed to the same run identity
+- optional persistence without identity replacement
+- `ProofReceipt` projection references the run; it does not become the authoritative identity source
 
 ---
 
@@ -155,8 +179,20 @@ Canonical vocabulary in `intergrax/core/qualification/status.py`:
 Historical example that **must** be representable:
 
 ```text
-status = PRODUCTION_QUALIFIED   # immutable outcome at run time
-validity = STALE                  # current admission view (section 5.2)
+Run A (immutable ProviderQualificationRun):
+  qualification_run_id = A
+  status = PRODUCTION_QUALIFIED   # historical outcome at execution time
+
+Validity evaluation T1 (separate view/record):
+  qualification_run_id = A
+  validity = CURRENT
+
+Validity evaluation T2 (append-only superseding evaluation):
+  qualification_run_id = A
+  validity = STALE
+  reason = adapter_revision_changed
+
+Run A remains unchanged.
 ```
 
 ### 5.2 Evidence validity — `QualificationEvidenceValidity` (NEW contract, separate enum)
@@ -167,7 +203,18 @@ validity = STALE                  # current admission view (section 5.2)
 | `STALE` | Underlying subject dimensions or platform/domain drift invalidated freshness; outcome history preserved. |
 | `REVOKED` | Evidence explicitly withdrawn (security, fraud, operator action). |
 
-Validity is evaluated **on evidence/run records** or on an admission view projection — not stored as a replacement for `QualificationStatus`.
+Validity is **not** a mutable field of `ProviderQualificationRun`. It is the current admission interpretation associated with a run/evidence set.
+
+| Concept | Role |
+|---------|------|
+| `QualificationValidityRecord` / `QualificationAdmissionView` | Current or superseding validity evaluation referencing `qualification_run_id`; may include `validity`, `reason`, `evaluated_at`, and policy/context anchors as needed |
+| Derived latest view | Admission reads the latest validity evaluation for a run; historical evaluations remain addressable |
+
+Do **not** mutate historical `ProviderQualificationRun` to change validity.
+
+**Lifecycle invariant:** a run that passed remains historically `PRODUCTION_QUALIFIED` even when current validity becomes `STALE` or `REVOKED`.
+
+**Persistence shape (not frozen in R1):** architecture permits either (A) append-only validity evaluation records with a derived latest view, or (B) a derived current admission/validity projection from immutable evidence and current policy/drift inputs. Do not design mutable overwrite semantics for qualification history.
 
 ### 5.3 Compatibility evaluation (existing, separate)
 
@@ -209,16 +256,22 @@ Production admission requires **all** of:
 
 ```text
 ProviderQualificationRun
+  qualification_run_id  (created at execution; authoritative identity)
   evidence: tuple[QualificationEvidence[ProviderQualificationEvidenceKind], ...]
-      ref --> ProofReceipt row key / proof_id (when persisted)
+      ref --> ProofReceipt locator / proof_id (when persisted; optional)
       kind --> evidence category (suite_result, live_backend, reproducibility, ...)
-
-ProofReceipt (optional persistence)
+        |
+        v (optional persistence/projection)
+ProofReceipt
+  proof_id                (persistence-owned locator; not assumed equal to qualification_run_id)
+  qualification_run_id    (references execution-owned run identity)
   proof_kind = provider_qualification / domain-specific kind
   domain_evidence = structured run summary (counts, suite id, subject dimensions)
   provider_evidence = bounded backend facts (real_backend, version, environment_id)
   guardrails = mocks/substitution flags
 ```
+
+Do **not** equate `proof_id == qualification_run_id` unless explicitly justified for a specific storage backend. Canonical direction: execution creates `qualification_run_id`; optional `ProofReceipt` references it without identity inversion.
 
 - **In-run canonical:** `ProviderQualificationRun.evidence` holds `QualificationEvidence` refs directly (**A**).
 - **Durable index:** when persisted, one `ProofReceipt` per run (**B**) with `QualificationEvidence.ref` pointing to the receipt locator.
@@ -301,8 +354,10 @@ Live vendor qualification runs on **bounded qualification hosts** or scheduled m
 
 Template for the completed Collaborative Work PostgreSQL proof. **Do not** create the runtime/evidence record until PROVIDER-QUAL-2 integration is approved.
 
+**Immutable run record** (`ProviderQualificationRun` — no `validity` field):
+
 ```yaml
-qualification_run_id: "<assigned at persistence — PROVIDER-QUAL-2>"
+qualification_run_id: "<created by qualification execution>"
 subject:
   provider_id: postgresql
   provider_version: "16.6"
@@ -314,7 +369,7 @@ subject:
   qualification_suite_version: "<suite content label>"
   environment_id: local-docker-qual-host
 status: PRODUCTION_QUALIFIED
-validity: CURRENT  # at time of recording; may become STALE later
+executed_at: "<utc completion timestamp>"
 result_summary:
   passed: 15
   failed: 0
@@ -339,6 +394,19 @@ evidence:
   - kind: limitation
     code: scoped_capability_and_version
 ```
+
+**Separate current validity / admission view** (not part of the immutable run; may be superseded):
+
+```yaml
+qualification_run_id: "<same run id as above>"
+validity: CURRENT
+evaluated_at: "<utc evaluation timestamp>"
+# Later evaluation for the same run id (append-only / derived latest view):
+# validity: STALE
+# reason: adapter_revision_changed
+```
+
+The run record above stays `status: PRODUCTION_QUALIFIED` even when validity later becomes `STALE` or `REVOKED`.
 
 ---
 
@@ -380,12 +448,24 @@ No new enums, no qualification-core edits, no per-vendor CI job added to default
 
 ## 14. Open for PROVIDER-QUAL-2 (explicitly out of scope here)
 
-- Python dataclass / Pydantic implementations of `ProviderQualificationSubject`, `ProviderQualificationRun`, `QualificationEvidenceValidity`
-- Evidence persistence and qualification index
-- Recording the PostgreSQL template as a live `ProofReceipt`
-- Admission policy engine wiring
-- Automatic staleness/hash impact engine
+**PROVIDER-QUAL-2 implements (contract boundary):**
+
+- `ProviderQualificationSubject`
+- `ProviderQualificationRun` (immutable run; **no** embedded mutable `validity` field)
+- `QualificationEvidenceValidity` vocabulary
+- typed validity/admission view or record (e.g. `QualificationValidityRecord` / `QualificationAdmissionView`) **only if** ownership remains sufficiently frozen here
+
+**Still deferred (do not start in PROVIDER-QUAL-2 scope creep):**
+
+- global admission policy engine
+- automatic staleness/hash impact engine
+- persistence assigning `qualification_run_id` (identity is execution-owned; persistence preserves it)
 - GitHub Actions or other executor implementations
+
+**Also deferred:**
+
+- evidence persistence and qualification index wiring
+- recording the PostgreSQL template as a live `ProofReceipt`
 
 ---
 

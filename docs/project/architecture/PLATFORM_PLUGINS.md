@@ -629,8 +629,8 @@ PLUGIN-8 proves executable E2E for both modes. PLUGIN-7 does not wire gates into
 | Topic | Freeze |
 |-------|--------|
 | **Subject** | `ProviderQualificationSubject` — `provider_id`, `provider_version`, `capability_id`, `domain`, adapter identity, `intergrax_revision`, `qualification_suite_id` / `version`, `environment_id`; string/data-driven `provider_id` only |
-| **Run** | `ProviderQualificationRun` — immutable `qualification_run_id`, outcome, executor-neutral metadata, evidence refs, reproducibility, limitations, `source_revision` |
-| **Outcome vs validity** | `QualificationStatus` = historical outcome (`NOT_QUALIFIED` … `REJECTED` only); separate `QualificationEvidenceValidity` (`CURRENT` / `STALE` / `REVOKED`); compatibility separate |
+| **Run** | `ProviderQualificationRun` — immutable executed historical fact; `qualification_run_id` created at execution (persistence preserves identity); outcome, executor-neutral metadata, evidence refs, reproducibility, limitations, `source_revision`; **no** embedded `validity` field |
+| **Outcome vs validity** | `QualificationStatus` = immutable historical outcome (`NOT_QUALIFIED` … `REJECTED` only); `QualificationEvidenceValidity` = separate current admission view/record (append-only or derived latest); compatibility separate |
 | **Admission** | `PRODUCTION_QUALIFIED` + `CURRENT` validity + compatibility + domain policy; no admission policy engine in PROVIDER-QUAL-1 |
 | **Evidence** | `QualificationEvidence` in-run canonical; optional `ProofReceipt` persistence via `ref` mapping — no second vocabulary |
 | **Capability scope** | Never globally qualified per provider; identity is provider + version + capability + suite + environment |
