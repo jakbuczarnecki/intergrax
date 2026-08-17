@@ -201,6 +201,50 @@ Maintainer roadmap context (not public proof): [PLATFORM_PLUGIN_ENTERPRISE_ROADM
 
 ---
 
+## Policy Catalog
+
+Frozen architecture (G2A): [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md).
+
+The **Policy Catalog** is the canonical registry of policy **definitions** available for application selection. It answers *what governance capabilities can this application select?* It is **not** implemented as a runtime catalog in G2A — this section freezes identity and ownership only.
+
+| Question | Concept | Identity |
+| -------- | ------- | -------- |
+| What can I choose? | Policy Catalog → Policy Definition | `policy_id` + definition version |
+| What did this application configure? | Configured rule instance | `rule_id` |
+| What policy state is active? | Runtime / immutable bundle | bundle id + bundle version |
+| What implements evaluation? | Policy handler | `handler_id` |
+| Where is it enforced? | Governance Evaluation Point | point-specific contract (G1A) |
+
+**Frozen flow:**
+
+```text
+Policy Catalog
+    ↓
+Policy Definition (policy_id + version)
+    ↓
+configured rule (rule_id)
+    ↓
+runtime bundle
+    ↓
+handler (handler_id)
+    ↓
+evaluation point
+    ↓
+PolicyDecision
+```
+
+**Identity separation:** `policy_id` ≠ `rule_id` ≠ `handler_id`.
+
+The catalog describes capability; bundles carry what was configured; handlers execute; evaluation points enforce. Catalog metadata does **not** prove runtime coverage.
+
+**Catalog is not:** `PolicyRuleRegistry`, `RuntimePolicyBundle`, `ImmutableRuntimePolicyBundle`, `PolicyEngine`, `RuntimePolicyEngine`, enforcer, HITL, evidence persistence, or a second plugin framework.
+
+**Catalog vs bundle:** the catalog holds what **can** be selected (e.g. `external_commitment_approval` v2); a configured rule is what the application **did** select (e.g. `finance.contracts.require_cfo`); a runtime bundle is the **active** composed policy state containing that rule. Policy definition version and bundle version are separate — one definition version may appear in many bundles.
+
+**Current implementation coupling:** on the declarative slice, `PolicyRuleRegistry` resolves handlers via `rule.rule_id`, temporarily coupling rule instance identity and handler lookup. That is existing technical debt, not target semantics; separation is deferred to G2B/G2C after typed catalog contracts.
+
+---
+
 ## Existing implementation map
 
 Conceptual pieces mapped to existing mechanisms — **without** blanket maturity claims:
@@ -234,6 +278,7 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 | Governance Evaluation Point architecture (G1A) | **Accepted** — [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) |
 | Contract hardening across critical runtime paths (G1B) | **Implemented core** — typed live contexts, typed meaningful-side-effect rules, immutable `PolicyDecision` and explicit bundle provenance invariants |
 | Uniform evaluation-point runtime enum / god engine | **Rejected** — multiple owners preserved |
+| Policy Catalog architecture (G2A) | **Accepted** — [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) |
 | Canonical built-in policy catalog | **Open** |
 | Complete platform-wide coverage | **Not claimed** |
 | Dedicated accepted public Governed Execution proof | **Not established** |
@@ -261,6 +306,7 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 | ----- | ---------------- |
 | Failure, retry, HITL, governed continuation | [RELIABILITY_FAILURE_AND_HITL.md](RELIABILITY_FAILURE_AND_HITL.md) |
 | Governance Evaluation Points and enforcement ownership | [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) |
+| Policy Catalog identity and ownership | [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) |
 | Platform plugins and policy handler admission | [PLATFORM_PLUGINS.md](PLATFORM_PLUGINS.md) · [ADR-PLATFORM-PLUGIN-001](../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) |
 | Observability and evidence spine | [OBSERVABILITY.md](OBSERVABILITY.md) · [PROOF_RECEIPTS.md](PROOF_RECEIPTS.md) |
 | Public architecture overview | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
