@@ -63,8 +63,6 @@ def _production_admission_rejections(
     rejected: list[PluginAdmissionRejection] = []
 
     for spec in iter_entry_point_specs(EP_POLICY_RULES):
-        if spec.distribution is None:
-            continue
         qualification = lookup(spec) if lookup is not None else None
         admission = evaluate_external_package_entry_point_production_admission(
             spec,

@@ -14,7 +14,11 @@ from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.environment_profile import PolicyRulesProfile
 from intergrax.core.distribution import PlatformCompatibility, check_platform_compatibility
 from intergrax.core.plugins.admission import PluginAdmissionReasonCode
-from intergrax.core.plugins.discovery import EP_POLICY_RULES, reset_entry_point_spec_cache_for_tests
+from intergrax.core.plugins.discovery import (
+    EP_POLICY_RULES,
+    load_entry_point_value,
+    reset_entry_point_spec_cache_for_tests,
+)
 from intergrax.core.plugins.platform_qualification import (
     PluginQualificationEvidenceKind,
     PluginQualificationLevel,
@@ -184,6 +188,40 @@ def _mock_installed_distribution(monkeypatch: pytest.MonkeyPatch) -> None:
         raise importlib.metadata.PackageNotFoundError(name)
 
     monkeypatch.setattr(importlib.metadata, "distribution", _distribution)
+
+
+def test_production_entry_point_distribution_none_rejected_before_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    load_calls: list[str] = []
+
+    def _tracking_load(value: str) -> object:
+        load_calls.append(value)
+        return load_entry_point_value(value)
+
+    monkeypatch.setattr(
+        "intergrax.core.plugins.discovery.load_entry_point_value",
+        _tracking_load,
+    )
+    _install_eps(
+        monkeypatch,
+        [_ep("alpha", "_AlphaHandler", distribution=None)],
+    )
+    registry = PolicyRuleRegistry()
+    report = load_policy_rule_plugin_report(
+        registry,
+        policy=PolicyRuleLoadPolicy(
+            require_production_admission=True,
+            package_qualification_lookup=None,
+            platform_version=_PLATFORM_VERSION,
+        ),
+    ).report
+    assert load_calls == []
+    assert registry.resolve(_HANDLER_ID) is None
+    assert report.registered_count == 0
+    assert report.rejected[0].reason_code is PluginAdmissionReasonCode.PRODUCTION_ADMISSION_DENIED
+    assert report.rejected[0].spec.name == "alpha"
+    assert report.rejected[0].spec.distribution is None
 
 
 def test_production_external_plugin_missing_qualification_not_registered(
