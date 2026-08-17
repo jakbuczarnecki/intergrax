@@ -112,8 +112,9 @@ Real configurable dimensions on the platform profile (as-built contract):
 | Planner strategy | `planner_kind` | `default` → `TaskPlanner`; `engine` → engine-backed Nexus planner; **unknown kinds fail fast** at bootstrap |
 | Classifier strategy | `classifier_kind` | `default` → `ClassifyingTaskClassifier`; `rules` \| `llm` + `IntentRoute` (ORCH-CONFIG.1) |
 | Graph topology | `ApplicationGraphSpec` / `graph_spec` on environment | Declarative nodes, edges, `trigger_capabilities`, `*.pipeline` suffix convention |
-| Parallel cap (batch) | `max_parallel_nodes` | Semaphore within one topological batch (ORCH-3) |
-| Global inflight cap | `max_inflight_nodes` | Cross-graph concurrency; emits `GRAPH_BACKPRESSURE` |
+| Parallel cap (batch) | `max_parallel_nodes` | Semaphore on concurrent nodes in one topological batch (ORCH-3) |
+| Global inflight cap | `max_inflight_nodes` | Semaphore across graph execution; emits `GRAPH_BACKPRESSURE` |
+| Tenant / host concurrency | `AgentEngine` / host runtime concurrency policy | Cross-task fairness via harness host |
 | Merge | `merge_strategy` | `concat`, `last_wins`, `structured_json`, `citation_preserving` (ORCH-5.4) |
 | Resilience / partial results | `allow_partial_result`, graph retry policy fields | Policy configuration — retry engine semantics in REL |
 | Long-running posture | `long_running_enabled` + task defaults helper | Checkpoint/schedule posture; queue plane for async work |
@@ -162,8 +163,9 @@ Independent graph nodes may run in parallel within a topological batch. More reg
 
 | Control | Effect |
 | ------- | ------ |
-| `max_parallel_nodes` | Caps concurrent nodes in one batch |
-| `max_inflight_nodes` | Global cap across the graph; may emit `GRAPH_BACKPRESSURE` |
+| `max_parallel_nodes` | Semaphore on concurrent nodes in one topological batch |
+| `max_inflight_nodes` | Semaphore across graph execution; emits `GRAPH_BACKPRESSURE` |
+| Tenant / host concurrency | `AgentEngine` / host runtime policy — cross-task fairness |
 | `max_delegation_depth` | Limits nested delegation expansion |
 
 **Boundary:** [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) owns infrastructure replicas, workers, and provisioning signals. Orchestration owns **graph-level** concurrency posture. ECP may **consume** `GRAPH_BACKPRESSURE` as a signal — it does not replace orchestration caps.

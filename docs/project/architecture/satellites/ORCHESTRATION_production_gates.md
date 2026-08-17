@@ -185,8 +185,9 @@ After parallel or sequential multi-node runs, `FinalResponseComposer` applies `O
 | `concat` | Default — concatenate agent summaries |
 | `last_wins` | Last successful node summary |
 | `structured_json` | JSON payload with per-agent status |
+| `citation_preserving` | Structured merge preserving citations (ORCH-5.4; `final_response_composer.py`) |
 
-**Future:** citation-preserving merge, LLM synthesis, conflict-aware HITL — IDEAL; not required for harness MVP.
+**Future:** LLM synthesis, conflict-aware HITL — IDEAL; not required for harness MVP.
 
 ## 51.4 Acceptance coverage
 
