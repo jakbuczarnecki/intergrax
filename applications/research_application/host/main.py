@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
+from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
 from intergrax.applications._shared.production_host_composition import (
     StrictProductionAsgiPlaceholder,
     bootstrap_production_registry_projection,
@@ -15,11 +16,22 @@ from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
     create_reference_production_process_composition,
 )
+from intergrax.applications._shared.reference_production_lifecycle import (
+    ReferenceProductionLifecycleLauncher,
+)
 from research_application.host.factory import create_research_backend_app
+from research_application.host.reference_lifecycle_input import build_research_reference_lifecycle_input
 from research_application.host.wiring import build_research_environment_profile
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
 load_dotenv()
+
+_STRICT_RUN_MESSAGE = (
+    "Research STRICT production requires explicit lifecycle deploy/activate before serving. "
+    "Use run_reference_production() or wire ReferenceProductionLifecycleLauncher with "
+    "build_research_reference_lifecycle_input(), then create_research_process_app("
+    "process_composition=...) with the same composition."
+)
 
 
 def create_research_process_app(
@@ -42,40 +54,43 @@ def create_app(
     *,
     process_composition: ProductionProcessComposition | None = None,
 ) -> FastAPI:
-    """Uvicorn factory entrypoint; owns one reference process composition when omitted."""
-    composition = (
-        process_composition
-        if process_composition is not None
-        else create_reference_production_process_composition()
-    )
-    return create_research_process_app(process_composition=composition)
+    """Uvicorn factory entrypoint; requires an activated process composition."""
+    if process_composition is None:
+        raise HarnessHostRegistryAuthorityError(_STRICT_RUN_MESSAGE)
+    return create_research_process_app(process_composition=process_composition)
 
 
 app = StrictProductionAsgiPlaceholder(application_package="research_application")
 
 
-def run() -> None:
+def run_reference_production() -> None:
+    """Explicit reference path: lifecycle deploy/activate then serve on one composition."""
     import uvicorn
 
     composition = create_reference_production_process_composition()
+    projection_input, activation_request = build_research_reference_lifecycle_input()
+    ReferenceProductionLifecycleLauncher(composition).deploy_and_activate(
+        projection_input,
+        activation_request,
+    )
     host = os.environ.get("RESEARCH_BACKEND_HOST", "0.0.0.0")
     port = int(os.environ.get("RESEARCH_BACKEND_PORT", "8010"))
-    reload = os.environ.get("RESEARCH_BACKEND_RELOAD", "").lower() in {"1", "true", "yes"}
-    if reload:
-        uvicorn.run(
-            "research_application.host.main:create_app",
-            factory=True,
-            host=host,
-            port=port,
-            reload=True,
-        )
-        return
     uvicorn.run(
         create_research_process_app(process_composition=composition),
         host=host,
         port=port,
         reload=False,
     )
+
+
+def run() -> None:
+    import sys
+
+    if os.environ.get("RESEARCH_REFERENCE_PRODUCTION", "").strip().lower() in {"1", "true", "yes"}:
+        run_reference_production()
+        return
+    print(_STRICT_RUN_MESSAGE, file=sys.stderr)
+    raise SystemExit(1)
 
 
 if __name__ == "__main__":

@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-import os
-
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
+from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
 from intergrax.applications._shared.production_host_composition import (
     StrictProductionAsgiPlaceholder,
     bootstrap_production_registry_projection,
 )
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
-    create_reference_production_process_composition,
 )
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
@@ -23,6 +21,13 @@ from local_workspace_application.host.settings import LocalWorkspaceBackendSetti
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 
 load_dotenv()
+
+_STRICT_RUN_MESSAGE = (
+    "Local Workspace STRICT production requires explicit lifecycle deploy/activate before serving. "
+    "Wire ReferenceProductionLifecycleLauncher with explicit lifecycle input, then "
+    "create_local_workspace_process_app(process_composition=...) or use hosted foreground "
+    "with an activated composition."
+)
 
 
 def create_local_workspace_process_app(
@@ -48,14 +53,11 @@ def create_app(
     process_composition: ProductionProcessComposition | None = None,
     settings: LocalWorkspaceBackendSettings | None = None,
 ) -> FastAPI:
-    """Uvicorn factory entrypoint; owns one reference process composition when omitted."""
-    composition = (
-        process_composition
-        if process_composition is not None
-        else create_reference_production_process_composition()
-    )
+    """Uvicorn factory entrypoint; requires an activated process composition."""
+    if process_composition is None:
+        raise HarnessHostRegistryAuthorityError(_STRICT_RUN_MESSAGE)
     return create_local_workspace_process_app(
-        process_composition=composition,
+        process_composition=process_composition,
         settings=settings,
     )
 
@@ -64,27 +66,10 @@ app = StrictProductionAsgiPlaceholder(application_package="local_workspace_appli
 
 
 def run() -> None:
-    import uvicorn
+    import sys
 
-    composition = create_reference_production_process_composition()
-    host = os.environ.get("LOCAL_WORKSPACE_BACKEND_HOST", "127.0.0.1")
-    port = int(os.environ.get("LOCAL_WORKSPACE_BACKEND_PORT", "8020"))
-    reload = os.environ.get("LOCAL_WORKSPACE_BACKEND_RELOAD", "").lower() in {"1", "true", "yes"}
-    if reload:
-        uvicorn.run(
-            "local_workspace_application.host.main:create_app",
-            factory=True,
-            host=host,
-            port=port,
-            reload=True,
-        )
-        return
-    uvicorn.run(
-        create_local_workspace_process_app(process_composition=composition),
-        host=host,
-        port=port,
-        reload=False,
-    )
+    print(_STRICT_RUN_MESSAGE, file=sys.stderr)
+    raise SystemExit(1)
 
 
 if __name__ == "__main__":

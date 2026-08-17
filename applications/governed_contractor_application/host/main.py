@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-import os
-
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
+from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
 from intergrax.applications._shared.production_host_composition import (
     StrictProductionAsgiPlaceholder,
     bootstrap_production_registry_projection,
 )
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
-    create_reference_production_process_composition,
 )
 from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
@@ -22,6 +20,12 @@ from governed_contractor_application.host.factory import create_governed_contrac
 from governed_contractor_application.manifest import build_governed_contractor_manifest
 
 load_dotenv()
+
+_STRICT_RUN_MESSAGE = (
+    "Governed Contractor STRICT production requires explicit lifecycle deploy/activate "
+    "before serving. Wire ReferenceProductionLifecycleLauncher with explicit lifecycle "
+    "input, then create_governed_contractor_process_app(process_composition=...)."
+)
 
 
 def create_governed_contractor_process_app(
@@ -44,40 +48,20 @@ def create_app(
     *,
     process_composition: ProductionProcessComposition | None = None,
 ) -> FastAPI:
-    """Uvicorn factory entrypoint; owns one reference process composition when omitted."""
-    composition = (
-        process_composition
-        if process_composition is not None
-        else create_reference_production_process_composition()
-    )
-    return create_governed_contractor_process_app(process_composition=composition)
+    """Uvicorn factory entrypoint; requires an activated process composition."""
+    if process_composition is None:
+        raise HarnessHostRegistryAuthorityError(_STRICT_RUN_MESSAGE)
+    return create_governed_contractor_process_app(process_composition=process_composition)
 
 
 app = StrictProductionAsgiPlaceholder(application_package="governed_contractor_application")
 
 
 def run() -> None:
-    import uvicorn
+    import sys
 
-    composition = create_reference_production_process_composition()
-    host = os.environ.get("GOVERNED_CONTRACTOR_BACKEND_HOST", "127.0.0.1")
-    port = int(os.environ.get("GOVERNED_CONTRACTOR_BACKEND_PORT", "8000"))
-    reload = os.environ.get("GOVERNED_CONTRACTOR_BACKEND_RELOAD", "").lower() in {"1", "true", "yes"}
-    if reload:
-        uvicorn.run(
-            "governed_contractor_application.host.main:create_app",
-            factory=True,
-            host=host,
-            port=port,
-            reload=True,
-        )
-        return
-    uvicorn.run(
-        create_governed_contractor_process_app(process_composition=composition),
-        host=host,
-        port=port,
-        reload=False,
-    )
+    print(_STRICT_RUN_MESSAGE, file=sys.stderr)
+    raise SystemExit(1)
 
 
 if __name__ == "__main__":

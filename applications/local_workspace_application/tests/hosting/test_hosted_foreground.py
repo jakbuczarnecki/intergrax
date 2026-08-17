@@ -144,7 +144,14 @@ def test_exit_code_mapping(kind: HostedApplicationExitKind, code: int) -> None:
     assert _exit_code(_supervisor_result(kind)) == code
 
 
-def test_main_emits_safe_json(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_hosting_main_requires_activated_composition() -> None:
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = main()
+    assert code == 1
+
+
+def test_hosted_process_launcher_emits_safe_json(monkeypatch: pytest.MonkeyPatch) -> None:
     expected = _supervisor_result(HostedApplicationExitKind.CLEAN_STOP)
 
     def _fake_run(
@@ -156,12 +163,14 @@ def test_main_emits_safe_json(monkeypatch: pytest.MonkeyPatch) -> None:
         return expected
 
     monkeypatch.setattr(
-        "local_workspace_application.hosting.__main__.run_local_workspace_hosted_application",
+        "local_workspace_application.hosting.foreground.run_local_workspace_hosted_application",
         _fake_run,
     )
+    from local_workspace_application.tests.hosting.hosted_process_launcher import main as launcher_main
+
     buffer = io.StringIO()
     with redirect_stdout(buffer):
-        code = main()
+        code = launcher_main()
     assert code == 0
     payload = json.loads(buffer.getvalue())
     assert payload["schema_version"] == "local_workspace.hosted_process_result.v1"

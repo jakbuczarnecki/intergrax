@@ -2,24 +2,28 @@
 
 from __future__ import annotations
 
-import os
-
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
+from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
 from intergrax.applications._shared.production_host_composition import (
     StrictProductionAsgiPlaceholder,
     bootstrap_production_registry_projection,
 )
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
-    create_reference_production_process_composition,
 )
 from dispute_sim_application.host.environment_profile import build_dispute_sim_environment_profile
 from dispute_sim_application.host.factory import create_dispute_sim_backend_app
 from dispute_sim_application.manifest import build_dispute_sim_manifest
 
 load_dotenv()
+
+_STRICT_RUN_MESSAGE = (
+    "Dispute Sim STRICT production requires explicit lifecycle deploy/activate before serving. "
+    "Wire ReferenceProductionLifecycleLauncher with explicit lifecycle input, then "
+    "create_dispute_sim_process_app(process_composition=...)."
+)
 
 
 def create_dispute_sim_process_app(
@@ -42,40 +46,20 @@ def create_app(
     *,
     process_composition: ProductionProcessComposition | None = None,
 ) -> FastAPI:
-    """Uvicorn factory entrypoint; owns one reference process composition when omitted."""
-    composition = (
-        process_composition
-        if process_composition is not None
-        else create_reference_production_process_composition()
-    )
-    return create_dispute_sim_process_app(process_composition=composition)
+    """Uvicorn factory entrypoint; requires an activated process composition."""
+    if process_composition is None:
+        raise HarnessHostRegistryAuthorityError(_STRICT_RUN_MESSAGE)
+    return create_dispute_sim_process_app(process_composition=process_composition)
 
 
 app = StrictProductionAsgiPlaceholder(application_package="dispute_sim_application")
 
 
 def run() -> None:
-    import uvicorn
+    import sys
 
-    composition = create_reference_production_process_composition()
-    host = os.environ.get("DISPUTE_SIM_BACKEND_HOST", "127.0.0.1")
-    port = int(os.environ.get("DISPUTE_SIM_BACKEND_PORT", "8020"))
-    reload = os.environ.get("DISPUTE_SIM_BACKEND_RELOAD", "").lower() in {"1", "true", "yes"}
-    if reload:
-        uvicorn.run(
-            "dispute_sim_application.host.main:create_app",
-            factory=True,
-            host=host,
-            port=port,
-            reload=True,
-        )
-        return
-    uvicorn.run(
-        create_dispute_sim_process_app(process_composition=composition),
-        host=host,
-        port=port,
-        reload=False,
-    )
+    print(_STRICT_RUN_MESSAGE, file=sys.stderr)
+    raise SystemExit(1)
 
 
 if __name__ == "__main__":

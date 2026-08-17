@@ -61,4 +61,6 @@ WORKDIR /app/applications/research_application
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/health')" || exit 1
 
+# research_application.host.main:app is import-safe only (StrictProductionAsgiPlaceholder).
+# Production serving requires lifecycle deploy/activate then create_app(process_composition=...).
 CMD ["uvicorn", "research_application.host.main:app", "--host", "0.0.0.0", "--port", "8010"]

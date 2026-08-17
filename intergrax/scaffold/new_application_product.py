@@ -243,7 +243,6 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
 def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     pkg = names.pkg
     short = names.short
-    pascal = names.pascal
     imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
     builders_const = names.builders_const
     factories = []
@@ -439,7 +438,6 @@ def tool_wiring_py(names: ScaffoldApplicationNames) -> str:
 
 def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
     short = names.short
-    pascal = names.pascal
     pkg = names.pkg
     return dedent(
         f'''\
@@ -650,32 +648,34 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
 def main_py(names: ScaffoldApplicationNames) -> str:
     pkg = names.pkg
     short = names.short
-    env_prefix_value = names.env_prefix
-    port = names.port
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
 
         from __future__ import annotations
 
-        import os
-
         from dotenv import load_dotenv
         from fastapi import FastAPI
 
+        from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
         from intergrax.applications._shared.production_host_composition import (
             StrictProductionAsgiPlaceholder,
             bootstrap_production_registry_projection,
         )
         from intergrax.applications._shared.production_process_composition import (
             ProductionProcessComposition,
-            create_reference_production_process_composition,
         )
         from {pkg}.host.environment_profile import build_{short}_environment_profile
         from {pkg}.host.factory import create_{short}_backend_app
         from {pkg}.manifest import build_{short}_manifest
 
         load_dotenv()
+
+        _STRICT_RUN_MESSAGE = (
+            "{pkg} STRICT production requires explicit lifecycle deploy/activate before serving. "
+            "Wire ReferenceProductionLifecycleLauncher with explicit lifecycle input, then "
+            "create_{short}_process_app(process_composition=...)."
+        )
 
 
         def create_{short}_process_app(
@@ -697,39 +697,19 @@ def main_py(names: ScaffoldApplicationNames) -> str:
             *,
             process_composition: ProductionProcessComposition | None = None,
         ) -> FastAPI:
-            composition = (
-                process_composition
-                if process_composition is not None
-                else create_reference_production_process_composition()
-            )
-            return create_{short}_process_app(process_composition=composition)
+            if process_composition is None:
+                raise HarnessHostRegistryAuthorityError(_STRICT_RUN_MESSAGE)
+            return create_{short}_process_app(process_composition=process_composition)
 
 
         app = StrictProductionAsgiPlaceholder(application_package="{pkg}")
 
 
         def run() -> None:
-            import uvicorn
+            import sys
 
-            composition = create_reference_production_process_composition()
-            host = os.environ.get("{env_prefix_value}BACKEND_HOST", "127.0.0.1")
-            port = int(os.environ.get("{env_prefix_value}BACKEND_PORT", "{port}"))
-            reload = os.environ.get("{env_prefix_value}BACKEND_RELOAD", "").lower() in {{"1", "true", "yes"}}
-            if reload:
-                uvicorn.run(
-                    "{pkg}.host.main:create_app",
-                    factory=True,
-                    host=host,
-                    port=port,
-                    reload=True,
-                )
-                return
-            uvicorn.run(
-                create_{short}_process_app(process_composition=composition),
-                host=host,
-                port=port,
-                reload=False,
-            )
+            print(_STRICT_RUN_MESSAGE, file=sys.stderr)
+            raise SystemExit(1)
 
 
         if __name__ == "__main__":
@@ -900,7 +880,6 @@ def env_example(
 
 def readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     pkg = names.pkg
-    short = names.short
     display = names.display
     env_prefix_value = names.env_prefix
     route_prefix = names.route_prefix

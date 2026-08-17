@@ -10,15 +10,6 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.agent_distribution.activation import ActivationService
-from intergrax.agent_distribution.deployment import FakeInMemoryRuntimeDeploymentAdapter
-from intergrax.agent_distribution.in_memory_stores import (
-    InMemoryApplicationEnvironmentActivationStore,
-    InMemoryDeploymentInstanceStore,
-    InMemoryRuntimeRevisionStore,
-)
-from intergrax.agent_distribution.runtime_revision import RuntimeRevisionState
-from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
 from intergrax.applications._shared.production_agent_platform_runtime import (
@@ -31,10 +22,13 @@ from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
     create_reference_production_process_composition,
 )
-from intergrax.applications._shared.registry_projection import (
-    ApplicationRegistryProjectionCoordinator,
-    InMemoryRegistryProjectionInputStore,
-    MaterializedRegistryProjection,
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.registry_projection_input_bundle import (
+    build_reference_activation_request,
+    build_reference_registry_projection_input_bundle,
+)
+from intergrax.applications._shared.reference_production_lifecycle import (
+    ReferenceProductionLifecycleLauncher,
 )
 from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
 from research_application.host.main import create_research_process_app
@@ -42,7 +36,6 @@ from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_environment_profile
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 from research_application.tests.research_ac3_projection import build_research_test_registry_projection
-from tests.unit.applications.ac3_projection_helpers import build_test_registry_projection_bundle
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -104,32 +97,10 @@ def _activate_projection_via_ap_lifecycle(
     composition: ProductionProcessComposition,
     bundle,
 ) -> str:
-    activation, _coordinator, revision_service = _wire_activation_on_composition(composition)
-    revision_service.persist_candidate_revision(bundle.runtime_revision)
-    revision_service.mark_validated(
-        bundle.runtime_revision.runtime_revision_id,
-        validated_revision=bundle.runtime_revision.model_copy(
-            update={"revision_state": RuntimeRevisionState.VALIDATED}
-        ),
-    )
-    input_store = activation._projection_coordinator._input_store  # noqa: SLF001
-    input_store.register(bundle)
-    revision = bundle.runtime_revision
-    activation.prepare_candidate(
-        application_id=revision.application_id,
-        application_environment_id=revision.application_environment_id,
-        runtime_revision_id=revision.runtime_revision_id,
-        artifact_locator="test://artifact",
-    )
-    activation.commit_activation(
-        application_id=revision.application_id,
-        application_environment_id=revision.application_environment_id,
-        runtime_revision_id=revision.runtime_revision_id,
-        expected_prior_traffic_revision_id=None,
-        expected_serving_pointer_revision=0,
-        expected_artifact_digest=bundle.materialization_artifact_digest or "sha256:" + ("d" * 64),
-    )
-    return revision.runtime_revision_id
+    launcher = ReferenceProductionLifecycleLauncher(composition)
+    activation_request = build_reference_activation_request(bundle)
+    result = launcher.deploy_and_activate(bundle, activation_request)
+    return result.runtime_revision_id
 
 
 def _research_activation_bundle(
@@ -146,37 +117,14 @@ def _research_activation_bundle(
     env = manifest.environment or build_research_environment_profile(settings)
     if application_environment_id is not None:
         env = env.model_copy(update={"profile_id": application_environment_id})
-    return build_test_registry_projection_bundle(
+    return build_reference_registry_projection_input_bundle(
         manifest,
         env,
         builders=RESEARCH_AGENT_BUILDERS,
-        revision_id=revision_id,
+        runtime_revision_id=revision_id,
         enabled_contract_stems=frozenset(enabled_contract_ids) if enabled_contract_ids else None,
         settings=settings,
     )
-
-
-def _wire_activation_on_composition(
-    composition: ProductionProcessComposition,
-) -> tuple[ActivationService, ApplicationRegistryProjectionCoordinator, RuntimeRevisionService]:
-    state = composition.agent_platform_runtime.distribution_state
-    stores = composition.agent_platform_runtime.stores
-    revision_store = InMemoryRuntimeRevisionStore(state)
-    input_store = InMemoryRegistryProjectionInputStore()
-    coordinator = ApplicationRegistryProjectionCoordinator(
-        revision_store=revision_store,
-        input_store=input_store,
-        projection_store=stores.registry_projection_store,
-    )
-    activation = ActivationService(
-        revision_store=revision_store,
-        deployment_instance_store=InMemoryDeploymentInstanceStore(state),
-        serving_store=stores.serving_store,
-        activation_store=InMemoryApplicationEnvironmentActivationStore(state),
-        deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
-        projection_coordinator=coordinator,
-    )
-    return activation, coordinator, RuntimeRevisionService(revision_store)
 
 
 def test_production_process_composition_owns_single_runtime_bundle() -> None:
