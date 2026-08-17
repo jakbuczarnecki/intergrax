@@ -9,6 +9,9 @@ import os
 
 from dotenv import load_dotenv
 
+from intergrax.applications._shared.production_agent_platform_runtime import (
+    build_production_agent_platform_runtime,
+)
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
 )
@@ -22,11 +25,13 @@ load_dotenv()
 _settings = LegalBackendSettings.from_env()
 _manifest = build_legal_manifest(_settings)
 _env = _manifest.environment or build_legal_environment_profile(_settings)
+_agent_platform_runtime = build_production_agent_platform_runtime()
 
 app = create_legal_backend_app(
     registry_projection=bootstrap_production_registry_projection(
         application_id=_manifest.app_id,
         application_environment_id=_env.profile_id,
+        stores=_agent_platform_runtime.stores,
     ),
     settings=_settings,
 )

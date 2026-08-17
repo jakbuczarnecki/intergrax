@@ -660,11 +660,29 @@ def main_py(names: ScaffoldApplicationNames) -> str:
 
         from dotenv import load_dotenv
 
+        from intergrax.applications._shared.production_agent_platform_runtime import (
+            build_production_agent_platform_runtime,
+        )
+        from intergrax.applications._shared.production_host_composition import (
+            bootstrap_production_registry_projection,
+        )
+        from {pkg}.host.environment_profile import build_{short}_environment_profile
         from {pkg}.host.factory import create_{short}_backend_app
+        from {pkg}.manifest import build_{short}_manifest
 
         load_dotenv()
 
-        app = create_{short}_backend_app()
+        _manifest = build_{short}_manifest()
+        _env = _manifest.environment or build_{short}_environment_profile()
+        _agent_platform_runtime = build_production_agent_platform_runtime()
+
+        app = create_{short}_backend_app(
+            registry_projection=bootstrap_production_registry_projection(
+                application_id=_manifest.app_id,
+                application_environment_id=_env.profile_id,
+                stores=_agent_platform_runtime.stores,
+            ),
+        )
 
 
         def run() -> None:

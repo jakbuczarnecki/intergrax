@@ -12,6 +12,10 @@ from typing import Protocol, runtime_checkable
 import uvicorn
 from fastapi import FastAPI
 
+from intergrax.applications._shared.production_agent_platform_runtime import (
+    ProductionAgentPlatformRuntime,
+    build_production_agent_platform_runtime,
+)
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
 )
@@ -71,12 +75,16 @@ class _HostedUvicornServer(uvicorn.Server):
 def _default_application_factory(
     settings: LocalWorkspaceBackendSettings,
     host_readiness: LocalWorkspaceReadinessProvider,
+    *,
+    agent_platform_runtime: ProductionAgentPlatformRuntime | None = None,
 ) -> FastAPI:
     env = build_local_workspace_environment_profile(settings)
+    platform_runtime = agent_platform_runtime or build_production_agent_platform_runtime()
     return create_local_workspace_backend_app(
         registry_projection=bootstrap_production_registry_projection(
             application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,
             application_environment_id=env.profile_id,
+            stores=platform_runtime.stores,
         ),
         settings=settings,
         host_readiness=host_readiness,

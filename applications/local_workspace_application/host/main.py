@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from intergrax.applications._shared.production_agent_platform_runtime import (
+    build_production_agent_platform_runtime,
+)
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
 )
@@ -18,11 +21,13 @@ from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MAN
 
 _settings = LocalWorkspaceBackendSettings.from_env()
 _env = build_local_workspace_environment_profile(_settings)
+_agent_platform_runtime = build_production_agent_platform_runtime()
 
 app = create_local_workspace_backend_app(
     registry_projection=bootstrap_production_registry_projection(
         application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,
         application_environment_id=_env.profile_id,
+        stores=_agent_platform_runtime.stores,
     ),
     settings=_settings,
 )
