@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-08-17 — **TRACE-BITEMP-1** typed bitemporal contracts + tenant ordering scope + transactional provider strategy **Planned / In Review** · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
+**Last updated:** 2026-08-17 — **TRACE-BITEMP-1** typed bitemporal contracts + tenant ordering scope + transactional provider strategy **Planned / In Review** · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-BITEMP-ARCH-SYNC-R6** unresolved position resolution ownership + lease/fencing + auditable terminalization · **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
 
 ---
 
@@ -1037,7 +1037,7 @@ As-of projections and bitemporal historical state answer **different questions**
 
 ## 8. First-class bitemporal historical state (TRACE-BITEMP-ARCH-SYNC)
 
-**Status:** Target canon (**accepted** 2026-08-15; watermark finality / gap semantics **TRACE-BITEMP-ARCH-SYNC-R5** 2026-08-16; revision-ordering authority / provider contract **TRACE-BITEMP-ARCH-SYNC-R4** 2026-08-16) · **TRACE-BITEMP-1** typed contracts **Planned / In Review** (independent audit closes it) · persistence **Planned** (TRACE-BITEMP-2–TRACE-BITEMP-5) · production persistence **not implemented**
+**Status:** Target canon (**accepted** 2026-08-15; unresolved position resolution / lease / fencing / auditable terminalization **TRACE-BITEMP-ARCH-SYNC-R6** 2026-08-17; watermark finality / gap semantics **TRACE-BITEMP-ARCH-SYNC-R5** 2026-08-16; revision-ordering authority / provider contract **TRACE-BITEMP-ARCH-SYNC-R4** 2026-08-16) · **TRACE-BITEMP-1** typed contracts **Planned / In Review** (independent audit closes it) · persistence **Planned** (TRACE-BITEMP-2–TRACE-BITEMP-5) · production persistence **not implemented**
 
 ### 8.1 Capability definition
 
@@ -1312,6 +1312,185 @@ A retry **MUST NOT** create a second accepted revision merely because the origin
 
 No silent ambiguous state.
 
+#### Unresolved position resolution, lease/fencing, and auditable terminalization (TRACE-BITEMP-ARCH-SYNC-R6)
+
+R5 freezes lifecycle states and finalized-contiguous watermark semantics. R6 freezes **who may resolve** `UNRESOLVED` positions, **how stale writers are fenced**, **how terminalization is audited**, and **how watermark liveness is preserved** without sacrificing safety.
+
+**Resolution semantic ownership.** The transition:
+
+```text
+UNRESOLVED → TERMINAL_NON_COMMITTED
+```
+
+is a **governed lifecycle resolution** owned semantically by the Observability / Bitemporal domain through **`RevisionOrderingAuthority`**. Applications, agents, arbitrary business logic, and generic Platform Plugin wrappers **MUST NOT** independently declare knowledge revision positions void. Resolution is a **sub-capability** of `RevisionOrderingAuthority` — not a second unrelated authority and not application-owned semantics. Exact runtime method/type names belong to **TRACE-BITEMP-2** unless already frozen in TRACE-BITEMP-1.
+
+**Semantic authority vs resolution trigger.** Architecture distinguishes:
+
+| Role | Meaning |
+|------|---------|
+| **Semantic authority** | The canonical contract deciding whether a lifecycle transition is valid |
+| **Trigger / source** | What initiated a resolution attempt |
+
+Possible triggers **MAY** include: recovery after restart; lease-expiry reaper; failed-transaction recovery; provider reconciliation; explicit operator/governance action. Triggers **MUST NOT** invent their own lifecycle semantics. Every resolution **MUST** pass through one canonical resolution rule set on `RevisionOrderingAuthority`.
+
+```text
+Recovery / Reaper / Operator
+        |
+        v
+RevisionOrderingAuthority (canonical resolution rules)
+        |
+        v
+validate ownership + fencing + durable state
+        |
+        +--> ACCEPTED
+        |
+        +--> TERMINAL_NON_COMMITTED
+        |
+        +--> remain UNRESOLVED
+```
+
+**Bounded resolution / liveness invariant.** An `UNRESOLVED` knowledge revision position **MUST NOT** be allowed to pin a tenant `KnowledgeRevisionWatermark` indefinitely without an active bounded resolution path. Every unresolved position **MUST** eventually:
+
+- become `ACCEPTED`, **or**
+- become `TERMINAL_NON_COMMITTED`, **or**
+- remain explicitly `UNRESOLVED` while an active bounded recovery/resolution process continues.
+
+The system **MUST NOT** rely on indefinite manual intervention as the default production mechanism. Manual/operator/governance action **MAY** exist as exceptional fallback. Exact timeout/SLA duration is **not** frozen here — **TRACE-BITEMP-2** owns concrete timing/configuration.
+
+**Watermark safety and liveness (both required).**
+
+| Property | Requirement |
+|----------|-------------|
+| **Safety** | Watermark **MUST NOT** pass an unresolved `K` (R5) |
+| **Liveness** | Stale unresolved positions are actively driven toward a terminal outcome under bounded resolution |
+
+Do **not** sacrifice one for the other.
+
+**Lease semantics (conceptual).** When in-flight acceptance requires bounded ownership, architecture requires a **lease / ownership mechanism**:
+
+- a writer/resolver temporarily owns authority to complete a particular acceptance/resolution operation;
+- ownership is bounded;
+- stale ownership can be superseded under canonical rules.
+
+**Lease expiry alone MUST NOT automatically prove that a revision is safe to void.** Architecture **explicitly rejects**:
+
+```text
+lease expired → blind TERMINAL_NON_COMMITTED
+```
+
+An old writer might still be alive or might later resume. Lease expiry is a **trigger for recovery/resolution**, not sufficient proof of terminal non-commitment.
+
+**Fencing (required).** Once recovery/resolution authority supersedes an old writer, the old writer **MUST NOT** be able to later commit or mutate the lifecycle outcome for that position. Conceptually:
+
+```text
+Writer A owns generation/fence F1
+        |
+        | lease/recovery superseded
+        v
+Recovery authority owns F2
+        |
+        +--> finalizes/recovers K
+        |
+        v
+late Writer A using F1 attempts commit → MUST be rejected
+```
+
+Architecture **MUST** guarantee newer authority supersedes older authority. Exact representation (fencing token, generation, epoch, version, or equivalent) belongs to **TRACE-BITEMP-2**.
+
+**Void is not a new knowledge revision position.** Resolving existing position **K** from `UNRESOLVED` → `TERMINAL_NON_COMMITTED` **MUST NOT** allocate a new `KnowledgeRevisionPosition` merely to express that lifecycle transition.
+
+**Forbidden:**
+
+```text
+K17 UNRESOLVED
+K18 = "void K17"
+```
+
+**Correct:**
+
+```text
+K17 lifecycle: UNRESOLVED → TERMINAL_NON_COMMITTED
++ separate immutable resolution/audit record
+```
+
+The terminalization decision finalizes the **existing K**. It is **not** a new accepted knowledge revision.
+
+**Immutable resolution record (conceptual).** Every transition to `TERMINAL_NON_COMMITTED` **MUST** be auditable via an immutable resolution record. Exact runtime type/name belongs to **TRACE-BITEMP-2**. The record **SHOULD** capture canonical safe metadata such as:
+
+- target ordering scope / tenant
+- target `KnowledgeRevisionPosition` **K**
+- prior lifecycle state
+- resulting lifecycle state
+- resolution reason code
+- resolution source (recovery; lease expiry/reaper; provider reconciliation; operator/governance; other canonical source)
+- authority/fencing generation or equivalent reference
+- system-time of the resolution decision
+- actor/service/operator identity where applicable
+- provenance/evidence reference supporting the decision
+- correlation/idempotency identity where applicable
+
+Raw payload/content is **not** required in the resolution record. The record **MUST** be immutable/audit-preserving.
+
+**Resolution record ≠ knowledge revision.**
+
+| Artifact | Role |
+|----------|------|
+| **Knowledge revision** | Changes accepted knowledge / domain fact history |
+| **Resolution record** | Records how/why an existing revision position lifecycle was finalized |
+
+The resolution record:
+
+- **MUST NOT** receive a new knowledge revision **K** merely because it exists;
+- **MUST NOT** change valid-time semantics of the underlying domain fact;
+- **MUST NOT** become a new bitemporal knowledge revision by default;
+- **MAY** carry system-time/audit metadata describing when platform resolution occurred;
+- **MUST** remain queryable for audit/provenance.
+
+Do **not** collapse resolution history into revision lineage.
+
+**Late commit after terminalization (fail-closed).** Once **K** is durably `TERMINAL_NON_COMMITTED` under a newer valid resolution/fencing authority, a stale writer **MUST NOT** later transition **K** to `ACCEPTED`. `TERMINAL_NON_COMMITTED` is **terminal**. A late write using stale ownership/fence **MUST** fail. **`TERMINAL_NON_COMMITTED → ACCEPTED` is forbidden.** If product/domain semantics require a later correction, it **MUST** be a new logical acceptance with a new `RevisionAcceptanceKey` and new **K**.
+
+**Race: original writer vs recovery.** **TRACE-BITEMP-2** **MUST** handle writer/recovery races on the same **K**. Canonical rule: exactly one valid lifecycle outcome wins under current authoritative fencing/ownership. **No timestamp-based winner selection.**
+
+| Case | Outcome |
+|------|---------|
+| **A** Writer commits before recovery obtains newer authority | `ACCEPTED` |
+| **B** Recovery obtains newer fencing authority first and proves operation cannot safely commit | `TERMINAL_NON_COMMITTED`; late writer rejected |
+| **C** State remains ambiguous | `UNRESOLVED`; watermark remains pinned; bounded resolution continues |
+
+**Recovery / reaper role (conceptual).** Architecture **SHOULD** define a production path such as an unresolved scanner / recovery worker / reaper responsible for:
+
+- finding stale `UNRESOLVED` positions;
+- obtaining current resolution authority/fence;
+- verifying durable acceptance state;
+- attempting safe recovery;
+- classifying terminal state;
+- writing immutable resolution record;
+- enabling watermark advancement when finalized.
+
+Process topology (daemon vs background task, scheduler, queue, cron, DB implementation) belongs to **TRACE-BITEMP-2** / operational design.
+
+**Governance / manual action (exception path).** Explicit governance/operator terminalization **MAY** exist only as a controlled exception. It **MUST**:
+
+- use the same canonical resolution authority on `RevisionOrderingAuthority`;
+- obey the same fencing rules;
+- produce the same immutable resolution record;
+- never bypass unresolved-state validation;
+- be fully auditable.
+
+Manual action **MUST NOT** be a magic override that ignores current authoritative writer ownership. Force-resolution semantics, if ever allowed, require **TRACE-BITEMP-2** or a later ADR with authorization and evidence requirements. RBAC details are **not** frozen here.
+
+**In-doubt / 2PC positions (provider-independent).** If a provider uses 2PC or another protocol capable of producing in-doubt operations:
+
+- in-doubt **K** is `UNRESOLVED`;
+- watermark **MUST NOT** pass it;
+- recovery **MUST** use provider-specific evidence behind canonical resolution semantics;
+- lease expiry alone is insufficient;
+- resolution **MUST** eventually classify the position or keep it explicitly unresolved;
+- provider-specific 2PC terminology **MUST NOT** leak into canonical reader semantics.
+
+Architecture does **not** select or require 2PC for the canonical provider merely because this scenario is documented.
+
 **Production-derived decision input (now selected in §8.11).** Transactional allocation is the canonical default because revision position allocation and durable acceptance are coordinated within the same transactional boundary. Alternatives remain valid as qualified providers behind `RevisionOrderingAuthority`.
 
 #### Wall-clock query vs reconstruction boundary
@@ -1359,6 +1538,9 @@ The contract owns semantic guarantees such as:
 
 - allocate / accept an authoritative revision position
 - classify position lifecycle state (allocated, accepted, unresolved, terminal non-committed)
+- **resolve** `UNRESOLVED` positions to `ACCEPTED` or `TERMINAL_NON_COMMITTED` under canonical rules (resolution sub-capability — applications **MUST NOT** void positions independently)
+- enforce bounded ownership/lease and fencing so stale writers cannot commit after supersession
+- emit immutable resolution/audit records for every `TERMINAL_NON_COMMITTED` transition
 - preserve monotonic ordering within the declared scope
 - expose / reconstruct **KnowledgeRevisionWatermark** using finalized contiguous boundary semantics
 - deterministic concurrent acceptance
@@ -1515,6 +1697,14 @@ TRACE-BITEMP-1 freezes the canonical default mechanism in §8.11 against these i
 13. **Selected ordering-scope correctness** — proof matches the scope chosen in TRACE-BITEMP-1.
 14. **Cross-scope semantics** — where ordering is partitioned, composition semantics are deterministic and documented.
 15. **Historical immutability** — accepted corrections are never destructively overwritten.
+16. **Stale writer fencing** — once recovery/resolution authority supersedes an old writer, late commits using stale ownership/fence **MUST** be rejected.
+17. **Bounded unresolved-position resolution** — every `UNRESOLVED` position has an active bounded resolution path; indefinite manual intervention is **not** the default production mechanism.
+18. **Deterministic race resolution** — writer vs recovery races resolve to exactly one valid lifecycle outcome under current authoritative fencing/ownership; no timestamp-based winner.
+19. **No late commit after terminalization** — `TERMINAL_NON_COMMITTED` is terminal; `TERMINAL_NON_COMMITTED → ACCEPTED` is forbidden.
+20. **Immutable resolution audit trail** — every `TERMINAL_NON_COMMITTED` transition produces an immutable, queryable resolution record distinct from knowledge revision lineage.
+21. **Watermark unpins after safe terminalization** — terminalization of a blocking gap **MAY** allow watermark advancement per finalized-contiguous rules; unresolved positions remain visible until legitimately resolved.
+22. **Lease expiry is not void proof** — lease expiry may trigger recovery but **MUST NOT** alone justify blind `TERMINAL_NON_COMMITTED`.
+23. **Lifecycle voiding does not allocate new K** — resolving `UNRESOLVED → TERMINAL_NON_COMMITTED` finalizes the existing position; it does **not** mint a new knowledge revision position for void semantics.
 
 #### Ordering scope / scalability decision boundary
 
@@ -1640,7 +1830,7 @@ Architecture defines semantics and capability. TRACE-BITEMP-1 **does** freeze or
 
 ### 8.10 Implementation status
 
-Accepted architecture · **TRACE-BITEMP-1** typed contracts **Planned / In Review** in `intergrax.contracts.bitemporal_knowledge` · production persistence **not implemented** (TRACE-BITEMP-2). Delivery: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) TRACE-BITEMP-1–TRACE-BITEMP-5.
+Accepted architecture · **TRACE-BITEMP-1** typed contracts **Planned / In Review** in `intergrax.contracts.bitemporal_knowledge` · unresolved position resolution / lease / fencing / auditable terminalization canon **TRACE-BITEMP-ARCH-SYNC-R6** · production persistence **not implemented** (TRACE-BITEMP-2). Delivery: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) TRACE-BITEMP-1–TRACE-BITEMP-5.
 
 ### 8.11 TRACE-BITEMP-1 frozen contracts
 
@@ -1658,7 +1848,8 @@ Module: `intergrax.contracts.bitemporal_knowledge`. Opt-in capability — **not*
 | Watermark | `KnowledgeRevisionWatermark(scope, finalized_through_value)`; `0` = empty prefix; finalized = `ACCEPTED` **or** `TERMINAL_NON_COMMITTED`; unresolved/allocated below `K` **blocks**; terminal gap does **not** block |
 | Ordering scope | **TENANT** via `KnowledgeOrderingScope.tenant_id` |
 | Cross-scope | No total order across tenants. Cross-scope queries return `KnowledgeRevisionWatermarkSet`. Comparing tenant K12 with tenant K20 as one sequence is forbidden (`CrossScopeKnowledgeOrderError`) |
-| Authority | `RevisionOrderingAuthority` (ABC): `accept_revision(scope, revision_id, acceptance_key)`, `position_lifecycle`, `watermark`, `records_through`, `unresolved_positions`. Host/DI selects provider. Applications **MUST NOT** invent ordering semantics |
+| Authority | `RevisionOrderingAuthority` (ABC): `accept_revision(scope, revision_id, acceptance_key)`, `position_lifecycle`, `watermark`, `records_through`, `unresolved_positions`; **resolution sub-capability** for `UNRESOLVED → ACCEPTED` / `TERMINAL_NON_COMMITTED` under canonical lease/fencing rules (exact API in TRACE-BITEMP-2). Host/DI selects provider. Applications **MUST NOT** invent ordering semantics or independently void positions |
+| Resolution audit | Conceptual immutable **resolution record** per `TERMINAL_NON_COMMITTED` transition — audit/provenance only; **not** a knowledge revision; exact type in TRACE-BITEMP-2 |
 | Canonical provider strategy | **Transactional / storage-native allocation + acceptance**: one durable transactional boundary atomically coordinating `KnowledgeRevisionId`, acceptance key, position allocation, durable acceptance/reference, and lifecycle/finality. Public type remains `RevisionOrderingAuthority` only |
 
 **Scope rationale (TENANT selected).** Intergrax persistence, isolation, deletion, and execution reconstruction are already tenant-partitioned. A tenant-scoped `K` is the natural unit of “what did Intergrax know for this tenant?” Global reconstruction is compositional: a `KnowledgeRevisionWatermarkSet`, **not** one invented global `K`.
@@ -1693,7 +1884,7 @@ Module: `intergrax.contracts.bitemporal_knowledge`. Opt-in capability — **not*
 | **I** Two distinct revisions concurrent | Distinct `K` values, deterministic tenant order | Advances only through finalized prefix | Independent keys | Auditable K1 → K2 order without timestamps |
 | **J** Terminal non-committed gap below later accepted revisions | Lower `K` stays `TERMINAL_NON_COMMITTED`; later `ACCEPTED` | Watermark **may** advance across the gap | n/a | Gap is classifiable, not invisible |
 
-**TRACE-BITEMP-2 boundary:** implement `RevisionOrderingAuthority` with the selected strategy; persist lifecycle; advance watermark; recovery of unresolved positions; host DI. **MUST NOT** invent types, change TENANT scope, weaken finalized-contiguous semantics, add valid/system time onto `RuntimeEvent`, or select a vendor type as the public contract.
+**TRACE-BITEMP-2 boundary:** implement `RevisionOrderingAuthority` with the selected strategy; persist lifecycle; authoritative resolution path (`UNRESOLVED → ACCEPTED` / `TERMINAL_NON_COMMITTED`); lease/ownership and fencing where required; bounded unresolved scanner/recovery; immutable resolution records; advance watermark; recovery of unresolved positions; stale-writer rejection; idempotent recovery; manual/governance fallback through same authority; host DI. **MUST NOT** invent types, change TENANT scope, weaken finalized-contiguous semantics, allocate new **K** for lifecycle voiding, add valid/system time onto `RuntimeEvent`, or select a vendor type as the public contract.
 
 ---
 
