@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 920" role="img">
+  <title>Intergrax LLM adapter boundary</title>
+  <desc>Conceptual diagram: Intergrax runtime selects an LLMProfile through routing and ModelCatalog, calls LLMAdapter, which normalizes provider responses from OpenAI, Claude, and Ollama into a single response envelope.</desc>
+  <rect width="1200" height="920" fill="#0d1117"/>
+  <rect x="32" y="28" width="1136" height="864" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#e6edf3">Intergrax LLM Adapters &#8212; vendor boundary</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" fill="#8b949e">Runtime consumes platform contracts, not vendor SDKs</text>
+
+  <rect x="400" y="130" width="400" height="56" rx="12" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="600" y="162" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#e6edf3">Intergrax runtime</text>
+
+  <line x1="600" y1="186" x2="600" y2="218" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 218 L594 204 L606 204 Z" fill="#484f58"/>
+
+  <rect x="440" y="218" width="320" height="52" rx="10" fill="#1c2d4a" stroke="#388bfd" stroke-width="2"/>
+  <text x="600" y="250" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">LLMProfile</text>
+
+  <line x1="600" y1="270" x2="600" y2="298" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 298 L594 286 L606 286 Z" fill="#484f58"/>
+
+  <rect x="400" y="298" width="400" height="52" rx="10" fill="#2d333b" stroke="#d4a72c" stroke-width="2"/>
+  <text x="600" y="330" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">routing / ModelCatalog</text>
+
+  <line x1="600" y1="350" x2="600" y2="378" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 378 L594 366 L606 366 Z" fill="#484f58"/>
+
+  <rect x="380" y="378" width="440" height="64" rx="14" fill="#1a3d2e" stroke="#3fb950" stroke-width="2.5"/>
+  <text x="600" y="414" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#e6edf3">LLMAdapter</text>
+
+  <line x1="600" y1="462" x2="600" y2="500" stroke="#3fb950" stroke-width="2"/>
+  <path d="M600 500 L594 486 L606 486 Z" fill="#3fb950"/>
+
+  <rect x="120" y="500" width="200" height="52" rx="10" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="220" y="532" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#e6edf3">OpenAI</text>
+
+  <rect x="500" y="500" width="200" height="52" rx="10" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="600" y="532" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#e6edf3">Claude</text>
+
+  <rect x="880" y="500" width="200" height="52" rx="10" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="980" y="532" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#e6edf3">Ollama</text>
+
+  <line x1="220" y1="500" x2="480" y2="442" stroke="#484f58" stroke-width="1.5"/>
+  <line x1="600" y1="500" x2="600" y2="442" stroke="#484f58" stroke-width="1.5"/>
+  <line x1="980" y1="500" x2="720" y2="442" stroke="#484f58" stroke-width="1.5"/>
+
+  <line x1="220" y1="552" x2="220" y2="600" stroke="#484f58" stroke-width="1.5"/>
+  <line x1="600" y1="552" x2="600" y2="600" stroke="#484f58" stroke-width="1.5"/>
+  <line x1="980" y1="552" x2="980" y2="600" stroke="#484f58" stroke-width="1.5"/>
+  <line x1="220" y1="600" x2="980" y2="600" stroke="#484f58" stroke-width="2"/>
+  <line x1="600" y1="600" x2="600" y2="628" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 628 L594 614 L606 614 Z" fill="#484f58"/>
+
+  <rect x="280" y="628" width="640" height="88" rx="14" fill="#2d1f4e" stroke="#a371f7" stroke-width="2"/>
+  <text x="600" y="660" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#e6edf3">normalized envelope</text>
+  <text x="600" y="688" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">content &#183; tools &#183; refusal &#183; usage &#183; model &#183; finish_reason &#183; provider_extensions</text>
+
+  <rect x="320" y="420" width="560" height="36" rx="8" fill="#3d2116" stroke="#f0883e" stroke-width="1.5"/>
+  <text x="600" y="443" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#f0883e">Vendor differences stop here.</text>
+
+  <text x="600" y="760" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" fill="#8b949e">Representative providers shown &#8212; not a full vendor catalog.</text>
+  <text x="600" y="868" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#6e7681">Conceptual architecture &#8212; not a runtime class diagram.</text>
+</svg>
