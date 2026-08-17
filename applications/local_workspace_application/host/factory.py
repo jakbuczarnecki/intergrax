@@ -23,6 +23,7 @@ from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.interaction_wiring import (
     wire_interaction_intake_service,
@@ -82,6 +83,7 @@ from local_workspace_application.serving.workspace_routes import (
 
 def create_local_workspace_backend_app(
     *,
+    registry_projection: MaterializedRegistryProjection,
     settings: Optional[LocalWorkspaceBackendSettings] = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
@@ -123,6 +125,7 @@ def create_local_workspace_backend_app(
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
         document_store=lkw_document_store,
+        registry_projection=registry_projection,
     )
     nexus_loop = runtime.nexus_loop
     platform = bootstrap_nexus_platform(

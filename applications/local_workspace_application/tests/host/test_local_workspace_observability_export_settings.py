@@ -16,6 +16,7 @@ from intergrax.runtime.observability.operator_wiring import (
     build_observability_export_runtime_plugin,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 
 pytestmark = [pytest.mark.unit]
 
@@ -316,6 +317,6 @@ def test_factory_explicit_config_wins(tmp_path, monkeypatch) -> None:
     )
 
     # The factory should use the explicit config, not build one from disabled settings
-    app = create_local_workspace_backend_app(observability_export=explicit_config)
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(), observability_export=explicit_config)
     assert app is not None
     assert app.title

@@ -44,7 +44,7 @@ Current claim status belongs to [PROOFS](../proofs/PROOFS.md). It separates impl
 
 ## Is Hybrid Ask proven?
 
-Partly, with boundaries. The [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) exercises indexed **Ask V1** — it is not the Hybrid Ask certification path. Separate accepted evidence demonstrates the bounded indexed branch through Hybrid Ask; see [PROOFS](../proofs/PROOFS.md) and [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md). Mixed indexed + authorized-live Hybrid Ask in one answer is **not proven**; this does not imply general production readiness or complete live-provider access.
+Partly, with boundaries. The [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) exercises indexed **Ask V1** — it is not the Hybrid Ask verification path. Separate accepted evidence demonstrates the bounded indexed branch through Hybrid Ask; see [PROOFS](../proofs/PROOFS.md) and [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md). Mixed indexed + authorized-live Hybrid Ask in one answer is **not proven**; this does not imply general production readiness or complete live-provider access.
 
 ## Where should I start?
 
@@ -72,7 +72,7 @@ The [LICENSE](../../../LICENSE) controls this boundary. Production Use and Comme
 
 ## How do I discuss a pilot?
 
-Go to [Partners](../community/PARTNERS.md). Prepare a concrete pilot brief and distinguish evaluation-only activity from operational, production, or commercial intent.
+Go to [Partners](../community/PARTNERS.md). For first contact, send a short 3–5 sentence workflow note covering the users, workflow, current problem, desired result, and intent. A detailed pilot brief is only needed after mutual fit is established.
 
 ## Can I contribute or send feedback?
 

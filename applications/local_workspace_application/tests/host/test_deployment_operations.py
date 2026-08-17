@@ -11,6 +11,7 @@ from intergrax.fastapi_core.config import ApiEnvironment
 from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from local_workspace_application.host.factory import create_local_workspace_backend_app
+from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.serving.workspace_routes import (
     ManagedWorkspaceRepository,
@@ -72,8 +73,8 @@ def test_readiness_reports_capabilities_and_liveness_without_secret(
     tmp_path: Path,
 ) -> None:
     secret = "deployment-secret-that-is-not-in-health"
-    app = create_local_workspace_backend_app(
-        settings=LocalWorkspaceBackendSettings(
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(LocalWorkspaceBackendSettings(
+            data_home=str(tmp_path / "data"), settings=LocalWorkspaceBackendSettings(
             data_home=str(tmp_path / "data"),
             include_mcp=False,
             include_scheduler=False,
@@ -108,8 +109,8 @@ def test_mandatory_store_failure_blocks_app_creation(
     )
 
     with pytest.raises(RuntimeError, match="lkw_durable_store_unavailable"):
-        create_local_workspace_backend_app(
-            settings=LocalWorkspaceBackendSettings(
+        create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(LocalWorkspaceBackendSettings(
+                data_home=str(tmp_path / "data"), settings=LocalWorkspaceBackendSettings(
                 data_home=str(tmp_path / "data"),
                 include_mcp=False,
                 include_scheduler=False,

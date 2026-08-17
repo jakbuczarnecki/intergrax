@@ -214,17 +214,23 @@ def test_count_parser_traces_in_trace_events() -> None:
 class _RecordingStore(InMemoryRuntimeEventStore):
     def __init__(self) -> None:
         super().__init__()
-        self.list_for_run_calls: list[tuple[str, str, int]] = []
+        self.list_positioned_for_run_calls: list[tuple[str, str, int]] = []
 
-    def list_for_run(
+    def list_positioned_for_run(
         self,
         run_id: str,
         *,
         tenant_id: str,
         limit: int = 1000,
-    ) -> list[RuntimeEvent]:
-        self.list_for_run_calls.append((run_id, tenant_id, limit))
-        return super().list_for_run(run_id, tenant_id=tenant_id, limit=limit)
+        through=None,
+    ):
+        self.list_positioned_for_run_calls.append((run_id, tenant_id, limit))
+        return super().list_positioned_for_run(
+            run_id,
+            tenant_id=tenant_id,
+            limit=limit,
+            through=through,
+        )
 
 
 def test_journal_ref_empty_canonical_store_keeps_parser_trace_count() -> None:
@@ -252,7 +258,7 @@ def test_journal_ref_empty_canonical_store_keeps_parser_trace_count() -> None:
     assert ref is not None
     assert ref.event_count == 0
     assert ref.parser_trace_count == 1
-    assert store.list_for_run_calls == [(run_id, _TENANT, 2000)]
+    assert store.list_positioned_for_run_calls == [(run_id, _TENANT, 2000)]
 
 
 def test_journal_export_snapshot_requires_actual_runtime_store() -> None:
@@ -262,4 +268,4 @@ def test_journal_export_snapshot_requires_actual_runtime_store() -> None:
     assert snapshot.event_count == 0
     assert snapshot.events == []
     assert snapshot.parser_trace_count == 0
-    assert store.list_for_run_calls == [(run_id, _TENANT, 2000)]
+    assert store.list_positioned_for_run_calls == [(run_id, _TENANT, 2000)]

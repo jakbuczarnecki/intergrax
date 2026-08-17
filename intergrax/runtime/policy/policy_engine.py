@@ -16,6 +16,11 @@ from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.runtime_policy import PolicyDecision as RuntimePolicyDecision
+from intergrax.contracts.runtime_policy_context import (
+    AgentDecisionPolicyContext,
+    CriticPolicyContext,
+    PreModelPolicyContext,
+)
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 from intergrax.runtime.replay.policy import (
@@ -51,7 +56,7 @@ class PolicyEngine:
         self,
         decision: AgentDecision,
         *,
-        context: Optional[Dict[str, Any]] = None,
+        context: AgentDecisionPolicyContext | None = None,
     ) -> RuntimePolicyDecision:
         return self.runtime.evaluate_decision(decision, context=context)
 
@@ -71,7 +76,7 @@ class PolicyEngine:
         tenant_id: str,
         agent_id: str,
         message_count: int,
-        context: Optional[Dict[str, Any]] = None,
+        context: PreModelPolicyContext | None = None,
     ) -> RuntimePolicyDecision:
         return self.runtime.evaluate_pre_llm(
             tenant_id=tenant_id,
@@ -86,12 +91,23 @@ class PolicyEngine:
         tenant_id: str,
         agent_id: str,
         output_chars: int,
-        context: Optional[Dict[str, Any]] = None,
     ) -> RuntimePolicyDecision:
         return self.runtime.evaluate_pre_output(
             tenant_id=tenant_id,
             agent_id=agent_id,
             output_chars=output_chars,
+        )
+
+    def evaluate_critic_verdict(
+        self,
+        *,
+        passed: bool,
+        recommended_action: str,
+        context: CriticPolicyContext | None = None,
+    ) -> RuntimePolicyDecision:
+        return self.runtime.evaluate_critic_verdict(
+            passed=passed,
+            recommended_action=recommended_action,
             context=context,
         )
 

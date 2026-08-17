@@ -628,7 +628,6 @@ class HarnessKernel:
             tenant_id=kernel_ctx.tenant_id,
             agent_id=kernel_ctx.agent_id,
             message_count=1,
-            context=step_ctx.metadata.get("policy_context"),
         )
 
     @staticmethod

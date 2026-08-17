@@ -30,6 +30,7 @@ from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepO
 from intergrax.contracts.execution_identity import require_active_execution_identity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.contracts.runtime_policy_context import AgentDecisionPolicyContext
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
@@ -461,22 +462,23 @@ class UAEPExecutor:
                 HookPoint.AFTER_DECISION,
                 decision_ctx,
             )
-            decision_context: dict[str, object] = {
-                "require_human_on_critical": task_options.governance.require_human_on_critical,
-                "has_unresolved_critical_interrupt": exec_ctx.metadata.get(
-                    "has_unresolved_critical_interrupt", False
-                ),
-            }
+            replan_context: dict[str, object] = {}
             replan_policy = request.metadata.get("replan_policy.v1")
             if isinstance(replan_policy, dict):
-                decision_context.update(replan_policy)
+                replan_context.update(replan_policy)
             resolution = self._interrupt_handler.resolve_decision(
                 decision,
                 task_id=task_id,
                 run_id=run_id,
                 agent_id=contract.id,
                 step_id=step.step_id,
-                context=decision_context,
+                context=replan_context or None,
+                decision_policy_context=AgentDecisionPolicyContext(
+                    require_human_on_critical=task_options.governance.require_human_on_critical,
+                    has_unresolved_critical_interrupt=bool(
+                        exec_ctx.metadata.get("has_unresolved_critical_interrupt", False)
+                    ),
+                ),
             )
             if resolution.interrupt is not None:
                 interrupt_ctx = hook_context_for_task(
@@ -650,9 +652,9 @@ class UAEPExecutor:
             run_id=run_id,
             agent_id=contract.id,
             step_id=step.step_id,
-            context={
-                "require_human_on_critical": task_options.governance.require_human_on_critical,
-            },
+            decision_policy_context=AgentDecisionPolicyContext(
+                require_human_on_critical=task_options.governance.require_human_on_critical,
+            ),
         )
 
     @staticmethod

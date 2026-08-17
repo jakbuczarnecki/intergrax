@@ -500,6 +500,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
         from intergrax.fastapi_core.config import ApiConfig
         from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+        from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
         from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
         from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
         from intergrax.runtime.interactions.router import create_interaction_intake_router
@@ -518,6 +519,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
 
         def create_{short}_backend_app(
             *,
+            registry_projection: MaterializedRegistryProjection,
             settings: Optional[{pascal}BackendSettings] = None,
             trace_db_path: Path | None = None,
             runtime_events_db_path: Path | None = None,
@@ -536,6 +538,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 runtime_events_db_path=runtime_events_db_path,
                 checkpoints_db_path=checkpoints_db_path,
                 use_in_memory_trace=trace_db_path is None,
+                registry_projection=registry_projection,
             )
             nexus_loop = runtime.nexus_loop
             registry = runtime.registry

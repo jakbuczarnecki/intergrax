@@ -11,9 +11,8 @@ import pytest
 from intergrax.applications._shared.environment_wiring import (
     _merge_integration_read_allowlist_roots,
 )
-from intergrax.applications._shared.harness_host_runtime import (
-    build_harness_host_runtime,
-)
+from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 from intergrax.integrations.registry.catalog_manifests import OTEL, SQLITE
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -97,10 +96,13 @@ def test_lkw_factory_runtime_includes_staging_and_user_read_roots(
 
     settings = LocalWorkspaceBackendSettings.from_env()
     env = build_local_workspace_environment_profile(settings)
+    projection = build_lkw_test_registry_projection(settings)
     runtime = build_harness_host_runtime(
         LOCAL_WORKSPACE_APPLICATION_MANIFEST,
         env,
         settings=settings,
+        registry_projection=projection,
+        use_in_memory_trace=True,
     )
     roots = runtime.env_wiring.tool_wiring.wiring_context.read_allowlist_roots
     assert settings.managed_upload_staging_dir in roots
@@ -127,10 +129,13 @@ def test_lkw_factory_runtime_merges_multiple_option_blocks(
         }
     )
     env = env.model_copy(update={"integration_profile": integration})
+    projection = build_lkw_test_registry_projection(settings)
     runtime = build_harness_host_runtime(
         LOCAL_WORKSPACE_APPLICATION_MANIFEST,
         env,
         settings=settings,
+        registry_projection=projection,
+        use_in_memory_trace=True,
     )
     roots = runtime.env_wiring.tool_wiring.wiring_context.read_allowlist_roots
     assert settings.managed_upload_staging_dir in roots

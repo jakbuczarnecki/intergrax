@@ -55,18 +55,16 @@ _REMOVED_STANDALONE_CAPABILITY_HEADINGS = (
 
 _REQUIRED_PUBLIC_LINKS = (
     "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
+    "docs/project/architecture/GOVERNED_EXECUTION.md",
     "docs/project/capabilities/token_optimization/README.md",
     "PROOFS.md",
     "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
-    "docs/project/technical/DOCUMENTATION_MAP.md",
-    "EVALUATION_GUIDE.md",
-    "PARTNERS.md",
-    "COLLABORATION.md",
-    "LICENSE",
     "WHY_INTERGRAX.md",
     "ARCHITECTURE_OVERVIEW.md",
-    "BUILD_WITH_INTERGRAX.md",
     "LKW_PRODUCT_TOUR.md",
+    "applications/local_workspace_application/docs/product/QUICKSTART.md",
+    "PARTNERS.md",
+    "LICENSE",
 )
 
 _COMPATIBILITY_ANCHORS = (
@@ -94,10 +92,14 @@ def readme_text() -> str:
 def test_canonical_positioning(readme_text: str) -> None:
     """Product-first first screen: Intergrax/LKW purpose and reusable foundations."""
     assert "Local Knowledge Workspace" in readme_text
-    assert "primary product path" in readme_text.lower() or "Try LKW" in readme_text
-    assert "reusable" in readme_text.lower()
-    assert "policy" in readme_text.lower()
-    assert "evidence" in readme_text.lower()
+    normalized = re.sub(r"[*_`]", "", readme_text).lower()
+    assert (
+        "primary daily-use conversational interface" in normalized
+        or "try lkw" in normalized
+    )
+    assert "reusable" in normalized
+    assert "policy" in normalized
+    assert "evidence" in normalized
     assert "Intergrax helps teams build" in readme_text
 
 
@@ -109,6 +111,7 @@ def test_section_order(readme_text: str) -> None:
 def test_platform_capabilities_table_contract(readme_text: str) -> None:
     assert "## Platform capabilities and directions" in readme_text
     for capability in (
+        "Governed Execution",
         "Observability & Auditability",
         "Token Optimization",
         "Multiplayer AI",
@@ -123,6 +126,8 @@ def test_platform_capabilities_table_contract(readme_text: str) -> None:
 def test_platform_capability_claim_boundaries(readme_text: str) -> None:
     normalized = re.sub(r"[*_`]", "", readme_text).lower()
     for phrase in (
+        "implemented slices — consolidation / qualification ongoing",
+        "complete platform-wide governance and production qualification not established",
         "implemented core + bounded proof",
         "universal every-path production observability not claimed",
         "partial — bounded",

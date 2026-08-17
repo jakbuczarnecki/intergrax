@@ -57,8 +57,11 @@ def make_journal_export_runtime_plugin(
         async def _export_journal(event: RuntimeEvent) -> None:
             if event.event_type != RuntimeEventType.TASK_COMPLETED:
                 return
-            tenant = event.tenant_id or "default"
-            run_id = event.run_id or event.task_id
+            tenant_raw = event.tenant_id
+            if tenant_raw is None or not tenant_raw.strip():
+                return
+            tenant = tenant_raw.strip()
+            run_id = event.run_id
             try:
                 persisted = reader.read_run(run_id, tenant)
             except (KeyError, ValueError):

@@ -48,14 +48,20 @@ flowchart LR
 
 - **Python 3.12** and **[uv](https://docs.astral.sh/uv/)**
 - A clone of this repository on the `development` branch
-- Repository baseline from the [Evaluation Guide](EVALUATION_GUIDE.md) (developer dependencies and repo confidence checks)
+- Workspace dependencies installed for scaffold and smoke tests (see **Setup** below)
 - **`Intergrax-ai[llm-ollama]`** for lab scaffold hosts — the generated smoke tests wire the default platform LLM profile (`ollama`). Install with `uv sync --extra llm-ollama` after scaffold (see below). A running Ollama server is **not** required for this quick start: the scaffolded agent uses an in-agent stub LLM for the reflex path exercised here.
 
-This page does not duplicate full platform setup. For catalog variables and provider configuration, see [Platform Configuration](../technical/guides/PLATFORM_CONFIGURATION.md).
+This page does not duplicate full platform setup. For catalog variables and provider configuration, see [Platform Configuration](../technical/guides/PLATFORM_CONFIGURATION.md). For a broader repository-level evaluation, use the [Evaluation Guide](EVALUATION_GUIDE.md).
 
 ## Setup
 
-From the **repository root**, complete the Evaluation Guide repository baseline first. Then continue here.
+From the **repository root** on the `development` branch:
+
+```bash
+uv sync
+```
+
+Continue here once `python -m intergrax.scaffold` is available. You do not need to complete the Evaluation Guide first.
 
 ## Scaffold the stack
 

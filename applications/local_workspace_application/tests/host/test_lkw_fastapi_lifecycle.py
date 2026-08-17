@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from local_workspace_application.host.factory import create_local_workspace_backend_app
+from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 from local_workspace_application.host.lifecycle import HostLifecycleState
 from local_workspace_application.host.readiness import LocalWorkspaceReadinessSnapshot
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
@@ -29,7 +30,7 @@ class _FakeReadiness:
 
 def test_fastapi_startup_moves_host_to_ready() -> None:
     settings = LocalWorkspaceBackendSettings(include_mcp=False, include_scheduler=False)
-    app = create_local_workspace_backend_app(settings=settings)
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
     lifecycle = app.state.lkw_host_lifecycle
     assert app.state.lkw_host_readiness is lifecycle
     assert lifecycle.state is HostLifecycleState.STARTING
@@ -40,7 +41,7 @@ def test_fastapi_startup_moves_host_to_ready() -> None:
 
 def test_readiness_endpoint_reports_ready_while_running() -> None:
     settings = LocalWorkspaceBackendSettings(include_mcp=False, include_scheduler=False)
-    app = create_local_workspace_backend_app(settings=settings)
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
     with TestClient(app) as client:
         response = client.get(f"{_PREFIX}/readiness")
     assert response.status_code == 200
@@ -55,7 +56,7 @@ def test_readiness_endpoint_reports_ready_while_running() -> None:
 
 def test_health_contract_remains_compatible() -> None:
     settings = LocalWorkspaceBackendSettings(include_mcp=False, include_scheduler=False)
-    app = create_local_workspace_backend_app(settings=settings)
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
     with TestClient(app) as client:
         response = client.get("/health")
     assert response.status_code == 200
@@ -64,7 +65,7 @@ def test_health_contract_remains_compatible() -> None:
 
 def test_shutdown_moves_host_to_stopped() -> None:
     settings = LocalWorkspaceBackendSettings(include_mcp=False, include_scheduler=False)
-    app = create_local_workspace_backend_app(settings=settings)
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
     lifecycle = app.state.lkw_host_lifecycle
     with TestClient(app):
         assert lifecycle.state is HostLifecycleState.READY
@@ -82,10 +83,7 @@ def test_hosted_mode_uses_injected_readiness_without_local_lifecycle() -> None:
             rejection_error_id="lkw_host_not_ready",
         )
     )
-    app = create_local_workspace_backend_app(
-        settings=settings,
-        host_readiness=fake,
-    )
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings, host_readiness=fake,)
     assert app.state.lkw_host_readiness is fake
     assert not hasattr(app.state, "lkw_host_lifecycle")
 

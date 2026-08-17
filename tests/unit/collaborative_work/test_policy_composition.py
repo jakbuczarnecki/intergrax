@@ -387,7 +387,7 @@ def test_runtime_meaningful_side_effect_deny_survives_composition() -> None:
     )
     assert authority.decision.action is PolicyAction.ALLOW
 
-    runtime_engine = RuntimePolicyEngine(rules=[])
+    runtime_engine = RuntimePolicyEngine()
     side_effect_request = MeaningfulSideEffectRequest(
         action="ACCEPT_QUOTE",
         kinds=(MeaningfulSideEffectKind.COMMITMENT,),

@@ -8,7 +8,7 @@ from fastapi import APIRouter, FastAPI, HTTPException, status
 
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import new_run_id
+from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from dispute_sim_application.serving.schemas import DisputeSimRunRequestV1, DisputeSimRunResponseV1
 
@@ -31,9 +31,9 @@ class DisputeSimRunService:
         )
 
     async def run_task(self, body: DisputeSimRunRequestV1) -> DisputeSimRunResponseV1:
-        run_id = new_run_id()
+        task_id, run_id = mint_intake_execution_identity()
         task = Task(
-            task_id=run_id,
+            task_id=task_id,
             tenant_id=body.tenant_id,
             user_id=body.user_id,
             session_id=body.session_id,
@@ -41,7 +41,7 @@ class DisputeSimRunService:
             context=TaskContext(capability=body.capability or "dispute.intake"),
             metadata=dict(body.metadata),
         )
-        result = await self.task_runner.run_task(task)
+        result = await self.task_runner.run_task(task, run_id=run_id)
         return DisputeSimRunResponseV1(
             task_id=result.task_id,
             run_id=result.run_id,

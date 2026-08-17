@@ -1313,6 +1313,8 @@ Align with observability spine — distribution events on Plane B; routing on Pl
 
 **Feature flag:** `build_application_registry` may accept manifest-only fallback when no binding store mounted (dev/lab).
 
+**AC-3 production host authority (STRICT):** active `RuntimeRevision` → `MaterializedRegistryProjection` → `HarnessHostRuntime`. Manifest-only assembly (`MANIFEST_DEVELOPMENT`) is forbidden under `ExecutionMode.STRICT`, including explicit override. Production host factories require an injected revision-bound projection; missing active serving/projection fails closed at composition.
+
 Built-in monorepo agents map to `builtin_package_ref` until explicit install records are required by policy.
 
 ---

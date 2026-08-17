@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from local_workspace_application.host.factory import create_local_workspace_backend_app
+from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 
 from intergrax.integrations._shared.in_memory_document_store import (
@@ -58,7 +59,7 @@ def api_client(
         lambda document_store=None: store,
     )
     settings = LocalWorkspaceBackendSettings.from_env()
-    app = create_local_workspace_backend_app(settings=settings)
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
     with TestClient(app) as client:
         yield client, store, workspace_root
 

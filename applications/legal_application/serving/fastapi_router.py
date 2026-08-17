@@ -15,7 +15,7 @@ LegalIdentitySource = Literal["body_or_context", "context_only"]
 from intergrax.agents.agent_contract import Agent
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task_run_bridge import new_run_id, runtime_request_with_run_id
+from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 from legal.legal_agent import LegalAgent
@@ -97,22 +97,22 @@ class DefaultLegalAgentService:
     ) -> LegalChatResponseV1:
         tenant, user = self._resolve_identity(body, http_ctx)
 
+        task_id, run_id = mint_intake_execution_identity()
         runtime_req = self.mapper.to_runtime_request(
             body,
             http_context=http_ctx,
             default_agent_id=self.config.default_agent_id,
             tenant_id=tenant,
             user_id=user,
+            task_id=task_id,
+            run_id=run_id,
         )
 
         try:
-            run_id = new_run_id()
-            nexus_req = runtime_request_with_run_id(runtime_req, run_id)
             result = await self.config.task_runner.run_runtime_request(
-                nexus_req,
+                runtime_req,
                 tenant_id=tenant,
                 user_id=user,
-                run_id=run_id,
                 capability="legal.contract_review",
             )
             answer = RuntimeAnswer(

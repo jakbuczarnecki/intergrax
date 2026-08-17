@@ -13,6 +13,7 @@ from legal_application.serving.schemas import (
     LegalChatResponseV1,
 )
 from intergrax.fastapi_core.context import RequestContext
+from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.llm.messages import AttachmentRef
 from intergrax.runtime.nexus.policies.runtime_policies import ApiTraceExportMode, DataCompliancePolicy
 from intergrax.runtime.nexus.responses.response_schema import (
@@ -41,6 +42,8 @@ class LegalApiV1RuntimeMapper:
         default_agent_id: str,
         tenant_id: str,
         user_id: str,
+        task_id: TaskId,
+        run_id: RunId,
     ) -> RuntimeRequest:
         agent_id = (body.agent_id or default_agent_id).strip()
         meta = dict(body.metadata)
@@ -54,6 +57,8 @@ class LegalApiV1RuntimeMapper:
             user_id=user_id,
             session_id=body.session_id.strip(),
             message=body.message,
+            task_id=task_id,
+            run_id=run_id,
             attachments=attachments,
             workspace_id=body.workspace_id,
             tenant_id=tenant_id,

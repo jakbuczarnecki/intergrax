@@ -18,6 +18,7 @@ from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
@@ -41,6 +42,7 @@ from dispute_sim_application.serving.fastapi_router import mount_dispute_sim_rou
 
 def create_dispute_sim_backend_app(
     *,
+    registry_projection: MaterializedRegistryProjection,
     settings: Optional[DisputeSimBackendSettings] = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
@@ -56,6 +58,7 @@ def create_dispute_sim_backend_app(
         settings=settings,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
+        registry_projection=registry_projection,
     )
     nexus_loop = runtime.nexus_loop
     platform = bootstrap_nexus_platform(

@@ -352,6 +352,22 @@ def _register_binding(
     )
 
 
+def build_manifest_development_registry(
+    manifest: ApplicationManifest,
+    ctx: ApplicationBuildContext,
+    *,
+    builders: BuilderMap | None = None,
+    require_enabled: bool = True,
+) -> AgentRegistry:
+    """Explicit non-production manifest-only registry assembly (dev/test/lab/scaffold)."""
+    return build_application_registry(
+        manifest,
+        ctx,
+        builders=builders,
+        require_enabled=require_enabled,
+    )
+
+
 def build_application_registry(
     manifest: ApplicationManifest,
     ctx: ApplicationBuildContext,
@@ -367,6 +383,9 @@ def build_application_registry(
     Revision-bound AP-10 projection (``effective_roster`` + ``runtime_revision``)
     resolves factories through ``factory_resolver`` and must not fall back to
     the host builders map.
+
+    Direct manifest-only callers in production hosts are forbidden; use
+    :func:`build_manifest_development_registry` for explicit dev/test assembly.
     """
     skill_registry = ctx.skill_registry
     if skill_registry is None and ctx.skill_profile is not None:

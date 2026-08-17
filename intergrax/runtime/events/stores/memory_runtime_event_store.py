@@ -6,35 +6,61 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from threading import Lock
 from typing import DefaultDict, List
 
-from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.events.execution_position import (
+    ExecutionEventPosition,
+    PositionedRuntimeEvent,
+)
+from intergrax.runtime.events.persistence_contract import (
+    RuntimeEventPersistence,
+    _validate_through_limit,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 
 class InMemoryRuntimeEventStore(RuntimeEventPersistence):
     def __init__(self) -> None:
-        self._by_run: DefaultDict[tuple[str, str], List[RuntimeEvent]] = defaultdict(list)
-        self._by_task: DefaultDict[tuple[str, str], List[RuntimeEvent]] = defaultdict(list)
-        self._seen_event_ids: set[str] = set()
+        self._by_run: DefaultDict[tuple[str, str], list[PositionedRuntimeEvent]] = defaultdict(
+            list
+        )
+        self._by_task: DefaultDict[tuple[str, str], list[PositionedRuntimeEvent]] = defaultdict(
+            list
+        )
+        self._accepted_by_event_id: dict[str, PositionedRuntimeEvent] = {}
+        self._next_position: DefaultDict[tuple[str, str], int] = defaultdict(lambda: 1)
+        self._run_locks: DefaultDict[tuple[str, str], Lock] = defaultdict(Lock)
 
-    def append(self, event: RuntimeEvent, *, tenant_id: str) -> None:
+    def append(self, event: RuntimeEvent, *, tenant_id: str) -> PositionedRuntimeEvent:
         scope = tenant_id or event.tenant_id or ""
-        if event.event_id in self._seen_event_ids:
-            return
-        self._seen_event_ids.add(event.event_id)
-        self._by_run[(scope, event.run_id)].append(event)
-        self._by_task[(scope, event.task_id)].append(event)
+        run_key = (scope, event.run_id)
+        with self._run_locks[run_key]:
+            existing = self._accepted_by_event_id.get(event.event_id)
+            if existing is not None:
+                return existing
+            position = ExecutionEventPosition(self._next_position[run_key])
+            self._next_position[run_key] += 1
+            positioned = PositionedRuntimeEvent(event=event, position=position)
+            self._accepted_by_event_id[event.event_id] = positioned
+            self._by_run[run_key].append(positioned)
+            self._by_task[(scope, event.task_id)].append(positioned)
+            return positioned
 
-    def list_for_run(
+    def list_positioned_for_run(
         self,
         run_id: str,
         *,
         tenant_id: str,
         limit: int = 1000,
-    ) -> List[RuntimeEvent]:
+        through: ExecutionEventPosition | None = None,
+    ) -> List[PositionedRuntimeEvent]:
+        limit, through = _validate_through_limit(limit=limit, through=through)
         rows = self._by_run.get((tenant_id, run_id), [])
-        return list(rows[:limit])
+        if through is None:
+            return list(rows[:limit])
+        filtered = [row for row in rows if row.position <= through]
+        return list(filtered[:limit])
 
     def list_for_task(
         self,
@@ -43,5 +69,7 @@ class InMemoryRuntimeEventStore(RuntimeEventPersistence):
         tenant_id: str,
         limit: int = 1000,
     ) -> List[RuntimeEvent]:
+        if type(limit) is not int or isinstance(limit, bool) or limit <= 0:
+            raise ValueError("limit must be > 0")
         rows = self._by_task.get((tenant_id, task_id), [])
-        return list(rows[:limit])
+        return [positioned.event for positioned in rows[:limit]]

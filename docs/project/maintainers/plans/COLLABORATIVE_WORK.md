@@ -234,6 +234,14 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Proof requirements** | `tests/unit/integrations/providers/relational_store/test_postgresql_session.py`; `tests/unit/collaborative_work/test_postgresql_platform_reuse.py`; `tests/integration/collaborative_work/test_postgresql_repository.py`; existing PostgreSQL + CW regressions |
 | **Next step** | MP-1 CORE FINAL REVIEW |
 
+### MP-1 closure and provider qualification (PROVIDER-QUAL)
+
+| Field | Value |
+|-------|-------|
+| **PostgreSQL live qualification** | **Accepted** — CW PostgreSQL repository suite: 15 passed / 0 skipped / 0 failed; `real_backend=true`; bounded local Docker qualification host; capability `collaborative_work.persistence.v1`; provider version `16.6` only |
+| **MP-1 final closure** | Depends on **provider qualification evidence integration** ([`PROVIDER-QUAL-3`](PLATFORM_PLUGINS.md#provider-qual-track-post-plugin-9)), **not** vendor-specific CI jobs or per-provider workflow changes |
+| **Architecture** | [`satellites/PLATFORM_PLUGINS_provider_qualification.md`](../../architecture/satellites/PLATFORM_PLUGINS_provider_qualification.md) |
+
 ---
 
 ## 4. Out of scope (current phase)

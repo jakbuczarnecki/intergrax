@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from intergrax.applications._shared.environment_wiring import wire_application_environment
+from intergrax.applications.contracts.platform_plugin_evidence import (
+    ApplicationPlatformPluginEvidence,
+)
 from intergrax.applications._shared.wiring import build_application_registry
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
@@ -25,17 +30,34 @@ def build_local_workspace_manifest(settings: LocalWorkspaceBackendSettings) -> A
     return LOCAL_WORKSPACE_APPLICATION_MANIFEST.model_copy(update={"agents": agents})
 
 
-def build_local_workspace_registry(
+@dataclass(frozen=True, slots=True)
+class LocalWorkspaceHostComposition:
+    """LKW host registry build with canonical Tier-3 platform plugin evidence."""
+
+    registry: AgentRegistry
+    platform_plugin_evidence: ApplicationPlatformPluginEvidence
+
+
+def build_local_workspace_host_composition(
     settings: LocalWorkspaceBackendSettings | None = None,
-) -> AgentRegistry:
+) -> LocalWorkspaceHostComposition:
     settings = settings or LocalWorkspaceBackendSettings.from_env()
     manifest = build_local_workspace_manifest(settings)
     env = manifest.environment or build_local_workspace_environment_profile(settings)
     if manifest.environment is None:
         manifest = manifest.model_copy(update={"environment": env})
     env_wiring = wire_application_environment(manifest, env, settings=settings)
-    return build_application_registry(
-        manifest,
-        env_wiring.build_context,
-        builders=LOCAL_WORKSPACE_AGENT_BUILDERS,
+    return LocalWorkspaceHostComposition(
+        registry=build_application_registry(
+            manifest,
+            env_wiring.build_context,
+            builders=LOCAL_WORKSPACE_AGENT_BUILDERS,
+        ),
+        platform_plugin_evidence=env_wiring.platform_plugin_evidence,
     )
+
+
+def build_local_workspace_registry(
+    settings: LocalWorkspaceBackendSettings | None = None,
+) -> AgentRegistry:
+    return build_local_workspace_host_composition(settings).registry

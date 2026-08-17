@@ -12,12 +12,19 @@ from typing import Protocol, runtime_checkable
 import uvicorn
 from fastapi import FastAPI
 
+from intergrax.applications._shared.production_host_composition import (
+    bootstrap_production_registry_projection,
+)
 from intergrax.hosting.contracts.context import HostedApplicationContext
 from intergrax.hosting.errors import HostedApplicationRuntimeError
+from local_workspace_application.host.environment_profile import (
+    build_local_workspace_environment_profile,
+)
 from local_workspace_application.host.factory import create_local_workspace_backend_app
 from local_workspace_application.host.readiness import LocalWorkspaceReadinessProvider
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.hosting.readiness import _HostedLocalWorkspaceReadiness
+from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 
 _STARTUP_POLL_INTERVAL_SECONDS = 0.01
 
@@ -65,7 +72,12 @@ def _default_application_factory(
     settings: LocalWorkspaceBackendSettings,
     host_readiness: LocalWorkspaceReadinessProvider,
 ) -> FastAPI:
+    env = build_local_workspace_environment_profile(settings)
     return create_local_workspace_backend_app(
+        registry_projection=bootstrap_production_registry_projection(
+            application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,
+            application_environment_id=env.profile_id,
+        ),
         settings=settings,
         host_readiness=host_readiness,
     )

@@ -22,6 +22,7 @@ from intergrax.runtime.observability.sentry_export_wiring import (
     build_sentry_observability_integration,
 )
 from local_workspace_application.host.factory import create_local_workspace_backend_app
+from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.serving.sentry_proof_routes import (
     emit_local_workspace_sentry_proof_failure,
@@ -163,11 +164,9 @@ def test_proof_http_route_reaches_fake_sentry_transport() -> None:
             ),
         ),
     ):
-        app = create_local_workspace_backend_app(
-            settings=LocalWorkspaceBackendSettings(
-                environment=ApiEnvironment.DEV,
-                default_agent_id="local_search",
-            ),
+        app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(LocalWorkspaceBackendSettings(
+                environment=ApiEnvironment.DEV), settings=LocalWorkspaceBackendSettings(
+                environment=ApiEnvironment.DEV, default_agent_id="local_search",),
             observability_export=config,
         )
         client = TestClient(app)
@@ -191,10 +190,9 @@ def test_proof_route_disabled_in_prod_environment() -> None:
         "local_workspace_application.host.factory.build_local_workspace_observability_plugins",
         return_value=(),
     ):
-        app = create_local_workspace_backend_app(
-            settings=LocalWorkspaceBackendSettings(
-                environment=ApiEnvironment.PROD,
-                default_agent_id="local_search",
+        app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(LocalWorkspaceBackendSettings(
+                environment=ApiEnvironment.PROD), settings=LocalWorkspaceBackendSettings(
+                environment=ApiEnvironment.PROD, default_agent_id="local_search",
                 api_keys_map={
                     "proof-key": ApiKeyIdentity(tenant_id="t", user_id="u", scopes=("*",))
                 },

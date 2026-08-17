@@ -17,6 +17,7 @@ from intergrax.integrations.providers.conversation_channel.slack.integration imp
     SlackConversationChannelIntegration,
 )
 from local_workspace_application.host.factory import create_local_workspace_backend_app
+from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 from local_workspace_application.host.lifecycle import HostLifecycleState, LocalWorkspaceHostLifecycle
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.slack_companion.companion import (
@@ -67,7 +68,7 @@ def test_slack_disabled_does_not_block_host() -> None:
         include_scheduler=False,
         slack_companion_enabled=False,
     )
-    app = create_local_workspace_backend_app(settings=settings)
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
     lifecycle = app.state.lkw_host_lifecycle
     with TestClient(app) as client:
         assert lifecycle.state is HostLifecycleState.READY
@@ -91,7 +92,7 @@ def test_invalid_slack_config_does_not_block_core_readiness() -> None:
         slack_active_workspace_id="ws",
         slack_ask_base_url="http://localhost:8020",
     )
-    app = create_local_workspace_backend_app(settings=settings)
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
     lifecycle = app.state.lkw_host_lifecycle
     with TestClient(app) as client:
         assert lifecycle.is_ready() is True
@@ -110,7 +111,7 @@ def test_enabled_fake_slack_starts_and_shutdown_stops() -> None:
         include_scheduler=False,
         slack_companion_enabled=False,
     )
-    app = create_local_workspace_backend_app(settings=settings)
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(settings), settings=settings)
     lifecycle = app.state.lkw_host_lifecycle
     enabled_settings = LocalWorkspaceBackendSettings(
         include_mcp=False,

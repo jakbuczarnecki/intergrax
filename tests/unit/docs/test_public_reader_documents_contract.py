@@ -503,21 +503,31 @@ def test_readme_routing(readme_text: str) -> None:
         "ARCHITECTURE_OVERVIEW.md",
         "USE_CASES.md",
         "PROOFS.md",
-        "EVALUATION_GUIDE.md",
         "BUILDER_QUICKSTART.md",
-        "BUILD_WITH_INTERGRAX.md",
         "LKW_PRODUCT_TOUR.md",
         "PARTNERS.md",
-        "COLLABORATION.md",
         "FAQ.md",
-        "ROADMAP.md",
-        "DOCUMENTATION_MAP.md",
         "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
-        "docs/project/README.md",
         "docs/project/capabilities/architecture/MULTIPLAYER_AI.md",
         "docs/project/architecture/PLATFORM_PLUGINS.md",
     ):
         assert link in readme_text, f"README missing link: {link}"
+    normalized = " ".join(_normalize(readme_text).split())
+    for phrase in (
+        "see lkw",
+        "run lkw locally",
+        "why intergrax",
+        "ai engineer / builder",
+        "architect / principal engineer",
+        "cto / engineering leader",
+        "technical reviewer",
+        "investor / strategic evaluator",
+        "design partner / integrator",
+        "primary daily-use conversational interface",
+        "slack dm ask path is live-verified",
+        "broader slack-first daily-use experience remains under productization",
+    ):
+        assert phrase in normalized, f"README missing routing marker: {phrase!r}"
     assert "Local Knowledge Workspace" in readme_text
     assert "Intergrax helps teams build" in readme_text
     assert "Try LKW" in readme_text
@@ -775,6 +785,29 @@ def test_public_map_reader_route_ownership_and_primary_intents() -> None:
     assert "PROOFS" in primary
 
 
+def test_public_map_separates_current_proof_paths_from_strategic_directions() -> None:
+    text = _read(PUBLIC_MAP_PATH)
+    normalized = " ".join(_normalize(text).split())
+    current_section = text.split("## Current product / proof paths", 1)[1].split(
+        "## Strategic directions", 1
+    )[0]
+    strategic_section = text.split("## Strategic directions", 1)[1].split(
+        "## Public documents", 1
+    )[0]
+    current_norm = " ".join(_normalize(current_section).split())
+    strategic_norm = " ".join(_normalize(strategic_section).split())
+
+    assert "featured proof paths" not in normalized
+    assert "local knowledge workspace" in current_norm
+    assert "token optimization engine" in current_norm
+    assert "agent marketplace" not in current_norm
+    assert "multiplayer ai" in strategic_norm
+    assert "platform extensibility / plugins" in strategic_norm
+    assert "agent marketplace" in strategic_norm
+    assert "future ecosystem direction" in strategic_norm
+    assert "not a shipped public marketplace" in strategic_norm
+
+
 def test_project_documentation_hub_is_not_a_map_duplicate() -> None:
     hub_text = _read(HUB_PATH)
     public_map_text = _read(PUBLIC_MAP_PATH)
@@ -862,6 +895,9 @@ def test_builder_quickstart_first_checkpoint_contract(builder_quickstart_text: s
     assert "uv sync --extra dev" not in builder_quickstart_text
     assert "uv run intergrax doctor" not in builder_quickstart_text
     assert "uv run pytest -m gate -q" not in builder_quickstart_text
+    assert "repository baseline from the evaluation guide" not in normalized
+    assert "you do not need to complete the evaluation guide first" in normalized
+    assert "broader repository-level evaluation" in normalized
 
 
 def test_readme_install_sequence(readme_text: str) -> None:

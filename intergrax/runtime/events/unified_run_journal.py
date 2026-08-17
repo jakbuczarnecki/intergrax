@@ -2,16 +2,14 @@
 # Intergrax framework – proprietary and confidential.
 
 """
-Unified run journal — derived chronological ``RuntimeEvent`` read model (§42.24).
+Unified run journal — derived execution-position ``RuntimeEvent`` read model (§42.24).
 
-Canonical execution truth is ``RuntimeEventPersistence.list_for_run``.
+Canonical execution truth is ``RuntimeEventPersistence.list_positioned_for_run``.
 This module does not own identity, does not mint identity, and does not
 reconstruct identity from Plane B trace tags, payload, or active ContextVar.
 """
 
 from __future__ import annotations
-
-from datetime import datetime
 
 from intergrax.contracts.execution_identity import validate_run_id
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
@@ -36,8 +34,12 @@ def build_unified_run_journal(
     _validate_journal_limit(limit)
     tenant_id = _require_tenant_id(persisted.metadata.tenant_id)
     run_id = validate_run_id(persisted.metadata.run_id)
-    stored = runtime_store.list_for_run(run_id, tenant_id=tenant_id, limit=limit)
-    return _sort_journal(list(stored))[:limit]
+    positioned = runtime_store.list_positioned_for_run(
+        run_id,
+        tenant_id=tenant_id,
+        limit=limit,
+    )
+    return [row.event for row in positioned]
 
 
 def _validate_journal_limit(limit: int) -> None:
@@ -53,16 +55,3 @@ def _require_tenant_id(tenant_id: str) -> str:
     return tenant_id
 
 
-def _sort_journal(events: list[RuntimeEvent]) -> list[RuntimeEvent]:
-    return sorted(events, key=_journal_sort_key)
-
-
-def _journal_sort_key(event: RuntimeEvent) -> tuple[datetime, int, str]:
-    return (event.timestamp, _trace_seq(event), event.event_id)
-
-
-def _trace_seq(event: RuntimeEvent) -> int:
-    raw_seq = event.payload.get("trace_seq")
-    if type(raw_seq) is int:
-        return raw_seq
-    return 0

@@ -6,6 +6,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from governed_contractor_application.host.factory import create_governed_contractor_backend_app
+from governed_contractor_application.tests.governed_contractor_ac3_projection import (
+    build_governed_contractor_test_registry_projection,
+)
 from testing_support.builder import MeteringFakeLLMAdapter
 
 pytestmark = [pytest.mark.unit]
@@ -35,20 +38,32 @@ def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_governed_contractor_backend_health():
-    client = TestClient(create_governed_contractor_backend_app())
+    client = TestClient(
+        create_governed_contractor_backend_app(
+            registry_projection=build_governed_contractor_test_registry_projection(),
+        )
+    )
     response = client.get("/health")
     assert response.status_code == 200
 
 
 def test_governed_contractor_backend_lists_agents():
-    client = TestClient(create_governed_contractor_backend_app())
+    client = TestClient(
+        create_governed_contractor_backend_app(
+            registry_projection=build_governed_contractor_test_registry_projection(),
+        )
+    )
     response = client.get(f"{_PREFIX}/agents")
     assert response.status_code == 200
     assert "agents" in response.json()
 
 
 def test_governed_contractor_backend_run(_stub_host_llm: None):
-    client = TestClient(create_governed_contractor_backend_app())
+    client = TestClient(
+        create_governed_contractor_backend_app(
+            registry_projection=build_governed_contractor_test_registry_projection(),
+        )
+    )
     response = client.post(
         f"{_PREFIX}/run",
         json={"message": "hello", "capability": "external_contractor.adapt"},

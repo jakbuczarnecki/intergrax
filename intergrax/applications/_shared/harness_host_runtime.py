@@ -87,7 +87,15 @@ from intergrax.applications._shared.security_wiring import (
 from intergrax.applications._shared.task_memory_wiring import (
     wire_task_memory_from_profile,
 )
-from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.applications._shared.harness_registry_authority import (
+    RegistryAssemblyMode,
+    resolve_harness_host_registry,
+    resolve_registry_assembly_mode,
+)
+from intergrax.applications._shared.registry_projection import (
+    MaterializedRegistryProjection,
+    RegistryProjectionEvidence,
+)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -100,6 +108,13 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+
+
+__all__ = [
+    "HarnessHostRuntime",
+    "RegistryAssemblyMode",
+    "build_harness_host_runtime",
+]
 
 
 @dataclass(frozen=True)
@@ -121,6 +136,7 @@ class HarnessHostRuntime:
     application_host: ApplicationHost | None
     agent_checkpoint_store: AgentCheckpointStore
     compensation_queue_store: CompensationQueueStore
+    registry_projection_evidence: RegistryProjectionEvidence | None = None
     boundary_event_buffer: BoundaryEventBuffer | None = None
 
 
@@ -137,6 +153,8 @@ def build_harness_host_runtime(
     use_in_memory_trace: bool = False,
     builders: dict[type, Any] | None = None,
     registry: AgentRegistry | None = None,
+    registry_projection: MaterializedRegistryProjection | None = None,
+    registry_assembly_mode: RegistryAssemblyMode | None = None,
     checkpoint_store: TaskCheckpointPersistence | None = None,
     agent_checkpoint_store: AgentCheckpointStore | None = None,
     notification_adapter: NotificationAdapter | None = None,
@@ -161,9 +179,17 @@ def build_harness_host_runtime(
         document_store=document_store,
         boundary_event_buffer=boundary_event_buffer,
     )
-    resolved_registry = registry or build_application_registry(
-        resolved_manifest,
-        env_wiring.build_context,
+    assembly_mode = resolve_registry_assembly_mode(
+        environment,
+        explicit=registry_assembly_mode,
+    )
+    resolved_registry, registry_evidence = resolve_harness_host_registry(
+        manifest=resolved_manifest,
+        build_context=env_wiring.build_context,
+        environment=environment,
+        assembly_mode=assembly_mode,
+        registry_projection=registry_projection,
+        registry=registry,
         builders=builders,
     )
     observability_wiring = wire_application_observability(
@@ -286,6 +312,7 @@ def build_harness_host_runtime(
         environment=environment,
         env_wiring=env_wiring,
         registry=resolved_registry,
+        registry_projection_evidence=registry_evidence,
         observability=observability,
         reliability=reliability_wiring,
         security=security_wiring,

@@ -156,7 +156,7 @@ implementation has started.
 ### A. Conversation Context completion
 
 1. `LKW-CONVERSATION-CONTEXT-1B2` — **ACCEPTED / CLOSED**.
-2. `LKW-CONVERSATION-CONTEXT-1C` — **READY_FOR_REVIEW**: integrate bounded
+2. `LKW-CONVERSATION-CONTEXT-1C` — **ACCEPTED / CLOSED**: integrate bounded
    durable thread-memory reconstruction and exactly-once exchange persistence.
 
 Required outcome:
@@ -614,7 +614,7 @@ Provider-neutral personal/shared conversation context architecture precedes shar
 | `LKW-CONVERSATION-CONTEXT-1B1` | **ACCEPTED** |
 | `LKW-CONVERSATION-CONTEXT-1B2` | **ACCEPTED / CLOSED** |
 | `LKW-CONVERSATION-CONTEXT-1B3` | **ACCEPTED / CLOSED** |
-| `LKW-CONVERSATION-CONTEXT-1C` | **READY_FOR_REVIEW** |
+| `LKW-CONVERSATION-CONTEXT-1C` | **ACCEPTED / CLOSED** |
 
 **Required dependency (implementation tracks):**
 

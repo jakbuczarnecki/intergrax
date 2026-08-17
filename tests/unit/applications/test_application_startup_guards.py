@@ -127,8 +127,9 @@ def test_local_workspace_factory_http_only_startup(monkeypatch: pytest.MonkeyPat
     monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
 
     from local_workspace_application.host.factory import create_local_workspace_backend_app
+from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 
-    app = create_local_workspace_backend_app()
+    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection())
     assert app.title
     assert "Local Workspace" in app.title
 

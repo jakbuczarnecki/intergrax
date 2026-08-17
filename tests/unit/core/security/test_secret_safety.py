@@ -10,12 +10,14 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from intergrax.core.security import (
+    CREDENTIAL_IN_URL,
     FORBIDDEN_KEY,
     SECRET_LIKE_VALUE,
     SecretSafetyValidationError,
     SecretSafeValidationPolicy,
     is_secret_like_key,
     is_secret_like_value,
+    validate_secret_safe_url,
     validate_secret_safe_value,
 )
 
@@ -50,6 +52,15 @@ _NO_VALUE_SCAN_POLICY = SecretSafeValidationPolicy(
     forbidden_key_names=frozenset({"password"}),
     forbidden_value_patterns=(_VALUE_PATTERN,),
     scan_string_values=False,
+)
+
+_URL_SCAN_POLICY = SecretSafeValidationPolicy(
+    forbidden_key_names=frozenset({"password"}),
+    scan_embedded_url_credentials=True,
+)
+
+_KNOWLEDGE_URL_POLICY = SecretSafeValidationPolicy(
+    forbidden_key_names=frozenset({"access_token", "api_key", "password"}),
 )
 
 
@@ -130,3 +141,43 @@ def test_safe_errors_do_not_contain_secret_literal() -> None:
 def test_policy_is_immutable() -> None:
     with pytest.raises(FrozenInstanceError):
         _NAME_POLICY.scan_string_values = True  # type: ignore[misc]
+
+
+def test_embedded_url_credentials_rejected_when_policy_enabled() -> None:
+    with pytest.raises(SecretSafetyValidationError) as exc_info:
+        validate_secret_safe_value(
+            {"endpoint": "https://user:pass@example.test/path"},
+            policy=_URL_SCAN_POLICY,
+        )
+    assert exc_info.value.reason_code == CREDENTIAL_IN_URL
+    assert "pass" not in str(exc_info.value)
+
+
+def test_embedded_url_credentials_not_scanned_by_default() -> None:
+    validate_secret_safe_value(
+        {"endpoint": "https://user:pass@example.test/path"},
+        policy=_NAME_POLICY,
+    )
+
+
+def test_url_without_credentials_accepted_when_policy_enabled() -> None:
+    validate_secret_safe_value(
+        {"endpoint": "https://example.test/item?page=1"},
+        policy=_URL_SCAN_POLICY,
+    )
+
+
+def test_url_secret_query_not_rejected_during_value_traversal() -> None:
+    validate_secret_safe_value(
+        {"endpoint": "https://example.test/?access_token=abc"},
+        policy=_URL_SCAN_POLICY,
+    )
+
+
+def test_validate_secret_safe_url_query_behavior_unchanged() -> None:
+    with pytest.raises(SecretSafetyValidationError, match="secret-bearing query parameter"):
+        validate_secret_safe_url(
+            "https://example.test/?access_token=abc",
+            field_name="web_url",
+            policy=_KNOWLEDGE_URL_POLICY,
+        )
