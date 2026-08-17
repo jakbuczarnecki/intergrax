@@ -1,6 +1,6 @@
 # Unified Context Lifecycle — Plan
 
-**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**
+**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**; **TOKEN-10E-1…4** and **TOKEN-10E** **ACCEPTED / CLOSED**; **TOKEN-10E-CLOSEOUT-1** **READY_FOR_REVIEW**
 **Architecture (1:1):** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
 **ADR:** [`ADR-UCL-001`](../../technical/adr/entries/2026-08-01/ADR-UCL-001.md) (**Accepted**)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -37,9 +37,13 @@
 | **TOKEN-10C** | Accepted / Closed |
 | **TOKEN-10D** | Accepted / Closed |
 | **TOKEN-10E-ARCH-1** | **Correction required / superseded** by UCL + ADR-UCL-001 |
-| **TOKEN-10E-1** | Durable compaction policy, identity, eligibility and activation safety contracts (contract-only; no runtime execution) — **READY_FOR_REVIEW** |
-| **TOKEN-10E-2 … TOKEN-10E-4** | **Blocked** pending **TOKEN-10E-1** acceptance |
-| **TOKEN-10F / G / H** | Planned |
+| **TOKEN-10E-1** | Durable compaction policy, identity, eligibility and activation safety contracts — **ACCEPTED / CLOSED** |
+| **TOKEN-10E-2** | Durable candidate flow using existing lookup/reservation semantics — **ACCEPTED / CLOSED** |
+| **TOKEN-10E-3** | Durable receipts and rollback metadata — **ACCEPTED / CLOSED** |
+| **TOKEN-10E-4** | First durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration — **ACCEPTED / CLOSED** |
+| **TOKEN-10E** | Phase integration — policy → candidate → validation → durable storage → CAS activation — **ACCEPTED / CLOSED** |
+| **TOKEN-10E-CLOSEOUT-1** | Public package-root contract freeze — **READY_FOR_REVIEW** |
+| **TOKEN-10F / G / H** | See [`TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md) |
 
 ---
 
@@ -56,7 +60,7 @@
 | **NEXUS_EXECUTION_FLOW** | Lifecycle coordination, lookup-before-create orchestration, reservation coordination |
 | **APPLICATION_HOSTING** | Profile normalization, authorization, UX |
 
-**Hard gate:** **TOKEN-10E-1** MUST NOT begin until **CTX-UCL-CLOSEOUT-1** is **accepted/closed**.
+**Hard gate (historical — satisfied):** **TOKEN-10E-1** MUST NOT begin until **CTX-UCL-CLOSEOUT-1** is **accepted/closed**. Gate satisfied; **TOKEN-10E-1…4** and **TOKEN-10E** are **ACCEPTED / CLOSED**.
 
 **Canonical sequence:**
 
@@ -69,7 +73,9 @@ CTX-UCL-4 → non-recursive internal executor behavior
 CTX-UCL-5 → runtime single-flight integration proof
 CTX-UCL-6 → legacy migration
 CTX-UCL-CLOSEOUT-1 → accepted/closed
-TOKEN-10E-1 → may begin
+TOKEN-10E-1 … TOKEN-10E-4 → accepted/closed
+TOKEN-10E → accepted/closed
+TOKEN-10E-CLOSEOUT-1 → ready for review
 ```
 
 ---
@@ -120,13 +126,14 @@ TOKEN-10E-1 → may begin
 
 ### Phase 5 — Durable compaction (after UCL closeout)
 
-| ID | Deliverable | Blocked by |
-|----|-------------|------------|
-| **TOKEN-10E-1** | Durable policy, source identity, eligibility, and activation safety contracts extending UCL (reuses UCL repository and reservation contracts; no second repository) | **READY_FOR_REVIEW** |
-| **TOKEN-10E-2** | Durable candidate flow using existing lookup/reservation semantics | CTX-UCL-4, TOKEN-10E-1 |
-| **TOKEN-10E-3** | Durable receipts and rollback metadata | TOKEN-10E-1 |
-| **TOKEN-10E-4** | First durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration (implementation may live in Memory/Session packages) | CTX-UCL-2, TOKEN-10E-3 |
-| **TOKEN-10E-CLOSEOUT-1** | Public package-root contract freeze | TOKEN-10E-4 |
+| ID | Deliverable | Status |
+|----|-------------|--------|
+| **TOKEN-10E-1** | Durable policy, source identity, eligibility, and activation safety contracts extending UCL (reuses UCL repository and reservation contracts; no second repository) | **ACCEPTED / CLOSED** |
+| **TOKEN-10E-2** | Durable candidate flow using existing lookup/reservation semantics | **ACCEPTED / CLOSED** |
+| **TOKEN-10E-3** | Durable receipts and rollback metadata | **ACCEPTED / CLOSED** |
+| **TOKEN-10E-4** | First durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration (implementation may live in Memory/Session packages) | **ACCEPTED / CLOSED** |
+| **TOKEN-10E** | Phase integration — policy → candidate → validation → durable storage → CAS activation | **ACCEPTED / CLOSED** |
+| **TOKEN-10E-CLOSEOUT-1** | Public package-root contract freeze | **READY_FOR_REVIEW** |
 
 ---
 
@@ -149,10 +156,11 @@ TOKEN-10E-1 → may begin
 - [x] Documentation guardrails extended
 - [ ] **Human review and acceptance**
 
-### TOKEN-10E-1 gate (future)
+### TOKEN-10E-1 gate (satisfied)
 
-- CTX-UCL-CLOSEOUT-1 accepted/closed
-- Typed contracts, single-budget path, reuse-before-create, single-flight creation, MessageSequence executor, ephemeral integration, and legacy migration proven coherent
+- [x] CTX-UCL-CLOSEOUT-1 accepted/closed
+- [x] Typed contracts, single-budget path, reuse-before-create, single-flight creation, MessageSequence executor, ephemeral integration, and legacy migration proven coherent
+- [x] **TOKEN-10E-1…4** and **TOKEN-10E** accepted/closed
 
 ---
 
@@ -166,7 +174,7 @@ TOKEN-10E-1 → may begin
 6. **Switch single-flight integration** (CTX-UCL-5).
 7. **Profile and legacy migration** (CTX-UCL-6).
 8. **Closeout** (CTX-UCL-CLOSEOUT-1).
-9. **Begin TOKEN-10E** durable compaction on UCL foundation.
+9. **TOKEN-10E** durable compaction on UCL foundation — **ACCEPTED / CLOSED** (rollback execution remains out of scope).
 
 ---
 
@@ -195,9 +203,11 @@ TOKEN-10E-1 → may begin
 
 | Item | Notes |
 |------|-------|
-| Append-only ledger durable storage backend | **TOKEN-10E-4** (durable production adapter) |
-| Durable production Optimization Artifact Catalog backend | **TOKEN-10E-4** (delivery coordination; Memory/Session owns contracts) |
-| CAS revision store | **CTX-UCL-2** (reference in-memory) / **TOKEN-10E-4** (durable) |
+| Rollback execution | Memory/Session owns `ActiveContextRevisionPointer` restore — out of TOKEN-10E scope |
+| Human-review UX | Application host responsibility — out of TOKEN-10E scope |
+| Production/customer durable enablement | Explicit/default-off; automatic production enablement out of TOKEN-10E scope |
+| Append-only ledger durable storage backend (beyond SQLite path) | Future Memory/Session backend work |
+| Universal distributed single-flight guarantee | Beyond evidenced SQLite + in-memory reference adapters |
 | LKW integration | After TOKEN-10 platform proof |
 | Provider-specific cache mutation | **Explicitly rejected** |
 
@@ -205,9 +215,4 @@ TOKEN-10E-1 → may begin
 
 ## Next step
 
-Independent final review of **CTX-UCL-CLOSEOUT-1**.
-
-After acceptance:
-
-- **CTX-UCL-CLOSEOUT-1** → **ACCEPTED / CLOSED**
-- **TOKEN-10E-1** may begin.
+Independent audit of **TOKEN-10E-CLOSEOUT-1** (public contract freeze). **TOKEN-10E-1…4** and **TOKEN-10E** are **ACCEPTED / CLOSED**; durable activation is implemented; rollback execution remains outside scope.

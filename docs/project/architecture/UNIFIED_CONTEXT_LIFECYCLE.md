@@ -37,7 +37,7 @@ UCL is **not** another Context Engine, Memory store, summarizer, Token Optimizat
 | **Transformation executor** | Token Optimization — typed executors on `CREATE_ARTIFACT` only |
 | **Lifecycle coordinator** | Nexus — lookup, reuse/create decision, reservation coordination |
 | **Ephemeral mode** | `EPHEMERAL_ASSEMBLY` — **integrated** on UCL-managed `PRIMARY_MODEL_CALL` |
-| **Durable mode** | `DURABLE_COMPACTION` — contracts in progress; **runtime not implemented** |
+| **Durable mode** | `DURABLE_COMPACTION` — **implemented** via **TOKEN-10E** (policy → candidate → validation → SQLite storage → CAS activation); explicit/default-off; rollback execution out of scope |
 | **Reuse/create** | Deterministic `ArtifactLookupKey` → `REUSE_ARTIFACT` before `CREATE_ARTIFACT` |
 | **Concurrency** | Same-key single-flight creation in reference flow (not a universal distributed lock) |
 | **Current maturity** | Four-axis statement in [Current maturity](#current-maturity) |
@@ -46,9 +46,9 @@ UCL is **not** another Context Engine, Memory store, summarizer, Token Optimizat
 > [!NOTE]
 > **Maturity boundary**
 >
-> **Shipped / integrated:** CTX-UCL-1…6D and CTX-UCL-CLOSEOUT-1 accepted/closed; **EPHEMERAL_ASSEMBLY** integrated (`ContextEngine` → `resolve_ucl_context_plan()` → lookup/reservation → executor on create only → final CE compile); reuse-before-create; same-key single-flight in reference flow; internal-call recursion guards; legacy competing summary authorities removed or fail-closed on the UCL-managed primary path.
+> **Shipped / integrated:** CTX-UCL-1…6D and CTX-UCL-CLOSEOUT-1 accepted/closed; **EPHEMERAL_ASSEMBLY** integrated (`ContextEngine` → `resolve_ucl_context_plan()` → lookup/reservation → executor on create only → final CE compile); **TOKEN-10E-1…4** and **TOKEN-10E** accepted/closed — bounded **DURABLE_COMPACTION** runtime (eligibility/policy, candidate flow, validation/receipts/rollback metadata, `SQLiteOptimizationArtifactRepository`, `SessionContextRevision` CAS activation); reuse-before-create; same-key single-flight; internal-call recursion guards; legacy competing summary authorities removed or fail-closed on the UCL-managed primary path.
 >
-> **Not shipped / not proven:** `DURABLE_COMPACTION` runtime execution; first durable production `OptimizationArtifactRepository` adapter; durable `SessionContextRevision` activation in production; production/customer operational evidence; universal distributed single-flight guarantee. **ACCEPTED / CLOSED** task status does **not** imply taxonomy **P4** or **E5**.
+> **Not shipped / not proven:** rollback **execution**; human-review UX; production/customer enablement for durable compaction (explicit/default-off); production/customer operational evidence; universal distributed single-flight guarantee beyond the evidenced SQLite path. **ACCEPTED / CLOSED** task status does **not** imply taxonomy **P4** or **E5**.
 
 **Primary audience:** Principal / Staff engineers and harness integrators tracing model-call context optimization — after the platform overview in the root README.
 
@@ -66,7 +66,7 @@ UCL is **not** another Context Engine, Memory store, summarizer, Token Optimizat
 ```text
 EPHEMERAL_ASSEMBLY   ✅ integrated
 
-DURABLE_COMPACTION   ◌ runtime not implemented
+DURABLE_COMPACTION   ✅ implemented (TOKEN-10E; bounded; rollback execution out of scope)
 ```
 
 ## UCL ownership model
@@ -86,9 +86,9 @@ DURABLE_COMPACTION   ◌ runtime not implemented
 | Mode | Purpose | Current state |
 | ---- | ------- | ------------- |
 | **EPHEMERAL_ASSEMBLY** | Build or reuse bounded model context for the current call | **Integrated** — UCL-managed `PRIMARY_MODEL_CALL` |
-| **DURABLE_COMPACTION** | Persist and activate a compacted durable context revision for future calls | **Runtime not implemented** — TOKEN-10E-1 contracts ready for review |
+| **DURABLE_COMPACTION** | Persist and activate a compacted durable context revision for future calls | **Implemented** — **TOKEN-10E-1…4** accepted/closed under UCL contracts; explicit/default-off; rollback **metadata** compiled; rollback **execution** out of scope |
 
-Ephemeral artifact reuse does **not** mutate durable history. Durable compaction requires candidate construction, validation, CAS activation, and rollback semantics — planned under TOKEN-10E extending UCL, not a second lifecycle.
+Ephemeral artifact reuse does **not** mutate durable history. Durable compaction requires candidate construction, validation, CAS activation, and rollback semantics — delivered under **TOKEN-10E** extending UCL, not a second lifecycle. Rollback **execution** (Memory/Session pointer restore) remains outside TOKEN-10E scope.
 
 ## What UCL replaced
 
@@ -142,7 +142,7 @@ When two parallel requests need the **same** `ArtifactLookupKey` and no artifact
 - others observe `ALREADY_IN_PROGRESS`, do not launch a duplicate expensive model call, and reuse the stored artifact when available;
 - failure releases the reservation; lease expiry enables recovery.
 
-The reference `InMemoryOptimizationArtifactRepository` provides **process-local** single-flight coordination. A durable multi-process production adapter remains a future TOKEN-10E-4 concern — do not read reference behavior as a universal distributed lock guarantee.
+The reference `InMemoryOptimizationArtifactRepository` provides **process-local** single-flight coordination. **`SQLiteOptimizationArtifactRepository`** (**TOKEN-10E-4**) adds durable reservation/store semantics via database transactions — do not read either adapter as a universal distributed lock guarantee beyond evidenced behavior.
 
 ## Internal-call boundary and recursion safety
 
@@ -192,7 +192,7 @@ UCL is not a public plugin marketplace. Extension surfaces are architecture cont
 | Surface | Role |
 | ------- | ---- |
 | `OptimizationArtifactRepository` | Port for lookup, reservation, store, invalidation |
-| Production durable adapter | TOKEN-10E-4 — first non-reference repository backend |
+| Production durable adapter | **`SQLiteOptimizationArtifactRepository`** — first durable backend (**TOKEN-10E-4** accepted/closed) |
 | Typed artifact executors | Token Optimization — e.g. `MessageSequenceArtifactExecutor` |
 | `ContextOptimizationPolicy` | Strategy IDs, mode (`EPHEMERAL_ASSEMBLY` \| `DURABLE_COMPACTION`), persistence policy |
 | Application host wiring | `context_runtime_bridge` — profile → policy normalization |
@@ -204,8 +204,8 @@ Implementation maturity: **I3**
 Production readiness: **P2**  
 Evidence maturity: **E3**
 
-- **A4** — Accepted [ADR-UCL-001](../technical/adr/entries/2026-08-01/ADR-UCL-001.md), closed CTX-UCL-1…6D + CLOSEOUT-1, explicit ownership and invariants in this hub; durable mode architecture defined but runtime not delivered.
-- **I3** — **EPHEMERAL_ASSEMBLY** integrated on UCL-managed `PRIMARY_MODEL_CALL`; reuse, single-flight, recursion guards, legacy migration closed. **DURABLE_COMPACTION** runtime **not implemented** (TOKEN-10E-1 contracts only) — blocks I4/I5 for the full domain scope.
+- **A4** — Accepted [ADR-UCL-001](../technical/adr/entries/2026-08-01/ADR-UCL-001.md), closed CTX-UCL-1…6D + CLOSEOUT-1, explicit ownership and invariants in this hub; bounded **DURABLE_COMPACTION** runtime delivered under **TOKEN-10E**.
+- **I3** — **EPHEMERAL_ASSEMBLY** integrated on UCL-managed `PRIMARY_MODEL_CALL`; reuse, single-flight, recursion guards, legacy migration closed. **DURABLE_COMPACTION** bounded runtime delivered via **TOKEN-10E-1…4** (candidate, validation/receipts, SQLite storage, CAS activation). **Blocks I4:** rollback execution not implemented; durable compaction explicit/default-off with production enablement out of scope; no domain-wide UCL primary-path durable integration proof — closeout alone does not imply I4/I5.
 - **P2** — Reference in-memory repository and lab/integration paths; no UCL-specific production handoff, SLO/runbook package, or customer operational evidence.
 - **E3** — Closeout integration proofs (lookup hit reuse, same-key single-flight, different-key concurrency, executor failure release, UAEP/context-plan integration, recursion guard, legacy source guard). No dedicated public UCL proof route — not E4/E5.
 
@@ -220,9 +220,10 @@ Evidence maturity: **E3**
 | Artifact reuse (`REUSE_ARTIFACT`) | **Integrated** — lookup hit path proven |
 | Same-key single-flight | **Integrated** — reference repository flow |
 | Legacy migration (model-facing history) | **Closed** — competing authorities removed/fail-closed |
-| **DURABLE_COMPACTION** contracts | **In progress** — TOKEN-10E-1 ready for review |
-| **DURABLE_COMPACTION** runtime | **Not implemented** |
-| Durable production repository adapter | **Not implemented** — TOKEN-10E-4 |
+| **DURABLE_COMPACTION** contracts | **Accepted** — TOKEN-10E-1 closed |
+| **DURABLE_COMPACTION** runtime | **Implemented** — TOKEN-10E-2…4 (bounded; explicit/default-off) |
+| Durable production repository adapter | **Implemented** — `SQLiteOptimizationArtifactRepository` (TOKEN-10E-4) |
+| Rollback execution | **Not implemented** — metadata only (TOKEN-10E-3); Memory/Session owns execution |
 
 ## Evidence / proof
 
@@ -240,6 +241,15 @@ Evidence maturity: **E3**
 - UAEP / context-plan integration (`test_uaep_assemble`, `test_context_plan_integration`)
 - Recursive optimization guard (`OptimizationExecutionGuard`)
 - Legacy summary source guard (`test_ctx_ucl_6d_legacy_summary_guard`)
+
+### Runtime / integration (TOKEN-10E durable compaction)
+
+Evidence coordinated via [`TOKEN_OPTIMIZATION.md`](../capabilities/architecture/TOKEN_OPTIMIZATION.md) §8.10 and [`plan/TOKEN_OPTIMIZATION.md`](../capabilities/plan/TOKEN_OPTIMIZATION.md) §TOKEN-10E — not a dedicated UCL proof route:
+
+- Durable candidate flow with reuse-before-create (**TOKEN-10E-2**)
+- Protected-region validation, receipt, and rollback-metadata compilation (**TOKEN-10E-3**)
+- `SQLiteOptimizationArtifactRepository` + `SessionContextRevision` CAS activation, idempotent replay, stale revision rejection (**TOKEN-10E-4**)
+- Phase closeout: candidate reuse/reopen, validation, durable artifact recovery, CAS activation (**TOKEN-10E-CLOSEOUT-1** — ready for review)
 
 ### Public product proof
 
@@ -263,12 +273,12 @@ None cited for the UCL domain — do not claim **P4** or **E5**.
 
 ## Maintainer and Cursor context
 
-**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**  
+**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**; **TOKEN-10E-1…4** and **TOKEN-10E** **ACCEPTED / CLOSED**  
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md)  
 **Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`TOKEN_OPTIMIZATION.md`](../capabilities/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)  
 **ADR:** [`ADR-UCL-001`](../technical/adr/entries/2026-08-01/ADR-UCL-001.md) · [`ADR-MEM-001`](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler — superseded where UCL conflicts)  
-**Last architecture/runtime pass:** 2026-08-04 — **CTX-UCL-CLOSEOUT-1** accepted/closed; **TOKEN-10E-1** durable safety contracts ready for review; **DURABLE_COMPACTION** runtime execution remains not implemented
+**Last architecture/runtime pass:** 2026-08-17 — **TOKEN-10E-1…4** and **TOKEN-10E** accepted/closed; bounded **DURABLE_COMPACTION** runtime synchronized with Token Optimization canon; rollback execution remains out of scope
 
 ### Cursor read scope (token budget)
 
@@ -291,13 +301,17 @@ None cited for the UCL domain — do not claim **P4** or **E5**.
 | Implemented phases | **CTX-UCL-1** through **CTX-UCL-6D** **ACCEPTED / CLOSED** |
 | Runtime implementation | **EPHEMERAL_ASSEMBLY** integrated — `ContextEngine` → `resolve_ucl_context_plan()` → repository lookup/reservation → `MessageSequenceArtifactExecutor` on `CREATE_ARTIFACT` only |
 | Legacy migration | **Complete** for model-facing conversation history — `HistoryLayer.OFF` raw-only; non-OFF strategies fail-closed; legacy provider slicing/flattening disabled; legacy compression profiles canonical or fail-closed; history summary prompt builder/YAML removed; no application-local summary caches; no direct conversation-summary bypass |
-| TOKEN-10E-1 | **READY_FOR_REVIEW** — durable safety contracts only; candidate flow and activation not implemented |
+| TOKEN-10E | **ACCEPTED / CLOSED** — durable compaction runtime over UCL contracts (**TOKEN-10E-1…4** closed; **TOKEN-10E-CLOSEOUT-1** ready for review) |
+| TOKEN-10E-1 | **ACCEPTED / CLOSED** — durable policy, source identity, eligibility, and activation safety contracts |
+| TOKEN-10E-2 | **ACCEPTED / CLOSED** — durable candidate flow with reuse-before-create |
+| TOKEN-10E-3 | **ACCEPTED / CLOSED** — validation, receipt, and rollback-metadata compilation |
+| TOKEN-10E-4 | **ACCEPTED / CLOSED** — `SQLiteOptimizationArtifactRepository` and `SessionContextRevision` CAS activation |
 | Owning domains | **MEMORY** (durable ledger/revisions) · **CONTEXT_ENGINEERING** (single budget authority) · **TOKEN_OPTIMIZATION** (transformation executor) · **NEXUS** (lifecycle coordinator) · **APPLICATION_HOSTING** (config/auth/UX) |
 | Supersedes | **TOKEN-10E-ARCH-1** as standalone compaction architecture — durable compaction now defined under UCL + TOKEN-10E |
 
 ## 2. Purpose
 
-> **Historical architecture-freeze scope (2026-08-01 — CTX-UCL-ARCH-1):** The paragraph below records the original architecture-freeze milestone. **CTX-UCL-1…6D** and **CTX-UCL-CLOSEOUT-1** subsequently implemented **EPHEMERAL_ASSEMBLY** runtime integration; the closing sentence applied only to CTX-UCL-ARCH-1, not to the domain today.
+> **Historical architecture-freeze scope (2026-08-01 — CTX-UCL-ARCH-1):** The paragraph below records the original architecture-freeze milestone. **CTX-UCL-1…6D** and **CTX-UCL-CLOSEOUT-1** subsequently implemented **EPHEMERAL_ASSEMBLY** runtime integration; **TOKEN-10E-1…4** subsequently implemented bounded **DURABLE_COMPACTION** runtime. The closing sentence applied only to CTX-UCL-ARCH-1, not to the domain today.
 
 Platform audit identified **multiple independent context-reduction authorities** operating without a shared lifecycle model. Before **TOKEN-10E** (durable in-cache compaction) implementation begins, this document freezes:
 
@@ -878,7 +892,7 @@ Do not change TOKEN-10D router/timing result semantics in this architecture pass
 | Activation | Compare-and-swap on active revision pointer |
 | Ledger | Original append-only ledger preserved or referenced |
 | Cache | Separate cache-lineage transition |
-| Implementation | **CTX-UCL-1…6** then **TOKEN-10E-1…4** |
+| Implementation | **CTX-UCL-1…6** + **TOKEN-10E-1…4** (**ACCEPTED / CLOSED**); rollback execution out of scope |
 
 ---
 
@@ -1282,17 +1296,20 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 | **CTX-UCL-6** | Legacy migration: disable independent `HistoryLayer` summarizer; remove provider-level duplicate summarization; remove application-local caches; remove direct summarizer calls bypassing reservation | **ACCEPTED / CLOSED** through **6D** |
 | **CTX-UCL-CLOSEOUT-1** | Closure gates: one canonical optimization decision point; one canonical summary creation path; internal-call recursion blocked; single-flight same-key creation proven; different-key concurrency preserved; reference repository wired; no competing summary caches | **ACCEPTED / CLOSED** |
 
-**Dependency gate (canonical):** `CTX-UCL-ARCH-1` accepted/closed → `CTX-UCL-1` … `CTX-UCL-6D` accepted/closed → **CTX-UCL-CLOSEOUT-1 ACCEPTED / CLOSED** → **TOKEN-10E-1 READY_FOR_REVIEW**.
+**Dependency gate (canonical):** `CTX-UCL-ARCH-1` accepted/closed → `CTX-UCL-1` … `CTX-UCL-6D` accepted/closed → **CTX-UCL-CLOSEOUT-1 ACCEPTED / CLOSED** → **TOKEN-10E-1…4 ACCEPTED / CLOSED** → **TOKEN-10E ACCEPTED / CLOSED**.
 
-**After CTX-UCL-CLOSEOUT-1:**
+> **Historical gate (pre-TOKEN-10E):** At CTX-UCL-CLOSEOUT-1 closeout, **TOKEN-10E-1** was **READY_FOR_REVIEW** and **TOKEN-10E-2…4** were blocked. That gate is **satisfied** — current state below.
+
+**After CTX-UCL-CLOSEOUT-1 (current):**
 
 | ID | Scope | Status |
 |----|-------|--------|
-| **TOKEN-10E-1** | Durable policy, source identity, eligibility, and activation safety contracts extending UCL (reuses UCL repository and reservation contracts; no second repository) | **READY_FOR_REVIEW** |
-| **TOKEN-10E-2** | Durable candidate flow using existing lookup/reservation semantics | Blocked |
-| **TOKEN-10E-3** | Durable receipts and rollback metadata | Blocked |
-| **TOKEN-10E-4** | First durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration (implementation may live in Memory/Session packages; delivery coordinated by TOKEN-10E-4) | Blocked |
-| **TOKEN-10E-CLOSEOUT-1** | Public contract freeze | Blocked |
+| **TOKEN-10E-1** | Durable policy, source identity, eligibility, and activation safety contracts extending UCL (reuses UCL repository and reservation contracts; no second repository) | **ACCEPTED / CLOSED** |
+| **TOKEN-10E-2** | Durable candidate flow using existing lookup/reservation semantics | **ACCEPTED / CLOSED** |
+| **TOKEN-10E-3** | Durable receipts and rollback metadata | **ACCEPTED / CLOSED** |
+| **TOKEN-10E-4** | First durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration (implementation may live in Memory/Session packages; delivery coordinated by TOKEN-10E-4) | **ACCEPTED / CLOSED** |
+| **TOKEN-10E** | Phase integration — policy → candidate → validation → durable storage → CAS activation | **ACCEPTED / CLOSED** |
+| **TOKEN-10E-CLOSEOUT-1** | Public contract freeze and independent audit | **READY_FOR_REVIEW** |
 
 **`InMemoryOptimizationArtifactRepository`:** reference runtime implementation for unit/integration tests and local runtime wiring — not the final durable production backend; not application-owned; not Token Optimization-owned.
 
@@ -1303,8 +1320,8 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 ## 25. User-visible meaning
 
 - **Ephemeral assembly** (`EPHEMERAL_ASSEMBLY`) is **implemented and closure-ready** for UCL-managed `PRIMARY_MODEL_CALL` paths.
-- **Durable compaction** (`DURABLE_COMPACTION`) remains **planned under TOKEN-10E** — not production-complete.
+- **Durable compaction** (`DURABLE_COMPACTION`) is **implemented under TOKEN-10E** — explicit/default-off; not production-enabled by default.
 - **Users** retain full conversation history subject to retention policy; compaction does not silently delete durable turns without explicit durable mode + policy.
-- **Review UX** (when `require_human_review`) shows candidate summary before activation — application host responsibility.
-- **Rollback** restores prior active revision when policy and metadata support it.
+- **Review UX** (when `require_human_review`) shows candidate summary before activation — application host responsibility; human-review UX remains out of TOKEN-10E scope.
+- **Rollback metadata** is compiled when policy requires it; **rollback execution** (restoring prior active revision) is **not implemented** — Memory/Session owns execution when delivered.
 - **Ephemeral assembly** may shorten what the model sees for one turn without changing stored history.
