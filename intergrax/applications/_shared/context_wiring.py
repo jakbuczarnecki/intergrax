@@ -7,7 +7,11 @@ from __future__ import annotations
 import logging
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.context.bootstrap import bootstrap_context_catalog, materialize_context_plugin_registry
+from intergrax.context.bootstrap import (
+    ContextCatalogBootstrapResult,
+    bootstrap_context_catalog,
+    materialize_context_plugin_registry,
+)
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.context.registry import ContextPluginRegistry, UnknownContextPluginError
 from intergrax.core.plugin_env import discover_plugins_enabled
@@ -31,10 +35,10 @@ def _is_production_environment(env: ApplicationEnvironmentProfile) -> bool:
 def bootstrap_application_context_catalog(
     *,
     discover_entry_points: bool | None = None,
-) -> None:
+) -> ContextCatalogBootstrapResult:
     """Register shipped context catalog (and optional entry-point plugins)."""
     discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
-    bootstrap_context_catalog(discover_entry_points=discover)
+    return bootstrap_context_catalog(discover_entry_points=discover)
 
 
 def validate_context_plugin_ids(

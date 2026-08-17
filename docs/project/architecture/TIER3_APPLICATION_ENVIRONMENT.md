@@ -118,7 +118,7 @@ Domain plugin discovery and admission run in **domain/shared wiring** (`memory_w
 
 - **Contract:** `intergrax.applications.contracts.platform_plugin_evidence.ApplicationPlatformPluginEvidence`
 - **Field on wiring result:** `ApplicationEnvironmentWiring.platform_plugin_evidence`
-- **Contents:** per-domain `DomainPluginLoadReport` values taken from the **same** domain bootstrap invocation that materialized runtime state (no second scan).
+- **Contents:** per-domain `DomainPluginLoadReport` values taken from the **same** domain bootstrap invocation that materialized runtime state (no second scan). Memory, Policy, and Context domains participate when their wiring runs during `wire_application_environment()`.
 - **Semantics:** discovery/admission evidence only — **not** `PRODUCTION_QUALIFIED` / package gate 10 (`evaluate_package_production_admission` remains deferred).
 
 Hosts consume resolved capabilities plus this evidence; they do not re-discover plugins locally.

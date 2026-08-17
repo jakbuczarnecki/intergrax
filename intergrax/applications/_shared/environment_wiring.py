@@ -163,7 +163,7 @@ def wire_application_environment(
     Replaces scattered per-host wiring sequences (lab/legal/research/poc).
     """
     bootstrap_application_integration_catalog()
-    bootstrap_application_context_catalog()
+    context_bootstrap = bootstrap_application_context_catalog()
     resolved_integration = (
         integration_profile or env.integration_profile or manifest.integration_profile
     )
@@ -377,6 +377,7 @@ def wire_application_environment(
 
     platform_plugin_evidence = build_application_platform_plugin_evidence(
         memory_report=memory_wiring.memory_store_plugin_load_report,
+        context_report=context_bootstrap.load_report,
         policy_bundle=policy_bundle,
     )
 
