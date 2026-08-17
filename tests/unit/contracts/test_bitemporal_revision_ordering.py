@@ -8,15 +8,18 @@ from intergrax.contracts.bitemporal_knowledge import (
     CrossScopeKnowledgeOrderError,
     KnowledgeOrderingScope,
     KnowledgeRevisionAcceptance,
+    KnowledgeRevisionId,
     KnowledgeRevisionPosition,
     KnowledgeRevisionPositionLifecycle,
     KnowledgeRevisionPositionRecord,
     KnowledgeRevisionWatermark,
+    RevisionAcceptanceConflictError,
     RevisionAcceptanceKey,
     RevisionOrderingAuthority,
     compute_finalized_watermark,
     lifecycle_blocks_watermark,
     lifecycle_is_finalized,
+    mint_knowledge_revision_id,
     mint_revision_acceptance_key,
 )
 
@@ -36,6 +39,93 @@ def _record(
         position=KnowledgeRevisionPosition(scope=resolved, value=value),
         lifecycle=lifecycle,
     )
+
+
+class _InMemoryRevisionOrderingAuthority(RevisionOrderingAuthority):
+    """Contract-level fake proving idempotent acceptance semantics only."""
+
+    def __init__(self) -> None:
+        self._next_position: dict[str, int] = {}
+        self._bindings: dict[tuple[str, str], tuple[KnowledgeRevisionId, KnowledgeRevisionPosition]] = {}
+        self._lifecycles: dict[tuple[str, int], KnowledgeRevisionPositionLifecycle] = {}
+
+    def accept_revision(
+        self,
+        *,
+        scope: KnowledgeOrderingScope,
+        revision_id: KnowledgeRevisionId,
+        acceptance_key: RevisionAcceptanceKey,
+    ) -> KnowledgeRevisionAcceptance:
+        tenant = scope.tenant_id
+        lookup = (tenant, acceptance_key.value)
+        existing = self._bindings.get(lookup)
+        if existing is not None:
+            bound_revision, bound_position = existing
+            if bound_revision != revision_id:
+                raise RevisionAcceptanceConflictError(
+                    "acceptance key already bound to a different knowledge revision"
+                )
+            return KnowledgeRevisionAcceptance(
+                revision_id=revision_id,
+                acceptance_key=acceptance_key,
+                position=bound_position,
+            )
+
+        next_value = self._next_position.get(tenant, 1)
+        position = KnowledgeRevisionPosition(scope=scope, value=next_value)
+        self._next_position[tenant] = next_value + 1
+        self._bindings[lookup] = (revision_id, position)
+        self._lifecycles[(tenant, next_value)] = KnowledgeRevisionPositionLifecycle.ACCEPTED
+        return KnowledgeRevisionAcceptance(
+            revision_id=revision_id,
+            acceptance_key=acceptance_key,
+            position=position,
+        )
+
+    def position_lifecycle(
+        self,
+        position: KnowledgeRevisionPosition,
+    ) -> KnowledgeRevisionPositionLifecycle:
+        tenant = position.scope.tenant_id
+        lifecycle = self._lifecycles.get((tenant, position.value))
+        if lifecycle is None:
+            raise ValueError("unknown position")
+        return lifecycle
+
+    def watermark(self, scope: KnowledgeOrderingScope) -> KnowledgeRevisionWatermark:
+        tenant = scope.tenant_id
+        finalized = 0
+        for value in range(1, self._next_position.get(tenant, 1)):
+            lifecycle = self._lifecycles.get((tenant, value))
+            if lifecycle is KnowledgeRevisionPositionLifecycle.ACCEPTED:
+                finalized = value
+        return KnowledgeRevisionWatermark(scope=scope, finalized_through_value=finalized)
+
+    def records_through(
+        self,
+        watermark: KnowledgeRevisionWatermark,
+    ) -> tuple[KnowledgeRevisionPositionRecord, ...]:
+        tenant = watermark.scope.tenant_id
+        records: list[KnowledgeRevisionPositionRecord] = []
+        for value in range(1, watermark.finalized_through_value + 1):
+            lifecycle = self._lifecycles.get((tenant, value))
+            if lifecycle is not None:
+                records.append(
+                    KnowledgeRevisionPositionRecord(
+                        position=KnowledgeRevisionPosition(
+                            scope=watermark.scope,
+                            value=value,
+                        ),
+                        lifecycle=lifecycle,
+                    )
+                )
+        return tuple(records)
+
+    def unresolved_positions(
+        self,
+        scope: KnowledgeOrderingScope,
+    ) -> tuple[KnowledgeRevisionPosition, ...]:
+        return ()
 
 
 @pytest.mark.unit
@@ -127,11 +217,20 @@ def test_empty_scope_watermark_and_cross_scope_records_rejected() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_acceptance_result_binds_key_to_position() -> None:
+def test_acceptance_result_binds_revision_key_and_position() -> None:
+    revision = mint_knowledge_revision_id()
     key = mint_revision_acceptance_key()
     position = KnowledgeRevisionPosition(scope=_scope(), value=7)
-    accepted = KnowledgeRevisionAcceptance(acceptance_key=key, position=position)
-    retry = KnowledgeRevisionAcceptance(acceptance_key=key, position=position)
+    accepted = KnowledgeRevisionAcceptance(
+        revision_id=revision,
+        acceptance_key=key,
+        position=position,
+    )
+    retry = KnowledgeRevisionAcceptance(
+        revision_id=revision,
+        acceptance_key=key,
+        position=position,
+    )
     assert accepted == retry
     assert accepted.acceptance_key != RevisionAcceptanceKey(
         mint_revision_acceptance_key().value
@@ -144,6 +243,146 @@ def test_revision_ordering_authority_is_abstract() -> None:
     assert "accept_revision" in RevisionOrderingAuthority.__abstractmethods__
     assert "watermark" in RevisionOrderingAuthority.__abstractmethods__
     assert "position_lifecycle" in RevisionOrderingAuthority.__abstractmethods__
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_same_key_same_revision_idempotent_acceptance() -> None:
+    authority = _InMemoryRevisionOrderingAuthority()
+    scope = _scope()
+    revision = mint_knowledge_revision_id()
+    key = mint_revision_acceptance_key()
+
+    first = authority.accept_revision(
+        scope=scope,
+        revision_id=revision,
+        acceptance_key=key,
+    )
+    retry = authority.accept_revision(
+        scope=scope,
+        revision_id=revision,
+        acceptance_key=key,
+    )
+
+    assert first == retry
+    assert first.position.value == 1
+    assert retry.position.value == 1
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_same_key_different_revision_raises_conflict() -> None:
+    authority = _InMemoryRevisionOrderingAuthority()
+    scope = _scope()
+    key = mint_revision_acceptance_key()
+    revision_one = mint_knowledge_revision_id()
+    revision_two = mint_knowledge_revision_id()
+
+    first = authority.accept_revision(
+        scope=scope,
+        revision_id=revision_one,
+        acceptance_key=key,
+    )
+    with pytest.raises(RevisionAcceptanceConflictError):
+        authority.accept_revision(
+            scope=scope,
+            revision_id=revision_two,
+            acceptance_key=key,
+        )
+
+    assert first.position.value == 1
+    assert authority._next_position[scope.tenant_id] == 2
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_distinct_revisions_and_keys_receive_distinct_positions() -> None:
+    authority = _InMemoryRevisionOrderingAuthority()
+    scope = _scope()
+
+    first = authority.accept_revision(
+        scope=scope,
+        revision_id=mint_knowledge_revision_id(),
+        acceptance_key=mint_revision_acceptance_key(),
+    )
+    second = authority.accept_revision(
+        scope=scope,
+        revision_id=mint_knowledge_revision_id(),
+        acceptance_key=mint_revision_acceptance_key(),
+    )
+
+    assert first.position.value != second.position.value
+    assert first.position.scope == second.position.scope == scope
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_cross_tenant_acceptance_keys_are_independent() -> None:
+    authority = _InMemoryRevisionOrderingAuthority()
+    key = mint_revision_acceptance_key()
+    tenant_a = _scope("tenant-a")
+    tenant_b = _scope("tenant-b")
+
+    accepted_a = authority.accept_revision(
+        scope=tenant_a,
+        revision_id=mint_knowledge_revision_id(),
+        acceptance_key=key,
+    )
+    accepted_b = authority.accept_revision(
+        scope=tenant_b,
+        revision_id=mint_knowledge_revision_id(),
+        acceptance_key=key,
+    )
+
+    assert accepted_a.position.scope == tenant_a
+    assert accepted_b.position.scope == tenant_b
+    assert accepted_a.position.value == 1
+    assert accepted_b.position.value == 1
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_concurrent_same_acceptance_converges_to_one_result() -> None:
+    authority = _InMemoryRevisionOrderingAuthority()
+    scope = _scope()
+    revision = mint_knowledge_revision_id()
+    key = mint_revision_acceptance_key()
+
+    first = authority.accept_revision(
+        scope=scope,
+        revision_id=revision,
+        acceptance_key=key,
+    )
+    concurrent_retry = authority.accept_revision(
+        scope=scope,
+        revision_id=revision,
+        acceptance_key=key,
+    )
+
+    assert first == concurrent_retry
+    assert authority._next_position[scope.tenant_id] == 2
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_concurrent_conflicting_revision_cannot_both_succeed() -> None:
+    authority = _InMemoryRevisionOrderingAuthority()
+    scope = _scope()
+    key = mint_revision_acceptance_key()
+    revision_one = mint_knowledge_revision_id()
+    revision_two = mint_knowledge_revision_id()
+
+    authority.accept_revision(
+        scope=scope,
+        revision_id=revision_one,
+        acceptance_key=key,
+    )
+    with pytest.raises(RevisionAcceptanceConflictError):
+        authority.accept_revision(
+            scope=scope,
+            revision_id=revision_two,
+            acceptance_key=key,
+        )
 
 
 @pytest.mark.unit
@@ -184,9 +423,27 @@ def test_failure_matrix_watermark_invariants() -> None:
         ),
     ).finalized_through_value == 3
 
-    # H/I are identity/uniqueness: distinct keys → distinct positions; same key
-    # cannot be represented as two accepted records at different K.
-    duplicate_key_positions_forbidden = {1, 2}
-    assert len(duplicate_key_positions_forbidden) == 2
+    # H/I: same key + same revision → same K; same key + different revision → conflict.
+    authority = _InMemoryRevisionOrderingAuthority()
+    scope = _scope()
+    key = mint_revision_acceptance_key()
+    revision = mint_knowledge_revision_id()
+    same = authority.accept_revision(
+        scope=scope,
+        revision_id=revision,
+        acceptance_key=key,
+    )
+    retry = authority.accept_revision(
+        scope=scope,
+        revision_id=revision,
+        acceptance_key=key,
+    )
+    assert same.position == retry.position
+    with pytest.raises(RevisionAcceptanceConflictError):
+        authority.accept_revision(
+            scope=scope,
+            revision_id=mint_knowledge_revision_id(),
+            acceptance_key=key,
+        )
     assert allocated is not accepted
     _ = KnowledgeRevisionWatermark(scope=_scope(), finalized_through_value=0)

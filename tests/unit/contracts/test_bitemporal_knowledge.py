@@ -10,13 +10,16 @@ from intergrax.contracts.bitemporal_knowledge import (
     BitemporalKnowledgeBasis,
     CrossScopeKnowledgeOrderError,
     KnowledgeOrderingScope,
+    KnowledgeRevisionId,
     KnowledgeRevisionPosition,
     KnowledgeRevisionWatermark,
     KnowledgeRevisionWatermarkSet,
     RevisionAcceptanceKey,
     SystemTimeBasis,
     ValidTimeBasis,
+    mint_knowledge_revision_id,
     mint_revision_acceptance_key,
+    validate_knowledge_revision_id,
     validate_revision_acceptance_key,
 )
 from intergrax.runtime.events.execution_position import ExecutionEventPosition
@@ -78,6 +81,18 @@ def test_bitemporal_basis_contains_only_temporal_axes() -> None:
     assert set(basis.__dataclass_fields__) == {"valid_time", "system_time"}
     assert type(basis.valid_time) is ValidTimeBasis
     assert type(basis.system_time) is SystemTimeBasis
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_knowledge_revision_id_is_nominal_and_not_event_id() -> None:
+    revision = mint_knowledge_revision_id()
+    assert revision.value.startswith("krev_")
+    assert validate_knowledge_revision_id(revision) == revision.value
+    with pytest.raises(ValueError, match="must start with"):
+        KnowledgeRevisionId("evt_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    with pytest.raises(TypeError):
+        validate_knowledge_revision_id(123)
 
 
 @pytest.mark.unit

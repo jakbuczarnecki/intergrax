@@ -22,6 +22,8 @@ from uuid import uuid4
 
 _ACCEPTANCE_KEY_SUFFIX = re.compile(r"^[0-9a-f]{32}$")
 _ACCEPTANCE_KEY_PREFIX = "rack_"
+_REVISION_ID_SUFFIX = re.compile(r"^[0-9a-f]{32}$")
+_REVISION_ID_PREFIX = "krev_"
 
 
 class CrossScopeKnowledgeOrderError(ValueError):
@@ -30,6 +32,10 @@ class CrossScopeKnowledgeOrderError(ValueError):
 
 class UnknownKnowledgeRevisionPositionError(ValueError):
     """Raised when a position was never allocated in the requested scope."""
+
+
+class RevisionAcceptanceConflictError(ValueError):
+    """Raised when an acceptance key in a scope is already bound to a different revision."""
 
 
 class ValidTimeBoundKind(StrEnum):
@@ -188,6 +194,44 @@ class KnowledgeOrderingScope:
 
 
 @dataclass(frozen=True, slots=True)
+class KnowledgeRevisionId:
+    """Immutable identity of the logical knowledge revision being accepted.
+
+    Owner: the knowledge revision lifecycle — minted when the immutable logical
+    revision is created, **before** ``RevisionOrderingAuthority.accept_revision``.
+    The ordering authority **consumes** this identity; it does **not** mint it.
+
+    Distinct from ``RevisionAcceptanceKey`` (which logical accept operation),
+    ``KnowledgeRevisionPosition`` (authoritative order), ``EventId``, ``RunId``,
+    and ``supersedes`` lineage.
+    """
+
+    value: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "value", validate_knowledge_revision_id(self.value))
+
+
+def validate_knowledge_revision_id(value: object) -> str:
+    if isinstance(value, KnowledgeRevisionId):
+        return value.value
+    if type(value) is not str:
+        raise TypeError(
+            f"KnowledgeRevisionId must be str, got {type(value).__name__}"
+        )
+    if not value.startswith(_REVISION_ID_PREFIX):
+        raise ValueError(f"KnowledgeRevisionId must start with {_REVISION_ID_PREFIX!r}")
+    suffix = value[len(_REVISION_ID_PREFIX) :]
+    if not _REVISION_ID_SUFFIX.fullmatch(suffix):
+        raise ValueError("KnowledgeRevisionId suffix must match [0-9a-f]{32}")
+    return value
+
+
+def mint_knowledge_revision_id() -> KnowledgeRevisionId:
+    return KnowledgeRevisionId(f"{_REVISION_ID_PREFIX}{uuid4().hex}")
+
+
+@dataclass(frozen=True, slots=True)
 class RevisionAcceptanceKey:
     """Nominal stable identity for idempotent revision acceptance.
 
@@ -197,8 +241,9 @@ class RevisionAcceptanceKey:
 
     Scope: unique within ``KnowledgeOrderingScope``.
 
-    Semantics: ``accept_revision(scope, acceptance_key=A) → K``; retry with the
-    same ``A`` in the same scope returns the same accepted ``K``. Not a request
+    Semantics: ``accept_revision(scope, revision_id=R, acceptance_key=A) → K``;
+    retry with the same ``R`` and ``A`` in the same scope returns the same
+    accepted ``K``. Same ``A`` with a different ``R`` is a conflict. Not a request
     timestamp, not ``EventId``, not ``RunId``.
     """
 
@@ -330,12 +375,17 @@ class KnowledgeRevisionPositionRecord:
 
 @dataclass(frozen=True, slots=True)
 class KnowledgeRevisionAcceptance:
-    """Idempotent accept result: stable key bound to authoritative position K."""
+    """Idempotent accept result: revision identity, stable key, authoritative K."""
 
+    revision_id: KnowledgeRevisionId
     acceptance_key: RevisionAcceptanceKey
     position: KnowledgeRevisionPosition
 
     def __post_init__(self) -> None:
+        if type(self.revision_id) is not KnowledgeRevisionId:
+            raise TypeError(
+                "KnowledgeRevisionAcceptance.revision_id must be KnowledgeRevisionId"
+            )
         if type(self.acceptance_key) is not RevisionAcceptanceKey:
             raise TypeError(
                 "KnowledgeRevisionAcceptance.acceptance_key must be RevisionAcceptanceKey"
@@ -419,9 +469,9 @@ class RevisionOrderingAuthority(ABC):
     types are vendor-neutral.
 
     Canonical first-party production strategy (TRACE-BITEMP-1): one durable
-    transactional boundary coordinating acceptance identity, position allocation,
-    durable acceptance, and lifecycle/finality. Physical store belongs to
-    TRACE-BITEMP-2.
+    transactional boundary coordinating ``KnowledgeRevisionId``, acceptance key,
+    position allocation, durable acceptance/reference, and lifecycle/finality.
+    Physical store belongs to TRACE-BITEMP-2.
     """
 
     @abstractmethod
@@ -429,11 +479,18 @@ class RevisionOrderingAuthority(ABC):
         self,
         *,
         scope: KnowledgeOrderingScope,
+        revision_id: KnowledgeRevisionId,
         acceptance_key: RevisionAcceptanceKey,
     ) -> KnowledgeRevisionAcceptance:
         """Idempotently accept a logical revision in ``scope``.
 
-        Retry with the same ``acceptance_key`` MUST return the same ``position``.
+        ``revision_id`` identifies the immutable logical revision; it MUST be
+        minted by the knowledge revision lifecycle before this call. The
+        authority consumes it and MUST NOT mint revision identity here.
+
+        Retry with the same ``revision_id`` and ``acceptance_key`` MUST return
+        the same ``position``. The same ``acceptance_key`` with a different
+        ``revision_id`` MUST raise ``RevisionAcceptanceConflictError``.
         """
 
     @abstractmethod
