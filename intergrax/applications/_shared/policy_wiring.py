@@ -23,6 +23,7 @@ from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.core.plugins.discovery import EP_POLICY_RULES, EntryPointSpec
 from intergrax.core.plugins.platform_qualification import (
+    PlatformPluginPackageQualificationBundle,
     PluginQualificationResult,
     resolve_host_platform_version,
 )
@@ -77,11 +78,20 @@ def build_runtime_policy_bundle(
     )
 
 
-def wire_policy_bundle(env: ApplicationEnvironmentProfile) -> RuntimePolicyBundle:
+def wire_policy_bundle(
+    env: ApplicationEnvironmentProfile,
+    *,
+    package_qualifications: PlatformPluginPackageQualificationBundle | None = None,
+) -> RuntimePolicyBundle:
     """Merge policy rules, domain fragments, execution mode, cost, and evaluation governance."""
     cost_wiring = wire_application_cost(env)
     evaluation_wiring = wire_application_evaluation(env)
     critic_wiring = wire_application_critic(env)
+    qualification_lookup = (
+        package_qualifications.lookup_for_entry_point
+        if package_qualifications is not None
+        else None
+    )
     base = build_runtime_policy_bundle(
         domain_fragments={
             **env.domain_policy_fragments,
@@ -92,6 +102,7 @@ def wire_policy_bundle(env: ApplicationEnvironmentProfile) -> RuntimePolicyBundl
         execution_mode=env.execution_mode,
         policy_rules=env.policy_rules,
         discover_entry_points=discover_plugins_enabled(),
+        package_qualification_lookup=qualification_lookup,
     )
     if cost_wiring.budget_policy is None:
         return base

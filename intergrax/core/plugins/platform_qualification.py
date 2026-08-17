@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 from intergrax.core.distribution import (
@@ -102,6 +104,83 @@ class PackageProductionAdmission:
     result: PluginQualificationResult
     compatibility: PlatformCompatibilityResult | None
     reason: str
+
+
+class PlatformPluginPackageQualificationBundleError(ValueError):
+    """Raised when immutable package qualification bundle construction fails."""
+
+
+@dataclass(frozen=True, slots=True)
+class PlatformPluginPackageQualificationBundle:
+    """Immutable bootstrap snapshot of external package qualification results.
+
+    Keyed by exact ``DistributionPackageIdentity``; does not perform admission.
+    """
+
+    _qualifications: Mapping[tuple[str, str], PluginQualificationResult]
+
+    def __init__(
+        self,
+        entries: Iterable[tuple[DistributionPackageIdentity, PluginQualificationResult]],
+    ) -> None:
+        built = _build_package_qualification_index(entries)
+        object.__setattr__(self, "_qualifications", MappingProxyType(built))
+
+    def lookup_for_entry_point(
+        self,
+        spec: EntryPointSpec,
+    ) -> PluginQualificationResult | None:
+        identity = resolve_entry_point_distribution_identity(spec)
+        if identity is None:
+            return None
+        return self._qualifications.get((identity.name, identity.version))
+
+    def lookup_for_package(
+        self,
+        identity: DistributionPackageIdentity,
+    ) -> PluginQualificationResult | None:
+        return self._qualifications.get((identity.name, identity.version))
+
+
+def _build_package_qualification_index(
+    entries: Iterable[tuple[DistributionPackageIdentity, PluginQualificationResult]],
+) -> dict[tuple[str, str], PluginQualificationResult]:
+    index: dict[tuple[str, str], PluginQualificationResult] = {}
+    for identity, qualification in entries:
+        _validate_package_qualification_entry(identity, qualification)
+        key = (identity.name, identity.version)
+        if key in index:
+            raise PlatformPluginPackageQualificationBundleError(
+                "duplicate package qualification for "
+                f"{identity.name}@{identity.version}"
+            )
+        index[key] = qualification
+    return index
+
+
+def _validate_package_qualification_entry(
+    identity: DistributionPackageIdentity,
+    qualification: PluginQualificationResult,
+) -> None:
+    subject = qualification.subject
+    if subject.level is not PluginQualificationLevel.PACKAGE:
+        raise PlatformPluginPackageQualificationBundleError(
+            "package qualification bundle requires package-level subject"
+        )
+    if subject.delivery_source is not PluginDeliverySource.EXTERNAL_PACKAGE:
+        raise PlatformPluginPackageQualificationBundleError(
+            "package qualification bundle requires external-package delivery source"
+        )
+    if subject.package_name != identity.name:
+        raise PlatformPluginPackageQualificationBundleError(
+            "qualification subject package name does not match bundle key "
+            f"({subject.package_name!r} != {identity.name!r})"
+        )
+    if subject.package_version != identity.version:
+        raise PlatformPluginPackageQualificationBundleError(
+            "qualification subject package version does not match bundle key "
+            f"({subject.package_version!r} != {identity.version!r})"
+        )
 
 
 def compatibility_evidence(

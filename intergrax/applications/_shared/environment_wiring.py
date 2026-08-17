@@ -94,6 +94,9 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.core.plugins.platform_qualification import (
+    PlatformPluginPackageQualificationBundle,
+)
 from intergrax.integrations.contracts.base import HealthStatus
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
@@ -156,6 +159,9 @@ def wire_application_environment(
     conformance_check: bool = True,
     document_store: Any | None = None,
     boundary_event_buffer: Any | None = None,
+    platform_plugin_package_qualifications: (
+        PlatformPluginPackageQualificationBundle | None
+    ) = None,
 ) -> ApplicationEnvironmentWiring:
     """
     Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
@@ -324,6 +330,7 @@ def wire_application_environment(
                 },
             },
         ),
+        package_qualifications=platform_plugin_package_qualifications,
     )
     prompt_registry = resolve_prompt_registry(env.prompt_profile)
 
