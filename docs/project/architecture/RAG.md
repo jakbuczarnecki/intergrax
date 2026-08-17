@@ -163,13 +163,15 @@ Tier routing via `RagProfile` is **cost/latency routing**, not autonomous MIME-b
 
 Architecture maturity: **A5**  
 Implementation maturity: **I4**  
-Production readiness: **P4**  
+Production readiness: **P3**  
 Evidence maturity: **E4**
 
 - **A5** — Canonical domain pair with normative contracts (`KnowledgeDocument`, `VectorStoreScope`, ownership/replacement semantics), closed qualification tracks (RAG-FINAL, RAG-PROD, RAG-LIVE, RAG-ENT), and enforced invariants — global **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** ([§8](#8-live-claim-boundary-and-roadmap) below).
 - **I4** — Native ingest → index → retrieve path integrated through Nexus, `RetrievalService`, plugin registries, and host wiring; M-RAG-CONVERGE closeout — plan frozen at L3 control plane ([plan](../maintainers/plans/RAG.md)). Beta catalog providers and unsupported replacement paths remain explicit limits — not I5.
-- **P4** — Production deployment **approved with explicit limitations** ([`RAG_PRODUCTION_HANDOFF.md`](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md), [`RAG_OPERATOR_GUIDE.md`](../technical/guides/RAG_OPERATOR_GUIDE.md)); documented boundaries on transactional replacement, multi-process coordination, and provider-specific SLOs — not unrestricted P5 enterprise operational proof.
+- **P3** — Controlled production candidate: production deployment is approved only under explicit documented constraints and deployment controls ([`RAG_PRODUCTION_HANDOFF.md`](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md), [`RAG_OPERATOR_GUIDE.md`](../technical/guides/RAG_OPERATOR_GUIDE.md)); qualified providers have bounded environment-specific live evidence; operators must repeat qualification in their actual production infrastructure before making deployment-specific SLO claims. This is not P4 operational production evidence and not P5 enterprise evidence.
 - **E4** — Executable qualification evidence: RAG-PROD-13, RAG-LIVE-15A–15E live backend gates, offline/harness matrices in this hub. Public LKW proofs add **bounded** indexed-path E4 scenarios — scope does not cover the full RAG domain ([Evidence / proof](#evidence--proof)). No E5 production/customer evidence window claimed.
+
+> **Qualification status vs P-axis:** **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** answers *"May this surface be deployed under the documented contract?"* Taxonomy **P3** answers *"What level of real production operational maturity has been evidenced?"* Those are separate concepts — qualification approval does not automatically imply taxonomy **P4**.
 
 > **Phase vs maturity:** RAG-FINAL / RAG-PROD / RAG-LIVE **Done** and **CLOSED** rows are **delivery and qualification states**, not automatic P5 or domain-wide E5 claims.
 
