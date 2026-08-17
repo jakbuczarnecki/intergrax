@@ -126,7 +126,7 @@ def test_platform_capabilities_table_contract(readme_text: str) -> None:
 def test_platform_capability_claim_boundaries(readme_text: str) -> None:
     normalized = re.sub(r"[*_`]", "", readme_text).lower()
     for phrase in (
-        "implemented slices — consolidation / qualification ongoing",
+        "implemented core — coverage / qualification ongoing",
         "complete platform-wide governance and production qualification not established",
         "implemented core + bounded proof",
         "universal every-path production observability not claimed",
@@ -224,6 +224,20 @@ def test_public_maturity_boundary(readme_text: str) -> None:
     ):
         assert phrase in normalized, f"Missing maturity boundary phrase: {phrase}"
     assert "incomplete" in normalized
+
+
+def test_governed_execution_claim_boundary(readme_text: str) -> None:
+    """G1B closeout: implemented core exists; coverage/qualification remain open."""
+    assert "Governed Execution" in readme_text
+    assert "IMPLEMENTED CORE — coverage / qualification ongoing" in readme_text
+    normalized = re.sub(r"[*_`]", "", readme_text)
+    assert (
+        "complete platform-wide governance and production qualification not established"
+        in normalized
+    )
+    lower = readme_text.lower()
+    assert "production ready" not in lower
+    assert "fully implemented" not in lower
 
 
 def test_token_optimization_claim_boundary(readme_text: str) -> None:

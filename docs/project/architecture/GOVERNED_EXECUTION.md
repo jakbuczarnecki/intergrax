@@ -159,7 +159,13 @@ These compose sequentially; they are **not** interchangeable. Authorization ALLO
 
 **PolicyEngine** is a facade over live `RuntimePolicyEngine` and optional replay `ExecutionPolicyEngine` — **not** the whole of Governed Execution. It does not own tool access/scope, declarative enforcer, HITL, or evidence.
 
-Contract hardening (**G1B**): typed runtime contexts, rule representation, bundle fragment validation, side-effect domain payloads, facade terminology, provenance on critical paths — backlog in ADR-GOVERNED-EXECUTION-001.
+Contract hardening (**G1B**) — **implemented core** on owned live paths (not platform-wide coverage):
+
+- **G1B-1:** typed live policy evaluation contexts for agent decision, pre-model, and critic governance; unused pre-output semantic context removed. Security-sensitive live evaluation on these owned paths no longer depends on opaque `dict` bags.
+- **G1B-2:** typed meaningful-side-effect runtime rules (`MeaningfulSideEffectPolicyRule`, explicit `rule_id`, existing `PolicyAction`); `RuntimePolicyEngine` does not parse dynamic type/decision/id strings; fail-closed semantics preserved.
+- **G1B-3:** hardened `PolicyDecision` — immutable, extra fields forbidden, explicit canonical provenance; bundle provenance either absent or complete; sha256 digest structurally validated; `audit_payload` remains diagnostic/non-authoritative. `EvaluatedPolicyDecision` remains the bundle-backed typed evidence contract; no duplicate evidence framework.
+
+Not closed by this core: `RuntimePolicyBundle.domain_fragments` hardening, `MeaningfulSideEffectRequest` context/correlation hardening, remaining facade terminology, universal rule catalog, universal evaluation-point coverage, `decision_id` on every policy producer, or durable evidence persistence.
 
 ---
 
@@ -226,14 +232,14 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 | Policy plugin / handler infrastructure | **Implemented slices** — admission / provenance partial |
 | Post-run governance | **Implemented mechanisms** — `GovernanceService` / `ExecutionGuard` |
 | Governance Evaluation Point architecture (G1A) | **Accepted** — [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) |
-| Contract hardening across critical paths (G1B) | **Open** — typed contexts, rules, provenance per ADR backlog |
+| Contract hardening across critical runtime paths (G1B) | **Implemented core** — typed live contexts, typed meaningful-side-effect rules, immutable `PolicyDecision` and explicit bundle provenance invariants |
 | Uniform evaluation-point runtime enum / god engine | **Rejected** — multiple owners preserved |
 | Canonical built-in policy catalog | **Open** |
 | Complete platform-wide coverage | **Not claimed** |
 | Dedicated accepted public Governed Execution proof | **Not established** |
 | Production qualification | **Not established** |
 
-**Safe summary:** meaningful governance mechanisms and bounded enforcement slices exist; consolidation, qualification, and accepted public proof remain open.
+**Safe summary:** meaningful governance mechanisms and a hardened runtime core exist; coverage, policy catalog, qualification, and accepted public proof remain open.
 
 ---
 
