@@ -7,7 +7,12 @@ from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnfor
 from intergrax.collaborative_work.policy_composition import compose_policy_decisions
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkRepositories,
+    CollaborativeWorkStoreOwner,
     open_sqlite_collaborative_work_repositories,
+)
+from intergrax.collaborative_work.persistence_provider import (
+    CollaborativeWorkPersistenceProvider,
+    resolve_collaborative_work_repositories,
 )
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
@@ -63,7 +68,9 @@ from intergrax.collaborative_work.repository import (
 )
 
 __all__ = [
+    "CollaborativeWorkPersistenceProvider",
     "CollaborativeWorkRepositories",
+    "CollaborativeWorkStoreOwner",
     "CollaborativeWorkAuthorityResolver",
     "CollaborativeWorkEnforcementGate",
     "CollaborativePolicyEvaluator",
@@ -93,6 +100,7 @@ __all__ = [
     "CreateCollaborativePolicyRuleCommand",
     "CreatePrincipalAuthorityGrantCommand",
     "CreateWorkspaceMembershipCommand",
+    "resolve_collaborative_work_repositories",
     "open_sqlite_collaborative_work_repositories",
     "InMemoryAuthorityDelegationRepository",
     "InMemoryCollaborativeOperationPolicyProfileRepository",

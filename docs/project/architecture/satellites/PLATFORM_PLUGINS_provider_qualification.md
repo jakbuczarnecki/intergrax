@@ -1,9 +1,9 @@
-ï»¿# Platform Plugins â€” Provider qualification architecture (PROVIDER-QUAL-1)
+# Platform Plugins — Provider qualification architecture (PROVIDER-QUAL-1)
 
-**Status:** Architecture freeze + contract design â€” **READY_FOR_REVIEW**
-**Parent hub:** [`PLATFORM_PLUGINS.md`](../PLATFORM_PLUGINS.md) Â§18
-**Plan:** [`maintainers/plans/PLATFORM_PLUGINS.md`](../../maintainers/plans/PLATFORM_PLUGINS.md) â€” PROVIDER-QUAL track
-**Decision (PROVIDER-QUAL-0):** **EXTEND_EXISTING** â€” no parallel `ProviderQualificationEngine` or new qualification domain
+**Status:** Architecture freeze + contract design — **READY_FOR_REVIEW**
+**Parent hub:** [`PLATFORM_PLUGINS.md`](../PLATFORM_PLUGINS.md) §18
+**Plan:** [`maintainers/plans/PLATFORM_PLUGINS.md`](../../maintainers/plans/PLATFORM_PLUGINS.md) — PROVIDER-QUAL track
+**Decision (PROVIDER-QUAL-0):** **EXTEND_EXISTING** — no parallel `ProviderQualificationEngine` or new qualification domain
 
 **Scope:** contract design and ownership freeze only. No runtime implementation, no CI vendor jobs, no LKW integration, no MP-2.
 
@@ -43,7 +43,7 @@ Platform coordination --> production admission hooks (outcome AND validity AND c
 Optional ProofReceipt persistence --> public claims index (PUBLIC_PROOF_AND_CLAIMS_MODEL)
 ```
 
-Reuses existing PLUGIN-7 contracts (`PluginQualificationSubject`, `PluginQualificationResult`, `PluginQualificationEvidenceKind`) as the **package/capability** qualification path. Provider-scoped qualification **extends** the same primitives with additional subject dimensions and a dedicated run record â€” it does not fork a second engine.
+Reuses existing PLUGIN-7 contracts (`PluginQualificationSubject`, `PluginQualificationResult`, `PluginQualificationEvidenceKind`) as the **package/capability** qualification path. Provider-scoped qualification **extends** the same primitives with additional subject dimensions and a dedicated run record — it does not fork a second engine.
 
 ---
 
@@ -109,11 +109,11 @@ It must **not** require changes to `QualificationStatus`, qualification core enu
 |-------|-----------|
 | `qualification_run_id` | Stable unique run id **created at qualification run creation/execution time** (UUID or deterministic idempotency key). Optional persistence **preserves** this identity; it must not assign or replace the authoritative run id. |
 | `subject` | `ProviderQualificationSubject` (section 3). |
-| `status` | `QualificationStatus` â€” **historical outcome only** (section 5.1). |
+| `status` | `QualificationStatus` — **historical outcome only** (section 5.1). |
 | `executed_at` | UTC timestamp of run completion. |
-| `executor` | Executor metadata (section 4.2) â€” not bound to GitHub Actions. |
+| `executor` | Executor metadata (section 4.2) — not bound to GitHub Actions. |
 | `result_summary` | Human-readable summary + structured counts (`passed`, `failed`, `skipped`, ...). |
-| `evidence` | `tuple[QualificationEvidence[...], ...]` â€” safe metadata refs (section 7). |
+| `evidence` | `tuple[QualificationEvidence[...], ...]` — safe metadata refs (section 7). |
 | `reproducibility` | Reference command or documented reproduction path where safe (no secrets). |
 | `limitations` | Explicit scope limits (capability, version, environment, mocks, substitution). |
 | `source_revision` | Git SHA or equivalent source anchor for qualification harness + adapter code. |
@@ -123,15 +123,15 @@ It must **not** require changes to `QualificationStatus`, qualification core enu
 
 | Field | Semantics |
 |-------|-----------|
-| `executor_kind` | `str` â€” e.g. `local_cli`, `ci_runner`, `operator_workstation`, `scheduled_qual_host`. |
-| `executor_id` | `str` â€” stable label for the executor instance or job template (not vendor-specific). |
+| `executor_kind` | `str` — e.g. `local_cli`, `ci_runner`, `operator_workstation`, `scheduled_qual_host`. |
+| `executor_id` | `str` — stable label for the executor instance or job template (not vendor-specific). |
 | `executor_version` | `str \| None` | Optional runner/harness version. |
 
 GitHub Actions is **one possible** `executor_kind=ci_runner` implementation. Qualification contracts must not import GHA types, workflow names, or job ids as required fields.
 
 ### 4.3 Immutability
 
-Once recorded, `status`, `subject`, `result_summary`, and `evidence` refs for a given `qualification_run_id` are **immutable**. **`validity` is not a field of `ProviderQualificationRun`.** Later drift is modeled only via separate `QualificationEvidenceValidity` evaluation (section 5.2), superseding runs, or explicit revocation records â€” never by rewriting historical outcome or mutating the run to change validity.
+Once recorded, `status`, `subject`, `result_summary`, and `evidence` refs for a given `qualification_run_id` are **immutable**. **`validity` is not a field of `ProviderQualificationRun`.** Later drift is modeled only via separate `QualificationEvidenceValidity` evaluation (section 5.2), superseding runs, or explicit revocation records — never by rewriting historical outcome or mutating the run to change validity.
 
 ### 4.4 Run identity lifecycle (FROZEN)
 
@@ -163,7 +163,7 @@ optional ProofReceipt / index persistence (preserves qualification_run_id)
 
 Three **separate** dimensions. Do not collapse them into `QualificationStatus`.
 
-### 5.1 Qualification outcome â€” `QualificationStatus`
+### 5.1 Qualification outcome — `QualificationStatus`
 
 Canonical vocabulary in `intergrax/core/qualification/status.py`:
 
@@ -195,7 +195,7 @@ Validity evaluation T2 (append-only superseding evaluation):
 Run A remains unchanged.
 ```
 
-### 5.2 Evidence validity â€” `QualificationEvidenceValidity` (NEW contract, separate enum)
+### 5.2 Evidence validity — `QualificationEvidenceValidity` (NEW contract, separate enum)
 
 | Value | Meaning |
 |-------|---------|
@@ -220,7 +220,7 @@ Do **not** mutate historical `ProviderQualificationRun` to change validity.
 
 Platform compatibility (`PlatformCompatibilityResult`, PLUGIN-6) and domain compatibility checks remain **separate** from qualification outcome. `INCOMPATIBLE` belongs here unless future evidence proves a different owner.
 
-### 5.4 Production admission (conceptual freeze â€” no policy engine in PROVIDER-QUAL-1)
+### 5.4 Production admission (conceptual freeze — no policy engine in PROVIDER-QUAL-1)
 
 Production admission requires **all** of:
 
@@ -237,7 +237,7 @@ Production admission requires **all** of:
 
 | Owner | Owns |
 |-------|------|
-| **Domain** | Suite semantics: CAS rules, idempotency, isolation, reconciliation â€” e.g. CW PostgreSQL repository suite |
+| **Domain** | Suite semantics: CAS rules, idempotency, isolation, reconciliation — e.g. CW PostgreSQL repository suite |
 | **Platform coordination** | Suite **identity** registration hooks, run/evidence indexing, cross-domain result vocabulary |
 | **Platform coordination** does **not** define | CW CAS semantics, CW idempotency, RAG isolation, VK reconciliation |
 
@@ -245,7 +245,7 @@ Production admission requires **all** of:
 
 ## 7. Evidence model (FROZEN)
 
-**Decision: C â€” both, with one canonical mapping.**
+**Decision: C — both, with one canonical mapping.**
 
 | Artifact | Role |
 |----------|------|
@@ -277,19 +277,19 @@ Do **not** equate `proof_id == qualification_run_id` unless explicitly justified
 - **Durable index:** when persisted, one `ProofReceipt` per run (**B**) with `QualificationEvidence.ref` pointing to the receipt locator.
 - **No second vocabulary:** do not invent parallel evidence type names; domain-specific detail lives in `ProofReceipt.domain_evidence` / `provider_evidence` bags and in evidence `code`/`label` fields.
 
-### 7.2 `ProviderQualificationEvidenceKind` (target contract â€” PROVIDER-QUAL-2)
+### 7.2 `ProviderQualificationEvidenceKind` (target contract — PROVIDER-QUAL-2)
 
 Extends the PLUGIN-7 kind pattern; exact enum implementation deferred to PROVIDER-QUAL-2. Conceptual kinds:
 
-- `suite_execution` â€” domain suite pass/fail counts
-- `live_backend` â€” real vendor backend used
-- `reproducibility` â€” safe rerun reference
-- `limitation` â€” explicit scope caps
-- `source_anchor` â€” git revision / harness version
+- `suite_execution` — domain suite pass/fail counts
+- `live_backend` — real vendor backend used
+- `reproducibility` — safe rerun reference
+- `limitation` — explicit scope caps
+- `source_anchor` — git revision / harness version
 
 ---
 
-## 8. Staleness model (FROZEN â€” detection deferred)
+## 8. Staleness model (FROZEN — detection deferred)
 
 ### 8.1 Semantics
 
@@ -346,15 +346,15 @@ Architecture must support **5 to 20 to 50+** providers without:
 | Architecture invariant tests | Public claims authoring |
 | Evidence parsing and index correctness | Live vendor matrix as merge gate |
 
-Live vendor qualification runs on **bounded qualification hosts** or scheduled maintainer workflows â€” not as a universal PR gate.
+Live vendor qualification runs on **bounded qualification hosts** or scheduled maintainer workflows — not as a universal PR gate.
 
 ---
 
-## 11. PostgreSQL proof template (CANONICAL MAPPING â€” no runtime record yet)
+## 11. PostgreSQL proof template (CANONICAL MAPPING — no runtime record yet)
 
 Template for the completed Collaborative Work PostgreSQL proof. **Do not** create the runtime/evidence record until PROVIDER-QUAL-2 integration is approved.
 
-**Immutable run record** (`ProviderQualificationRun` â€” no `validity` field):
+**Immutable run record** (`ProviderQualificationRun` — no `validity` field):
 
 ```yaml
 qualification_run_id: "<created by qualification execution>"
@@ -463,7 +463,7 @@ No new enums, no qualification-core edits, no per-vendor CI job added to default
 - GitHub Actions or other executor implementations
 
 
-## 15. PROVIDER-QUAL-3A-R1 â€” provider binding / platform reuse (FROZEN)
+## 15. PROVIDER-QUAL-3A-R1 — provider binding / platform reuse (FROZEN)
 
 **Decision (PROVIDER-QUAL-3A corrected):** **EXTEND_EXISTING_PROVIDER_BINDING**
 
@@ -506,15 +506,15 @@ Conceptual names only (no frozen implementation class): `CollaborativeWorkPersis
 
 ```text
 IntegrationProfile
-        â†“
+        ¡
 IntegrationCategory.RELATIONAL_STORE
-        â†“
+        ¡
 factory.resolve / resolve_from_profile
-        â†“
+        ¡
 catalog entry
-        â†“
+        ¡
 provider factory
-        â†“
+        ¡
 RelationalStore
 ```
 
@@ -533,7 +533,7 @@ Collaborative Work composition currently contains vendor-specific constructors:
 
 `CollaborativeWorkRepositories` currently carries concrete storage implementation knowledge.
 
-This is acceptable as **current implementation lineage**, but **not** acceptable as the future qualification binding boundary. The direct PostgreSQL opener is **historical/implementation evidence only** â€” **not** canonical provider qualification routing.
+This is acceptable as **current implementation lineage**, but **not** acceptable as the future qualification binding boundary. The direct PostgreSQL opener is **historical/implementation evidence only** — **not** canonical provider qualification routing.
 
 Qualification orchestration must **not** call `open_postgresql_collaborative_work_repositories(...)` or `open_oracle_collaborative_work_repositories(...)` directly.
 
@@ -594,21 +594,21 @@ The future bridge may internally use provider/session/relational mechanics, but 
 
 ```text
 provider_id = "postgresql"
-        â†“
+        ¡
 IntegrationProfile / Integrations catalog
-        â†“
+        ¡
 canonical provider resolution
-        â†“
+        ¡
 typed CW persistence/provider bridge
-        â†“
+        ¡
 PostgreSQL CW adapter
-        â†“
+        ¡
 PostgreSQLConnectionProvider / PostgreSQLSession
-        â†“
+        ¡
 real PostgreSQL
-        â†“
+        ¡
 CollaborativeWorkRepositories
-        â†“
+        ¡
 same CW qualification suite
 ```
 
@@ -618,17 +618,17 @@ Qualification core does **not** import: `PostgreSQLConnectionProvider`, `Postgre
 
 ```text
 provider_id = "oracle"
-        â†“
+        ¡
 same Integrations resolution
-        â†“
+        ¡
 same typed CW domain-provider bridge contract
-        â†“
+        ¡
 Oracle CW adapter
-        â†“
+        ¡
 Oracle provider mechanics
-        â†“
+        ¡
 CollaborativeWorkRepositories
-        â†“
+        ¡
 same CW qualification suite
 ```
 
@@ -652,13 +652,13 @@ without editing:
 - provider enums
 - existing vendor branches
 
-If central code gains `if provider_id == "future-vendor-x"` â†’ **FAIL**.
+If central code gains `if provider_id == "future-vendor-x"` › **FAIL**.
 
 ### 15.12 Provider registry decision
 
 **No** new `ProviderQualificationRegistry`, `QualificationProviderRegistry`, or `QualificationVendorCatalog`.
 
-Integrations catalog remains canonical provider registration/resolution. The missing capability is **not** a registry â€” it is a typed bridge/materialization contract between resolved provider and domain-specific authoritative repository/capability bundle.
+Integrations catalog remains canonical provider registration/resolution. The missing capability is **not** a registry — it is a typed bridge/materialization contract between resolved provider and domain-specific authoritative repository/capability bundle.
 
 ### 15.13 Platform Plugins boundary
 
@@ -676,7 +676,7 @@ The typed bridge must reuse existing provider configuration/environment mechanis
 
 Future implementation must use explicit typed interfaces/factories.
 
-**Forbidden:** `getattr`, `setattr`, `hasattr`, `vars`, `object.__setattr__`, `__dict__`, string method dispatch, private-field unwrapping, method-presence discovery. No dynamic provider capability detection. If provider does not implement the required domain binding contract â†’ fail explicitly.
+**Forbidden:** `getattr`, `setattr`, `hasattr`, `vars`, `object.__setattr__`, `__dict__`, string method dispatch, private-field unwrapping, method-presence discovery. No dynamic provider capability detection. If provider does not implement the required domain binding contract › fail explicitly.
 
 ### 15.16 Binding matrix (PROVIDER-QUAL-3A-R1)
 
@@ -696,23 +696,25 @@ Do **not** classify qualification binding as fully reusable without the typed br
 | Stage | Scope |
 |-------|-------|
 | **PROVIDER-QUAL-3A-R1** | Architecture correction only (this freeze) |
-| **PROVIDER-QUAL-3B** | Implement minimal typed domain-provider binding extension using existing Integrations selection/resolution |
+| **PROVIDER-QUAL-3B** | **READY_FOR_REVIEW** — `CollaborativeWorkPersistenceProvider.materialize_collaborative_work_repositories()`; domain resolver `resolve_collaborative_work_repositories(profile)` composes `resolve_relational_store` |
 | **PROVIDER-QUAL-3C** | Qualification evidence persistence/index + record accepted PostgreSQL 16.6 evidence through the canonical binding |
 
-PostgreSQL evidence must **not** be persisted before **PROVIDER-QUAL-3B** is independently approved.
+**PROVIDER-QUAL-3B** implementation (review gate): `intergrax/collaborative_work/persistence_provider.py`; vendor adapters on `SqliteRelationalStoreIntegration` / `PostgresqlRelationalStoreIntegration`; `CollaborativeWorkRepositories.store` typed as `CollaborativeWorkStoreOwner` (lifecycle-only).
 
-### 15.18 Frozen invariants (PROVIDER-QUAL-INV-1 â€¦ INV-8)
+PostgreSQL evidence must **not** be persisted before **PROVIDER-QUAL-3B** is independently approved. **PROVIDER-QUAL-3C** remains **not started**.
+
+### 15.18 Frozen invariants (PROVIDER-QUAL-INV-1 … INV-8)
 
 | ID | Invariant |
 |----|-----------|
 | **INV-1** | No vendor-specific qualification execution path in qualification core/coordinator. |
 | **INV-2** | Qualification uses canonical Integrations provider resolution (`IntegrationProfile`, catalog `factory.resolve`). |
-| **INV-3** | Domain qualification consumes typed domain capability ports/factories â€” never raw vendor construction. |
+| **INV-3** | Domain qualification consumes typed domain capability ports/factories — never raw vendor construction. |
 | **INV-4** | Adding a provider must not modify qualification core. |
-| **INV-5** | `provider_id` remains string/data-driven â€” never a closed-world enum in qualification core. |
+| **INV-5** | `provider_id` remains string/data-driven — never a closed-world enum in qualification core. |
 | **INV-6** | No qualification-specific provider registry. |
 | **INV-7** | **Domain provider binding:** after provider selection/resolution, domain qualification must receive a typed domain-owned capability/factory. Qualification orchestration must not call `open_postgresql_collaborative_work_repositories(...)`, `open_oracle_collaborative_work_repositories(...)`, or equivalent vendor openers directly. |
-| **INV-8** | **Provider selection â‰  domain materialization:** Integrations owns provider selection/resolution; domain owns construction/materialization of its semantic repository/capability adapter. A typed bridge connects those responsibilities. Neither layer may absorb the other's semantics. |
+| **INV-8** | **Provider selection ? domain materialization:** Integrations owns provider selection/resolution; domain owns construction/materialization of its semantic repository/capability adapter. A typed bridge connects those responsibilities. Neither layer may absorb the other's semantics. |
 
 ### 15.19 Identity relationships
 
@@ -721,18 +723,18 @@ PostgreSQL evidence must **not** be persisted before **PROVIDER-QUAL-3B** is ind
 | `provider_id` | Vendor/backend catalog slug (e.g. `postgresql`, `oracle`) |
 | `integration_kind` | Category / `IntegrationCategory` value (e.g. `relational_store`) |
 | `integration_id` | `{provider_id}:{integration_kind}` via `derive_platform_integration_id` |
-| `capability_id` | Domain qualification scope (e.g. `collaborative_work.persistence.v1`) â€” **not** a catalog slug |
-| package identity | Distribution/delivery (`package_name`, entry points) â€” PLUGIN-7 path; orthogonal to runtime slug |
+| `capability_id` | Domain qualification scope (e.g. `collaborative_work.persistence.v1`) — **not** a catalog slug |
+| package identity | Distribution/delivery (`package_name`, entry points) — PLUGIN-7 path; orthogonal to runtime slug |
 
 ---
 
-## 16. PROVIDER-QUAL-3C â€” evidence persistence/integration (deferred)
+## 16. PROVIDER-QUAL-3C — evidence persistence/integration (deferred)
 
 - qualification run persistence/index integration
 - mapping to existing `ProofReceipt` where appropriate
 - recording the PostgreSQL template as a live `ProofReceipt` (already accepted PostgreSQL 16.6 bounded qualification evidence)
 - query/discovery surface for qualification evidence as already architected
-- **binding:** canonical flow per Â§15.7 (Integrations resolution â†’ typed domain-provider bridge â†’ CW suite) â€” **PROVIDER-QUAL-3B** must land first
+- **binding:** canonical flow per §15.7 (Integrations resolution › typed domain-provider bridge › CW suite) — **PROVIDER-QUAL-3B** must land first
 
 **Out of scope until 3C:** persisting PostgreSQL 16.6 evidence before **PROVIDER-QUAL-3B** approval.
 
@@ -743,5 +745,5 @@ PostgreSQL evidence must **not** be persisted before **PROVIDER-QUAL-3B** is ind
 - [`PLATFORM_PLUGINS.md`](../PLATFORM_PLUGINS.md) section 18
 - [`PROOF_RECEIPTS.md`](../PROOF_RECEIPTS.md)
 - [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](../../maintainers/public-adoption/PUBLIC_PROOF_AND_CLAIMS_MODEL.md)
-- [`COLLABORATIVE_WORK.md`](../COLLABORATIVE_WORK.md) â€” CW-INV-19, durable PostgreSQL adapter
-- [`INTEGRATIONS.md`](../INTEGRATIONS.md) â€” `provider_id` vs `integration_kind`
+- [`COLLABORATIVE_WORK.md`](../COLLABORATIVE_WORK.md) — CW-INV-19, durable PostgreSQL adapter
+- [`INTEGRATIONS.md`](../INTEGRATIONS.md) — `provider_id` vs `integration_kind`

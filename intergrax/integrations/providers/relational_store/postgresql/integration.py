@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence, Mapping, Any
+from typing import TYPE_CHECKING, Sequence, Mapping, Any
 
 from pydantic import PrivateAttr
 
@@ -13,6 +13,9 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+
+if TYPE_CHECKING:
+    from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 
 POSTGRESQL_RELATIONAL_STORE_PROVIDER_ID = "postgresql"
 
@@ -76,5 +79,21 @@ class PostgresqlRelationalStoreIntegration(RelationalStoreIntegrationContract):
     @property
     def client(self) -> PostgresqlRelationalStoreClient | None:
         return self._client
+
+    def materialize_collaborative_work_repositories(self) -> CollaborativeWorkRepositories:
+        from intergrax.collaborative_work.persistence import (
+            open_postgresql_collaborative_work_repositories,
+        )
+        from intergrax.integrations.providers.relational_store.postgresql.adapter import (
+            _PostgreSQLRelationalStore,
+        )
+
+        client = self._require_client()
+        if not isinstance(client, _PostgreSQLRelationalStore):
+            raise IntegrationConfigurationError(
+                "Postgresql relational store integration requires a PostgreSQL adapter "
+                "client to materialize Collaborative Work repositories."
+            )
+        return open_postgresql_collaborative_work_repositories(config=client.config)
 
 RelationalStore.register(PostgresqlRelationalStoreIntegration)

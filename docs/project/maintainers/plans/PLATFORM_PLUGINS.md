@@ -159,7 +159,7 @@ Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qu
 | **PROVIDER-QUAL-2** | Typed contracts | **Done** | `ProviderQualificationSubject`, `ProviderQualificationRun`, evidence kinds; unit/contract tests; vendor-neutrality invariants |
 | **PROVIDER-QUAL-3A** | Provider binding audit | **Done** | Initial audit; superseded by **PROVIDER-QUAL-3A-R1** correction |
 | **PROVIDER-QUAL-3A-R1** | Provider binding correction | **Done** | **EXTEND_EXISTING_PROVIDER_BINDING** — reuse Integrations resolution; extend with typed domain-provider bridge; satellite §15 freeze; INV-1..INV-8 |
-| **PROVIDER-QUAL-3B** | Typed domain-provider binding | Planned | Implement minimal typed domain-provider binding extension using existing Integrations selection/resolution |
+| **PROVIDER-QUAL-3B** | Typed domain-provider binding | **READY_FOR_REVIEW** | `CollaborativeWorkPersistenceProvider` + `resolve_collaborative_work_repositories`; SQLite/PostgreSQL vendor adapters; fail-closed unsupported providers |
 | **PROVIDER-QUAL-3C** | Evidence persistence/integration | Planned | Qualification run persistence/index integration; mapping to existing ProofReceipt where appropriate; record accepted PostgreSQL 16.6 evidence through canonical binding; **requires 3B** |
 
 **Explicit out of scope (PROVIDER-QUAL-1):** runtime Python changes, GHA vendor jobs, LKW integration, MP-2, admission policy engine, automatic staleness engine.

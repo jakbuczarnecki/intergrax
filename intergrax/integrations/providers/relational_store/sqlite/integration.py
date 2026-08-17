@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
+from typing import TYPE_CHECKING, Any, Mapping, Protocol, Sequence, runtime_checkable
 
 from pydantic import PrivateAttr
 
@@ -13,6 +13,9 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+
+if TYPE_CHECKING:
+    from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 
 SQLITE_RELATIONAL_STORE_PROVIDER_ID = "sqlite"
 
@@ -85,5 +88,12 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
     @property
     def client(self) -> SqliteRelationalStoreClient | None:
         return self._client
+
+    def materialize_collaborative_work_repositories(self) -> CollaborativeWorkRepositories:
+        from intergrax.collaborative_work.persistence import (
+            open_sqlite_collaborative_work_repositories,
+        )
+
+        return open_sqlite_collaborative_work_repositories(str(self.db_path))
 
 RelationalStore.register(SqliteRelationalStoreIntegration)
