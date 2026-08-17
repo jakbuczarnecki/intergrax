@@ -156,9 +156,23 @@ Tier-3 Applications  →  Tier-2 Agents  →  Tier-1 Nexus  →  Tier-0 Platform
 
 CI guards (no grandfather exceptions):
 
-- `scripts/check_no_upward_application_imports.py` — full lower-layer scan
+- `scripts/check_no_upward_application_imports.py` — manually enumerated lower-tier roots (`SCAN_ROOTS`); does not automatically cover every current/future lower-tier package
 - `scripts/maintenance/check_intergrax_no_applications_imports.py`
 - `scripts/maintenance/check_agents_no_tier3_imports.py`
+
+### Tier-boundary enforcement qualification
+
+**Audit snapshot:** `4c92e0a08f92341f559408c234d213a8ac482d76`  
+**Verdict:** `CONDITIONALLY SOUND — ENFORCEMENT REMEDIATION REQUIRED`  
+No confirmed current upward Tier-3 import violation was found in the audited scope.
+
+The Tier-0..3 dependency direction above remains canonical and strict. This subsection qualifies **enforcement and proof quality** only — it is **not** a redesign of the tier model.
+
+- **Partial enforcement today:** audited implementation provides boundary checks focused mainly on Tier-3 / application imports; proof coverage of the full forbidden upward dependency matrix is incomplete.
+- **Manual enumeration:** current scanner roots are manually maintained; they MUST NOT be described as a complete proof of tier compliance across all production packages.
+- **Production-grade target:** one authoritative package→tier classification model feeding automated enforcement; newly introduced or unclassified production packages MUST fail closed.
+- **Semantic validation:** enforcement SHOULD validate semantic dependency/import relationships, not rely solely on textual regex matching (which can miss relative or dynamic import forms). This records an enforcement weakness — not a claim of confirmed current violations.
+- **CI alignment:** canonical tier-boundary enforcement MUST run on the active integration path; plan↔CI drift (three documented guards vs narrower CI invocation) is tracked in plan **[§6.1ax](../maintainers/plans/PLATFORM_FOUNDATION.md#61ax-pf-tier-enforcement--production-tier-boundary-qualification)**.
 
 ## Relationship To “Layer 1 / 2 / 3” Naming
 
