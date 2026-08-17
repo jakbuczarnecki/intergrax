@@ -26,6 +26,8 @@ class QualificationEvidenceValidity(StrEnum):
 
 
 def _require_non_empty_text(value: str, *, field_name: str) -> None:
+    if type(value) is not str:
+        raise TypeError(f"{field_name} must be str, got {type(value).__name__}")
     if not value or not value.strip():
         raise ValueError(f"{field_name} must be non-empty")
     if value != value.strip():

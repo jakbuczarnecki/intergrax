@@ -22,6 +22,7 @@ from intergrax.core.qualification import (
     new_qualification_run_id,
     validate_qualification_run_id,
 )
+from intergrax.core.plugins.platform_qualification import PluginQualificationEvidenceKind
 
 pytestmark = pytest.mark.unit
 
@@ -336,3 +337,180 @@ def test_validity_record_is_immutable() -> None:
     )
     with pytest.raises(dataclasses.FrozenInstanceError):
         record.validity = QualificationEvidenceValidity.REVOKED  # type: ignore[misc]
+
+
+@pytest.mark.parametrize(
+    ("constructor", "kwargs", "field_name"),
+    [
+        (
+            ProviderQualificationSubject,
+            {
+                "provider_id": 123,
+                "provider_version": "16.6",
+                "capability_id": "collaborative_work.persistence.v1",
+                "domain": "collaborative_work",
+                "intergrax_revision": "rev",
+                "qualification_suite_id": "suite",
+                "qualification_suite_version": "1.0.0",
+                "environment_id": "env",
+            },
+            "provider_id",
+        ),
+        (
+            ProviderQualificationSubject,
+            {
+                "provider_id": "postgresql",
+                "provider_version": "16.6",
+                "capability_id": "collaborative_work.persistence.v1",
+                "domain": "collaborative_work",
+                "intergrax_revision": "rev",
+                "qualification_suite_id": "suite",
+                "qualification_suite_version": "1.0.0",
+                "environment_id": "env",
+                "adapter_identity": 123,
+            },
+            "adapter_identity",
+        ),
+        (
+            ProviderQualificationExecutor,
+            {"executor_kind": 123, "executor_id": "qual-host-01"},
+            "executor_kind",
+        ),
+        (
+            ProviderQualificationResultSummary,
+            {"passed": 0, "failed": 0, "skipped": 0, "label": 123},
+            "label",
+        ),
+        (
+            ProviderQualificationEnvironmentMetadata,
+            {
+                "real_backend": True,
+                "mocks": False,
+                "sqlite_substitution": False,
+                "bounded_environment": 123,
+            },
+            "bounded_environment",
+        ),
+    ],
+)
+def test_contract_rejects_non_string_text_fields(
+    constructor: type,
+    kwargs: dict,
+    field_name: str,
+) -> None:
+    with pytest.raises(TypeError, match=f"{field_name} must be str"):
+        constructor(**kwargs)
+
+
+def test_run_rejects_non_string_reproducibility() -> None:
+    with pytest.raises(TypeError, match="reproducibility must be str"):
+        ProviderQualificationRun(
+            qualification_run_id=new_qualification_run_id(),
+            subject=_subject(),
+            status=QualificationStatus.QUALIFIED,
+            executed_at=_EXECUTED_AT,
+            executor=_executor(),
+            result_summary=_result_summary(),
+            evidence=(),
+            reproducibility=123,
+            limitations=(),
+            source_revision="rev",
+            environment_metadata=_environment_metadata(),
+        )
+
+
+def test_run_rejects_non_string_limitation_element() -> None:
+    with pytest.raises(TypeError, match="limitations\\[0\\] must be str"):
+        ProviderQualificationRun(
+            qualification_run_id=new_qualification_run_id(),
+            subject=_subject(),
+            status=QualificationStatus.QUALIFIED,
+            executed_at=_EXECUTED_AT,
+            executor=_executor(),
+            result_summary=_result_summary(),
+            evidence=(),
+            reproducibility=None,
+            limitations=(123,),
+            source_revision="rev",
+            environment_metadata=_environment_metadata(),
+        )
+
+
+def test_validity_record_rejects_non_string_reason() -> None:
+    with pytest.raises(TypeError, match="reason must be str"):
+        QualificationValidityRecord(
+            qualification_run_id=new_qualification_run_id(),
+            validity=QualificationEvidenceValidity.STALE,
+            evaluated_at=_EVALUATED_AT_T1,
+            reason=123,
+        )
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "field_name"),
+    [
+        ({"real_backend": "yes", "mocks": False, "sqlite_substitution": False}, "real_backend"),
+        ({"real_backend": 1, "mocks": False, "sqlite_substitution": False}, "real_backend"),
+        ({"real_backend": True, "mocks": 0, "sqlite_substitution": False}, "mocks"),
+        (
+            {"real_backend": True, "mocks": False, "sqlite_substitution": None},
+            "sqlite_substitution",
+        ),
+    ],
+)
+def test_environment_metadata_rejects_non_bool_fields(kwargs: dict, field_name: str) -> None:
+    with pytest.raises(TypeError, match=f"{field_name} must be bool"):
+        ProviderQualificationEnvironmentMetadata(**kwargs)
+
+
+def test_environment_metadata_accepts_exact_bool_values() -> None:
+    metadata = ProviderQualificationEnvironmentMetadata(
+        real_backend=True,
+        mocks=False,
+        sqlite_substitution=True,
+    )
+    assert metadata.real_backend is True
+    assert metadata.mocks is False
+    assert metadata.sqlite_substitution is True
+
+
+def test_run_rejects_string_evidence_kind() -> None:
+    invalid_evidence = QualificationEvidence(
+        kind="suite_execution",
+        code="suite.passed",
+    )
+    with pytest.raises(TypeError, match="evidence\\[0\\].kind must be ProviderQualificationEvidenceKind"):
+        ProviderQualificationRun(
+            qualification_run_id=new_qualification_run_id(),
+            subject=_subject(),
+            status=QualificationStatus.QUALIFIED,
+            executed_at=_EXECUTED_AT,
+            executor=_executor(),
+            result_summary=_result_summary(),
+            evidence=(invalid_evidence,),
+            reproducibility=None,
+            limitations=(),
+            source_revision="rev",
+            environment_metadata=_environment_metadata(),
+        )
+
+
+def test_run_rejects_foreign_qualification_evidence_kind() -> None:
+    foreign_evidence = QualificationEvidence(
+        kind=PluginQualificationEvidenceKind.DOMAIN_QUALIFICATION,
+        code="domain.qualified",
+    )
+    with pytest.raises(TypeError, match="evidence\\[0\\].kind must be ProviderQualificationEvidenceKind"):
+        ProviderQualificationRun(
+            qualification_run_id=new_qualification_run_id(),
+            subject=_subject(),
+            status=QualificationStatus.QUALIFIED,
+            executed_at=_EXECUTED_AT,
+            executor=_executor(),
+            result_summary=_result_summary(),
+            evidence=(foreign_evidence,),
+            reproducibility=None,
+            limitations=(),
+            source_revision="rev",
+            environment_metadata=_environment_metadata(),
+        )

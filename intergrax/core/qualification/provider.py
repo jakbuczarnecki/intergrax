@@ -38,6 +38,11 @@ def _validate_limitations(value: tuple[str, ...]) -> None:
         _require_non_empty_text(item, field_name=f"limitations[{index}]")
 
 
+def _require_bool(value: object, *, field_name: str) -> None:
+    if type(value) is not bool:
+        raise TypeError(f"{field_name} must be bool, got {type(value).__name__}")
+
+
 def _validate_evidence(
     value: tuple[QualificationEvidence[ProviderQualificationEvidenceKind], ...],
 ) -> None:
@@ -46,6 +51,11 @@ def _validate_evidence(
     for index, item in enumerate(value):
         if not isinstance(item, QualificationEvidence):
             raise TypeError(f"evidence[{index}] must be QualificationEvidence")
+        if not isinstance(item.kind, ProviderQualificationEvidenceKind):
+            raise TypeError(
+                f"evidence[{index}].kind must be ProviderQualificationEvidenceKind, "
+                f"got {type(item.kind).__name__}"
+            )
 
 
 def _validate_optional_text(value: str | None, *, field_name: str) -> None:
@@ -142,6 +152,9 @@ class ProviderQualificationEnvironmentMetadata:
     bounded_environment: str | None = None
 
     def __post_init__(self) -> None:
+        _require_bool(self.real_backend, field_name="real_backend")
+        _require_bool(self.mocks, field_name="mocks")
+        _require_bool(self.sqlite_substitution, field_name="sqlite_substitution")
         _validate_optional_text(self.bounded_environment, field_name="bounded_environment")
 
 
