@@ -117,7 +117,8 @@ Full UER boundary: [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md
 | Document | Owns |
 | -------- | ---- |
 | **This hub** | Runtime control-flow narrative — sequences, UC-*, code paths, retry/HITL on the task spine |
-| [`ORCHESTRATION.md`](ORCHESTRATION.md) | Configuration and models — `OrchestrationProfile`, graph specs, strategy catalog (§50–§56) |
+| [`ORCHESTRATION.md`](ORCHESTRATION.md) | Public configuration model — `OrchestrationProfile`, graph specs, engineering canon |
+| [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md) §50–§56 | Strategy catalog and detailed CFG canon |
 
 Nexus **executes** orchestration configuration; it does not duplicate the full Orchestration architecture.
 
@@ -268,7 +269,7 @@ Real configuration surfaces (not internal class APIs):
 - Merge policy / `FinalResponseComposerProfile`
 - Application environment profiles and host wiring (`nexus_factory`, `orchestration_wiring`)
 
-Authoring: [`ORCHESTRATION.md`](ORCHESTRATION.md) §56 · [`AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix I.
+Authoring: [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56 · [`AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix I.
 
 ## Go deeper
 
@@ -277,7 +278,7 @@ Authoring: [`ORCHESTRATION.md`](ORCHESTRATION.md) §56 · [`AGENT_CREATION_GUIDE
 | **Engineering canon** | [Below](#engineering-canon) — §1–§8 boundaries, sequences, entry points, planning |
 | **Runtime extended** | [`satellites/NEXUS_EXECUTION_FLOW_extended_depth.md`](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) — §9+ graph, UAEP, UC-*, S1–S8 matrix, retry, tools |
 | **Implementation plan** | [`maintainers/plans/NEXUS_EXECUTION_FLOW.md`](../maintainers/plans/NEXUS_EXECUTION_FLOW.md) |
-| **Orchestration config** | [`ORCHESTRATION.md`](ORCHESTRATION.md) §56 |
+| **Orchestration config** | [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56 |
 | **UER / REL / Governance** | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) · [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
 | **Audit** | [`audit/NEXUS_EXECUTION_FLOW.md`](../maintainers/audit/NEXUS_EXECUTION_FLOW.md) · [`audit_slices/NEXUS_EXECUTION_FLOW.md`](../technical/guides/audit_slices/NEXUS_EXECUTION_FLOW.md) |
 
@@ -499,7 +500,7 @@ Every scenario below uses **`UnifiedTaskRunner.run_task()`**. Differences are **
 | **S6 — Hybrid daemon** | Always-on + workers | Interactive tasks + cron index jobs | Separate capabilities per job type | Independent Nexus runs per `Task` |
 | **S7 — HITL pause/resume** | Any | Agent `REQUEST_HUMAN` or planning gate | `require_human_approval`, critic L2 | `WAITING_FOR_HUMAN` → resume token → same path |
 
-**Harness proof (CFG-06 / S3):** `tests/integration/runtime/test_orchestration_cfg_simulation.py` · canon [`ORCHESTRATION.md`](ORCHESTRATION.md) §56.13.
+**Harness proof (CFG-06 / S3):** `tests/integration/runtime/test_orchestration_cfg_simulation.py` · canon [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56.13.
 
 ```mermaid
 sequenceDiagram
@@ -529,7 +530,7 @@ sequenceDiagram
 | Tier-2 agent instances in registry | Registered at bootstrap | Executed per graph node |
 | Background index / queue consumer | Separate `Task` triggers | N/A |
 
-**Routing:** configuration cases **CFG-*** [`ORCHESTRATION.md`](ORCHESTRATION.md) §56.7 · Tier-3 summary [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23 · routing modes [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4.
+**Routing:** configuration cases **CFG-*** [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56.7 · Tier-3 summary [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23 · routing modes [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4.
 
 **Completion:** structural validation (`non_empty_summary`) is always applied; semantic completion (critic, HITL) is profile-driven — [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries).
 

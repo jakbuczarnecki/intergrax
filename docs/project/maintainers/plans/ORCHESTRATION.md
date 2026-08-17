@@ -61,7 +61,7 @@
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
-| 1 | **ORCH-STRAT.1–5** | Docs | **Done** | Architecture §50–§54 | Strategy catalog + gap register |
+| 1 | **ORCH-STRAT.1–5** | Docs | **Done** | [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#50-orchestration-strategies-catalog) §50–§54 | Strategy catalog + gap register |
 | 2 | **ORCH-STRAT.6** | Docs | **Done** | Cross-ref sync | FLOW §27, AUDIT_MAP §9–§10 |
 
 **Runtime backlog:** [Phase ORCH-5](.#phase-orch-5--orchestration-strategy-runtime-gaps-band-2aq--closed) — **Done** (2026-06-09).
@@ -72,7 +72,7 @@
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
-| 1 | **ORCH-DOC.3** | Docs | **Done** | Architecture §55 + §53.1 cross-ref | ORCHESTRATION canon + REASONING §9.4 link |
+| 1 | **ORCH-DOC.3** | Docs | **Done** | [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#55-interaction-posture--orchestration-matrix) §55 + §53.1 cross-ref | ORCHESTRATION canon + REASONING §9.4 link |
 
 ### 6.1g Harness implementation queue — governance audit (closed)
 
@@ -186,7 +186,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 | 2026-06-05 | ORCH-DOC.1, ORCH-DOC.2 | Governance + orchestration audit docs; Appendix H/I; AUDIT_MAP cross-refs |
 | 2026-06-05 | ORCH-1, ORCH-2, ORCH-3 | Orchestration wiring, graph spec plan seed, parallel cap; gate **581** |
 | 2026-06-05 | ORCH-4 | Plan + author guide closeout |
-| 2026-06-08 | ORCH-STRAT.1–6 | Strategy catalog §50–§54 in architecture; FLOW §27 + AUDIT_MAP §9–§10 cross-ref |
+| 2026-06-08 | ORCH-STRAT.1–6 | Strategy catalog §50–§54 in [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#50-orchestration-strategies-catalog); FLOW §27 + AUDIT_MAP §9–§10 cross-ref |
 
 **Phase ORCH complete when:** ORCH-1–4 **Done**; §6.1b queue closed; Appendix I has no “planned wiring” gaps; gate **581** green. **Status: complete (2026-06-05).**
 
@@ -196,13 +196,13 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 **Status:** **Done** (2026-06-08) — strategy sections added to orchestration architecture pair  
 **Prerequisites:** Phase ORCH **Done** · Phase V-MA **Done** · Phase FLOW **Done**  
-**Goal:** Consolidate coordination patterns, parallelism, resilience, and specialization in [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md) §50–§54 — close audit gap “strategies only in FLOW”
+**Goal:** Consolidate coordination patterns, parallelism, resilience, and specialization in [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#50-orchestration-strategies-catalog) §50–§54 — close audit gap “strategies only in FLOW”
 **Priority ladder:** **Band 2ap** — **closed** on doc merge  
 **ADR:** **No ADR needed** — documentation consolidation; runtime contracts unchanged
 
 | ID | Deliverable | Status | Priority | Module / doc | Acceptance |
 |----|-------------|--------|----------|--------------|------------|
-| ORCH-STRAT.1 | **§50** — coordination pattern catalog + collaboration/specialization | **Done** | **Critical** | `architecture/ORCHESTRATION.md` | Maps to `CoordinationPattern` enum |
+| ORCH-STRAT.1 | **§50** — coordination pattern catalog + collaboration/specialization | **Done** | **Critical** | `architecture/satellites/ORCHESTRATION_production_gates.md` | Maps to `CoordinationPattern` enum |
 | ORCH-STRAT.2 | **§51** — parallelism, merge, backpressure | **Done** | **Critical** | same | Cross-ref FLOW §9 |
 | ORCH-STRAT.3 | **§52** — resilience (retry layers, checkpoint, failover vs ECP) | **Done** | High | same | Cross-ref FLOW §14, RELIABILITY |
 | ORCH-STRAT.4 | **§53** — specialization, delegation, handoff | **Done** | High | same | Cross-ref REASONING, FLOW §13 |
@@ -213,7 +213,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 ## Phase ORCH-CONFIG — Platform interaction & multi-agent configuration (Band 2ar — closed)
 
-**Status:** **Done** (2026-06-09) — **11/11 Done** (architecture **Done** incl. §59 audit — [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md) §56–§59; reference host CFG presets + harness simulation)
+**Status:** **Done** (2026-06-09) — **11/11 Done** (architecture **Done** incl. §59 audit — [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56–§59; reference host CFG presets + harness simulation)
 **Prerequisites:** Phase ORCH-STRAT **Done** · Phase H-APP-DOC.1 **Done** · default queue = §6.1 maintenance  
 **Goal:** Close every gap in §56.11 so **all CFG-* cases** marked ⚠️/❌ become ✅ without runtime forks  
 **Canonical input:** §56.7 case register + §56.11 plan table — do not duplicate elsewhere
@@ -234,7 +234,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 | ORCH-CONFIG.8 | CFG-17 | Swarm runtime — extends ORCH-5.1 | **Done** | Medium | `swarm_policy.py` · `GraphExecutor` batch guard · CFG-17 sim |
 | ORCH-CONFIG.9 | All CFG | `check_orchestration_config_docs.py` — CFG IDs in tests/docs | **Done** | Low | `scripts/maintenance/check_orchestration_config_docs.py` |
 | ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | **Done** | High | `nexus_plan_bridge.py` · `test_cog_depth_residual_gate.py` |
-| ORCH-CONFIG.11 | §59 | **Audit canon** — §59 gaps/debt/discrepancies register | **Done** | Medium | Architecture §59 + hub index 2026-06-09 |
+| ORCH-CONFIG.11 | §59 | **Audit canon** — §59 gaps/debt/discrepancies register | **Done** | Medium | [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#59-platform-execution-audit---gaps-technical-debt-discrepancies) §59 + hub index 2026-06-09 |
 
 **Execution order (complete):** ORCH-CONFIG.2 → ORCH-CONFIG.1 → ORCH-CONFIG.3 → ORCH-CONFIG.4 → ORCH-CONFIG.10 → ORCH-CONFIG.6 → ORCH-CONFIG.7 → ORCH-CONFIG.8 → ORCH-CONFIG.9 → ORCH-CONFIG.5 (harness **Done**); FLOW-8 product host **Deferred** §6.3.
 
@@ -264,7 +264,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 **Status:** **Done** (2026-06-09) — **5/5 Done**  
 **Prerequisites:** Phase ORCH-STRAT **Done** · default queue = §6.1 maintenance  
-**Goal:** Close gaps in [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md) §54 — swarm depth, pattern metadata on plans, active redundancy policy
+**Goal:** Close gaps in [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#54-maturity-and-gap-register) §54 — swarm depth, pattern metadata on plans, active redundancy policy
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
@@ -307,7 +307,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 **Prerequisites:** Queueing plane **Done**; `message_bus.async_runner` skill **Done**.
 
-**Audit note (2026-06-09):** ORCH-6.1–6.4 close **runtime** posture; ORCH-6.5 tracks **Tier-3 surface debt** documented in architecture §57.5, §59.2.
+**Audit note (2026-06-09):** ORCH-6.1–6.4 close **runtime** posture; ORCH-6.5 tracks **Tier-3 surface debt** documented in [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#57-synchronous-and-asynchronous-execution-postures) §57.5, [`§59.2`](../../architecture/satellites/ORCHESTRATION_production_gates.md#59-platform-execution-audit---gaps-technical-debt-discrepancies).
 
 **Explicitly excluded:** New queue transport; nested Nexus per async job.
 
@@ -334,7 +334,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **ORCH-MAINT-DOC-01** | Docs | P3 | **Done** | Sync architecture `ORCHESTRATION.md` §59.2 async-queue note + §59.4 `run_async` row with ORCH-MAINT-01/04 truth (lab scaffold `INCLUDE_QUEUE_WORKER=true`; `async_task_index_resolver` profile-backed index) | No stale “not scaffold-default” / lab-only in-memory wording; product hosts remain opt-in |
+| 1 | **ORCH-MAINT-DOC-01** | Docs | P3 | **Done** | Sync [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#59-platform-execution-audit---gaps-technical-debt-discrepancies) §59.2 async-queue note + §59.4 `run_async` row with ORCH-MAINT-01/04 truth (lab scaffold `INCLUDE_QUEUE_WORKER=true`; `async_task_index_resolver` profile-backed index) | No stale “not scaffold-default” / lab-only in-memory wording; product hosts remain opt-in |
 | 2 | **ORCH-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19` | `ORCHESTRATION.md` + `progress.json` updated; L3 verdict layers 3, 9 |
 
 **Suggested PR order:** none — §6.1aw queue closed (2026-06-19).

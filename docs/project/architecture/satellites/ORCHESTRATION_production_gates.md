@@ -287,6 +287,10 @@ Planning depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9�
 
 # 54. Maturity and Gap Register
 
+> **Historical maturity register.** The **L0–L4** labels below are retained from the pre-A/I/P/E audit model for historical traceability. They are **not** the current Intergrax maturity taxonomy and must not be interpreted as equivalent to A/I/P/E levels. Historical L3/L4 does **not** imply I4/P4/E4 automatically.
+>
+> **Current Orchestration maturity:** **A4 / I4 / P2 / E3** — see [ORCHESTRATION.md → Current maturity](../ORCHESTRATION.md#current-maturity).
+
 | Area | Score (L0–L4) | Canon section | Notes |
 |------|---------------|---------------|-------|
 | Nexus loop / intake | L3–L4 | §9–§10, §48 | Done |
