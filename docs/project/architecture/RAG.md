@@ -1,17 +1,252 @@
 # RAG and Retrieval
 
-**Status:** Canonical architecture · **PRODUCTION_QUALIFIED_WITH_LIMITATIONS**
+**Intergrax RAG** is the platform domain that governs **how approved external and organizational knowledge is ingested, indexed, and retrieved** — scoped documents, corpora, and connected sources — so agents can ground answers in attributable evidence instead of model parametric memory alone.
+
+## Why it matters
+
+Foundation models do not automatically hold your organization's current, private, or tenant-specific knowledge. Dumping entire document libraries into every prompt does not scale, cannot enforce tenant or workspace boundaries, and cannot attach reliable provenance to what the model sees.
+
+Intergrax RAG addresses that gap with a native path from **authorized sources** through **scoped indexes** to **policy-aware retrieval**:
+
+- **Knowledge enters through governed ingest** — loaders, parsers, and connectors produce scoped `KnowledgeDocument` values with provenance, not opaque text blobs.
+- **Retrieval is bounded** — `tenant_id`, `namespace`, `workspace_id`, metadata filters, publication-generation visibility, and host policy gates constrain what can be returned.
+- **Evidence is attributable** — retrieval hits carry document identity, scope, and provenance semantics so Context Engineering and downstream surfaces can cite or degrade honestly.
+- **It is not a correctness guarantee** — retrieval improves grounding when sources are good and scope is right; it does not prove answer quality, security authorization for every source, or production scale by itself.
+
+> [!NOTE]
+> **Maturity boundary:** Global status is **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** — bounded qualification and documented deployment contracts exist ([handoff](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md)), not unrestricted production or enterprise-grade operational proof. Public LKW proofs exercise **indexed** RAG paths only; they do not qualify every provider, GraphRAG live backend, or mixed live+indexed Hybrid Ask. See [Current maturity](#current-maturity) and [Evidence / proof](#evidence--proof).
+
+**Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring ingest, vector backends, or retrieval profiles — after the platform overview in the root README.
+
+## At a glance
+
+| Concern | Summary |
+| -------- | -------- |
+| **Responsibility** | External/document knowledge ingest, knowledge indexes, retrieval contracts, provider abstraction |
+| **Knowledge sources** | Files, URLs, workspace corpora, integration connectors — authorized and scoped by the host |
+| **Ingest** | Parser/loader → `KnowledgeDocument` normalization → native chunking → embedding → index write |
+| **Index / stores** | Vector backends (Qdrant, PgVector, Chroma live-qualified; others cataloged with limits), optional TOC/section and graph evidence indexes |
+| **Retrieval** | `RetrievalService` — dense, hybrid, hierarchical, graph-augmented strategies under `VectorStoreScope` |
+| **Scope / policy** | Tenant + namespace + workspace isolation; source ownership; generation visibility; host/policy gates on retrieve |
+| **Context Engineering** | Consumes retrieval hits as fragments; owns final model-context assembly and budgeting |
+| **Memory** | Parallel domain — session/LTM/episodic recall; `knowledge` index domain is RAG-owned |
+| **Maturity** | Four-axis statement in [Current maturity](#current-maturity) — **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** |
+| **Go deeper** | [Engineering canon](#engineering-canon) · [pipeline satellite](satellites/RAG_pipelines_detail.md) · [plan](../maintainers/plans/RAG.md) · [proofs](../proofs/PROOFS.md) |
+
+## Flagship architecture visual
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/rag-platform-position-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/rag-platform-position-light.svg">
+  <img
+    alt="Conceptual diagram: approved knowledge sources flow through ingest, normalization, indexing, and scoped retrieval into retrieved evidence; Context Engineering assembles model context for the Agent or LLM. Memory is a separate path, not RAG ingest."
+    src="assets/rag-platform-position-light.svg"
+  >
+</picture>
+
+RAG works on **knowledge sources** and produces **retrieval evidence** for Context Engineering. It is not user/session Memory and not the final context assembler.
+
+## RAG vs Memory vs Context Engineering
+
+| System | Core question | Owns |
+| ------ | ------------- | ---- |
+| **Memory** | What should the system remember across execution boundaries? | Persisted stores, lifecycle, consolidation, retention, recall semantics |
+| **RAG** | What approved external knowledge should be retrieved? | Document/corpus ingest, `knowledge` index domain, retrieval service, provider contracts |
+| **Context Engineering** | What information should be placed into the model context now? | Fragment collection, budgeting, degradation, provenance on assembly |
+
+**Hard boundary:** Knowledge (RAG) ≠ user LTM ≠ episodic session turns. Vector indexes for `ltm` and `episodic` may share integration machinery with RAG but remain separate logical domains with distinct metadata, write triggers, and CE read paths — see [`MEMORY.md`](MEMORY.md).
+
+```text
+Memory     → What should the system remember across execution boundaries?
+RAG        → What external / approved knowledge should be retrieved?
+Context Engineering → What information should enter the model context now?
+```
+
+## How RAG works
+
+A typical native path (provider-specific adapters may vary at the edges):
+
+1. **Source authorization / selection** — host or application selects an authorized source and scope (`tenant_id`, `namespace`, `workspace_id`).
+2. **Ingest** — parser/loader reads the source into scoped documents.
+3. **Normalize / chunk** — native chunking produces derivative documents with lineage preserved.
+4. **Enrich metadata / provenance** — scope fields and `provenance.source_id` establish ownership identity.
+5. **Index** — embeddings write `VectorStoreRecord` values; optional TOC/section and graph publication.
+6. **Retrieve under scope / filter / policy** — `RetrievalService` queries within `VectorStoreScope`, applies visibility and strategy layers.
+7. **Return evidence / fragments** — hits with logical vector IDs, citations, and provenance semantics.
+8. **Context Engineering assembles model-facing context** — fragments enter the budgeted LLM window with attribution.
+
+```mermaid
+flowchart LR
+    SRC[Authorized sources]
+    IG[Ingest + normalize]
+    CH[Chunk + enrich]
+    IX[Knowledge index]
+    RT[Scoped retrieval]
+    EV[Retrieved evidence]
+    CE[Context Engineering]
+    LLM[Agent / LLM]
+
+    SRC --> IG --> CH --> IX --> RT --> EV --> CE --> LLM
+```
+
+Module-level pipeline detail and extension surfaces: [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md).
+
+## RAG is more than vector search
+
+Intergrax RAG is **not** only `embedding → vector DB → nearest neighbors`. The native stack also includes:
+
+- **Source adapters** — parsers, loaders, and integration connectors behind explicit plugin boundaries.
+- **Document normalization** — `KnowledgeDocument` ABI with immutable identity, scope, and provenance.
+- **Metadata and scope** — system-owned tenant/namespace/workspace fields; ownership keyed by `provenance.source_id`.
+- **Alternate retrieval channels** — hybrid dense+lexical fusion, hierarchical TOC/section routing, graph-augmented evidence where configured.
+- **Filtering and visibility** — publication-generation fencing, inactive-record filtering before exposure.
+- **Policy / security boundary** — scope validation before provider calls; host policy on retrieve paths; fail-closed replacement when ownership lookup is unavailable.
+- **Host profiles** — `RagProfile`, registries, and `RetrievalService` compose ingest and retrieve behavior per deployment.
+
+Vector similarity remains the dense baseline; the platform treats retrieval as a **governed knowledge operation**, not a single embedding call.
+
+## Responsibility boundaries
+
+### RAG owns
+
+- External/document knowledge ingestion and source-scoped reingest lifecycles.
+- Knowledge indexes (`knowledge` vector domain; optional TOC and graph evidence channels).
+- Retrieval contracts — `RetrievalService`, retriever/reranker plugin surfaces, hit/result ABIs.
+- Provider and integration abstraction — embedding providers, vector backends, graph indexer ports where supported.
+- Metadata, filter, provenance, and scope semantics on knowledge documents and vector records.
+- Graph/vector retrieval composition for canonical harness and qualified live backends.
+
+### RAG does not own
+
+- User/session memory stores or episodic recall semantics — [`MEMORY.md`](MEMORY.md).
+- Final model-context assembly, token budgeting, or degradation ladder — [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md).
+- Generic filesystem or database permissions outside knowledge contracts.
+- Application business authorization policy — Tier-3 governance and policy layers gate usage.
+- Model response correctness, hallucination guarantees, or answer assembly quality.
+- Unrelated systems of record (CRM, ERP, operational DBs) except through explicit connectors.
+
+### Applications (Tier-3) configure
+
+- `RagProfile`, connector selection, index namespaces, and retrieval strategy per host.
+- Wiring ingest jobs, workspace sync, and Ask/Hybrid paths that **consume** retrieval output.
+- Provider backend choice from the catalog — see [`INTEGRATIONS.md`](INTEGRATIONS.md).
+
+## Relationship to Intergrax
+
+| Neighbor | Relationship |
+| -------- | ------------- |
+| [`MEMORY.md`](MEMORY.md) | Parallel recall path; shared vector machinery possible; `knowledge` domain owned by RAG |
+| [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) | Consumes retrieval hits; owns what reaches the LLM |
+| [`INTEGRATIONS.md`](INTEGRATIONS.md) | Provider catalog taxonomy — catalog status ≠ RAG qualification |
+| [`UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) | UCL owns durable ledger/revisions; RAG supplies retrievable knowledge fragments |
+| [`LANGCHAIN_INDEPENDENCE.md`](../capabilities/architecture/LANGCHAIN_INDEPENDENCE.md) | Native ABI is LangChain-independent; optional compatibility adapters |
+| LKW (product) | Bounded **proof consumer** of indexed ingest/retrieve — not architectural owner of RAG |
+| Nexus / runtime | `rag.retrieve`, ingest orchestration, observability on hot paths |
+
+## Extensibility
+
+Hosts and extension authors plug into documented surfaces — not ad hoc imports of provider internals:
+
+| Surface | Role | Guide |
+| ------- | ---- | ----- |
+| Parser / loader | Source → `KnowledgeDocument` | [`RAG_EXTENSION_GUIDE.md`](../technical/guides/RAG_EXTENSION_GUIDE.md) |
+| Metadata enricher | Scoped metadata before index | same |
+| Chunker | Native derivative documents + lineage | same |
+| Embedding provider | Ordered vectors, identity preserved | same |
+| Vector backend | `VectorStoreRecord` / `VectorStoreScope` ABI | same · [`INTEGRATIONS.md`](INTEGRATIONS.md) |
+| Retriever / reranker | Strategy and fusion layers | same |
+| Graph indexer | Entity/relationship evidence linked to vector IDs | same · pipeline satellite |
+
+Tier routing via `RagProfile` is **cost/latency routing**, not autonomous MIME-based algorithm selection.
+
+## Current maturity
+
+Architecture maturity: **A5**  
+Implementation maturity: **I4**  
+Production readiness: **P4**  
+Evidence maturity: **E4**
+
+- **A5** — Canonical domain pair with normative contracts (`KnowledgeDocument`, `VectorStoreScope`, ownership/replacement semantics), closed qualification tracks (RAG-FINAL, RAG-PROD, RAG-LIVE, RAG-ENT), and enforced invariants — global **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** ([§8](#8-live-claim-boundary-and-roadmap) below).
+- **I4** — Native ingest → index → retrieve path integrated through Nexus, `RetrievalService`, plugin registries, and host wiring; M-RAG-CONVERGE closeout — plan frozen at L3 control plane ([plan](../maintainers/plans/RAG.md)). Beta catalog providers and unsupported replacement paths remain explicit limits — not I5.
+- **P4** — Production deployment **approved with explicit limitations** ([`RAG_PRODUCTION_HANDOFF.md`](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md), [`RAG_OPERATOR_GUIDE.md`](../technical/guides/RAG_OPERATOR_GUIDE.md)); documented boundaries on transactional replacement, multi-process coordination, and provider-specific SLOs — not unrestricted P5 enterprise operational proof.
+- **E4** — Executable qualification evidence: RAG-PROD-13, RAG-LIVE-15A–15E live backend gates, offline/harness matrices in this hub. Public LKW proofs add **bounded** indexed-path E4 scenarios — scope does not cover the full RAG domain ([Evidence / proof](#evidence--proof)). No E5 production/customer evidence window claimed.
+
+> **Phase vs maturity:** RAG-FINAL / RAG-PROD / RAG-LIVE **Done** and **CLOSED** rows are **delivery and qualification states**, not automatic P5 or domain-wide E5 claims.
+
+### Capability coverage (summary)
+
+| Area | Status |
+| ---- | ------ |
+| Native ingest → retrieval E2E | Qualified — offline/harness ([§7](#7-canonical-current-state-qualification-matrix)) |
+| Dense / hybrid / hierarchical retrieval | Qualified with documented limits |
+| Dual-index + source replacement | Qualified with limitations — non-atomic TOC/vector publication |
+| GraphRAG canonical harness | Qualified — `InMemoryGraphStore`; Neo4j live baseline + generation fencing live-qualified |
+| Stable vector providers (Qdrant, PgVector, Chroma) | **LIVE_QUALIFIED** under environment-specific gates |
+| Beta vector providers (Weaviate, LanceDB, …) | Catalog **BETA** — source replacement unsupported or fail-closed |
+| LangChain independence | Native path qualified; optional compatibility adapters |
+| Public product proof (LKW indexed) | Bounded proof — indexed scope only ([`PROOFS.md`](../proofs/PROOFS.md)) |
+
+Full qualification matrix: [§7 Canonical current-state qualification matrix](#7-canonical-current-state-qualification-matrix) in engineering canon below.
+
+## Evidence / proof
+
+### Engineering qualification (domain-internal)
+
+| Proof / evidence | Demonstrates | Does not demonstrate |
+| ---------------- | ------------ | -------------------- |
+| RAG-PROD-13 + RAG-PROD-14 handoff | Qdrant live qualification: scope isolation, ownership, replacement, logical-ID parity | All vector backends; universal SLO; unrestricted production |
+| RAG-LIVE-15A-R2 (PgVector) | Live PgVector contract against repo-owned qualification environment | Other deployments; enterprise scale |
+| RAG-LIVE-15B-R2 (Chroma) | Live Chroma HTTP contract (1.4.1 env) | Universal Chroma compatibility |
+| RAG-LIVE-15C/D (Neo4j) | Live GraphRAG baseline + publication-generation fencing | Zero stale physical records; distributed transactions |
+| RAG-FINAL-10A–10D harness | Offline/harness dual-index, GraphRAG harness, plugin gates | Live provider parity for every beta adapter |
+| RAG-ENT-3 enterprise handoff | Enterprise readiness closeout under stated limits | Regulated multi-tenant operational proof (E5) |
+
+Authoritative records: [`RAG_PRODUCTION_QUALIFICATION.md`](../maintainers/qualification/RAG_PRODUCTION_QUALIFICATION.md) · [`RAG_LIVE_BACKEND_CLOSEOUT.md`](../maintainers/qualification/RAG_LIVE_BACKEND_CLOSEOUT.md) · [`RAG_ENTERPRISE_HANDOFF.md`](../maintainers/qualification/RAG_ENTERPRISE_HANDOFF.md).
+
+### Public proof routes (bounded product paths)
+
+LKW exercises **indexed** RAG ingest and retrieval — not the full RAG qualification surface:
+
+| Public path | Demonstrates | Does not demonstrate |
+| ----------- | ------------ | -------------------- |
+| LKW Product Quick Start / indexed Ask V1 | Managed sample → index → grounded indexed Ask with citation path | Hybrid live+indexed; all providers; production/commercial validation |
+| LKW indexed Hybrid Ask (`indexed_only`) | Production indexed branch; retrieval even when answer assembly returns `insufficient_evidence` | Mixed authorized-live Hybrid Ask |
+| LKW Web URL intake (`LKW-WEB-URL-INDEXED-ASK`) | WEB_URL capture → tenant/workspace Qdrant scope → indexed retrieval | Arbitrary external sites; complete live-provider access |
+| LKW Trusted Ask / Core Platform proofs | Durable workspace indexed path through real runtime stack | Universal provider certification |
+
+Catalog: [`docs/project/proofs/PROOFS.md`](../proofs/PROOFS.md) · LKW detail: [`LKW_PLATFORM_PROOF.md`](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md).
+
+**Not established by current public or qualification evidence:** mixed indexed + authorized live Hybrid Ask; complete live-provider access; real-user validation; commercial validation; transactional exactly-once replacement across stores.
+
+## Go deeper
+
+| Depth | Route |
+| ----- | ----- |
+| **Engineering canon** | [Below](#engineering-canon) — contracts, architecture, qualification matrices |
+| **Pipeline / module detail** | [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) |
+| **Implementation plan** | [`maintainers/plans/RAG.md`](../maintainers/plans/RAG.md) |
+| **Operator / deployment** | [`RAG_OPERATOR_GUIDE.md`](../technical/guides/RAG_OPERATOR_GUIDE.md) |
+| **Extension authoring** | [`RAG_EXTENSION_GUIDE.md`](../technical/guides/RAG_EXTENSION_GUIDE.md) |
+| **KnowledgeDocument ABI** | [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) |
+| **Qualification artifacts** | [`qualification/RAG_PRODUCTION_HANDOFF.md`](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md) and linked LIVE/ENT records |
+| **Audit slice** | [`guides/audit_slices/RAG.md`](../technical/guides/audit_slices/RAG.md) |
+| **Related domains** | [`MEMORY.md`](MEMORY.md) · [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`INTEGRATIONS.md`](INTEGRATIONS.md) |
+| **Public proofs** | [`proofs/PROOFS.md`](../proofs/PROOFS.md) |
+
+---
+
+## Maintainer and Cursor context
+
+**Status:** Canonical architecture · **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`**
 **Scope:** native Intergrax RAG architecture and qualification boundary after RAG-FINAL-10A–10D
 **Implementation:** `intergrax/rag`
 **Plan/history:** [`../maintainers/plans/RAG.md`](../maintainers/plans/RAG.md)
 **Production handoff:** [`RAG_PRODUCTION_HANDOFF.md`](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 
-This document is the current source of truth for RAG architecture, provider
-taxonomy, qualification status and failure boundaries. The accepted RAG-PROD-13
-result and the closed RAG-PROD-14 production handoff are recorded here and in
-the linked qualification artifacts.
+The accepted RAG-PROD-13 result and the closed RAG-PROD-14 production handoff are recorded here and in the linked qualification artifacts.
 
-## Navigation and documentation inventory
+### Navigation and documentation inventory
 
 | Classification | File | Ownership |
 |---|---|---|
@@ -35,9 +270,23 @@ the linked qualification artifacts.
 | **CATALOG OWNER** | [`INTEGRATIONS.md`](INTEGRATIONS.md) | Provider catalog taxonomy, not RAG qualification |
 | **NAVIGATION ONLY** | [`../technical/guides/audit_slices/RAG.md`](../technical/guides/audit_slices/RAG.md) | Read-scope and audit entry point |
 
-Older current-state passages in the architecture hub and pipeline satellite
-were superseded by RAG-FINAL-10A–10D and are not retained as competing truth.
-Historical evidence remains in the plan and audit-history documents.
+Older current-state passages in the architecture hub and pipeline satellite were superseded by RAG-FINAL-10A–10D and are not retained as competing truth. Historical evidence remains in the plan and audit-history documents.
+
+### Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (RAG canon).
+
+- **Implement / audit default:** human-facing front + engineering canon §1–§7. Pipeline detail: [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md).
+- **Use** `Read` with offset/limit per § below.
+- **Plan hub:** [`plan/RAG.md`](../maintainers/plans/RAG.md) (scoped status § only).
+- **Audit slice:** [`guides/audit_slices/RAG.md`](../technical/guides/audit_slices/RAG.md).
+- **Max reads:** at most **one** satellite per session unless RESUME cites more.
+
+---
+
+## Engineering canon
+
+Authoritative technical specification (§1–§10). Public front section above; pipeline module map in the [satellite](satellites/RAG_pipelines_detail.md).
 
 ## 1. Canonical contracts and identity
 
