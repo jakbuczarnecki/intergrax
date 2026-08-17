@@ -55,7 +55,7 @@ with Try LKW as the repository’s primary product action.
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore multi-agent / collaborative AI direction | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) |
 | Explore platform extensibility / governed plugins | [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) |
-| Explore future ecosystem direction | [Agent Marketplace concept](../product/AGENT_MARKETPLACE.md) |
+| Explore future ecosystem direction | [Agent Marketplace concept](../overview/AGENT_MARKETPLACE.md) |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
 | Run an evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
@@ -129,7 +129,7 @@ binding, immutable materialization, RuntimeRevision activation, AgentRegistry,
 and Nexus capability routing. It is **not** a shipped public marketplace,
 publisher portal, or commercial catalog today.
 
-[Open the Agent Marketplace concept and reference architecture](../product/AGENT_MARKETPLACE.md)
+[Open the Agent Marketplace concept and reference architecture](../overview/AGENT_MARKETPLACE.md)
 
 ---
 
@@ -154,7 +154,7 @@ publisher portal, or commercial catalog today.
 | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Supported executable indexed LKW product evaluation |
 | [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
 | [Token Optimization guide](../capabilities/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
-| [Agent Marketplace concept](../product/AGENT_MARKETPLACE.md) | Future ecosystem direction — governed agent distribution concept and reference architecture (not a shipped product) |
+| [Agent Marketplace concept](../overview/AGENT_MARKETPLACE.md) | Future ecosystem direction — governed agent distribution concept and reference architecture (not a shipped product) |
 | [Intergrax Proofs](../proofs/PROOFS.md) | Current evidence status / public evidence dashboard — status legend and verification paths |
 
 Maintainer contracts and claim controls are intentionally excluded

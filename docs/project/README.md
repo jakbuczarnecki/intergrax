@@ -42,7 +42,7 @@ what you want to understand, try, inspect, build, or review.
   architecture for governed multi-principal collaboration.
 - [Platform Extensibility / Plugins](architecture/PLATFORM_PLUGINS.md) —
   strategic architecture for independently packaged, governed platform extensions.
-- [Agent Marketplace](product/AGENT_MARKETPLACE.md) — future ecosystem layer
+- [Agent Marketplace](overview/AGENT_MARKETPLACE.md) — future ecosystem layer
   for governed agent distribution (concept and reference architecture; not a
   shipped product).
 - [Integrations](integrations/README.md) — canonical integration documentation.
@@ -68,8 +68,7 @@ remain incomplete. Detailed evidence and claim boundaries belong in
 
 ## Browse by documentation area
 
-- `overview/` — project context, use cases, FAQ, roadmap, and positioning.
-- `product/` — cross-cutting product concepts (Agent Marketplace). LKW product docs live under `applications/local_workspace_application/docs/product/`.
+- `overview/` — project context, use cases, FAQ, roadmap, positioning, and strategic product concepts (e.g. Agent Marketplace). LKW product docs live under `applications/local_workspace_application/docs/product/`.
 - `builders/` — build and evaluation routes.
 - `architecture/` — project architecture canon.
 - `proofs/` — bounded evidence and proof status.

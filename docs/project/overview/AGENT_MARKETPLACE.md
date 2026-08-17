@@ -1083,7 +1083,7 @@ That separation is what allows the model to scale from **local private agents** 
 
 | Item | Value |
 |------|-------|
-| Path | `docs/project/product/AGENT_MARKETPLACE.md` |
+| Path | `docs/project/overview/AGENT_MARKETPLACE.md` |
 | Intended future link target | Repository README / public product index (separate session) |
 | Canonical architecture conflicts | **None identified** — concept aligns with frozen Agent Distribution model |
 | README modified | **No** |
