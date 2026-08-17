@@ -968,7 +968,8 @@ Validation = FAILED
 7. Prefix reads **MUST NOT** silently truncate: incomplete reads fail closed (`RunExecutionHistoryTruncatedError`).
 8. Logical-only — **no** projection persistence, store, or materialized view (TRACE-ASOF-3).
 9. **No** `KnowledgeRevisionPosition` / bitemporal types in the execution reducer — E-only reconstruction.
-10. `TASK_COMPLETED` and `CANCELLED` are irreversible; `TASK_FAILED` / `PLAN_FAILED` may precede `RETRY_SCHEDULED` / `RETRY_STARTED` in the same `RunId`; `RETRY_SCHEDULED` preserves status; `RETRY_STARTED` transitions `FAILED` → `RUNNING`.
+10. `TASK_COMPLETED` and `CANCELLED` are irreversible run-terminal statuses; `TASK_FAILED` / `PLAN_FAILED` represent the current retryable failure state (not canonical finality); `RETRY_SCHEDULED` preserves `FAILED`; `RETRY_STARTED` transitions `FAILED` → `RUNNING`.
+11. `RunExecutionAsOfProjection.is_terminal` is `True` only for `COMPLETED` and `CANCELLED`. `FAILED` is **not** terminal — canonical runtime permits `FAILED` → `RETRY_SCHEDULED` → `RETRY_STARTED` → `RUNNING`. There is currently **no** distinct canonical `RuntimeEventType` for final non-retryable run failure (e.g. retries exhausted); if one is introduced later, projection finality may be extended under a separately reviewed contract change.
 
 **Forbidden:** `dict[str, Any]` projection fields; dynamic projection registry; payload-key lifecycle inference; timestamp-ordered reducer input; second source of truth.
 

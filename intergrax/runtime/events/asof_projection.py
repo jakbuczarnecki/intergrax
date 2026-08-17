@@ -56,15 +56,7 @@ class RunExecutionLifecycleStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-_TERMINAL_STATUSES = frozenset(
-    {
-        RunExecutionLifecycleStatus.COMPLETED,
-        RunExecutionLifecycleStatus.FAILED,
-        RunExecutionLifecycleStatus.CANCELLED,
-    }
-)
-
-_NON_REVERSIBLE_TERMINAL_STATUSES = frozenset(
+_FINAL_RUN_STATUSES = frozenset(
     {
         RunExecutionLifecycleStatus.COMPLETED,
         RunExecutionLifecycleStatus.CANCELLED,
@@ -122,7 +114,7 @@ class RunExecutionAsOfProjection:
 
     @property
     def is_terminal(self) -> bool:
-        return self.lifecycle_status in _TERMINAL_STATUSES
+        return self.lifecycle_status in _FINAL_RUN_STATUSES
 
 
 def project_run_execution_as_of(
@@ -254,7 +246,7 @@ def _apply_lifecycle_event(
     event_type: RuntimeEventType,
 ) -> RunExecutionLifecycleStatus:
     if event_type == RuntimeEventType.RETRY_SCHEDULED:
-        if current in _NON_REVERSIBLE_TERMINAL_STATUSES:
+        if current in _FINAL_RUN_STATUSES:
             raise InvalidRunExecutionHistoryError(
                 f"retry lifecycle event {event_type.value!r} after terminal "
                 f"{current.value}"
@@ -263,27 +255,32 @@ def _apply_lifecycle_event(
 
     mapped = _LIFECYCLE_STATUS_BY_EVENT.get(event_type)
     if mapped is not None:
-        if current in _NON_REVERSIBLE_TERMINAL_STATUSES:
+        if current in _FINAL_RUN_STATUSES:
             raise InvalidRunExecutionHistoryError(
                 f"lifecycle event {event_type.value!r} after terminal {current.value}"
             )
         if current == RunExecutionLifecycleStatus.FAILED:
             if event_type == RuntimeEventType.RETRY_STARTED:
                 return RunExecutionLifecycleStatus.RUNNING
-            if mapped in _TERMINAL_STATUSES and mapped != current:
+            if mapped in _FINAL_RUN_STATUSES:
                 raise InvalidRunExecutionHistoryError(
-                    f"conflicting terminal lifecycle event {event_type.value!r} after "
+                    f"conflicting final lifecycle event {event_type.value!r} after "
                     f"{current.value}"
                 )
-            if mapped not in _TERMINAL_STATUSES:
+            if mapped != RunExecutionLifecycleStatus.FAILED:
                 raise InvalidRunExecutionHistoryError(
-                    f"non-terminal lifecycle event {event_type.value!r} after terminal "
+                    f"disallowed lifecycle event {event_type.value!r} after "
                     f"{current.value}"
                 )
+            return mapped
         return mapped
 
     if current == RunExecutionLifecycleStatus.CREATED:
         return RunExecutionLifecycleStatus.RUNNING
+    if current == RunExecutionLifecycleStatus.FAILED:
+        raise InvalidRunExecutionHistoryError(
+            f"disallowed lifecycle event {event_type.value!r} after {current.value}"
+        )
     return current
 
 

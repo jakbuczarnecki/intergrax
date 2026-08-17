@@ -287,11 +287,13 @@ def test_retry_attempt_history_and_current_attempt() -> None:
     )
 
     assert at_failure.lifecycle_status == RunExecutionLifecycleStatus.FAILED
-    assert at_failure.is_terminal is True
+    assert at_failure.is_terminal is False
     assert before_retry.lifecycle_status == RunExecutionLifecycleStatus.FAILED
+    assert before_retry.is_terminal is False
     assert before_retry.current_attempt_id == attempt_a1
     assert before_retry.attempt_ids == (attempt_a1,)
     assert after_retry.lifecycle_status == RunExecutionLifecycleStatus.RUNNING
+    assert after_retry.is_terminal is False
     assert after_retry.attempt_ids == (attempt_a1, attempt_a2)
     assert after_retry.current_attempt_id == attempt_a2
     assert len(after_retry.attempts) == 2
@@ -596,6 +598,32 @@ def test_completed_run_cannot_reopen() -> None:
             positioned_events=tuple(store.list_positioned_through(boundary, tenant_id=_TENANT)),
             tenant_id=_TENANT,
         )
+
+
+@pytest.mark.unit
+def test_cancelled_projection_is_terminal() -> None:
+    store = InMemoryRuntimeEventStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    positioned = _append_sequence(
+        store,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_types=[
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.CANCELLED,
+        ],
+    )
+    boundary = as_of_boundary_for_positioned(positioned[-1])
+    projection = project_run_execution_as_of(
+        boundary=boundary,
+        positioned_events=tuple(store.list_positioned_through(boundary, tenant_id=_TENANT)),
+        tenant_id=_TENANT,
+    )
+    assert projection.lifecycle_status == RunExecutionLifecycleStatus.CANCELLED
+    assert projection.is_terminal is True
 
 
 @pytest.mark.unit
