@@ -61,6 +61,18 @@ class GovernanceResolution(BaseModel):
             AgentDecisionType.CANCEL,
         }
 
+    @property
+    def should_block_execution(self) -> bool:
+        """Mandatory policy outcomes that must not proceed to decision execution."""
+        action = self.policy_decision.action
+        if action is PolicyAction.DENY:
+            return True
+        if action is PolicyAction.ESCALATE:
+            return self.policy_decision.enforcement_level is EnforcementLevel.MANDATORY
+        if self.interrupt is not None and self.interrupt.blocking:
+            return action is not PolicyAction.ALLOW
+        return False
+
 
 class ExecutionInterruptHandler:
     """Maps ``AgentDecision`` / ``ExecutionInterrupt`` to policy-backed governance outcomes."""

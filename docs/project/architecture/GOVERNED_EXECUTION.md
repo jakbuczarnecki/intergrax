@@ -167,6 +167,22 @@ Contract hardening (**G1B**) — **implemented core** on owned live paths (not p
 
 Not closed by this core: `RuntimePolicyBundle.domain_fragments` hardening, `MeaningfulSideEffectRequest` context/correlation hardening, remaining facade terminology, universal rule catalog, universal evaluation-point coverage, `decision_id` on every policy producer, or durable evidence persistence.
 
+### G3B — Governance Evaluation Point execution coverage (2026-08-17)
+
+Frozen audit baseline (G3) closed only where a live mechanism is wired to a mandatory execution boundary with enforced outcomes. Status vocabulary: **COVERED**, **PARTIAL**, **GAP**, **OBSERVE_ONLY**, **NOT_APPLICABLE**.
+
+| Evaluation point | Status | Owner / mechanism | Canonical enforcement boundary | Qualification / remaining gap |
+| ---------------- | ------ | ----------------- | ------------------------------ | ----------------------------- |
+| **AGENT_DECISION** | **COVERED** | `RuntimePolicyEngine.evaluate_decision` via `ExecutionInterruptHandler.resolve_decision` | `UAEPExecutor` step loop — `GovernanceResolution.should_block_execution` before decision-driven control flow | Custom policy engines may return DENY; enforcement is mandatory at UAEP boundary |
+| **interrupt sub-boundary** | **COVERED** | `RuntimePolicyEngine.evaluate_interrupt` via `resolve_decision` / `resolve_interrupt` | `GovernanceResolution.should_block_execution` + `should_pause` on blocking interrupts | HITL semantic consolidation deferred to G5 |
+| **PRE_MODEL** | **COVERED** | `PolicyEngine.evaluate_pre_llm` | `PlanningRunner` (Nexus planning) · `PolicyEnforcingLLMRouter` wrapping `StepLLMRouter.complete` (ACP agent-step LLM) | Non-ACP direct adapter callers outside `StepLLMRouter` remain host-qualified |
+| **TOOL_PLAN_OR_ACCESS** | **COVERED** | `ToolAccessPolicy.apply` (+ optional `ToolScopePolicy` via bundle resolution) | `tool_runtime.execute_plan` before plan exposure / context side-effects | Host-owned planners outside Nexus `tool_runtime` path are host-qualified |
+| **TOOL_INVOCATION authorization** | **COVERED** | `RuntimeToolInvoker` authorization | Pre-handler authorization gate | Unchanged — regression-protected |
+| **TOOL_INVOCATION declarative policy** | **COVERED** | `DeclarativePolicyEnforcer` | `RuntimeToolInvoker` before handler | Unchanged — regression-protected |
+| **MEANINGFUL_SIDE_EFFECT** | **PARTIAL** | `MeaningfulSideEffectAuthorizationBoundary` (collaborative-work) · `MeaningfulSideEffectEvaluator` at adapter boundary | `ExternalWorkAdapter._evaluate_side_effect` before provider call (runtime-only) · `MeaningfulSideEffectAuthorizationBoundary.authorize` (collaborative-work) | Not every runtime side-effect path is wired through `MeaningfulSideEffectAuthorizationBoundary`; collaborative-work hosts must inject the boundary |
+| **PRE_OUTPUT** | **COVERED** | `PolicyEngine.evaluate_pre_output` | `HarnessKernel._policy_post_check` (terminal step) · `apply_pre_output_policy` in `NexusLoop._finish_task` | Non-terminal harness steps skip post-output evaluation by design |
+| **POST_RUN** | **PARTIAL** | `GovernanceService` → `ExecutionGuard.evaluate_run` | `invoke_post_run_governance` at `NexusLoop._finish_task` and `UAEPExecutor.execute` completion when `governance_service` is configured | Runs without an injected `GovernanceService` skip post-run evaluation by configuration |
+
 ---
 
 ## Human-in-the-loop

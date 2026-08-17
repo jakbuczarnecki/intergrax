@@ -13,6 +13,7 @@ class PreModelPhase(StrEnum):
     """Phase discriminator for pre-model policy evaluation."""
 
     NEXUS_PLANNING = "nexus_planning"
+    AGENT_STEP = "agent_step"
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,6 +31,8 @@ class PreModelPolicyContext:
     phase: PreModelPhase | None = None
     planner_model_id: str = ""
     denied_planner_model_ids: tuple[str, ...] = ()
+    model_id: str = ""
+    denied_model_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

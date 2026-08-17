@@ -377,6 +377,14 @@ async def _run_acp_session_bound(
         ),
         degrade_provider=lambda: kernel_ctx_holder[0].budget_degrade_active,
     )
+    from intergrax.runtime.policy.pre_model_policy_bridge import wrap_policy_enforcing_llm_router
+
+    llm_router = wrap_policy_enforcing_llm_router(
+        llm_router,
+        policy_engine=kernel_ctx_holder[0].policy_engine or PolicyEngine(),
+        tenant_id=merged.tenant_id,
+        agent_id=merged.agent_id,
+    )
     if host is not None and host.runtime_profile is not None and host.runtime_profile.llm_routing_profile is not None:
         from intergrax.agents.authoring.dynamic_llm_router import wrap_dynamic_llm_router
         from intergrax.agents.authoring.acp_routing_trace_bridge import (
