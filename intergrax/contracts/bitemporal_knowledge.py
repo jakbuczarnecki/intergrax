@@ -396,10 +396,15 @@ class KnowledgeRevisionWatermarkSet:
             seen.add(watermark.scope)
 
 
+class InvalidKnowledgeRevisionPositionRecordError(ValueError):
+    """Raised when a position record violates canonical lifecycle/revision invariants."""
+
+
 @dataclass(frozen=True, slots=True)
 class KnowledgeRevisionPositionRecord:
     position: KnowledgeRevisionPosition
     lifecycle: KnowledgeRevisionPositionLifecycle
+    accepted_revision_id: KnowledgeRevisionId | None
 
     def __post_init__(self) -> None:
         if type(self.position) is not KnowledgeRevisionPosition:
@@ -409,6 +414,20 @@ class KnowledgeRevisionPositionRecord:
         if not isinstance(self.lifecycle, KnowledgeRevisionPositionLifecycle):
             raise TypeError(
                 "KnowledgeRevisionPositionRecord.lifecycle must be KnowledgeRevisionPositionLifecycle"
+            )
+        if self.accepted_revision_id is not None and type(self.accepted_revision_id) is not KnowledgeRevisionId:
+            raise TypeError(
+                "KnowledgeRevisionPositionRecord.accepted_revision_id must be KnowledgeRevisionId or None"
+            )
+        if self.lifecycle is KnowledgeRevisionPositionLifecycle.ACCEPTED:
+            if self.accepted_revision_id is None:
+                raise InvalidKnowledgeRevisionPositionRecordError(
+                    "ACCEPTED position must bind accepted_revision_id"
+                )
+            return
+        if self.accepted_revision_id is not None:
+            raise InvalidKnowledgeRevisionPositionRecordError(
+                f"{self.lifecycle.value} position must not bind accepted_revision_id"
             )
 
 

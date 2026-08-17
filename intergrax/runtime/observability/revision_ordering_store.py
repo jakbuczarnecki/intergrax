@@ -475,7 +475,7 @@ class RevisionOrderingSQLiteStore:
             self._ensure_open()
             rows = self._connection.execute(
                 """
-                SELECT position, lifecycle
+                SELECT position, lifecycle, revision_id, canonical_accepted
                 FROM knowledge_position_states
                 WHERE tenant_id = ? AND position <= ?
                 ORDER BY position ASC
@@ -488,10 +488,7 @@ class RevisionOrderingSQLiteStore:
             if lifecycle_blocks_watermark(lifecycle):
                 raise ValueError("records_through watermark includes blocking lifecycle")
             records.append(
-                KnowledgeRevisionPositionRecord(
-                    position=KnowledgeRevisionPosition(scope=scope, value=int(row["position"])),
-                    lifecycle=lifecycle,
-                )
+                _position_record_from_row(scope=scope, row=row),
             )
         return tuple(records)
 
@@ -625,7 +622,7 @@ class RevisionOrderingSQLiteStore:
             self._ensure_open()
             rows = self._connection.execute(
                 """
-                SELECT position, lifecycle
+                SELECT position, lifecycle, revision_id, canonical_accepted
                 FROM knowledge_position_states
                 WHERE tenant_id = ?
                 ORDER BY position ASC
@@ -633,10 +630,7 @@ class RevisionOrderingSQLiteStore:
                 (tenant,),
             ).fetchall()
         return tuple(
-            KnowledgeRevisionPositionRecord(
-                position=KnowledgeRevisionPosition(scope=scope, value=int(row["position"])),
-                lifecycle=KnowledgeRevisionPositionLifecycle(row["lifecycle"]),
-            )
+            _position_record_from_row(scope=scope, row=row)
             for row in rows
         )
 
@@ -778,3 +772,21 @@ class RevisionOrderingSQLiteStore:
 
 def _new_record_id(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex}"
+
+
+def _position_record_from_row(
+    *,
+    scope: KnowledgeOrderingScope,
+    row: sqlite3.Row,
+) -> KnowledgeRevisionPositionRecord:
+    lifecycle = KnowledgeRevisionPositionLifecycle(row["lifecycle"])
+    accepted_revision_id: KnowledgeRevisionId | None = None
+    if lifecycle is KnowledgeRevisionPositionLifecycle.ACCEPTED:
+        if int(row["canonical_accepted"]) != 1 or row["revision_id"] is None:
+            raise ValueError("ACCEPTED position missing canonical revision binding")
+        accepted_revision_id = KnowledgeRevisionId(row["revision_id"])
+    return KnowledgeRevisionPositionRecord(
+        position=KnowledgeRevisionPosition(scope=scope, value=int(row["position"])),
+        lifecycle=lifecycle,
+        accepted_revision_id=accepted_revision_id,
+    )

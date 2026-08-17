@@ -6,6 +6,7 @@ import pytest
 
 from intergrax.contracts.bitemporal_knowledge import (
     CrossScopeKnowledgeOrderError,
+    InvalidKnowledgeRevisionPositionRecordError,
     KnowledgeOrderingScope,
     KnowledgeRevisionAcceptance,
     KnowledgeRevisionId,
@@ -39,11 +40,16 @@ def _record(
     lifecycle: KnowledgeRevisionPositionLifecycle,
     *,
     scope: KnowledgeOrderingScope | None = None,
+    accepted_revision_id: KnowledgeRevisionId | None = None,
 ) -> KnowledgeRevisionPositionRecord:
     resolved = scope or _scope()
+    revision_id = accepted_revision_id
+    if lifecycle is KnowledgeRevisionPositionLifecycle.ACCEPTED and revision_id is None:
+        revision_id = mint_knowledge_revision_id()
     return KnowledgeRevisionPositionRecord(
         position=KnowledgeRevisionPosition(scope=resolved, value=value),
         lifecycle=lifecycle,
+        accepted_revision_id=revision_id,
     )
 
 
@@ -54,6 +60,7 @@ class _InMemoryRevisionOrderingAuthority(RevisionOrderingAuthority):
         self._next_position: dict[str, int] = {}
         self._bindings: dict[tuple[str, str], tuple[KnowledgeRevisionId, KnowledgeRevisionPosition]] = {}
         self._lifecycles: dict[tuple[str, int], KnowledgeRevisionPositionLifecycle] = {}
+        self._accepted_revision_ids: dict[tuple[str, int], KnowledgeRevisionId] = {}
 
     def accept_revision(
         self,
@@ -82,6 +89,7 @@ class _InMemoryRevisionOrderingAuthority(RevisionOrderingAuthority):
         self._next_position[tenant] = next_value + 1
         self._bindings[lookup] = (revision_id, position)
         self._lifecycles[(tenant, next_value)] = KnowledgeRevisionPositionLifecycle.ACCEPTED
+        self._accepted_revision_ids[(tenant, next_value)] = revision_id
         return KnowledgeRevisionAcceptance(
             revision_id=revision_id,
             acceptance_key=acceptance_key,
@@ -106,6 +114,11 @@ class _InMemoryRevisionOrderingAuthority(RevisionOrderingAuthority):
             KnowledgeRevisionPositionRecord(
                 position=KnowledgeRevisionPosition(scope=scope, value=value),
                 lifecycle=lifecycle,
+                accepted_revision_id=(
+                    self._accepted_revision_ids[(tenant, value)]
+                    if lifecycle is KnowledgeRevisionPositionLifecycle.ACCEPTED
+                    else None
+                ),
             )
             for (record_tenant, value), lifecycle in sorted(self._lifecycles.items())
             if record_tenant == tenant
@@ -128,6 +141,11 @@ class _InMemoryRevisionOrderingAuthority(RevisionOrderingAuthority):
                             value=value,
                         ),
                         lifecycle=lifecycle,
+                        accepted_revision_id=(
+                            self._accepted_revision_ids[(tenant, value)]
+                            if lifecycle is KnowledgeRevisionPositionLifecycle.ACCEPTED
+                            else None
+                        ),
                     )
                 )
         return tuple(records)
@@ -510,3 +528,37 @@ def test_failure_matrix_watermark_invariants() -> None:
         )
     assert allocated is not accepted
     _ = KnowledgeRevisionWatermark(scope=_scope(), finalized_through_value=0)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_accepted_position_record_requires_revision_id() -> None:
+    with pytest.raises(InvalidKnowledgeRevisionPositionRecordError):
+        KnowledgeRevisionPositionRecord(
+            position=KnowledgeRevisionPosition(scope=_scope(), value=1),
+            lifecycle=KnowledgeRevisionPositionLifecycle.ACCEPTED,
+            accepted_revision_id=None,
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_terminal_position_record_rejects_revision_id() -> None:
+    with pytest.raises(InvalidKnowledgeRevisionPositionRecordError):
+        KnowledgeRevisionPositionRecord(
+            position=KnowledgeRevisionPosition(scope=_scope(), value=2),
+            lifecycle=KnowledgeRevisionPositionLifecycle.TERMINAL_NON_COMMITTED,
+            accepted_revision_id=mint_knowledge_revision_id(),
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_accepted_position_record_binds_revision_id() -> None:
+    revision = mint_knowledge_revision_id()
+    record = KnowledgeRevisionPositionRecord(
+        position=KnowledgeRevisionPosition(scope=_scope(), value=3),
+        lifecycle=KnowledgeRevisionPositionLifecycle.ACCEPTED,
+        accepted_revision_id=revision,
+    )
+    assert record.accepted_revision_id == revision
