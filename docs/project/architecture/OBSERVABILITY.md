@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-08-17 — **TRACE-ASOF-2** logical execution projection **Planned / In Review** · **TRACE-BITEMP-1** typed bitemporal contracts + tenant ordering scope + transactional provider strategy **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-BITEMP-ARCH-SYNC-R6** unresolved position resolution ownership + lease/fencing + auditable terminalization · **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
+**Last updated:** 2026-08-17 — **TRACE-ASOF-2** logical execution projection **Planned / In Review** · **TRACE-BITEMP-1** typed bitemporal contracts + tenant ordering scope + transactional provider strategy **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-BITEMP-ARCH-SYNC-R7** acceptance linearization + fenced-out/orphaned durable commit semantics · **TRACE-BITEMP-ARCH-SYNC-R6** unresolved position resolution ownership + lease/fencing + auditable terminalization · **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
 
 ---
 
@@ -1066,7 +1066,7 @@ As-of projections and bitemporal historical state answer **different questions**
 
 ## 8. First-class bitemporal historical state (TRACE-BITEMP-ARCH-SYNC)
 
-**Status:** Target canon (**accepted** 2026-08-15; unresolved position resolution / lease / fencing / auditable terminalization **TRACE-BITEMP-ARCH-SYNC-R6** 2026-08-17; watermark finality / gap semantics **TRACE-BITEMP-ARCH-SYNC-R5** 2026-08-16; revision-ordering authority / provider contract **TRACE-BITEMP-ARCH-SYNC-R4** 2026-08-16) · **TRACE-BITEMP-1** typed contracts **Planned / In Review** (independent audit closes it) · persistence **Planned** (TRACE-BITEMP-2–TRACE-BITEMP-5) · production persistence **not implemented**
+**Status:** Target canon (**accepted** 2026-08-15; acceptance linearization + fenced-out/orphaned durable commit semantics **TRACE-BITEMP-ARCH-SYNC-R7** 2026-08-17; unresolved position resolution / lease / fencing / auditable terminalization **TRACE-BITEMP-ARCH-SYNC-R6** 2026-08-17; watermark finality / gap semantics **TRACE-BITEMP-ARCH-SYNC-R5** 2026-08-16; revision-ordering authority / provider contract **TRACE-BITEMP-ARCH-SYNC-R4** 2026-08-16) · **TRACE-BITEMP-1** typed contracts **Planned / In Review** (independent audit closes it) · persistence **Planned** (TRACE-BITEMP-2–TRACE-BITEMP-5) · production persistence **not implemented**
 
 ### 8.1 Capability definition
 
@@ -1422,9 +1422,11 @@ Recovery authority owns F2
         |
         v
 late Writer A using F1 attempts commit → MUST be rejected
+        or, if already in-flight and cannot be physically cancelled,
+        → durable outcome MUST NOT become canonical ACCEPTED (R7)
 ```
 
-Architecture **MUST** guarantee newer authority supersedes older authority. Exact representation (fencing token, generation, epoch, version, or equivalent) belongs to **TRACE-BITEMP-2**.
+Architecture **MUST** guarantee newer authority supersedes older authority. The platform **SHOULD** prevent stale physical commit where the provider/storage allows it. But even where an already-in-flight storage transaction cannot be physically cancelled, fencing **MUST** prevent that durable outcome from becoming canonical **ACCEPTED** knowledge. Provider qualification **MUST** test both: (1) prevention where possible, and (2) safe semantic isolation where prevention is impossible. Do **not** claim every storage engine can cancel an in-flight transaction. Exact representation (fencing token, generation, epoch, version, or equivalent) belongs to **TRACE-BITEMP-2**.
 
 **Void is not a new knowledge revision position.** Resolving existing position **K** from `UNRESOLVED` → `TERMINAL_NON_COMMITTED` **MUST NOT** allocate a new `KnowledgeRevisionPosition` merely to express that lifecycle transition.
 
@@ -1477,14 +1479,14 @@ The resolution record:
 
 Do **not** collapse resolution history into revision lineage.
 
-**Late commit after terminalization (fail-closed).** Once **K** is durably `TERMINAL_NON_COMMITTED` under a newer valid resolution/fencing authority, a stale writer **MUST NOT** later transition **K** to `ACCEPTED`. `TERMINAL_NON_COMMITTED` is **terminal**. A late write using stale ownership/fence **MUST** fail. **`TERMINAL_NON_COMMITTED → ACCEPTED` is forbidden.** If product/domain semantics require a later correction, it **MUST** be a new logical acceptance with a new `RevisionAcceptanceKey` and new **K**.
+**Late commit after terminalization (fail-closed).** Once **K** is durably `TERMINAL_NON_COMMITTED` under a newer valid resolution/fencing authority, a stale writer **MUST NOT** later transition **K** to `ACCEPTED`. `TERMINAL_NON_COMMITTED` is **terminal**. A late write using stale ownership/fence **MUST** fail canonical acceptance — and if it nevertheless becomes physically durable, it **MUST** be treated as a fenced-out/orphaned durable write (R7), not as resurrection of **K**. **`TERMINAL_NON_COMMITTED → ACCEPTED` is forbidden.** Reconciliation **MUST NOT** rewrite canonical historical meaning toward a stale durable outcome. If product/domain semantics require a later correction, it **MUST** be a new logical acceptance with a new `RevisionAcceptanceKey` and new **K** — do **not** reuse terminal **K**.
 
-**Race: original writer vs recovery.** **TRACE-BITEMP-2** **MUST** handle writer/recovery races on the same **K**. Canonical rule: exactly one valid lifecycle outcome wins under current authoritative fencing/ownership. **No timestamp-based winner selection.**
+**Race: original writer vs recovery.** **TRACE-BITEMP-2** **MUST** handle writer/recovery races on the same **K**. Canonical rule: exactly one valid lifecycle outcome wins under current authoritative fencing/ownership at the authoritative linearization point (R7). **No timestamp-based winner selection.**
 
 | Case | Outcome |
 |------|---------|
-| **A** Writer commits before recovery obtains newer authority | `ACCEPTED` |
-| **B** Recovery obtains newer fencing authority first and proves operation cannot safely commit | `TERMINAL_NON_COMMITTED`; late writer rejected |
+| **A** Canonical acceptance linearizes before recovery obtains newer authority | `ACCEPTED`; recovery **MUST** observe `ACCEPTED` and **cannot** terminalize/void **K** |
+| **B** Recovery terminalization linearizes before stale writer | `TERMINAL_NON_COMMITTED`; late writer rejected or orphaned if physically durable |
 | **C** State remains ambiguous | `UNRESOLVED`; watermark remains pinned; bounded resolution continues |
 
 **Recovery / reaper role (conceptual).** Architecture **SHOULD** define a production path such as an unresolved scanner / recovery worker / reaper responsible for:
@@ -1519,6 +1521,147 @@ Manual action **MUST NOT** be a magic override that ignores current authoritativ
 - provider-specific 2PC terminology **MUST NOT** leak into canonical reader semantics.
 
 Architecture does **not** select or require 2PC for the canonical provider merely because this scenario is documented.
+
+#### Acceptance linearization and fenced-out/orphaned durable commits (TRACE-BITEMP-ARCH-SYNC-R7)
+
+R6 freezes resolution ownership, lease/fencing, and auditable terminalization. R7 freezes **authoritative acceptance/finalization linearization**, the distinction between **physical durability** and **canonical acceptance**, and production-safe semantics when a stale/fenced-out writer's in-flight persistence transaction becomes physically durable **after** a newer fencing generation has already authoritatively finalized the corresponding position **K** as `TERMINAL_NON_COMMITTED`.
+
+**Physical durability ≠ canonical acceptance.** A physical/durable write existing in storage is **not**, by itself, sufficient to make a knowledge revision canonically `ACCEPTED`. Canonical acceptance requires:
+
+- valid current `RevisionOrderingAuthority` ownership/fencing
+- successful canonical acceptance transition
+- authoritative `KnowledgeRevisionPosition` association
+- lifecycle state `ACCEPTED` under the winning authority
+
+```text
+PHYSICAL DURABILITY  !=  CANONICAL ACCEPTANCE
+```
+
+A provider **MUST NOT** infer `ACCEPTED` solely because bytes/rows/documents exist in the underlying persistence layer.
+
+**Authoritative linearization point.** Architecture **MUST** guarantee exactly one authoritative linearization point for each position lifecycle outcome. Linearization is the single canonical concurrency point that determines which outcome won: `ACCEPTED` **or** `TERMINAL_NON_COMMITTED`. **No timestamp ordering.**
+
+| Case | Canonical rule |
+|------|----------------|
+| **A — acceptance-first** | Valid writer acceptance linearizes first → **K** = `ACCEPTED` → later recovery **MUST** observe `ACCEPTED` and **cannot** void **K** |
+| **B — terminalization-first** | Newer fencing authority terminalization linearizes first → **K** = `TERMINAL_NON_COMMITTED` → late stale writer **cannot** canonically accept **K** → any later physical write from stale writer is fenced-out/orphaned |
+
+The exact transactional/CAS/storage primitive belongs to **TRACE-BITEMP-2**. Do **not** freeze vendor-specific mechanics here.
+
+**Terminalization remains authoritative.** Once **K** = `TERMINAL_NON_COMMITTED` has authoritatively linearized under the winning/newer fencing generation, that result **MUST** remain canonical. A later durable write produced under an older/stale authority **MUST NOT** cause `TERMINAL_NON_COMMITTED → ACCEPTED`. Architecture **MUST NOT** reconcile canonical lifecycle state toward a stale durable outcome. Otherwise historical watermarks could change meaning after publication.
+
+**Historical watermark immutability.** Example:
+
+```text
+K16 ACCEPTED
+K17 TERMINAL_NON_COMMITTED
+K18 ACCEPTED
+K19 ACCEPTED
+→ watermark = K19
+```
+
+A reader reconstructing at **K19** **MUST** permanently observe **K17** as containing no accepted knowledge revision. If an old F1 persistence transaction later becomes physically durable, that **MUST NOT** retroactively alter the meaning of watermark **K19**. Canonical historical reconstruction at the same **K** **MUST** remain deterministic before and after orphan discovery.
+
+**Fenced-out / orphaned durable write (conceptual).** Exact runtime type/name belongs to **TRACE-BITEMP-2**. Meaning: data physically reached durable persistence, but did so without valid canonical acceptance authority because its writer had already been superseded/fenced out.
+
+```text
+Writer A owns fence F1
+        ↓
+starts persistence transaction
+
+Recovery obtains F2
+        ↓
+authoritatively finalizes K17 as TERMINAL_NON_COMMITTED
+        ↓
+watermark may later advance
+
+old F1 transaction nevertheless reaches durable storage
+        ↓
+physical data exists
+        ↓
+canonical K17 remains TERMINAL_NON_COMMITTED
+        ↓
+late write = FENCED_OUT_DURABLE_WRITE / ORPHANED_DURABLE_WRITE
+```
+
+Such a write:
+
+- **MUST NOT** become accepted knowledge
+- **MUST NOT** resurrect `TERMINAL_NON_COMMITTED` **K**
+- **MUST NOT** affect `KnowledgeRevisionWatermark`
+- **MUST NOT** participate in canonical reconstruction
+- **MUST** be detectable/auditable
+- **MUST** enter a controlled reconciliation/quarantine path
+
+Prefer keeping canonical **K** lifecycle unchanged and representing the storage anomaly separately. Do **not** define it as a new lifecycle value for `KnowledgeRevisionPosition` unless implementation design later proves this is necessary.
+
+**Quarantine / reconciliation.** An orphaned/fenced-out durable write **MUST** be isolated from canonical knowledge reads:
+
+```text
+physical durable write
+        +
+stale fencing authority
+        ↓
+orphan detection
+        ↓
+quarantine / reconciliation
+        ↓
+audit + operator/recovery visibility
+```
+
+It **MUST NOT** silently enter canonical projections. Possible implementation actions **MAY** include quarantine marker, storage reconciliation record, provider-specific isolation, cleanup/garbage collection, or another safe mechanism. Physical implementation is **not** frozen here.
+
+**Orphan / integrity evidence record (conceptual).** A detected orphaned/fenced-out durable write **MUST** produce immutable audit/integrity evidence distinct from knowledge revision lineage. Exact runtime type/name belongs to **TRACE-BITEMP-2**. The record **SHOULD** capture:
+
+- tenant/ordering scope
+- target **K**
+- stale fencing generation
+- winning fencing generation
+- canonical lifecycle outcome
+- provider/storage reference
+- detection source
+- reason classification
+- system-time detected
+- evidence/provenance reference
+- reconciliation disposition/status where applicable
+
+Raw knowledge payload is **not** required. The orphan record **MUST NOT** become a knowledge revision. Architecture **MUST NOT** allocate a new **K** merely to record the anomaly.
+
+**Commit-before-finalization vs finalization-before-commit.** Both cases are frozen explicitly. Timestamp ordering **MUST NOT** decide which case occurred — canonical concurrency/fencing/transaction authority decides.
+
+| Case | Sequence | Canonical outcome |
+|------|----------|-------------------|
+| **A** | Writer F1 canonical acceptance succeeds → **K** = `ACCEPTED` → Recovery F2 starts later | Recovery **MUST** observe `ACCEPTED`; **cannot** terminalize/void **K** |
+| **B** | Recovery F2 terminalizes first → **K** = `TERMINAL_NON_COMMITTED` → old F1 transaction later becomes physically durable | **K** remains `TERMINAL_NON_COMMITTED`; late write = fenced-out/orphaned durable write → quarantine/reconciliation |
+
+**No reconciliation by resurrection.** Architecture **explicitly rejects**: "storage contains durable revision, therefore change **K** back to `ACCEPTED`" after terminalization has linearized. If the orphaned content is still logically valid and should be accepted, create a **new** logical acceptance: new `RevisionAcceptanceKey` → new **K_new** → normal acceptance flow. Do **not** reuse terminal **K**. Do **not** mutate historical terminal outcome.
+
+**Atomicity requirement refinement.** The canonical provider **SHOULD** coordinate acceptance key, position allocation, lifecycle transition, durable accepted revision, and fencing/generation validation inside the strongest available atomic boundary (§8.11). However architecture **MUST** still define orphan behavior because:
+
+- qualified alternative providers may have different persistence topology
+- crashes/network partitions may produce ambiguous client outcomes
+- external or distributed persistence may permit physical writes after authority loss
+- future provider implementations must preserve canonical semantics
+
+Transactional default does **not** eliminate the need for explicit orphan semantics.
+
+**Provider observational equivalence.** Every qualified provider **MUST** preserve the same winning canonical lifecycle outcome, watermark semantics, and historical reconstruction regardless of whether its persistence layer can physically prevent a late stale write.
+
+| Provider behavior | Canonical reader observation |
+|-------------------|---------------------------|
+| **A** Late stale write physically rejected | Same as B |
+| **B** Late stale write physically lands but is quarantined as orphaned | Same as A |
+
+**Audit vs knowledge history.** Keep separate:
+
+| Stream | Role |
+|--------|------|
+| **A** Canonical knowledge history | Accepted domain facts |
+| **B** Position lifecycle history | `ALLOCATED` / `ACCEPTED` / `UNRESOLVED` / `TERMINAL_NON_COMMITTED` |
+| **C** Resolution audit history | `ResolutionRecord` per terminalization |
+| **D** Storage-integrity / orphan evidence | Fenced-out/orphaned durable write detection |
+
+An orphaned durable write is a storage/integrity event. It is **not** accepted knowledge, a knowledge revision, a new **K**, revision lineage, or a valid-time correction. It **MAY** be linked to `ResolutionRecord`, provider diagnostics, integrity incident/problem signal, or operator audit surfaces.
 
 **Production-derived decision input (now selected in §8.11).** Transactional allocation is the canonical default because revision position allocation and durable acceptance are coordinated within the same transactional boundary. Alternatives remain valid as qualified providers behind `RevisionOrderingAuthority`.
 
@@ -1568,7 +1711,7 @@ The contract owns semantic guarantees such as:
 - allocate / accept an authoritative revision position
 - classify position lifecycle state (allocated, accepted, unresolved, terminal non-committed)
 - **resolve** `UNRESOLVED` positions to `ACCEPTED` or `TERMINAL_NON_COMMITTED` under canonical rules (resolution sub-capability — applications **MUST NOT** void positions independently)
-- enforce bounded ownership/lease and fencing so stale writers cannot commit after supersession
+- enforce bounded ownership/lease and fencing so stale writers cannot commit after supersession; where physical prevention is impossible, stale durable outcomes **MUST NOT** become canonical `ACCEPTED` (R7)
 - emit immutable resolution/audit records for every `TERMINAL_NON_COMMITTED` transition
 - preserve monotonic ordering within the declared scope
 - expose / reconstruct **KnowledgeRevisionWatermark** using finalized contiguous boundary semantics
@@ -1621,7 +1764,7 @@ SEMANTIC INVARIANCE
 
 A host/deployment **MAY** select a qualified alternative provider when deployment requirements differ. Every alternative **MUST** implement the **same** **RevisionOrderingAuthority** contract and preserve exactly the same ordering, watermark, concurrency, audit, failure, and reconstruction semantics.
 
-**Provider-independent observational equivalence.** Provider A may allocate transactionally; Provider B may use a dedicated sequencer; Provider C may use another production-grade allocator. Canonical readers **MUST** see the same semantics for revision acceptance, authoritative position, position finality, gaps, watermark, historical reconstruction, retry/idempotency, and failure visibility. Provider swap **MUST NOT** change the meaning of **KnowledgeRevisionWatermark**. Implementation-specific allocation gaps **MUST** remain below the semantic abstraction.
+**Provider-independent observational equivalence.** Provider A may allocate transactionally; Provider B may use a dedicated sequencer; Provider C may use another production-grade allocator. Canonical readers **MUST** see the same semantics for revision acceptance, authoritative position, position finality, gaps, watermark, historical reconstruction, retry/idempotency, and failure visibility. Provider swap **MUST NOT** change the meaning of **KnowledgeRevisionWatermark**. Implementation-specific allocation gaps **MUST** remain below the semantic abstraction. **R7:** providers that physically reject late stale writes and providers that quarantine landed late writes as orphaned **MUST** yield identical canonical reader state.
 
 Examples of future implementation strategies **MAY** include (unselected here):
 
@@ -1726,14 +1869,19 @@ TRACE-BITEMP-1 freezes the canonical default mechanism in §8.11 against these i
 13. **Selected ordering-scope correctness** — proof matches the scope chosen in TRACE-BITEMP-1.
 14. **Cross-scope semantics** — where ordering is partitioned, composition semantics are deterministic and documented.
 15. **Historical immutability** — accepted corrections are never destructively overwritten.
-16. **Stale writer fencing** — once recovery/resolution authority supersedes an old writer, late commits using stale ownership/fence **MUST** be rejected.
+16. **Stale writer fencing** — once recovery/resolution authority supersedes an old writer, late commits using stale ownership/fence **MUST** be rejected; where physical prevention is impossible, late durable writes **MUST** be quarantined as orphaned and **MUST NOT** become canonical `ACCEPTED` (R7).
 17. **Bounded unresolved-position resolution** — every `UNRESOLVED` position has an active bounded resolution path; indefinite manual intervention is **not** the default production mechanism.
-18. **Deterministic race resolution** — writer vs recovery races resolve to exactly one valid lifecycle outcome under current authoritative fencing/ownership; no timestamp-based winner.
-19. **No late commit after terminalization** — `TERMINAL_NON_COMMITTED` is terminal; `TERMINAL_NON_COMMITTED → ACCEPTED` is forbidden.
+18. **Deterministic race resolution** — writer vs recovery races resolve to exactly one valid lifecycle outcome under current authoritative fencing/ownership at the authoritative linearization point; no timestamp-based winner.
+19. **No late commit after terminalization** — `TERMINAL_NON_COMMITTED` is terminal; `TERMINAL_NON_COMMITTED → ACCEPTED` is forbidden; orphaned durable writes **MUST NOT** resurrect terminal **K**.
 20. **Immutable resolution audit trail** — every `TERMINAL_NON_COMMITTED` transition produces an immutable, queryable resolution record distinct from knowledge revision lineage.
 21. **Watermark unpins after safe terminalization** — terminalization of a blocking gap **MAY** allow watermark advancement per finalized-contiguous rules; unresolved positions remain visible until legitimately resolved.
 22. **Lease expiry is not void proof** — lease expiry may trigger recovery but **MUST NOT** alone justify blind `TERMINAL_NON_COMMITTED`.
 23. **Lifecycle voiding does not allocate new K** — resolving `UNRESOLVED → TERMINAL_NON_COMMITTED` finalizes the existing position; it does **not** mint a new knowledge revision position for void semantics.
+24. **Physical durability ≠ canonical acceptance** — storage presence alone **MUST NOT** imply `ACCEPTED`; canonical acceptance requires valid authority, successful transition, position association, and winning lifecycle state (R7).
+25. **Authoritative linearization** — exactly one lifecycle outcome (`ACCEPTED` or `TERMINAL_NON_COMMITTED`) wins per **K**; acceptance-first blocks later void; terminalization-first blocks later canonical acceptance (R7).
+26. **Historical watermark immutability** — orphan discovery **MUST NOT** retroactively change reconstruction at the same finalized watermark **K** (R7).
+27. **Orphan quarantine** — fenced-out/orphaned durable writes **MUST** be isolated from canonical reads and produce immutable integrity evidence; **MUST NOT** affect watermark or allocate new **K** (R7).
+28. **No reconciliation by resurrection** — legitimate later acceptance of orphaned content **MUST** use new `RevisionAcceptanceKey` + new **K** (R7).
 
 #### Ordering scope / scalability decision boundary
 
@@ -1859,7 +2007,7 @@ Architecture defines semantics and capability. TRACE-BITEMP-1 **does** freeze or
 
 ### 8.10 Implementation status
 
-Accepted architecture · **TRACE-BITEMP-1** typed contracts **Planned / In Review** in `intergrax.contracts.bitemporal_knowledge` · unresolved position resolution / lease / fencing / auditable terminalization canon **TRACE-BITEMP-ARCH-SYNC-R6** · production persistence **not implemented** (TRACE-BITEMP-2). Delivery: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) TRACE-BITEMP-1–TRACE-BITEMP-5.
+Accepted architecture · **TRACE-BITEMP-1** typed contracts **Planned / In Review** in `intergrax.contracts.bitemporal_knowledge` · acceptance linearization + fenced-out/orphaned durable commit semantics canon **TRACE-BITEMP-ARCH-SYNC-R7** · unresolved position resolution / lease / fencing / auditable terminalization canon **TRACE-BITEMP-ARCH-SYNC-R6** · production persistence **not implemented** (TRACE-BITEMP-2). Delivery: [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) TRACE-BITEMP-1–TRACE-BITEMP-5.
 
 ### 8.11 TRACE-BITEMP-1 frozen contracts
 
@@ -1879,7 +2027,8 @@ Module: `intergrax.contracts.bitemporal_knowledge`. Opt-in capability — **not*
 | Cross-scope | No total order across tenants. Cross-scope queries return `KnowledgeRevisionWatermarkSet`. Comparing tenant K12 with tenant K20 as one sequence is forbidden (`CrossScopeKnowledgeOrderError`) |
 | Authority | `RevisionOrderingAuthority` (ABC): `accept_revision(scope, revision_id, acceptance_key)`, `position_lifecycle`, `watermark`, `records_through`, `unresolved_positions`; **resolution sub-capability** for `UNRESOLVED → ACCEPTED` / `TERMINAL_NON_COMMITTED` under canonical lease/fencing rules (exact API in TRACE-BITEMP-2). Host/DI selects provider. Applications **MUST NOT** invent ordering semantics or independently void positions |
 | Resolution audit | Conceptual immutable **resolution record** per `TERMINAL_NON_COMMITTED` transition — audit/provenance only; **not** a knowledge revision; exact type in TRACE-BITEMP-2 |
-| Canonical provider strategy | **Transactional / storage-native allocation + acceptance**: one durable transactional boundary atomically coordinating `KnowledgeRevisionId`, acceptance key, position allocation, durable acceptance/reference, and lifecycle/finality. Public type remains `RevisionOrderingAuthority` only |
+| Orphan / integrity evidence | Conceptual immutable record per detected fenced-out/orphaned durable write — storage/integrity event only; **not** a knowledge revision; **MUST NOT** allocate new **K**; exact type in TRACE-BITEMP-2 (R7) |
+| Canonical provider strategy | **Transactional / storage-native allocation + acceptance**: one durable transactional boundary atomically coordinating `KnowledgeRevisionId`, acceptance key, position allocation, durable acceptance/reference, lifecycle/finality, and fencing/generation validation where feasible. Explicit orphan semantics still required when physical prevention is impossible (R7). Public type remains `RevisionOrderingAuthority` only |
 
 **Scope rationale (TENANT selected).** Intergrax persistence, isolation, deletion, and execution reconstruction are already tenant-partitioned. A tenant-scoped `K` is the natural unit of “what did Intergrax know for this tenant?” Global reconstruction is compositional: a `KnowledgeRevisionWatermarkSet`, **not** one invented global `K`.
 
@@ -1913,7 +2062,7 @@ Module: `intergrax.contracts.bitemporal_knowledge`. Opt-in capability — **not*
 | **I** Two distinct revisions concurrent | Distinct `K` values, deterministic tenant order | Advances only through finalized prefix | Independent keys | Auditable K1 → K2 order without timestamps |
 | **J** Terminal non-committed gap below later accepted revisions | Lower `K` stays `TERMINAL_NON_COMMITTED`; later `ACCEPTED` | Watermark **may** advance across the gap | n/a | Gap is classifiable, not invisible |
 
-**TRACE-BITEMP-2 boundary:** implement `RevisionOrderingAuthority` with the selected strategy; persist lifecycle; authoritative resolution path (`UNRESOLVED → ACCEPTED` / `TERMINAL_NON_COMMITTED`); lease/ownership and fencing where required; bounded unresolved scanner/recovery; immutable resolution records; advance watermark; recovery of unresolved positions; stale-writer rejection; idempotent recovery; manual/governance fallback through same authority; host DI. **MUST NOT** invent types, change TENANT scope, weaken finalized-contiguous semantics, allocate new **K** for lifecycle voiding, add valid/system time onto `RuntimeEvent`, or select a vendor type as the public contract.
+**TRACE-BITEMP-2 boundary:** implement `RevisionOrderingAuthority` with the selected strategy; persist lifecycle; authoritative resolution path (`UNRESOLVED → ACCEPTED` / `TERMINAL_NON_COMMITTED`); lease/ownership and fencing where required; bounded unresolved scanner/recovery; immutable resolution records; authoritative acceptance/finalization linearization primitive; validate current fencing generation at canonical acceptance; detect/quarantine/isolate orphaned durable writes where physical stale-commit prevention is impossible; persist immutable orphan/integrity evidence; advance watermark; recovery of unresolved positions; stale-writer rejection; distinguish committed-and-canonically-accepted vs unresolved vs terminal vs orphaned physical residue; idempotent recovery; manual/governance fallback through same authority; host DI. **MUST NOT** infer `ACCEPTED` from physical storage presence alone; **MUST NOT** resurrect `TERMINAL_NON_COMMITTED`; **MUST NOT** allocate new **K** for lifecycle voiding or orphan detection; **MUST NOT** invent types, change TENANT scope, weaken finalized-contiguous semantics, add valid/system time onto `RuntimeEvent`, or select a vendor type as the public contract.
 
 ---
 
