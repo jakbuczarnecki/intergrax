@@ -241,7 +241,9 @@ The catalog describes capability; bundles carry what was configured; handlers ex
 
 **Catalog vs bundle:** the catalog holds what **can** be selected (e.g. `external_commitment_approval` v2); a configured rule is what the application **did** select (e.g. `finance.contracts.require_cfo`); a runtime bundle is the **active** composed policy state containing that rule. Policy definition version and bundle version are separate — one definition version may appear in many bundles.
 
-**Current implementation coupling:** on the declarative slice, `PolicyRuleRegistry` resolves handlers via `rule.rule_id`, temporarily coupling rule instance identity and handler lookup. That is existing technical debt, not target semantics; separation is deferred to G2B/G2C after typed catalog contracts.
+**G2B typed contract:** `intergrax.contracts.policy_catalog` implements immutable `PolicyDefinition` metadata — `policy_id`, definition `version`, `display_name`, `description`, `handler_id`, `configuration_contract_id`, and `source` (`built_in` / `plugin`). This answers *what policy capability exists* at the contract level only; runtime catalog/resolution is **not** implemented yet, and the canonical built-in policy catalog remains **Open**.
+
+**Current implementation coupling:** on the declarative slice, `PolicyRuleRegistry` resolves handlers via `rule.rule_id`, temporarily coupling rule instance identity and handler lookup. That is existing technical debt, not target semantics; separation is deferred to G2C after typed catalog contracts (G2B).
 
 ---
 
@@ -279,6 +281,7 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 | Contract hardening across critical runtime paths (G1B) | **Implemented core** — typed live contexts, typed meaningful-side-effect rules, immutable `PolicyDecision` and explicit bundle provenance invariants |
 | Uniform evaluation-point runtime enum / god engine | **Rejected** — multiple owners preserved |
 | Policy Catalog architecture (G2A) | **Accepted** — [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) |
+| Typed Policy Catalog contracts (G2B) | **Implemented** — immutable `PolicyDefinition` identity/source/configuration-contract metadata; runtime catalog/resolution not yet implemented |
 | Canonical built-in policy catalog | **Open** |
 | Complete platform-wide coverage | **Not claimed** |
 | Dedicated accepted public Governed Execution proof | **Not established** |
