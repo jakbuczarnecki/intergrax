@@ -533,10 +533,11 @@ class NexusLoop:
             invoke_post_run_governance,
         )
 
+        active_run_id, _ = require_active_execution_identity()
         invoke_post_run_governance(
             self._governance_service,
-            run_id=task.task_id,
-            agent_id=task.agent_id or "unknown",
+            run_id=active_run_id,
+            agent_id=task.agent_id or "",
         )
         return result
 
