@@ -406,7 +406,7 @@ These documents illustrate **parts** of the standard. None is a complete target 
 | Document | Illustrates |
 |----------|-------------|
 | [GOVERNED_EXECUTION.md](../../architecture/GOVERNED_EXECUTION.md) | Human-facing opening, early maturity boundary, At a glance, responsibility split, flagship mental-model visual |
-| [LKW_PRODUCT_TOUR.md](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) | Visual hierarchy, light/dark `<picture>` SVG, Mermaid flow, route / next-action pattern, explicit boundaries |
+| [LKW_PRODUCT_TOUR.md](../../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) | Visual hierarchy, light/dark `<picture>` SVG, Mermaid flow, route / next-action pattern, explicit boundaries |
 
 **Anti-patterns visible in legacy hubs (fix in DOC-3):**
 
