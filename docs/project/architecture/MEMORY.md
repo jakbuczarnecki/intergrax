@@ -16,7 +16,7 @@ Memory gives the platform and applications:
 Memory **does not** decide what the model sees on a given turn — that is Context Engineering. It **does not** own document corpus retrieval — that is RAG.
 
 > [!NOTE]
-> **Maturity boundary:** Core memory stores, lifecycle, and LTM/episodic vector indexes are **implemented and as-built** (phases MEM, MEM-DEPTH, MEM-VEC). This is **not** a production-qualification claim comparable to the RAG domain's bounded proof catalog, nor a claim of universal enterprise memory, fully distributed durability, or a versioned procedural memory store. Procedural memory remains **minimal** in the current runtime.
+> **Maturity boundary:** Core memory stores, lifecycle, and LTM/episodic vector indexes are built in the runtime (plan phases MEM, MEM-DEPTH, MEM-VEC — **Done** as delivery states, not P-axis claims). See [Current maturity](#current-maturity) for the four-axis statement. This is **not** a production-qualification claim comparable to the RAG domain's bounded proof catalog, nor a claim of universal enterprise memory, fully distributed durability, or a versioned procedural memory store. Procedural memory remains **minimal** in the current runtime.
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring memory stores — after the platform overview in the root README.
 
@@ -30,7 +30,7 @@ Memory **does not** decide what the model sees on a given turn — that is Conte
 | **Retrieval model** | `MemoryView` / Nexus steps; optional `ltm` and `episodic` vector domains when host wires the RAG integration stack |
 | **Context Engineering** | Consumes memory recall outputs; owns final context assembly, budgeting, and provenance |
 | **RAG** | Owns external/document knowledge retrieval (`knowledge` index domain); distinct from user LTM and session episodic memory |
-| **Maturity** | Core stores **strong**; procedural memory **minimal**; evidence is engineering/qualification-oriented — see [Current maturity](#current-maturity) |
+| **Maturity** | Four-axis statement in [Current maturity](#current-maturity) — procedural memory **minimal**; public production qualification **not claimed** |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [extended satellite](satellites/MEMORY_extended_depth.md) · [plan](../maintainers/plans/MEMORY.md) |
 
 ## Flagship architecture visual
@@ -134,6 +134,20 @@ Memory exposes pluggable store surfaces for hosts that need non-default backends
 Tier-3 hosts wire the integration RAG stack (`EmbeddingManager`, `VectorstoreManager`, `RetrievalService`) into memory facades — agents never open vector databases directly. Routing overview: [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §9.
 
 ## Current maturity
+
+Architecture maturity: **A4**  
+Implementation maturity: **I4**  
+Production readiness: **P2**  
+Evidence maturity: **E3**
+
+- **A4** — Canonical domain pair with normative store/lifecycle contracts, ADRs (MEM-001, MEM-002), and mapped cross-layer boundaries (CE, RAG, UCL); Post-L3 audit baseline **32/32 L3** and AUDIT-IDEAL memory rows closed ([plan](../maintainers/plans/MEMORY.md)).
+- **I4** — Core stores, consolidation, and vector recall paths wired through Nexus / `MemoryView`; phases MEM, MEM-DEPTH, MEM-VEC **Done** ([plan](../maintainers/plans/MEMORY.md) · audit history satellite). Procedural memory remains **minimal**; LCI-4D **READY_FOR_REVIEW** — not I5.
+- **P2** — Lab/reference profiles and sqlite integration bundle ([audit history](../maintainers/plans/satellites/MEMORY_audit_history.md)); **public production qualification not claimed** — no Memory entry in the public proof catalog ([Evidence / proof](#evidence--proof)).
+- **E3** — Gate suite and integration paths (vector LTM wiring, acceptance) cited in plan closeout; ADRs and audit slice. No dedicated public proof route — not E4/E5.
+
+> **Phase vs maturity:** MEM / MEM-DEPTH / MEM-VEC **Done** are **plan delivery states**, not production-readiness (P) claims.
+
+### Capability coverage
 
 | Area | Status |
 | ---- | ------ |

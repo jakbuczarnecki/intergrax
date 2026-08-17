@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img">
   <title>Intergrax Memory platform position</title>
-  <desc>Conceptual diagram showing execution and session state flowing into Memory stores, Context Engineering assembling model context from Memory and RAG retrieval, and the Agent or LLM consuming the result.</desc>
+  <desc>Conceptual diagram showing execution and session state flowing into Memory stores; Memory recall and RAG retrieval feeding Context Engineering, which assembles model context for the Agent or LLM.</desc>
   <rect width="1200" height="820" fill="#0d1117"/>
   <rect x="32" y="28" width="1136" height="764" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
 
@@ -23,32 +23,32 @@
   <rect x="640" y="336" width="220" height="48" rx="10" fill="#0d1117" stroke="#3fb950" stroke-width="1.5"/>
   <text x="750" y="366" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#e6edf3">Durable LTM / episodic</text>
 
-  <line x1="600" y1="400" x2="600" y2="436" stroke="#e6edf3" stroke-width="2.5"/>
-  <path d="M600 436 L590 422 L610 422 Z" fill="#e6edf3"/>
+  <line x1="450" y1="400" x2="450" y2="418" stroke="#3fb950" stroke-width="2.5"/>
+  <path d="M450 418 L442 404 L458 404 Z" fill="#3fb950"/>
 
-  <rect x="260" y="440" width="680" height="88" rx="16" fill="#3d2e14" stroke="#d29922" stroke-width="2.5"/>
-  <text x="600" y="476" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="24" font-weight="700" fill="#e6edf3">Context Engineering</text>
-  <text x="600" y="506" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" fill="#8b949e">What information enters the model context now &#8212; under budget and provenance</text>
+  <rect x="260" y="422" width="340" height="72" rx="12" fill="#1a3324" stroke="#3fb950" stroke-width="2"/>
+  <text x="430" y="450" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Memory recall</text>
+  <text x="430" y="474" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">session, LTM, episodic, task KV</text>
 
-  <line x1="450" y1="528" x2="450" y2="560" stroke="#3fb950" stroke-width="2"/>
-  <path d="M450 560 L442 548 L458 548 Z" fill="#3fb950"/>
-  <line x1="750" y1="528" x2="750" y2="560" stroke="#58a6ff" stroke-width="2"/>
-  <path d="M750 560 L742 548 L758 548 Z" fill="#58a6ff"/>
+  <rect x="600" y="422" width="340" height="72" rx="12" fill="#1c2d4a" stroke="#58a6ff" stroke-width="2"/>
+  <text x="770" y="450" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">RAG retrieval</text>
+  <text x="770" y="474" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">external / document knowledge</text>
 
-  <rect x="300" y="564" width="300" height="72" rx="12" fill="#1a3324" stroke="#3fb950" stroke-width="2"/>
-  <text x="450" y="596" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Memory recall</text>
-  <text x="450" y="620" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">session, LTM, episodic, task KV</text>
+  <line x1="430" y1="494" x2="480" y2="512" stroke="#3fb950" stroke-width="2"/>
+  <path d="M480 512 L468 502 L472 518 Z" fill="#3fb950"/>
+  <line x1="770" y1="494" x2="720" y2="512" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M720 512 L732 502 L728 518 Z" fill="#58a6ff"/>
 
-  <rect x="600" y="564" width="300" height="72" rx="12" fill="#1c2d4a" stroke="#58a6ff" stroke-width="2"/>
-  <text x="750" y="596" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">RAG retrieval</text>
-  <text x="750" y="620" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">external / document knowledge</text>
+  <rect x="260" y="512" width="680" height="88" rx="16" fill="#3d2e14" stroke="#d29922" stroke-width="2.5"/>
+  <text x="600" y="548" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="24" font-weight="700" fill="#e6edf3">Context Engineering</text>
+  <text x="600" y="578" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" fill="#8b949e">Assembles model context from recall and retrieval &#8212; under budget and provenance</text>
 
-  <line x1="600" y1="636" x2="600" y2="672" stroke="#e6edf3" stroke-width="2.5"/>
-  <path d="M600 672 L590 658 L610 658 Z" fill="#e6edf3"/>
+  <line x1="600" y1="600" x2="600" y2="636" stroke="#e6edf3" stroke-width="2.5"/>
+  <path d="M600 636 L590 622 L610 622 Z" fill="#e6edf3"/>
 
-  <rect x="420" y="676" width="360" height="72" rx="14" fill="#21262d" stroke="#8b949e" stroke-width="2"/>
-  <text x="600" y="708" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#e6edf3">Agent / LLM</text>
-  <text x="600" y="734" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" fill="#8b949e">governed turn execution</text>
+  <rect x="420" y="640" width="360" height="72" rx="14" fill="#21262d" stroke="#8b949e" stroke-width="2"/>
+  <text x="600" y="672" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#e6edf3">Agent / LLM</text>
+  <text x="600" y="698" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" fill="#8b949e">governed turn execution</text>
 
-  <text x="600" y="792" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#6e7681">Conceptual architecture &#8212; not a runtime class diagram.</text>
+  <text x="600" y="768" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#6e7681">Conceptual architecture &#8212; not a runtime class diagram.</text>
 </svg>
