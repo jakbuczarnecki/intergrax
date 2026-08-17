@@ -552,7 +552,7 @@ Intergrax implements cognition at **three nested scopes**. All three converge on
 
 **Rule:** Do not collapse planes — Nexus MUST NOT micromanage tool-level loops; agents MUST NOT rewrite global multi-agent topology without Nexus delegation contracts.
 
-**Flow narrative (sequence diagrams, UC-*):** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §4–§18 — RCL owns cognition **depth**; FLOW owns end-to-end **narrative**.
+**Flow narrative (sequence diagrams):** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §4–§8; UC-* scenarios and extended sequence — [`satellites/NEXUS_EXECUTION_FLOW_extended_depth.md`](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) §9+ — RCL owns cognition **depth**; FLOW owns end-to-end **narrative**.
 
 ---
 
