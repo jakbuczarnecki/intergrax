@@ -156,8 +156,11 @@ Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qu
 |----|------|--------|---------|
 | **PROVIDER-QUAL-0** | Architecture decision | **Done** | `EXTEND_EXISTING` — reuse core qualification + platform coordination + ProofReceipt |
 | **PROVIDER-QUAL-1** | Architecture freeze + contract design | **READY_FOR_REVIEW** | Subject/run/status/evidence/admission/CI boundary freeze; PostgreSQL template; Oracle extensibility proof |
-| **PROVIDER-QUAL-2** | Typed contracts | Planned | Implement `ProviderQualificationSubject`, `ProviderQualificationRun`, `QualificationEvidenceValidity`, typed validity/admission view or record if ownership remains frozen; reusable evidence kind contracts as required; unit/contract tests; vendor-neutrality invariants |
-| **PROVIDER-QUAL-3** | Evidence persistence/integration | Planned | Qualification run persistence/index integration; mapping to existing `ProofReceipt` where appropriate; record the already accepted PostgreSQL 16.6 bounded qualification evidence; query/discovery surface for qualification evidence as already architected |
+| **PROVIDER-QUAL-2** | Typed contracts | **Done** | `ProviderQualificationSubject`, `ProviderQualificationRun`, evidence kinds; unit/contract tests; vendor-neutrality invariants |
+| **PROVIDER-QUAL-3A** | Provider binding audit | **Done** | Initial audit; superseded by **PROVIDER-QUAL-3A-R1** correction |
+| **PROVIDER-QUAL-3A-R1** | Provider binding correction | **Done** | **EXTEND_EXISTING_PROVIDER_BINDING** — reuse Integrations resolution; extend with typed domain-provider bridge; satellite §15 freeze; INV-1..INV-8 |
+| **PROVIDER-QUAL-3B** | Typed domain-provider binding | Planned | Implement minimal typed domain-provider binding extension using existing Integrations selection/resolution |
+| **PROVIDER-QUAL-3C** | Evidence persistence/integration | Planned | Qualification run persistence/index integration; mapping to existing ProofReceipt where appropriate; record accepted PostgreSQL 16.6 evidence through canonical binding; **requires 3B** |
 
 **Explicit out of scope (PROVIDER-QUAL-1):** runtime Python changes, GHA vendor jobs, LKW integration, MP-2, admission policy engine, automatic staleness engine.
 
