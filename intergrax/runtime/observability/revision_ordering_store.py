@@ -156,8 +156,9 @@ class RevisionOrderingSQLiteStore:
                     lifecycle,
                     revision_id,
                     writer_fencing_generation,
+                    canonical_fencing_generation,
                     canonical_accepted
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     tenant,
@@ -165,6 +166,7 @@ class RevisionOrderingSQLiteStore:
                     lifecycle.value,
                     revision_id.value if lifecycle is KnowledgeRevisionPositionLifecycle.ACCEPTED else None,
                     writer_fence,
+                    writer_fence if lifecycle is KnowledgeRevisionPositionLifecycle.ACCEPTED else None,
                     1 if lifecycle is KnowledgeRevisionPositionLifecycle.ACCEPTED else 0,
                 ),
             )
@@ -246,7 +248,10 @@ class RevisionOrderingSQLiteStore:
             updated = conn.execute(
                 """
                 UPDATE knowledge_position_states
-                SET lifecycle = ?, canonical_accepted = 0, revision_id = NULL
+                SET lifecycle = ?,
+                    canonical_accepted = 0,
+                    revision_id = NULL,
+                    canonical_fencing_generation = ?
                 WHERE tenant_id = ?
                   AND position = ?
                   AND lifecycle IN (?, ?)
@@ -254,6 +259,7 @@ class RevisionOrderingSQLiteStore:
                 """,
                 (
                     KnowledgeRevisionPositionLifecycle.TERMINAL_NON_COMMITTED.value,
+                    authority.fencing_generation.value,
                     tenant,
                     position.value,
                     KnowledgeRevisionPositionLifecycle.UNRESOLVED.value,
@@ -336,7 +342,7 @@ class RevisionOrderingSQLiteStore:
         with self._transaction() as conn:
             row = conn.execute(
                 """
-                SELECT lifecycle, writer_fencing_generation
+                SELECT lifecycle, canonical_fencing_generation
                 FROM knowledge_position_states
                 WHERE tenant_id = ? AND position = ?
                 """,
@@ -347,9 +353,12 @@ class RevisionOrderingSQLiteStore:
                     f"knowledge revision position {position.value} was never allocated"
                 )
             canonical_lifecycle = KnowledgeRevisionPositionLifecycle(row["lifecycle"])
+            canonical_fence_value = row["canonical_fencing_generation"]
+            if canonical_fence_value is None:
+                return None
             winning_fence = RevisionFencingGeneration(
                 scope=scope,
-                value=int(row["writer_fencing_generation"]),
+                value=int(canonical_fence_value),
             )
             conn.execute(
                 """
@@ -410,6 +419,30 @@ class RevisionOrderingSQLiteStore:
                 ),
             )
             return orphan
+
+    def canonical_fencing_generation(
+        self,
+        position: KnowledgeRevisionPosition,
+    ) -> RevisionFencingGeneration | None:
+        tenant = position.scope.tenant_id
+        with self._lock:
+            self._ensure_open()
+            row = self._connection.execute(
+                """
+                SELECT canonical_fencing_generation
+                FROM knowledge_position_states
+                WHERE tenant_id = ? AND position = ?
+                """,
+                (tenant, position.value),
+            ).fetchone()
+        if row is None:
+            raise UnknownKnowledgeRevisionPositionError(
+                f"knowledge revision position {position.value} was never allocated"
+            )
+        value = row["canonical_fencing_generation"]
+        if value is None:
+            return None
+        return RevisionFencingGeneration(scope=position.scope, value=int(value))
 
     def position_lifecycle(
         self,
@@ -543,20 +576,14 @@ class RevisionOrderingSQLiteStore:
         current_fence = self._current_fencing_generation(conn, scope)
         writer_fence = int(row["writer_fencing_generation"])
         if writer_fence < current_fence:
-            self._record_stale_acceptance_orphan(
-                conn,
-                scope=scope,
-                position=position,
-                revision_id=revision_id,
-                stale_fencing_generation=RevisionFencingGeneration(scope=scope, value=writer_fence),
-                winning_fencing_generation=RevisionFencingGeneration(scope=scope, value=current_fence),
-                canonical_lifecycle=lifecycle,
-            )
             raise StaleRevisionFencingError("stale writer cannot canonically accept position")
         updated = conn.execute(
             """
             UPDATE knowledge_position_states
-            SET lifecycle = ?, revision_id = ?, canonical_accepted = 1
+            SET lifecycle = ?,
+                revision_id = ?,
+                canonical_accepted = 1,
+                canonical_fencing_generation = ?
             WHERE tenant_id = ?
               AND position = ?
               AND lifecycle IN (?, ?)
@@ -565,6 +592,7 @@ class RevisionOrderingSQLiteStore:
             (
                 KnowledgeRevisionPositionLifecycle.ACCEPTED.value,
                 revision_id.value,
+                writer_fence,
                 tenant,
                 position.value,
                 KnowledgeRevisionPositionLifecycle.UNRESOLVED.value,
@@ -587,62 +615,6 @@ class RevisionOrderingSQLiteStore:
             if refreshed_lifecycle is KnowledgeRevisionPositionLifecycle.TERMINAL_NON_COMMITTED:
                 raise StaleRevisionFencingError("position terminalized before acceptance completed")
             raise StaleRevisionFencingError("acceptance completion lost authoritative race")
-
-    def _record_stale_acceptance_orphan(
-        self,
-        conn: sqlite3.Connection,
-        *,
-        scope: KnowledgeOrderingScope,
-        position: KnowledgeRevisionPosition,
-        revision_id: KnowledgeRevisionId,
-        stale_fencing_generation: RevisionFencingGeneration,
-        winning_fencing_generation: RevisionFencingGeneration,
-        canonical_lifecycle: KnowledgeRevisionPositionLifecycle,
-    ) -> None:
-        detected_at = self._time_provider.utc_now()
-        conn.execute(
-            """
-            INSERT INTO knowledge_physical_payloads (
-                tenant_id, position, revision_id, writer_fencing_generation, is_quarantined
-            ) VALUES (?, ?, ?, ?, 1)
-            """,
-            (
-                scope.tenant_id,
-                position.value,
-                revision_id.value,
-                stale_fencing_generation.value,
-            ),
-        )
-        conn.execute(
-            """
-            INSERT INTO knowledge_orphan_records (
-                record_id,
-                tenant_id,
-                position,
-                stale_fencing_generation,
-                winning_fencing_generation,
-                canonical_lifecycle,
-                revision_id,
-                reason,
-                detection_source,
-                detected_at_utc,
-                disposition
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                _new_record_id("korph"),
-                scope.tenant_id,
-                position.value,
-                stale_fencing_generation.value,
-                winning_fencing_generation.value,
-                canonical_lifecycle.value,
-                revision_id.value,
-                OrphanedDurableRevisionReason.STALE_FENCE_SUPERSEDED.value,
-                OrphanedDurableRevisionDetectionSource.ACCEPTANCE_PATH.value,
-                detected_at.isoformat(),
-                OrphanedDurableRevisionDisposition.QUARANTINED.value,
-            ),
-        )
 
     def _all_position_records(
         self,
@@ -733,6 +705,7 @@ class RevisionOrderingSQLiteStore:
                     lifecycle TEXT NOT NULL,
                     revision_id TEXT,
                     writer_fencing_generation INTEGER NOT NULL DEFAULT 0,
+                    canonical_fencing_generation INTEGER,
                     canonical_accepted INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY (tenant_id, position)
                 );

@@ -13,6 +13,7 @@ from intergrax.contracts.bitemporal_knowledge import (
     KnowledgeRevisionPosition,
     KnowledgeRevisionPositionLifecycle,
     RevisionAcceptanceConflictError,
+    RevisionFencingGeneration,
     StaleRevisionFencingError,
     UnknownKnowledgeRevisionPositionError,
     UnresolvedPositionResolutionError,
@@ -263,10 +264,14 @@ def test_resolution_race_acceptance_first(tmp_path: Path) -> None:
     revision = mint_knowledge_revision_id()
     pending = provider.accept_revision(scope=scope, revision_id=revision, acceptance_key=key)
     assert provider.position_lifecycle(pending.position) is KnowledgeRevisionPositionLifecycle.UNRESOLVED
+    writer_generation = RevisionFencingGeneration(scope=scope, value=0)
     completed = provider.accept_revision(scope=scope, revision_id=revision, acceptance_key=key)
     assert completed.position == pending.position
     assert provider.position_lifecycle(pending.position) is KnowledgeRevisionPositionLifecycle.ACCEPTED
+    canonical_generation = provider.store.canonical_fencing_generation(pending.position)
+    assert canonical_generation == writer_generation
     authority = provider.acquire_resolution_authority(scope)
+    assert authority.fencing_generation.value > writer_generation.value
     with pytest.raises(UnresolvedPositionResolutionError):
         provider.resolve_unresolved_position(
             position=pending.position,
@@ -274,28 +279,48 @@ def test_resolution_race_acceptance_first(tmp_path: Path) -> None:
             reason=KnowledgeRevisionResolutionReason.NO_CANONICAL_DURABLE_ACCEPTANCE,
             source=KnowledgeRevisionResolutionSource.RECOVERY,
         )
+    assert provider.list_orphan_records(scope) == ()
 
 
 @pytest.mark.unit
 @pytest.mark.gate
 def test_resolution_race_terminalization_first(tmp_path: Path) -> None:
-    provider = _open_provider(tmp_path, pause_after_allocate=True)
+    provider = _open_provider(
+        tmp_path,
+        pause_after_allocate=True,
+        allow_late_physical_write=True,
+    )
     scope = _scope()
     key = mint_revision_acceptance_key()
     revision = mint_knowledge_revision_id()
     pending = provider.accept_revision(scope=scope, revision_id=revision, acceptance_key=key)
+    stale_writer_generation = RevisionFencingGeneration(scope=scope, value=0)
     authority = provider.acquire_resolution_authority(scope)
-    provider.resolve_unresolved_position(
+    winning_recovery_generation = authority.fencing_generation
+    assert winning_recovery_generation.value > stale_writer_generation.value
+    resolution = provider.resolve_unresolved_position(
         position=pending.position,
         authority=authority,
         reason=KnowledgeRevisionResolutionReason.NO_CANONICAL_DURABLE_ACCEPTANCE,
         source=KnowledgeRevisionResolutionSource.RECOVERY,
     )
+    assert resolution.fencing_generation == winning_recovery_generation
+    assert provider.store.canonical_fencing_generation(pending.position) == winning_recovery_generation
     assert provider.position_lifecycle(pending.position) is (
         KnowledgeRevisionPositionLifecycle.TERMINAL_NON_COMMITTED
     )
     with pytest.raises(StaleRevisionFencingError):
         provider.accept_revision(scope=scope, revision_id=revision, acceptance_key=key)
+    assert provider.list_orphan_records(scope) == ()
+    orphan = provider.inject_late_physical_write(
+        position=pending.position,
+        revision_id=revision,
+        stale_fencing_generation=stale_writer_generation,
+    )
+    assert orphan is not None
+    assert orphan.stale_fencing_generation == stale_writer_generation
+    assert orphan.winning_fencing_generation == winning_recovery_generation
+    assert stale_writer_generation != winning_recovery_generation
 
 
 @pytest.mark.unit
@@ -310,25 +335,36 @@ def test_orphan_late_physical_write(tmp_path: Path) -> None:
     key = mint_revision_acceptance_key()
     revision = mint_knowledge_revision_id()
     pending = provider.accept_revision(scope=scope, revision_id=revision, acceptance_key=key)
+    stale_writer_generation = RevisionFencingGeneration(scope=scope, value=0)
     authority = provider.acquire_resolution_authority(scope)
-    provider.resolve_unresolved_position(
+    winning_recovery_generation = authority.fencing_generation
+    assert winning_recovery_generation.value > stale_writer_generation.value
+    resolution = provider.resolve_unresolved_position(
         position=pending.position,
         authority=authority,
         reason=KnowledgeRevisionResolutionReason.STALE_FENCE_SUPERSEDED,
         source=KnowledgeRevisionResolutionSource.RECOVERY,
     )
+    assert resolution.fencing_generation == winning_recovery_generation
+    assert provider.store.canonical_fencing_generation(pending.position) == winning_recovery_generation
+    with pytest.raises(StaleRevisionFencingError):
+        provider.accept_revision(scope=scope, revision_id=revision, acceptance_key=key)
+    assert provider.list_orphan_records(scope) == ()
     watermark_before = provider.watermark(scope)
     orphan = provider.inject_late_physical_write(
         position=pending.position,
         revision_id=revision,
-        stale_fencing_generation=authority,
+        stale_fencing_generation=stale_writer_generation,
     )
     assert orphan is not None
+    assert orphan.stale_fencing_generation == stale_writer_generation
+    assert orphan.winning_fencing_generation == winning_recovery_generation
+    assert stale_writer_generation != winning_recovery_generation
     assert provider.position_lifecycle(pending.position) is (
         KnowledgeRevisionPositionLifecycle.TERMINAL_NON_COMMITTED
     )
     assert provider.watermark(scope) == watermark_before
-    assert provider.list_orphan_records(scope)
+    assert provider.list_orphan_records(scope) == (orphan,)
 
 
 @pytest.mark.unit
@@ -351,7 +387,9 @@ def test_historical_immutability_after_orphan(tmp_path: Path) -> None:
         revision_id=mint_knowledge_revision_id(),
         acceptance_key=mint_revision_acceptance_key(),
     )
+    stale_writer_generation = RevisionFencingGeneration(scope=scope, value=0)
     authority = provider.acquire_resolution_authority(scope)
+    winning_recovery_generation = authority.fencing_generation
     provider.resolve_unresolved_position(
         position=pending.position,
         authority=authority,
@@ -370,13 +408,28 @@ def test_historical_immutability_after_orphan(tmp_path: Path) -> None:
     )
     watermark = provider.watermark(scope)
     historical_before = provider.records_through(watermark)
-    provider.inject_late_physical_write(
+    orphan = provider.inject_late_physical_write(
         position=pending.position,
         revision_id=mint_knowledge_revision_id(),
-        stale_fencing_generation=authority,
+        stale_fencing_generation=stale_writer_generation,
     )
     historical_after = provider.records_through(watermark)
     assert historical_before == historical_after
+    assert orphan is not None
+    assert orphan.winning_fencing_generation == winning_recovery_generation
+    assert orphan.stale_fencing_generation == stale_writer_generation
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_tenant_resolution_generation_advances(tmp_path: Path) -> None:
+    provider = _open_provider(tmp_path)
+    scope = _scope()
+    first = provider.acquire_resolution_authority(scope)
+    second = provider.acquire_resolution_authority(scope)
+    assert second.fencing_generation.value == first.fencing_generation.value + 1
+    assert first.scope == scope
+    assert second.scope == scope
 
 
 @pytest.mark.unit

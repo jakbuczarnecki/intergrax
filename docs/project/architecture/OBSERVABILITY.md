@@ -2073,9 +2073,9 @@ Module: `intergrax.contracts.bitemporal_knowledge`. Opt-in capability — **not*
 | Durable store | `intergrax.runtime.observability.revision_ordering_store.RevisionOrderingSQLiteStore` |
 | Recovery | `intergrax.runtime.observability.unresolved_revision_recovery.UnresolvedRevisionRecovery` |
 | Host DI | `intergrax.runtime.observability.composition.open_revision_ordering_authority` (`INTERGRAX_REVISION_ORDERING_DB`) |
-| Fencing | `RevisionFencingGeneration` per tenant scope; `ResolutionAuthority` from `acquire_resolution_authority` |
-| Resolution API | `resolve_unresolved_position` → `KnowledgeRevisionResolutionRecord` |
-| Orphan evidence | `OrphanedDurableRevisionRecord` + `knowledge_orphan_records` / quarantined `knowledge_physical_payloads` |
+| Fencing | `RevisionFencingGeneration` per tenant scope; `ResolutionAuthority` from `acquire_resolution_authority`; `writer_fencing_generation` preserves original writer authority; `canonical_fencing_generation` records winning canonical lifecycle authority (acceptance or terminalization) |
+| Resolution API | `resolve_unresolved_position` → `KnowledgeRevisionResolutionRecord`; terminalization persists `canonical_fencing_generation` = recovery authority generation |
+| Orphan evidence | `OrphanedDurableRevisionRecord` + `knowledge_orphan_records` / quarantined `knowledge_physical_payloads`; requires modeled physical durability — stale canonical acceptance rejection alone does **not** create orphan evidence |
 | Watermark | `compute_finalized_watermark` over durable `knowledge_position_states` |
 | Revision reference | `KnowledgeRevisionId` bound in `knowledge_acceptance_bindings` — no untyped knowledge payload bucket |
 

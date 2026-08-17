@@ -19,6 +19,7 @@ from intergrax.contracts.bitemporal_knowledge import (
     OrphanedDurableRevisionRecord,
     ResolutionAuthority,
     RevisionAcceptanceKey,
+    RevisionFencingGeneration,
     RevisionOrderingAuthority,
 )
 from intergrax.runtime.observability.revision_ordering_store import (
@@ -113,18 +114,12 @@ class CanonicalRevisionOrderingProvider(RevisionOrderingAuthority):
         *,
         position: KnowledgeRevisionPosition,
         revision_id: KnowledgeRevisionId,
-        stale_fencing_generation: ResolutionAuthority | None = None,
+        stale_fencing_generation: RevisionFencingGeneration,
     ) -> OrphanedDurableRevisionRecord | None:
-        from intergrax.contracts.bitemporal_knowledge import RevisionFencingGeneration
-
-        if stale_fencing_generation is None:
-            fence = RevisionFencingGeneration(scope=position.scope, value=0)
-        else:
-            fence = stale_fencing_generation.fencing_generation
         return self._store.inject_late_physical_write(
             position=position,
             revision_id=revision_id,
-            stale_fencing_generation=fence,
+            stale_fencing_generation=stale_fencing_generation,
         )
 
     def list_orphan_records(
