@@ -26,6 +26,7 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | Domain architecture canon | `docs/project/architecture/<DOMAIN>.md` |
 | Implementation status / backlog | `docs/project/maintainers/plans/<DOMAIN>.md` |
 | Strategy, invariants, authoring guides | [guides/README.md](guides/README.md) |
+| **Documentation Design System** (domain / feature hub standard) | [DOCUMENTATION_DESIGN_SYSTEM.md](guides/DOCUMENTATION_DESIGN_SYSTEM.md) |
 | Work with Cursor (AI agent) | [AGENTS.md](../../../AGENTS.md) + [AGENT_INSTRUCTIONS.md](guides/AGENT_INSTRUCTIONS.md) |
 | Cursor token budget (F2 / F3) | [CURSOR_TOKEN_SETUP.md](guides/CURSOR_TOKEN_SETUP.md) |
 | Audit procedure | [audit/README.md](../maintainers/audit/README.md) |
@@ -57,6 +58,7 @@ Domain pair index (24 names): [architecture hub § Domain pair index](../archite
 | `docs/project/capabilities/plan/<FEATURE>.md` | **Cross-layer feature plan** — phases across domains; domain rows stay in owning `docs/project/maintainers/plans/<DOMAIN>.md` | Standalone domain plan |
 | `docs/project/capabilities/architecture/satellites/` · `docs/project/capabilities/plan/satellites/` | Feature satellite registers (`.cursorignore`; explicit `@` / `Read` only) | Feature root `satellites/` |
 | [guides/](guides/README.md) | Cross-cutting strategy, invariants, authoring, audit methodology | Domain canon |
+| [DOCUMENTATION_DESIGN_SYSTEM.md](guides/DOCUMENTATION_DESIGN_SYSTEM.md) | **Hub authoring standard** — front section, visuals, gates, maintenance for `architecture/<DOMAIN>.md` and feature hubs | Domain content, plan rows |
 | [platform/governed_external_execution.md](platform/governed_external_execution.md) | Cross-cutting platform capability: governed external execution (ownership · lifecycle · invariants) | ADR text, GEC product trackers |
 | [integrations/impeachmentright_validation_readiness.md](../integrations/impeachmentright_validation_readiness.md) | Partner-facing readiness / five-point compatibility matrix for governed external execution | Platform architecture canon, attestation/EBE design |
 | [AGENTS.md](../../../AGENTS.md) | Cursor auto-load **stub** (~350 tok) | Full agent instructions |

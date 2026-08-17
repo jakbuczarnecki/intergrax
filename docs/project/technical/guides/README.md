@@ -6,6 +6,7 @@ Authoring guides, strategic context, and audit methodology.
 
 | Document | Purpose |
 |----------|---------|
+| [DOCUMENTATION_DESIGN_SYSTEM.md](DOCUMENTATION_DESIGN_SYSTEM.md) | **Canonical hub design standard** — human-facing front section, visual grammar, maturity/claim rules, DOC-3 modernization target |
 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | **Cross-layer MUST/MUST NOT rules** + `SYS-INV-*` index (P2-ARCH-01) — read before every implementation session |
 | [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) | **Four-axis maturity vocabulary** (A/I/P/E) — required before using *production-ready*, *L4*, *done*, etc. (P2-ARCH-02) |
 | [AGENT_AUTHOR_MINIMAL_PATH.md](AGENT_AUTHOR_MINIMAL_PATH.md) | **Minimal safe path for Tier-2 agent authors** — contracts, flow, MUST NOT, Cursor checklist |
