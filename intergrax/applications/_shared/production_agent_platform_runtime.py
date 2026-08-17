@@ -1,26 +1,35 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Process-local Agent Platform lifecycle store composition for production hosts (AC-3-FIX-2).
+"""Process-local Agent Platform lifecycle store bundle (AGENT-CONSOLIDATION-3-ARCH).
 
-Production chain (reference single-process host):
+Reference production V1 chain (single process, one composition root):
 
-    Agent Platform lifecycle composition (activation / projection)
+    ProductionProcessComposition
         ↓
-    ApplicationEnvironmentServingStore + RuntimeRegistryProjectionStore
+    ProductionAgentPlatformRuntime.stores
+        ↓
+    AP-9 activation → ApplicationEnvironmentServingStore
+    AP-10 projection → RuntimeRegistryProjectionStore
         ↓
     active traffic-serving RuntimeRevision id
         ↓
     MaterializedRegistryProjection
         ↓
-    production application factory → Nexus
+    production application host → Nexus
 
-Host startup is a **consumer** of stores populated before traffic serving. It does
+``build_production_agent_platform_runtime()`` constructs **one new process-local
+lifecycle universe**. It does **not** resolve already-active production state.
+Only ``ProductionProcessComposition`` (or an equivalent process composition root)
+may call it once per process.
+
+Host startup is a **consumer** of stores populated by deploy/activate. It does
 **not** build registry projections from manifest and does **not** instantiate fresh
 lifecycle stores per bootstrap call.
 
-Current adapters are process-local in-memory implementations. They are suitable for
-reference-host production semantics only; durable multi-instance persistence remains
-deferred.
+Current adapters are process-local in-memory implementations. They support
+**reference single-process production semantics** only — restart loses lifecycle
+state and multi-instance deployment is not supported at this adapter tier.
+Durable multi-instance production remains deferred (see ADR-AGENT-005).
 """
 
 from __future__ import annotations
@@ -55,7 +64,11 @@ class ProductionAgentPlatformRuntime:
 
 
 def build_production_agent_platform_runtime() -> ProductionAgentPlatformRuntime:
-    """Build one process-local AP lifecycle store composition for a production host."""
+    """Construct one new process-local AP lifecycle store bundle for a composition root.
+
+    Callers MUST be the process composition root (``ProductionProcessComposition``).
+    Application ``main.py`` and factories MUST NOT be canonical owners.
+    """
     state = AgentDistributionStoreState()
     return ProductionAgentPlatformRuntime(
         distribution_state=state,
@@ -66,8 +79,11 @@ def build_production_agent_platform_runtime() -> ProductionAgentPlatformRuntime:
     )
 
 
+create_process_local_agent_platform_runtime = build_production_agent_platform_runtime
+
 __all__ = [
     "AgentPlatformRuntimeStores",
     "ProductionAgentPlatformRuntime",
     "build_production_agent_platform_runtime",
+    "create_process_local_agent_platform_runtime",
 ]

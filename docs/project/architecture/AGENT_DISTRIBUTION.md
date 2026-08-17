@@ -2,7 +2,7 @@
 
 **Status:** Canonical architecture (AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1 activation semantics frozen — documentation only)  
 **Plan (1:1):** [`plan/AGENT_DISTRIBUTION.md`](../maintainers/plans/AGENT_DISTRIBUTION.md)  
-**ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md)  
+**ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) · [`adr/entries/2026-08-17/ADR-AGENT-005.md`](../technical/adr/entries/2026-08-17/ADR-AGENT-005.md) (AC-3 store ownership)  
 **Evidence gate:** [`audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../maintainers/audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md) (AGENT-PLATFORM-0)  
 **Execution hub (do not duplicate):** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §15–§16  
 **Runtime graph:** [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md)  
@@ -57,6 +57,7 @@
 31. [Migration from manifest-only applications](#31-migration-from-manifest-only-applications)
 32. [Explicit non-goals](#32-explicit-non-goals)
 33. [Implementation dependency graph / recommended AP-3+ sequencing](#33-implementation-dependency-graph--recommended-ap-3-sequencing)
+34. [Reference production topology (AGENT-CONSOLIDATION-3-ARCH)](#34-reference-production-topology-agent-consolidation-3-arch)
 
 ---
 
@@ -1349,6 +1350,97 @@ AP-3  Tier-0 contracts (identity, catalog provider IF, installation/binding reco
 ```
 
 **AGENT-PLATFORM-3 may begin** with AP-3 Tier-0 contracts and store interfaces — this architecture document is complete and contains no blocking open questions for implementation start.
+
+---
+
+## 34. Reference production topology (AGENT-CONSOLIDATION-3-ARCH)
+
+**ADR:** [`ADR-AGENT-005`](../technical/adr/entries/2026-08-17/ADR-AGENT-005.md)
+
+### 34.1 Reference production V1 (frozen)
+
+| Property | Semantics |
+|----------|-----------|
+| Process model | Single OS process |
+| Composition root | `ProductionProcessComposition` — one explicit process-level owner |
+| Store bundle | `ProductionAgentPlatformRuntime.stores` (`AgentPlatformRuntimeStores`) shared by lifecycle and serving |
+| Adapter tier | Process-local in-memory AP-9/AP-10 adapters **only** under this topology |
+| Durability | Restart loses lifecycle state |
+| Scale-out | Multi-instance deployment **not** supported by this adapter tier |
+
+Process-local in-memory stores are **not** general production durable storage. They implement **reference single-process production semantics** only.
+
+### 34.2 Deferred: durable / multi-instance production
+
+Future evolution (not implemented):
+
+- AP lifecycle authority survives process restart
+- Multiple application host instances resolve the same active revision
+- Serving/projection backed by durable store adapters
+- Deployment/controller topology may be separate from serving hosts
+
+**Migration trigger:** requirement for cross-process activation, restart-safe serving pointer, or horizontal host scale-out beyond one process.
+
+### 34.3 Ownership rule
+
+```text
+ProductionProcessComposition          ← canonical owner (process lifetime)
+    └── ProductionAgentPlatformRuntime
+            └── AgentPlatformRuntimeStores
+                    ├── ApplicationEnvironmentServingStore   (AP-9 authority surface)
+                    └── RuntimeRegistryProjectionStore       (AP-10 authority surface)
+```
+
+**Forbidden owners:** application `main.py`, product factories, per-request bootstrap, per-factory construction.
+
+`build_production_agent_platform_runtime()` means *construct one new process-local lifecycle universe* — not *resolve currently active production state*.
+
+### 34.4 Lifecycle writers and serving consumer
+
+| Store | Writer (AP) | Module / service |
+|-------|-------------|-------------------|
+| `ApplicationEnvironmentServingStore.traffic_serving_revision_id` | AP-9 | `ActivationService.commit_activation()` → `ApplicationEnvironmentActivationStore.atomic_commit_activation()` (shared `AgentDistributionStoreState` with serving adapter) |
+| `RuntimeRegistryProjectionStore` | AP-10 | `ApplicationRegistryProjectionCoordinator.prepare_projection()` → `put(MaterializedRegistryProjection)` |
+
+The process composition root injects the **same** store instances into activation/projection services and into host serving resolution. No duplicate coordinator per application host.
+
+**Serving consumer (read-only):**
+
+```text
+bootstrap_production_registry_projection()
+  → resolve_active_registry_projection()
+      → ApplicationEnvironmentServingStore.get_serving_record()
+      → RuntimeRegistryProjectionStore.get(revision_id)
+      → MaterializedRegistryProjection
+      → HarnessHostRuntime / Nexus
+```
+
+Host MUST NOT activate, project, select latest revision, rebuild registry, or mutate serving pointer.
+
+### 34.5 Startup sequencing (reference host)
+
+1. Create `ProductionProcessComposition`
+2. Initialize / load AP lifecycle state (admin or prior in-process state)
+3. Ensure active serving revision exists (deploy + activate)
+4. Resolve active projection (`bootstrap_production_registry_projection`)
+5. Construct application host with injected projection
+6. Expose traffic
+
+**Fail closed:** no active revision → STRICT host cannot start. Do not auto-bootstrap a default manifest revision.
+
+**DEPLOY / ACTIVATE ≠ SERVE:** cold reference process without prior activation cannot start a STRICT application host. That is expected.
+
+### 34.6 Multi-application process semantics (AP-11)
+
+One `AgentPlatformRuntimeStores` bundle per process may hold state for multiple `(application_id, application_environment_id)` pairs. Do not create one store bundle per application unless an explicit isolation contract requires it.
+
+### 34.7 Development / lab (unchanged)
+
+Manifest → development registry → host. No production lifecycle requirement. `ExecutionMode.STRICT` remains revision-bound.
+
+### 34.8 Unresolved blockers
+
+**None** for reference production V1. Durable multi-instance topology is explicitly deferred — not a blocker for AC-3-FIX-3 wiring against process-local adapters.
 
 ### Unresolved architecture blockers
 
