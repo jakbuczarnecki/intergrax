@@ -14,6 +14,7 @@ from intergrax.context.bootstrap import (
     materialize_context_plugin_registry,
     reset_context_catalog_bootstrap_for_tests,
 )
+from intergrax.context.plugin import ContextPlugin
 from intergrax.context.providers.builtin import BuiltinContextPlugin
 from intergrax.context.registry import ContextPluginRegistry, clear_context_plugin_catalog, list_context_plugin_ids
 from intergrax.core.plugins.admission import PluginAdmissionReasonCode
@@ -192,6 +193,11 @@ def test_shipped_builtin_not_in_accepted_external_ep_evidence(
     accepted_names = {spec.name for spec in result.load_report.accepted}
     assert "intergrax.builtin" not in accepted_names
     assert accepted_names == {"acme_context"}
+
+
+def test_canonical_context_plugin_protocol_check() -> None:
+    assert issubclass(_AcmeContextPlugin, ContextPlugin)
+    assert not issubclass(_UnsupportedContextTarget, ContextPlugin)
 
 
 def test_unsupported_target_rejected(

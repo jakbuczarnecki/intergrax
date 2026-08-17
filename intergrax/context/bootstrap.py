@@ -52,13 +52,6 @@ class ContextCatalogBootstrapResult:
     load_report: DomainPluginLoadReport
 
 
-def _is_context_plugin_type(plugin_type: type) -> bool:
-    if not isinstance(plugin_type, type):
-        return False
-    required = ("plugin_id", "plugin_version", "plugin_description", "register")
-    return all(callable(getattr(plugin_type, name, None)) for name in required)
-
-
 def _register_explicit_context_plugin(
     plugin_type: type[ContextPlugin],
     *,
@@ -85,7 +78,7 @@ def _register_context_entry_point(
     *,
     on_conflict: ConflictPolicy,
 ) -> tuple[bool, PluginAdmissionRejection | None]:
-    if not _is_context_plugin_type(plugin_type):
+    if not issubclass(plugin_type, ContextPlugin):
         message = (
             f"Context entry point {spec.name!r} does not implement ContextPlugin"
         )
