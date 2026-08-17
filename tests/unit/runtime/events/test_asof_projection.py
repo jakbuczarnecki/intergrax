@@ -16,6 +16,7 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.asof_projection import (
     HistoricalEventReference,
     InvalidRunExecutionHistoryError,
+    RunExecutionBoundaryNotFoundError,
     RunExecutionHistoryNotFoundError,
     RunExecutionHistoryTruncatedError,
     RunExecutionLifecycleStatus,
@@ -31,11 +32,12 @@ from intergrax.runtime.events.execution_position import (
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.events.unified_run_journal import (
+    PositionedJournalBoundaryNotFoundError,
     PositionedJournalPrefixTruncatedError,
     load_positioned_run_journal_through,
 )
 
-pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
+pytestmark = [pytest.mark.gate]
 
 _TENANT = "tenant-a"
 _SAME_TS = datetime(2026, 6, 7, 10, 0, 0, tzinfo=timezone.utc)
@@ -227,6 +229,15 @@ def test_retry_attempt_history_and_current_attempt() -> None:
                 task_id=task_id,
                 run_id=run_id,
                 attempt_id=attempt_a1,
+                event_type=RuntimeEventType.TASK_FAILED,
+            ),
+            tenant_id=_TENANT,
+        ),
+        store.append(
+            _event(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_a1,
                 event_type=RuntimeEventType.RETRY_SCHEDULED,
             ),
             tenant_id=_TENANT,
@@ -250,10 +261,18 @@ def test_retry_attempt_history_and_current_attempt() -> None:
             tenant_id=_TENANT,
         ),
     ]
-    before_retry = project_run_execution_as_of(
+    at_failure = project_run_execution_as_of(
         boundary=as_of_boundary_for_positioned(positioned[1]),
         positioned_events=tuple(store.list_positioned_through(
             as_of_boundary_for_positioned(positioned[1]),
+            tenant_id=_TENANT,
+        )),
+        tenant_id=_TENANT,
+    )
+    before_retry = project_run_execution_as_of(
+        boundary=as_of_boundary_for_positioned(positioned[2]),
+        positioned_events=tuple(store.list_positioned_through(
+            as_of_boundary_for_positioned(positioned[2]),
             tenant_id=_TENANT,
         )),
         tenant_id=_TENANT,
@@ -267,8 +286,12 @@ def test_retry_attempt_history_and_current_attempt() -> None:
         tenant_id=_TENANT,
     )
 
+    assert at_failure.lifecycle_status == RunExecutionLifecycleStatus.FAILED
+    assert at_failure.is_terminal is True
+    assert before_retry.lifecycle_status == RunExecutionLifecycleStatus.FAILED
     assert before_retry.current_attempt_id == attempt_a1
     assert before_retry.attempt_ids == (attempt_a1,)
+    assert after_retry.lifecycle_status == RunExecutionLifecycleStatus.RUNNING
     assert after_retry.attempt_ids == (attempt_a1, attempt_a2)
     assert after_retry.current_attempt_id == attempt_a2
     assert len(after_retry.attempts) == 2
@@ -442,6 +465,184 @@ def test_unknown_history_fails_explicitly() -> None:
 
 
 @pytest.mark.unit
+def test_nonexistent_boundary_position_rejected_by_reducer() -> None:
+    store = InMemoryRuntimeEventStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    positioned = _append_sequence(
+        store,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_types=[RuntimeEventType.TASK_CREATED, RuntimeEventType.PLAN_CREATED],
+    )
+    boundary = AsOfBoundary(run_id=run_id, position=ExecutionEventPosition(99))
+    prefix = tuple(store.list_positioned_through(boundary, tenant_id=_TENANT))
+    with pytest.raises(RunExecutionBoundaryNotFoundError):
+        project_run_execution_as_of(
+            boundary=boundary,
+            positioned_events=prefix,
+            tenant_id=_TENANT,
+        )
+
+
+@pytest.mark.unit
+def test_nonexistent_boundary_position_rejected_by_reconstruction() -> None:
+    store = InMemoryRuntimeEventStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    _append_sequence(
+        store,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_types=[RuntimeEventType.TASK_CREATED, RuntimeEventType.PLAN_CREATED],
+    )
+    boundary = AsOfBoundary(run_id=run_id, position=ExecutionEventPosition(99))
+    with pytest.raises(RunExecutionBoundaryNotFoundError):
+        reconstruct_run_execution_as_of(
+            persistence=store,
+            tenant_id=_TENANT,
+            boundary=boundary,
+        )
+    with pytest.raises(PositionedJournalBoundaryNotFoundError):
+        load_positioned_run_journal_through(
+            store,
+            tenant_id=_TENANT,
+            boundary=boundary,
+        )
+
+
+@pytest.mark.unit
+def test_valid_boundary_remains_stable_after_later_appends() -> None:
+    store = InMemoryRuntimeEventStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    positioned = _append_sequence(
+        store,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_types=[RuntimeEventType.TASK_CREATED, RuntimeEventType.PLAN_CREATED],
+    )
+    boundary = as_of_boundary_for_positioned(positioned[1])
+    projection1 = reconstruct_run_execution_as_of(
+        persistence=store,
+        tenant_id=_TENANT,
+        boundary=boundary,
+    )
+    _append_sequence(
+        store,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_types=[
+            RuntimeEventType.STEP_STARTED,
+            RuntimeEventType.STEP_COMPLETED,
+        ],
+    )
+    projection2 = reconstruct_run_execution_as_of(
+        persistence=store,
+        tenant_id=_TENANT,
+        boundary=boundary,
+    )
+
+    assert projection1 == projection2
+    assert projection1.last_included_position == boundary.position
+
+
+@pytest.mark.unit
+def test_completed_run_cannot_reopen() -> None:
+    store = InMemoryRuntimeEventStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    positioned = [
+        store.append(
+            _event(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                event_type=RuntimeEventType.TASK_CREATED,
+            ),
+            tenant_id=_TENANT,
+        ),
+        store.append(
+            _event(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                event_type=RuntimeEventType.TASK_COMPLETED,
+            ),
+            tenant_id=_TENANT,
+        ),
+        store.append(
+            _event(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=mint_attempt_id(),
+                event_type=RuntimeEventType.RETRY_STARTED,
+            ),
+            tenant_id=_TENANT,
+        ),
+    ]
+    boundary = as_of_boundary_for_positioned(positioned[-1])
+    with pytest.raises(InvalidRunExecutionHistoryError, match="after terminal completed"):
+        project_run_execution_as_of(
+            boundary=boundary,
+            positioned_events=tuple(store.list_positioned_through(boundary, tenant_id=_TENANT)),
+            tenant_id=_TENANT,
+        )
+
+
+@pytest.mark.unit
+def test_cancelled_run_cannot_reopen() -> None:
+    store = InMemoryRuntimeEventStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    positioned = [
+        store.append(
+            _event(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                event_type=RuntimeEventType.TASK_CREATED,
+            ),
+            tenant_id=_TENANT,
+        ),
+        store.append(
+            _event(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                event_type=RuntimeEventType.CANCELLED,
+            ),
+            tenant_id=_TENANT,
+        ),
+        store.append(
+            _event(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=mint_attempt_id(),
+                event_type=RuntimeEventType.RETRY_SCHEDULED,
+            ),
+            tenant_id=_TENANT,
+        ),
+    ]
+    boundary = as_of_boundary_for_positioned(positioned[-1])
+    with pytest.raises(InvalidRunExecutionHistoryError, match="after terminal cancelled"):
+        project_run_execution_as_of(
+            boundary=boundary,
+            positioned_events=tuple(store.list_positioned_through(boundary, tenant_id=_TENANT)),
+            tenant_id=_TENANT,
+        )
+
+
+@pytest.mark.unit
 def test_source_provenance_matches_positioned_events() -> None:
     store = InMemoryRuntimeEventStore()
     task_id = mint_task_id()
@@ -470,7 +671,7 @@ def test_source_provenance_matches_positioned_events() -> None:
 
 
 @pytest.mark.unit
-def test_boundary_beyond_last_event_uses_existing_prefix() -> None:
+def test_successful_projection_last_included_equals_boundary() -> None:
     store = InMemoryRuntimeEventStore()
     task_id = mint_task_id()
     run_id = mint_run_id()
@@ -480,13 +681,16 @@ def test_boundary_beyond_last_event_uses_existing_prefix() -> None:
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
-        event_types=[RuntimeEventType.TASK_CREATED, RuntimeEventType.PLAN_CREATED],
+        event_types=[
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.PLAN_CREATED,
+            RuntimeEventType.STEP_STARTED,
+        ],
     )
-    boundary = AsOfBoundary(run_id=run_id, position=ExecutionEventPosition(99))
+    boundary = as_of_boundary_for_positioned(positioned[1])
     projection = reconstruct_run_execution_as_of(
         persistence=store,
         tenant_id=_TENANT,
         boundary=boundary,
     )
-    assert projection.boundary.position == ExecutionEventPosition(99)
-    assert projection.last_included_position == positioned[-1].position
+    assert projection.last_included_position == boundary.position

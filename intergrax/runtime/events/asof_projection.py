@@ -17,6 +17,7 @@ from intergrax.runtime.events.execution_position import (
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.unified_run_journal import (
+    PositionedJournalBoundaryNotFoundError,
     PositionedJournalPrefixTruncatedError,
     load_positioned_run_journal_through,
 )
@@ -27,7 +28,11 @@ class RunExecutionProjectionError(Exception):
 
 
 class RunExecutionHistoryNotFoundError(RunExecutionProjectionError):
-    """No canonical positioned history exists for the requested run/boundary."""
+    """No canonical positioned history exists for the requested run."""
+
+
+class RunExecutionBoundaryNotFoundError(RunExecutionProjectionError):
+    """Canonical history exists but has no accepted event at the requested boundary position."""
 
 
 class RunExecutionHistoryTruncatedError(RunExecutionProjectionError):
@@ -59,10 +64,10 @@ _TERMINAL_STATUSES = frozenset(
     }
 )
 
-_RETRY_RECOVERY_TYPES = frozenset(
+_NON_REVERSIBLE_TERMINAL_STATUSES = frozenset(
     {
-        RuntimeEventType.RETRY_SCHEDULED,
-        RuntimeEventType.RETRY_STARTED,
+        RunExecutionLifecycleStatus.COMPLETED,
+        RunExecutionLifecycleStatus.CANCELLED,
     }
 )
 
@@ -142,6 +147,12 @@ def project_run_execution_as_of(
         boundary=boundary,
         tenant_id=tenant_id,
     )
+    if positioned_events[-1].position != boundary.position:
+        raise RunExecutionBoundaryNotFoundError(
+            f"positioned prefix ends at {positioned_events[-1].position.value}, "
+            f"not at requested boundary {boundary.position.value} "
+            f"for run {boundary.run_id!r}"
+        )
 
     lifecycle_status = RunExecutionLifecycleStatus.CREATED
     attempt_order: list[AttemptId] = []
@@ -225,6 +236,12 @@ def reconstruct_run_execution_as_of(
         )
     except PositionedJournalPrefixTruncatedError as exc:
         raise RunExecutionHistoryTruncatedError(str(exc)) from exc
+    except PositionedJournalBoundaryNotFoundError as exc:
+        raise RunExecutionBoundaryNotFoundError(str(exc)) from exc
+    if not positioned_events:
+        raise RunExecutionHistoryNotFoundError(
+            f"no canonical execution history for run {boundary.run_id!r}"
+        )
     return project_run_execution_as_of(
         boundary=boundary,
         positioned_events=positioned_events,
@@ -236,9 +253,23 @@ def _apply_lifecycle_event(
     current: RunExecutionLifecycleStatus,
     event_type: RuntimeEventType,
 ) -> RunExecutionLifecycleStatus:
+    if event_type == RuntimeEventType.RETRY_SCHEDULED:
+        if current in _NON_REVERSIBLE_TERMINAL_STATUSES:
+            raise InvalidRunExecutionHistoryError(
+                f"retry lifecycle event {event_type.value!r} after terminal "
+                f"{current.value}"
+            )
+        return current
+
     mapped = _LIFECYCLE_STATUS_BY_EVENT.get(event_type)
     if mapped is not None:
-        if current in _TERMINAL_STATUSES and event_type not in _RETRY_RECOVERY_TYPES:
+        if current in _NON_REVERSIBLE_TERMINAL_STATUSES:
+            raise InvalidRunExecutionHistoryError(
+                f"lifecycle event {event_type.value!r} after terminal {current.value}"
+            )
+        if current == RunExecutionLifecycleStatus.FAILED:
+            if event_type == RuntimeEventType.RETRY_STARTED:
+                return RunExecutionLifecycleStatus.RUNNING
             if mapped in _TERMINAL_STATUSES and mapped != current:
                 raise InvalidRunExecutionHistoryError(
                     f"conflicting terminal lifecycle event {event_type.value!r} after "
@@ -249,8 +280,6 @@ def _apply_lifecycle_event(
                     f"non-terminal lifecycle event {event_type.value!r} after terminal "
                     f"{current.value}"
                 )
-        if event_type == RuntimeEventType.RETRY_SCHEDULED:
-            return RunExecutionLifecycleStatus.RUNNING if current in _TERMINAL_STATUSES else current
         return mapped
 
     if current == RunExecutionLifecycleStatus.CREATED:

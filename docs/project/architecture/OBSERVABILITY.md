@@ -955,7 +955,7 @@ Validation = FAILED
 | **Source provenance** | `HistoricalEventReference` | same | `EventId` + `ExecutionEventPosition` + `AttemptId` + `RuntimeEventType` — no payload copies |
 | **Pure reducer** | `project_run_execution_as_of(...)` | same | Deterministic fold over positioned prefix; no persistence, clock, or live state |
 | **Read orchestration** | `reconstruct_run_execution_as_of(...)` | same | Tenant-scoped load via `load_positioned_run_journal_through` then reducer |
-| **Positioned journal load** | `load_positioned_run_journal_through(...)` | `unified_run_journal` | Canonical persistence read path; paginates by increasing `limit` until prefix complete |
+| **Positioned journal load** | `load_positioned_run_journal_through(...)` | `unified_run_journal` | Single authority for prefix completeness and exact boundary existence; paginates by increasing `limit` until prefix complete |
 
 **Rules (TRACE-ASOF-2):**
 
@@ -963,11 +963,12 @@ Validation = FAILED
 2. Reducer **MUST NOT** parse `RuntimeEvent.payload` or use timestamp ordering.
 3. `PAUSE_REQUESTED` ≠ `PAUSED`; `CANCELLATION_REQUESTED` ≠ `CANCELLED`; `HUMAN_APPROVAL_REQUESTED` does not imply run failure.
 4. Attempt history is first-seen execution-position order; `RETRY_STARTED` introduces a new `AttemptId`; `RESUMED` preserves attempt identity.
-5. Requested `AsOfBoundary` is retained even when beyond the last accepted event; `last_included_position` records the highest included position.
-6. Unknown / missing canonical history **MUST** fail (`RunExecutionHistoryNotFoundError`) — not an empty projection.
+5. `AsOfBoundary` is a **stable historical coordinate**: reconstruction is valid only when the boundary position corresponds to an accepted `PositionedRuntimeEvent` in canonical history. A nonexistent future position **MUST** fail (`RunExecutionBoundaryNotFoundError`). On success, `last_included_position == boundary.position`.
+6. Unknown run with no positioned history **MUST** fail (`RunExecutionHistoryNotFoundError`) — not an empty projection.
 7. Prefix reads **MUST NOT** silently truncate: incomplete reads fail closed (`RunExecutionHistoryTruncatedError`).
 8. Logical-only — **no** projection persistence, store, or materialized view (TRACE-ASOF-3).
 9. **No** `KnowledgeRevisionPosition` / bitemporal types in the execution reducer — E-only reconstruction.
+10. `TASK_COMPLETED` and `CANCELLED` are irreversible; `TASK_FAILED` / `PLAN_FAILED` may precede `RETRY_SCHEDULED` / `RETRY_STARTED` in the same `RunId`; `RETRY_SCHEDULED` preserves status; `RETRY_STARTED` transitions `FAILED` → `RUNNING`.
 
 **Forbidden:** `dict[str, Any]` projection fields; dynamic projection registry; payload-key lifecycle inference; timestamp-ordered reducer input; second source of truth.
 

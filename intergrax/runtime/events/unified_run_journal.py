@@ -24,6 +24,10 @@ class PositionedJournalPrefixTruncatedError(Exception):
     """Raised when a positioned journal prefix read hits the configured limit."""
 
 
+class PositionedJournalBoundaryNotFoundError(Exception):
+    """Raised when canonical history has no accepted event at the requested boundary position."""
+
+
 def load_positioned_run_journal_through(
     runtime_store: RuntimeEventPersistence,
     *,
@@ -37,6 +41,11 @@ def load_positioned_run_journal_through(
 
     Reads paginate by increasing ``limit`` until the inclusive prefix is complete or
     ``max_limit`` is exceeded. A truncated read fails closed.
+
+    Ownership: this helper is the single authority for prefix completeness and exact
+    boundary existence. It returns a prefix whose last event position equals
+    ``boundary.position``, or raises when history is absent, the exact boundary event
+    is missing, or completeness cannot be proven within ``max_limit``.
     """
     _require_tenant_id(tenant_id)
     _validate_journal_limit(initial_limit)
@@ -57,8 +66,19 @@ def load_positioned_run_journal_through(
             return batch
         last_position = batch[-1].position
         if len(batch) < limit:
+            if last_position < boundary.position:
+                raise PositionedJournalBoundaryNotFoundError(
+                    f"no accepted execution event at position {boundary.position.value} "
+                    f"for run {boundary.run_id!r}"
+                )
             return batch
         if last_position >= boundary.position:
+            if last_position != boundary.position:
+                raise PositionedJournalBoundaryNotFoundError(
+                    f"positioned prefix ends at {last_position.value}, "
+                    f"not at requested boundary {boundary.position.value} "
+                    f"for run {boundary.run_id!r}"
+                )
             return batch
         if limit >= max_limit:
             raise PositionedJournalPrefixTruncatedError(
