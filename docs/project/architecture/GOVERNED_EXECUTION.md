@@ -243,9 +243,28 @@ The catalog describes capability; bundles carry what was configured; handlers ex
 
 **G2B typed contract:** `intergrax.contracts.policy_catalog` implements immutable `PolicyDefinition` metadata — `policy_id`, definition `version`, `display_name`, `description`, `handler_id`, `configuration_contract_id`, and `source` (`built_in` / `plugin`). This answers *what policy capability exists* at the contract level only.
 
-**G2C-1 resolution core:** `intergrax.runtime.policy.catalog.PolicyCatalog` implements deterministic exact `PolicyDefinition` resolution by `(policy_id, version)` — multi-version coexistence, explicit unknown-policy failure, explicit unsupported-version failure, deterministic duplicate conflict rejection, and **no** latest/fallback/downgrade behavior. The catalog may be empty initially; G2C-1 does **not** ship canonical built-in definitions. `PolicyCatalog` does **not** resolve `handler_id` or `configuration_contract_id`; plugin discovery/admission is outside this module. The canonical built-in policy catalog remains **Open**.
+**G2C-1 resolution core:** `intergrax.runtime.policy.catalog.PolicyCatalog` implements deterministic exact `PolicyDefinition` resolution by `(policy_id, version)` — multi-version coexistence, explicit unknown-policy failure, explicit unsupported-version failure, deterministic duplicate conflict rejection, and **no** latest/fallback/downgrade behavior. `PolicyCatalog` does **not** resolve `handler_id` or `configuration_contract_id`; plugin discovery/admission is outside this module.
 
-**G2C-2A rule / handler identity separation:** on the declarative runtime path, `rule_id` is configured rule instance identity and `handler_id` is runtime handler implementation identity. `PolicyRuleRegistry` resolves handlers by `handler_id`; evidence and outcomes attribute decisions to `rule_id`. G2C-2A-R1 completed active caller and fixture migration after the initial core identity split. No Policy Catalog wiring, no `policy_id` on configured rules, and no canonical built-in `PolicyDefinition` shipped yet — G2C-2B owns first real built-in policy and catalog-to-rule composition.
+**G2C-2A rule / handler identity separation:** on the declarative runtime path, `rule_id` is configured rule instance identity and `handler_id` is runtime handler implementation identity. `PolicyRuleRegistry` resolves handlers by `handler_id`; evidence and outcomes attribute decisions to `rule_id`. G2C-2A-R1 completed active caller and fixture migration after the initial core identity split.
+
+**G2C-2B first built-in policy — Tool Invocation Control:** canonical built-in catalog and typed composition for one real policy capability:
+
+```text
+PolicyDefinition (policy_id = tool_invocation_control, version = 1, source = built_in)
+    ↓
+ToolInvocationControlConfig (tool_id + action; configuration_contract_id = tool_invocation_control.v1)
+    ↓
+configured DeclarativePolicyRule (rule_id = application identity; handler_id = deny_tool)
+    ↓
+PolicyRuleRegistry
+    ↓
+DeclarativePolicyEnforcer (ALLOW / DENY / REQUIRE_HITL)
+```
+
+- First canonical built-in policy: `tool_invocation_control@1` via `intergrax.runtime.policy.builtin_catalog`.
+- Typed config is immutable; arbitrary `conditions` are **not** exposed through this contract.
+- `handler_id = deny_tool` is a historical runtime implementation name; the product capability is Tool Invocation Control.
+- Broader built-in policy inventory, platform-wide coverage, and production qualification are **not** claimed.
 
 ---
 
@@ -284,9 +303,9 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 | Uniform evaluation-point runtime enum / god engine | **Rejected** — multiple owners preserved |
 | Policy Catalog architecture (G2A) | **Accepted** — [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) |
 | Typed Policy Catalog contracts (G2B) | **Implemented** — immutable `PolicyDefinition` identity/source/configuration-contract metadata |
-| Policy Catalog resolution core (G2C-1) | **Implemented** — exact `(policy_id, version)` resolution and deterministic conflict rejection; canonical built-in definitions not yet shipped |
+| Policy Catalog resolution core (G2C-1) | **Implemented** — exact `(policy_id, version)` resolution and deterministic conflict rejection |
 | Declarative rule / handler identity separation (G2C-2A) | **Implemented** — configured rule identity and handler implementation identity are distinct on the declarative runtime path; G2C-2A-R1 completed active caller and fixture migration |
-| Canonical built-in policy catalog | **Open** |
+| Canonical built-in policy catalog | **Implemented core** — first canonical built-in policy `tool_invocation_control@1`; broader policy inventory and qualification ongoing |
 | Complete platform-wide coverage | **Not claimed** |
 | Dedicated accepted public Governed Execution proof | **Not established** |
 | Production qualification | **Not established** |
