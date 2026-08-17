@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from intergrax.contracts.policy_catalog import PolicyDefinition, PolicyDefinitionSource
 from intergrax.contracts.tool_invocation_control_policy import (
     TOOL_INVOCATION_CONTROL_CONFIGURATION_CONTRACT_ID,
@@ -44,7 +46,15 @@ def built_in_policy_definitions() -> tuple[PolicyDefinition, ...]:
 
 def build_builtin_policy_catalog() -> PolicyCatalog:
     """Build the canonical immutable built-in Policy Catalog."""
-    return PolicyCatalog(built_in_policy_definitions())
+    return build_policy_catalog()
+
+
+def build_policy_catalog(
+    *,
+    plugin_definitions: Iterable[PolicyDefinition] = (),
+) -> PolicyCatalog:
+    """Compose built-in and validated plugin PolicyDefinition values."""
+    return PolicyCatalog((*built_in_policy_definitions(), *plugin_definitions))
 
 
 def _validate_builtin_tool_invocation_control_definition(definition: PolicyDefinition) -> None:

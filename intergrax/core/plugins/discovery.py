@@ -29,6 +29,7 @@ EP_RAG_RETRIEVERS = "intergrax.rag.retrievers"
 EP_RAG_RERANKERS = "intergrax.rag.rerankers"
 EP_SECURITY_DEFENSES = "intergrax.security_defenses"
 EP_POLICY_RULES = "intergrax.policy_rules"
+EP_POLICY_DEFINITIONS = "intergrax.policy_definitions"
 EP_TOOL_INVOCATION_PATTERNS = "intergrax.tool_invocation_patterns"
 
 T = TypeVar("T")
