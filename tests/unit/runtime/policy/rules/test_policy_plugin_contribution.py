@@ -15,6 +15,7 @@ from intergrax.core.plugins.admission import PluginAdmissionReasonCode
 from intergrax.core.plugins.discovery import (
     EP_POLICY_DEFINITIONS,
     EP_POLICY_RULES,
+    EntryPointSpec,
     load_entry_point_value,
     reset_entry_point_spec_cache_for_tests,
 )
@@ -225,11 +226,10 @@ def _lookup_for(qualification: object | None) -> object:
 
 
 def _lookup_for_packages(qualifications: dict[str, object | None]) -> object:
-    def lookup(spec: object) -> object | None:
-        distribution = getattr(spec, "distribution", None)
-        if distribution is None:
+    def lookup(spec: EntryPointSpec) -> object | None:
+        if spec.distribution is None:
             return None
-        return qualifications.get(distribution)
+        return qualifications.get(spec.distribution)
 
     return lookup
 
@@ -635,27 +635,72 @@ def test_end_to_end_handler_admission_to_catalog_resolve(
 def test_production_rejected_definition_not_imported_before_admission(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    load_calls: list[str] = []
+    qualification = _production_package_qualification(compatibility=_compatible_platform())
+    registry, handler_provenance = _load_admitted_handlers(
+        monkeypatch,
+        qualification=qualification,
+    )
+    definition_load_calls: list[str] = []
+    original_load = load_entry_point_value
 
     def _tracking_load(value: str) -> object:
-        load_calls.append(value)
-        return load_entry_point_value(value)
+        if value.endswith(":_CONTRIBUTION"):
+            definition_load_calls.append(value)
+        return original_load(value)
 
     monkeypatch.setattr(
         "intergrax.core.plugins.discovery.load_entry_point_value",
         _tracking_load,
     )
-    registry, handler_provenance = _load_admitted_handlers(
-        monkeypatch,
-        qualification=None,
-    )
     _install_eps(
         monkeypatch,
-        [_definition_ep("alpha-policy", "_CONTRIBUTION", distribution=None)],
+        [
+            _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+        ],
     )
-    load_policy_definition_plugin_report(
+    outcome = load_policy_definition_plugin_report(
         registry,
         handler_provenance,
         policy=_production_load_policy(None),
     )
-    assert load_calls == []
+    assert outcome.contributions == ()
+    assert outcome.report.rejected[0].reason_code is (
+        PluginAdmissionReasonCode.PRODUCTION_ADMISSION_DENIED
+    )
+    assert definition_load_calls == []
+
+
+_MIXED_CONTRIBUTIONS = (_CONTRIBUTION, _builtin_spoof())
+
+
+def test_multi_value_entry_point_rejects_all_when_any_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    qualification = _production_package_qualification(compatibility=_compatible_platform())
+    registry, handler_provenance = _load_admitted_handlers(
+        monkeypatch,
+        qualification=qualification,
+    )
+    _install_eps(
+        monkeypatch,
+        [
+            _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
+            _definition_ep(
+                "alpha-policy",
+                "_MIXED_CONTRIBUTIONS",
+                distribution=_PACKAGE_NAME,
+            ),
+        ],
+    )
+    _mock_installed_distribution(monkeypatch)
+    outcome = load_policy_definition_plugin_report(
+        registry,
+        handler_provenance,
+        policy=_production_load_policy(qualification),
+    )
+    assert outcome.contributions == ()
+    assert outcome.report.rejected[0].reason_code is (
+        PluginAdmissionReasonCode.INVALID_POLICY_CONTRIBUTION_SOURCE
+    )
+    assert outcome.report.accepted == ()

@@ -214,11 +214,13 @@ def load_policy_definition_plugin_report(
             failed.append(EntryPointLoadResult(spec=result.spec, error=exc))
             continue
 
+        pending: list[GovernancePolicyContribution] = []
+        entry_rejections: list[PluginAdmissionRejection] = []
         entry_rejected = False
         for definition in definitions:
             bound = _bind_contribution(definition, result.spec)
             if isinstance(bound, PluginAdmissionRejection):
-                rejected.append(bound)
+                entry_rejections.append(bound)
                 entry_rejected = True
                 continue
             binding_rejection = _validate_handler_binding(
@@ -228,13 +230,17 @@ def load_policy_definition_plugin_report(
                 provenance_by_handler,
             )
             if binding_rejection is not None:
-                rejected.append(binding_rejection)
+                entry_rejections.append(binding_rejection)
                 entry_rejected = True
                 continue
-            contributions.append(bound)
+            pending.append(bound)
 
-        if not entry_rejected and definitions:
-            accepted.append(result.spec)
+        if entry_rejected:
+            rejected.extend(entry_rejections)
+        else:
+            contributions.extend(pending)
+            if definitions:
+                accepted.append(result.spec)
 
     accepted_tuple = tuple(sorted(accepted, key=lambda spec: (spec.name, spec.value)))
     report = DomainPluginLoadReport(
