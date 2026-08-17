@@ -44,4 +44,29 @@ def bootstrap_production_registry_projection(
     )
 
 
-__all__ = ["bootstrap_production_registry_projection"]
+class StrictProductionAsgiPlaceholder:
+    """Import-safe module-level ASGI symbol for STRICT apps without lifecycle activation.
+
+    Production serving requires an explicit ``ProductionProcessComposition`` that has
+    already passed through AP lifecycle activation. Use ``create_<app>_process_app`` or
+    ``create_app(process_composition=...)`` from a process root instead of ``module:app``.
+    """
+
+    def __init__(self, *, application_package: str) -> None:
+        self._application_package = application_package
+
+    async def __call__(self, scope: object, receive: object, send: object) -> None:
+        del scope, receive, send
+        raise HarnessHostRegistryAuthorityError(
+            f"{self._application_package}.host.main:app cannot serve STRICT production "
+            "without an activated ProductionProcessComposition; use "
+            f"create_app(process_composition=...) with uvicorn --factory or build the "
+            f"host via create_{self._application_package.rsplit('.', 1)[-1]}_process_app "
+            "from a process root that owns lifecycle activation"
+        )
+
+
+__all__ = [
+    "StrictProductionAsgiPlaceholder",
+    "bootstrap_production_registry_projection",
+]

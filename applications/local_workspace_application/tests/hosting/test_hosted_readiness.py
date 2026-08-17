@@ -33,6 +33,11 @@ from intergrax.hosting.engine.health import (
 from intergrax.hosting.services import HostedApplicationServiceRegistry
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.hosting import build_local_workspace_hosted_profile
+from local_workspace_application.tests.lkw_ac3_projection import (
+    create_lkw_hosted_test_process_composition,
+)
+
+_TEST_PROCESS_COMPOSITION = create_lkw_hosted_test_process_composition()
 from local_workspace_application.hosting.readiness import _HostedLocalWorkspaceReadiness
 
 pytestmark = pytest.mark.unit
@@ -111,6 +116,7 @@ def _make_context(
     readiness: _MutableReadinessService,
 ) -> HostedApplicationContext:
     profile = build_local_workspace_hosted_profile(
+        process_composition=_TEST_PROCESS_COMPOSITION,
         settings=LocalWorkspaceBackendSettings(),
     )
     services = HostedApplicationServiceRegistry()

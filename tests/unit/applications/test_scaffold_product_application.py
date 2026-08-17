@@ -37,6 +37,11 @@ def test_scaffold_product_profile_creates_fastapi_core_tree(tmp_path):
     assert "create_app" in factory
     assert "create_debug_app" not in factory
 
+    main_py = (target / "host" / "main.py").read_text(encoding="utf-8")
+    assert "create_demo_product_process_app" in main_py
+    assert "ProductionProcessComposition" in main_py
+    assert "build_production_agent_platform_runtime" not in main_py
+
     settings = (target / "host" / "settings.py").read_text(encoding="utf-8")
     assert "DemoProductBackendSettings" in settings
     assert "BACKEND_BOOTSTRAP_API_KEY" in settings

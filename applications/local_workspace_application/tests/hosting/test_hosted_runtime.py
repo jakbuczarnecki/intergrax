@@ -40,8 +40,13 @@ from local_workspace_application.hosting.runtime import (
     _HostedUvicornServer,
     _LocalWorkspaceHostedRuntime,
 )
+from local_workspace_application.tests.lkw_ac3_projection import (
+    create_lkw_hosted_test_process_composition,
+)
 
 pytestmark = pytest.mark.unit
+
+_TEST_PROCESS_COMPOSITION = create_lkw_hosted_test_process_composition()
 
 
 class _Clock:
@@ -119,6 +124,7 @@ def _context_for_runtime(
     readiness: _MutableReadinessService | None = None,
 ) -> HostedApplicationContext:
     profile = build_local_workspace_hosted_profile(
+        process_composition=_TEST_PROCESS_COMPOSITION,
         settings=LocalWorkspaceBackendSettings(),
     )
     public = profile.public_view().model_copy(
@@ -211,6 +217,7 @@ async def test_ready_false_before_start() -> None:
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
+        process_composition=_TEST_PROCESS_COMPOSITION,
         application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: _FakeServer(),
     )
@@ -242,6 +249,7 @@ async def test_start_ready_stop_lifecycle() -> None:
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
+        process_composition=_TEST_PROCESS_COMPOSITION,
         application_factory=application_factory,
         server_factory=server_factory,
     )
@@ -287,6 +295,7 @@ async def test_runtime_ready_independent_of_platform_ready() -> None:
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
+        process_composition=_TEST_PROCESS_COMPOSITION,
         application_factory=application_factory,
         server_factory=lambda app, host, port: server,
     )
@@ -339,6 +348,7 @@ async def test_ready_false_when_serve_task_finishes() -> None:
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
+        process_composition=_TEST_PROCESS_COMPOSITION,
         application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
@@ -361,6 +371,7 @@ async def test_second_start_rejected() -> None:
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
+        process_composition=_TEST_PROCESS_COMPOSITION,
         application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
@@ -393,6 +404,7 @@ async def test_app_factory_failure_creates_no_server_or_task() -> None:
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
+        process_composition=_TEST_PROCESS_COMPOSITION,
         application_factory=application_factory,
         server_factory=server_factory,
     )
@@ -414,6 +426,7 @@ async def test_serve_raises_before_started() -> None:
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
+        process_composition=_TEST_PROCESS_COMPOSITION,
         application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
@@ -433,6 +446,7 @@ async def test_system_exit_before_startup_is_normalized() -> None:
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
+        process_composition=_TEST_PROCESS_COMPOSITION,
         application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
@@ -457,6 +471,7 @@ async def test_system_exit_after_startup_does_not_exit_process() -> None:
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
+        process_composition=_TEST_PROCESS_COMPOSITION,
         application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
@@ -490,6 +505,7 @@ async def test_serve_exits_before_started() -> None:
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
+        process_composition=_TEST_PROCESS_COMPOSITION,
         application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
@@ -507,6 +523,7 @@ async def test_startup_timeout_cancels_serve_task() -> None:
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
+        process_composition=_TEST_PROCESS_COMPOSITION,
         application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )

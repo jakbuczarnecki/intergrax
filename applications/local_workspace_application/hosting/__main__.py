@@ -7,6 +7,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from intergrax.applications._shared.production_process_composition import (
+    create_reference_production_process_composition,
+)
 from intergrax.hosting import (
     HostedApplicationExitKind,
     HostedApplicationSupervisorResult,
@@ -55,7 +58,9 @@ def _exit_code(result: HostedApplicationSupervisorResult) -> int:
 
 
 def main() -> int:
-    result = run_local_workspace_hosted_application()
+    result = run_local_workspace_hosted_application(
+        process_composition=create_reference_production_process_composition(),
+    )
     print(
         json.dumps(
             _safe_result_payload(result),

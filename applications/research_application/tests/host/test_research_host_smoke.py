@@ -12,6 +12,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_research_application_health() -> None:
-    client = TestClient(create_research_backend_app())
+    client = TestClient(
+        create_research_backend_app(
+            registry_projection=build_research_test_registry_projection(),
+        )
+    )
     response = client.get("/health")
     assert response.status_code == 200

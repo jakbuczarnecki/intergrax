@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
 from intergrax.agent_distribution.runtime_revision import (
@@ -186,6 +184,35 @@ def build_test_registry_projection(
     settings: object | None = None,
 ) -> MaterializedRegistryProjection:
     """Build a revision-bound projection for harness/factory integration tests."""
+    bundle = build_test_registry_projection_bundle(
+        manifest,
+        environment,
+        enabled_bindings=enabled_bindings,
+        enabled_contract_stems=enabled_contract_stems,
+        builders=builders,
+        revision_id=revision_id,
+        release_id=release_id,
+        package_digest=package_digest,
+        artifact_digest=artifact_digest,
+        settings=settings,
+    )
+    return build_registry_projection(bundle)
+
+
+def build_test_registry_projection_bundle(
+    manifest: ApplicationManifest,
+    environment: ApplicationEnvironmentProfile,
+    *,
+    enabled_bindings: tuple[AgentBinding, ...] | None = None,
+    enabled_contract_stems: frozenset[str] | None = None,
+    builders: BuilderMap | None = None,
+    revision_id: str = "test-runtime-revision",
+    release_id: str = _TEST_RELEASE,
+    package_digest: str = _TEST_DIGEST,
+    artifact_digest: str = _TEST_ARTIFACT,
+    settings: object | None = None,
+) -> RegistryProjectionInputBundle:
+    """Build frozen AP-10 projection inputs for lifecycle activation tests."""
     manifest = _manifest_with_contract_ids(manifest)
     manifest = _manifest_with_builder_factories(manifest, builders)
     bindings = enabled_bindings or tuple(manifest.enabled_agents())
@@ -215,8 +242,8 @@ def build_test_registry_projection(
         runtime_graph_digest=_TEST_GRAPH_DIGEST,
         materialization_artifact_digest=artifact_digest,
         materialization_topology=MaterializationTopology.VENV_BUNDLE,
-        revision_state=RuntimeRevisionState.ACTIVE,
-        activated_at=datetime.now(UTC),
+        revision_state=RuntimeRevisionState.CANDIDATE,
+        activated_at=None,
     )
     ctx = ApplicationBuildContext.for_manifest(manifest)
     if settings is not None:
@@ -227,7 +254,7 @@ def build_test_registry_projection(
             environment,
             settings=settings,
         ).build_context
-    bundle = RegistryProjectionInputBundle(
+    return RegistryProjectionInputBundle(
         runtime_revision=revision,
         effective_roster=roster,
         manifest=manifest,
@@ -241,4 +268,3 @@ def build_test_registry_projection(
         builders=builders,
         materialization_artifact_digest=artifact_digest,
     )
-    return build_registry_projection(bundle)

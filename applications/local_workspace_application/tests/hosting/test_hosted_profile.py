@@ -48,6 +48,11 @@ from local_workspace_application.hosting.profile import (
 )
 from local_workspace_application.hosting.runtime import _LocalWorkspaceHostedRuntime
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
+from local_workspace_application.tests.lkw_ac3_projection import (
+    create_lkw_hosted_test_process_composition,
+)
+
+_TEST_PROCESS_COMPOSITION = create_lkw_hosted_test_process_composition()
 
 
 class _Clock:
@@ -142,6 +147,7 @@ def _minimal_context(profile: HostedApplicationProfile) -> HostedApplicationCont
 
 def test_builder_returns_hosted_application_profile() -> None:
     profile = build_local_workspace_hosted_profile(
+        process_composition=_TEST_PROCESS_COMPOSITION,
         settings=LocalWorkspaceBackendSettings(),
     )
     assert isinstance(profile, HostedApplicationProfile)
@@ -201,8 +207,14 @@ def test_builder_returns_hosted_application_profile() -> None:
 
 def test_profile_resolves_and_digests_are_deterministic() -> None:
     settings = LocalWorkspaceBackendSettings()
-    profile_a = build_local_workspace_hosted_profile(settings=settings)
-    profile_b = build_local_workspace_hosted_profile(settings=settings)
+    profile_a = build_local_workspace_hosted_profile(
+        process_composition=_TEST_PROCESS_COMPOSITION,
+        settings=settings,
+    )
+    profile_b = build_local_workspace_hosted_profile(
+        process_composition=_TEST_PROCESS_COMPOSITION,
+        settings=settings,
+    )
     definition_a = resolve_hosted_application_definition(profile_a)
     definition_b = resolve_hosted_application_definition(profile_b)
     assert definition_a.application_id == "local_workspace"
@@ -221,7 +233,8 @@ def test_settings_snapshot_resolved_once(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.setattr(
         LocalWorkspaceBackendSettings, "from_env", staticmethod(_from_env)
     )
-    profile = build_local_workspace_hosted_profile()
+    profile = build_local_workspace_hosted_profile(
+        process_composition=_TEST_PROCESS_COMPOSITION,)
     assert calls["count"] == 1
 
     context = _minimal_context(profile)
@@ -271,7 +284,8 @@ def test_public_view_excludes_settings_and_secrets(
         data_home=f"/tmp/{marker_data}",
         allowed_read_roots=frozenset({f"/tmp/{marker_root}"}),
     )
-    profile = build_local_workspace_hosted_profile(settings=settings)
+    profile = build_local_workspace_hosted_profile(
+        process_composition=_TEST_PROCESS_COMPOSITION,settings=settings)
     public_json = profile.public_view().model_dump_json()
     digest = profile.profile_digest()
     definition = resolve_hosted_application_definition(profile)
@@ -300,6 +314,7 @@ def test_public_view_excludes_settings_and_secrets(
 @pytest.mark.asyncio
 async def test_factory_protocol_via_invoke_application_factory() -> None:
     profile = build_local_workspace_hosted_profile(
+        process_composition=_TEST_PROCESS_COMPOSITION,
         settings=LocalWorkspaceBackendSettings(),
     )
     context = _minimal_context(profile)
