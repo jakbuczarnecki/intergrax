@@ -31,7 +31,8 @@ from legal_application.host.wiring import build_legal_environment_profile, build
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _INLINE_POLICY_RULE = {
-    "rule_id": "deny_tool",
+    "rule_id": "evidence.blocked",
+    "handler_id": "deny_tool",
     "resource_kind": "tool",
     "resource_id": "blocked",
     "action": "deny",

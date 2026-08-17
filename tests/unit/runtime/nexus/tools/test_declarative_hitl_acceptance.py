@@ -36,6 +36,7 @@ from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _TOOL_ID = "accept.hitl.tool"
+_RULE_ID = "accept.hitl.tool"
 
 
 class _Input(BaseModel):
@@ -64,7 +65,7 @@ def _grant(**overrides: object) -> DeclarativeHitlApprovalGrant:
         "step_id": "step-1",
         "tool_id": _TOOL_ID,
         "idempotency_key": "idem-1",
-        "matched_rule_ids": ("deny_tool",),
+        "matched_rule_ids": (_RULE_ID,),
         "human_request_id": "hr-1",
         "policy_provenance_digest": "digest-1",
         "pause_id": "pause-1",
@@ -84,7 +85,7 @@ def _pending() -> object:
         step_id="step-1",
         tool_id=_TOOL_ID,
         idempotency_key="idem-1",
-        matched_rule_ids=("deny_tool",),
+        matched_rule_ids=(_RULE_ID,),
         human_request_id="hr-1",
         policy_provenance_digest="digest-1",
         agent_id="agent-1",
@@ -143,7 +144,8 @@ def test_d_different_invocation_scope_cannot_reuse_grant() -> None:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "require_hitl",
@@ -173,7 +175,8 @@ def test_e_deny_after_approve_does_not_restore_grant() -> None:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "deny",
@@ -287,7 +290,8 @@ def test_j_approved_target_executes_once_via_invoker() -> None:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "require_hitl",
@@ -312,7 +316,7 @@ def test_j_approved_target_executes_once_via_invoker() -> None:
     state.request.task_id = "task-1"
     state.context.config.policy_bundle = bundle
     state.declarative_hitl_grant = _grant(
-        matched_rule_ids=("deny_tool",),
+        matched_rule_ids=(_RULE_ID,),
         policy_provenance_digest=bundle.declarative_policy_runtime.provenance.rules_digest_sha256,
     )
     req = maybe_assign_declarative_hitl_scope(
@@ -418,7 +422,8 @@ def test_p_missing_task_id_in_context_grant_does_not_satisfy() -> None:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "require_hitl",
@@ -448,7 +453,8 @@ def test_invoker_blocks_without_scope_when_hitl_required() -> None:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "require_hitl",
