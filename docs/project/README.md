@@ -37,26 +37,28 @@ what you want to understand, try, inspect, build, or review.
 
 ## Explore the platform
 
-- [Capabilities](capabilities/README.md) — reusable platform capability areas.
-- [Multiplayer AI](capabilities/architecture/MULTIPLAYER_AI.md) — strategic
-  architecture for governed multi-principal collaboration.
-- [Platform Extensibility / Plugins](architecture/PLATFORM_PLUGINS.md) —
-  strategic architecture for independently packaged, governed platform extensions.
-- [Agent Marketplace](overview/AGENT_MARKETPLACE.md) — future ecosystem layer
-  for governed agent distribution (concept and reference architecture; not a
-  shipped product).
-- [Integrations](integrations/README.md) — canonical integration documentation.
-- [Products](../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) — begin with the documented LKW product
-  route.
+Grouped platform areas and canonical domain links:
+[Platform Map in root README](../../README.md#explore-the-intergrax-platform).
+
+Strategic multi-layer features and cross-layer coordination:
+[Capabilities README](capabilities/README.md).
+
+Primary product route:
+[LKW Product Tour](../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md).
+
+Integration documentation index:
+[Integrations](integrations/README.md).
 
 ## Documentation depth
 
-- **Project landing and first contact** — the [root README](../../README.md).
-- **Public reader routes** — the [Public Documentation Map](community/PUBLIC_DOCUMENTATION_MAP.md).
-- **Proof and evidence** — [Intergrax Proofs](proofs/PROOFS.md) and the
-  [LKW Platform Proof](../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md).
-- **Technical routing** — the [Technical Documentation Map](technical/DOCUMENTATION_MAP.md).
-- **Maintainer controls** — [Maintainer Documentation](maintainers/public-adoption/README.md).
+| Layer | Role |
+| --- | --- |
+| [Root README](../../README.md) | First contact, Platform Map, maturity snapshot |
+| [Public Documentation Map](community/PUBLIC_DOCUMENTATION_MAP.md) | Intent routing by what you want to do |
+| [Architecture Overview](architecture/ARCHITECTURE_OVERVIEW.md) | Project-level architecture mental model |
+| [Technical Documentation Map](technical/DOCUMENTATION_MAP.md) | Engineering routing, domain pairs, guides |
+| [Intergrax Proofs](proofs/PROOFS.md) | Bounded evidence and proof status |
+| [Maintainer Documentation](maintainers/public-adoption/README.md) | Maintainer controls — not a normal reader route |
 
 ## Current maturity
 
