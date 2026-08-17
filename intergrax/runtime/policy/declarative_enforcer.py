@@ -121,7 +121,7 @@ class DeclarativePolicyEnforcer:
                 matched_rule_ids.append(rule.rule_id)
             reasons.extend(outcome.reasons)
             if outcome.unknown_handler:
-                unknown_handler_ids.append(rule.rule_id)
+                unknown_handler_ids.append(rule.handler_id)
 
         final_action = _aggregate_action(tuple(outcomes))
         would_deny = final_action in (PolicyRuleAction.DENY, PolicyRuleAction.REQUIRE_HITL)

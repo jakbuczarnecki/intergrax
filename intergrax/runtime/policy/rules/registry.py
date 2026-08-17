@@ -121,12 +121,12 @@ class PolicyRuleRegistry:
                 unsupported_conditions=True,
             )
 
-        handler = self._handlers.get(rule.rule_id)
+        handler = self._handlers.get(rule.handler_id)
         if handler is None:
             return PolicyRuleEvaluationOutcome(
                 rule_id=rule.rule_id,
                 action=PolicyRuleAction.DENY,
-                reasons=(f"unknown_handler:{rule.rule_id}",),
+                reasons=(f"unknown_handler:{rule.handler_id}",),
                 unknown_handler=True,
             )
 
