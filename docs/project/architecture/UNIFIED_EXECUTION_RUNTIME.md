@@ -13,7 +13,7 @@ UER makes execution behavior **platform-owned**. Agents express domain work and 
 Agents **must not** implement ad hoc lifecycle, retry, HITL, or event semantics. They run through **UAEP** (`AgentEngine` / `HarnessKernel`) and the `RuntimeEventBus`.
 
 > [!NOTE]
-> **Maturity boundary:** Core runtime semantics — `RuntimeEvent` spine, UAEP, typed execution identity, retry/HITL/cancellation events — are **implemented** on the Nexus harness path. This is **not** a production-qualification claim: `execution_mode=strict` and `production_mode` are policy posture, not taxonomy **P4** evidence. Extended engineering sections (§42.8+) remain referenced in satellites; Token Optimization runtime policy rows (`TOKEN-UER-*`) are **planned** in the plan — see [Current maturity](#current-maturity) and [unresolved documentation drift](#unresolved-documentation-drift-outside-scope).
+> **Maturity boundary:** Core runtime semantics — `RuntimeEvent` spine, UAEP, typed execution identity, retry/HITL/cancellation events — are **implemented** on the Nexus harness path. This is **not** a production-qualification claim: `execution_mode=strict` and `production_mode` are policy posture, not taxonomy **P4** evidence. Extended engineering sections (§42.8+) live in the [runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) (intentional progressive disclosure); Token Optimization runtime policy rows (`TOKEN-UER-*`) are **planned** in the plan — see [Current maturity](#current-maturity) and [unresolved documentation drift](#unresolved-documentation-drift-outside-scope).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring runtime policy, hooks, and application hosts — after the platform overview in the root README.
 
@@ -223,7 +223,7 @@ Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** — Foundational cross-domain canon: UAEP, `RuntimeEvent` spine, hook model, identity sync with Observability (TRACE-ARCH-SYNC-1, §42.1.8), REL retry/HITL ownership, Governed Execution evaluation-point map; Post-L3 AUDIT-IDEAL Band 2ay rows closed ([plan](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md)).
-- **I4** — Typed `TaskId`/`RunId`/`AttemptId`/`EventId` implemented (TRACE-1A/B/C **Done** per [OBS plan](../maintainers/plans/OBSERVABILITY.md)); UAEP/HarnessKernel path, event catalog gates, retry layers, HITL/cancellation events wired; §6.1av UAEP maintenance **closed**. Not I5 — `RetryCoordinator` future, `TOKEN-UER-*` unwired, `EscalationRouter` lab-minimal deferred, extended §42.8+ hub sections live in referenced satellite only.
+- **I4** — Typed `TaskId`/`RunId`/`AttemptId`/`EventId` implemented (TRACE-1A/B/C **Done** per [OBS plan](../maintainers/plans/OBSERVABILITY.md)); UAEP/HarnessKernel path, event catalog gates, retry layers, HITL/cancellation events wired; §6.1av UAEP maintenance **closed**. Not I5 — `RetryCoordinator` future (when canonical), `EscalationRouter` lab-minimal/deferred, and other runtime hardening gaps not yet closed on the harness path.
 - **P2** — Harness lab/reference profiles and strict-mode policy posture; **no UER-domain production handoff or operational SLO package** — `production_mode` ≠ taxonomy P4.
 - **E3** — Unit/gate evidence (event catalog, tenant propagation, single `STEP_COMPLETED` per step), audit slice, 2026-06-19 audit results. **No dedicated public UER proof route** — not E4/E5.
 
@@ -240,7 +240,7 @@ Evidence maturity: **E3**
 | Graph + run-level retry | **Implemented** — two layers per REL §31.1 |
 | HITL / pause / resume / cancel events | **Implemented** — REL + HITL plan **Done** |
 | `TOKEN-UER-1` / `TOKEN-UER-2` | **Planned** in UER plan — may be stale vs Token Optimization feature canon; not evidence of missing core runtime |
-| Extended §42.8+ engineering sections | **Satellite-referenced** — see [unresolved drift](#unresolved-documentation-drift-outside-scope) |
+| Extended §42.8+ engineering sections | **Satellite-referenced** — intentional progressive disclosure in [runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) |
 | Public UER lifecycle proof | **Not claimed** |
 
 ## Evidence / proof
@@ -269,13 +269,21 @@ UER evidence is **engineering- and audit-oriented** — there is **no** dedicate
 | **Audit** | [`audit/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/audit/UNIFIED_EXECUTION_RUNTIME.md) · [audit slice](../technical/guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md) |
 | **Target architecture** | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §8 |
 
+### Documentation layout (hub / satellite)
+
+Intentional progressive disclosure — **not** unresolved drift.
+
+| Layer | Owns | Notes |
+| ----- | ---- | ----- |
+| Hub (engineering canon below) | §42.1–§42.7 | Default implement/audit read scope |
+| [Runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) | §42.8+ | Interrupt, pause/resume, HITL flow, policy engine, tool runtime, shared contracts |
+| Audit slice | §42.1–§42.15 | Valid when read against hub + satellite |
+
 ### Unresolved documentation drift (outside scope)
 
 | Item | Notes |
 | ---- | ----- |
-| `satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md` | Referenced by hub and audit slice for §42.8+ — **file not present** in repo at DOC-3E time |
-| `TOKEN-UER-1` / `TOKEN-UER-2` (**Planned** in UER plan) | May be stale relative to Token Optimization feature canon — plan not modified in DOC-3E |
-| Hub §42.1–§42.7 only | Audit slice cites §42.1–§42.15 — extended sections not in hub body |
+| `TOKEN-UER-1` / `TOKEN-UER-2` (**Planned** in UER plan) | May be stale relative to Token Optimization feature canon — plan not modified in DOC-3E-R1 |
 
 ---
 
@@ -287,7 +295,7 @@ UER evidence is **engineering- and audit-oriented** — there is **no** dedicate
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 4–5, 8, 23–24  
 **Audit instruction:** [`audit/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/audit/UNIFIED_EXECUTION_RUNTIME.md)  
-**Last updated:** 2026-08-17 — DOC-3E public front modernization; TRACE identity supersession in §42.1.1
+**Last updated:** 2026-08-17 — DOC-3E-R1 hub/satellite layout correction; DOC-3E public front modernization; TRACE identity supersession in §42.1.1
 
 ### Cursor read scope (token budget)
 
