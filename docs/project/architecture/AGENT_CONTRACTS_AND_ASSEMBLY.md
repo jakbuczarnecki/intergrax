@@ -76,23 +76,27 @@ AgentContract (+ profiles / bindings)
         ↓
 Tier-3 host wires environment → configured agent instance
         ↓
-Nexus routes Task / graph node by capability
-        ↓
-Agent.run()  — whole agent session (author facade)
-        ↓
-AgentRuntime.advance_step()  — one iteration glue
-        ↓
-on_next_step()  — one domain decision (author)
-        ↓
-HarnessKernel.execute_step()  — policy, trace, gateways, budgets (platform)
-        ↓
-AgentRunResult / graph node outcome
+        ┌────────────────────────┴────────────────────────┐
+        ↓                                                  ↓
+Direct agent session                          Nexus Task / graph node
+Agent.run()                                    UAEP bridge (run_step → shim)
+        ↓                                                  ↓
+AgentRuntime / session loop                             framework execution bridge
+        └────────────────────────┬────────────────────────┘
+                                 ↓
+                         on_next_step()  — domain decision (author)
+                                 ↓
+                  HarnessKernel.execute_step()  — policy, trace, gateways, budgets
+                                 ↓
+                    AgentRunResult / graph node outcome
 ```
+
+Nexus routes Task / graph nodes by capability when orchestration applies; it does **not** universally call `Agent.run()`. Both entry paths converge on the same author hook — `on_next_step()` — before platform-governed execution.
 
 1. **Declare** — author defines `AgentContract` and registers capabilities.
 2. **Assemble** — Tier-3 profile binds prompt, tool, LLM, memory, modality, and governance profiles.
 3. **Route** — Nexus resolves `required_capability` via `AgentRegistry` (not hardcoded class names).
-4. **Session** — `Agent.run()` orchestrates many `advance_step` iterations until terminal `StepOutcome`.
+4. **Enter** — direct session via `Agent.run()`, **or** Nexus graph node via UAEP bridge (`run_step` → shim) without `Agent.run()` as outer facade.
 5. **Decide** — each iteration: author `on_next_step()` returns intent; kernel executes safely.
 6. **Govern** — lifecycle, certification, and production gates apply before `production_mode` promotion.
 
@@ -102,35 +106,41 @@ Minimal author path: [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../technical/guides
 
 | Entry | Scope | Owner |
 | ----- | ----- | ----- |
-| **`Agent.run()`** | Whole agent session — many iterations until terminal | Author-facing facade; base class orchestrates harness services |
+| **`Agent.run()`** | Whole agent session — many iterations until terminal | Author-facing facade for **direct** sessions; base class orchestrates harness services |
 | **`on_next_step()`** | One domain decision / iteration | Author domain logic — plan, tool intent, model choice within profile, terminal/HITL intent |
 
 ```text
-Agent.run()           → whole agent session
-on_next_step()        → one domain decision / iteration
+Agent.run()           → whole direct agent session (Path A)
+on_next_step()        → one domain decision / iteration (both paths)
 ```
 
-Authors **do not** implement the full execution loop. `run()` → merge environment → step loop (`advance_step` → `on_next_step`) → UAEP/policy/trace. Cognitive patterns (ReAct, decomposition) delegate to `on_next_step`.
+`Agent.run()` is the public author-facing API for a full **direct** agent session. `on_next_step()` is the canonical author domain-decision hook.
+
+Task / Nexus graph-node execution may reach the same `on_next_step()` through the UAEP bridge (`run_step` → shim) **without** using `Agent.run()` as the outer session facade. Therefore **`Agent.run()` is not the universal Tier-1 graph-node entry point.**
+
+Authors **do not** implement the full execution loop. On the direct path: `run()` → merge environment → step loop (`advance_step` → `on_next_step`) → UAEP/policy/trace. Cognitive patterns (ReAct, decomposition) delegate to `on_next_step`.
 
 Engineering detail: [§13](#13-agent-interface-run-facade-step-loop-and-uaep) · satellite [§32](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md).
 
 ## Execution stack
 
+Ownership layers — not one mandatory call chain. Direct sessions and Nexus graph nodes take different outer paths; both converge on `on_next_step()` before HarnessKernel.
+
 ```text
-NexusLoop.handle_task()     → task / multi-agent orchestration (when / where)
-Agent.run()                 → agent session (author facade)
-AgentRuntime.advance_step() → one iteration glue
-HarnessKernel.execute_step()→ deterministic safe execution cycle
-on_next_step()              → domain decision (author)
+Path A (direct):     Agent.run() → AgentRuntime.advance_step() → on_next_step() → HarnessKernel
+Path B (Nexus):      Task → NexusLoop → graph node → UAEP bridge → on_next_step() → HarnessKernel
+Shared author hook:  on_next_step()
+Platform cycle:      HarnessKernel.execute_step() — policy, trace, gateways, budgets
 ```
 
 | Layer | Does | Does not |
 | ----- | ---- | -------- |
-| **NexusLoop** | Task intake, graph, routing, delegation, merge | Agent session API; domain tool/model choice |
-| **Agent.run()** | Author session entry; orchestrates iterations | Policy, trace, tool gateway, budgets |
-| **AgentRuntime** | Glue: `on_next_step` + kernel per iteration | Domain planning |
+| **NexusLoop** | Task intake, graph, routing, delegation, merge | Agent session API; domain tool/model choice; mandatory `Agent.run()` on every node |
+| **Agent.run()** | Direct author session facade; orchestrates iterations | Universal Tier-1 graph-node entry; policy, trace, tool gateway, budgets |
+| **AgentRuntime** | Session-loop glue: `on_next_step` + kernel per iteration (Path A) | Domain planning |
+| **UAEP bridge** | Nexus graph-node execution bridge (`run_step` → shim → `on_next_step`) | Author session API; domain planning |
+| **on_next_step** | Domain reasoning, intent, terminal/HITL — **shared author hook** | Private lifecycle or retry engine |
 | **HarnessKernel** | Policy, trace, gateways, state merge, budgets | Choose domain tools/models for author |
-| **on_next_step** | Domain reasoning, intent, terminal/HITL | Private lifecycle or retry engine |
 
 Nexus is **not** an agent session API. Agents must not build private multi-agent graphs outside Nexus contracts.
 
