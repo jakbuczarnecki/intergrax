@@ -38,6 +38,45 @@ class RevisionAcceptanceConflictError(ValueError):
     """Raised when an acceptance key in a scope is already bound to a different revision."""
 
 
+class StaleRevisionFencingError(ValueError):
+    """Raised when a writer or resolver holds a superseded fencing generation."""
+
+
+class UnresolvedPositionResolutionError(ValueError):
+    """Raised when a position cannot be resolved under current authority/state."""
+
+
+class KnowledgeRevisionResolutionReason(StrEnum):
+    NO_CANONICAL_DURABLE_ACCEPTANCE = "no_canonical_durable_acceptance"
+    STALE_FENCE_SUPERSEDED = "stale_fence_superseded"
+    PROVIDER_ROLLBACK_CONFIRMED = "provider_rollback_confirmed"
+    OTHER_CANONICAL = "other_canonical"
+
+
+class KnowledgeRevisionResolutionSource(StrEnum):
+    RECOVERY = "recovery"
+    LEASE_REAPER = "lease_reaper"
+    PROVIDER_RECONCILIATION = "provider_reconciliation"
+    OPERATOR = "operator"
+
+
+class OrphanedDurableRevisionReason(StrEnum):
+    STALE_FENCE_SUPERSEDED = "stale_fence_superseded"
+    TERMINAL_POSITION_LATE_WRITE = "terminal_position_late_write"
+
+
+class OrphanedDurableRevisionDetectionSource(StrEnum):
+    PROVIDER_RECONCILIATION = "provider_reconciliation"
+    RECOVERY = "recovery"
+    ACCEPTANCE_PATH = "acceptance_path"
+
+
+class OrphanedDurableRevisionDisposition(StrEnum):
+    QUARANTINED = "quarantined"
+    PENDING_RECONCILIATION = "pending_reconciliation"
+    RECONCILED = "reconciled"
+
+
 class ValidTimeBoundKind(StrEnum):
     INSTANT = "instant"
     INTERVAL = "interval"
@@ -396,6 +435,114 @@ class KnowledgeRevisionAcceptance:
             )
 
 
+@dataclass(frozen=True, slots=True)
+class RevisionFencingGeneration:
+    """Provider-neutral fencing generation for a tenant ordering scope."""
+
+    scope: KnowledgeOrderingScope
+    value: int
+
+    def __post_init__(self) -> None:
+        if type(self.scope) is not KnowledgeOrderingScope:
+            raise TypeError("RevisionFencingGeneration.scope must be KnowledgeOrderingScope")
+        if type(self.value) is not int or isinstance(self.value, bool) or self.value < 0:
+            raise ValueError("RevisionFencingGeneration.value must be int >= 0")
+
+
+@dataclass(frozen=True, slots=True)
+class ResolutionAuthority:
+    """Current resolution/fencing authority for one tenant ordering scope."""
+
+    scope: KnowledgeOrderingScope
+    fencing_generation: RevisionFencingGeneration
+
+    def __post_init__(self) -> None:
+        if type(self.scope) is not KnowledgeOrderingScope:
+            raise TypeError("ResolutionAuthority.scope must be KnowledgeOrderingScope")
+        if type(self.fencing_generation) is not RevisionFencingGeneration:
+            raise TypeError("ResolutionAuthority.fencing_generation must be RevisionFencingGeneration")
+        if self.fencing_generation.scope != self.scope:
+            raise CrossScopeKnowledgeOrderError(
+                "ResolutionAuthority fencing generation scope mismatch"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class KnowledgeRevisionResolutionRecord:
+    """Immutable audit record for UNRESOLVED → TERMINAL_NON_COMMITTED."""
+
+    scope: KnowledgeOrderingScope
+    position: KnowledgeRevisionPosition
+    prior_lifecycle: KnowledgeRevisionPositionLifecycle
+    resulting_lifecycle: KnowledgeRevisionPositionLifecycle
+    reason: KnowledgeRevisionResolutionReason
+    source: KnowledgeRevisionResolutionSource
+    fencing_generation: RevisionFencingGeneration
+    detected_at: datetime
+    actor_identity: str | None = None
+    correlation_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if type(self.scope) is not KnowledgeOrderingScope:
+            raise TypeError("KnowledgeRevisionResolutionRecord.scope must be KnowledgeOrderingScope")
+        if type(self.position) is not KnowledgeRevisionPosition:
+            raise TypeError("KnowledgeRevisionResolutionRecord.position must be KnowledgeRevisionPosition")
+        if self.position.scope != self.scope:
+            raise CrossScopeKnowledgeOrderError("resolution record position scope mismatch")
+        if not isinstance(self.prior_lifecycle, KnowledgeRevisionPositionLifecycle):
+            raise TypeError("prior_lifecycle must be KnowledgeRevisionPositionLifecycle")
+        if not isinstance(self.resulting_lifecycle, KnowledgeRevisionPositionLifecycle):
+            raise TypeError("resulting_lifecycle must be KnowledgeRevisionPositionLifecycle")
+        if self.resulting_lifecycle is not KnowledgeRevisionPositionLifecycle.TERMINAL_NON_COMMITTED:
+            raise ValueError("resolution record resulting lifecycle must be TERMINAL_NON_COMMITTED")
+        if not isinstance(self.reason, KnowledgeRevisionResolutionReason):
+            raise TypeError("reason must be KnowledgeRevisionResolutionReason")
+        if not isinstance(self.source, KnowledgeRevisionResolutionSource):
+            raise TypeError("source must be KnowledgeRevisionResolutionSource")
+        if type(self.fencing_generation) is not RevisionFencingGeneration:
+            raise TypeError("fencing_generation must be RevisionFencingGeneration")
+        object.__setattr__(self, "detected_at", _require_aware_instant(self.detected_at, "detected_at"))
+
+
+@dataclass(frozen=True, slots=True)
+class OrphanedDurableRevisionRecord:
+    """Immutable integrity evidence for fenced-out durable writes."""
+
+    scope: KnowledgeOrderingScope
+    position: KnowledgeRevisionPosition
+    stale_fencing_generation: RevisionFencingGeneration
+    winning_fencing_generation: RevisionFencingGeneration
+    canonical_lifecycle: KnowledgeRevisionPositionLifecycle
+    revision_id: KnowledgeRevisionId
+    reason: OrphanedDurableRevisionReason
+    detection_source: OrphanedDurableRevisionDetectionSource
+    detected_at: datetime
+    disposition: OrphanedDurableRevisionDisposition
+
+    def __post_init__(self) -> None:
+        if type(self.scope) is not KnowledgeOrderingScope:
+            raise TypeError("OrphanedDurableRevisionRecord.scope must be KnowledgeOrderingScope")
+        if type(self.position) is not KnowledgeRevisionPosition:
+            raise TypeError("OrphanedDurableRevisionRecord.position must be KnowledgeRevisionPosition")
+        if self.position.scope != self.scope:
+            raise CrossScopeKnowledgeOrderError("orphan record position scope mismatch")
+        if type(self.stale_fencing_generation) is not RevisionFencingGeneration:
+            raise TypeError("stale_fencing_generation must be RevisionFencingGeneration")
+        if type(self.winning_fencing_generation) is not RevisionFencingGeneration:
+            raise TypeError("winning_fencing_generation must be RevisionFencingGeneration")
+        if not isinstance(self.canonical_lifecycle, KnowledgeRevisionPositionLifecycle):
+            raise TypeError("canonical_lifecycle must be KnowledgeRevisionPositionLifecycle")
+        if type(self.revision_id) is not KnowledgeRevisionId:
+            raise TypeError("revision_id must be KnowledgeRevisionId")
+        if not isinstance(self.reason, OrphanedDurableRevisionReason):
+            raise TypeError("reason must be OrphanedDurableRevisionReason")
+        if not isinstance(self.detection_source, OrphanedDurableRevisionDetectionSource):
+            raise TypeError("detection_source must be OrphanedDurableRevisionDetectionSource")
+        if not isinstance(self.disposition, OrphanedDurableRevisionDisposition):
+            raise TypeError("disposition must be OrphanedDurableRevisionDisposition")
+        object.__setattr__(self, "detected_at", _require_aware_instant(self.detected_at, "detected_at"))
+
+
 def lifecycle_is_finalized(lifecycle: KnowledgeRevisionPositionLifecycle) -> bool:
     return lifecycle in (
         KnowledgeRevisionPositionLifecycle.ACCEPTED,
@@ -520,6 +667,31 @@ class RevisionOrderingAuthority(ABC):
         scope: KnowledgeOrderingScope,
     ) -> tuple[KnowledgeRevisionPosition, ...]:
         """Positions that currently block watermark advancement in ``scope``."""
+
+    @abstractmethod
+    def acquire_resolution_authority(
+        self,
+        scope: KnowledgeOrderingScope,
+    ) -> ResolutionAuthority:
+        """Acquire current resolution/fencing authority for ``scope``."""
+
+    @abstractmethod
+    def resolve_unresolved_position(
+        self,
+        *,
+        position: KnowledgeRevisionPosition,
+        authority: ResolutionAuthority,
+        reason: KnowledgeRevisionResolutionReason,
+        source: KnowledgeRevisionResolutionSource,
+        actor_identity: str | None = None,
+        correlation_id: str | None = None,
+    ) -> KnowledgeRevisionResolutionRecord:
+        """Governed UNRESOLVED/ALLOCATED → TERMINAL_NON_COMMITTED transition.
+
+        Stale authority raises ``StaleRevisionFencingError``. Positions that are
+        already ``ACCEPTED`` or ``TERMINAL_NON_COMMITTED`` raise
+        ``UnresolvedPositionResolutionError``.
+        """
 
 
 def _require_same_scope(

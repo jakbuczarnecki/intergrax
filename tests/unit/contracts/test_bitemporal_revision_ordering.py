@@ -13,9 +13,15 @@ from intergrax.contracts.bitemporal_knowledge import (
     KnowledgeRevisionPositionLifecycle,
     KnowledgeRevisionPositionRecord,
     KnowledgeRevisionWatermark,
+    KnowledgeRevisionResolutionReason,
+    KnowledgeRevisionResolutionRecord,
+    KnowledgeRevisionResolutionSource,
+    ResolutionAuthority,
     RevisionAcceptanceConflictError,
     RevisionAcceptanceKey,
+    RevisionFencingGeneration,
     RevisionOrderingAuthority,
+    UnknownKnowledgeRevisionPositionError,
     compute_finalized_watermark,
     lifecycle_blocks_watermark,
     lifecycle_is_finalized,
@@ -89,17 +95,22 @@ class _InMemoryRevisionOrderingAuthority(RevisionOrderingAuthority):
         tenant = position.scope.tenant_id
         lifecycle = self._lifecycles.get((tenant, position.value))
         if lifecycle is None:
-            raise ValueError("unknown position")
+            raise UnknownKnowledgeRevisionPositionError(
+                f"knowledge revision position {position.value} was never allocated"
+            )
         return lifecycle
 
     def watermark(self, scope: KnowledgeOrderingScope) -> KnowledgeRevisionWatermark:
         tenant = scope.tenant_id
-        finalized = 0
-        for value in range(1, self._next_position.get(tenant, 1)):
-            lifecycle = self._lifecycles.get((tenant, value))
-            if lifecycle is KnowledgeRevisionPositionLifecycle.ACCEPTED:
-                finalized = value
-        return KnowledgeRevisionWatermark(scope=scope, finalized_through_value=finalized)
+        records = tuple(
+            KnowledgeRevisionPositionRecord(
+                position=KnowledgeRevisionPosition(scope=scope, value=value),
+                lifecycle=lifecycle,
+            )
+            for (record_tenant, value), lifecycle in sorted(self._lifecycles.items())
+            if record_tenant == tenant
+        )
+        return compute_finalized_watermark(scope=scope, records=records)
 
     def records_through(
         self,
@@ -125,7 +136,59 @@ class _InMemoryRevisionOrderingAuthority(RevisionOrderingAuthority):
         self,
         scope: KnowledgeOrderingScope,
     ) -> tuple[KnowledgeRevisionPosition, ...]:
-        return ()
+        tenant = scope.tenant_id
+        unresolved: list[KnowledgeRevisionPosition] = []
+        for (record_tenant, value), lifecycle in sorted(self._lifecycles.items()):
+            if record_tenant != tenant:
+                continue
+            if lifecycle_blocks_watermark(lifecycle):
+                unresolved.append(KnowledgeRevisionPosition(scope=scope, value=value))
+        return tuple(unresolved)
+
+    def acquire_resolution_authority(
+        self,
+        scope: KnowledgeOrderingScope,
+    ) -> ResolutionAuthority:
+        return ResolutionAuthority(
+            scope=scope,
+            fencing_generation=RevisionFencingGeneration(scope=scope, value=1),
+        )
+
+    def resolve_unresolved_position(
+        self,
+        *,
+        position: KnowledgeRevisionPosition,
+        authority: ResolutionAuthority,
+        reason: KnowledgeRevisionResolutionReason,
+        source: KnowledgeRevisionResolutionSource,
+        actor_identity: str | None = None,
+        correlation_id: str | None = None,
+    ) -> KnowledgeRevisionResolutionRecord:
+        from intergrax.utils.time_provider import SystemTimeProvider
+
+        tenant = position.scope.tenant_id
+        lifecycle = self._lifecycles.get((tenant, position.value))
+        if lifecycle is None:
+            raise UnknownKnowledgeRevisionPositionError(
+                f"knowledge revision position {position.value} was never allocated"
+            )
+        if lifecycle is KnowledgeRevisionPositionLifecycle.TERMINAL_NON_COMMITTED:
+            raise ValueError("already terminal")
+        self._lifecycles[(tenant, position.value)] = (
+            KnowledgeRevisionPositionLifecycle.TERMINAL_NON_COMMITTED
+        )
+        return KnowledgeRevisionResolutionRecord(
+            scope=position.scope,
+            position=position,
+            prior_lifecycle=lifecycle,
+            resulting_lifecycle=KnowledgeRevisionPositionLifecycle.TERMINAL_NON_COMMITTED,
+            reason=reason,
+            source=source,
+            fencing_generation=authority.fencing_generation,
+            detected_at=SystemTimeProvider.utc_now(),
+            actor_identity=actor_identity,
+            correlation_id=correlation_id,
+        )
 
 
 @pytest.mark.unit
