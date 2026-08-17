@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.providers.relational_store.postgresql.adapter import _PostgreSQLRelationalStore
 from intergrax.integrations.providers.relational_store.postgresql.config import PostgreSQLIntegrationConfig
@@ -50,9 +51,20 @@ def create_postgresql_relational_store(
     *,
     relational_store: Optional[RelationalStore] = None,
     connection_factory: Optional[Callable[[], object]] = None,
+    _collaborative_work_materialization: bool = False,
     **config_overrides: object,
-) -> PostgresqlRelationalStoreIntegration:
+) -> PostgresqlRelationalStoreIntegration | CollaborativeWorkRepositories:
     """Catalog factory for ``"postgresql"`` / ``RELATIONAL_STORE``."""
+    if _collaborative_work_materialization:
+        from intergrax.collaborative_work.persistence import (
+            open_postgresql_collaborative_work_repositories,
+        )
+
+        config = resolve_postgresql_config(**config_overrides)
+        return open_postgresql_collaborative_work_repositories(
+            config=config,
+            connection_factory=connection_factory,
+        )
     bundle = create_postgresql_integration(
         relational_store=relational_store,
         connection_factory=connection_factory,

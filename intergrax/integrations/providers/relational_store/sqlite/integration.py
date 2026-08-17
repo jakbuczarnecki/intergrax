@@ -93,7 +93,17 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
         from intergrax.collaborative_work.persistence import (
             open_sqlite_collaborative_work_repositories,
         )
+        from intergrax.integrations.providers.relational_store.sqlite.adapter import (
+            _SQLiteRelationalStore,
+        )
 
-        return open_sqlite_collaborative_work_repositories(str(self.db_path))
+        client = self._require_client()
+        if not isinstance(client, _SQLiteRelationalStore):
+            raise IntegrationConfigurationError(
+                "Sqlite relational store integration requires a SQLite adapter client "
+                "to materialize Collaborative Work repositories."
+            )
+        db_path = client.release_connection_for_collaborative_work_materialization()
+        return open_sqlite_collaborative_work_repositories(db_path)
 
 RelationalStore.register(SqliteRelationalStoreIntegration)

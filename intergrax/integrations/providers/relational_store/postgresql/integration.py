@@ -94,6 +94,12 @@ class PostgresqlRelationalStoreIntegration(RelationalStoreIntegrationContract):
                 "Postgresql relational store integration requires a PostgreSQL adapter "
                 "client to materialize Collaborative Work repositories."
             )
-        return open_postgresql_collaborative_work_repositories(config=client.config)
+        config, connection_factory = (
+            client.release_connection_for_collaborative_work_materialization()
+        )
+        return open_postgresql_collaborative_work_repositories(
+            config=config,
+            connection_factory=connection_factory,
+        )
 
 RelationalStore.register(PostgresqlRelationalStoreIntegration)

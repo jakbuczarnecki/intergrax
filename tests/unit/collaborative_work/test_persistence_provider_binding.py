@@ -1,11 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Tests for typed Collaborative Work persistence provider binding (PROVIDER-QUAL-3B)."""
+"""Tests for typed Collaborative Work persistence provider binding (PROVIDER-QUAL-3B-R1)."""
 
 from __future__ import annotations
 
 import ast
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -70,18 +70,14 @@ class _FakeConnection:
         self.closed = True
 
 
-def _postgresql_connection_factory() -> tuple[Callable[[], _FakeConnection], _FakeConnection]:
-    connection = _FakeConnection()
+class _CountingConnectionFactory:
+    def __init__(self, connection: _FakeConnection) -> None:
+        self.connection = connection
+        self.invocations = 0
 
-    def _factory() -> _FakeConnection:
-        return connection
-
-    return _factory, connection
-
-
-class _NoopCollaborativeWorkStore:
-    def close(self) -> None:
-        return None
+    def __call__(self) -> _FakeConnection:
+        self.invocations += 1
+        return self.connection
 
 
 def _in_memory_collaborative_work_repositories() -> CollaborativeWorkRepositories:
@@ -93,6 +89,11 @@ def _in_memory_collaborative_work_repositories() -> CollaborativeWorkRepositorie
         operation_profile=InMemoryCollaborativeOperationPolicyProfileRepository(),
         store=_NoopCollaborativeWorkStore(),
     )
+
+
+class _NoopCollaborativeWorkStore:
+    def close(self) -> None:
+        return None
 
 
 class _UnsupportedRelationalStore:
@@ -207,8 +208,12 @@ def test_sqlite_profile_materializes_collaborative_work_repositories(tmp_path: P
         options={SQLITE: {"data_dir": str(tmp_path)}},
     )
 
-    bundle = resolve_collaborative_work_repositories(profile)
+    with patch(
+        "intergrax.integrations.providers.relational_store.sqlite.bundle._SQLiteRelationalStore.connect",
+    ) as generic_connect:
+        bundle = resolve_collaborative_work_repositories(profile)
 
+    generic_connect.assert_not_called()
     assert isinstance(bundle, CollaborativeWorkRepositories)
     assert bundle.membership.capabilities.durable is True
     assert bundle.membership.capabilities.reference_only is False
@@ -217,27 +222,50 @@ def test_sqlite_profile_materializes_collaborative_work_repositories(tmp_path: P
 
 def test_postgresql_profile_materializes_collaborative_work_repositories() -> None:
     register_postgresql_integration()
-    connection_factory, _connection = _postgresql_connection_factory()
+    connection = _FakeConnection()
+    counting_factory = _CountingConnectionFactory(connection)
     profile = IntegrationProfile(
         relational_store=POSTGRESQL,
         options={
             POSTGRESQL: {
                 "dsn": "postgresql://localhost/test",
-                "connection_factory": connection_factory,
+                "connection_factory": counting_factory,
             }
         },
     )
 
     with patch(
-        "intergrax.collaborative_work.persistence.open_postgresql_collaborative_work_repositories",
-        side_effect=lambda **_kwargs: _in_memory_collaborative_work_repositories(),
-    ) as mocked_open:
+        "intergrax.integrations.providers.relational_store.postgresql.opens.open_postgresql_relational_store",
+    ) as generic_open:
         bundle = resolve_collaborative_work_repositories(profile)
 
-    mocked_open.assert_called_once()
-    assert mocked_open.call_args.kwargs["config"].dsn == "postgresql://localhost/test"
+    generic_open.assert_not_called()
+    assert counting_factory.invocations >= 1
     assert isinstance(bundle, CollaborativeWorkRepositories)
     bundle.close()
+    assert connection.closed is True
+
+
+def test_postgresql_profile_preserves_injected_connection_factory() -> None:
+    register_postgresql_integration()
+    connection = _FakeConnection()
+    counting_factory = _CountingConnectionFactory(connection)
+    profile = IntegrationProfile(
+        relational_store=POSTGRESQL,
+        options={
+            POSTGRESQL: {
+                "dsn": "postgresql://localhost/test",
+                "connection_factory": counting_factory,
+            }
+        },
+    )
+
+    bundle = resolve_collaborative_work_repositories(profile)
+
+    assert counting_factory.invocations >= 1
+    assert connection.executed
+    bundle.close()
+    assert connection.closed is True
 
 
 def test_unsupported_relational_provider_fails_explicitly() -> None:

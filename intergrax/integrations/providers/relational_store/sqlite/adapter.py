@@ -48,6 +48,11 @@ class _SQLiteRelationalStore:
             self._connection.close()
             self._connection = None
 
+    def release_connection_for_collaborative_work_materialization(self) -> str:
+        """Relinquish generic connection before Collaborative Work opens its store."""
+        self.close()
+        return str(self._db_path)
+
     def _require_connection(self) -> sqlite3.Connection:
         if self._connection is None:
             self.connect()

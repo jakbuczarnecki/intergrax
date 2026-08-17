@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.postgresql.config import PostgreSQLIntegrationConfig
@@ -53,6 +53,19 @@ class _PostgreSQLRelationalStore:
         if self._connection is not None:
             self._connection.close()
             self._connection = None
+
+    def release_connection_for_collaborative_work_materialization(
+        self,
+    ) -> tuple[PostgreSQLIntegrationConfig, Callable[[], Any]]:
+        """Transfer sole connection ownership to Collaborative Work materialization."""
+        connection = self._require_connection()
+        self._connection = None
+        config = self._config
+
+        def _reuse_connection() -> Any:
+            return connection
+
+        return config, _reuse_connection
 
     def _require_connection(self) -> Any:
         if self._connection is None:

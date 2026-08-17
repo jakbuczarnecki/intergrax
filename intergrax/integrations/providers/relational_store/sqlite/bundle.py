@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 from intergrax.integrations.providers.relational_store.sqlite.adapter import _SQLiteRelationalStore
 from intergrax.integrations.providers.relational_store.sqlite.config import SQLiteIntegrationConfig
 from intergrax.integrations.providers.relational_store.sqlite.opens import (
@@ -109,13 +110,20 @@ def create_sqlite_relational_store(
     *,
     data_dir: Path | str | None = None,
     db_path: Path | str | None = None,
+    _collaborative_work_materialization: bool = False,
     **config_overrides: object,
-) -> SqliteRelationalStoreIntegration:
+) -> SqliteRelationalStoreIntegration | CollaborativeWorkRepositories:
     """Catalog factory for ``"sqlite"`` / ``RELATIONAL_STORE``."""
     overrides: dict[str, object] = dict(config_overrides)
     if db_path is not None:
         overrides["relational_db"] = Path(db_path)
     _, paths = _build_paths(data_dir=data_dir, **overrides)
+    if _collaborative_work_materialization:
+        from intergrax.collaborative_work.persistence import (
+            open_sqlite_collaborative_work_repositories,
+        )
+
+        return open_sqlite_collaborative_work_repositories(str(paths.relational))
     store = _SQLiteRelationalStore(paths.relational)
     integration = SqliteRelationalStoreIntegration.from_client(store)
     integration.connect()
