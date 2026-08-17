@@ -3,8 +3,9 @@
 """Build canonical ``RegistryProjectionInputBundle`` for reference production lifecycle.
 
 Explicit deploy input — not startup manifest projection. Uses process-local
-``InMemoryRuntimeAgentFactoryResolver`` with caller-supplied factories; OCI/VENV
-artifact factory loading remains deferred (``PRODUCTION_RUNTIME_FACTORY_ADAPTER_DEFERRED``).
+``InMemoryRuntimeAgentFactoryResolver`` with caller-supplied factories for reference
+simulation. Production ``VENV_BUNDLE`` artifact loading uses
+``VenvBundleRuntimeAgentFactoryResolver``; OCI/sidecar remain deferred.
 """
 
 from __future__ import annotations

@@ -225,7 +225,8 @@ staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 | `RuntimeAgentFactoryResolver` port + in-memory test adapter | done |
 | Revision-bound projection uses exact `(package_digest, factory_reference)` resolver | done |
 | Host builders map is not production authority for AP-10 projection | done |
-| `PRODUCTION_RUNTIME_FACTORY_ADAPTER_DEFERRED` | deferred — AP-8 locators/bytes only; no callable loader |
+| `VenvBundleRuntimeAgentFactoryResolver` for `VENV_BUNDLE` artifact authority | done |
+| `PRODUCTION_RUNTIME_FACTORY_ADAPTER_DEFERRED` | partial — `VENV_BUNDLE` implemented; OCI/sidecar deferred |
 | AP-10 focused tests + AP-9 activation regression | done |
 
 **Evidence:** `intergrax/applications/_shared/runtime_agent_factory_resolver.py`, `wiring.py`, `registry_projection.py`, `tests/unit/applications/test_registry_projection_ap10.py`
