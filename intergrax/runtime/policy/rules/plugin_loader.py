@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from intergrax.core.plugins.admission import (
@@ -18,7 +19,13 @@ from intergrax.core.plugins.discovery import (
     EntryPointSpec,
     LoadIsolation,
     instantiate_entry_point_target,
+    iter_entry_point_specs,
     load_entry_point_targets,
+)
+from intergrax.core.plugins.platform_qualification import (
+    PluginQualificationResult,
+    evaluate_external_package_entry_point_production_admission,
+    resolve_host_platform_version,
 )
 from intergrax.runtime.policy.rules.provenance import PolicyHandlerProvenance, handler_provenance_from_spec
 from intergrax.runtime.policy.rules.registry import PolicyRuleHandler, PolicyRuleRegistry
@@ -37,6 +44,46 @@ class PolicyRuleLoadPolicy:
     ep_name_conflict: ConflictPolicy = "error"
     on_load_failure: LoadIsolation = "isolate"
     allowed_handler_ids: frozenset[str] | None = None
+    require_production_admission: bool = False
+    package_qualification_lookup: (
+        Callable[[EntryPointSpec], PluginQualificationResult | None] | None
+    ) = None
+    platform_version: str | None = None
+
+
+def _production_admission_rejections(
+    policy: PolicyRuleLoadPolicy,
+) -> tuple[frozenset[str], list[PluginAdmissionRejection]]:
+    if not policy.require_production_admission:
+        return frozenset(), []
+
+    platform_version = policy.platform_version or resolve_host_platform_version()
+    lookup = policy.package_qualification_lookup
+    rejected_names: set[str] = set()
+    rejected: list[PluginAdmissionRejection] = []
+
+    for spec in iter_entry_point_specs(EP_POLICY_RULES):
+        if spec.distribution is None:
+            continue
+        qualification = lookup(spec) if lookup is not None else None
+        admission = evaluate_external_package_entry_point_production_admission(
+            spec,
+            qualification,
+            platform_version=platform_version,
+        )
+        if admission.admitted:
+            continue
+        rejected_names.add(spec.name)
+        rejected.append(
+            PluginAdmissionRejection(
+                spec=spec,
+                reason_code=PluginAdmissionReasonCode.PRODUCTION_ADMISSION_DENIED,
+                reason=admission.reason,
+                fail_closed=True,
+            )
+        )
+
+    return frozenset(rejected_names), rejected
 
 
 def load_policy_rule_plugin_report(
@@ -46,8 +93,9 @@ def load_policy_rule_plugin_report(
 ) -> PolicyRulePluginLoadOutcome:
     """Load ``intergrax.policy_rules`` EPs with structured evidence."""
     chosen = policy if policy is not None else PolicyRuleLoadPolicy()
+    skip_names, production_rejected = _production_admission_rejections(chosen)
     accepted: list[EntryPointSpec] = []
-    rejected: list[PluginAdmissionRejection] = []
+    rejected: list[PluginAdmissionRejection] = list(production_rejected)
     failed: list[EntryPointLoadResult] = []
     handler_provenance: list[PolicyHandlerProvenance] = []
 
@@ -55,6 +103,7 @@ def load_policy_rule_plugin_report(
         EP_POLICY_RULES,
         on_conflict=chosen.ep_name_conflict,
         on_load_failure=chosen.on_load_failure,
+        skip_names=skip_names,
     ):
         if result.error is not None:
             failed.append(result)

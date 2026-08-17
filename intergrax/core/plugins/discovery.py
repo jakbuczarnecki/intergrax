@@ -164,11 +164,15 @@ def load_entry_point_targets(
     on_conflict: ConflictPolicy = "error",
     on_load_failure: LoadIsolation = "fail_fast",
     seen: set[str] | None = None,
+    skip_names: frozenset[str] | None = None,
 ) -> list[EntryPointLoadResult]:
     """Load entry-point targets for ``group`` without domain registration."""
     known = seen if seen is not None else set()
+    skipped = skip_names or frozenset()
     loaded: list[EntryPointLoadResult] = []
     for spec in iter_entry_point_specs(group):
+        if spec.name in skipped:
+            continue
         if spec.name in known:
             if on_conflict == "skip":
                 logger.warning("Skipping duplicate entry point %s in group %s", spec.name, group)
