@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-08-17 — **TRACE-BITEMP-1** typed bitemporal contracts + tenant ordering scope + transactional provider strategy **Planned / In Review** · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-BITEMP-ARCH-SYNC-R6** unresolved position resolution ownership + lease/fencing + auditable terminalization · **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
+**Last updated:** 2026-08-17 — **TRACE-ASOF-2** logical execution projection **Planned / In Review** · **TRACE-BITEMP-1** typed bitemporal contracts + tenant ordering scope + transactional provider strategy **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-BITEMP-ARCH-SYNC-R6** unresolved position resolution ownership + lease/fencing + auditable terminalization · **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
 
 ---
 
@@ -894,7 +894,7 @@ The journal is a **derived view**. Metrics, external APM, and product summaries 
 
 ## 7. First-class as-of projections (TRACE-ARCH-SYNC-1)
 
-**Status:** Target canon (**accepted** 2026-08-15) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · logical projections **Planned** (TRACE-ASOF-2–TRACE-ASOF-4) · compatible with bitemporal knowledge basis (§8)
+**Status:** Target canon (**accepted** 2026-08-15) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-ASOF-2** run execution lifecycle projection **Planned / In Review** · query/materialization surfaces **Planned** (TRACE-ASOF-3–TRACE-ASOF-4) · compatible with bitemporal knowledge basis (§8)
 
 **TRACE-ASOF-1 evidence chain:** `ae618fc81817497dbbcf018d92c95856f2d44115` → `d88253dbcfaa470597f93d91eec6a80a30e77007` → `98a2d186d9b512048c01024b67f1e707d72240ee` → `a7a931c6a5c4356e9bd49d7d9f8b5787e9a826b6` → `02462d96897daa4ea19d96dce776768a03cbbf53`.
 
@@ -941,7 +941,35 @@ Policy = ALLOW
 Validation = FAILED
 ```
 
-Architecture does **not** freeze a concrete projection schema here — TRACE-ASOF-2 defines the logical projection engine.
+**TRACE-ASOF-2** freezes the first canonical logical projection contract in §7.3.1.
+
+### 7.3.1 Run execution lifecycle projection (`TRACE-ASOF-2`)
+
+**Status:** **Planned / In Review** (independent audit closes it).
+
+| Concept | Type / API | Owner | Semantics |
+|---------|------------|-------|-----------|
+| **Projection result** | `RunExecutionAsOfProjection` | `intergrax.runtime.events.asof_projection` | Immutable run-scoped execution/lifecycle state at inclusive `AsOfBoundary` |
+| **Lifecycle status** | `RunExecutionLifecycleStatus` | same | Closed enum derived from `RuntimeEventType` only — `CREATED`, `RUNNING`, `PAUSE_REQUESTED`, `PAUSED`, `CANCELLATION_REQUESTED`, `COMPLETED`, `FAILED`, `CANCELLED` |
+| **Attempt summary** | `AttemptAsOfSummary` | same | Per-attempt first/last position + event count reconstructed from prefix |
+| **Source provenance** | `HistoricalEventReference` | same | `EventId` + `ExecutionEventPosition` + `AttemptId` + `RuntimeEventType` — no payload copies |
+| **Pure reducer** | `project_run_execution_as_of(...)` | same | Deterministic fold over positioned prefix; no persistence, clock, or live state |
+| **Read orchestration** | `reconstruct_run_execution_as_of(...)` | same | Tenant-scoped load via `load_positioned_run_journal_through` then reducer |
+| **Positioned journal load** | `load_positioned_run_journal_through(...)` | `unified_run_journal` | Canonical persistence read path; paginates by increasing `limit` until prefix complete |
+
+**Rules (TRACE-ASOF-2):**
+
+1. Canonical input is `list_positioned_through(boundary)` semantics — `position <= boundary.position`, strict increasing positions, same `RunId`.
+2. Reducer **MUST NOT** parse `RuntimeEvent.payload` or use timestamp ordering.
+3. `PAUSE_REQUESTED` ≠ `PAUSED`; `CANCELLATION_REQUESTED` ≠ `CANCELLED`; `HUMAN_APPROVAL_REQUESTED` does not imply run failure.
+4. Attempt history is first-seen execution-position order; `RETRY_STARTED` introduces a new `AttemptId`; `RESUMED` preserves attempt identity.
+5. Requested `AsOfBoundary` is retained even when beyond the last accepted event; `last_included_position` records the highest included position.
+6. Unknown / missing canonical history **MUST** fail (`RunExecutionHistoryNotFoundError`) — not an empty projection.
+7. Prefix reads **MUST NOT** silently truncate: incomplete reads fail closed (`RunExecutionHistoryTruncatedError`).
+8. Logical-only — **no** projection persistence, store, or materialized view (TRACE-ASOF-3).
+9. **No** `KnowledgeRevisionPosition` / bitemporal types in the execution reducer — E-only reconstruction.
+
+**Forbidden:** `dict[str, Any]` projection fields; dynamic projection registry; payload-key lifecycle inference; timestamp-ordered reducer input; second source of truth.
 
 ### 7.3 Execution position and as-of boundary (`AsOfBoundary`)
 
@@ -974,7 +1002,7 @@ Canonical execution-history ordering is **not** timestamp-based. For one accepte
 
 **Forbidden:** `AsOfBoundary(timestamp=...)`, `ORDER BY RuntimeEvent.timestamp`, `(timestamp, event_id)` tie-break as authoritative order, producer-side position minting, exposing backend row ids as the public position type.
 
-Logical state reconstruction at a boundary belongs to **TRACE-ASOF-2** — not implemented here.
+Execution position + boundary semantics are **TRACE-ASOF-1**. Run execution lifecycle logical reconstruction is **TRACE-ASOF-2** (§7.3.1).
 
 ### 7.4 Projection properties
 
