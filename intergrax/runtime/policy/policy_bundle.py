@@ -11,6 +11,8 @@ from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy
 from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
 from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
+from intergrax.runtime.policy.builtin_catalog import build_builtin_policy_catalog
+from intergrax.runtime.policy.catalog import PolicyCatalog
 from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
 from intergrax.runtime.policy.rules.provenance import PolicyBundleProvenance
 from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
@@ -48,6 +50,7 @@ class RuntimePolicyBundle:
     plan_loop: PlanLoopPolicy | None = None
     require_human_on_critical: bool = True
     domain_fragments: Dict[str, Any] = field(default_factory=dict)
+    policy_catalog: PolicyCatalog = field(default_factory=build_builtin_policy_catalog)
     declarative_policy_runtime: DeclarativePolicyRuntime | None = None
 
     def fragment(self, key: str) -> Optional[Any]:
