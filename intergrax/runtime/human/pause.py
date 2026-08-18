@@ -20,7 +20,10 @@ from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.interrupts.handler import GovernanceResolution
 from intergrax.runtime.task.task import Task
-from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
+from intergrax.runtime.task.task_contract import (
+    HumanApprovalResolution,
+    TaskPauseRecord,
+)
 from intergrax.runtime.task.task_metadata_keys import (
     ESCALATION_CHAIN_KEY,
     ESCALATION_LEVEL_KEY,
@@ -52,6 +55,7 @@ __all__ = [
     "HumanPauseCoordinator",
     "PauseRecord",
     "TaskMetadataKey",
+    "approved_resolution_for_resume",
 ]
 
 
@@ -68,8 +72,49 @@ class PauseRecord(BaseModel):
     schema_version: str = "pause_record.v1"
 
 
+def approved_resolution_for_resume(
+    *,
+    task_id: str,
+    resolution: HumanApprovalResolution | None,
+    expected_pause_id: str,
+    expected_human_request_id: str,
+    run_id: str | None = None,
+) -> HumanApprovalResolution | None:
+    """Return canonical APPROVE resolution only when it matches the exact lifecycle."""
+    if resolution is None:
+        return None
+    if resolution.verdict is not HumanResponseVerdict.APPROVE:
+        return None
+    if resolution.task_id != task_id:
+        return None
+    if resolution.pause_id != expected_pause_id:
+        return None
+    if resolution.human_request_id != expected_human_request_id:
+        return None
+    if run_id is not None and resolution.run_id is not None and resolution.run_id != run_id:
+        return None
+    return resolution
+
+
 class HumanPauseCoordinator:
     """Persists pause state on tasks and supports approve/reject/escalate resume signals."""
+
+    @staticmethod
+    def approved_resolution_for_resume(
+        *,
+        task_id: str,
+        resolution: HumanApprovalResolution | None,
+        expected_pause_id: str,
+        expected_human_request_id: str,
+        run_id: str | None = None,
+    ) -> HumanApprovalResolution | None:
+        return approved_resolution_for_resume(
+            task_id=task_id,
+            resolution=resolution,
+            expected_pause_id=expected_pause_id,
+            expected_human_request_id=expected_human_request_id,
+            run_id=run_id,
+        )
 
     @staticmethod
     def apply_pause(task: Task, execution: AgentExecutionResult) -> Task:

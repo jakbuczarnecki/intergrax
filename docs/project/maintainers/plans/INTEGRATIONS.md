@@ -66,6 +66,51 @@ Provider runtime matrix:
 
 ---
 
+<a id="protocol-v22-providerbackend-abstraction-remediation-2026-08-18"></a>
+
+### Protocol v2.2 — provider/backend abstraction remediation (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-PROVIDER-BACKEND-ABSTRACTION-PERSIST-1.
+
+<a id="protocol-v22-pba-fix-b--observability-export-and-vendor-governance-2026-08-18"></a>
+
+#### PBA-FIX-B — Observability export boundary and vendor governance
+
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-02`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md), [`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-04`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)
+
+**Outcome (planning only):**
+
+- Remove RAG/parser direct Sentry/Langfuse vendor delivery.
+- Route through canonical observability export/provider boundary.
+- Preserve canonical sanitization guarantees.
+- Harden ownership-aware vendor-boundary gate and CI proof.
+- Tests must demonstrate that the previous bypass is rejected.
+
+<a id="protocol-v22-pba-fix-c--provider-owned-guardrail-configuration-2026-08-18"></a>
+
+#### PBA-FIX-C — Provider-owned guardrail configuration
+
+**Status:** `ACCEPTED / PLANNED`
+**Finding:** [`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)
+
+**Outcome (planning only):**
+
+- Provider-owned typed guardrail config.
+- Generic host profile no longer contains Bedrock-specific configuration.
+- Preserve `LlmGuardrailBackend` as behavior contract.
+- Provider selection remains composition responsibility.
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+
+**Recommended remediation order (prioritization, not dependency graph):** PBA-FIX-A → PBA-FIX-B → PBA-FIX-C → PBA-FIX-D
+
+---
+
 ## Phase H-INT-GRAPH — graph_store expansion (Planned)
 
 **Purpose:** New `graph_store` vendor slugs required before RAG adapters M-RAG.49–M-RAG.51.  

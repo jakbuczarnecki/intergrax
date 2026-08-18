@@ -35,6 +35,33 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
+<a id="protocol-v22-pba-fix-d--experiment-persistence-port-2026-08-18"></a>
+
+### Protocol v2.2 — PBA-FIX-D — Experiment persistence port (2026-08-18)
+
+**Status:** `ACCEPTED / PLANNED`
+**Priority:** P2
+**Type:** Arch / Wire / Proof
+**Finding:** [`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-05`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Outcome (planning only):**
+
+- Introduce/use provider-neutral experiment persistence port.
+- Inject it into `ExperimentSession`/debug consumers.
+- Retain SQLite as lab/default composition option.
+- Prove consumer behavior using the port/substitutable test double.
+
+**Remediation rules:**
+
+- Revalidate finding against then-current `development` HEAD before implementation.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- **Not implemented** by audit persistence task AUDIT-20260818-PROVIDER-BACKEND-ABSTRACTION-PERSIST-1.
+
+**Recommended remediation order (prioritization, not dependency graph):** PBA-FIX-A → PBA-FIX-B → PBA-FIX-C → PBA-FIX-D
+
+---
+
 ## Architecture doc alignment (P2-ARCH)
 
 | ID | Scope | Status |

@@ -33,6 +33,7 @@ from typing import Callable, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from intergrax.applications._shared.harness_auth import require_harness_api_key
+from intergrax.runtime.human.models import HumanResponseVerdict
 
 from intergrax.debug.formatters import build_trace_payload
 from intergrax.debug.hitl_service import DebugHitlResumeService
@@ -343,10 +344,18 @@ def create_debug_router(
                 ),
             )
         try:
+            verdict = HumanResponseVerdict(body.response.strip().lower())
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Unsupported human verdict: {body.response!r}",
+            ) from exc
+        try:
             result = await hitl_service.resume_with_human_response(
                 task_id,
                 tenant,
-                response=body.response,
+                verdict=verdict,
+                response_text=body.response,
                 resume_token=body.resume_token,
                 user_id=body.user_id or "debug_operator",
             )

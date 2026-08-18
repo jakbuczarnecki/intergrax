@@ -44,7 +44,7 @@ def test_task_hydrates_and_syncs_legacy_metadata():
         message="hello",
         metadata={
             "shadow_workspace": True,
-            "human_approved": True,
+            "human_decision": HumanResponseVerdict.APPROVE.value,
             "classification": "single_agent_default",
         },
     )

@@ -23,6 +23,33 @@
 
 ---
 
+<a id="protocol-v22-pba-fix-a--long-running-checkpoint-port-consumption-2026-08-18"></a>
+
+### Protocol v2.2 — PBA-FIX-A — Long-running checkpoint port consumption (2026-08-18)
+
+**Status:** `ACCEPTED / PLANNED`
+**Priority:** P1
+**Type:** Arch / Wire / Proof
+**Findings:** [`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-01`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Outcome (planning only):**
+
+- Nexus + `LongRunningCoordinator` depend on checkpoint ports (`TaskCheckpointPersistence` / `TaskCheckpointReader`).
+- Provider-neutral checkpoint construction — not owned by `SQLiteTaskCheckpointStore`.
+- Composition chooses concrete backend.
+- Add substitutability/regression proof during implementation.
+
+**Remediation rules:**
+
+- Revalidate finding against then-current `development` HEAD before implementation.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- **Not implemented** by audit persistence task AUDIT-20260818-PROVIDER-BACKEND-ABSTRACTION-PERSIST-1.
+
+**Recommended remediation order (prioritization, not dependency graph):** PBA-FIX-A → PBA-FIX-B → PBA-FIX-C → PBA-FIX-D
+
+---
+
 ## Architecture documentation (P2)
 
 | ID | Task | Status |

@@ -326,6 +326,37 @@ Evidence maturity: **E3**
 
 ---
 
+---
+
+<a id="protocol-v22-provider-backend-abstraction-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 provider/backend abstraction target invariants (2026-08-18)
+
+Accepted Protocol v2.2 audit layer [`PROVIDER_BACKEND_ABSTRACTION`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+**Finding 02 — observability export boundary**
+
+1. All external observability vendor I/O from platform/domain consumers flows through the canonical sanitized observability export/provider boundary or an explicitly equivalent canonical contract ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-02`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+2. RAG/parser telemetry must not directly call Sentry/Langfuse/vendor APIs ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-02`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+3. `source`/`error` metadata must cross the normal observability safety/export boundary before vendor delivery ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-02`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+
+**Finding 03 — guardrail configuration ownership**
+
+4. Generic host/platform guardrail profiles remain provider-neutral ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+5. Vendor-specific configuration belongs to provider-owned typed configuration selected/resolved in composition ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+6. `LlmGuardrailBackend` remains the behavior contract ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+7. Do not encode new vendor-specific fields into generic shared profiles ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+
+**Finding 04 — vendor-boundary governance**
+
+8. Vendor-boundary governance must inspect high-level consumers rather than bless known vendor-call files through broad filename exceptions ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-04`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+9. Explicit exceptions must correspond to genuine provider-owned boundaries or narrowly justified provider-specific tooling ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-04`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+10. Proof must cover direct vendor imports/calls sufficiently to prevent the confirmed parser-trace bypass class ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-04`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+
+The invariant is ownership-aware boundary enforcement — not a giant universal SDK blacklist as architecture.
+
+Remediation tracked as **PBA-FIX-B** (findings 02, 04) and **PBA-FIX-C** (finding 03) in [plan](../maintainers/plans/INTEGRATIONS.md#protocol-v22-providerbackend-abstraction-remediation-2026-08-18). **Not implemented** by audit persistence.
+
 ## Engineering canon
 
 **Status:** Canonical architecture (domain pair 1:1)  
