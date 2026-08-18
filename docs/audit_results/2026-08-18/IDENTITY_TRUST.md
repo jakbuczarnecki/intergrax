@@ -37,7 +37,7 @@
 - **Prior audit reference(s):** [`INTERFACE_TASK_INTAKE`](INTERFACE_TASK_INTAKE.md) (public intake identity); [`PROVIDER_BACKEND_ABSTRACTION`](PROVIDER_BACKEND_ABSTRACTION.md) (IdentityProviderBackend abstraction); [`STRATEGIC_HARNESS_MODEL`](STRATEGIC_HARNESS_MODEL.md) (execution identity continuity)
 - **architecture_sync:** COMPLETE after commit A
 - **plan_sync:** COMPLETE after commit A
-- **post_sync_sha:** — *(pending until commit A exists)*
+- **post_sync_sha:** `be52ca045443e906ef03f47fbd8cde1dbd1f6fbc`
 
 ## Executive summary
 
