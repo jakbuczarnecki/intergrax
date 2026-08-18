@@ -113,7 +113,12 @@ def _approve_resolution(task: Task) -> None:
         request_id="hr-1",
         prompt="approve?",
     )
-    HumanPauseCoordinator.resolve_human_response(task, HumanResponseVerdict.APPROVE)
+    HumanPauseCoordinator.resolve_human_response(
+        task,
+        HumanResponseVerdict.APPROVE,
+        pause_id="pause-1",
+        human_request_id="hr-1",
+    )
 
 
 def test_a_persisted_grant_absent_after_resume_transfer() -> None:

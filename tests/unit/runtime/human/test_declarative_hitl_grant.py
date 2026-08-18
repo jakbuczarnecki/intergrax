@@ -28,7 +28,12 @@ def _approve_resolution(task: Task, *, pause_id: str = "pause-1", human_request_
         request_id=human_request_id,
         prompt="approve?",
     )
-    HumanPauseCoordinator.resolve_human_response(task, HumanResponseVerdict.APPROVE)
+    HumanPauseCoordinator.resolve_human_response(
+        task,
+        HumanResponseVerdict.APPROVE,
+        pause_id=pause_id,
+        human_request_id=human_request_id,
+    )
 
 
 def _pending(task_id: str = "task_test01") -> DeclarativeHitlPendingApproval:

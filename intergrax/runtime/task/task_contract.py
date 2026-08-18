@@ -35,6 +35,8 @@ class TaskIsolationOptions(BaseModel):
 class TaskHumanInput(BaseModel):
     response_text: Optional[str] = None
     verdict: Optional[str] = None
+    pause_id: Optional[str] = None
+    human_request_id: Optional[str] = None
 
     @property
     def is_resumed(self) -> bool:

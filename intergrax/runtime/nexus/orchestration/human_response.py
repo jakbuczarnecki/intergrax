@@ -16,6 +16,14 @@ def normalize_human_response(task: Task) -> None:
         HumanPauseCoordinator.record_human_response(task, str(response))
 
 
+def clear_consumed_human_input(task: Task) -> None:
+    task.options.human.response_text = None
+    task.options.human.verdict = None
+    task.options.human.pause_id = None
+    task.options.human.human_request_id = None
+    task.sync_metadata()
+
+
 def persist_human_decision(
     task: Task,
     verdict: HumanResponseVerdict,

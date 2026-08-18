@@ -75,6 +75,7 @@ class HumanPauseCoordinator:
     def apply_pause(task: Task, execution: AgentExecutionResult) -> Task:
         gov = task.runtime.governance
         if execution.human_request is not None:
+            gov.hitl_resolution = None
             HumanTimeoutCoordinator.attach_to_task(task, execution.human_request)
         if execution.execution_interrupt is not None:
             gov.execution_interrupt = execution.execution_interrupt
@@ -147,21 +148,27 @@ class HumanPauseCoordinator:
         if pause_record.task_id != task.task_id:
             raise HumanApprovalResolutionError("pause task_id mismatch")
 
+        if verdict is HumanResponseVerdict.UNKNOWN:
+            raise HumanApprovalResolutionError("unsupported verdict")
+
+        if pause_id is None:
+            raise HumanApprovalResolutionError("pause_id required")
+
+        if human_request_id is None:
+            raise HumanApprovalResolutionError("human_request_id required")
+
         active_pause_id = pause_record.pause_id
         active_request_id = pause_record.human_request_id
 
-        if pause_id is not None and pause_id != active_pause_id:
+        if pause_id != active_pause_id:
             raise HumanApprovalResolutionError("pause_id mismatch")
 
-        if human_request_id is not None and human_request_id != active_request_id:
+        if human_request_id != active_request_id:
             raise HumanApprovalResolutionError("human_request_id mismatch")
 
         if gov.human_request is not None:
             if gov.human_request.request_id != active_request_id:
                 raise HumanApprovalResolutionError("human_request identity mismatch")
-
-        if verdict is HumanResponseVerdict.UNKNOWN:
-            raise HumanApprovalResolutionError("unsupported verdict")
 
         resolution = HumanApprovalResolution(
             task_id=task.task_id,
