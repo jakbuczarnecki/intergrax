@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1040" role="img">
+  <title>Intergrax skill resolution boundary</title>
+  <desc>Conceptual diagram: SkillProfile and AgentContract skills resolve through SkillResolver into capability requirements; ToolRuntime still executes actions.</desc>
+  <rect width="1200" height="1040" fill="#f6f8fb"/>
+  <rect x="32" y="28" width="1136" height="984" rx="22" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#1a1a2e">Intergrax Skills &#8212; composition vs execution</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" fill="#3d4f66">Skills compose capability requirements; Tools execute actions</text>
+
+  <rect x="460" y="130" width="280" height="44" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="600" y="158" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#1a1a2e">SkillProfile</text>
+
+  <line x1="600" y1="174" x2="600" y2="198" stroke="#5b6f82" stroke-width="2"/>
+  <path d="M600 198 L594 184 L606 184 Z" fill="#5b6f82"/>
+
+  <rect x="460" y="198" width="280" height="44" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="600" y="226" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#1a1a2e">SkillRegistry</text>
+
+  <line x1="600" y1="242" x2="600" y2="266" stroke="#5b6f82" stroke-width="2"/>
+  <path d="M600 266 L594 252 L606 252 Z" fill="#5b6f82"/>
+
+  <rect x="400" y="266" width="400" height="44" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="600" y="294" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#1a1a2e">AgentContract.skills[]</text>
+
+  <line x1="600" y1="310" x2="600" y2="334" stroke="#5b6f82" stroke-width="2"/>
+  <path d="M600 334 L594 320 L606 320 Z" fill="#5b6f82"/>
+
+  <rect x="420" y="334" width="360" height="52" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2.5"/>
+  <text x="600" y="366" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#1a1a2e">SkillResolver</text>
+
+  <line x1="600" y1="386" x2="600" y2="410" stroke="#2e7d32" stroke-width="2"/>
+  <path d="M600 410 L594 396 L606 396 Z" fill="#2e7d32"/>
+
+  <rect x="360" y="410" width="480" height="56" rx="12" fill="#f3f8f4" stroke="#2e7d32" stroke-width="2"/>
+  <text x="600" y="442" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">ResolvedSkillPack</text>
+
+  <rect x="180" y="486" width="260" height="52" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="310" y="518" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#1a1a2e">tool_ids</text>
+
+  <rect x="470" y="486" width="260" height="52" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="600" y="518" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#1a1a2e">prompt refs</text>
+
+  <rect x="760" y="486" width="260" height="52" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="890" y="518" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#1a1a2e">policy refs</text>
+
+  <line x1="600" y1="466" x2="310" y2="486" stroke="#5b6f82" stroke-width="1.5"/>
+  <line x1="600" y1="466" x2="600" y2="486" stroke="#5b6f82" stroke-width="1.5"/>
+  <line x1="600" y1="466" x2="890" y2="486" stroke="#5b6f82" stroke-width="1.5"/>
+
+  <line x1="600" y1="538" x2="600" y2="562" stroke="#5b6f82" stroke-width="2"/>
+  <path d="M600 562 L594 548 L606 548 Z" fill="#5b6f82"/>
+
+  <rect x="360" y="562" width="480" height="52" rx="12" fill="#fff8e1" stroke="#c9a227" stroke-width="2"/>
+  <text x="600" y="594" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#1a1a2e">AgentContract.allowed_tools</text>
+
+  <line x1="600" y1="614" x2="600" y2="638" stroke="#5b6f82" stroke-width="2"/>
+  <path d="M600 638 L594 624 L606 624 Z" fill="#5b6f82"/>
+
+  <rect x="300" y="638" width="600" height="52" rx="12" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="600" y="670" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">ToolProfile / runtime policy / Governance</text>
+
+  <line x1="600" y1="690" x2="600" y2="714" stroke="#5b6f82" stroke-width="2"/>
+  <path d="M600 714 L594 700 L606 700 Z" fill="#5b6f82"/>
+
+  <rect x="420" y="714" width="360" height="56" rx="14" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2.5"/>
+  <text x="600" y="748" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#1a1a2e">ToolRuntime</text>
+
+  <rect x="320" y="468" width="560" height="36" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+  <text x="600" y="491" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#bf360c">Skills compose capabilities. Tools execute actions.</text>
+
+  <text x="600" y="820" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" fill="#3d4f66">SkillResolver is deterministic &#8212; no LLM calls.</text>
+  <text x="600" y="980" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#5b6f82">Conceptual architecture &#8212; not a runtime class diagram.</text>
+</svg>

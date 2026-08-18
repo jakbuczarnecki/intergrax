@@ -1,13 +1,373 @@
-# Skills
+# Intergrax Skills
+
+**Intergrax Skills** are declarative, reusable capability packages that compose tool requirements, prompt references, policy metadata, and skill dependencies into an agent’s effective capability set.
+
+## Why it matters
+
+Without Skills:
+
+- agent authors copy tool ID lists by hand,
+- prompt and policy dependencies drift between agents,
+- capability composition is not reusable,
+- dependency resolution is manual,
+- plugin packs are hard to ship consistently,
+- agent capability declarations lack one typed contract,
+- the host cannot centrally control which capability packs are available.
+
+Skills address this through `SkillManifest`, catalog + runtime registry, `SkillProfile`, `SkillResolver`, transitive `requires_skills`, merge into `AgentContract`, plugin/import paths, and environment consistency checks.
+
+> [!NOTE]
+> **Maturity boundary:** SK-EXP through SK-EXP5 and the first-party catalog are **shipped and gate-tested** (**153** skills · **43** bundles). That proves composition scale on the harness path — **not** universal production qualification, not end-to-end prompt/policy bridge consumption on every host, and not permission to bypass `ToolRuntime` or Governance. See [Current maturity](#current-maturity).
+
+**Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring `SkillProfile`, plugins, and agent skill declarations — after the platform overview in the root README.
+
+## At a glance
+
+| Concern | Summary |
+| -------- | -------- |
+| **Responsibility** | Declarative capability composition — tool IDs, prompt refs, policy fragments, dependencies |
+| **Skill contract** | `SkillManifest` — stable `skill_id`, version, `tool_ids`, metadata |
+| **Host availability** | `SkillProfile` — which bundles/skills the host enables |
+| **Agent declaration** | `AgentContract.skills[]` — manifest objects the agent requires |
+| **Resolution time** | Agent bind / registration (`AgentRegistry.register`) — not LLM-invoked |
+| **Resolver** | `SkillResolver` — deterministic registry lookup, no LLM |
+| **Dependencies** | `requires_skills` — transitive expansion, cycle rejection |
+| **Tool requirements** | Union of resolved `tool_ids` → `AgentContract.allowed_tools` |
+| **Prompt refs** | `prompt_instruction_ids` — SK-BRIDGE.1 helper shipped; **not** universal runtime consumption |
+| **Policy refs** | `policy_fragment_id` — SK-BRIDGE.2 helper shipped; **not** universal runtime merge |
+| **Risk metadata** | Per-skill `risk_tier`; pack uses effective max tier |
+| **Dynamic selection** | Optional AHI hook — recommends from **already enabled** bundles only |
+| **Plugins** | `SkillPlugin` → catalog → `SkillProfile` → registry |
+| **External import** | Cursor `SKILL.md` / LangGraph pack → validated manifest → explicit registry attach |
+| **Tools relation** | Skills **compose** `tool_ids`; Tools **execute** via `ToolRuntime` |
+| **Agent relation** | Agent declares Skills; Skill is not a mini-agent |
+| **Integrations relation** | Skill → Tool → Integration — no direct vendor SDK dependency |
+| **CodeCraft relation** | Skills may include `codecraft.*` tool IDs; CodeCraft owns codegen lifecycle |
+| **Catalog scale** | Gate-tested **153** skills · **43** shipped bundles |
+| **Maturity** | Four-axis statement in [Current maturity](#current-maturity) |
+
+## Flagship architecture visual
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/skill-resolution-boundary-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/skill-resolution-boundary-light.svg">
+  <img
+    alt="Conceptual diagram: SkillProfile and AgentContract skills resolve through SkillResolver into tool IDs, prompt refs, and policy refs, then narrow through ToolProfile and Governance to ToolRuntime. Skills compose capabilities; Tools execute actions."
+    src="assets/skill-resolution-boundary-light.svg"
+  >
+</picture>
+
+**Mental model:**
+
+```text
+SkillProfile
+    ↓
+SkillRegistry
+    ↓
+AgentContract.skills[]
+    ↓
+SkillResolver
+    ↓
+ResolvedSkillPack
+   ├── tool_ids
+   ├── prompt refs
+   ├── policy refs
+   └── risk / dependencies
+    ↓
+AgentContract.allowed_tools
+    ↓
+ToolProfile / runtime policy
+    ↓
+ToolRuntime
+```
+
+> **Skills compose capabilities. Tools execute actions.**
+
+## How it works
+
+1. **Catalog bootstrap** — shipped and plugin bundles register `SkillManifest` rows into `SkillCatalog`.
+2. **Host enablement** — Tier-3 `SkillProfile` selects which bundles enter the runtime `SkillRegistry`.
+3. **Agent declaration** — `AgentContract.skills[]` lists required `SkillManifest` objects (not string IDs alone at the contract boundary).
+4. **Resolve** — `SkillResolver` expands `requires_skills`, merges `tool_ids`, prompt refs, policy refs, and risk metadata into `ResolvedSkillPack`.
+5. **Contract merge** — `resolve_contract_tools()` unions skill tools with `extra_tools` and **replaces** `allowed_tools`.
+6. **Environment narrow** — `ToolProfile`, `RuntimePolicyBundle`, and Governance intersect what may actually execute.
+7. **Execute** — only resolved, policy-allowed tools run through `ToolRuntime`.
+
+```mermaid
+flowchart TB
+    SP[SkillProfile]
+    SR[SkillRegistry]
+    AC[AgentContract.skills]
+    RES[SkillResolver]
+    PACK[ResolvedSkillPack]
+    AT[allowed_tools]
+    TR[ToolRuntime]
+
+    SP --> SR --> AC --> RES --> PACK --> AT --> TR
+```
+
+**Rule:** Skills are **not** invoked by the LLM. The runtime resolves them at agent bind time.
+
+## Skill ≠ Tool ≠ Agent ≠ Integration
+
+| Concept | Meaning |
+| ------- | ------- |
+| **Integration** | Backend/vendor connection |
+| **Tool** | Concrete executable capability (`tool_id` via `ToolRuntime`) |
+| **Skill** | Reusable capability package — requirements, not execution |
+| **Agent** | Runtime decision-making module using composed capabilities |
+
+**Example:**
+
+```text
+Jira Integration
+  → jira.search_tasks / jira.add_comment Tools
+  → issue_triage Skill
+  → Support Agent
+```
+
+A Skill does **not** execute backend calls, install permissions, or bypass `ToolRuntime`.
+
+## SkillCatalog vs SkillRegistry vs SkillProfile
+
+Do not collapse these layers:
+
+```text
+SkillCatalog
+  → all registered bundle metadata (bootstrap / plugins)
+
+SkillProfile
+  → which bundles/skills the host enables for this environment
+
+SkillRegistry
+  → runtime-visible skill_id → RegisteredSkill lookup set
+```
+
+| Layer | Role |
+| ----- | ---- |
+| **SkillCatalog** | Process-wide bundle metadata (`register_skill_bundle`, `iter_bundles`) |
+| **SkillProfile** | Host policy — `enabled_bundles`, `enabled`, `register_all_catalog_bundles` |
+| **SkillRegistry** | Runtime lookup used by `SkillResolver` and validation |
+
+## AgentContract.skills and allowed_tools
+
+- Agents declare **`SkillManifest` objects** on `AgentContract.skills[]`.
+- `allowed_tools` is a **derived output**, not independent authority.
+- `extra_tools` may add `ToolContract` refs beyond the skill union.
+- Resolution happens at **`AgentRegistry.register`** when `skill_registry` is provided.
+
+Canonical merge (`resolve_contract_tools()`):
+
+```text
+AgentContract.skills
++ extra_tools
+    ↓
+resolve_contract_tools()
+    ↓
+AgentContract.allowed_tools   (replaces pre-declared author list)
+```
+
+Pre-declared `allowed_tools` on the author contract are **not** preserved. Environment intersection happens later via `ToolProfile` / `ToolAccessPolicy`.
+
+## SkillResolver and ResolvedSkillPack
+
+`SkillResolver` performs **pure registry lookups** — deterministic, **no LLM calls**.
+
+```text
+ResolvedSkillPack
+├── skill_ids          (expanded order — dependencies first)
+├── tool_ids
+├── prompt_instruction_ids
+├── policy_fragment_ids
+└── risk_tier          (max tier across merged skills)
+```
+
+| Behavior | Detail |
+| -------- | ------ |
+| `requires_skills` | Topological expansion; cycle → `SkillResolutionError` |
+| Tool validation | When `tool_registry` provided, every `tool_id` must exist |
+| Unknown skill | `SkillResolutionError` at resolve / validate |
+| Authority | Resolver **composes contracts**; it does not make autonomous policy decisions |
+
+## requires_skills
+
+```text
+advanced_skill
+  → requires base_a
+  → requires base_b
+```
+
+The resolver expands transitively, orders dependencies before parents, and rejects cycles. This is **manifest composition**, not runtime recursive execution of Skills.
+
+## Skill does not grant execution permission
+
+```text
+Skill requires tool_ids
+       ↓
+resolved allowed_tools
+       ↓
+ToolProfile / environment availability
+       ↓
+runtime policy / Governance
+       ↓
+ToolRuntime
+```
+
+> **A Skill can require a Tool; it cannot bypass ToolRuntime or Governance.**
+
+`extend_tool_profile_for_skills()` may append skill-declared `tool_ids` to the host `ToolProfile` during Tier-3 wiring so resolver validation can succeed — that is **host tool availability configuration**, not autonomous permission expansion beyond host/policy rules.
+
+## Prompt and policy bridges (current as-built)
+
+| Bridge | Helper | Runtime wiring |
+| ------ | ------ | -------------- |
+| **SK-BRIDGE.1** | `skill_prompt_metadata(pack)` | **Helper only** — no production call sites outside unit tests; agents typically wire prompts in UAEP steps or Prompt Registry explicitly |
+| **SK-BRIDGE.2** | `merge_skill_policy_fragments(bundle, pack)` | **Helper only** — not merged universally into every host `RuntimePolicyBundle` path |
+
+Declare `prompt_instruction_ids` and `policy_fragment_id` for governance and traceability. Where bridges are not wired, consume prompts and policy through explicit agent/host paths. Skill policy metadata **feeds** Governance where wired; it does **not** replace Governance.
+
+## Risk tier
+
+Each `SkillManifest` may declare `risk_tier` (`low` · `medium` · `high` · `critical`). `ResolvedSkillPack` uses the **maximum** tier across merged skills. Risk metadata informs policy and qualification; it does **not** itself execute denial.
+
+## Dynamic skill selection
+
+Optional AHI hook (AUDIT-IDEAL-12.2): `resolve_skill_selection_hook()` + `SkillSelectionEngine`.
+
+```text
+approved runtime skill universe (SkillProfile.enabled_bundles)
+        ↓
+dynamic selection (when adaptive ROUTING_TUNING enabled)
+        ↓
+recommendation proposal — does not auto-install bundles
+```
+
+| Property | Semantics |
+| -------- | --------- |
+| **Candidate universe** | `env.skill_profile.enabled_bundles` — cannot expand beyond host-enabled bundles |
+| **Default** | **Off** unless product profile + adaptive profile enabled + `ROUTING_TUNING` loop enabled |
+| **Authority** | `RECOMMEND` — proposals, not permission grants |
+| **Behavior** | Rule-based bundle recommendation from task-class utility signals |
+
+> **Selection chooses from an already bounded universe** — it is not installation or permission expansion.
+
+## Plugin model and external import
+
+```text
+external package
+  → SkillPlugin (entry point intergrax.skills)
+  → SkillCatalog
+  → SkillProfile enablement
+  → SkillRegistry
+```
+
+External Cursor `SKILL.md`:
+
+```text
+external SKILL.md
+  → import_cursor_skill_file()
+  → validated SkillManifest
+  → SkillRegistry.register()   (explicit — not automatic catalog/global enablement)
+```
+
+LangGraph-compatible JSON packs map through `LangGraphSkillPackImporter` (AUDIT-IDEAL-12.1) — an import surface, not the conceptual center of Skills.
+
+Invalid imports fail without partial attach (`CursorSkillImportError` / `LangGraphSkillImportError`).
+
+## Relationship to Intergrax
+
+| Neighbor | Relationship |
+| -------- | ------------- |
+| [**Tools**](TOOLS.md) | Skills compose `tool_ids`; Tools own execution, validation, policy, trace |
+| [**Agent Contracts**](AGENT_CONTRACTS_AND_ASSEMBLY.md) | `AgentContract.skills[]` input; `allowed_tools` derived output |
+| [**Integrations**](INTEGRATIONS.md) | Skill → Tool → Integration; Skills should not depend on vendor SDKs directly |
+| [**CodeCraft**](CODE_CRAFT.md) | Skills may reference `codecraft.*` tools; CodeCraft owns generated-code lifecycle |
+| [**Governed Execution**](GOVERNED_EXECUTION.md) | Skill may contribute policy fragments where wired; Governance owns allow/deny/HITL |
+| [**Adaptive Harness Intelligence**](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md) | Dynamic skill selection hook (optional recommendations) |
+
+## Catalog scale and qualification boundary
+
+Gate-tested shipped catalog: **153** skills across **43** first-party bundles (`SHIPPED_SKILL_PLUGINS`, `test_sk_exp_skill_bundles.py`).
+
+```text
+many shipped Skills
+≠
+production qualification
+```
+
+Catalog size proves composition-model scale — not P4/E4 platform maturity.
+
+## Current implementation state
+
+| Area | State |
+| ---- | ----- |
+| SK-EXP … SK-EXP5 | **Done** — catalog expansion shipped |
+| Registry / resolver / contract merge | **Done** — bind-time resolution |
+| `extend_tool_profile_for_skills` | **Done** — Tier-3 `wire_application_environment` |
+| Plugin path + external import | **Done** |
+| AUDIT-IDEAL-12.1 LangGraph import | **Done** |
+| AUDIT-IDEAL-12.2 dynamic selection hook | **Done** — optional recommend-only hook |
+| SK-BRIDGE.1 prompt metadata | **Partial** — helper shipped, not end-to-end on all hosts |
+| SK-BRIDGE.2 policy merge | **Partial** — helper shipped, not end-to-end on all hosts |
+
+## Current maturity
+
+Architecture maturity: **A4**  
+Implementation maturity: **I4**  
+Production readiness: **P2**  
+Evidence maturity: **E3**
+
+- **A4** — Clear Skill / Tool / Agent / Integration boundary; stable `SkillManifest`; catalog vs registry vs profile split; deterministic resolver; dependency semantics; plugin/import model; adjacent-domain boundaries validated.
+- **I4** — Resolver, registry/profile wiring, contract merge, tool validation, plugin/import, dynamic selection hook, conformance/gates. Not I5 — SK-BRIDGE helpers are not universally consumed end-to-end; not every host path merges skill policy into runtime bundles automatically.
+- **P2** — Harness and lab qualification on core resolution paths; not representative customer production qualification or runbook-backed operations (not P4).
+- **E3** — Unit/gate tests (resolver, cycles, missing tools, contract merge, profile/registry, plugin/import, usage-docs gate, catalog counts). No dedicated Skills public proof route in [`PROOFS.md`](../proofs/PROOFS.md).
+
+### Catalog-proven vs production-qualified
+
+| Catalog-proven (representative) | Not claimed as universal production qualification |
+| ----------------------------- | ------------------------------------------------- |
+| 153-skill / 43-bundle gate-tested catalog | Every skill bundle customer-qualified |
+| Deterministic `SkillResolver` at agent bind | Universal prompt/policy bridge on every host |
+| Plugin + external import paths | Autonomous permission expansion via dynamic selection |
+| `SKILL_RESOLVED` trace events | End-to-end skill lifecycle public proof (E4/E5) |
+
+## Evidence / proof
+
+| Evidence class | What exists | What it does not prove |
+| -------------- | ----------- | ---------------------- |
+| Architecture | This hub, skill catalog satellite, author guides | Production operation |
+| Unit / gate | Resolver, cycles, missing tools, contract merge, profile/registry, plugin/import, `test_skill_usage_docs.py`, catalog count gate | Universal bridge wiring |
+| Integration | Agent registration, environment wiring, `ToolProfile` consistency, dynamic selection hook gate | Dedicated public Skills proof |
+| Public proof | **None** dedicated in [`PROOFS.md`](../proofs/PROOFS.md) | Full-harness Skills lifecycle at product scale |
+| Production / customer | **None** cited for full domain qualification | Not E5 |
+
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
+
+## Go deeper
+
+| Depth | Route |
+| ----- | ----- |
+| Engineering canon | [Below](#engineering-canon) |
+| Skill catalog inventory | [`satellites/SKILLS_skill_catalog.md`](satellites/SKILLS_skill_catalog.md) |
+| Implementation plan | [`maintainers/plans/SKILLS.md`](../maintainers/plans/SKILLS.md) |
+| Agent creation | [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) **Appendix J** |
+| Extension author | [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §4 |
+| Tools | [`TOOLS.md`](TOOLS.md) |
+| Agent Contracts | [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) |
+| Integrations | [`INTEGRATIONS.md`](INTEGRATIONS.md) |
+| CodeCraft | [`CODE_CRAFT.md`](CODE_CRAFT.md) |
+| Governance | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
+
+---
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Last updated:** 2026-06-23 — **Full Harness LC** (re-validates 2026-06-08 closeout); SK-EXP through SK-EXP5 shipped; **150** skills · **42** bundles  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
-**Plan (1:1):** [`plan/SKILLS.md`](../maintainers/plans/SKILLS.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Author map:** [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) **Appendix J**
+**Last updated:** 2026-08-18 — DOC-3M hub modernization; gate-tested **153** skills · **43** bundles; SK-BRIDGE helpers partial  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/SKILLS.md`](../maintainers/plans/SKILLS.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Author map:** [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) **Appendix J**  
 **Audit layers:** 12  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)---
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
 
 ## Cursor read scope (token budget)
 
@@ -19,9 +379,6 @@
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
----
-
-
 ## Architecture satellites (read on demand)
 
 Large § blocks moved out of the architecture hub to reduce Cursor context use.
@@ -32,7 +389,21 @@ Load **only** the satellite matching your task or cited §.
 | [`satellites/SKILLS_skill_catalog.md`](satellites/SKILLS_skill_catalog.md) | skill catalog |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
-## Four-layer stack
+
+---
+
+## Engineering canon
+
+### Public invariant
+
+```text
+A Skill may compose capabilities.
+It does not execute them.
+It does not install permissions.
+It does not bypass ToolRuntime.
+```
+
+### Four-layer stack
 
 ```text
 Integration  →  vendor backend (Postgres, Bing, Jira)
@@ -41,15 +412,11 @@ Skill        →  tool_ids + prompt refs + policy fragment
 Agent        →  UAEP module with skills[] on AgentContract
 ```
 
-Skills are **not** invoked by the LLM. The runtime **resolves** them into `allowed_tools` and metadata at **agent registration** (and via the diagnostic catalog tool `skill.resolve`).
-
 Skills may compose `codecraft.*` tools (e.g. `codecraft.ephemeral_builder`) — skills **compose** bundles; CodeCraft **orchestrates** ephemeral codegen under Harness governance ([`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary)). Skills **MUST NOT** implement agent-local craft loops or bypass ToolRuntime for generated code execution.
 
 **Unified RAG path (R-Context.4 — Done):** Prefer catalog tool `rag.retrieve` in resolved `allowed_tools` / `tool_ids`. `RuntimeToolGateway` capability plans use `tool_ids` first; legal bridge passes `tool_ids` only. `LegalToolPlan.use_rag` remains for LLM structured output and syncs to `tool_ids` via Pydantic validator — not passed to Nexus. Legacy metadata `use_rag` still honored in `ContextBuilder` for older callers.
 
----
-
-## Skill engine — two registry layers
+### Skill engine — two registry layers
 
 Intergrax mirrors the tool catalog pattern: a **static catalog** (bootstrap metadata) and a **runtime registry** (lookup by `skill_id`).
 
@@ -85,13 +452,15 @@ Agent bind time (Tier-1)
 | Tier-3 wiring | `applications/_shared/skill_wiring.py` | `build_application_skill_wiring()` |
 | Tool auto-enable | `applications/_shared/skill_tool_profile.py` | `extend_tool_profile_for_skills()` |
 | Runtime snapshot | `applications/_shared/catalog_runtime_bridge.py` | `RuntimeConfig.skill_profile` (TS-1) |
+| Prompt/policy bridge | `applications/_shared/skill_bridge_wiring.py` | `skill_prompt_metadata`, `merge_skill_policy_fragments` (helpers) |
+| Dynamic selection | `applications/_shared/skill_selection_wiring.py` | `resolve_skill_selection_hook()` |
 
-**Shipped bundles (41):** `harness`, `rag`, `workspace`, `memory`, `research`, `knowledge`, `legal`, `ops`, `dev`, `browser`, `collaboration`, `data`, `platform`, `sandbox`, `hitl`, `graph`, `storage`, `message_bus`, `cache`, `eval`, `modality`, `notify`, `cost`, `identity`, `health`, `context`, `agent`, `vector_store`, `crm`, `billing`, `metrics`, `catalog`, `cloud_platform`, `code`, `filesystem`, `http`, `interaction`, `jira`, `gitlab`, `ml`, `openai` — registered via `skills/registry/shipped_plugins.py`.  
+**Shipped bundles (43):** `agent`, `billing`, `browser`, `cache`, `catalog`, `cloud_platform`, `code`, `codecraft`, `collaboration`, `context`, `cost`, `crm`, `data`, `dev`, `eval`, `filesystem`, `gitlab`, `graph`, `harness`, `health`, `hitl`, `http`, `identity`, `interaction`, `jira`, `knowledge`, `legal`, `local`, `memory`, `message_bus`, `metrics`, `ml`, `modality`, `notify`, `openai`, `ops`, `platform`, `rag`, `research`, `sandbox`, `storage`, `vector_store`, `workspace` — registered via `skills/registry/shipped_plugins.py`.  
 `knowledge` remains **BETA**; all other shipped bundles **STABLE**.
 
 ---
 
-## Tier-3 host pipeline
+### Tier-3 host pipeline
 
 Canonical entry: `wire_application_environment()` (`applications/_shared/environment_wiring.py`).
 
@@ -128,7 +497,7 @@ wire_application_environment(manifest, env)
 
 ---
 
-## SkillManifest
+### SkillManifest
 
 | Field | Purpose |
 |-------|---------|
@@ -147,9 +516,7 @@ Plugin protocol: `intergrax/skills/core/plugin.py` (`SkillPlugin`, entry point `
 
 ---
 
-## SkillResolver and ResolvedSkillPack
-
-`SkillResolver` performs **pure registry lookups** — no LLM calls.
+### SkillResolver and ResolvedSkillPack (engineering)
 
 ```python
 from intergrax.skills.resolver import SkillResolver, ResolvedSkillPack
@@ -175,7 +542,7 @@ Typed contract: `SkillResolverProtocol` (Phase TS-3).
 
 ---
 
-## Agent composition
+### Agent composition
 
 Agents declare **manifest objects**, not string ids:
 
@@ -202,7 +569,7 @@ registry.register(
 )
 ```
 
-### Resolution semantics (canonical)
+#### Resolution semantics (canonical)
 
 `resolve_contract_tools()` (`skills/integration/contract_resolution.py`):
 
@@ -217,7 +584,7 @@ If `skill_registry` is omitted at register time, `AgentRegistry` bootstraps all 
 
 ---
 
-## Runtime effects — implemented today vs manifest fields
+### Runtime effects — implemented today vs manifest fields
 
 | Output | Status | Consumer |
 |--------|--------|----------|
@@ -227,22 +594,16 @@ If `skill_registry` is omitted at register time, `AgentRegistry` bootstraps all 
 | `SKILL_IMPORT_FAILED` trace | **Done** | `import_cursor_skill_file(..., event_bus=…)` |
 | Capability graph nodes | **Done** | `capability_graph.py` (prompt + policy edges) |
 | `skill.resolve` catalog tool | **Done** | Diagnostic / planner introspection (`TOOLS.md`) |
-| `prompt_instruction_ids` → `ContextManager` | **Planned** | Track **SK-BRIDGE.1** in plan — agents consume prompts in UAEP steps today |
-| `policy_fragment_id` → `RuntimePolicyBundle` | **Planned** | Track **SK-BRIDGE.2** in plan — Tier-3 `domain_policy_fragments` is separate |
-
-Until SK-BRIDGE.* ships, declare `prompt_instruction_ids` and `policy_fragment_id` for governance/traceability; wire prompts in agent steps or Prompt Registry explicitly.
+| `prompt_instruction_ids` → runtime context | **Partial** | SK-BRIDGE.1 helper — not universal host consumption |
+| `policy_fragment_id` → `RuntimePolicyBundle` | **Partial** | SK-BRIDGE.2 helper — not universal host merge |
 
 ---
 
-## Third-party skill extension (developer path)
+### Third-party skill extension (developer path)
 
 **Task:** PLATFORM-PLUGIN-DOCS-3 · **Quickstart:** [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §4 · §16.6–§16.7 · **Example:** `intergrax/skills/examples/custom_pack/` (copyable in-repo; build your own wheel for distribution)
 
-### Skill is NOT a Tool
-
-Skills package **reusable capability requirements** for agents (`tool_ids`, prompt refs, policy fragments, `requires_skills`). The LLM does **not** invoke skills directly. `SkillResolver` expands manifests at agent bind time into `allowed_tools` and metadata; tools execute via `ToolRuntime`.
-
-### Public contract
+#### Public contract
 
 | Item | Value |
 |------|-------|
@@ -256,7 +617,7 @@ Skills package **reusable capability requirements** for agents (`tool_ids`, prom
 
 No `SkillWiringContext` — DI flows through tools at invoke time.
 
-### Runtime path
+#### Runtime path
 
 ```text
 SkillProfile → build_registry_from_profile → SkillRegistry
@@ -265,18 +626,18 @@ SkillProfile → build_registry_from_profile → SkillRegistry
   → extend_tool_profile_for_skills (Tier-3) ensures tools enabled
 ```
 
-### Dependencies (`requires_skills`)
+#### Dependencies (`requires_skills`)
 
 Transitive expansion before parent skill; cycles raise `SkillResolutionError`. When `tool_registry` is provided, missing `tool_id` raises `SkillResolutionError`.
 
-### Delivery modes
+#### Delivery modes
 
 | Mode | Registration |
 |------|--------------|
 | External package | EP `intergrax.skills` + discovery + `SkillProfile` |
 | Host-embedded | `register_skill_plugin(cls)` + `SkillProfile` |
 
-### Failure and troubleshooting (summary)
+#### Failure and troubleshooting (summary)
 
 | Issue | Error / signal |
 |-------|----------------|
@@ -291,7 +652,7 @@ Tests: `tests/unit/skills/test_external_skill_plugin.py`
 
 ---
 
-## Registry bootstrap (standalone)
+### Registry bootstrap (standalone)
 
 Mirror of tool catalog pattern:
 
@@ -305,11 +666,11 @@ registry: SkillRegistry = build_registry_from_profile(
 )
 ```
 
-External bundles: `SkillPlugin` + `register_skill_plugin()` or entry point `intergrax.skills`. See [guides/EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md).
+External bundles: `SkillPlugin` + `register_skill_plugin()` or entry point `intergrax.skills`. See [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md).
 
 ---
 
-## External skills (Cursor SKILL.md)
+### External skills (Cursor SKILL.md)
 
 ```python
 from pathlib import Path
@@ -326,9 +687,11 @@ Invalid files raise `CursorSkillImportError` — no partial attach. Failed impor
 
 Importer module: `skills/importers/cursor_skill_md.py` (`CursorSkillImporter`).
 
+LangGraph packs: `skills/importers/langgraph_skill_pack.py` (`LangGraphSkillPackImporter`).
+
 ---
 
-## Scaffold
+### Scaffold
 
 ```bash
 python -m intergrax.scaffold new-skill legal.my_skill --domain legal
@@ -349,5 +712,3 @@ intergrax/skills/providers/<bundle>/
 ```
 
 Every shipped `skill_id` **must** have a filled `intergrax/skills/providers/<bundle>/<skill_id>/USAGE.md` (English). Gate: `test_skill_usage_docs.py`.
-
----
