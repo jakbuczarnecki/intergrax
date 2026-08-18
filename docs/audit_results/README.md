@@ -61,9 +61,7 @@ docs/audit_results/
 
 | Campaign | started_at | completed_at | status | campaign_start_sha | campaign_end_sha | scope | overall_verdict |
 |----------|------------|--------------|--------|--------------------|------------------|-------|-----------------|
-| — | — | — | — | — | — | — | — |
-
-_No Protocol v2 campaigns persisted yet._
+| [2026-08-18](2026-08-18/README.md) | 2026-08-18 | — | IN_PROGRESS | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | — | Platform audit — `STRATEGIC_HARNESS_MODEL` complete (1 layer) | — |
 
 ### Registry lifecycle
 
@@ -96,7 +94,7 @@ This root `README.md` is:
 
 Results under [legacy/](legacy/README.md) were produced under superseded protocols (Legacy Audit Protocol v1, plan-satellite audit registers). They are useful for historical comparison only — **not** evidence of current platform maturity.
 
-**Protocol v2** (this tree, from 2026-08-18) is model-driven and periodic. No 2026-08-18 v2 campaign is persisted until independently reviewed after this protocol migration.
+**Protocol v2** (this tree, from 2026-08-18) is model-driven and periodic. Active campaign: [2026-08-18](2026-08-18/README.md) — first layer `STRATEGIC_HARNESS_MODEL` **FAIL**, 10 ACCEPTED findings.
 
 ---
 

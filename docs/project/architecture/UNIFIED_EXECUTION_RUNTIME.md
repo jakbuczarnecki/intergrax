@@ -215,19 +215,31 @@ UER is not a plugin marketplace. Real extension surfaces:
 
 Do not expose internal `HarnessKernel` or `NexusLoop` details as public extension APIs without canonical evidence.
 
+## Protocol v2 strategic harness target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) (**FAIL**, 10 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only:
+
+1. **Equivalent governed boundaries** — normal, retry, and resume execution use the same canonical governed step boundary (HarnessKernel-equivalent semantics), including UAEP resume ([`-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-02`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+2. **Fail closed without kernel** — certified production paths must fail closed when required kernel/governance context is missing; dev/test bypasses must be explicit and separately named ([`-03`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+3. **Continuous identity** — `TaskId`/`RunId`/`AttemptId` propagate across internal bridges (e.g. Nexus → ACP) unless an explicit typed parent/child attempt relationship exists ([`-08`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-09`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+4. **Attempt boundaries** — a new `AttemptId` is minted only at a defined attempt boundary (retry), not at arbitrary internal handoffs.
+5. **Production host/profile** — production execution requires explicit production host/profile wiring; hostless paths are dev/test/lab only ([`-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+6. **Mandatory guarantees** — "mandatory path" means mandatory **guarantees** (policy, trace, gateways, identity, kernel-equivalent step semantics), not merely that common code usually passes through `AgentEngine` ([`-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+7. **Maturity honesty** — historical Done rows remain historical; **current** maturity references accepted Protocol v2 findings until SHM-FIX remediation is independently verified ([`-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+
 ## Current maturity
 
-Architecture maturity: **A4**
-Implementation maturity: **I4**
+Architecture maturity: **A4** *(target)* — **current invariant closure reopened** by Protocol v2 [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)
+Implementation maturity: **I4** *(target)* — same reopening
 Production readiness: **P2**
 Evidence maturity: **E3**
 
-- **A4** — Foundational cross-domain canon: UAEP, `RuntimeEvent` spine, hook model, identity sync with Observability (TRACE-ARCH-SYNC-1, §42.1.8), REL retry/HITL ownership, Governed Execution evaluation-point map; Post-L3 AUDIT-IDEAL Band 2ay rows closed ([plan](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md)).
-- **I4** — Typed `TaskId`/`RunId`/`AttemptId`/`EventId` implemented (TRACE-1A/B/C **Done** per [OBS plan](../maintainers/plans/OBSERVABILITY.md)); UAEP/HarnessKernel path, event catalog gates, retry layers, HITL/cancellation events wired; §6.1av UAEP maintenance **closed**. Not I5 — `RetryCoordinator` future (when canonical), `EscalationRouter` lab-minimal/deferred, and other runtime hardening gaps not yet closed on the harness path.
+- **A4 (target)** — Foundational cross-domain canon: UAEP, `RuntimeEvent` spine, hook model, identity sync with Observability (TRACE-ARCH-SYNC-1, §42.1.8), REL retry/HITL ownership, Governed Execution evaluation-point map; Post-L3 AUDIT-IDEAL Band 2ay rows closed historically ([plan](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md)). **Current:** accepted Protocol v2 findings block universal invariant closure until remediated.
+- **I4 (target)** — Typed `TaskId`/`RunId`/`AttemptId`/`EventId` implemented (TRACE-1A/B/C **Done** per [OBS plan](../maintainers/plans/OBSERVABILITY.md)); UAEP/HarnessKernel path, event catalog gates, retry layers, HITL/cancellation events wired; §6.1av UAEP maintenance **closed** historically. Not I5 — resume/kernel equivalence, identity bridge continuity, and production host structural requirements remain open per Protocol v2.
 - **P2** — Harness lab/reference profiles and strict-mode policy posture; **no UER-domain production handoff or operational SLO package** — `production_mode` ≠ taxonomy P4.
 - **E3** — Unit/gate evidence (event catalog, tenant propagation, single `STEP_COMPLETED` per step), audit slice, 2026-06-19 audit results. **No dedicated public UER proof route** — not E4/E5.
 
-> **Phase vs maturity:** AUDIT-IDEAL and UAEP-MAINT **Done** rows are plan delivery states, not P-axis or public proof claims.
+> **Phase vs maturity:** AUDIT-IDEAL and UAEP-MAINT **Done** rows are plan delivery states, not P-axis or public proof claims. Protocol v2 accepted findings reopen **current** maturity until SHM-FIX blocks are verified.
 
 ### Capability coverage (summary)
 
@@ -235,7 +247,7 @@ Evidence maturity: **E3**
 | ---- | ------ |
 | `RuntimeEvent` spine + catalog | **Implemented** — phase coverage gates in code |
 | Typed execution identity | **Implemented** — TRACE-1A/B/C closed ([OBS plan](../maintainers/plans/OBSERVABILITY.md)) |
-| UAEP / `AgentEngine` / `HarnessKernel` | **Implemented** — mandatory agent path |
+| UAEP / `AgentEngine` / `HarnessKernel` | **Target:** mandatory governed guarantees on all certified paths — see [Protocol v2 strategic harness target invariants](#protocol-v2-strategic-harness-target-invariants-2026-08-18) |
 | Hook system + policy interception | **Implemented** on wired harness paths |
 | Graph + run-level retry | **Implemented** — two layers per REL §31.1 |
 | HITL / pause / resume / cancel events | **Implemented** — REL + HITL plan **Done** |

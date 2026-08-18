@@ -35,6 +35,23 @@ Load **only** the satellite matching your task or cited gap ID.
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
+### Protocol v2 remediation — STRATEGIC_HARNESS_MODEL (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-INIT.
+
+| Block | Status | Findings | Scope |
+|-------|--------|----------|-------|
+| **SHM-FIX-A** | ACCEPTED / PLANNED | [`-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-02`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-03`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Equivalent governed step boundary for normal and resume; fail closed without kernel context |
+| **SHM-FIX-B** | ACCEPTED / PLANNED | [`-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-08`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-09`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | AttemptId continuity across bridges; typed RuntimeExecutionContext at ACP boundary |
+| **SHM-FIX-C** | ACCEPTED / PLANNED | [`-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-07`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Structural production host/profile; remove product-shaped result promotion from core runtime |
+| **SHM-FIX-D** | ACCEPTED / PLANNED | [`-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Recertify mandatory-path and maturity claims after A–C verification |
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- If parallel work already fixed a finding, do not duplicate — independently verify before lifecycle advancement.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** only after campaign/remediation rollup confirms closure ([`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md)).
 
 ---
 
