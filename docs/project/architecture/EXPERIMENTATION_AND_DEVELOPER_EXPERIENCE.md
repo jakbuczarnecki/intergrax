@@ -655,3 +655,21 @@ The first usable flow should be:
 ```
 
 This validates the entire skeleton.
+
+---
+
+<a id="protocol-v22-provider-backend-abstraction-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 provider/backend abstraction target invariants (2026-08-18)
+
+Accepted Protocol v2.2 audit layer [`PROVIDER_BACKEND_ABSTRACTION`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+1. **Experiment persistence port** — reusable `ExperimentSession`/business workflow depends on a provider-neutral `ExperimentPersistence`/`ExperimentStore`-style port ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-05`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+2. **Lab composition** — SQLite remains a valid default lab provider selected at composition ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-05`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+3. **Trace abstractions** — trace access continues through existing `RunTraceReader`/`RunTraceWriter`-style abstractions ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-05`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+4. **Substitutability over provider count** — do not require multiple production experiment-store providers merely to satisfy abstraction count; meaningful substitutability is the target ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-05`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+5. **Debug/HTTP typing** — debug/HTTP consumers should type against the port rather than `SQLiteExperimentStore` ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-05`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+
+**Qualification:** MVP-EVOL and laboratory workflow maturity claims remain historical; the accepted audit gap above records target state only.
+
+Remediation tracked as **PBA-FIX-D** in [plan PBA-FIX-D](../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#protocol-v22-pba-fix-d--experiment-persistence-port-2026-08-18). **Not implemented** by audit persistence.

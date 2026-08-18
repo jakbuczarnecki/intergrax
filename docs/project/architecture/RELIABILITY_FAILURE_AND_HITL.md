@@ -806,6 +806,22 @@ Agents MUST NOT implement ad-hoc human gates or send approval messages directly.
 
 ---
 
+---
+
+<a id="protocol-v22-provider-backend-abstraction-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 provider/backend abstraction target invariants (2026-08-18)
+
+Accepted Protocol v2.2 audit layer [`PROVIDER_BACKEND_ABSTRACTION`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+1. **Port consumption** — generic Nexus/long-running checkpoint consumers depend on `TaskCheckpointPersistence` / `TaskCheckpointReader`, never `SQLiteTaskCheckpointStore` ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-01`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+2. **Composition ownership** — provider/backend construction belongs to controlled host/composition wiring ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-01`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+3. **Provider-neutral construction** — checkpoint model construction is provider-neutral runtime/domain behavior, not a method owned by a SQLite implementation ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-01`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+4. **Lab/reference backend** — SQLite may remain a lab/reference implementation ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-01`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+5. **Substitutability** — another backend must be substitutable without editing generic Nexus orchestration semantics ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-01`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+
+Remediation tracked as **PBA-FIX-A** in [plan PBA-FIX-A](../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md#protocol-v22-pba-fix-a--long-running-checkpoint-port-consumption-2026-08-18). **Not implemented** by audit persistence.
+
 ## Unresolved documentation drift (outside this edit)
 
 Report only — not fixed in DOC-3Q scope:
