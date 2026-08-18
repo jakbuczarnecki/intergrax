@@ -36,7 +36,7 @@ Skills address this through `SkillManifest`, catalog + runtime registry, `SkillP
 | **Prompt refs** | `prompt_instruction_ids` — SK-BRIDGE.1 helper shipped; **not** universal runtime consumption |
 | **Policy refs** | `policy_fragment_id` — SK-BRIDGE.2 helper shipped; **not** universal runtime merge |
 | **Risk metadata** | Per-skill `risk_tier`; pack uses effective max tier |
-| **Dynamic selection** | Optional AHI hook — recommends from **already enabled** bundles only |
+| **Dynamic selection** | Optional AHI hook — `RECOMMEND` proposals from profile or default candidate bundles; does not auto-enable |
 | **Plugins** | `SkillPlugin` → catalog → `SkillProfile` → registry |
 | **External import** | Cursor `SKILL.md` / LangGraph pack → validated manifest → explicit registry attach |
 | **Tools relation** | Skills **compose** `tool_ids`; Tools **execute** via `ToolRuntime` |
@@ -235,21 +235,33 @@ Each `SkillManifest` may declare `risk_tier` (`low` · `medium` · `high` · `cr
 Optional AHI hook (AUDIT-IDEAL-12.2): `resolve_skill_selection_hook()` + `SkillSelectionEngine`.
 
 ```text
-approved runtime skill universe (SkillProfile.enabled_bundles)
+explicit SkillProfile.enabled_bundles
         ↓
-dynamic selection (when adaptive ROUTING_TUNING enabled)
+candidate set
+        ┐
+        │
+empty enabled_bundles
         ↓
-recommendation proposal — does not auto-install bundles
+default candidates (rag, workspace, memory)
+        ┘
+        ↓
+SkillSelectionEngine (when adaptive ROUTING_TUNING enabled)
+        ↓
+RECOMMEND proposal (AdaptationProposalCandidate / ProfileVersionDraft)
+        ↓
+no automatic Skill enablement / permission grant
 ```
 
 | Property | Semantics |
 | -------- | --------- |
-| **Candidate universe** | `env.skill_profile.enabled_bundles` — cannot expand beyond host-enabled bundles |
+| **Candidate bundles** | `SkillProfile.enabled_bundles` when non-empty; when empty, `resolve_skill_selection_hook()` falls back to `("rag", "workspace", "memory")` — fallback candidates are **not** implied host-enabled |
 | **Default** | **Off** unless product profile + adaptive profile enabled + `ROUTING_TUNING` loop enabled |
-| **Authority** | `RECOMMEND` — proposals, not permission grants |
+| **Authority** | `RECOMMEND` — emits `AdaptationProposalCandidate` / `ProfileVersionDraft`; does not register, enable, install, authorize, or execute Skill bundles |
 | **Behavior** | Rule-based bundle recommendation from task-class utility signals |
 
-> **Selection chooses from an already bounded universe** — it is not installation or permission expansion.
+> **Recommendations do not automatically enable Skills** — host/runtime enablement and policy boundaries still apply before a capability becomes usable. Selection is not installation or permission expansion.
+
+**Known limitation:** strict "dynamic selection can only ever propose explicitly `SkillProfile.enabled_bundles`" is **not** the current invariant — empty profiles use default candidate bundles. Tighter bounded-candidate semantics, if desired, is a separate AHI/Skills implementation decision (not prescribed here).
 
 ## Plugin model and external import
 
@@ -361,7 +373,7 @@ Evidence maturity: **E3**
 ---
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Last updated:** 2026-08-18 — DOC-3M hub modernization; gate-tested **153** skills · **43** bundles; SK-BRIDGE helpers partial  
+**Last updated:** 2026-08-18 — DOC-3M-R1 dynamic-selection candidate semantics; gate-tested **153** skills · **43** bundles; SK-BRIDGE helpers partial  
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/SKILLS.md`](../maintainers/plans/SKILLS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
