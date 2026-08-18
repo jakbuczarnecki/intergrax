@@ -10,7 +10,7 @@ OpenAI-compatible slugs share `openai_compat_factory.py`. ABC defaults: streamin
 |------|----------------|-------------|--------|------------|-------|
 | `openai` | `openai_responses_adapter` | `OPENAI_API_KEY` | yes | yes | Native Responses API |
 | `gemini` | `gemini_adapter` | `GOOGLE_API_KEY` | yes | yes | |
-| `ollama` | `ollama_adapter` | `OLLAMA_BASE_URL` | yes | partial | Local; context override today |
+| `ollama` | `native_ollama_adapter` (default); `ollama_adapter` (LangChain optional) | `OLLAMA_BASE_URL` | yes | partial | Local; context override today |
 | `mistral` | `mistral_adapter` | `MISTRAL_API_KEY` | yes | yes | |
 | `claude` | `claude_adapter` | `ANTHROPIC_API_KEY` | yes | yes | |
 | `azure_openai` | `azure_openai_adapter` | `AZURE_OPENAI_*` | yes | yes | |
@@ -34,7 +34,7 @@ Per-provider model env vars: `INTERGRAX_DEFAULT_<PROVIDER>_MODEL` (see [`USAGE.m
 
 | Concern | Ollama | vLLM | llama.cpp |
 |---------|--------|------|-----------|
-| Adapter module | `ollama_adapter.py` (LangChain) | `openai_compat_providers.VllmChatAdapter` | `openai_compat_providers.LlamaCppChatAdapter` |
+| Adapter module | `native_ollama_adapter.py` (`NativeOllamaAdapter`, default); `ollama_adapter.py` (`LangChainOllamaAdapter`, optional extra) | `openai_compat_providers.VllmChatAdapter` | `openai_compat_providers.LlamaCppChatAdapter` |
 | API shape | Ollama native HTTP | OpenAI Chat Completions (`/v1`) | OpenAI Chat Completions (`/v1`) |
 | Tier-0 slug | `LLMProvider.OLLAMA` | `LLMProvider.VLLM` | `LLMProvider.LLAMA_CPP` |
 | Local Docker | `infra/docker/ollama` · profile `rag` · port **11434** | `infra/docker/vllm` · profile **`vllm`** (opt-in) · host **8100** | `infra/docker/llama-cpp` · profile **`llama-cpp`** (opt-in) · host **8102** |

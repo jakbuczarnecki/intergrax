@@ -288,7 +288,7 @@ Audit slice: [`guides/audit_slices/LLM_ADAPTERS.md`](../technical/guides/audit_s
 | Depth | Route |
 | ----- | ----- |
 | Engineering canon | [Below](#engineering-canon) in this file |
-| Routing / failover depth | **Topology drift** — `satellites/LLM_ADAPTERS_routing_failover.md` referenced but not present post doc-tree migration; historical content at pre-migration `docs/architecture/arch/` path — restore satellite or read audit register |
+| Routing / failover depth | [`satellites/LLM_ADAPTERS_routing_failover.md`](satellites/LLM_ADAPTERS_routing_failover.md) |
 | Providers catalog | [`satellites/LLM_ADAPTERS_providers_catalog.md`](satellites/LLM_ADAPTERS_providers_catalog.md) |
 | Audit register | [`satellites/LLM_ADAPTERS_audit_register.md`](satellites/LLM_ADAPTERS_audit_register.md) |
 | Plan | [`maintainers/plans/LLM_ADAPTERS.md`](../maintainers/plans/LLM_ADAPTERS.md) |
@@ -317,7 +317,7 @@ Audit slice: [`guides/audit_slices/LLM_ADAPTERS.md`](../technical/guides/audit_s
 **Do not read this entire file in one session** (LLM_ADAPTERS canon).
 
 - **Implement / audit default:** public front + adapter envelope + routing summary in this hub.
-- **Failover / routing depth:** `satellites/LLM_ADAPTERS_routing_failover.md` — **missing** (topology drift; see [Go deeper](#go-deeper)); use audit register satellite for routing wave register.
+- **Failover / routing depth:** [`satellites/LLM_ADAPTERS_routing_failover.md`](satellites/LLM_ADAPTERS_routing_failover.md).
 - **Providers:** [`satellites/LLM_ADAPTERS_providers_catalog.md`](satellites/LLM_ADAPTERS_providers_catalog.md).
 - **Audit register:** [`satellites/LLM_ADAPTERS_audit_register.md`](satellites/LLM_ADAPTERS_audit_register.md).
 - **Plan hub:** [`plan/LLM_ADAPTERS.md`](../maintainers/plans/LLM_ADAPTERS.md) (scoped §6 / open rows only).
@@ -330,7 +330,7 @@ Audit slice: [`guides/audit_slices/LLM_ADAPTERS.md`](../technical/guides/audit_s
 | --------- | -------- | ------ |
 | [`satellites/LLM_ADAPTERS_audit_register.md`](satellites/LLM_ADAPTERS_audit_register.md) | Audit register, routing wave maturity, open gaps | Present |
 | [`satellites/LLM_ADAPTERS_providers_catalog.md`](satellites/LLM_ADAPTERS_providers_catalog.md) | Provider catalog (19 slugs), env wiring, observability | Present |
-| `satellites/LLM_ADAPTERS_routing_failover.md` | Routing / failover depth | **Missing** — referenced pre-migration; not restored in `architecture/satellites/` |
+| [`satellites/LLM_ADAPTERS_routing_failover.md`](satellites/LLM_ADAPTERS_routing_failover.md) | Routing / failover depth | Present |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
@@ -742,6 +742,4 @@ Reuse: `LLMAdapterResponse.usage`, `LLMTokenUsage.cached_input_tokens`, `LLMAdap
 
 | Item | Note |
 | ---- | ---- |
-| `satellites/LLM_ADAPTERS_routing_failover.md` | Referenced in hub and `generate_architecture_read_scopes.py` but **not present** after doc-tree migration — content existed at pre-migration `docs/architecture/arch/LLM_ADAPTERS_routing_failover.md` |
-| `satellites/LLM_ADAPTERS_providers_catalog.md` | Ollama row may still describe LangChain module — **stale vs LCI-6D native default**; satellite not edited in DOC-3J |
-| `scripts/audit/generate_architecture_read_scopes.py` | Still links missing routing_failover satellite |
+| `scripts/audit/generate_architecture_read_scopes.py` | Links routing_failover satellite — verify on next arch-scope maintenance pass |
