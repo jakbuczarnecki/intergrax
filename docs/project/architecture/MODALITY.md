@@ -150,11 +150,11 @@ Scores use [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md). *
 | Axis | Score |
 |------|------:|
 | Architecture maturity | **A4** |
-| Implementation maturity | **I3** |
-| Production readiness | **P2** |
+| Implementation maturity | **I2** |
+| Production readiness | **P1** |
 | Evidence maturity | **E2** |
 
-Plane C P1/E2 caps the aggregate — do not read A4/I3 as “all Modality is production-ready.”
+The domain headline uses the weakest-plane value on each maturity axis. Plane C therefore currently caps implementation at I2, production readiness at P1, and evidence at E2 — one mature plane does not make all Modality production-ready.
 
 ## Evidence / proof
 
