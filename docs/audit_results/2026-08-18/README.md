@@ -26,7 +26,7 @@
 
 | Layer | File | audited_sha | post_sync_sha | Verdict | Findings | State |
 |-------|------|-------------|---------------|---------|----------|-------|
-| STRATEGIC_HARNESS_MODEL | [STRATEGIC_HARNESS_MODEL.md](STRATEGIC_HARNESS_MODEL.md) | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | `PENDING` | FAIL | 10 (10 ACCEPTED) | complete |
+| STRATEGIC_HARNESS_MODEL | [STRATEGIC_HARNESS_MODEL.md](STRATEGIC_HARNESS_MODEL.md) | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | `363a8a1f10ea4198d479c3a708af6122ac72144b` | FAIL | 10 (10 ACCEPTED) | complete |
 
 ## Finding register
 

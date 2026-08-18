@@ -10,7 +10,7 @@
 |-------|-------|
 | **Verdict** | **FAIL** |
 | **audited_sha** | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
-| **post_sync_sha** | `PENDING` |
+| **post_sync_sha** | `363a8a1f10ea4198d479c3a708af6122ac72144b` |
 | **Operator decision** | accepted 2026-08-18 |
 | **Findings** | 10 total — 10 ACCEPTED |
 
