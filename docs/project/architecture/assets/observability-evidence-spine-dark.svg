@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1020" role="img">
+  <title>Intergrax observability evidence spine</title>
+  <desc>Conceptual diagram: Task to Run to Attempt to RuntimeEvent through Harness Observability Spine to persistence, Unified Run Journal, inspect, metrics, export, and as-of historical reconstruction.</desc>
+  <rect width="1200" height="1020" fill="#0d1117"/>
+  <rect x="32" y="28" width="1136" height="964" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#e6edf3">Intergrax Observability &#8212; execution evidence</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" fill="#8b949e">Canonical RuntimeEvent history, not logs plus metrics alone</text>
+
+  <rect x="480" y="130" width="240" height="44" rx="10" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="600" y="158" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">EXECUTION</text>
+
+  <line x1="600" y1="174" x2="600" y2="198" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 198 L594 214 L606 214 Z" fill="#484f58"/>
+
+  <rect x="300" y="214" width="600" height="52" rx="12" fill="#1c2d4a" stroke="#388bfd" stroke-width="2"/>
+  <text x="600" y="246" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Task &#8594; Run &#8594; Attempt</text>
+
+  <line x1="600" y1="266" x2="600" y2="290" stroke="#388bfd" stroke-width="2"/>
+  <path d="M600 290 L594 276 L606 276 Z" fill="#388bfd"/>
+
+  <rect x="360" y="290" width="480" height="52" rx="12" fill="#1a3d2e" stroke="#3fb950" stroke-width="2"/>
+  <text x="600" y="322" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="19" font-weight="700" fill="#e6edf3">RuntimeEvent</text>
+
+  <line x1="600" y1="362" x2="600" y2="386" stroke="#3fb950" stroke-width="2"/>
+  <path d="M600 386 L594 372 L606 372 Z" fill="#3fb950"/>
+
+  <rect x="260" y="386" width="680" height="64" rx="14" fill="#2d333b" stroke="#d4a72c" stroke-width="2.5"/>
+  <text x="600" y="420" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#e6edf3">Harness Observability Spine (HOS)</text>
+
+  <line x1="600" y1="450" x2="600" y2="474" stroke="#d4a72c" stroke-width="2"/>
+  <path d="M600 474 L594 460 L606 460 Z" fill="#d4a72c"/>
+
+  <rect x="380" y="474" width="440" height="48" rx="10" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="600" y="504" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#e6edf3">canonical persistence</text>
+
+  <line x1="600" y1="522" x2="600" y2="546" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 546 L594 540 L606 540 Z" fill="#484f58"/>
+
+  <rect x="320" y="546" width="560" height="52" rx="12" fill="#2d1f4a" stroke="#a371f7" stroke-width="2"/>
+  <text x="600" y="578" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Unified Run Journal</text>
+
+  <line x1="600" y1="606" x2="600" y2="630" stroke="#a371f7" stroke-width="2"/>
+  <path d="M600 630 L594 616 L606 616 Z" fill="#a371f7"/>
+
+  <rect x="200" y="630" width="240" height="48" rx="10" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="320" y="660" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#e6edf3">inspect</text>
+
+  <rect x="480" y="630" width="240" height="48" rx="10" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="600" y="660" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#e6edf3">metrics</text>
+
+  <rect x="760" y="630" width="240" height="48" rx="10" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="880" y="660" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#e6edf3">export</text>
+
+  <line x1="320" y1="678" x2="320" y2="710" stroke="#484f58" stroke-width="2"/>
+  <line x1="320" y1="710" x2="600" y2="710" stroke="#484f58" stroke-width="2"/>
+  <line x1="600" y1="710" x2="600" y2="734" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 734 L594 720 L606 720 Z" fill="#484f58"/>
+
+  <rect x="360" y="734" width="480" height="52" rx="12" fill="#1c2d4a" stroke="#388bfd" stroke-width="2"/>
+  <text x="600" y="766" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">as-of reconstruction</text>
+
+  <line x1="600" y1="786" x2="600" y2="810" stroke="#388bfd" stroke-width="2"/>
+  <path d="M600 810 L594 796 L606 796 Z" fill="#388bfd"/>
+
+  <rect x="340" y="810" width="520" height="48" rx="10" fill="#1a3d2e" stroke="#3fb950" stroke-width="2"/>
+  <text x="600" y="840" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#e6edf3">historical evidence (E boundary &#183; K watermark)</text>
+
+  <rect x="860" y="386" width="300" height="120" rx="12" fill="#21262d" stroke="#484f58" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="980" y="412" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#e6edf3">Platform lifecycle</text>
+  <text x="980" y="432" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#8b949e">problem / diagnostic signals</text>
+  <text x="980" y="456" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#8b949e">same HOS infrastructure</text>
+  <text x="980" y="476" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#8b949e">no fake Task/Run/Attempt</text>
+
+  <line x1="860" y1="446" x2="740" y2="418" stroke="#484f58" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+  <text x="600" y="900" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" fill="#8b949e">Logs tell you something happened. The execution journal tells you what the Harness says happened.</text>
+  <text x="600" y="960" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Conceptual architecture &#8212; not a runtime class diagram.</text>
+</svg>

@@ -1,13 +1,411 @@
-# Observability
+# Intergrax Observability
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
-**Plan (1:1):** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Audit layers:** 21, 30  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Last updated:** 2026-08-17 — **TRACE-BITEMP-3** K-only knowledge reconstruction **Done / Closed** (`5c2eedca75fc32101ea7a35e332c2abb3af24985`) · **TRACE-ASOF-2** logical execution projection **Done / Closed** (`d0cfad1eeecbf3167e3955b93d4a2ef82de09b4f`) · **TRACE-BITEMP-2** canonical revision ordering provider **Planned / In Review** · **TRACE-BITEMP-1** typed bitemporal contracts + tenant ordering scope + transactional provider strategy **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-BITEMP-ARCH-SYNC-R7** acceptance linearization + fenced-out/orphaned durable commit semantics · **TRACE-BITEMP-ARCH-SYNC-R6** unresolved position resolution ownership + lease/fencing + auditable terminalization · **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
+**Intergrax Observability** is the canonical execution evidence layer that assigns typed identity to runtime events, reconstructs runs deterministically, and exports policy-safe projections to operators and external telemetry systems.
+
+## Why it matters
+
+Without the Harness Observability Spine (HOS):
+
+- agents keep private loggers and side-effect histories,
+- retries and attempts blur together,
+- vendor trace UIs become accidental sources of truth,
+- operators cannot tell which event belongs to which run or attempt,
+- historical execution state cannot be reconstructed deterministically,
+- metrics do not explain why execution terminated,
+- platform lifecycle forces fake execution IDs,
+- evaluation builds a separate telemetry stack.
+
+Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict persistence, the Unified Run Journal, deterministic execution positions, as-of projection, canonical knowledge revision ordering, and policy-safe export.
+
+> [!NOTE]
+> **Maturity boundary:** Core execution evidence (TRACE-1A–1C, ASOF-1/2, BITEMP-1/3) is **implemented and closed** on the harness path. Canonical revision ordering provider (**TRACE-BITEMP-2**) is an **implemented slice — acceptance in review**. Full **E + K + Valid Time + System Time** query semantics, public as-of query API, OECP code phases, and **OBS-VENDOR** production hardening remain **planned**. External sinks visualize Intergrax evidence — they do **not** define execution truth.
+
+**Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring observability profiles, export policies, or domain signals — after the platform overview in the root README.
+
+## At a glance
+
+| Concern | Summary |
+| -------- | -------- |
+| **Canonical execution envelope** | `RuntimeEvent` — meaningful execution transition with full typed identity |
+| **Identity** | `TaskId` → `RunId` → `AttemptId` → `EventId` — structural, not metadata fallback |
+| **Execution scope** | `RuntimeEvent` is execution-scoped only — all four IDs required |
+| **Non-execution signals** | Platform observability signal — lifecycle without synthetic execution identity |
+| **Persistence** | `RuntimeEventPersistence` — canonical execution history |
+| **Read model** | Unified Run Journal — derived chronological view, not a second source of truth |
+| **Historical coordinate (E)** | `ExecutionEventPosition` + inclusive `AsOfBoundary` — not timestamp-only ordering |
+| **As-of reconstruction** | `RunExecutionAsOfProjection` via pure reducer at boundary **E** — **Done** (TRACE-ASOF-2) |
+| **Knowledge ordering (K)** | `RevisionOrderingAuthority` + finalized watermark — contracts **Done**; durable provider **in review** |
+| **K-only reconstruction** | `HistoricalKnowledgeProjection` at watermark **K** — **Done**; not full bitemporal |
+| **Bitemporal scope** | E and K shipped slices; Valid/System Time + combined E+K query **planned** |
+| **Problem plane** | `PlatformProblemSignal` — classified operator attention; not execution history |
+| **Redaction** | `DiagnosticPayload.redact()` + export policy — strongest on canonical/export paths |
+| **Export** | HOS → policy-safe envelope → Integration vendor backend |
+| **External sinks** | OTLP, Langfuse, Sentry, Phoenix, Datadog — destinations, not semantic owners |
+| **Evaluation / OECP** | Consumes HOS evidence — architecture **documented**; code phases **planned** |
+| **Maturity** | A4 · I4 · P2 · E3 — see [Current maturity](#current-maturity) |
+
+## Flagship architecture visual
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/observability-evidence-spine-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/observability-evidence-spine-light.svg">
+  <img
+    alt="Conceptual diagram: Task to Run to Attempt to RuntimeEvent through Harness Observability Spine to persistence, Unified Run Journal, inspect, metrics, export, and as-of historical reconstruction."
+    src="assets/observability-evidence-spine-light.svg"
+  >
+</picture>
+
+**Primary mental model:**
+
+```text
+Task
+ ↓
+Run
+ ↓
+Attempt
+ ↓
+RuntimeEvents
+ ↓
+Harness Observability Spine
+ ↓
+canonical persistence
+ ↓
+Unified Run Journal
+ ↓
+inspect / reconstruct / export / evaluate
+```
+
+> **Logs tell you something happened. The execution journal tells you what the Harness says happened.**
+
+**Signal families:**
+
+```text
+RuntimeEvent  → execution truth
+TraceEvent    → diagnostic / read-model detail
+Logs          → local diagnosis
+Metrics       → aggregates
+External sink → destination
+```
+
+> **One spine. Multiple signal families. No private observability stacks.**
+
+## How it works
+
+1. **Emit** — meaningful execution transitions publish through HOS (`RuntimeEventBus`, approved emit paths).
+2. **Normalize** — `trace_bridge`, payload registry, schema guard align envelopes to contracts.
+3. **Persist** — `RuntimeEventPersistence` stores canonical execution history; `RunTraceWriter` holds Plane B diagnostic detail.
+4. **Read** — `build_unified_run_journal()` reconstructs a strict chronological operator view.
+5. **Reconstruct** — positioned prefix + `AsOfBoundary` **E** or knowledge watermark **K** yield deterministic projections.
+6. **Export** — policy-safe `ObservabilityExportEnvelope` routes to optional vendor Integrations.
+
+```mermaid
+flowchart TB
+    EX[Task / Run / Attempt execution]
+    RE[RuntimeEvent]
+    HOS[Harness Observability Spine]
+    PER[RuntimeEventPersistence]
+    JR[Unified Run Journal]
+    INS[inspect]
+    MET[metrics]
+    EXP[export]
+    ASOF[as-of reconstruction]
+
+    EX --> RE --> HOS --> PER --> JR
+    JR --> INS
+    JR --> MET
+    JR --> EXP
+    JR --> ASOF
+```
+
+Platform lifecycle, problem, and diagnostic signals use the **same HOS infrastructure** with their own envelope families — no synthetic `TaskId`/`RunId`/`AttemptId`.
+
+## Task → Run → Attempt → Event
+
+```text
+Task
+└── Run
+    ├── Attempt 1
+    │   ├── Event
+    │   └── Event
+    └── Attempt 2
+        ├── Event
+        └── Event
+```
+
+| Level | Meaning |
+| ----- | ------- |
+| **Task** | User or system work item |
+| **Run** | One run lifecycle for that task |
+| **Attempt** | One concrete execution try inside the run |
+| **Event** | One meaningful transition inside an attempt |
+
+> **One arbitrary signal ≠ one Attempt.** Attempt identity tracks execution tries — not every log line or diagnostic row.
+
+Identity is **structural** on the canonical contract — not best-effort metadata fallback (TRACE-1C strict journal).
+
+## RuntimeEvent ≠ TraceEvent ≠ logs ≠ metrics
+
+| Signal | Role | Must not become |
+| ------ | ---- | --------------- |
+| **`RuntimeEvent`** | Canonical execution history on `RuntimeEventBus` | Optional add-on beside private agent logs |
+| **`TraceEvent`** | Compatibility / diagnostic / read-model detail (Plane B) | Second event authority or private audit store |
+| **Logs** | Local diagnostic output (stdlib, host, integration transport) | Canonical execution evidence |
+| **Metrics** | Aggregated operational signals (Prometheus, OTLP counters) | Substitute for the unified run journal |
+| **External sinks** | Destinations for normalized export | Semantic owners of Intergrax event vocabulary |
+
+## Harness Observability Spine (HOS)
+
+HOS is shared platform infrastructure:
+
+```text
+emit → normalize → persist → read → export
+```
+
+Applications and agents **configure and extend** HOS — they do **not** create private observability buses.
+
+**Envelope families on one spine:**
+
+```text
+HOS
+├── RuntimeEvent
+├── Platform observability signal
+├── PlatformProblemSignal
+├── DiagnosticPayload
+└── export projections (ObservabilityExportEnvelope)
+```
+
+Semantic contract ≠ transport. HOS does **not** mean one universal envelope type.
+
+### Execution vs platform signal (example)
+
+| Fact | Envelope | Identity |
+| ---- | -------- | -------- |
+| Tool invocation during a run | `RuntimeEvent` | `TaskId` + `RunId` + `AttemptId` + `EventId` required |
+| Application instance started | Platform observability signal | No fake `TaskId`/`RunId`/`AttemptId` |
+
+Hosting lifecycle routes through `ObservabilityHostedApplicationEventPublisher` on the canonical platform path (TRACE-1B-HOS-FIX **Done**).
+
+## Unified Run Journal
+
+```text
+canonical persisted RuntimeEvents
+        ↓
+strict reconstruction (build_unified_run_journal)
+        ↓
+Unified Run Journal
+```
+
+The journal is a **derived read model** — chronological operator view, attempt-aware ordering, foundation for Execution Story surfaces. It is **not** a new persistence authority.
+
+**Source of truth:** `RuntimeEventPersistence` → canonical execution history. `TraceEvent` / `RunTraceWriter` → diagnostic compatibility detail.
+
+## Historical execution coordinate and as-of projection
+
+**ExecutionEventPosition** assigns deterministic order within a run — **not** timestamp-only ordering.
+
+```text
+Run history
+  → exact boundary E (AsOfBoundary)
+  → positioned prefix through E
+  → RunExecutionAsOfProjection as-of E
+```
+
+Question: **“What had happened by execution position E?”** — reconstruction/projection, not live replay.
+
+`project_run_execution_as_of` is a **pure reducer** over a positioned prefix: attempt-aware, provenance to source events, exact boundary must exist; incomplete pagination fails closed (TRACE-ASOF-1/2 **Done**).
+
+## Knowledge revision ordering and K-only reconstruction
+
+Second historical axis — canonical knowledge corrections:
+
+```text
+KnowledgeRevision
+  → RevisionOrderingAuthority (semantic contract)
+  → canonical K position + watermark
+```
+
+**Watermark (no silent gaps):**
+
+```text
+K1 accepted · K2 accepted · K3 accepted → finalized through K3
+K1 accepted · K2 unresolved · K3 accepted → cannot claim finalized through K3
+```
+
+**K-only reconstruction (TRACE-BITEMP-3 Done):**
+
+```text
+Knowledge watermark K
+  → finalized prefix
+  → accepted revision IDs
+  → KnowledgeRevisionReader
+  → pure reducer
+  → HistoricalKnowledgeProjection
+```
+
+> **K-only knowledge reconstruction is not full E + K + Valid Time + System Time reconstruction.**
+
+## Bitemporal model and current implementation boundary
+
+Four coordinates (do not collapse):
+
+| Axis | Meaning |
+| ---- | ------- |
+| **E** | Execution history position |
+| **K** | Canonical knowledge revision boundary (watermark) |
+| **Valid Time** | When a fact is true in the domain/world |
+| **System Time** | When the system recorded or knew it |
+
+| Capability | State |
+| ---------- | ----- |
+| Typed bitemporal contracts | **Done** (TRACE-BITEMP-1) |
+| `RevisionOrderingAuthority` contract | **Done** (TRACE-BITEMP-1) |
+| Durable provider (`CanonicalRevisionOrderingProvider` / SQLite) | **Implemented slice — Planned / In Review** (TRACE-BITEMP-2) |
+| K-only reconstruction | **Done** (TRACE-BITEMP-3) |
+| E as-of reconstruction | **Done** (TRACE-ASOF-1/2) |
+| Combined E + K query | **Planned** (TRACE-BITEMP-4) |
+| Valid / System Time query semantics | **Planned** (TRACE-BITEMP-4) |
+| Materialized historical projections | **Planned / conditional** (TRACE-ASOF-3) |
+| Public execution-as-of query API at E | **Planned** (TRACE-ASOF-4) |
+
+```text
+RevisionOrderingAuthority  → semantic contract (backend-independent)
+SQLite provider            → one first-party implementation (TRACE-BITEMP-2)
+```
+
+**Fencing:** scoped authority generation prevents stale resolution writers from rewriting newer canonical revision ordering (TRACE-BITEMP-ARCH-SYNC-R6/R7 canon).
+
+## Problem plane and DiagnosticPayload
+
+| Signal | Answers |
+| ------ | ------- |
+| **`RuntimeEvent`** | What happened in execution |
+| **`PlatformProblemSignal`** | What requires operator attention |
+
+`DiagnosticPayload` supplies typed detail (`payload_schema_id`, `redact()`) on trace or domain-signal envelopes — not an independent lifecycle channel.
+
+## Redaction and external sinks
+
+```text
+diagnostic / event payload
+  → redact / policy-safe projection
+  → persistence / export
+```
+
+Platform contracts require redaction before persistence and export; enforcement coverage is **strongest** on canonical payload and export paths — not claimed universal across every ad-hoc log path.
+
+```text
+HOS
+  → normalized / policy-safe export
+  → OTLP / Langfuse / Sentry / Phoenix / Datadog / …
+```
+
+> **External telemetry systems visualize Intergrax evidence. They do not define Intergrax execution truth.**
+
+Observability owns signal semantics, identity, canonical history, and export policy. Integration owns transport/backend ([`INTEGRATIONS.md`](INTEGRATIONS.md)).
+
+## Relationship to Intergrax
+
+| Neighbor | Boundary |
+| -------- | -------- |
+| [**UER**](UNIFIED_EXECUTION_RUNTIME.md) | Execution lifecycle; Observability records transitions with typed identity |
+| [**Nexus**](NEXUS_EXECUTION_FLOW.md) | Orchestration emits through HOS — no private trace bus |
+| [**Tools**](TOOLS.md) | Tool invocations emit `TOOL_*` transitions; Tools must not keep private side-effect history |
+| [**Integrations**](INTEGRATIONS.md) | Vendor backends are export sinks; Integrations do not own event semantics |
+| [**Reliability / HITL**](RELIABILITY_FAILURE_AND_HITL.md) | Reliability owns behavior; Observability owns evidence of retries, attempts, handoff, terminal reason |
+| [**Governed Execution**](GOVERNED_EXECUTION.md) | Governance authorizes; Observability records decision and provenance |
+| [**Critic**](CRITIC_VERIFICATION.md) | Critic owns verification verdict; Observability records inputs/metadata/verdict refs — distinct from OECP |
+
+## Observability & Evaluation Control Plane (OECP)
+
+```text
+HOS evidence
+  → OECP
+  → eval snapshots / evidence ledger / regression gates (target)
+```
+
+> **OECP consumes the spine. It does not create another spine.**
+
+| Area | State |
+| ---- | ----- |
+| Architecture canon (OBS-ECP-0) | **Done** — hub + extended satellite + plan |
+| Trace Completeness Contract | **Planned** |
+| Evidence Ledger | **Planned** — target eval-ready layer derived from HOS |
+| Eval Registry v2 | **Planned** |
+| Metric / eval plugins, CI gates, workbench UX | **Planned** |
+
+Depth: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) · plan [`OBSERVABILITY_eval_control_plane.md`](../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md).
+
+## Public invariants
+
+```text
+RuntimeEvent is canonical execution evidence.
+```
+
+```text
+Execution identity is structural: Task → Run → Attempt → Event.
+```
+
+```text
+Unified Run Journal is a read model, not a second source of truth.
+```
+
+```text
+External sinks do not define Intergrax event semantics.
+```
+
+```text
+K-only reconstruction ≠ full bitemporal reconstruction.
+```
+
+## Current maturity
+
+| Axis | Level | Rationale |
+| ---- | ----- | --------- |
+| **Architecture (A)** | **A4** | Validated canon: identity, HOS families, source-of-truth boundaries, E/K model coherent; full bitemporal query surface still planned |
+| **Implementation (I)** | **I4** | HOS, strict identity/journal, platform signals, as-of, K reconstruction integrated; BITEMP-2 provider slice in review; OECP code not shipped |
+| **Production (P)** | **P2** | SQLite defaults, export boundary partial, OBS-VENDOR hardening planned — not distributed production qualification |
+| **Evidence (E)** | **E3** | Unit/gate proofs on identity, journal, as-of, revision store, reconstruction, export; bounded LKW platform proof partial — not E4 full-harness E2E |
+
+| Sub-area | Implementation | Evidence |
+| -------- | -------------- | -------- |
+| Core execution observability | **I4** — closed TRACE-1A–1C | Gate tests + journal proofs |
+| Historical reconstruction (E, K) | **I4** — ASOF-1/2, BITEMP-3 closed; BITEMP-2 in review | Reducer + provider qualification tests |
+| External export / vendors | **I3** — export boundary done; vendor adapters partial | Export policy tests; full vendor hardening open |
+| OECP | **I1** — architecture only | OBS-ECP-0 docs; code phases planned |
+
+## Evidence / proof
+
+| Layer | Artifacts |
+| ----- | --------- |
+| **Architecture** | This hub · [`OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) · TRACE / bitemporal canon in engineering section |
+| **Unit / gate** | Identity, strict journal, platform signal path, as-of, bitemporal contracts, revision store, K reconstruction, redaction/export tests under `tests/unit/runtime/observability/` and `tests/unit/contracts/` |
+| **Integration** | Representative Task → Run → Attempt → journal paths; tool/HITL visibility in harness proofs |
+| **Public proof** | [`PROOFS.md`](../proofs/PROOFS.md) — LKW Core Platform Proof (**partial** bounded proof; Elasticsearch/Kibana export closed for platform proof, not production hardening) |
+| **Production / customer** | **Not established** |
+
+## Go deeper
+
+| Depth | Route |
+| ----- | ----- |
+| Engineering canon | [Below — §1–§10](#engineering-canon) in this file |
+| Extended depth (OECP target) | [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) |
+| Implementation plan | [`maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) |
+| OECP plan | [`maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md`](../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md) |
+| UER · Nexus · Reliability · Governance · Tools · Integrations · Critic | Neighbor hubs linked above |
+| Maturity taxonomy | [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md) |
+| Public proofs | [`PROOFS.md`](../proofs/PROOFS.md) |
 
 ---
+
+## Maintainer metadata
+
+**Status:** Canonical architecture (domain pair 1:1)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 21, 30  
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Last updated:** 2026-08-18 — DOC-3P public front modernization · TRACE-BITEMP-3 K-only **Done** · TRACE-ASOF-2 **Done** · TRACE-BITEMP-2 provider **Planned / In Review** (implemented slice) · TRACE-BITEMP-1 **Done** · TRACE-ASOF-1 **Done** · TRACE-1C **Done**
 
 ## Cursor read scope (token budget)
 
@@ -15,23 +413,23 @@
 
 - **Implement / audit default:** trace spine + HOS + signal planes (§1–§4); execution identity + journal + as-of + bitemporal state (§5–§10). Extended depth: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
-- **Plan hub:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) (scoped §6 only).
+- **Plan hub:** [`maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) (scoped §6 only).
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
----
-
-
 ## Architecture satellites (read on demand)
 
-Large § blocks moved out of the architecture hub to reduce Cursor context use.
-Load **only** the satellite matching your task or cited §.
+Large § blocks moved out of the architecture hub to reduce Cursor context use. Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
-|-----------|----------|
-| [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) | extended depth · **OECP** target architecture (Evidence Ledger, Eval Registry v2, custom telemetry, L5–L7) |
+| --------- | ---------- |
+| [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) | Extended depth · **OECP** target architecture (Evidence Ledger, Eval Registry v2, custom telemetry, L5–L7) |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
+
+---
+
+## Engineering canon
 
 ## 1. Purpose and scope
 
@@ -139,7 +537,7 @@ The Harness Observability Spine (§3) is the write/read/export path; this sectio
 | **`PlatformProblemSignal`** | Vendor-neutral problem/error plane for classified failures requiring operator attention; exported via `ObservabilityExportPolicy` | A substitute for `RuntimeEvent` execution history or a generic lifecycle channel |
 | **Platform observability signal** | Non-execution platform/domain lifecycle signal on HOS (application instance, component, infrastructure) with its own identity and correlation — **no** `TaskId`/`RunId`/`AttemptId` | A `RuntimeEvent` with synthetic execution identity |
 
-**Implementation detail:** Plane A/B/C breakdown, field catalog, and bridge mechanics — §4. Correlation identifiers — §6 and [Required correlation fields](.#required-correlation-fields) below. Layered `event_type` / `event_kind` governance — §4.4 and [Event type governance](.#event-type-governance) below.
+**Implementation detail:** Plane A/B/C breakdown, field catalog, and bridge mechanics — §4. Correlation identifiers — §6 and [Required correlation fields](#required-correlation-fields) below. Layered `event_type` / `event_kind` governance — §4.4 and [Event type governance](#event-type-governance) below.
 
 **Cross-layer canon:** [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) §7 · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1 · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §12.2 · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`TOOLS.md`](TOOLS.md) · [`INTEGRATIONS.md`](INTEGRATIONS.md) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §31 · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#boundary-with-observability--evaluation-control-plane-oecp) · [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#scaling-action-governance) · [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary)
 
@@ -243,7 +641,7 @@ HostedApplicationEvent
   → existing HOS spine / export infrastructure
 ```
 
-**Architecture debt (implementation status: Planned — TRACE-1B-HOS-FIX):** `RuntimeSpineHostedApplicationEventPublisher` (`intergrax/hosting/eventing.py`) currently adapts hosting events into `RuntimeEvent` via `emit_domain_signal()` after synthesizing `TaskId`, `RunId`, and a fresh `AttemptId` (`mint_attempt_id()`) per event. This is **architecturally invalid** under TRACE-1B: it falsely equates each hosting event with a new execution attempt. Pre-production clean-cut: **remove/replace** this adapter in the implementation slice — no compatibility alias, dual path, or historical migration.
+**Shipped (TRACE-1B-HOS-FIX Done):** `ObservabilityHostedApplicationEventPublisher` (`intergrax/hosting/eventing.py`) routes `HostedApplicationEvent` through the canonical platform observability path on the existing HOS spine/export infrastructure (`ExportRecordKind.PLATFORM_SIGNAL`). The legacy `RuntimeSpineHostedApplicationEventPublisher` adapter that synthesized `TaskId`, `RunId`, and per-event `AttemptId` is **removed** — no compatibility alias or dual path.
 
 ### D. Author decision supplement (see also §4.4.1)
 
@@ -944,7 +1342,7 @@ Validation = FAILED
 
 ### 7.3.1 Run execution lifecycle projection (`TRACE-ASOF-2`)
 
-**Status:** **Planned / In Review** (independent audit closes it).
+**Status:** **Done / Closed** (`d0cfad1eeecbf3167e3955b93d4a2ef82de09b4f`).
 
 | Concept | Type / API | Owner | Semantics |
 |---------|------------|-------|-----------|
