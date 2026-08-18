@@ -50,8 +50,20 @@ class GovernedContinuationGrantCoordinator:
         if human_request.governed_continuation is None:
             raise GovernedContinuationGrantError("governed continuation correlation required")
 
+        continuation = human_request.governed_continuation
+        if not continuation.task_id:
+            raise GovernedContinuationGrantError("continuation task_id required")
+        if not continuation.run_id:
+            raise GovernedContinuationGrantError("continuation run_id required")
+        if continuation.task_id != task.task_id:
+            raise GovernedContinuationGrantError("continuation task_id mismatch")
+        if resolution.task_id != continuation.task_id:
+            raise GovernedContinuationGrantError("resolution continuation task_id mismatch")
+
         if resolution.run_id is None:
             raise GovernedContinuationGrantError("resolution run_id required")
+        if resolution.run_id != continuation.run_id:
+            raise GovernedContinuationGrantError("continuation run_id mismatch")
 
     @staticmethod
     def create_grant_from_approval(task: Task) -> GovernedContinuationApprovalGrant | None:
@@ -76,8 +88,9 @@ class GovernedContinuationGrantCoordinator:
             grant_id=f"gcg_{uuid4().hex[:16]}",
             continuation_request_id=continuation.continuation_request_id,
             side_effect_scope_id=continuation.side_effect_scope_id,
-            task_id=resolution.task_id,
-            run_id=resolution.run_id,
+            side_effect_scope_digest=continuation.side_effect_scope_digest,
+            task_id=continuation.task_id,
+            run_id=continuation.run_id,
             operation_id=continuation.operation_id,
             resource_scope=continuation.resource_scope,
             policy_rule_id=continuation.policy_rule_id,

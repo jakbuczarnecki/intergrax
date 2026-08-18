@@ -46,6 +46,7 @@ class MeaningfulSideEffectRequest(BaseModel):
     action: str = _NON_EMPTY
     kinds: tuple[MeaningfulSideEffectKind, ...] = Field(min_length=1)
     side_effect_scope_id: str = _NON_EMPTY
+    side_effect_scope_digest: str | None = None
     task_id: str = _NON_EMPTY
     run_id: str = _NON_EMPTY
     principal_id: str | None = None
@@ -66,6 +67,14 @@ class MeaningfulSideEffectRequest(BaseModel):
     @field_validator("principal_id", "tenant_id", "resource", "external_target")
     @classmethod
     def _strip_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+    @field_validator("side_effect_scope_digest")
+    @classmethod
+    def _strip_side_effect_scope_digest(cls, value: str | None) -> str | None:
         if value is None:
             return None
         normalized = value.strip()

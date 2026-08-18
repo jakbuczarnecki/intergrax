@@ -66,6 +66,7 @@ def compose_governed_continuation_from_enforcement(
         resource_scope=resource_scope,
         policy_action=decision.action,
         side_effect_scope_id=side_effect.side_effect_scope_id,
+        side_effect_scope_digest=side_effect.side_effect_scope_digest,
     )
 
 

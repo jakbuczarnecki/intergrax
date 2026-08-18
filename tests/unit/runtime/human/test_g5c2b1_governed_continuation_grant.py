@@ -48,12 +48,16 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 TASK_ID = mint_task_id()
 RUN_ID = mint_run_id()
+RUN_OTHER = mint_run_id()
+TASK_OTHER = mint_task_id()
 ATTEMPT_ID = mint_attempt_id()
 OPERATION = "collaborative.document.delete"
 RESOURCE = "document-123"
 POLICY_RULE = "runtime.hitl"
 SCOPE_1 = "side-effect-scope-1"
 SCOPE_2 = "side-effect-scope-2"
+SCOPE_DIGEST_1 = "sha256:" + ("ab" * 32)
+SCOPE_DIGEST_2 = "sha256:" + ("cd" * 32)
 CONTINUATION_1 = "gcr_scope_1"
 CONTINUATION_2 = "gcr_scope_2"
 PAUSE_A = "pause-a"
@@ -68,21 +72,35 @@ def _continuation_request(
     side_effect_scope_id: str,
     operation_id: str = OPERATION,
     resource_scope: str = RESOURCE,
+    task_id: str = TASK_ID,
+    run_id: str = RUN_ID,
+    side_effect_scope_digest: str | None = None,
 ) -> GovernedContinuationRequest:
     return GovernedContinuationRequest(
         reason=ContinuationReason.COMPLIANCE,
-        task_id=TASK_ID,
-        run_id=RUN_ID,
+        task_id=task_id,
+        run_id=run_id,
         source_agent_id="agent-test",
         prompt="continuation required",
         continuation_request_id=continuation_request_id,
         side_effect_scope_id=side_effect_scope_id,
+        side_effect_scope_digest=side_effect_scope_digest,
         operation_id=operation_id,
         policy_rule_id=POLICY_RULE,
         resource_scope=resource_scope,
         policy_action=PolicyAction.REQUIRE_HUMAN,
-        correlation={"side_effect_scope_id": "evil", "operation_id": "evil"},
-        context={"side_effect_scope_id": "evil", "operation_id": "evil"},
+        correlation={
+            "side_effect_scope_id": "evil",
+            "side_effect_scope_digest": "evil_digest",
+            "run_id": "evil_run",
+            "operation_id": "evil",
+        },
+        context={
+            "side_effect_scope_id": "evil",
+            "side_effect_scope_digest": "evil_digest",
+            "run_id": "evil_run",
+            "operation_id": "evil",
+        },
     )
 
 
@@ -142,9 +160,69 @@ def test_same_action_resource_different_scope_ids_remain_distinct() -> None:
 
     corr_s2 = continuation_s2.to_correlation()
     assert corr_s2.side_effect_scope_id == SCOPE_2
+    assert corr_s2.task_id == TASK_ID
+    assert corr_s2.run_id == RUN_ID
     assert corr_s2.operation_id == OPERATION
     assert corr_s2.resource_scope == RESOURCE
     assert grant_s1.continuation_request_id != corr_s2.continuation_request_id
+
+
+def test_run_mismatch_fails_closed() -> None:
+    continuation = _continuation_request(
+        continuation_request_id=CONTINUATION_1,
+        side_effect_scope_id=SCOPE_1,
+        run_id=RUN_ID,
+    )
+    task = _task()
+    pause = _apply_governed_pause(task, continuation)
+    _approve_resolution(
+        task,
+        pause_id=pause.pause_id,
+        human_request_id=pause.human_request_id,
+        run_id=RUN_OTHER,
+    )
+    with pytest.raises(GovernedContinuationGrantError, match="continuation run_id mismatch"):
+        GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
+    assert task.runtime.governance.governed_continuation_grant is None
+
+
+def test_matching_run_creates_grant_with_original_run_id() -> None:
+    continuation = _continuation_request(
+        continuation_request_id=CONTINUATION_1,
+        side_effect_scope_id=SCOPE_1,
+        run_id=RUN_ID,
+    )
+    task = _task()
+    pause = _apply_governed_pause(task, continuation)
+    _approve_resolution(
+        task,
+        pause_id=pause.pause_id,
+        human_request_id=pause.human_request_id,
+        run_id=RUN_ID,
+    )
+    grant = GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
+    assert grant is not None
+    assert grant.run_id == RUN_ID
+
+
+def test_task_mismatch_fails_closed() -> None:
+    continuation = _continuation_request(
+        continuation_request_id=CONTINUATION_1,
+        side_effect_scope_id=SCOPE_1,
+        task_id=TASK_OTHER,
+        run_id=RUN_ID,
+    )
+    task = _task()
+    pause = _apply_governed_pause(task, continuation)
+    _approve_resolution(
+        task,
+        pause_id=pause.pause_id,
+        human_request_id=pause.human_request_id,
+        run_id=RUN_ID,
+    )
+    with pytest.raises(GovernedContinuationGrantError, match="continuation task_id mismatch"):
+        GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
+    assert task.runtime.governance.governed_continuation_grant is None
 
 
 def test_exact_canonical_approve_creates_grant() -> None:
@@ -282,6 +360,7 @@ def test_dynamic_context_cannot_change_grant_scope() -> None:
     continuation = _continuation_request(
         continuation_request_id=CONTINUATION_1,
         side_effect_scope_id=SCOPE_1,
+        side_effect_scope_digest=SCOPE_DIGEST_1,
     )
     task = _task()
     pause = _apply_governed_pause(task, continuation)
@@ -293,8 +372,12 @@ def test_dynamic_context_cannot_change_grant_scope() -> None:
     grant = GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
     assert grant is not None
     assert grant.side_effect_scope_id == SCOPE_1
+    assert grant.side_effect_scope_digest == SCOPE_DIGEST_1
+    assert grant.run_id == RUN_ID
     assert grant.operation_id == OPERATION
     assert grant.side_effect_scope_id != "evil"
+    assert grant.side_effect_scope_digest != "evil_digest"
+    assert grant.run_id != "evil_run"
     assert grant.operation_id != "evil"
 
 
@@ -372,6 +455,7 @@ async def test_intake_runner_reject_clears_grant(
         grant_id="gcg_stale",
         continuation_request_id=CONTINUATION_1,
         side_effect_scope_id=SCOPE_1,
+        side_effect_scope_digest=None,
         task_id=TASK_ID,
         run_id=RUN_ID,
         operation_id=OPERATION,
