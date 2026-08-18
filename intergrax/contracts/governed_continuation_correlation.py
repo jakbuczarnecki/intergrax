@@ -4,9 +4,24 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.contracts.policy_action import PolicyAction
+
 _NON_EMPTY = Field(min_length=1)
+
+
+class ContinuationReason(StrEnum):
+    """Why continuation is blocked — independent of commercial/domain logic."""
+
+    QUOTE = "quote"
+    SECURITY = "security"
+    LEGAL = "legal"
+    PROCUREMENT = "procurement"
+    COMPLIANCE = "compliance"
+    PUBLICATION = "publication"
 
 
 class GovernedContinuationCorrelation(BaseModel):
@@ -15,14 +30,14 @@ class GovernedContinuationCorrelation(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     continuation_request_id: str = _NON_EMPTY
-    reason: str = _NON_EMPTY
+    reason: ContinuationReason
     operation_id: str = _NON_EMPTY
     policy_rule_id: str | None = None
     resource_scope: str | None = None
-    policy_action: str | None = None
+    policy_action: PolicyAction | None = None
     source_step_id: str | None = None
 
-    @field_validator("continuation_request_id", "operation_id", "reason")
+    @field_validator("continuation_request_id", "operation_id")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()
@@ -37,21 +52,3 @@ class GovernedContinuationCorrelation(BaseModel):
             return None
         normalized = value.strip()
         return normalized or None
-
-    @field_validator("reason")
-    @classmethod
-    def _validate_reason(cls, value: str) -> str:
-        from intergrax.contracts.governed_continuation import ContinuationReason
-
-        ContinuationReason(value)
-        return value
-
-    @field_validator("policy_action")
-    @classmethod
-    def _validate_policy_action(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        from intergrax.contracts.runtime_policy import PolicyAction
-
-        PolicyAction(value)
-        return value.strip()

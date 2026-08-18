@@ -9,25 +9,12 @@ Distinct from replay ``ExecutionPolicyEngine`` — use ``intergrax.runtime.polic
 
 from __future__ import annotations
 
-from enum import Enum
 from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.agent_decision import AgentDecision
-
-
-class PolicyAction(str, Enum):
-    ALLOW = "allow"
-    DENY = "deny"
-    MODIFY = "modify"
-    ESCALATE = "escalate"
-    REQUIRE_HUMAN = "require_human"
-
-
-class EnforcementLevel(str, Enum):
-    ADVISORY = "advisory"
-    MANDATORY = "mandatory"
+from intergrax.contracts.policy_action import EnforcementLevel, PolicyAction
 
 
 class PolicyDecision(BaseModel):

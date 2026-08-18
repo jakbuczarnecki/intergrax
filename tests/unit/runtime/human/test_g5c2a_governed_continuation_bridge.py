@@ -41,6 +41,7 @@ from intergrax.contracts.governed_continuation import (
     ContinuationReason,
     GovernedContinuationRequest,
 )
+from intergrax.contracts.governed_continuation_correlation import GovernedContinuationCorrelation
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
@@ -48,9 +49,9 @@ from intergrax.contracts.meaningful_side_effect import (
 from intergrax.contracts.meaningful_side_effect_policy import MeaningfulSideEffectPolicyRule
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.human.governed_continuation_bridge import (
-    apply_governed_continuation_pause,
     bridge_governed_continuation_to_execution_result,
     bridge_governed_continuation_to_governance,
+    compose_continuation_human_request,
 )
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
@@ -235,27 +236,24 @@ def test_require_human_produces_canonical_pause_composition() -> None:
         )
     )
     executed: list[str] = []
-    authorization = boundary.authorize(_enforcement_request(membership))
-    assert authorization.permitted is False
-    assert authorization.requires_governed_continuation is True
-    assert authorization.governed_continuation_request is not None
-
-    result = boundary.authorize_and_execute(
-        _enforcement_request(membership),
-        lambda: executed.append("side-effect"),
-    )
-    assert isinstance(result, MeaningfulSideEffectAuthorizationResult)
-    assert executed == []
-
     task = _task()
     lifecycle = TaskLifecycle()
     lifecycle.transition(task, TaskState.CLASSIFIED)
     lifecycle.transition(task, TaskState.PLANNED)
 
-    continuation = authorization.governed_continuation_request
-    apply_governed_continuation_pause(task, continuation)
-    lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
+    result = boundary.authorize_and_execute(
+        _enforcement_request(membership),
+        lambda: executed.append("side-effect"),
+        task=task,
+        lifecycle=lifecycle,
+    )
+    assert isinstance(result, MeaningfulSideEffectAuthorizationResult)
+    assert result.permitted is False
+    assert result.requires_governed_continuation is True
+    assert result.governed_continuation_request is not None
+    assert executed == []
 
+    continuation = result.governed_continuation_request
     gov = task.runtime.governance
     assert gov.paused is True
     assert gov.pause_record is not None
@@ -266,6 +264,10 @@ def test_require_human_produces_canonical_pause_composition() -> None:
         gov.human_request.governed_continuation.continuation_request_id
         == continuation.continuation_request_id
     )
+    corr = gov.human_request.governed_continuation
+    assert corr.reason is ContinuationReason.COMPLIANCE
+    assert corr.policy_action is PolicyAction.REQUIRE_HUMAN
+    assert task.state is TaskState.WAITING_FOR_HUMAN
 
 
 def test_exact_continuation_correlation_distinguishes_s1_from_s2() -> None:
@@ -286,6 +288,10 @@ def test_exact_continuation_correlation_distinguishes_s1_from_s2() -> None:
     corr_s1 = resolution_s1.human_request.governed_continuation
     corr_s2 = resolution_s2.human_request.governed_continuation
     assert corr_s1 is not None and corr_s2 is not None
+    assert corr_s1.reason is ContinuationReason.COMPLIANCE
+    assert corr_s2.reason is ContinuationReason.COMPLIANCE
+    assert corr_s1.policy_action is PolicyAction.REQUIRE_HUMAN
+    assert corr_s2.policy_action is PolicyAction.REQUIRE_HUMAN
     assert corr_s1.operation_id == _OPERATION_S1
     assert corr_s2.operation_id == _OPERATION_S2
     assert corr_s1.resource_scope == _RESOURCE_S1
@@ -305,12 +311,24 @@ def test_deny_does_not_create_hitl_or_continuation() -> None:
             )
         )
     )
-    authorization = boundary.authorize(_enforcement_request(membership))
-    assert authorization.permitted is False
-    assert authorization.requires_governed_continuation is False
-    assert authorization.governed_continuation_request is None
-
+    executed: list[str] = []
     task = _task()
+    lifecycle = TaskLifecycle()
+    lifecycle.transition(task, TaskState.CLASSIFIED)
+    lifecycle.transition(task, TaskState.PLANNED)
+
+    result = boundary.authorize_and_execute(
+        _enforcement_request(membership),
+        lambda: executed.append("denied"),
+        task=task,
+        lifecycle=lifecycle,
+    )
+    assert isinstance(result, MeaningfulSideEffectAuthorizationResult)
+    assert result.permitted is False
+    assert result.requires_governed_continuation is False
+    assert result.governed_continuation_request is None
+    assert executed == []
+
     assert task.runtime.governance.paused is False
     assert task.runtime.governance.pause_record is None
     assert task.runtime.governance.human_request is None
@@ -319,18 +337,22 @@ def test_deny_does_not_create_hitl_or_continuation() -> None:
 
 def test_allow_does_not_pause() -> None:
     boundary, membership = _seed_gate()
-    authorization = boundary.authorize(_enforcement_request(membership))
-    assert authorization.permitted is True
-    assert authorization.requires_governed_continuation is False
-    assert authorization.governed_continuation_request is None
+    task = _task()
+    lifecycle = TaskLifecycle()
+    lifecycle.transition(task, TaskState.CLASSIFIED)
+    lifecycle.transition(task, TaskState.PLANNED)
 
     executed: list[str] = []
     result = boundary.authorize_and_execute(
         _enforcement_request(membership),
         lambda: executed.append("ok") or "ok",
+        task=task,
+        lifecycle=lifecycle,
     )
     assert result == "ok"
     assert executed == ["ok"]
+    assert task.runtime.governance.paused is False
+    assert task.runtime.governance.pause_record is None
 
 
 def test_continuation_request_is_not_execution_authority() -> None:
@@ -380,3 +402,40 @@ def test_canonical_hitl_reuse_human_pause_coordinator() -> None:
     assert gov.pause_record.human_request_id == execution.human_request.request_id
     assert gov.execution_interrupt is not None
     assert gov.execution_interrupt.interrupt_id == execution.execution_interrupt.interrupt_id
+
+
+def test_correlation_enum_round_trip_preserves_types() -> None:
+    continuation = _continuation_request()
+    correlation = continuation.to_correlation()
+    assert isinstance(correlation, GovernedContinuationCorrelation)
+    assert correlation.reason is ContinuationReason.COMPLIANCE
+    assert correlation.policy_action is PolicyAction.REQUIRE_HUMAN
+
+    restored = GovernedContinuationCorrelation.model_validate(
+        correlation.model_dump(mode="json")
+    )
+    assert restored.reason is ContinuationReason.COMPLIANCE
+    assert restored.policy_action is PolicyAction.REQUIRE_HUMAN
+
+
+def test_bridge_human_request_options_use_canonical_verdict_enum() -> None:
+    from pathlib import Path
+
+    from intergrax.runtime.human.models import HumanResponseVerdict
+
+    continuation = _continuation_request()
+    human_request = compose_continuation_human_request(continuation)
+    assert human_request.options == [
+        HumanResponseVerdict.APPROVE.value,
+        HumanResponseVerdict.REJECT.value,
+        HumanResponseVerdict.ESCALATE.value,
+    ]
+
+    bridge_path = (
+        Path(__file__).resolve().parents[4]
+        / "intergrax/runtime/human/governed_continuation_bridge.py"
+    )
+    bridge_source = bridge_path.read_text(encoding="utf-8")
+    assert 'options=["approve"' not in bridge_source
+    assert 'options=["reject"' not in bridge_source
+    assert 'options=["escalate"' not in bridge_source

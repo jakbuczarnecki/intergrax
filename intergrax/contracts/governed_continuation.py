@@ -18,7 +18,6 @@ reasons (security, legal, …) reuse the same shape without quote-specific types
 
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import Any, Final, Literal, Mapping
 from uuid import uuid4
 
@@ -26,7 +25,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
 from intergrax.contracts.external_work import QuoteAcceptanceEvidence
-from intergrax.contracts.governed_continuation_correlation import GovernedContinuationCorrelation
+from intergrax.contracts.governed_continuation_correlation import (
+    ContinuationReason,
+    GovernedContinuationCorrelation,
+)
 from intergrax.contracts.runtime_policy import PolicyAction
 
 SCHEMA_GOVERNED_CONTINUATION_REQUEST_V1: Final = "governed_continuation_request.v1"
@@ -36,17 +38,6 @@ META_CONTINUATION_REASON: Final = "continuation.reason"
 META_CONTINUATION_CORRELATION: Final = "continuation.correlation"
 
 _NON_EMPTY = Field(min_length=1)
-
-
-class ContinuationReason(StrEnum):
-    """Why continuation is blocked — independent of commercial/domain logic."""
-
-    QUOTE = "quote"
-    SECURITY = "security"
-    LEGAL = "legal"
-    PROCUREMENT = "procurement"
-    COMPLIANCE = "compliance"
-    PUBLICATION = "publication"
 
 
 class ContinuationEvidenceRefs(BaseModel):
@@ -140,7 +131,7 @@ class GovernedContinuationRequest(BaseModel):
             raise ValueError("operation_id required for typed continuation correlation")
         return GovernedContinuationCorrelation(
             continuation_request_id=self.continuation_request_id,
-            reason=self.reason.value,
+            reason=self.reason,
             operation_id=self.operation_id,
             policy_rule_id=self.policy_rule_id,
             resource_scope=self.resource_scope,

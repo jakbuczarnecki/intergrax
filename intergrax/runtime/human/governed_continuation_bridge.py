@@ -16,6 +16,7 @@ from intergrax.contracts.governed_continuation import (
     compose_continuation_interrupt,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.interrupts.handler import GovernanceResolution
 from intergrax.runtime.task.task import Task
@@ -76,7 +77,11 @@ def compose_continuation_human_request(
     return HumanRequest(
         request_id=request_id or f"hr_{uuid4().hex[:12]}",
         prompt=request.prompt,
-        options=["approve", "reject", "escalate"],
+        options=[
+            HumanResponseVerdict.APPROVE.value,
+            HumanResponseVerdict.REJECT.value,
+            HumanResponseVerdict.ESCALATE.value,
+        ],
         governed_continuation=request.to_correlation(),
     )
 
