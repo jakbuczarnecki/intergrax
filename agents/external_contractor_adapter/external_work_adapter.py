@@ -551,6 +551,8 @@ class ExternalWorkAdapter:
             source_agent_id=source_agent_id,
             source_step_id=source_step_id,
             prompt="External work quote requires governed continuation before side effects",
+            operation_id=ACTION_ACCEPT_QUOTE,
+            resource_scope=correlation.external_task_id,
             correlation={
                 "task_id": correlation.task_id,
                 "run_id": correlation.run_id,
@@ -819,6 +821,10 @@ class ExternalWorkAdapter:
                     f"Meaningful side effect {action} requires governed continuation "
                     f"before provider execution ({decision.reason})"
                 ),
+                operation_id=action,
+                policy_rule_id=decision.policy_rule_id,
+                resource_scope=resource,
+                policy_action=decision.action,
                 correlation=dict(correlation),
                 context={
                     "side_effect_action": action,

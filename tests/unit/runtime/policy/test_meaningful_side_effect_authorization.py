@@ -212,6 +212,8 @@ def test_boundary_require_human_does_not_become_allow() -> None:
     assert authorization.permitted is False
     assert authorization.decision.action is PolicyAction.REQUIRE_HUMAN
     assert authorization.requires_governed_continuation is True
+    assert authorization.governed_continuation_request is not None
+    assert authorization.governed_continuation_request.operation_id == _OPERATION
 
 
 def test_boundary_preserves_operation_and_principal_identities() -> None:

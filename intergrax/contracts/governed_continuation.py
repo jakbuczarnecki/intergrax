@@ -20,12 +20,14 @@ from __future__ import annotations
 
 from enum import StrEnum
 from typing import Any, Final, Literal, Mapping
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
 from intergrax.contracts.external_work import QuoteAcceptanceEvidence
+from intergrax.contracts.governed_continuation_correlation import GovernedContinuationCorrelation
+from intergrax.contracts.runtime_policy import PolicyAction
 
 SCHEMA_GOVERNED_CONTINUATION_REQUEST_V1: Final = "governed_continuation_request.v1"
 SCHEMA_CONTINUATION_EVIDENCE_REFS_V1: Final = "continuation_evidence_refs.v1"
@@ -91,8 +93,31 @@ class GovernedContinuationRequest(BaseModel):
     source_agent_id: str = _NON_EMPTY
     source_step_id: str | None = None
     prompt: str = Field(min_length=1)
+    continuation_request_id: str = Field(
+        default_factory=lambda: f"gcr_{uuid4().hex[:12]}"
+    )
+    operation_id: str | None = None
+    policy_rule_id: str | None = None
+    resource_scope: str | None = None
+    policy_action: PolicyAction | None = None
     correlation: Mapping[str, Any] = Field(default_factory=dict)
     context: Mapping[str, Any] = Field(default_factory=dict)
+
+    @field_validator("continuation_request_id")
+    @classmethod
+    def _strip_continuation_request_id(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("continuation_request_id must be non-empty")
+        return normalized
+
+    @field_validator("operation_id", "policy_rule_id", "resource_scope")
+    @classmethod
+    def _strip_optional_identity(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
 
     @field_validator("task_id", "run_id", "source_agent_id", "prompt")
     @classmethod
@@ -110,6 +135,19 @@ class GovernedContinuationRequest(BaseModel):
         normalized = value.strip()
         return normalized or None
 
+    def to_correlation(self) -> GovernedContinuationCorrelation:
+        if self.operation_id is None:
+            raise ValueError("operation_id required for typed continuation correlation")
+        return GovernedContinuationCorrelation(
+            continuation_request_id=self.continuation_request_id,
+            reason=self.reason.value,
+            operation_id=self.operation_id,
+            policy_rule_id=self.policy_rule_id,
+            resource_scope=self.resource_scope,
+            policy_action=self.policy_action,
+            source_step_id=self.source_step_id,
+        )
+
 
 def compose_continuation_interrupt(
     request: GovernedContinuationRequest,
@@ -117,6 +155,8 @@ def compose_continuation_interrupt(
     interrupt_id: str | None = None,
 ) -> ExecutionInterrupt:
     """Map a continuation request onto the existing ``ExecutionInterrupt`` model."""
+    from intergrax.contracts.agent_decision import AgentDecisionType
+
     metadata: dict[str, Any] = {
         META_CONTINUATION_REASON: request.reason.value,
         META_CONTINUATION_CORRELATION: dict(request.correlation),
@@ -142,6 +182,8 @@ def compose_continuation_agent_decision(
     interrupt: ExecutionInterrupt,
 ) -> AgentDecision:
     """AgentDecision that Nexus interrupt handling already understands."""
+    from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+
     return AgentDecision(
         type=AgentDecisionType.INTERRUPT,
         reason=f"governed_continuation:{request.reason.value}",

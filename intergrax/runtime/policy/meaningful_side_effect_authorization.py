@@ -18,7 +18,11 @@ from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementRequest,
     CollaborativeWorkEnforcementResult,
 )
+from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.human.governed_continuation_bridge import (
+    compose_governed_continuation_from_enforcement,
+)
 
 T = TypeVar("T")
 
@@ -31,6 +35,7 @@ class MeaningfulSideEffectAuthorizationResult:
     decision: PolicyDecision
     enforcement_result: CollaborativeWorkEnforcementResult
     requires_governed_continuation: bool
+    governed_continuation_request: GovernedContinuationRequest | None = None
 
 
 class MeaningfulSideEffectAuthorizationBoundary:
@@ -42,17 +47,30 @@ class MeaningfulSideEffectAuthorizationBoundary:
     def authorize(
         self,
         request: CollaborativeWorkEnforcementRequest,
+        *,
+        source_agent_id: str = "platform.meaningful_side_effect",
+        source_step_id: str | None = None,
     ) -> MeaningfulSideEffectAuthorizationResult:
         enforcement_result = self._enforcement_gate.evaluate(request)
         decision = enforcement_result.composition.decision
         action = decision.action
         permitted = action is PolicyAction.ALLOW
         requires_continuation = action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE)
+        governed_continuation_request = compose_governed_continuation_from_enforcement(
+            request,
+            decision=decision,
+            enforcement_operation_id=enforcement_result.operation_id,
+            enforcement_authority_scope=enforcement_result.authority_scope,
+            requires_governed_continuation=requires_continuation,
+            source_agent_id=source_agent_id,
+            source_step_id=source_step_id,
+        )
         return MeaningfulSideEffectAuthorizationResult(
             permitted=permitted,
             decision=decision,
             enforcement_result=enforcement_result,
             requires_governed_continuation=requires_continuation,
+            governed_continuation_request=governed_continuation_request,
         )
 
     def authorize_and_execute(
