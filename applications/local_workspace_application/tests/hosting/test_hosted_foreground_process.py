@@ -106,6 +106,7 @@ def _build_process_env(tmp_path: Path, port: int) -> dict[str, str]:
     env["LOCAL_WORKSPACE_INCLUDE_INTERACTIONS"] = "false"
     env["LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL"] = "false"
     env["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "false"
+    env["INTERGRAX_HARNESS_API_KEY"] = "test-hosted-process-key"
     return env
 
 
@@ -291,7 +292,7 @@ def test_hosted_foreground_process_ready_index_and_instance_conflict(
 
     stdout_path = tmp_path / "first-stdout.log"
     stderr_path = tmp_path / "first-stderr.log"
-    command = [sys.executable, "-m", "local_workspace_application.hosting"]
+    command = [sys.executable, str(Path(__file__).with_name("hosted_process_launcher.py"))]
     stdout_handle = stdout_path.open("w", encoding="utf-8")
     stderr_handle = stderr_path.open("w", encoding="utf-8")
     first_process: subprocess.Popen[str] | None = None
@@ -398,7 +399,7 @@ def test_hosted_foreground_process_graceful_stop_releases_instance_lock(
 ) -> None:
     port = _reserve_free_port()
     env = _build_process_env(tmp_path, port)
-    command = [sys.executable, "-m", "local_workspace_application.hosting"]
+    command = [sys.executable, str(Path(__file__).with_name("hosted_process_launcher.py"))]
     group_kwargs = _subprocess_group_kwargs()
 
     first_stdout = tmp_path / "stop-first-stdout.log"

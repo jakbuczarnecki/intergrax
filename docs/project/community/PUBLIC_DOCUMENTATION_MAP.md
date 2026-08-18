@@ -8,6 +8,8 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Start here if you want to understand Intergrax, evaluate proof paths, or find the right next document — without reading internal implementation plans or maintainer controls first.
 
+**First contact and platform discovery** live in the [root README](../../../README.md#explore-the-intergrax-platform) — including the grouped Platform Map and documentation-layer guide. This map routes by **reader intent**; it does not duplicate the full platform index.
+
 ---
 
 ## Start by what you want to do
@@ -47,7 +49,7 @@ with Try LKW as the repository’s primary product action.
 | Inspect bounded LKW technical evidence | [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
 | Start building with Intergrax | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md) |
 | Plan a deeper build | [BUILD_WITH_INTERGRAX](../builders/BUILD_WITH_INTERGRAX.md) |
-| Review as an architect or platform engineer | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) |
+| Review as an architect or platform engineer | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) — then [Platform Map](../../../README.md#explore-the-intergrax-platform) for grouped domain exploration |
 | Assess fit as a CTO, product lead or technical buyer | [Use Cases](../overview/USE_CASES.md) |
 | Evaluate as an investor, business decision maker or strategic evaluator | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) — then [PROOFS](../proofs/PROOFS.md) for evidence |
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
@@ -55,7 +57,7 @@ with Try LKW as the repository’s primary product action.
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore multi-agent / collaborative AI direction | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) |
 | Explore platform extensibility / governed plugins | [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) |
-| Explore future ecosystem direction | [Agent Marketplace concept](../product/AGENT_MARKETPLACE.md) |
+| Explore future ecosystem direction | [Agent Marketplace concept](../overview/AGENT_MARKETPLACE.md) |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
 | Run an evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
@@ -66,6 +68,29 @@ with Try LKW as the repository’s primary product action.
 | Read general first-contact questions | [FAQ](../overview/FAQ.md) |
 | Contribute or provide technical feedback | [Collaboration](COLLABORATION.md) |
 | Read legally authoritative terms | [LICENSE](../../../LICENSE) |
+
+---
+
+## Documentation layers
+
+Use the right layer for your question — do not start in maintainer plans, satellites, or ADRs unless you need implementation depth.
+
+| Layer | Role | Entry |
+| --- | --- | --- |
+| **First contact** | Problem, paths, platform map, maturity snapshot | [README](../../../README.md) |
+| **Intent routing** (this map) | Find docs by what you want to do | This file |
+| **Architecture mental model** | Responsibility boundaries and governed execution flow | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) |
+| **Domain architecture** | What each platform area should do | `docs/project/architecture/<DOMAIN>.md` — see [Platform Map](../../../README.md#explore-the-intergrax-platform) |
+| **Feature architecture** | Cross-layer capabilities | `docs/project/capabilities/architecture/<FEATURE>.md` — index: [capabilities README](../capabilities/README.md) |
+| **Satellites** | Extended engineering registers | Load on demand from domain or feature hubs — not public first-contact |
+| **Technical guides** | How to configure, build, extend, or operate | [Technical guides](../technical/guides/README.md) |
+| **Plans / ADR / proofs** | Implementation status, decisions, bounded evidence | [PROOFS](../proofs/PROOFS.md) · [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) |
+
+```text
+README → domain / feature architecture → optional satellite
+       → guides (how-to)
+       → proofs (evidence)
+```
 
 ---
 
@@ -129,7 +154,7 @@ binding, immutable materialization, RuntimeRevision activation, AgentRegistry,
 and Nexus capability routing. It is **not** a shipped public marketplace,
 publisher portal, or commercial catalog today.
 
-[Open the Agent Marketplace concept and reference architecture](../product/AGENT_MARKETPLACE.md)
+[Open the Agent Marketplace concept and reference architecture](../overview/AGENT_MARKETPLACE.md)
 
 ---
 
@@ -154,7 +179,7 @@ publisher portal, or commercial catalog today.
 | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Supported executable indexed LKW product evaluation |
 | [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
 | [Token Optimization guide](../capabilities/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
-| [Agent Marketplace concept](../product/AGENT_MARKETPLACE.md) | Future ecosystem direction — governed agent distribution concept and reference architecture (not a shipped product) |
+| [Agent Marketplace concept](../overview/AGENT_MARKETPLACE.md) | Future ecosystem direction — governed agent distribution concept and reference architecture (not a shipped product) |
 | [Intergrax Proofs](../proofs/PROOFS.md) | Current evidence status / public evidence dashboard — status legend and verification paths |
 
 Maintainer contracts and claim controls are intentionally excluded

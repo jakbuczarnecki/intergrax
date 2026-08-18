@@ -1,4 +1,4 @@
-# Reliability Failure And Hitl — Implementation Plan
+﻿# Reliability Failure And Hitl — Implementation Plan
 
 **Architecture (1:1):** [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -18,7 +18,7 @@
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md) read-scope block only.
-- **Audit slice:** [`guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md`](../../technical/guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
@@ -75,7 +75,7 @@ Architecture: [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (REL-DOC.1 + REL-1–3)
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §22; H-APP `ReliabilityProfile` **Done**; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix R**.
+**Audit basis:** [`docs/audit_results/AUDIT_PROTOCOL.md`](guides/docs/audit_results/AUDIT_PROTOCOL.md) §22; H-APP `ReliabilityProfile` **Done**; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix R**.
 
 **Priority ladder:** **Band 2u** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -162,7 +162,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | REL-LC-S1 | **Re-audit** — REL/REL-ADV register + HITL verdict | **Done** | High | No P0/P1 |
 | REL-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
 | REL-LC-S3 | **Gate verification** | **Done** | High | 23 tests · 3 CI scripts |
-| REL-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+| REL-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_legacy campaign README` mature |
 
 **Deferred P2–P4:** IDEAL-22.3–22.6 chaos/per-step retry · ResiliencePolicy HTTP product parity · durable async queue opt-in · M-LLM-X.4 failover (LLM domain)
 

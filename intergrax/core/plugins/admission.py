@@ -20,6 +20,11 @@ class PluginAdmissionReasonCode(StrEnum):
     ALREADY_REGISTERED = "already_registered"
     PLUGIN_ID_SKIPPED = "plugin_id_skipped"
     NOT_IN_ALLOWLIST = "not_in_allowlist"
+    PRODUCTION_ADMISSION_DENIED = "production_admission_denied"
+    INVALID_POLICY_CONTRIBUTION_SOURCE = "invalid_policy_contribution_source"
+    POLICY_HANDLER_BINDING_MISSING = "policy_handler_binding_missing"
+    POLICY_HANDLER_PROVENANCE_MISMATCH = "policy_handler_provenance_mismatch"
+    UNRESOLVED_PACKAGE_IDENTITY = "unresolved_package_identity"
 
 
 @dataclass(frozen=True, slots=True)

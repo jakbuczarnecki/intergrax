@@ -5,7 +5,7 @@
 | **Status** | Accepted (architecture only) |
 | **Date** | 2026-08-12 |
 | **Task** | AGENT-PLATFORM-1 — architecture decision gate |
-| **Evidence** | [`AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../../../maintainers/audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md) (AGENT-PLATFORM-0) |
+| **Evidence** | [`AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../../../../audit_results/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md) (AGENT-PLATFORM-0) |
 | **Deciders** | Platform architecture (Harness AI) |
 | **Related** | [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §15–§16 · [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](../../architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md) · [`APPLICATION_DEPENDENCY_MODEL.md`](../../architecture/APPLICATION_DEPENDENCY_MODEL.md) · [`PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) · [ADR-AGENT-001](entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](entries/2026-06-11/ADR-AGENT-003.md) · [ADR-HOST-001](entries/2026-07-13/ADR-HOST-001.md) |
 

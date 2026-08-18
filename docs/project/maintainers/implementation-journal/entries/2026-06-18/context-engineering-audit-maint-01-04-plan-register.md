@@ -34,7 +34,7 @@ Context engineering depth backlog traceable without reopening closed CE-EXT phas
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/CONTEXT_ENGINEERING.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/CONTEXT_ENGINEERING.md` |
 
 ## Verification
 

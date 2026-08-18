@@ -50,7 +50,7 @@ Context assembly observability matches CE-9.1 plan claims: candidate collect/dro
 ```bash
 uv run pytest tests/unit/runtime/events/test_context_skill_recording.py tests/unit/runtime/nexus/context/test_context_engine.py -m gate -q
 python scripts/maintenance/check_implementation_journal.py
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 ```
 
 Result: pass.

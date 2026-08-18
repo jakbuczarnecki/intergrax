@@ -40,7 +40,7 @@ Full CE-EXT ladder S0–S12 is implementable on default/codebase/explore_child p
 |------|--------|
 | Architecture | `docs/project/architecture/CONTEXT_ENGINEERING.md` |
 | Plan | `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` — S6–S12 |
-| Audit | `docs/project/maintainers/audit/CONTEXT_ENGINEERING.md` (2026-06-12 refresh) |
+| Audit | `docs/audit_results/CONTEXT_ENGINEERING.md` (2026-06-12 refresh) |
 
 ## Changed artifacts
 

@@ -40,6 +40,7 @@ from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 _TOOL_ID = "hitl.governed.tool"
+_RULE_ID = "hitl.governed.tool"
 
 
 class _Input(BaseModel):
@@ -64,7 +65,8 @@ def _policy_bundle() -> object:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "require_hitl",

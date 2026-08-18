@@ -23,7 +23,7 @@ Continue Tier-3 application architecture sprint queue: APP-CON-DX.1 and APP-CON-
 - `APPLICATION_CREATION_GUIDE.md` — canonical §31 workflow, §45 checklist, §47 recipes, ops CLI, verification commands.
 - `AGENT_CREATION_GUIDE.md` Appendix F links to application guide.
 - `generate_domain_audit_prompts.py` — TIER3 domain expanded for APP-CON/PROD/EVOL/OPS gates and §24–§51 scope.
-- Regenerated `docs/project/maintainers/audit/TIER3_APPLICATION_ENVIRONMENT.md`.
+- Regenerated `docs/audit_results/TIER3_APPLICATION_ENVIRONMENT.md`.
 - `scripts/audit/check_tier3_audit_prompt.py` wired into production gates.
 
 ## Project impact
@@ -41,7 +41,7 @@ Application authors have a single creation guide aligned with frozen architectur
 
 - `docs/project/technical/guides/APPLICATION_CREATION_GUIDE.md`
 - `docs/project/technical/guides/AGENT_CREATION_GUIDE.md`
-- `docs/project/maintainers/audit/TIER3_APPLICATION_ENVIRONMENT.md`
+- `docs/audit_results/TIER3_APPLICATION_ENVIRONMENT.md`
 - `scripts/audit/generate_domain_audit_prompts.py`
 - `scripts/audit/check_tier3_audit_prompt.py`
 - `scripts/gates/check_application_production_gates.py`

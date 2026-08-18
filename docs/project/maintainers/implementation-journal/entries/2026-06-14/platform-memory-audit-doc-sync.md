@@ -23,7 +23,7 @@ Verify consistency between memory layer audit findings and architecture canon; c
 
 Synchronized `docs/project/architecture/MEMORY.md` after MEM-VEC closeout: removed stale "target/partial/not shipped" labels, updated MemoryKind enum, persistence matrix (Mongo session), market parity §14, read-path naming (`run_session_semantic_recall_context`, CE `SessionSemanticRecallProvider`), §7.3 budgeting vs ADR-MEM-001, and added §17 audit register (MEM-AUDIT-1…7).
 
-Updated `docs/project/maintainers/plans/MEMORY.md` AUDIT-IDEAL header, 16.x CE ownership notes, MemoryKind as-built text, session Mongo row. Refreshed `docs/project/maintainers/audit/MEMORY.md` gaps table and code paths. Updated audit map §15 for MEM-VEC status.
+Updated `docs/project/maintainers/plans/MEMORY.md` AUDIT-IDEAL header, 16.x CE ownership notes, MemoryKind as-built text, session Mongo row. Refreshed `docs/audit_results/MEMORY.md` gaps table and code paths. Updated audit map §15 for MEM-VEC status.
 
 ## Project impact
 
@@ -35,20 +35,20 @@ Auditors and implementers have a single consistent MEMORY canon matching MEM-VEC
 |------|--------|
 | Architecture | `docs/project/architecture/MEMORY.md` §17 audit register |
 | Plan | `docs/project/maintainers/plans/MEMORY.md` — AUDIT-IDEAL + MEM-VEC |
-| Audit prompt | `docs/project/maintainers/audit/MEMORY.md` |
+| Audit prompt | `docs/audit_results/MEMORY.md` |
 | ADR | ADR-MEM-001, ADR-MEM-002 (unchanged) |
 
 ## Changed artifacts
 
 - `docs/project/architecture/MEMORY.md`
 - `docs/project/maintainers/plans/MEMORY.md`
-- `docs/project/maintainers/audit/MEMORY.md`
+- `docs/audit_results/MEMORY.md`
 - `docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` §15
 
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

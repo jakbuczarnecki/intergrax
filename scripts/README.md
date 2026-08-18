@@ -1,13 +1,12 @@
-# Scripts
+﻿# Scripts
 
 This directory contains repository tooling grouped by purpose. New scripts should be placed in the most specific category instead of the top-level `scripts/` directory.
 
 | Directory | Purpose |
 |---|---|
-| `audit/` | Audit prompt generation, audit read scopes, and audit-specific checks. |
 | `ci/` | CI/preflight/regression entrypoints. |
 | `codemods/` | Automated source transformations and one-off migration helpers. |
-| `docs/` | Documentation and index generation utilities. |
+| `docs/` | Documentation and index generation utilities (includes domain-pair checks). |
 | `gates/` | Production, promotion, readiness, and release gate checks. |
 | `maintenance/` | Repository hygiene, architecture constraints, catalog, wiring, and compatibility checks. |
 | `release/` | Phase closeout, release-cycle, and ops-evidence helpers. |
@@ -26,8 +25,8 @@ uv run python scripts/ci/run_regression_gate_ci.py --profile smoke
 # Run unit tests by marker
 scripts/ci/test.bat gate
 
-# Regenerate audit prompts
-uv run python scripts/audit/generate_domain_audit_prompts.py
+# Regenerate plan read scopes
+uv run python scripts/docs/generate_plan_read_scopes.py
 
 # Harness maintenance gate
 uv run python scripts/maintenance/check_harness_no_getattr.py

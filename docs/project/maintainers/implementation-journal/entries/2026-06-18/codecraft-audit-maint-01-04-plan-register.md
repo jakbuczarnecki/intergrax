@@ -34,7 +34,7 @@ Code Craft depth backlog is traceable without reopening closed ECC runtime phase
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/CODE_CRAFT.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/CODE_CRAFT.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/CODE_CRAFT.md` |
 
 ## Verification
 

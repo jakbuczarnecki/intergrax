@@ -280,7 +280,7 @@ Runtime execution always flows through **domain contracts and host composition**
 
 **Rule:** The Platform Plugin layer **must not bypass** domain validation, policy, or security gates.
 
-**Tier-3 adoption (APP-ADOPTION-1):** `wire_application_environment()` collects per-domain `DomainPluginLoadReport` evidence from the same domain bootstrap pass into `ApplicationPlatformPluginEvidence` on `ApplicationEnvironmentWiring.platform_plugin_evidence`. Applications consume resolved capabilities and this bootstrap snapshot; they **must not** run duplicate discovery or maintain a global installed-plugin inventory. Evidence is discovery/admission only — not `PRODUCTION_QUALIFIED` (package gate 10 remains separate).
+**Tier-3 adoption (APP-ADOPTION-1 / APP-ADOPTION-1A):** `wire_application_environment()` collects per-domain `DomainPluginLoadReport` evidence from the same domain bootstrap pass into `ApplicationPlatformPluginEvidence` on `ApplicationEnvironmentWiring.platform_plugin_evidence` (Memory, Policy when declarative policy participates, Context). Applications consume resolved capabilities and this bootstrap snapshot; they **must not** run duplicate discovery or maintain a global installed-plugin inventory. Evidence is discovery/admission only — not `PRODUCTION_QUALIFIED` (package gate 10 remains separate).
 
 ---
 

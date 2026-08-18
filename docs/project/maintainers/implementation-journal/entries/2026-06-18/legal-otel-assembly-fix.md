@@ -26,7 +26,7 @@ Fix failing gate test `test_legal_backend_chat_with_unified_task_runner` and syn
 
 - `intergrax/integrations/registry/profile.py` — `legal_product()`
 - `tests/unit/applications/test_legal_manifest_wiring.py`
-- `docs/audit_results/2026-06-18/RUN_SUMMARY.md`
+- `docs/audit_results/legacy/2026-06-18/RUN_SUMMARY.md`
 - `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — §6.1av cross-domain status
 
 ## Verification

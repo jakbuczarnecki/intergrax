@@ -415,7 +415,7 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 | **Scope** | Regenerate audit prompt; enforce `max_total_exec_time_s`; register GAP-ECC-23 |
 | **Goal** | Documentation matches shipped runtime; cumulative exec budget fail-closed |
 | **DoD** | Audit prompt shows Done; unit test for budget deny; gate green |
-| **Files** | `docs/project/maintainers/audit/CODE_CRAFT.md`, `scripts/audit/generate_domain_audit_prompts.py`, `intergrax/codecraft/profile.py`, `intergrax/runtime/codecraft/orchestrator.py`, `intergrax/tools/providers/codecraft/service.py`, tests |
+| **Files** | `docs/audit_results/CODE_CRAFT.md`, `scripts/audit/generate_domain_audit_prompts.py`, `intergrax/codecraft/profile.py`, `intergrax/runtime/codecraft/orchestrator.py`, `intergrax/tools/providers/codecraft/service.py`, tests |
 
 ## Sprint S7 — Documentation sync (**Done** in this iteration)
 

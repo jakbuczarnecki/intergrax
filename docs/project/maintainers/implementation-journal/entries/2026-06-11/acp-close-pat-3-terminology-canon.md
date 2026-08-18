@@ -47,7 +47,7 @@ Authors and LLM agents have one normative vocabulary entry (§29); appendices ar
 ```bash
 uv run python scripts/maintenance/check_agent_creation_guide_acp_canon.py
 uv run pytest tests/unit/scripts/test_check_agent_creation_guide_acp_canon.py -m gate -q
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 uv run python scripts/maintenance/check_implementation_journal.py
 ```
 

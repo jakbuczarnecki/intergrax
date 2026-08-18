@@ -5,8 +5,7 @@
 **Plan (1:1):** [`plan/MODALITY.md`](../maintainers/plans/MODALITY.md)
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 29  
-**Audit instruction:** [`audit/MODALITY.md`](../maintainers/audit/MODALITY.md)
-**Last updated:** 2026-06-20 — Modality Production Boundary (plane-specific maturity; cross-layer disambiguation)
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Last updated:** 2026-06-20 — Modality Production Boundary (plane-specific maturity; cross-layer disambiguation)
 
 ---
 
@@ -17,7 +16,7 @@
 - **Implement / audit default:** modality adapters hub. Tool surface: [`satellites/MODALITY_tool_surface_detail.md`](satellites/MODALITY_tool_surface_detail.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/MODALITY.md`](../maintainers/plans/MODALITY.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/MODALITY.md`](../technical/guides/audit_slices/MODALITY.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---

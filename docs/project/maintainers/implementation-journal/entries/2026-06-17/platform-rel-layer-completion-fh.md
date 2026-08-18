@@ -43,7 +43,7 @@ Reliability and HITL layer formally closed for Full Harness LC — ResiliencePol
 
 - `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — Phase RELIABILITY-LC register
 - `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — Full Harness LC maturity note
-- `docs/project/maintainers/audit/RELIABILITY_FAILURE_AND_HITL.md` — Full Harness LC sync
+- `docs/audit_results/RELIABILITY_FAILURE_AND_HITL.md` — Full Harness LC sync
 
 ## Verification
 

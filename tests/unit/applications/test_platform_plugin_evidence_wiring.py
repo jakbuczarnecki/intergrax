@@ -17,10 +17,11 @@ from intergrax.applications.contracts.environment_profile import (
     PolicyRulesProfile,
 )
 from intergrax.applications.contracts.platform_plugin_evidence import (
+    PLATFORM_PLUGIN_DOMAIN_CONTEXT,
     PLATFORM_PLUGIN_DOMAIN_MEMORY,
     PLATFORM_PLUGIN_DOMAIN_POLICY,
 )
-from intergrax.core.plugins.discovery import EP_MEMORY_STORES, EP_POLICY_RULES
+from intergrax.core.plugins.discovery import EP_CONTEXT, EP_MEMORY_STORES, EP_POLICY_RULES
 from intergrax.core.plugins.discovery import reset_entry_point_spec_cache_for_tests
 from intergrax.integrations.registry.profile import IntegrationProfile
 from lab_application.host.settings import LabApplicationSettings
@@ -31,7 +32,8 @@ from legal_application.host.wiring import build_legal_environment_profile, build
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _INLINE_POLICY_RULE = {
-    "rule_id": "deny_tool",
+    "rule_id": "evidence.blocked",
+    "handler_id": "deny_tool",
     "resource_kind": "tool",
     "resource_id": "blocked",
     "action": "deny",
@@ -88,7 +90,7 @@ def _dev_legal_settings() -> LegalBackendSettings:
 
 
 @pytest.mark.no_ci
-def test_wire_application_environment_exposes_memory_domain_report() -> None:
+def test_wire_application_environment_exposes_memory_and_context_domain_reports() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="ppe.memory")
     wiring = wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
@@ -97,6 +99,35 @@ def test_wire_application_environment_exposes_memory_domain_report() -> None:
     assert memory_report is not None
     assert memory_report.group == EP_MEMORY_STORES
     assert memory_report is wiring.platform_plugin_evidence.memory_report()
+
+    context_report = wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_CONTEXT)
+    assert context_report is not None
+    assert context_report.group == EP_CONTEXT
+
+
+@pytest.mark.no_ci
+def test_wire_application_environment_context_report_matches_same_bootstrap_pass(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[object] = []
+    original = environment_wiring_module.bootstrap_application_context_catalog
+
+    def _capture(**kwargs: object) -> object:
+        result = original(**kwargs)
+        captured.append(result.load_report)
+        return result
+
+    monkeypatch.setattr(
+        environment_wiring_module,
+        "bootstrap_application_context_catalog",
+        _capture,
+    )
+    settings = LabApplicationSettings.from_env()
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="ppe.context-same-pass")
+    wiring = wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
+
+    assert captured
+    assert wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_CONTEXT) is captured[0]
 
 
 @pytest.mark.no_ci
@@ -131,7 +162,7 @@ def test_platform_plugin_evidence_mapping_is_immutable() -> None:
 
 
 @pytest.mark.no_ci
-def test_baseline_environment_has_deterministic_empty_memory_evidence() -> None:
+def test_baseline_environment_has_deterministic_empty_memory_and_context_evidence() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="ppe.baseline")
     wiring = wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
@@ -141,6 +172,14 @@ def test_baseline_environment_has_deterministic_empty_memory_evidence() -> None:
     assert memory_report.rejected == ()
     assert memory_report.failed == ()
     assert memory_report.registered_count == 0
+
+    context_report = wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_CONTEXT)
+    assert context_report is not None
+    assert context_report.group == EP_CONTEXT
+    assert context_report.accepted == ()
+    assert context_report.rejected == ()
+    assert context_report.failed == ()
+    assert context_report.registered_count == 0
 
 
 @pytest.mark.no_ci
@@ -235,3 +274,4 @@ def test_legal_host_wires_with_platform_plugin_evidence() -> None:
     wiring = wire_application_environment(manifest, env, settings=settings, conformance_check=False)
 
     assert wiring.platform_plugin_evidence.memory_report().group == EP_MEMORY_STORES
+    assert wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_CONTEXT) is not None

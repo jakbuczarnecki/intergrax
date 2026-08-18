@@ -33,7 +33,7 @@ LLM DX and Tier-3 wiring backlog is traceable without reopening closed P0/P1 pha
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/LLM_ADAPTERS.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/LLM_ADAPTERS.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/LLM_ADAPTERS.md` |
 
 ## Verification
 

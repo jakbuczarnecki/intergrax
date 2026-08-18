@@ -4,15 +4,12 @@
 
 from __future__ import annotations
 
-import json
+import sys
 from typing import Any
 
 from intergrax.hosting import (
     HostedApplicationExitKind,
     HostedApplicationSupervisorResult,
-)
-from local_workspace_application.hosting.foreground import (
-    run_local_workspace_hosted_application,
 )
 
 
@@ -55,15 +52,12 @@ def _exit_code(result: HostedApplicationSupervisorResult) -> int:
 
 
 def main() -> int:
-    result = run_local_workspace_hosted_application()
     print(
-        json.dumps(
-            _safe_result_payload(result),
-            sort_keys=True,
-        ),
-        flush=True,
+        "local_workspace_application.hosting requires an activated process composition; "
+        "use tests/hosting/hosted_process_launcher.py or wire lifecycle before foreground run.",
+        file=sys.stderr,
     )
-    return _exit_code(result)
+    return 1
 
 
 if __name__ == "__main__":

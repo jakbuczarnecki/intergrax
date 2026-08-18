@@ -35,14 +35,14 @@ Agent architecture canon (§13–§40) is now honestly **implementation-complete
 | Architecture | `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §25.4 · §25.5 · §28.3 · §36.4 · §40.13 |
 | Plan | `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` ACP-FINISH · §6.1bc |
 | Cross-plan | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` §43 |
-| Audit prompt | `docs/project/maintainers/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` |
+| Audit prompt | `docs/audit_results/AGENT_CONTRACTS_AND_ASSEMBLY.md` |
 
 ## Changed artifacts
 
 - `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — GAP-ACP-36/37 Closed; §40.13 maturity sync
 - `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` — ACP-FINISH phase Done; executive summary
 - `scripts/audit/generate_domain_audit_prompts.py` — AGENT known_gaps + active_phases
-- `docs/project/maintainers/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` — regenerated
+- `docs/audit_results/AGENT_CONTRACTS_AND_ASSEMBLY.md` — regenerated
 
 ## Verification
 
@@ -50,7 +50,7 @@ Agent architecture canon (§13–§40) is now honestly **implementation-complete
 uv run pytest tests/unit/agents/test_acp_token_budget_enforcement.py \
   tests/unit/agents/test_acp_token_budget_reactions.py \
   tests/unit/agents/test_acp_token_usage_metering.py -q
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 uv run python scripts/audit/generate_domain_audit_prompts.py
 ```

@@ -39,12 +39,12 @@ Three roster agents now use typed cognitive hooks end-to-end while remaining UAE
 - `intergrax/agents/authoring/acp_uaep_shim.py`, `patterns/base.py`, `acp_run.py`
 - `intergrax/contracts/acp_metadata_keys.py` (`AcpRunContextKey`)
 - `agents/echo`, `agents/signoff_probe`, `agents/research`
-- `scripts/audit/audit_agent_fleet_legacy.py`, `scripts/maintenance/check_agent_fleet_migration.py`
+- `scripts/maintenance/audit_agent_fleet_legacy.py`, `scripts/maintenance/check_agent_fleet_migration.py`
 - `agents/README.md`, plan tracker, `tests/unit/agents/fleet/test_pilot_migration.py`
 
 ## Verification
 
-- `uv run python scripts/audit/audit_agent_fleet_legacy.py`
+- `uv run python scripts/maintenance/audit_agent_fleet_legacy.py`
 - `uv run python scripts/maintenance/check_agent_fleet_migration.py`
 - `uv run pytest tests/unit/agents/fleet/test_pilot_migration.py agents/signoff_probe/tests/ tests/integration/agents/test_agent_engine_uaep_echo.py -q`
 

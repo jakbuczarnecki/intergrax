@@ -43,7 +43,7 @@ Architects evaluating the repo see auditable L0–L4 maturity per hero domain on
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 python scripts/gates/harness_maturity_report.py
 ```

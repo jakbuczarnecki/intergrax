@@ -31,18 +31,18 @@ Operators have a truthful alignment backlog — CE-EXT Done does not imply full 
 |------|--------|
 | Architecture | `docs/project/architecture/CONTEXT_ENGINEERING.md` §2, §3, §8.3, §16 |
 | Plan | `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` CE-ALIGN, sprints A0–A6 |
-| Audit | `docs/project/maintainers/audit/CONTEXT_ENGINEERING.md` |
+| Audit | `docs/audit_results/CONTEXT_ENGINEERING.md` |
 
 ## Changed artifacts
 
 - `docs/project/architecture/CONTEXT_ENGINEERING.md`
 - `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md`
-- `docs/project/maintainers/audit/CONTEXT_ENGINEERING.md`
+- `docs/audit_results/CONTEXT_ENGINEERING.md`
 
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 ```
 
 Result: pass.

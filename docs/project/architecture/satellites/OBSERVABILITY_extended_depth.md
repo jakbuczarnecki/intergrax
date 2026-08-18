@@ -496,7 +496,7 @@ Unsigned v2 remains available when signing is disabled. Golden vector: `applicat
 ## Observability & Evaluation Control Plane
 
 **Status:** Target architecture (canonical decision) · **2026-06-24**  
-**Audit source:** [`audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md`](../../maintainers/audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md)
+**Audit source:** [`audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md`](../../../audit_results/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md)
 **Plan:** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](../../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md)
 
 OECP sits **above** the Harness Observability Spine (HOS). It **consumes** `RuntimeEvent`, `TraceEvent`, unified journal, and evidence refs. It **must not** introduce a parallel trace system, private eval database, or vendor-owned semantics.

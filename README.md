@@ -49,6 +49,50 @@ Questions? See the [FAQ](docs/project/overview/FAQ.md).
 
 ---
 
+<a id="explore-the-intergrax-platform"></a>
+## Explore the Intergrax Platform
+
+**What is Intergrax built from?** The platform is organized into human-readable
+areas below. Each area links to canonical **domain architecture** documents —
+the public entry points for *what* a subsystem should do. For cross-layer
+capabilities, see [multi-layer feature architecture](#platform-capabilities-and-directions).
+For deep engineering registers, use architecture **satellites** (on demand via the
+[Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md)) —
+not as a first-contact route.
+
+| Platform area | What it provides | Explore |
+| --- | --- | --- |
+| **Runtime & Orchestration** | Unified execution, workflow orchestration, and Nexus execution paths | [Unified Execution Runtime](docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Orchestration](docs/project/architecture/ORCHESTRATION.md) · [Nexus Execution Flow](docs/project/architecture/NEXUS_EXECUTION_FLOW.md) |
+| **Agents & Reasoning** | Agent contracts, reasoning and cognition, critic verification, adaptive harness intelligence | [Agent Contracts & Assembly](docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [Reasoning & Cognition](docs/project/architecture/REASONING_AND_COGNITION.md) · [Critic Verification](docs/project/architecture/CRITIC_VERIFICATION.md) · [Adaptive Harness Intelligence](docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
+| **Knowledge & Retrieval** | Retrieval, grounding, and knowledge-source integration boundaries | [RAG](docs/project/architecture/RAG.md) · [Knowledge Source Integrations](docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) |
+| **Memory & Context** | Durable memory, context engineering, and unified context lifecycle | [Memory](docs/project/architecture/MEMORY.md) · [Context Engineering](docs/project/architecture/CONTEXT_ENGINEERING.md) · [Unified Context Lifecycle](docs/project/architecture/UNIFIED_CONTEXT_LIFECYCLE.md) |
+| **Tools, Skills & Integrations** | Tools, skills, integrations, LLM adapters, and code-craft surfaces | [Tools](docs/project/architecture/TOOLS.md) · [Skills](docs/project/architecture/SKILLS.md) · [Integrations](docs/project/architecture/INTEGRATIONS.md) · [LLM Adapters](docs/project/architecture/LLM_ADAPTERS.md) · [Code Craft](docs/project/architecture/CODE_CRAFT.md) |
+| **Governance, HITL & Reliability** | Policy and approval enforcement, failure handling, and human-in-the-loop | [Governed Execution](docs/project/architecture/GOVERNED_EXECUTION.md) · [Reliability / Failure / HITL](docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md) |
+| **Observability & Evidence** | Runtime observability, proof receipts, and reviewable execution records | [Observability](docs/project/architecture/OBSERVABILITY.md) · [Proof Receipts](docs/project/architecture/PROOF_RECEIPTS.md) |
+| **Extensibility & Ecosystem** | Governed plugins, agent distribution, marketplace direction, multiplayer collaboration | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) · [Agent Distribution](docs/project/architecture/AGENT_DISTRIBUTION.md) · [Multiplayer AI](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) · [Agent Marketplace](docs/project/overview/AGENT_MARKETPLACE.md) |
+| **Application Platform** | Tier-3 application environment and application hosting | [Tier-3 Application Environment](docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [Application Hosting](docs/project/architecture/APPLICATION_HOSTING.md) |
+| **Platform Foundations & Scale** | Core platform foundation, elastic capacity, modality, and developer experience | [Platform Foundation](docs/project/architecture/PLATFORM_FOUNDATION.md) · [Elastic Capacity & Scaling](docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md) · [Modality](docs/project/architecture/MODALITY.md) · [Experimentation & DX](docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
+
+Full domain index (24 architecture ↔ plan pairs):
+[runtime architecture hub](docs/project/architecture/intergrax_runtime_architecture.md).
+Project-level mental model:
+[Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md).
+
+### How documentation is organized
+
+| Layer | Answers | Start here |
+| --- | --- | --- |
+| **First contact** | What is Intergrax, choose a path, platform map | This README |
+| **Intent routing** | I want to try / evaluate / build / review | [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md) |
+| **Architecture mental model** | Responsibility boundaries and system flow | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
+| **Domain architecture** | What a platform area should do | `docs/project/architecture/<DOMAIN>.md` |
+| **Feature architecture** | Cross-layer capabilities coordinating domains | `docs/project/capabilities/architecture/<FEATURE>.md` |
+| **Satellites** | Extended engineering depth (on demand) | Indexed from domain or feature hubs — not first-contact |
+| **Technical guides** | How to configure, build, extend, or operate | [Technical guides](docs/project/technical/guides/README.md) |
+| **Plans / ADR / proofs** | Implementation status, decisions, bounded evidence | [PROOFS](docs/project/proofs/PROOFS.md) · [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
+
+---
+
 ## Local Knowledge Workspace (LKW)
 
 ### Product workflow
@@ -230,12 +274,12 @@ capability-specific; see linked architecture and proof routes for detail.
 
 | Capability / direction | What it adds | Current maturity | Explore |
 | --- | --- | --- | --- |
-| **Governed Execution** | Reusable policy and approval enforcement around agent decisions, tool/action boundaries and meaningful side effects, with canonical HITL and plugin-extensible policy rules | **IMPLEMENTED SLICES — consolidation / qualification ongoing** — complete platform-wide governance and production qualification **not established** | [Governed Execution](docs/project/architecture/GOVERNED_EXECUTION.md) |
+| **Governed Execution** | Reusable policy and approval enforcement around agent decisions, tool/action boundaries and meaningful side effects, with canonical HITL and plugin-extensible policy rules | **IMPLEMENTED CORE — coverage / qualification ongoing** — complete platform-wide governance and production qualification **not established** | [Governed Execution](docs/project/architecture/GOVERNED_EXECUTION.md) |
 | **Observability & Auditability** | Shared observability spine for reconstructable, reviewable governed execution — runtime events, [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence; execution-level explainability, not hidden chain-of-thought | **IMPLEMENTED CORE + BOUNDED PROOF** — universal every-path production observability **not claimed** | [Observability](docs/project/architecture/OBSERVABILITY.md) · [LKW bounded observability proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Controlled Sentry proof](applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md) |
 | **Token Optimization** | Featured platform-capability proof — policy-governed context and prompt optimization with receipts, fallback, and bounded offline proof | **PARTIAL — bounded** — universal savings and production-proven savings **not established** | [Token Optimization guide](docs/project/capabilities/token_optimization/README.md) · [Claim guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md) |
 | **Multiplayer AI** | Governed multi-principal collaboration among humans, agents, services, and external agents | **Architecture / roadmap stage** — runtime proof **not yet established** | [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) |
 | **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** — implementation stages planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
-| **Agent Marketplace** | Future ecosystem layer — discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT — NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/product/AGENT_MARKETPLACE.md) |
+| **Agent Marketplace** | Future ecosystem layer — discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT — NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/overview/AGENT_MARKETPLACE.md) |
 
 ## License and collaboration
 

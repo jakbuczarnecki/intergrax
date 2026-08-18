@@ -72,7 +72,8 @@ class PolicyRuleHandler(Protocol):
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `rule_id` | `str` | Selects handler — must match `PolicyRuleHandler.rule_id` |
+| `rule_id` | `str` | Configured rule instance identity (audit / evidence) |
+| `handler_id` | `str` | Runtime handler lookup — must match `PolicyRuleHandler.rule_id` |
 | `resource_kind` | `str` | e.g. `tool`, `agent`, `capability` |
 | `resource_id` | `str` | Target id or `*` |
 | `action` | `PolicyRuleAction` | `allow`, `deny`, `require_hitl` |
@@ -92,7 +93,7 @@ class PolicyRuleRegistry:
     ) -> PolicyRuleAction: ...
 ```
 
-- Unknown `rule_id` → `PolicyRuleAction.DENY` (fail-closed; `unknown_handler=True` on outcome).
+- Unknown `handler_id` → `PolicyRuleAction.DENY` (fail-closed; `unknown_handler=True` on outcome).
 - Duplicate `rule_id` on `register()` → governed by admission policy (`error` default; shipped handler collision denied).
 - Handler allowlist enforced at registration when configured on `PolicyRulesProfile`.
 
@@ -160,7 +161,8 @@ class DenySandboxExecHandler:
 Example YAML (`applications/lab_application/policy/rules/harness_lab.yaml`):
 
 ```yaml
-- rule_id: deny_tool
+- rule_id: lab.sandbox.exec
+  handler_id: deny_tool
   resource_kind: tool
   resource_id: sandbox.exec
   action: deny
@@ -342,7 +344,8 @@ registry = PolicyRuleRegistry()
 registry.register(DenySandboxExecHandler())
 action = registry.evaluate_rule(
     DeclarativePolicyRule(
-        rule_id="deny_tool",
+        rule_id="lab.sandbox.exec",
+        handler_id="deny_tool",
         resource_kind="tool",
         resource_id="sandbox.exec",
         action=PolicyRuleAction.DENY,
@@ -356,7 +359,7 @@ assert action == PolicyRuleAction.DENY
 
 ## 15. Production checklist
 
-- [ ] Handler `rule_id` matches YAML `rule_id` values
+- [ ] Handler `rule_id` matches YAML `handler_id` values
 - [ ] YAML validated in CI (`load_policy_rules_from_path`)
 - [ ] `INTERGRAX_DISCOVER_PLUGINS` enabled when using EP handlers
 - [ ] `PolicyEnforcementMode` set (`audit_only` vs `enforce`) per deployment profile

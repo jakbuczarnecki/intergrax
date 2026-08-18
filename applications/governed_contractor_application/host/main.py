@@ -1,11 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 
-import os
+from __future__ import annotations
 
 from dotenv import load_dotenv
+from fastapi import FastAPI
 
+from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
 from intergrax.applications._shared.production_host_composition import (
+    StrictProductionAsgiPlaceholder,
     bootstrap_production_registry_projection,
+)
+from intergrax.applications._shared.production_process_composition import (
+    ProductionProcessComposition,
 )
 from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
@@ -15,29 +21,47 @@ from governed_contractor_application.manifest import build_governed_contractor_m
 
 load_dotenv()
 
-_manifest = build_governed_contractor_manifest()
-_env = _manifest.environment or build_governed_contractor_environment_profile()
-
-app = create_governed_contractor_backend_app(
-    registry_projection=bootstrap_production_registry_projection(
-        application_id=_manifest.app_id,
-        application_environment_id=_env.profile_id,
-    ),
+_STRICT_RUN_MESSAGE = (
+    "Governed Contractor STRICT production requires explicit lifecycle deploy/activate "
+    "before serving. Wire ReferenceProductionLifecycleLauncher with explicit lifecycle "
+    "input, then create_governed_contractor_process_app(process_composition=...)."
 )
 
 
-def run() -> None:
-    import uvicorn
-
-    host = os.environ.get("GOVERNED_CONTRACTOR_BACKEND_HOST", "127.0.0.1")
-    port = int(os.environ.get("GOVERNED_CONTRACTOR_BACKEND_PORT", "8000"))
-    uvicorn.run(
-        "governed_contractor_application.host.main:app",
-        host=host,
-        port=port,
-        reload=os.environ.get("GOVERNED_CONTRACTOR_BACKEND_RELOAD", "").lower()
-        in {"1", "true", "yes"},
+def create_governed_contractor_process_app(
+    *,
+    process_composition: ProductionProcessComposition,
+) -> FastAPI:
+    """Build the Governed Contractor STRICT host from an activated process composition."""
+    manifest = build_governed_contractor_manifest()
+    env = manifest.environment or build_governed_contractor_environment_profile()
+    return create_governed_contractor_backend_app(
+        registry_projection=bootstrap_production_registry_projection(
+            application_id=manifest.app_id,
+            application_environment_id=env.profile_id,
+            stores=process_composition.agent_platform_runtime.stores,
+        ),
     )
+
+
+def create_app(
+    *,
+    process_composition: ProductionProcessComposition | None = None,
+) -> FastAPI:
+    """Uvicorn factory entrypoint; requires an activated process composition."""
+    if process_composition is None:
+        raise HarnessHostRegistryAuthorityError(_STRICT_RUN_MESSAGE)
+    return create_governed_contractor_process_app(process_composition=process_composition)
+
+
+app = StrictProductionAsgiPlaceholder(application_package="governed_contractor_application")
+
+
+def run() -> None:
+    import sys
+
+    print(_STRICT_RUN_MESSAGE, file=sys.stderr)
+    raise SystemExit(1)
 
 
 if __name__ == "__main__":

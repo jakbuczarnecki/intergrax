@@ -4,7 +4,18 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.production_process_composition import (
+    ProductionProcessComposition,
+    create_reference_production_process_composition,
+)
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.registry_projection_input_bundle import (
+    build_reference_activation_request,
+    build_reference_registry_projection_input_bundle,
+)
+from intergrax.applications._shared.reference_production_lifecycle import (
+    ReferenceProductionLifecycleLauncher,
+)
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from local_workspace_application.host.agent_builders import LOCAL_WORKSPACE_AGENT_BUILDERS
 from local_workspace_application.host.environment_profile import (
@@ -36,3 +47,30 @@ def lkw_test_environment(
 ) -> ApplicationEnvironmentProfile:
     resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
     return build_local_workspace_environment_profile(resolved_settings)
+
+
+def create_lkw_hosted_test_process_composition(
+    *,
+    seed_active_projection: bool = False,
+    settings: LocalWorkspaceBackendSettings | None = None,
+    revision_id: str = "lkw-hosted-test-runtime-revision",
+) -> ProductionProcessComposition:
+    """Process composition for hosted-runtime tests; optionally activate via AP lifecycle."""
+    composition = create_reference_production_process_composition()
+    if not seed_active_projection:
+        return composition
+    resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
+    env = lkw_test_environment(resolved_settings)
+    projection_input = build_reference_registry_projection_input_bundle(
+        LOCAL_WORKSPACE_APPLICATION_MANIFEST,
+        env,
+        builders=LOCAL_WORKSPACE_AGENT_BUILDERS,
+        runtime_revision_id=revision_id,
+        settings=resolved_settings,
+    )
+    activation_request = build_reference_activation_request(projection_input)
+    ReferenceProductionLifecycleLauncher(composition).deploy_and_activate(
+        projection_input,
+        activation_request,
+    )
+    return composition

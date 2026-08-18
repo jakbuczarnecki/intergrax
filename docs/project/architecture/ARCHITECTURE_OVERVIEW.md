@@ -160,8 +160,9 @@ Details belong in the [Platform Plugins architecture](PLATFORM_PLUGINS.md).
 ## Architect review path
 
 1. Understand this Architecture Overview as the project-level mental model.
-2. Make [PROOFS](../proofs/PROOFS.md) the primary next action: check what has current bounded evidence and what remains incomplete.
-3. Use the [Evaluation Guide](../builders/EVALUATION_GUIDE.md) for a bounded technical evaluation.
-4. Use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) to route deeper implementation questions to the canonical architecture material it indexes, including the [Harness narrative](../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) and [runtime architecture hub](../architecture/intergrax_runtime_architecture.md).
+2. Use the [Platform Map](../../../README.md#explore-the-intergrax-platform) for a grouped view of platform areas and domain architecture entry points.
+3. Make [PROOFS](../proofs/PROOFS.md) the primary next action: check what has current bounded evidence and what remains incomplete.
+4. Use the [Evaluation Guide](../builders/EVALUATION_GUIDE.md) for a bounded technical evaluation.
+5. Use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) to route deeper implementation questions to the canonical architecture material it indexes, including the [Harness narrative](../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) and [runtime architecture hub](../architecture/intergrax_runtime_architecture.md).
 
 The overview summarizes the architecture; the proof documents establish current evidence; the technical map routes implementation-level due diligence. None of these routes turns bounded evidence into a production, security, real-user, or commercial validation claim.

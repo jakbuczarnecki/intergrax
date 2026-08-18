@@ -54,7 +54,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | **Scope** | Architecture §2 historical gaps + status; plan audit register; audit prompt regeneration |
 | **Goal** | Honest L3+ layer status — no false “open gap” list at doc open |
 | **DoD** | Architecture/plan/audit prompt aligned; closes GAP-CVL-10, CVL-BACKLOG-04 |
-| **Files** | `docs/project/architecture/CRITIC_VERIFICATION.md`, `docs/project/maintainers/plans/CRITIC_VERIFICATION.md`, `scripts/audit/generate_domain_audit_prompts.py`, `docs/project/maintainers/audit/CRITIC_VERIFICATION.md` |
+| **Files** | `docs/project/architecture/CRITIC_VERIFICATION.md`, `docs/project/maintainers/plans/CRITIC_VERIFICATION.md`, `scripts/audit/generate_domain_audit_prompts.py`, `docs/audit_results/CRITIC_VERIFICATION.md` |
 
 ## Sprint CVL-LC-2 — NexusEvalRunner semantic wiring (**Done** 2026-06-13)
 

@@ -41,7 +41,7 @@ DX layer formally closed for Full Harness LC — scaffold, eval, trace explorer,
 
 - `docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — Phase DX-LC register
 - `docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — Full Harness LC note
-- `docs/project/maintainers/audit/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — sync
+- `docs/audit_results/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — sync
 
 ## Verification
 

@@ -10,7 +10,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+from intergrax.core.distribution import DistributionPackageIdentity
 from intergrax.core.plugins.discovery import EntryPointSpec
+from intergrax.core.plugins.platform_qualification import resolve_entry_point_distribution_identity
 from intergrax.runtime.policy.rules.schema import DeclarativePolicyRule
 
 PolicyRulesSourceKind = Literal["inline", "file", "mixed"]
@@ -24,6 +26,7 @@ class PolicyHandlerProvenance:
     ep_name: str
     ep_value: str
     distribution: str | None = None
+    package_identity: DistributionPackageIdentity | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,4 +63,5 @@ def handler_provenance_from_spec(rule_id: str, spec: EntryPointSpec) -> PolicyHa
         ep_name=spec.name,
         ep_value=spec.value,
         distribution=spec.distribution,
+        package_identity=resolve_entry_point_distribution_identity(spec),
     )

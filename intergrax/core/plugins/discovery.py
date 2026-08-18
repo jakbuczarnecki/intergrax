@@ -29,6 +29,7 @@ EP_RAG_RETRIEVERS = "intergrax.rag.retrievers"
 EP_RAG_RERANKERS = "intergrax.rag.rerankers"
 EP_SECURITY_DEFENSES = "intergrax.security_defenses"
 EP_POLICY_RULES = "intergrax.policy_rules"
+EP_POLICY_DEFINITIONS = "intergrax.policy_definitions"
 EP_TOOL_INVOCATION_PATTERNS = "intergrax.tool_invocation_patterns"
 
 T = TypeVar("T")
@@ -164,11 +165,15 @@ def load_entry_point_targets(
     on_conflict: ConflictPolicy = "error",
     on_load_failure: LoadIsolation = "fail_fast",
     seen: set[str] | None = None,
+    skip_names: frozenset[str] | None = None,
 ) -> list[EntryPointLoadResult]:
     """Load entry-point targets for ``group`` without domain registration."""
     known = seen if seen is not None else set()
+    skipped = skip_names or frozenset()
     loaded: list[EntryPointLoadResult] = []
     for spec in iter_entry_point_specs(group):
+        if spec.name in skipped:
+            continue
         if spec.name in known:
             if on_conflict == "skip":
                 logger.warning("Skipping duplicate entry point %s in group %s", spec.name, group)

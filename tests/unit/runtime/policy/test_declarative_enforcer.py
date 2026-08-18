@@ -54,7 +54,8 @@ def test_no_matching_rules_allow() -> None:
 
 def test_exact_tool_match_deny() -> None:
     rule = DeclarativePolicyRule(
-        rule_id="deny_tool",
+        rule_id="finance.block_upload",
+        handler_id="deny_tool",
         resource_kind="tool",
         resource_id="blocked.tool",
         action=PolicyRuleAction.DENY,
@@ -64,12 +65,13 @@ def test_exact_tool_match_deny() -> None:
         context=PolicyEvaluationContext(tool_id="blocked.tool"),
     )
     assert decision.action is PolicyRuleAction.DENY
-    assert decision.matched_rule_ids == ("deny_tool",)
+    assert decision.matched_rule_ids == ("finance.block_upload",)
 
 
 def test_wildcard_match() -> None:
     rule = DeclarativePolicyRule(
-        rule_id="deny_tool",
+        rule_id="finance.require_hitl",
+        handler_id="deny_tool",
         resource_kind="tool",
         resource_id="*",
         action=PolicyRuleAction.REQUIRE_HITL,
@@ -85,19 +87,22 @@ def test_wildcard_match() -> None:
 def test_precedence_deny_over_hitl_over_allow() -> None:
     rules = (
         DeclarativePolicyRule(
-            rule_id="deny_tool",
+            rule_id="rule.allow",
+            handler_id="deny_tool",
             resource_kind="tool",
             resource_id="x",
             action=PolicyRuleAction.ALLOW,
         ),
         DeclarativePolicyRule(
-            rule_id="deny_tool",
+            rule_id="rule.hitl",
+            handler_id="deny_tool",
             resource_kind="tool",
             resource_id="x",
             action=PolicyRuleAction.REQUIRE_HITL,
         ),
         DeclarativePolicyRule(
-            rule_id="deny_tool",
+            rule_id="rule.deny",
+            handler_id="deny_tool",
             resource_kind="tool",
             resource_id="x",
             action=PolicyRuleAction.DENY,
@@ -112,7 +117,8 @@ def test_precedence_deny_over_hitl_over_allow() -> None:
 
 def test_unknown_handler_deny() -> None:
     rule = DeclarativePolicyRule(
-        rule_id="nonexistent_handler",
+        rule_id="finance.custom_rule",
+        handler_id="nonexistent_handler",
         resource_kind="tool",
         resource_id="x",
         action=PolicyRuleAction.ALLOW,
@@ -127,7 +133,8 @@ def test_unknown_handler_deny() -> None:
 
 def test_audit_only_records_but_does_not_enforce() -> None:
     rule = DeclarativePolicyRule(
-        rule_id="deny_tool",
+        rule_id="finance.block_upload",
+        handler_id="deny_tool",
         resource_kind="tool",
         resource_id="blocked",
         action=PolicyRuleAction.DENY,
@@ -144,7 +151,8 @@ def test_audit_only_records_but_does_not_enforce() -> None:
 
 def test_enforce_blocks() -> None:
     rule = DeclarativePolicyRule(
-        rule_id="deny_tool",
+        rule_id="finance.block_upload",
+        handler_id="deny_tool",
         resource_kind="tool",
         resource_id="blocked",
         action=PolicyRuleAction.DENY,

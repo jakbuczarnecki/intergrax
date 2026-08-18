@@ -12,11 +12,80 @@ reconstruct identity from Plane B trace tags, payload, or active ContextVar.
 from __future__ import annotations
 
 from intergrax.contracts.execution_identity import validate_run_id
+from intergrax.runtime.events.execution_position import AsOfBoundary, PositionedRuntimeEvent
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun
 
 JOURNAL_SCHEMA_VERSION = "unified_run_journal.v1"
+
+
+class PositionedJournalPrefixTruncatedError(Exception):
+    """Raised when a positioned journal prefix read hits the configured limit."""
+
+
+class PositionedJournalBoundaryNotFoundError(Exception):
+    """Raised when canonical history has no accepted event at the requested boundary position."""
+
+
+def load_positioned_run_journal_through(
+    runtime_store: RuntimeEventPersistence,
+    *,
+    tenant_id: str,
+    boundary: AsOfBoundary,
+    initial_limit: int = 1000,
+    max_limit: int = 1_000_000,
+) -> tuple[PositionedRuntimeEvent, ...]:
+    """
+    Return the complete positioned prefix for ``boundary`` via the canonical store read path.
+
+    Reads paginate by increasing ``limit`` until the inclusive prefix is complete or
+    ``max_limit`` is exceeded. A truncated read fails closed.
+
+    Ownership: this helper is the single authority for prefix completeness and exact
+    boundary existence. It returns a prefix whose last event position equals
+    ``boundary.position``, or raises when history is absent, the exact boundary event
+    is missing, or completeness cannot be proven within ``max_limit``.
+    """
+    _require_tenant_id(tenant_id)
+    _validate_journal_limit(initial_limit)
+    _validate_journal_limit(max_limit)
+    if initial_limit > max_limit:
+        raise ValueError("initial_limit must be <= max_limit")
+
+    limit = initial_limit
+    while True:
+        batch = tuple(
+            runtime_store.list_positioned_through(
+                boundary,
+                tenant_id=tenant_id,
+                limit=limit,
+            )
+        )
+        if not batch:
+            return batch
+        last_position = batch[-1].position
+        if len(batch) < limit:
+            if last_position < boundary.position:
+                raise PositionedJournalBoundaryNotFoundError(
+                    f"no accepted execution event at position {boundary.position.value} "
+                    f"for run {boundary.run_id!r}"
+                )
+            return batch
+        if last_position >= boundary.position:
+            if last_position != boundary.position:
+                raise PositionedJournalBoundaryNotFoundError(
+                    f"positioned prefix ends at {last_position.value}, "
+                    f"not at requested boundary {boundary.position.value} "
+                    f"for run {boundary.run_id!r}"
+                )
+            return batch
+        if limit >= max_limit:
+            raise PositionedJournalPrefixTruncatedError(
+                f"execution history prefix for run {boundary.run_id!r} through position "
+                f"{boundary.position.value} exceeds max_limit={max_limit}"
+            )
+        limit = min(limit * 2, max_limit)
 
 
 def build_unified_run_journal(

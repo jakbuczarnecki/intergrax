@@ -171,7 +171,7 @@ def render_plan_read_scope_block(domain: str, scope: str) -> str:
         f"- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.\n"
         f"- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.\n"
         f"- **Architecture hub:** [`architecture/{domain}.md`](../architecture/{domain}.md) read-scope block only.\n"
-        f"- **Audit slice:** [`guides/audit_slices/{domain}.md`](../guides/audit_slices/{domain}.md).\n"
+        f"- **Audit slice:** [`docs/audit_results/{domain}.md`](../docs/audit_results/{domain}.md).\n"
         f"- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.\n\n"
         f"---\n"
     )

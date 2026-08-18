@@ -22,7 +22,7 @@ uv run python scripts/maintenance/check_context_builtin_providers.py
 
 # Platform gates
 uv run pytest -m gate -q
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 uv run python scripts/maintenance/check_observability_gates.py
 ```
 

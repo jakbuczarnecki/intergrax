@@ -15,12 +15,12 @@ Implement **Intergrax Harness AI / Agent OS**. Root `AGENTS.md` = stub (~350 tok
 ONE DOMAIN = ONE NEW CHAT
 ```
 
-Audit / implement / closeout: one domain pair per chat. HEP steps: `@docs/project/maintainers/bootstrap/hep_step.txt`. Resume: new chat + bootstrap + `RESUME: docs/audit_results/…/progress.json` only.
+Audit / implement / closeout: one domain pair per chat. HEP steps: `@docs/project/maintainers/bootstrap/hep_step.txt`. Platform audit: `@docs/audit_results/AUDIT_PROTOCOL.md` only when operator requests audit.
 
 ## Domain read scope (when I1 allows load)
 
 - **Read:** arch hub read-scope block + plan hub read-scope + **one** satellite (`docs/project/maintainers/plans/satellites/` or `docs/project/architecture/satellites/`).
-- **Audits:** `docs/project/technical/guides/audit_slices/<DOMAIN>.md` — not full IDEAL/AUDIT_MAP.
+- **Audits:** follow `docs/audit_results/AUDIT_PROTOCOL.md`; load campaign result files only when operator cites them.
 - **Max:** one file >5k tok per session unless RESUME cites more.
 
 ## Never violate
@@ -31,8 +31,6 @@ intergrax/ ↛ agents/|applications/   agents/ ↛ applications/
 ```
 
 Default scope: gate maintenance `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` hub. Phase K / §6.3 only with explicit operator approval.
-
-**Mode I:** `audyt pomysłu` / `idea audit` → `intergrax-idea-audit.mdc` (no code until approved).
 
 Repository artifacts: English. Operator chat: session language. **Do not commit** unless asked.
 

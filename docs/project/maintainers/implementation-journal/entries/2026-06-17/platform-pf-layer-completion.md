@@ -41,13 +41,13 @@ PLATFORM_FOUNDATION domain pair is closed for Full Harness LC with no blocking P
 
 - `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — P1-ARCH-02 → Done (×2)
 - `docs/project/architecture/intergrax_runtime_architecture.md` — OBS-EVOL-9 hub status
-- `docs/project/maintainers/audit/OBSERVABILITY.md` — audit instruction sync
+- `docs/audit_results/OBSERVABILITY.md` — audit instruction sync
 - `docs/_external/layer_completion_progress.json` — PF mature + session bootstrap
 
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 uv run python scripts/gates/harness_maturity_report.py
 ```

@@ -41,7 +41,7 @@ Implementation journal entries citing “Layer Completion Mode” now resolve to
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

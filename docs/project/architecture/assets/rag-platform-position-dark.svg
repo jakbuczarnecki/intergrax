@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img">
+  <title>Intergrax RAG knowledge flow</title>
+  <desc>Conceptual diagram showing approved knowledge sources flowing through ingest, normalization, indexing, scoped retrieval, and retrieved evidence into Context Engineering for the Agent or LLM. RAG is not user memory or final context assembly.</desc>
+  <rect width="1200" height="900" fill="#0d1117"/>
+  <rect x="32" y="28" width="1136" height="844" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#e6edf3">Intergrax RAG &#8212; knowledge flow</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" fill="#8b949e">Approved external knowledge &#8212; ingest, index, retrieve &#8212; not user memory</text>
+
+  <rect x="340" y="128" width="520" height="64" rx="12" fill="#1c2d4a" stroke="#58a6ff" stroke-width="2"/>
+  <text x="600" y="156" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#e6edf3">Approved / authorized knowledge sources</text>
+  <text x="600" y="178" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">files, URLs, connectors, workspace corpora</text>
+
+  <line x1="600" y1="196" x2="600" y2="224" stroke="#e6edf3" stroke-width="2.5"/>
+  <path d="M600 224 L590 210 L610 210 Z" fill="#e6edf3"/>
+
+  <rect x="400" y="228" width="440" height="52" rx="10" fill="#21262d" stroke="#8b949e" stroke-width="2"/>
+  <text x="600" y="258" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Ingest</text>
+
+  <line x1="600" y1="280" x2="600" y2="296" stroke="#e6edf3" stroke-width="2"/>
+  <path d="M600 296 L590 288 L610 288 Z" fill="#e6edf3"/>
+
+  <rect x="320" y="300" width="560" height="64" rx="12" fill="#21262d" stroke="#8b949e" stroke-width="2"/>
+  <text x="600" y="328" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Normalize / chunk / enrich metadata</text>
+  <text x="600" y="350" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">KnowledgeDocument, scope, provenance</text>
+
+  <line x1="600" y1="364" x2="600" y2="380" stroke="#e6edf3" stroke-width="2"/>
+  <path d="M600 380 L590 372 L610 372 Z" fill="#e6edf3"/>
+
+  <rect x="340" y="384" width="520" height="72" rx="14" fill="#1c2d4a" stroke="#58a6ff" stroke-width="2.5"/>
+  <text x="600" y="414" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#e6edf3">Knowledge index</text>
+  <text x="600" y="438" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">vector, TOC/section, optional graph evidence</text>
+
+  <line x1="600" y1="456" x2="600" y2="472" stroke="#58a6ff" stroke-width="2.5"/>
+  <path d="M600 472 L590 460 L610 460 Z" fill="#58a6ff"/>
+
+  <rect x="300" y="476" width="580" height="72" rx="14" fill="#1c2d4a" stroke="#58a6ff" stroke-width="2.5"/>
+  <text x="600" y="506" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#e6edf3">Scoped / policy-aware retrieval</text>
+  <text x="600" y="528" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">tenant, namespace, workspace, filters, visibility</text>
+
+  <line x1="600" y1="556" x2="600" y2="572" stroke="#58a6ff" stroke-width="2.5"/>
+  <path d="M600 572 L590 560 L610 560 Z" fill="#58a6ff"/>
+
+  <rect x="360" y="576" width="480" height="56" rx="12" fill="#1c2d4a" stroke="#58a6ff" stroke-width="2"/>
+  <text x="600" y="608" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Retrieved evidence / fragments</text>
+
+  <line x1="600" y1="632" x2="600" y2="652" stroke="#e6edf3" stroke-width="2"/>
+  <path d="M600 652 L590 638 L610 638 Z" fill="#e6edf3"/>
+
+  <rect x="260" y="656" width="680" height="80" rx="16" fill="#3d2e14" stroke="#d29922" stroke-width="2.5"/>
+  <text x="600" y="688" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="24" font-weight="700" fill="#e6edf3">Context Engineering</text>
+  <text x="600" y="714" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" fill="#8b949e">Assembles model context &#8212; budget, provenance, degradation</text>
+
+  <line x1="600" y1="744" x2="600" y2="772" stroke="#e6edf3" stroke-width="2.5"/>
+  <path d="M600 772 L590 758 L610 758 Z" fill="#e6edf3"/>
+
+  <rect x="420" y="776" width="360" height="64" rx="14" fill="#21262d" stroke="#8b949e" stroke-width="2"/>
+  <text x="600" y="804" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#e6edf3">Agent / LLM</text>
+  <text x="600" y="822" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">governed turn execution</text>
+
+  <rect x="48" y="420" width="200" height="88" rx="10" fill="#1a3324" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="148" y="452" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#e6edf3">Memory</text>
+  <text x="148" y="472" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#8b949e">separate path</text>
+  <text x="148" y="490" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#8b949e">not RAG ingest</text>
+
+  <text x="600" y="868" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#6e7681">Conceptual data flow &#8212; not a runtime class diagram.</text>
+</svg>

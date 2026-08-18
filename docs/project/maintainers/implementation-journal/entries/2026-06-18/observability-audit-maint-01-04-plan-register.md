@@ -33,7 +33,7 @@ Observability depth backlog traceable without reopening closed OBS-EVOL-9 phases
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/OBSERVABILITY.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/OBSERVABILITY.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/OBSERVABILITY.md` |
 
 ## Verification
 

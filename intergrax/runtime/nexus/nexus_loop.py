@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
@@ -151,6 +151,7 @@ class NexusLoop:
         allow_dynamic_replan: bool = False,
         denied_planner_model_ids: tuple[str, ...] = (),
         planner_model_id: str | None = None,
+        governance_service: Any = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -176,6 +177,7 @@ class NexusLoop:
         self._human_hooks = HumanApprovalHookCoordinator(self._middleware)
         self._lifecycle_hooks = NexusLifecycleHookCoordinator(self._middleware)
         self._policy_engine = coerce_policy_engine(policy_engine)
+        self._governance_service = governance_service
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=self._policy_engine,
             allow_dynamic_replan=allow_dynamic_replan,
@@ -207,6 +209,7 @@ class NexusLoop:
             uaep_executor=UAEPExecutor(
                 event_bus=self._event_bus,
                 policy_engine=self._policy_engine,
+                governance_service=governance_service,
                 shadow_manager=self._shadow_manager,
                 sandbox_manager=self._sandbox_manager,
                 middleware=self._middleware,
@@ -526,6 +529,16 @@ class NexusLoop:
             )
         self._maybe_record_adaptive_outcome_signal(task, result)
         self._maybe_record_multi_agent_evaluation(executions, task_id=task.task_id)
+        from intergrax.runtime.governance.post_run_governance_bridge import (
+            invoke_post_run_governance,
+        )
+
+        active_run_id, _ = require_active_execution_identity()
+        invoke_post_run_governance(
+            self._governance_service,
+            run_id=active_run_id,
+            agent_id=task.agent_id or "",
+        )
         return result
 
     def _maybe_record_multi_agent_evaluation(

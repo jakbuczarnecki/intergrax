@@ -43,6 +43,9 @@ from intergrax.hosting.supervisor.classification import HostedApplicationExitKin
 from local_workspace_application.hosting.profile import (
     build_local_workspace_hosted_profile,
 )
+from local_workspace_application.tests.lkw_ac3_projection import (
+    create_lkw_hosted_test_process_composition,
+)
 
 pytestmark = [pytest.mark.unit]
 
@@ -92,6 +95,7 @@ def _configure_lkw_env(
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_INTERACTIONS", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED", "false")
+    monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "test-hosted-restart-key")
     return workspace
 
 
@@ -267,7 +271,11 @@ async def test_hosted_lkw_restart_creates_new_instance_and_accepts_work(
     hosting_run = (tmp_path / "hosting-run").resolve()
     paths = HostedApplicationPaths(data_home=hosting_data, run_directory=hosting_run)
 
-    profile = build_local_workspace_hosted_profile()
+    profile = build_local_workspace_hosted_profile(
+        process_composition=create_lkw_hosted_test_process_composition(
+            seed_active_projection=True,
+        ),
+    )
     definition = resolve_hosted_application_definition(profile)
     profile_digest = profile.profile_digest()
 

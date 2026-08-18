@@ -43,7 +43,7 @@ Elastic Capacity layer formally closed for Full Harness LC — signal bridge, K8
 
 - `docs/project/maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md` — Phase ECP-LC register
 - `docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md` — Full Harness LC note
-- `docs/project/maintainers/audit/ELASTIC_CAPACITY_AND_SCALING.md` — ECP-PROD gaps closed
+- `docs/audit_results/ELASTIC_CAPACITY_AND_SCALING.md` — ECP-PROD gaps closed
 
 ## Verification
 

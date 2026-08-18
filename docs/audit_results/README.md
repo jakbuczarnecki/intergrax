@@ -1,52 +1,57 @@
-# Architecture audit results
+# Intergrax Platform Audit
 
-Dated outputs from **orchestrated** harness audits ([`ORCHESTRATOR.md`](../audit/ORCHESTRATOR.md)).
+docs/audit_results/ is the **single canonical source of truth** for Intergrax platform audit methodology, campaigns, historical results, and remediation status.
+
+| Document | Role |
+|----------|------|
+| [AUDIT_PROTOCOL.md](AUDIT_PROTOCOL.md) | Canonical instruction for conducting an adversarial platform audit |
+| [AUDIT_REMEDIATION_PROTOCOL.md](AUDIT_REMEDIATION_PROTOCOL.md) | Canonical instruction for implementing accepted audit findings |
+
+**Not duplicated here:** target system design lives in docs/project/architecture/; implementation work lives in docs/project/maintainers/plans/. Architecture and plans may reference canonical audit finding IDs; audit history and remediation status belong under docs/audit_results/ only.
 
 ---
 
-## Layout
+## Directory model
 
-```text
+`	ext
 docs/audit_results/
+  README.md
+  AUDIT_PROTOCOL.md
+  AUDIT_REMEDIATION_PROTOCOL.md
   YYYY-MM-DD/
-    progress.json       # machine state — resume across sessions
-    RUN_SUMMARY.md      # human rollup
-    <DOMAIN>.md         # per-domain result (required when status=completed)
-    <DOMAIN>.json       # optional machine-readable findings
-```
+    README.md              # campaign master register
+    <LAYER>.md             # immutable per-layer snapshot at exact commit
+    ...
+  legacy/
+    README.md
+    YYYY-MM-DD/            # Legacy Audit Protocol v1 campaigns
+    ...
+`
 
-**Second run same day:** `YYYY-MM-DD_run-2/` (manual folder name).
+### Campaign semantics
 
----
+- **Dated directory** = one audit campaign (YYYY-MM-DD). Repeated same-day campaigns use deterministic suffixes (YYYY-MM-DD_run-2) when needed.
+- **Campaign README** = master register: scope, commit SHA, status (IN_PROGRESS / COMPLETE / ABORTED), finding index, remediation rollup.
+- **Per-layer files** = immutable audit snapshots bound to an exact repository commit. Completed historical reports are **not rewritten** to pretend a problem never existed.
+- **Remediation / closure evidence** is tracked in the campaign register and via [AUDIT_REMEDIATION_PROTOCOL.md](AUDIT_REMEDIATION_PROTOCOL.md).
+- **Later periodic audits** create new dated campaigns; they do not silently overwrite prior evidence.
 
-## Initialize a run
+### Legacy vs protocol v2
 
-```bash
-uv run python scripts/audit/init_architecture_audit_run.py --date 2026-06-17 --mode audit_only
-uv run python scripts/audit/init_architecture_audit_run.py --date 2026-06-17 --mode audit_only --domain MEMORY
-uv run python scripts/audit/init_architecture_audit_run.py --date 2026-06-17 --mode implement_plan
-uv run python scripts/audit/init_architecture_audit_run.py --date 2026-06-17 --mode layer_completion
-```
+Results under [legacy/](legacy/README.md) were produced under the superseded **Legacy Audit Protocol v1** (progress.json, orchestrators, generated prompts). They are useful for historical comparison only — **not** evidence of current platform maturity.
 
----
-
-## Validate
-
-```bash
-uv run python scripts/audit/check_architecture_audit_run.py 2026-06-17
-uv run python scripts/audit/check_architecture_audit_run.py 2026-06-17 --require-complete
-```
+**Protocol v2** (this tree, from 2026-08-18) is model-driven and periodic. No 2026-08-18 v2 campaign is persisted until independently reviewed after this protocol migration.
 
 ---
 
-## Git policy
+## How to run an audit
 
-**Commit** `progress.json`, `RUN_SUMMARY.md`, and completed `<DOMAIN>.md` files — they are the audit history.
+1. Read this README.
+2. Follow [AUDIT_PROTOCOL.md](AUDIT_PROTOCOL.md) end to end.
+3. Persist accepted results under a new YYYY-MM-DD/ campaign directory.
 
-Do **not** commit chat transcripts. Operator PL notes may stay in `docs/_external/` (gitignored).
+## How to remediate findings
 
----
-
-## Template
-
-Copy [`TEMPLATE_DOMAIN_RESULT.md`](../audit/TEMPLATE_DOMAIN_RESULT.md) when writing `<DOMAIN>.md`.
+1. Read this README.
+2. Follow [AUDIT_REMEDIATION_PROTOCOL.md](AUDIT_REMEDIATION_PROTOCOL.md).
+3. Update campaign remediation status in the relevant campaign README; do not rewrite immutable per-layer audit text.

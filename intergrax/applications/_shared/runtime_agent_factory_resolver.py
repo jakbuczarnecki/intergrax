@@ -7,11 +7,9 @@ Production projection must resolve ``AgentFactory`` from immutable
 ``(package_digest, factory_reference)`` authority bound to a ``RuntimeRevision``.
 Host builders maps are not production authority.
 
-``PRODUCTION_RUNTIME_FACTORY_ADAPTER_DEFERRED``: AP-8 materialization exposes
-``artifact_locator`` / package artifact bytes, not a topology-neutral callable
-loader for OCI_IMAGE, VENV_BUNDLE, or SANDBOX_SIDECAR. A production adapter
-belongs with host/runtime serving wiring once that loader exists. Do not fake
-package provenance by importing from the current process.
+``VENV_BUNDLE`` production loading is implemented by
+:class:`~intergrax.applications._shared.venv_bundle_runtime_agent_factory_resolver.VenvBundleRuntimeAgentFactoryResolver`.
+``OCI_IMAGE`` and ``SANDBOX_SIDECAR`` remain deferred.
 """
 
 from __future__ import annotations
@@ -24,6 +22,8 @@ from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision
 from intergrax.applications.contracts.factory import AgentFactory
 
+# Aggregate deferral remains True while OCI_IMAGE / SANDBOX_SIDECAR lack loaders.
+# VENV_BUNDLE production resolver: ``venv_bundle_runtime_agent_factory_resolver``.
 PRODUCTION_RUNTIME_FACTORY_ADAPTER_DEFERRED: Final = True
 
 _FactoryKey = tuple[str, str | None, str | None]

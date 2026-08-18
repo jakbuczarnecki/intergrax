@@ -5,12 +5,25 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
+from types import MappingProxyType
+from typing import TYPE_CHECKING
 
-from intergrax.core.distribution import PlatformCompatibilityResult
+from intergrax.core.distribution import (
+    DistributionPackageIdentity,
+    PlatformCompatibilityResult,
+    check_platform_compatibility,
+)
+from intergrax.core.plugins.discovery import EntryPointSpec
 from intergrax.core.plugins.errors import ProductionQualificationRequiredError
 from intergrax.core.qualification import QualificationEvidence, QualificationStatus
+
+if TYPE_CHECKING:
+    from importlib.metadata import Distribution
+
+    from intergrax.core.plugins.package_contract import PlatformPluginManifest
 
 
 class PlatformPluginTrustModel(StrEnum):
@@ -91,6 +104,83 @@ class PackageProductionAdmission:
     result: PluginQualificationResult
     compatibility: PlatformCompatibilityResult | None
     reason: str
+
+
+class PlatformPluginPackageQualificationBundleError(ValueError):
+    """Raised when immutable package qualification bundle construction fails."""
+
+
+@dataclass(frozen=True, slots=True)
+class PlatformPluginPackageQualificationBundle:
+    """Immutable bootstrap snapshot of external package qualification results.
+
+    Keyed by exact ``DistributionPackageIdentity``; does not perform admission.
+    """
+
+    _qualifications: Mapping[tuple[str, str], PluginQualificationResult]
+
+    def __init__(
+        self,
+        entries: Iterable[tuple[DistributionPackageIdentity, PluginQualificationResult]],
+    ) -> None:
+        built = _build_package_qualification_index(entries)
+        object.__setattr__(self, "_qualifications", MappingProxyType(built))
+
+    def lookup_for_entry_point(
+        self,
+        spec: EntryPointSpec,
+    ) -> PluginQualificationResult | None:
+        identity = resolve_entry_point_distribution_identity(spec)
+        if identity is None:
+            return None
+        return self._qualifications.get((identity.name, identity.version))
+
+    def lookup_for_package(
+        self,
+        identity: DistributionPackageIdentity,
+    ) -> PluginQualificationResult | None:
+        return self._qualifications.get((identity.name, identity.version))
+
+
+def _build_package_qualification_index(
+    entries: Iterable[tuple[DistributionPackageIdentity, PluginQualificationResult]],
+) -> dict[tuple[str, str], PluginQualificationResult]:
+    index: dict[tuple[str, str], PluginQualificationResult] = {}
+    for identity, qualification in entries:
+        _validate_package_qualification_entry(identity, qualification)
+        key = (identity.name, identity.version)
+        if key in index:
+            raise PlatformPluginPackageQualificationBundleError(
+                "duplicate package qualification for "
+                f"{identity.name}@{identity.version}"
+            )
+        index[key] = qualification
+    return index
+
+
+def _validate_package_qualification_entry(
+    identity: DistributionPackageIdentity,
+    qualification: PluginQualificationResult,
+) -> None:
+    subject = qualification.subject
+    if subject.level is not PluginQualificationLevel.PACKAGE:
+        raise PlatformPluginPackageQualificationBundleError(
+            "package qualification bundle requires package-level subject"
+        )
+    if subject.delivery_source is not PluginDeliverySource.EXTERNAL_PACKAGE:
+        raise PlatformPluginPackageQualificationBundleError(
+            "package qualification bundle requires external-package delivery source"
+        )
+    if subject.package_name != identity.name:
+        raise PlatformPluginPackageQualificationBundleError(
+            "qualification subject package name does not match bundle key "
+            f"({subject.package_name!r} != {identity.name!r})"
+        )
+    if subject.package_version != identity.version:
+        raise PlatformPluginPackageQualificationBundleError(
+            "qualification subject package version does not match bundle key "
+            f"({subject.package_version!r} != {identity.version!r})"
+        )
 
 
 def compatibility_evidence(
@@ -245,3 +335,154 @@ def evaluate_package_production_admission(
         compatibility=compatibility,
         reason="production-qualified evidence present",
     )
+
+
+def resolve_host_platform_version() -> str:
+    """Return the installed Intergrax platform version for compatibility checks."""
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        return version("intergrax")
+    except PackageNotFoundError:
+        return version("Intergrax-ai")
+
+
+def resolve_entry_point_distribution_identity(
+    spec: EntryPointSpec,
+) -> DistributionPackageIdentity | None:
+    """Resolve canonical package identity for an entry point's distribution."""
+    if spec.distribution is None:
+        return None
+    from importlib.metadata import PackageNotFoundError, distribution
+
+    try:
+        installed = distribution(spec.distribution)
+    except PackageNotFoundError:
+        return None
+    try:
+        return DistributionPackageIdentity(name=spec.distribution, version=installed.version)
+    except ValueError:
+        return None
+
+
+def qualification_matches_distribution_identity(
+    qualification: PluginQualificationResult,
+    identity: DistributionPackageIdentity,
+) -> bool:
+    """Return whether qualification evidence applies to ``identity``."""
+    if qualification.subject.package_name is None or qualification.subject.package_version is None:
+        return False
+    try:
+        qualified = DistributionPackageIdentity(
+            name=qualification.subject.package_name,
+            version=qualification.subject.package_version,
+        )
+    except ValueError:
+        return False
+    return qualified.name == identity.name and qualified.version == identity.version
+
+
+def _try_parse_platform_plugin_manifest_from_distribution(
+    dist: Distribution,
+) -> PlatformPluginManifest | None:
+    from intergrax.core.plugins.errors import PlatformPluginManifestValidationError
+    from intergrax.core.plugins.manifest_io import parse_platform_plugin_pyproject_toml
+
+    if dist.files is None:
+        return None
+    for file in dist.files:
+        if file.name != "pyproject.toml":
+            continue
+        try:
+            source = dist.read_text(file)
+        except OSError:
+            continue
+        if source is None:
+            continue
+        try:
+            return parse_platform_plugin_pyproject_toml(source)
+        except PlatformPluginManifestValidationError:
+            return None
+    return None
+
+
+def resolve_installed_distribution_platform_compatibility(
+    distribution_name: str,
+    platform_version: str,
+) -> PlatformCompatibilityResult | None:
+    """Resolve platform compatibility from an installed distribution manifest."""
+    from importlib.metadata import PackageNotFoundError, distribution
+
+    try:
+        installed = distribution(distribution_name)
+    except PackageNotFoundError:
+        return None
+    manifest = _try_parse_platform_plugin_manifest_from_distribution(installed)
+    if manifest is None:
+        return None
+    return check_platform_compatibility(
+        manifest.platform_compatibility,
+        platform_version,
+    )
+
+
+def evaluate_external_package_entry_point_production_admission(
+    spec: EntryPointSpec,
+    qualification: PluginQualificationResult | None,
+    *,
+    platform_version: str,
+) -> PackageProductionAdmission:
+    """Evaluate production admission for an external-package entry point."""
+    identity = resolve_entry_point_distribution_identity(spec)
+    if identity is None:
+        placeholder = build_qualification_result(
+            subject=build_external_package_subject(
+                level=PluginQualificationLevel.PACKAGE,
+                package_name=spec.distribution or "unknown",
+                package_version="0",
+            ),
+            status=QualificationStatus.NOT_QUALIFIED,
+            evidence=(),
+            reason="external package identity could not be resolved from entry point distribution",
+        )
+        return PackageProductionAdmission(
+            admitted=False,
+            result=placeholder,
+            compatibility=None,
+            reason=placeholder.reason,
+        )
+
+    compatibility = resolve_installed_distribution_platform_compatibility(
+        identity.name,
+        platform_version,
+    )
+
+    if qualification is None:
+        missing = build_qualification_result(
+            subject=build_external_package_subject(
+                level=PluginQualificationLevel.PACKAGE,
+                package_name=identity.name,
+                package_version=identity.version,
+                entry_point_group=spec.group,
+                entry_point_name=spec.name,
+            ),
+            status=QualificationStatus.NOT_QUALIFIED,
+            evidence=(),
+            reason="production qualification evidence missing for external policy plugin package",
+        )
+        return evaluate_package_production_admission(missing, compatibility=compatibility)
+
+    if not qualification_matches_distribution_identity(qualification, identity):
+        mismatched = build_qualification_result(
+            subject=qualification.subject,
+            status=QualificationStatus.NOT_QUALIFIED,
+            evidence=qualification.evidence,
+            reason=(
+                "production qualification package identity does not match entry point distribution "
+                f"({identity.name}@{identity.version})"
+            ),
+            domain_qualification_label=qualification.domain_qualification_label,
+        )
+        return evaluate_package_production_admission(mismatched, compatibility=compatibility)
+
+    return evaluate_package_production_admission(qualification, compatibility=compatibility)

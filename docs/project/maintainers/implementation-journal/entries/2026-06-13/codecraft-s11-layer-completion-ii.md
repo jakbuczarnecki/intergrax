@@ -22,7 +22,7 @@ Close the gap where Ephemeral Code Craft reads as architecture-only in audit pro
 
 ## Summary
 
-Regenerated `docs/project/maintainers/audit/CODE_CRAFT.md` from updated `generate_domain_audit_prompts.py` (ECC-0…S11 Done, depth backlog only). Enforced `max_total_exec_time_s` fail-closed in `CodeCraftOrchestrator.iterate` and capped single-shot `codecraft.run` timeout. Registered GAP-ECC-23 for per-task `Task.metadata.codecraft_mode` override.
+Regenerated `docs/audit_results/CODE_CRAFT.md` from updated `generate_domain_audit_prompts.py` (ECC-0…S11 Done, depth backlog only). Enforced `max_total_exec_time_s` fail-closed in `CodeCraftOrchestrator.iterate` and capped single-shot `codecraft.run` timeout. Registered GAP-ECC-23 for per-task `Task.metadata.codecraft_mode` override.
 
 ## Project impact
 
@@ -40,7 +40,7 @@ Audit agents and operators now see honest L3+ runtime status. Cumulative sandbox
 ## Changed artifacts
 
 - `scripts/audit/generate_domain_audit_prompts.py` — CODE_CRAFT domain Done status
-- `docs/project/maintainers/audit/CODE_CRAFT.md` — regenerated audit prompt
+- `docs/audit_results/CODE_CRAFT.md` — regenerated audit prompt
 - `intergrax/codecraft/profile.py` — exec budget helpers
 - `intergrax/runtime/codecraft/orchestrator.py` — budget deny + timeout cap
 - `intergrax/tools/providers/codecraft/service.py` — single-shot timeout cap

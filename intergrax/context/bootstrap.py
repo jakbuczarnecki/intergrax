@@ -19,9 +19,23 @@ from intergrax.core.catalog_conflict import (
     entry_point_conflict_policy,
     should_skip_catalog_registration,
 )
-from intergrax.core.plugins.discovery import EP_CONTEXT, ConflictPolicy, register_plugins
+from intergrax.core.plugins.admission import (
+    DomainPluginLoadReport,
+    PluginAdmissionReasonCode,
+    PluginAdmissionRejection,
+)
+from intergrax.core.plugins.discovery import (
+    EP_CONTEXT,
+    ConflictPolicy,
+    EntryPointLoadResult,
+    EntryPointSpec,
+    load_entry_point_targets,
+    resolve_entry_point_plugin_type,
+)
+from intergrax.core.plugins.errors import PluginLoadError
 
 _context_shipped_done = False
+_SHIPPED_BUILTIN_PLUGIN_ID = "intergrax.builtin"
 
 
 def reset_context_catalog_bootstrap_for_tests() -> None:
@@ -35,6 +49,73 @@ def reset_context_catalog_bootstrap_for_tests() -> None:
 class ContextCatalogBootstrapResult:
     context_plugins: int
     catalog_plugin_ids: tuple[str, ...]
+    load_report: DomainPluginLoadReport
+
+
+def _register_explicit_context_plugin(
+    plugin_type: type[ContextPlugin],
+    *,
+    on_conflict: ConflictPolicy,
+) -> bool:
+    plugin_id = plugin_type.plugin_id().strip().lower()
+    registered = plugin_id in list_context_plugin_ids()
+    if should_skip_catalog_registration(slug_registered=registered, on_conflict=on_conflict):
+        return False
+    override = catalog_registration_override(
+        slug=plugin_id,
+        slug_registered=registered,
+        on_conflict=on_conflict,
+        catalog_kind="context",
+        plugin_type=plugin_type,
+    )
+    register_context_plugin(plugin_type, override=override)
+    return True
+
+
+def _register_context_entry_point(
+    plugin_type: type,
+    spec: EntryPointSpec,
+    *,
+    on_conflict: ConflictPolicy,
+) -> tuple[bool, PluginAdmissionRejection | None]:
+    if not issubclass(plugin_type, ContextPlugin):
+        message = (
+            f"Context entry point {spec.name!r} does not implement ContextPlugin"
+        )
+        return False, PluginAdmissionRejection(
+            spec=spec,
+            reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
+            reason=message,
+            fail_closed=True,
+        )
+
+    plugin_id = plugin_type.plugin_id().strip().lower()
+    registered = plugin_id in list_context_plugin_ids()
+    if should_skip_catalog_registration(slug_registered=registered, on_conflict=on_conflict):
+        reason_code = (
+            PluginAdmissionReasonCode.SHIPPED_ID_COLLISION
+            if plugin_id == _SHIPPED_BUILTIN_PLUGIN_ID
+            else PluginAdmissionReasonCode.PLUGIN_ID_SKIPPED
+        )
+        return False, PluginAdmissionRejection(
+            spec=spec,
+            reason_code=reason_code,
+            reason=(
+                f"Context plugin {plugin_id!r} already registered; skipping"
+            ),
+            plugin_id=plugin_id,
+            fail_closed=False,
+        )
+
+    override = catalog_registration_override(
+        slug=plugin_id,
+        slug_registered=registered,
+        on_conflict=on_conflict,
+        catalog_kind="context",
+        plugin_type=plugin_type,
+    )
+    register_context_plugin(plugin_type, override=override)
+    return True, None
 
 
 def bootstrap_context_catalog(
@@ -57,32 +138,67 @@ def bootstrap_context_catalog(
         _context_shipped_done = True
 
     ep_policy = entry_point_conflict_policy(on_conflict)
+    plugin_count = 0
 
-    def _register_context(plugin_type: type[ContextPlugin]) -> bool:
-        plugin_id = plugin_type.plugin_id().strip().lower()
-        registered = plugin_id in list_context_plugin_ids()
-        if should_skip_catalog_registration(slug_registered=registered, on_conflict=on_conflict):
-            return False
-        override = catalog_registration_override(
-            slug=plugin_id,
-            slug_registered=registered,
-            on_conflict=on_conflict,
-            catalog_kind="context",
-            plugin_type=plugin_type,
+    for plugin_type in context_plugins:
+        if _register_explicit_context_plugin(plugin_type, on_conflict=on_conflict):
+            plugin_count += 1
+
+    if not discover_entry_points:
+        return ContextCatalogBootstrapResult(
+            context_plugins=plugin_count,
+            catalog_plugin_ids=tuple(list_context_plugin_ids()),
+            load_report=DomainPluginLoadReport.empty(EP_CONTEXT),
         )
-        register_context_plugin(plugin_type, override=override)
-        return True
 
-    plugin_count = register_plugins(
+    accepted: list[EntryPointSpec] = []
+    rejected: list[PluginAdmissionRejection] = []
+    failed: list[EntryPointLoadResult] = []
+
+    for result in load_entry_point_targets(
         EP_CONTEXT,
-        _register_context,
-        explicit=context_plugins,
-        discover_entry_points=discover_entry_points,
         on_conflict=ep_policy,
+        on_load_failure="fail_fast",
+    ):
+        if result.error is not None:
+            failed.append(result)
+            continue
+        try:
+            plugin_type = resolve_entry_point_plugin_type(
+                result.target,
+                result.spec.value,
+            )
+        except PluginLoadError as exc:
+            raise PluginLoadError(
+                f"Failed to load {EP_CONTEXT}:{result.spec.name} "
+                f"({result.spec.value}): {exc}"
+            ) from exc
+
+        registered, rejection = _register_context_entry_point(
+            plugin_type,
+            result.spec,
+            on_conflict=on_conflict,
+        )
+        if rejection is not None:
+            rejected.append(rejection)
+            continue
+        if registered:
+            plugin_count += 1
+            accepted.append(result.spec)
+
+    load_report = DomainPluginLoadReport(
+        group=EP_CONTEXT,
+        accepted=tuple(sorted(accepted, key=lambda spec: (spec.name, spec.value))),
+        rejected=tuple(
+            sorted(rejected, key=lambda item: (item.spec.name, item.spec.value))
+        ),
+        failed=tuple(sorted(failed, key=lambda item: (item.spec.name, item.spec.value))),
+        registered_count=len(accepted),
     )
     return ContextCatalogBootstrapResult(
         context_plugins=plugin_count,
         catalog_plugin_ids=tuple(list_context_plugin_ids()),
+        load_report=load_report,
     )
 
 

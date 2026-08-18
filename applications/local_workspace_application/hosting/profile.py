@@ -8,6 +8,9 @@ import os
 from dataclasses import dataclass
 from typing import cast
 
+from intergrax.applications._shared.production_process_composition import (
+    ProductionProcessComposition,
+)
 from intergrax.hosting.contracts.components import (
     HostedApplicationComponentRegistration,
 )
@@ -47,6 +50,7 @@ class _LocalWorkspaceRuntimeFactory:
     settings: LocalWorkspaceBackendSettings
     bind_host: str
     bind_port: int
+    process_composition: ProductionProcessComposition
 
     def __call__(self, context: HostedApplicationContext) -> HostedApplicationRuntime:
         return _LocalWorkspaceHostedRuntime(
@@ -54,11 +58,13 @@ class _LocalWorkspaceRuntimeFactory:
             settings=self.settings,
             bind_host=self.bind_host,
             bind_port=self.bind_port,
+            process_composition=self.process_composition,
         )
 
 
 def build_local_workspace_hosted_profile(
     *,
+    process_composition: ProductionProcessComposition,
     settings: LocalWorkspaceBackendSettings | None = None,
 ) -> HostedApplicationProfile:
     """Build the LKW-owned hosted application profile."""
@@ -73,6 +79,7 @@ def build_local_workspace_hosted_profile(
         settings=resolved_settings,
         bind_host=bind_host,
         bind_port=bind_port,
+        process_composition=process_composition,
     )
     boundary = _LocalWorkspaceHostingBoundary()
     before_ready_hook = HostedApplicationHook(

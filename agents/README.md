@@ -1,4 +1,4 @@
-# Tier-2 agents (`agents/`)
+﻿# Tier-2 agents (`agents/`)
 
 **Role:** Reusable domain capabilities — contracts, typed step loop (`on_next_step`), prompts.  
 **Hosts:** Tier-3 applications under `applications/` mount agents via `AgentBinding.mount(...)`.  
@@ -28,7 +28,7 @@ Applications select agents by package dependency — see
 | **T2** staging mutating | MIG-4 | `legal`, LKW trio, DSW quartet | **Done** |
 | **T4** long-running | MIG-5 | `organization_worker`, `intergrax_assistant`, K-path agents | **Done** |
 
-Inventory: `uv run python scripts/audit/audit_agent_fleet_legacy.py` → `build/agent_fleet_inventory.json`.  
+Inventory: `uv run python scripts/maintenance/audit_agent_fleet_legacy.py` → `build/agent_fleet_inventory.json`.  
 CI gate: `uv run python scripts/gates/check_agent_acp_close_ci.py` (fleet migration + scoreboard blockers; ACP-CLOSE-CI-1/3).  
 Scoreboard (ACP-PROD-12): `uv run python scripts/gates/report_agent_production_readiness.py --roster` → `build/agent_production_readiness.json`.  
 Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_readiness.py --require-fleet-migration-closure --regenerate`.

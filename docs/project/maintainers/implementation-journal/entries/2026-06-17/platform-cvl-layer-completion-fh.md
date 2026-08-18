@@ -43,7 +43,7 @@ Critic Verification layer formally closed for Full Harness LC — CVL graph, eva
 
 - `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — Phase CRITIC_VERIFICATION-LC register
 - `docs/project/architecture/CRITIC_VERIFICATION.md` — Full Harness LC maturity note
-- `docs/project/maintainers/audit/CRITIC_VERIFICATION.md` — Full Harness LC sync
+- `docs/audit_results/CRITIC_VERIFICATION.md` — Full Harness LC sync
 
 ## Verification
 

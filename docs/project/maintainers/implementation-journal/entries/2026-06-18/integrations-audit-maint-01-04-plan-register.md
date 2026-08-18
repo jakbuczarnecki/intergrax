@@ -33,7 +33,7 @@ Integration rather than catalog depth backlog traceable without reopening closed
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/INTEGRATIONS.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/INTEGRATIONS.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/INTEGRATIONS.md` |
 
 ## Verification
 

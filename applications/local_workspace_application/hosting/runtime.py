@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from functools import partial
 from typing import Protocol, runtime_checkable
 
 import uvicorn
@@ -14,6 +15,9 @@ from fastapi import FastAPI
 
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
+)
+from intergrax.applications._shared.production_process_composition import (
+    ProductionProcessComposition,
 )
 from intergrax.hosting.contracts.context import HostedApplicationContext
 from intergrax.hosting.errors import HostedApplicationRuntimeError
@@ -71,12 +75,15 @@ class _HostedUvicornServer(uvicorn.Server):
 def _default_application_factory(
     settings: LocalWorkspaceBackendSettings,
     host_readiness: LocalWorkspaceReadinessProvider,
+    *,
+    process_composition: ProductionProcessComposition,
 ) -> FastAPI:
     env = build_local_workspace_environment_profile(settings)
     return create_local_workspace_backend_app(
         registry_projection=bootstrap_production_registry_projection(
             application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,
             application_environment_id=env.profile_id,
+            stores=process_composition.agent_platform_runtime.stores,
         ),
         settings=settings,
         host_readiness=host_readiness,
@@ -104,6 +111,7 @@ class _LocalWorkspaceHostedRuntime:
         settings: LocalWorkspaceBackendSettings,
         bind_host: str,
         bind_port: int,
+        process_composition: ProductionProcessComposition,
         application_factory: ApplicationFactory | None = None,
         server_factory: ServerFactory | None = None,
     ) -> None:
@@ -111,7 +119,11 @@ class _LocalWorkspaceHostedRuntime:
         self._settings = settings
         self._bind_host = bind_host
         self._bind_port = bind_port
-        self._application_factory = application_factory or _default_application_factory
+        self._process_composition = process_composition
+        self._application_factory = application_factory or partial(
+            _default_application_factory,
+            process_composition=process_composition,
+        )
         self._server_factory = server_factory or _default_server_factory
         self._app: FastAPI | None = None
         self._server: _HostedServer | None = None

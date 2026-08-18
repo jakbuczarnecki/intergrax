@@ -43,7 +43,7 @@ Observability layer formally closed for Full Harness LC — layered event catalo
 
 - `docs/project/maintainers/plans/OBSERVABILITY.md` — Phase OBSERVABILITY-LC register
 - `docs/project/architecture/OBSERVABILITY.md` — Full Harness LC maturity note
-- `docs/project/maintainers/audit/OBSERVABILITY.md` — Full Harness LC sync
+- `docs/audit_results/OBSERVABILITY.md` — Full Harness LC sync
 
 ## Verification
 

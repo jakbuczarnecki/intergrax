@@ -29,7 +29,8 @@ pytestmark = pytest.mark.unit
 
 _GROUP = "intergrax.policy_rules"
 _INLINE_RULE = {
-    "rule_id": "deny_tool",
+    "rule_id": "wiring.blocked",
+    "handler_id": "deny_tool",
     "resource_kind": "tool",
     "resource_id": "blocked",
     "action": "deny",
@@ -99,7 +100,8 @@ def test_configured_policy_rules_create_declarative_runtime() -> None:
     runtime = bundle.declarative_policy_runtime
     assert isinstance(runtime, DeclarativePolicyRuntime)
     assert len(runtime.rules) == 1
-    assert runtime.rules[0].rule_id == "deny_tool"
+    assert runtime.rules[0].rule_id == "wiring.blocked"
+    assert runtime.rules[0].handler_id == "deny_tool"
 
 
 def test_rules_stored_as_immutable_tuple() -> None:

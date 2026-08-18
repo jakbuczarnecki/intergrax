@@ -38,14 +38,14 @@ Band **2az** AUDIT-IDEAL register is complete; default harness queue returns to 
 |------|--------|
 | Architecture | `docs/project/architecture/LLM_ADAPTERS.md`, `docs/project/architecture/RAG.md` |
 | Plan | `docs/project/maintainers/plans/AUDIT_IDEAL_2026.md`, `docs/project/maintainers/plans/LLM_ADAPTERS.md`, `docs/project/maintainers/plans/RAG.md` |
-| Audit | `docs/audit_results/2026-06-18/RUN_SUMMARY.md` |
+| Audit | `docs/audit_results/legacy/2026-06-18/RUN_SUMMARY.md` |
 
 ## Changed artifacts
 
 - `intergrax/llm_adapters/registry/catalog_capabilities.py` — catalog capability overlay
 - `intergrax/runtime/nexus/context/context_preflight.py` — adapter token delegation
 - `scripts/maintenance/check_llm_profile_runtime.py`, `check_rag_hierarchical_bootstrap.py`, `check_rag_catalog_poisoning_defense.py`
-- `intergrax/cli/doctor.py`, `scripts/audit/check_audit_ideal_gates.py`
+- `intergrax/cli/doctor.py`, `scripts/gates/check_audit_ideal_gates.py`
 - `tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py`
 
 ## Verification

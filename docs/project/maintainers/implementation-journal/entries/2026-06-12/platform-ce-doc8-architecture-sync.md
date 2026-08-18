@@ -19,7 +19,7 @@ Synchronize domain documentation (`architecture`, `plan`, audit guide) with the 
 
 ## Summary
 
-Updated `docs/project/architecture/CONTEXT_ENGINEERING.md` to reflect L3+ engine maturity, hybrid UAEP/ACP/graph paths, provider registry (stub vs live), GAP-CTX status register (§16), and full module inventory (§17). Aligned `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` status summary (CE-EXT Done, CE-DOC.8 row, gap matrix Status column). Refreshed `docs/project/maintainers/audit/CONTEXT_ENGINEERING.md` code-path inventory. Hub row in `intergrax_runtime_architecture.md` marks CE-EXT Done.
+Updated `docs/project/architecture/CONTEXT_ENGINEERING.md` to reflect L3+ engine maturity, hybrid UAEP/ACP/graph paths, provider registry (stub vs live), GAP-CTX status register (§16), and full module inventory (§17). Aligned `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` status summary (CE-EXT Done, CE-DOC.8 row, gap matrix Status column). Refreshed `docs/audit_results/CONTEXT_ENGINEERING.md` code-path inventory. Hub row in `intergrax_runtime_architecture.md` marks CE-EXT Done.
 
 ## Project impact
 
@@ -32,19 +32,19 @@ Architecture ↔ implementation traceability is restored for FAUDIT layer 16; op
 | Architecture | `docs/project/architecture/CONTEXT_ENGINEERING.md` §2–§3, §8.3, §16–§17 |
 | Plan | `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` CE-DOC.8 · CE-EXT phase status |
 | ADR | `docs/project/technical/adr/entries/2026-06-12/ADR-CTX-001.md` (unchanged) |
-| Audit / gap | `docs/project/maintainers/audit/CONTEXT_ENGINEERING.md` · GAP-CTX register architecture §16 |
+| Audit / gap | `docs/audit_results/CONTEXT_ENGINEERING.md` · GAP-CTX register architecture §16 |
 
 ## Changed artifacts
 
 - `docs/project/architecture/CONTEXT_ENGINEERING.md` — post CE-EXT as-built canon
 - `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` — CE-DOC.8, CE-EXT Done, gap Status column
-- `docs/project/maintainers/audit/CONTEXT_ENGINEERING.md` — code paths + GAP summary
+- `docs/audit_results/CONTEXT_ENGINEERING.md` — code paths + GAP summary
 - `docs/project/architecture/intergrax_runtime_architecture.md` — hub CE-EXT Done
 
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

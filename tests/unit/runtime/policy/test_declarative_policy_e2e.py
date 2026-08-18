@@ -30,6 +30,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _GROUP = "intergrax.policy_rules"
 _TOOL_ID = "e2e.blocked.tool"
+_RULE_ID = "e2e.blocked.tool"
 
 
 class _Input(BaseModel):
@@ -92,7 +93,8 @@ def _deny_profile(*, mode: str = "enforce") -> PolicyRulesProfile:
     return PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "deny",
@@ -141,7 +143,7 @@ def test_enforce_deny_blocks_tool_invocation() -> None:
         invoker.invoke(state=state, agent_id="agent-e2e", request=request)
 
     assert executor.calls == 0
-    assert "deny_tool" in exc.value.matched_rule_ids
+    assert _RULE_ID in exc.value.matched_rule_ids
     trace = next(e for e in state.trace_events if e.step == "declarative_policy_evaluation")
     payload = trace.payload
     assert payload.action == "deny"
@@ -177,7 +179,8 @@ def test_unknown_handler_enforce_denies_without_side_effect() -> None:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "nonexistent_handler",
+                "rule_id": "e2e.unknown.allow",
+                "handler_id": "nonexistent_handler",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "allow",
@@ -212,7 +215,8 @@ def test_require_hitl_blocks_tool_before_orchestration_bridge() -> None:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "require_hitl",
@@ -233,7 +237,7 @@ def test_require_hitl_blocks_tool_before_orchestration_bridge() -> None:
         invoker.invoke(state=state, agent_id="agent-e2e", request=request)
 
     assert executor.calls == 0
-    assert "deny_tool" in exc.value.matched_rule_ids
+    assert _RULE_ID in exc.value.matched_rule_ids
 
 
 def test_allowlist_rejects_unlisted_external_handler(
@@ -262,7 +266,8 @@ def test_scope_deny_still_wins_over_declarative_allow() -> None:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": "e2e.scope.allow",
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": "allowed.tool",
                 "action": "allow",
@@ -311,7 +316,8 @@ def test_require_hitl_satisfied_by_matching_grant() -> None:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "require_hitl",
@@ -330,7 +336,7 @@ def test_require_hitl_satisfied_by_matching_grant() -> None:
         step_id="1",
         tool_id=_TOOL_ID,
         idempotency_key=None,
-        matched_rule_ids=("deny_tool",),
+        matched_rule_ids=(_RULE_ID,),
         human_request_id="hr-1",
         policy_provenance_digest=bundle.declarative_policy_runtime.provenance.rules_digest_sha256,
         pause_id="pause-1",
@@ -359,7 +365,8 @@ def test_deny_overrides_matching_grant() -> None:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "deny",
@@ -378,7 +385,7 @@ def test_deny_overrides_matching_grant() -> None:
         step_id="1",
         tool_id=_TOOL_ID,
         idempotency_key=None,
-        matched_rule_ids=("deny_tool",),
+        matched_rule_ids=(_RULE_ID,),
         human_request_id="hr-1",
         policy_provenance_digest=None,
         pause_id="pause-1",
@@ -404,7 +411,8 @@ def test_grant_satisfaction_requires_identity_dimensions() -> None:
     env.policy_rules = PolicyRulesProfile(
         inline_rules=[
             {
-                "rule_id": "deny_tool",
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
                 "resource_kind": "tool",
                 "resource_id": _TOOL_ID,
                 "action": "require_hitl",
@@ -422,7 +430,7 @@ def test_grant_satisfaction_requires_identity_dimensions() -> None:
         step_id="1",
         tool_id=_TOOL_ID,
         idempotency_key=None,
-        matched_rule_ids=("deny_tool",),
+        matched_rule_ids=(_RULE_ID,),
         human_request_id="hr-1",
         policy_provenance_digest=bundle.declarative_policy_runtime.provenance.rules_digest_sha256,
         pause_id="pause-1",

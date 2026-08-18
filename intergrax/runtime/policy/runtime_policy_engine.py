@@ -159,6 +159,20 @@ class RuntimePolicyEngine:
                         "planner_model_id": planner_model_id,
                     },
                 )
+        if ctx.phase is PreModelPhase.AGENT_STEP:
+            model_id = ctx.model_id.strip()
+            denied = {item.strip() for item in ctx.denied_model_ids if item.strip()}
+            if model_id and model_id in denied:
+                return PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="agent_model_denied",
+                    policy_rule_id="runtime.agent_model_denied",
+                    audit_payload={
+                        "tenant_id": tenant_id,
+                        "agent_id": agent_id,
+                        "model_id": model_id,
+                    },
+                )
         return PolicyDecision(
             action=PolicyAction.ALLOW,
             reason="pre_llm_default_allow",

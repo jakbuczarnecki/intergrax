@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from pathlib import Path
 
 from intergrax.applications._shared.cost_wiring import wire_application_cost
@@ -20,7 +21,12 @@ from intergrax.applications.contracts.execution_mode import (
 )
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.core.plugins.admission import DomainPluginLoadReport
-from intergrax.core.plugins.discovery import EP_POLICY_RULES
+from intergrax.core.plugins.discovery import EP_POLICY_RULES, EntryPointSpec
+from intergrax.core.plugins.platform_qualification import (
+    PlatformPluginPackageQualificationBundle,
+    PluginQualificationResult,
+    resolve_host_platform_version,
+)
 from intergrax.runtime.policy.policy_bundle import (
     DeclarativePolicyRuntime,
     RuntimePolicyBundle,
@@ -50,6 +56,9 @@ def build_runtime_policy_bundle(
     execution_mode: ExecutionMode | None = None,
     policy_rules: PolicyRulesProfile | None = None,
     discover_entry_points: bool | None = None,
+    package_qualification_lookup: (
+        Callable[[EntryPointSpec], PluginQualificationResult | None] | None
+    ) = None,
 ) -> RuntimePolicyBundle:
     """Default harness policy bundle for lab and product hosts."""
     fragments = dict(domain_fragments or {})
@@ -59,6 +68,8 @@ def build_runtime_policy_bundle(
     declarative_runtime = _build_declarative_policy_runtime(
         policy_rules,
         discover_entry_points=discover_entry_points,
+        execution_mode=execution_mode,
+        package_qualification_lookup=package_qualification_lookup,
     )
     return RuntimePolicyBundle(
         require_human_on_critical=require_human_on_critical,
@@ -67,11 +78,20 @@ def build_runtime_policy_bundle(
     )
 
 
-def wire_policy_bundle(env: ApplicationEnvironmentProfile) -> RuntimePolicyBundle:
+def wire_policy_bundle(
+    env: ApplicationEnvironmentProfile,
+    *,
+    package_qualifications: PlatformPluginPackageQualificationBundle | None = None,
+) -> RuntimePolicyBundle:
     """Merge policy rules, domain fragments, execution mode, cost, and evaluation governance."""
     cost_wiring = wire_application_cost(env)
     evaluation_wiring = wire_application_evaluation(env)
     critic_wiring = wire_application_critic(env)
+    qualification_lookup = (
+        package_qualifications.lookup_for_entry_point
+        if package_qualifications is not None
+        else None
+    )
     base = build_runtime_policy_bundle(
         domain_fragments={
             **env.domain_policy_fragments,
@@ -82,6 +102,7 @@ def wire_policy_bundle(env: ApplicationEnvironmentProfile) -> RuntimePolicyBundl
         execution_mode=env.execution_mode,
         policy_rules=env.policy_rules,
         discover_entry_points=discover_plugins_enabled(),
+        package_qualification_lookup=qualification_lookup,
     )
     if cost_wiring.budget_policy is None:
         return base
@@ -99,6 +120,10 @@ def _build_declarative_policy_runtime(
     policy_rules: PolicyRulesProfile | None,
     *,
     discover_entry_points: bool | None,
+    execution_mode: ExecutionMode | None = None,
+    package_qualification_lookup: (
+        Callable[[EntryPointSpec], PluginQualificationResult | None] | None
+    ) = None,
 ) -> DeclarativePolicyRuntime | None:
     if policy_rules is None:
         return None
@@ -111,9 +136,13 @@ def _build_declarative_policy_runtime(
         if discover_entry_points is None
         else discover_entry_points
     )
+    require_production_admission = execution_mode is ExecutionMode.STRICT
     load_policy = PolicyRuleLoadPolicy(
         on_load_failure=_STANDARD_POLICY_LOAD_POLICY.on_load_failure,
         allowed_handler_ids=allowlist,
+        require_production_admission=require_production_admission,
+        package_qualification_lookup=package_qualification_lookup,
+        platform_version=resolve_host_platform_version(),
     )
     if discover:
         plugin_outcome = load_policy_rule_plugin_report(registry, policy=load_policy)

@@ -1,4 +1,4 @@
-# Platform Foundation — Implementation Plan
+﻿# Platform Foundation — Implementation Plan
 
 **Architecture (1:1):** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -17,7 +17,7 @@
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) read-scope block only.
-- **Audit slice:** [`guides/audit_slices/PLATFORM_FOUNDATION.md`](../../technical/guides/audit_slices/PLATFORM_FOUNDATION.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
@@ -47,9 +47,9 @@ RAG implementation, or packaging declaration changes belong to this closeout.
 
 ## 6. What to implement next
 
-**Default answer (infrastructure):** **[§6.1](.#61-harness-platform-maintenance-default--band-1)** gate green on every PR — CRIT-V and OBS-BUS platform closeouts **Done**.
+**Default answer (infrastructure):** **[§6.1](.#61-harness-platform-maintenance-default--band-1)** gate green on every PR — CRIT-V and OBS-BUS platform closeouts **Done**. **Open qualification:** **[§6.1ax PF-TIER-ENFORCEMENT](.#61ax-pf-tier-enforcement--production-tier-boundary-qualification)** — tier-boundary enforcement remediation (audit `4c92e0a`, verdict `CONDITIONALLY SOUND — ENFORCEMENT REMEDIATION REQUIRED`).
 
-**Maintenance-only mode:** If CRIT-V paused by explicit decision, revert to §6.1 gate-only maintenance.
+**Maintenance-only mode (qualified):** Feature/platform implementation backlogs remain **closed**; ongoing work = §6.1 gate maintenance. Tier-boundary enforcement remediation is **not** closed — see §6.1ax. If CRIT-V paused by explicit decision, revert to §6.1 gate-only maintenance (enforcement qualification still open).
 
 **Out of scope:** product/application implementation work and business backlogs — **[§6.3](.#63-end-of-platform-plan)** · **[§4.0a](.#40a-implementation-scope-split-infrastructure-vs-business)**.
 
@@ -57,7 +57,7 @@ RAG implementation, or packaging declaration changes belong to this closeout.
 
 ### 6.1 Harness platform maintenance (default — Band 1)
 
-§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](.#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**. **Band 2ay M.12** = **Done** — see **[§6.1an](.#61an-harness-implementation-queue--llm-guardrail-integrations-closed)**. **Optional harness extension (after gate green):** **[Band 2ae Phase HEP](.#61aw-phase-hep--harness-evidence-pack-band-2ae)** — runtime evidence packaging.
+§4.1 backlog is **closed** for feature/platform implementation. Ongoing work = keep the harness green. **Exception (open qualification):** tier-boundary enforcement proof is incomplete — **[§6.1ax](.#61ax-pf-tier-enforcement--production-tier-boundary-qualification)** must complete before Foundation may return to unqualified maintenance-only/closed status for this area. **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](.#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**. **Band 2ay M.12** = **Done** — see **[§6.1an](.#61an-harness-implementation-queue--llm-guardrail-integrations-closed)**. **Optional harness extension (after gate green):** **[Band 2ae Phase HEP](.#61aw-phase-hep--harness-evidence-pack-band-2ae)** — runtime evidence packaging.
 
 ```text
 Verify (every harness PR):
@@ -107,11 +107,62 @@ Verify (every harness PR):
 | 4 | **PF-MAINT-LEG-01** | Code | P3 | **Done** | Remove `use_rag`/`use_websearch` from LLM planner schema (`EnginePlan`) | `check_legacy_tool_plan_booleans.py` green; `tool_ids` only |
 | 5 | **PF-MAINT-DOC-03** | Docs | P3 | **Done** | Sync §0.5 regression gate counter with live `pytest -m gate` snapshot | Plan §0.5 shows **1498 passed** (2026-06-19) |
 | 6 | **PF-MAINT-LEG-02** | Code | P3 | **Done** | Remove legacy `use_rag`/`use_websearch` shims from `ToolInvocationPlan` (`tool_runtime.py`) | Zero DeprecationWarning in gate; `tool_ids` only at runtime bridge |
-| 7 | **PF-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19` | `PLATFORM_FOUNDATION.md` + `progress.json` present |
+| 7 | **PF-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/legacy/2026-06-19` | `PLATFORM_FOUNDATION.md` + `legacy campaign README` present |
 
 **Suggested PR order:** none — §6.1av queue closed (2026-06-19).
 
 **Explicitly excluded:** §50 marketplace, new Tier-0 mechanisms beyond §6.1 — see [§6.3](.#63-end-of-platform-plan).
+
+### 6.1ax PF-TIER-ENFORCEMENT — Production tier-boundary qualification
+
+**Status:** `PLANNED`  
+**Priority:** P1  
+**Type:** Arch / Wire / Proof  
+**Source:** PLATFORM_FOUNDATION enforcement audit — snapshot `4c92e0a08f92341f559408c234d213a8ac482d76`  
+**Verdict:** `CONDITIONALLY SOUND — ENFORCEMENT REMEDIATION REQUIRED` — conceptual Tier-0..3 architecture is sound; no confirmed current upward Tier-3 import violation was found in the audited scope; enforcement/proof is incomplete and must be strengthened before PLATFORM_FOUNDATION can truthfully be treated as fully closed for tier boundaries.
+
+**Audit findings (persisted):**
+
+| ID | Severity | Area | Summary |
+|----|----------|------|---------|
+| FND-01 | HIGH | ARCH / PROOF | Documented “full lower-layer scan” is not full — `check_no_upward_application_imports.py` uses manually enumerated `SCAN_ROOTS` |
+| FND-02 | HIGH | ARCH / CONTRACT / PROOF | No single authoritative package→tier classification model; `DeploymentTier` is label/metadata; knowledge duplicated across docs and scanner lists |
+| FND-03 | HIGH | WIRE / DOC / PROOF | Plan requires three tier guards per harness PR; audited CI runs only `check_agents_no_tier3_imports.py` in relevant tier-boundary gate paths |
+| FND-04 | HIGH | ARCH / PROOF | Guards focus on application/Tier-3 imports; no one complete mechanism for full forbidden upward dependency matrix |
+| FND-05 | MEDIUM | IMPL / PROOF | Inspected guards use regex/text matching, not semantic import/dependency analysis |
+| FND-06 | HIGH | REL / WIRE | Main regression workflow is push-triggered for `main`, not shared `development` — integration-branch protection gap |
+| FND-07 | MEDIUM | TEST / PROOF | No dedicated contract tests found in audited scope proving guard fail/pass/completeness behavior |
+| FND-08 | LOW | CONTRACT / LEGACY | `DeploymentTier.PRODUCT` deprecated alias appears unused — optional cleanup subordinate to enforcement |
+| FND-09 | HIGH | DOC / PROOF | “Closed / maintenance-only” language too strong while enforcement gaps remain |
+
+**Scope (one implementation unit):**
+
+| | Deliverable |
+|---|-------------|
+| **A** | **Authoritative package→tier classification** — one canonical source of truth for Tier-0..3 production packages; eliminate duplicated manual `SCAN_ROOTS` knowledge |
+| **B** | **Complete dependency matrix enforcement** — validate every forbidden upward tier dependency, not only Tier-3 application imports |
+| **C** | **Fail-closed package discovery** — newly introduced production packages must not silently escape classification/enforcement |
+| **D** | **Semantic import/dependency analysis** — replace or subsume regex-only proof with structurally reliable analysis (implementation choice left to implementation task; production-grade, dependency-conscious) |
+| **E** | **Tests of the architectural guard** — deterministic tests proving forbidden upward dependency → FAIL; allowed dependency → PASS; unclassified package → FAIL; representative relative/import syntax cannot silently bypass enforcement |
+| **F** | **CI wiring** — canonical tier-boundary enforcement runs in relevant PR/full gate; active shared `development` integration path receives appropriate automated protection |
+| **G** | **Guard consolidation** — after canonical mechanism owns enforcement, remove duplicate/obsolete tier guard scripts or reduce to thin wrappers only with justified compatibility need |
+| **H** | **Legacy cleanup** — assess/remove `DeploymentTier.PRODUCT` if confirmed unused (subordinate to A–G) |
+| **I** | **Documentation/status closeout** — architecture and plan wording match actual enforcement; only then may Foundation return to unqualified maintenance-only/closed status for tier boundaries |
+
+**Acceptance criteria:**
+
+1. One authoritative production package→tier classification exists.
+2. Every production package in relevant repository roots is classified or causes fail-closed failure.
+3. Full Tier-0..3 forbidden upward dependency matrix is enforced.
+4. Guard is not solely regex/text based.
+5. Contract/unit tests prove allowed and forbidden dependency cases plus unclassified-package behavior.
+6. Canonical CI invokes the new enforcement.
+7. Active integration workflow protects `development` appropriately.
+8. Old duplicate tier guards are removed or have an explicitly justified remaining role.
+9. Architecture and plan wording match actual enforcement.
+10. Independent audit is required before marking this remediation **Done**.
+
+**Explicitly excluded from this block:** product/application feature work; Tier-0..3 conceptual redesign.
 
 ### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae)
 

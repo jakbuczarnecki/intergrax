@@ -135,7 +135,7 @@ bounds were updated and pass.
 Required audit commands:
 
 ```text
-uv run python scripts/audit/validate_langchain_inventory.py  PASS
+uv run python scripts/docs/validate_langchain_inventory.py  PASS
 uv run python scripts/maintenance/check_langchain_boundary.py PASS
 uv lock --check                                             PASS
 git diff --check                                             PASS

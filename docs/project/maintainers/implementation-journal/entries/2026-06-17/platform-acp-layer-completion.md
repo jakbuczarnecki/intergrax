@@ -43,7 +43,7 @@ ACP domain formally closed for Full Harness LC orchestration — no open P0/P1; 
 
 ## Changed artifacts
 
-- `docs/project/maintainers/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` — known gaps sync
+- `docs/audit_results/AGENT_CONTRACTS_AND_ASSEMBLY.md` — known gaps sync
 - `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — ACP-INV-02, §28.3 audit sync
 - `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` — Phase ACP-LC register
 

@@ -1,5 +1,6 @@
 # Reference declarative policy rules for lab harness (Phase H-APP.2.8)
-- rule_id: deny_tool
+- rule_id: lab.sandbox.exec
+  handler_id: deny_tool
   resource_kind: tool
   resource_id: sandbox.exec
   action: allow

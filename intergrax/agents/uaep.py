@@ -40,6 +40,9 @@ from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler, GovernanceResolution
+from intergrax.runtime.policy.agent_decision_enforcement import (
+    agent_decision_failure_from_resolution,
+)
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway
@@ -125,6 +128,7 @@ class UAEPExecutor:
         event_bus: Optional[RuntimeEventBus] = None,
         policy_engine: PolicyEngine | RuntimePolicyEngine | None = None,
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
+        governance_service: Any = None,
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
         sandbox_manager: Optional[SandboxSessionManager] = None,
         task_memory_store: Optional[TaskMemoryPersistence] = None,
@@ -140,6 +144,7 @@ class UAEPExecutor:
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=resolved_policy,
         )
+        self._governance_service = governance_service
         self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
         self._sandbox_manager = sandbox_manager or SandboxSessionManager()
         self._task_memory_store = task_memory_store
@@ -538,6 +543,16 @@ class UAEPExecutor:
                 )
                 exec_ctx.metadata[RUNTIME_CHECKPOINT_KEY] = runtime_snapshot
                 break
+            if resolution.should_block_execution:
+                governance = resolution
+                exec_ctx.metadata["governance_resolution"] = resolution
+                last_output = StepOutput(
+                    step_id=step.step_id,
+                    summary=resolution.policy_decision.reason or "policy_denied",
+                    data={"policy_action": resolution.policy_decision.action.value},
+                )
+                decision = agent_decision_failure_from_resolution(resolution)
+                break
             if decision.type != AgentDecisionType.CONTINUE:
                 break
 
@@ -587,6 +602,16 @@ class UAEPExecutor:
 
         if not validation.valid and validation.errors and answer.route is not None:
             answer.route.extra.setdefault("agent_validation_errors", validation.errors)
+
+        from intergrax.runtime.governance.post_run_governance_bridge import (
+            invoke_post_run_governance,
+        )
+
+        invoke_post_run_governance(
+            self._governance_service,
+            run_id=run_id,
+            agent_id=contract.id,
+        )
 
         return answer, validation, runtime_context, governance
 

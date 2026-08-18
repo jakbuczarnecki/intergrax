@@ -14,6 +14,7 @@ from intergrax.core.plugins.discovery import EP_MEMORY_STORES
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 
 PLATFORM_PLUGIN_DOMAIN_MEMORY = "memory"
+PLATFORM_PLUGIN_DOMAIN_CONTEXT = "context"
 PLATFORM_PLUGIN_DOMAIN_POLICY = "policy"
 
 
@@ -50,11 +51,13 @@ class ApplicationPlatformPluginEvidence:
 def build_application_platform_plugin_evidence(
     *,
     memory_report: DomainPluginLoadReport,
+    context_report: DomainPluginLoadReport,
     policy_bundle: RuntimePolicyBundle,
 ) -> ApplicationPlatformPluginEvidence:
     """Compose application evidence from the same domain wiring invocations."""
     reports: dict[str, DomainPluginLoadReport] = {
         PLATFORM_PLUGIN_DOMAIN_MEMORY: memory_report,
+        PLATFORM_PLUGIN_DOMAIN_CONTEXT: context_report,
     }
     declarative_runtime = policy_bundle.declarative_policy_runtime
     if declarative_runtime is not None:

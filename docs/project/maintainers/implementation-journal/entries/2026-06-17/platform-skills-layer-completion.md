@@ -44,7 +44,7 @@ Skills layer formally closed for Full Harness LC — catalog L3, bridge wiring, 
 
 - `docs/project/maintainers/plans/SKILLS.md` — Phase SKILLS-LC register
 - `docs/project/architecture/SKILLS.md` — Full Harness LC maturity note
-- `docs/project/maintainers/audit/SKILLS.md` — SK-BRIDGE gaps closed
+- `docs/audit_results/SKILLS.md` — SK-BRIDGE gaps closed
 - `tests/unit/skills/test_skill_registry_factory.py` — profile assertion fix
 
 ## Verification

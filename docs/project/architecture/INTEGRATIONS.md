@@ -5,8 +5,7 @@
 **Plan (1:1):** [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md)
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 13–14  
-**Audit instruction:** [`audit/INTEGRATIONS.md`](../maintainers/audit/INTEGRATIONS.md)
----
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)---
 
 ## Cursor read scope (token budget)
 
@@ -15,7 +14,7 @@
 - **Implement / audit default:** IntegrationLayer contract + wiring + checklists (hub). Provider catalog: [`satellites/INTEGRATIONS_provider_catalog.md`](satellites/INTEGRATIONS_provider_catalog.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/INTEGRATIONS.md`](../technical/guides/audit_slices/INTEGRATIONS.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---

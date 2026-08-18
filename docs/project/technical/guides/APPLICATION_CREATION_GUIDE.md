@@ -160,7 +160,7 @@ python scripts/maintenance/check_harness_no_getattr.py
 | Scenario matrix / UC-A* | architecture §35 · §44 |
 | Evolution (snapshot, migrations, package) | architecture §49 |
 | Ops (health, registry, capability graph) | architecture §50 |
-| Domain audit | [`../../maintainers/audit/TIER3_APPLICATION_ENVIRONMENT.md`](../../maintainers/audit/TIER3_APPLICATION_ENVIRONMENT.md) |
+| Domain audit | [`../../../audit_results/TIER3_APPLICATION_ENVIRONMENT.md`](../../../audit_results/TIER3_APPLICATION_ENVIRONMENT.md) |
 
 ---
 

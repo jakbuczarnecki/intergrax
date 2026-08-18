@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 920" role="img">
+  <title>Intergrax Orchestration control plane</title>
+  <desc>Conceptual diagram: application needs flow into OrchestrationProfile, which configures planner, graph topology, parallelism, and merge before Nexus executes a Task to TaskResult. UER supplies runtime behavior.</desc>
+  <rect width="1200" height="920" fill="#f6f8fb"/>
+  <rect x="32" y="28" width="1136" height="864" rx="22" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="700" fill="#1a1a2e">Intergrax Orchestration &#8212; configuration layer</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" fill="#3d4f66">Structure before execution &#8212; not a separate runtime</text>
+
+  <rect x="420" y="132" width="360" height="52" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="600" y="164" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#1a1a2e">Application / product needs</text>
+
+  <line x1="600" y1="184" x2="600" y2="208" stroke="#1a1a2e" stroke-width="2.5"/>
+  <path d="M600 208 L590 194 L610 194 Z" fill="#1a1a2e"/>
+
+  <rect x="360" y="212" width="480" height="64" rx="14" fill="#fff8e1" stroke="#c9a227" stroke-width="2.5"/>
+  <text x="600" y="242" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#1a1a2e">OrchestrationProfile</text>
+  <text x="600" y="266" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#3d4f66">planner &#183; classifier &#183; graph &#183; parallelism &#183; merge &#183; resilience</text>
+
+  <line x1="600" y1="276" x2="600" y2="300" stroke="#c9a227" stroke-width="2"/>
+  <line x1="180" y1="300" x2="1020" y2="300" stroke="#c9a227" stroke-width="2"/>
+  <line x1="180" y1="300" x2="180" y2="328" stroke="#c9a227" stroke-width="2"/>
+  <line x1="420" y1="300" x2="420" y2="328" stroke="#c9a227" stroke-width="2"/>
+  <line x1="600" y1="300" x2="600" y2="328" stroke="#c9a227" stroke-width="2"/>
+  <line x1="780" y1="300" x2="780" y2="328" stroke="#c9a227" stroke-width="2"/>
+  <line x1="1020" y1="300" x2="1020" y2="328" stroke="#c9a227" stroke-width="2"/>
+
+  <rect x="100" y="332" width="160" height="48" rx="10" fill="#ffffff" stroke="#c9a227" stroke-width="2"/>
+  <text x="180" y="362" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#1a1a2e">Planner</text>
+
+  <rect x="340" y="332" width="160" height="48" rx="10" fill="#ffffff" stroke="#c9a227" stroke-width="2"/>
+  <text x="420" y="362" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#1a1a2e">Graph</text>
+
+  <rect x="520" y="332" width="160" height="48" rx="10" fill="#ffffff" stroke="#c9a227" stroke-width="2"/>
+  <text x="600" y="362" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#1a1a2e">Parallelism</text>
+
+  <rect x="700" y="332" width="160" height="48" rx="10" fill="#ffffff" stroke="#c9a227" stroke-width="2"/>
+  <text x="780" y="362" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#1a1a2e">Merge</text>
+
+  <rect x="940" y="332" width="160" height="48" rx="10" fill="#ffffff" stroke="#c9a227" stroke-width="2"/>
+  <text x="1020" y="362" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#1a1a2e">Resilience</text>
+
+  <rect x="300" y="408" width="600" height="120" rx="12" fill="#f6f8fb" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="600" y="436" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#3d4f66">Graph topology examples</text>
+  <text x="600" y="462" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#5b6f82">single &#183; sequential &#183; parallel &#183; delegation &#183; multi-agent graph</text>
+  <text x="600" y="488" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#5b6f82">swarm &#183; evaluator-loop &#183; dynamic pattern advisory</text>
+  <text x="600" y="514" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#5b6f82">ApplicationGraphSpec seeds NexusPlan when configured</text>
+
+  <line x1="600" y1="528" x2="600" y2="556" stroke="#1a1a2e" stroke-width="2.5"/>
+  <path d="M600 556 L590 542 L610 542 Z" fill="#1a1a2e"/>
+
+  <rect x="380" y="560" width="440" height="56" rx="14" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2.5"/>
+  <text x="600" y="586" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#1a1a2e">Nexus Execution Flow</text>
+  <text x="600" y="606" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">Task &#8594; plan &#8594; graph &#8594; control-flow</text>
+
+  <line x1="600" y1="616" x2="600" y2="640" stroke="#1a1a2e" stroke-width="2.5"/>
+  <path d="M600 640 L590 626 L610 626 Z" fill="#1a1a2e"/>
+
+  <rect x="430" y="644" width="340" height="48" rx="12" fill="#f0f4f8" stroke="#5b6f82" stroke-width="2"/>
+  <text x="600" y="674" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#1a1a2e">TaskResult</text>
+
+  <rect x="120" y="728" width="960" height="72" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="1.5"/>
+  <text x="600" y="758" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">Orchestration = structure &#160;&#160;&#183;&#160;&#160; Nexus = path &#160;&#160;&#183;&#160;&#160; UER = runtime behavior</text>
+  <text x="600" y="784" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">UER defines lifecycle, attempts, retry/HITL semantics inside each graph node</text>
+
+  <text x="600" y="868" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#5b6f82">Conceptual architecture &#8212; not a runtime class diagram.</text>
+</svg>

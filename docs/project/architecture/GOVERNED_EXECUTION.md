@@ -159,7 +159,29 @@ These compose sequentially; they are **not** interchangeable. Authorization ALLO
 
 **PolicyEngine** is a facade over live `RuntimePolicyEngine` and optional replay `ExecutionPolicyEngine` — **not** the whole of Governed Execution. It does not own tool access/scope, declarative enforcer, HITL, or evidence.
 
-Contract hardening (**G1B**): typed runtime contexts, rule representation, bundle fragment validation, side-effect domain payloads, facade terminology, provenance on critical paths — backlog in ADR-GOVERNED-EXECUTION-001.
+Contract hardening (**G1B**) — **implemented core** on owned live paths (not platform-wide coverage):
+
+- **G1B-1:** typed live policy evaluation contexts for agent decision, pre-model, and critic governance; unused pre-output semantic context removed. Security-sensitive live evaluation on these owned paths no longer depends on opaque `dict` bags.
+- **G1B-2:** typed meaningful-side-effect runtime rules (`MeaningfulSideEffectPolicyRule`, explicit `rule_id`, existing `PolicyAction`); `RuntimePolicyEngine` does not parse dynamic type/decision/id strings; fail-closed semantics preserved.
+- **G1B-3:** hardened `PolicyDecision` — immutable, extra fields forbidden, explicit canonical provenance; bundle provenance either absent or complete; sha256 digest structurally validated; `audit_payload` remains diagnostic/non-authoritative. `EvaluatedPolicyDecision` remains the bundle-backed typed evidence contract; no duplicate evidence framework.
+
+Not closed by this core: `RuntimePolicyBundle.domain_fragments` hardening, `MeaningfulSideEffectRequest` context/correlation hardening, remaining facade terminology, universal rule catalog, universal evaluation-point coverage, `decision_id` on every policy producer, or durable evidence persistence.
+
+### G3B — Governance Evaluation Point execution coverage (2026-08-17)
+
+Frozen audit baseline (G3) closed only where a live mechanism is wired to a mandatory execution boundary with enforced outcomes. Status vocabulary: **COVERED**, **PARTIAL**, **GAP**, **OBSERVE_ONLY**, **NOT_APPLICABLE**.
+
+| Evaluation point | Status | Owner / mechanism | Canonical enforcement boundary | Qualification / remaining gap |
+| ---------------- | ------ | ----------------- | ------------------------------ | ----------------------------- |
+| **AGENT_DECISION** | **COVERED** | `RuntimePolicyEngine.evaluate_decision` via `ExecutionInterruptHandler.resolve_decision` | `UAEPExecutor` step loop — `GovernanceResolution.should_block_execution` before decision-driven control flow | Custom policy engines may return DENY; enforcement is mandatory at UAEP boundary |
+| **interrupt sub-boundary** | **COVERED** | `RuntimePolicyEngine.evaluate_interrupt` via `resolve_decision` / `resolve_interrupt` | `GovernanceResolution.should_block_execution` + `should_pause` on blocking interrupts | HITL semantic consolidation deferred to G5 |
+| **PRE_MODEL** | **COVERED** | `PolicyEngine.evaluate_pre_llm` | `PlanningRunner` (Nexus planning) · `PolicyEnforcingLLMRouter` wrapping `StepLLMRouter.complete` (ACP agent-step LLM) | Non-ACP direct adapter callers outside `StepLLMRouter` remain host-qualified |
+| **TOOL_PLAN_OR_ACCESS** | **COVERED** | `ToolAccessPolicy.apply` (+ optional `ToolScopePolicy` via bundle resolution) | `tool_runtime.execute_plan` before plan exposure / context side-effects | Host-owned planners outside Nexus `tool_runtime` path are host-qualified |
+| **TOOL_INVOCATION authorization** | **COVERED** | `RuntimeToolInvoker` authorization | Pre-handler authorization gate | Unchanged — regression-protected |
+| **TOOL_INVOCATION declarative policy** | **COVERED** | `DeclarativePolicyEnforcer` | `RuntimeToolInvoker` before handler | Unchanged — regression-protected |
+| **MEANINGFUL_SIDE_EFFECT** | **PARTIAL** | `MeaningfulSideEffectAuthorizationBoundary` (collaborative-work) · `MeaningfulSideEffectEvaluator` at adapter boundary | `ExternalWorkAdapter._evaluate_side_effect` before provider call (runtime-only) · `MeaningfulSideEffectAuthorizationBoundary.authorize` (collaborative-work) | Not every runtime side-effect path is wired through `MeaningfulSideEffectAuthorizationBoundary`; collaborative-work hosts must inject the boundary |
+| **PRE_OUTPUT** | **COVERED** | `PolicyEngine.evaluate_pre_output` | `HarnessKernel._policy_post_check` (terminal step) · `apply_pre_output_policy` in `NexusLoop._finish_task` | Non-terminal harness steps skip post-output evaluation by design |
+| **POST_RUN** | **PARTIAL** | `GovernanceService` → `ExecutionGuard.evaluate_run` | `invoke_post_run_governance` at `NexusLoop._finish_task` and `UAEPExecutor.execute` completion when `governance_service` is configured | Runs without an injected `GovernanceService` skip post-run evaluation by configuration |
 
 ---
 
@@ -195,6 +217,73 @@ Maintainer roadmap context (not public proof): [PLATFORM_PLUGIN_ENTERPRISE_ROADM
 
 ---
 
+## Policy Catalog
+
+Frozen architecture (G2A): [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md).
+
+The **Policy Catalog** is the canonical registry of policy **definitions** available for application selection. It answers *what governance capabilities can this application select?* It is **not** implemented as a runtime catalog in G2A — this section freezes identity and ownership only.
+
+| Question | Concept | Identity |
+| -------- | ------- | -------- |
+| What can I choose? | Policy Catalog → Policy Definition | `policy_id` + definition version |
+| What did this application configure? | Configured rule instance | `rule_id` |
+| What policy state is active? | Runtime / immutable bundle | bundle id + bundle version |
+| What implements evaluation? | Policy handler | `handler_id` |
+| Where is it enforced? | Governance Evaluation Point | point-specific contract (G1A) |
+
+**Frozen flow:**
+
+```text
+Policy Catalog
+    ↓
+Policy Definition (policy_id + version)
+    ↓
+configured rule (rule_id)
+    ↓
+runtime bundle
+    ↓
+handler (handler_id)
+    ↓
+evaluation point
+    ↓
+PolicyDecision
+```
+
+**Identity separation:** `policy_id` ≠ `rule_id` ≠ `handler_id`.
+
+The catalog describes capability; bundles carry what was configured; handlers execute; evaluation points enforce. Catalog metadata does **not** prove runtime coverage.
+
+**Catalog is not:** `PolicyRuleRegistry`, `RuntimePolicyBundle`, `ImmutableRuntimePolicyBundle`, `PolicyEngine`, `RuntimePolicyEngine`, enforcer, HITL, evidence persistence, or a second plugin framework.
+
+**Catalog vs bundle:** the catalog holds what **can** be selected (e.g. `external_commitment_approval` v2); a configured rule is what the application **did** select (e.g. `finance.contracts.require_cfo`); a runtime bundle is the **active** composed policy state containing that rule. Policy definition version and bundle version are separate — one definition version may appear in many bundles.
+
+**G2B typed contract:** `intergrax.contracts.policy_catalog` implements immutable `PolicyDefinition` metadata — `policy_id`, definition `version`, `display_name`, `description`, `handler_id`, `configuration_contract_id`, and `source` (`built_in` / `plugin`). This answers *what policy capability exists* at the contract level only.
+
+**G2C-1 resolution core:** `intergrax.runtime.policy.catalog.PolicyCatalog` implements deterministic exact `PolicyDefinition` resolution by `(policy_id, version)` — multi-version coexistence, explicit unknown-policy failure, explicit unsupported-version failure, deterministic duplicate conflict rejection, and **no** latest/fallback/downgrade behavior. `PolicyCatalog` does **not** resolve `handler_id` or `configuration_contract_id`; plugin discovery/admission is outside this module.
+
+**G2C-2A rule / handler identity separation:** on the declarative runtime path, `rule_id` is configured rule instance identity and `handler_id` is runtime handler implementation identity. `PolicyRuleRegistry` resolves handlers by `handler_id`; evidence and outcomes attribute decisions to `rule_id`. G2C-2A-R1 completed active caller and fixture migration after the initial core identity split.
+
+**G2C-2B first built-in policy — Tool Invocation Control:** canonical built-in catalog and typed composition for one real policy capability:
+
+```text
+PolicyDefinition (policy_id = tool_invocation_control, version = 1, source = built_in)
+    ↓
+ToolInvocationControlConfig (tool_id + action; configuration_contract_id = tool_invocation_control.v1)
+    ↓
+configured DeclarativePolicyRule (rule_id = application identity; handler_id = deny_tool)
+    ↓
+PolicyRuleRegistry
+    ↓
+DeclarativePolicyEnforcer (ALLOW / DENY / REQUIRE_HITL)
+```
+
+- First canonical built-in policy: `tool_invocation_control@1` via `intergrax.runtime.policy.builtin_catalog`.
+- Typed config is immutable; arbitrary `conditions` are **not** exposed through this contract.
+- `handler_id = deny_tool` is a historical runtime implementation name; the product capability is Tool Invocation Control.
+- Broader built-in policy inventory, platform-wide coverage, and production qualification are **not** claimed.
+
+---
+
 ## Existing implementation map
 
 Conceptual pieces mapped to existing mechanisms — **without** blanket maturity claims:
@@ -226,14 +315,18 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 | Policy plugin / handler infrastructure | **Implemented slices** — admission / provenance partial |
 | Post-run governance | **Implemented mechanisms** — `GovernanceService` / `ExecutionGuard` |
 | Governance Evaluation Point architecture (G1A) | **Accepted** — [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) |
-| Contract hardening across critical paths (G1B) | **Open** — typed contexts, rules, provenance per ADR backlog |
+| Contract hardening across critical runtime paths (G1B) | **Implemented core** — typed live contexts, typed meaningful-side-effect rules, immutable `PolicyDecision` and explicit bundle provenance invariants |
 | Uniform evaluation-point runtime enum / god engine | **Rejected** — multiple owners preserved |
-| Canonical built-in policy catalog | **Open** |
+| Policy Catalog architecture (G2A) | **Accepted** — [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) |
+| Typed Policy Catalog contracts (G2B) | **Implemented** — immutable `PolicyDefinition` identity/source/configuration-contract metadata |
+| Policy Catalog resolution core (G2C-1) | **Implemented** — exact `(policy_id, version)` resolution and deterministic conflict rejection |
+| Declarative rule / handler identity separation (G2C-2A) | **Implemented** — configured rule identity and handler implementation identity are distinct on the declarative runtime path; G2C-2A-R1 completed active caller and fixture migration |
+| Canonical built-in policy catalog | **Implemented core** — first canonical built-in policy `tool_invocation_control@1`; broader policy inventory and qualification ongoing |
 | Complete platform-wide coverage | **Not claimed** |
 | Dedicated accepted public Governed Execution proof | **Not established** |
 | Production qualification | **Not established** |
 
-**Safe summary:** meaningful governance mechanisms and bounded enforcement slices exist; consolidation, qualification, and accepted public proof remain open.
+**Safe summary:** meaningful governance mechanisms and a hardened runtime core exist; coverage, policy catalog, qualification, and accepted public proof remain open.
 
 ---
 
@@ -255,6 +348,7 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 | ----- | ---------------- |
 | Failure, retry, HITL, governed continuation | [RELIABILITY_FAILURE_AND_HITL.md](RELIABILITY_FAILURE_AND_HITL.md) |
 | Governance Evaluation Points and enforcement ownership | [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) |
+| Policy Catalog identity and ownership | [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) |
 | Platform plugins and policy handler admission | [PLATFORM_PLUGINS.md](PLATFORM_PLUGINS.md) · [ADR-PLATFORM-PLUGIN-001](../technical/adr/entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) |
 | Observability and evidence spine | [OBSERVABILITY.md](OBSERVABILITY.md) · [PROOF_RECEIPTS.md](PROOF_RECEIPTS.md) |
 | Public architecture overview | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |

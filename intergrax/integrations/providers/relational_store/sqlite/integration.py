@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
+from typing import TYPE_CHECKING, Any, Mapping, Protocol, Sequence, runtime_checkable
 
 from pydantic import PrivateAttr
 
@@ -13,6 +13,9 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+
+if TYPE_CHECKING:
+    from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 
 SQLITE_RELATIONAL_STORE_PROVIDER_ID = "sqlite"
 
@@ -85,5 +88,22 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
     @property
     def client(self) -> SqliteRelationalStoreClient | None:
         return self._client
+
+    def materialize_collaborative_work_repositories(self) -> CollaborativeWorkRepositories:
+        from intergrax.collaborative_work.persistence import (
+            open_sqlite_collaborative_work_repositories,
+        )
+        from intergrax.integrations.providers.relational_store.sqlite.adapter import (
+            _SQLiteRelationalStore,
+        )
+
+        client = self._require_client()
+        if not isinstance(client, _SQLiteRelationalStore):
+            raise IntegrationConfigurationError(
+                "Sqlite relational store integration requires a SQLite adapter client "
+                "to materialize Collaborative Work repositories."
+            )
+        db_path = client.release_connection_for_collaborative_work_materialization()
+        return open_sqlite_collaborative_work_repositories(db_path)
 
 RelationalStore.register(SqliteRelationalStoreIntegration)

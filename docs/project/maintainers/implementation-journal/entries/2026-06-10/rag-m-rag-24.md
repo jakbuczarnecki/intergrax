@@ -55,7 +55,7 @@ uv run pytest tests/unit/rag/ingest/test_hierarchical_dual_index_wiring.py tests
 uv run pytest -m gate -q
 python scripts/maintenance/check_harness_no_getattr.py
 uv run python scripts/maintenance/check_observability_gates.py
-uv run python scripts/audit/check_docs_domain_pairs.py
+uv run python scripts/docs/check_docs_domain_pairs.py
 ```
 
 Result: 3 hierarchical tests passed; full gate green; harness scripts OK.

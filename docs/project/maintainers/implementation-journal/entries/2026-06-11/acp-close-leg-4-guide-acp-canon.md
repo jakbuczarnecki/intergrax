@@ -47,7 +47,7 @@ New agent authors see a single ACP entry path in canon docs; UAEP remains docume
 ```bash
 uv run python scripts/maintenance/check_agent_creation_guide_acp_canon.py
 uv run pytest tests/unit/scripts/test_check_agent_creation_guide_acp_canon.py -m gate -q
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 ```
 
 ## Risks and follow-ups

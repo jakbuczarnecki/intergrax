@@ -50,7 +50,7 @@ Tier-3 hosts now have normative contracts for host state, artifacts, hook orderi
 ```bash
 uv run pytest tests/unit/applications/test_environment_state_and_artifacts.py tests/unit/applications/test_application_host_wiring.py -q
 python scripts/gates/check_application_production_gates.py
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

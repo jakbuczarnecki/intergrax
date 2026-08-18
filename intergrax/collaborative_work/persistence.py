@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 from intergrax.collaborative_work.postgresql_repository import (
     PostgreSQLAuthorityDelegationRepository,
@@ -38,6 +38,14 @@ from intergrax.integrations.providers.relational_store.postgresql.config import 
 )
 
 
+@runtime_checkable
+class CollaborativeWorkStoreOwner(Protocol):
+    """Lifecycle owner for durable Collaborative Work repository adapters."""
+
+    def close(self) -> None:
+        """Release persistence resources."""
+
+
 @dataclass(frozen=True, slots=True)
 class CollaborativeWorkRepositories:
     """Bundle of authoritative Collaborative Work repository ports."""
@@ -47,7 +55,7 @@ class CollaborativeWorkRepositories:
     principal_authority: PrincipalAuthorityRepository
     policy: CollaborativePolicyRepository
     operation_profile: CollaborativeOperationPolicyProfileRepository
-    store: SQLiteCollaborativeWorkStore | PostgreSQLCollaborativeWorkStore
+    store: CollaborativeWorkStoreOwner
 
     def close(self) -> None:
         self.store.close()

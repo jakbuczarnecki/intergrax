@@ -33,7 +33,7 @@ Fleet hygiene backlog is now traceable: boundary_demo ReflexAgent migration, AS-
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md` |
 | Gate evidence | `check_agent_skill_resolution.py` FAIL on `boundary_demo` |
 
 ## Verification

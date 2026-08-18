@@ -1,4 +1,4 @@
-## Satellite registers (read on demand)
+﻿## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.
 Load **only** the satellite matching your task or cited gap ID.
@@ -30,7 +30,7 @@ Load **only** the satellite matching your task or cited gap ID.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) read-scope block only.
-- **Audit slice:** [`guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../../technical/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
@@ -43,19 +43,17 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase DX-IDEA — Idea intake audit (Mode I)
+## Phase DX-IDEA — Idea intake audit (historical)
 
-**Source:** Operator workflow for auditing a **single harness or product idea** before implementation.  
-**Bootstrap:** [`bootstrap/idea_audit.txt`](../bootstrap/idea_audit.txt) · **Orchestrator:** [`audit/IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md) · **Cursor rule:** `.cursor/rules/intergrax-idea-audit.mdc`  
-**Status:** **Done** — live chat audit; idea in operator message; durable record = architecture + plan update after operator approval (no sidecar files).
+**Status:** **Done** — superseded by canonical [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md) (protocol v2, 2026-08-18). Historical Mode I workflow rows retained for plan traceability only.
 
 | ID | Gap | Priority | Status |
 |----|-----|----------|--------|
-| DX-IDEA-01 | Mode I indexed in hub, audit map, bootstrap README; architecture §43.2 surface | P2 | **Done** |
-| DX-IDEA-02 | `scripts/audit/check_idea_audit_bootstrap.py` — bootstrap ↔ orchestrator consistency gate | P3 | **Done** |
-| DX-IDEA-03 | Natural-language idea intake via Cursor rule; bootstrap without USER CONFIG placeholders | P2 | **Done** |
+| DX-IDEA-01 | Mode I indexed in hub and architecture §43.2 surface | P2 | **Done** |
+| DX-IDEA-02 | Legacy bootstrap ↔ orchestrator consistency gate (removed with protocol v2) | P3 | **Done** |
+| DX-IDEA-03 | Natural-language idea intake workflow | P2 | **Done** |
 
-**Delivery rule:** One **DX-IDEA-\*** ID per PR → update this table → `check_idea_audit_bootstrap.py` green.
+**Delivery rule:** One **DX-IDEA-\*** ID per PR → update this table → verification green.
 
 **no ADR needed** — documentation and DX workflow only; no runtime contract change.
 

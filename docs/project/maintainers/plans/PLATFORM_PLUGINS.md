@@ -1,4 +1,4 @@
-# Platform Plugins — Maintainer Roadmap
+﻿# Platform Plugins — Maintainer Roadmap
 
 **Program:** Platform Plugin architecture  
 **Status:** PLATFORM-PLUGIN-1 **Done** · PLATFORM-PLUGIN-2 **Done** · PLATFORM-PLUGIN-3 **Done** · PLATFORM-PLUGIN-4 **Done** · PLATFORM-PLUGIN-5 **Done** · PLATFORM-PLUGIN-6 **Done** · PLATFORM-PLUGIN-7 **Done** · PLATFORM-PLUGIN-8 **Done** · PLATFORM-PLUGIN-9 **Done** — program **CLOSED**
@@ -117,7 +117,7 @@ PLUGIN-4 is intentionally **after** architecture decision: harmonization without
 
 ## Audit evidence placement
 
-**FACT:** [`docs/audit_results/`](../../audit_results/README.md) exists on `development`. It stores **dated outputs from orchestrated harness architecture audits** ([`ORCHESTRATOR.md`](../../audit/ORCHESTRATOR.md)): `YYYY-MM-DD/` folders with `progress.json`, `RUN_SUMMARY.md`, and per-domain `<DOMAIN>.md` results, initialized and validated via `scripts/audit/` tooling.
+**FACT:** [`docs/audit_results/`](../../audit_results/README.md) exists on `development`. It stores **dated outputs from orchestrated harness architecture audits** ([`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)): `YYYY-MM-DD/` folders with `legacy campaign README`, `RUN_SUMMARY.md`, and per-domain `<DOMAIN>.md` results, initialized and validated via `scripts/docs/` tooling.
 
 **FACT:** PLATFORM-PLUGIN-1 evidence lives in [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md) under `maintainers/plans/` — **retained here** because it is **program-specific** extension-surface inventory and architecture audit evidence, not an orchestrated per-domain run in the harness audit workflow. Domain programs persist Mode A2 results under `docs/audit_results/`; the Platform Plugin program coordinates cross-cutting extension architecture and keeps its audit alongside this roadmap.
 
@@ -156,8 +156,12 @@ Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qu
 |----|------|--------|---------|
 | **PROVIDER-QUAL-0** | Architecture decision | **Done** | `EXTEND_EXISTING` — reuse core qualification + platform coordination + ProofReceipt |
 | **PROVIDER-QUAL-1** | Architecture freeze + contract design | **READY_FOR_REVIEW** | Subject/run/status/evidence/admission/CI boundary freeze; PostgreSQL template; Oracle extensibility proof |
-| **PROVIDER-QUAL-2** | Typed contracts | Planned | Implement `ProviderQualificationSubject`, `ProviderQualificationRun`, `QualificationEvidenceValidity`, typed validity/admission view or record if ownership remains frozen; reusable evidence kind contracts as required; unit/contract tests; vendor-neutrality invariants |
-| **PROVIDER-QUAL-3** | Evidence persistence/integration | Planned | Qualification run persistence/index integration; mapping to existing `ProofReceipt` where appropriate; record the already accepted PostgreSQL 16.6 bounded qualification evidence; query/discovery surface for qualification evidence as already architected |
+| **PROVIDER-QUAL-2** | Typed contracts | **Done** | `ProviderQualificationSubject`, `ProviderQualificationRun`, evidence kinds; unit/contract tests; vendor-neutrality invariants |
+| **PROVIDER-QUAL-3A** | Provider binding audit | **Done** | Initial audit; superseded by **PROVIDER-QUAL-3A-R1** correction |
+| **PROVIDER-QUAL-3A-R1** | Provider binding correction | **Done** | **EXTEND_EXISTING_PROVIDER_BINDING** — reuse Integrations resolution; extend with typed domain-provider bridge; satellite §15 freeze; INV-1..INV-8 |
+| **PROVIDER-QUAL-3B** | Typed domain-provider binding | **READY_FOR_REVIEW** | Initial `CollaborativeWorkPersistenceProvider` bridge; superseded by **PROVIDER-QUAL-3B-R1** lifecycle correction |
+| **PROVIDER-QUAL-3B-R1** | Lifecycle-safe provider materialization | **READY_FOR_REVIEW** | Single provider lifecycle; `_collaborative_work_materialization` catalog path; no abandoned generic relational runtime; connection_factory preserved |
+| **PROVIDER-QUAL-3C** | Evidence persistence/integration | Planned | Qualification run persistence/index integration; mapping to existing ProofReceipt where appropriate; record accepted PostgreSQL 16.6 evidence through canonical binding; **requires 3B** |
 
 **Explicit out of scope (PROVIDER-QUAL-1):** runtime Python changes, GHA vendor jobs, LKW integration, MP-2, admission policy engine, automatic staleness engine.
 

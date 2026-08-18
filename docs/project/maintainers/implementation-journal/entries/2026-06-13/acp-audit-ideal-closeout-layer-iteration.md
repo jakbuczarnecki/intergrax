@@ -41,7 +41,7 @@ AGENT_CONTRACTS_AND_ASSEMBLY layer (§12–§40) is now consistently **Done** ac
 
 - `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`
 - `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md`
-- `docs/project/maintainers/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` (regenerated)
+- `docs/audit_results/AGENT_CONTRACTS_AND_ASSEMBLY.md` (regenerated)
 - `intergrax/agents/readiness/scoreboard.py`
 
 ## Verification

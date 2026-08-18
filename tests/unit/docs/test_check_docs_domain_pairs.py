@@ -19,11 +19,11 @@ PLAN = REPO_ROOT / "docs" / "project" / "maintainers" / "plans"
 FEATURE_ARCH = REPO_ROOT / "docs" / "project" / "capabilities" / "architecture"
 FEATURE_PLAN = REPO_ROOT / "docs" / "project" / "capabilities" / "plan"
 CAPABILITIES_README = REPO_ROOT / "docs" / "project" / "capabilities" / "README.md"
-CHECKER = REPO_ROOT / "scripts" / "audit" / "check_docs_domain_pairs.py"
-_AUDIT_DIR = REPO_ROOT / "scripts" / "audit"
-if str(_AUDIT_DIR) not in sys.path:
-    sys.path.insert(0, str(_AUDIT_DIR))
-from architecture_audit_common import canonical_domain_ids  # noqa: E402
+CHECKER = REPO_ROOT / "scripts" / "docs" / "check_docs_domain_pairs.py"
+_DOCS_SCRIPTS = REPO_ROOT / "scripts" / "docs"
+if str(_DOCS_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_DOCS_SCRIPTS))
+from docs_domain_common import canonical_domain_ids  # noqa: E402
 import check_docs_domain_pairs as domain_pairs  # noqa: E402
 
 _FEATURE_INDEX_ROW = re.compile(r"^\| `([A-Z][A-Z0-9_]+)` \|", re.MULTILINE)

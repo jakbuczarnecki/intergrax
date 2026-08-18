@@ -32,7 +32,7 @@ Platform now has a first-class domain for the context compiler engine — clear 
 | Architecture | `docs/project/architecture/CONTEXT_ENGINEERING.md` |
 | Plan | `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` — CE-DOC Done, CE-EXT Planned |
 | ADR | `docs/project/technical/adr/entries/2026-06-12/ADR-CTX-001.md` |
-| Audit | `docs/project/maintainers/audit/CONTEXT_ENGINEERING.md` · audit map §16 |
+| Audit | `docs/audit_results/CONTEXT_ENGINEERING.md` · audit map §16 |
 
 ## Changed artifacts
 
@@ -48,7 +48,7 @@ Platform now has a first-class domain for the context compiler engine — clear 
 
 ```bash
 uv run python scripts/audit/generate_domain_audit_prompts.py
-uv run python scripts/audit/check_docs_domain_pairs.py
+uv run python scripts/docs/check_docs_domain_pairs.py
 ```
 
 Result: pass (22 domain pairs).

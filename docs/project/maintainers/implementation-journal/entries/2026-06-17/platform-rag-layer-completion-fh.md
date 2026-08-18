@@ -44,7 +44,7 @@ RAG layer formally closed for Full Harness LC — retrieval engine L3+, GraphRAG
 
 - `docs/project/maintainers/plans/RAG.md` — Phase RAG-LC register
 - `docs/project/architecture/RAG.md` — Full Harness LC maturity note
-- `docs/project/maintainers/audit/RAG.md` — GAP-RAG gaps closed
+- `docs/audit_results/RAG.md` — GAP-RAG gaps closed
 
 ## Verification
 

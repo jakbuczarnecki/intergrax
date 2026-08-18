@@ -11,7 +11,7 @@
 | Significant decisions | `docs/project/technical/adr/`, agent/app `adr/` | Link only — not a second ADR store |
 | Technical proof | Git commits, tests | Verification commands and outcome |
 
-The journal is **operator tooling** (alongside [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md), [`LAYER_COMPLETION_MODE.md`](../LAYER_COMPLETION_MODE.md), and [`audit/`](../audit)). It does **not** replace domain pairs or plan rows.
+The journal is **operator tooling** (alongside [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md), [`LAYER_COMPLETION_MODE.md`](../LAYER_COMPLETION_MODE.md)). It does **not** replace domain pairs or plan rows.
 
 **Operator request** sections are **paraphrases** of the architect's intent — not verbatim chat transcripts.
 
@@ -62,7 +62,7 @@ Write an entry **only** when at least one **milestone trigger** below applies. O
 
 Multi-tier episodes (e.g. agent + application in one PR): set `tiers: [tier-2, tier-3]` and list all scopes in `scope` or Traceability.
 
-Harness audit map layer — see [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md).
+Platform audit procedure — see [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md).
 
 ---
 

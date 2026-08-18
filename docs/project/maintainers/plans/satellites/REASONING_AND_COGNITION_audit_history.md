@@ -20,7 +20,7 @@
 | COG-DOC.2 | **`plan/REASONING_AND_COGNITION.md`** — this file; Phase COG-DEPTH register | **Done** | **Critical** | `docs/project/maintainers/plans` | 1:1 pair check green |
 | COG-DOC.3 | **Hub update** — 18 domain pairs; audit routing §7 → RCL pair | **Done** | High | `intergrax_runtime_architecture.md` | `check_docs_domain_pairs.py` OK |
 | COG-DOC.4 | **Cross-ref sync** — `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW` §7–§8, §24; `AGENTS.md`; `INTEGRAX_HARNESS_AUDIT_MAP` §7 | **Done** | High | `docs/*` | No orphan §7 content |
-| COG-DOC.5 | **Gate script** — `python scripts/audit/check_docs_domain_pairs.py` | **Done** | Medium | CI scripts | 18 pairs reported |
+| COG-DOC.5 | **Gate script** — `python scripts/docs/check_docs_domain_pairs.py` | **Done** | Medium | CI scripts | 18 pairs reported |
 | COG-DOC.6 | **Routing modes §9.4** — MULTI_AGENT vs pipeline graph vs engine planner | **Done** | High | `architecture/REASONING_AND_COGNITION.md` §9.4–§9.5 | Cross-ref TIER3 §23, ORCH §55 |
 
 ---

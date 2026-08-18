@@ -6,8 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6
 **ADR:** [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../technical/adr/entries/2026-06-10/ADR-CODECRAFT-001.md)
 **Audit layer:** 11b (Ephemeral Code Craft)  
-**Audit instruction:** [`audit/CODE_CRAFT.md`](../maintainers/audit/CODE_CRAFT.md)
-**Implementation:** `intergrax/codecraft` · `intergrax/runtime/codecraft` · `intergrax/tools/providers/codecraft`
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Implementation:** `intergrax/codecraft` · `intergrax/runtime/codecraft` · `intergrax/tools/providers/codecraft`
 **Last updated:** 2026-06-20 — **P2-ARCH-12** CodeCraft safety boundary; ECC-0…ECC-6 + S7–S11 + §6.1av Done (L3+)
 
 ---
@@ -19,7 +18,7 @@
 - **Implement / audit default:** ephemeral codegen loop contracts (§1–§6). Extended §7+: [`satellites/CODE_CRAFT_extended_depth.md`](satellites/CODE_CRAFT_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/CODE_CRAFT.md`](../maintainers/plans/CODE_CRAFT.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/CODE_CRAFT.md`](../technical/guides/audit_slices/CODE_CRAFT.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---

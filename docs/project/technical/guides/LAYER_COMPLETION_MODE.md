@@ -2,7 +2,7 @@
 
 **Status:** Canonical (2026-06-17)  
 **Audience:** Maintainers, architects, implementation agents  
-**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) · [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) (architecture vs implementation rules) · [implementation-journal/](../../maintainers/implementation-journal/README.md)
+**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [audit_results/AUDIT_PROTOCOL.md](../../../audit_results/AUDIT_PROTOCOL.md) · [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) (architecture vs implementation rules) · [implementation-journal/](../../maintainers/implementation-journal/README.md)
 
 **Cursor iteration (every session):** [`.cursor/rules/intergrax-iteration.mdc`](../../../../.cursor/rules/intergrax-iteration.mdc) — single-item gate maintenance; **this guide** is the extended workflow for **closing an entire harness layer** to architectural maturity.
 
@@ -24,7 +24,7 @@ The goal is not merely to implement existing architecture. The goal is to bring 
 |-------------|-------------|------|
 | [`.cursor/rules/intergrax-iteration.mdc`](../../../../.cursor/rules/intergrax-iteration.mdc) | One coherent plan item | Default Cursor sessions |
 | **This guide (Layer Completion Mode)** | Full domain layer → maturity | Deep layer closeout (journal: “Layer Completion Mode”) |
-| [audit/LAYER_COMPLETION_ORCHESTRATOR.md](../../maintainers/audit/LAYER_COMPLETION_ORCHESTRATOR.md) | All 24 pairs sequentially | Paste [`../../maintainers/bootstrap/05_closeout_all_domains.txt`](../../maintainers/bootstrap/05_closeout_all_domains.txt) |
+| [audit_results/AUDIT_REMEDIATION_PROTOCOL.md](../../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md) | Remediate accepted audit findings after platform audit | Ad-hoc closeout without audit evidence |
 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | Cross-domain never-violate rules | Skim **before every** Step 1 and Step 6 |
 | [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) | Hard repo rules, verification bundle | On demand (`@docs/project/technical/guides/AGENT_INSTRUCTIONS.md`) |
 | [AGENTS.md](../../../../AGENTS.md) | Cursor auto-load stub (tiers, boundaries) | Always (Cursor) |
@@ -44,7 +44,7 @@ Read **only** documents required for the designated layer — do **not** load al
 | 3 | [intergrax_runtime_architecture.md](../../architecture/intergrax_runtime_architecture.md) | Hub — domain pair picker |
 | 4 | `docs/project/architecture/<DOMAIN>.md` + `docs/project/maintainers/plans/<DOMAIN>.md` | Canon + plan for **this layer only** (1:1 basename) |
 | 4b | [`capabilities/README.md`](../../capabilities/README.md) + matching feature pair | When closing a **multi-layer feature** — feature architecture + feature plan, then smallest domain-owned slice |
-| 5 | [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) | Audit layer → `<DOMAIN>` mapping |
+| 5 | [audit_results/AUDIT_PROTOCOL.md](../../../audit_results/AUDIT_PROTOCOL.md) | Adversarial layer audit procedure and campaign model |
 | 6 | [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) | Tier imports, scope, verification commands |
 | 7 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) | North star for Step 1A strategic review |
 

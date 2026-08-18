@@ -45,7 +45,7 @@ Context Engineering layer formally closed for Full Harness LC — L3+ engine, bu
 
 - `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` — Phase CONTEXT_ENGINEERING-LC register
 - `docs/project/architecture/CONTEXT_ENGINEERING.md` — Full Harness LC maturity note
-- `docs/project/maintainers/audit/CONTEXT_ENGINEERING.md` — GAP-CTX gaps closed
+- `docs/audit_results/CONTEXT_ENGINEERING.md` — GAP-CTX gaps closed
 
 ## Verification
 

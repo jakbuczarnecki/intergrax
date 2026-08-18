@@ -1,7 +1,7 @@
-# Ideal Harness L3 — Implementation Plan
+﻿# Ideal Harness L3 — Implementation Plan
 
 **Architecture target:** [`guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §12.3
-**Audit map:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §8 (32 layers)
+**Audit map:** [`guides/docs/audit_results/AUDIT_PROTOCOL.md`](../../technical/guides/docs/audit_results/AUDIT_PROTOCOL.md) §8 (32 layers)
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2ax** · queue **§6.1at**  
 **Status:** **W2 Done** (2026-06-09) — P0+P1 harness depth closed; scorecard **32/32 L3**; Band 3 rows remain deferred
 

@@ -10,7 +10,7 @@
 
 ---
 
-## Cursor read scope
+## Cursor read scope (token budget)
 
 For one implementation task read only:
 

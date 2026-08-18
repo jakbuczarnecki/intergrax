@@ -34,7 +34,7 @@ RAG ops honesty and audit prompt sync backlog traceable without reopening closed
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/RAG.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/RAG.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/RAG.md` |
 
 ## Verification
 

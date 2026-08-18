@@ -25,7 +25,7 @@ Tier-3  applications/        Deployable product environments
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/project/technical/guides/` as needed — do not load unrelated domain docs.
 
-**Cursor context budget:** respect `.cursorignore`. **I1/O1:** always-on `.cursor/rules/intergrax-token-budget.mdc`. Plan hubs + [`../plan/satellites/`](../../maintainers/plans/satellites) satellites. Audits: [`audit_slices/<DOMAIN>.md`](audit_slices). **F2:** root `AGENTS.md` is a stub; full reference is this file — see [`CURSOR_TOKEN_SETUP.md`](CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat; HEP → [`../bootstrap/hep_step.txt`](../../maintainers/bootstrap/hep_step.txt). **O1:** terse operator replies by default — see § Operator communication below.
+**Cursor context budget:** respect `.cursorignore`. **I1/O1:** always-on `.cursor/rules/intergrax-token-budget.mdc`. Plan hubs + [`../plan/satellites/`](../../maintainers/plans/satellites) satellites. Platform audits: follow [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md). **F2:** root `AGENTS.md` is a stub; full reference is this file — see [`CURSOR_TOKEN_SETUP.md`](CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat; HEP → [`../bootstrap/hep_step.txt`](../../maintainers/bootstrap/hep_step.txt). **O1:** terse operator replies by default — see § Operator communication below.
 
 ---
 
@@ -113,7 +113,7 @@ applications/    MAY import from agents/ and intergrax/
 ### Documentation
 
 - **One source of truth per topic** — `docs/project/` is the canonical human documentation root; no parallel guides
-- Strategy / ideal / audit / invariants → `docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`, `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`, `SYSTEM_INVARIANTS.md`
+- Strategy / ideal / audit / invariants → `docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`, `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `docs/audit_results/AUDIT_PROTOCOL.md`, `SYSTEM_INVARIANTS.md`
 - Architecture hub → `docs/project/architecture/intergrax_runtime_architecture.md`
 - Domain-layer pairs → `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (**1:1**, same filename)
 - Multi-layer feature pairs → `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` (**1:1**; do not create `docs/project/maintainers/plans/<FEATURE>.md` for cross-layer features)
@@ -135,7 +135,8 @@ applications/    MAY import from agents/ and intergrax/
 
 | Task | Read first (architecture + plan pair) |
 |------|---------------------------------------|
-| Audit a new idea before build | Say `Zrób audyt pomysłu: …` in a new chat — rule `.cursor/rules/intergrax-idea-audit.mdc` → [`idea_audit.txt`](../../maintainers/bootstrap/idea_audit.txt) · [`IDEA_AUDIT_ORCHESTRATOR.md`](../../maintainers/audit/IDEA_AUDIT_ORCHESTRATOR.md) |
+| Conduct platform audit | [docs/audit_results/AUDIT_PROTOCOL.md](../../../audit_results/AUDIT_PROTOCOL.md) |
+| Remediate accepted audit findings | [docs/audit_results/AUDIT_REMEDIATION_PROTOCOL.md](../../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md) |
 | Cross-layer platform feature | [`capabilities/README.md`](../../capabilities/README.md) → matching feature architecture + feature plan, then affected domain pairs |
 | Create a new agent | [docs/project/technical/guides/AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Wire integrations | [INTEGRATIONS.md](../../architecture/INTEGRATIONS.md) · [plan/INTEGRATIONS.md](../../maintainers/plans/INTEGRATIONS.md) |
@@ -162,8 +163,7 @@ applications/    MAY import from agents/ and intergrax/
 | Platform ladder / product backlog | [PLATFORM_FOUNDATION.md](../../architecture/PLATFORM_FOUNDATION.md) · [plan/PLATFORM_FOUNDATION.md](../../maintainers/plans/PLATFORM_FOUNDATION.md) |
 | Available agents (roster) | [agents/README.md](../../../../agents/README.md) |
 | Available application environments | [applications/README.md](../../../../applications/README.md) |
-| Harness audit (32 layers) | [docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) |
-| Architecture audit orchestration (24 pairs) | [docs/project/maintainers/audit/README.md](../../maintainers/audit/README.md) · [docs/project/maintainers/bootstrap/](../../maintainers/bootstrap/README.md) · `scripts/audit/init_architecture_audit_run.py` |
+| Platform audit | [docs/audit_results/AUDIT_PROTOCOL.md](../../../audit_results/AUDIT_PROTOCOL.md) · [docs/audit_results/README.md](../../../audit_results/README.md) |
 | System invariants (never violate) | [docs/project/technical/guides/SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) |
 | Layer completion (full domain closeout) | [docs/project/technical/guides/LAYER_COMPLETION_MODE.md](LAYER_COMPLETION_MODE.md) |
 | Implementation journal | [docs/project/maintainers/implementation-journal/README.md](../../maintainers/implementation-journal/README.md) |
@@ -191,16 +191,13 @@ uv run intergrax doctor
 uv run pytest -m "gate and not no_ci" -q
 python scripts/maintenance/check_harness_no_getattr.py
 uv run python scripts/maintenance/check_observability_gates.py
-python scripts/audit/check_docs_domain_pairs.py
-python scripts/audit/check_idea_audit_bootstrap.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_reasoning_gates.py
 python scripts/maintenance/check_implementation_journal.py
 python scripts/maintenance/check_harness_adr.py
 python scripts/maintenance/check_plan_hub_size.py
 python scripts/ci/check_cursor_token_setup.py
 python scripts/maintenance/check_arch_hub_size.py
-python scripts/audit/check_token_generator_freshness.py
-python scripts/audit/check_audit_token_discipline.py
 uv run python scripts/gates/check_agent_acp_close_ci.py
 python scripts/maintenance/check_production_capacity_adapters.py
 python scripts/maintenance/check_harness_resilience_policy.py

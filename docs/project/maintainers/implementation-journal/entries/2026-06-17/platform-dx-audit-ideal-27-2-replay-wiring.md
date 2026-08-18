@@ -38,7 +38,7 @@ Product host profiles now have a typed, gate-verified contract for harness repla
 - `intergrax/applications/_shared/replay_environment_wiring.py` — product host resolver
 - `intergrax/applications/contracts/application_host.py` — `replay_environment_enabled` flag
 - `scripts/maintenance/check_replay_environment_wiring.py` — gate script
-- `scripts/audit/check_audit_ideal_gates.py` — umbrella registration
+- `scripts/gates/check_audit_ideal_gates.py` — umbrella registration
 - `tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py` — wiring unit test
 - `docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — row Done
 

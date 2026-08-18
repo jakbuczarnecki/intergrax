@@ -106,7 +106,7 @@ RIGHT:  "I have 2 agents → graph_spec DEPENDS_ON chain OR *.pipeline OR engine
 | Graph ignored | Task carries pre-built `plan_id` | Clear `plan_id` for fresh graph seed |
 | Chat sends free text, wrong agent | No L1 capability; classifier not enabled | `classifier_kind=rules` + `IntentRoute`, or host `B1` shim |
 
-**Cross-ref:** full configuration canon (CFG-*, matrices, plan register) — [`ORCHESTRATION.md`](ORCHESTRATION.md) §56 · Tier-3 host summary — [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.
+**Cross-ref:** full configuration canon (CFG-*, matrices, plan register) — [`ORCHESTRATION_production_gates.md`](ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56 · Tier-3 host summary — [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.
 
 ### 9.5 Intake → classification → planning contract
 
@@ -261,7 +261,7 @@ Tool cognition selects **which tools** the LLM calls inside a step loop.
 
 **Selection modes (production strategies):** before `ToolPlanningService` runs, `ToolSelectionStrategy` may narrow the planner schema — standard (full catalog), keyword top-k, skill pack, semantic index, and hierarchical traversal **Done** (TOOL-ENG-13/14). Canon: [`TOOLS.md`](TOOLS.md#tool-selection-modes-production-strategies) · plugin model: [`TOOLS.md`](TOOLS.md#tool-selection-plugin-model-l6-extensibility).
 
-**Invocation patterns (orchestration):** after `ToolCallPlan` is produced, `ToolInvocationPattern` **Done** (TOOL-ENG-16) determines how the batch executes — single-pass, parallel batch, bounded ReAct, deterministic chain. Distinct from Nexus `ExecutionGraph` (agent-level). Canon: [`TOOLS.md`](TOOLS.md#tool-invocation-patterns-production-orchestration) · flow: [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §15.1.
+**Invocation patterns (orchestration):** after `ToolCallPlan` is produced, `ToolInvocationPattern` **Done** (TOOL-ENG-16) determines how the batch executes — single-pass, parallel batch, bounded ReAct, deterministic chain. Distinct from Nexus `ExecutionGraph` (agent-level). Canon: [`TOOLS.md`](TOOLS.md#tool-invocation-patterns-production-orchestration) · flow: [`NEXUS_EXECUTION_FLOW_extended_depth.md`](NEXUS_EXECUTION_FLOW_extended_depth.md#151-tool-invocation-orchestration-plane-3--vs-graph) §15.1.
 
 | Module | Role |
 |--------|------|

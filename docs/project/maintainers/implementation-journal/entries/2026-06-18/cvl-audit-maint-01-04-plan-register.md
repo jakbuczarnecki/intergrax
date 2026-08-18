@@ -33,7 +33,7 @@ CVL depth backlog traceable with explicit AHI/TOOLS/PLATFORM cross-refs.
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/CRITIC_VERIFICATION.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/CRITIC_VERIFICATION.md` |
 
 ## Verification
 

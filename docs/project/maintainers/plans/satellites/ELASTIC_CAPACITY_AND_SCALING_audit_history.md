@@ -19,7 +19,7 @@
 | ECP-DOC.3 | **`docs/project/technical/adr/entries/2026-06-08/ADR-SCALE-001.md`** — ECP vs K8s HPA; tier separation | **Done** | High | `docs/project/technical/adr` | Linked from architecture + adr README |
 | ECP-DOC.4 | **Hub update** — 19 domain pairs; audit routing for capacity | **Done** | High | `intergrax_runtime_architecture.md` | `check_docs_domain_pairs.py` OK |
 | ECP-DOC.5 | **Cross-ref sync** — ORCHESTRATION §49, OBS §9.3, INTEGRATIONS k8s, AGENTS.md, audit map §30 | **Done** | High | `docs/*` | No orphan scaling narrative |
-| ECP-DOC.6 | **Gate script** — `python scripts/audit/check_docs_domain_pairs.py` | **Done** | Medium | CI scripts | 19 pairs reported |
+| ECP-DOC.6 | **Gate script** — `python scripts/docs/check_docs_domain_pairs.py` | **Done** | Medium | CI scripts | 19 pairs reported |
 
 ---
 

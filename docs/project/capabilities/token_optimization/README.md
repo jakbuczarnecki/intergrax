@@ -57,7 +57,7 @@ flowchart LR
 | [Cache-prefix architecture](../architecture/TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md) | Stable-prefix and provider-cache rules |
 | [vLLM live proof](proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md) | Reviewer execution guide |
 | [Public claim guardrails](../TOKEN_OPTIMIZATION_CLAIMS.md) | What can and cannot be claimed publicly |
-| [Audit instruction](../../maintainers/audit/TOKEN_OPTIMIZATION.md) | Audit scope and review criteria |
+| [Audit instruction](../../../audit_results/TOKEN_OPTIMIZATION.md) | Audit scope and review criteria |
 
 ---
 
@@ -626,5 +626,5 @@ Detailed implementation phases, dependencies and review state:
 | Architecture | [TOKEN_OPTIMIZATION.md](../architecture/TOKEN_OPTIMIZATION.md) |
 | Plan | [TOKEN_OPTIMIZATION.md](../plan/TOKEN_OPTIMIZATION.md) |
 | Claims | [TOKEN_OPTIMIZATION_CLAIMS.md](../TOKEN_OPTIMIZATION_CLAIMS.md) |
-| Audit | [TOKEN_OPTIMIZATION.md](../../maintainers/audit/TOKEN_OPTIMIZATION.md) |
+| Audit | [TOKEN_OPTIMIZATION.md](../../../audit_results/TOKEN_OPTIMIZATION.md) |
 | Proof guide | [VLLM_PREFIX_CACHE_LIVE_PROOF.md](proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md) |
