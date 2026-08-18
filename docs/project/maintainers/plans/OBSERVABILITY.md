@@ -22,7 +22,7 @@
 
 **Do not read this entire file in one session** (OBSERVABILITY plan).
 
-- **Implement / audit default:** Hub Phase TRACE (§5–§10 arch) · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) (active OECP register), [`plan/satellites/OBSERVABILITY_audit_history.md`](plan/satellites/OBSERVABILITY_audit_history.md) (closed phases). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub Phase TRACE (§5–§10 arch) · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) (active OECP register), [`plan/satellites/OBSERVABILITY_implementation_history.md`](plan/satellites/OBSERVABILITY_implementation_history.md) (closed phases). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Token Optimization:** read feature pair + rows `TOKEN-OBS-1` / `TOKEN-OBS-2`; use HOS/domain-signal model, do not create private telemetry channel.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
@@ -160,7 +160,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | Satellite | Contents |
 |-----------|----------|
 | [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) | **OECP** — eval control plane implementation register (active) |
-| [`plan/satellites/OBSERVABILITY_audit_history.md`](plan/satellites/OBSERVABILITY_audit_history.md) | audit history (closed phases) |
+| [`plan/satellites/OBSERVABILITY_implementation_history.md`](plan/satellites/OBSERVABILITY_implementation_history.md) | implementation history (closed phases) |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

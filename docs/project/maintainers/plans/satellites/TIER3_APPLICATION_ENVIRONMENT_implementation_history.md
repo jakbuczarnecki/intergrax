@@ -1,6 +1,9 @@
-# TIER3_APPLICATION_ENVIRONMENT — audit history + LC closeout
+# TIER3_APPLICATION_ENVIRONMENT — implementation history + LC closeout
 
 **Parent hub:** [`TIER3_APPLICATION_ENVIRONMENT.md`](../TIER3_APPLICATION_ENVIRONMENT.md)
+
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/TIER3_APPLICATION_ENVIRONMENT_implementation_history.md](../../../../audit_results/legacy/plan-audit-history/TIER3_APPLICATION_ENVIRONMENT_implementation_history.md).
+
 
 ## Phase H-APP — Tier-3 Application Environment (full configurability)
 

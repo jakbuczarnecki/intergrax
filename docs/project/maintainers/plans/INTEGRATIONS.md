@@ -91,7 +91,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | Satellite | Contents |
 |-----------|----------|
 | [`plan/INTEGRATIONS_appendices.md`](plan/INTEGRATIONS_appendices.md) | appendices |
-| [`plan/INTEGRATIONS_audit_history.md`](plan/INTEGRATIONS_audit_history.md) | audit history |
+| [`plan/INTEGRATIONS_implementation_history.md`](plan/INTEGRATIONS_implementation_history.md) | implementation history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

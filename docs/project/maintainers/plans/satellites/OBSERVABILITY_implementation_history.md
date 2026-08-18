@@ -1,6 +1,9 @@
-# OBSERVABILITY — audit history + LC closeout
+# OBSERVABILITY — implementation history + LC closeout
 
 **Parent hub:** [`OBSERVABILITY.md`](../OBSERVABILITY.md)
+
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/OBSERVABILITY_implementation_history.md](../../../../audit_results/legacy/plan-audit-history/OBSERVABILITY_implementation_history.md).
+
 
 ## Phase IDEAL-L3 — Observability ops depth (Band 2ax)
 
@@ -76,7 +79,6 @@
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (OBS-DOC.1 + OBS-1–3)
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §21; complements GOV-AUDIT Appendix H; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix Q**.
 
 **Priority ladder:** **Band 2t** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -103,7 +105,6 @@
 
 **Architecture:** [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) · **ADR:** [ADR-OBS-001](adr/entries/2026-06-08/ADR-OBS-001.md)
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §21 · complements Phase OBS (wiring closeout) · supersedes residual “live bus emit for all LLM paths” row when OBS-BUS-2 ships.
 
 **Priority ladder:** **Band 2al** (§4.0) — runs **after** Phase CRIT-V (Band 2ak) or in parallel §6.1 maintenance slices; **one OBS-BUS ID per PR**.
 
@@ -188,10 +189,10 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 ## Phase OBS-EVOL-9 — Layered event catalog (P1-ARCH-02)
 
-**Status:** **Done** (2026-06-17) — M0–M3 register complete; OBS-EVOL-9.9 (`runtime_event.v2`) deferred (low priority, post-publication)  
+**Status:** **Done** (2026-06-17) — M0–M3 register complete; OBS-EVOL-9.9 (`runtime_event.v2`) deferred (low priority, post-publication)
 **Goal:** Scale HOS beyond flat `RuntimeEventType` growth — spine + `event_kind` + `EventCatalog` — **before external v1 publication** (no external migration).
 
-**ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md)  
+**ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md)
 **Architecture:** [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) §4.4 · UAEP [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.1.6
 
 ### OBS-EVOL-9 — Strategic Architecture Review (accepted 2026-06-17)
@@ -242,9 +243,9 @@ python scripts/maintenance/check_harness_adr.py
 
 ## Phase OBSERVABILITY-LC — Full Harness Layer Completion closeout (2026-06-17)
 
-**Status:** **Done** (2026-06-17) — re-validates OBS-EVOL-9 + OBS-BUS closeout; no open P0/P1  
-**Prerequisites:** OBS-EVOL-9 M0–M3 **Done** (9.9 deferred) · ADR-OBS-001/003  
-**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**Status:** **Done** (2026-06-17) — re-validates OBS-EVOL-9 + OBS-BUS closeout; no open P0/P1
+**Prerequisites:** OBS-EVOL-9 M0–M3 **Done** (9.9 deferred) · ADR-OBS-001/003
+**Goal:** Formal Full Harness LC closeout — gate verification, journal
 **ADR:** **No ADR needed**
 
 | ID | Deliverable | Status | Priority | Acceptance |
@@ -258,7 +259,7 @@ python scripts/maintenance/check_harness_adr.py
 
 ### 6.1av Harness implementation queue — Observability audit maintenance (planned)
 
-**Source:** Layer 16 audit (2026-06-18) — `OBSERVABILITY` layers 21, 30 · [`../audit_results/2026-06-18/OBSERVABILITY.md`](../audit_results/2026-06-18/OBSERVABILITY.md)  
+**Source:** Layer 16 audit (2026-06-18) — `OBSERVABILITY` layers 21, 30 · [`../audit_results/2026-06-18/OBSERVABILITY.md`](../audit_results/2026-06-18/OBSERVABILITY.md)
 **Priority ladder:** **Band 1** (§6.1) — post-publication + prompt sync; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

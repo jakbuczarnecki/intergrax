@@ -1,4 +1,4 @@
-﻿# Reliability Failure And Hitl — Implementation Plan
+# Reliability Failure And Hitl — Implementation Plan
 
 **Architecture (1:1):** [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -75,7 +75,7 @@ Architecture: [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (REL-DOC.1 + REL-1–3)
 
-**Audit basis:** [`docs/audit_results/AUDIT_PROTOCOL.md`](guides/docs/audit_results/AUDIT_PROTOCOL.md) §22; H-APP `ReliabilityProfile` **Done**; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix R**.
+**Audit basis:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md) §22; H-APP `ReliabilityProfile` **Done**; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix R**.
 
 **Priority ladder:** **Band 2u** (§4.0) — closed; default queue = **§6.1** maintenance.
 

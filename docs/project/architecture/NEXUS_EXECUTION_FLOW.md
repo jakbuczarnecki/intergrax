@@ -1,4 +1,4 @@
-﻿# Nexus Execution Flow
+# Nexus Execution Flow
 
 **Intergrax Nexus Execution Flow** is the canonical Tier-1 control path that turns an incoming `Task` into a governed, observable `TaskResult` across single-agent and multi-agent execution.
 
@@ -210,9 +210,9 @@ Full S1–S8 matrix: [runtime extended §12.2](satellites/NEXUS_EXECUTION_FLOW_e
 
 ## Current maturity
 
-Architecture maturity: **A4**  
-Implementation maturity: **I4**  
-Production readiness: **P2**  
+Architecture maturity: **A4**
+Implementation maturity: **I4**
+Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** — Explicit control-flow canon, three planning planes, tier boundaries, UC-1–UC-9 and S1–S8 scenario model, ADR-FLOW-* family, normative entry convergence on `UnifiedTaskRunner` ([§12.2](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md#122-scenario-production-status)).
@@ -296,11 +296,11 @@ Intentional progressive disclosure — **not** unresolved drift.
 
 ## Maintainer and Cursor context
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/NEXUS_EXECUTION_FLOW.md`](../maintainers/plans/NEXUS_EXECUTION_FLOW.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** 8, 9, 10 (flow narrative) · cognition depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §7–§10  
+**Status:** Canonical architecture (domain pair 1:1)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/NEXUS_EXECUTION_FLOW.md`](../maintainers/plans/NEXUS_EXECUTION_FLOW.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Audit layers:** 8, 9, 10 (flow narrative) · cognition depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §7–§10
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Last updated:** 2026-08-17 — DOC-3F-R1 hub/satellite topology correction; DOC-3F public front preserved
 
 ### Cursor read scope (token budget)

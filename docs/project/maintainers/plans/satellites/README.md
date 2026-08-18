@@ -8,7 +8,7 @@ Load **one** satellite per session when a task or audit gap ID requires it.
 |---------|----------------|
 | `<DOMAIN>_06_closed_queues.md` | Re-validating closed §6.1/§6.2 queues |
 | `<DOMAIN>_master_registers.md` | Gap ID in ORCH/FLOW/TS/… master register |
-| `<DOMAIN>_audit_history.md` | LC closeout / historical audit narrative |
+| `<DOMAIN>_implementation_history.md` | LC closeout / historical audit narrative |
 | `<DOMAIN>_phase_closeout.md` | Phase V-REM, FAUDIT-32, INT closeout bodies |
 | `<DOMAIN>_appendices.md` | Appendix traceability B–N |
 | `PLATFORM_FOUNDATION_*` | Platform-wide registers (shared canonical source) |

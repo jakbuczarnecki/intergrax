@@ -1,0 +1,6 @@
+# Indexing-only exclusions (Cursor semantic index).
+# Canonical audit README + protocols remain readable via explicit @ / Read.
+
+docs/audit_results/legacy/
+docs/audit_results/20??-??-??/
+docs/audit_results/20??-??-??_run-*/

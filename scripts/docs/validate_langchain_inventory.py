@@ -1,4 +1,4 @@
-﻿"""Uncommitted LCI-0A inventory validator (not part of LCI-0A commit)."""
+"""Uncommitted LCI-0A inventory validator (not part of LCI-0A commit)."""
 from __future__ import annotations
 
 import sys
@@ -63,14 +63,14 @@ REMOVED_LCI_5B_INVENTORY_IDS = {
 def _fix_mojibake(text: str) -> str:
     return (
         text.replace("Â©", "©")
-        .replace("â€“", "–")
-        .replace("â€”", "—")
-        .replace("â€˜", "'")
-        .replace("â€™", "'")
-        .replace("â€œ", '"')
-        .replace("â€\x9d", '"')
-        .replace("â€¦", "…")
-        .replace("â€", "")
+        .replace(""“", "–")
+        .replace("—", "—")
+        .replace(""˜", "'")
+        .replace("'", "'")
+        .replace(""", '"')
+        .replace(""\x9d", '"')
+        .replace(""¦", "…")
+        .replace(""", "")
         .replace("Â", "")
     )
 

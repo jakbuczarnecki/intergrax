@@ -1,8 +1,8 @@
-﻿# Platform Plugins — Maintainer Roadmap
+# Platform Plugins — Maintainer Roadmap
 
-**Program:** Platform Plugin architecture  
+**Program:** Platform Plugin architecture
 **Status:** PLATFORM-PLUGIN-1 **Done** · PLATFORM-PLUGIN-2 **Done** · PLATFORM-PLUGIN-3 **Done** · PLATFORM-PLUGIN-4 **Done** · PLATFORM-PLUGIN-5 **Done** · PLATFORM-PLUGIN-6 **Done** · PLATFORM-PLUGIN-7 **Done** · PLATFORM-PLUGIN-8 **Done** · PLATFORM-PLUGIN-9 **Done** — program **CLOSED**
-**Audit evidence:** [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md)  
+**Audit evidence:** [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md)
 **Canonical architecture:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
 
 **Last updated:** 2026-08-12

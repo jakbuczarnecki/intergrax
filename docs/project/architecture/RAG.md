@@ -266,11 +266,11 @@ The accepted RAG-PROD-13 result and the closed RAG-PROD-14 production handoff ar
 | **SATELLITE** | [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | Pipeline/module detail; current status points here |
 | **SATELLITE** | [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | `KnowledgeDocument` ABI |
 | **HISTORICAL / PLAN** | [`../maintainers/plans/RAG.md`](../maintainers/plans/RAG.md) | Implementation history and roadmap; not runtime truth |
-| **HISTORICAL / PLAN** | `../maintainers/plans/satellites/RAG_audit_history.md` | Detailed historical audit register |
+| **HISTORICAL / PLAN** | `../maintainers/plans/satellites/RAG_implementation_history.md` | Detailed historical implementation register (audit evidence archived under docs/audit_results/legacy/plan-audit-history/) |
 | **RELATED OWNER** | `../capabilities/architecture/LANGCHAIN_INDEPENDENCE.md` | LangChain boundary and optionality |
 | **RELATED PLAN** | `../capabilities/plan/LANGCHAIN_INDEPENDENCE.md` | LangChain migration history |
 | **CATALOG OWNER** | [`INTEGRATIONS.md`](INTEGRATIONS.md) | Provider catalog taxonomy, not RAG qualification |
-| **NAVIGATION ONLY** | [`../technical/docs/audit_results/RAG.md`](../technical/docs/audit_results/RAG.md) | Read-scope and audit entry point |
+| **NAVIGATION ONLY** | [`../../audit_results/legacy/2026-06-18/RAG.md`](../../audit_results/legacy/2026-06-18/RAG.md) | Read-scope and audit entry point |
 
 Older current-state passages in the architecture hub and pipeline satellite were superseded by RAG-FINAL-10A–10D and are not retained as competing truth. Historical evidence remains in the plan and audit-history documents.
 

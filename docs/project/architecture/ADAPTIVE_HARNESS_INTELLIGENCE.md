@@ -1,4 +1,4 @@
-﻿# Adaptive Harness Intelligence
+# Adaptive Harness Intelligence
 
 **Status:** Canonical architecture (domain pair 1:1)  
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
@@ -241,7 +241,7 @@ AHI addresses three related but distinct problems:
 
 ### 5.1 Maturity model recap
 
-From [`docs/audit_results/AUDIT_PROTOCOL.md`](guides/docs/audit_results/AUDIT_PROTOCOL.md):
+From [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md):
 
 | Level | Meaning |
 |-------|---------|

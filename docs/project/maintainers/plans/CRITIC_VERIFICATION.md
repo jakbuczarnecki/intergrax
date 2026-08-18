@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (CRITIC_VERIFICATION plan).
 
-- **Implement / audit default:** AUDIT-IDEAL · §CVL-4 backlog · audit_history satellite. **On demand (one max):** [`plan/satellites/CRITIC_VERIFICATION_appendices.md`](plan/satellites/CRITIC_VERIFICATION_appendices.md) · [`plan/satellites/CRITIC_VERIFICATION_audit_history.md`](plan/satellites/CRITIC_VERIFICATION_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** AUDIT-IDEAL · §CVL-4 backlog · implementation_history satellite. **On demand (one max):** [`plan/satellites/CRITIC_VERIFICATION_appendices.md`](plan/satellites/CRITIC_VERIFICATION_appendices.md) · [`plan/satellites/CRITIC_VERIFICATION_implementation_history.md`](plan/satellites/CRITIC_VERIFICATION_implementation_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) read-scope block only.
@@ -39,7 +39,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | Satellite | Contents |
 |-----------|----------|
 | [`plan/satellites/CRITIC_VERIFICATION_appendices.md`](plan/satellites/CRITIC_VERIFICATION_appendices.md) | appendices |
-| [`plan/satellites/CRITIC_VERIFICATION_audit_history.md`](plan/satellites/CRITIC_VERIFICATION_audit_history.md) | audit history |
+| [`plan/satellites/CRITIC_VERIFICATION_implementation_history.md`](plan/satellites/CRITIC_VERIFICATION_implementation_history.md) | implementation history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
@@ -75,7 +75,7 @@ Foreign **Platform / ORCH / FLOW / FAUDIT** registers were removed from this hub
 | FAUDIT-32 | [`plan/satellites/PLATFORM_FOUNDATION_phase_closeout.md`](plan/satellites/PLATFORM_FOUNDATION_phase_closeout.md) |
 | FLOW depth | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) |
 
-**Audit history (CVL-1…3, LC closeout):** [`plan/satellites/CRITIC_VERIFICATION_audit_history.md`](plan/satellites/CRITIC_VERIFICATION_audit_history.md)
+**Audit history (CVL-1…3, LC closeout):** [`plan/satellites/CRITIC_VERIFICATION_implementation_history.md`](plan/satellites/CRITIC_VERIFICATION_implementation_history.md)
 
 ---
 ## Audit §CVL-4 — Backlog (P2–P4, non-blocking)

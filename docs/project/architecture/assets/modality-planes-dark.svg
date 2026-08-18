@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img">
+  <title>Intergrax Modality three planes</title>
+  <desc>Conceptual diagram: Modality splits into Plane A generative LLM reasoning, Plane B media-to-knowledge ingest, and Plane C dedicated model inference behind ToolRuntime. Multimodal does not mean one runtime path.</desc>
+  <rect width="1200" height="820" fill="#0d1117"/>
+  <rect x="32" y="28" width="1136" height="764" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#e6edf3">Intergrax Modality &#8212; three execution planes</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" fill="#8b949e">Multimodal does not mean one runtime path</text>
+
+  <rect x="480" y="128" width="240" height="56" rx="12" fill="#21262d" stroke="#8b949e" stroke-width="2"/>
+  <text x="600" y="162" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="24" font-weight="700" fill="#e6edf3">MODALITY</text>
+
+  <line x1="600" y1="184" x2="600" y2="208" stroke="#e6edf3" stroke-width="2.5"/>
+  <line x1="220" y1="208" x2="980" y2="208" stroke="#e6edf3" stroke-width="2.5"/>
+  <line x1="220" y1="208" x2="220" y2="232" stroke="#e6edf3" stroke-width="2.5"/>
+  <line x1="600" y1="208" x2="600" y2="232" stroke="#e6edf3" stroke-width="2.5"/>
+  <line x1="980" y1="208" x2="980" y2="232" stroke="#e6edf3" stroke-width="2.5"/>
+
+  <rect x="80" y="236" width="280" height="88" rx="14" fill="#1c2d4a" stroke="#58a6ff" stroke-width="2.5"/>
+  <text x="220" y="268" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#e6edf3">Plane A</text>
+  <text x="220" y="294" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Generative multimodal LLM</text>
+  <text x="220" y="312" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#6e7681">reason over media in dialog</text>
+
+  <rect x="460" y="236" width="280" height="88" rx="14" fill="#1a2e1f" stroke="#3fb950" stroke-width="2.5"/>
+  <text x="600" y="268" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#e6edf3">Plane B</text>
+  <text x="600" y="294" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Media &#8594; knowledge</text>
+  <text x="600" y="312" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#6e7681">ingest, parse, transcribe</text>
+
+  <rect x="840" y="236" width="280" height="88" rx="14" fill="#2d2414" stroke="#d29922" stroke-width="2.5"/>
+  <text x="980" y="268" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#e6edf3">Plane C</text>
+  <text x="980" y="294" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Dedicated ML inference</text>
+  <text x="980" y="312" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#6e7681">CV, classical ML, speech tools</text>
+
+  <line x1="220" y1="324" x2="220" y2="352" stroke="#58a6ff" stroke-width="2"/>
+  <line x1="600" y1="324" x2="600" y2="352" stroke="#3fb950" stroke-width="2"/>
+  <line x1="980" y1="324" x2="980" y2="352" stroke="#d29922" stroke-width="2"/>
+
+  <rect x="100" y="356" width="240" height="48" rx="10" fill="#21262d" stroke="#58a6ff" stroke-width="2"/>
+  <text x="220" y="386" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#e6edf3">LLMAdapter</text>
+
+  <rect x="480" y="356" width="240" height="48" rx="10" fill="#21262d" stroke="#3fb950" stroke-width="2"/>
+  <text x="600" y="386" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#e6edf3">parsers / loaders</text>
+
+  <rect x="860" y="356" width="240" height="48" rx="10" fill="#21262d" stroke="#d29922" stroke-width="2"/>
+  <text x="980" y="386" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#e6edf3">model_inference</text>
+
+  <line x1="220" y1="404" x2="220" y2="428" stroke="#58a6ff" stroke-width="2"/>
+  <line x1="600" y1="404" x2="600" y2="428" stroke="#3fb950" stroke-width="2"/>
+  <line x1="980" y1="404" x2="980" y2="428" stroke="#d29922" stroke-width="2"/>
+
+  <rect x="100" y="432" width="240" height="48" rx="10" fill="#21262d" stroke="#30363d" stroke-width="1.5"/>
+  <text x="220" y="462" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#e6edf3">reasoning</text>
+
+  <rect x="480" y="432" width="240" height="48" rx="10" fill="#21262d" stroke="#30363d" stroke-width="1.5"/>
+  <text x="600" y="462" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#e6edf3">RAG / knowledge</text>
+
+  <rect x="860" y="432" width="240" height="48" rx="10" fill="#21262d" stroke="#30363d" stroke-width="1.5"/>
+  <text x="980" y="462" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#e6edf3">Tools</text>
+
+  <line x1="980" y1="480" x2="980" y2="504" stroke="#d29922" stroke-width="2"/>
+  <path d="M980 504 L970 490 L990 490 Z" fill="#d29922"/>
+
+  <rect x="860" y="508" width="240" height="48" rx="10" fill="#21262d" stroke="#d29922" stroke-width="2"/>
+  <text x="980" y="538" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">ToolRuntime</text>
+
+  <rect x="180" y="600" width="840" height="56" rx="12" fill="#3d1f20" stroke="#f85149" stroke-width="2"/>
+  <text x="600" y="634" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">Multimodal reasoning &#8800; media ingest &#8800; dedicated inference</text>
+
+  <text x="600" y="700" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Plane A &#8594; reason over media &#160;&#160;|&#160;&#160; Plane B &#8594; turn media into knowledge &#160;&#160;|&#160;&#160; Plane C &#8594; run specialized models</text>
+  <text x="600" y="728" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#6e7681">Integration supplies backend substrate; Modality defines execution plane and agent access path</text>
+</svg>

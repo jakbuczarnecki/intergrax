@@ -12,7 +12,7 @@
 
 **Do not read this entire file in one session** (REASONING_AND_COGNITION plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/REASONING_AND_COGNITION_appendices.md`](plan/satellites/REASONING_AND_COGNITION_appendices.md) · [`plan/satellites/REASONING_AND_COGNITION_audit_history.md`](plan/satellites/REASONING_AND_COGNITION_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/REASONING_AND_COGNITION_appendices.md`](plan/satellites/REASONING_AND_COGNITION_appendices.md) · [`plan/satellites/REASONING_AND_COGNITION_implementation_history.md`](plan/satellites/REASONING_AND_COGNITION_implementation_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/REASONING_AND_COGNITION.md`](../../architecture/REASONING_AND_COGNITION.md) read-scope block only.
@@ -29,7 +29,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | Satellite | Contents |
 |-----------|----------|
 | [`plan/satellites/REASONING_AND_COGNITION_appendices.md`](plan/satellites/REASONING_AND_COGNITION_appendices.md) | appendices |
-| [`plan/satellites/REASONING_AND_COGNITION_audit_history.md`](plan/satellites/REASONING_AND_COGNITION_audit_history.md) | audit history |
+| [`plan/satellites/REASONING_AND_COGNITION_implementation_history.md`](plan/satellites/REASONING_AND_COGNITION_implementation_history.md) | implementation history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

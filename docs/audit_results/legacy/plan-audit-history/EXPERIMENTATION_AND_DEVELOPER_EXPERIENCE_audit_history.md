@@ -1,3 +1,8 @@
+> **Migrated (AUDIT-PROTOCOL-RESET-R2):** Historical plan-satellite audit register.
+> **Original path:** docs\project\maintainers\plans\satellites\EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_implementation_history.md
+> **Original role:** Plan satellite — audit history + LC closeout
+> **Canonical audit ownership:** docs/audit_results/ (this file is historical evidence only)
+
 # EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE — audit history + LC closeout
 
 **Parent hub:** [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)

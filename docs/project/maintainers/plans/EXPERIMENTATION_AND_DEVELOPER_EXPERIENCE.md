@@ -1,4 +1,4 @@
-﻿## Satellite registers (read on demand)
+## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.
 Load **only** the satellite matching your task or cited gap ID.
@@ -67,7 +67,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | Satellite | Contents |
 |-----------|----------|
 | [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_appendices.md`](plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_appendices.md) | appendices |
-| [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_audit_history.md`](plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_audit_history.md) | audit history |
+| [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_implementation_history.md`](plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_implementation_history.md) | implementation history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

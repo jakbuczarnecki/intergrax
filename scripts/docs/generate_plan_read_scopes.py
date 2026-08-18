@@ -49,7 +49,7 @@ EXTRA_SCOPES: dict[str, str] = {
     ),
     "AGENT_CONTRACTS_AND_ASSEMBLY": (
         "§6.1bc ACP-FINISH status · AUDIT-IDEAL §12–§20 table (**Done** skip unless cited) · "
-        "[`plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md`](plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md) on demand"
+        "[`plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_implementation_history.md`](plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_implementation_history.md) on demand"
     ),
     "INTEGRATIONS": (
         "Phase INT / H-INT hub queues · §6.1 open P0/P1 · M.6 expansion registers — satellite on demand"

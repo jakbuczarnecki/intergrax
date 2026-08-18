@@ -16,7 +16,7 @@
 
 **Do not read this entire file in one session** (ADAPTIVE_HARNESS_INTELLIGENCE plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md), [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_implementation_history.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_implementation_history.md), [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Token Optimization:** read feature pair + row `TOKEN-AHI-1`; do not implement adaptive token policy until TOKEN-6 telemetry/regression gates exist.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
@@ -43,7 +43,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md) | audit history |
+| [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_implementation_history.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_implementation_history.md) | implementation history |
 | [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) | ADAS / Agent Design Search detailed implementation plan |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.

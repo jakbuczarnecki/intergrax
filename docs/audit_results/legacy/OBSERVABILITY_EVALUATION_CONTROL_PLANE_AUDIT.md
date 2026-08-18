@@ -1082,7 +1082,7 @@ Read first:
 4. docs/project/architecture/CRITIC_VERIFICATION.md
 5. docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md or the relevant satellite if the hub points there
 6. docs/project/maintainers/plans/OBSERVABILITY.md
-7. docs/project/maintainers/plans/satellites/OBSERVABILITY_audit_history.md
+7. docs/project/maintainers/plans/satellites/OBSERVABILITY_implementation_history.md
 8. docs/project/maintainers/audit/README.md
 
 Required documentation changes:

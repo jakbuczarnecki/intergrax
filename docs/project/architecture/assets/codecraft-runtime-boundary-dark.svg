@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1100" role="img">
+  <title>Intergrax CodeCraft runtime boundary</title>
+  <desc>Conceptual diagram: agent goal flows through CodeCraftOrchestrator, static gate, policy and optional HITL, sandbox execution, tests and CVL verdict, then bounded retry or promotion via CraftResult. Generated code never bypasses the Harness execution boundary.</desc>
+  <rect width="1200" height="1100" fill="#0d1117"/>
+  <rect x="32" y="28" width="1136" height="1044" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#e6edf3">Intergrax CodeCraft &#8212; agent goal vs Harness execution</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" fill="#8b949e">Orchestrated ephemeral codegen inside platform policy, sandbox, and verification</text>
+
+  <rect x="420" y="130" width="360" height="52" rx="12" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="600" y="162" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="19" font-weight="700" fill="#e6edf3">Agent goal</text>
+
+  <line x1="600" y1="182" x2="600" y2="210" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 210 L594 196 L606 196 Z" fill="#484f58"/>
+
+  <rect x="340" y="210" width="520" height="56" rx="14" fill="#1b2f1f" stroke="#3fb950" stroke-width="2.5"/>
+  <text x="600" y="244" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#e6edf3">CodeCraftOrchestrator</text>
+
+  <line x1="600" y1="266" x2="600" y2="294" stroke="#3fb950" stroke-width="2"/>
+  <path d="M600 294 L594 280 L606 280 Z" fill="#3fb950"/>
+
+  <rect x="460" y="294" width="280" height="44" rx="10" fill="#1c2d4a" stroke="#388bfd" stroke-width="2"/>
+  <text x="600" y="322" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">Generate</text>
+
+  <line x1="600" y1="338" x2="600" y2="366" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 366 L594 352 L606 352 Z" fill="#484f58"/>
+
+  <rect x="400" y="366" width="400" height="48" rx="12" fill="#2d333b" stroke="#d4a72c" stroke-width="2"/>
+  <text x="600" y="396" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">Static gate (L0)</text>
+
+  <line x1="600" y1="414" x2="600" y2="442" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 442 L594 428 L606 428 Z" fill="#484f58"/>
+
+  <rect x="360" y="442" width="480" height="48" rx="12" fill="#2d2419" stroke="#db6d28" stroke-width="2"/>
+  <text x="600" y="472" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#e6edf3">Policy / optional HITL</text>
+
+  <line x1="600" y1="490" x2="600" y2="518" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 518 L594 504 L606 504 Z" fill="#484f58"/>
+
+  <rect x="380" y="518" width="440" height="48" rx="12" fill="#2b1f3d" stroke="#a371f7" stroke-width="2"/>
+  <text x="600" y="548" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#e6edf3">Sandbox execution substrate</text>
+
+  <line x1="600" y1="566" x2="600" y2="594" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 594 L594 580 L606 580 Z" fill="#484f58"/>
+
+  <rect x="400" y="594" width="400" height="48" rx="12" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="600" y="624" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#e6edf3">Execute + test</text>
+
+  <line x1="600" y1="642" x2="600" y2="670" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 670 L594 656 L606 656 Z" fill="#484f58"/>
+
+  <rect x="360" y="670" width="480" height="48" rx="12" fill="#1c2d4a" stroke="#388bfd" stroke-width="2"/>
+  <text x="600" y="700" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="600" fill="#e6edf3">Critic / CVL verdict</text>
+
+  <line x1="600" y1="718" x2="600" y2="752" stroke="#484f58" stroke-width="2"/>
+  <path d="M600 752 L594 738 L606 738 Z" fill="#484f58"/>
+
+  <rect x="220" y="752" width="300" height="88" rx="12" fill="#3d1f1f" stroke="#f85149" stroke-width="2"/>
+  <text x="370" y="786" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#e6edf3">Bounded retry</text>
+  <text x="370" y="812" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#8b949e">max_iterations &#183; time cap</text>
+
+  <rect x="680" y="752" width="300" height="88" rx="12" fill="#1b2f1f" stroke="#3fb950" stroke-width="2"/>
+  <text x="830" y="786" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#e6edf3">Promote CraftResult</text>
+  <text x="830" y="812" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#8b949e">typed output / artifacts</text>
+
+  <line x1="370" y1="840" x2="370" y2="878" stroke="#f85149" stroke-width="2"/>
+  <path d="M370 878 L364 864 L376 864 Z" fill="#f85149"/>
+  <rect x="250" y="878" width="240" height="44" rx="10" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="370" y="906" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#e6edf3">dispose session</text>
+
+  <rect x="220" y="948" width="760" height="44" rx="10" fill="#2d2419" stroke="#db6d28" stroke-width="1.5"/>
+  <text x="600" y="976" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#db6d28">Generated code never bypasses the Harness execution boundary.</text>
+
+  <text x="600" y="1048" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Conceptual architecture &#8212; not a runtime class diagram.</text>
+</svg>

@@ -530,4 +530,4 @@ See [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md). **PLATFORM-PLUGIN-2** should d
 - Claims verified against executable code and cited tests on `development`.
 - No `docs/project/architecture/PLATFORM_PLUGINS.md` created (intentional).
 - Historical doc paths distinguished from current `docs/project/` layout.
-- **Evidence location:** retained under `maintainers/plans/` as program-specific audit evidence. [`docs/audit_results/`](../../audit_results/README.md) holds **orchestrated** harness domain audit runs (`YYYY-MM-DD/`, `progress.json`, `RUN_SUMMARY.md`, `<DOMAIN>.md`) — a different workflow from this cross-cutting PLATFORM-PLUGIN inventory; not relocated to `audit_results/` without an orchestrated run.
+- **Evidence location:** retained under `maintainers/plans/` as program-specific audit evidence. [`docs/audit_results/`](../../audit_results/README.md) holds canonical platform audit campaigns per [AUDIT_PROTOCOL.md](../../audit_results/AUDIT_PROTOCOL.md); legacy v1 campaigns under [`docs/audit_results/legacy/`](../../audit_results/legacy/README.md) — a different workflow from this cross-cutting PLATFORM-PLUGIN inventory.

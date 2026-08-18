@@ -102,7 +102,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/LLM_ADAPTERS_audit_history.md`](plan/LLM_ADAPTERS_audit_history.md) | audit history |
+| [`plan/LLM_ADAPTERS_implementation_history.md`](plan/LLM_ADAPTERS_implementation_history.md) | implementation history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

@@ -1,4 +1,4 @@
-﻿# Scripts
+# Scripts
 
 This directory contains repository tooling grouped by purpose. New scripts should be placed in the most specific category instead of the top-level `scripts/` directory.
 

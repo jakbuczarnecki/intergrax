@@ -1,4 +1,4 @@
-﻿# Platform Foundation — Implementation Plan
+# Platform Foundation — Implementation Plan
 
 **Architecture (1:1):** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -115,10 +115,10 @@ Verify (every harness PR):
 
 ### 6.1ax PF-TIER-ENFORCEMENT — Production tier-boundary qualification
 
-**Status:** `PLANNED`  
-**Priority:** P1  
-**Type:** Arch / Wire / Proof  
-**Source:** PLATFORM_FOUNDATION enforcement audit — snapshot `4c92e0a08f92341f559408c234d213a8ac482d76`  
+**Status:** `PLANNED`
+**Priority:** P1
+**Type:** Arch / Wire / Proof
+**Source:** PLATFORM_FOUNDATION enforcement audit — snapshot `4c92e0a08f92341f559408c234d213a8ac482d76`
 **Verdict:** `CONDITIONALLY SOUND — ENFORCEMENT REMEDIATION REQUIRED` — conceptual Tier-0..3 architecture is sound; no confirmed current upward Tier-3 import violation was found in the audited scope; enforcement/proof is incomplete and must be strengthened before PLATFORM_FOUNDATION can truthfully be treated as fully closed for tier boundaries.
 
 **Audit findings (persisted):**

@@ -1,4 +1,4 @@
-﻿# Orchestration — Implementation Plan
+# Orchestration — Implementation Plan
 
 **Architecture (1:1):** [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -24,7 +24,7 @@
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.4 · baseline **32/32 L3**
-**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**
 **Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
 
 | ID | AUDIT § | Gap | Priority | Status |
@@ -133,10 +133,10 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 ---
 ## Phase ORCH — Orchestration control plane closeout
 
-**Status:** **Done** (2026-06-05) — **6/6** deliverables Done (ORCH-DOC.* + ORCH-1–4); gate **581 passed**  
-**Prerequisites:** R-Delegate **Done**, Q+-N.* runners **Done**, H-APP.3.1–3.2 **Done**, V-MA.* **Done**  
-**Goal:** Close orchestration audit residuals (AUDIT_MAP §7–§10) — wire declared Tier-3 profile fields to runtime; bridge declarative graph spec to execution plan; cap graph batch concurrency.  
-**Priority ladder:** **Band 2j** (§4.0) — **default implementation queue** after §6.1 gate on each PR.  
+**Status:** **Done** (2026-06-05) — **6/6** deliverables Done (ORCH-DOC.* + ORCH-1–4); gate **581 passed**
+**Prerequisites:** R-Delegate **Done**, Q+-N.* runners **Done**, H-APP.3.1–3.2 **Done**, V-MA.* **Done**
+**Goal:** Close orchestration audit residuals (AUDIT_MAP §7–§10) — wire declared Tier-3 profile fields to runtime; bridge declarative graph spec to execution plan; cap graph batch concurrency.
+**Priority ladder:** **Band 2j** (§4.0) — **default implementation queue** after §6.1 gate on each PR.
 **Execution order:** [§6.2bb](.#62bb-phase-orch-execution-order-band-2j--active) · queue: [§6.1b](.#61b-harness-implementation-queue--orchestration-closeout-active)
 **Author map:** [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane)
 
@@ -194,10 +194,10 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 ## Phase ORCH-STRAT — Execution strategies canon (Band 2ap)
 
-**Status:** **Done** (2026-06-08) — strategy sections added to orchestration architecture pair  
-**Prerequisites:** Phase ORCH **Done** · Phase V-MA **Done** · Phase FLOW **Done**  
+**Status:** **Done** (2026-06-08) — strategy sections added to orchestration architecture pair
+**Prerequisites:** Phase ORCH **Done** · Phase V-MA **Done** · Phase FLOW **Done**
 **Goal:** Consolidate coordination patterns, parallelism, resilience, and specialization in [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#50-orchestration-strategies-catalog) §50–§54 — close audit gap “strategies only in FLOW”
-**Priority ladder:** **Band 2ap** — **closed** on doc merge  
+**Priority ladder:** **Band 2ap** — **closed** on doc merge
 **ADR:** **No ADR needed** — documentation consolidation; runtime contracts unchanged
 
 | ID | Deliverable | Status | Priority | Module / doc | Acceptance |
@@ -214,8 +214,8 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 ## Phase ORCH-CONFIG — Platform interaction & multi-agent configuration (Band 2ar — closed)
 
 **Status:** **Done** (2026-06-09) — **11/11 Done** (architecture **Done** incl. §59 audit — [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56–§59; reference host CFG presets + harness simulation)
-**Prerequisites:** Phase ORCH-STRAT **Done** · Phase H-APP-DOC.1 **Done** · default queue = §6.1 maintenance  
-**Goal:** Close every gap in §56.11 so **all CFG-* cases** marked ⚠️/❌ become ✅ without runtime forks  
+**Prerequisites:** Phase ORCH-STRAT **Done** · Phase H-APP-DOC.1 **Done** · default queue = §6.1 maintenance
+**Goal:** Close every gap in §56.11 so **all CFG-* cases** marked ⚠️/❌ become ✅ without runtime forks
 **Canonical input:** §56.7 case register + §56.11 plan table — do not duplicate elsewhere
 
 **Harness-first rule (2026-06-09):** ORCH-CONFIG validates platform behaviour via **harness integration tests** (`tests/integration/runtime/test_orchestration_cfg_simulation.py`) with abstract stub agents — **not** by implementing Tier-3 business products. Tier-3 reference hosts (FLOW-8 / §6.3) remain product-gated.
@@ -262,8 +262,8 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 ## Phase ORCH-5 — Orchestration strategy runtime gaps (Band 2aq — closed)
 
-**Status:** **Done** (2026-06-09) — **5/5 Done**  
-**Prerequisites:** Phase ORCH-STRAT **Done** · default queue = §6.1 maintenance  
+**Status:** **Done** (2026-06-09) — **5/5 Done**
+**Prerequisites:** Phase ORCH-STRAT **Done** · default queue = §6.1 maintenance
 **Goal:** Close gaps in [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#54-maturity-and-gap-register) §54 — swarm depth, pattern metadata on plans, active redundancy policy
 
 | ID | Deliverable | Status | Priority | Acceptance |

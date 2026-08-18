@@ -1,7 +1,7 @@
-﻿# Tier-2 agents (`agents/`)
+# Tier-2 agents (`agents/`)
 
-**Role:** Reusable domain capabilities — contracts, typed step loop (`on_next_step`), prompts.  
-**Hosts:** Tier-3 applications under `applications/` mount agents via `AgentBinding.mount(...)`.  
+**Role:** Reusable domain capabilities — contracts, typed step loop (`on_next_step`), prompts.
+**Hosts:** Tier-3 applications under `applications/` mount agents via `AgentBinding.mount(...)`.
 **Workflow:** [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) · Appendix AC
 **Terminology (canonical):** [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §29](../docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#29-author-facing-run-facade) — session/run/step vocabulary
 **Architecture:** [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · **§32.0** readability
@@ -28,9 +28,9 @@ Applications select agents by package dependency — see
 | **T2** staging mutating | MIG-4 | `legal`, LKW trio, DSW quartet | **Done** |
 | **T4** long-running | MIG-5 | `organization_worker`, `intergrax_assistant`, K-path agents | **Done** |
 
-Inventory: `uv run python scripts/maintenance/audit_agent_fleet_legacy.py` → `build/agent_fleet_inventory.json`.  
-CI gate: `uv run python scripts/gates/check_agent_acp_close_ci.py` (fleet migration + scoreboard blockers; ACP-CLOSE-CI-1/3).  
-Scoreboard (ACP-PROD-12): `uv run python scripts/gates/report_agent_production_readiness.py --roster` → `build/agent_production_readiness.json`.  
+Inventory: `uv run python scripts/maintenance/audit_agent_fleet_legacy.py` → `build/agent_fleet_inventory.json`.
+CI gate: `uv run python scripts/gates/check_agent_acp_close_ci.py` (fleet migration + scoreboard blockers; ACP-CLOSE-CI-1/3).
+Scoreboard (ACP-PROD-12): `uv run python scripts/gates/report_agent_production_readiness.py --roster` → `build/agent_production_readiness.json`.
 Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_readiness.py --require-fleet-migration-closure --regenerate`.
 
 ---

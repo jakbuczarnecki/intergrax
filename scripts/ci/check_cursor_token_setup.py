@@ -10,10 +10,15 @@ ROOT = Path(__file__).resolve().parents[2]
 BOOTSTRAP = ROOT / "docs" / "project" / "maintainers" / "bootstrap"
 CURSOR_SETUP = ROOT / "docs" / "project" / "technical" / "guides" / "CURSOR_TOKEN_SETUP.md"
 CURSORIGNORE = ROOT / ".cursorignore"
+CURSORINDEXINGIGNORE = ROOT / ".cursorindexingignore"
 H2_IGNORE_DIRS = (
-    "docs/audit_results/",
     "docs/project/architecture/satellites/",
     "docs/project/maintainers/plans/satellites/",
+)
+H2_INDEXING_IGNORE_DIRS = (
+    "docs/audit_results/legacy/",
+    "docs/audit_results/20??-??-??/",
+    "docs/audit_results/20??-??-??_run-*/",
 )
 H2_IGNORE_PATHS = (
     "docs/project/technical/guides/AGENT_CREATION_GUIDE.md",
@@ -98,6 +103,21 @@ def main() -> int:
         for path in H2_IGNORE_PATHS:
             if path not in ignore:
                 errors.append(f".cursorignore must exclude bulky guide {path} (H2)")
+        if "docs/audit_results/" in ignore:
+            errors.append(
+                ".cursorignore must not broadly exclude docs/audit_results/ "
+                "(use .cursorindexingignore for bulky campaign artifacts)"
+            )
+
+    if not CURSORINDEXINGIGNORE.is_file():
+        errors.append("missing .cursorindexingignore (audit campaign indexing exclusions)")
+    else:
+        indexing_ignore = CURSORINDEXINGIGNORE.read_text(encoding="utf-8")
+        for path in H2_INDEXING_IGNORE_DIRS:
+            if path not in indexing_ignore:
+                errors.append(
+                    f".cursorindexingignore must exclude token-heavy audit dir {path} (H2 indexing)"
+                )
 
     if not SYMBOL_INDEX.is_file():
         errors.append("missing docs/project/technical/guides/SYMBOL_INDEX.md")

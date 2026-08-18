@@ -1,7 +1,7 @@
-﻿# Intergrax Audit Remediation Protocol
+# Intergrax Audit Remediation Protocol
 
-**Version:** 1.0  
-**Audience:** Human operators and model executors (Cursor agents, CI remediation jobs)  
+**Version:** 1.0
+**Audience:** Human operators and model executors (Cursor agents, CI remediation jobs)
 **Scope:** Post-audit remediation of findings recorded in Intergrax audit campaigns under `docs/audit_results/`.
 
 This protocol is **canonical**. Executors MUST follow it in order. Deviations require explicit operator approval recorded in the campaign register.
@@ -13,15 +13,15 @@ This protocol is **canonical**. Executors MUST follow it in order. Deviations re
 ### A.1 Read the audit index
 
 1. Read `docs/audit_results/README.md` before selecting any campaign.
-2. Identify campaigns by **name**, **date**, and **status** (`COMPLETE`, `IN_PROGRESS`, `ARCHIVED`).
+2. Identify campaigns by **name**, **date**, and **status** (`IN_PROGRESS`, `COMPLETE`, `ABORTED`).
 3. Note the campaign's **scope statement**, **severity model**, and **register location**.
 
 ### A.2 Default campaign selection
 
 | Condition | Action |
 |-----------|--------|
-| Operator names a campaign | Use that campaign if it exists and is not `ARCHIVED` without operator override. |
-| Operator does not name a campaign | Select the **latest `COMPLETE`** campaign whose scope matches the remediation request. |
+| Operator names a campaign | Use that campaign if it exists and is not `ABORTED` without operator override. |
+| Operator does not name a campaign | Select the **latest `COMPLETE`** campaign whose scope matches the remediation request. `COMPLETE` is the prerequisite audit baseline for normal remediation — remediation selects a finished audit, not an in-flight one. |
 | No `COMPLETE` campaign matches | **STOP.** Report gap; do not invent findings or remediate from partial notes. |
 
 **Latest** means most recent `completed_at` (or equivalent) in the campaign metadata. If dates tie, prefer the campaign with higher declared coverage or the one referenced in the operator request.
@@ -36,9 +36,32 @@ This protocol is **canonical**. Executors MUST follow it in order. Deviations re
 
 Confirm:
 
-- Campaign register file is readable and internally consistent (finding IDs unique).
+- Campaign `README.md` finding register is readable and internally consistent (finding IDs unique).
 - Accepted findings are distinguishable from draft or rejected entries.
 - Architecture and plan references cited by findings exist or are flagged as missing (see Section C).
+
+### A.5 Authoritative finding register
+
+The campaign `README.md` **finding register** is the authoritative source for:
+
+- current status
+- severity/category
+- dependencies
+- remediation block
+- implementation commit
+- verification evidence
+
+Per-layer files (`docs/audit_results/<CAMPAIGN_DIR>/<LAYER_CODE>.md`) provide:
+
+- immutable original observation
+- evidence
+- reproduction
+- impact
+- publication-time operator decision (`Status at publication`)
+
+**Never** update immutable per-layer report text merely to advance remediation status. Update the campaign `README.md` finding register instead. Historical finding description and evidence remain unchanged.
+
+Architecture provides **target**. Plan provides **implementation work unit**. No duplicate status authority elsewhere.
 
 ---
 
@@ -48,10 +71,12 @@ Confirm:
 
 Construct the queue from:
 
-1. **Campaign register** — authoritative list of findings, severities, statuses, and cross-references.
-2. **Accepted unresolved findings** — status `OPEN` or `ACCEPTED` (and not `DEFERRED` / `REJECTED` / `CLOSED`).
-3. **Dependencies** — explicit `depends_on` fields, implied ordering (e.g., schema before consumer), and plan-block prerequisites.
+1. **Campaign `README.md` finding register** — authoritative list of findings, severities, statuses, dependencies, remediation blocks, and cross-references.
+2. **Accepted unresolved findings** — status `ACCEPTED` (and not `DEFERRED` / `REJECTED` / `CLOSED`). When resuming in-flight remediation, include `IMPLEMENTING` explicitly. Do **not** remediate `PROPOSED` findings before operator acceptance.
+3. **Dependencies** — explicit `dependencies` fields in the finding register, implied ordering (e.g., schema before consumer), and plan-block prerequisites.
 4. **Plan blocks** — remediation work units from `docs/project/maintainers/plans/` or capability plan docs paired with architecture targets.
+
+Per-layer snapshots supply historical observation and evidence only; they are **not** a second source of truth for lifecycle state.
 
 ### B.2 Ordering rules
 
@@ -71,7 +96,14 @@ Tie-break: earlier finding ID, then alphabetically by plan block reference.
 
 ### B.4 Queue artifact
 
-Maintain a working queue (markdown table, checklist, or campaign annex) updated as statuses change. The queue is the executor's roadmap for Sections D–L.
+The working remediation queue may be derived from the campaign finding register, but **must not** become a second source of truth.
+
+If an executor keeps a temporary queue or checklist (markdown table, annex, or session notes):
+
+- it is a **derived view only**
+- all lifecycle changes are written back to the campaign `README.md` finding register
+
+Never treat a derived queue as authoritative over the campaign register.
 
 ---
 
@@ -81,10 +113,11 @@ When sources disagree, resolve in this order:
 
 | Priority | Source | Role |
 |----------|--------|------|
-| 1 | **Audit finding** | Describes the **problem** — observed gap, risk, or non-conformance. |
-| 2 | **Architecture doc** (`docs/project/architecture/`, capability architecture) | Describes the **target** — intended design and invariants. |
-| 3 | **Plan doc** (`docs/project/maintainers/plans/`, capability plan) | Describes the **work unit** — phased delivery and acceptance criteria. |
-| 4 | **Codebase** | **Baseline** — what is implemented today; not a substitute for arch/plan when they define the target. |
+| 1 | **Campaign finding register** (`docs/audit_results/<CAMPAIGN_DIR>/README.md`) | Authoritative **current** finding lifecycle, remediation block, dependencies, implementation commit, verification evidence. |
+| 2 | **Per-layer audit snapshot** | Immutable **historical** problem description, evidence, reproduction, impact, publication-time operator decision. |
+| 3 | **Architecture doc** (`docs/project/architecture/`, capability architecture) | Describes the **target** — intended design and invariants. |
+| 4 | **Plan doc** (`docs/project/maintainers/plans/`, capability plan) | Describes the **work unit** — phased delivery and acceptance criteria. |
+| 5 | **Codebase** | **Baseline** — what is implemented today; not a substitute for arch/plan when they define the target. |
 
 ### C.1 Conflict handling — STOP
 
@@ -95,9 +128,28 @@ When sources disagree, resolve in this order:
 - Code "as-is" is treated as correct while audit and arch agree the behavior is wrong (code is baseline, not veto).
 - Two architecture sources conflict with no documented precedence.
 
-Record the conflict in the campaign register comment field; do not implement until hierarchy is reconciled.
+Record the conflict in the campaign `README.md` finding register `notes` field; do not implement until hierarchy is reconciled.
 
 ---
+
+## D0. Stale-finding revalidation (before every remediation block)
+
+Before implementing **every** remediation block:
+
+1. Resolve current `development` HEAD (`git rev-parse HEAD` on branch `development`).
+2. Compare it with the `audited_sha` of the finding.
+3. Revalidate that the finding still exists on current code.
+4. Verify that target architecture/plan has not materially changed.
+
+| Outcome | Action |
+|---------|--------|
+| Finding still exists | Implement normally. |
+| Finding already fixed | **Do not** implement a duplicate fix. Identify existing commit/change, run independent verification, attach evidence, progress toward `VERIFIED`/`CLOSED` when justified. |
+| Finding changed manifestation | Update trace/reconciliation; do not silently implement the stale prescription. |
+| Current architecture contradicts old remediation target | **STOP** and report architecture conflict. |
+
+An audit finding defines the **historical observed problem**. It is **not** permission to blindly overwrite current source.
+
 
 ## D. Task Selection
 
@@ -128,7 +180,7 @@ When the operator pre-authorizes a batch:
 
 ### E.3 Status transitions at start
 
-When work begins on a block, set implicated findings to `IMPLEMENTING` in the campaign register (Section I).
+When work begins on a block, set implicated findings to `IMPLEMENTING` in the campaign `README.md` finding register (Section I). Do **not** mutate immutable per-layer snapshot text to reflect lifecycle changes.
 
 ---
 
@@ -152,7 +204,7 @@ Executors MUST obey these constraints during remediation:
 
 | Rule | Requirement |
 |------|-------------|
-| **Branch** | Work on a **development branch**; never commit remediation directly to protected default branches unless operator explicitly directs. |
+| **Branch** | Work only on the existing shared branch named exactly `development`. Do **not** create branches or worktrees unless explicitly authorized by the operator. |
 | **History** | **No** `reset`, `rebase`, `stash`, `clean`, `amend`, or **force-push** unless operator explicitly requests a specific command. |
 | **Concurrent work** | **Preserve** other in-progress work on the branch; do not discard unrelated changes. |
 | **Staging** | Stage **task-owned files only**; never `git add -A` or blanket staging. |
@@ -180,7 +232,7 @@ Remediation is not complete at implementation time. Each block requires verifica
 
 ### H.3 Verification artifact
 
-Record commands run, job URLs or IDs, and test names in the campaign trace (Section K). Set finding status to `IMPLEMENTED` when code/docs merge locally; do not set `VERIFIED` without Section J.
+Record commands run, job URLs or IDs, and test names in the campaign `README.md` finding register (Section K). Set finding status to `IMPLEMENTED` when code/docs merge locally; do not set `VERIFIED` without Section J.
 
 ---
 
@@ -190,23 +242,39 @@ Record commands run, job URLs or IDs, and test names in the campaign trace (Sect
 
 | Status | Meaning |
 |--------|---------|
-| `OPEN` | Recorded; not yet accepted for remediation. |
+| `PROPOSED` | Produced by audit; not yet operator-accepted. |
 | `ACCEPTED` | Agreed valid; queued for remediation. |
 | `IMPLEMENTING` | Active work in progress on this finding. |
 | `IMPLEMENTED` | Fix applied; awaiting independent verification. |
 | `VERIFIED` | Independent verification passed (Section J). |
-| `CLOSED` | Remediation complete and accepted in campaign rollup. |
+| `CLOSED` | Independent verification passed and remediation for this finding is finalized in the campaign remediation rollup. Does **not** close the audit campaign. |
+| `DISPUTED` | Operator disputes; finding and evidence preserved without acceptance. |
 | `DEFERRED` | Explicitly postponed with reason and revisit trigger. |
-| `REJECTED` | Invalid or out of scope; will not fix. |
+| `REJECTED` | Invalid or out of scope; will not fix; requires rationale. |
+| `WITHDRAWN` | Withdrawn; ID is not reused. |
 
-### I.2 Transition rules
+### I.2 Campaign statuses
 
-- Implementer may set: `OPEN`→`ACCEPTED`, `ACCEPTED`→`IMPLEMENTING`, `IMPLEMENTING`→`IMPLEMENTED`.
+| Status | Meaning |
+|--------|---------|
+| `IN_PROGRESS` | Campaign active; layers may be incomplete. |
+| `COMPLETE` | Scoped **audit** finished; audit rollup published and audit baseline frozen in campaign `README.md` (see [AUDIT_PROTOCOL.md](AUDIT_PROTOCOL.md) section C2). Does **not** mean remediation finished or all findings `CLOSED`. Campaign status remains `COMPLETE` throughout post-audit remediation. |
+| `ABORTED` | Campaign halted with documented reason. |
+
+Legacy material is identified by location under `legacy/`, not by a competing active campaign status.
+
+### I.3 Transition rules
+
+- Audit produces `PROPOSED` findings in the campaign finding register; operator acceptance → `ACCEPTED`.
+- Per-layer snapshots record publication-time decision only (`Status at publication`); they do **not** track `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED`.
+- Implementer may set in the **campaign finding register**: `ACCEPTED`→`IMPLEMENTING`, `IMPLEMENTING`→`IMPLEMENTED`.
 - Implementer **cannot** self-certify `VERIFIED` or `CLOSED`.
-- `DEFERRED` and `REJECTED` require operator acknowledgment and rationale in the register.
-- `CLOSED` follows `VERIFIED` and completion rollup (Section L).
-
----
+- Independent verifier sets `VERIFIED` after Section J.
+- `CLOSED` follows `VERIFIED` and recording the finding's final remediation disposition in the remediation rollup (Section L).
+- Reaching remediation completion does **not** transition campaign status. The campaign was already `COMPLETE` as an audit campaign.
+- `DEFERRED`, `REJECTED`, and `DISPUTED` require operator acknowledgment and rationale in the finding register.
+- `WITHDRAWN` does not delete or reuse the finding ID.
+- **Never** update immutable per-layer report text merely to advance remediation status; update the campaign `README.md` finding register instead.
 
 ## J. Independent Verification Pass
 
@@ -226,43 +294,48 @@ If independent verification is impossible in the environment, **STOP** and reque
 Every remediated finding MUST maintain an auditable chain:
 
 ```text
-finding_id → arch_ref → plan_block → commit_hash → verification_evidence → campaign_status
+finding_id → arch_ref → plan_block → commit_hash → verification_evidence → finding_status
 ```
 
-### K.1 Required fields (per finding or block)
+### K.1 Required fields (per finding in campaign finding register)
 
 | Field | Description |
 |-------|-------------|
 | `finding_id` | Campaign register identifier |
 | `arch_ref` | Doc path + section anchor |
-| `plan_block` | Plan doc path + block/phase id |
-| `commit_hash` | One or more commits (full SHA) |
+| `plan_ref` | Plan doc path + block/phase id |
+| `implementation_commit` | One or more commits (full SHA) |
 | `verification_evidence` | Test names, CI run, reviewer id, date |
-| `campaign_status` | Terminal or in-progress status from Section I |
+| `status` | Per-finding lifecycle status from Section I.1 |
+
+All lifecycle and traceability updates belong in the campaign `README.md` finding register, not in immutable per-layer snapshots.
 
 Broken links in the chain block `CLOSED` for that finding.
 
 ---
 
-## L. Completion Rollup
+## L. Remediation Completion Rollup
 
-### L.1 Campaign closure criteria
+### L.1 Remediation completion criteria
 
-Before recommending audit closure:
+Before declaring remediation of this campaign's accepted findings complete:
 
 - All `ACCEPTED` findings are `CLOSED`, or explicitly `DEFERRED` / `REJECTED` with rationale.
 - No finding remains in `IMPLEMENTING` or `IMPLEMENTED` without an active verifier.
 - Traceability chain (Section K) is complete for every `CLOSED` finding.
 - Queue is empty or only contains deferred items with revisit triggers.
 
-### L.2 Rollup report
+**Critical rule:** Reaching remediation completion does **not** transition campaign status. The campaign was already `COMPLETE` as an audit campaign. Do **not** update `completed_at`, `campaign_end_sha`, or `overall_verdict` during remediation completion.
 
-Produce a short rollup:
+### L.2 Remediation rollup report
 
-- Counts by final status and severity.
+Update the campaign `README.md` **remediation rollup** section (section D.2 in [AUDIT_PROTOCOL.md](AUDIT_PROTOCOL.md)). Do **not** create `CAMPAIGN_SUMMARY.md`. Do **not** overwrite the frozen audit rollup (section D.1). Include at minimum:
+
+- Counts by current remediation status and severity.
 - List of `DEFERRED` and `REJECTED` with reasons.
 - Commits and verification summary.
 - Residual risks explicitly acknowledged.
+- Remediation completion statement (when criteria in L.1 are met).
 
 ### L.3 Follow-on audit
 
@@ -272,7 +345,7 @@ Recommend a **later independent audit** (new campaign) when:
 - Multiple items were deferred.
 - Architecture changed materially during remediation.
 
-Do not claim "fully audited" solely because remediation closed — only that **this campaign's accepted findings were addressed per this protocol**.
+Do not claim "fully audited" solely because remediation closed — only that **this campaign's accepted findings were addressed per this protocol**. Fixing and closing every finding does **not** retroactively change the original campaign `overall_verdict`; a fresh audit campaign determines current platform verdict independently.
 
 ---
 
@@ -280,14 +353,14 @@ Do not claim "fully audited" solely because remediation closed — only that **t
 
 1. [ ] Read `docs/audit_results/README.md`
 2. [ ] Select latest `COMPLETE` campaign (or operator-named); never silent `IN_PROGRESS` remediation
-3. [ ] Build ordered queue from register + arch + plan; group coherent blocks
+3. [ ] Build ordered queue from campaign finding register + arch + plan; group coherent blocks
 4. [ ] Resolve sources per hierarchy; STOP on conflict
 5. [ ] Pick top unblocked block; scoped reads only
 6. [ ] Roadmap + plain language + expected proof; confirm before implement (if interactive)
 7. [ ] Implement with production quality and Section G restrictions
 8. [ ] Verify with new/negative tests + CI + diff review
 9. [ ] Set `IMPLEMENTED`; independent pass → `VERIFIED` → `CLOSED`
-10. [ ] Maintain traceability chain; rollup; recommend follow-on audit if warranted
+10. [ ] Maintain traceability in campaign finding register; update remediation rollup (section D.2) in campaign `README.md`; recommend follow-on audit if warranted. Remediation completion leaves campaign status `COMPLETE`.
 
 ---
 

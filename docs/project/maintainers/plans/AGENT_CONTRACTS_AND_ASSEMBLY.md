@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (AGENT_CONTRACTS_AND_ASSEMBLY plan).
 
-- **Implement / audit default:** §6.1bc ACP-FINISH status · AUDIT-IDEAL §12–§20 table (**Done** skip unless cited) · [`plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md`](plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md) on demand
+- **Implement / audit default:** §6.1bc ACP-FINISH status · AUDIT-IDEAL §12–§20 table (**Done** skip unless cited) · [`plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_implementation_history.md`](plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_implementation_history.md) on demand
 - **Token Optimization:** read feature pair + row `TOKEN-ACP-1` only when adding agent-level hints; do not implement until TOKEN-UER-2 runtime output policy exists.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
@@ -40,6 +40,24 @@
 
 **Ordered queue:** [§6.1bc](.#61bc-harness-implementation-queue--acp-finish-closed) — **Done** (2026-06-13).
 
+### Protocol v2 remediation — STRATEGIC_HARNESS_MODEL (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-INIT.
+
+| Block | Status | Findings | Scope |
+|-------|--------|----------|-------|
+| **SHM-FIX-A** | ACCEPTED / PLANNED | [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-02`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-03`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | One canonical governed execution semantics across direct, Nexus, normal, and resume paths |
+| **SHM-FIX-B** | ACCEPTED / PLANNED | [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-08`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-09`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Typed critical author/runtime boundary; Task/Run/Attempt continuity |
+| **SHM-FIX-C** | ACCEPTED / PLANNED | [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-07`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Explicit production host/profile requirements; product-neutral result transport |
+| **SHM-FIX-D** | ACCEPTED / PLANNED | [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Maturity recertification after A–C verification |
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- If parallel work already fixed a finding, do not duplicate — independently verify before lifecycle advancement.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** only after campaign/remediation rollup confirms closure ([`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md)).
+
 ---
 
 ## Phase TOKEN-ACP — Optional token optimization agent hints (Deferred)
@@ -62,7 +80,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md) | audit history |
+| [`plan/AGENT_CONTRACTS_AND_ASSEMBLY_implementation_history.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY_implementation_history.md) | implementation history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

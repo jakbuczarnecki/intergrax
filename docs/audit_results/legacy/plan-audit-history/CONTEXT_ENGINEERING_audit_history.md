@@ -1,3 +1,8 @@
+> **Migrated (AUDIT-PROTOCOL-RESET-R2):** Historical plan-satellite audit register.
+> **Original path:** docs\project\maintainers\plans\satellites\CONTEXT_ENGINEERING_implementation_history.md
+> **Original role:** Plan satellite — audit history + LC closeout
+> **Canonical audit ownership:** docs/audit_results/ (this file is historical evidence only)
+
 # CONTEXT_ENGINEERING — audit history + LC closeout
 
 **Parent hub:** [`CONTEXT_ENGINEERING.md`](../CONTEXT_ENGINEERING.md)
