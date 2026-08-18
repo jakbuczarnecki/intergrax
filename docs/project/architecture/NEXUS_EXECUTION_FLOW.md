@@ -193,6 +193,30 @@ Single-agent canonical path; multi-agent graph mechanics (sequential, parallel, 
 
 Every product host deployment; multi-agent scale in real operations; universal SLO/capacity evidence; production/customer operational windows. **18/18 harness FLOW Done ≠ production ready.**
 
+<a id="protocol-v22-task-intake-execution-convergence-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 task-intake execution convergence target invariants (2026-08-18)
+
+Accepted [`INTERFACE_TASK_INTAKE`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) findings **02, 03, 05** (2026-08-18). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-INTERFACE-TASK-INTAKE-PERSIST.
+
+1. Supported execution surfaces **MUST** converge through the canonical public execution boundary before `NexusLoop`.
+2. Intended canonical path:
+
+```text
+surface-specific edge parsing
+  → canonical normalized intake
+  → Task
+  → UnifiedTaskRunner
+  → NexusLoop
+  → TaskResult
+```
+
+3. `TaskId` and `RunId` are distinct canonical identities. A `RunId` **MUST NOT** be passed as `Task.task_id`.
+4. Direct `NexusLoop` execution is **not** an equivalent supported production intake path unless an explicitly documented public abstraction proves equivalent runner guarantees (`ActiveTaskRegistry`, `llm_tenant_scope`, canonical runner-level identity/resume handling).
+5. Critical executor capabilities such as prepared-task execution must be expressed as typed Protocol/interface contracts—not `hasattr` / string / reflection discovery.
+
+Remediation blocks: **ITI-FIX-B** (identity), **ITI-FIX-C** (runner convergence + typed executor). Cross-reference Tier-3 intake normalization (**ITI-FIX-A**) in [`TIER3_APPLICATION_ENVIRONMENT`](TIER3_APPLICATION_ENVIRONMENT.md).
+
 ## Scenario capability (summary)
 
 | Capability | State |

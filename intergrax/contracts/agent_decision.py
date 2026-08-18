@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from intergrax.contracts.agent_handoff import AgentHandoff
 from intergrax.contracts.event_severity import EventSeverity
+from intergrax.contracts.governed_continuation_correlation import GovernedContinuationCorrelation
 
 
 class AgentDecisionType(str, Enum):
@@ -58,6 +59,7 @@ class HumanRequest(BaseModel):
     urgency: HumanRequestUrgency = HumanRequestUrgency.NORMAL
     timeout_seconds: Optional[int] = None
     default_on_timeout: Optional[AgentDecisionType] = None
+    governed_continuation: Optional[GovernedContinuationCorrelation] = None
 
     @field_validator("urgency", mode="before")
     @classmethod

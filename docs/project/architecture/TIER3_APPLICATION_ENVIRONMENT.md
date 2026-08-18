@@ -196,6 +196,21 @@ Some current product hosts still use private platform-state composition as a wor
 
 Tier-3 consumer code under top-level `applications/` is not in the current `check_harness_no_getattr.py` scan roots. **Target invariant:** dynamic boundary access must be explicit and mechanically governed. **Ownership:** **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](../maintainers/plans/PLATFORM_FOUNDATION.md) — do not treat as Tier-3-fixed.
 
+<a id="protocol-v22-tier3-intake-target-invariants-2026-08-18"></a>
+
+### Protocol v2.2 Tier-3 intake target invariants (2026-08-18)
+
+Accepted [`INTERFACE_TASK_INTAKE`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) findings **01, 04, 06** (2026-08-18). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+
+1. Surface-specific external schemas/adapters are allowed at the edge.
+2. They **MUST** converge into one canonical normalized intake contract before runtime `Task` execution semantics diverge.
+3. `TaskEnvelope` is the current target canonical normalized intake contract; current implementation has incomplete adoption (**ITI-FIX-A**).
+4. Typed SLA/risk/workspace/constraints semantics should remain typed canonical state after normalization; legacy flat metadata may remain only as bounded compatibility/serialization (**ITI-FIX-A** / finding 04).
+5. Supported product interaction surfaces must reach the canonical execution runner, not production-mounted direct Nexus compatibility paths — cross-reference **ITI-FIX-C** in [`NEXUS_EXECUTION_FLOW`](NEXUS_EXECUTION_FLOW.md).
+6. Streaming/async product intake parity requires real E2E proof. `streaming_intake_enabled=True` alone is not proof (**ITI-FIX-D**).
+
+Historical AUDIT-IDEAL Done labels (including AUDIT-IDEAL-3.2) remain historical facts. Protocol v2.2 accepted new intake parity gaps qualified above.
+
 ## Current implementation state
 
 | Mechanism | State |

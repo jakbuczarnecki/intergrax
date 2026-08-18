@@ -53,6 +53,24 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
+### Protocol v2.2 remediation — INTERFACE_TASK_INTAKE (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-INTERFACE-TASK-INTAKE-PERSIST.
+
+| Block | Status | Findings | Acceptance intent |
+|-------|--------|----------|-------------------|
+| **ITI-FIX-B** | ACCEPTED / PLANNED | [`AUDIT-20260818-INTERFACE_TASK_INTAKE-02`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) | Canonical distinct `TaskId`/`RunId` minting and propagation on every supported public intake surface; migrate all audited consumers; regression coverage proves no `RunId`-as-`TaskId` consumer path; canonical identity helper/factory reused; focused public-surface tests |
+| **ITI-FIX-C** | ACCEPTED / PLANNED | [`AUDIT-20260818-INTERFACE_TASK_INTAKE-03`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md), [`05`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) | Production interaction execution converges through `UnifiedTaskRunner`; remove production reliance on direct-Nexus backward-compat path; replace `hasattr` `execute_prepared` discovery with typed interface; preserve readiness/enrichment semantics; HTTP/interactions/MCP/worker/scheduler supported surfaces retain canonical runner guarantees |
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Historical Done/READY_FOR_CLOSE rows remain historical.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+
+---
+
 ### 6.1aj Harness implementation queue — Nexus execution depth (closed)
 
 **Purpose:** Single ordered list for **Phase FLOW** (Band 2aj). **Closed 2026-06-09** — **18/18 harness Done** (FLOW-8 harness ORCH-CONFIG.5); product host **Deferred** §6.3. Ongoing: **§6.1** maintenance only.

@@ -6,9 +6,16 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Intergrax Public Documentation Map
 
-Start here if you want to understand Intergrax, evaluate proof paths, or find the right next document — without reading internal implementation plans or maintainer controls first.
+Use this map when you know what you want to do but not which document to open.
 
-**First contact and platform discovery** live in the [root README](../../../README.md#explore-the-intergrax-platform) — including the grouped Platform Map and documentation-layer guide. This map routes by **reader intent**; it does not duplicate the full platform index.
+| Gateway | Role |
+| --- | --- |
+| [README](../../../README.md) | First contact — what Intergrax is, persona paths, grouped Platform Map, LKW product discovery |
+| **This map** | Intent-based fallback router — find the right next document by goal |
+| [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) | Project-level architectural mental model |
+| [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) | Complete technical index — 24 domain pairs + cross-layer feature pairs |
+
+**First contact and platform discovery** stay in the [README](../../../README.md#explore-the-intergrax-platform) — including the grouped Platform Map and documentation-layer guide. This file routes by **reader intent**; it does not duplicate the full platform index or persona table.
 
 ---
 
@@ -62,7 +69,7 @@ with Try LKW as the repository’s primary product action.
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
 | Run an evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
 | Understand permission boundaries | [Collaboration](COLLABORATION.md) and [LICENSE](../../../LICENSE) |
-| Perform deep technical review | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) |
+| Perform deep technical review | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) · [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (24-domain index) |
 | Understand why Intergrax exists | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) |
 | See where the product-validation program is heading | [Roadmap](../overview/ROADMAP.md) |
 | Read general first-contact questions | [FAQ](../overview/FAQ.md) |
@@ -96,9 +103,11 @@ README → domain / feature architecture → optional satellite
 
 ## Current product / proof paths
 
+Bounded product and capability proof routes — not a second proof dashboard. For the full status legend and evidence inventory, use [PROOFS](../proofs/PROOFS.md). For first-contact LKW context, see the [README LKW section](../../../README.md#local-knowledge-workspace-lkw).
+
 ### Local Knowledge Workspace
 
-**Primary product proof**
+**Primary Product Proof** — **Backend Product Alpha / MVP** — **PARTIAL**
 
 Local Knowledge Workspace (LKW) is the current primary product-development and platform-validation program. The reader route is:
 
@@ -130,7 +139,7 @@ Intergrax includes a deterministic, policy-governed Token Optimization Engine wi
 
 ## Strategic directions
 
-Future ecosystem and platform directions — **not** current product proofs. These remain lower priority than accepted evidence above.
+Future ecosystem and platform directions — **not** current product proofs and **not** equivalent to shipped platform domains. These remain lower priority than accepted evidence above. Compact status also appears in the [README platform capabilities table](../../../README.md#platform-capabilities-and-directions).
 
 ### Multiplayer AI
 
@@ -158,7 +167,9 @@ publisher portal, or commercial catalog today.
 
 ---
 
-## Public documents
+## Named public documents
+
+Use the [intent table](#start-by-what-you-want-to-do) first. This quick index helps when you already know a document name.
 
 | Document | Purpose |
 |----------|---------|
