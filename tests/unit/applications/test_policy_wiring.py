@@ -210,9 +210,9 @@ def _conflicting_contribution() -> GovernancePolicyContribution:
             policy_id=TOOL_INVOCATION_CONTROL_POLICY_ID,
             version=TOOL_INVOCATION_CONTROL_VERSION,
             handler_id=_HANDLER_ID,
-            configuration_contract_id=TOOL_INVOCATION_CONTROL_CONFIGURATION_CONTRACT_ID,
+            configuration_contract_id=_CONFIG_CONTRACT_ID,
         ),
-        configuration_contract_binding=None,
+        configuration_contract_binding=_PLUGIN_BINDING,
     )
 
 

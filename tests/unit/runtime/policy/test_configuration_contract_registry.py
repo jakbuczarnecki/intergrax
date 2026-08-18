@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.applications.contracts.environment_profile import PolicyRulesProfile
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.policy_catalog import PolicyDefinition, PolicyDefinitionSource
 from intergrax.contracts.tool_invocation_control_policy import (
     TOOL_INVOCATION_CONTROL_CONFIGURATION_CONTRACT_ID,
@@ -156,6 +157,9 @@ def _governance_contribution(
 
 _CONTRIBUTION_EP = _governance_contribution()
 _DEFINITION_ONLY = _plugin_policy_definition()
+_BUILTIN_ID_DEFINITION_ONLY = _plugin_policy_definition(
+    configuration_contract_id=TOOL_INVOCATION_CONTROL_CONFIGURATION_CONTRACT_ID,
+)
 
 
 def _builtin_override_contribution() -> GovernancePolicyContribution:
@@ -429,6 +433,36 @@ def test_plugin_definition_missing_binding_rejected(
     )
 
 
+def test_plugin_definition_builtin_contract_id_missing_binding_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    qualification = _production_package_qualification(compatibility=_compatible_platform())
+    registry, handler_provenance = _load_admitted_handlers(
+        monkeypatch,
+        qualification=qualification,
+    )
+    _install_eps(
+        monkeypatch,
+        [
+            _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
+            _definition_ep(
+                "builtin-id-no-binding",
+                "_BUILTIN_ID_DEFINITION_ONLY",
+                distribution=_PACKAGE_NAME,
+            ),
+        ],
+    )
+    outcome = load_policy_definition_plugin_report(
+        registry,
+        handler_provenance,
+        policy=_production_load_policy(qualification),
+    )
+    assert outcome.contributions == ()
+    assert outcome.report.rejected[0].reason_code is (
+        PluginAdmissionReasonCode.POLICY_CONFIGURATION_CONTRACT_BINDING_MISSING
+    )
+
+
 def test_plugin_definition_cannot_use_foreign_package_binding(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -578,7 +612,7 @@ def test_canonical_runtime_bundle_policy_to_typed_config(
         policy_rules=PolicyRulesProfile(inline_rules=[]),
         discover_entry_points=True,
         package_qualification_lookup=_lookup_for(qualification),
-        execution_mode=None,
+        execution_mode=ExecutionMode.STRICT,
     )
     assert bundle.declarative_policy_runtime is not None
     definition = bundle.policy_catalog.resolve(

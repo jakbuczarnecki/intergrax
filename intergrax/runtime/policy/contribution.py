@@ -226,9 +226,6 @@ def _validate_configuration_contract_binding(
             )
         return None
 
-    if contract_id in reserved:
-        return None
-
     return PluginAdmissionRejection(
         spec=spec,
         reason_code=PluginAdmissionReasonCode.POLICY_CONFIGURATION_CONTRACT_BINDING_MISSING,
