@@ -13,7 +13,7 @@ Use this map when you know what you want to do but not which document to open.
 | [README](../../../README.md) | First contact — what Intergrax is, persona paths, grouped Platform Map, LKW product discovery |
 | **This map** | Intent-based fallback router — find the right next document by goal |
 | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) | Project-level architectural mental model |
-| [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) | Complete technical domain and feature index (24 pairs) |
+| [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) | Complete technical index — 24 domain pairs + cross-layer feature pairs |
 
 **First contact and platform discovery** stay in the [README](../../../README.md#explore-the-intergrax-platform) — including the grouped Platform Map and documentation-layer guide. This file routes by **reader intent**; it does not duplicate the full platform index or persona table.
 
@@ -103,7 +103,7 @@ README → domain / feature architecture → optional satellite
 
 ## Current product / proof paths
 
-Bounded product and capability proof routes — not a second proof dashboard. For the full status legend and evidence inventory, use [PROOFS](../proofs/PROOFS.md). For first-contact LKW context, see the [README LKW section](../../../README.md#try-lkw).
+Bounded product and capability proof routes — not a second proof dashboard. For the full status legend and evidence inventory, use [PROOFS](../proofs/PROOFS.md). For first-contact LKW context, see the [README LKW section](../../../README.md#local-knowledge-workspace-lkw).
 
 ### Local Knowledge Workspace
 
