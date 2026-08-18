@@ -83,7 +83,7 @@ Foreign **Platform / ORCH / FLOW / FAUDIT** registers were removed from this hub
 | FAUDIT-32 | [`plan/satellites/PLATFORM_FOUNDATION_phase_closeout.md`](plan/satellites/PLATFORM_FOUNDATION_phase_closeout.md) |
 | FLOW depth | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) |
 
-**Audit history (CVL-1…3, LC closeout):** [`plan/satellites/CRITIC_VERIFICATION_audit_history.md`](plan/satellites/CRITIC_VERIFICATION_audit_history.md)
+**Audit history (CVL-1…3, LC closeout):** [`plan/satellites/CRITIC_VERIFICATION_implementation_history.md`](plan/satellites/CRITIC_VERIFICATION_implementation_history.md)
 
 ---
 """,

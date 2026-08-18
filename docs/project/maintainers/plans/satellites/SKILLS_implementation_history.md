@@ -1,6 +1,9 @@
-# SKILLS — audit history + LC closeout
+# SKILLS — implementation history + LC closeout
 
 **Parent hub:** [`SKILLS.md`](../SKILLS.md)
+
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/SKILLS_audit_history.md](../../../../audit_results/legacy/plan-audit-history/SKILLS_audit_history.md).
+
 
 ## Phase TS — Tools & skills control plane closeout
 

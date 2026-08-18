@@ -1,4 +1,4 @@
-﻿# Intergrax Audit Remediation Protocol
+# Intergrax Audit Remediation Protocol
 
 **Version:** 1.0  
 **Audience:** Human operators and model executors (Cursor agents, CI remediation jobs)  
@@ -13,14 +13,14 @@ This protocol is **canonical**. Executors MUST follow it in order. Deviations re
 ### A.1 Read the audit index
 
 1. Read `docs/audit_results/README.md` before selecting any campaign.
-2. Identify campaigns by **name**, **date**, and **status** (`COMPLETE`, `IN_PROGRESS`, `ARCHIVED`).
+2. Identify campaigns by **name**, **date**, and **status** (`IN_PROGRESS`, `COMPLETE`, `ABORTED`).
 3. Note the campaign's **scope statement**, **severity model**, and **register location**.
 
 ### A.2 Default campaign selection
 
 | Condition | Action |
 |-----------|--------|
-| Operator names a campaign | Use that campaign if it exists and is not `ARCHIVED` without operator override. |
+| Operator names a campaign | Use that campaign if it exists and is not `ABORTED` without operator override. |
 | Operator does not name a campaign | Select the **latest `COMPLETE`** campaign whose scope matches the remediation request. |
 | No `COMPLETE` campaign matches | **STOP.** Report gap; do not invent findings or remediate from partial notes. |
 
@@ -99,6 +99,25 @@ Record the conflict in the campaign register comment field; do not implement unt
 
 ---
 
+## D0. Stale-finding revalidation (before every remediation block)
+
+Before implementing **every** remediation block:
+
+1. Resolve current `development` HEAD (`git rev-parse HEAD` on branch `development`).
+2. Compare it with the `audited_sha` of the finding.
+3. Revalidate that the finding still exists on current code.
+4. Verify that target architecture/plan has not materially changed.
+
+| Outcome | Action |
+|---------|--------|
+| Finding still exists | Implement normally. |
+| Finding already fixed | **Do not** implement a duplicate fix. Identify existing commit/change, run independent verification, attach evidence, progress toward `VERIFIED`/`CLOSED` when justified. |
+| Finding changed manifestation | Update trace/reconciliation; do not silently implement the stale prescription. |
+| Current architecture contradicts old remediation target | **STOP** and report architecture conflict. |
+
+An audit finding defines the **historical observed problem**. It is **not** permission to blindly overwrite current source.
+
+
 ## D. Task Selection
 
 1. Select the **highest-priority unblocked** item from the remediation queue (Section B).
@@ -152,7 +171,7 @@ Executors MUST obey these constraints during remediation:
 
 | Rule | Requirement |
 |------|-------------|
-| **Branch** | Work on a **development branch**; never commit remediation directly to protected default branches unless operator explicitly directs. |
+| **Branch** | Work only on the existing shared branch named exactly `development`. Do **not** create branches or worktrees unless explicitly authorized by the operator. |
 | **History** | **No** `reset`, `rebase`, `stash`, `clean`, `amend`, or **force-push** unless operator explicitly requests a specific command. |
 | **Concurrent work** | **Preserve** other in-progress work on the branch; do not discard unrelated changes. |
 | **Staging** | Stage **task-owned files only**; never `git add -A` or blanket staging. |
@@ -190,23 +209,36 @@ Record commands run, job URLs or IDs, and test names in the campaign trace (Sect
 
 | Status | Meaning |
 |--------|---------|
-| `OPEN` | Recorded; not yet accepted for remediation. |
+| `PROPOSED` | Produced by audit; not yet operator-accepted. |
 | `ACCEPTED` | Agreed valid; queued for remediation. |
 | `IMPLEMENTING` | Active work in progress on this finding. |
 | `IMPLEMENTED` | Fix applied; awaiting independent verification. |
 | `VERIFIED` | Independent verification passed (Section J). |
 | `CLOSED` | Remediation complete and accepted in campaign rollup. |
+| `DISPUTED` | Operator disputes; finding and evidence preserved without acceptance. |
 | `DEFERRED` | Explicitly postponed with reason and revisit trigger. |
-| `REJECTED` | Invalid or out of scope; will not fix. |
+| `REJECTED` | Invalid or out of scope; will not fix; requires rationale. |
+| `WITHDRAWN` | Withdrawn; ID is not reused. |
 
-### I.2 Transition rules
+### I.2 Campaign statuses
 
-- Implementer may set: `OPEN`→`ACCEPTED`, `ACCEPTED`→`IMPLEMENTING`, `IMPLEMENTING`→`IMPLEMENTED`.
+| Status | Meaning |
+|--------|---------|
+| `IN_PROGRESS` | Campaign active; layers may be incomplete. |
+| `COMPLETE` | Scoped layers finished; rollup published in campaign `README.md`. |
+| `ABORTED` | Campaign halted with documented reason. |
+
+Legacy material is identified by location under `legacy/`, not by a competing active campaign status.
+
+### I.3 Transition rules
+
+- Audit produces `PROPOSED` findings; operator acceptance → `ACCEPTED`.
+- Implementer may set: `ACCEPTED`→`IMPLEMENTING`, `IMPLEMENTING`→`IMPLEMENTED`.
 - Implementer **cannot** self-certify `VERIFIED` or `CLOSED`.
-- `DEFERRED` and `REJECTED` require operator acknowledgment and rationale in the register.
+- Independent verifier sets `VERIFIED` after Section J.
 - `CLOSED` follows `VERIFIED` and completion rollup (Section L).
-
----
+- `DEFERRED`, `REJECTED`, and `DISPUTED` require operator acknowledgment and rationale in the register.
+- `WITHDRAWN` does not delete or reuse the finding ID.
 
 ## J. Independent Verification Pass
 

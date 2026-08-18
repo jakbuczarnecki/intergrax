@@ -5,7 +5,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/satellites/CODE_CRAFT_audit_history.md`](plan/satellites/CODE_CRAFT_audit_history.md) | audit history |
+| [`plan/satellites/CODE_CRAFT_implementation_history.md`](plan/satellites/CODE_CRAFT_implementation_history.md) | implementation history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
@@ -29,7 +29,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Do not read this entire file in one session** (CODE_CRAFT plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/CODE_CRAFT_audit_history.md`](plan/satellites/CODE_CRAFT_audit_history.md). §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/CODE_CRAFT_implementation_history.md`](plan/satellites/CODE_CRAFT_implementation_history.md). §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/CODE_CRAFT.md`](../../architecture/CODE_CRAFT.md) read-scope block only.

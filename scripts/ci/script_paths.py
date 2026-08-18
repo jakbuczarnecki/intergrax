@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
 """Canonical basename → scripts/ relative path map for CI gate runners."""

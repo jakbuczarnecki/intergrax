@@ -32,7 +32,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | Satellite | Contents |
 |-----------|----------|
 | [`plan/satellites/ELASTIC_CAPACITY_AND_SCALING_appendices.md`](plan/satellites/ELASTIC_CAPACITY_AND_SCALING_appendices.md) | appendices |
-| [`plan/satellites/ELASTIC_CAPACITY_AND_SCALING_audit_history.md`](plan/satellites/ELASTIC_CAPACITY_AND_SCALING_audit_history.md) | audit history |
+| [`plan/satellites/ELASTIC_CAPACITY_AND_SCALING_implementation_history.md`](plan/satellites/ELASTIC_CAPACITY_AND_SCALING_implementation_history.md) | implementation history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

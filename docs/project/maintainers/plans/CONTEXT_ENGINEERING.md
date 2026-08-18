@@ -5,7 +5,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/satellites/CONTEXT_ENGINEERING_audit_history.md`](plan/satellites/CONTEXT_ENGINEERING_audit_history.md) | audit history |
+| [`plan/satellites/CONTEXT_ENGINEERING_implementation_history.md`](plan/satellites/CONTEXT_ENGINEERING_implementation_history.md) | implementation history |
 | [`plan/satellites/CONTEXT_ENGINEERING_embedded_detail.md`](plan/satellites/CONTEXT_ENGINEERING_embedded_detail.md) | embedded detail |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
@@ -30,7 +30,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Do not read this entire file in one session** (CONTEXT_ENGINEERING plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/CONTEXT_ENGINEERING_audit_history.md`](plan/satellites/CONTEXT_ENGINEERING_audit_history.md) · [`plan/satellites/CONTEXT_ENGINEERING_embedded_detail.md`](plan/satellites/CONTEXT_ENGINEERING_embedded_detail.md). §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/CONTEXT_ENGINEERING_implementation_history.md`](plan/satellites/CONTEXT_ENGINEERING_implementation_history.md) · [`plan/satellites/CONTEXT_ENGINEERING_embedded_detail.md`](plan/satellites/CONTEXT_ENGINEERING_embedded_detail.md). §6.1 maintenance queues — open P0/P1 only
 - **Token Optimization:** read feature pair + rows `TOKEN-CE-1` / `TOKEN-CE-2`; inspect existing `ContextCompiler`, `DefaultNexusContextEngine`, `ContextBudgetPolicy`, `DegradationLadder`, and adapter-token preflight only as needed.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.

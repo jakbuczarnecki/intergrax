@@ -1,6 +1,9 @@
-# OBSERVABILITY — audit history + LC closeout
+# OBSERVABILITY — implementation history + LC closeout
 
 **Parent hub:** [`OBSERVABILITY.md`](../OBSERVABILITY.md)
+
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/OBSERVABILITY_audit_history.md](../../../../audit_results/legacy/plan-audit-history/OBSERVABILITY_audit_history.md).
+
 
 ## Phase IDEAL-L3 — Observability ops depth (Band 2ax)
 

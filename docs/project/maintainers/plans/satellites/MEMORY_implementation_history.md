@@ -1,6 +1,9 @@
-# MEMORY — audit history + LC closeout
+# MEMORY — implementation history + LC closeout
 
 **Parent hub:** [`MEMORY.md`](../MEMORY.md)
+
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/MEMORY_audit_history.md](../../../../audit_results/legacy/plan-audit-history/MEMORY_audit_history.md).
+
 
 ## Phase MEM-VEC — Vector memory integration (Band 2aw)
 

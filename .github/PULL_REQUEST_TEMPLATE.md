@@ -1,4 +1,4 @@
-﻿Before submitting substantial work, read [docs/project/community/COLLABORATION.md](../docs/project/community/COLLABORATION.md) and [LICENSE](../LICENSE).
+Before submitting substantial work, read [docs/project/community/COLLABORATION.md](../docs/project/community/COLLABORATION.md) and [LICENSE](../LICENSE).
 
 ## Summary
 
@@ -30,7 +30,7 @@
 
 <!-- Mark affected AUDIT_MAP layers (1–32); link IDEAL-* ID when applicable -->
 
-- [ ] Layer impact assessed (see `docs/project/technical/guides/docs/audit_results/AUDIT_PROTOCOL.md`)
+- [ ] Layer impact assessed (see `docs/audit_results/AUDIT_PROTOCOL.md`)
 - [ ] Domain plan pair updated when contracts change (`docs/project/architecture/<DOMAIN>.md` + `docs/project/maintainers/plans/<DOMAIN>.md`)
 
 ## Architecture compliance

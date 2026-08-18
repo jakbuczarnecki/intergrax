@@ -112,7 +112,7 @@ def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
     sat_embedded: list[str] = []
     sat_phases: list[str] = []
     sat_appendices: list[str] = []
-    sat_audit_history: list[str] = []
+    sat_implementation_history: list[str] = []
 
     for h2_title, h2_body in h2s:
         if h2_title == "__preamble__":
@@ -135,7 +135,7 @@ def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
             continue
 
         if any(h2_title.startswith(p) for p in cfg.move_h2_prefixes):
-            sat_audit_history.extend(h2_body)
+            sat_implementation_history.extend(h2_body)
             continue
 
         if any(h2_title.startswith(p) for p in cfg.move_h2_detail_prefixes):
@@ -203,7 +203,7 @@ def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
     satellites: dict[str, str] = {}
     d = cfg.domain
 
-    # Preamble lines starting with # Audit Result → audit history
+    # Preamble lines starting with # Audit Result → implementation history
     if cfg.domain == "CRITIC_VERIFICATION":
         cleaned: list[str] = []
         audit_chunk: list[str] = []
@@ -214,7 +214,7 @@ def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
                 audit_chunk.append(line)
             elif in_audit and line.startswith("## "):
                 in_audit = False
-                sat_audit_history.extend(audit_chunk)
+                sat_implementation_history.extend(audit_chunk)
                 audit_chunk = []
                 cleaned.append(line)
             elif in_audit:
@@ -222,12 +222,12 @@ def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
             else:
                 cleaned.append(line)
         if audit_chunk:
-            sat_audit_history.extend(audit_chunk)
+            sat_implementation_history.extend(audit_chunk)
         hub = cleaned
 
-    if sat_audit_history:
-        fn = f"{d}_audit_history.md"
-        satellites[fn] = render_satellite(d, "audit history + LC closeout", "\n".join(sat_audit_history))
+    if sat_implementation_history:
+        fn = f"{d}_implementation_history.md"
+        satellites[fn] = render_satellite(d, "implementation history + LC closeout", "\n".join(sat_implementation_history))
 
     if sat_closed:
         fn = f"{d}_06_closed_queues.md"

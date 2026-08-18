@@ -11,9 +11,18 @@
 
 > **Your job is not to confirm that Intergrax is well designed. Your job is to try to prove that it is not.**
 
-Assume defects exist until falsified with evidence. A prior PASS, a green CI run, or polished architecture prose does not reduce skepticism. Treat every claim as guilty until inspected.
+**Falsification principles (brutal and neutral):**
 
-This protocol is **model-executable**: an agent following it must produce the same artifacts, evidence standards, and verdict discipline regardless of tooling. It is **not** tied to Cursor, any specific orchestrator, `progress.json`, or deleted harness machinery.
+- Assume every material claim is **UNVERIFIED** until independently examined.
+- Actively search for counterexamples and failure modes.
+- There is no reward for PASS and no reward for FAIL.
+- Never manufacture, inflate, or preserve a finding merely to satisfy the adversarial posture.
+- If a hypothesis cannot be supported with evidence, downgrade it to an open question or discard it.
+- A clean **PASS** backed by a serious falsification attempt is a valid audit outcome.
+
+A prior PASS, a green CI run, or polished architecture prose does not reduce skepticism.
+
+This protocol is **model-executable**: an agent following it must produce the same artifacts, evidence standards, and verdict discipline regardless of tooling. It is **not** tied to Cursor, any specific orchestrator, `progress.json`, or deleted harness machinery.: an agent following it must produce the same artifacts, evidence standards, and verdict discipline regardless of tooling. It is **not** tied to Cursor, any specific orchestrator, `progress.json`, or deleted harness machinery.
 
 ---
 
@@ -47,40 +56,147 @@ When sources conflict, resolve in this order (highest wins):
 
 ---
 
+
+## B1. Architecture as auditable claim
+
+Architecture (`docs/project/architecture/`, capability architecture hubs) is a **target-state source of truth for implementation**, but architecture itself is **also an auditable claim**.
+
+The audit must not stop at "code matches architecture." Separately ask:
+
+- Is the target architecture production-grade?
+- Are the abstractions correct?
+- Are responsibilities in the correct layer?
+- Are dependency directions appropriate?
+- Are stated guarantees realistically enforceable?
+- Is the design safe under failure, retry, restart, concurrency, and multi-host operation?
+- Does it support reusable platform mechanisms rather than current-product special cases?
+- Would a second independent application reuse the mechanism cleanly?
+- Does the design create unnecessary parallel universal mechanisms?
+- Are important production invariants absent from the architecture?
+- Is a documented abstraction only paper architecture?
+- Are industry-standard mature production patterns materially stronger for this problem?
+
+**Finding kinds (architecture vs implementation):**
+
+| Kind | Meaning |
+|------|---------|
+| **IMPLEMENTATION DEFECT** | Code contradicts a valid architecture target or invariant. |
+| **ARCHITECTURE DEFECT** | Target design is wrong, incomplete, or not production-grade. |
+| **IMPLEMENTATION/ARCHITECTURE DRIFT** | Code and architecture disagree; ownership of the gap must be explicit. |
+
+Do not treat canonical architecture prose as automatically correct. External comparison is evidence-driven when materially useful; do not perform internet research merely for decoration.
+
+
 ## C. Campaign model
 
-An audit **campaign** is a bounded run against a pinned repository state.
+An audit **campaign** is a **longitudinal audit sequence** across one or more layers. Each **layer audit** is an **immutable snapshot** pinned to an exact repository SHA.
+
+After each accepted layer the canonical workflow is:
+
+```
+audit → persist result → sync architecture → sync implementation plan → commit → next layer
+```
+
+Therefore `development` may advance between layer audits. Do **not** model a multi-layer campaign as audited against a single pinned SHA.
 
 ### Campaign identity
 
 - **Campaign date:** `YYYY-MM-DD` (UTC calendar date when the campaign **starts**).
-- **Campaign root:** `docs/audit_results/YYYY-MM-DD/`
-- **Register:** `docs/audit_results/README.md` — append one row per campaign (date, SHA, status, operator, summary verdict).
+- **Campaign root:** `docs/audit_results/YYYY-MM-DD/` (see same-day naming below).
+- **Global registry:** `docs/audit_results/README.md` — protocol entry point, global campaign registry, latest-campaign discovery, legacy pointer.
 
-### Campaign contents
+### Campaign directory layout
 
+```text
+docs/audit_results/
+  README.md
+  AUDIT_PROTOCOL.md
+  AUDIT_REMEDIATION_PROTOCOL.md
+  YYYY-MM-DD/
+    README.md              # REQUIRED — campaign master register AND rollup
+    <LAYER_CODE>.md        # immutable per-layer audit snapshot
+    ...
+  legacy/
+    ...
 ```
-docs/audit_results/YYYY-MM-DD/
-  README.md              # optional campaign-local index (layers, SHA, status)
-  CAMPAIGN_SUMMARY.md    # rollup after all scoped layers complete or abort
-  <LAYER_CODE>.md        # one file per audited layer/domain (see section O)
-```
 
-### Required metadata (campaign and per-layer)
+**Do not** require a separate `CAMPAIGN_SUMMARY.md`. The campaign `README.md` is the master register and campaign rollup.
 
-- **SHA:** full commit hash audited.
-- **Status:** `IN_PROGRESS` | `COMPLETE` | `ABORTED`
-- **Same-day naming:** if multiple campaigns start the same UTC day, suffix folders: `YYYY-MM-DD-a`, `YYYY-MM-DD-b`, etc., each registered in `README.md`.
+### Same-day campaigns
+
+Use **one** convention only:
+
+- `YYYY-MM-DD`
+- `YYYY-MM-DD_run-2`
+- `YYYY-MM-DD_run-3`
+
+Do **not** use `YYYY-MM-DD-a` / `-b` suffixes.
+
+### Required campaign metadata (in campaign `README.md`)
+
+| Field | Description |
+|-------|-------------|
+| `campaign_id` | Dated directory name (e.g. `2026-08-18` or `2026-08-18_run-2`) |
+| `started_at` | UTC timestamp when campaign started |
+| `completed_at` | UTC timestamp when campaign closed (or null while in progress) |
+| `status` | `IN_PROGRESS` \| `COMPLETE` \| `ABORTED` |
+| `campaign_start_sha` | Repository SHA at campaign start |
+| `campaign_end_sha` | Final repository state after campaign-owned documentation synchronization |
+| `scope` | Layers/domains in scope |
+| `overall_verdict` | Campaign rollup verdict (section J) |
+
+Legacy material is identified by location under `legacy/`, not by a competing active campaign status.
+
+### Required per-layer register metadata (in campaign `README.md` layer table)
+
+| Field | Description |
+|-------|-------------|
+| `layer` | Layer code (e.g. `MEMORY`, `ORCHESTRATION`) |
+| `status` | Layer audit status |
+| `audited_sha` | **Exact** SHA this layer was audited against (immutable once published) |
+| `verdict` | Layer verdict (section J) |
+| `finding_count` | Count by severity |
+| `architecture_sync` | Whether arch sync completed for accepted findings |
+| `plan_sync` | Whether plan sync completed for accepted findings |
+| `post_sync_sha` | Commit SHA after arch/plan sync (when synchronization created a later commit) |
+
+Every per-layer result file MUST record the same `audited_sha`. Evidence in that result refers to **that** SHA only.
+
+**Do not** retroactively change `audited_sha` when architecture/plan sync advances `development`.
+
+At campaign completion, `campaign_end_sha` records the final repository state after campaign-owned documentation synchronization.
+
+### Concurrent changes between layer audits
+
+If runtime/product code changes concurrently between layer audits:
+
+- Audit the next layer against the **then-current** exact SHA; record it explicitly.
+- If concurrent changes invalidate already-audited findings, flag the affected layer for **revalidation** rather than pretending the whole campaign used one immutable source tree.
 
 ### Lifecycle
 
-1. Create folder + register row with `IN_PROGRESS`.
-2. Execute layers per operator roadmap (section P).
-3. Set `COMPLETE` when scoped layers finish and rollup (section N) is written, or `ABORTED` with reason if halted.
+1. Create dated folder + campaign `README.md` with `IN_PROGRESS` and `campaign_start_sha`.
+2. Execute layers per operator roadmap (section P); persist each layer at its `audited_sha`.
+3. After each accepted layer: arch/plan sync → commit → record `post_sync_sha` in campaign register.
+4. Set campaign `COMPLETE` when scoped layers finish and rollup is written in campaign `README.md`, or `ABORTED` with reason.
 
-**No dependency** on `progress.json`, orchestrator scripts, or IDE-specific state files. Those may exist elsewhere but are not part of this protocol.
+**No dependency** on `progress.json`, orchestrator scripts, or IDE-specific state files.
 
----
+
+## C1. Context and read discipline
+
+- Audit **one layer** as the normal atomic unit.
+- Begin from its architecture/plan ownership pair and known code entrypoints.
+- Use path-filtered textual search before broad exploration.
+- Follow concrete call paths and evidence.
+- Do **not** run repo-wide semantic searches by default.
+- Do **not** load all architecture/plan docs for all layers.
+- Do **not** run full-suite tests when targeted tests or gates are sufficient.
+- Expand context only when a concrete hypothesis or cross-layer dependency requires it.
+- When expanding materially, record **why** in the layer file.
+
+Accuracy outranks token savings, but targeted evidence outranks bulk reading.
+
 
 ## D. Layer-by-layer discipline
 
@@ -203,8 +319,9 @@ Lack of evidence for production-safe behavior under these stresses is a finding 
 
 ### Categories (use one primary)
 
-- **DEFECT** — implementation contradicts specified behavior or invariants.
-- **ARCHITECTURAL RISK** — design allows invalid states; may not be triggered in current tests.
+- **IMPLEMENTATION DEFECT** — implementation contradicts specified behavior or invariants.
+- **ARCHITECTURE DEFECT** — target design is wrong, incomplete, or not production-grade.
+- **IMPLEMENTATION/ARCHITECTURE DRIFT** — code and architecture disagree; gap ownership must be explicit.
 - **BOUNDARY VIOLATION** — tier/import/product-surface rule broken.
 - **SECURITY** — authn/authz/secrets/trust-boundary issue.
 - **RELIABILITY** — crash, duplication, lost work, non-idempotent side effects.
@@ -215,6 +332,24 @@ Lack of evidence for production-safe behavior under these stresses is a finding 
 - **PROCESS / CLAIM** — `Done` or `PASS` unsupported by evidence.
 
 ---
+
+## G1. Finding lifecycle status
+
+| Status | Meaning |
+|--------|---------|
+| `PROPOSED` | Produced by audit; not yet operator-accepted. |
+| `ACCEPTED` | Operator accepted; queued for remediation. |
+| `IMPLEMENTING` | Remediation in progress. |
+| `IMPLEMENTED` | Fix applied; awaiting independent verification. |
+| `VERIFIED` | Independent verification passed. |
+| `CLOSED` | Campaign remediation rollup complete for this finding. |
+| `DISPUTED` | Operator disputes; finding and evidence preserved without acceptance. |
+| `DEFERRED` | Postponed; requires rationale and revisit trigger. |
+| `REJECTED` | Invalid or out of scope; requires rationale. |
+| `WITHDRAWN` | Withdrawn; ID is not reused. |
+
+Rules: audit produces `PROPOSED`; operator acceptance → `ACCEPTED`; remediation starts → `IMPLEMENTING`; implementer may reach `IMPLEMENTED`; implementer **must not** self-certify `VERIFIED` or `CLOSED`; independent verifier → `VERIFIED`; campaign remediation rollup → `CLOSED`.
+
 
 ## H. Finding IDs
 
@@ -319,7 +454,7 @@ Synchronization is **post-acceptance** only — audits do not edit arch/plan to 
 
 ## N. Cross-layer review (rollup)
 
-When multiple layers complete in one campaign, author `CAMPAIGN_SUMMARY.md`:
+When multiple layers complete in one campaign, update the campaign `README.md` rollup section:
 
 1. **Scope table** — layer, SHA, verdict, finding counts by severity.
 2. **Cross-layer findings** — mismatches spanning tiers (e.g. orchestration assumes memory guarantee memory does not provide).
@@ -327,7 +462,7 @@ When multiple layers complete in one campaign, author `CAMPAIGN_SUMMARY.md`:
 4. **Campaign verdict** — per section J.
 5. **Recommended remediation order** — operator-facing, not implementation.
 
-Cross-layer issues get their own IDs using layer code `CROSS` (e.g. `AUDIT-20260818-CROSS-01`) in the campaign summary.
+Cross-layer issues get their own IDs using layer code `CROSS` (e.g. `AUDIT-20260818-CROSS-01`) in the campaign `README.md` rollup.
 
 ---
 
@@ -342,7 +477,7 @@ Each `docs/audit_results/YYYY-MM-DD/<LAYER_CODE>.md` MUST contain:
 - Campaign date:
 - Layer code:
 - Tier(s):
-- SHA:
+- audited_sha:
 - Status: IN_PROGRESS | COMPLETE | ABORTED
 - Auditor:
 - Architecture doc(s):
@@ -363,7 +498,7 @@ Each `docs/audit_results/YYYY-MM-DD/<LAYER_CODE>.md` MUST contain:
 ### AUDIT-YYYYMMDD-<LAYER_CODE>-01
 - Severity:
 - Category:
-- Status: OPEN | ACCEPTED | DEFERRED | WITHDRAWN
+- Status: PROPOSED | ACCEPTED | IMPLEMENTING | IMPLEMENTED | VERIFIED | CLOSED | DISPUTED | DEFERRED | REJECTED | WITHDRAWN
 - Claim falsified:
 - Observation:
 - Location:

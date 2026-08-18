@@ -46,7 +46,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | Satellite | Contents |
 |-----------|----------|
 | [`plan/satellites/UNIFIED_EXECUTION_RUNTIME_06_closed_queues.md`](plan/satellites/UNIFIED_EXECUTION_RUNTIME_06_closed_queues.md) | 06 closed queues |
-| [`plan/satellites/UNIFIED_EXECUTION_RUNTIME_audit_history.md`](plan/satellites/UNIFIED_EXECUTION_RUNTIME_audit_history.md) | audit history |
+| [`plan/satellites/UNIFIED_EXECUTION_RUNTIME_implementation_history.md`](plan/satellites/UNIFIED_EXECUTION_RUNTIME_implementation_history.md) | implementation history |
 | [`plan/satellites/UNIFIED_EXECUTION_RUNTIME_embedded_detail.md`](plan/satellites/UNIFIED_EXECUTION_RUNTIME_embedded_detail.md) | embedded detail |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** file per session unless RESUME cites more.

@@ -1,6 +1,9 @@
-# UNIFIED_EXECUTION_RUNTIME — audit history + LC closeout
+# UNIFIED_EXECUTION_RUNTIME — implementation history + LC closeout
 
 **Parent hub:** [`UNIFIED_EXECUTION_RUNTIME.md`](../UNIFIED_EXECUTION_RUNTIME.md)
+
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/UNIFIED_EXECUTION_RUNTIME_audit_history.md](../../../../audit_results/legacy/plan-audit-history/UNIFIED_EXECUTION_RUNTIME_audit_history.md).
+
 
 ## Phase SEC-PLANES — Security & Trust Planes (**Closed**)
 

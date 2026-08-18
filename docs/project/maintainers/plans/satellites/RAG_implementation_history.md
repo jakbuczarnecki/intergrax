@@ -1,6 +1,9 @@
-# RAG — audit history + LC closeout
+# RAG — implementation history + LC closeout
 
 **Parent hub:** [`RAG.md`](../RAG.md)
+
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/RAG_audit_history.md](../../../../audit_results/legacy/plan-audit-history/RAG_audit_history.md).
+
 
 ## Phase RAG — RAG retrieval control plane closeout
 

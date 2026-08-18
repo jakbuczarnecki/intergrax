@@ -141,8 +141,8 @@ Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** — Canonical domain pair with normative store/lifecycle contracts, ADRs (MEM-001, MEM-002), and mapped cross-layer boundaries (CE, RAG, UCL); Post-L3 audit baseline **32/32 L3** and AUDIT-IDEAL memory rows closed ([plan](../maintainers/plans/MEMORY.md)).
-- **I4** — Core stores, consolidation, and vector recall paths wired through Nexus / `MemoryView`; phases MEM, MEM-DEPTH, MEM-VEC **Done** ([plan](../maintainers/plans/MEMORY.md) · audit history satellite). Procedural memory remains **minimal**; LCI-4D **READY_FOR_REVIEW** — not I5.
-- **P2** — Lab/reference profiles and sqlite integration bundle ([audit history](../maintainers/plans/satellites/MEMORY_audit_history.md)); **public production qualification not claimed** — no Memory entry in the public proof catalog ([Evidence / proof](#evidence--proof)).
+- **I4** — Core stores, consolidation, and vector recall paths wired through Nexus / `MemoryView`; phases MEM, MEM-DEPTH, MEM-VEC **Done** ([plan](../maintainers/plans/MEMORY.md) · implementation history satellite). Procedural memory remains **minimal**; LCI-4D **READY_FOR_REVIEW** — not I5.
+- **P2** — Lab/reference profiles and sqlite integration bundle ([implementation history](../maintainers/plans/satellites/MEMORY_implementation_history.md)); **public production qualification not claimed** — no Memory entry in the public proof catalog ([Evidence / proof](#evidence--proof)).
 - **E3** — Gate suite and integration paths (vector LTM wiring, acceptance) cited in plan closeout; ADRs and audit slice. No dedicated public proof route — not E4/E5.
 
 > **Phase vs maturity:** MEM / MEM-DEPTH / MEM-VEC **Done** are **plan delivery states**, not production-readiness (P) claims.

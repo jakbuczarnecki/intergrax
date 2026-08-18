@@ -1,3 +1,8 @@
+> **Migrated (AUDIT-PROTOCOL-RESET-R2):** Historical plan-satellite audit register.
+> **Original path:** docs\project\maintainers\plans\satellites\CODE_CRAFT_audit_history.md
+> **Original role:** Plan satellite — audit history + LC closeout
+> **Canonical audit ownership:** docs/audit_results/ (this file is historical evidence only)
+
 # CODE_CRAFT — audit history + LC closeout
 
 **Parent hub:** [`CODE_CRAFT.md`](../CODE_CRAFT.md)

@@ -1,4 +1,4 @@
-﻿# Security Policy
+# Security Policy
 
 ## Supported versions
 
@@ -51,7 +51,7 @@ Intergrax implements security as a **control plane** within the Harness AI platf
 | Policy engine | [docs/project/architecture/intergrax_runtime_architecture.md §42.11](docs/project/architecture/intergrax_runtime_architecture.md) |
 | Security control plane | [docs/project/technical/guides/AGENT_CREATION_GUIDE.md Appendix S](docs/project/technical/guides/AGENT_CREATION_GUIDE.md) |
 | Production hardening | [docs/project/architecture/intergrax_runtime_architecture.md Phase U](docs/project/architecture/intergrax_runtime_architecture.md) |
-| Harness audit (security layers) | [docs/project/technical/guides/docs/audit_results/AUDIT_PROTOCOL.md](docs/project/technical/guides/docs/audit_results/AUDIT_PROTOCOL.md) |
+| Harness audit (security layers) | [docs/audit_results/AUDIT_PROTOCOL.md](docs/audit_results/AUDIT_PROTOCOL.md) |
 
 ### Key security mechanisms
 

@@ -1,6 +1,9 @@
-# ELASTIC_CAPACITY_AND_SCALING — audit history + LC closeout
+# ELASTIC_CAPACITY_AND_SCALING — implementation history + LC closeout
 
 **Parent hub:** [`ELASTIC_CAPACITY_AND_SCALING.md`](../ELASTIC_CAPACITY_AND_SCALING.md)
+
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/ELASTIC_CAPACITY_AND_SCALING_audit_history.md](../../../../audit_results/legacy/plan-audit-history/ELASTIC_CAPACITY_AND_SCALING_audit_history.md).
+
 
 ## Phase ECP-DOC — Domain pair establishment (Band 2an)
 

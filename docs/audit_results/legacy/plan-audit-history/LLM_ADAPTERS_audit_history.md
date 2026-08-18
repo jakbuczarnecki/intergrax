@@ -1,3 +1,8 @@
+> **Migrated (AUDIT-PROTOCOL-RESET-R2):** Historical plan-satellite audit register.
+> **Original path:** docs\project\maintainers\plans\satellites\LLM_ADAPTERS_audit_history.md
+> **Original role:** Plan satellite — audit history + LC closeout
+> **Canonical audit ownership:** docs/audit_results/ (this file is historical evidence only)
+
 # LLM_ADAPTERS — audit history + LC closeout
 
 **Parent hub:** [`LLM_ADAPTERS.md`](../LLM_ADAPTERS.md)

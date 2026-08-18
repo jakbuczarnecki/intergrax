@@ -48,7 +48,7 @@ Concrete hosting implementation rows remain tracked exclusively in [`plan/APPLIC
 
 **Do not read this entire file in one session** (TIER3_APPLICATION_ENVIRONMENT plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/TIER3_APPLICATION_ENVIRONMENT_audit_history.md`](plan/satellites/TIER3_APPLICATION_ENVIRONMENT_audit_history.md) · [`plan/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md`](plan/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/TIER3_APPLICATION_ENVIRONMENT_implementation_history.md`](plan/satellites/TIER3_APPLICATION_ENVIRONMENT_implementation_history.md) · [`plan/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md`](plan/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) read-scope block only.
@@ -90,7 +90,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/satellites/TIER3_APPLICATION_ENVIRONMENT_audit_history.md`](plan/satellites/TIER3_APPLICATION_ENVIRONMENT_audit_history.md) | audit history |
+| [`plan/satellites/TIER3_APPLICATION_ENVIRONMENT_implementation_history.md`](plan/satellites/TIER3_APPLICATION_ENVIRONMENT_implementation_history.md) | implementation history |
 | [`plan/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md`](plan/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md) | embedded detail |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
