@@ -18,7 +18,10 @@ from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
-from intergrax.runtime.nexus.orchestration.human_response import normalize_human_response
+from intergrax.runtime.nexus.orchestration.human_response import (
+    clear_consumed_human_input,
+    normalize_human_response,
+)
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
@@ -64,25 +67,49 @@ class NexusIntakeRunner:
             task.state = TaskState.CREATED
 
         verdict = HumanPauseCoordinator.verdict_from_task(task)
+        response_pause_id = task.options.human.pause_id
+        response_request_id = task.options.human.human_request_id
         if verdict == HumanResponseVerdict.REJECT:
-            DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
-            return IntakePhaseOutcome(
-                early_result=await self.hitl.handle_human_rejection(
-                    task, trace_emitter, lifecycle
-                )
+            HumanPauseCoordinator.resolve_human_response(
+                task,
+                HumanResponseVerdict.REJECT,
+                pause_id=response_pause_id,
+                human_request_id=response_request_id,
+                response_text=task.options.human.response_text,
             )
+            DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
+            result = await self.hitl.handle_human_rejection(
+                task, trace_emitter, lifecycle
+            )
+            clear_consumed_human_input(task)
+            return IntakePhaseOutcome(early_result=result)
         if verdict == HumanResponseVerdict.ESCALATE:
-            DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
-            return IntakePhaseOutcome(
-                early_result=await self.hitl.handle_human_escalation(
-                    task, trace_emitter, lifecycle
-                )
+            HumanPauseCoordinator.resolve_human_response(
+                task,
+                HumanResponseVerdict.ESCALATE,
+                pause_id=response_pause_id,
+                human_request_id=response_request_id,
+                response_text=task.options.human.response_text,
             )
+            DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
+            result = await self.hitl.handle_human_escalation(
+                task, trace_emitter, lifecycle
+            )
+            clear_consumed_human_input(task)
+            return IntakePhaseOutcome(early_result=result)
 
         if HumanPauseCoordinator.is_resumed(task):
             if self.execution_identity is None:
                 raise RuntimeError("active execution identity required for intake emission")
             run_id, attempt_id = self.execution_identity.require()
+            HumanPauseCoordinator.resolve_human_response(
+                task,
+                HumanResponseVerdict.APPROVE,
+                pause_id=response_pause_id,
+                human_request_id=response_request_id,
+                run_id=run_id,
+                response_text=task.options.human.response_text,
+            )
             await self.publish(
                 runtime_event_from_task_state(
                     task,
@@ -107,5 +134,6 @@ class NexusIntakeRunner:
                 DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
                 task.sync_metadata()
             HumanPauseCoordinator.clear_pause(task)
+            clear_consumed_human_input(task)
 
         return IntakePhaseOutcome()

@@ -12,6 +12,20 @@
 
 Implement the Tier-0 Agent Distribution domain so operators can discover, install, bind, configure, enable, upgrade, rollback, and uninstall agents **without** hot-loading Python, **without** LKW-local stores, and **without** breaking deterministic runtime graphs or Nexus capability routing.
 
+### Protocol v2 remediation — TIER_LAYER_BOUNDARIES (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-TIER-LAYER-PERSIST.
+
+| Block | Status | Findings | Acceptance intent |
+|-------|--------|----------|-------------------|
+| **TL-FIX-B** | ACCEPTED / PLANNED | [`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) | Exactly one canonical `echo@1.0.0` concrete production implementation; no colliding Tier-1 concrete copy; package/import/registry tests prove canonical resolution; clean-cut removal preferred (no legacy alias unless real dependency demonstrated during remediation); revalidate current `development` before implementation |
+
+**Remediation rules:**
+
+- Revalidate finding against then-current `development` HEAD before implementation.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+
 ## Architecture delivery (AGENT-PLATFORM-2) — Done
 
 | Item | Status |

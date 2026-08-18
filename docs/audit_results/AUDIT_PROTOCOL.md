@@ -1,7 +1,7 @@
-# Intergrax Platform Audit Protocol v2.1
+# Intergrax Platform Audit Protocol v2.2
 
 **Status:** Canonical
-**Version:** 2.1
+**Version:** 2.2
 **Audience:** Human operators and model executors (any harness, any IDE)
 **Scope:** Full Intergrax platform — Tier-0 `intergrax/`, Tier-1 `intergrax/runtime/`, Tier-2 `agents/`, Tier-3 `applications/`
 
@@ -23,6 +23,8 @@
 A prior PASS, a green CI run, or polished architecture prose does not reduce skepticism.
 
 This protocol is **model-executable**: an agent following it must produce the same artifacts, evidence standards, and verdict discipline regardless of tooling. It is **not** tied to Cursor, any specific orchestrator, `progress.json`, or deleted harness machinery.
+
+**Protocol versioning:** Protocol v2.2 applies **prospectively** to new audits and revalidations. Already published Protocol v2/v2.1 per-layer snapshots are **not** rewritten merely because methodology became stricter. If an active campaign needs coverage of the v2.2 provider/backend rule, perform a new pinned layer or revalidation snapshot using the newer protocol. Do **not** mutate immutable historical evidence.
 
 ---
 
@@ -81,6 +83,14 @@ The audit must not stop at "code matches architecture." Separately ask:
 - Are important production invariants absent from the architecture?
 - Is a documented abstraction only paper architecture?
 - Are industry-standard mature production patterns materially stronger for this problem?
+- Is each infrastructure concern represented by a meaningful provider-neutral abstraction where replaceability/platform ownership requires one?
+- Are provider boundaries explicit?
+- Is concrete vendor knowledge isolated behind those boundaries?
+- Does architecture specify who owns provider selection/composition?
+- Are domain models polluted with vendor-specific types/configuration?
+- Can another provider be implemented without changing high-level semantics?
+- Are provider capabilities explicit when implementations legitimately differ?
+- Is an abstraction merely paper architecture while code depends on concrete providers?
 
 **Finding kinds (architecture vs implementation):**
 
@@ -526,6 +536,12 @@ Do not require these exact prefixes if a better stable domain code already exist
 - Does it correctly declare capabilities and dependencies?
 - Does it preserve policy, identity, auditability, retry, cancellation, and HITL semantics supplied by the platform?
 - Could a second application reuse the same mechanism, or is platform logic trapped inside this consumer?
+- Does the application/agent/plugin depend on canonical platform ports?
+- Does it import a concrete provider/backend directly?
+- Does it receive a vendor client through context/state/metadata?
+- Does it contain backend-specific branching?
+- Does it reimplement provider selection?
+- Could the provider be replaced without changing consumer business logic?
 
 **Consumer conformance matrix (required for platform consumer audits):**
 
@@ -560,8 +576,291 @@ At minimum evaluate applicability of:
 16. registries / capability discovery
 17. state/persistence ownership
 18. typed request/result contracts
+19. provider/backend independence
 
 The matrix must **not** force irrelevant mechanisms onto every consumer. `NOT APPLICABLE` is valid but requires a concise reason for material platform concerns. `DUPLICATED`, `BYPASSED`, `MISSING PLATFORM CAPABILITY`, or `INSUFFICIENT EVIDENCE` should drive findings/open questions as warranted by severity and evidence.
+
+### D4. Provider / Backend Abstraction Discipline
+
+**Core invariant:**
+
+> **DEPEND ON ABSTRACTIONS, NOT PROVIDERS.**
+
+Concrete vendor SDK/API/backend knowledge may exist only:
+
+1. inside the provider/adapter implementation that owns that vendor integration;
+2. inside a controlled composition root / DI / provider registry responsible only for selecting and constructing the provider;
+3. narrowly inside provider-specific tests, migrations, diagnostics, or operational tooling whose vendor ownership is explicit.
+
+Vendor-specific semantics MUST NOT leak through the provider boundary into platform/domain/runtime/agent/application business/execution logic.
+
+For every material infrastructure/external capability, consuming code MUST depend on an Intergrax-owned typed abstraction such as:
+
+- `Protocol`
+- ABC
+- typed port
+- repository/store contract
+- exporter contract
+- queue contract
+- cache contract
+- lock contract
+- object/blob storage contract
+- event sink/source contract
+- telemetry contract
+- LLM adapter contract
+- embedding contract
+- vector/retrieval contract
+- secrets provider contract
+- connector/integration contract
+- identity provider contract
+- notification contract
+- typed provider-neutral request/result models
+
+Concrete provider/backend implementations implement those abstractions.
+
+**Canonical dependency shape:**
+
+```text
+domain/runtime/agent/application
+            |
+            v
+     Intergrax port
+            ^
+            |
+     provider adapter
+            |
+            v
+      vendor SDK/API
+```
+
+**NOT:**
+
+```text
+domain/runtime/agent/application
+            |
+            v
+      vendor SDK/API
+```
+
+#### PROVIDER BOUNDARY
+
+The **provider boundary** is the explicit ownership boundary where provider-neutral Intergrax semantics are translated to a concrete vendor/backend API.
+
+Inside the provider boundary, vendor-specific details MAY exist:
+
+- SDK imports
+- concrete client types
+- connection pools
+- vendor exceptions
+- SQL dialect / query syntax
+- retry/error translation required by that backend
+- serialization peculiarities
+- vendor configuration
+- credentials required by that provider
+
+Outside the provider boundary they MUST NOT become the contract consumed by unrelated platform/domain/runtime/application/agent code.
+
+The provider boundary must be explicit through package/module ownership and contracts.
+
+#### Composition root exception
+
+A composition root / DI container / provider registry MAY:
+
+- select provider by typed provider ID/config;
+- import/instantiate concrete provider implementation;
+- inject it behind the canonical abstraction.
+
+Composition code MUST NOT:
+
+- execute domain operations through vendor-specific APIs;
+- propagate concrete provider types into consumers;
+- expose vendor clients as general application/runtime state;
+- become a second implementation of provider semantics;
+- require downstream consumers to branch on vendor identity.
+
+**Good:**
+
+```text
+provider = PostgresEventStore(config)
+journal = RunJournal(store=provider)
+```
+
+**Bad:**
+
+```text
+journal = RunJournal(postgres_client=...)
+runtime.postgres.execute(...)
+if backend == "postgres": ...
+```
+
+#### Mandatory audit triggers
+
+Future audits MUST actively look for the following. Presence alone is NOT automatically a finding; the auditor MUST determine whether the import or usage lives inside the canonical provider boundary.
+
+**A. DIRECT VENDOR IMPORTS** — illustrative examples: `sqlite3`, `psycopg` / `asyncpg`, PostgreSQL-specific clients, Cassandra drivers, `pymongo`, Redis clients, Kafka clients, RabbitMQ clients, Elasticsearch/OpenSearch clients, `boto3` / cloud SDKs, Azure/GCP SDKs, Qdrant/Pinecone/Chroma clients, OpenAI/Anthropic/vendor LLM clients, Sentry/vendor telemetry SDKs, vendor-specific OpenTelemetry exporters, filesystem/cloud object-store SDKs.
+
+**B. CONCRETE PROVIDER CLASS DEPENDENCIES** — consumers importing or requiring `SqliteX`, `PostgresX`, `RedisX`, `KafkaX`, `MongoX`, `CassandraX`, `VendorX` instead of `XStore`, `XRepository`, `XPort`, `XProvider`, `XProtocol`, or `XAdapter` contract.
+
+**C. VENDOR TYPES LEAKING THROUGH CONTRACTS** — e.g. `def connection() -> psycopg.Connection`, `def client() -> Redis`, `field: MongoClient`, `result: VendorResponse`. A Protocol wrapping a vendor type is NOT vendor-neutral.
+
+**D. VENDOR EXCEPTION LEAKAGE** — e.g. `except psycopg.OperationalError` inside generic runtime/business code. Provider should translate to Intergrax-owned errors such as `StorageUnavailable`, `ConcurrencyConflict`, `ProviderTimeout`, `ProviderRejected`, `TransientBackendFailure` (exact taxonomy remains domain-owned).
+
+**E. VENDOR-SPECIFIC CONFIG LEAKAGE** — generic/shared contracts with fields such as `postgres_host`, `sqlite_path`, `cassandra_cluster`, `redis_database`, `kafka_topic` when those concepts belong to one provider. Provider-specific config may exist in provider-owned configuration or explicit composition configuration; generic domain/platform contracts should express provider-neutral semantics or provider references.
+
+**F. VENDOR QUERY / DIALECT LEAKAGE** — e.g. `PRAGMA`, `INSERT OR REPLACE`, PostgreSQL JSONB-specific operations, `LISTEN/NOTIFY`, Cassandra CQL details, Redis command semantics, vendor-specific search DSL. Legitimate inside provider implementations, migrations, or explicitly provider-owned operational tooling; audit triggers outside those boundaries.
+
+**G. VENDOR IDENTITY BRANCHING** — e.g. `if backend == "postgres"`, `if provider == "sqlite"`, `isinstance(store, PostgresStore)` inside domain/runtime/application/agent logic. Provider selection belongs in composition/provider resolution; provider capability differences should be expressed through typed capabilities, not vendor-name conditionals scattered through consumers.
+
+**H. CONCRETE DEFAULT CONSTRUCTION** — generic runtime/domain code internally doing `self.store = SqliteStore(...)`, `self.queue = RedisQueue(...)`, `self.exporter = SentryExporter(...)` rather than receiving/resolving the canonical abstraction through approved composition.
+
+**I. VENDOR CLIENT PASS-THROUGH** — concrete clients stored in runtime contexts, agent contexts, application state, generic metadata, service locators, `dict[str, Any]`, or hidden attributes as an escape hatch around provider abstractions.
+
+#### Paper abstraction rule
+
+> **EXISTENCE OF AN INTERFACE IS NOT PROOF OF ABSTRACTION.**
+
+An audit MUST trace **actual dependencies and call paths**.
+
+Example:
+
+```text
+EventStore Protocol exists
+      |
+      X
+Runtime imports SqliteEventStore directly
+```
+
+This is a **paper abstraction** and should produce a finding when the concrete dependency materially defeats provider independence.
+
+**Mandatory falsification questions:**
+
+- Does the consumer type against the port or the concrete provider?
+- Is the port actually used on the real production call path?
+- Does the factory return the abstraction or concrete provider type?
+- Can another provider be substituted without editing domain/runtime logic?
+- Do tests exercise substitution through the abstraction?
+- Does concrete provider state leak after construction?
+- Does provider-specific behavior escape through metadata or exceptions?
+
+#### Dependency inversion discipline
+
+High-level policy/domain/runtime code owns or consumes abstractions. Low-level provider modules implement those abstractions.
+
+**Preferred source dependency:**
+
+```text
+domain -> port
+runtime -> port
+adapter -> port
+```
+
+**Not:**
+
+```text
+domain -> adapter -> vendor
+```
+
+A lower-level implementation must not become the public contract simply because it is currently the only implementation.
+
+#### Abstraction scope — do not overengineer
+
+Do NOT require a Protocol/ABC for every class or function. Mandatory abstraction is primarily for:
+
+- replaceable infrastructure;
+- external services;
+- persistence;
+- queues/event transports;
+- telemetry/export;
+- caches/locks;
+- object/file storage;
+- model/LLM providers;
+- vector/search stores;
+- integrations;
+- secrets/identity backends;
+- cross-layer capabilities;
+- reusable platform extension points.
+
+Pure local algorithms/value objects/internal helpers do not need artificial interfaces merely to satisfy the protocol. The audit should evaluate ownership/substitutability, not interface count.
+
+#### Material infrastructure concerns
+
+The rule applies at minimum to applicable concerns such as (illustrative, not exhaustive):
+
+- logs
+- runtime events
+- traces
+- metrics
+- audit evidence
+- journals
+- observability export
+- relational persistence
+- document persistence
+- knowledge persistence
+- memory
+- vector storage/search
+- RAG retrieval
+- checkpoints
+- task/run state
+- queues
+- pub/sub/event buses
+- caches
+- distributed locks
+- object/blob/file storage
+- configuration backends
+- secrets
+- identity/auth providers
+- LLM/model providers
+- embeddings
+- external integrations/connectors
+- notifications
+- deployment/cloud provider APIs
+
+#### Provider abstraction classification
+
+For each material concern inspected, classify the observed relationship as one of:
+
+| Classification | Meaning |
+|----------------|---------|
+| **ABSTRACTION_PRESERVED** | Consumer depends on canonical typed port. |
+| **PROVIDER_LOCAL** | Vendor details correctly contained inside provider adapter. |
+| **COMPOSITION_ONLY** | Concrete provider visible only at controlled composition/DI boundary and injected behind abstraction. |
+| **VENDOR_LEAK** | Vendor API/type/config/error/query semantics cross into consumer/domain logic. |
+| **PAPER_ABSTRACTION** | Port exists but real code bypasses it and depends on implementation. |
+| **MISSING_ABSTRACTION** | Material replaceable/platform concern has no stable provider-neutral port. |
+| **JUSTIFIED_VENDOR_COUPLING** | Coupling is intentionally part of the product/provider-specific module and does not claim platform neutrality; rationale required. |
+| **NOT_APPLICABLE** | Concern not material to scope. |
+| **INSUFFICIENT_EVIDENCE** | Cannot classify from available evidence. |
+
+`VENDOR_LEAK`, `PAPER_ABSTRACTION`, `MISSING_ABSTRACTION`, and `INSUFFICIENT_EVIDENCE` must drive a finding/open question as appropriate.
+
+#### Failure / semantic translation
+
+Provider abstraction covers behavior, not only method names. Provider adapters should translate provider-specific semantics into stable Intergrax semantics where the domain requires it: errors, timeouts, conflicts, transaction results, consistency limitations, retryability, capabilities, health/status.
+
+Do NOT pretend all providers have identical capabilities. When differences are material, expose them through typed provider-neutral capability contracts rather than testing vendor names in consumers.
+
+#### Test / proof expectations
+
+When a domain claims provider independence, relevant audits should look for proof such as:
+
+- contract tests shared across providers;
+- substitutability tests;
+- fake/in-memory provider implementing the same port where appropriate;
+- negative tests preventing direct vendor imports;
+- tests proving vendor exceptions do not leak;
+- tests proving consumers operate against the port.
+
+Do NOT require every domain to have multiple production providers merely to prove abstraction quality. One implementation is acceptable if the abstraction is meaningful, high-level code truly depends on it, the provider boundary is real, and the design does not hard-code vendor semantics upstream.
+
+#### Severity guidance (provider/backend)
+
+Use existing severity rules (section G). Guidance:
+
+- direct concrete vendor dependency on a material platform boundary: normally **MEDIUM** or **HIGH** depending on blast radius/guarantees;
+- vendor bypass that defeats security, durability, tenant isolation, auditability, or critical reliability: **HIGH** or **CRITICAL** per section G;
+- paper abstraction on a production-critical persistence/event/identity boundary: normally **HIGH** when substitution/guarantees are materially defeated;
+- isolated internal maintainability leakage: may be **LOW**/**MEDIUM**;
+- mere provider implementation containing its own vendor SDK: **NOT** a finding.
 
 ---
 
@@ -581,6 +880,18 @@ For each in-scope component, attempt to disprove stated invariants. At minimum, 
 - **False portability** — claims of cloud-agnostic or multi-host operation contradicted by local-only locks, paths, or APIs.
 - **Legacy paths** — deprecated modules still reachable; dual implementations where only one is documented.
 - **Doc drift** — architecture/plan describes behavior or APIs that code no longer implements.
+- **Direct vendor SDK/API calls** — outside provider boundary (section D4).
+- **Concrete backend imports** — in high-level domain/runtime/agent/application code.
+- **Provider implementation types in public contracts** — vendor types exposed through ports or APIs.
+- **Vendor-specific exceptions leaking upward** — generic code catching or propagating vendor exceptions.
+- **Vendor-specific configuration in generic contracts** — provider-owned config fields on platform/domain models.
+- **Vendor query/dialect syntax** — outside provider-owned implementation, migrations, or operational tooling.
+- **Provider-name branching** — in domain/runtime/application/agent logic instead of composition.
+- **Concrete backend construction** — outside composition/provider ownership.
+- **Vendor clients in metadata/context/state** — pass-through around abstractions.
+- **Paper abstractions** — port exists but actual dependency/call path uses concrete provider (section D4).
+- **Missing provider-neutral port** — material replaceable concern without stable abstraction.
+- **Duplicate provider abstractions** — multiple competing abstractions for the same platform concern.
 
 ### Reliability and correctness
 
@@ -678,7 +989,7 @@ If **YES** and no credible reason for dynamism exists, record an appropriate fin
 
 - **"Done" without behavior** — plan marks complete but no implementation or no observable effect.
 - **Tests missing invariants** — critical properties never asserted (authz, idempotency, failure modes).
-- **Paper abstractions** — interfaces with single no-op implementation; layers that delegate without adding enforcement.
+- **Paper abstractions** — interfaces with single no-op implementation; layers that delegate without adding enforcement; ports bypassed by direct concrete provider dependency on production call paths (section D4).
 - **Missing negative tests** — only happy path; no tests for denial, timeout, malformed input, crash mid-flight.
 - **Cross-layer mismatches** — tier A assumes tier B provides guarantee B does not implement.
 
@@ -892,8 +1203,17 @@ When multiple layers complete in one campaign, update the campaign `README.md` *
    - direct storage ownership violations
    - consumer bypasses
    - repeated thin adapters that may indicate a missing shared platform abstraction
+   - SQLite semantics scattered across multiple domains
+   - Postgres-specific behavior outside persistence adapters
+   - multiple independently invented storage abstractions
+   - different event domains calling Kafka directly
+   - multiple Redis-specific caches instead of shared cache contract
+   - application-specific vendor clients bypassing platform connectors
+   - direct LLM vendor SDKs in agents
+   - direct vector DB clients in RAG consumers
+   - vendor-specific observability calls outside exporter providers
 
-   Repeated adapters may indicate healthy reuse **or** a missing reusable abstraction. The auditor must distinguish them rather than automatically flag duplication. Also include fail-open patterns and test gaps.
+   Repeated adapters may indicate healthy reuse **or** a missing reusable abstraction. Repeated vendor coupling across layers is a systemic architecture signal. The auditor must distinguish them rather than automatically flag duplication. Also include fail-open patterns and test gaps.
 4. **Campaign verdict** — per section J.
 5. **Recommended remediation order** — operator-facing, not implementation.
 
@@ -955,6 +1275,20 @@ Each per-layer file MUST contain:
 | concern | canonical platform owner/mechanism | observed consumer mechanism | classification | evidence | finding_id / note |
 |---------|-----------------------------------|-----------------------------|----------------|----------|-------------------|
 
+## Provider / backend abstraction
+(REQUIRED for every DOMAIN / LAYER / CONCEPTUAL / PLATFORM CONSUMER audit under Protocol v2.2+)
+
+If no material external/infrastructure concern exists in scope:
+
+`NOT APPLICABLE — <brief reason>`
+
+Otherwise include a concise matrix:
+
+| concern | canonical abstraction | provider boundary | composition owner | observed provider(s) | classification | evidence/finding |
+|---------|-----------------------|-------------------|-------------------|----------------------|----------------|------------------|
+
+Only concerns material to the audited scope must be traced. The auditor may NOT omit this section. Do **not** retroactively require this section in already-published immutable snapshots.
+
 ## Open questions / blocked items
 
 ## Operator acceptance
@@ -991,7 +1325,7 @@ Do **not** record `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED` in per-
 
 ## Appendix: Audit scope shapes and layer codes (non-exhaustive)
 
-Protocol v2.1 supports three audit shapes:
+Protocol v2.2 supports three audit shapes:
 
 1. **DOMAIN / LAYER AUDIT** — one architecture/domain pair (section D).
 2. **CONCEPTUAL / CROSS-DOMAIN AUDIT** — explicit invariant slice spanning domains (below).
@@ -1020,4 +1354,4 @@ This preserves the Intergrax audit roadmap without forcing every audit layer to 
 
 ---
 
-*End of Intergrax Platform Audit Protocol v2.1*
+*End of Intergrax Platform Audit Protocol v2.2*

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1180" role="img">
+  <title>Intergrax Adaptive Harness Intelligence governed loop</title>
+  <desc>Conceptual diagram: execution evidence flows through outcome signals, adaptation engine, governance gates, profile versioning, shadow and canary promotion, apply, verification, and keep or rollback.</desc>
+  <rect width="1200" height="1180" fill="#0d1117"/>
+  <rect x="32" y="28" width="1136" height="1124" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#e6edf3">Intergrax AHI &#8212; governed adaptation loop</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" fill="#8b949e">Versioned promotion, not silent mutation</text>
+
+  <rect x="420" y="130" width="360" height="48" rx="12" fill="#13253f" stroke="#58a6ff" stroke-width="2"/>
+  <text x="600" y="160" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">EXECUTION EVIDENCE</text>
+
+  <line x1="600" y1="178" x2="600" y2="202" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M600 202 L594 188 L606 188 Z" fill="#58a6ff"/>
+
+  <rect x="420" y="202" width="360" height="48" rx="12" fill="#13253f" stroke="#58a6ff" stroke-width="2"/>
+  <text x="600" y="232" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Outcome Signals</text>
+
+  <line x1="600" y1="250" x2="600" y2="274" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M600 274 L594 260 L606 260 Z" fill="#58a6ff"/>
+
+  <rect x="390" y="274" width="420" height="48" rx="12" fill="#2d2410" stroke="#d29922" stroke-width="2"/>
+  <text x="600" y="304" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">AdaptationEngine</text>
+
+  <line x1="600" y1="322" x2="600" y2="346" stroke="#d29922" stroke-width="2"/>
+  <path d="M600 346 L594 332 L606 332 Z" fill="#d29922"/>
+
+  <rect x="450" y="346" width="300" height="48" rx="12" fill="#2d1f12" stroke="#db6d28" stroke-width="2"/>
+  <text x="600" y="376" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Proposal</text>
+
+  <line x1="600" y1="394" x2="600" y2="418" stroke="#db6d28" stroke-width="2"/>
+  <path d="M600 418 L594 404 L606 404 Z" fill="#db6d28"/>
+
+  <rect x="330" y="418" width="540" height="48" rx="12" fill="#271a3d" stroke="#a371f7" stroke-width="2"/>
+  <text x="600" y="448" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Governance Pipeline</text>
+
+  <line x1="600" y1="466" x2="600" y2="490" stroke="#a371f7" stroke-width="2"/>
+  <path d="M600 490 L594 476 L606 476 Z" fill="#a371f7"/>
+
+  <rect x="390" y="490" width="420" height="48" rx="12" fill="#13261a" stroke="#3fb950" stroke-width="2"/>
+  <text x="600" y="520" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Profile Version</text>
+
+  <line x1="600" y1="538" x2="600" y2="562" stroke="#3fb950" stroke-width="2"/>
+  <line x1="360" y1="562" x2="840" y2="562" stroke="#3fb950" stroke-width="2"/>
+  <line x1="360" y1="562" x2="360" y2="586" stroke="#3fb950" stroke-width="2"/>
+  <line x1="600" y1="562" x2="600" y2="586" stroke="#3fb950" stroke-width="2"/>
+  <line x1="840" y1="562" x2="840" y2="586" stroke="#3fb950" stroke-width="2"/>
+
+  <rect x="240" y="586" width="240" height="48" rx="12" fill="#13261a" stroke="#3fb950" stroke-width="2"/>
+  <text x="360" y="616" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">Shadow</text>
+
+  <rect x="480" y="586" width="240" height="48" rx="12" fill="#13261a" stroke="#3fb950" stroke-width="2"/>
+  <text x="600" y="616" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">Canary</text>
+
+  <rect x="720" y="586" width="240" height="48" rx="12" fill="#3d1f1f" stroke="#f85149" stroke-width="2"/>
+  <text x="840" y="616" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">Reject</text>
+
+  <line x1="360" y1="634" x2="360" y2="658" stroke="#3fb950" stroke-width="2"/>
+  <line x1="600" y1="634" x2="600" y2="658" stroke="#3fb950" stroke-width="2"/>
+  <line x1="360" y1="658" x2="600" y2="658" stroke="#3fb950" stroke-width="2"/>
+  <line x1="600" y1="658" x2="600" y2="682" stroke="#3fb950" stroke-width="2"/>
+  <path d="M600 682 L594 668 L606 668 Z" fill="#3fb950"/>
+
+  <rect x="450" y="682" width="300" height="48" rx="12" fill="#13253f" stroke="#58a6ff" stroke-width="2.5"/>
+  <text x="600" y="712" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Apply</text>
+
+  <line x1="600" y1="730" x2="600" y2="754" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M600 754 L594 740 L606 740 Z" fill="#58a6ff"/>
+
+  <rect x="450" y="754" width="300" height="48" rx="12" fill="#2d2410" stroke="#d29922" stroke-width="2"/>
+  <text x="600" y="784" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Verify</text>
+
+  <line x1="600" y1="802" x2="600" y2="826" stroke="#d29922" stroke-width="2"/>
+  <line x1="420" y1="826" x2="780" y2="826" stroke="#d29922" stroke-width="2"/>
+  <line x1="420" y1="826" x2="420" y2="850" stroke="#d29922" stroke-width="2"/>
+  <line x1="780" y1="826" x2="780" y2="850" stroke="#d29922" stroke-width="2"/>
+
+  <rect x="300" y="850" width="240" height="48" rx="12" fill="#13261a" stroke="#3fb950" stroke-width="2"/>
+  <text x="420" y="880" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">keep</text>
+
+  <rect x="660" y="850" width="240" height="48" rx="12" fill="#3d1f1f" stroke="#f85149" stroke-width="2"/>
+  <text x="780" y="880" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">rollback</text>
+
+  <rect x="120" y="940" width="960" height="72" rx="14" fill="#2d2410" stroke="#d29922" stroke-width="2"/>
+  <text x="600" y="972" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">Adaptation is versioned promotion, not silent mutation.</text>
+  <text x="600" y="998" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" fill="#8b949e">Proposal &#8800; permission &#8800; production deployment</text>
+
+  <text x="600" y="1060" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">AdaptationEngine proposes &#183; AdaptationExecutor promotes &#183; Governance grants authority</text>
+</svg>

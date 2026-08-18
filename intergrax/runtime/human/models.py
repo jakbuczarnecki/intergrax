@@ -11,6 +11,8 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from intergrax.utils.time_provider import SystemTimeProvider
+
 
 class HumanResponseVerdict(str, Enum):
     APPROVE = "approve"
@@ -46,3 +48,34 @@ class EscalationOutcome(BaseModel):
     level: int
     message: str = ""
     fail_task: bool = False
+
+
+def build_human_decision_record(
+    *,
+    task_id: str,
+    tenant_id: str,
+    user_id: str,
+    verdict: HumanResponseVerdict,
+    response_text: str,
+    human_request_id: str = "",
+    escalation_level: int = 0,
+    escalation_target: Optional[EscalationTarget] = None,
+    agent_id: Optional[str] = None,
+    run_id: Optional[str] = None,
+    notes: str = "",
+) -> HumanDecisionRecord:
+    """Vendor-neutral factory for persisted human decision records."""
+    return HumanDecisionRecord(
+        task_id=task_id,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        human_request_id=human_request_id,
+        verdict=verdict,
+        response_text=response_text,
+        escalation_level=escalation_level,
+        escalation_target=escalation_target,
+        agent_id=agent_id,
+        run_id=run_id,
+        notes=notes,
+        created_at_utc=SystemTimeProvider.utc_now().isoformat(),
+    )

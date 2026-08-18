@@ -20,7 +20,7 @@ from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.interrupts.handler import GovernanceResolution
 from intergrax.runtime.task.task import Task
-from intergrax.runtime.task.task_contract import TaskPauseRecord
+from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
 from intergrax.runtime.task.task_metadata_keys import (
     ESCALATION_CHAIN_KEY,
     ESCALATION_LEVEL_KEY,
@@ -48,10 +48,15 @@ __all__ = [
     "HUMAN_ESCALATED_KEY",
     "HUMAN_REJECTED_KEY",
     "HUMAN_RESPONSE_KEY",
+    "HumanApprovalResolutionError",
     "HumanPauseCoordinator",
     "PauseRecord",
     "TaskMetadataKey",
 ]
+
+
+class HumanApprovalResolutionError(ValueError):
+    """Fail-closed human approval resolution against the active pause/request."""
 
 
 class PauseRecord(BaseModel):
@@ -70,6 +75,7 @@ class HumanPauseCoordinator:
     def apply_pause(task: Task, execution: AgentExecutionResult) -> Task:
         gov = task.runtime.governance
         if execution.human_request is not None:
+            gov.hitl_resolution = None
             HumanTimeoutCoordinator.attach_to_task(task, execution.human_request)
         if execution.execution_interrupt is not None:
             gov.execution_interrupt = execution.execution_interrupt
@@ -120,6 +126,62 @@ class HumanPauseCoordinator:
         task.runtime.governance.paused = False
         task.sync_metadata()
         return task
+
+    @staticmethod
+    def resolve_human_response(
+        task: Task,
+        verdict: HumanResponseVerdict,
+        *,
+        pause_id: str | None = None,
+        human_request_id: str | None = None,
+        run_id: str | None = None,
+        response_text: str | None = None,
+    ) -> HumanApprovalResolution:
+        gov = task.runtime.governance
+        if gov.hitl_resolution is not None:
+            raise HumanApprovalResolutionError("human approval already resolved")
+
+        pause_record = gov.pause_record
+        if pause_record is None:
+            raise HumanApprovalResolutionError("no active pause record")
+
+        if pause_record.task_id != task.task_id:
+            raise HumanApprovalResolutionError("pause task_id mismatch")
+
+        if verdict is HumanResponseVerdict.UNKNOWN:
+            raise HumanApprovalResolutionError("unsupported verdict")
+
+        if pause_id is None:
+            raise HumanApprovalResolutionError("pause_id required")
+
+        if human_request_id is None:
+            raise HumanApprovalResolutionError("human_request_id required")
+
+        active_pause_id = pause_record.pause_id
+        active_request_id = pause_record.human_request_id
+
+        if pause_id != active_pause_id:
+            raise HumanApprovalResolutionError("pause_id mismatch")
+
+        if human_request_id != active_request_id:
+            raise HumanApprovalResolutionError("human_request_id mismatch")
+
+        if gov.human_request is not None:
+            if gov.human_request.request_id != active_request_id:
+                raise HumanApprovalResolutionError("human_request identity mismatch")
+
+        resolution = HumanApprovalResolution(
+            task_id=task.task_id,
+            pause_id=active_pause_id,
+            human_request_id=active_request_id,
+            verdict=verdict,
+            resolved_at=datetime.now(timezone.utc).isoformat(),
+            run_id=run_id,
+            response_text=response_text or task.options.human.response_text,
+        )
+        gov.hitl_resolution = resolution
+        task.sync_metadata()
+        return resolution
 
     @staticmethod
     def verdict_from_task(task: Task) -> Optional[HumanResponseVerdict]:

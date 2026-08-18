@@ -417,6 +417,19 @@ Production MUST reject floating `latest` as sole selector. Channel labels may ma
 
 Built-in agents may skip external fetch but **never** skip trust/compatibility simulation in production profiles.
 
+<a id="protocol-v2-agent-ownership-target-invariants-2026-08-18"></a>
+
+### Protocol v2 agent ownership target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) (**FAIL**, finding 02 ACCEPTED). Target state only:
+
+1. **Single implementation authority** — a production `(contract_id, agent_version)` has one canonical concrete implementation authority ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+2. **No silent Tier-1 duplication** — Tier-1 framework/runtime packages may own abstractions, bridges, and runtime mechanisms, but MUST NOT silently duplicate a reusable concrete Tier-2 agent under the same production identity ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+3. **No competing authorities** — packaging/materialization/registration MUST NOT allow two independently maintained concrete implementations with the same canonical identity to become competing authorities ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+4. **Distinct core reference identity** — if a platform/reference harness agent must live in core, it requires an explicitly distinct identity/lifecycle contract rather than colliding with a reusable Tier-2 package ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+
+Remediation tracked as **TL-FIX-B** in [plan](../maintainers/plans/AGENT_DISTRIBUTION.md). **Not implemented** by audit persistence.
+
 ---
 
 ## 10. Trust and provenance

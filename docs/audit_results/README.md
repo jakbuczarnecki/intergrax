@@ -61,7 +61,7 @@ docs/audit_results/
 
 | Campaign | started_at | completed_at | status | campaign_start_sha | campaign_end_sha | scope | overall_verdict |
 |----------|------------|--------------|--------|--------------------|------------------|-------|-----------------|
-| [2026-08-18](2026-08-18/README.md) | 2026-08-18 | — | IN_PROGRESS | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | — | Platform audit — `STRATEGIC_HARNESS_MODEL` complete (1 layer) | — |
+| [2026-08-18](2026-08-18/README.md) | 2026-08-18 | — | IN_PROGRESS | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | — | Platform audit — 2 layers complete (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`) | — |
 
 ### Registry lifecycle
 
@@ -94,11 +94,11 @@ This root `README.md` is:
 
 Results under [legacy/](legacy/README.md) were produced under superseded protocols (Legacy Audit Protocol v1, plan-satellite audit registers). They are useful for historical comparison only — **not** evidence of current platform maturity.
 
-**Protocol v2.1** (this tree, from 2026-08-18) is model-driven and periodic. Active campaign: [2026-08-18](2026-08-18/README.md) — first layer `STRATEGIC_HARNESS_MODEL` **FAIL**, 10 ACCEPTED findings.
+**Protocol v2.2** (this tree, from 2026-08-18) is model-driven and periodic. v2.2 additionally requires provider/backend abstraction discipline, dependency inversion, concrete vendor isolation behind provider adapters, and proof that consumers use abstractions rather than paper interfaces. Active campaign: [2026-08-18](2026-08-18/README.md) — two layers complete: `STRATEGIC_HARNESS_MODEL` **FAIL** (10 ACCEPTED findings) and `TIER_LAYER_BOUNDARIES` **FAIL** (5 ACCEPTED findings); campaign `IN_PROGRESS`.
 
-### Audit scope shapes (Protocol v2.1)
+### Audit scope shapes (Protocol v2.2)
 
-Protocol v2.1 supports three audit shapes:
+Protocol v2.2 supports three audit shapes:
 
 1. **DOMAIN / LAYER AUDIT**
 2. **CONCEPTUAL / CROSS-DOMAIN AUDIT**

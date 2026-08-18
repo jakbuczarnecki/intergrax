@@ -173,6 +173,20 @@ The Tier-0..3 dependency direction above remains canonical and strict. This subs
 - **Semantic validation:** enforcement SHOULD validate semantic dependency/import relationships, not rely solely on textual regex matching (which can miss relative or dynamic import forms). This records an enforcement weakness — not a claim of confirmed current violations.
 - **CI alignment:** canonical tier-boundary enforcement MUST run on the active integration path; plan↔CI drift (three documented guards vs narrower CI invocation) is tracked in plan **[§6.1ax](../maintainers/plans/PLATFORM_FOUNDATION.md#61ax-pf-tier-enforcement--production-tier-boundary-qualification)**.
 
+<a id="protocol-v2-tier-boundary-target-invariants-2026-08-18"></a>
+
+### Protocol v2 tier-boundary target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Prior PF-TIER-ENFORCEMENT audit (`4c92e0a`) remains historical — not rewritten. Target state only:
+
+1. **Authoritative classification** — every production package/source ownership unit has one authoritative Tier classification ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-01`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+2. **Fail closed** — new/unclassified production packages MUST fail closed ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-01`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+3. **Complete matrix** — the complete forbidden Tier dependency matrix is mechanically and semantically enforced; application-only regex checks are not sufficient as universal proof ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-01`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+4. **Integration-path enforcement** — canonical boundary enforcement runs on the actual integration path relied on for development/PR qualification ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-01`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+5. **Consumer static-contract coverage** — static-contract/dynamic-reflection governance MUST cover material production consumer boundaries, including Tier-3 `applications/`, or have explicit typed exception ownership ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-05`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+
+Remediation tracked as **TL-FIX-A** in [plan §6.1ax TL-FIX-A](../maintainers/plans/PLATFORM_FOUNDATION.md#61ax-tl-fix-a--executable-tier-ownership-protocol-v221-2026-08-18). **Not implemented** by audit persistence.
+
 ## Relationship To “Layer 1 / 2 / 3” Naming
 
 Earlier sections and diagrams may refer to **Layer 1 / 2 / 3**. Mapping:

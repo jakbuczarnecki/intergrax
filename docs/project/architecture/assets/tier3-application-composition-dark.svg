@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img">
+  <title>Intergrax Tier-3 Application Composition</title>
+  <desc>Conceptual diagram: product definition flows through ApplicationManifest, ApplicationEnvironmentProfile, and AgentBinding into wire_application_environment, ApplicationEnvironmentWiring, HarnessApplication or ApplicationHost, UnifiedTaskRunner, Nexus, and platform domains. Side path: Tier-3 definition to Application Hosting for process lifecycle.</desc>
+  <rect width="1200" height="900" fill="#0d1117"/>
+  <rect x="32" y="24" width="760" height="852" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <rect x="820" y="24" width="348" height="852" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+
+  <text x="412" y="64" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="26" font-weight="700" fill="#e6edf3">Tier-3 Application Composition</text>
+  <text x="412" y="92" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" fill="#8b949e">Compose the platform &#183; do not fork it</text>
+
+  <rect x="262" y="118" width="300" height="44" rx="10" fill="#1c2d4a" stroke="#58a6ff" stroke-width="2"/>
+  <text x="412" y="146" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="600" fill="#e6edf3">PRODUCT DEFINITION</text>
+
+  <line x1="412" y1="162" x2="412" y2="182" stroke="#e6edf3" stroke-width="2"/>
+  <path d="M412 182 L402 168 L422 168 Z" fill="#e6edf3"/>
+
+  <rect x="112" y="188" width="200" height="40" rx="10" fill="#2d2411" stroke="#d4a72c" stroke-width="2"/>
+  <text x="212" y="214" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" font-weight="600" fill="#e6edf3">ApplicationManifest</text>
+
+  <rect x="512" y="188" width="200" height="40" rx="10" fill="#2d2411" stroke="#d4a72c" stroke-width="2"/>
+  <text x="612" y="214" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" font-weight="600" fill="#e6edf3">EnvironmentProfile</text>
+
+  <rect x="312" y="248" width="200" height="40" rx="10" fill="#2d2411" stroke="#d4a72c" stroke-width="2"/>
+  <text x="412" y="274" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" font-weight="600" fill="#e6edf3">AgentBinding[]</text>
+
+  <line x1="412" y1="288" x2="412" y2="308" stroke="#e6edf3" stroke-width="2"/>
+  <path d="M412 308 L402 294 L422 294 Z" fill="#e6edf3"/>
+
+  <rect x="212" y="314" width="400" height="44" rx="12" fill="#1a2e1f" stroke="#3fb950" stroke-width="2.5"/>
+  <text x="412" y="342" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#e6edf3">wire_application_environment()</text>
+
+  <line x1="412" y1="358" x2="412" y2="378" stroke="#e6edf3" stroke-width="2"/>
+  <path d="M412 378 L402 364 L422 364 Z" fill="#e6edf3"/>
+
+  <rect x="212" y="384" width="400" height="44" rx="12" fill="#161b22" stroke="#6e7681" stroke-width="2"/>
+  <text x="412" y="412" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="600" fill="#e6edf3">ApplicationEnvironmentWiring</text>
+
+  <line x1="412" y1="428" x2="412" y2="448" stroke="#e6edf3" stroke-width="2"/>
+  <path d="M412 448 L402 434 L422 434 Z" fill="#e6edf3"/>
+
+  <rect x="162" y="454" width="500" height="44" rx="12" fill="#161b22" stroke="#6e7681" stroke-width="2"/>
+  <text x="412" y="482" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="600" fill="#e6edf3">HarnessApplication / ApplicationHost</text>
+
+  <line x1="412" y1="498" x2="412" y2="518" stroke="#e6edf3" stroke-width="2"/>
+  <path d="M412 518 L402 504 L422 504 Z" fill="#e6edf3"/>
+
+  <rect x="262" y="524" width="300" height="44" rx="12" fill="#1c2d4a" stroke="#58a6ff" stroke-width="2.5"/>
+  <text x="412" y="552" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#e6edf3">UnifiedTaskRunner</text>
+
+  <line x1="412" y1="568" x2="412" y2="588" stroke="#e6edf3" stroke-width="2"/>
+  <path d="M412 588 L402 574 L422 574 Z" fill="#e6edf3"/>
+
+  <rect x="312" y="594" width="200" height="44" rx="12" fill="#21262d" stroke="#e6edf3" stroke-width="2"/>
+  <text x="412" y="622" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#e6edf3">Nexus</text>
+
+  <line x1="412" y1="638" x2="412" y2="658" stroke="#e6edf3" stroke-width="2"/>
+  <line x1="112" y1="658" x2="712" y2="658" stroke="#6e7681" stroke-width="2"/>
+  <line x1="112" y1="658" x2="112" y2="682" stroke="#6e7681" stroke-width="2"/>
+  <line x1="312" y1="658" x2="312" y2="682" stroke="#6e7681" stroke-width="2"/>
+  <line x1="512" y1="658" x2="512" y2="682" stroke="#6e7681" stroke-width="2"/>
+  <line x1="712" y1="658" x2="712" y2="682" stroke="#6e7681" stroke-width="2"/>
+
+  <rect x="52" y="686" width="120" height="36" rx="8" fill="#161b22" stroke="#6e7681" stroke-width="1.5"/>
+  <text x="112" y="709" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" font-weight="600" fill="#e6edf3">Agents</text>
+  <rect x="252" y="686" width="120" height="36" rx="8" fill="#161b22" stroke="#6e7681" stroke-width="1.5"/>
+  <text x="312" y="709" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" font-weight="600" fill="#e6edf3">Tools</text>
+  <rect x="452" y="686" width="120" height="36" rx="8" fill="#161b22" stroke="#6e7681" stroke-width="1.5"/>
+  <text x="512" y="709" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" font-weight="600" fill="#e6edf3">RAG / Memory</text>
+  <rect x="652" y="686" width="120" height="36" rx="8" fill="#161b22" stroke="#6e7681" stroke-width="1.5"/>
+  <text x="712" y="709" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" font-weight="600" fill="#e6edf3">Policy / Obs</text>
+
+  <text x="994" y="64" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#e6edf3">Hosting boundary</text>
+  <text x="994" y="90" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">Application semantics &#8800; lifecycle</text>
+
+  <rect x="870" y="130" width="248" height="44" rx="10" fill="#1c2d4a" stroke="#58a6ff" stroke-width="2"/>
+  <text x="994" y="158" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="600" fill="#e6edf3">Tier-3 definition</text>
+  <line x1="994" y1="174" x2="994" y2="194" stroke="#e6edf3" stroke-width="2"/>
+  <path d="M994 194 L984 180 L1004 180 Z" fill="#e6edf3"/>
+  <rect x="870" y="200" width="248" height="44" rx="10" fill="#161b22" stroke="#6e7681" stroke-width="2"/>
+  <text x="994" y="228" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="600" fill="#e6edf3">Application Hosting</text>
+  <line x1="994" y1="244" x2="994" y2="264" stroke="#e6edf3" stroke-width="2"/>
+  <path d="M994 264 L984 250 L1004 250 Z" fill="#e6edf3"/>
+  <rect x="848" y="270" width="292" height="120" rx="12" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
+  <text x="994" y="302" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#8b949e">process lifecycle</text>
+  <text x="994" y="328" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#8b949e">readiness / restart</text>
+  <text x="994" y="354" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#8b949e">graceful shutdown</text>
+  <text x="994" y="380" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#8b949e">OS service integration</text>
+
+  <rect x="848" y="520" width="292" height="100" rx="12" fill="#2d2411" stroke="#d4a72c" stroke-width="2"/>
+  <text x="994" y="552" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" font-weight="700" fill="#e6edf3">Protocol v2 debt (open)</text>
+  <text x="994" y="578" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#8b949e">TL-FIX-C product vocab in generic contract</text>
+  <text x="994" y="600" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#8b949e">TL-FIX-D private _execution_adapter reach-in</text>
+</svg>

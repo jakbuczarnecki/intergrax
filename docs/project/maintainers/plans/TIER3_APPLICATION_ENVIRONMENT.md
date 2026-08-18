@@ -115,3 +115,23 @@ Load **only** the satellite matching your task or cited gap ID.
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
 ---
+
+### Protocol v2 remediation — TIER_LAYER_BOUNDARIES (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-TIER-LAYER-PERSIST.
+
+| Block | Status | Findings | Acceptance intent |
+|-------|--------|----------|-------------------|
+| **TL-FIX-C** | ACCEPTED / PLANNED | [`AUDIT-20260818-TIER_LAYER_BOUNDARIES-03`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) | Generic deployment/profile contract contains no LKW-specific vocabulary; product-specific deployment configuration is application-owned or typed extension-owned; migrate consumers cleanly after revalidation |
+| **TL-FIX-D** | ACCEPTED / PLANNED | [`AUDIT-20260818-TIER_LAYER_BOUNDARIES-04`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) | Public typed execution-adapter/run-service composition mechanism; Legal and Dispute Sim no longer assign `_execution_adapter` directly; focused tests prove inline + queued composition |
+
+Finding 05 remains owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](PLATFORM_FOUNDATION.md) — not duplicated here.
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Historical Done/READY_FOR_CLOSE rows (including LKW hybrid) remain historical.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+
+---

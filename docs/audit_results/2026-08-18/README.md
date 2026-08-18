@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — layer sequence in progress; first layer `STRATEGIC_HARNESS_MODEL` complete |
+| `scope` | Platform audit — layer sequence in progress; first two layers complete (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -29,10 +29,11 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | layer | status | audited_sha | verdict | critical | high | medium | low | architecture_sync | plan_sync | post_sync_sha | report |
 |-------|--------|-------------|---------|----------|------|--------|-----|---------------------|-----------|---------------|--------|
 | STRATEGIC_HARNESS_MODEL | COMPLETE | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | FAIL | 0 | 6 | 4 | 0 | COMPLETE | COMPLETE | `def29be1adf2e099c300b7a8471c32b946e9c957` | [STRATEGIC_HARNESS_MODEL.md](STRATEGIC_HARNESS_MODEL.md) |
+| TIER_LAYER_BOUNDARIES | COMPLETE | `d8d10bb5099d003eb9495674c28e0f6e6762dbfa` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `a5d6f83d0ea274dec269377a9ce1cc4421b1bd12` | [TIER_LAYER_BOUNDARIES.md](TIER_LAYER_BOUNDARIES.md) |
 
 ## Finding register
 
-Authoritative current lifecycle for remediation. Immutable observation and evidence remain in [STRATEGIC_HARNESS_MODEL.md](STRATEGIC_HARNESS_MODEL.md).
+Authoritative current lifecycle for remediation. Immutable observation and evidence remain in per-layer reports.
 
 | finding_id | layer | severity | category | status | remediation_block | dependencies | arch_ref | plan_ref | implementation_commit | verification_evidence | notes |
 |------------|-------|----------|----------|--------|-------------------|--------------|----------|----------|----------------------|-------------------------|-------|
@@ -46,10 +47,17 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-STRATEGIC_HARNESS_MODEL-08 | STRATEGIC_HARNESS_MODEL | HIGH | RELIABILITY | ACCEPTED | SHM-FIX-B | — | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — [Protocol v2 strategic harness target invariants (2026-08-18)](#protocol-v2-strategic-harness-target-invariants-2026-08-18) | `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — SHM-FIX-B | — | — | operator accepted 2026-08-18 |
 | AUDIT-20260818-STRATEGIC_HARNESS_MODEL-09 | STRATEGIC_HARNESS_MODEL | HIGH | IMPLEMENTATION DEFECT | ACCEPTED | SHM-FIX-B | — | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — [Protocol v2 strategic harness target invariants (2026-08-18)](#protocol-v2-strategic-harness-target-invariants-2026-08-18) | `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — SHM-FIX-B | — | — | Related classification: TEST GAP; operator accepted 2026-08-18 |
 | AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10 | STRATEGIC_HARNESS_MODEL | MEDIUM | PROCESS / CLAIM | ACCEPTED | SHM-FIX-D | SHM-FIX-A, SHM-FIX-B, SHM-FIX-C | `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — [Protocol v2 strategic harness target invariants (2026-08-18)](#protocol-v2-strategic-harness-target-invariants-2026-08-18); `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — [Protocol v2 strategic harness target invariants (2026-08-18)](#protocol-v2-strategic-harness-target-invariants-2026-08-18) | `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` — SHM-FIX-D; `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — SHM-FIX-D | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-TIER_LAYER_BOUNDARIES-01 | TIER_LAYER_BOUNDARIES | HIGH | IMPLEMENTATION DEFECT | ACCEPTED | TL-FIX-A | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 tier-boundary target invariants (2026-08-18)](#protocol-v2-tier-boundary-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — TL-FIX-A | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-TIER_LAYER_BOUNDARIES-02 | TIER_LAYER_BOUNDARIES | HIGH | BOUNDARY VIOLATION | ACCEPTED | TL-FIX-B | — | `docs/project/architecture/AGENT_DISTRIBUTION.md` — [Protocol v2 agent ownership target invariants (2026-08-18)](#protocol-v2-agent-ownership-target-invariants-2026-08-18) | `docs/project/maintainers/plans/AGENT_DISTRIBUTION.md` — TL-FIX-B | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-TIER_LAYER_BOUNDARIES-03 | TIER_LAYER_BOUNDARIES | MEDIUM | BOUNDARY VIOLATION | ACCEPTED | TL-FIX-C | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 Tier-3 boundary target invariants (2026-08-18)](#protocol-v2-tier3-boundary-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — TL-FIX-C | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-TIER_LAYER_BOUNDARIES-04 | TIER_LAYER_BOUNDARIES | MEDIUM | BOUNDARY VIOLATION | ACCEPTED | TL-FIX-D | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 Tier-3 boundary target invariants (2026-08-18)](#protocol-v2-tier3-boundary-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — TL-FIX-D | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-TIER_LAYER_BOUNDARIES-05 | TIER_LAYER_BOUNDARIES | MEDIUM | TEST GAP | ACCEPTED | TL-FIX-A | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 tier-boundary target invariants (2026-08-18)](#protocol-v2-tier-boundary-target-invariants-2026-08-18); `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 Tier-3 boundary target invariants (2026-08-18)](#protocol-v2-tier3-boundary-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — TL-FIX-A | — | — | operator accepted 2026-08-18 |
 
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
+
+**Completed layers:** 2
 
 First layer summary:
 
@@ -58,13 +66,26 @@ First layer summary:
 - **Systemic themes:** universal governed execution boundary; identity/typed author surface; production host neutrality; maturity claims vs verified invariants
 - **Recommended remediation order:** SHM-FIX-A → SHM-FIX-B → SHM-FIX-C → SHM-FIX-D (see layer report)
 
+Second layer summary:
+
+- **Layer:** TIER_LAYER_BOUNDARIES — **FAIL** at `d8d10bb5099d003eb9495674c28e0f6e6762dbfa`
+- **Accepted findings:** 5 total — 0 CRITICAL, 2 HIGH, 3 MEDIUM, 0 LOW
+- **Systemic themes:** executable tier ownership proof; single agent identity authority; product-neutral Tier-3 contracts; public application composition API; consumer static-contract coverage
+- **Recommended remediation order:** TL-FIX-A → TL-FIX-B → TL-FIX-C → TL-FIX-D (see layer report)
+
+**Cumulative (completed layers only):** 15 accepted findings — 0 CRITICAL, 8 HIGH, 7 MEDIUM, 0 LOW
+
 ## Remediation rollup
 
 **Status:** not started — campaign audit still `IN_PROGRESS`; normal remediation queue builds after campaign `COMPLETE` unless operator scopes work to named findings.
 
 | remediation_block | findings | status | notes |
 |-------------------|----------|--------|-------|
-| SHM-FIX-A | 01, 02, 03, 04 | ACCEPTED / PLANNED | execution boundary — not implemented in this persistence task |
-| SHM-FIX-B | 06, 08, 09 | ACCEPTED / PLANNED | identity and typed context |
-| SHM-FIX-C | 05, 07 | ACCEPTED / PLANNED | host and platform neutrality |
-| SHM-FIX-D | 10 | ACCEPTED / PLANNED | maturity recertification after A–C verification |
+| SHM-FIX-A | AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01, 02, 03, 04 | ACCEPTED / PLANNED | execution boundary — not implemented in this persistence task |
+| SHM-FIX-B | AUDIT-20260818-STRATEGIC_HARNESS_MODEL-06, 08, 09 | ACCEPTED / PLANNED | identity and typed context |
+| SHM-FIX-C | AUDIT-20260818-STRATEGIC_HARNESS_MODEL-05, 07 | ACCEPTED / PLANNED | host and platform neutrality |
+| SHM-FIX-D | AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10 | ACCEPTED / PLANNED | maturity recertification after A–C verification |
+| TL-FIX-A | AUDIT-20260818-TIER_LAYER_BOUNDARIES-01, 05 | ACCEPTED / PLANNED | executable tier ownership — not implemented in this persistence task |
+| TL-FIX-B | AUDIT-20260818-TIER_LAYER_BOUNDARIES-02 | ACCEPTED / PLANNED | single agent ownership |
+| TL-FIX-C | AUDIT-20260818-TIER_LAYER_BOUNDARIES-03 | ACCEPTED / PLANNED | product-neutral Tier-3 platform |
+| TL-FIX-D | AUDIT-20260818-TIER_LAYER_BOUNDARIES-04 | ACCEPTED / PLANNED | public application composition contract |

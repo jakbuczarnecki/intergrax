@@ -10,7 +10,7 @@ from typing import Optional
 from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
-from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -27,7 +27,7 @@ class DebugHitlResumeService:
         *,
         checkpoint_store: TaskCheckpointPersistence,
         runtime_event_store: Optional[RuntimeEventPersistence] = None,
-        human_decision_store: Optional[SQLiteHumanDecisionStore] = None,
+        human_decision_store: HumanDecisionPersistence | None = None,
     ) -> None:
         self._registry = registry
         self._checkpoint_store = checkpoint_store

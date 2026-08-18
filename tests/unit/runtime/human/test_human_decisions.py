@@ -2,13 +2,23 @@
 
 import pytest
 
+from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.runtime.human.escalation import EscalationRouter, parse_human_response
 from intergrax.runtime.human.models import (
     EscalationTarget,
+    HumanDecisionRecord,
     HumanResponseVerdict,
+    build_human_decision_record,
 )
 from intergrax.runtime.human.pause import HumanPauseCoordinator
+from intergrax.runtime.human.persistence_contract import (
+    HumanDecisionPersistence,
+    InMemoryHumanDecisionPersistence,
+)
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.orchestration.human_response import persist_human_decision
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
@@ -51,7 +61,8 @@ def test_escalation_router_levels():
 
 def test_human_decision_store_records_and_lists(tmp_path):
     store = SQLiteHumanDecisionStore(db_path=tmp_path / "human.db")
-    record = SQLiteHumanDecisionStore.build_record(
+    assert isinstance(store, HumanDecisionPersistence)
+    record = build_human_decision_record(
         task_id="task-1",
         tenant_id="t1",
         user_id="u1",
@@ -68,3 +79,29 @@ def test_human_decision_store_records_and_lists(tmp_path):
 
     escalations = store.list_escalations("t1")
     assert len(escalations) == 1
+
+
+def test_persist_human_decision_uses_generic_persistence() -> None:
+    store = InMemoryHumanDecisionPersistence()
+    task_id = mint_task_id()
+    task = Task(tenant_id="t1", user_id="u1", message="x", task_id=task_id)
+    HumanPauseCoordinator.record_human_response(task, "approve")
+
+    persist_human_decision(
+        task,
+        HumanResponseVerdict.APPROVE,
+        human_store=store,
+        response_text="approve",
+    )
+
+    listed = store.list_for_task(task_id, "t1")
+    assert len(listed) == 1
+    assert isinstance(listed[0], HumanDecisionRecord)
+    assert listed[0].verdict is HumanResponseVerdict.APPROVE
+    assert listed[0].response_text == "approve"
+
+
+def test_nexus_loop_accepts_human_decision_persistence() -> None:
+    store = InMemoryHumanDecisionPersistence()
+    loop = NexusLoop(AgentRegistry(), human_decision_store=store)
+    assert loop._human_store is store
