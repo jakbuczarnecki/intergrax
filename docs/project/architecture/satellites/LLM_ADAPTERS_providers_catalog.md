@@ -117,7 +117,7 @@ Do not merge counters without explicit bridge code.
 ## Resilience & secrets
 
 - **`LLMCallConfig`:** retries, timeout, in-process rate limit, circuit breaker, optional Redis distributed limit.
-- **Failover (target):** profile chain — M-LLM-X.4.
+- **Failover:** profile chain via `fallback_profiles` / `FailoverLLMAdapter` — Done.
 - **Secrets:** `registry/secrets.py` — env + `llm/<provider>/api_key`.
 
 ---
@@ -133,7 +133,7 @@ Do not merge counters without explicit bridge code.
 | `INTERGRAX_LLM_TENANT_MAX_TOKENS` | Hard per-tenant quota |
 | `INTERGRAX_LLM_GOVERNANCE_WARN_TOKENS` | Soft warn on task complete |
 | `INTERGRAX_BEDROCK_USE_CONVERSE` | Bedrock Converse API toggle |
-| `INTERGRAX_LLM_MODEL_CATALOG_PATH` | **Target** M-LLM-X.1 — optional override YAML |
+| `INTERGRAX_LLM_MODEL_CATALOG_PATH` | Optional `ModelCatalog` override YAML |
 | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, … | Per-provider secrets |
 
 ---
