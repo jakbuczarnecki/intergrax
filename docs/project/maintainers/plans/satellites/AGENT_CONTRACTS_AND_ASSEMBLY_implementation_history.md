@@ -2,7 +2,7 @@
 
 **Parent hub:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../AGENT_CONTRACTS_AND_ASSEMBLY.md)
 
-> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md](../../../../audit_results/legacy/plan-audit-history/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md).
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/AGENT_CONTRACTS_AND_ASSEMBLY_implementation_history.md](../../../../audit_results/legacy/plan-audit-history/AGENT_CONTRACTS_AND_ASSEMBLY_implementation_history.md).
 
 
 ## Phase ACP — Agent Cognitive Patterns (ACP)

@@ -2,7 +2,7 @@
 
 **Parent hub:** [`CONTEXT_ENGINEERING.md`](../CONTEXT_ENGINEERING.md)
 
-> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/CONTEXT_ENGINEERING_audit_history.md](../../../../audit_results/legacy/plan-audit-history/CONTEXT_ENGINEERING_audit_history.md).
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/CONTEXT_ENGINEERING_implementation_history.md](../../../../audit_results/legacy/plan-audit-history/CONTEXT_ENGINEERING_implementation_history.md).
 
 
 ## Layer audit register (2026-06-17 — iteration III, Layer Completion Mode)

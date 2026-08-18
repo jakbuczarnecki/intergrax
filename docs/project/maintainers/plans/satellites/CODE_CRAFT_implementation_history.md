@@ -2,7 +2,7 @@
 
 **Parent hub:** [`CODE_CRAFT.md`](../CODE_CRAFT.md)
 
-> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/CODE_CRAFT_audit_history.md](../../../../audit_results/legacy/plan-audit-history/CODE_CRAFT_audit_history.md).
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/CODE_CRAFT_implementation_history.md](../../../../audit_results/legacy/plan-audit-history/CODE_CRAFT_implementation_history.md).
 
 
 ## Phase ECC-0 — Architecture canon (Done)

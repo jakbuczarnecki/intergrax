@@ -2,7 +2,7 @@
 
 **Parent hub:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../ADAPTIVE_HARNESS_INTELLIGENCE.md)
 
-> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md](../../../../audit_results/legacy/plan-audit-history/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md).
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/ADAPTIVE_HARNESS_INTELLIGENCE_implementation_history.md](../../../../audit_results/legacy/plan-audit-history/ADAPTIVE_HARNESS_INTELLIGENCE_implementation_history.md).
 
 
 ## Phase W-ADAPT — Adaptive Harness Intelligence (L4 runtime)

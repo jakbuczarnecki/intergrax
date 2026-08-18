@@ -2,7 +2,7 @@
 
 **Parent hub:** [`LLM_ADAPTERS.md`](../LLM_ADAPTERS.md)
 
-> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/LLM_ADAPTERS_audit_history.md](../../../../audit_results/legacy/plan-audit-history/LLM_ADAPTERS_audit_history.md).
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/LLM_ADAPTERS_implementation_history.md](../../../../audit_results/legacy/plan-audit-history/LLM_ADAPTERS_implementation_history.md).
 
 
 ## Layer Completion Mode — Sprint register (2026-06-14)

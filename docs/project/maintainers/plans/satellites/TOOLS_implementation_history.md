@@ -2,7 +2,7 @@
 
 **Parent hub:** [`TOOLS.md`](../TOOLS.md)
 
-> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/TOOLS_audit_history.md](../../../../audit_results/legacy/plan-audit-history/TOOLS_audit_history.md).
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/TOOLS_implementation_history.md](../../../../audit_results/legacy/plan-audit-history/TOOLS_implementation_history.md).
 
 
 ## Phase LEG — Legacy tool plan boolean closeout

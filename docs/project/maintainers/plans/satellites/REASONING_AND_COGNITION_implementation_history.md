@@ -2,7 +2,7 @@
 
 **Parent hub:** [`REASONING_AND_COGNITION.md`](../REASONING_AND_COGNITION.md)
 
-> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/REASONING_AND_COGNITION_audit_history.md](../../../../audit_results/legacy/plan-audit-history/REASONING_AND_COGNITION_audit_history.md).
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/REASONING_AND_COGNITION_implementation_history.md](../../../../audit_results/legacy/plan-audit-history/REASONING_AND_COGNITION_implementation_history.md).
 
 
 ## Phase COG-DOC — Domain pair establishment (Band 2al)

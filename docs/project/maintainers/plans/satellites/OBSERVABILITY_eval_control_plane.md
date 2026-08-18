@@ -5,7 +5,7 @@
 **Audit source:** [audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md](../../audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md)  
 **Status:** Active implementation register — **2026-06-24**
 
-> Closed phases (OBS, OBS-BUS, EBE, OBS-EVOL-9) remain in [OBSERVABILITY_audit_history.md](OBSERVABILITY_audit_history.md). Do not re-open without operator reprioritization.
+> Closed phases (OBS, OBS-BUS, EBE, OBS-EVOL-9) remain in [OBSERVABILITY_implementation_history.md](OBSERVABILITY_implementation_history.md). Do not re-open without operator reprioritization.
 
 ---
 
@@ -64,4 +64,4 @@ One phase ID (or cohesive sub-ID batch) per PR unless operator reprioritizes.
 
 ---
 
-*Update this register when closing an OECP phase. Keep historical OBS/OBS-BUS/EBE rows in [OBSERVABILITY_audit_history.md](OBSERVABILITY_audit_history.md).*
+*Update this register when closing an OECP phase. Keep historical OBS/OBS-BUS/EBE rows in [OBSERVABILITY_implementation_history.md](OBSERVABILITY_implementation_history.md).*

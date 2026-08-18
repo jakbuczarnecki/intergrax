@@ -2,7 +2,7 @@
 
 **Parent hub:** [`CRITIC_VERIFICATION.md`](../CRITIC_VERIFICATION.md)
 
-> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/CRITIC_VERIFICATION_audit_history.md](../../../../audit_results/legacy/plan-audit-history/CRITIC_VERIFICATION_audit_history.md).
+> **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/CRITIC_VERIFICATION_implementation_history.md](../../../../audit_results/legacy/plan-audit-history/CRITIC_VERIFICATION_implementation_history.md).
 
 
 ## Audit §CVL-1 — Scope
