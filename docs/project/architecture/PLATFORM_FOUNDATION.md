@@ -1,14 +1,139 @@
 # Platform Foundation
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
-**Plan (1:1):** [`plan/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Audit layers:** 1–2, 32  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — platform evolution rules; Platform Foundation owns implementation gates and spine verification, not capability-ownership policy.
+**Intergrax Platform Foundation** is the domain that owns the platform's **four-tier topology**, strict dependency direction, cross-layer invariants, tier-boundary enforcement posture, and spine verification gates — the structural rules every other domain builds on.
+
+## Why it matters
+
+Without a canonical tier model and enforced dependency direction, every team could place orchestration in agents, business logic in Tier-0 adapters, or product wiring in runtime packages. That produces import cycles, untestable hosts, policy bypass, and incompatible deployment stories.
+
+Platform Foundation gives architects and implementers one spine: **Tier-3 composes; Tier-2 decides domain work; Tier-1 orchestrates; Tier-0 supplies adapters** — with CI gates and qualification records that prove the spine stays intact.
+
+> [!NOTE]
+> **Maturity boundary:** The four-tier model and dependency rules are **canonical** in this hub. Tier-boundary **enforcement proof** is **not closed** — see [Tier-boundary enforcement qualification](#tier-boundary-enforcement-qualification) and plan [§6.1ax](../maintainers/plans/PLATFORM_FOUNDATION.md#61ax-pf-tier-enforcement--production-tier-boundary-qualification). Gate-green maintenance mode does **not** mean every package is mechanically classified or every forbidden import path is proven.
+
+> [!IMPORTANT]
+> **Capability ownership policy** lives in [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md). Platform Foundation owns spine topology, invariants, and verification gates — not domain feature canon.
+
+**Primary audience:** Principal / Staff engineers, harness integrators, and auditors validating tier boundaries — after the platform overview in the root README.
+
+## At a glance
+
+| Concern | Summary |
+| -------- | -------- |
+| **Responsibility** | Four-tier topology, dependency direction, cross-layer invariants, tier-boundary enforcement posture, platform gate spine |
+| **Tier model** | Tier-0 Platform → Tier-1 Nexus → Tier-2 Agents → Tier-3 Applications |
+| **Dependency rule** | Higher tiers import lower tiers only — see [Dependency Direction](#dependency-direction-strict) |
+| **Invariants** | [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) — `SYS-INV-*` index |
+| **Enforcement** | CI import guards + open qualification [§6.1ax](../maintainers/plans/PLATFORM_FOUNDATION.md#61ax-pf-tier-enforcement--production-tier-boundary-qualification) |
+| **Maturity** | Qualification boundaries in [Current maturity](#current-maturity) — no single headline A/I/P/E score in this hub |
+| **Go deeper** | [Engineering canon](#engineering-canon) · [extended satellite](satellites/PLATFORM_FOUNDATION_extended_depth.md) · [plan](../maintainers/plans/PLATFORM_FOUNDATION.md) |
+
+## Flagship architecture visual
+
+```mermaid
+flowchart TB
+    T3["Tier-3 — Applications<br/>product shell, host wiring"]
+    T2["Tier-2 — Agents<br/>domain capability modules"]
+    T1["Tier-1 — Nexus Runtime<br/>Agent OS orchestration"]
+    T0["Tier-0 — Platform<br/>adapters, tools, integrations"]
+
+    T3 --> T2 --> T1 --> T0
+```
+
+Applications compose agents; agents run inside Nexus; Nexus consumes Tier-0 services under policy. **Tier-3 composes the platform; it does not fork it.**
+
+## How the tier model works
+
+1. **Tier-3 Application** — deployable host: manifest, profiles, surfaces, agent roster wiring.
+2. **Tier-2 Agent** — bounded domain module implementing `Agent` + `AgentContract`; local step loop only.
+3. **Tier-1 Nexus** — global orchestration: task intake, graph, policy, tool gateway, trace coordination.
+4. **Tier-0 Platform** — integrations, tools, skills, LLM adapters, memory/RAG stores — no orchestration.
+
+Execution flow: user/API (Tier-3) → Nexus intake (Tier-1) → selected agents (Tier-2) → Tier-0 services under Nexus policy → response to application host.
+
+## Responsibility boundaries
+
+### Platform Foundation owns
+
+- Canonical Tier-0..3 definitions, repository placement, and dependency direction.
+- Cross-layer invariant index and tier-boundary enforcement qualification posture.
+- Platform spine verification gates (`intergrax doctor --ci`, `pytest -m gate`) as documented in the plan.
+
+### Platform Foundation does not own
+
+- Per-domain capability architecture (Memory, RAG, Orchestration, etc.) — see domain pairs in [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md).
+- Capability ownership and adoption policy — [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md).
+- Product business logic — Tier-2 agents and Tier-3 hosts.
+
+### Applications (Tier-3) configure
+
+- Which agents, integrations, and profiles compose a deployable product — [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md).
+
+## Relationship to Intergrax
+
+| Neighbor | Relationship |
+| -------- | ------------- |
+| [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) | Platform hub — indexes all domain pairs |
+| [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) | Meta-governance for capability ownership and proof order |
+| [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | Execution semantics inside Tier-1 runs |
+| [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | Nexus control-flow narrative |
+| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) | Tier-3 composition contracts |
+| [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Deployment lifecycle around Tier-3 hosts |
+
+## Current limitations
+
+- Tier-boundary enforcement is **partial** — scanner roots are manually enumerated; full package→tier classification is tracked as open work ([§6.1ax](../maintainers/plans/PLATFORM_FOUNDATION.md#61ax-pf-tier-enforcement--production-tier-boundary-qualification)).
+- Protocol v2 audit [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) records **target invariants only** — remediation not implemented by audit persistence alone.
+- Extended platform depth and production gate registers live in satellites — not required for first-contact reading.
+
+## Current maturity
+
+This hub does **not** publish a single headline four-axis **A/I/P/E** score. Use the boundaries below with the [plan](../maintainers/plans/PLATFORM_FOUNDATION.md) for delivery rows:
+
+| Axis | Current boundary |
+| ---- | ---------------- |
+| **Architecture** | Four-tier model, dependency rules, and `SYS-INV-*` cross-layer invariants are canonical |
+| **Implementation** | Platform spine and Band-1 gate maintenance are active; feature backlog closed per plan §6.1 |
+| **Production** | Tier-boundary enforcement qualification **open** — verdict `CONDITIONALLY SOUND — ENFORCEMENT REMEDIATION REQUIRED` |
+| **Evidence** | CI gate suite, `uv run intergrax doctor --ci`, HEP smoke path — **not** universal production qualification |
+
+## Evidence / proof
+
+Platform Foundation evidence is **gate- and audit-oriented**:
+
+- **CI gates:** `uv run pytest -m gate -q` · `uv run intergrax doctor --ci` (plan §6.1 default).
+- **Tier import guards:** `scripts/check_no_upward_application_imports.py`, `scripts/maintenance/check_intergrax_no_applications_imports.py`, `scripts/maintenance/check_agents_no_tier3_imports.py`.
+- **Harness evidence pack:** [`HARNESS_EVIDENCE_PACK.md`](../maintainers/plans/HARNESS_EVIDENCE_PACK.md) — smoke audit and artifact checker closeouts.
+- **Tier-boundary audits:** PF-TIER snapshot `4c92e0a` · Protocol v2 [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md).
+- **Platform audit protocol:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
+
+Gate green does **not** substitute for closed tier-enforcement qualification or customer production evidence.
+
+## Go deeper
+
+| Depth | Route |
+| ----- | ----- |
+| **Engineering canon** | [Below](#engineering-canon) — tier definitions, harness alignment, high-level diagram |
+| **Extended depth** | [`satellites/PLATFORM_FOUNDATION_extended_depth.md`](satellites/PLATFORM_FOUNDATION_extended_depth.md) |
+| **Production gates** | [`satellites/PLATFORM_FOUNDATION_production_gates.md`](satellites/PLATFORM_FOUNDATION_production_gates.md) |
+| **Implementation plan** | [`maintainers/plans/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md) |
+| **Architecture governance** | [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) |
+| **System invariants** | [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) |
+| **Target architecture** | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
+
 ---
 
-## Cursor read scope (token budget)
+## Maintainer and Cursor context
+
+**Status:** Canonical architecture (domain pair 1:1)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 1–2, 32  
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — platform evolution rules; Platform Foundation owns implementation gates and spine verification, not capability-ownership policy.
+
+### Cursor read scope (token budget)
 
 **Do not read this entire file in one session** (PLATFORM_FOUNDATION canon).
 
@@ -18,10 +143,7 @@
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
----
-
-
-## Architecture satellites (read on demand)
+### Architecture satellites (read on demand)
 
 Large § blocks moved out of the architecture hub to reduce Cursor context use.
 Load **only** the satellite matching your task or cited §.
@@ -32,6 +154,11 @@ Load **only** the satellite matching your task or cited §.
 | [`satellites/PLATFORM_FOUNDATION_production_gates.md`](satellites/PLATFORM_FOUNDATION_production_gates.md) | production gates |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
+
+---
+
+## Engineering canon
+
 ## Tier-1 — Nexus Runtime (Agent Operating System)
 
 **Role:** the **Agent OS** — orchestrates agents the way an operating system orchestrates applications.
@@ -268,7 +395,7 @@ Agents MUST NOT call integrations directly. Agents MUST NOT import CV/ML SDKs (`
 | **1 — Skills = tools** | Encode instructions + multi-tool workflows as oversized tools | **Rejected** — breaks atomic LLM function schema, MCP export, risk/idempotency per operation, and external tool ecosystems |
 | **2 — Skill Library** | Fourth layer: Integration → Tool → **Skill** → Agent | **Adopted** — **MVP Done**; importers for external formats (e.g. Cursor `SKILL.md`) after manifest validation |
 
-Implementation tracker: [`plan/PLATFORM_FOUNDATION.md) Appendix E · catalog [`architecture/SKILLS.md`](architecture/SKILLS.md).
+Implementation tracker: [`plan/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md) Appendix E · catalog [`SKILLS.md`](SKILLS.md).
 
 ---
 

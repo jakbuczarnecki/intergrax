@@ -448,7 +448,9 @@ Evidence maturity: **E3**
 **Plan (1:1):** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 11  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)## Cursor read scope (token budget)
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
+
+## Cursor read scope (token budget)
 
 **Do not read this entire file in one session** (TOOLS canon).
 

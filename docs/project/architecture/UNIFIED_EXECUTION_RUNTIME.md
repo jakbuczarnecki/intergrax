@@ -308,7 +308,8 @@ Intentional progressive disclosure — **not** unresolved drift.
 **Plan (1:1):** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md)
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 4–5, 8, 23–24
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Last updated:** 2026-08-17 — DOC-3E-R1 hub/satellite layout correction; DOC-3E public front modernization; TRACE identity supersession in §42.1.1
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Last updated:** 2026-08-17 — DOC-3E-R1 hub/satellite layout correction; DOC-3E public front modernization; TRACE identity supersession in §42.1.1
 
 ### Cursor read scope (token budget)
 

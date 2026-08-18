@@ -415,7 +415,9 @@ Backlog and phase trackers: [plan](../maintainers/plans/REASONING_AND_COGNITION.
 **Plan (1:1):** [`plan/REASONING_AND_COGNITION.md`](../maintainers/plans/REASONING_AND_COGNITION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5  
 **Audit layers:** 7 (Reasoning, Planning and Cognition) · cross-ref 17 (Prompt Registry input)  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)### Cursor read scope (token budget)
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
+
+### Cursor read scope (token budget)
 
 **Do not read this entire file in one session** (REASONING_AND_COGNITION canon).
 

@@ -351,7 +351,8 @@ Evidence maturity: **E3**
 **Plan (1:1):** [`plan/ORCHESTRATION.md`](../maintainers/plans/ORCHESTRATION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 3, 9 · multi-agent patterns: audit layer 10 (cross-ref satellite §50)  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Reasoning / planning canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (audit layer 7)  
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Reasoning / planning canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (audit layer 7)  
 **Elastic capacity:** [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) (infra capacity signals and scaling — **not** graph scheduling, agent topology or orchestration brain)
 
 ### Cursor read scope (token budget)

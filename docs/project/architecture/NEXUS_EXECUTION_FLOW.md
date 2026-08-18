@@ -301,7 +301,8 @@ Intentional progressive disclosure — **not** unresolved drift.
 **Plan (1:1):** [`plan/NEXUS_EXECUTION_FLOW.md`](../maintainers/plans/NEXUS_EXECUTION_FLOW.md)
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 8, 9, 10 (flow narrative) · cognition depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §7–§10
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Last updated:** 2026-08-17 — DOC-3F-R1 hub/satellite topology correction; DOC-3F public front preserved
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Last updated:** 2026-08-17 — DOC-3F-R1 hub/satellite topology correction; DOC-3F public front preserved
 
 ### Cursor read scope (token budget)
 
