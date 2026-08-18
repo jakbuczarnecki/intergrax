@@ -6,7 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.runtime.human.models import EscalationTarget, HumanResponseVerdict
+from intergrax.runtime.human.models import (
+    EscalationTarget,
+    HumanDecisionRecord,
+    HumanResponseVerdict,
+    build_human_decision_record,
+)
+from intergrax.runtime.human.persistence_contract import InMemoryHumanDecisionPersistence
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
 from intergrax.tools.providers.hitl.contracts import (
     HitlGetDecisionInput,
@@ -30,7 +36,7 @@ pytestmark = pytest.mark.unit
 @pytest.fixture
 def hitl_ctx(tmp_path: Path) -> ToolWiringContext:
     store = SQLiteHumanDecisionStore(db_path=tmp_path / "human.db")
-    record = SQLiteHumanDecisionStore.build_record(
+    record = build_human_decision_record(
         task_id="task-1",
         tenant_id="tenant-1",
         user_id="user-1",
@@ -89,6 +95,28 @@ def test_hitl_submit_response(hitl_ctx: ToolWiringContext) -> None:
     assert out.recorded is True
     assert out.decision is not None
     assert out.decision.verdict == "approve"
+
+
+def test_hitl_submit_response_uses_vendor_neutral_factory() -> None:
+    store = InMemoryHumanDecisionPersistence()
+    ctx = ToolWiringContext(human_decision_store=store)
+    out = hitl_submit_response(
+        ctx,
+        HitlSubmitResponseInput(
+            tenant_id="tenant-1",
+            task_id="task-3",
+            user_id="operator-1",
+            verdict="approve",
+            response_text="approved without sqlite",
+        ),
+    )
+    assert out.used is True
+    assert out.recorded is True
+    assert out.decision is not None
+    listed = store.list_for_task("task-3", "tenant-1")
+    assert len(listed) == 1
+    assert isinstance(listed[0], HumanDecisionRecord)
+    assert listed[0].verdict is HumanResponseVerdict.APPROVE
 
 
 def test_hitl_list_for_task(hitl_ctx: ToolWiringContext) -> None:

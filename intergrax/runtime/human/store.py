@@ -19,7 +19,7 @@ from intergrax.runtime.human.models import (
     HumanDecisionRecord,
     HumanResponseVerdict,
 )
-from intergrax.utils.time_provider import SystemTimeProvider
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 
 __all__ = [
     "DEFAULT_HUMAN_DECISIONS_DB",
@@ -38,7 +38,7 @@ def open_human_decision_store(db_path: Path | None = None) -> SQLiteHumanDecisio
     return create_sqlite_human_decision_store()  # type: ignore[return-value]
 
 
-class SQLiteHumanDecisionStore:
+class SQLiteHumanDecisionStore(HumanDecisionPersistence):
     def __init__(self, *, db_path: Path) -> None:
         self._db_path = db_path
         self._ensure_schema()
@@ -179,33 +179,3 @@ class SQLiteHumanDecisionStore:
             created_at_utc=row["created_at_utc"],
         )
 
-    @classmethod
-    def build_record(
-        cls,
-        *,
-        task_id: str,
-        tenant_id: str,
-        user_id: str,
-        verdict: HumanResponseVerdict,
-        response_text: str,
-        human_request_id: str = "",
-        escalation_level: int = 0,
-        escalation_target: Optional[EscalationTarget] = None,
-        agent_id: Optional[str] = None,
-        run_id: Optional[str] = None,
-        notes: str = "",
-    ) -> HumanDecisionRecord:
-        return HumanDecisionRecord(
-            task_id=task_id,
-            tenant_id=tenant_id,
-            user_id=user_id,
-            human_request_id=human_request_id,
-            verdict=verdict,
-            response_text=response_text,
-            escalation_level=escalation_level,
-            escalation_target=escalation_target,
-            agent_id=agent_id,
-            run_id=run_id,
-            notes=notes,
-            created_at_utc=SystemTimeProvider.utc_now().isoformat(),
-        )

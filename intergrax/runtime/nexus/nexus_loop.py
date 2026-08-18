@@ -53,7 +53,7 @@ from intergrax.runtime.hooks.nexus_lifecycle_hooks import (
 )
 from intergrax.runtime.human.escalation import EscalationRouter
 from intergrax.runtime.human.models import HumanResponseVerdict, EscalationTarget
-from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
@@ -129,7 +129,7 @@ class NexusLoop:
         interrupt_handler: Optional[ExecutionInterruptHandler] = None,
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
         sandbox_manager: Optional[SandboxSessionManager] = None,
-        human_decision_store: Optional[SQLiteHumanDecisionStore] = None,
+        human_decision_store: HumanDecisionPersistence | None = None,
         escalation_router: Optional[EscalationRouter] = None,
         checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
         agent_checkpoint_store: AgentCheckpointStore | None = None,

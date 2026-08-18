@@ -28,7 +28,7 @@ from intergrax.runtime.human.escalation import EscalationRouter
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanApprovalResolutionError, HumanPauseCoordinator
-from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence, InMemoryHumanDecisionPersistence
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookCoordinator
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
@@ -118,7 +118,7 @@ def _pending(
 
 def _build_intake_runner_with_hitl(
     *,
-    human_store: SQLiteHumanDecisionStore | None = None,
+    human_store: HumanDecisionPersistence | None = None,
 ) -> tuple[NexusIntakeRunner, list[object]]:
     published: list[object] = []
     human_hooks = HumanApprovalHookCoordinator(MiddlewarePipeline())
@@ -471,7 +471,6 @@ def test_valid_reject_persists_resolution_clears_pending_no_grant() -> None:
 
 @pytest.mark.asyncio
 async def test_intake_runner_reject_preserves_evidence_before_cleanup(
-    tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_hitl_runtime_events(monkeypatch)
@@ -488,7 +487,7 @@ async def test_intake_runner_reject_preserves_evidence_before_cleanup(
         human_request_id=human_request_id,
     )
 
-    store = SQLiteHumanDecisionStore(db_path=tmp_path / "human.db")
+    store = InMemoryHumanDecisionPersistence()
     runner, published = _build_intake_runner_with_hitl(human_store=store)
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
@@ -526,7 +525,6 @@ async def test_intake_runner_reject_preserves_evidence_before_cleanup(
 
 @pytest.mark.asyncio
 async def test_intake_runner_escalate_preserves_evidence_before_cleanup(
-    tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_hitl_runtime_events(monkeypatch)
@@ -543,7 +541,7 @@ async def test_intake_runner_escalate_preserves_evidence_before_cleanup(
         human_request_id=human_request_id,
     )
 
-    store = SQLiteHumanDecisionStore(db_path=tmp_path / "human.db")
+    store = InMemoryHumanDecisionPersistence()
     runner, published = _build_intake_runner_with_hitl(human_store=store)
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)

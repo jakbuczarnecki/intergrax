@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 from intergrax.runtime.human.escalation import EscalationTarget
-from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.runtime.human.models import HumanResponseVerdict, build_human_decision_record
 from intergrax.runtime.human.pause import HumanPauseCoordinator
-from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.task.task import Task
 
 
@@ -28,7 +28,7 @@ def persist_human_decision(
     task: Task,
     verdict: HumanResponseVerdict,
     *,
-    human_store: SQLiteHumanDecisionStore | None,
+    human_store: HumanDecisionPersistence | None,
     response_text: str = "",
 ) -> None:
     if human_store is None:
@@ -36,7 +36,7 @@ def persist_human_decision(
     human_request = HumanPauseCoordinator.human_request_from_task(task)
     target_raw = task.runtime.governance.escalation_target
     target = EscalationTarget(str(target_raw)) if target_raw else None
-    record = SQLiteHumanDecisionStore.build_record(
+    record = build_human_decision_record(
         task_id=task.task_id,
         tenant_id=task.tenant_id,
         user_id=task.user_id,

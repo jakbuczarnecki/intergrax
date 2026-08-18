@@ -3,8 +3,12 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.human.models import EscalationTarget, HumanDecisionRecord, HumanResponseVerdict
-from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.human.models import (
+    EscalationTarget,
+    HumanDecisionRecord,
+    HumanResponseVerdict,
+    build_human_decision_record,
+)
 from intergrax.tools.providers.hitl.contracts import (
     HitlDecisionOutput,
     HitlGetDecisionInput,
@@ -125,7 +129,7 @@ def hitl_submit_response(ctx: ToolWiringContext, params: HitlSubmitResponseInput
     except ValueError as exc:
         return HitlSubmitResponseOutput(used=True, recorded=False, reason=str(exc))
 
-    record = SQLiteHumanDecisionStore.build_record(
+    record = build_human_decision_record(
         task_id=params.task_id.strip(),
         tenant_id=params.tenant_id.strip(),
         user_id=params.user_id.strip(),
