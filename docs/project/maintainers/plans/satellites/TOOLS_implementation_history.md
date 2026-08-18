@@ -31,7 +31,6 @@
 
 **Status:** **Done** (2026-06-02) — **5/5** deliverables Done (TS-DOC.* + TS-1–3); gate **589 passed**
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §11–§12; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix J**.
 
 **Priority ladder:** **Band 2k** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -64,9 +63,9 @@
 
 ## Phase TOOL-ENG-DOC — Tool engine documentation canon (Band 2ar / 2bb)
 
-**Status:** **Done** (2026-06-12) — **7/7** DOC rows · pipeline · selection modes · invocation patterns · selection plugin · graph boundary  
-**Prerequisites:** Phase TS **Done** · Phase O **Done** · Phase LEG **Done**  
-**Goal:** Canon in [`architecture/TOOLS.md`](../architecture/TOOLS.md) for selection (L6), orchestration (2a), atomic invoke (2b), logging — plus plugin extensibility  
+**Status:** **Done** (2026-06-12) — **7/7** DOC rows · pipeline · selection modes · invocation patterns · selection plugin · graph boundary
+**Prerequisites:** Phase TS **Done** · Phase O **Done** · Phase LEG **Done**
+**Goal:** Canon in [`architecture/TOOLS.md`](../architecture/TOOLS.md) for selection (L6), orchestration (2a), atomic invoke (2b), logging — plus plugin extensibility
 **ADR:** **No ADR needed** for DOC rows; implementation rows TOOL-ENG-13/14/16/26 require ADR at code merge
 
 | ID | Deliverable | Status | Priority | Module / doc | Acceptance |
@@ -115,7 +114,7 @@
 
 ### Phase O — Tool Library & Unified Tool Model (Tier-0)
 
-**Canon:** §7.1.6–§7.1.7, §22, §42.12  
+**Canon:** §7.1.6–§7.1.7, §22, §42.12
 **Goal:** Ship a reusable **Tool Library** catalog (mirror Integration Library) and migrate legacy pipeline flags (`use_rag`, `use_websearch`) to explicit catalog tools.
 
 **Prerequisite:** Phase M.3 (`IntegrationProfile`) available; tool engine (`ToolRegistry`, `RuntimeToolInvoker`) exists.

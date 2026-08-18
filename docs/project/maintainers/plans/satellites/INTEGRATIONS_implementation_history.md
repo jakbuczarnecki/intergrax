@@ -9,7 +9,6 @@
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (INT-DOC.* + INT-1–2); gate **612 passed**
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §13; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix K**.
 
 **Priority ladder:** **Band 2l** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -52,7 +51,7 @@
 
 ### Phase M — Integration Library (Tier-0 Catalog)
 
-**Canon:** §7.1.1–§7.1.5  
+**Canon:** §7.1.1–§7.1.5
 **Goal:** One discoverable integration catalog so platform teams ship adapters and agent teams compose them in Tier-3 — without duplicating Redis/Postgres/Slack clients per agent.
 
 **Principle:** evolve existing modules (`queueing`, `distributed`, `websearch`, …) into catalog providers; do not fork parallel stacks.
@@ -190,10 +189,10 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers` into
 
 #### M.6 P4 — Harness platform expansion (Done)
 
-**Status:** **Done** (2026-06-02) — **28/28 Done** · catalog **127** slugs  
-**Source:** Integration harness ROI audit (2026-06-02)  
+**Status:** **Done** (2026-06-02) — **28/28 Done** · catalog **127** slugs
+**Source:** Integration harness ROI audit (2026-06-02)
 **Queue:** [§6.1w](.#61w-harness-implementation-queue--integration-expansion-m6-p4-closed) · **Execution order:** [§6.2ae](.#62ae-phase-m6-p4-execution-order--done)
-**Priority ladder:** **Band 2aa** (§4.0) — **Done**  
+**Priority ladder:** **Band 2aa** (§4.0) — **Done**
 **Implementation:** `intergrax/integrations/_shared/p5` + thin shells via `scripts/maintenance/wire_p5_m6_p4_providers.py` · `register_m6_p4_integrations()` in `bootstrap_extended.py`
 
 **Hard rules:**
@@ -270,8 +269,8 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers` into
 
 #### M.6 P5 — Harness integration depth (register archive)
 
-**Status:** **Done** (2026-06-02) — **33/34** · catalog **135** slugs in layout.py (**136** when `trivy` ships)  
-**Source:** Harness integration re-audit (2026-06-02) — post M.6 P4 follow-up  
+**Status:** **Done** (2026-06-02) — **33/34** · catalog **135** slugs in layout.py (**136** when `trivy` ships)
+**Source:** Harness integration re-audit (2026-06-02) — post M.6 P4 follow-up
 **Queue:** [§6.1x](.#61x-harness-implementation-queue--integration-depth-m6-p5-planned) · **Execution order:** [§6.2af](.#62af-phase-m6-p5-execution-order-band-2ab--planned)
 **Priority ladder:** **Band 2ab** (§4.0) — runs **in parallel** with §6.1 maintenance; **does not** unblock Band 3 product work
 
@@ -362,8 +361,8 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers` into
 
 #### M.6 P6 — Harness integration expansion (Done — 32/32)
 
-**Status:** **Done** (2026-06-02) — **32/32** · catalog **167** slugs in layout.py  
-**Source:** Harness integration gap audit (2026-06-02) — post M.6 P5; all **32** proposed slugs registered below (includes `trivy` migrated from M-P5.30, plus `modal`, `daytona`, `workos`, `hubspot` from audit waves)  
+**Status:** **Done** (2026-06-02) — **32/32** · catalog **167** slugs in layout.py
+**Source:** Harness integration gap audit (2026-06-02) — post M.6 P5; all **32** proposed slugs registered below (includes `trivy` migrated from M-P5.30, plus `modal`, `daytona`, `workos`, `hubspot` from audit waves)
 **Queue:** [§6.1y](.#61y-harness-implementation-queue--integration-expansion-m6-p6-done) · **Execution order:** [§6.2ag](.#62ag-phase-m6-p6-execution-order-band-2ac--done)
 **Priority ladder:** **Band 2ac** (§4.0) — runs **in parallel** with §6.1 maintenance; **does not** unblock Band 3 product work
 
@@ -450,10 +449,10 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers` into
 
 #### M.7 P7 — Agent-developer integration expansion (Done — 18/18)
 
-**Status:** **Done** (2026-06-08) — **18/18** · catalog **185** slugs in `layout.py`  
-**Source:** Integration audit for Tier-2 agent authors (2026-06-08)  
+**Status:** **Done** (2026-06-08) — **18/18** · catalog **185** slugs in `layout.py`
+**Source:** Integration audit for Tier-2 agent authors (2026-06-08)
 **Queue:** [§6.1z](.#61z-harness-implementation-queue--agent-developer-expansion-m7-p7-done)
-**Priority ladder:** **Band 2ad** — runs in parallel with §6.1 maintenance  
+**Priority ladder:** **Band 2ad** — runs in parallel with §6.1 maintenance
 **Implementation:** `intergrax/integrations/_shared/p8` + thin shells via `scripts/maintenance/wire_p8_m7_p7_providers.py` · `register_m7_p7_integrations()` in `bootstrap_m7_p7.py`
 
 **Hard rules:**
@@ -505,7 +504,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers` into
 
 #### Phase M.12 — LLM guardrail integrations (Done)
 
-**Canon:** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) §47 · UAEP §42.11.6  
+**Canon:** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) §47 · UAEP §42.11.6
 **Goal:** Ship `llm_guardrail` integration category + Tier-1 `guardrail_runtime_bridge` so Tier-3 hosts can select NeMo Guardrails, Guardrails AI, LLM Guard, OpenGuardrails, and complementary scanners without agent SDK imports.
 
 **Status:** **Done** (2026-06-09) — **14/14** deliverables; vendor SDKs optional (pattern/HTTP fallback in CI).

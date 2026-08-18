@@ -7,10 +7,10 @@
 
 ## Phase MEM-VEC — Vector memory integration (Band 2aw)
 
-**Status:** **Done** (2026-06-17) — MEMV1/MEMV2 **Done**; MEMV3 plugin + skill runtime **Done**.  
-**Architecture:** [`architecture/MEMORY.md`](../architecture/MEMORY.md) §5.3, §6.4–6.5, §7.1.1, §11.5  
-**Cross-plan:** [`plan/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) — `SESSION_HISTORY_SEMANTIC` fragment source (CE-VEC-1)  
-**ADR:** [`ADR-MEM-002`](../adr/entries/2026-06-14/ADR-MEM-002.md) — three-domain vector catalog (Accepted 2026-06-14)  
+**Status:** **Done** (2026-06-17) — MEMV1/MEMV2 **Done**; MEMV3 plugin + skill runtime **Done**.
+**Architecture:** [`architecture/MEMORY.md`](../architecture/MEMORY.md) §5.3, §6.4–6.5, §7.1.1, §11.5
+**Cross-plan:** [`plan/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) — `SESSION_HISTORY_SEMANTIC` fragment source (CE-VEC-1)
+**ADR:** [`ADR-MEM-002`](../adr/entries/2026-06-14/ADR-MEM-002.md) — three-domain vector catalog (Accepted 2026-06-14)
 **Goal:** Semantic vector recall for **LTM facts** and **session turns** wired end-to-end into Tier-3 hosts and Nexus CE pipeline — without agents touching vector SDKs.
 
 **Success gate:** P0 **Done**; lab + reference hosts pass `test_memory_vector_wiring_gate`; `enable_long_term_memory` + vector integration ⇒ `UserLongtermMemoryStep` returns hits in integration test.
@@ -117,10 +117,10 @@ Work **one MEM-DEPTH ID per PR**; after each step update the MEM-DEPTH master ta
 
 ## Phase MEM — Memory Platform Completion
 
-**Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **571 passed**.  
-**Prerequisites:** Phases **I** (TaskMemory), **R-Context**, **H-APP** (profile models), **DX-5.7** (ops:memory hints) **Done**; **H-APP.4.3** closed via **MEM-1.***.  
-**Goal:** Close every gap from the **memory platform audit** — short-term session, user/org LTM, task KV, context compression, H-APP→runtime wiring, persistence, recovery, observability, developer hooks, and market-parity documentation — **without** Band 3 product agents (K.1/K.2) or Mem0-like SaaS product layer (MEM-8 deferred P3).  
-**Priority ladder:** **Band 2h** (§4.0) — **closed**; default queue = §6.1 maintenance.  
+**Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **571 passed**.
+**Prerequisites:** Phases **I** (TaskMemory), **R-Context**, **H-APP** (profile models), **DX-5.7** (ops:memory hints) **Done**; **H-APP.4.3** closed via **MEM-1.***.
+**Goal:** Close every gap from the **memory platform audit** — short-term session, user/org LTM, task KV, context compression, H-APP→runtime wiring, persistence, recovery, observability, developer hooks, and market-parity documentation — **without** Band 3 product agents (K.1/K.2) or Mem0-like SaaS product layer (MEM-8 deferred P3).
+**Priority ladder:** **Band 2h** (§4.0) — **closed**; default queue = §6.1 maintenance.
 **Execution order:** [§6.2aa](.#62aa-phase-mem-execution-order-band-2h--closed).
 **Canon refs:** §27 Memory model · §28.1 Context assembly · §42.35 MemoryView · Appendix G in [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md).
 
@@ -159,11 +159,11 @@ Total: 48
 
 Canon §27 defines **5 memory types**:
 
-1. Task Memory  
-2. Agent Local Memory  
-3. User / Organization Memory  
-4. Long-Term Knowledge Memory  
-5. Execution Trace Memory  
+1. Task Memory
+2. Agent Local Memory
+3. User / Organization Memory
+4. Long-Term Knowledge Memory
+5. Execution Trace Memory
 
 Runtime maps these to **four operational stores** (+ trace + RAG — not memory layers):
 
@@ -362,10 +362,10 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 
 ## Phase MEM-DEPTH — Memory Intelligence Depth
 
-**Status:** **Done** (2026-06-08) — **26/26** deliverables; canonical architecture **Done** ([`architecture/MEMORY.md`](architecture/MEMORY.md)).  
-**Prerequisites:** Phase **MEM** (**Done**), Phase **CTX** (**Done**), Phase **R-Delegate** (**Done**), Phase **H-APP** (**Done**).  
-**Goal:** Raise Memory Layer from **L2 → L4** and Context Compiler from fragmented steps to a **unified, never-overflow** pipeline — context compiler, memory lifecycle automation, explore delegation, entity intelligence — **without** Band 3 business agents or Mem0 SaaS product.  
-**Priority ladder:** **Band 2am** (§4.0) — **closed** (2026-06-08); default queue = §6.1 maintenance.  
+**Status:** **Done** (2026-06-08) — **26/26** deliverables; canonical architecture **Done** ([`architecture/MEMORY.md`](architecture/MEMORY.md)).
+**Prerequisites:** Phase **MEM** (**Done**), Phase **CTX** (**Done**), Phase **R-Delegate** (**Done**), Phase **H-APP** (**Done**).
+**Goal:** Raise Memory Layer from **L2 → L4** and Context Compiler from fragmented steps to a **unified, never-overflow** pipeline — context compiler, memory lifecycle automation, explore delegation, entity intelligence — **without** Band 3 business agents or Mem0 SaaS product.
+**Priority ladder:** **Band 2am** (§4.0) — **closed** (2026-06-08); default queue = §6.1 maintenance.
 **Execution order:** [§6.2ab](.#62ab-phase-mem-depth-execution-order-band-2am--active).
 **Canon refs:** [`architecture/MEMORY.md`](architecture/MEMORY.md) · architecture §27–§28.1 · IDEAL §3.7, §16 · audit map §15–16.
 
@@ -475,7 +475,6 @@ Total: 26
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (CTX-DOC.* + CTX-1–2); gate **612 passed**
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §16; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix L**.
 
 **Priority ladder:** **Band 2n** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -519,9 +518,9 @@ Total: 26
 
 ## Phase MEMORY-LC — Full Harness Layer Completion closeout (2026-06-17)
 
-**Status:** **Done** (2026-06-17) — re-validates 2026-06-17 layer completion + MEM-VEC/MEM-DEPTH; no open P0/P1  
-**Prerequisites:** MEM-VEC **Done** · MEM-DEPTH **Done** · MEM-OBS.1 **Done**  
-**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**Status:** **Done** (2026-06-17) — re-validates 2026-06-17 layer completion + MEM-VEC/MEM-DEPTH; no open P0/P1
+**Prerequisites:** MEM-VEC **Done** · MEM-DEPTH **Done** · MEM-OBS.1 **Done**
+**Goal:** Formal Full Harness LC closeout — gate verification, journal
 **ADR:** **No ADR needed**
 
 | ID | Deliverable | Status | Priority | Acceptance |
@@ -535,7 +534,7 @@ Total: 26
 
 ### 6.1av Harness implementation queue — Memory audit maintenance (planned)
 
-**Source:** Layer 13 audit (2026-06-18) — `MEMORY` layer 15 · [`../audit_results/2026-06-18/MEMORY.md`](../audit_results/2026-06-18/MEMORY.md)  
+**Source:** Layer 13 audit (2026-06-18) — `MEMORY` layer 15 · [`../audit_results/2026-06-18/MEMORY.md`](../audit_results/2026-06-18/MEMORY.md)
 **Priority ladder:** **Band 1** (§6.1) — depth backlog only; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

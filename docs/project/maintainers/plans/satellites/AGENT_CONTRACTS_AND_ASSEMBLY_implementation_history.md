@@ -7,11 +7,10 @@
 
 ## Phase ACP — Agent Cognitive Patterns (ACP)
 
-**Status:** **Done** (2026-06-11) — Waves **0–8** delivered; master register **80/80** ACP-* rows **Done**; fleet migration **100%** Runtime dimension  
-**Architecture:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 (incl. **§32.0** readability & typed-only contracts)  
-**ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md)  
-**Author guide:** [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix AC (sync with §32.0)  
-**Audit:** [`audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit/AGENT_CONTRACTS_AND_ASSEMBLY.md) · domain audit **2026-06-11**  
+**Status:** **Done** (2026-06-11) — Waves **0–8** delivered; master register **80/80** ACP-* rows **Done**; fleet migration **100%** Runtime dimension
+**Architecture:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 (incl. **§32.0** readability & typed-only contracts)
+**ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md)
+**Author guide:** [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix AC (sync with §32.0)
 **Priority ladder:** **Band 2aw** — **closed** · **Band 2bb (ACP-CLOSE)** — **closed** · **Band 2bc (ACP-FINISH)** — **closed** (2026-06-13)
 
 **Strategic outcome (delivered):** Tier-2 authors use **`agent.run(AgentRunRequest)`** + typed **`on_next_step` → `StepOutcome`**; environment merges per-agent memory/tools/RAG/LLM from Tier-3 profile; Nexus remains `Task` entry for multi-agent prod.
@@ -69,7 +68,7 @@
 
 ### ACP legacy & technical debt register (must shrink to zero)
 
-**Audit 2026-06-11:** **18/18 Closed** in code — DEBT register fully closed; **ACP-CLOSE complete** (CI-2 Done).
+**Historical (legacy audit, 2026-06-11):** DEBT register closure recorded in legacy audit history (see pointer above); **ACP-CLOSE** implementation complete (CI-2 Done).
 
 | Debt ID | Legacy surface | Replacement | Status | Closed by / Open row |
 |---------|----------------|-------------|--------|----------------------|
@@ -238,7 +237,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 ## Phase ACP-CLOSE — Architecture compliance closeout
 
 **Status:** **Done** (2026-06-11) — post-ACP domain audit · **Band 2bb** · queue **[§6.1bb](.#61bb-harness-implementation-queue--acp-close-done)**
-**Source:** Architecture ↔ plan ↔ code audit (2026-06-11)  
+**Source:** Architecture ↔ plan ↔ code audit (2026-06-11)
 **Goal (achieved):** **DEBT-ACP register → zero**; §40 host depth; §40.12 evidenced; CI-1..3 wired.
 
 **Explicitly excluded:** Nexus graph/orchestration refactor; Phase K agents; new Tier-0 engines.
@@ -293,7 +292,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 
 ## Phase ACP-FINISH — Agent architecture completion
 
-**Status:** **Done** (2026-06-13) — GAP-ACP-36/37 **Closed** · architecture §28.3 **37 Closed · 0 Open** · **Band 2bc closed**  
+**Status:** **Done** (2026-06-13) — GAP-ACP-36/37 **Closed** · architecture §28.3 **37 Closed · 0 Open** · **Band 2bc closed**
 **Goal:** Close **GAP-ACP-36** (invocation token rollups) and **GAP-ACP-37** (per-agent limits + application reaction policies). After this phase, agent architecture canon is **decision-complete and implementation-complete** for §13–§40 (AUDIT-IDEAL §12–§20 residuals remain parallel).
 
 **Explicitly excluded:** New cognitive patterns; Nexus orchestration refactor; Phase K business agents.

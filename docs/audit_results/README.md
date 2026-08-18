@@ -37,6 +37,16 @@ docs/audit_results/
 - **Remediation / closure evidence** is tracked in the campaign register and via [AUDIT_REMEDIATION_PROTOCOL.md](AUDIT_REMEDIATION_PROTOCOL.md).
 - **Later periodic audits** create new dated campaigns; they do not silently overwrite prior evidence.
 
+
+
+## Campaign registry
+
+| Campaign | started_at | status | campaign_start_sha | campaign_end_sha | scope | overall_verdict |
+|----------|------------|--------|--------------------|------------------|-------|-----------------|
+| — | — | — | — | — | — | — |
+
+_No Protocol v2 campaigns persisted yet._
+
 ### Global registry (this file)
 
 This root `README.md` is only:

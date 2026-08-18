@@ -9,7 +9,6 @@
 
 **Status:** **Done** (2026-06-02) — **5/5** deliverables Done (TS-DOC.* + TS-1–3); gate **589 passed**
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §11–§12; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix J**.
 
 **Priority ladder:** **Band 2k** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -44,9 +43,9 @@
 
 ### Phase R — Harness AI Alignment (post-audit 2026-06-01)
 
-**Source:** Harness AI philosophy audit (scaffold, harness, LLM, tool vs skill, context engineering, subagents, policy) — traceability in **Appendix E**.  
-**Status:** **Done (MVP)** (2026-06-01). **Prerequisite met:** Phase **Q+ Done**.  
-**Goal:** Intergrax vocabulary and Tier-0 modules align with industry harness terminology **without** breaking Integration → Tool → Agent stack; add **Skill Library** for reuse and external compatibility.  
+**Source:** Harness AI philosophy audit (scaffold, harness, LLM, tool vs skill, context engineering, subagents, policy) — traceability in **Appendix E**.
+**Status:** **Done (MVP)** (2026-06-01). **Prerequisite met:** Phase **Q+ Done**.
+**Goal:** Intergrax vocabulary and Tier-0 modules align with industry harness terminology **without** breaking Integration → Tool → Agent stack; add **Skill Library** for reuse and external compatibility.
 **Principle:** evolve, not rewrite · skills **compose** tools (never replace `ToolRuntime`) · one R.* ID per PR · gate green.
 
 **Out of scope for Phase R:**
@@ -176,9 +175,9 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 
 ## Phase SKILLS-LC — Full Harness Layer Completion closeout (2026-06-17)
 
-**Status:** **Done** (2026-06-17) — re-validates 2026-06-08 Layer Completion (SK-EXP…SK-EXP5, SK-BRIDGE.1/2); no open P0/P1  
-**Prerequisites:** Phase TS **Closed** · AUDIT-IDEAL-12.1/12.2 **Done**  
-**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**Status:** **Done** (2026-06-17) — re-validates 2026-06-08 Layer Completion (SK-EXP…SK-EXP5, SK-BRIDGE.1/2); no open P0/P1
+**Prerequisites:** Phase TS **Closed** · AUDIT-IDEAL-12.1/12.2 **Done**
+**Goal:** Formal Full Harness LC closeout — gate verification, journal
 **ADR:** **No ADR needed**
 
 | ID | Deliverable | Status | Priority | Acceptance |
@@ -192,7 +191,7 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 
 ### 6.1av Harness implementation queue — Skills audit maintenance (planned)
 
-**Source:** Layer 10 audit (2026-06-18) — `SKILLS` layer 12 · [`../audit_results/2026-06-18/SKILLS.md`](../audit_results/2026-06-18/SKILLS.md)  
+**Source:** Layer 10 audit (2026-06-18) — `SKILLS` layer 12 · [`../audit_results/2026-06-18/SKILLS.md`](../audit_results/2026-06-18/SKILLS.md)
 **Priority ladder:** **Band 1** (§6.1) — catalog hygiene + DX; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

@@ -9,7 +9,6 @@
 
 **Status:** **Done** (2026-06-02) — **3/3** deliverables Done (RAG-DOC.* + RAG-1); gate **612 passed**
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §14; author map: **Appendix K** §K.5.
 
 **Priority ladder:** **Band 2m** (§4.0) — closed; default queue = **§6.1** maintenance + **M-RAG-DEPTH**.
 
@@ -32,7 +31,7 @@
 | 2026-06-10 | M-RAG.23 | Wire `query_expansion` to bootstrap + deep-tier `effective_retriever`; closes GAP-RAG-01/17/23, AUDIT-IDEAL-14.3, M-RAG.6 |
 | 2026-06-10 | M-RAG.25 | Catalog poisoning filter on `perform_rag_retrieve`; closes GAP-RAG-04, AUDIT-IDEAL-14.5 |
 
-**Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**  
+**Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**
 **Phase M-RAG-DEPTH:** **Complete** (2026-06-10) — M-RAG.23 … M-RAG.37 **Done**.
 
 **Phase M-RAG-BACKLOG:** **Complete** (2026-06-13) — M-RAG.55–M-RAG.57 **Done**; M-RAG.49–M-RAG.51 **Done**; M-RAG.58 **Frozen** (GAP-RAG-15).
@@ -41,7 +40,7 @@
 
 ## Phase M-RAG — RAG Engine (Tier-0)
 
-**Canon:** [`architecture/RAG.md`](../architecture/RAG.md) · PLATFORM_FOUNDATION §5.2.2  
+**Canon:** [`architecture/RAG.md`](../architecture/RAG.md) · PLATFORM_FOUNDATION §5.2.2
 **Goal:** One configurable retrieval path for `rag.retrieve`, Nexus `ContextBuilder`, and ingest — no duplicate dense-only shortcuts; parsers/chunkers/rerankers selected via profile and Integration Library slugs (never hardcoded to a single vendor).
 
 | # | Deliverable | Status | Notes |
@@ -73,8 +72,8 @@
 
 ## Phase M-RAG-DEPTH — Production hardening (post audit 2026-06-10)
 
-**Source:** Full engine depth audit · canon [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth audit register  
-**Status:** **Done** (2026-06-10) — runs in parallel with §6.1 gate maintenance ([`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md))  
+**Source:** Full engine depth audit · canon [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth audit register
+**Status:** **Done** (2026-06-10) — runs in parallel with §6.1 gate maintenance ([`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md))
 **Policy:** See [Step-by-step rollout](.#step-by-step-rollout--phase-m-rag-depth) waves 1–3
 
 | # | ID | Deliverable | Priority | Status | GAP-RAG | Acceptance |
@@ -244,9 +243,9 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 
 ## Phase RAG-LC — Full Harness Layer Completion closeout (2026-06-17)
 
-**Status:** **Done** (2026-06-17) — re-validates M-RAG-ITERATION-III + M-RAG-CONVERGE; no open P0/P1  
-**Prerequisites:** M-RAG-GRAPH **Done** · M-RAG.62–M-RAG.68 **Done**  
-**Goal:** Formal Full Harness LC closeout — gate verification, journal, audit prompt sync  
+**Status:** **Done** (2026-06-17) — re-validates M-RAG-ITERATION-III + M-RAG-CONVERGE; no open P0/P1
+**Prerequisites:** M-RAG-GRAPH **Done** · M-RAG.62–M-RAG.68 **Done**
+**Goal:** Formal Full Harness LC closeout — gate verification, journal, audit prompt sync
 **ADR:** **No ADR needed**
 
 | ID | Deliverable | Status | Priority | Acceptance |
@@ -260,7 +259,7 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 
 ### 6.1av Harness implementation queue — RAG audit maintenance (planned)
 
-**Source:** Layer 12 audit (2026-06-18) — `RAG` layer 14 · [`../audit_results/2026-06-18/RAG.md`](../audit_results/2026-06-18/RAG.md)  
+**Source:** Layer 12 audit (2026-06-18) — `RAG` layer 14 · [`../audit_results/2026-06-18/RAG.md`](../audit_results/2026-06-18/RAG.md)
 **Priority ladder:** **Band 1** (§6.1) — ops honesty + prompt sync; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -280,7 +279,7 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 
 ### Phase RAG-MAINT-vllm — vLLM embedding provider (2026-06-19)
 
-**Source:** vLLM platform integration — RAG embeddings via OpenAI-compatible `/v1/embeddings`.  
+**Source:** vLLM platform integration — RAG embeddings via OpenAI-compatible `/v1/embeddings`.
 **Goal:** `VllmEmbeddingProvider` registered in default bootstrap; optional Docker `vllm-embed` on host **8101**.
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -295,7 +294,7 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 
 ### Phase RAG-MAINT-llama-cpp — llama.cpp embedding provider (2026-06-19)
 
-**Source:** llama.cpp platform integration — RAG embeddings via OpenAI-compatible `/v1/embeddings`.  
+**Source:** llama.cpp platform integration — RAG embeddings via OpenAI-compatible `/v1/embeddings`.
 **Goal:** `LlamaCppEmbeddingProvider` registered in default bootstrap; optional Docker `llama-cpp-embed` on host **8103**.
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

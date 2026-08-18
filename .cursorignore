@@ -45,11 +45,6 @@ _external_apps/
 docs/_external/
 temp_documents/
 
-# Canonical audit protocol + campaign artifacts — explicit @/Read only
-!docs/audit_results/README.md
-!docs/audit_results/AUDIT_PROTOCOL.md
-!docs/audit_results/AUDIT_REMEDIATION_PROTOCOL.md
-docs/audit_results/
 
 
 # ADR archive (load cited ADR only)

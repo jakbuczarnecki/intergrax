@@ -1,7 +1,7 @@
 # Intergrax Audit Remediation Protocol
 
-**Version:** 1.0  
-**Audience:** Human operators and model executors (Cursor agents, CI remediation jobs)  
+**Version:** 1.0
+**Audience:** Human operators and model executors (Cursor agents, CI remediation jobs)
 **Scope:** Post-audit remediation of findings recorded in Intergrax audit campaigns under `docs/audit_results/`.
 
 This protocol is **canonical**. Executors MUST follow it in order. Deviations require explicit operator approval recorded in the campaign register.
@@ -49,7 +49,7 @@ Confirm:
 Construct the queue from:
 
 1. **Campaign register** — authoritative list of findings, severities, statuses, and cross-references.
-2. **Accepted unresolved findings** — status `OPEN` or `ACCEPTED` (and not `DEFERRED` / `REJECTED` / `CLOSED`).
+2. **Accepted unresolved findings** — status `ACCEPTED` (and not `DEFERRED` / `REJECTED` / `CLOSED`). When resuming in-flight remediation, include `IMPLEMENTING` explicitly. Do **not** remediate `PROPOSED` findings before operator acceptance.
 3. **Dependencies** — explicit `depends_on` fields, implied ordering (e.g., schema before consumer), and plan-block prerequisites.
 4. **Plan blocks** — remediation work units from `docs/project/maintainers/plans/` or capability plan docs paired with architecture targets.
 
@@ -258,7 +258,7 @@ If independent verification is impossible in the environment, **STOP** and reque
 Every remediated finding MUST maintain an auditable chain:
 
 ```text
-finding_id → arch_ref → plan_block → commit_hash → verification_evidence → campaign_status
+finding_id → arch_ref → plan_block → commit_hash → verification_evidence → finding_status
 ```
 
 ### K.1 Required fields (per finding or block)
@@ -270,7 +270,7 @@ finding_id → arch_ref → plan_block → commit_hash → verification_evidence
 | `plan_block` | Plan doc path + block/phase id |
 | `commit_hash` | One or more commits (full SHA) |
 | `verification_evidence` | Test names, CI run, reviewer id, date |
-| `campaign_status` | Terminal or in-progress status from Section I |
+| `finding_status` | Per-finding lifecycle status from Section I.1 (`PROPOSED` / `ACCEPTED` / `IMPLEMENTING` / `IMPLEMENTED` / `VERIFIED` / `CLOSED` / `DISPUTED` / `DEFERRED` / `REJECTED` / `WITHDRAWN`) |
 
 Broken links in the chain block `CLOSED` for that finding.
 

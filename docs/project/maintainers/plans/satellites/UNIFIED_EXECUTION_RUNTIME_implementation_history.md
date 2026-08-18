@@ -7,11 +7,11 @@
 
 ## Phase SEC-PLANES — Security & Trust Planes (**Closed**)
 
-**Status:** **Done** (2026-06-19) — **17/17 Done** (SEC-PLANES)  
-**Source:** Idea audit (2026-06-19) — modular security without duplicate tier  
-**Architecture:** [§42.45.2–§42.45.9](../architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance)  
-**Prerequisites:** Phase SEC **Done** · M.12 **Done** · GOV-DOC.3 **Done**  
-**Priority ladder:** **Band 2bb** (§4.0) — **closed**  
+**Status:** **Done** (2026-06-19) — **17/17 Done** (SEC-PLANES)
+**Source:** Idea audit (2026-06-19) — modular security without duplicate tier
+**Architecture:** [§42.45.2–§42.45.9](../architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance)
+**Prerequisites:** Phase SEC **Done** · M.12 **Done** · GOV-DOC.3 **Done**
+**Priority ladder:** **Band 2bb** (§4.0) — **closed**
 **Queue:** [§6.1aw](.#61aw-harness-implementation-queue--security--trust-planes-sec-planes--closed)
 **Execution order:** [§6.2bo](.#62bo-phase-sec-planes-execution-order-band-2bb--closed)
 **ADR:** [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md)
@@ -73,11 +73,11 @@
 
 ## Phase SEC-PLANES-EVOL — Enterprise hardening (**Closed**)
 
-**Status:** **Done** (2026-06-19) — **7/7 Done** (SEC-PLANES-EVOL)  
-**Source:** Post-SEC-PLANES enterprise audit (2026-06-19)  
-**Architecture:** [§42.45.10](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424510-enterprise-hardening--maturity-model-and-backlog)  
-**Prerequisites:** Phase SEC-PLANES **Done** (17/17) · OBS spine domain signals (ADR-OBS-003)  
-**Priority ladder:** **Band 2bc** (§4.0) — incremental after SEC-PLANES; **one ID per PR**  
+**Status:** **Done** (2026-06-19) — **7/7 Done** (SEC-PLANES-EVOL)
+**Source:** Post-SEC-PLANES enterprise audit (2026-06-19)
+**Architecture:** [§42.45.10](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424510-enterprise-hardening--maturity-model-and-backlog)
+**Prerequisites:** Phase SEC-PLANES **Done** (17/17) · OBS spine domain signals (ADR-OBS-003)
+**Priority ladder:** **Band 2bc** (§4.0) — incremental after SEC-PLANES; **one ID per PR**
 **Queue:** [§6.1bc](.#61bc-harness-implementation-queue--sec-planes-evol-enterprise-hardening--active)
 **Execution order:** [§6.2bp](.#62bp-phase-sec-planes-evol-execution-order-band-2bc--active)
 
@@ -126,9 +126,9 @@
 
 ### 6.1bd Harness implementation queue — SEC-ENT (enterprise production) — **Closed**
 
-**Source:** Post-EVOL enterprise audit (2026-06-19) · canon [§42.45.11](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424511-enterprise-production-readiness)  
-**Priority ladder:** **Band 2bd** (§4.0) — after SEC-PLANES-EVOL; **one ID per PR**  
-**Prerequisites:** Phase SEC-PLANES-EVOL **Done** (7/7)  
+**Source:** Post-EVOL enterprise audit (2026-06-19) · canon [§42.45.11](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424511-enterprise-production-readiness)
+**Priority ladder:** **Band 2bd** (§4.0) — after SEC-PLANES-EVOL; **one ID per PR**
+**Prerequisites:** Phase SEC-PLANES-EVOL **Done** (7/7)
 **Status:** **Done** (2026-06-19) — **6/6**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -150,8 +150,8 @@
 
 ## Phase SEC-ENT — Enterprise production (**Closed**)
 
-**Status:** **Done** (2026-06-19) — **6/6 Done** (SEC-ENT)  
-**Architecture:** [§42.45.11](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424511-enterprise-production-readiness)  
+**Status:** **Done** (2026-06-19) — **6/6 Done** (SEC-ENT)
+**Architecture:** [§42.45.11](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424511-enterprise-production-readiness)
 **Queue:** [§6.1bd](.#61bd-harness-implementation-queue--sec-ent-enterprise-production--closed)
 **Execution order:** [§6.2bq](.#62bq-phase-sec-ent-execution-order-band-2bd--closed)
 
@@ -183,7 +183,6 @@
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (COST-DOC.1 + COST-1–3)
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §24; V-COST **Done**; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix T**.
 
 **Priority ladder:** **Band 2w** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -204,7 +203,6 @@
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (EVAL-DOC.1 + EVAL-1–3)
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §25; V-EVAL **Done**; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix U**.
 
 **Priority ladder:** **Band 2x** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -223,12 +221,11 @@
 
 
 
-**Status:** **Done** (2026-06-08) — **24/24** deliverables Done (CRIT-V-0 through CRIT-V-7)  
-**Prerequisites:** Phase EVAL **Done** (registry wiring), Phase FLOW **Done** (graph hooks), Phase M-LLM-R **Done** (typed LLM envelope)  
-**Goal:** Deliver production-grade PEV **Verify** infrastructure — L0/L1/L2 critic stack with tier-separated competencies; uplift Evaluation audit layer L2→L3.  
-**Priority ladder:** **Band 2ak** (§4.0) — **Done** (2026-06-08). Default queue reverts to §6.1 gate maintenance.  
-**Architecture:** [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) · canon [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) · [ADR-CRITIC-001](adr/entries/2026-06-07/ADR-CRITIC-001.md)  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §25 (Evaluation), §7 (Reasoning), §10 (Multi-agent); closes **FAUDIT-EVAL.1** residual  
+**Status:** **Done** (2026-06-08) — **24/24** deliverables Done (CRIT-V-0 through CRIT-V-7)
+**Prerequisites:** Phase EVAL **Done** (registry wiring), Phase FLOW **Done** (graph hooks), Phase M-LLM-R **Done** (typed LLM envelope)
+**Goal:** Deliver production-grade PEV **Verify** infrastructure — L0/L1/L2 critic stack with tier-separated competencies; uplift Evaluation audit layer L2→L3.
+**Priority ladder:** **Band 2ak** (§4.0) — **Done** (2026-06-08). Default queue reverts to §6.1 gate maintenance.
+**Architecture:** [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) · canon [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) · [ADR-CRITIC-001](adr/entries/2026-06-07/ADR-CRITIC-001.md)
 **Execution order:** [§6.2ak](.#62ak-phase-crit-v-execution-order-band-2ak--closed) · queue: [§6.1ak](.#61ak-harness-implementation-queue--critic-verification-layer-closed)
 
 **Delivery rule:** One **CRIT-V-*** ID per PR → update master table + §6.1ak + gate green.
@@ -304,9 +301,9 @@
 
 ## Phase GOV-AUDIT — Governance control plane (audit closeout)
 
-**Status:** **Done** (2026-06-05) — runtime governance via V-REM, H-APP, DX-5.8; documentation via GOV-DOC.*  
-**Prerequisites:** Phase V-REM **Done**, H-APP.2.4–2.8 **Done**, DX-5.8 **Done**  
-**Goal:** Close governance/policy/observability audit (AUDIT_MAP §5, §21) with a single authoring map and traceability — **no** new OS features.  
+**Status:** **Done** (2026-06-05) — runtime governance via V-REM, H-APP, DX-5.8; documentation via GOV-DOC.*
+**Prerequisites:** Phase V-REM **Done**, H-APP.2.4–2.8 **Done**, DX-5.8 **Done**
+**Goal:** Close governance/policy/observability audit (AUDIT_MAP §5, §21) with a single authoring map and traceability — **no** new OS features.
 **Author map:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane)
 
 **Delivery rule:** GOV-DOC.* = docs-only PRs; no code unless regression found → route to **REG-*** under §6.1.
@@ -328,7 +325,6 @@
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (SEC-DOC.1 + SEC-1–3)
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §23; V-SEC / V-REM-SEC **Done**; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix S**.
 
 **Priority ladder:** **Band 2v** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -351,7 +347,6 @@
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (COST-DOC.1 + COST-1–3)
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §24; V-COST **Done**; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix T**.
 
 **Priority ladder:** **Band 2w** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -460,7 +455,6 @@
 
 **Status:** **Done** (2026-06-09) — documentation (GR-DOC.*) + implementation (GR-INT.*) via [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) Phase **M.12**.
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §5 (Policy), §23 (Security); IDEAL §3.3 guardrails vector.
 
 **ADR:** **No ADR needed** for documentation-only catalog. First shipped `llm_guardrail` slug (M.12) requires harness ADR (`docs/project/technical/adr`) for contract + middleware bridge.
 

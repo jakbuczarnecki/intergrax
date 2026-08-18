@@ -1,8 +1,8 @@
 # Intergrax Platform Audit Protocol v2
 
-**Status:** Canonical  
-**Version:** 2.0  
-**Audience:** Human operators and model executors (any harness, any IDE)  
+**Status:** Canonical
+**Version:** 2.0
+**Audience:** Human operators and model executors (any harness, any IDE)
 **Scope:** Full Intergrax platform — Tier-0 `intergrax/`, Tier-1 `intergrax/runtime/`, Tier-2 `agents/`, Tier-3 `applications/`
 
 ---
@@ -22,7 +22,7 @@
 
 A prior PASS, a green CI run, or polished architecture prose does not reduce skepticism.
 
-This protocol is **model-executable**: an agent following it must produce the same artifacts, evidence standards, and verdict discipline regardless of tooling. It is **not** tied to Cursor, any specific orchestrator, `progress.json`, or deleted harness machinery.: an agent following it must produce the same artifacts, evidence standards, and verdict discipline regardless of tooling. It is **not** tied to Cursor, any specific orchestrator, `progress.json`, or deleted harness machinery.
+This protocol is **model-executable**: an agent following it must produce the same artifacts, evidence standards, and verdict discipline regardless of tooling. It is **not** tied to Cursor, any specific orchestrator, `progress.json`, or deleted harness machinery.
 
 ---
 
@@ -356,18 +356,33 @@ Rules: audit produces `PROPOSED`; operator acceptance → `ACCEPTED`; remediatio
 Format (immutable once published):
 
 ```
-AUDIT-YYYYMMDD-<LAYER_CODE>-NN
+AUDIT-<CAMPAIGN_TOKEN>-<LAYER_CODE>-NN
 ```
 
-- `YYYYMMDD` — campaign date (folder date, no hyphens).
+**Campaign token mapping** (deterministic, from campaign directory name):
+
+| Campaign directory | `CAMPAIGN_TOKEN` |
+|--------------------|------------------|
+| `YYYY-MM-DD` | `YYYYMMDD` (e.g. `20260818`) |
+| `YYYY-MM-DD_run-2` | `YYYYMMDD-R2` (e.g. `20260818-R2`) |
+| `YYYY-MM-DD_run-3` | `YYYYMMDD-R3` (e.g. `20260818-R3`) |
+
+- `CAMPAIGN_TOKEN` — immutable after publication; never reused across campaigns.
 - `<LAYER_CODE>` — uppercase domain/layer identifier (e.g. `ORCHESTRATION`, `MEMORY`, `PLATFORM_FOUNDATION`).
 - `NN` — two-digit sequence per layer per campaign (`01`, `02`, ...).
+
+**Examples:**
+
+- First campaign (`2026-08-18`): `AUDIT-20260818-MEMORY-01`
+- Same-day run 2 (`2026-08-18_run-2`): `AUDIT-20260818-R2-MEMORY-01`, `AUDIT-20260818-R2-CROSS-01`
+- Same-day run 3 (`2026-08-18_run-3`): `AUDIT-20260818-R3-MEMORY-01`
 
 **Rules:**
 
 - IDs are never reused or renumbered.
 - If a finding is withdrawn, mark status `WITHDRAWN` with reason; do not delete.
 - If duplicate root cause, cross-reference IDs; keep one primary.
+- `WITHDRAWN` IDs remain reserved.
 
 ---
 
@@ -462,7 +477,7 @@ When multiple layers complete in one campaign, update the campaign `README.md` r
 4. **Campaign verdict** — per section J.
 5. **Recommended remediation order** — operator-facing, not implementation.
 
-Cross-layer issues get their own IDs using layer code `CROSS` (e.g. `AUDIT-20260818-CROSS-01`) in the campaign `README.md` rollup.
+Cross-layer issues get their own IDs using layer code `CROSS` (e.g. `AUDIT-20260818-CROSS-01`, `AUDIT-20260818-R2-CROSS-01`) in the campaign `README.md` rollup.
 
 ---
 
@@ -495,7 +510,7 @@ Each `docs/audit_results/YYYY-MM-DD/<LAYER_CODE>.md` MUST contain:
 ## Findings
 (enumerated AUDIT-... entries, each with section I evidence)
 
-### AUDIT-YYYYMMDD-<LAYER_CODE>-01
+### AUDIT-<CAMPAIGN_TOKEN>-<LAYER_CODE>-01
 - Severity:
 - Category:
 - Status: PROPOSED | ACCEPTED | IMPLEMENTING | IMPLEMENTED | VERIFIED | CLOSED | DISPUTED | DEFERRED | REJECTED | WITHDRAWN

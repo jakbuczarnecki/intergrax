@@ -9,7 +9,6 @@
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (EVAL-DOC.1 + EVAL-1–3)
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §25; V-EVAL **Done**; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix U**.
 
 **Priority ladder:** **Band 2x** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -28,10 +27,10 @@
 
 ## Phase DX — Developer Authoring Experience (fast environment + agent builds)
 
-**Status:** **Done** (2026-06-02) — **47/47** deliverables **Done** in master table; gate **533+ passed**.  
-**Prerequisites:** Phase **H-APP** **Done** (typed `ApplicationEnvironmentProfile`, `wire_application_environment`, `build_harness_host_runtime`). Phases **N**, **P-Ext**, **S** scaffold baseline **Done**.  
-**Goal:** Make building **Tier-3 application environments** and **Tier-2 agents** trivial for Python developers — LangGraph-like mental model (state/steps → graph → run), **measurable** time-to-first-run (TTFRun), progressive disclosure (minimal → standard → production), and **UI-ready** serialized specs for Phase 2 (non-developer environment builder).  
-**Priority ladder:** **Band 2f** (§4.0) — **closed for core path**; residual IDs are **infrastructure** follow-ups, not Band 3.  
+**Status:** **Done** (2026-06-02) — **47/47** deliverables **Done** in master table; gate **533+ passed**.
+**Prerequisites:** Phase **H-APP** **Done** (typed `ApplicationEnvironmentProfile`, `wire_application_environment`, `build_harness_host_runtime`). Phases **N**, **P-Ext**, **S** scaffold baseline **Done**.
+**Goal:** Make building **Tier-3 application environments** and **Tier-2 agents** trivial for Python developers — LangGraph-like mental model (state/steps → graph → run), **measurable** time-to-first-run (TTFRun), progressive disclosure (minimal → standard → production), and **UI-ready** serialized specs for Phase 2 (non-developer environment builder).
+**Priority ladder:** **Band 2f** (§4.0) — **closed for core path**; residual IDs are **infrastructure** follow-ups, not Band 3.
 **Scope split:** [§4.0a](.#40a-implementation-scope-split-infrastructure-vs-business).
 **Execution order:** [§6.2y](.#62y-phase-dx-execution-order-band-2f--mostly-done).
 
@@ -185,8 +184,8 @@ Total: 47
 
 ## Phase AA — Agents & Applications Conformance (scaffold, docs, deploy)
 
-**Status:** **Mostly Done** (2026-06-02) — **platform/conformance Done** (tier hygiene, ARCHITECTURE matrix, deploy triad, legal **scaffold** reset); **domain steps Deferred** (AA-LEG.2.2+); gate **534 passed**.  
-**Prerequisites:** Phase **H-APP** **Done**, Phase **DX** **Mostly Done** (scaffold generators, `build_harness_host_runtime`, CLI, presets).  
+**Status:** **Mostly Done** (2026-06-02) — **platform/conformance Done** (tier hygiene, ARCHITECTURE matrix, deploy triad, legal **scaffold** reset); **domain steps Deferred** (AA-LEG.2.2+); gate **534 passed**.
+**Prerequisites:** Phase **H-APP** **Done**, Phase **DX** **Mostly Done** (scaffold generators, `build_harness_host_runtime`, CLI, presets).
 **Goal:** Bring every **Tier-2** agent under `agents` and every **Tier-3** host under `applications` to a **documented, scaffold-aligned** state — fast authoring, full environment control (handlers, observability, policy), and **repeatable deploy** (Docker + deploy doc + `pyproject.toml` dependency contract per application). **Domain UAEP implementation is Band 3** — see [§6.3](.#63-end-of-plan--deferred-product-work-only).
 **Priority ladder:** **Band 2g** (§4.0) — **platform rows closed**; only [AA residual](.#aa--residual-backlog-infrastructure) + §6.1 maintenance.
 **Scope split:** [§4.0a](.#40a-implementation-scope-split-infrastructure-vs-business).
@@ -492,7 +491,7 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 | 2026-06-02 | AA sync | AA-LABAPP.6 **Done**; AA-LABAG.2 **Won't fix**; §6.1z implementation queue |
 | 2026-06-02 | AA-LEG.0.2, OPS-L3.1 | Tag `legal-legacy-pre-aa`; operational L3 evidence verified |
 
-**Suggested session order (platform — complete):**  
+**Suggested session order (platform — complete):**
 See [§6.1z](.#61z-harness-implementation-queue-consolidated). **Do not schedule** AA-LEG.2.* / AA-RES.5 / AA-ORG.3–4 in harness cadence — use [§6.3a](.#63a-business-backlog-register-consolidated) after product decision.
 
 ---
@@ -501,10 +500,10 @@ See [§6.1z](.#61z-harness-implementation-queue-consolidated). **Do not schedule
 
 ## Phase W-OPS — Operational Harness Maturity (IDEAL L3 ops)
 
-**Status:** **Done** (2026-06-06) — W-OPS.1–W-OPS.15 delivered including W-OPS.10 lab stack health probes; **operational L3** sign-off still requires `W_OPS_RELEASE_CYCLES>=2` (or `build/architecture_hardening/release_cycles.json`) via `phase_w_ops_evidence.py --enforce`.  
-**Source:** Harness maturity audit (2026-06-02; conversation) · [IDEAL_HARNESS_AI_ARCHITECTURE.md](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §12.3–§12.4 · [guides/HARNESS_ENVIRONMENT.md](guides/HARNESS_ENVIRONMENT.md)  
-**Prerequisites:** Phases **V**, **P-Ext**, **W-ML**, §4.1 **Done**.  
-**Goal:** Close the gap between **L3 CI evidence** (`maturity_gate_evidence`, relaxed thresholds) and **L3 operational** (IDEAL critical areas Policy/Reliability/Observability ≥ 3 with release evidence).  
+**Status:** **Done** (2026-06-06) — W-OPS.1–W-OPS.15 delivered including W-OPS.10 lab stack health probes; **operational L3** sign-off still requires `W_OPS_RELEASE_CYCLES>=2` (or `build/architecture_hardening/release_cycles.json`) via `phase_w_ops_evidence.py --enforce`.
+**Source:** Harness maturity audit (2026-06-02; conversation) · [IDEAL_HARNESS_AI_ARCHITECTURE.md](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §12.3–§12.4 · [guides/HARNESS_ENVIRONMENT.md](guides/HARNESS_ENVIRONMENT.md)
+**Prerequisites:** Phases **V**, **P-Ext**, **W-ML**, §4.1 **Done**.
+**Goal:** Close the gap between **L3 CI evidence** (`maturity_gate_evidence`, relaxed thresholds) and **L3 operational** (IDEAL critical areas Policy/Reliability/Observability ≥ 3 with release evidence).
 **Out of scope:** K.1, K.2, new product Tier-3 apps, domain/product skills (Band 3 · §6.3).
 
 **Audit verdict (harness-only):** Intergrax is **L2+ scalable harness** with strong Tier-0 catalogs and Nexus §42; default implementation queue is **§6.1 + §6.2w**, not product agents.
@@ -691,8 +690,8 @@ uv run pytest tests/ -m gate -q
 
 ## Phase DX-LC — Full Harness Layer Completion closeout (2026-06-17)
 
-**Status:** **Done** (2026-06-17) — re-validates DX 47/47 + W-OPS + AUDIT-IDEAL-26/27; no open P0/P1  
-**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**Status:** **Done** (2026-06-17) — re-validates DX 47/47 + W-OPS + AUDIT-IDEAL-26/27; no open P0/P1
+**Goal:** Formal Full Harness LC closeout — gate verification, journal
 **ADR:** **No ADR needed**
 
 | ID | Deliverable | Status | Priority | Acceptance |
@@ -706,7 +705,7 @@ uv run pytest tests/ -m gate -q
 
 ### 6.1av Harness implementation queue — Developer experience audit maintenance (planned)
 
-**Source:** Layer 21 audit (2026-06-18) — `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` · [`../audit_results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../audit_results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
+**Source:** Layer 21 audit (2026-06-18) — `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` · [`../audit_results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../audit_results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)
 **Priority ladder:** **Band 1** (§6.1) — DX bundle + cross-refs; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

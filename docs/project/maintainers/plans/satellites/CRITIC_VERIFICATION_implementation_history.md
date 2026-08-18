@@ -90,9 +90,9 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 ## Phase CRITIC_VERIFICATION-LC — Full Harness Layer Completion closeout (2026-06-17)
 
-**Status:** **Done** (2026-06-17) — re-validates CVL-LC-1…4 + CRIT-V-0…7; no open P0/P1  
-**Prerequisites:** CRIT-V **Done** · CVL layer completion **Done** (2026-06-13)  
-**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**Status:** **Done** (2026-06-17) — re-validates CVL-LC-1…4 + CRIT-V-0…7; no open P0/P1
+**Prerequisites:** CRIT-V **Done** · CVL layer completion **Done** (2026-06-13)
+**Goal:** Formal Full Harness LC closeout — gate verification, journal
 **ADR:** **No ADR needed**
 
 | ID | Deliverable | Status | Priority | Acceptance |
@@ -106,7 +106,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 ### 6.1av Harness implementation queue — Critic verification audit maintenance (planned)
 
-**Source:** Layer 18 audit (2026-06-18) — `CRITIC_VERIFICATION` layer 25 · [`../audit_results/2026-06-18/CRITIC_VERIFICATION.md`](../audit_results/2026-06-18/CRITIC_VERIFICATION.md)  
+**Source:** Layer 18 audit (2026-06-18) — `CRITIC_VERIFICATION` layer 25 · [`../audit_results/2026-06-18/CRITIC_VERIFICATION.md`](../audit_results/2026-06-18/CRITIC_VERIFICATION.md)
 **Priority ladder:** **Band 1** (§6.1) — optional eval depth + cross-refs; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -128,7 +128,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 **Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](.#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](.#63a-business-backlog-register-consolidated)** · **[§4.0a](.#40a-implementation-scope-split-infrastructure-vs-business)**.
 
-**Audit basis:** Governance audit (2026-06-05) → GOV-AUDIT **Done**; orchestration audit (2026-06-05) → Phase ORCH + §6.1b; tools/skills audit (2026-06-02) → Phase TS + §6.1c; integration/RAG audit (2026-06-02) → Phase INT + RAG + §6.1d/§6.1e; context engineering audit (2026-06-02) → Phase CTX + §6.1f; prior V-REM/MEM/DX/AA closeouts in [§6.1z](.#61z-harness-implementation-queue-consolidated) / [§6.1aa](.#61aa-harness-implementation-queue-memory-platform).
+**Implementation context:** Phases ORCH, TS, INT, RAG, CTX, and prior V-REM/MEM/DX/AA closeouts — see queue registers below.
 
 ### 6.1i Harness implementation queue — prompt registry closeout (closed)
 
@@ -527,7 +527,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 ### 6.1w Harness implementation queue — Integration expansion (M.6 P4 closed)
 
-**Purpose:** Ordered backlog for **Phase M.6 P4** (Band 2aa). **Status:** **Done** (2026-06-02) — **28/28 Done** · catalog **127**.  
+**Purpose:** Ordered backlog for **Phase M.6 P4** (Band 2aa). **Status:** **Done** (2026-06-02) — **28/28 Done** · catalog **127**.
 **Register:** [M.6 P4 — Master register](.#m6-p4--master-register-28-slugs) · **Execution order:** [§6.2ae](.#62ae-phase-m6-p4-execution-order--done)
 **Policy:** One slug per PR; runs **in parallel** with §6.1 maintenance — pull only when harness ops/adaptive/INT health needs the slug.
 
@@ -546,7 +546,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 ### 6.1x Harness implementation queue — Integration depth (M.6 P5 done)
 
-**Purpose:** Closeout record for **Phase M.6 P5** (Band 2ab). **Status:** **Done** (2026-06-02) — **33/34**.  
+**Purpose:** Closeout record for **Phase M.6 P5** (Band 2ab). **Status:** **Done** (2026-06-02) — **33/34**.
 **Register:** [M.6 P5 — Master register](.#m6-p5--master-register-34-slugs) · **Execution order:** [§6.2af](.#62af-phase-m6-p5-execution-order-band-2ab--planned)
 **Policy:** One slug per PR (or one harden wave ≤4 slugs); runs **in parallel** with §6.1 maintenance — pull when W-OPS / W-ADAPT / EVAL / prod stack needs the slug.
 
@@ -563,7 +563,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 ### 6.1y Harness implementation queue — Integration expansion (M.6 P6 Done)
 
-**Purpose:** Ordered backlog for **Phase M.6 P6** (Band 2ac). **Status:** **Done** (2026-06-02) — **32/32**.  
+**Purpose:** Ordered backlog for **Phase M.6 P6** (Band 2ac). **Status:** **Done** (2026-06-02) — **32/32**.
 **Register:** [M.6 P6 — Master register](.#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](.#62ag-phase-m6-p6-execution-order-band-2ac--done)
 **Policy:** One slug per PR (or one CAT wave before first slug in a new category); runs **in parallel** with §6.1 maintenance — pull when security/sandbox/identity/GitOps/speech harness gaps block ops.
 
@@ -623,7 +623,7 @@ Verify (every harness PR):
 
 ### 6.1ah Harness implementation queue — FAUDIT-32 remediation (closed)
 
-**Status:** **Done** (2026-06-06) — **23/23 Done**  
+**Status:** **Done** (2026-06-06) — **23/23 Done**
 **Source:** [Phase FAUDIT-32](.#phase-faudit-32--full-architecture-audit-closeout) · **Appendix M**
 **Priority ladder:** **Band 2ad** (§4.0) — runs **after** FAUDIT-TIER.1 on every harness PR that touches `intergrax/runtime/architecture`
 
@@ -676,7 +676,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.1ai Harness implementation queue — FAUDIT-32 follow-up (closed)
 
-**Status:** **Done** (2026-06-06) — post-remediation depth for PE/ALG/MEM adoption  
+**Status:** **Done** (2026-06-06) — post-remediation depth for PE/ALG/MEM adoption
 **Priority ladder:** **Band 2ad** (§4.0) — runs after §6.1ah closure
 
 | ID | Status | Deliverable |
@@ -1104,8 +1104,8 @@ Wave H-INT-17 (reserve):    M-P6.25 → M-P6.26 → M-P6.27 → M-P6.28 → M-P6
 Wave PRE (presets):         M-P6-PRE.1  (after H-INT-10 P0 slugs wired)
 ```
 
-**Prerequisites:** Phase M.6 P5 **Done**; M-P5.FU wiring **Done**; Phase SEC closeout **Done** (V-SEC patterns for `security_scanner`).  
-**Parallelism:** H-INT-10 unblocks STABLE promote gate; H-INT-11 unblocks cloud `sandbox.exec`; H-INT-12 unblocks multi-tenant hosts; H-INT-14 unifies speech catalog.  
+**Prerequisites:** Phase M.6 P5 **Done**; M-P5.FU wiring **Done**; Phase SEC closeout **Done** (V-SEC patterns for `security_scanner`).
+**Parallelism:** H-INT-10 unblocks STABLE promote gate; H-INT-11 unblocks cloud `sandbox.exec`; H-INT-12 unblocks multi-tenant hosts; H-INT-14 unifies speech catalog.
 **Closeout target:** catalog **167** slugs; optional `HARNESS_M6_P6_PROBE_SLUGS` + four Tier-3 presets; gate green.
 
 ### 6.2af Phase M.6 P5 execution order (Band 2ab — Planned)
@@ -1121,8 +1121,8 @@ Wave H-INT-9 (P2 reserve):  M-P5.29 → M-P5.30 → M-P5.31 → M-P5.32 → M-P5
 Wave PRE (presets):         M-P5-PRE.1  (after H-INT-6 P0 slugs wired)
 ```
 
-**Prerequisites:** Phase M.6 P4 **Done**; M-P4.FU wiring **Done**; Phase INT closeout **Done** (health probe patterns).  
-**Parallelism:** H-INT-6 unblocks W-OPS metrics + multi-CI; H-INT-7 unblocks EVAL/W-ADAPT; H-INT-8 is lab-only.  
+**Prerequisites:** Phase M.6 P4 **Done**; M-P4.FU wiring **Done**; Phase INT closeout **Done** (health probe patterns).
+**Parallelism:** H-INT-6 unblocks W-OPS metrics + multi-CI; H-INT-7 unblocks EVAL/W-ADAPT; H-INT-8 is lab-only.
 **Closeout target:** catalog **136** slugs; `HARNESS_M6_P5_PROBE_SLUGS` + four Tier-3 presets; gate green.
 
 ### 6.2ae Phase M.6 P4 execution order (Band 2aa — Done)
@@ -1138,8 +1138,8 @@ Wave H-INT-4 (control):     M-P4.12 → M-P4.13 → M-P4.14 → M-P4.15 → M-P4
 Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4.21 → M-P4.22 → M-P4.23 → M-P4.24 → M-P4.25 → M-P4.26 → M-P4.27 → M-P4.28
 ```
 
-**Prerequisites:** Phase M core + M.6 P1/P2/P3 **Done**; Phase INT closeout **Done** (health probe patterns).  
-**Parallelism:** Any wave after H-INT-0 may start when a slug is needed — prefer H-INT-1 → H-INT-2 → H-INT-3 order for W-OPS/adaptive unblock.  
+**Prerequisites:** Phase M core + M.6 P1/P2/P3 **Done**; Phase INT closeout **Done** (health probe patterns).
+**Parallelism:** Any wave after H-INT-0 may start when a slug is needed — prefer H-INT-1 → H-INT-2 → H-INT-3 order for W-OPS/adaptive unblock.
 **Closeout:** **Done** — catalog **127** in `layout.py`; `tests/unit/integrations/providers/test_p5_m6_p4_providers.py` (42 tests).
 
 ### 6.2ad Phase M-LLM-R execution order (Band 2z — closed 2026-06-06)
@@ -1528,7 +1528,7 @@ Reuse:
 
 # Audit Result: Critic & Verification Layer (CVL)
 
-**Audit date:** 2026-06-13  
+**Audit date:** 2026-06-13
 **Method:** Layer Completion Mode vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` §18 · `INTEGRAX_HARNESS_AUDIT_MAP.md` §25 · code `runtime/critic` · `tools/providers/eval` · Tier-3 critic wiring
 **Verdict:** **CRIT-V-0…7 + FOLLOWUP Done** — domain **CRITIC_VERIFICATION** closed at **L3+** (Architecturally Mature).
 

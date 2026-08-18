@@ -15,7 +15,6 @@ Historical outputs produced under the **Legacy Audit Protocol v1** (orchestrator
 | `GOVERNANCE_CONSISTENCY_AUDIT.md` | Migrated from `docs/project/technical/guides/` (2026-06-11 freeze audit) |
 | `AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md` | Migrated from `docs/project/maintainers/audit/` (2026-08-12 discovery) |
 | `OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md` | Migrated from `docs/project/maintainers/audit/` |
-
 | `plan-audit-history/` | Migrated plan-satellite `*_audit_history.md` registers (AUDIT-PROTOCOL-RESET-R2) |
 
 ## Current protocol
