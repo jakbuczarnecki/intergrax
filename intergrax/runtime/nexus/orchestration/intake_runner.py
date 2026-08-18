@@ -65,6 +65,11 @@ class NexusIntakeRunner:
 
         verdict = HumanPauseCoordinator.verdict_from_task(task)
         if verdict == HumanResponseVerdict.REJECT:
+            HumanPauseCoordinator.resolve_human_response(
+                task,
+                HumanResponseVerdict.REJECT,
+                response_text=task.options.human.response_text,
+            )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
             return IntakePhaseOutcome(
                 early_result=await self.hitl.handle_human_rejection(
@@ -72,6 +77,11 @@ class NexusIntakeRunner:
                 )
             )
         if verdict == HumanResponseVerdict.ESCALATE:
+            HumanPauseCoordinator.resolve_human_response(
+                task,
+                HumanResponseVerdict.ESCALATE,
+                response_text=task.options.human.response_text,
+            )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
             return IntakePhaseOutcome(
                 early_result=await self.hitl.handle_human_escalation(
@@ -83,6 +93,12 @@ class NexusIntakeRunner:
             if self.execution_identity is None:
                 raise RuntimeError("active execution identity required for intake emission")
             run_id, attempt_id = self.execution_identity.require()
+            HumanPauseCoordinator.resolve_human_response(
+                task,
+                HumanResponseVerdict.APPROVE,
+                run_id=run_id,
+                response_text=task.options.human.response_text,
+            )
             await self.publish(
                 runtime_event_from_task_state(
                     task,

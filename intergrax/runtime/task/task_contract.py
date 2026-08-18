@@ -7,9 +7,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.agent_decision import HumanRequest
+from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.declarative_hitl import (
     DeclarativeHitlApprovalGrant,
@@ -90,6 +91,21 @@ class TaskPauseRecord(BaseModel):
     schema_version: str = "pause_record.v1"
 
 
+class HumanApprovalResolution(BaseModel):
+    """Canonical human decision bound to one exact pause/request lifecycle."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    task_id: str
+    pause_id: str
+    human_request_id: str
+    verdict: HumanResponseVerdict
+    resolved_at: str
+    run_id: Optional[str] = None
+    response_text: Optional[str] = None
+    schema_version: str = "human_approval_resolution.v1"
+
+
 class TaskGovernanceState(BaseModel):
     paused: bool = False
     human_request: Optional[HumanRequest] = None
@@ -97,6 +113,7 @@ class TaskGovernanceState(BaseModel):
     human_request_expires_at: Optional[str] = None
     execution_interrupt: Optional[ExecutionInterrupt] = None
     pause_record: Optional[TaskPauseRecord] = None
+    hitl_resolution: Optional[HumanApprovalResolution] = None
     escalation_level: int = 0
     escalation_target: Optional[str] = None
     escalation_chain: List[EscalationStep] = Field(default_factory=list)
