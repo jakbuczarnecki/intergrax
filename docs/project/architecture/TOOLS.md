@@ -1,44 +1,483 @@
-# Tools
+﻿# Intergrax Tools
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
-**Plan (1:1):** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Audit layers:** 11  
-**Audit instruction:** [`audit/TOOLS.md`](../maintainers/audit/TOOLS.md)
+**Intergrax Tools** defines the governed runtime boundary between agent or model **tool intent** and actual execution — including discovery, selection, permissions, validation, orchestration, invocation, and audit.
+
+## Why it matters
+
+Without a platform-owned tool runtime:
+
+- agents can call integrations or vendor SDKs directly,
+- tool permissions become accidental,
+- schema validation may be skipped,
+- side effects can run multiple times without trace,
+- policy enforcement is inconsistent,
+- every agent reimplements its own tool loop,
+- audit and observability fragment across paths,
+- skills, tools, and integrations collapse into one concept.
+
+Intergrax Tools addresses this through `ToolContract` / registry, layered permissions, planning and selection, `ToolRuntime`, invocation patterns, idempotency and resilience hooks, and observability on the platform event spine.
+
+> [!NOTE]
+> **Maturity boundary:** Phase **TOOL-ENG** is **closed** (36/36) with a gate-tested **200**-`tool_id` catalog and a mature invoke engine on the harness path. That is **not** universal production qualification: not every side-effect path is customer-qualified, governance wiring is **partial** on some external-effect surfaces, **TOKEN-TOOLS-1B** runtime compact-catalog wiring remains **Planned**, and **TOOL-PRODUCT-ROI** tools (`code.*`, `git.*`, `patch.*`, browser automation, research evidence) remain **Planned**. See [Current maturity](#current-maturity).
+
+**Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring `ToolProfile`, plugins, and agent tool access — after the platform overview in the root README.
+
+## At a glance
+
+| Concern | Summary |
+| -------- | -------- |
+| **Responsibility** | Governed tool discovery, selection, permissions, validation, orchestration, invocation, audit |
+| **Tool contract** | Stable `tool_id`, input/output schema, risk/side-effect metadata, retry/timeout metadata, handler binding |
+| **Tool intent** | LLM `tool_call`, planner proposal, or `ToolRequest` — **not** execution |
+| **Selection** | Which tools exist and which may this run use (host, agent/skill, policy, modality) |
+| **Planning** | Which tool(s) the model/planner proposes (`CatalogToolPlanner`, `ToolPlanningService`) |
+| **Effective permissions** | Intersection of `AgentContract`, skills, `ToolProfile`, `RuntimePolicyBundle`, modality, invoker scope |
+| **ToolRuntime** | Enforcement facade — policy-checked execution path agents and Nexus **must** use |
+| **Atomic invocation** | `ToolRuntime` → gateway → `RuntimeToolInvoker` → `ToolExecutor` → backend |
+| **Invocation patterns** | `single_pass`, bounded ReAct, parallel batch — reusable orchestration, not agent-private loops |
+| **Side effects / idempotency** | Stricter policy and optional `IdempotentToolInvoker` where contracts declare side effects |
+| **Governance / HITL** | Policy owns allow/deny/approval semantics; Tools owns execution enforcement point |
+| **Skills relation** | Skills compose `tool_ids` and guidance — **not** runtime-callable tools |
+| **Integrations relation** | Vendor/backend binding behind tool handlers |
+| **MCP** | `ToolContract` export/protocol surface — not a duplicate catalog |
+| **Catalog scale** | Same runtime model exercised at **200** tools / **49** bundles (gate-tested count) |
+| **Production boundary** | Harness-proven engine — not representative customer SLO or universal side-effect qualification |
+| **Maturity** | Four-axis statement in [Current maturity](#current-maturity) |
+
+## Flagship architecture visual
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/tool-runtime-boundary-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/tool-runtime-boundary-light.svg">
+  <img
+    alt="Conceptual diagram: tool intent passes through effective tool access layers, ToolRuntime enforcement, RuntimeToolInvoker, and handlers to integrations or backends. Intent is not execution."
+    src="assets/tool-runtime-boundary-light.svg"
+  >
+</picture>
+
+**Mental model:**
+
+```text
+Agent / LLM / Planner
+        ↓
+    tool intent
+        ↓
+Effective tool access (narrowing)
+        ↓
+    ToolRuntime
+        ↓
+validation · policy · trace · scope
+idempotency · timeout · retry
+        ↓
+RuntimeToolInvoker
+        ↓
+ToolExecutor / handler
+        ↓
+Integration / sandbox / RAG backend
+```
+
+> **Intent is not execution.** Every real tool call crosses the runtime enforcement boundary.
+
+## How it works
+
+At a high level:
+
+1. **Bootstrap** — Tier-3 `ToolProfile` and `IntegrationProfile` build a runtime `ToolRegistry` from catalog bundles.
+2. **Declare** — `AgentContract.allowed_tools` and resolved skill `tool_ids` declare what an agent may request.
+3. **Narrow** — `RuntimePolicyBundle.tool_access`, modality filters, and selection strategies shrink the visible schema set.
+4. **Plan** — `CatalogToolPlanner` / `ToolPlanningService` or native `generate_with_tools` proposes `tool_id` + arguments (`ToolPlanDecision`).
+5. **Filter** — `ToolAccessPolicy` and scope policies apply plan-level and per-call checks.
+6. **Orchestrate** — `ToolInvocationPattern` runs single-pass, bounded ReAct, or parallel batches.
+7. **Execute** — `ToolRuntime` routes through gateway and `RuntimeToolInvoker` with validation, trace, timeout, retry, optional idempotency.
+8. **Observe** — `TOOL_*` runtime events and trace spine record attempts and outcomes.
+
+```mermaid
+flowchart TB
+    TI[tool intent]
+    SEL[selection / permissions]
+    PLN[planner proposal]
+    TR[ToolRuntime]
+    INV[RuntimeToolInvoker]
+    BE[handler / integration]
+
+    TI --> SEL --> PLN --> TR --> INV --> BE
+```
+
+**Rule:** Planner proposes; runtime enforces.
+
+## Tool ≠ Skill ≠ Integration
+
+| Layer | Role |
+| ----- | ---- |
+| **Skill** | Reusable behavior package — `tool_ids`, prompt refs, policy fragments |
+| **Tool** | Concrete callable capability — stable `tool_id` executed via `ToolRuntime` |
+| **Integration** | Backend/vendor implementation — databases, search, issue trackers, sandboxes |
+
+**Example:**
+
+```text
+Skill: issue_triage
+  → uses jira.search_tasks / jira.get_issue / jira.add_comment
+  → backed by Jira integration
+```
+
+Skills are **not** invoked by the LLM. `SkillResolver` expands manifests into `allowed_tools` at agent bind time. A skill may reference tools but **must not** bypass `ToolRuntime`. See [`SKILLS.md`](SKILLS.md).
+
+Integrations supply typed clients through `ToolWiringContext`; agents **must not** import vendor SDKs for invokable actions. See [`INTEGRATIONS.md`](INTEGRATIONS.md).
+
+## Tool call ≠ tool execution
+
+A model or planner may propose:
+
+```text
+tool_id + arguments
+```
+
+Execution happens only after:
+
+- host catalog / `ToolProfile` availability,
+- agent/skill allowlists,
+- runtime policy and scope,
+- schema validation,
+- optional approval/HITL when governance requires it on wired paths,
+- invocation through `ToolRuntime`.
+
+```text
+LLM tool_call  →  intent only
+ToolRuntime    →  actual execution
+```
+
+LLM Adapters normalize provider tool calls to `LLMToolCall`; execution belongs here. See [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md).
+
+## Selection vs planning vs execution
+
+| Phase | Question | Owner |
+| ----- | -------- | ----- |
+| **Selection** | Which tools are visible/allowed? | `ToolProfile`, `SkillResolver`, policy bundle, modality, selection strategy |
+| **Planning** | Which tool(s) does the model propose? | `CatalogToolPlanner`, `ToolPlanningService`, native `generate_with_tools` |
+| **Execution** | How is a governed invocation performed? | `ToolRuntime`, gateways, `RuntimeToolInvoker`, `ToolExecutor` |
+
+```text
+available schemas
+  → selection narrowing
+  → planner/model proposal (ToolPlanDecision / tool_calls)
+  → policy/access filter
+  → invocation pattern
+  → ToolRuntime
+  → execution
+```
+
+Do not treat planner choice as permission grant. `ToolPlanDecision` ≠ side effect. Cognition Plane 3 proposes; Tools enforces — see [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md).
+
+### Tool selection layers (public grouping)
+
+Engineering detail uses L0–L7 in [Selection detail](#selection-detail-layers); publicly:
+
+1. **Host availability** — `ToolProfile` + registry bootstrap
+2. **Agent / skill declaration** — `AgentContract.allowed_tools`, skill `tool_ids`
+3. **Runtime policy / scope** — `RuntimePolicyBundle.tool_access`, `StaticToolScopePolicy`
+4. **Modality / plan narrowing** — modality profile, `ToolAccessPolicy`, selection strategy
+5. **Final per-call invoker check** — `ToolScopePolicy` on `RuntimeToolInvoker`
+
+**Invariant:** each layer may **narrow** access; no downstream layer may expand an upstream allowlist.
+
+## AgentContract vs ToolProfile vs policy
+
+```text
+AgentContract.allowed_tools   → what agent may request
+ToolProfile                   → what host exposes in this environment
+SkillResolver                 → may compose allowed tool ids
+RuntimePolicyBundle / scope   → what is allowed in this run/context
+RuntimeToolInvoker            → final per-call enforcement
+```
+
+## ToolContract (public)
+
+High-level contract surface:
+
+- stable `tool_id`,
+- input/output JSON schema,
+- risk / `side_effects` metadata when declared,
+- `ToolRetryPolicy` / timeout metadata on the contract,
+- handler or provider binding via registry bootstrap.
+
+Legacy `ToolBase` is **deprecated** — use `ToolContract`. Do not copy full ABC/dataclass definitions here.
+
+## ToolRuntime
+
+`ToolRuntime` is the **enforcement facade** for the tool execution path (UAEP §42.12). Agents and Nexus **must** call it for side effects — not handlers, integrations, or vendor SDKs directly.
+
+It:
+
+- receives invocation plans or `ToolRequest`s,
+- applies effective permissions and plan filters,
+- routes through `BoundToolGateway` / `RuntimeToolGateway`,
+- delegates atomic execution to `RuntimeToolInvoker`,
+- emits `TOOL_*` events on the runtime spine.
+
+`ToolRuntime` is **not** a second orchestration runtime — Nexus/UER own task/graph lifecycle; Tools owns governed invocation inside those flows.
+
+### Atomic invocation chain
+
+```text
+ToolRuntime
+  → RuntimeToolGateway / BoundToolGateway
+  → RuntimeToolInvoker
+  → ToolExecutor
+  → integration / sandbox / RAG backend
+```
+
+Per call: registry lookup, input/output schema validation, scope check, timeout/retry from contract, error mapping, trace. Capability aliases (`use_rag`, `use_tools`) remain **partial/legacy** — prefer explicit `tool_id`s.
+
+### Entry paths (convergence)
+
+| Path | Reaches governed invoker? |
+| ---- | ------------------------- |
+| ACP `ctx.invoke_tool` | **Yes** |
+| Bounded tool loop (`run_bounded_tool_loop`) | **Yes** |
+| `ToolRuntime` catalog context (`rag.retrieve`, `websearch.query`) | **Yes** |
+| Engine plan `tool_ids` (Nexus host) | **Yes** when wired |
+| Legacy capability `ToolRuntime.invoke` aliases | **Partial** — prefer explicit `tool_id`s |
+
+## Tool planning
+
+High-level planner stack:
+
+- **`CatalogToolPlanner`** — LLM-facing planner wired from registry schemas,
+- **`ToolPlanningService`** — native `generate_with_tools` or JSON fallback; respects `allowed_tool_ids`,
+- **`tool_planner_input`** — assembles scoped planner context,
+- **fallback** — structured JSON plan path when native tool calling is unavailable.
+
+All paths narrow against effective permissions before exposure to the model.
+
+## ToolInvocationPattern
+
+Reusable orchestration primitive — agents should **not** build private tool loops.
+
+| Mode | Role |
+| ---- | ---- |
+| `single_pass` | One planner round → invoke proposed calls |
+| `bounded_react` | Limited tool/LLM iterations with platform caps |
+| `parallel_batch` | Parallel call batch with concurrency limits |
+
+The pattern controls **how** a plan or call series executes; it does not own domain reasoning. Shipped modes also include `parallel_semantic_batch` and `deterministic_chain`. Custom patterns register via entry point `intergrax.tool_invocation_patterns`. Author guide: [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](../technical/guides/TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md).
+
+## Side effects, idempotency, retry, timeout
+
+### Side effects
+
+| Class | Posture |
+| ----- | ------- |
+| **Read-only tools** | Repeatable; lower mutation risk |
+| **Side-effectful tools** | Stricter policy, audit, optional idempotency keys, possible approval on wired governance paths |
+
+Do **not** claim every mutating tool has exactly-once semantics across external systems.
+
+### Idempotency
+
+`IdempotentToolInvoker` wraps the invoker when `ToolContract` declares `side_effects` and the request carries an `idempotency_key` — protecting against duplicate **platform** invocation. Platform idempotency support ≠ universal exactly-once guarantee for external vendors.
+
+### Retry / timeout
+
+`ToolRetryPolicy` and runtime timeout are enforced in `RuntimeToolInvoker` — **R1 ToolRuntime layer** only; agents **must not** retry tool calls themselves. Retries are **not** always safe for mutating tools; policy and contract metadata govern whether retry is permitted.
+
+## Governance / HITL boundary
+
+```text
+tool intent
+   ↓
+runtime policy / declarative tool policy decision
+   ↓
+ALLOW / DENY / REQUIRE_HITL (on wired paths)
+   ↓
+ToolRuntime enforcement
+```
+
+**Ownership split:**
+
+- **Governed Execution / Policy** — authorization semantics, declarative `tool_invocation_control`, meaningful-side-effect rules, HITL pause/resume,
+- **Tools** — execution enforcement point, `ToolAccessPolicy`, `ToolScopePolicy`, invoker contracts, trace emission.
+
+`TOOL_PLAN_OR_ACCESS` is **covered** via `ToolAccessPolicy.apply` before plan exposure. **Meaningful external side effects** are **partial** — not every runtime side-effect path is wired through `MeaningfulSideEffectAuthorizationBoundary`. Do not duplicate full governance architecture — see [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md).
+
+### Policy layers (do not collapse)
+
+| Layer | Examples |
+| ----- | -------- |
+| Static tool scope / allowlists | `StaticToolScopePolicy`, `AgentContract.allowed_tools` |
+| Plan-level access filtering | `ToolAccessPolicy.apply` on `ToolInvocationPlan` |
+| Runtime side-effect authorization | Meaningful-side-effect evaluators on wired adapter paths |
+| Optional HITL | `REQUIRE_HITL` / human approval on declarative policy paths |
+
+## MCP
+
+```text
+ToolContract (canonical registry)
+  → native Intergrax runtime execution
+  → MCP / function-schema export (AUDIT-IDEAL-11.2 Done)
+```
+
+MCP is an **exposure/protocol boundary** — not a second tool catalog or bypass around `ToolRuntime`.
+
+## Catalog scale vs engine maturity
+
+```text
+Tool engine maturity  ≠  every planned tool exists
+```
+
+- **Shipped catalog:** **200** `tool_id`s and **49** bundles per plan/register; **200** count gate-tested in `tests/unit/tools/providers/test_catalog_expansion.py`.
+- **TOOL-PRODUCT-ROI:** **Planned** — `code.*`, `git.*`, `patch.apply_safe`, browser automation suite, research evidence tools are **not** shipped unless a matching implementation PR lands.
+
+Large catalog exercises the same runtime model — it is **not** a substitute for production qualification.
+
+## Token Optimization boundary
+
+| Row | Status |
+| --- | ------ |
+| **TOKEN-TOOLS-1A** | **Done** — helper-only `ToolSchemaOptimizer`; canonical registry unchanged |
+| **TOKEN-TOOLS-1B** | **Planned** — runtime wiring in planner/schema export before `generate_with_tools` |
+
+Compact catalog optimization is **not** active by default.
+
+## Runtime-bound tools and legacy aliases
+
+Some tools are platform/runtime-bound (`workspace.*`, `memory.*`, `harness.*`, `sandbox.exec`) via `runtime_bound_catalog` and `BoundToolGateway`. Standard catalog execution should prefer explicit `tool_id`s. Legacy capability aliases are compatibility surfaces — not the public mental model.
+
+## Observability and sandbox
+
+- Tool attempts/results use the unified trace/runtime event spine (`TOOL_REQUESTED`, `TOOL_COMPLETED`, `TOOL_FAILED`, `TOOL_DENIED`) — no per-agent private tool logging. See [`OBSERVABILITY.md`](OBSERVABILITY.md).
+- Sandboxed execution applies to code/sandbox tool families where configured (AUDIT-IDEAL-11.1 **Done**). **Not** every tool runs in a process sandbox — sandboxing is tool/backend-specific.
+
+## Responsibility boundaries
+
+### Tools owns
+
+- `ToolContract`, registry, catalog bundles, `ToolProfile` bootstrap
+- Selection, planning services, `ToolInvocationPattern`
+- `ToolRuntime`, gateways, `RuntimeToolInvoker`, idempotency wrapper
+- Tool trace emission and invoke-side enforcement
+
+### Tools does not own
+
+- LLM provider tool-call normalization — [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md)
+- Cognition / `ToolPlanDecision` semantics — [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md)
+- Task/graph orchestration — [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)
+- UAEP lifecycle, retry/HITL event semantics — [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md)
+- Policy definition and HITL ownership — [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md)
+- Integration vendor contracts — [`INTEGRATIONS.md`](INTEGRATIONS.md)
+- Skill manifest resolution — [`SKILLS.md`](SKILLS.md)
+
+### Applications (Tier-3) configure
+
+- `ToolProfile.enabled` / `enabled_bundles`, `IntegrationProfile`, `tool_wiring.py`
+- Static tool scope in runtime policy bundles
+- Which bundles and integrations are available in the environment
+
+## Relationship to Intergrax
+
+| Neighbor | Relation |
+| -------- | -------- |
+| **Reasoning** | Plane 3 proposes `ToolPlanDecision`; Tools executes |
+| **Nexus** | Third planning plane; converges on `ToolRuntime` for side effects |
+| **UER / UAEP** | Execution lifecycle; `ToolRuntime` is a producer of `TOOL_*` events |
+| **Governed Execution** | Policy decisions before/at tool paths; Tools enforces invoke boundary |
+| **Skills** | Compose `tool_ids`; do not replace tools |
+| **Integrations** | Backend behind handlers |
+| **LLM Adapters** | Return `LLMToolCall` intent |
+
+## Extensibility
+
+Platform tool plugins register `ToolContract` rows at bootstrap (`ToolPlugin` → catalog → `ToolProfile` → registry → invoker). Quickstart: [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §3 · §16 · §17. Deeper selection/plugin semantics: [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md).
+
+## Current maturity
+
+Architecture maturity: **A4**  
+Implementation maturity: **I4**  
+Production readiness: **P2**  
+Evidence maturity: **E3**
+
+- **A4** — Clear Tool / Skill / Integration separation; stable `ToolContract` + `ToolRuntime`; layered selection/policy/invocation architecture; adjacent-domain boundaries validated; side-effect and governance boundaries documented honestly.
+- **I4** — Phase **TOOL-ENG** **closed** (36/36); `ToolRuntime`, planner, invocation patterns, scope/access policy, idempotency, MCP export, sandboxing, 200-tool catalog, conformance/gates. Not I5 — **TOKEN-TOOLS-1B**, **TOOL-PRODUCT-ROI**, optional L1 critic on tool output, and full meaningful-side-effect wiring remain open.
+- **P2** — Harness and lab qualification on core invoke/selection paths; not representative customer production qualification, universal side-effect SLO evidence, or runbook-backed operations (not P4).
+- **E3** — Unit/gate tests (contracts, selection, invoker, patterns, idempotency, schema export), integration paths (ACP invoke, bounded loop, plugin dual-mode e2e, runtime-bound catalog). No dedicated Tools-only public proof route in [`PROOFS.md`](../proofs/PROOFS.md); LKW exercises tool paths only in **bounded** supporting-foundation scope — not E4/E5.
+
+### Harness-proven vs production-qualified
+
+| Harness-proven (representative) | Not claimed as universal production qualification |
+| ------------------------------- | ------------------------------------------------- |
+| `RuntimeToolInvoker` schema/timeout/retry/trace | Every side-effect tool customer-qualified |
+| `ToolInvocationPattern` shipped modes | Universal exactly-once across external systems |
+| 200-tool catalog + gate tests | TOOL-PRODUCT-ROI tools shipped |
+| MCP/function-schema export | Compact catalog active by default (TOKEN-TOOLS-1B) |
+| Sandboxed code tool path | Every tool process-sandboxed |
+
+## Evidence / proof
+
+| Evidence class | What exists | What it does not prove |
+| -------------- | ----------- | ---------------------- |
+| Architecture | This hub, satellites, ADR-TOOL-001..003 | Production operation |
+| Unit / gate | `ToolContract`, selection/access, invoker, patterns, idempotency, MCP/schema gates | Full harness on every path |
+| Integration | ACP `ctx.invoke_tool`, bounded tool loop, runtime-bound catalog, plugin dual-mode e2e (`test_plugin8_dual_mode_tool_e2e.py`) | Dedicated public tool-runtime proof |
+| Public proof | **Bounded** — LKW supporting paths only ([`PROOFS.md`](../proofs/PROOFS.md)); no Tools-domain entry | Side-effect qualification at product scale |
+| Production / customer | **None** cited for full domain qualification | Not E5 |
+
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
+
+## Go deeper
+
+| Depth | Route |
+| ----- | ----- |
+| Engineering canon | [Below](#engineering-canon) |
+| Selection / plugins | [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md) |
+| Runtime config reference | [`satellites/TOOLS_runtime_config_reference.md`](satellites/TOOLS_runtime_config_reference.md) |
+| Plan | [`maintainers/plans/TOOLS.md`](../maintainers/plans/TOOLS.md) |
+| Skills | [`SKILLS.md`](SKILLS.md) |
+| Integrations | [`INTEGRATIONS.md`](INTEGRATIONS.md) |
+| Governance | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
+| Nexus / UER | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) |
+| Reasoning | [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) |
+| LLM Adapters | [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) |
+| Extension author | [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) |
+| Invocation patterns | [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](../technical/guides/TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) |
+| Audit slice | [`docs/audit_results/TOOLS.md`](../../audit_results/TOOLS.md) |
+
 ---
 
-## Cursor read scope (token budget)
+**Status:** Canonical architecture (domain pair 1:1)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 11  
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)## Cursor read scope (token budget)
 
 **Do not read this entire file in one session** (TOOLS canon).
 
 - **Implement / audit default:** ToolRuntime path + plugin model + policy invoke (hub through production posture). Selection / invocation: [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md). RuntimeConfig fields: [`satellites/TOOLS_runtime_config_reference.md`](satellites/TOOLS_runtime_config_reference.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/TOOLS.md`](../technical/guides/audit_slices/TOOLS.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
-
----
-
 
 ## Architecture satellites (read on demand)
 
-Large § blocks moved out of the architecture hub to reduce Cursor context use.
-Load **only** the satellite matching your task or cited §.
-
 | Satellite | Contents |
-|-----------|----------|
-| [`satellites/TOOLS_runtime_config_reference.md`](satellites/TOOLS_runtime_config_reference.md) | runtime config reference |
-| [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md) | selection and plugins |
+| --------- | -------- |
+| [`satellites/TOOLS_runtime_config_reference.md`](satellites/TOOLS_runtime_config_reference.md) | Runtime config reference |
+| [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md) | Selection and plugins |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
-## Four-layer stack
+
+---
+
+## Engineering canon
+
+### Four-layer stack
 
 ```text
 Tier-2  Agent (skill_ids, allowed_tools, ToolRequest)
         │
         ▼
-Tier-0  Skill Library (MVP Done) — composable packs: tool_ids + prompts + policy — see [architecture/SKILLS.md](architecture/SKILLS.md)
+Tier-0  Skill Library (MVP Done) — composable packs: tool_ids + prompts + policy — see [SKILLS.md](SKILLS.md)
         │
         ▼
 Tier-0  Tool Library (rag.retrieve, jira.search_tasks, …)
@@ -47,13 +486,9 @@ Tier-0  Tool Library (rag.retrieve, jira.search_tasks, …)
 Tier-0  Integration Library (IssueTracker, SearchProvider, VectorStore, …)
 ```
 
-Skills are **not** tools — see architecture §7.1.8. Catalog: [architecture/SKILLS.md](architecture/SKILLS.md).
+Skills are **not** tools — see [`SKILLS.md`](SKILLS.md). **Agents declare tool_ids.** **Applications enable tools** via `ToolProfile` and inject integrations via `ToolWiringContext`. **Integrations** remain vendor-swappable without agent changes.
 
-**Agents declare tool_ids.** **Applications enable tools** via `ToolProfile` and inject integrations via `ToolWiringContext`. **Integrations** remain vendor-swappable without agent changes.
-
----
-
-## How wiring works (Phase O.2)
+### How wiring works (Phase O.2)
 
 ```text
 Tier-3 application (tool_wiring.py)
@@ -93,9 +528,7 @@ registry = build_registry_from_profile(
 )
 ```
 
----
-
-## Tool engine (implemented today)
+### Tool engine (implemented today)
 
 Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done** — full **200-tool** catalog registered):
 
@@ -113,7 +546,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 | `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — capability aliases + registered catalog `tool_id` via `catalog_dispatch` (TOOL-ENG-2) |
 | `catalog_dispatch` | `intergrax/runtime/nexus/tools/catalog_dispatch.py` | **Done** — per-id plan dispatch + gateway invoke (TOOL-ENG-1/2) |
 | `BoundToolGateway` | `intergrax/runtime/nexus/tools/uaep_tool_gateway.py` | **Done** — UAEP §42.12 facade: `sandbox.exec` + 18 runtime-bound ids; catalog `tool_id`s delegate to `RuntimeToolGateway` (ADR-TOOL-001 · TOOL-ENG-2) |
-| `CatalogToolPlanner` (LLM planner) | `intergrax/runtime/nexus/tools/catalog_tool_planner.py` | **Done** — OpenAI schema from registry via `ToolPlanningService` ([§Multi-tool execution](.#multi-tool-execution-semantics)) |
+| `CatalogToolPlanner` (LLM planner) | `intergrax/runtime/nexus/tools/catalog_tool_planner.py` | **Done** — OpenAI schema from registry via `ToolPlanningService` (see [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md)) |
 | `ToolPlanningService` | `intergrax/runtime/nexus/tools/tool_planning_service.py` | **Done** — native `generate_with_tools` or JSON fallback; `allowed_tool_ids` filter (TOOL-ENG-4) |
 | `tool_planner_input` | `intergrax/runtime/nexus/tools/tool_planner_input.py` | **Done** — `tools_context_scope` assembly (TOOL-ENG-11) |
 | `tool_selection` | `intergrax/runtime/nexus/tools/tool_selection.py` | **Done** — `ToolSelectionStrategy` router (TOOL-ENG-5/26/31/32) |
@@ -122,7 +555,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 | `ToolInvocationPattern` | `intergrax/runtime/nexus/tools/tool_invocation_pattern.py` | **Done** — protocol + `pattern_for_mode()` (TOOL-ENG-16,21) · ADR-TOOL-003 |
 | `SinglePassPattern` / `BoundedReactPattern` / `ParallelBatchPattern` | `intergrax/runtime/nexus/tools/patterns` | **Done** — shipped orchestration (TOOL-ENG-17,18,9) |
 | `ToolInvocationAggregate` | `intergrax/runtime/nexus/tools/tool_invocation_aggregate.py` | **Done** — batch merge (TOOL-ENG-29) |
-| `IdempotentToolInvoker` | `intergrax/runtime/tools/idempotent_invoker.py` | **Done** — exactly-once for `side_effects` + `idempotency_key` |
+| `IdempotentToolInvoker` | `intergrax/runtime/tools/idempotent_invoker.py` | **Done** — dedup for `side_effects` + `idempotency_key` |
 | `catalog_context` | `intergrax/runtime/nexus/tools/catalog_context.py` | **Done** — `rag.retrieve` / `websearch.query` dispatch via `plan_context_invocation` |
 | `ToolAccessPolicy` | `intergrax/runtime/nexus/tools/tool_access_policy.py` | **Done** — plan-level filter (`ToolInvocationPlan`); modality intersect |
 | `StaticToolScopePolicy` | `intergrax/runtime/tools/scope_policy.py` | **Done** — wired via `config.tool_scope_policy` in `RuntimeContext.build()` (TOOL-ENG-3) |
@@ -131,9 +564,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 
 **Naming:** docs use **Tool engine** for the Tier-1 runtime stack below; **`ToolRuntime`** is the enforcement facade agents and Nexus MUST call (§42.12). Catalog types live in Tier-0 `intergrax/tools`.
 
----
-
-## Tool execution pipeline
+### Tool execution pipeline
 
 The **tool engine** is the Tier-1 stack that **selects** which catalog tools may run, **invokes** them through a single policy-checked path, and **logs** every attempt. Agents and graph nodes never call handlers or integrations directly.
 
@@ -183,7 +614,7 @@ flowchart TD
     TE --> TRW
 ```
 
-### Phase responsibilities
+#### Phase responsibilities
 
 | Phase | Question answered | Primary components | Tier |
 |-------|-------------------|-------------------|------|
@@ -192,7 +623,7 @@ flowchart TD
 | **2b — Atomic invoke** | How is **one** tool call executed safely? | `ToolRuntime`, `RuntimeToolGateway`, `RuntimeToolInvoker`, `ToolExecutor`, `runtime_bound_catalog` | Tier-1 |
 | **3 — Logging** | What happened, for audit and debug? | `trace_event`, `RuntimeEvent` (`TOOL_*`), security middleware, `RunTraceWriter`, agent/tool trace metadata — **must** use spine ([`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine); no private tool trace stores) | Tier-1 + observability |
 
-### Entry paths — convergence on invoker
+#### Entry paths — convergence on invoker
 
 | Path | When used | Dispatch module | Reaches `RuntimeToolInvoker`? |
 |------|-----------|-----------------|-------------------------------|
@@ -207,7 +638,7 @@ All successful catalog executions converge on **`RuntimeToolInvoker`** (optional
 
 Multi-call batches route through **`run_bounded_tool_loop`** / **`ctx.invoke_tool`**, which resolve and delegate to a configured **`ToolInvocationPattern`** before `RuntimeToolInvoker` (see [Tool invocation patterns](#tool-invocation-patterns) · author guide [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](../technical/guides/TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md)).
 
-### Selection detail (layers)
+#### Selection detail (layers) {#selection-detail-layers}
 
 | Layer | Mechanism | What it filters | Applied when |
 |-------|-----------|-----------------|--------------|
@@ -217,13 +648,13 @@ Multi-call batches route through **`run_bounded_tool_loop`** / **`ctx.invoke_too
 | **L3 Policy bundle** | `RuntimePolicyBundle.tool_access` (`StaticToolScopePolicy`) | Tier-3 static scope | `resolve_allowed_tools_from_config` |
 | **L4 Modality** | `ModalityProfile` → `filter_tool_ids_by_modality_profile` | Media/ML plane tools | `ToolAccessPolicy.apply_modality_profile` |
 | **L5 Plan filter** | `ToolAccessPolicy.apply` on `ToolInvocationPlan` | `use_rag` / `use_websearch` / `tool_ids` / `use_tools` | `ToolRuntime.invoke` |
-| **L6 Schema narrowing** | `ToolSelectionStrategy` → `resolve_planner_allowed_tool_ids` | Subset passed to `ToolPlanningService` / `to_openai_tools` (see [§Production strategies](.#tool-selection-modes-production-strategies)) | `run_bounded_tool_loop` / `ctx.invoke_tool` (TOOL-ENG-5) |
+| **L6 Schema narrowing** | `ToolSelectionStrategy` → `resolve_planner_allowed_tool_ids` | Subset passed to `ToolPlanningService` / `to_openai_tools` (see [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md)) | `run_bounded_tool_loop` / `ctx.invoke_tool` (TOOL-ENG-5) |
 | **L6b LLM planner** | `ToolPlanningService` → `generate_with_tools` | Model picks `tool_calls` from narrowed schema | `CatalogToolPlanner` |
 | **L7 Invoker scope** | `ToolScopePolicy.is_allowed` on `RuntimeToolInvoker` | Per-call deny | **Done** — `scope_policy` from `RuntimeConfig` (TOOL-ENG-3) |
 
 See [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) — cognition Plane 3 (Tool): `ToolPlanDecision` ≠ `AgentDecision` (§42.7).
 
-### Invocation detail
+#### Invocation detail
 
 ```text
 ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
@@ -242,7 +673,7 @@ ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
 
 `ToolRuntime.invoke_request(ToolRequest)` is the UAEP §42.12 surface; routes **sandbox**, **runtime-bound** ids, **capability aliases**, and **catalog `tool_id`s** via `BoundToolGateway` → `RuntimeToolGateway` (TOOL-ENG-2 **Done** · ADR-TOOL-001).
 
-### Logging detail
+#### Logging detail
 
 | Signal | Mechanism | When |
 |--------|-----------|------|
@@ -255,11 +686,9 @@ ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
 | Security | `MiddlewarePipeline` `BEFORE/AFTER_TOOL_CALL` | Guardrails / injection scan |
 | Persisted run | `RunTraceWriter` / lab trace API | Post-mortem |
 
-**Authoring:** [`AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix J · **Audit:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §11 · **Engine work:** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md) Phase **TOOL-ENG**.
+**Authoring:** [`AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix J · **Audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) · **Engine work:** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md) Phase **TOOL-ENG**.
 
----
-
-## Platform tool plugin — developer path
+### Platform tool plugin — developer path
 
 **Task:** PLATFORM-PLUGIN-DOCS-3 · **Quickstart:** [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §3 · §16 · §17
 
@@ -271,11 +700,11 @@ ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
 
 **Sequence (both modes):** `ToolPlugin` → catalog registration → `ToolProfile` enablement → `ToolWiringContext` → `build_registry_from_profile` → `RuntimeToolInvoker`.
 
-### Lifecycle
+#### Lifecycle
 
 `ToolPlugin` registration is **catalog/bootstrap-time**. Handlers may own resources only when their domain design requires it. There is no generic Platform Plugin unload/shutdown manager. Integrations injected via `ToolWiringContext` follow host/domain lifecycle ownership.
 
-### Failure behavior
+#### Failure behavior
 
 | Condition | Behavior |
 |-----------|----------|
@@ -288,7 +717,7 @@ ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
 
 Bootstrap `on_conflict` policy: EXTENSION_AUTHOR_GUIDE §5.
 
-### Troubleshooting
+#### Troubleshooting
 
 | Symptom | Fix |
 |---------|-----|
@@ -301,13 +730,11 @@ Bootstrap `on_conflict` policy: EXTENSION_AUTHOR_GUIDE §5.
 
 Proof: `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`
 
----
-
-## Tool engine production posture (2026-06-10)
+### Tool engine production posture (2026-06-10)
 
 Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invoke → verify → log). Distinct from AUDIT-IDEAL-11.* (catalog sandbox/MCP/lint — **Done**).
 
-### Maturity matrix
+#### Maturity matrix
 
 | Area | Posture | Notes |
 |------|---------|-------|
@@ -329,15 +756,13 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | **§42.12 gateway** | **Done** | Catalog `tool_id` → invoker (TOOL-ENG-2); runtime-bound + sandbox unchanged |
 | **`tool_scope_policy` wiring** | **Done** | `RuntimeToolInvoker` in `RuntimeContext.build()` (TOOL-ENG-3) |
 | **Post-tool verification** | **Done** | `run_post_tool_verify` trace + enforce block (TOOL-ENG-7) — safety boundaries [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) |
-| **Optional L1 critic on tool output** | **Planned** / **Deferred** (default **OFF**) | Post-invoke hook via CVL on high-risk tools only — not part of post-tool verification ship; see [Deferred runtime features](.#deferred-runtime-features-not-new-tools) |
+| **Optional L1 critic on tool output** | **Planned** / **Deferred** (default **OFF**) | Post-invoke hook via CVL on high-risk tools only — not part of post-tool verification ship; see [Deferred runtime features](#deferred-runtime-features-not-new-tools) |
 | **AHI dynamic tool modes** | **Done** | `ToolEngineHook` + `recommend_tool_modes` (TOOL-ENG-10) |
 | **Observability** | **Production** | Selection + pattern diag, budget ticks, `tool_traces` (TOOL-ENG-27/32) |
 
-**Strategic focus (2026-06-12):** Phase **TOOL-ENG** **closed** — maintenance via gate scripts; deferred runtime features → [Phase TOOL-PRODUCT-ROI](.#phase-tool-product-roi--catalog-extension-by-product-value-planned).
+**Strategic focus (2026-06-12):** Phase **TOOL-ENG** **closed** — maintenance via gate scripts; deferred runtime features → [Phase TOOL-PRODUCT-ROI](#phase-tool-product-roi--catalog-extension-by-product-value-planned).
 
----
-
-## Tool invocation patterns
+### Tool invocation patterns
 
 **Author guide:** [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](../technical/guides/TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md)
 
@@ -351,17 +776,15 @@ Shipped modes: `ToolInvocationMode` (`single_pass`, `bounded_react`, `parallel_b
 
 Resolution: `resolve_invocation_pattern` in `tool_invocation_pattern.py` · runtime entry `run_bounded_tool_loop` in `tool_loop.py`.
 
----
-
-## Phase TOOL-PRODUCT-ROI — Catalog extension by product value (Planned)
+### Phase TOOL-PRODUCT-ROI — Catalog extension by product value (Planned)
 
 **Status:** Architecture & plan only — **not shipped**  
-**Plan (1:1):** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md) — Phase TOOL-PRODUCT-ROI
+**Plan (1:1):** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md) — Phase TOOL-PRODUCT-ROI  
 **Policy:** One implementation ID per PR; register planned `tool_id`s only in matching task PRs.
 
 **Purpose:** Extend the mature tool catalog (**200 shipped `tool_id`s**, **49** bundles, Full Harness LC **Done**) with **missing, high-ROI tools** for coding agents and change-audit agents — **not** general-purpose catalog padding. Existing families (RAG, filesystem, workspace, database, websearch, observability, eval, HITL, workflow, etc.) remain sufficient; add only gaps that improve **repository understanding** and **change safety**.
 
-### Why TOOL-PRODUCT-ROI (product value, not catalog padding)
+#### Why TOOL-PRODUCT-ROI (product value, not catalog padding)
 
 | Gap today | Harness need |
 |-----------|--------------|
@@ -371,7 +794,7 @@ Resolution: `resolve_invocation_pattern` in `tool_invocation_pattern.py` · runt
 | Research claims without evidence chain | **Research evidence** layer above websearch/RAG (phase 3) |
 | Full browser automation | Deferred — `browser.fetch_page` exists; interactive suite only if web-app agents become first-class |
 
-### Wave 1 — Code Intelligence Tools (read-only, **P0**)
+#### Wave 1 — Code Intelligence Tools (read-only, **P0**)
 
 **Bundle id:** `code_intelligence` · **Public `tool_id` namespace:** `code.*` (bundle name and tool namespace are intentionally distinct).
 
@@ -388,7 +811,7 @@ All tools **read-only**, dispatch via **ToolRuntime**; backends may use `local_g
 
 **First-wave priority (highest ROI):** `code.repo_map`, `code.symbol_search`, `code.dependency_graph`, `code.boundary_check`, `code.diff_risk_analyze`.
 
-### Wave 2 — Git / PR Context Tools (read-only, **P1**)
+#### Wave 2 — Git / PR Context Tools (read-only, **P1**)
 
 Read-only GitHub/GitLab (and local git) context for audit agents. **No** merge, approve, push, or apply-patch tools in this wave.
 
@@ -400,7 +823,7 @@ Read-only GitHub/GitLab (and local git) context for audit agents. **No** merge, 
 | `git.pr_context` | PR metadata, description, review threads, changed files |
 | `git.ci_status` | CI/check run status for branch or PR |
 
-### Wave 3 — Safe Patch Tools (write-capable, **P2**)
+#### Wave 3 — Safe Patch Tools (write-capable, **P2**)
 
 Requires policy, idempotency, audit trail, optional HITL.
 
@@ -409,14 +832,14 @@ Requires policy, idempotency, audit trail, optional HITL.
 | `patch.preview` | Show patch effect; validate allowed paths |
 | `patch.apply_safe` | Apply patch only after preview + policy gate |
 
-### Later families (product-gated)
+#### Later families (product-gated)
 
 | Family | Example `tool_id`s | Gate |
 |--------|-------------------|------|
 | **Browser automation** | `browser.navigate`, `browser.click`, `browser.fill_form`, `browser.screenshot`, `browser.extract`, `browser.network_requests`, `browser.console_messages` | Only if Intergrax hosts web-app agents as first-class |
 | **Research evidence** | `research.evidence_pack`, `research.claim_verify`, `research.source_rank` | Research/audit agents needing claim↔source binding above websearch/RAG |
 
-### Deferred runtime features (not new tools)
+#### Deferred runtime features (not new tools) {#deferred-runtime-features-not-new-tools}
 
 These extend existing engine paths; **default OFF**.
 
@@ -425,7 +848,7 @@ These extend existing engine paths; **default OFF**.
 | **Hierarchical LLM category pass** | `RuntimeConfig.tool_selection_hierarchical_llm_pass = false` | Optional LLM step when deterministic hierarchical selection picks wrong category on large catalogs; **must not** expand permissions or select outside policy allow-list (ADR-TOOL-005) |
 | **Optional L1 critic on tool output** | Post-invoke hook on `RuntimeToolInvoker`: execution → output validation → optional L1 critic → allow / suspicious / block / require_hitl | High-risk tools only (e.g. `database.execute`, `filesystem.write_text`, `storage.delete`, `rag.purge_collection`, `platform.put_secret`, `collaboration.send_mail`, `patch.apply_safe`); see [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 
-### Architectural boundaries (unchanged)
+#### Architectural boundaries (unchanged)
 
 ```text
 Agent → Skill → ToolRuntime → Tool handler → Integration (optional)
@@ -435,11 +858,9 @@ Agent → Skill → ToolRuntime → Tool handler → Integration (optional)
 - Read-only waves **MUST NOT** perform writes or side effects (`side_effects=False`).
 - Write-capable patch tools **MUST** use ToolRuntime policy, idempotency keys, trace spine, and HITL where configured.
 
-### Explicit non-goals (TOOL-PRODUCT-ROI)
+#### Explicit non-goals (TOOL-PRODUCT-ROI)
 
 - Duplicating existing RAG, filesystem, workspace, websearch, or eval tools under new names
 - Git write ops (merge, approve, push) before read-only context tools ship
 - Global L1 critic on all read-only tools
 - Browser automation suite without a Tier-3 product driver
-
----
