@@ -194,6 +194,7 @@ def _enforcement_request(
         meaningful_side_effect_request=MeaningfulSideEffectRequest(
             action=operation_id,
             kinds=(MeaningfulSideEffectKind.MUTATION,),
+            side_effect_scope_id=f"scope-{resource_scope}",
             task_id=task_id,
             run_id=run_id,
             principal_id=_ACTING,
@@ -216,6 +217,7 @@ def _continuation_request(
         source_agent_id="agent-test",
         prompt="continuation required",
         continuation_request_id=continuation_request_id,
+        side_effect_scope_id=f"scope-{resource_scope}",
         operation_id=operation_id,
         policy_rule_id="runtime.hitl",
         resource_scope=resource_scope,

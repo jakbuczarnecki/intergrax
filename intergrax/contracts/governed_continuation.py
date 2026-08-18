@@ -87,6 +87,7 @@ class GovernedContinuationRequest(BaseModel):
     continuation_request_id: str = Field(
         default_factory=lambda: f"gcr_{uuid4().hex[:12]}"
     )
+    side_effect_scope_id: str | None = None
     operation_id: str | None = None
     policy_rule_id: str | None = None
     resource_scope: str | None = None
@@ -101,6 +102,14 @@ class GovernedContinuationRequest(BaseModel):
         if not normalized:
             raise ValueError("continuation_request_id must be non-empty")
         return normalized
+
+    @field_validator("side_effect_scope_id")
+    @classmethod
+    def _strip_side_effect_scope_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
 
     @field_validator("operation_id", "policy_rule_id", "resource_scope")
     @classmethod
@@ -132,6 +141,7 @@ class GovernedContinuationRequest(BaseModel):
         return GovernedContinuationCorrelation(
             continuation_request_id=self.continuation_request_id,
             reason=self.reason,
+            side_effect_scope_id=self.side_effect_scope_id,
             operation_id=self.operation_id,
             policy_rule_id=self.policy_rule_id,
             resource_scope=self.resource_scope,

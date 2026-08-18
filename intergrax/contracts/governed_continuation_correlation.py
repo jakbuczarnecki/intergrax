@@ -31,6 +31,7 @@ class GovernedContinuationCorrelation(BaseModel):
 
     continuation_request_id: str = _NON_EMPTY
     reason: ContinuationReason
+    side_effect_scope_id: str | None = None
     operation_id: str = _NON_EMPTY
     policy_rule_id: str | None = None
     resource_scope: str | None = None
@@ -44,6 +45,14 @@ class GovernedContinuationCorrelation(BaseModel):
         if not normalized:
             raise ValueError("field must be non-empty")
         return normalized
+
+    @field_validator("side_effect_scope_id")
+    @classmethod
+    def _strip_side_effect_scope_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
 
     @field_validator("policy_rule_id", "resource_scope", "source_step_id")
     @classmethod

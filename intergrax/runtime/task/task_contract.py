@@ -16,6 +16,7 @@ from intergrax.contracts.declarative_hitl import (
     DeclarativeHitlApprovalGrant,
     DeclarativeHitlPendingApproval,
 )
+from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 
@@ -121,6 +122,7 @@ class TaskGovernanceState(BaseModel):
     escalation_chain: List[EscalationStep] = Field(default_factory=list)
     declarative_hitl_pending: Optional[DeclarativeHitlPendingApproval] = None
     declarative_hitl_grant: Optional[DeclarativeHitlApprovalGrant] = None
+    governed_continuation_grant: Optional[GovernedContinuationApprovalGrant] = None
 
 
 class TaskClassificationState(BaseModel):

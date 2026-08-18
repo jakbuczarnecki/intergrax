@@ -45,6 +45,7 @@ class MeaningfulSideEffectRequest(BaseModel):
     )
     action: str = _NON_EMPTY
     kinds: tuple[MeaningfulSideEffectKind, ...] = Field(min_length=1)
+    side_effect_scope_id: str = _NON_EMPTY
     task_id: str = _NON_EMPTY
     run_id: str = _NON_EMPTY
     principal_id: str | None = None
@@ -54,7 +55,7 @@ class MeaningfulSideEffectRequest(BaseModel):
     correlation: Mapping[str, Any] = Field(default_factory=dict)
     context: Mapping[str, Any] = Field(default_factory=dict)
 
-    @field_validator("action", "task_id", "run_id")
+    @field_validator("action", "side_effect_scope_id", "task_id", "run_id")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()

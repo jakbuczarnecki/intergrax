@@ -161,6 +161,7 @@ def _enforcement_request(membership: WorkspaceMembership) -> CollaborativeWorkEn
         meaningful_side_effect_request=MeaningfulSideEffectRequest(
             action=_OPERATION,
             kinds=(MeaningfulSideEffectKind.MUTATION,),
+            side_effect_scope_id="scope-1",
             task_id="task-1",
             run_id="run-1",
             principal_id=_ACTING,
