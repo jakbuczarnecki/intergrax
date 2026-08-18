@@ -57,7 +57,7 @@ Context budgeting for new model strings no longer depends on stale per-adapter d
 
 ```bash
 uv run pytest tests/unit/llm_adapters/test_model_catalog.py tests/unit/llm_adapters/test_context_window_wiring.py -q
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

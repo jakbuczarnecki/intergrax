@@ -54,12 +54,12 @@ Developers and maintainers have a complete documentation baseline for M-LLM-X im
 - `applications/USAGE.md`
 - `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md`, `RELIABILITY_FAILURE_AND_HITL.md`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`
 - `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md`, `PLATFORM_FOUNDATION.md`
-- `docs/project/maintainers/audit/LLM_ADAPTERS.md`
+- `docs/audit_results/LLM_ADAPTERS.md`
 
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_harness_adr.py
 python scripts/maintenance/check_implementation_journal.py
 ```

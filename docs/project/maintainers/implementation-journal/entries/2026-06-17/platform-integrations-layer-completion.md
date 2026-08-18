@@ -43,7 +43,7 @@ Integrations layer formally closed for Full Harness LC — catalog L3, marketpla
 
 - `docs/project/maintainers/plans/INTEGRATIONS.md` — Phase INTEGRATIONS-LC register
 - `docs/project/architecture/INTEGRATIONS.md` — Full Harness LC maturity note
-- `docs/project/maintainers/audit/INTEGRATIONS.md` — Full Harness LC sync
+- `docs/audit_results/INTEGRATIONS.md` — Full Harness LC sync
 
 ## Verification
 

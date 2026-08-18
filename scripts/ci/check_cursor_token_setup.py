@@ -11,16 +11,14 @@ BOOTSTRAP = ROOT / "docs" / "project" / "maintainers" / "bootstrap"
 CURSOR_SETUP = ROOT / "docs" / "project" / "technical" / "guides" / "CURSOR_TOKEN_SETUP.md"
 CURSORIGNORE = ROOT / ".cursorignore"
 H2_IGNORE_DIRS = (
-    "docs/project/maintainers/audit/",
+    "docs/audit_results/",
     "docs/project/architecture/satellites/",
     "docs/project/maintainers/plans/satellites/",
 )
 H2_IGNORE_PATHS = (
     "docs/project/technical/guides/AGENT_CREATION_GUIDE.md",
     "docs/project/technical/guides/APPLICATION_CREATION_GUIDE.md",
-    "docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md",
     "docs/project/technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md",
-    "docs/project/technical/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md",
     "docs/project/technical/guides/SYSTEM_INVARIANTS.md",
     "docs/project/technical/guides/MATURITY_TAXONOMY.md",
     "docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md",
@@ -45,21 +43,12 @@ STUB_MARKER = "AGENT_INSTRUCTIONS.md"
 STUB_MAX_LINES = 45
 CI_HOTFIX_RULE = ROOT / ".cursor" / "rules" / "intergrax-ci-hotfix.mdc"
 FULL_MIN_LINES = 150
-AUDIT_BOOTSTRAPS = (
-    "01_audit_all_domains.txt",
-    "02_audit_one_domain.txt",
-    "03_implement_plan_all_domains.txt",
-    "04_implement_plan_one_domain.txt",
-    "05_closeout_all_domains.txt",
-    "06_interactive_layer_by_layer_audit.txt",
-)
+REQUIRED_BOOTSTRAPS: tuple[str, ...] = ()
 HEP_BOOTSTRAP = "hep_step.txt"
 FORBIDDEN_BROAD_ACCESS_PHRASES = (
     "full repository access",
 )
 BROAD_ACCESS_GUARD_PATHS = (
-    ROOT / "scripts" / "audit",
-    ROOT / "docs" / "project" / "maintainers" / "audit",
     ROOT / ".cursor",
     ROOT / "docs" / "project" / "maintainers" / "bootstrap",
     ROOT / "docs" / "project" / "technical" / "guides" / "CURSOR_TOKEN_SETUP.md",
@@ -166,12 +155,16 @@ def main() -> int:
     if "intergrax-token-budget" not in iteration:
         errors.append("intergrax-iteration.mdc must reference intergrax-token-budget.mdc (I1/O1)")
 
-    plan_gen = ROOT / "scripts" / "audit" / "generate_plan_read_scopes.py"
+    plan_gen = ROOT / "scripts" / "docs" / "generate_plan_read_scopes.py"
     if not plan_gen.is_file():
-        errors.append("missing scripts/audit/generate_plan_read_scopes.py (G1-E2)")
+        errors.append("missing scripts/docs/generate_plan_read_scopes.py (G1-E2)")
     else:
+        sys.path.insert(0, str(ROOT / "scripts" / "docs"))
+        from docs_domain_common import canonical_domain_ids  # noqa: WPS433
+
+        canonical_plans = {f"{name}.md" for name in canonical_domain_ids()}
         for path in sorted(PLAN_DIR.glob("*.md")):
-            if path.name in SKIP_PLAN_HUBS:
+            if path.name in SKIP_PLAN_HUBS or path.name not in canonical_plans:
                 continue
             if PLAN_READ_SCOPE_MARKER not in path.read_text(encoding="utf-8"):
                 errors.append(f"{path.relative_to(ROOT)}: missing plan read-scope block (G1-E2)")
@@ -180,7 +173,7 @@ def main() -> int:
     if agents_ref.is_file():
         errors.append("remove redundant .cursor/rules/intergrax-agents-reference.mdc (stub replaces it)")
 
-    for name in AUDIT_BOOTSTRAPS:
+    for name in REQUIRED_BOOTSTRAPS:
         path = BOOTSTRAP / name
         if not path.is_file():
             errors.append(f"missing bootstrap {name}")

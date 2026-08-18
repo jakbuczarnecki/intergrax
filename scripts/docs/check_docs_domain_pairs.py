@@ -7,7 +7,7 @@ import re
 import sys
 from pathlib import Path
 
-from architecture_audit_common import DOMAIN_ORDER, REPO_ROOT, canonical_domain_ids
+from docs_domain_common import DOMAIN_ORDER, REPO_ROOT, canonical_domain_ids
 
 DOCS = REPO_ROOT / "docs" / "project"
 ARCH = DOCS / "architecture"
@@ -22,7 +22,6 @@ GUIDES = DOCS / "technical" / "guides"
 REQUIRED_GUIDES = {
     "INTERGRAX_DEVELOPMENT_STRATEGY.md",
     "IDEAL_HARNESS_AI_ARCHITECTURE.md",
-    "INTEGRAX_HARNESS_AUDIT_MAP.md",
 }
 
 FORBIDDEN = [

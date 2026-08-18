@@ -44,7 +44,7 @@ TIER3_APPLICATION_ENVIRONMENT now pairs symmetrically with AGENT_CONTRACTS_AND_A
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

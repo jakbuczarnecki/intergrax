@@ -41,12 +41,12 @@ Architecture ↔ plan ↔ code traceability is restored after Phase ACP completi
 - `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — GAP register, code maps, maturity gates
 - `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` — DOC-2..4 Done; §6.1bb queue updated
 - `scripts/audit/generate_domain_audit_prompts.py` — AGENT active phases and known gaps
-- `docs/project/maintainers/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` — regenerated
+- `docs/audit_results/AGENT_CONTRACTS_AND_ASSEMBLY.md` — regenerated
 
 ## Verification
 
 ```bash
-uv run python scripts/audit/check_docs_domain_pairs.py
+uv run python scripts/docs/check_docs_domain_pairs.py
 uv run python scripts/audit/generate_domain_audit_prompts.py
 ```
 

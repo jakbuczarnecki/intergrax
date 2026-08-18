@@ -1,4 +1,4 @@
-# Platform Plugins — Maintainer Roadmap
+﻿# Platform Plugins — Maintainer Roadmap
 
 **Program:** Platform Plugin architecture  
 **Status:** PLATFORM-PLUGIN-1 **Done** · PLATFORM-PLUGIN-2 **Done** · PLATFORM-PLUGIN-3 **Done** · PLATFORM-PLUGIN-4 **Done** · PLATFORM-PLUGIN-5 **Done** · PLATFORM-PLUGIN-6 **Done** · PLATFORM-PLUGIN-7 **Done** · PLATFORM-PLUGIN-8 **Done** · PLATFORM-PLUGIN-9 **Done** — program **CLOSED**
@@ -117,7 +117,7 @@ PLUGIN-4 is intentionally **after** architecture decision: harmonization without
 
 ## Audit evidence placement
 
-**FACT:** [`docs/audit_results/`](../../audit_results/README.md) exists on `development`. It stores **dated outputs from orchestrated harness architecture audits** ([`ORCHESTRATOR.md`](../../audit/ORCHESTRATOR.md)): `YYYY-MM-DD/` folders with `progress.json`, `RUN_SUMMARY.md`, and per-domain `<DOMAIN>.md` results, initialized and validated via `scripts/audit/` tooling.
+**FACT:** [`docs/audit_results/`](../../audit_results/README.md) exists on `development`. It stores **dated outputs from orchestrated harness architecture audits** ([`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)): `YYYY-MM-DD/` folders with `legacy campaign README`, `RUN_SUMMARY.md`, and per-domain `<DOMAIN>.md` results, initialized and validated via `scripts/docs/` tooling.
 
 **FACT:** PLATFORM-PLUGIN-1 evidence lives in [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md) under `maintainers/plans/` — **retained here** because it is **program-specific** extension-surface inventory and architecture audit evidence, not an orchestrated per-domain run in the harness audit workflow. Domain programs persist Mode A2 results under `docs/audit_results/`; the Platform Plugin program coordinates cross-cutting extension architecture and keeps its audit alongside this roadmap.
 

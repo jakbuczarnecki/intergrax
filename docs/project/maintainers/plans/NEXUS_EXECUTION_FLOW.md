@@ -1,4 +1,4 @@
-# Nexus Execution Flow — Implementation Plan
+﻿# Nexus Execution Flow — Implementation Plan
 
 **Architecture (1:1):** [`architecture/NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -16,7 +16,7 @@
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md) read-scope block only.
-- **Audit slice:** [`guides/audit_slices/NEXUS_EXECUTION_FLOW.md`](../../technical/guides/audit_slices/NEXUS_EXECUTION_FLOW.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
@@ -109,7 +109,7 @@ Load **only** the satellite matching your task or cited gap ID.
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **FLOW-MAINT-05** | Test | P3 | **Done** | Lifecycle regression: multi-node partial graph + `allow_partial_result=False` → `TaskState.FAILED`; `True` → `PARTIALLY_COMPLETED` | `test_graph_runner_resilience.py`; gate green |
 | 2 | **FLOW-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av header; sync architecture §1.4 partial-results test row with FLOW-MAINT-05 | Canon matches test evidence |
-| 3 | **FLOW-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19` | `NEXUS_EXECUTION_FLOW.md` + `progress.json`; L3 verdict layers 8–10 |
+| 3 | **FLOW-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/legacy/2026-06-19` | `NEXUS_EXECUTION_FLOW.md` + `legacy campaign README`; L3 verdict layers 8–10 |
 
 **Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 

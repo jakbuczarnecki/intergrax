@@ -124,7 +124,7 @@ def block(domain: str, scope: str) -> str:
         f"- **Implement / audit default:** {scope}\n"
         f"- **Use** table of contents below — `Read` with offset/limit per §.\n"
         f"- **Plan hub:** [`plan/{domain}.md`](../plan/{domain}.md) (scoped §6 only).\n"
-        f"- **Audit slice:** [`guides/audit_slices/{domain}.md`](../guides/audit_slices/{domain}.md).\n"
+        f"- **Audit slice:** [`docs/audit_results/{domain}.md`](../docs/audit_results/{domain}.md).\n"
         f"- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.\n\n"
         f"---\n"
     )

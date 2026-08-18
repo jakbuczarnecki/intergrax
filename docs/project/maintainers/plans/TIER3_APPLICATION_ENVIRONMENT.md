@@ -52,7 +52,7 @@ Concrete hosting implementation rows remain tracked exclusively in [`plan/APPLIC
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) read-scope block only.
-- **Audit slice:** [`guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`](../../technical/guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---

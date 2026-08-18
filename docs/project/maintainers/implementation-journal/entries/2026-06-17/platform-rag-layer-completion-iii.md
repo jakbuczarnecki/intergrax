@@ -55,7 +55,7 @@ Tier-3 hosts get fail-fast `RagProfile` validation, extended tenant isolation on
 - `intergrax/applications/_shared/reference_workflows/rag_async_ingest.py` — M-RAG.67
 - `intergrax/legacy/rag_answers/__init__.py` — M-RAG.68 removal timeline
 - Tests: tenant isolation, validator, metrics, ACL, plugins, async ingest reference, beta promotion
-- Docs: `docs/project/architecture/RAG.md`, `docs/project/maintainers/plans/RAG.md`, `docs/project/maintainers/audit/RAG.md`
+- Docs: `docs/project/architecture/RAG.md`, `docs/project/maintainers/plans/RAG.md`, `docs/audit_results/RAG.md`
 
 ## Verification
 

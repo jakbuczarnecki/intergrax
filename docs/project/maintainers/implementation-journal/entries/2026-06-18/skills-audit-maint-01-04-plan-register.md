@@ -33,7 +33,7 @@ Skills catalog hygiene and DX backlog traceable without reopening closed SK-EXP 
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/SKILLS.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/SKILLS.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/SKILLS.md` |
 
 ## Verification
 

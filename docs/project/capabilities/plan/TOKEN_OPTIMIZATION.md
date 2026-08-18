@@ -8,7 +8,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 **Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G CLOSED**; **TOKEN-10H CLOSED (NOT QUALIFIED: MODEL_BEHAVIOR_MISMATCH, 14/16, STABLE)**; **TOKEN-10I BLOCKED_HARDWARE_CAPACITY_FINAL**.
 **Feature architecture (1:1):** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
-**Source audit instruction:** [`../../maintainers/audit/TOKEN_OPTIMIZATION.md`](../../maintainers/audit/TOKEN_OPTIMIZATION.md)
+**Source audit instruction:** [`../../../audit_results/TOKEN_OPTIMIZATION.md`](../../../audit_results/TOKEN_OPTIMIZATION.md)
 **Primary anchor domain:** `CONTEXT_ENGINEERING`  
 **Related domains:** `LLM_ADAPTERS`, `TOOLS`, `MEMORY`, `RAG`, `OBSERVABILITY`, `UNIFIED_EXECUTION_RUNTIME`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `ADAPTIVE_HARNESS_INTELLIGENCE`
 
@@ -3053,7 +3053,7 @@ Acceptance:
 Run:
 uv run pytest tests/unit/runtime/token_optimization/ -q
 uv run python scripts/check_token_optimization_contracts.py
-uv run python scripts/audit/check_docs_domain_pairs.py
+uv run python scripts/docs/check_docs_domain_pairs.py
 
 Commit:
 feat: add token optimization contracts and receipts

@@ -50,7 +50,7 @@ Tier-3 hosts keep flat `spec_version` 1.x wire shape and existing wiring entry p
 - `intergrax/applications/_shared/environment_conformance.py` — ProfileInvariantValidator
 - `tests/unit/applications/test_environment_profile_bundles.py`
 - `scripts/maintenance/check_environment_profile_bundle_schema.py`
-- `scripts/audit/generate_domain_audit_prompts.py` · `docs/project/maintainers/audit/TIER3_APPLICATION_ENVIRONMENT.md`
+- `scripts/audit/generate_domain_audit_prompts.py` · `docs/audit_results/TIER3_APPLICATION_ENVIRONMENT.md`
 
 ## Verification
 

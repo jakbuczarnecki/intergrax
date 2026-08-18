@@ -1,4 +1,4 @@
-# Orchestration — Implementation Plan
+﻿# Orchestration — Implementation Plan
 
 **Architecture (1:1):** [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -16,7 +16,7 @@
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md) read-scope block only.
-- **Audit slice:** [`guides/audit_slices/ORCHESTRATION.md`](../../technical/guides/audit_slices/ORCHESTRATION.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
@@ -335,7 +335,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **ORCH-MAINT-DOC-01** | Docs | P3 | **Done** | Sync [`architecture/satellites/ORCHESTRATION_production_gates.md`](../../architecture/satellites/ORCHESTRATION_production_gates.md#59-platform-execution-audit---gaps-technical-debt-discrepancies) §59.2 async-queue note + §59.4 `run_async` row with ORCH-MAINT-01/04 truth (lab scaffold `INCLUDE_QUEUE_WORKER=true`; `async_task_index_resolver` profile-backed index) | No stale “not scaffold-default” / lab-only in-memory wording; product hosts remain opt-in |
-| 2 | **ORCH-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19` | `ORCHESTRATION.md` + `progress.json` updated; L3 verdict layers 3, 9 |
+| 2 | **ORCH-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/legacy/2026-06-19` | `ORCHESTRATION.md` + `legacy campaign README` updated; L3 verdict layers 3, 9 |
 
 **Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 

@@ -1,4 +1,4 @@
-# Unified Execution Runtime
+﻿# Unified Execution Runtime
 
 **Intergrax Unified Execution Runtime (UER)** defines the common lifecycle, identity, event, policy interception, retry, interruption, and completion semantics that every agent execution follows.
 
@@ -252,7 +252,7 @@ UER evidence is **engineering- and audit-oriented** — there is **no** dedicate
 | Architecture | This hub, TRACE-ARCH-SYNC-1, REL/Governed Execution boundaries | Production operation at scale |
 | Unit / gate | Event catalog phase coverage, UAEP tenant propagation, single `STEP_COMPLETED` gate | Full multi-tenant SLO |
 | Integration / runtime | Nexus harness path, unified journal strictness (TRACE-1C) | Universal product-host qualification |
-| Audit | [`audit_slices/UNIFIED_EXECUTION_RUNTIME.md`](../technical/guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md), 2026-06-19 audit closeout | Customer production window |
+| Audit | [`docs/audit_results/AUDIT_PROTOCOL.md`](../technical/docs/audit_results/UNIFIED_EXECUTION_RUNTIME.md), 2026-06-19 audit closeout | Customer production window |
 | Public product proof | **None** for UER domain | Do not infer UER qualification from RAG, Token Optimization, or LKW proofs that merely run on the harness stack |
 
 ## Go deeper
@@ -266,7 +266,7 @@ UER evidence is **engineering- and audit-oriented** — there is **no** dedicate
 | **Nexus flow** | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) |
 | **Reliability / HITL** | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) |
 | **Governance** | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
-| **Audit** | [`audit/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/audit/UNIFIED_EXECUTION_RUNTIME.md) · [audit slice](../technical/guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md) |
+| **Platform audit** | [`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) · [`audit_results/`](../../audit_results/README.md) |
 | **Target architecture** | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §8 |
 
 ### Documentation layout (hub / satellite)
@@ -294,8 +294,7 @@ Intentional progressive disclosure — **not** unresolved drift.
 **Plan (1:1):** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 4–5, 8, 23–24  
-**Audit instruction:** [`audit/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/audit/UNIFIED_EXECUTION_RUNTIME.md)  
-**Last updated:** 2026-08-17 — DOC-3E-R1 hub/satellite layout correction; DOC-3E public front modernization; TRACE identity supersession in §42.1.1
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Last updated:** 2026-08-17 — DOC-3E-R1 hub/satellite layout correction; DOC-3E public front modernization; TRACE identity supersession in §42.1.1
 
 ### Cursor read scope (token budget)
 
@@ -304,7 +303,7 @@ Intentional progressive disclosure — **not** unresolved drift.
 - **Implement / audit default:** UAEP + RuntimeEvent spine (§42.1–§42.7). Extended §42.8+: [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md`](../technical/guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ### Architecture satellites (read on demand)

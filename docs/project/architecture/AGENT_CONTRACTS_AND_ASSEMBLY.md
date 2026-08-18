@@ -387,7 +387,7 @@ Evidence maturity: **E3**
 | Public product proof | **None** — no dedicated ACP entry in [`PROOFS.md`](../proofs/PROOFS.md) | Do not infer from other domain proofs |
 | Production / customer | **None** cited for ACP domain | Not E5 |
 
-Audit slice: [`guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../technical/guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md).
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 
 ## Go deeper
 
@@ -405,7 +405,7 @@ Audit slice: [`guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../technica
 | **Tools** | [`TOOLS.md`](TOOLS.md) |
 | **Memory** | [`MEMORY.md`](MEMORY.md) |
 | **Application hosting** | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) |
-| **Audit** | [`audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
+| **Platform audit** | [`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) · [`audit_results/`](../../audit_results/README.md) |
 
 ---
 
@@ -416,8 +416,7 @@ Audit slice: [`guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../technica
 **Plan (1:1):** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 17–20, 31 (+ ACP cognitive patterns §21)  
-**Audit instruction:** [`audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
-**ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md) · [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) — ACP · `run()` · `on_next_step` · dual observability · distribution boundary  
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md) · [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) — ACP · `run()` · `on_next_step` · dual observability · distribution boundary  
 
 **Distribution (execution-adjacent — do not duplicate here):** [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) — catalog · install · binding · runtime lock · activation (AGENT-PLATFORM-2)
 
@@ -434,7 +433,7 @@ Audit slice: [`guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../technica
 - **Implement / audit default:** §12–§21 (contract, registry, capability, ACP). Extended §22–§39 + checklist §45: [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md). §40+: [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../technical/guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ### Architecture satellites (read on demand)

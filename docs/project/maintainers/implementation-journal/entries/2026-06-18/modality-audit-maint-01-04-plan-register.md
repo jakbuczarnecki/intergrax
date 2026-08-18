@@ -34,7 +34,7 @@ Modality test hygiene backlog is actionable — failing tests must pass in stand
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/MODALITY.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/MODALITY.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/MODALITY.md` |
 | Failing tests | `test_opencv_vision.py`, `test_celery_modality_execution.py` |
 
 ## Verification

@@ -51,7 +51,7 @@ def main() -> int:
         inventory = load_fleet_inventory()
     except FileNotFoundError as exc:
         print(str(exc), file=sys.stderr)
-        print("Run: uv run python scripts/audit/audit_agent_fleet_legacy.py", file=sys.stderr)
+        print("Run: uv run python scripts/maintenance/audit_agent_fleet_legacy.py", file=sys.stderr)
         return 1
 
     if args.agent:

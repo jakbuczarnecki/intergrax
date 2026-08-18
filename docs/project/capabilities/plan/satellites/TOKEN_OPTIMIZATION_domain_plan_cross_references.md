@@ -9,7 +9,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Parent hub:** [`TOKEN_OPTIMIZATION.md`](../TOKEN_OPTIMIZATION.md)  
 **Feature architecture (1:1):** [`../../architecture/TOKEN_OPTIMIZATION.md`](../../architecture/TOKEN_OPTIMIZATION.md)  
 **Architecture satellite:** [`../../architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md`](../../architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md)  
-**Source audit:** [`../../../maintainers/audit/TOKEN_OPTIMIZATION.md`](../../../maintainers/audit/TOKEN_OPTIMIZATION.md)
+**Source audit:** [`../../../../audit_results/TOKEN_OPTIMIZATION.md`](../../../../audit_results/TOKEN_OPTIMIZATION.md)
 **Purpose:** Ensure every domain plan participating in `TOKEN_OPTIMIZATION` has visible cross-references, required TOKEN phase rows, and alignment with the feature coordination map.
 
 ---
@@ -80,7 +80,7 @@ Before declaring `TOKEN_OPTIMIZATION` plan adoption complete, verify:
 - [ ] Domain plan TOKEN rows link back to [`../TOKEN_OPTIMIZATION.md`](../TOKEN_OPTIMIZATION.md) and [`../../architecture/TOKEN_OPTIMIZATION.md`](../../architecture/TOKEN_OPTIMIZATION.md).
 - [ ] Architecture cross-references in domain architecture files match [`../../architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md`](../../architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md).
 - [ ] `docs/project/maintainers/plans/TOKEN_OPTIMIZATION.md` does **not** exist (feature stays multi-layer).
-- [ ] `uv run python scripts/audit/check_docs_domain_pairs.py` remains green.
+- [ ] `uv run python scripts/docs/check_docs_domain_pairs.py` remains green.
 
 ---
 
@@ -110,7 +110,7 @@ In each file, add one concise `Cross-feature — Token Optimization` entry in th
 Add or verify TOKEN-* phase rows cited in this satellite.
 
 Run:
-uv run python scripts/audit/check_docs_domain_pairs.py
+uv run python scripts/docs/check_docs_domain_pairs.py
 
 Commit:
 docs: add token optimization domain plan cross-references

@@ -42,7 +42,7 @@ Adaptive Harness Intelligence layer formally closed for Full Harness LC — L4 c
 
 - `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` — Phase AHI-LC register
 - `docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — Full Harness LC note
-- `docs/project/maintainers/audit/ADAPTIVE_HARNESS_INTELLIGENCE.md` — sync
+- `docs/audit_results/ADAPTIVE_HARNESS_INTELLIGENCE.md` — sync
 
 ## Verification
 

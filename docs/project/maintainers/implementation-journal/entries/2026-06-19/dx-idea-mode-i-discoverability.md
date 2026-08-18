@@ -38,7 +38,7 @@ Operators can find the idea-intake workflow from hub, audit map, AGENTS, and cur
 ## Changed artifacts
 
 - `docs/project/maintainers/bootstrap/idea_audit.txt` — MODE semantics; Step 7 confirmation wording
-- `docs/project/maintainers/audit/IDEA_AUDIT_ORCHESTRATOR.md` — example USER CONFIG; journal guidance; MODE table
+- `docs/audit_results/IDEA_AUDIT_ORCHESTRATOR.md` — example USER CONFIG; journal guidance; MODE table
 - `docs/project/maintainers/bootstrap/README.md` — Mode I excludes init/resume
 - `docs/project/architecture/intergrax_runtime_architecture.md` — hub links to Mode I
 - `docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — Mode I index
@@ -52,7 +52,7 @@ Operators can find the idea-intake workflow from hub, audit map, AGENTS, and cur
 
 ```bash
 python scripts/audit/check_idea_audit_bootstrap.py
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 ```
 
 Result: pass.

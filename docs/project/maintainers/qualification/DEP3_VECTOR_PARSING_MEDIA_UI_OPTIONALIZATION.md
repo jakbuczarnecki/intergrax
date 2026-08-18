@@ -189,7 +189,7 @@ because it calls the current in-memory contract without the required explicit
 Required audit commands:
 
 ```text
-uv run python scripts/audit/validate_langchain_inventory.py
+uv run python scripts/docs/validate_langchain_inventory.py
 uv run python scripts/maintenance/check_langchain_boundary.py
 uv lock --check
 git diff --check

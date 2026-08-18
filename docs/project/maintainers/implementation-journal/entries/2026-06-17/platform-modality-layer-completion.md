@@ -43,7 +43,7 @@ Modality layer formally closed for Full Harness LC — three-plane model, vision
 
 - `docs/project/maintainers/plans/MODALITY.md` — Phase MODALITY-LC register
 - `docs/project/architecture/MODALITY.md` — Full Harness LC maturity note
-- `docs/project/maintainers/audit/MODALITY.md` — Full Harness LC sync
+- `docs/audit_results/MODALITY.md` — Full Harness LC sync
 
 ## Verification
 

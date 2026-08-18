@@ -39,13 +39,13 @@ Closes the documentation gap between CE-2.3 (catalog stubs Done) and full §7.1 
 
 - `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` — CE-PROV-WIRE phase, GAP-CTX-20, CE-DOC.11, sprints B0–B4
 - `docs/project/architecture/CONTEXT_ENGINEERING.md` — §2–§3, §8.3–§8.4, §9.1, §16–§17
-- `docs/project/maintainers/audit/CONTEXT_ENGINEERING.md` — phase status
+- `docs/audit_results/CONTEXT_ENGINEERING.md` — phase status
 - `docs/project/architecture/intergrax_runtime_architecture.md` — hub row
 
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

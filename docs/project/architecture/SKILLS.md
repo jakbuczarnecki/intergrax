@@ -7,9 +7,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Author map:** [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) **Appendix J**
 **Audit layers:** 12  
-**Audit instruction:** [`audit/SKILLS.md`](../maintainers/audit/SKILLS.md)
-
----
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)---
 
 ## Cursor read scope (token budget)
 
@@ -18,7 +16,7 @@
 - **Implement / audit default:** skill selection hook + registry (hub). Catalog: [`satellites/SKILLS_skill_catalog.md`](satellites/SKILLS_skill_catalog.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/SKILLS.md`](../maintainers/plans/SKILLS.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/SKILLS.md`](../technical/guides/audit_slices/SKILLS.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---

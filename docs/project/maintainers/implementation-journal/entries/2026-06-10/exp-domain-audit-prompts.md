@@ -19,7 +19,7 @@ Replace ad-hoc per-iteration audit instructions with reusable, domain-scoped aud
 
 ## Summary
 
-Created `docs/project/maintainers/audit/<DOMAIN>.md` for all 21 domains with copy-paste prompt blocks and `scripts/audit/generate_domain_audit_prompts.py` for regeneration after canon changes. Linked from architecture hub and guides index.
+Created `docs/audit_results/<DOMAIN>.md` for all 21 domains with copy-paste prompt blocks and `scripts/audit/generate_domain_audit_prompts.py` for regeneration after canon changes. Linked from architecture hub and guides index.
 
 ## Project impact
 
@@ -35,13 +35,13 @@ Domain audits become repeatable and comparable — operators paste one prompt pe
 
 ## Changed artifacts
 
-- `docs/project/maintainers/audit/*.md` — 21 domain prompts
+- `docs/audit_results/*.md` — 21 domain prompts
 - `scripts/audit/generate_domain_audit_prompts.py` — generator
 
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 ```
 
 Result: pass.

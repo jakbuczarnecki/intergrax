@@ -326,7 +326,7 @@ Evidence maturity: **E3**
 | Public product proof | **None** for Orchestration domain | Do not infer from LKW or other domain proofs |
 | Production / customer | **None** cited for Orchestration domain | Not E5 |
 
-Audit slice: [`guides/audit_slices/ORCHESTRATION.md`](../technical/guides/audit_slices/ORCHESTRATION.md).
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 
 ## Go deeper
 
@@ -340,7 +340,7 @@ Audit slice: [`guides/audit_slices/ORCHESTRATION.md`](../technical/guides/audit_
 | **Reasoning** | [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) |
 | **Reliability / HITL** | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) |
 | **Application hosting** | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) |
-| **Audit** | [`audit/ORCHESTRATION.md`](../maintainers/audit/ORCHESTRATION.md) · [audit slice](../technical/guides/audit_slices/ORCHESTRATION.md) |
+| **Platform audit** | [`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) · [`audit_results/`](../../audit_results/README.md) |
 
 ---
 
@@ -351,8 +351,7 @@ Audit slice: [`guides/audit_slices/ORCHESTRATION.md`](../technical/guides/audit_
 **Plan (1:1):** [`plan/ORCHESTRATION.md`](../maintainers/plans/ORCHESTRATION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 3, 9 · multi-agent patterns: audit layer 10 (cross-ref satellite §50)  
-**Audit instruction:** [`audit/ORCHESTRATION.md`](../maintainers/audit/ORCHESTRATION.md)  
-**Reasoning / planning canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (audit layer 7)  
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Reasoning / planning canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (audit layer 7)  
 **Elastic capacity:** [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) (infra capacity signals and scaling — **not** graph scheduling, agent topology or orchestration brain)
 
 ### Cursor read scope (token budget)
@@ -362,7 +361,7 @@ Audit slice: [`guides/audit_slices/ORCHESTRATION.md`](../technical/guides/audit_
 - **Implement / audit default:** public front + engineering canon §9–§26 below.
 - **Strategy / CFG / production depth:** [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md) §47+ only.
 - **Plan hub:** [`plan/ORCHESTRATION.md`](../maintainers/plans/ORCHESTRATION.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/ORCHESTRATION.md`](../technical/guides/audit_slices/ORCHESTRATION.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ### Document roles (read order)

@@ -5,8 +5,7 @@
 **Plan (1:1):** [`plan/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md)
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 25 (verify depth)  
-**Audit instruction:** [`audit/CRITIC_VERIFICATION.md`](../maintainers/audit/CRITIC_VERIFICATION.md)
-**Last updated:** 2026-06-20 — **P2-ARCH-08** Verification Safety Boundaries; **CRIT-V-0…7 + CVL-LC-1…4 Done (L3+)**
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Last updated:** 2026-06-20 — **P2-ARCH-08** Verification Safety Boundaries; **CRIT-V-0…7 + CVL-LC-1…4 Done (L3+)**
 ---
 
 ## Cursor read scope (token budget)
@@ -16,7 +15,7 @@
 - **Implement / audit default:** CVL contracts + orchestrator + wiring (§1–§6). Extended §7+: [`satellites/CRITIC_VERIFICATION_extended_depth.md`](satellites/CRITIC_VERIFICATION_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/CRITIC_VERIFICATION.md`](../technical/guides/audit_slices/CRITIC_VERIFICATION.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---

@@ -32,13 +32,13 @@ Tools layer meets Layer Completion Mode exit criteria: L3 catalog + L3 engine, a
 |------|--------|
 | Plan | `docs/project/maintainers/plans/TOOLS.md` §Layer completion final audit |
 | Architecture | `docs/project/architecture/TOOLS.md` §production posture · §gap register |
-| Audit | `docs/project/maintainers/audit/TOOLS.md` |
+| Audit | `docs/audit_results/TOOLS.md` |
 
 ## Changed artifacts
 
 - `docs/project/architecture/TOOLS.md` — maturity L3, gap register Done rows, CI scripts
 - `docs/project/maintainers/plans/TOOLS.md` — final audit section
-- `docs/project/maintainers/audit/TOOLS.md` — regenerated known_gaps
+- `docs/audit_results/TOOLS.md` — regenerated known_gaps
 - `scripts/audit/generate_domain_audit_prompts.py` — TOOLS phase status
 
 ## Verification

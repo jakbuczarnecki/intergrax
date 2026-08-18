@@ -6,6 +6,10 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Related plans:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)
 
+## Cursor read scope (token budget)
+
+Open `## 6` / `### 6.1*` maintenance queues — **P0/P1** rows with Status ≠ Done only; skip closed/complete registers unless re-validating a cited gap.
+
 ---
 
 ## Current status

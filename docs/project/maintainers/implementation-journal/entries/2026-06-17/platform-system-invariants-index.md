@@ -46,7 +46,7 @@ Architects, reviewers, and LLM agents now have one onboarding page for “never 
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

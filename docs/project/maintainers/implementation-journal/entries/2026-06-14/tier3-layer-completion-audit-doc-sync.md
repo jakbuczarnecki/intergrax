@@ -52,7 +52,7 @@ Tier-3 documentation now matches implementation status: **Architecturally Mature
 ```bash
 uv run pytest tests/unit/applications/ -q
 uv run python scripts/gates/check_application_production_gates.py
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

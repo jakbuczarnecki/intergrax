@@ -39,13 +39,13 @@ ORCHESTRATION domain pair closed for Full Harness LC with no blocking P0/P1 in O
 ## Changed artifacts
 
 - `docs/project/maintainers/plans/ORCHESTRATION.md` — AUDIT-IDEAL-3.1 Done; ORCH-5 closed
-- `docs/project/maintainers/audit/ORCHESTRATION.md` — stale ORCH-5.4 gap removed
+- `docs/audit_results/ORCHESTRATION.md` — stale ORCH-5.4 gap removed
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/runtime/architecture/test_faudit_remediation.py::test_task_envelope_round_trip -q
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

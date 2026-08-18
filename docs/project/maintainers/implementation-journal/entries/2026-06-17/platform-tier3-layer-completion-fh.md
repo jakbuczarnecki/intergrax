@@ -41,7 +41,7 @@ Tier-3 Application Environment layer formally closed for Full Harness LC — **2
 
 - `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — Phase TIER3-LC register
 - `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — Full Harness LC note
-- `docs/project/maintainers/audit/TIER3_APPLICATION_ENVIRONMENT.md` — sync
+- `docs/audit_results/TIER3_APPLICATION_ENVIRONMENT.md` — sync
 
 ## Verification
 

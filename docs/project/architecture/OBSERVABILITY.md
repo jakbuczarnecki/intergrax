@@ -5,8 +5,7 @@
 **Plan (1:1):** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md)
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 21, 30  
-**Audit instruction:** [`audit/OBSERVABILITY.md`](../maintainers/audit/OBSERVABILITY.md)
-**Last updated:** 2026-08-17 — **TRACE-BITEMP-3** K-only knowledge reconstruction **Done / Closed** (`5c2eedca75fc32101ea7a35e332c2abb3af24985`) · **TRACE-ASOF-2** logical execution projection **Done / Closed** (`d0cfad1eeecbf3167e3955b93d4a2ef82de09b4f`) · **TRACE-BITEMP-2** canonical revision ordering provider **Planned / In Review** · **TRACE-BITEMP-1** typed bitemporal contracts + tenant ordering scope + transactional provider strategy **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-BITEMP-ARCH-SYNC-R7** acceptance linearization + fenced-out/orphaned durable commit semantics · **TRACE-BITEMP-ARCH-SYNC-R6** unresolved position resolution ownership + lease/fencing + auditable terminalization · **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Last updated:** 2026-08-17 — **TRACE-BITEMP-3** K-only knowledge reconstruction **Done / Closed** (`5c2eedca75fc32101ea7a35e332c2abb3af24985`) · **TRACE-ASOF-2** logical execution projection **Done / Closed** (`d0cfad1eeecbf3167e3955b93d4a2ef82de09b4f`) · **TRACE-BITEMP-2** canonical revision ordering provider **Planned / In Review** · **TRACE-BITEMP-1** typed bitemporal contracts + tenant ordering scope + transactional provider strategy **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-BITEMP-ARCH-SYNC-R7** acceptance linearization + fenced-out/orphaned durable commit semantics · **TRACE-BITEMP-ARCH-SYNC-R6** unresolved position resolution ownership + lease/fencing + auditable terminalization · **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction / knowledge revision ordering · **TRACE-BITEMP-ARCH-SYNC-R1** temporal axes semantic correction · pre-production clean-cut policy
 
 ---
 
@@ -17,7 +16,7 @@
 - **Implement / audit default:** trace spine + HOS + signal planes (§1–§4); execution identity + journal + as-of + bitemporal state (§5–§10). Extended depth: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/OBSERVABILITY.md`](../technical/guides/audit_slices/OBSERVABILITY.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---
@@ -152,7 +151,7 @@ Intergrax observability is **not** limited to traces and metrics. The **Harness 
 
 OECP transforms spine data into eval-grade artifacts: **evidence ledger** records, **eval snapshots**, **metric results**, **regression gates**, and **perturbation suites**. External workbenches (Langfuse, LangSmith, OTLP, Sentry, Phoenix, Braintrust, Datadog, …) are optional sinks — not semantic owners.
 
-**Target architecture:** [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) (OECP sections). **Plan:** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md). **Audit source:** [`audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md`](../maintainers/audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md).
+**Target architecture:** [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) (OECP sections). **Plan:** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md). **Audit source:** [`audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md`](../../audit_results/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md).
 
 ---
 

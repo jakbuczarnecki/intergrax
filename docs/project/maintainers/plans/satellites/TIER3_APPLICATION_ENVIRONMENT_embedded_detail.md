@@ -171,7 +171,7 @@ python scripts/maintenance/check_harness_no_getattr.py
 python scripts/maintenance/check_agent_registry_bypass.py
 
 # Domain pair + journal
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 
 # Full gate (includes agent + platform)

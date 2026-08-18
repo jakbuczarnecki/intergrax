@@ -34,7 +34,7 @@ Tool selection depth and DX backlog traceable without reopening closed TOOL-ENG 
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/TOOLS.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/TOOLS.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/TOOLS.md` |
 
 ## Verification
 

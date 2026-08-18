@@ -259,7 +259,7 @@ Governance, policy, and observability are **composable control-plane layers** �
 | Full control-plane map (profiles, bundles, hooks, EP groups) | [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
 | Operator policy read order | Architecture [§42.11.5](architecture/UNIFIED_EXECUTION_RUNTIME.md#42115-how-to-read-policy-for-a-run-operator) |
 | Policy rule handler plugins (`intergrax.policy_rules`) | [`guides/EXTENSION_AUTHOR_GUIDE.md` §10](guides/EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) |
-| Audit layers (policy §5, observability §21) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
+| Audit layers (policy §5, observability §21) | [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md) |
 | Observability wire-time closeout (§21) | [`guides/AGENT_CREATION_GUIDE.md` Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](plan/OBSERVABILITY.md) |
 | Reliability wire-time closeout (§22) | [`guides/AGENT_CREATION_GUIDE.md` Appendix R](guides/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) · [Phase REL](plan/OBSERVABILITY.md) |
 | Security wire-time closeout (§23) | [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [Phase SEC](plan/UNIFIED_EXECUTION_RUNTIME.md) |

@@ -355,7 +355,7 @@ Warunek review acceptance jest spełniony: clean core i canonical smoke przechod
 ## Evidence commands
 
 ```text
-uv run python scripts/audit/validate_langchain_inventory.py
+uv run python scripts/docs/validate_langchain_inventory.py
 uv run python scripts/maintenance/check_langchain_boundary.py
 uv run python scripts/maintenance/check_dependency_ownership.py
 uv lock --check

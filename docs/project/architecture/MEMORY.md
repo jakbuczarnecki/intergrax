@@ -167,7 +167,7 @@ Backlog rows, open gaps, and phase trackers live in the [Memory plan](../maintai
 Memory evidence is currently **engineering- and qualification-oriented**:
 
 - As-built wiring and contracts documented in this hub (§5–§7) and validated through unit/integration test paths cited in the plan.
-- Audit slice: [`guides/audit_slices/MEMORY.md`](../technical/guides/audit_slices/MEMORY.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - ADRs: [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler / consolidation), [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog).
 
 There is **no** dedicated public proof route in [`docs/project/proofs/`](../proofs/) for the Memory domain at this time. Do not infer production qualification from RAG or unrelated proof artifacts.
@@ -181,7 +181,7 @@ There is **no** dedicated public proof route in [`docs/project/proofs/`](../proo
 | **Implementation plan** | [`maintainers/plans/MEMORY.md`](../maintainers/plans/MEMORY.md) |
 | **ADRs** | [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) · [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) |
 | **Store plugins** | [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) |
-| **Audit** | [`audit/MEMORY.md`](../maintainers/audit/MEMORY.md) · [`audit_slices/MEMORY.md`](../technical/guides/audit_slices/MEMORY.md) |
+| **Platform audit** | [`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) · [`audit_results/`](../../audit_results/README.md) |
 | **Target architecture** | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
 
 ---
@@ -193,8 +193,7 @@ There is **no** dedicated public proof route in [`docs/project/proofs/`](../proo
 **Plan (1:1):** [`plan/MEMORY.md`](../maintainers/plans/MEMORY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layer:** 15 (Memory)  
-**Audit instruction:** [`audit/MEMORY.md`](../maintainers/audit/MEMORY.md)  
-**Context assembly (Layer C):** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../maintainers/plans/CONTEXT_ENGINEERING.md)  
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Context assembly (Layer C):** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../maintainers/plans/CONTEXT_ENGINEERING.md)  
 **Unified lifecycle:** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) · [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md) · [`ADR-UCL-001`](../technical/adr/entries/2026-08-01/ADR-UCL-001.md) — `ConversationLedger`, `SessionContextRevision`, `OptimizationArtifactRepository`, `InMemoryOptimizationArtifactRepository` (CTX-UCL-2 reference), single-flight `ArtifactCreationReservation`, CAS activation; separates retention from model-facing compaction; reuse-before-create  
 **Related:** [`architecture/RAG.md`](RAG.md) — Tier-0 retrieval engine; this doc covers **memory stores, lifecycle**, and the **Knowledge vs LTM** boundary.  
 **Third-party extension / developer guide:** [`guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) (factory protocols, bootstrap semantics, wiring) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §9 (routing)  
@@ -208,7 +207,7 @@ There is **no** dedicated public proof route in [`docs/project/proofs/`](../proo
 - **Implement / audit default:** LTM store contracts + scope model (§1–§7). Extended §8+: [`satellites/MEMORY_extended_depth.md`](satellites/MEMORY_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/MEMORY.md`](../maintainers/plans/MEMORY.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/MEMORY.md`](../technical/guides/audit_slices/MEMORY.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ### Architecture satellites (read on demand)

@@ -44,13 +44,13 @@ Harness operators and implementers have a single canon for scaling tool selectio
 - `docs/project/maintainers/plans/TOOLS.md` — TOOL-ENG-DOC.4 Done; TOOL-ENG-13/14/15 Planned; queue §6.1e
 - `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` — §15 diagram + L6/L6b stages
 - `docs/project/architecture/REASONING_AND_COGNITION.md` — §13 tool_selection cross-ref
-- `docs/project/maintainers/audit/TOOLS.md` — open gaps + audit dimension 19
+- `docs/audit_results/TOOLS.md` — open gaps + audit dimension 19
 - `docs/project/technical/guides/AGENT_CREATION_GUIDE.md` — Appendix J selection mode surface
 
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

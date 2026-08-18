@@ -231,7 +231,7 @@ Catalog: [`docs/project/proofs/PROOFS.md`](../proofs/PROOFS.md) · LKW detail: [
 | **Extension authoring** | [`RAG_EXTENSION_GUIDE.md`](../technical/guides/RAG_EXTENSION_GUIDE.md) |
 | **KnowledgeDocument ABI** | [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) |
 | **Qualification artifacts** | [`qualification/RAG_PRODUCTION_HANDOFF.md`](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md) and linked LIVE/ENT records |
-| **Audit slice** | [`guides/audit_slices/RAG.md`](../technical/guides/audit_slices/RAG.md) |
+| **Platform audit** | [`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) |
 | **Related domains** | [`MEMORY.md`](MEMORY.md) · [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`INTEGRATIONS.md`](INTEGRATIONS.md) |
 | **Public proofs** | [`proofs/PROOFS.md`](../proofs/PROOFS.md) |
 
@@ -270,7 +270,7 @@ The accepted RAG-PROD-13 result and the closed RAG-PROD-14 production handoff ar
 | **RELATED OWNER** | `../capabilities/architecture/LANGCHAIN_INDEPENDENCE.md` | LangChain boundary and optionality |
 | **RELATED PLAN** | `../capabilities/plan/LANGCHAIN_INDEPENDENCE.md` | LangChain migration history |
 | **CATALOG OWNER** | [`INTEGRATIONS.md`](INTEGRATIONS.md) | Provider catalog taxonomy, not RAG qualification |
-| **NAVIGATION ONLY** | [`../technical/guides/audit_slices/RAG.md`](../technical/guides/audit_slices/RAG.md) | Read-scope and audit entry point |
+| **NAVIGATION ONLY** | [`../technical/docs/audit_results/RAG.md`](../technical/docs/audit_results/RAG.md) | Read-scope and audit entry point |
 
 Older current-state passages in the architecture hub and pipeline satellite were superseded by RAG-FINAL-10A–10D and are not retained as competing truth. Historical evidence remains in the plan and audit-history documents.
 
@@ -281,7 +281,7 @@ Older current-state passages in the architecture hub and pipeline satellite were
 - **Implement / audit default:** human-facing front + engineering canon §1–§7. Pipeline detail: [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md).
 - **Use** `Read` with offset/limit per § below.
 - **Plan hub:** [`plan/RAG.md`](../maintainers/plans/RAG.md) (scoped status § only).
-- **Audit slice:** [`guides/audit_slices/RAG.md`](../technical/guides/audit_slices/RAG.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** satellite per session unless RESUME cites more.
 
 ---

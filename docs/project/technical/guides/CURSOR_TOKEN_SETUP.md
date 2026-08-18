@@ -51,7 +51,7 @@ HEP implement steps: [`docs/project/maintainers/bootstrap/hep_step.txt`](../../m
 |-----------|------|
 | I1 + mandatory preflight in `intergrax-token-budget.mdc` | ~180 |
 
-**Mandatory preflight** (before any implementation step): state read scope, edit scope, tests. If scope exceeds operator-listed files → **STOP** and ask. Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full hubs, `docs/project/maintainers/audit`, or domain guides unless explicitly requested.
+**Mandatory preflight** (before any implementation step): state read scope, edit scope, tests. If scope exceeds operator-listed files → **STOP** and ask. Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full hubs, `docs/audit_results/AUDIT_PROTOCOL.md`, or domain guides unless explicitly requested.
 
 **Default:** `offset`/`limit` or `grep` before full file; max 2 plan files on docs-only steps; no parallel full hub reads; no subagents unless operator asks.
 
@@ -96,7 +96,7 @@ Satellites are in `.cursorignore` — load with explicit `Read` or `@` when read
 uv run python scripts/docs/split_domain_architecture.py [DOMAIN ...]
 uv run python scripts/maintenance/check_arch_hub_size.py
 uv run python scripts/docs/verify_arch_split_content.py
-uv run python scripts/audit/generate_architecture_read_scopes.py
+uv run python scripts/docs/generate_architecture_read_scopes.py
 ```
 
 ---
@@ -110,7 +110,7 @@ Satellites (`docs/project/maintainers/plans/satellites`) are in `.cursorignore` 
 ```bash
 uv run python scripts/docs/split_domain_plan.py [DOMAIN ...]
 uv run python scripts/maintenance/check_plan_hub_size.py
-uv run python scripts/audit/generate_plan_read_scopes.py
+uv run python scripts/docs/generate_plan_read_scopes.py
 ```
 
 Plan hubs include **Cursor read scope (token budget)** blocks (~150 tok) — read §6 / open queues only; same explicit-load rule as F4 arch read-scopes.
@@ -121,9 +121,11 @@ Plan hubs include **Cursor read scope (token budget)** blocks (~150 tok) — rea
 
 Explicit `@` / `Read` only (reduces accidental index/search noise):
 
-**Audit control prompts:**
+**Platform audit (canonical):**
 
-- `docs/project/maintainers/audit` — generated domain/feature audit prompts; load with explicit `@docs/project/maintainers/audit/<DOMAIN>.md` or `@docs/project/maintainers/audit/<FEATURE>.md` only, never as background implementation context
+- `docs/audit_results/AUDIT_PROTOCOL.md` — load only when operator requests a platform audit
+- `docs/audit_results/AUDIT_REMEDIATION_PROTOCOL.md` — load only when remediating accepted findings
+- `docs/audit_results/` campaign directories — load only when operator cites a campaign path
 
 **Satellite directories (F4 / G1 / multi-layer features):**
 
@@ -136,10 +138,10 @@ Explicit `@` / `Read` only (reduces accidental index/search noise):
 
 - `docs/project/technical/guides/AGENT_CREATION_GUIDE.md`
 - `docs/project/technical/guides/APPLICATION_CREATION_GUIDE.md`
-- `docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`
 - `docs/project/technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`
-- `docs/project/technical/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`
-- `docs/project/technical/guides/SYSTEM_INVARIANTS.md` — grep `SYS-INV-*` IDs from audit slice; `@` full file only when cited
+- `docs/audit_results/AUDIT_PROTOCOL.md`
+- `docs/audit_results/AUDIT_REMEDIATION_PROTOCOL.md`
+- `docs/project/technical/guides/SYSTEM_INVARIANTS.md` — grep `SYS-INV-*` IDs when cited; `@` full file only when cited
 - `docs/project/technical/guides/MATURITY_TAXONOMY.md`
 - `docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`
 - `docs/project/architecture/intergrax_runtime_architecture.md` — domain pair index; use bootstrap domain list or `@` when needed
@@ -147,21 +149,16 @@ Explicit `@` / `Read` only (reduces accidental index/search noise):
 
 ---
 
-## H3 — Slim domain audit prompts
+## H3 — Platform audit protocol
 
-`docs/project/maintainers/audit/<DOMAIN>.md` prompt bodies ≤2,400 tok — slice-first §0, no bulk IDEAL/AUDIT_MAP reads.
-
-```bash
-uv run python scripts/audit/generate_domain_audit_prompts.py
-uv run python scripts/audit/check_audit_token_discipline.py
-```
+Follow [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md) for adversarial layer audits. Persist results under `docs/audit_results/YYYY-MM-DD/` per campaign model in [`docs/audit_results/README.md`](../../../audit_results/README.md).
 
 ---
 
 ## E2 — Architecture read scopes (all domains)
 
 ```bash
-uv run python scripts/audit/generate_architecture_read_scopes.py
+uv run python scripts/docs/generate_architecture_read_scopes.py
 ```
 
 ---
@@ -169,24 +166,14 @@ uv run python scripts/audit/generate_architecture_read_scopes.py
 ## G1-E2 — Plan read scopes (all domains)
 
 ```bash
-uv run python scripts/audit/generate_plan_read_scopes.py
+uv run python scripts/docs/generate_plan_read_scopes.py
 ```
 
 Plan hub read-scope blocks mirror architecture E2 — §6 / open P0/P1 queues only; at most one `plan/satellites` satellite per session.
 
 ---
 
-## H1 — Audit token discipline CI
-
-```bash
-uv run python scripts/audit/check_audit_token_discipline.py
-```
-
-Domain audit prompts must reference `audit_slices` + `Context budget`; bootstraps must include `READ_BUDGET`.
-
----
-
-## F5-B — Symbol index + CODE_ENTRY in audit slices
+## F5-B — Symbol index
 
 [`docs/project/technical/guides/SYMBOL_INDEX.md`](SYMBOL_INDEX.md) — grep before repo-wide semantic search.
 
@@ -196,23 +183,10 @@ uv run python scripts/docs/generate_symbol_index.py
 
 ---
 
-## F7 — Generator freshness CI
+## Token setup CI
 
 ```bash
-uv run python scripts/audit/check_token_generator_freshness.py
-```
-
-Regenerates audit slices, arch read scopes, audit prompts; fails if outputs drift.
-
----
-
-## Audit compact context
-
-[`audit_slices/<DOMAIN>.md`](audit_slices) (~300 tok) instead of full IDEAL + AUDIT_MAP.
-
-```bash
-uv run python scripts/audit/generate_audit_read_slices.py
 uv run python scripts/ci/check_cursor_token_setup.py
 ```
 
-`check_cursor_token_setup.py` also rejects broad Cursor access wording in audit/control prompts.
+`check_cursor_token_setup.py` validates AGENTS stub split, bootstrap read budgets, plan read-scope blocks, and rejects broad Cursor access wording in control prompts.

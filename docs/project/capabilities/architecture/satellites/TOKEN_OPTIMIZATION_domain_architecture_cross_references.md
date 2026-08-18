@@ -9,7 +9,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Parent hub:** [`TOKEN_OPTIMIZATION.md`](../TOKEN_OPTIMIZATION.md)  
 **Feature plan (1:1):** [`../../plan/TOKEN_OPTIMIZATION.md`](../../plan/TOKEN_OPTIMIZATION.md)  
 **Plan satellite:** [`../../plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md`](../../plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md)  
-**Source audit:** [`../../../maintainers/audit/TOKEN_OPTIMIZATION.md`](../../../maintainers/audit/TOKEN_OPTIMIZATION.md)
+**Source audit:** [`../../../../audit_results/TOKEN_OPTIMIZATION.md`](../../../../audit_results/TOKEN_OPTIMIZATION.md)
 **Purpose:** Ensure every architecture domain participating in the `TOKEN_OPTIMIZATION` multi-layer feature has a visible cross-reference and a precise ownership statement.
 
 ---
@@ -76,7 +76,7 @@ Before declaring `TOKEN_OPTIMIZATION` architecture adoption complete, verify:
 - [ ] `docs/project/architecture/LLM_ADAPTERS.md` contains the cross-feature reference.
 - [ ] Conditional references are added before their TOKEN slices begin.
 - [ ] [`../../plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md`](../../plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md) domain plan row checklist remains aligned with domain plan rows.
-- [ ] `uv run python scripts/audit/check_docs_domain_pairs.py` remains green.
+- [ ] `uv run python scripts/docs/check_docs_domain_pairs.py` remains green.
 
 ---
 
@@ -120,7 +120,7 @@ In each file, add one concise `Cross-feature — Token Optimization` entry in th
 Use the domain-specific ownership sentence from this checklist.
 
 Run:
-uv run python scripts/audit/check_docs_domain_pairs.py
+uv run python scripts/docs/check_docs_domain_pairs.py
 
 Commit:
 docs: add token optimization architecture cross-references

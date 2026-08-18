@@ -17,7 +17,7 @@ Before reading or editing in an implementation step, state:
 
 If more files are needed than the operator listed → **STOP** and ask. Do not read additional files silently.
 
-Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full plan/arch hubs, domain guides, or `docs/project/maintainers/audit/` control prompts unless explicitly requested.
+Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full plan/arch hubs, domain guides, or `docs/audit_results/` control prompts unless explicitly requested.
 
 **CI/test hotfixes:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new chat**. `AGENT_INSTRUCTIONS.md` is **forbidden** unless operator writes `ALLOW_FULL_AGENT_INSTRUCTIONS`. Words like "verification", "GitHub", or "audit" alone do **not** authorize loading it.
 
@@ -30,7 +30,7 @@ Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full plan/arch h
 - **Expand context** (full hub, subagent, >3 source files outside operator read scope, repo-wide semantic search): **STOP** — one short question; wait for OK.
 - **LKW Tier-2 tasks:** read `agents/local_indexer/steps/index_job.py` (or sibling LKW step modules) for `invoke_tool` + allowlist — **do not** open `uaep.py`, `boundary_demo`, or Nexus loop sources for pattern discovery.
 - **Expansion budget:** max **3 files** outside operator **read scope** per task; then STOP and ask.
-- Grep + path filter before semantic search. Respect `.cursorignore`. No `docs/project/maintainers/audit/` or `audit_results/` unless explicitly `@`-referenced or `RESUME:` cites it.
+- Grep + path filter before semantic search. Respect `.cursorignore`. No `docs/audit_results/` or `audit_results/` unless explicitly `@`-referenced or `RESUME:` cites it.
 - **Doc topology:** domain-layer `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md`; multi-layer feature `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` — [`docs/project/capabilities/README.md`](../../docs/project/capabilities/README.md).
 
 ## O1 — output (reply)

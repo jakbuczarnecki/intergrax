@@ -42,7 +42,7 @@ LLM adapter layer formally closed for Full Harness LC — typed envelope, ModelC
 
 ## Changed artifacts
 
-- `docs/project/maintainers/audit/LLM_ADAPTERS.md` — known gaps sync
+- `docs/audit_results/LLM_ADAPTERS.md` — known gaps sync
 - `docs/project/architecture/LLM_ADAPTERS.md` — Full Harness LC maturity note
 - `docs/project/maintainers/plans/LLM_ADAPTERS.md` — Phase LLM-LC register, AUDIT-IDEAL header
 

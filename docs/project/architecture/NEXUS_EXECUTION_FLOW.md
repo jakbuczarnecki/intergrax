@@ -280,7 +280,7 @@ Authoring: [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRA
 | **Implementation plan** | [`maintainers/plans/NEXUS_EXECUTION_FLOW.md`](../maintainers/plans/NEXUS_EXECUTION_FLOW.md) |
 | **Orchestration config** | [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56 |
 | **UER / REL / Governance** | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) · [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
-| **Audit** | [`audit/NEXUS_EXECUTION_FLOW.md`](../maintainers/audit/NEXUS_EXECUTION_FLOW.md) · [`audit_slices/NEXUS_EXECUTION_FLOW.md`](../technical/guides/audit_slices/NEXUS_EXECUTION_FLOW.md) |
+| **Platform audit** | [`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) · [`audit_results/`](../../audit_results/README.md) |
 
 ### Documentation layout (hub / satellite)
 
@@ -301,8 +301,7 @@ Intentional progressive disclosure — **not** unresolved drift.
 **Plan (1:1):** [`plan/NEXUS_EXECUTION_FLOW.md`](../maintainers/plans/NEXUS_EXECUTION_FLOW.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 8, 9, 10 (flow narrative) · cognition depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §7–§10  
-**Audit instruction:** [`audit/NEXUS_EXECUTION_FLOW.md`](../maintainers/audit/NEXUS_EXECUTION_FLOW.md)  
-**Last updated:** 2026-08-17 — DOC-3F-R1 hub/satellite topology correction; DOC-3F public front preserved
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Last updated:** 2026-08-17 — DOC-3F-R1 hub/satellite topology correction; DOC-3F public front preserved
 
 ### Cursor read scope (token budget)
 
@@ -311,7 +310,7 @@ Intentional progressive disclosure — **not** unresolved drift.
 - **Implement / audit default:** §1–§8 flow spine (purpose → classification → planning). Extended §9+: [`satellites/NEXUS_EXECUTION_FLOW_extended_depth.md`](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/NEXUS_EXECUTION_FLOW.md`](../maintainers/plans/NEXUS_EXECUTION_FLOW.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/NEXUS_EXECUTION_FLOW.md`](../technical/guides/audit_slices/NEXUS_EXECUTION_FLOW.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ### Architecture satellites (read on demand)

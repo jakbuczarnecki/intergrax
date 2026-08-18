@@ -35,13 +35,13 @@ Full Tier-2 roster (excluding lab mock fixtures) runs typed cognitive hooks with
 ## Changed artifacts
 
 - `agents/organization_worker`, `intergrax_assistant`, `problem_radar`, `vendor_discovery`
-- Contract files + `scripts/audit/audit_agent_fleet_legacy.py` migrated set
+- Contract files + `scripts/maintenance/audit_agent_fleet_legacy.py` migrated set
 - `tests/unit/agents/fleet/test_remaining_migration.py`
 - `tests/unit/agents/fleet/test_host_binding_mig7.py`
 
 ## Verification
 
-- `uv run python scripts/audit/audit_agent_fleet_legacy.py`
+- `uv run python scripts/maintenance/audit_agent_fleet_legacy.py`
 - `uv run python scripts/maintenance/check_agent_fleet_migration.py`
 - `uv run pytest tests/unit/agents/fleet/ -q`
 

@@ -61,7 +61,7 @@ Provider runtime matrix:
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) read-scope block only.
-- **Audit slice:** [`guides/audit_slices/INTEGRATIONS.md`](../../technical/guides/audit_slices/INTEGRATIONS.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---

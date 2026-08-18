@@ -48,7 +48,7 @@ Tier-3 authors get a canonical grouping model (HostMeta, SecurityEnvelope, Capab
 - `docs/project/technical/guides/APPLICATION_CREATION_GUIDE.md` — §1.1 bundles
 - `docs/project/technical/guides/AGENT_CREATION_GUIDE.md` — Appendix H.2 map
 - `docs/project/technical/guides/HARNESS_ENVIRONMENT.md` — control plane cross-ref
-- `docs/project/maintainers/audit/TIER3_APPLICATION_ENVIRONMENT.md` — audit vocabulary + gaps
+- `docs/audit_results/TIER3_APPLICATION_ENVIRONMENT.md` — audit vocabulary + gaps
 - `docs/project/technical/guides/GOVERNANCE_CONSISTENCY_AUDIT.md` — registry vs profile note
 - `docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layer 28 gap
 - `docs/project/technical/guides/ARCHITECTURE_DEBT_REGISTER.md` — P1-ARCH-01
@@ -60,7 +60,7 @@ Tier-3 authors get a canonical grouping model (HostMeta, SecurityEnvelope, Capab
 
 ```bash
 python scripts/maintenance/check_harness_adr.py
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_implementation_journal.py
 ```
 

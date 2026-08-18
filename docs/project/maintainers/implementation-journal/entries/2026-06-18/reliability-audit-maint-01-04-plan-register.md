@@ -33,7 +33,7 @@ Reliability depth backlog traceable with explicit cross-refs to FLOW, ORCH, and 
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md` |
 
 ## Verification
 

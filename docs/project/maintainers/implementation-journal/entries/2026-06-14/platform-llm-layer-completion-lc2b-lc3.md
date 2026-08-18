@@ -62,14 +62,14 @@ LLM layer reaches production-ready routing and token accounting consistency; ACP
 - `scripts/maintenance/check_context_preflight_uses_adapter_tokens.py`
 - `docs/project/architecture/LLM_ADAPTERS.md`
 - `docs/project/maintainers/plans/LLM_ADAPTERS.md`
-- `docs/project/maintainers/audit/LLM_ADAPTERS.md`
+- `docs/audit_results/LLM_ADAPTERS.md`
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/llm_adapters/test_failover_adapter.py tests/unit/llm_adapters/test_model_router.py tests/unit/llm_adapters/test_context_window_wiring.py tests/unit/agents/authoring/test_llm_router.py -q
 python scripts/maintenance/check_context_preflight_uses_adapter_tokens.py
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 ```
 
 ## Risks and follow-ups

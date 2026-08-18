@@ -5,8 +5,7 @@
 **Plan (1:1):** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md)
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §26
 **Audit layers:** 3, 28
-**Audit instruction:** [`audit/TIER3_APPLICATION_ENVIRONMENT.md`](../maintainers/audit/TIER3_APPLICATION_ENVIRONMENT.md)
-**Agent cooperation:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §30 · §35–§39 · [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix H · AC
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Agent cooperation:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §30 · §35–§39 · [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix H · AC
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates H-APP + APP-CON/EVOL/OPS)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — Tier-3 applications are platform adopters (`PLATFORM-INV-004`). Reusable infrastructure discovered during application development must be promoted to the owning platform domain before application implementation continues (`PLATFORM-INV-001`, `PLATFORM-INV-002`).
 
@@ -19,7 +18,7 @@
 - **Implement / audit default:** §20–§25 host profile + manifest wiring. Extended §26–§39: [`satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md). §40+: [`satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`](../technical/guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---

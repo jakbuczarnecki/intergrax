@@ -1,12 +1,11 @@
-# Adaptive Harness Intelligence
+﻿# Adaptive Harness Intelligence
 
 **Status:** Canonical architecture (domain pair 1:1)  
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Plan (1:1):** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md)
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** L4 AHI  
-**Audit instruction:** [`audit/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/audit/ADAPTIVE_HARNESS_INTELLIGENCE.md)
-**Last updated:** 2026-06-22 — **AHI-ADAS-00** ADAS canonical section + ADR-ADAPT-002; **P2-ARCH-10** AHI governance boundary; **Full Harness LC** (re-validates W-ADAPT); **70/70 Done**
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Last updated:** 2026-06-22 — **AHI-ADAS-00** ADAS canonical section + ADR-ADAPT-002; **P2-ARCH-10** AHI governance boundary; **Full Harness LC** (re-validates W-ADAPT); **70/70 Done**
 
 ### L4 Frozen cross-domain index (AHI-MAINT-04)
 
@@ -27,7 +26,7 @@
 - **Implement / audit default:** L4 adaptive loop contracts (§1–§7). Extended §8+: [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md). ADAS sub-capability: [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) (on demand).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../technical/guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---
@@ -242,7 +241,7 @@ AHI addresses three related but distinct problems:
 
 ### 5.1 Maturity model recap
 
-From [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md):
+From [`docs/audit_results/AUDIT_PROTOCOL.md`](guides/docs/audit_results/AUDIT_PROTOCOL.md):
 
 | Level | Meaning |
 |-------|---------|

@@ -243,7 +243,7 @@ Context Engineering evidence is **engineering- and qualification-oriented** — 
 | Public product proof | **None** for CE domain | Do not infer CE qualification from RAG/LKW proofs that merely consume assembled context |
 | Production / customer | **None** cited for CE domain | Not E5 |
 
-Audit slice: [`guides/audit_slices/CONTEXT_ENGINEERING.md`](../technical/guides/audit_slices/CONTEXT_ENGINEERING.md).
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 
 ## Go deeper
 
@@ -254,7 +254,7 @@ Audit slice: [`guides/audit_slices/CONTEXT_ENGINEERING.md`](../technical/guides/
 | **Implementation plan** | [`maintainers/plans/CONTEXT_ENGINEERING.md`](../maintainers/plans/CONTEXT_ENGINEERING.md) |
 | **ADR** | [ADR-CTX-001](../technical/adr/entries/2026-06-12/ADR-CTX-001.md) · [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics) |
 | **Plugin authoring** | [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md) |
-| **Audit** | [`audit/CONTEXT_ENGINEERING.md`](../maintainers/audit/CONTEXT_ENGINEERING.md) · [audit slice](../technical/guides/audit_slices/CONTEXT_ENGINEERING.md) |
+| **Platform audit** | [`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) · [`audit_results/`](../../audit_results/README.md) |
 | **Related domains** | [`MEMORY.md`](MEMORY.md) · [`RAG.md`](RAG.md) · [`UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) |
 | **Target architecture** | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §16 |
 
@@ -267,8 +267,7 @@ Audit slice: [`guides/audit_slices/CONTEXT_ENGINEERING.md`](../technical/guides/
 **Plan (1:1):** [`plan/CONTEXT_ENGINEERING.md`](../maintainers/plans/CONTEXT_ENGINEERING.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §16  
 **Audit layer:** 16 (Context Engineering)  
-**Audit instruction:** [`audit/CONTEXT_ENGINEERING.md`](../maintainers/audit/CONTEXT_ENGINEERING.md)  
-**ADR:** [`ADR-CTX-001`](../technical/adr/entries/2026-06-12/ADR-CTX-001.md) · [`ADR-MEM-001`](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics)  
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**ADR:** [`ADR-CTX-001`](../technical/adr/entries/2026-06-12/ADR-CTX-001.md) · [`ADR-MEM-001`](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics)  
 **Related:** [`architecture/MEMORY.md`](MEMORY.md) (stores + lifecycle) · [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) (single budget authority + lifecycle) · [`architecture/RAG.md`](RAG.md) (retrieval) · [`architecture/TOOLS.md`](TOOLS.md) (tool outputs) · [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (turn narrative) · [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) (event spine) · [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix L  
 **Third-party extension / developer guide:** [`guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md) (implementation workflow) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) (catalog routing)  
 **Implementation (as-built):** `intergrax/context` · `intergrax/runtime/nexus/context` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`  
@@ -281,7 +280,7 @@ Audit slice: [`guides/audit_slices/CONTEXT_ENGINEERING.md`](../technical/guides/
 - **Implement / audit default:** context assembly engine + scoring (§1–§7). Extended §8+: [`satellites/CONTEXT_ENGINEERING_extended_depth.md`](satellites/CONTEXT_ENGINEERING_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/CONTEXT_ENGINEERING.md`](../maintainers/plans/CONTEXT_ENGINEERING.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/CONTEXT_ENGINEERING.md`](../technical/guides/audit_slices/CONTEXT_ENGINEERING.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ### Architecture satellites (read on demand)

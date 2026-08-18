@@ -5,8 +5,7 @@
 **Plan (1:1):** [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 25–27, 30  
-**Audit instruction:** [`audit/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../maintainers/audit/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)
-**Last updated:** 2026-06-20 — **P2-ARCH-13** Experimentation/DX architecture vs implementation rules boundary
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Last updated:** 2026-06-20 — **P2-ARCH-13** Experimentation/DX architecture vs implementation rules boundary
 
 ---
 
@@ -17,7 +16,7 @@
 - **Implement / audit default:** §39–§41 DX + minimal runtime flow. Extended §42+: [`satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md`](satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md). §43+: [`satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md`](satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../technical/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---

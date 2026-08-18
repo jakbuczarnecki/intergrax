@@ -12,7 +12,6 @@ if str(_DOCS_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_DOCS_SCRIPTS))
 
 import re
-import runpy
 from pathlib import Path
 
 from plan_hub_lib import (
@@ -68,26 +67,11 @@ EXTRA_SCOPES: dict[str, str] = {
 
 
 def _audit_slice_plan_hints() -> dict[str, str]:
-    gen = runpy.run_path(str(ROOT / "scripts" / "generate_audit_read_slices.py"))
-    slices: dict[str, dict[str, str]] = gen["DOMAIN_SLICES"]
-    gen_prompts = runpy.run_path(str(ROOT / "scripts" / "generate_domain_audit_prompts.py"))
-    for entry in gen_prompts["DOMAINS"]:
-        did = entry["id"]
-        if did in slices:
-            continue
-        slices[did] = {
-            "plan_hub": f"Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand",
-        }
-    return {domain: spec["plan_hub"] for domain, spec in slices.items()}
+    return {}
 
 
 def _domain_plan_read_scope() -> dict[str, str]:
-    gen = runpy.run_path(str(ROOT / "scripts" / "generate_domain_audit_prompts.py"))
-    out: dict[str, str] = {}
-    for entry in gen["DOMAINS"]:
-        if "plan_read_scope" in entry:
-            out[entry["id"]] = entry["plan_read_scope"]
-    return out
+    return {}
 
 
 def _pf_satellites_from_disk() -> list[str]:

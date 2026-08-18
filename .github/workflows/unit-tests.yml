@@ -216,7 +216,7 @@ jobs:
           && uv run --frozen python scripts/maintenance/check_langchain_boundary.py
           && uv run --frozen python scripts/maintenance/check_knowledge_document_conformance.py
           && uv run --frozen python scripts/maintenance/check_agents_no_tier3_imports.py
-          && uv run --frozen python scripts/audit/check_docs_domain_pairs.py
+          && uv run --frozen python scripts/docs/check_docs_domain_pairs.py
           && uv run --frozen python scripts/maintenance/check_scaffold_harness_alignment.py
           && uv run --frozen python scripts/maintenance/check_plugin_catalog.py
           && uv run --frozen python scripts/maintenance/check_legacy_tool_plan_booleans.py

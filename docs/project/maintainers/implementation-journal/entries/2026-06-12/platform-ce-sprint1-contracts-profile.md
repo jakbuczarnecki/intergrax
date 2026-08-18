@@ -54,7 +54,7 @@ Harness now has a Tier-0 home for the CE plugin catalog and typed assembly contr
 ```bash
 uv run pytest tests/unit/context/ tests/unit/applications/test_context_runtime_bridge.py -m gate -q
 python scripts/maintenance/check_context_tier0_import_boundary.py
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 ```
 
 Result: 16 passed; boundary script OK; domain pairs OK.

@@ -44,7 +44,7 @@ Memory layer formally closed for Full Harness LC — LTM vector recall, episodic
 
 - `docs/project/maintainers/plans/MEMORY.md` — Phase MEMORY-LC register
 - `docs/project/architecture/MEMORY.md` — Full Harness LC maturity note
-- `docs/project/maintainers/audit/MEMORY.md` — Full Harness LC sync
+- `docs/audit_results/MEMORY.md` — Full Harness LC sync
 
 ## Verification
 

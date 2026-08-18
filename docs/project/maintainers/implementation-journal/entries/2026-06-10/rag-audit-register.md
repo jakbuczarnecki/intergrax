@@ -42,7 +42,7 @@ RAG remediation is now queue-driven with 100% gap coverage — audits, plan rows
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 ```
 
 Result: pass — RAG pair consistent.

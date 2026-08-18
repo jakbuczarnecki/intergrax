@@ -1,4 +1,4 @@
-# Platform Foundation — Implementation Plan
+﻿# Platform Foundation — Implementation Plan
 
 **Architecture (1:1):** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -17,7 +17,7 @@
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) read-scope block only.
-- **Audit slice:** [`guides/audit_slices/PLATFORM_FOUNDATION.md`](../../technical/guides/audit_slices/PLATFORM_FOUNDATION.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
@@ -107,7 +107,7 @@ Verify (every harness PR):
 | 4 | **PF-MAINT-LEG-01** | Code | P3 | **Done** | Remove `use_rag`/`use_websearch` from LLM planner schema (`EnginePlan`) | `check_legacy_tool_plan_booleans.py` green; `tool_ids` only |
 | 5 | **PF-MAINT-DOC-03** | Docs | P3 | **Done** | Sync §0.5 regression gate counter with live `pytest -m gate` snapshot | Plan §0.5 shows **1498 passed** (2026-06-19) |
 | 6 | **PF-MAINT-LEG-02** | Code | P3 | **Done** | Remove legacy `use_rag`/`use_websearch` shims from `ToolInvocationPlan` (`tool_runtime.py`) | Zero DeprecationWarning in gate; `tool_ids` only at runtime bridge |
-| 7 | **PF-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19` | `PLATFORM_FOUNDATION.md` + `progress.json` present |
+| 7 | **PF-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/legacy/2026-06-19` | `PLATFORM_FOUNDATION.md` + `legacy campaign README` present |
 
 **Suggested PR order:** none — §6.1av queue closed (2026-06-19).
 

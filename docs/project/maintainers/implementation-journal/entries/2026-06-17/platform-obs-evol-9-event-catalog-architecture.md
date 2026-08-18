@@ -55,7 +55,7 @@ External developers will extend observability via `emit_domain_signal` and paylo
 ## Verification
 
 ```bash
-python scripts/audit/check_docs_domain_pairs.py
+python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_harness_adr.py
 python scripts/audit/generate_domain_audit_prompts.py
 python scripts/maintenance/check_implementation_journal.py

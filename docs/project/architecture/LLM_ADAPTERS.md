@@ -281,7 +281,7 @@ Evidence maturity: **E3**
 | Public proof | **Bounded** — `LKW-MODEL-RUNTIME` in [`PROOFS.md`](../proofs/PROOFS.md) (Ollama/vLLM portability) | Dedicated LLM-adapters-only public proof route — **none** |
 | Production / customer | **None** cited for full domain qualification | Not E5 |
 
-Audit slice: [`guides/audit_slices/LLM_ADAPTERS.md`](../technical/guides/audit_slices/LLM_ADAPTERS.md).
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 
 ## Go deeper
 
@@ -307,9 +307,8 @@ Audit slice: [`guides/audit_slices/LLM_ADAPTERS.md`](../technical/guides/audit_s
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/LLM_ADAPTERS.md`](../maintainers/plans/LLM_ADAPTERS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5  
-**Audit layers:** 6 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md)  
-**Audit instruction:** [`audit/LLM_ADAPTERS.md`](../maintainers/audit/LLM_ADAPTERS.md)  
-**Developer guide:** [`intergrax/llm_adapters/USAGE.md`](../../../intergrax/llm_adapters/USAGE.md)  
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Developer guide:** [`intergrax/llm_adapters/USAGE.md`](../../../intergrax/llm_adapters/USAGE.md)  
 **ADR:** [ADR-LLM-001](../technical/adr/entries/2026-06-06/ADR-LLM-001.md) (envelope) · [ADR-LLM-002](../technical/adr/entries/2026-06-14/ADR-LLM-002.md) (ModelCatalog) · [ADR-LLM-003](../technical/adr/entries/2026-06-19/ADR-LLM-003.md) (routing rules)
 
 ### Cursor read scope (token budget)
@@ -321,7 +320,7 @@ Audit slice: [`guides/audit_slices/LLM_ADAPTERS.md`](../technical/guides/audit_s
 - **Providers:** [`satellites/LLM_ADAPTERS_providers_catalog.md`](satellites/LLM_ADAPTERS_providers_catalog.md).
 - **Audit register:** [`satellites/LLM_ADAPTERS_audit_register.md`](satellites/LLM_ADAPTERS_audit_register.md).
 - **Plan hub:** [`plan/LLM_ADAPTERS.md`](../maintainers/plans/LLM_ADAPTERS.md) (scoped §6 / open rows only).
-- **Audit slice:** [`guides/audit_slices/LLM_ADAPTERS.md`](../technical/guides/audit_slices/LLM_ADAPTERS.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** satellite per session unless RESUME cites more.
 
 ### Architecture satellites (read on demand)
@@ -425,7 +424,7 @@ Optional `LLMCallSummary` on `SignalAssemblyInput.last_llm_call` → `HarnessOut
 
 ### M-LLM-R as-built conformance (audit dimensions)
 
-Re-validate per [`audit/LLM_ADAPTERS.md`](../maintainers/audit/LLM_ADAPTERS.md) §3:
+Re-validate per [`audit/LLM_ADAPTERS.md`](../../audit_results/LLM_ADAPTERS.md) §3:
 
 | # | Dimension | Status | Evidence |
 |---|-----------|--------|----------|
@@ -742,4 +741,4 @@ Reuse: `LLMAdapterResponse.usage`, `LLMTokenUsage.cached_input_tokens`, `LLMAdap
 
 | Item | Note |
 | ---- | ---- |
-| `scripts/audit/generate_architecture_read_scopes.py` | Links routing_failover satellite — verify on next arch-scope maintenance pass |
+| `scripts/docs/generate_architecture_read_scopes.py` | Links routing_failover satellite — verify on next arch-scope maintenance pass |

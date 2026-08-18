@@ -45,7 +45,7 @@ Ephemeral Code Craft layer formally closed for Full Harness LC — orchestrator 
 
 - `docs/project/maintainers/plans/CODE_CRAFT.md` — Phase CODE_CRAFT-LC register
 - `docs/project/architecture/CODE_CRAFT.md` — Full Harness LC maturity note
-- `docs/project/maintainers/audit/CODE_CRAFT.md` — Full Harness LC sync
+- `docs/audit_results/CODE_CRAFT.md` — Full Harness LC sync
 
 ## Verification
 

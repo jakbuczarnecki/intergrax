@@ -5,8 +5,7 @@
 **Plan (1:1):** [`plan/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md)
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 1–2, 32  
-**Audit instruction:** [`audit/PLATFORM_FOUNDATION.md`](../maintainers/audit/PLATFORM_FOUNDATION.md)
-**Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — platform evolution rules; Platform Foundation owns implementation gates and spine verification, not capability-ownership policy.
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — platform evolution rules; Platform Foundation owns implementation gates and spine verification, not capability-ownership policy.
 ---
 
 ## Cursor read scope (token budget)
@@ -16,7 +15,7 @@
 - **Implement / audit default:** §1–§6 platform spine. Extended §7+: [`satellites/PLATFORM_FOUNDATION_extended_depth.md`](satellites/PLATFORM_FOUNDATION_extended_depth.md). §43+: [`satellites/PLATFORM_FOUNDATION_production_gates.md`](satellites/PLATFORM_FOUNDATION_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md) (scoped §6 only).
-- **Audit slice:** [`guides/audit_slices/PLATFORM_FOUNDATION.md`](../technical/guides/audit_slices/PLATFORM_FOUNDATION.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---

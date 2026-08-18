@@ -34,7 +34,7 @@ Memory depth backlog traceable without reopening closed MEM/MEM-DEPTH phases.
 | Link | Target |
 |------|--------|
 | Plan | `docs/project/maintainers/plans/MEMORY.md` §6.1av |
-| Audit result | `docs/audit_results/2026-06-18/MEMORY.md` |
+| Audit result | `docs/audit_results/legacy/2026-06-18/MEMORY.md` |
 
 ## Verification
 

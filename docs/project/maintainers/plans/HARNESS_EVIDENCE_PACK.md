@@ -23,7 +23,7 @@
 - **EVID-COST (Done):** § Mode I — EVID-COST · **EVID-COST-01…05 Done** · § EVID-COST closeout · § Evidence ROI roadmap · § Future waves.
 - **Skip** HEP-4+ unless implementing those waves.
 - **Architecture:** DX read-scope block only — smoke/e2e evidence owns list.
-- **Audit slice:** [`guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../../technical/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 
 ---
 
