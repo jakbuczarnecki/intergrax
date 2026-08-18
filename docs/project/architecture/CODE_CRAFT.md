@@ -20,7 +20,7 @@ Without a platform-owned ephemeral codegen path:
 CodeCraft addresses this through `CodeCraftOrchestrator`, typed `CodeCraftProfile`, static gate (L0), governed sandbox execution, bounded iteration, CVL verification, typed promotion via `CraftResult`, and ephemeral lifecycle semantics.
 
 > [!NOTE]
-> **Maturity boundary:** Phases **ECC-0…ECC-6** and post-closeout **S7–S11** are **Done** on the harness path, with **Full Harness LC** internal evidence. That is **not** universal production qualification for arbitrary generated-code execution: `local` isolation is workspace-level dev substrate, `container` isolation is not yet a distinct OCI boundary, `network_egress` is a profile contract with **partial** runtime enforcement, and hostile-code / sandbox-escape evidence is not claimed. See [Current maturity](#current-maturity).
+> **Maturity boundary:** Phases **ECC-0…ECC-6** and post-closeout **S7–S11** are **Done** on the harness path, with **Full Harness LC** internal evidence. That is **not** universal production qualification for arbitrary generated-code execution: `local` isolation is workspace-level dev substrate, `container` isolation is not yet a distinct OCI boundary, `network_egress` is a profile contract with **partial** runtime enforcement, `cloud`/`container` tiers may fall back to local when hosted substrate is unresolved, and hostile-code / sandbox-escape evidence is not claimed. See [Current maturity](#current-maturity).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and application authors configuring `CodeCraftProfile` and `codecraft.*` tool access — after the platform overview in the root README.
 
@@ -42,7 +42,7 @@ CodeCraft addresses this through `CodeCraftOrchestrator`, typed `CodeCraftProfil
 | **Ephemeral tools** | `EphemeralToolRegistry` — session-scoped; ≠ global `ToolRegistry` |
 | **Promotion** | **Promote the verified result** (`CraftResult`) — not automatic durable tool synthesis |
 | **Isolation modes** | `local` (dev substrate) · `container` / `cloud` (stronger where configured) — not equivalent tiers |
-| **Fail-closed behavior** | Missing profile, sandbox, policy deny, or gate failure → `DENIED` / controlled failure |
+| **Fail-closed behavior** | Profile disabled/denied, policy deny, static gate rejection → `DENIED` / controlled failure; isolation-tier anti-downgrade **not** fail-closed today |
 | **Tools relation** | `codecraft.*` exposed via `ToolRuntime`; catalog tools preferred when available |
 | **Skills relation** | Skills may compose `codecraft.*`; skills do not execute the craft loop |
 | **Production boundary** | Harness-proven orchestration — not representative hostile-code production posture |
@@ -243,18 +243,26 @@ Optional `security.scan` complements the gate when `security_scan_before_exec` i
 | Tier | Substrate | Posture |
 | ---- | --------- | ------- |
 | `local` | `SandboxSession` subprocess in workspace root | Dev/lab substrate — **not** a full production security boundary |
-| `container` | Routes to hosted resolver when configured; distinct OCI runner **not** yet separate in as-built | Stronger where hosted path is wired |
-| `cloud` | `HostedSandboxSession` via `sandbox_host` integration (`e2b`, `modal`, `daytona`, …) | Provider-backed isolation when configured |
+| `container` | Hosted resolver when configured (`IntegrationProfile` / `sandbox_host`); falls back to local `SandboxSession` when unresolved; distinct OCI runner **not** yet separate | Stronger only when hosted path resolves |
+| `cloud` | `HostedSandboxSession` via `sandbox_host` integration (`e2b`, `modal`, `daytona`, …); falls back to local when unresolved | Provider-backed isolation when hosted path resolves |
 
 Tiers are **not** equivalent guarantees. Production regulated profiles should prefer `cloud` (or future dedicated `container` runner) over `local`.
 
 ### Hosted sandbox boundary
 
-When `isolation_tier` is `cloud` or `container`:
+When `isolation_tier` is `cloud` or `container`, `resolve_craft_sandbox_session` (as-built):
 
-- `sandbox_host` / `IntegrationProfile` selects the backend provider,
+1. tries `IntegrationProfile` hosted sandbox resolution when present,
+2. tries `ctx.sandbox_host` → `HostedSandboxSession` when configured,
+3. if neither resolves, **falls through** to `resolve_sandbox_session(ctx)` — the standard local `SandboxSession` path.
+
+Therefore cloud/container tiers **do not** currently enforce strict fail-closed anti-downgrade semantics when hosted substrate is unavailable. Treat this fallback as a **production and safety limitation**: a profile requesting `cloud` or `container` may still execute on the local workspace substrate.
+
+- `sandbox_host` / `IntegrationProfile` selects the backend provider when wired,
 - CodeCraft does **not** own vendor SDKs — it resolves substrate through existing integration wiring,
-- if requested substrate is unavailable → **fail closed** (no host subprocess fallback).
+- successfully resolved hosted paths use provider-backed isolation; unresolved paths downgrade to local — presence of `SandboxSession` alone does **not** make that downgrade secure.
+
+> **Current as-built warning:** cloud/container resolution may fall back to the standard local sandbox path when no hosted substrate resolves. Strict isolation-tier anti-downgrade enforcement is **not** yet guaranteed.
 
 Cloud sandbox is **not** automatically secure enough for arbitrary hostile code without deployment-specific evidence.
 
@@ -314,9 +322,9 @@ In `supervised` mode, explicit `codecraft.promote` may be required after human a
 If any of the following hold:
 
 - profile missing or `mode=disabled`,
-- sandbox session unavailable for an exec-capable mode,
 - policy denies execution,
-- required gate unavailable,
+- static gate rejects generated code,
+- required gate unavailable when mandatory for the mode,
 
 then:
 
@@ -324,11 +332,14 @@ then:
 DENIED / controlled failure
 ```
 
-Never:
+**Isolation-tier resolution (current as-built):** when `isolation_tier` is `cloud` or `container` and no hosted substrate resolves, the resolver falls back to the standard local sandbox path — **not** `DENIED`. Strict isolation-tier anti-downgrade enforcement is **not** yet guaranteed.
 
-- host subprocess fallback outside approved substrate,
+When no sandbox substrate resolves at all (including after local fallback), exec-capable modes fail closed.
+
+Never (by design on these paths):
+
 - direct raw Python execution bypassing sandbox,
-- silent downgrade of isolation tier.
+- agent-local craft loops outside `CodeCraftOrchestrator`.
 
 ## Policy / Governance boundary
 
@@ -435,6 +446,10 @@ Policy decides whether execution is permitted.
 Sandbox provides the execution boundary.
 Tests / CVL evaluate result quality.
 None of these alone is sufficient as a complete security proof.
+
+Sandbox isolation strength depends on the resolved substrate.
+Cloud/container profiles may currently downgrade to local workspace
+execution when hosted resolution fails.
 ```
 
 Extended allowed/disallowed action matrices and governance-facing execution modes (Lab / Supervised / Governed production): [`satellites/CODE_CRAFT_extended_depth.md`](satellites/CODE_CRAFT_extended_depth.md#codecraft-safety-boundary).
@@ -460,7 +475,7 @@ Evidence maturity: **E3**
 
 - **A4** — Canonical domain pair; orchestrator/session/profile separation; Tool / Sandbox / Governance / CVL boundaries; fail-closed design; promotion semantics; isolation model documented; P2-ARCH-12 safety boundary ([plan](../maintainers/plans/CODE_CRAFT.md)).
 - **I4** — ECC-0…ECC-6 + S7–S11 **Done**: orchestrator, profile wiring, static gate, sandbox execution, bounded loop, test runner, promotion, ephemeral registry, trace, HITL/policy integration on harness path.
-- **P2** — Lab/reference hosts and harness CFG exercise CodeCraft paths; **public production qualification for arbitrary generated-code execution not claimed** — `local` tier is workspace isolation, `container` OCI runner not distinct, `network_egress` enforcement partial, no hostile-code or sandbox-escape production evidence.
+- **P2** — Lab/reference hosts and harness CFG exercise CodeCraft paths; **public production qualification for arbitrary generated-code execution not claimed** — `local` tier is workspace isolation, `container` OCI runner not distinct, `network_egress` enforcement partial, strict isolation-tier fail-closed downgrade protection not yet proven, no hostile-code or sandbox-escape production evidence.
 - **E3** — Unit/gate suite (`check_codecraft_layer.py`, orchestrator and provider tests), Full Harness LC internal evidence. **No** dedicated public proof route in [`docs/project/proofs/PROOFS.md`](../proofs/PROOFS.md) — not E4/E5.
 
 ## Evidence / proof
@@ -495,7 +510,7 @@ Evidence maturity: **E3**
 ### Unresolved documentation drift (outside scope)
 
 - Extended satellite header still uses legacy **L3+** wording — hub uses four-axis maturity only.
-- Satellite `container` tier table lists OCI runner as future — matches current `sandbox_resolver` routing (hosted with local fallback).
+- Satellite `container` tier table lists OCI runner as future — hub documents current `sandbox_resolver` routing (hosted with local fallback when unresolved).
 - [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) hub retains legacy `L3+` in maintainer header (not edited in DOC-3L).
 
 ---
@@ -510,7 +525,7 @@ Evidence maturity: **E3**
 **Audit layer:** 11b (Ephemeral Code Craft)  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
 **Implementation:** `intergrax/codecraft` · `intergrax/runtime/codecraft` · `intergrax/tools/providers/codecraft`  
-**Last updated:** 2026-08-18 — **DOC-3L** public front modernization; **P2-ARCH-12** safety boundary
+**Last updated:** 2026-08-18 — **DOC-3L-R1** sandbox isolation truth reconciliation; **P2-ARCH-12** safety boundary
 
 ### Cursor read scope (token budget)
 
@@ -604,7 +619,7 @@ ECC closes these gaps **without** violating tier boundaries or duplicating CVL /
 3. **Ephemeral by default** — generated code and virtual tools die with `craft_id` unless explicitly promoted as artifacts.
 4. **L0 before exec** — static gate always runs before `run_python` / `run_script` in autonomous modes.
 5. **Judge separation** — code-generation LLM profile MUST differ from producer agent profile (same rule as CVL).
-6. **Fail closed** — missing profile, missing sandbox session, or policy deny → `DENIED`, never host subprocess fallback.
+6. **Fail closed (authorization paths)** — missing profile, policy deny, or static gate rejection → `DENIED`; isolation-tier downgrade to local when hosted substrate is unresolved is a known as-built limitation (see [Hosted sandbox boundary](#hosted-sandbox-boundary)).
 7. **Trace everything** — `CODECRAFT_*` events correlated with `sandbox_session_id`, `task_id`, `run_id`.
 8. **Tier discipline** — Nexus/UAEP orchestrates; Tier-3 selects `CodeCraftProfile`; Tier-2 supplies goals only.
 
