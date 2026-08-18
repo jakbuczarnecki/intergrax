@@ -822,6 +822,20 @@ Accepted Protocol v2.2 audit layer [`PROVIDER_BACKEND_ABSTRACTION`](../../audit_
 
 Remediation tracked as **PBA-FIX-A** in [plan PBA-FIX-A](../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md#protocol-v22-pba-fix-a--long-running-checkpoint-port-consumption-2026-08-18). **Not implemented** by audit persistence.
 
+<a id="protocol-v22-human-decision-provenance-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 human decision provenance target invariants (2026-08-18)
+
+Accepted [`IDENTITY_TRUST`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) findings **03, 04** (2026-08-18). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+1. Exact `task_id` + `pause_id` + `human_request_id` correlation remains mandatory (preserve existing G5C fail-closed guarantees).
+2. Canonical human decision evidence must additionally preserve verified approver principal provenance.
+3. Do not persist secrets/tokens in decision evidence.
+4. All supported resume surfaces must reconstruct exact pause/request correlation from authoritative checkpoint/pause state.
+5. Raw response text/verdict alone must never become equivalent to canonical approval evidence.
+
+Remediation block: **IDT-FIX-C**.
+
 ## Unresolved documentation drift (outside this edit)
 
 Report only — not fixed in DOC-3Q scope:

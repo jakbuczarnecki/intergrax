@@ -50,6 +50,29 @@
 
 ---
 
+### Protocol v2.2 remediation — IDENTITY_TRUST (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/IDENTITY_TRUST.md`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+#### IDT-FIX-C — Human decision provenance
+
+**Status:** `ACCEPTED / PLANNED`
+**Source:** [`AUDIT-20260818-IDENTITY_TRUST-03`](../../audit_results/2026-08-18/IDENTITY_TRUST.md), [`AUDIT-20260818-IDENTITY_TRUST-04`](../../audit_results/2026-08-18/IDENTITY_TRUST.md)
+
+**Acceptance criteria:**
+
+- Canonical approver principal evidence on persisted human decision records.
+- Exact pause/request identity preserved on every supported resume path.
+- Shared HTTP resume reaches same invariant as debug/canonical resume (`DebugHitlResumeService` pattern).
+- Stale/wrong approver correlation fails closed.
+- Token/secret not persisted in decision evidence.
+- Existing G5C exact pause/request guarantees preserved.
+
+**Remediation rules:** same as PBA-FIX-A block above.
+
+---
+
 ## Architecture documentation (P2)
 
 | ID | Task | Status |

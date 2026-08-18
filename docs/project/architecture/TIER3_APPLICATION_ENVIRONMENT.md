@@ -211,6 +211,26 @@ Accepted [`INTERFACE_TASK_INTAKE`](../../audit_results/2026-08-18/INTERFACE_TASK
 
 Historical AUDIT-IDEAL Done labels (including AUDIT-IDEAL-3.2) remain historical facts. Protocol v2.2 accepted new intake parity gaps qualified above.
 
+<a id="protocol-v22-identitytrust-target-invariants-2026-08-18"></a>
+
+### Protocol v2.2 identity/trust target invariants (2026-08-18)
+
+Accepted [`IDENTITY_TRUST`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) findings **01, 06** (2026-08-18). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+
+**Target flow:**
+
+```text
+credential/session → verified principal → canonical RequestIdentity / actor principal → Task/runtime
+```
+
+**Normative requirements (IDT-FIX-A):**
+
+1. `tenant_id` / `user_id` / `principal_type` / `auth_subject` originate from authenticated/authorized principal where authentication applies.
+2. Untrusted body/metadata **MUST NOT** override stronger verified identity.
+3. One canonical principal/actor contract must connect Tier-3 intake with runtime execution identity.
+4. `ActorIdentity` / `RequestIdentity` divergence must be resolved by one explicit canonical model or typed bridge.
+5. Product-specific intake may adapt credentials but must not invent parallel identity semantics.
+
 ## Current implementation state
 
 | Mechanism | State |

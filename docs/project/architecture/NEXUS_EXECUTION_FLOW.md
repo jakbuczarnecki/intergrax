@@ -217,6 +217,20 @@ surface-specific edge parsing
 
 Remediation blocks: **ITI-FIX-B** (identity), **ITI-FIX-C** (runner convergence + typed executor). Cross-reference Tier-3 intake normalization (**ITI-FIX-A**) in [`TIER3_APPLICATION_ENVIRONMENT`](TIER3_APPLICATION_ENVIRONMENT.md).
 
+<a id="protocol-v22-delegated-authority-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 delegated authority target invariants (2026-08-18)
+
+Accepted [`IDENTITY_TRUST`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) finding **02** (2026-08-18). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+1. Delegated authority **MUST** be ≤ parent effective authority.
+2. Declared `permission_scopes` must become enforced effective child authority, not observability-only metadata.
+3. Child tool/memory/integration/side-effect capabilities must respect effective delegated authority where applicable.
+4. `DELEGATION_GRANTED` must describe effective enforced authority.
+5. Reuse existing platform authority/policy mechanisms where possible rather than inventing a second private authority engine.
+
+Remediation block: **IDT-FIX-B**. Positive reference pattern: `CollaborativeWorkAuthorityResolver` (do not silently merge models).
+
 ## Scenario capability (summary)
 
 | Capability | State |

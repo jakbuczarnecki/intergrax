@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — layer sequence in progress; first four layers complete (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`) |
+| `scope` | Platform audit — layer sequence in progress; first five layers complete (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -32,6 +32,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | TIER_LAYER_BOUNDARIES | COMPLETE | `d8d10bb5099d003eb9495674c28e0f6e6762dbfa` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `a5d6f83d0ea274dec269377a9ce1cc4421b1bd12` | [TIER_LAYER_BOUNDARIES.md](TIER_LAYER_BOUNDARIES.md) |
 | PROVIDER_BACKEND_ABSTRACTION | COMPLETE | `7570e9b4508554a42bdf5cce2c987c56c6f2b80e` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `3fb36254bf58f3898dac16f0ae0fca3f01bb95d6` | [PROVIDER_BACKEND_ABSTRACTION.md](PROVIDER_BACKEND_ABSTRACTION.md) |
 | INTERFACE_TASK_INTAKE | COMPLETE | `2640d826da6f1a781e798326ff1b21b3a9f7c4cc` | FAIL | 0 | 3 | 3 | 0 | COMPLETE | COMPLETE | `f2550615df385e474508e08ce763b43cef7e980b` | [INTERFACE_TASK_INTAKE.md](INTERFACE_TASK_INTAKE.md) |
+| IDENTITY_TRUST | COMPLETE | `6fbc5e4928963ecd386456158b0753662fed209b` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | — | [IDENTITY_TRUST.md](IDENTITY_TRUST.md) |
 
 ## Finding register
 
@@ -65,12 +66,18 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-INTERFACE_TASK_INTAKE-04 | INTERFACE_TASK_INTAKE | MEDIUM | IMPLEMENTATION/ARCHITECTURE DRIFT | ACCEPTED | ITI-FIX-A | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2.2 Tier-3 intake target invariants (2026-08-18)](#protocol-v22-tier3-intake-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — ITI-FIX-A | — | — | operator accepted 2026-08-18 |
 | AUDIT-20260818-INTERFACE_TASK_INTAKE-05 | INTERFACE_TASK_INTAKE | MEDIUM | ARCHITECTURE DEFECT | ACCEPTED | ITI-FIX-C | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` — [Protocol v2.2 task-intake execution convergence target invariants (2026-08-18)](#protocol-v22-task-intake-execution-convergence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — ITI-FIX-C | — | — | operator accepted 2026-08-18 |
 | AUDIT-20260818-INTERFACE_TASK_INTAKE-06 | INTERFACE_TASK_INTAKE | MEDIUM | TEST GAP | ACCEPTED | ITI-FIX-D | ITI-FIX-A, ITI-FIX-B, ITI-FIX-C | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2.2 Tier-3 intake target invariants (2026-08-18)](#protocol-v22-tier3-intake-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — ITI-FIX-D | — | — | Related classification: PROCESS / CLAIM; operator accepted 2026-08-18 |
+| AUDIT-20260818-IDENTITY_TRUST-01 | IDENTITY_TRUST | HIGH | SECURITY | ACCEPTED | IDT-FIX-A | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2.2 identity/trust target invariants (2026-08-18)](#protocol-v22-identitytrust-target-invariants-2026-08-18); `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — [Protocol v2.2 execution identity closure target invariants (2026-08-18)](#protocol-v22-execution-identity-closure-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — IDT-FIX-A | — | — | Related classification: TEST GAP; operator accepted 2026-08-18 |
+| AUDIT-20260818-IDENTITY_TRUST-02 | IDENTITY_TRUST | HIGH | SECURITY | ACCEPTED | IDT-FIX-B | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` — [Protocol v2.2 delegated authority target invariants (2026-08-18)](#protocol-v22-delegated-authority-target-invariants-2026-08-18) | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — IDT-FIX-B | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-IDENTITY_TRUST-03 | IDENTITY_TRUST | HIGH | SECURITY | ACCEPTED | IDT-FIX-C | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2.2 human decision provenance target invariants (2026-08-18)](#protocol-v22-human-decision-provenance-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — IDT-FIX-C | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-IDENTITY_TRUST-04 | IDENTITY_TRUST | MEDIUM | IMPLEMENTATION DEFECT | ACCEPTED | IDT-FIX-C | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2.2 human decision provenance target invariants (2026-08-18)](#protocol-v22-human-decision-provenance-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — IDT-FIX-C | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-IDENTITY_TRUST-05 | IDENTITY_TRUST | HIGH | IMPLEMENTATION DEFECT | ACCEPTED | IDT-FIX-D | — | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — [Protocol v2.2 execution identity closure target invariants (2026-08-18)](#protocol-v22-execution-identity-closure-target-invariants-2026-08-18) | `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — IDT-FIX-D | — | — | Related classification: OPERABILITY; operator accepted 2026-08-18 |
+| AUDIT-20260818-IDENTITY_TRUST-06 | IDENTITY_TRUST | MEDIUM | ARCHITECTURE DEFECT | ACCEPTED | IDT-FIX-A | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2.2 identity/trust target invariants (2026-08-18)](#protocol-v22-identitytrust-target-invariants-2026-08-18); `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — [Protocol v2.2 execution identity closure target invariants (2026-08-18)](#protocol-v22-execution-identity-closure-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — IDT-FIX-A | — | — | operator accepted 2026-08-18 |
 
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 4
+**Completed layers:** 5
 
 First layer summary:
 
@@ -100,7 +107,14 @@ Fourth layer summary:
 - **Systemic themes:** canonical normalized intake contract adoption; distinct TaskId/RunId on public surfaces; UnifiedTaskRunner convergence before Nexus; typed intake semantics preservation; typed executor interfaces; E2E streaming intake parity proof
 - **Recommended remediation order:** ITI-FIX-A → ITI-FIX-B → ITI-FIX-C → ITI-FIX-D (see layer report)
 
-**Cumulative (completed layers only):** 26 accepted findings — 0 CRITICAL, 13 HIGH, 13 MEDIUM, 0 LOW
+Fifth layer summary:
+
+- **Layer:** IDENTITY_TRUST — **FAIL** at `6fbc5e4928963ecd386456158b0753662fed209b`
+- **Accepted findings:** 6 total — 0 CRITICAL, 4 HIGH, 2 MEDIUM, 0 LOW
+- **Systemic themes:** authenticated principal spine; delegated authority enforcement; human approver provenance; resume surface HITL correlation; execution identity closure on residual paths; actor/principal model coherence
+- **Recommended remediation order:** IDT-FIX-A → IDT-FIX-B → IDT-FIX-C → IDT-FIX-D (see layer report)
+
+**Cumulative (completed layers only):** 32 accepted findings — 0 CRITICAL, 17 HIGH, 15 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -124,3 +138,7 @@ Fourth layer summary:
 | ITI-FIX-B | AUDIT-20260818-INTERFACE_TASK_INTAKE-02 | ACCEPTED / PLANNED | distinct TaskId/RunId on public intake paths |
 | ITI-FIX-C | AUDIT-20260818-INTERFACE_TASK_INTAKE-03, 05 | ACCEPTED / PLANNED | UnifiedTaskRunner convergence + typed executor interface |
 | ITI-FIX-D | AUDIT-20260818-INTERFACE_TASK_INTAKE-06 | ACCEPTED / PLANNED | E2E streaming intake parity proof after A/B/C |
+| IDT-FIX-A | AUDIT-20260818-IDENTITY_TRUST-01, 06 | ACCEPTED / PLANNED | authenticated principal spine — not implemented in this persistence task |
+| IDT-FIX-B | AUDIT-20260818-IDENTITY_TRUST-02 | ACCEPTED / PLANNED | delegated authority narrowing |
+| IDT-FIX-C | AUDIT-20260818-IDENTITY_TRUST-03, 04 | ACCEPTED / PLANNED | human decision provenance + resume surface alignment |
+| IDT-FIX-D | AUDIT-20260818-IDENTITY_TRUST-05 | ACCEPTED / PLANNED | execution identity closure on residual HITL/lifecycle paths |

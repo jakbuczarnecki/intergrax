@@ -151,3 +151,27 @@ Finding 05 remains owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](PLATFOR
 **Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
 
 ---
+
+### Protocol v2.2 remediation — IDENTITY_TRUST (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/IDENTITY_TRUST.md`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+#### IDT-FIX-A — Authenticated principal spine
+
+**Status:** `ACCEPTED / PLANNED`
+**Source:** [`AUDIT-20260818-IDENTITY_TRUST-01`](../../audit_results/2026-08-18/IDENTITY_TRUST.md), [`AUDIT-20260818-IDENTITY_TRUST-06`](../../audit_results/2026-08-18/IDENTITY_TRUST.md)
+
+**Acceptance criteria:**
+
+- One canonical verified-principal → `RequestIdentity` path for authenticated Tier-3 intake.
+- No untrusted metadata/body override of verified `tenant_id` / `user_id` / principal fields.
+- Resolve `ActorIdentity` / `RequestIdentity` ownership and wire semantics (writer/reader contract).
+- Product/reference-host conformance tests eventually required.
+- No credential/token persistence in runtime state.
+
+**Dependencies:** coordinate with UER identity contracts; do not redesign auth provider abstraction.
+
+**Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
+
+---

@@ -229,6 +229,20 @@ Accepted Protocol v2 audit layer [`STRATEGIC_HARNESS_MODEL`](../../audit_results
 6. **Mandatory guarantees** — "mandatory path" means mandatory **guarantees** (policy, trace, gateways, identity, kernel-equivalent step semantics), not merely that common code usually passes through `AgentEngine` ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
 7. **Maturity honesty** — historical Done rows remain historical; **current** maturity references accepted Protocol v2 findings until SHM-FIX remediation is independently verified ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
 
+<a id="protocol-v22-execution-identity-closure-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 execution identity closure target invariants (2026-08-18)
+
+Accepted [`IDENTITY_TRUST`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) findings **05** (primary) and **01, 06** (supporting principal spine) (2026-08-18). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+1. `TaskId`, `RunId`, `AttemptId` remain distinct canonical identities.
+2. Once `ActiveExecutionIdentity` is bound, runtime events/hooks/HITL provenance **MUST** consume canonical `RunId` + `AttemptId`.
+3. `TaskId` **MUST NOT** be substituted for `RunId` on production HITL/lifecycle/runtime-event paths.
+4. Identity-bearing hooks/events must not reconstruct execution identity from mutable task metadata.
+5. Principal identity and execution identity are distinct concepts but must remain explicitly correlated.
+
+Remediation blocks: **IDT-FIX-D** (execution identity closure), **IDT-FIX-A** (principal spine). Finding 05 is internal provenance after valid execution identity is bound — not duplicate public intake TaskId/RunId minting ([`INTERFACE_TASK_INTAKE`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md)).
+
 ## Current maturity
 
 Architecture maturity: **A4** *(target)* — **current invariant closure reopened** by Protocol v2 [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)

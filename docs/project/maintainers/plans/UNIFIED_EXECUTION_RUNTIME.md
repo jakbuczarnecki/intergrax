@@ -55,6 +55,28 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
+### Protocol v2.2 remediation — IDENTITY_TRUST (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/IDENTITY_TRUST.md`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+#### IDT-FIX-D — Execution identity closure
+
+**Status:** `ACCEPTED / PLANNED`
+**Source:** [`AUDIT-20260818-IDENTITY_TRUST-05`](../../audit_results/2026-08-18/IDENTITY_TRUST.md)
+
+**Acceptance criteria:**
+
+- No production HITL/lifecycle/runtime-event path substitutes `TaskId` for `RunId`.
+- Canonical `RunId` + `AttemptId` obtained from `ActiveExecutionIdentity` or explicit canonical runtime context.
+- APPROVE / REJECT / ESCALATE parity across HITL verdict branches.
+- Hooks/events carry correct execution identity.
+- Contract/gate tests cover all three HITL verdict branches and lifecycle provenance.
+
+**Remediation rules:** same as SHM-FIX block above.
+
+---
+
 ## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.
