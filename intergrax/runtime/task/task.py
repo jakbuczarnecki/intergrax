@@ -146,6 +146,7 @@ class Task(BaseModel):
         metadata.setdefault("task_id", self.task_id)
         metadata.setdefault("run_id", run_id)
 
+        governance = self.runtime.governance
         return RuntimeRequest(
             agent_id=self.agent_id,
             user_id=self.user_id,
@@ -156,6 +157,8 @@ class Task(BaseModel):
             tenant_id=self.tenant_id,
             workspace_id=self.metadata.get("workspace_id"),
             metadata=metadata,
+            hitl_resolution=governance.hitl_resolution,
+            hitl_pause_record=governance.pause_record,
         )
 
 

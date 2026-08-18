@@ -22,9 +22,6 @@ from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.sandbox.sandbox_runtime import SandboxMetadataKey
 from intergrax.runtime.task.task_contract import (
     TASK_CONTRACT_METADATA_KEY,
-    VERDICT_APPROVE,
-    VERDICT_ESCALATE,
-    VERDICT_REJECT,
     EscalationStep,
     TaskClassificationState,
     TaskContractPayload,
@@ -87,18 +84,12 @@ def _truthy(value: Any) -> bool:
 
 def _verdict_from_legacy(metadata: Dict[str, Any]) -> Optional[HumanResponseVerdict]:
     raw = metadata.get(TaskMetadataKey.HUMAN_DECISION)
-    if raw:
-        try:
-            return HumanResponseVerdict(str(raw))
-        except ValueError:
-            return HumanResponseVerdict.UNKNOWN
-    if _truthy(metadata.get(TaskMetadataKey.HUMAN_APPROVED)):
-        return HumanResponseVerdict.APPROVE
-    if _truthy(metadata.get(TaskMetadataKey.HUMAN_REJECTED)):
-        return HumanResponseVerdict.REJECT
-    if _truthy(metadata.get(TaskMetadataKey.HUMAN_ESCALATED)):
-        return HumanResponseVerdict.ESCALATE
-    return None
+    if not raw:
+        return None
+    try:
+        return HumanResponseVerdict(str(raw))
+    except ValueError:
+        return HumanResponseVerdict.UNKNOWN
 
 
 def _verdict_to_contract_value(verdict: HumanResponseVerdict) -> str:
@@ -309,14 +300,11 @@ def sync_task_metadata(task: Task) -> None:
 
     if human.verdict is not None:
         meta[TaskMetadataKey.HUMAN_DECISION] = human.verdict
-        meta[TaskMetadataKey.HUMAN_APPROVED] = human.verdict == VERDICT_APPROVE
-        meta[TaskMetadataKey.HUMAN_REJECTED] = human.verdict == VERDICT_REJECT
-        meta[TaskMetadataKey.HUMAN_ESCALATED] = human.verdict == VERDICT_ESCALATE
     else:
         meta.pop(TaskMetadataKey.HUMAN_DECISION, None)
-        meta.pop(TaskMetadataKey.HUMAN_APPROVED, None)
-        meta.pop(TaskMetadataKey.HUMAN_REJECTED, None)
-        meta.pop(TaskMetadataKey.HUMAN_ESCALATED, None)
+    meta.pop(TaskMetadataKey.HUMAN_APPROVED, None)
+    meta.pop(TaskMetadataKey.HUMAN_REJECTED, None)
+    meta.pop(TaskMetadataKey.HUMAN_ESCALATED, None)
 
     lr = opts.long_running
     meta[TaskMetadataKey.LONG_RUNNING] = lr.enabled

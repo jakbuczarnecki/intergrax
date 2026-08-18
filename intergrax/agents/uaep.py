@@ -330,16 +330,11 @@ class UAEPExecutor:
         governance: Optional[GovernanceResolution] = None
         runtime_ckpt = runtime_checkpoint_from_metadata(request.metadata)
         uaep_resume_approval = None
-        governance = HumanPauseCoordinator.governance_from_request_metadata(request.metadata)
-        if (
-            governance is not None
-            and governance.pause_record is not None
-            and request.task_id
-        ):
-            pause_record = governance.pause_record
+        pause_record = request.hitl_pause_record
+        if pause_record is not None and request.task_id:
             uaep_resume_approval = HumanPauseCoordinator.approved_resolution_for_resume(
                 task_id=request.task_id,
-                governance=governance,
+                resolution=request.hitl_resolution,
                 expected_pause_id=pause_record.pause_id,
                 expected_human_request_id=pause_record.human_request_id,
                 run_id=run_id,
