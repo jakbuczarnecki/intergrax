@@ -94,7 +94,17 @@ This root `README.md` is:
 
 Results under [legacy/](legacy/README.md) were produced under superseded protocols (Legacy Audit Protocol v1, plan-satellite audit registers). They are useful for historical comparison only — **not** evidence of current platform maturity.
 
-**Protocol v2** (this tree, from 2026-08-18) is model-driven and periodic. Active campaign: [2026-08-18](2026-08-18/README.md) — first layer `STRATEGIC_HARNESS_MODEL` **FAIL**, 10 ACCEPTED findings.
+**Protocol v2.1** (this tree, from 2026-08-18) is model-driven and periodic. Active campaign: [2026-08-18](2026-08-18/README.md) — first layer `STRATEGIC_HARNESS_MODEL` **FAIL**, 10 ACCEPTED findings.
+
+### Audit scope shapes (Protocol v2.1)
+
+Protocol v2.1 supports three audit shapes:
+
+1. **DOMAIN / LAYER AUDIT**
+2. **CONCEPTUAL / CROSS-DOMAIN AUDIT**
+3. **PLATFORM CONSUMER AUDIT**
+
+Platform consumer audits verify whether applications, agents, plugins, and integration adapters correctly reuse canonical Intergrax mechanisms, respect layer ownership, preserve platform guarantees, and avoid duplicate/bypass infrastructure. See [AUDIT_PROTOCOL.md](AUDIT_PROTOCOL.md) section D3 for consumer audit scope, conformance matrix, and falsification questions.
 
 ---
 

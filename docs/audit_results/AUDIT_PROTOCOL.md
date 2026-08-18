@@ -1,7 +1,7 @@
-# Intergrax Platform Audit Protocol v2
+# Intergrax Platform Audit Protocol v2.1
 
 **Status:** Canonical
-**Version:** 2.0
+**Version:** 2.1
 **Audience:** Human operators and model executors (any harness, any IDE)
 **Scope:** Full Intergrax platform — Tier-0 `intergrax/`, Tier-1 `intergrax/runtime/`, Tier-2 `agents/`, Tier-3 `applications/`
 
@@ -72,6 +72,12 @@ The audit must not stop at "code matches architecture." Separately ask:
 - Does it support reusable platform mechanisms rather than current-product special cases?
 - Would a second independent application reuse the mechanism cleanly?
 - Does the design create unnecessary parallel universal mechanisms?
+- Does another platform component already solve substantially the same concern?
+- Are two registries, event systems, retry systems, policy evaluators, context assemblers, memory abstractions, tool gateways, identity mechanisms, or config systems competing for the same ownership?
+- Is one implementation merely a product-local clone?
+- Are shared invariants implemented multiple times and drifting?
+- Could the second mechanism be a thin adapter over the canonical one?
+- If two mechanisms are intentionally distinct, is their ownership boundary explicit and non-overlapping?
 - Are important production invariants absent from the architecture?
 - Is a documented abstraction only paper architecture?
 - Are industry-standard mature production patterns materially stronger for this problem?
@@ -387,7 +393,175 @@ Do not begin layer N+1 until layer N is `COMPLETE` or explicitly deferred in the
 
 - Tier-0 `intergrax/` MUST NOT import from `agents/` or `applications/`.
 - Tier-2 `agents/` MUST NOT import from `applications/`.
-- Violations are always at least **HIGH** unless proven unreachable dead code with evidence.
+- Explicit prohibited cross-tier import violations are always at least **HIGH** unless proven unreachable dead code with evidence.
+- Material bypass of a mandatory security/reliability/governance boundary should normally be **HIGH** or **CRITICAL** according to section G severity definitions.
+- Do not make every harmless internal helper import automatically **HIGH**.
+
+**Import direction is necessary but not sufficient.**
+
+A boundary audit MUST evaluate all of the following ownership dimensions, not only import graphs:
+
+| Dimension | Audit requirement |
+|-----------|-------------------|
+| **A. IMPORT OWNERSHIP** | Lower/core tiers do not depend on higher/product tiers; existing Tier-0/Tier-2 import rules remain mandatory. |
+| **B. CONTRACT OWNERSHIP** | A higher layer / consumer must use the canonical public contract of the lower platform layer rather than reaching into private implementation details when a public contract exists. Audit for direct access to private/internal modules, implementation-only helpers, internal stores/repositories, internal event buses, private singleton/global state, hidden metadata channels, internal registries, and implementation classes where a public Protocol/ABC/API exists. |
+| **C. DATA OWNERSHIP** | A layer must not directly read/write another layer's owned persistence/state when a canonical service/repository/contract owns that state. |
+| **D. BEHAVIOR OWNERSHIP** | A higher layer must not reimplement or bypass guarantees owned by a lower layer, including policy, identity, retry, observability, tool execution, persistence, etc. |
+| **E. PRODUCT LEAKAGE** | Generic/core tiers must not acquire product/application-specific vocabulary, keys, routing, state, or business semantics. |
+| **F. BYPASS EQUIVALENCE** | If an alternate path does not call the canonical component literally, it must prove equivalent mandatory guarantees. "Different call chain" is acceptable only when guarantees remain structurally equivalent. |
+
+**Normative boundary rule:**
+
+> A boundary is violated not only by an illegal import, but also when ownership, state, behavior, or mandatory guarantees cross layers through backdoors, duplicated mechanisms, hidden metadata, direct storage access, or private API use.
+
+### D1. Platform mechanism coverage (layer and consumer audits)
+
+An auditor must not conclude **PASS** merely because no local defect is visible.
+
+For each material concern owned by the audited scope:
+
+```text
+identify canonical owner
+    ↓
+identify canonical mechanism
+    ↓
+trace actual use
+    ↓
+verify guarantees preserved
+    ↓
+check for duplicate/bypass paths
+```
+
+If ownership or canonical mechanism cannot be determined, record an open question or architecture finding depending on evidence. This prevents "looks fine locally" audits.
+
+### D2. Platform reuse and canonical mechanism discipline
+
+**Core rule: REUSE BEFORE INVENT.**
+
+Before accepting any new local mechanism that solves a platform-level concern, the auditor MUST determine whether Intergrax already owns a canonical mechanism for that concern.
+
+Explicitly inspect applicable mechanisms such as (illustrative, not exhaustive):
+
+- execution runtime / HarnessKernel / UAEP
+- identity
+- policy / governance
+- approvals / HITL
+- tool invocation / ToolGateway
+- integrations / connectors
+- capability registration / discovery
+- registries
+- memory
+- RAG
+- context engineering
+- prompt management
+- LLM/model routing
+- retry / resilience / recovery
+- idempotency
+- observability / events / tracing
+- workspace
+- sandbox
+- configuration
+- secrets/trust boundaries
+- budgets / cost controls
+- state / persistence contracts
+
+For every local competing mechanism, classify it conceptually as one of:
+
+| Classification | Meaning |
+|----------------|---------|
+| **CANONICAL REUSE** | Directly uses the platform mechanism. |
+| **THIN ADAPTER** | Translates product/domain input into the canonical mechanism without recreating its semantics. |
+| **JUSTIFIED SPECIALIZATION** | Platform mechanism exists but domain-specific behavior legitimately sits above it while preserving the platform guarantee. |
+| **DUPLICATED PLATFORM MECHANISM** | Recreates a platform-owned concern locally. |
+| **BYPASSED PLATFORM MECHANISM** | Avoids a canonical mandatory mechanism and loses/changes guarantees. |
+| **MISSING PLATFORM CAPABILITY** | Platform truly lacks the required reusable capability. |
+
+**Normative rules:**
+
+- **DUPLICATED PLATFORM MECHANISM** without explicit architectural justification is a finding.
+- **BYPASSED PLATFORM MECHANISM** is a finding whenever required guarantees differ or disappear.
+- If the platform genuinely lacks the capability, the consumer/layer must not silently establish a second universal mechanism as an accidental local standard. Record the architectural gap and make ownership explicit.
+- Thin adapters are desirable when they preserve canonical semantics.
+- Do not force reuse of a platform component that demonstrably does not satisfy the required contract; in that case record an architecture gap rather than pretending reuse is correct.
+
+**Parallel universal mechanism** — a mechanism that independently tries to own a concern already intended to be owned globally by another Intergrax platform component. Unjustified parallel universal mechanisms are architecture findings even if both implementations individually work.
+
+Reuse is about shared **ownership / guarantees / semantics**, not superficial code deduplication. Do not create premature shared abstractions merely because two functions look similar.
+
+### D3. Platform consumer audit scope
+
+A **PLATFORM CONSUMER AUDIT** is an explicit audit scope type. A platform consumer may be:
+
+- application
+- agent
+- subagent
+- plugin
+- integration adapter
+- reference product
+- other higher-level component consuming Intergrax capabilities
+
+A consumer audit is **not** primarily asking "Does this product feature work?" It asks **"Is this component a correct Intergrax platform consumer?"** It may inspect product correctness when necessary to determine platform conformance, but its primary concern is platform usage.
+
+Consumer audits MUST use the same campaign/finding machinery as domain audits. Use a stable `LAYER_CODE`, for example:
+
+- `APPLICATION_<STABLE_NAME>`
+- `AGENT_<STABLE_NAME>`
+- `PLUGIN_<STABLE_NAME>`
+
+Do not require these exact prefixes if a better stable domain code already exists, but the code must be explicit and stable. Do **not** change finding ID syntax (section H).
+
+**Mandatory consumer falsification questions:**
+
+- Does the consumer call platform public contracts or internal implementations?
+- Does it bypass HarnessKernel/runtime/governance/tool gateways?
+- Does it create its own execution identity?
+- Does it maintain its own retry loop where platform reliability should own it?
+- Does it directly call external SDKs where Intergrax integration/tool contracts should own access?
+- Does it create product-local memory/RAG/context/prompt registries duplicating platform facilities?
+- Does it emit its own incompatible observability/event model?
+- Does it manage state/persistence owned by another platform layer?
+- Does it carry untyped `dict[str, Any]`/metadata payloads across boundaries instead of typed contracts?
+- Does it use reflection/dynamic dispatch to emulate capability contracts?
+- Does it embed product concerns down into reusable tiers?
+- Does it correctly declare capabilities and dependencies?
+- Does it preserve policy, identity, auditability, retry, cancellation, and HITL semantics supplied by the platform?
+- Could a second application reuse the same mechanism, or is platform logic trapped inside this consumer?
+
+**Consumer conformance matrix (required for platform consumer audits):**
+
+For each applicable platform concern, record one of:
+
+- `REUSED`
+- `THIN ADAPTER`
+- `JUSTIFIED SPECIALIZATION`
+- `DUPLICATED`
+- `BYPASSED`
+- `MISSING PLATFORM CAPABILITY`
+- `NOT APPLICABLE`
+- `INSUFFICIENT EVIDENCE`
+
+At minimum evaluate applicability of:
+
+1. canonical execution/runtime
+2. identity / Task / Run / Attempt
+3. policy / governance
+4. approval / HITL
+5. tools / ToolGateway
+6. integrations/connectors
+7. memory
+8. RAG
+9. context engineering
+10. prompt/model routing where relevant
+11. retries / recovery / idempotency
+12. observability / events / tracing
+13. workspace / sandbox
+14. configuration / secrets
+15. budgets / cost controls
+16. registries / capability discovery
+17. state/persistence ownership
+18. typed request/result contracts
+
+The matrix must **not** force irrelevant mechanisms onto every consumer. `NOT APPLICABLE` is valid but requires a concise reason for material platform concerns. `DUPLICATED`, `BYPASSED`, `MISSING PLATFORM CAPABILITY`, or `INSUFFICIENT EVIDENCE` should drive findings/open questions as warranted by severity and evidence.
 
 ---
 
@@ -399,7 +573,8 @@ For each in-scope component, attempt to disprove stated invariants. At minimum, 
 
 - **Architecture bypasses** — code paths that skip documented gates, policies, or lifecycle stages.
 - **Alternate paths** — feature flags, env toggles, legacy branches, "admin" or debug entrypoints that change behavior.
-- **Dependency violations** — cross-tier imports, circular deps, runtime plugin loading that breaks boundaries.
+- **Dependency violations** — cross-tier imports, circular deps, runtime plugin loading that breaks boundaries; contract/state/behavior ownership violations beyond import graphs (section D).
+- **Duplicated / bypassed platform mechanisms** — local retry loops, registries, policy evaluators, tool gateways, memory/RAG/context stacks, or observability models that recreate or bypass canonical platform ownership (section D2).
 - **Hidden global state** — module-level singletons, process-wide caches, class variables, thread-locals used as implicit channels.
 - **Product leakage** — application-specific logic in runtime/agents tiers; domain logic in wrong tier.
 - **Host-specific behavior** — paths, shells, OS assumptions, hardcoded developer machine layout.
@@ -434,9 +609,69 @@ For each in-scope component, attempt to disprove stated invariants. At minimum, 
 
 ### Contracts and typing
 
+**Default invariant:**
+
+> Critical Intergrax boundaries are statically explicit and strongly typed. Dynamic structures are exceptions requiring evidence-based justification, not the default integration mechanism.
+
+Preferred contract forms should include, where appropriate:
+
+- typed domain models
+- dataclasses / validated models
+- `Protocol`
+- ABC / explicit base classes
+- enums
+- `NewType` / value objects / typed identifiers
+- explicit request/result models
+- typed capability interfaces
+- typed registries
+- discriminated/versioned payload models where external variation requires them
+
+Strong typing may use Protocols, composition, models, value objects, ABCs, or base classes as appropriate. Do **not** force one giant base class.
+
+**Audit triggers** (do **not** ban these constructs universally):
+
+- `dict[str, Any]`
+- `Any`
+- generic `object`
+- arbitrary nested dictionaries/lists used as contracts
+- magic string metadata keys controlling behavior
+- `getattr`
+- `setattr`
+- `hasattr` used for capability/behavior discovery
+- string-based method dispatch
+- reflection used to select critical behavior
+- `importlib` / dynamic imports
+- monkey patching outside intentionally isolated tests
+- runtime mutation of interfaces/classes
+- unvalidated JSON crossing trust or ownership boundaries
+- dynamically shaped payloads crossing platform boundaries
+
+Risk rises when dynamic structures cross trust boundaries, ownership boundaries, persistence boundaries, execution boundaries, or public author/consumer contracts. Do **not** treat every `dict` as a finding.
+
+**Acceptable exception model** — dynamic structures MAY be appropriate for:
+
+- raw external input before validation
+- opaque extension payloads deliberately preserved as opaque
+- narrowly scoped serialization/deserialization
+- validated plugin discovery
+- local non-contract scratch state
+- test doubles / test instrumentation
+
+When used:
+
+1. keep the dynamic surface narrow,
+2. validate/normalize at the boundary,
+3. convert into typed contracts as early as practical,
+4. do not use dynamic reflection as a hidden substitute for a canonical platform contract,
+5. document why static typing is not appropriate.
+
+**Falsification question:**
+
+> Could this runtime decision be expressed through an existing or new typed Protocol/model/enum/value object instead of reflection or `Any`-shaped state?
+
+If **YES** and no credible reason for dynamism exists, record an appropriate finding.
+
 - **Weak contracts** — undocumented JSON shapes, optional fields that change semantics, version skew.
-- **`dict[str, Any]`** (and equivalent) — untyped payloads crossing trust boundaries without validation.
-- **Reflection / `getattr` / dynamic dispatch** — behavior depends on string names; bypasses static analysis and policy hooks.
 - **Hidden dependencies** — import side effects, registry mutation at import time, implicit plugin discovery.
 
 ### Verification quality
@@ -646,7 +881,19 @@ When multiple layers complete in one campaign, update the campaign `README.md` *
 
 1. **Scope table** — layer, SHA, verdict, finding counts by severity.
 2. **Cross-layer findings** — mismatches spanning tiers (e.g. orchestration assumes memory guarantee memory does not provide).
-3. **Systemic themes** — repeated `dict[str, Any]`, fail-open patterns, test gaps.
+3. **Systemic themes** — explicitly look for repeated:
+   - `dict[str, Any]` / `Any` boundary usage
+   - reflection / magic-string dispatch
+   - duplicate registries
+   - duplicate policy systems
+   - duplicate retry systems
+   - duplicate event/observability systems
+   - duplicate context/memory/RAG mechanisms
+   - direct storage ownership violations
+   - consumer bypasses
+   - repeated thin adapters that may indicate a missing shared platform abstraction
+
+   Repeated adapters may indicate healthy reuse **or** a missing reusable abstraction. The auditor must distinguish them rather than automatically flag duplication. Also include fail-open patterns and test gaps.
 4. **Campaign verdict** — per section J.
 5. **Recommended remediation order** — operator-facing, not implementation.
 
@@ -702,6 +949,12 @@ Each per-layer file MUST contain:
 ## Prior-audit comparison
 (section K, or N/A)
 
+## Consumer conformance matrix
+(REQUIRED for PLATFORM CONSUMER AUDITS only — omit for DOMAIN / CONCEPTUAL audits)
+
+| concern | canonical platform owner/mechanism | observed consumer mechanism | classification | evidence | finding_id / note |
+|---------|-----------------------------------|-----------------------------|----------------|----------|-------------------|
+
 ## Open questions / blocked items
 
 ## Operator acceptance
@@ -736,9 +989,15 @@ Do **not** record `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED` in per-
 
 ---
 
-## Appendix: Layer codes (non-exhaustive)
+## Appendix: Audit scope shapes and layer codes (non-exhaustive)
 
-A layer audit **normally** maps to one architecture/domain pair aligned with `docs/project/architecture/<DOMAIN>.md`, e.g.:
+Protocol v2.1 supports three audit shapes:
+
+1. **DOMAIN / LAYER AUDIT** — one architecture/domain pair (section D).
+2. **CONCEPTUAL / CROSS-DOMAIN AUDIT** — explicit invariant slice spanning domains (below).
+3. **PLATFORM CONSUMER AUDIT** — application, agent, plugin, or integration adapter as platform consumer (section D3).
+
+A **domain / layer audit** normally maps to one architecture/domain pair aligned with `docs/project/architecture/<DOMAIN>.md`, e.g.:
 
 `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW`, `UNIFIED_EXECUTION_RUNTIME`, `MEMORY`, `RAG`, `CONTEXT_ENGINEERING`, `INTEGRATIONS`, `MODALITY`, `RELIABILITY_FAILURE_AND_HITL`, `ADAPTIVE_HARNESS_INTELLIGENCE`, `PLATFORM_PLUGINS`
 
@@ -761,4 +1020,4 @@ This preserves the Intergrax audit roadmap without forcing every audit layer to 
 
 ---
 
-*End of Intergrax Platform Audit Protocol v2*
+*End of Intergrax Platform Audit Protocol v2.1*
