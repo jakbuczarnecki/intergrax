@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — layer sequence in progress; first three layers complete (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`) |
+| `scope` | Platform audit — layer sequence in progress; first four layers complete (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -31,6 +31,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | STRATEGIC_HARNESS_MODEL | COMPLETE | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | FAIL | 0 | 6 | 4 | 0 | COMPLETE | COMPLETE | `def29be1adf2e099c300b7a8471c32b946e9c957` | [STRATEGIC_HARNESS_MODEL.md](STRATEGIC_HARNESS_MODEL.md) |
 | TIER_LAYER_BOUNDARIES | COMPLETE | `d8d10bb5099d003eb9495674c28e0f6e6762dbfa` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `a5d6f83d0ea274dec269377a9ce1cc4421b1bd12` | [TIER_LAYER_BOUNDARIES.md](TIER_LAYER_BOUNDARIES.md) |
 | PROVIDER_BACKEND_ABSTRACTION | COMPLETE | `7570e9b4508554a42bdf5cce2c987c56c6f2b80e` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `3fb36254bf58f3898dac16f0ae0fca3f01bb95d6` | [PROVIDER_BACKEND_ABSTRACTION.md](PROVIDER_BACKEND_ABSTRACTION.md) |
+| INTERFACE_TASK_INTAKE | COMPLETE | `2640d826da6f1a781e798326ff1b21b3a9f7c4cc` | FAIL | 0 | 3 | 3 | 0 | COMPLETE | COMPLETE | `—` | [INTERFACE_TASK_INTAKE.md](INTERFACE_TASK_INTAKE.md) |
 
 ## Finding register
 
@@ -58,12 +59,18 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03 | PROVIDER_BACKEND_ABSTRACTION | MEDIUM | ARCHITECTURE DEFECT | ACCEPTED | PBA-FIX-C | — | `docs/project/architecture/INTEGRATIONS.md` — [Protocol v2.2 provider/backend abstraction target invariants (2026-08-18)](#protocol-v22-provider-backend-abstraction-target-invariants-2026-08-18) | `docs/project/maintainers/plans/INTEGRATIONS.md` — PBA-FIX-C | — | — | operator accepted 2026-08-18; VENDOR_LEAK |
 | AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-04 | PROVIDER_BACKEND_ABSTRACTION | MEDIUM | TEST GAP | ACCEPTED | PBA-FIX-B | — | `docs/project/architecture/INTEGRATIONS.md` — [Protocol v2.2 provider/backend abstraction target invariants (2026-08-18)](#protocol-v22-provider-backend-abstraction-target-invariants-2026-08-18) | `docs/project/maintainers/plans/INTEGRATIONS.md` — PBA-FIX-B | — | — | operator accepted 2026-08-18 |
 | AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-05 | PROVIDER_BACKEND_ABSTRACTION | MEDIUM | ARCHITECTURE DEFECT | ACCEPTED | PBA-FIX-D | — | `docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — [Protocol v2.2 provider/backend abstraction target invariants (2026-08-18)](#protocol-v22-provider-backend-abstraction-target-invariants-2026-08-18) | `docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — PBA-FIX-D | — | — | operator accepted 2026-08-18; MISSING_ABSTRACTION / VENDOR_LEAK |
+| AUDIT-20260818-INTERFACE_TASK_INTAKE-01 | INTERFACE_TASK_INTAKE | HIGH | IMPLEMENTATION/ARCHITECTURE DRIFT | ACCEPTED | ITI-FIX-A | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2.2 Tier-3 intake target invariants (2026-08-18)](#protocol-v22-tier3-intake-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — ITI-FIX-A | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-INTERFACE_TASK_INTAKE-02 | INTERFACE_TASK_INTAKE | HIGH | IMPLEMENTATION DEFECT | ACCEPTED | ITI-FIX-B | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` — [Protocol v2.2 task-intake execution convergence target invariants (2026-08-18)](#protocol-v22-task-intake-execution-convergence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — ITI-FIX-B | — | — | Related classification: TEST GAP; operator accepted 2026-08-18 |
+| AUDIT-20260818-INTERFACE_TASK_INTAKE-03 | INTERFACE_TASK_INTAKE | HIGH | BOUNDARY VIOLATION | ACCEPTED | ITI-FIX-C | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` — [Protocol v2.2 task-intake execution convergence target invariants (2026-08-18)](#protocol-v22-task-intake-execution-convergence-target-invariants-2026-08-18); `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2.2 Tier-3 intake target invariants (2026-08-18)](#protocol-v22-tier3-intake-target-invariants-2026-08-18) | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — ITI-FIX-C | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-INTERFACE_TASK_INTAKE-04 | INTERFACE_TASK_INTAKE | MEDIUM | IMPLEMENTATION/ARCHITECTURE DRIFT | ACCEPTED | ITI-FIX-A | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2.2 Tier-3 intake target invariants (2026-08-18)](#protocol-v22-tier3-intake-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — ITI-FIX-A | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-INTERFACE_TASK_INTAKE-05 | INTERFACE_TASK_INTAKE | MEDIUM | ARCHITECTURE DEFECT | ACCEPTED | ITI-FIX-C | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` — [Protocol v2.2 task-intake execution convergence target invariants (2026-08-18)](#protocol-v22-task-intake-execution-convergence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — ITI-FIX-C | — | — | operator accepted 2026-08-18 |
+| AUDIT-20260818-INTERFACE_TASK_INTAKE-06 | INTERFACE_TASK_INTAKE | MEDIUM | TEST GAP | ACCEPTED | ITI-FIX-D | ITI-FIX-A, ITI-FIX-B, ITI-FIX-C | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2.2 Tier-3 intake target invariants (2026-08-18)](#protocol-v22-tier3-intake-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — ITI-FIX-D | — | — | Related classification: PROCESS / CLAIM; operator accepted 2026-08-18 |
 
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 3
+**Completed layers:** 4
 
 First layer summary:
 
@@ -86,7 +93,14 @@ Third layer summary:
 - **Systemic themes:** concrete persistence leakage through paper abstractions; canonical observability provider bypass; provider-specific configuration leakage; incomplete vendor-boundary proof; missing Experimentation persistence abstraction
 - **Recommended remediation order:** PBA-FIX-A → PBA-FIX-B → PBA-FIX-C → PBA-FIX-D (see layer report)
 
-**Cumulative (completed layers only):** 20 accepted findings — 0 CRITICAL, 10 HIGH, 10 MEDIUM, 0 LOW
+Fourth layer summary:
+
+- **Layer:** INTERFACE_TASK_INTAKE — **FAIL** at `2640d826da6f1a781e798326ff1b21b3a9f7c4cc`
+- **Accepted findings:** 6 total — 0 CRITICAL, 3 HIGH, 3 MEDIUM, 0 LOW
+- **Systemic themes:** canonical normalized intake contract adoption; distinct TaskId/RunId on public surfaces; UnifiedTaskRunner convergence before Nexus; typed intake semantics preservation; typed executor interfaces; E2E streaming intake parity proof
+- **Recommended remediation order:** ITI-FIX-A → ITI-FIX-B → ITI-FIX-C → ITI-FIX-D (see layer report)
+
+**Cumulative (completed layers only):** 26 accepted findings — 0 CRITICAL, 13 HIGH, 13 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -106,3 +120,7 @@ Third layer summary:
 | PBA-FIX-B | AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-02, 04 | ACCEPTED / PLANNED | observability export boundary + vendor-boundary governance |
 | PBA-FIX-C | AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03 | ACCEPTED / PLANNED | provider-owned guardrail configuration |
 | PBA-FIX-D | AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-05 | ACCEPTED / PLANNED | experiment persistence port — not implemented in this persistence task |
+| ITI-FIX-A | AUDIT-20260818-INTERFACE_TASK_INTAKE-01, 04 | ACCEPTED / PLANNED | canonical normalized intake contract — not implemented in this persistence task |
+| ITI-FIX-B | AUDIT-20260818-INTERFACE_TASK_INTAKE-02 | ACCEPTED / PLANNED | distinct TaskId/RunId on public intake paths |
+| ITI-FIX-C | AUDIT-20260818-INTERFACE_TASK_INTAKE-03, 05 | ACCEPTED / PLANNED | UnifiedTaskRunner convergence + typed executor interface |
+| ITI-FIX-D | AUDIT-20260818-INTERFACE_TASK_INTAKE-06 | ACCEPTED / PLANNED | E2E streaming intake parity proof after A/B/C |

@@ -135,3 +135,19 @@ Finding 05 remains owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](PLATFOR
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
 
 ---
+
+### Protocol v2.2 remediation — INTERFACE_TASK_INTAKE (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-INTERFACE-TASK-INTAKE-PERSIST.
+
+| Block | Status | Findings | Dependencies | Acceptance intent |
+|-------|--------|----------|--------------|-------------------|
+| **ITI-FIX-A** | ACCEPTED / PLANNED | [`AUDIT-20260818-INTERFACE_TASK_INTAKE-01`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md), [`04`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) | — | One canonical normalized intake contract; surface adapters become thin adapters; preserve typed intake semantics; bounded legacy metadata bridge only |
+| **ITI-FIX-D** | ACCEPTED / PLANNED | [`AUDIT-20260818-INTERFACE_TASK_INTAKE-06`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) | ITI-FIX-A, ITI-FIX-B, ITI-FIX-C | Replace flag-only intake parity proof with E2E product-host evidence: stream/chunks → `TaskEnvelope` → `Task` → `UnifiedTaskRunner` → `TaskResult`; cross-reference **ITI-FIX-C** for interaction runner convergence |
+
+**Qualification:** Historical AUDIT-IDEAL Done labels (including AUDIT-IDEAL-3.2) remain historical delivery facts. Protocol v2.2 accepted the new intake parity and normalization gaps above — do not silently rewrite historical Done history.
+
+**Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
+
+---
