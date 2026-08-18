@@ -1,47 +1,300 @@
-# Tier-3 Application Environment, Sandbox, and Shadow Workspace
+# Tier-3 Application Environment
 
-**Status:** Canonical architecture (domain pair 1:1) · **Application authoring gate:** §24–§50 + APP-CON-* / APP-EVOL-* / APP-OPS-* (host environments)
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
-**Plan (1:1):** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §26
-**Audit layers:** 3, 28
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)**Agent cooperation:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §30 · §35–§39 · [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix H · AC
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates H-APP + APP-CON/EVOL/OPS)
-**Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — Tier-3 applications are platform adopters (`PLATFORM-INV-004`). Reusable infrastructure discovered during application development must be promoted to the owning platform domain before application implementation continues (`PLATFORM-INV-001`, `PLATFORM-INV-002`).
+**Intergrax Tier-3 Application Environment** is the product composition layer that declares an application's manifest, environment posture, agent bindings, and platform capability configuration while executing through canonical Harness runtime contracts.
+
+> **Tier-3 composes the platform; it does not fork the platform.**
+
+> **Application semantics ≠ hosting lifecycle.**
+
+## Why it matters
+
+Without this layer:
+
+- every application assembles runtime differently,
+- product code copies platform mechanisms instead of adopting them,
+- HTTP, queue, MCP, and CLI entry points diverge onto different execution paths,
+- manifest and environment profile responsibilities blur,
+- hosting lifecycle leaks into application semantics,
+- plugins are rediscovered per app,
+- private platform-state reach-in becomes a normal integration pattern,
+- product-specific vocabulary pollutes generic platform contracts.
+
+Tier-3 solves this by keeping **one canonical composition path** from product definition to Nexus, with explicit boundaries to Hosting, Agents, Governance, Observability, Integrations, and Experimentation.
+
+## Maturity boundary
+
+> [!IMPORTANT]
+> **Protocol v2 (2026-08-18) accepted two Tier-3 boundary defects that remain planned, not fixed:** **TL-FIX-C** (LKW-specific fields on generic `HostDeploymentProfile`) and **TL-FIX-D** (private `_execution_adapter` mutation in Legal and Dispute Sim hosts). Finding 05 (dynamic boundary guard scope) is owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION`](PLATFORM_FOUNDATION.md) — not Tier-3 remediation. See [Current limitations](#current-limitations--protocol-v2).
+
+> [!NOTE]
+> Historical **L3 / Done** plan rows and AUDIT-IDEAL closeout labels describe harness delivery — **not** automatic universal product production qualification. Representative product proof exists for LKW ([`PROOFS.md`](../proofs/PROOFS.md)); other hosts vary.
+
+**Primary audience:** Tier-3 application authors, principal engineers wiring host factories, and architects evaluating application vs platform ownership — after the platform overview in the root README.
+
+## At a glance
+
+| Concern | Summary |
+| -------- | -------- |
+| **Responsibility** | Product application definition, environment posture, agent roster, platform capability configuration |
+| **Composition root** | `ApplicationEnvironmentProfile` — configures platform-owned mechanisms; does not implement them |
+| **Canonical wiring** | `wire_application_environment()` → frozen `ApplicationEnvironmentWiring` |
+| **Execution surface** | `UnifiedTaskRunner.run_task()` on supported intake paths → `NexusLoop` |
+| **Agent roster** | `AgentBinding[]` — mount/config only; agent lifecycle owned by Agent layer |
+| **Environment snapshot** | Immutable `EnvironmentSnapshot` on deploy/intake — request-bound, not durable history |
+| **App hooks** | `ApplicationHost.on_hook` — task/domain reactions; distinct from Hosting lifecycle hooks |
+| **Plugin boundary** | Applications consume admitted plugins; domain wiring discovers them |
+| **Hosting boundary** | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) owns process lifecycle — not application definition |
+| **Protocol v2 debt** | TL-FIX-C · TL-FIX-D — **ACCEPTED / PLANNED** |
+| **Maturity** | **A4 · I3 · P3 · E3** — see [Current maturity](#current-maturity) |
+| **Go deeper** | [Engineering canon](#engineering-canon) · [extended depth satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) · [production gates satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md) · [plan](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) |
+
+## Flagship architecture visual
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/tier3-application-composition-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/tier3-application-composition-light.svg">
+  <img
+    alt="Conceptual diagram: ApplicationManifest, ApplicationEnvironmentProfile, and AgentBinding compose through wire_application_environment into ApplicationEnvironmentWiring, HarnessApplication or ApplicationHost, UnifiedTaskRunner, Nexus, and platform domains. Side panel: Tier-3 definition to Application Hosting for process lifecycle."
+    src="assets/tier3-application-composition-light.svg"
+  >
+</picture>
+
+## Canonical composition flow
+
+```text
+product definition
+      ↓
+ApplicationManifest
+      +
+ApplicationEnvironmentProfile
+      +
+AgentBinding[]
+      ↓
+wire_application_environment()
+      ↓
+ApplicationEnvironmentWiring
+      ↓
+HarnessApplication / ApplicationHost
+      ↓
+UnifiedTaskRunner
+      ↓
+Nexus
+      ↓
+Agents / Tools / RAG / Memory / Policy / Observability
+```
+
+**Separate concern — hosting only:**
+
+```text
+Tier-3 application definition
+      ↓
+Application Hosting
+      ↓
+process lifecycle / readiness / restart / shutdown
+```
+
+1. Define product/application identity (`app_id`, ownership, route/env prefixes).
+2. Build `ApplicationManifest` with roster entries.
+3. Resolve `ApplicationEnvironmentProfile` (manifest field or lab/product defaults).
+4. Attach typed `AgentBinding[]` with factories or mount helpers.
+5. Resolve nested bundle fields / flat wire shims (`spec_version` 1.x compat).
+6. Materialize `EnvironmentSnapshot` on deploy or task intake when wired.
+7. Call `wire_application_environment(manifest, env, …)` — single domain wiring entry.
+8. Build host facade via `build_harness_host_runtime()` or `HarnessApplication.build_*()`.
+9. Route supported intake through `UnifiedTaskRunner.run_task()` (or `run_runtime_request`).
+10. Execute through `NexusLoop` and platform domains.
+11. Emit `ApplicationRunSummary` (Plane A) into Observability path when orchestration completes.
+12. Optionally wrap with Application Hosting for continuous process lifecycle.
+
+## Manifest vs profile vs hosting
+
+| Concern | Owner |
+| -------- | ------ |
+| What the application **is** (identity, route, env prefix, roster declaration) | `ApplicationManifest` |
+| How Harness **configures** capabilities for this host | `ApplicationEnvironmentProfile` |
+| Agent roster mount / per-entry options | `AgentBinding` |
+| Resolved runtime composition **output** | `ApplicationEnvironmentWiring` |
+| Task execution author surface | `UnifiedTaskRunner` / `HarnessApplication` / host factory |
+| Process lifecycle, readiness, restart, OS integration | [`Application Hosting`](APPLICATION_HOSTING.md) |
+
+## Responsibility boundaries
+
+### Tier-3 owns
+
+- Declaring manifest, environment profile, bindings, interaction/workload posture.
+- Selecting integration profiles, observability posture, budget **declarations**.
+- Wiring through `wire_application_environment()` and public host factories.
+- Application hooks (`ApplicationHost.on_hook`) for domain reactions.
+- Consuming platform-admitted plugins and resolved wiring artifacts.
+
+### Tier-3 does **not** own
+
+| Neighbor | Boundary |
+| -------- | -------- |
+| **Application Hosting** | Process lifecycle, readiness, restart, shutdown — does not replace Manifest, Profile, `UnifiedTaskRunner`, or Nexus path |
+| **Agents** | Agent contracts, cognition, tool behavior — Tier-3 composes/rosters only |
+| **Governance** | Authorization decisions — application selects within allowed profiles; cannot weaken global policy |
+| **Observability** | Execution evidence semantics — Tier-3 configures posture; no app-local trace authority |
+| **Integrations** | Provider abstraction — Tier-3 selects profiles; no product-local vendor SDK wrappers when platform integration exists |
+| **Experimentation** | Candidate config testing — Tier-3 defines actual composition; Hosting activates running service |
+
+### Platform adopter invariant
+
+```text
+Tier-3 application  →  consumes public platform capabilities
+Tier-3 application  ✗  duplicates universal platform mechanisms
+```
+
+Reusable infrastructure discovered during application work returns to the owning platform domain ([`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) `PLATFORM-INV-001`, `PLATFORM-INV-002`, `PLATFORM-INV-004`).
+
+## Public invariants
+
+```text
+Tier-3 composes the platform; it does not fork the platform.
+Application semantics ≠ hosting lifecycle.
+Application configuration ≠ authorization.
+Applications consume admitted plugins; they do not rediscover them.
+Plugin admission evidence ≠ production qualification.
+Product-specific vocabulary belongs to product-owned configuration or typed extensions.
+Tier-3 should use public typed composition APIs, not private platform-state mutation.
+All supported intake surfaces should converge on the canonical task execution path.
+```
+
+## Current limitations — Protocol v2
+
+Accepted audit: [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) findings **03–05** (2026-08-18). Remediation tracked in [plan](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md); **not implemented** by audit persistence.
+
+### TL-FIX-C — product vocabulary in generic contract
+
+**Status:** ACCEPTED / PLANNED · **not fixed**
+
+Some generic Tier-3 profile surfaces still contain product-specific deployment vocabulary; accepted remediation will move those concerns to product-owned configuration or typed extensions.
+
+| Field | Contract | Impacted product | Target ownership |
+| ----- | -------- | ---------------- | ---------------- |
+| `lkw_hybrid_daemon_enabled` | `HostDeploymentProfile` | Local Knowledge Workspace | Product-owned deployment config or typed extension |
+| `lkw_daemon_bind_host` | `HostDeploymentProfile` | LKW hybrid daemon | Product-owned |
+| `lkw_daemon_port` | `HostDeploymentProfile` | LKW hybrid daemon | Product-owned |
+| `business_agents_deploy_enabled` | `HostDeploymentProfile` | LKW business agents deploy | Product-owned |
+
+**Code:** `intergrax/applications/contracts/environment_profile/sub_profiles.py` (`HostDeploymentProfile`).
+
+### TL-FIX-D — private composition reach-in
+
+**Status:** ACCEPTED / PLANNED · **not fixed**
+
+Some current product hosts still use private platform-state composition as a workaround; this is **not** the target public composition API and remediation is planned.
+
+| Application | Path | Pattern |
+| ----------- | ---- | ------- |
+| `legal_application` | `applications/legal_application/host/factory.py` | `run_service._execution_adapter = queue_wiring.execution_adapter` |
+| `dispute_sim_application` | `applications/dispute_sim_application/host/factory.py` | same private assignment |
+
+**Cause:** `wire_optional_queue_execution` requires an existing `DefaultRunService` to build `QueuedNexusExecutionAdapter`; no public rebinding API on `DefaultRunService` today. **Not** all reference hosts use this pattern — LKW and lab hosts use `build_harness_host_runtime()` without documented reach-in.
+
+### Finding 05 — dynamic boundary (Platform Foundation)
+
+Tier-3 consumer code under top-level `applications/` is not in the current `check_harness_no_getattr.py` scan roots. **Target invariant:** dynamic boundary access must be explicit and mechanically governed. **Ownership:** **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](../maintainers/plans/PLATFORM_FOUNDATION.md) — do not treat as Tier-3-fixed.
+
+## Current implementation state
+
+| Mechanism | State |
+| --------- | ----- |
+| `ApplicationManifest` | Shipped — identity, roster, optional embedded `environment`, integration profile, ownership metadata |
+| `ApplicationEnvironmentProfile` | Shipped — nested bundles + flat 1.x shims; composition root |
+| Hierarchical bundles | M1–M3 Done — nested canonical at `spec_version` 2.0; flat wire compat preserved |
+| `EnvironmentSnapshot` | Shipped — immutable deploy/intake materialization; digests for profile/roster |
+| `ApplicationEnvironmentState` | Shipped — task-scoped hook state (`app_env_state.v2`); phases via `EnvironmentTaskPhase` |
+| `wire_application_environment()` | Shipped — canonical domain wiring entry |
+| `ApplicationEnvironmentWiring` | Shipped — frozen dataclass output; not a second runtime authority |
+| `HarnessApplication` | Shipped — fluent author facade → manifest + `build_harness_host_runtime()` |
+| `ApplicationHost` | Shipped — Protocol for `on_hook`; distinct from `HostedApplicationHooks` |
+| `UnifiedTaskRunner` | Shipped — HTTP/MCP/eval paths on major reference hosts; queue worker paths converge when wired |
+| Intake parity | Done on plan register for product hosts (HTTP, async queue, streaming where implemented, scheduled/hybrid via profile) — not every theoretical surface |
+| Sandbox / shadow | Partial — real `SandboxSessionManager` / `ShadowWorkspaceManager` when profile enables; not a universal production isolation guarantee |
+| Production gates | Scripts exist (`check_application_production_gates.py` et al.); CI smoke invokes on PR/`main` — see [Evidence](#evidence--proof) |
+| TL-FIX-C / TL-FIX-D | Open planned remediation |
+
+## Current maturity
+
+Four-axis qualification ([`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md)):
+
+| Axis | Rating | Rationale |
+| ---- | ------ | --------- |
+| **Architecture (A)** | **A4** | Stable composition model and adjacent ownership; **not A5** while TL-FIX-C/D remain accepted |
+| **Implementation (I)** | **I3** | Canonical path works on major hosts; private reach-in isolated to Legal/Dispute Sim queue wiring |
+| **Production (P)** | **P3** | Gate scripts + partial CI smoke; not universal product production qualification |
+| **Evidence (E)** | **E3** | LKW bounded platform proof; no E5 external/customer deployment evidence |
+
+**Sub-axis (honest, not averaged):**
+
+| Area | Note |
+| ---- | ---- |
+| Composition contracts | Strong — wiring entry + frozen output |
+| Intake parity | Good on reference/product hosts; not all surfaces proven |
+| Profile resolution | Nested bundles shipped; no multi-file org/base resolver service |
+| Plugin bootstrap | Domain wiring owns discovery; evidence on wiring result |
+| Production gates | APP-PROD-1..8 Done in satellite register; CI wiring partial vs plan backlog drift |
+| Sandbox/shadow | Runtime managers exist; maturity varies by host |
+| Protocol v2 remediation | TL-FIX-C/D planned |
+
+> **Legacy naming:** Historical **L3** / feature **Done** rows in the plan describe harness delivery phases — not automatic **P4** production readiness for every Tier-3 host.
+
+## Evidence / proof
+
+| Layer | Route |
+| ----- | ----- |
+| Architecture | This hub · satellites · ADR-APP-* · [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) |
+| Unit / gate | `tests/unit/applications/` — profile bundles, manifest, wiring, runner, hooks; `scripts/gates/check_application_production_gates.py` |
+| Integration | Host factory tests · intake convergence · plugin evidence · environment snapshot |
+| Product / reference | LKW — [`PROOFS.md`](../proofs/PROOFS.md) · [`LKW Platform Proof`](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
+| Public proof | LKW primary bounded path — not a dedicated generic Tier-3-only proof route |
+| External / customer | Not claimed |
+
+**Production gates + CI:** `check_application_production_gates.py` runs in `.github/workflows/unit-tests.yml` ci-smoke (PR and `main` push). **`development`-branch pushes and doc-only pushes do not trigger this path.** Plan §6.2y still lists **APP-PROD-9** without Done marker while production-gates satellite marks it Done — **plan drift; not reconciled in this task.**
+
+## Go deeper
+
+| Depth | Route |
+| ----- | ----- |
+| Engineering canon | [Below — key contracts reconciled to code](#engineering-canon) |
+| Extended depth §20–§39 | [`satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) |
+| Production gates §40+ | [`satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md) |
+| Implementation plan | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) |
+| Application Hosting | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) |
+| Agent contracts | [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) |
+| Governance | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
+| Observability | [`OBSERVABILITY.md`](OBSERVABILITY.md) |
+| Platform Foundation | [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) |
+| Experimentation / DX | [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
+| Protocol v2 audit | [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) |
 
 ---
 
-## Cursor read scope (token budget)
+## Engineering canon
 
-**Do not read this entire file in one session** (TIER3_APPLICATION_ENVIRONMENT canon).
+**Topology:** this hub is the public front + engineering hub. Bulky §20–§39 detail lives in the [extended-depth satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md). §40+ production gates live in the [production-gates satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md). Do not duplicate satellite bodies here.
 
-- **Implement / audit default:** §20–§25 host profile + manifest wiring. Extended §26–§39: [`satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md). §40+: [`satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md).
-- **Use** table of contents below — `Read` with offset/limit per §.
-- **Plan hub:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) (scoped §6 only).
-- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
-- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+**Implement / audit default:** profile + manifest + wiring (§22–§25 summary below). Load **at most one** satellite per session.
 
----
-## Architecture satellites (read on demand)
+### Document metadata
 
-Large § blocks moved out of the architecture hub to reduce Cursor context use.
-Load **only** the satellite matching your task or cited §.
+| Field | Value |
+| ----- | ----- |
+| **Status** | Canonical architecture (domain pair 1:1) |
+| **Hub** | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) |
+| **Plan (1:1)** | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) |
+| **Architecture governance** | [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) |
+| **Agent cooperation** | [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §30 · §35–§39 |
+| **Last updated** | 2026-08-18 — DOC-3V design-system modernization |
 
-| Satellite | Contents |
-|-----------|----------|
-| [`satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) | extended depth |
-| [`satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md) | production gates |
-
-> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
-
-
-## Related platform domains
+### Related platform domains
 
 | Domain | Relationship |
 |--------|--------------|
-| [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Optional **deployment wrapper** around a Tier-3 application definition |
+| [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Optional deployment wrapper around a Tier-3 application definition |
 
-A Tier-3 application definition may be wrapped by Application Hosting for continuous availability, readiness, instance ownership, signals, graceful shutdown, restart supervision, and OS service integration. **Tier-3 application semantics remain unchanged** across deployment models — standalone runner, hosted engine, or future deployment models all execute the same `Task` / `NexusLoop` path.
+A Tier-3 application definition may be wrapped by Application Hosting for continuous availability, readiness, instance ownership, signals, graceful shutdown, restart supervision, and OS service integration. **Tier-3 application semantics remain unchanged** — standalone runner, hosted engine, or future deployment models execute the same `Task` / `NexusLoop` path.
 
 Application Hosting **does not replace** `ApplicationManifest`, `ApplicationEnvironmentProfile`, `UnifiedTaskRunner`, `ApplicationHost.on_hook`, or `NexusLoop`.
 
@@ -49,96 +302,200 @@ Application Hosting **does not replace** `ApplicationManifest`, `ApplicationEnvi
 
 | Tier-3 owns (product workload posture) | Application Hosting owns (platform deployment mechanics) |
 |----------------------------------------|----------------------------------------------------------|
-| the application requires continuous availability | process lifecycle |
-| the application exposes HTTP/MCP/interaction surfaces | liveness/readiness coordination |
-| the application contributes background components | instance ownership |
-| the application supports reactive, scheduled, or hybrid workloads | signal handling |
-| posture declarations in profile and host factory wiring | graceful shutdown |
+| continuous availability requirement | process lifecycle |
+| HTTP/MCP/interaction surface declaration | liveness/readiness coordination |
+| background component contribution | instance ownership |
+| reactive, scheduled, or hybrid workload declaration | signal handling |
+| posture in profile and host factory | graceful shutdown |
 | | restart supervision |
 | | generic OS hosting adapters |
-| | service-manager integration boundaries |
 
-Canon: [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) · [`plan/APPLICATION_HOSTING.md`](../maintainers/plans/APPLICATION_HOSTING.md) · [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) §34.
+### Engineering canon index
 
-
-## Table of contents
-
-| § | Topic |
-|---|--------|
-| [§20](.#20-shadow-workspace-model) | Shadow workspace model |
-| [§21](.#21-sandbox-model) | Sandbox model |
-| [§22](.#22-application-environment-profile-canonical) | **ApplicationEnvironmentProfile** (composition root) |
-| [§22.6](.#226-hierarchical-profile-bundles) | **Hierarchical profile bundles** (P1-ARCH-01 · ADR-APP-003) |
-| [§23](.#23-application-interaction-postures-canonical) | Interaction postures, routing, scenarios |
-| [§24](.#24-application-contract) | **Application contract** (`ApplicationManifest`) |
-| [§25](.#25-application-interface-run_task-facade-harnessapplication-and-applicationhost) | **Application interface:** `run_task()`, `HarnessApplication`, `ApplicationHost` |
-| [§26](.#26-application-execution-result) | **Application execution result** (Plane A) |
-| [§27](.#27-application-roster-and-registry-assembly) | Roster and registry assembly |
-| [§28](.#28-application-environment-architecture-app) | **Application Environment Architecture (APP)** |
-| [§29](.#29-tier-and-terminology-canon-application) | Tier and terminology canon (application) |
-| [§30](.#30-three-environment-control-modes) | Three environment control modes |
-| [§31](.#31-author-facing-harnessapplication-facade) | Author-facing `HarnessApplication` facade |
-| [§32](.#32-applicationhost-hook-surface) | **ApplicationHost hook surface** |
-| [§33](.#33-dual-observability-application-and-agent-planes) | Dual observability planes |
-| [§34](.#34-per-agent-binding-from-the-application) | Per-agent binding from application |
-| [§35](.#35-use-case-catalog-application--environment) | Use-case catalog |
-| [§36](.#36-final-architecture-application--agent--harness-cooperation) | Final architecture synthesis |
-| [§37](.#37-pre-implementation-operational-contracts-app-con) | Pre-implementation operational contracts |
-| [§38](.#38-execution-responsibility-stack-l4-application) | Execution stack: L4 application |
-| [§39](.#39-organizational-policy-envelope--virtual-workforce) | Organizational policy envelope |
-| [§40](.#40-production-reliability-safety-and-release-gates-tier-3) | Production reliability and release gates |
-| [§41](.#41-composition-primitives-separation-matrix) | Composition primitives separation |
-| [§42](.#42-applicationenvironmentstate-typed-host-state) | **ApplicationEnvironmentState** |
-| [§43](.#43-budget-reactions-and-token-governance) | Budget reactions and token governance |
-| [§44](.#44-scenario-test-matrix-tier-3) | Scenario test matrix |
-| [§45](.#45-checklist-for-new-application-implementation) | New application checklist |
-| [§46](.#46-production-readiness-acceptance-criteria) | Production readiness acceptance criteria |
-| [§47](.#47-developer-mental-model) | **Developer mental model** (recipes) |
-| [§48](.#48-application-artifacts) | **Application artifacts** |
-| [§49](.#49-runtime-evolution-and-governance) | **Runtime evolution and governance** |
-| [§50](.#50-platform-operations-canon) | **Platform operations canon** (capability graph, registry, ownership, health) |
-| [§51](.#51-cross-document-consistency-freeze) | **Cross-document consistency** (freeze audit) |
+| § | Topic | Detail location |
+|---|--------|-----------------|
+| §20 | Shadow workspace | [Satellite §20](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) |
+| §21 | Sandbox | [Satellite §21](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) |
+| §22 | `ApplicationEnvironmentProfile` | Below + [Satellite §22](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) |
+| §23 | Interaction postures | [Satellite §23](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) · [`ORCHESTRATION.md`](ORCHESTRATION.md) §56 |
+| §24 | `ApplicationManifest` | Below + [Satellite §24](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) |
+| §25 | Execution facade | Below + [Satellite §25](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) |
+| §26–§39 | Execution result, roster, APP canon, hooks, observability, bindings, checklists | [Extended-depth satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) |
+| §40+ | Production gates, env state, budget, scenarios, ops | [Production-gates satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md) |
 
 ---
 
----
+<a id="22-application-environment-profile-canonical"></a>
 
-## OECP profile surfaces (target)
+## §22 — ApplicationEnvironmentProfile (composition root)
 
-Tier-3 `ApplicationEnvironmentProfile` declares opt-in surfaces for the Observability & Evaluation Control Plane (OECP): `custom_telemetry_providers`, `custom_telemetry_enrichers`, `custom_event_handlers`, `custom_eval_metric_plugins`, `eval_dataset_refs`, `eval_gate_profiles`, `counterfactual_profiles`, `vendor_export_profiles`. These are **architectural profile hooks** — not separate observability semantics. Full contract: [`satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) §22.1.1 · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability--evaluation-control-plane).
+`ApplicationEnvironmentProfile` is the **Tier-3 composition root**. It declares how this application configures available Harness capabilities — execution mode, identity, observability, policy, queueing, RAG, memory, context, scaling, budgets, interaction posture — as **data**, not custom runtime implementations.
+
+**Code:** `intergrax/applications/contracts/environment_profile/root.py`
+
+Nested bundles (ADR-APP-003 · APP-EVOL-8) are canonical storage:
+
+```text
+ApplicationEnvironmentProfile
+├── meta (HostMeta)
+├── security (SecurityEnvelope)
+├── capabilities (CapabilityBundle)
+├── cognition (CognitionBundle)
+├── governance (GovernanceBundle)
+├── topology (TopologyBundle)
+├── isolation (IsolationBundle)
+└── extensions (EnvironmentExtensions)
+```
+
+Flat top-level properties remain **wire-compatible shims** for `spec_version` 1.x JSON. **`spec_version` 2.0** nested wire is canonical (M3 Done). Wiring (`wire_application_environment`, `materialize_runtime_config`, `build_nexus_loop_from_environment`) reads slices through bundles/shims — no Nexus fork.
+
+**Profile resolution today:** effective profile comes from `ApplicationManifest.environment` when set, else `ApplicationManifest.resolved_environment()` lab/product defaults — not a separate multi-file org/base/environment resolver service. Authors compose presets in Python or YAML; per-agent effective config uses `merge_environment()` (platform → application profile → binding → request).
+
+<a id="226-hierarchical-profile-bundles"></a>
+
+### §22.6 — Hierarchical profile bundles
+
+| Phase | `spec_version` | Behavior |
+| ----- | -------------- | -------- |
+| M1 | 1.x | Nested models + flat `@property` shims |
+| M2 | 1.x | Per-bundle presets (`CapabilityBundle.lab()`, …) |
+| M3 | 2.0.0 | Nested JSON canonical; flat top-level deprecated |
+
+`EnvironmentSnapshot` digests use bundle-normalized form so nested and flat serializations fingerprint equally when semantically equal.
+
+### OECP profile surfaces (target)
+
+Tier-3 profile may declare opt-in Observability & Evaluation Control Plane hooks (`custom_telemetry_providers`, `custom_eval_metric_plugins`, `eval_gate_profiles`, …) — **architectural target / docs**, not shipped runtime fields on all hosts. Full contract: [Satellite §22.1.1](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) · [`OBSERVABILITY.md`](OBSERVABILITY.md). Do not present OECP hooks as current universal capability.
+
+### Platform plugin bootstrap evidence (APP-ADOPTION-1)
+
+Domain plugin discovery and admission run in **domain/shared wiring** (`memory_wiring`, `policy_wiring`, `context_wiring`, …). Applications **do not** run setuptools discovery or maintain a global plugin inventory.
+
+`wire_application_environment()` attaches:
+
+- **Contract:** `ApplicationPlatformPluginEvidence`
+- **Field:** `ApplicationEnvironmentWiring.platform_plugin_evidence`
+- **Semantics:** per-domain `DomainPluginLoadReport` from the **same** bootstrap invocation — discovery/admission evidence only, **not** `PRODUCTION_QUALIFIED`.
+
+> **Plugin admission evidence ≠ production qualification.**
+
+<a id="wire-application-environment"></a>
+
+### §22.2 — `wire_application_environment()`
+
+**Canonical current composition path** for Tier-3 hosts. Single entry composes tool/skill/policy/memory/context/RAG/modality/codecraft/reliability/observability wiring, optional shadow/sandbox managers, registry snapshot, capability graph view, and plugin evidence.
+
+**Output:** frozen `@dataclass` `ApplicationEnvironmentWiring` — resolved artifacts for host factories; **not** a parallel runtime authority.
+
+**Code:** `intergrax/applications/_shared/environment_wiring.py`
+
+<a id="24-application-contract"></a>
+
+## §24 — ApplicationManifest
+
+**Role:** identity / ownership / product application declaration.
+
+**Useful fields (shipped):** `app_id`, `name`, `description`, `version`, `profile` (`ApplicationProfile` LAB/PRODUCT), `route_prefix`, `env_prefix`, `default_host`, `default_port`, `default_capability`, `agents: list[AgentBinding]`, `integration_profile`, `features`, optional `environment: ApplicationEnvironmentProfile`, optional `ownership`.
+
+**Not overloaded here:** full runtime wiring (→ `wire_application_environment`), process lifecycle (→ Hosting), authorization (→ Governance).
+
+`AgentBinding` — one roster entry: prefer `AgentBinding.mount(AgentClass, factory=…)`; serialized `import_path` / `factory_path` for scaffold/YAML only. Per-entry options (`memory_scope_override`, `rag_collection_override`, tool allow/deny lists, `budget_slice`) configure allowed extension points — they do **not** rewrite core `AgentContract` arbitrarily. Effective merge order at runtime: **platform → application profile → binding → request** (`merge_environment` in `intergrax/agents/run_environment.py`).
+
+<a id="25-application-interface-run_task-facade-harnessapplication-and-applicationhost"></a>
+
+## §25 — Application interface
+
+### `UnifiedTaskRunner`
+
+Single Task entry via `NexusLoop.handle_task`. Used by HTTP routers, MCP mirrors, eval paths, LKW task executor, and background worker factories on wired hosts.
+
+```text
+HTTP / CLI / queue worker / MCP / eval
+      ↓
+UnifiedTaskRunner.run_task()  (when host is wired correctly)
+      ↓
+NexusLoop
+```
+
+**Honest limit:** not every code path in the monorepo is proven to use `UnifiedTaskRunner` yet; queue composition in Legal/Dispute Sim additionally mutates private `_execution_adapter` (TL-FIX-D). Target: all **supported** intake surfaces converge on the same task semantics.
+
+### `HarnessApplication`
+
+Fluent author-facing builder (lab/scaffold flows) producing manifest + `build_harness_host_runtime()` / FastAPI app. Convenience facade — not a second platform.
+
+### `ApplicationHost`
+
+Protocol for `on_hook(point, context) -> HookResult | None`. Maps application/domain reactions to Nexus `HookPoint` values.
+
+**Boundary (normative):**
+
+```text
+ApplicationHost.on_hook     → application reactions / domain integration
+HostedApplicationHooks      → process lifecycle / readiness / shutdown / restart
+```
+
+Do not merge. See [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) HOST-INV-11.
+
+<a id="environment-snapshot"></a>
+
+## EnvironmentSnapshot
+
+Immutable materialization for one deploy or Task intake (`environment_snapshot.v1`). Fields include `snapshot_id`, `app_id`, `app_version`, `profile_snapshot_id`, manifest/roster digests, `captured_by` (`deploy` | `intake` | `manual_export`).
+
+**Semantics:** request/deploy-bound runtime object propagated via `Task.metadata` and hook runtime state — **not** a durable historical reconstruction store.
+
+<a id="42-applicationenvironmentstate-typed-host-state"></a>
+
+## §42 — ApplicationEnvironmentState
+
+Typed host-scoped state on `HookContext.runtime_state` (`app_env_state.v2`). Tracks `EnvironmentTaskPhase` (intake → … → completed/failed), `EnvironmentHealthStatus`, HITL/budget overlays, shadow/sandbox refs — **not** BOOTING/READY/DRAINING process states (those belong to Application Hosting).
+
+**Persistence:** task-scoped by default via MODIFY merges within one `Task` lifecycle; cross-task persistence uses Tier-0 stores — not unbounded `custom` growth.
+
+<a id="20-shadow-workspace-model"></a> <a id="21-sandbox-model"></a>
+
+## §20–§21 — Shadow workspace and sandbox (summary)
+
+| Mechanism | Profile | Runtime | Maturity |
+| --------- | ------- | ------- | -------- |
+| Shadow workspace | `ShadowWorkspaceProfile` in `IsolationBundle` | `ShadowWorkspaceManager` when wired | Partial — real manager; retention/cleanup host-dependent (APP-CON-8 gate) |
+| Sandbox | `SandboxProfile` | `SandboxSessionManager` when wired | Partial — code-exec isolation path; not universal prod guarantee |
+
+Distinct from Experimentation shadow/candidate **profile versions** (AHI) — different ownership. Detail: [Satellite §20–§21](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md).
+
+<a id="26-application-execution-result"></a>
+
+## §26 — ApplicationRunSummary
+
+Plane A orchestration rollup (`application_run_summary.v1`) built from Nexus task execution — agent invocations, token totals, terminal status. Linked to Observability/evidence path; **optional** per task depending on orchestration path and wiring. Tier-3 does not define a second observability authority.
+
+<a id="43-budget-reactions-and-token-governance"></a>
+
+## §43 — Budget / token posture (boundary)
+
+```text
+Tier-3  →  declares budget_reaction profile + AgentBinding.budget_slice posture
+Agent/runtime/policy layers  →  enforce metering and reactions
+```
+
+Tier-3 does **not** own global token accounting or the budget governor. STRICT product hosts: APP-PROD-7 gate expects COST profile + slices — see [production-gates satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md).
 
 <a id="protocol-v2-tier3-boundary-target-invariants-2026-08-18"></a>
 
-## Protocol v2 Tier-3 boundary target invariants (2026-08-18)
+## Protocol v2 target invariants (2026-08-18)
 
-Accepted Protocol v2 audit layer [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) (**FAIL**, findings 03–05 ACCEPTED). Historical Done feature rows (including LKW hybrid functionality) remain historical. Target state only:
+Accepted [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) findings 03–05. **Target state** (remediation planned):
 
-1. **Product-neutral contracts** — generic Tier-3 environment/profile contracts remain product-neutral ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-03`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
-2. **Product-owned deployment vocabulary** — LKW or another product's deployment vocabulary belongs to product-owned configuration or typed extension, built on generic platform capabilities ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-03`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
-3. **Public composition API** — Tier-3 application hosts compose lower layers through public typed contracts; direct mutation of `_private` platform state is not a supported composition API ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-04`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
-4. **Platform-owned composition cycles** — cyclic construction requirements between services/adapters MUST be resolved by a platform-owned public composition mechanism, not consumer reach-in ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-04`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
-5. **Governed dynamic access** — dynamic/reflection-based access at the Tier-3 boundary is explicit, justified, and mechanically governed; Tier-3 MUST NOT silently fall outside platform static-contract discipline ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-05`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md); cross-plan enforcement dependency: **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](../maintainers/plans/PLATFORM_FOUNDATION.md)).
-
-Remediation tracked as **TL-FIX-C** and **TL-FIX-D** in [plan](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md). **Not implemented** by audit persistence.
+1. Product-neutral generic Tier-3 contracts (TL-FIX-C).
+2. Public typed composition API — no private platform mutation (TL-FIX-D).
+3. Platform-owned resolution of composition cycles (TL-FIX-D).
+4. Governed dynamic access at consumer boundaries (TL-FIX-A / Platform Foundation).
 
 ---
 
-## Platform plugin bootstrap evidence (APP-ADOPTION-1)
+<a id="45-checklist-for-new-application-implementation"></a>
 
-Domain plugin discovery and admission run in **domain/shared wiring** (`memory_wiring`, `policy_wiring`, `context_wiring`, …). Applications **do not** run their own setuptools discovery or maintain a global plugin inventory.
-
-`wire_application_environment()` composes a single immutable snapshot:
-
-- **Contract:** `intergrax.applications.contracts.platform_plugin_evidence.ApplicationPlatformPluginEvidence`
-- **Field on wiring result:** `ApplicationEnvironmentWiring.platform_plugin_evidence`
-- **Contents:** per-domain `DomainPluginLoadReport` values taken from the **same** domain bootstrap invocation that materialized runtime state (no second scan). Memory, Policy, and Context domains participate when their wiring runs during `wire_application_environment()`.
-- **Semantics:** discovery/admission evidence only — **not** `PRODUCTION_QUALIFIED` / package gate 10 (`evaluate_package_production_admission` remains deferred).
-
-Hosts consume resolved capabilities plus this evidence; they do not re-discover plugins locally.
-
----
-
-# 45. Checklist For New Application Implementation
+# §45 — Checklist for new application implementation
 
 Before implementing a new Tier-3 environment, answer:
 
@@ -163,6 +520,6 @@ Before implementing a new Tier-3 environment, answer:
 18. Cross-ref product ARCHITECTURE.md — not duplicated in platform plan?
 ```
 
-If these questions cannot be answered, do not ship the host. **Guides:** [`guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](../technical/guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) (question 1) · [`guides/APPLICATION_CREATION_GUIDE.md`](../technical/guides/APPLICATION_CREATION_GUIDE.md) · [`applications/USAGE.md`](../../../applications/USAGE.md) · [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Step 4E · Appendix H.
+If these questions cannot be answered, do not ship the host. **Guides:** [`TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](../technical/guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) · [`APPLICATION_CREATION_GUIDE.md`](../technical/guides/APPLICATION_CREATION_GUIDE.md) · [`applications/USAGE.md`](../../../applications/USAGE.md).
 
----
+**Full §26–§51 canon:** [extended-depth](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) · [production-gates](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md) satellites.
