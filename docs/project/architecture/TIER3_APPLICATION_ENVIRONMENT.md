@@ -107,6 +107,20 @@ Canon: [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) · [`plan/APPLICATION_
 
 Tier-3 `ApplicationEnvironmentProfile` declares opt-in surfaces for the Observability & Evaluation Control Plane (OECP): `custom_telemetry_providers`, `custom_telemetry_enrichers`, `custom_event_handlers`, `custom_eval_metric_plugins`, `eval_dataset_refs`, `eval_gate_profiles`, `counterfactual_profiles`, `vendor_export_profiles`. These are **architectural profile hooks** — not separate observability semantics. Full contract: [`satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) §22.1.1 · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability--evaluation-control-plane).
 
+<a id="protocol-v2-tier3-boundary-target-invariants-2026-08-18"></a>
+
+## Protocol v2 Tier-3 boundary target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) (**FAIL**, findings 03–05 ACCEPTED). Historical Done feature rows (including LKW hybrid functionality) remain historical. Target state only:
+
+1. **Product-neutral contracts** — generic Tier-3 environment/profile contracts remain product-neutral ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-03`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+2. **Product-owned deployment vocabulary** — LKW or another product's deployment vocabulary belongs to product-owned configuration or typed extension, built on generic platform capabilities ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-03`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+3. **Public composition API** — Tier-3 application hosts compose lower layers through public typed contracts; direct mutation of `_private` platform state is not a supported composition API ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-04`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+4. **Platform-owned composition cycles** — cyclic construction requirements between services/adapters MUST be resolved by a platform-owned public composition mechanism, not consumer reach-in ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-04`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+5. **Governed dynamic access** — dynamic/reflection-based access at the Tier-3 boundary is explicit, justified, and mechanically governed; Tier-3 MUST NOT silently fall outside platform static-contract discipline ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-05`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md); cross-plan enforcement dependency: **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](../maintainers/plans/PLATFORM_FOUNDATION.md)).
+
+Remediation tracked as **TL-FIX-C** and **TL-FIX-D** in [plan](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md). **Not implemented** by audit persistence.
+
 ---
 
 ## Platform plugin bootstrap evidence (APP-ADOPTION-1)

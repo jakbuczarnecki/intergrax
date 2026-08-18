@@ -164,6 +164,33 @@ Verify (every harness PR):
 
 **Explicitly excluded from this block:** product/application feature work; Tier-0..3 conceptual redesign.
 
+<a id="61ax-tl-fix-a--executable-tier-ownership-protocol-v221-2026-08-18"></a>
+
+### TL-FIX-A — Executable tier ownership (Protocol v2.1 · 2026-08-18)
+
+**Status:** `PLANNED`
+**Priority:** P1
+**Type:** Arch / Wire / Proof
+**Source:** [`AUDIT-20260818-TIER_LAYER_BOUNDARIES-01`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md), [`AUDIT-20260818-TIER_LAYER_BOUNDARIES-05`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Deliverable intent:**
+
+- one authoritative production package→tier classifier
+- complete semantic forbidden-edge enforcement
+- unclassified production package fails closed
+- deterministic tests for allowed/forbidden/unclassified/relative-import cases
+- canonical CI wiring on relevant development/PR/integration path
+- Tier-3 `applications/` consumer/static-contract coverage (`check_harness_no_getattr` scope or successor)
+- old duplicated guards removed or reduced only after canonical mechanism owns proof
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- May reference/absorb §6.1ax PF-TIER-ENFORCEMENT conceptually; do **not** mark PF-TIER-ENFORCEMENT Done merely because this block exists.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- **Not implemented** by audit persistence task AUDIT-20260818-TIER-LAYER-PERSIST.
+
 ### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae)
 
 **Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done**; EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** — `certify core` → `trace export` → `evidence live-core` → `evidence posture` / `evidence posture export`. EVID-CORE-FU-01 adds selected local no-network live Tier-0 probes with mock LLM/tools. It does not replace deterministic CORE certification and is not full runtime certification.
