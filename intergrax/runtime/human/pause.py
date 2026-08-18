@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Mapping, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -20,7 +20,13 @@ from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.interrupts.handler import GovernanceResolution
 from intergrax.runtime.task.task import Task
-from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
+from intergrax.runtime.task.task_contract import (
+    TASK_CONTRACT_METADATA_KEY,
+    HumanApprovalResolution,
+    TaskContractPayload,
+    TaskGovernanceState,
+    TaskPauseRecord,
+)
 from intergrax.runtime.task.task_metadata_keys import (
     ESCALATION_CHAIN_KEY,
     ESCALATION_LEVEL_KEY,
@@ -52,6 +58,7 @@ __all__ = [
     "HumanPauseCoordinator",
     "PauseRecord",
     "TaskMetadataKey",
+    "approved_resolution_for_resume",
 ]
 
 
@@ -68,8 +75,60 @@ class PauseRecord(BaseModel):
     schema_version: str = "pause_record.v1"
 
 
+def approved_resolution_for_resume(
+    *,
+    task_id: str,
+    governance: TaskGovernanceState,
+    expected_pause_id: str,
+    expected_human_request_id: str,
+    run_id: str | None = None,
+) -> HumanApprovalResolution | None:
+    """Return canonical APPROVE resolution only when it matches the exact lifecycle."""
+    resolution = governance.hitl_resolution
+    if resolution is None:
+        return None
+    if resolution.verdict is not HumanResponseVerdict.APPROVE:
+        return None
+    if resolution.task_id != task_id:
+        return None
+    if resolution.pause_id != expected_pause_id:
+        return None
+    if resolution.human_request_id != expected_human_request_id:
+        return None
+    if run_id is not None and resolution.run_id is not None and resolution.run_id != run_id:
+        return None
+    return resolution
+
+
 class HumanPauseCoordinator:
     """Persists pause state on tasks and supports approve/reject/escalate resume signals."""
+
+    @staticmethod
+    def governance_from_request_metadata(
+        metadata: Mapping[str, Any],
+    ) -> TaskGovernanceState | None:
+        embedded = metadata.get(TASK_CONTRACT_METADATA_KEY)
+        if not isinstance(embedded, dict) or "runtime" not in embedded:
+            return None
+        payload = TaskContractPayload.model_validate(embedded)
+        return payload.runtime.governance
+
+    @staticmethod
+    def approved_resolution_for_resume(
+        *,
+        task_id: str,
+        governance: TaskGovernanceState,
+        expected_pause_id: str,
+        expected_human_request_id: str,
+        run_id: str | None = None,
+    ) -> HumanApprovalResolution | None:
+        return approved_resolution_for_resume(
+            task_id=task_id,
+            governance=governance,
+            expected_pause_id=expected_pause_id,
+            expected_human_request_id=expected_human_request_id,
+            run_id=run_id,
+        )
 
     @staticmethod
     def apply_pause(task: Task, execution: AgentExecutionResult) -> Task:

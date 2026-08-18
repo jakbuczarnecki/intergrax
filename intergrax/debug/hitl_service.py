@@ -8,14 +8,18 @@ from __future__ import annotations
 from typing import Optional
 
 from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
-from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskResult
-from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
+from intergrax.runtime.task.task_contract import (
+    TaskExecutionOptions,
+    TaskHumanInput,
+    TaskLongRunningOptions,
+)
 
 
 class DebugHitlResumeService:
@@ -39,7 +43,8 @@ class DebugHitlResumeService:
         task_id: str,
         tenant_id: str,
         *,
-        response: str,
+        verdict: HumanResponseVerdict,
+        response_text: str = "",
         resume_token: Optional[str] = None,
         user_id: str = "debug_operator",
     ) -> TaskResult:
@@ -48,30 +53,29 @@ class DebugHitlResumeService:
             raise ValueError(f"No checkpoint found for task {task_id!r} (tenant={tenant_id})")
 
         paused = Task.model_validate(checkpoint.task_snapshot)
-        metadata: dict[str, str | bool] = {
-            "human_response": response,
-            "resume_token": checkpoint.resume_token,
-        }
-        normalized = response.strip().lower()
-        if normalized in {"approve", "yes", "ok"}:
-            metadata["human_approved"] = True
+        pause_record = paused.runtime.governance.pause_record
+        if pause_record is None:
+            raise ValueError(
+                f"Checkpoint for task {task_id!r} has no active pause record for HITL resume"
+            )
 
-        task = Task(
-            tenant_id=tenant_id,
-            user_id=user_id or paused.user_id,
-            message=paused.message,
-            context=paused.context,
-            task_id=checkpoint.task_id,
-            options=TaskExecutionOptions(
-                long_running=TaskLongRunningOptions(
-                    enabled=True,
-                    resume_token=checkpoint.resume_token,
-                    notify_channel=checkpoint.notify_channel,
-                ),
+        task = Task.model_validate(checkpoint.task_snapshot)
+        task.options = TaskExecutionOptions(
+            long_running=TaskLongRunningOptions(
+                enabled=True,
+                resume_token=checkpoint.resume_token,
+                notify_channel=checkpoint.notify_channel,
+                checkpoint_on_pause=task.options.long_running.checkpoint_on_pause,
             ),
-            metadata=metadata,
+            human=TaskHumanInput(
+                response_text=response_text or verdict.value,
+                verdict=verdict.value,
+                pause_id=pause_record.pause_id,
+                human_request_id=pause_record.human_request_id,
+            ),
         )
-        HumanPauseCoordinator.record_human_response(task, response)
+        task.metadata["resume_token"] = checkpoint.resume_token
+        task.sync_metadata()
 
         run_id, attempt_id = execution_identity_from_checkpoint(checkpoint)
 

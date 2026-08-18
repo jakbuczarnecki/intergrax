@@ -53,7 +53,6 @@ def build_timeout_resume_task(
         response_text=f"scheduler:timeout:{action.value}",
         verdict=verdict.value,
     )
-    _apply_verdict_metadata(task, verdict)
     task.metadata["scheduler_timeout"] = True
     task.metadata["scheduler_timeout_action"] = action.value
     task.sync_metadata()
@@ -73,13 +72,6 @@ def build_scheduled_resume_task(
             response_text=str(extra.pop("response_text", f"scheduler:delayed:{verdict.value}")),
             verdict=verdict.value,
         )
-        _apply_verdict_metadata(task, verdict)
-    elif extra.get("human_approved"):
-        task.options.human = TaskHumanInput(
-            response_text=str(extra.pop("response_text", "scheduler:delayed:approve")),
-            verdict=HumanResponseVerdict.APPROVE.value,
-        )
-        task.metadata["human_approved"] = True
     task.metadata["scheduler_delayed_resume"] = True
     task.metadata["schedule_id"] = entry.schedule_id
     for key, value in extra.items():
@@ -104,12 +96,3 @@ def _base_resume_task(checkpoint: TaskCheckpoint) -> Task:
     task.options = TaskExecutionOptions.model_validate(task.options.model_dump())
     task.metadata["resume_token"] = checkpoint.resume_token
     return task
-
-
-def _apply_verdict_metadata(task: Task, verdict: HumanResponseVerdict) -> None:
-    if verdict == HumanResponseVerdict.APPROVE:
-        task.metadata["human_approved"] = True
-    elif verdict == HumanResponseVerdict.REJECT:
-        task.metadata["human_rejected"] = True
-    elif verdict == HumanResponseVerdict.ESCALATE:
-        task.metadata["human_escalated"] = True

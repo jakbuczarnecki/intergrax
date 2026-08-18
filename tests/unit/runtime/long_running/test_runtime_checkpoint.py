@@ -22,8 +22,25 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
 )
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
+from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
+from intergrax.runtime.task.task_contract import HumanApprovalResolution
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+
+def _approve_resolution(
+    *,
+    pause_id: str = "pause-1",
+    human_request_id: str = "hr-1",
+    task_id: str = "task-1",
+) -> HumanApprovalResolution:
+    return HumanApprovalResolution(
+        task_id=task_id,
+        pause_id=pause_id,
+        human_request_id=human_request_id,
+        verdict=HumanResponseVerdict.APPROVE,
+        resolved_at="2026-08-18T00:00:00+00:00",
+    )
 
 
 @pytest.mark.unit
@@ -137,19 +154,19 @@ def test_should_skip_uaep_step_when_resumed_at_same_index():
         step_index=0,
         step_id="review",
         checkpoint=ckpt,
-        human_approved=True,
+        approval=_approve_resolution(),
     )
     assert not should_skip_uaep_step(
         step_index=0,
         step_id="review",
         checkpoint=ckpt,
-        human_approved=False,
+        approval=None,
     )
     assert not should_skip_uaep_step(
         step_index=1,
         step_id="review",
         checkpoint=ckpt,
-        human_approved=True,
+        approval=_approve_resolution(),
     )
 
 
@@ -167,20 +184,20 @@ def test_should_resume_uaep_step_when_mid_step_cursor_present():
         step_index=0,
         step_id="process",
         checkpoint=ckpt,
-        human_approved=True,
+        approval=_approve_resolution(),
     )
     assert not should_skip_uaep_step(
         step_index=0,
         step_id="process",
         checkpoint=ckpt,
-        human_approved=True,
+        approval=_approve_resolution(),
     )
     completed = ckpt.model_copy(update={"uaep_step_completed": True, "uaep_step_cursor": None})
     assert should_skip_uaep_step(
         step_index=0,
         step_id="process",
         checkpoint=completed,
-        human_approved=True,
+        approval=_approve_resolution(),
     )
 
 

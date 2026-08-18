@@ -25,6 +25,7 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 )
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task_contract import HumanApprovalResolution
 
 
 def build_runtime_checkpoint(
@@ -215,9 +216,9 @@ def should_skip_uaep_step(
     step_index: int,
     step_id: str,
     checkpoint: Optional[RuntimeCheckpointStateView],
-    human_approved: bool,
+    approval: HumanApprovalResolution | None,
 ) -> bool:
-    if checkpoint is None or not human_approved:
+    if checkpoint is None or approval is None:
         return False
     if checkpoint.uaep_step_index != step_index:
         return False
@@ -233,9 +234,9 @@ def should_resume_uaep_step(
     step_index: int,
     step_id: str,
     checkpoint: Optional[RuntimeCheckpointStateView],
-    human_approved: bool,
+    approval: HumanApprovalResolution | None,
 ) -> bool:
-    if checkpoint is None or not human_approved:
+    if checkpoint is None or approval is None:
         return False
     if checkpoint.uaep_step_index != step_index:
         return False

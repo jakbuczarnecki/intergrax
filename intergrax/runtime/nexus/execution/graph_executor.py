@@ -597,8 +597,6 @@ class GraphExecutor:
             runtime_snapshot = runtime_checkpoint_from_metadata(task.metadata)
             if runtime_snapshot is not None:
                 attach_runtime_checkpoint_to_metadata(request.metadata, runtime_snapshot)
-            if task.options.human.is_resumed or task.metadata.get("human_approved"):
-                request.metadata["human_approved"] = True
             critic_feedback = node.metadata.get("critic_feedback")
             if isinstance(critic_feedback, list) and critic_feedback:
                 request.metadata["critic_feedback"] = list(critic_feedback)

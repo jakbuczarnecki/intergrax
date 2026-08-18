@@ -53,6 +53,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, Rou
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
 from intergrax.runtime.task.task_metadata_bridge import execution_options_for_request
+from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.cancellation.coordinator import (
     CANCELLATION_REQUESTED_KEY,
     CancellationCoordinator,
@@ -328,7 +329,21 @@ class UAEPExecutor:
         last_output: Optional[StepOutput] = None
         governance: Optional[GovernanceResolution] = None
         runtime_ckpt = runtime_checkpoint_from_metadata(request.metadata)
-        human_approved = task_options.human.is_resumed or bool(request.metadata.get("human_approved"))
+        uaep_resume_approval = None
+        governance = HumanPauseCoordinator.governance_from_request_metadata(request.metadata)
+        if (
+            governance is not None
+            and governance.pause_record is not None
+            and request.task_id
+        ):
+            pause_record = governance.pause_record
+            uaep_resume_approval = HumanPauseCoordinator.approved_resolution_for_resume(
+                task_id=request.task_id,
+                governance=governance,
+                expected_pause_id=pause_record.pause_id,
+                expected_human_request_id=pause_record.human_request_id,
+                run_id=run_id,
+            )
 
         for index, step in enumerate(steps):
             if CancellationCoordinator.is_requested(request.metadata):
@@ -362,7 +377,7 @@ class UAEPExecutor:
                     step_index=index,
                     step_id=step.step_id,
                     checkpoint=runtime_ckpt,
-                    human_approved=human_approved,
+                    approval=uaep_resume_approval,
                 ):
                     last_output = StepOutput.model_validate(runtime_ckpt.last_step_output)
                     step_result = StepExecutionResult(output=last_output)
@@ -370,7 +385,7 @@ class UAEPExecutor:
                     step_index=index,
                     step_id=step.step_id,
                     checkpoint=runtime_ckpt,
-                    human_approved=human_approved,
+                    approval=uaep_resume_approval,
                 ):
                     assert runtime_ckpt is not None
                     exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(runtime_ckpt.uaep_step_cursor or {})
