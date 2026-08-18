@@ -46,7 +46,10 @@ from intergrax.runtime.policy.builtin_catalog import (
     TOOL_INVOCATION_CONTROL_POLICY_ID,
     TOOL_INVOCATION_CONTROL_VERSION,
 )
-from intergrax.runtime.policy.catalog import PolicyDefinitionConflictError
+from intergrax.runtime.policy.catalog import (
+    PolicyDefinitionConflictError,
+    UnknownPolicyDefinitionError,
+)
 from intergrax.runtime.policy.policy_bundle import DeclarativePolicyRuntime, RuntimePolicyBundle
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
@@ -486,7 +489,7 @@ def test_policy_rules_none_has_builtin_catalog_only(
         version=TOOL_INVOCATION_CONTROL_VERSION,
     )
     assert resolved.source is PolicyDefinitionSource.BUILT_IN
-    with pytest.raises(Exception):
+    with pytest.raises(UnknownPolicyDefinitionError):
         bundle.policy_catalog.resolve(policy_id=_POLICY_ID, version=_POLICY_VERSION)
 
 
@@ -543,7 +546,7 @@ def test_canonical_bundle_strict_unqualified_plugin_not_in_catalog(
         discover_entry_points=True,
         package_qualification_lookup=_lookup_for(None),
     )
-    with pytest.raises(Exception):
+    with pytest.raises(UnknownPolicyDefinitionError):
         bundle.policy_catalog.resolve(policy_id=_POLICY_ID, version=_POLICY_VERSION)
 
 
@@ -602,7 +605,7 @@ def test_canonical_bundle_handler_provenance_mismatch_excludes_definition(
             }
         ),
     )
-    with pytest.raises(Exception):
+    with pytest.raises(UnknownPolicyDefinitionError):
         bundle.policy_catalog.resolve(policy_id=_POLICY_ID, version=_POLICY_VERSION)
 
 
@@ -645,7 +648,7 @@ def test_discover_plugins_false_builtin_catalog_only(
         policy_rules=_strict_profile(),
         discover_entry_points=False,
     )
-    with pytest.raises(Exception):
+    with pytest.raises(UnknownPolicyDefinitionError):
         bundle.policy_catalog.resolve(policy_id=_POLICY_ID, version=_POLICY_VERSION)
     resolved = bundle.policy_catalog.resolve(
         policy_id=TOOL_INVOCATION_CONTROL_POLICY_ID,
