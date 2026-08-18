@@ -21,7 +21,7 @@ This protocol is **canonical**. Executors MUST follow it in order. Deviations re
 | Condition | Action |
 |-----------|--------|
 | Operator names a campaign | Use that campaign if it exists and is not `ABORTED` without operator override. |
-| Operator does not name a campaign | Select the **latest `COMPLETE`** campaign whose scope matches the remediation request. |
+| Operator does not name a campaign | Select the **latest `COMPLETE`** campaign whose scope matches the remediation request. `COMPLETE` is the prerequisite audit baseline for normal remediation — remediation selects a finished audit, not an in-flight one. |
 | No `COMPLETE` campaign matches | **STOP.** Report gap; do not invent findings or remediate from partial notes. |
 
 **Latest** means most recent `completed_at` (or equivalent) in the campaign metadata. If dates tie, prefer the campaign with higher declared coverage or the one referenced in the operator request.
@@ -247,7 +247,7 @@ Record commands run, job URLs or IDs, and test names in the campaign `README.md`
 | `IMPLEMENTING` | Active work in progress on this finding. |
 | `IMPLEMENTED` | Fix applied; awaiting independent verification. |
 | `VERIFIED` | Independent verification passed (Section J). |
-| `CLOSED` | Remediation complete and accepted in campaign rollup. |
+| `CLOSED` | Independent verification passed and remediation for this finding is finalized in the campaign remediation rollup. Does **not** close the audit campaign. |
 | `DISPUTED` | Operator disputes; finding and evidence preserved without acceptance. |
 | `DEFERRED` | Explicitly postponed with reason and revisit trigger. |
 | `REJECTED` | Invalid or out of scope; will not fix; requires rationale. |
@@ -258,7 +258,7 @@ Record commands run, job URLs or IDs, and test names in the campaign `README.md`
 | Status | Meaning |
 |--------|---------|
 | `IN_PROGRESS` | Campaign active; layers may be incomplete. |
-| `COMPLETE` | Scoped layers finished; rollup published in campaign `README.md`. |
+| `COMPLETE` | Scoped **audit** finished; audit rollup published and audit baseline frozen in campaign `README.md` (see [AUDIT_PROTOCOL.md](AUDIT_PROTOCOL.md) section C2). Does **not** mean remediation finished or all findings `CLOSED`. Campaign status remains `COMPLETE` throughout post-audit remediation. |
 | `ABORTED` | Campaign halted with documented reason. |
 
 Legacy material is identified by location under `legacy/`, not by a competing active campaign status.
@@ -270,7 +270,8 @@ Legacy material is identified by location under `legacy/`, not by a competing ac
 - Implementer may set in the **campaign finding register**: `ACCEPTED`→`IMPLEMENTING`, `IMPLEMENTING`→`IMPLEMENTED`.
 - Implementer **cannot** self-certify `VERIFIED` or `CLOSED`.
 - Independent verifier sets `VERIFIED` after Section J.
-- `CLOSED` follows `VERIFIED` and completion rollup (Section L).
+- `CLOSED` follows `VERIFIED` and recording the finding's final remediation disposition in the remediation rollup (Section L).
+- Reaching remediation completion does **not** transition campaign status. The campaign was already `COMPLETE` as an audit campaign.
 - `DEFERRED`, `REJECTED`, and `DISPUTED` require operator acknowledgment and rationale in the finding register.
 - `WITHDRAWN` does not delete or reuse the finding ID.
 - **Never** update immutable per-layer report text merely to advance remediation status; update the campaign `README.md` finding register instead.
@@ -313,25 +314,28 @@ Broken links in the chain block `CLOSED` for that finding.
 
 ---
 
-## L. Completion Rollup
+## L. Remediation Completion Rollup
 
-### L.1 Campaign closure criteria
+### L.1 Remediation completion criteria
 
-Before recommending audit closure:
+Before declaring remediation of this campaign's accepted findings complete:
 
 - All `ACCEPTED` findings are `CLOSED`, or explicitly `DEFERRED` / `REJECTED` with rationale.
 - No finding remains in `IMPLEMENTING` or `IMPLEMENTED` without an active verifier.
 - Traceability chain (Section K) is complete for every `CLOSED` finding.
 - Queue is empty or only contains deferred items with revisit triggers.
 
-### L.2 Rollup report
+**Critical rule:** Reaching remediation completion does **not** transition campaign status. The campaign was already `COMPLETE` as an audit campaign. Do **not** update `completed_at`, `campaign_end_sha`, or `overall_verdict` during remediation completion.
 
-Update the campaign `README.md` rollup section (section D in [AUDIT_PROTOCOL.md](AUDIT_PROTOCOL.md)). Do **not** create `CAMPAIGN_SUMMARY.md`. Include at minimum:
+### L.2 Remediation rollup report
 
-- Counts by final status and severity.
+Update the campaign `README.md` **remediation rollup** section (section D.2 in [AUDIT_PROTOCOL.md](AUDIT_PROTOCOL.md)). Do **not** create `CAMPAIGN_SUMMARY.md`. Do **not** overwrite the frozen audit rollup (section D.1). Include at minimum:
+
+- Counts by current remediation status and severity.
 - List of `DEFERRED` and `REJECTED` with reasons.
 - Commits and verification summary.
 - Residual risks explicitly acknowledged.
+- Remediation completion statement (when criteria in L.1 are met).
 
 ### L.3 Follow-on audit
 
@@ -341,7 +345,7 @@ Recommend a **later independent audit** (new campaign) when:
 - Multiple items were deferred.
 - Architecture changed materially during remediation.
 
-Do not claim "fully audited" solely because remediation closed — only that **this campaign's accepted findings were addressed per this protocol**.
+Do not claim "fully audited" solely because remediation closed — only that **this campaign's accepted findings were addressed per this protocol**. Fixing and closing every finding does **not** retroactively change the original campaign `overall_verdict`; a fresh audit campaign determines current platform verdict independently.
 
 ---
 
@@ -356,7 +360,7 @@ Do not claim "fully audited" solely because remediation closed — only that **t
 7. [ ] Implement with production quality and Section G restrictions
 8. [ ] Verify with new/negative tests + CI + diff review
 9. [ ] Set `IMPLEMENTED`; independent pass → `VERIFIED` → `CLOSED`
-10. [ ] Maintain traceability in campaign finding register; rollup in campaign `README.md`; recommend follow-on audit if warranted
+10. [ ] Maintain traceability in campaign finding register; update remediation rollup (section D.2) in campaign `README.md`; recommend follow-on audit if warranted. Remediation completion leaves campaign status `COMPLETE`.
 
 ---
 

@@ -9,6 +9,12 @@
 
 **Not duplicated here:** target system design lives in `docs/project/architecture/`; implementation work lives in `docs/project/maintainers/plans/`. Architecture and plans may reference canonical finding IDs; audit history, campaign status, and remediation status belong under `docs/audit_results/` only.
 
+**Campaign status tracks the audit lifecycle, not the remediation lifecycle.**
+
+- `COMPLETE` = scoped audit completed and audit baseline frozen (`completed_at`, `campaign_end_sha`, `overall_verdict`, per-layer evidence).
+- Finding statuses (`ACCEPTED` → `IMPLEMENTING` → `IMPLEMENTED` → `VERIFIED` → `CLOSED`) track subsequent remediation in the campaign `README.md` finding register and remediation rollup.
+- The root registry row remains unchanged while remediation proceeds. Do **not** add a second campaign status system or remediation columns to this registry.
+
 **Status authority (no duplicates elsewhere):**
 
 | Artifact | Role |
@@ -44,10 +50,10 @@ docs/audit_results/
 ### Campaign semantics
 
 - **Dated directory** = one audit campaign (`<CAMPAIGN_DIR>`). Repeated same-day campaigns use `YYYY-MM-DD_run-2`, `YYYY-MM-DD_run-3`, etc.
-- **Campaign `README.md`** = master register: metadata, layer register, finding register (authoritative current lifecycle), cross-layer rollup, remediation/verification trace. **No separate `CAMPAIGN_SUMMARY.md`.**
+- **Campaign `README.md`** = master register: metadata, layer register, finding register (authoritative current lifecycle), **audit rollup** (frozen at audit `COMPLETE`), **remediation rollup** (mutable post-audit), remediation/verification trace. **No separate `CAMPAIGN_SUMMARY.md`.**
 - **Per-layer files** = immutable audit snapshots bound to an exact `audited_sha`. Completed historical reports are **not rewritten** to advance remediation status or pretend a problem never existed.
-- **Remediation / closure evidence** is tracked in the campaign finding register and via [AUDIT_REMEDIATION_PROTOCOL.md](AUDIT_REMEDIATION_PROTOCOL.md).
-- **Later periodic audits** create new dated campaigns; they do not silently overwrite prior evidence.
+- **Remediation / verification evidence** is tracked in the campaign finding register, remediation rollup, and via [AUDIT_REMEDIATION_PROTOCOL.md](AUDIT_REMEDIATION_PROTOCOL.md). Remediation normally begins against a `COMPLETE` campaign; remediation completion does **not** change campaign status or frozen audit baseline fields.
+- **Later periodic audits** create new dated campaigns; they do not silently overwrite prior evidence. Closing all findings does **not** retroactively change a prior campaign's `overall_verdict` — a fresh audit determines current platform verdict independently.
 
 ---
 
@@ -67,9 +73,9 @@ _No Protocol v2 campaigns persisted yet._
 - Immediately add **one** row here with `status` = `IN_PROGRESS`, `campaign_end_sha` = `—`, `completed_at` = `—`, `overall_verdict` = `—`.
 - Never append a duplicate registry row for the same `campaign_id`.
 
-**On campaign completion:**
+**On audit campaign completion:**
 
-- Update the **same** row: `status` = `COMPLETE`, `completed_at` populated, `campaign_end_sha` populated, `overall_verdict` populated.
+- Update the **same** row: `status` = `COMPLETE`, `completed_at` populated, `campaign_end_sha` populated, `overall_verdict` populated. These fields are frozen at audit closeout and MUST NOT be rewritten during remediation.
 
 **On abort:**
 

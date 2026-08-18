@@ -144,8 +144,8 @@ Do **not** use `YYYY-MM-DD-a` / `-b` suffixes.
 | `campaign_id` | Dated directory name (e.g. `2026-08-18` or `2026-08-18_run-2`) |
 | `campaign_token` | Immutable token derived from directory name (section H) |
 | `started_at` | UTC timestamp when campaign started |
-| `completed_at` | UTC timestamp when campaign closed (or `—` while in progress) |
-| `status` | `IN_PROGRESS` \| `COMPLETE` \| `ABORTED` |
+| `completed_at` | UTC timestamp when the **scoped audit** closed (or `—` while in progress) |
+| `status` | `IN_PROGRESS` \| `COMPLETE` \| `ABORTED` — tracks **audit lifecycle only** (section C2) |
 | `campaign_start_sha` | Repository SHA at campaign start |
 | `campaign_end_sha` | Final repository state after campaign-owned documentation synchronization (or `—` while in progress) |
 | `scope` | Layers/domains in scope |
@@ -191,23 +191,43 @@ The finding register in the campaign `README.md` is the **authoritative current 
 
 `dependencies` reference canonical finding IDs and/or explicitly named remediation blocks. `remediation_block`, `implementation_commit`, and `verification_evidence` remain `—` until they exist.
 
-#### D. Cross-layer / campaign rollup (required section)
+#### D. Campaign rollup (required sections — one document, two semantic rollups)
+
+The campaign `README.md` holds **two** rollup sections with distinct semantics. Do **not** create another file (no `CAMPAIGN_SUMMARY.md`).
+
+##### D.1 Audit rollup (AUDIT ROLLUP)
+
+Produced when campaign status becomes `COMPLETE`. Frozen as historical audit conclusion except via an explicit correction note (section C2).
 
 At minimum:
 
 - systemic themes
 - CROSS findings
-- final counts
-- overall verdict
+- audit finding counts by severity
+- overall audit verdict (`overall_verdict`)
 - recommended remediation order
 
-Do **not** require another file for these sections.
+Do **not** overwrite this section during post-audit remediation. Remediation progress belongs in section D.2.
+
+##### D.2 Remediation rollup (REMEDIATION ROLLUP)
+
+Updated **after** campaign status is `COMPLETE`, as remediation proceeds. Mutable post-audit state only.
+
+At minimum:
+
+- finding counts by **current remediation status**
+- implementation commits
+- verification progress
+- deferred/rejected residual items
+- remediation completion statement (when applicable)
+
+The remediation rollup does **not** overwrite the audit rollup. Reaching remediation completion does **not** transition campaign status — the campaign was already `COMPLETE` as an audit campaign.
 
 Every per-layer result file MUST record the same `audited_sha`. Evidence in that result refers to **that** SHA only.
 
 **Do not** retroactively change `audited_sha` when architecture/plan sync advances `development`.
 
-At campaign completion, `campaign_end_sha` records the final repository state after campaign-owned documentation synchronization.
+At **audit** completion, `campaign_end_sha` records the audit-closeout repository SHA after campaign-owned documentation synchronization. Remediation MUST NOT replace `campaign_end_sha` with a later remediation commit.
 
 ### Concurrent changes between layer audits
 
@@ -215,6 +235,92 @@ If runtime/product code changes concurrently between layer audits:
 
 - Audit the next layer against the **then-current** exact SHA; record it explicitly.
 - If concurrent changes invalidate already-audited findings, flag the affected layer for **revalidation** rather than pretending the whole campaign used one immutable source tree.
+
+### C2. Campaign status `COMPLETE` — audit completion, not remediation completion
+
+Campaign status tracks the **audit lifecycle**, not the remediation lifecycle.
+
+**`COMPLETE` means:** the scoped **audit itself** is complete. It means:
+
+- scoped layer audits finished,
+- operator decisions were recorded,
+- immutable layer snapshots were published,
+- architecture/plan synchronization required by accepted findings was completed for audit closeout,
+- campaign audit rollup (section D.1) was completed,
+- audit baseline metadata was frozen (below).
+
+**`COMPLETE` does NOT mean:**
+
+- accepted findings were implemented,
+- remediation finished,
+- findings are `CLOSED`.
+
+Remediation normally begins **against** an already `COMPLETE` audit campaign. Campaign status remains `COMPLETE` throughout post-audit remediation. `ABORTED` is the only other terminal campaign status.
+
+**Canonical sequence:**
+
+```text
+campaign IN_PROGRESS
+    ↓
+perform audit
+    ↓
+campaign COMPLETE          ← audit baseline frozen
+    ↓
+remediation may begin
+    ↓
+finding ACCEPTED → IMPLEMENTING → IMPLEMENTED → VERIFIED → CLOSED
+```
+
+#### Audit baseline freeze at `COMPLETE`
+
+Once campaign status becomes `COMPLETE`, the audit baseline is **historical evidence** and MUST NOT be silently rewritten by remediation.
+
+**Frozen audit-baseline metadata:**
+
+- `campaign_id`
+- `campaign_token`
+- `started_at`
+- `completed_at`
+- `campaign_start_sha`
+- `campaign_end_sha` — audit-closeout repository SHA; not a later remediation commit
+- `scope`
+- `overall_verdict`
+
+**Frozen historical audit facts:**
+
+- per-layer `audited_sha`
+- per-layer audit verdict
+- original finding ID
+- original severity/category at audit publication
+- immutable per-layer finding evidence
+- original audit rollup conclusions (section D.1)
+
+Remediation MUST NOT change `overall_verdict` from `FAIL` / `PASS WITH GAPS` to `PASS` merely because fixes were implemented. A later audit campaign determines whether the remediated platform now deserves a different verdict.
+
+#### Mutable post-audit remediation state
+
+After campaign `COMPLETE`, the campaign `README.md` remains mutable **only** for post-audit remediation/verification state. The following finding-register fields may evolve:
+
+- `status`
+- `remediation_block`
+- `dependencies` (where remediation planning legitimately changes)
+- `arch_ref` / `plan_ref` (when current remediation trace needs updated target references)
+- `implementation_commit`
+- `verification_evidence`
+- `notes`
+
+Do **not** mutate immutable per-layer snapshot text. If audit-baseline metadata itself was factually wrong due to a clerical error, correction requires an explicit correction note preserving the old value/provenance — never silent rewrite.
+
+#### Periodic audit semantics
+
+Fixing and closing every finding does **not** retroactively change the original campaign verdict.
+
+Example:
+
+- `2026-08-18`: `overall_verdict` = `FAIL`; all accepted findings later `CLOSED`.
+- `2026-11-18`: a fresh audit determines current platform verdict independently.
+
+This is the mechanism by which audit history shows real architectural progress and regression.
 
 ### Lifecycle
 
@@ -229,11 +335,11 @@ If runtime/product code changes concurrently between layer audits:
 4. After each accepted layer: arch/plan sync → commit → record `post_sync_sha` in the campaign layer register; update the campaign finding register for lifecycle transitions.
 5. Maintain the campaign finding register as the authoritative current state for remediation (section G1); do **not** mutate immutable per-layer snapshots to advance remediation status.
 
-**On campaign completion** (update **both** campaign `README.md` and the **same** root-registry row):
+**On audit campaign completion** (update **both** campaign `README.md` and the **same** root-registry row):
 
-6. Finish/update campaign `README.md` rollup (section D).
-7. Set campaign `status` = `COMPLETE` in campaign `README.md`; populate `completed_at`, `campaign_end_sha`, and `overall_verdict`.
-8. Update the corresponding row in `docs/audit_results/README.md` with the same completion values. Do **not** create a second campaign-summary artifact.
+6. Finish/update campaign `README.md` **audit rollup** (section D.1); freeze audit baseline (section C2).
+7. Set campaign `status` = `COMPLETE` in campaign `README.md`; populate `completed_at`, `campaign_end_sha`, and `overall_verdict`. This closes the **audit**, not remediation.
+8. Update the corresponding row in `docs/audit_results/README.md` with the same completion values. Do **not** create a second campaign-summary artifact. Root registry row remains unchanged while remediation proceeds afterward.
 
 **On abort** (update **both** campaign `README.md` and the **same** root-registry row):
 
@@ -404,13 +510,13 @@ Lack of evidence for production-safe behavior under these stresses is a finding 
 | `IMPLEMENTING` | Remediation in progress. |
 | `IMPLEMENTED` | Fix applied; awaiting independent verification. |
 | `VERIFIED` | Independent verification passed. |
-| `CLOSED` | Campaign remediation rollup complete for this finding. |
+| `CLOSED` | Independent verification passed and remediation for this finding is finalized in the campaign remediation rollup (section D.2). Does **not** close the audit campaign. |
 | `DISPUTED` | Operator disputes; finding and evidence preserved without acceptance. |
 | `DEFERRED` | Postponed; requires rationale and revisit trigger. |
 | `REJECTED` | Invalid or out of scope; requires rationale. |
 | `WITHDRAWN` | Withdrawn; ID is not reused. |
 
-Rules: audit produces `PROPOSED`; operator acceptance → `ACCEPTED`; remediation starts → `IMPLEMENTING`; implementer may reach `IMPLEMENTED`; implementer **must not** self-certify `VERIFIED` or `CLOSED`; independent verifier → `VERIFIED`; campaign remediation rollup → `CLOSED`.
+Rules: audit produces `PROPOSED`; operator acceptance → `ACCEPTED`; remediation starts → `IMPLEMENTING`; implementer may reach `IMPLEMENTED`; implementer **must not** self-certify `VERIFIED` or `CLOSED`; independent verifier → `VERIFIED`; `CLOSED` follows `VERIFIED` and recording the finding's final remediation disposition in the remediation rollup (section D.2). Closing a finding does **not** transition campaign status — the campaign was already `COMPLETE` as an audit campaign.
 
 **State ownership:**
 
@@ -536,7 +642,7 @@ Synchronization is **post-acceptance** only — audits do not edit arch/plan to 
 
 ## N. Cross-layer review (rollup)
 
-When multiple layers complete in one campaign, update the campaign `README.md` rollup section:
+When multiple layers complete in one campaign, update the campaign `README.md` **audit rollup** (section D.1):
 
 1. **Scope table** — layer, SHA, verdict, finding counts by severity.
 2. **Cross-layer findings** — mismatches spanning tiers (e.g. orchestration assumes memory guarantee memory does not provide).
@@ -621,11 +727,12 @@ Do **not** record `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED` in per-
    - CRITICAL/HIGH deferrals require explicit rationale and target date in campaign README.
    - Only then persist final layer files and update register.
 5. **Arch/plan sync** — separate step after acceptance (section M); may be same or follow-up change set.
-6. **Campaign close** —
-   1. Finish/update campaign `README.md` rollup (section D).
+6. **Audit campaign close** —
+   1. Finish/update campaign `README.md` audit rollup (section D.1); freeze audit baseline (section C2).
    2. Set campaign status `COMPLETE` or `ABORTED` in campaign `README.md`.
    3. Update the corresponding row in root `docs/audit_results/README.md`.
    4. Do **not** create a second campaign-summary artifact (no `CAMPAIGN_SUMMARY.md`).
+   5. Remediation (if any) begins afterward per [AUDIT_REMEDIATION_PROTOCOL.md](AUDIT_REMEDIATION_PROTOCOL.md); campaign status remains `COMPLETE`.
 
 ---
 
