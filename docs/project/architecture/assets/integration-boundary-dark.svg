@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img">
+  <title>Intergrax integration boundary</title>
+  <desc>Conceptual diagram: host selects provider via IntegrationProfile; agents invoke Tools that use category-specific Integrations to reach vendor backends. Agents do not call vendor SDKs.</desc>
+  <rect width="1200" height="900" fill="#0d1117"/>
+  <rect x="32" y="28" width="1136" height="844" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+
+  <text x="600" y="68" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="700" fill="#e6edf3">Intergrax Integrations &#8212; host choice vs tool intent</text>
+  <text x="600" y="100" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" fill="#8b949e">Provider choice belongs to the host. Action intent belongs to the Tool. Vendor details belong to the Integration.</text>
+
+  <rect x="56" y="130" width="500" height="520" rx="16" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="300" y="162" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Application / Host</text>
+
+  <rect x="116" y="188" width="360" height="48" rx="10" fill="#1f3a5f" stroke="#388bfd" stroke-width="2"/>
+  <text x="300" y="218" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#e6edf3">IntegrationProfile</text>
+  <line x1="300" y1="260" x2="300" y2="288" stroke="#484f58" stroke-width="2"/>
+  <path d="M300 288 L294 274 L306 274 Z" fill="#484f58"/>
+  <rect x="116" y="288" width="360" height="44" rx="10" fill="#161b22" stroke="#484f58" stroke-width="1.5"/>
+  <text x="300" y="316" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">provider selection (per category)</text>
+  <line x1="300" y1="352" x2="300" y2="380" stroke="#484f58" stroke-width="2"/>
+  <path d="M300 380 L294 366 L306 366 Z" fill="#484f58"/>
+  <rect x="96" y="380" width="400" height="52" rx="10" fill="#3d2f1f" stroke="#d29922" stroke-width="2"/>
+  <text x="300" y="412" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#e6edf3">category-specific contract</text>
+  <line x1="300" y1="432" x2="300" y2="460" stroke="#484f58" stroke-width="2"/>
+  <path d="M300 460 L294 446 L306 446 Z" fill="#484f58"/>
+  <rect x="116" y="460" width="360" height="48" rx="10" fill="#1a3d2a" stroke="#3fb950" stroke-width="2"/>
+  <text x="300" y="490" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#e6edf3">Integration instance</text>
+  <line x1="300" y1="508" x2="300" y2="536" stroke="#3fb950" stroke-width="2"/>
+  <path d="M300 536 L294 528 L306 528 Z" fill="#3fb950"/>
+  <rect x="136" y="536" width="320" height="44" rx="10" fill="#161b22" stroke="#484f58" stroke-width="1.5"/>
+  <text x="300" y="564" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">vendor / backend</text>
+
+  <rect x="636" y="130" width="500" height="520" rx="16" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="886" y="162" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Agent execution path</text>
+
+  <rect x="756" y="196" width="280" height="44" rx="10" fill="#161b22" stroke="#484f58" stroke-width="2"/>
+  <text x="886" y="224" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#e6edf3">Agent</text>
+  <line x1="886" y1="240" x2="886" y2="268" stroke="#484f58" stroke-width="2"/>
+  <path d="M886 268 L880 254 L892 254 Z" fill="#484f58"/>
+  <rect x="776" y="268" width="240" height="40" rx="10" fill="#161b22" stroke="#484f58" stroke-width="1.5"/>
+  <text x="886" y="294" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Skill</text>
+  <line x1="886" y1="308" x2="886" y2="336" stroke="#484f58" stroke-width="2"/>
+  <path d="M886 336 L880 328 L892 328 Z" fill="#484f58"/>
+  <rect x="756" y="336" width="280" height="44" rx="10" fill="#1f3a5f" stroke="#388bfd" stroke-width="2"/>
+  <text x="886" y="364" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#e6edf3">ToolRuntime</text>
+  <line x1="886" y1="380" x2="886" y2="408" stroke="#388bfd" stroke-width="2"/>
+  <path d="M886 408 L880 404 L892 404 Z" fill="#388bfd"/>
+  <rect x="776" y="408" width="240" height="40" rx="10" fill="#161b22" stroke="#484f58" stroke-width="1.5"/>
+  <text x="886" y="434" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Tool</text>
+  <line x1="886" y1="448" x2="886" y2="476" stroke="#484f58" stroke-width="2"/>
+  <path d="M886 476 L880 468 L892 468 Z" fill="#484f58"/>
+  <rect x="756" y="476" width="280" height="48" rx="10" fill="#1a3d2a" stroke="#3fb950" stroke-width="2"/>
+  <text x="886" y="506" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#e6edf3">Integration</text>
+  <line x1="886" y1="524" x2="886" y2="548" stroke="#3fb950" stroke-width="2"/>
+  <path d="M886 548 L880 540 L892 540 Z" fill="#3fb950"/>
+  <rect x="776" y="548" width="240" height="40" rx="10" fill="#161b22" stroke="#484f58" stroke-width="1.5"/>
+  <text x="886" y="574" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">vendor / backend</text>
+
+  <line x1="556" y1="488" x2="636" y2="488" stroke="#3fb950" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="600" y="478" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#8b949e">same Integration layer</text>
+
+  <rect x="180" y="640" width="840" height="56" rx="12" fill="#3d2f1f" stroke="#d29922" stroke-width="2"/>
+  <text x="600" y="674" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#e6edf3">Agents invoke Tools. Tools use Integrations. Agents do not call vendor SDKs.</text>
+
+  <rect x="220" y="720" width="760" height="44" rx="10" fill="#1a3d2a" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="600" y="748" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">Registry v2 = typed metadata / validation &#183; runtime binding = catalog + IntegrationProfile path today</text>
+</svg>
