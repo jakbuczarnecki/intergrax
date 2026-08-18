@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1040" role="img">
+  <title>Intergrax Critic and Verification stack</title>
+  <desc>Conceptual diagram: candidate result flows through L0 deterministic verification, optional L1 semantic and trajectory checks, optional L2 human authority, to CriticVerdict and Reliability recovery choices.</desc>
+  <rect width="1200" height="1040" fill="#f6f8fb"/>
+  <rect x="32" y="28" width="1136" height="984" rx="22" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#1a1a2e">Intergrax Critic &#38; Verification</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" fill="#3d4f66">Verify before recovery. Deterministic before probabilistic.</text>
+
+  <rect x="420" y="130" width="360" height="48" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="600" y="160" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">CANDIDATE RESULT</text>
+
+  <line x1="600" y1="178" x2="600" y2="202" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M600 202 L594 188 L606 188 Z" fill="#1a5fb4"/>
+
+  <rect x="300" y="202" width="600" height="56" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2.5"/>
+  <text x="600" y="228" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">L0 VERIFY</text>
+  <text x="600" y="248" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">schema &#183; rules &#183; contracts &#183; tests</text>
+
+  <line x1="600" y1="258" x2="600" y2="282" stroke="#2e7d32" stroke-width="2"/>
+  <path d="M600 282 L594 268 L606 268 Z" fill="#2e7d32"/>
+
+  <rect x="280" y="282" width="640" height="56" rx="12" fill="#fff8e1" stroke="#c9a227" stroke-width="2" stroke-dasharray="8 4"/>
+  <text x="600" y="308" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">optional L1 VERIFY</text>
+  <text x="600" y="328" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">semantic judge &#183; trajectory</text>
+
+  <line x1="600" y1="338" x2="600" y2="362" stroke="#c9a227" stroke-width="2"/>
+  <path d="M600 362 L594 348 L606 348 Z" fill="#c9a227"/>
+
+  <rect x="320" y="362" width="560" height="56" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2" stroke-dasharray="8 4"/>
+  <text x="600" y="388" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">optional L2 VERIFY</text>
+  <text x="600" y="408" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">human &#183; compliance &#183; authority</text>
+
+  <line x1="600" y1="418" x2="600" y2="442" stroke="#7c3aed" stroke-width="2"/>
+  <path d="M600 442 L594 428 L606 428 Z" fill="#7c3aed"/>
+
+  <rect x="380" y="442" width="440" height="52" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2.5"/>
+  <text x="600" y="474" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="19" font-weight="700" fill="#1a1a2e">CriticVerdict</text>
+
+  <line x1="600" y1="494" x2="600" y2="518" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M600 518 L594 504 L606 504 Z" fill="#1a5fb4"/>
+
+  <rect x="360" y="518" width="480" height="52" rx="12" fill="#fff3e0" stroke="#ef6c00" stroke-width="2.5"/>
+  <text x="600" y="550" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="19" font-weight="700" fill="#1a1a2e">Reliability</text>
+
+  <line x1="420" y1="570" x2="420" y2="606" stroke="#ef6c00" stroke-width="2"/>
+  <line x1="600" y1="570" x2="600" y2="606" stroke="#ef6c00" stroke-width="2"/>
+  <line x1="780" y1="570" x2="780" y2="606" stroke="#ef6c00" stroke-width="2"/>
+
+  <rect x="300" y="606" width="240" height="48" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="420" y="636" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">accept</text>
+
+  <rect x="480" y="606" width="240" height="48" rx="10" fill="#fff8e1" stroke="#c9a227" stroke-width="2"/>
+  <text x="600" y="636" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">revise / retry</text>
+
+  <rect x="660" y="606" width="240" height="48" rx="10" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+  <text x="780" y="636" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">HITL / fail</text>
+
+  <rect x="80" y="720" width="1040" height="64" rx="12" fill="#f6f8fb" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="600" y="748" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">Critic decides whether the result is acceptable.</text>
+  <text x="600" y="772" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">Reliability decides what to do with that verdict.</text>
+
+  <text x="600" y="840" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#3d4f66">Critic is not necessarily an LLM &#8212; L0 may be schema, rules, or tests.</text>
+  <text x="600" y="868" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#3d4f66">CVL per-run correctness &#183; OECP cross-run measurement (target)</text>
+</svg>
