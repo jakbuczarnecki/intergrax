@@ -9,7 +9,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 How Intergrax separates the specialized product application, its application operating layer, model or agent behavior, governed access to knowledge and tools, and reviewable evidence.
 
 > [!NOTE]
-> Intergrax is source-available and in active R&D. This overview explains **responsibility boundaries** and **governed execution**; it is not the complete architecture canon or a production-readiness, security-certification, or commercial-validation claim. Use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) for deep implementation architecture.
+> Intergrax is source-available and in active R&D. This overview explains **responsibility boundaries** and **governed execution**; it is not the complete architecture canon or a production-readiness, security-certification, or commercial-validation claim. For first contact or persona routing, start at the [README](../../../README.md). For intent-based navigation when unsure which document to open, use the [Public Documentation Map](../community/PUBLIC_DOCUMENTATION_MAP.md). Use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) for deep implementation architecture.
 
 Primary audience: external architects, Principal or Staff engineers, CTOs, and technical evaluators comparing application operating boundaries.
 
@@ -159,10 +159,12 @@ Details belong in the [Platform Plugins architecture](PLATFORM_PLUGINS.md).
 
 ## Architect review path
 
-1. Understand this Architecture Overview as the project-level mental model.
-2. Use the [Platform Map](../../../README.md#explore-the-intergrax-platform) for a grouped view of platform areas and domain architecture entry points.
-3. Make [PROOFS](../proofs/PROOFS.md) the primary next action: check what has current bounded evidence and what remains incomplete.
-4. Use the [Evaluation Guide](../builders/EVALUATION_GUIDE.md) for a bounded technical evaluation.
-5. Use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) to route deeper implementation questions to the canonical architecture material it indexes, including the [Harness narrative](../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) and [runtime architecture hub](../architecture/intergrax_runtime_architecture.md).
+Architecture-specific continuation — not a general documentation index.
 
-The overview summarizes the architecture; the proof documents establish current evidence; the technical map routes implementation-level due diligence. None of these routes turns bounded evidence into a production, security, real-user, or commercial validation claim.
+1. Understand this Architecture Overview as the project-level mental model.
+2. Explore the [Platform Map](../../../README.md#explore-the-intergrax-platform) for grouped platform areas and domain architecture entry points.
+3. Inspect [PROOFS](../proofs/PROOFS.md) for current bounded evidence and open validation gates.
+4. Use the [Evaluation Guide](../builders/EVALUATION_GUIDE.md) when you need a bounded technical evaluation of one claim.
+5. Go deeper via the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) and [runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (complete 24-domain index) — including the [Harness narrative](../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) when helpful.
+
+The overview summarizes the architecture; proof documents establish current evidence; the technical map and runtime hub route implementation-level due diligence. None of these routes turns bounded evidence into a production, security, real-user, or commercial validation claim.

@@ -1,5 +1,7 @@
 # Intergrax Runtime Architecture
 
+> **Technical index** — complete 24-domain architecture ↔ plan register and cross-layer feature pairs. For the public project-level mental model, see [Architecture Overview](ARCHITECTURE_OVERVIEW.md). First contact: [README](../../../README.md).
+
 **Hub only** — domain architecture and implementation are paired 1:1 under `.` and `../maintainers/plans`; multi-layer features are paired 1:1 under `../capabilities/architecture` and `../capabilities/plan`.
 **Architecture principles:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — canonical rules for platform capability ownership, domain creation, application adoption, and proof order (meta-architecture governance; not a domain pair).
 **Target:** [`../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
