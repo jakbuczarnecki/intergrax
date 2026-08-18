@@ -31,7 +31,16 @@
   - duplicate ownership of PBA checkpoint SQLite leak (PBA-01) or TL-FIX-D private `_execution_adapter`
 - **Prior audit reference(s):** [`STRATEGIC_HARNESS_MODEL`](STRATEGIC_HARNESS_MODEL.md) (universal execution boundary history); [`TIER_LAYER_BOUNDARIES`](TIER_LAYER_BOUNDARIES.md) (Tier-3 composition); [`PROVIDER_BACKEND_ABSTRACTION`](PROVIDER_BACKEND_ABSTRACTION.md) (checkpoint persistence port consumption)
 - **Exact audit-start time:** not captured; preserve date-level precision rather than fabricate one
-- **post_sync_sha:** `—` (trace commit follows audit sync commit)
+- **post_sync_sha:** `f2550615df385e474508e08ce763b43cef7e980b`
+
+> **Traceability correction (2026-08-18):**
+> the initial persistence commit published `post_sync_sha` as `—` because
+> the synchronization commit SHA did not yet exist. The campaign register
+> recorded the final value in trace commit
+> `589f72ea157c92fb006f29f1450d12ba426b6233`.
+> This correction records that already-existing synchronization SHA only;
+> no audit finding, evidence, severity, verdict, status, audited_sha,
+> architecture target, or remediation state changed.
 
 ## Executive summary
 
