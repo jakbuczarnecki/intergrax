@@ -32,7 +32,7 @@
   - re-audit of STRATEGIC_HARNESS_MODEL findings
   - unrelated provider/tool/RAG internals
 - **Prior audit reference(s):** prior PF-TIER-ENFORCEMENT enforcement audit (`4c92e0a`) remains historical evidence; Protocol v2.1 findings below are the canonical AUDIT-2 observations for this layer.
-- **post_sync_sha:** PENDING
+- **post_sync_sha:** `a5d6f83d0ea274dec269377a9ce1cc4421b1bd12`
 - **Exact audit-start time:** not captured; date-level UTC precision preserved.
 
 ## Executive summary
