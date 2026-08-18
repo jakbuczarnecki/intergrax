@@ -67,6 +67,7 @@ with Try LKW as the repository’s primary product action.
 | Explore future ecosystem direction | [Agent Marketplace concept](../overview/AGENT_MARKETPLACE.md) |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
+| Compare Intergrax with modern agent/platform alternatives | [Alternatives and trade-offs](../overview/ALTERNATIVES_AND_TRADEOFFS.md) |
 | Run an evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
 | Understand permission boundaries | [Collaboration](COLLABORATION.md) and [LICENSE](../../../LICENSE) |
 | Perform deep technical review | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) · [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (24-domain index) |
@@ -175,6 +176,7 @@ Use the [intent table](#start-by-what-you-want-to-do) first. This quick index he
 |----------|---------|
 | [README](../../../README.md) | First-contact landing — problem, value, quick start, maturity snapshot |
 | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) | Problem, value, audience, category fit and fair comparison with common approaches |
+| [ALTERNATIVES_AND_TRADEOFFS](../overview/ALTERNATIVES_AND_TRADEOFFS.md) | Named modern agent/platform alternatives — decision trade-offs, not a feature scorecard |
 | [ARCHITECTURE_OVERVIEW](../architecture/ARCHITECTURE_OVERVIEW.md) | Public architecture overview — responsibility boundaries and system flow |
 | [GOVERNED_EXECUTION](../architecture/GOVERNED_EXECUTION.md) | Governed Execution platform capability — policy definition, enforcement, HITL, and maturity boundary |
 | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md) | First bounded builder orientation and progressive-disclosure route |
