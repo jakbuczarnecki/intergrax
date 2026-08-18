@@ -42,10 +42,10 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Block | Status | Findings | Scope |
 |-------|--------|----------|-------|
-| **SHM-FIX-A** | ACCEPTED / PLANNED | [`-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-02`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-03`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Equivalent governed step boundary for normal and resume; fail closed without kernel context |
-| **SHM-FIX-B** | ACCEPTED / PLANNED | [`-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-08`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-09`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | AttemptId continuity across bridges; typed RuntimeExecutionContext at ACP boundary |
-| **SHM-FIX-C** | ACCEPTED / PLANNED | [`-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-07`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Structural production host/profile; remove product-shaped result promotion from core runtime |
-| **SHM-FIX-D** | ACCEPTED / PLANNED | [`-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Recertify mandatory-path and maturity claims after A–C verification |
+| **SHM-FIX-A** | ACCEPTED / PLANNED | [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-02`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-03`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Equivalent governed step boundary for normal and resume; fail closed without kernel context |
+| **SHM-FIX-B** | ACCEPTED / PLANNED | [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-08`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-09`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | AttemptId continuity across bridges; typed RuntimeExecutionContext at ACP boundary |
+| **SHM-FIX-C** | ACCEPTED / PLANNED | [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-07`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Structural production host/profile; remove product-shaped result promotion from core runtime |
+| **SHM-FIX-D** | ACCEPTED / PLANNED | [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | Recertify mandatory-path and maturity claims after A–C verification |
 
 **Remediation rules:**
 

@@ -215,17 +215,19 @@ UER is not a plugin marketplace. Real extension surfaces:
 
 Do not expose internal `HarnessKernel` or `NexusLoop` details as public extension APIs without canonical evidence.
 
+<a id="protocol-v2-strategic-harness-target-invariants-2026-08-18"></a>
+
 ## Protocol v2 strategic harness target invariants (2026-08-18)
 
 Accepted Protocol v2 audit layer [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) (**FAIL**, 10 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only:
 
-1. **Equivalent governed boundaries** — normal, retry, and resume execution use the same canonical governed step boundary (HarnessKernel-equivalent semantics), including UAEP resume ([`-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-02`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-2. **Fail closed without kernel** — certified production paths must fail closed when required kernel/governance context is missing; dev/test bypasses must be explicit and separately named ([`-03`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-3. **Continuous identity** — `TaskId`/`RunId`/`AttemptId` propagate across internal bridges (e.g. Nexus → ACP) unless an explicit typed parent/child attempt relationship exists ([`-08`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-09`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+1. **Equivalent governed boundaries** — normal, retry, and resume execution use the same canonical governed step boundary (HarnessKernel-equivalent semantics), including UAEP resume ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-02`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+2. **Fail closed without kernel** — certified production paths must fail closed when required kernel/governance context is missing; dev/test bypasses must be explicit and separately named ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-03`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+3. **Continuous identity** — `TaskId`/`RunId`/`AttemptId` propagate across internal bridges (e.g. Nexus → ACP) unless an explicit typed parent/child attempt relationship exists ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-08`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-09`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
 4. **Attempt boundaries** — a new `AttemptId` is minted only at a defined attempt boundary (retry), not at arbitrary internal handoffs.
-5. **Production host/profile** — production execution requires explicit production host/profile wiring; hostless paths are dev/test/lab only ([`-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-6. **Mandatory guarantees** — "mandatory path" means mandatory **guarantees** (policy, trace, gateways, identity, kernel-equivalent step semantics), not merely that common code usually passes through `AgentEngine` ([`-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-7. **Maturity honesty** — historical Done rows remain historical; **current** maturity references accepted Protocol v2 findings until SHM-FIX remediation is independently verified ([`-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+5. **Production host/profile** — production execution requires explicit production host/profile wiring; hostless paths are dev/test/lab only ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+6. **Mandatory guarantees** — "mandatory path" means mandatory **guarantees** (policy, trace, gateways, identity, kernel-equivalent step semantics), not merely that common code usually passes through `AgentEngine` ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+7. **Maturity honesty** — historical Done rows remain historical; **current** maturity references accepted Protocol v2 findings until SHM-FIX remediation is independently verified ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
 
 ## Current maturity
 

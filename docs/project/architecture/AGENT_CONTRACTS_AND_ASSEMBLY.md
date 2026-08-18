@@ -363,16 +363,18 @@ Public summary — gates in [§20](#20-agent-lifecycle-governance) and productio
 
 `production_mode` and platform-ready wording are posture — not taxonomy **P4**.
 
+<a id="protocol-v2-strategic-harness-target-invariants-2026-08-18"></a>
+
 ## Protocol v2 strategic harness target invariants (2026-08-18)
 
 Accepted Protocol v2 audit layer [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) (**FAIL**, 10 ACCEPTED findings). Canonical evidence and lifecycle: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). This section states **target design only** — not bug history.
 
 1. **Canonical author contract** — production-certified author execution must use one explicit author contract. If `on_next_step()` is canonical, every certified path must reach equivalent semantics by construction ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-2. **No hidden runtime escape** — author code must not depend on unrestricted hidden runtime escape hatches (e.g. untyped metadata channels) to bypass platform-owned effect boundaries ([`-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-3. **Typed critical author context** — `AgentStepContext`, `StepOutcome`, and related author surfaces at the critical boundary must be typed capability models, not unbounded `dict[str, Any]` author dependencies ([`-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-4. **Universal pre-effect governance** — HarnessKernel (or an explicitly proven compositional equivalent) is the boundary before meaningful side effects; author paths must not perform ungoverned effects first ([`-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-5. **Product-neutral core transport** — product/application vocabulary (e.g. domain-specific summary keys) must not live in core execution result transport ([`-07`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-6. **Maturity honesty** — historical ACP/AUDIT-IDEAL **Done** rows remain historical; **current** maturity must acknowledge unresolved accepted Protocol v2 findings until independently verified closed ([`-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+2. **No hidden runtime escape** — author code must not depend on unrestricted hidden runtime escape hatches (e.g. untyped metadata channels) to bypass platform-owned effect boundaries ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+3. **Typed critical author context** — `AgentStepContext`, `StepOutcome`, and related author surfaces at the critical boundary must be typed capability models, not unbounded `dict[str, Any]` author dependencies ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+4. **Universal pre-effect governance** — HarnessKernel (or an explicitly proven compositional equivalent) is the boundary before meaningful side effects; author paths must not perform ungoverned effects first ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+5. **Product-neutral core transport** — product/application vocabulary (e.g. domain-specific summary keys) must not live in core execution result transport ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-07`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+6. **Maturity honesty** — historical ACP/AUDIT-IDEAL **Done** rows remain historical; **current** maturity must acknowledge unresolved accepted Protocol v2 findings until independently verified closed ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
 
 ## Current maturity
 
@@ -381,9 +383,9 @@ Implementation maturity: **I4** *(target)* — same reopening; prior ACP deliver
 Production readiness: **P2**  
 Evidence maturity: **E3**
 
-- **A4 (target)** — Normative contract, author/runtime ownership split, assembly model, registry/capability architecture, adjacent-domain boundaries (Nexus, UER, Tools, Memory, Reasoning, Distribution, Tier-3); AUDIT-IDEAL §12–§20 **Done** historically ([plan](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)). **Current:** accepted Protocol v2 findings `-01`…`-10` block architecture-complete claims until remediated and re-verified.
+- **A4 (target)** — Normative contract, author/runtime ownership split, assembly model, registry/capability architecture, adjacent-domain boundaries (Nexus, UER, Tools, Memory, Reasoning, Distribution, Tier-3); AUDIT-IDEAL §12–§20 **Done** historically ([plan](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)). **Current:** accepted Protocol v2 findings `AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`…`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10` block architecture-complete claims until remediated and re-verified.
 - **I4 (target)** — ACP + ACP-CLOSE + ACP-FINISH **Done** historically: `run()` / `on_next_step`, HarnessKernel path, fleet migration, registry snapshot, capability negotiation, prompt governance, lifecycle gates, production-gate implementation. Not I5 — uneven per-agent certification and host adoption; Protocol v2 execution-boundary and typing gaps remain open.
-- **P2** — Platform-ready gates and harness host depth (**ACP-CLOSE-PROD-* Done** historically); **no** universal product production handoff or per-customer operational package — `production_mode` ≠ **P4**; production host/profile wiring must become structural ([`-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+- **P2** — Platform-ready gates and harness host depth (**ACP-CLOSE-PROD-* Done** historically); **no** universal product production handoff or per-customer operational package — `production_mode` ≠ **P4**; production host/profile wiring must become structural ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
 - **E3** — Unit/gate suite (`check_agent_acp_close_ci.py`, contract/author surface, registry, capability graph, lifecycle metadata), integration paths (Nexus/UAEP execution, cross-host reuse certification). **No dedicated public ACP proof route** in [`PROOFS.md`](../proofs/PROOFS.md) — not E4/E5.
 
 > **Phase vs maturity:** ACP-FINISH and AUDIT-IDEAL **Done** rows are plan delivery states, not P-axis or public proof claims. Protocol v2 accepted findings reopen **current** maturity until SHM-FIX blocks are implemented and independently verified.
