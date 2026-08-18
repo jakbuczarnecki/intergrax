@@ -1,4 +1,4 @@
-﻿# Intergrax Tools
+# Intergrax Tools
 
 **Intergrax Tools** defines the governed runtime boundary between agent or model **tool intent** and actual execution — including discovery, selection, permissions, validation, orchestration, invocation, and audit.
 
