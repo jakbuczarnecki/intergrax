@@ -36,9 +36,32 @@ This protocol is **canonical**. Executors MUST follow it in order. Deviations re
 
 Confirm:
 
-- Campaign register file is readable and internally consistent (finding IDs unique).
+- Campaign `README.md` finding register is readable and internally consistent (finding IDs unique).
 - Accepted findings are distinguishable from draft or rejected entries.
 - Architecture and plan references cited by findings exist or are flagged as missing (see Section C).
+
+### A.5 Authoritative finding register
+
+The campaign `README.md` **finding register** is the authoritative source for:
+
+- current status
+- severity/category
+- dependencies
+- remediation block
+- implementation commit
+- verification evidence
+
+Per-layer files (`docs/audit_results/<CAMPAIGN_DIR>/<LAYER_CODE>.md`) provide:
+
+- immutable original observation
+- evidence
+- reproduction
+- impact
+- publication-time operator decision (`Status at publication`)
+
+**Never** update immutable per-layer report text merely to advance remediation status. Update the campaign `README.md` finding register instead. Historical finding description and evidence remain unchanged.
+
+Architecture provides **target**. Plan provides **implementation work unit**. No duplicate status authority elsewhere.
 
 ---
 
@@ -48,10 +71,12 @@ Confirm:
 
 Construct the queue from:
 
-1. **Campaign register** — authoritative list of findings, severities, statuses, and cross-references.
+1. **Campaign `README.md` finding register** — authoritative list of findings, severities, statuses, dependencies, remediation blocks, and cross-references.
 2. **Accepted unresolved findings** — status `ACCEPTED` (and not `DEFERRED` / `REJECTED` / `CLOSED`). When resuming in-flight remediation, include `IMPLEMENTING` explicitly. Do **not** remediate `PROPOSED` findings before operator acceptance.
-3. **Dependencies** — explicit `depends_on` fields, implied ordering (e.g., schema before consumer), and plan-block prerequisites.
+3. **Dependencies** — explicit `dependencies` fields in the finding register, implied ordering (e.g., schema before consumer), and plan-block prerequisites.
 4. **Plan blocks** — remediation work units from `docs/project/maintainers/plans/` or capability plan docs paired with architecture targets.
+
+Per-layer snapshots supply historical observation and evidence only; they are **not** a second source of truth for lifecycle state.
 
 ### B.2 Ordering rules
 
@@ -71,7 +96,14 @@ Tie-break: earlier finding ID, then alphabetically by plan block reference.
 
 ### B.4 Queue artifact
 
-Maintain a working queue (markdown table, checklist, or campaign annex) updated as statuses change. The queue is the executor's roadmap for Sections D–L.
+The working remediation queue may be derived from the campaign finding register, but **must not** become a second source of truth.
+
+If an executor keeps a temporary queue or checklist (markdown table, annex, or session notes):
+
+- it is a **derived view only**
+- all lifecycle changes are written back to the campaign `README.md` finding register
+
+Never treat a derived queue as authoritative over the campaign register.
 
 ---
 
@@ -81,10 +113,11 @@ When sources disagree, resolve in this order:
 
 | Priority | Source | Role |
 |----------|--------|------|
-| 1 | **Audit finding** | Describes the **problem** — observed gap, risk, or non-conformance. |
-| 2 | **Architecture doc** (`docs/project/architecture/`, capability architecture) | Describes the **target** — intended design and invariants. |
-| 3 | **Plan doc** (`docs/project/maintainers/plans/`, capability plan) | Describes the **work unit** — phased delivery and acceptance criteria. |
-| 4 | **Codebase** | **Baseline** — what is implemented today; not a substitute for arch/plan when they define the target. |
+| 1 | **Campaign finding register** (`docs/audit_results/<CAMPAIGN_DIR>/README.md`) | Authoritative **current** finding lifecycle, remediation block, dependencies, implementation commit, verification evidence. |
+| 2 | **Per-layer audit snapshot** | Immutable **historical** problem description, evidence, reproduction, impact, publication-time operator decision. |
+| 3 | **Architecture doc** (`docs/project/architecture/`, capability architecture) | Describes the **target** — intended design and invariants. |
+| 4 | **Plan doc** (`docs/project/maintainers/plans/`, capability plan) | Describes the **work unit** — phased delivery and acceptance criteria. |
+| 5 | **Codebase** | **Baseline** — what is implemented today; not a substitute for arch/plan when they define the target. |
 
 ### C.1 Conflict handling — STOP
 
@@ -95,7 +128,7 @@ When sources disagree, resolve in this order:
 - Code "as-is" is treated as correct while audit and arch agree the behavior is wrong (code is baseline, not veto).
 - Two architecture sources conflict with no documented precedence.
 
-Record the conflict in the campaign register comment field; do not implement until hierarchy is reconciled.
+Record the conflict in the campaign `README.md` finding register `notes` field; do not implement until hierarchy is reconciled.
 
 ---
 
@@ -147,7 +180,7 @@ When the operator pre-authorizes a batch:
 
 ### E.3 Status transitions at start
 
-When work begins on a block, set implicated findings to `IMPLEMENTING` in the campaign register (Section I).
+When work begins on a block, set implicated findings to `IMPLEMENTING` in the campaign `README.md` finding register (Section I). Do **not** mutate immutable per-layer snapshot text to reflect lifecycle changes.
 
 ---
 
@@ -199,7 +232,7 @@ Remediation is not complete at implementation time. Each block requires verifica
 
 ### H.3 Verification artifact
 
-Record commands run, job URLs or IDs, and test names in the campaign trace (Section K). Set finding status to `IMPLEMENTED` when code/docs merge locally; do not set `VERIFIED` without Section J.
+Record commands run, job URLs or IDs, and test names in the campaign `README.md` finding register (Section K). Set finding status to `IMPLEMENTED` when code/docs merge locally; do not set `VERIFIED` without Section J.
 
 ---
 
@@ -232,13 +265,15 @@ Legacy material is identified by location under `legacy/`, not by a competing ac
 
 ### I.3 Transition rules
 
-- Audit produces `PROPOSED` findings; operator acceptance → `ACCEPTED`.
-- Implementer may set: `ACCEPTED`→`IMPLEMENTING`, `IMPLEMENTING`→`IMPLEMENTED`.
+- Audit produces `PROPOSED` findings in the campaign finding register; operator acceptance → `ACCEPTED`.
+- Per-layer snapshots record publication-time decision only (`Status at publication`); they do **not** track `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED`.
+- Implementer may set in the **campaign finding register**: `ACCEPTED`→`IMPLEMENTING`, `IMPLEMENTING`→`IMPLEMENTED`.
 - Implementer **cannot** self-certify `VERIFIED` or `CLOSED`.
 - Independent verifier sets `VERIFIED` after Section J.
 - `CLOSED` follows `VERIFIED` and completion rollup (Section L).
-- `DEFERRED`, `REJECTED`, and `DISPUTED` require operator acknowledgment and rationale in the register.
+- `DEFERRED`, `REJECTED`, and `DISPUTED` require operator acknowledgment and rationale in the finding register.
 - `WITHDRAWN` does not delete or reuse the finding ID.
+- **Never** update immutable per-layer report text merely to advance remediation status; update the campaign `README.md` finding register instead.
 
 ## J. Independent Verification Pass
 
@@ -261,16 +296,18 @@ Every remediated finding MUST maintain an auditable chain:
 finding_id → arch_ref → plan_block → commit_hash → verification_evidence → finding_status
 ```
 
-### K.1 Required fields (per finding or block)
+### K.1 Required fields (per finding in campaign finding register)
 
 | Field | Description |
 |-------|-------------|
 | `finding_id` | Campaign register identifier |
 | `arch_ref` | Doc path + section anchor |
-| `plan_block` | Plan doc path + block/phase id |
-| `commit_hash` | One or more commits (full SHA) |
+| `plan_ref` | Plan doc path + block/phase id |
+| `implementation_commit` | One or more commits (full SHA) |
 | `verification_evidence` | Test names, CI run, reviewer id, date |
-| `finding_status` | Per-finding lifecycle status from Section I.1 (`PROPOSED` / `ACCEPTED` / `IMPLEMENTING` / `IMPLEMENTED` / `VERIFIED` / `CLOSED` / `DISPUTED` / `DEFERRED` / `REJECTED` / `WITHDRAWN`) |
+| `status` | Per-finding lifecycle status from Section I.1 |
+
+All lifecycle and traceability updates belong in the campaign `README.md` finding register, not in immutable per-layer snapshots.
 
 Broken links in the chain block `CLOSED` for that finding.
 
@@ -289,7 +326,7 @@ Before recommending audit closure:
 
 ### L.2 Rollup report
 
-Produce a short rollup:
+Update the campaign `README.md` rollup section (section D in [AUDIT_PROTOCOL.md](AUDIT_PROTOCOL.md)). Do **not** create `CAMPAIGN_SUMMARY.md`. Include at minimum:
 
 - Counts by final status and severity.
 - List of `DEFERRED` and `REJECTED` with reasons.
@@ -312,14 +349,14 @@ Do not claim "fully audited" solely because remediation closed — only that **t
 
 1. [ ] Read `docs/audit_results/README.md`
 2. [ ] Select latest `COMPLETE` campaign (or operator-named); never silent `IN_PROGRESS` remediation
-3. [ ] Build ordered queue from register + arch + plan; group coherent blocks
+3. [ ] Build ordered queue from campaign finding register + arch + plan; group coherent blocks
 4. [ ] Resolve sources per hierarchy; STOP on conflict
 5. [ ] Pick top unblocked block; scoped reads only
 6. [ ] Roadmap + plain language + expected proof; confirm before implement (if interactive)
 7. [ ] Implement with production quality and Section G restrictions
 8. [ ] Verify with new/negative tests + CI + diff review
 9. [ ] Set `IMPLEMENTED`; independent pass → `VERIFIED` → `CLOSED`
-10. [ ] Maintain traceability chain; rollup; recommend follow-on audit if warranted
+10. [ ] Maintain traceability in campaign finding register; rollup in campaign `README.md`; recommend follow-on audit if warranted
 
 ---
 

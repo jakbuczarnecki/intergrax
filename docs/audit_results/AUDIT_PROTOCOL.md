@@ -102,7 +102,8 @@ Therefore `development` may advance between layer audits. Do **not** model a mul
 ### Campaign identity
 
 - **Campaign date:** `YYYY-MM-DD` (UTC calendar date when the campaign **starts**).
-- **Campaign root:** `docs/audit_results/YYYY-MM-DD/` (see same-day naming below).
+- **Campaign directory (`<CAMPAIGN_DIR>`):** `YYYY-MM-DD` \| `YYYY-MM-DD_run-2` \| `YYYY-MM-DD_run-3` (see same-day naming below).
+- **Campaign root:** `docs/audit_results/<CAMPAIGN_DIR>/`
 - **Global registry:** `docs/audit_results/README.md` — protocol entry point, global campaign registry, latest-campaign discovery, legacy pointer.
 
 ### Campaign directory layout
@@ -112,7 +113,7 @@ docs/audit_results/
   README.md
   AUDIT_PROTOCOL.md
   AUDIT_REMEDIATION_PROTOCOL.md
-  YYYY-MM-DD/
+  <CAMPAIGN_DIR>/
     README.md              # REQUIRED — campaign master register AND rollup
     <LAYER_CODE>.md        # immutable per-layer audit snapshot
     ...
@@ -120,7 +121,7 @@ docs/audit_results/
     ...
 ```
 
-**Do not** require a separate `CAMPAIGN_SUMMARY.md`. The campaign `README.md` is the master register and campaign rollup.
+A campaign has **one** coordination/rollup document: `docs/audit_results/<CAMPAIGN_DIR>/README.md`. It holds campaign metadata, layer register, finding register, cross-layer rollup, and remediation/verification trace. There is **no** `CAMPAIGN_SUMMARY.md`. Do **not** create or publish a second campaign-summary artifact.
 
 ### Same-day campaigns
 
@@ -132,33 +133,75 @@ Use **one** convention only:
 
 Do **not** use `YYYY-MM-DD-a` / `-b` suffixes.
 
-### Required campaign metadata (in campaign `README.md`)
+### Campaign `README.md` — master register contract
+
+`docs/audit_results/<CAMPAIGN_DIR>/README.md` is the **mutable master register** for one campaign. It is the single coordination/rollup document. Do **not** create `CAMPAIGN_SUMMARY.md` or any other parallel campaign-status artifact.
+
+#### A. Campaign metadata (required section)
 
 | Field | Description |
 |-------|-------------|
 | `campaign_id` | Dated directory name (e.g. `2026-08-18` or `2026-08-18_run-2`) |
+| `campaign_token` | Immutable token derived from directory name (section H) |
 | `started_at` | UTC timestamp when campaign started |
-| `completed_at` | UTC timestamp when campaign closed (or null while in progress) |
+| `completed_at` | UTC timestamp when campaign closed (or `—` while in progress) |
 | `status` | `IN_PROGRESS` \| `COMPLETE` \| `ABORTED` |
 | `campaign_start_sha` | Repository SHA at campaign start |
-| `campaign_end_sha` | Final repository state after campaign-owned documentation synchronization |
+| `campaign_end_sha` | Final repository state after campaign-owned documentation synchronization (or `—` while in progress) |
 | `scope` | Layers/domains in scope |
-| `overall_verdict` | Campaign rollup verdict (section J) |
+| `overall_verdict` | Campaign rollup verdict (section J; or `—` while in progress) |
 
 Legacy material is identified by location under `legacy/`, not by a competing active campaign status.
 
-### Required per-layer register metadata (in campaign `README.md` layer table)
+#### B. Layer register (required table)
 
-| Field | Description |
-|-------|-------------|
+| Column | Description |
+|--------|-------------|
 | `layer` | Layer code (e.g. `MEMORY`, `ORCHESTRATION`) |
 | `status` | Layer audit status |
 | `audited_sha` | **Exact** SHA this layer was audited against (immutable once published) |
 | `verdict` | Layer verdict (section J) |
-| `finding_count` | Count by severity |
+| `critical` | Count of CRITICAL findings |
+| `high` | Count of HIGH findings |
+| `medium` | Count of MEDIUM findings |
+| `low` | Count of LOW findings |
 | `architecture_sync` | Whether arch sync completed for accepted findings |
 | `plan_sync` | Whether plan sync completed for accepted findings |
-| `post_sync_sha` | Commit SHA after arch/plan sync (when synchronization created a later commit) |
+| `post_sync_sha` | Commit SHA after arch/plan sync (when synchronization created a later commit; or `—`) |
+| `report` | Path to immutable per-layer snapshot (e.g. `<LAYER_CODE>.md`) |
+
+#### C. Finding register — current authoritative state (required table)
+
+The finding register in the campaign `README.md` is the **authoritative current state** for finding lifecycle and remediation. Initially unknown fields use `—`.
+
+| Column | Description |
+|--------|-------------|
+| `finding_id` | Immutable ID (section H) |
+| `layer` | Layer code (or `CROSS`) |
+| `severity` | CRITICAL \| HIGH \| MEDIUM \| LOW |
+| `category` | Primary category (section G) |
+| `status` | Current lifecycle status (section G1) |
+| `remediation_block` | Named remediation block (or `—` until accepted findings are grouped) |
+| `dependencies` | Canonical finding IDs and/or explicitly named remediation blocks (or `—`) |
+| `arch_ref` | Architecture doc path + section anchor (or `—`) |
+| `plan_ref` | Plan doc path + block/phase id (or `—`) |
+| `implementation_commit` | One or more full commit SHAs (or `—` until they exist) |
+| `verification_evidence` | Tests, CI run, reviewer id, date (or `—` until they exist) |
+| `notes` | Operator/executor notes (or `—`) |
+
+`dependencies` reference canonical finding IDs and/or explicitly named remediation blocks. `remediation_block`, `implementation_commit`, and `verification_evidence` remain `—` until they exist.
+
+#### D. Cross-layer / campaign rollup (required section)
+
+At minimum:
+
+- systemic themes
+- CROSS findings
+- final counts
+- overall verdict
+- recommended remediation order
+
+Do **not** require another file for these sections.
 
 Every per-layer result file MUST record the same `audited_sha`. Evidence in that result refers to **that** SHA only.
 
@@ -175,10 +218,29 @@ If runtime/product code changes concurrently between layer audits:
 
 ### Lifecycle
 
-1. Create dated folder + campaign `README.md` with `IN_PROGRESS` and `campaign_start_sha`.
-2. Execute layers per operator roadmap (section P); persist each layer at its `audited_sha`.
-3. After each accepted layer: arch/plan sync → commit → record `post_sync_sha` in campaign register.
-4. Set campaign `COMPLETE` when scoped layers finish and rollup is written in campaign `README.md`, or `ABORTED` with reason.
+**On campaign initialization** (both steps required; no `IN_PROGRESS` campaign without a registry row):
+
+1. Create `docs/audit_results/<CAMPAIGN_DIR>/` and campaign `README.md` with metadata section A populated: `status` = `IN_PROGRESS`, `campaign_start_sha` set, `completed_at` = `—`, `campaign_end_sha` = `—`, `overall_verdict` = `—`.
+2. Immediately add **one** row to the global campaign registry in `docs/audit_results/README.md` with the same values. Never append a duplicate registry row for the same `campaign_id`.
+
+**During campaign:**
+
+3. Execute layers per operator roadmap (section P); persist each layer at its `audited_sha` to `docs/audit_results/<CAMPAIGN_DIR>/<LAYER_CODE>.md`.
+4. After each accepted layer: arch/plan sync → commit → record `post_sync_sha` in the campaign layer register; update the campaign finding register for lifecycle transitions.
+5. Maintain the campaign finding register as the authoritative current state for remediation (section G1); do **not** mutate immutable per-layer snapshots to advance remediation status.
+
+**On campaign completion** (update **both** campaign `README.md` and the **same** root-registry row):
+
+6. Finish/update campaign `README.md` rollup (section D).
+7. Set campaign `status` = `COMPLETE` in campaign `README.md`; populate `completed_at`, `campaign_end_sha`, and `overall_verdict`.
+8. Update the corresponding row in `docs/audit_results/README.md` with the same completion values. Do **not** create a second campaign-summary artifact.
+
+**On abort** (update **both** campaign `README.md` and the **same** root-registry row):
+
+9. Set campaign `status` = `ABORTED` with completion/abort timestamp and reason; preserve the campaign directory and evidence.
+10. Update the corresponding root-registry row to `ABORTED`. Do **not** append a duplicate registry row.
+
+Registry rows are **newest-first**. The root registry is sufficient for discovering the latest campaign, the latest `COMPLETE` campaign, and any active (`IN_PROGRESS`) campaign.
 
 **No dependency** on `progress.json`, orchestrator scripts, or IDE-specific state files.
 
@@ -350,6 +412,11 @@ Lack of evidence for production-safe behavior under these stresses is a finding 
 
 Rules: audit produces `PROPOSED`; operator acceptance → `ACCEPTED`; remediation starts → `IMPLEMENTING`; implementer may reach `IMPLEMENTED`; implementer **must not** self-certify `VERIFIED` or `CLOSED`; independent verifier → `VERIFIED`; campaign remediation rollup → `CLOSED`.
 
+**State ownership:**
+
+- **Campaign `README.md` finding register** — authoritative **current** lifecycle, remediation, and verification state (`PROPOSED` through `CLOSED`, including `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`).
+- **Per-layer snapshot** (`docs/audit_results/<CAMPAIGN_DIR>/<LAYER_CODE>.md`) — immutable historical observation plus **publication-time operator decision** only (section O). Do **not** use per-layer files as the current location for `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED`.
+
 
 ## H. Finding IDs
 
@@ -449,7 +516,7 @@ When a prior campaign exists for the same layer:
 4. **Classify** — section G severity and category.
 5. **Present** — deliver findings to operator before treating them as accepted (section P).
 6. **Accept** — operator confirms, disputes, or defers each finding.
-7. **Persist** — write accepted artifacts to `docs/audit_results/YYYY-MM-DD/`.
+7. **Persist** — write accepted artifacts to `docs/audit_results/<CAMPAIGN_DIR>/`.
 8. **Sync arch/plan** — after acceptance, update docs per section M.
 
 ---
@@ -458,12 +525,12 @@ When a prior campaign exists for the same layer:
 
 After operator accepts findings:
 
-1. **Architecture** — update target docs if design must change to address ARCHITECTURAL RISK or accepted DEFECT remediation.
+1. **Architecture** — update target docs when an accepted finding requires target-design change, especially for **ARCHITECTURE DEFECT** or **IMPLEMENTATION/ARCHITECTURE DRIFT**. Implementation-only defects (**IMPLEMENTATION DEFECT** and similar) may require plan updates without changing architecture when the existing target is already correct.
 2. **Plan** — adjust task status, add remediation items, link finding IDs; never mark `Done` without behavior evidence.
-3. **Cross-links** — layer audit file links to arch/plan sections; plan cites `AUDIT-...` IDs.
-4. **No silent rewrite** — doc changes that reverse a finding require a new audit or explicit operator waiver recorded in the campaign README.
+3. **Cross-links** — layer audit file links to arch/plan sections; plan cites `AUDIT-...` IDs; campaign finding register holds current remediation trace.
+4. **No silent rewrite** — doc changes that reverse a finding require a new audit or explicit operator waiver recorded in the campaign `README.md`.
 
-Synchronization is **post-acceptance** only — audits do not edit arch/plan to match broken code without recording the gap as a finding or accepted debt.
+Synchronization is **post-acceptance** only — audits do not edit arch/plan to match broken code without recording the gap as a finding or accepted debt. Never update immutable per-layer report text merely to advance remediation status; update the campaign `README.md` finding register instead.
 
 ---
 
@@ -483,7 +550,9 @@ Cross-layer issues get their own IDs using layer code `CROSS` (e.g. `AUDIT-20260
 
 ## O. Required per-layer result format
 
-Each `docs/audit_results/YYYY-MM-DD/<LAYER_CODE>.md` MUST contain:
+Each `docs/audit_results/<CAMPAIGN_DIR>/<LAYER_CODE>.md` is an **immutable historical snapshot** after publication. It records the original finding, evidence, reproduction, impact, and publication-time operator decision. It does **not** store future live remediation state.
+
+Each per-layer file MUST contain:
 
 ```markdown
 # <LAYER_CODE> — Platform Audit
@@ -513,7 +582,7 @@ Each `docs/audit_results/YYYY-MM-DD/<LAYER_CODE>.md` MUST contain:
 ### AUDIT-<CAMPAIGN_TOKEN>-<LAYER_CODE>-01
 - Severity:
 - Category:
-- Status: PROPOSED | ACCEPTED | IMPLEMENTING | IMPLEMENTED | VERIFIED | CLOSED | DISPUTED | DEFERRED | REJECTED | WITHDRAWN
+- Status at publication: PROPOSED | ACCEPTED | DEFERRED | DISPUTED | REJECTED | WITHDRAWN
 - Claim falsified:
 - Observation:
 - Location:
@@ -536,6 +605,10 @@ Each `docs/audit_results/YYYY-MM-DD/<LAYER_CODE>.md` MUST contain:
 - Disputed findings:
 ```
 
+**Publication-time status values** represent audit/operator decision at persist time. Normally: `ACCEPTED`, `DEFERRED`, `DISPUTED`, `REJECTED`, `WITHDRAWN`. If a finding is persisted before operator decision for an explicitly authorized reason, `PROPOSED` may be used.
+
+Do **not** record `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED` in per-layer snapshots. Those lifecycle transitions belong **only** in the campaign `README.md` finding register.
+
 ---
 
 ## P. Operator workflow
@@ -548,17 +621,36 @@ Each `docs/audit_results/YYYY-MM-DD/<LAYER_CODE>.md` MUST contain:
    - CRITICAL/HIGH deferrals require explicit rationale and target date in campaign README.
    - Only then persist final layer files and update register.
 5. **Arch/plan sync** — separate step after acceptance (section M); may be same or follow-up change set.
-6. **Campaign close** — update `docs/audit_results/README.md`, set status `COMPLETE` or `ABORTED`, publish `CAMPAIGN_SUMMARY.md` if multi-layer.
+6. **Campaign close** —
+   1. Finish/update campaign `README.md` rollup (section D).
+   2. Set campaign status `COMPLETE` or `ABORTED` in campaign `README.md`.
+   3. Update the corresponding row in root `docs/audit_results/README.md`.
+   4. Do **not** create a second campaign-summary artifact (no `CAMPAIGN_SUMMARY.md`).
 
 ---
 
 ## Appendix: Layer codes (non-exhaustive)
 
-Use domain names aligned with `docs/project/architecture/<DOMAIN>.md` pairs, e.g.:
+A layer audit **normally** maps to one architecture/domain pair aligned with `docs/project/architecture/<DOMAIN>.md`, e.g.:
 
 `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW`, `UNIFIED_EXECUTION_RUNTIME`, `MEMORY`, `RAG`, `CONTEXT_ENGINEERING`, `INTEGRATIONS`, `MODALITY`, `RELIABILITY_FAILURE_AND_HITL`, `ADAPTIVE_HARNESS_INTELLIGENCE`, `PLATFORM_PLUGINS`
 
 Capability-scoped audits may use capability hub names from `docs/project/capabilities/`.
+
+### Conceptual / cross-domain slices
+
+A campaign may explicitly define a **conceptual invariant slice** spanning multiple domains when the operator declares that scope. Example: `STRATEGIC_HARNESS_MODEL` may legitimately span agent execution, UER, Nexus, identity, and policy boundaries.
+
+Requirements for a conceptual slice:
+
+- stable `LAYER_CODE`
+- explicit in-scope architecture docs
+- explicit code entrypoints
+- explicit scope out
+- exact `audited_sha`
+- no double-counting hidden by the cross-layer scope
+
+This preserves the Intergrax audit roadmap without forcing every audit layer to equal one Markdown domain file.
 
 ---
 
