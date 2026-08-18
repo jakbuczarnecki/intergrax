@@ -34,7 +34,7 @@
   - re-audit of previously published layers
 - **Prior audit reference(s):** legacy provider/integrations material is historical only; no prior canonical Protocol v2.2 PROVIDER_BACKEND_ABSTRACTION snapshot
 - **Exact audit-start time:** not captured; preserve date-level precision rather than fabricate one
-- **post_sync_sha:** `—`
+- **post_sync_sha:** `3fb36254bf58f3898dac16f0ae0fca3f01bb95d6`
 
 ## Executive summary
 

@@ -30,7 +30,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 |-------|--------|-------------|---------|----------|------|--------|-----|---------------------|-----------|---------------|--------|
 | STRATEGIC_HARNESS_MODEL | COMPLETE | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | FAIL | 0 | 6 | 4 | 0 | COMPLETE | COMPLETE | `def29be1adf2e099c300b7a8471c32b946e9c957` | [STRATEGIC_HARNESS_MODEL.md](STRATEGIC_HARNESS_MODEL.md) |
 | TIER_LAYER_BOUNDARIES | COMPLETE | `d8d10bb5099d003eb9495674c28e0f6e6762dbfa` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `a5d6f83d0ea274dec269377a9ce1cc4421b1bd12` | [TIER_LAYER_BOUNDARIES.md](TIER_LAYER_BOUNDARIES.md) |
-| PROVIDER_BACKEND_ABSTRACTION | COMPLETE | `7570e9b4508554a42bdf5cce2c987c56c6f2b80e` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `—` | [PROVIDER_BACKEND_ABSTRACTION.md](PROVIDER_BACKEND_ABSTRACTION.md) |
+| PROVIDER_BACKEND_ABSTRACTION | COMPLETE | `7570e9b4508554a42bdf5cce2c987c56c6f2b80e` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `3fb36254bf58f3898dac16f0ae0fca3f01bb95d6` | [PROVIDER_BACKEND_ABSTRACTION.md](PROVIDER_BACKEND_ABSTRACTION.md) |
 
 ## Finding register
 
