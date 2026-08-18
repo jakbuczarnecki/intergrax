@@ -24,6 +24,13 @@ class PluginAdmissionReasonCode(StrEnum):
     INVALID_POLICY_CONTRIBUTION_SOURCE = "invalid_policy_contribution_source"
     POLICY_HANDLER_BINDING_MISSING = "policy_handler_binding_missing"
     POLICY_HANDLER_PROVENANCE_MISMATCH = "policy_handler_provenance_mismatch"
+    POLICY_CONFIGURATION_CONTRACT_BINDING_MISSING = (
+        "policy_configuration_contract_binding_missing"
+    )
+    POLICY_CONFIGURATION_CONTRACT_ID_MISMATCH = (
+        "policy_configuration_contract_id_mismatch"
+    )
+    CONFIGURATION_CONTRACT_BUILTIN_RESERVED = "configuration_contract_builtin_reserved"
     UNRESOLVED_PACKAGE_IDENTITY = "unresolved_package_identity"
 
 

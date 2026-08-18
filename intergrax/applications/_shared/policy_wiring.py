@@ -34,7 +34,16 @@ from intergrax.runtime.policy.builtin_catalog import (
     build_policy_catalog,
 )
 from intergrax.runtime.policy.catalog import PolicyCatalog
-from intergrax.runtime.policy.contribution import load_policy_definition_plugin_report
+from intergrax.runtime.policy.contribution import (
+    GovernancePolicyContribution,
+    build_composed_configuration_contract_registry,
+    load_policy_definition_plugin_report,
+)
+from intergrax.runtime.policy.configuration_contract import (
+    ConfigurationContractRegistry,
+    build_builtin_configuration_contract_registry,
+    validate_builtin_policy_contract_consistency,
+)
 from intergrax.runtime.policy.policy_bundle import (
     DeclarativePolicyRuntime,
     RuntimePolicyBundle,
@@ -61,6 +70,7 @@ _STANDARD_POLICY_LOAD_POLICY = PolicyRuleLoadPolicy(on_load_failure="isolate")
 class _DeclarativePolicyComposition:
     runtime: DeclarativePolicyRuntime
     plugin_definitions: tuple[PolicyDefinition, ...]
+    plugin_contributions: tuple[GovernancePolicyContribution, ...] = ()
 
 
 def build_runtime_policy_bundle(
@@ -79,7 +89,7 @@ def build_runtime_policy_bundle(
     if execution_mode is not None:
         fragments["execution_mode"] = execution_mode.value
         fragments["runtime_policies"] = runtime_policies_for_execution_mode(execution_mode)
-    declarative_runtime, policy_catalog = _compose_policy_bundle(
+    declarative_runtime, policy_catalog, config_registry = _compose_policy_bundle(
         policy_rules,
         discover_entry_points=discover_entry_points,
         execution_mode=execution_mode,
@@ -89,6 +99,7 @@ def build_runtime_policy_bundle(
         require_human_on_critical=require_human_on_critical,
         domain_fragments=fragments,
         policy_catalog=policy_catalog,
+        configuration_contract_registry=config_registry,
         declarative_policy_runtime=declarative_runtime,
     )
 
@@ -128,6 +139,7 @@ def wire_policy_bundle(
         require_human_on_critical=base.require_human_on_critical,
         domain_fragments=base.domain_fragments,
         policy_catalog=base.policy_catalog,
+        configuration_contract_registry=base.configuration_contract_registry,
         declarative_policy_runtime=base.declarative_policy_runtime,
     )
 
@@ -140,9 +152,12 @@ def _compose_policy_bundle(
     package_qualification_lookup: (
         Callable[[EntryPointSpec], PluginQualificationResult | None] | None
     ) = None,
-) -> tuple[DeclarativePolicyRuntime | None, PolicyCatalog]:
+) -> tuple[DeclarativePolicyRuntime | None, PolicyCatalog, ConfigurationContractRegistry]:
     if policy_rules is None:
-        return None, build_builtin_policy_catalog()
+        catalog = build_builtin_policy_catalog()
+        registry = build_builtin_configuration_contract_registry()
+        validate_builtin_policy_contract_consistency(catalog, registry)
+        return None, catalog, registry
     composition = _build_declarative_policy_composition(
         policy_rules,
         discover_entry_points=discover_entry_points,
@@ -152,7 +167,11 @@ def _compose_policy_bundle(
     policy_catalog = build_policy_catalog(
         plugin_definitions=composition.plugin_definitions,
     )
-    return composition.runtime, policy_catalog
+    config_registry = build_composed_configuration_contract_registry(
+        composition.plugin_contributions,
+    )
+    validate_builtin_policy_contract_consistency(policy_catalog, config_registry)
+    return composition.runtime, policy_catalog, config_registry
 
 
 def _build_declarative_policy_composition(
@@ -196,10 +215,12 @@ def _build_declarative_policy_composition(
             contribution.definition
             for contribution in definition_outcome.contributions
         )
+        plugin_contributions = definition_outcome.contributions
     else:
         load_report = DomainPluginLoadReport.empty(EP_POLICY_RULES)
         external_handler_provenance = ()
         plugin_definitions = ()
+        plugin_contributions = ()
     provenance = _build_provenance(
         policy_rules,
         rules=rules,
@@ -215,6 +236,7 @@ def _build_declarative_policy_composition(
             provenance=provenance,
         ),
         plugin_definitions=plugin_definitions,
+        plugin_contributions=plugin_contributions,
     )
 
 

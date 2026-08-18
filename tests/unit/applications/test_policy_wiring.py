@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from intergrax.applications._shared.policy_wiring import (
     build_runtime_policy_bundle,
@@ -42,6 +42,9 @@ from intergrax.core.distribution import (
     check_platform_compatibility,
 )
 from intergrax.core.qualification import QualificationEvidence, QualificationStatus
+from intergrax.contracts.tool_invocation_control_policy import (
+    TOOL_INVOCATION_CONTROL_CONFIGURATION_CONTRACT_ID,
+)
 from intergrax.runtime.policy.builtin_catalog import (
     TOOL_INVOCATION_CONTROL_POLICY_ID,
     TOOL_INVOCATION_CONTROL_VERSION,
@@ -50,6 +53,8 @@ from intergrax.runtime.policy.catalog import (
     PolicyDefinitionConflictError,
     UnknownPolicyDefinitionError,
 )
+from intergrax.runtime.policy.configuration_contract import ConfigurationContractBinding
+from intergrax.runtime.policy.contribution import GovernancePolicyContribution
 from intergrax.runtime.policy.policy_bundle import DeclarativePolicyRuntime, RuntimePolicyBundle
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
@@ -67,6 +72,18 @@ _POLICY_ID = "data_export_control"
 _POLICY_VERSION = "2"
 _CONFIG_CONTRACT_ID = "acme.data_export_control.v1"
 _PLATFORM_VERSION = "0.1.0"
+
+
+class _PluginTestConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    enabled: bool = True
+
+
+_PLUGIN_BINDING = ConfigurationContractBinding.from_pydantic_model(
+    _CONFIG_CONTRACT_ID,
+    _PluginTestConfig,
+)
 _INLINE_RULE = {
     "rule_id": "wiring.blocked",
     "handler_id": "deny_tool",
@@ -169,11 +186,33 @@ def _plugin_policy_definition(**overrides: object) -> PolicyDefinition:
 _CONTRIBUTION = _plugin_policy_definition()
 
 
-def _conflicting_contribution() -> PolicyDefinition:
-    return _plugin_policy_definition(
-        policy_id=TOOL_INVOCATION_CONTROL_POLICY_ID,
-        version=TOOL_INVOCATION_CONTROL_VERSION,
-        handler_id=_HANDLER_ID,
+def _governance_contribution(
+    definition: PolicyDefinition | None = None,
+    *,
+    configuration_contract_binding: ConfigurationContractBinding | None = _PLUGIN_BINDING,
+) -> GovernancePolicyContribution:
+    return GovernancePolicyContribution(
+        definition=definition or _CONTRIBUTION,
+        package_identity=DistributionPackageIdentity(
+            name=_PACKAGE_NAME,
+            version=_PACKAGE_VERSION,
+        ),
+        configuration_contract_binding=configuration_contract_binding,
+    )
+
+
+_CONTRIBUTION_EP = _governance_contribution()
+
+
+def _conflicting_contribution() -> GovernancePolicyContribution:
+    return _governance_contribution(
+        _plugin_policy_definition(
+            policy_id=TOOL_INVOCATION_CONTROL_POLICY_ID,
+            version=TOOL_INVOCATION_CONTROL_VERSION,
+            handler_id=_HANDLER_ID,
+            configuration_contract_id=TOOL_INVOCATION_CONTROL_CONFIGURATION_CONTRACT_ID,
+        ),
+        configuration_contract_binding=None,
     )
 
 
@@ -479,7 +518,7 @@ def test_policy_rules_none_has_builtin_catalog_only(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     bundle = build_runtime_policy_bundle(discover_entry_points=True)
@@ -501,7 +540,7 @@ def test_canonical_bundle_resolves_qualified_plugin_definition(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     _mock_installed_distribution(monkeypatch)
@@ -532,7 +571,7 @@ def test_canonical_bundle_strict_unqualified_plugin_not_in_catalog(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     _mock_installed_distribution(monkeypatch)
@@ -641,7 +680,7 @@ def test_discover_plugins_false_builtin_catalog_only(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     bundle = build_runtime_policy_bundle(
@@ -665,7 +704,7 @@ def test_budget_reconstruction_preserves_policy_catalog(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     _mock_installed_distribution(monkeypatch)
@@ -705,7 +744,7 @@ def test_handler_discovery_occurs_once_per_bundle(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     _mock_installed_distribution(monkeypatch)

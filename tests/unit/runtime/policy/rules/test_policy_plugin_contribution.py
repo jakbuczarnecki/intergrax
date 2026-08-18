@@ -8,6 +8,7 @@ import importlib.metadata
 from unittest.mock import MagicMock
 
 import pytest
+from pydantic import BaseModel, ConfigDict
 
 from intergrax.contracts.policy_catalog import PolicyDefinition, PolicyDefinitionSource
 from intergrax.core.distribution import DistributionPackageIdentity, PlatformCompatibility, check_platform_compatibility
@@ -27,6 +28,9 @@ from intergrax.core.plugins.platform_qualification import (
     compatibility_evidence,
 )
 from intergrax.core.qualification import QualificationEvidence, QualificationStatus
+from intergrax.contracts.tool_invocation_control_policy import (
+    TOOL_INVOCATION_CONTROL_CONFIGURATION_CONTRACT_ID,
+)
 from intergrax.runtime.policy.builtin_catalog import (
     TOOL_INVOCATION_CONTROL_POLICY_ID,
     TOOL_INVOCATION_CONTROL_VERSION,
@@ -42,6 +46,7 @@ from intergrax.runtime.policy.contribution import (
     build_composed_policy_catalog,
     load_policy_definition_plugin_report,
 )
+from intergrax.runtime.policy.configuration_contract import ConfigurationContractBinding
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.plugin_loader import (
     PolicyRuleLoadPolicy,
@@ -62,6 +67,18 @@ _POLICY_ID = "data_export_control"
 _POLICY_VERSION = "2"
 _CONFIG_CONTRACT_ID = "acme.data_export_control.v1"
 _PLATFORM_VERSION = "0.1.0"
+
+
+class _PluginTestConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    enabled: bool = True
+
+
+_PLUGIN_BINDING = ConfigurationContractBinding.from_pydantic_model(
+    _CONFIG_CONTRACT_ID,
+    _PluginTestConfig,
+)
 
 
 class _Dist:
@@ -120,15 +137,37 @@ def _plugin_policy_definition(**overrides: object) -> PolicyDefinition:
 _CONTRIBUTION = _plugin_policy_definition()
 
 
+def _governance_contribution(
+    definition: PolicyDefinition | None = None,
+    *,
+    configuration_contract_binding: ConfigurationContractBinding | None = _PLUGIN_BINDING,
+) -> GovernancePolicyContribution:
+    return GovernancePolicyContribution(
+        definition=definition or _CONTRIBUTION,
+        package_identity=DistributionPackageIdentity(
+            name=_PACKAGE_NAME,
+            version=_PACKAGE_VERSION,
+        ),
+        configuration_contract_binding=configuration_contract_binding,
+    )
+
+
+_CONTRIBUTION_EP = _governance_contribution()
+
+
 def _builtin_spoof() -> PolicyDefinition:
     return _plugin_policy_definition(source=PolicyDefinitionSource.BUILT_IN)
 
 
-def _conflicting_contribution() -> PolicyDefinition:
-    return _plugin_policy_definition(
-        policy_id=TOOL_INVOCATION_CONTROL_POLICY_ID,
-        version=TOOL_INVOCATION_CONTROL_VERSION,
-        handler_id=_HANDLER_ID,
+def _conflicting_contribution() -> GovernancePolicyContribution:
+    return _governance_contribution(
+        _plugin_policy_definition(
+            policy_id=TOOL_INVOCATION_CONTROL_POLICY_ID,
+            version=TOOL_INVOCATION_CONTROL_VERSION,
+            handler_id=_HANDLER_ID,
+            configuration_contract_id=TOOL_INVOCATION_CONTROL_CONFIGURATION_CONTRACT_ID,
+        ),
+        configuration_contract_binding=None,
     )
 
 
@@ -282,7 +321,7 @@ def test_admitted_plugin_contribution_resolves_in_catalog(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     catalog, outcome = build_composed_policy_catalog(
@@ -307,7 +346,7 @@ def test_production_rejected_package_has_no_contribution(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     outcome = load_policy_definition_plugin_report(
@@ -482,8 +521,8 @@ def test_two_plugin_contributions_same_identity_conflict(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("first", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
-            _definition_ep("second", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("first", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
+            _definition_ep("second", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     _mock_installed_distribution(monkeypatch)
@@ -525,7 +564,7 @@ def test_package_version_differs_from_policy_version(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     _mock_installed_distribution(
@@ -590,7 +629,7 @@ def test_end_to_end_handler_admission_to_catalog_resolve(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     _mock_installed_distribution(monkeypatch)
@@ -621,13 +660,14 @@ def test_end_to_end_handler_admission_to_catalog_resolve(
             name=_PACKAGE_NAME,
             version=_PACKAGE_VERSION,
         ),
+        configuration_contract_binding=_PLUGIN_BINDING,
     )
     assert definition_outcome.contributions[0] == contribution
     resolved = catalog.resolve(policy_id=_POLICY_ID, version=_POLICY_VERSION)
     assert resolved.handler_id == _HANDLER_ID
     assert resolved.source is PolicyDefinitionSource.PLUGIN
     assert all(
-        call.endswith((":_AlphaHandler", ":_CONTRIBUTION"))
+        call.endswith((":_AlphaHandler", ":_CONTRIBUTION_EP"))
         for call in load_calls
     )
 
@@ -644,7 +684,7 @@ def test_production_rejected_definition_not_imported_before_admission(
     original_load = load_entry_point_value
 
     def _tracking_load(value: str) -> object:
-        if value.endswith(":_CONTRIBUTION"):
+        if value.endswith((":_CONTRIBUTION", ":_CONTRIBUTION_EP")):
             definition_load_calls.append(value)
         return original_load(value)
 
@@ -656,7 +696,7 @@ def test_production_rejected_definition_not_imported_before_admission(
         monkeypatch,
         [
             _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
-            _definition_ep("alpha-policy", "_CONTRIBUTION", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
         ],
     )
     outcome = load_policy_definition_plugin_report(
@@ -671,7 +711,7 @@ def test_production_rejected_definition_not_imported_before_admission(
     assert definition_load_calls == []
 
 
-_MIXED_CONTRIBUTIONS = (_CONTRIBUTION, _builtin_spoof())
+_MIXED_CONTRIBUTIONS = (_CONTRIBUTION_EP, _builtin_spoof())
 
 
 def test_multi_value_entry_point_rejects_all_when_any_invalid(

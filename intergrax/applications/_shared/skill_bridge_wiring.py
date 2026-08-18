@@ -32,5 +32,6 @@ def merge_skill_policy_fragments(
         require_human_on_critical=bundle.require_human_on_critical,
         domain_fragments=fragments,
         policy_catalog=bundle.policy_catalog,
+        configuration_contract_registry=bundle.configuration_contract_registry,
         declarative_policy_runtime=bundle.declarative_policy_runtime,
     )
