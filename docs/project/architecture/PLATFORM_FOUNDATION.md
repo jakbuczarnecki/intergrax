@@ -28,7 +28,9 @@ Platform Foundation gives architects and implementers one spine: **Tier-3 compos
 | **Maturity** | Qualification boundaries in [Current maturity](#current-maturity) — no single headline A/I/P/E score in this hub |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [extended satellite](satellites/PLATFORM_FOUNDATION_extended_depth.md) · [plan](../maintainers/plans/PLATFORM_FOUNDATION.md) |
 
-## Flagship architecture visual
+## Flagship architecture visual — dependency direction
+
+**Allowed dependency / import direction** (not runtime execution):
 
 ```mermaid
 flowchart TB
@@ -39,6 +41,8 @@ flowchart TB
 
     T3 --> T2 --> T1 --> T0
 ```
+
+Dependency direction is Tier-3 → Tier-2 → Tier-1 → Tier-0. Runtime execution differs: Tier-3 intake enters Nexus (Tier-1), which invokes Tier-2 agents using Tier-0 services.
 
 Applications compose agents; agents run inside Nexus; Nexus consumes Tier-0 services under policy. **Tier-3 composes the platform; it does not fork it.**
 
