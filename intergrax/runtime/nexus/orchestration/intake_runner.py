@@ -78,12 +78,11 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
-            clear_consumed_human_input(task)
-            return IntakePhaseOutcome(
-                early_result=await self.hitl.handle_human_rejection(
-                    task, trace_emitter, lifecycle
-                )
+            result = await self.hitl.handle_human_rejection(
+                task, trace_emitter, lifecycle
             )
+            clear_consumed_human_input(task)
+            return IntakePhaseOutcome(early_result=result)
         if verdict == HumanResponseVerdict.ESCALATE:
             HumanPauseCoordinator.resolve_human_response(
                 task,
@@ -93,12 +92,11 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
-            clear_consumed_human_input(task)
-            return IntakePhaseOutcome(
-                early_result=await self.hitl.handle_human_escalation(
-                    task, trace_emitter, lifecycle
-                )
+            result = await self.hitl.handle_human_escalation(
+                task, trace_emitter, lifecycle
             )
+            clear_consumed_human_input(task)
+            return IntakePhaseOutcome(early_result=result)
 
         if HumanPauseCoordinator.is_resumed(task):
             if self.execution_identity is None:

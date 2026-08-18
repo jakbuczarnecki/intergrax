@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
@@ -17,16 +18,23 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     reset_active_execution_identity,
 )
+from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.human.declarative_hitl_grant import (
     DeclarativeHitlGrantCoordinator,
     DeclarativeHitlGrantError,
 )
+from intergrax.runtime.human.escalation import EscalationRouter
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanApprovalResolutionError, HumanPauseCoordinator
+from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookCoordinator
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
+from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
+from intergrax.runtime.nexus.orchestration.human_response import persist_human_decision
 from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
-from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
@@ -108,6 +116,97 @@ def _pending(
     )
 
 
+def _build_intake_runner_with_hitl(
+    *,
+    human_store: SQLiteHumanDecisionStore | None = None,
+) -> tuple[NexusIntakeRunner, list[object]]:
+    published: list[object] = []
+    human_hooks = HumanApprovalHookCoordinator(MiddlewarePipeline())
+    lifecycle_hooks = NexusLifecycleHookCoordinator(MiddlewarePipeline())
+
+    async def publish(event: object, **kwargs: object) -> None:
+        published.append(event)
+
+    async def finish_task(task: Task, *args: object, **kwargs: object) -> TaskResult:
+        return TaskResult(task_id=task.task_id, state=task.state)
+
+    async def finalize_trace(*args: object, **kwargs: object) -> None:
+        return None
+
+    async def maybe_checkpoint(*args: object, **kwargs: object) -> None:
+        return None
+
+    def persist_decision(
+        task: Task,
+        verdict: HumanResponseVerdict,
+        *,
+        response_text: str = "",
+    ) -> None:
+        persist_human_decision(
+            task,
+            verdict,
+            human_store=human_store,
+            response_text=response_text,
+        )
+
+    hitl = NexusHitlRunner(
+        publish=publish,
+        human_hooks=human_hooks,
+        lifecycle_hooks=lifecycle_hooks,
+        escalation_router=EscalationRouter(max_levels=3),
+        notification_adapter=None,
+        finish_task=finish_task,
+        finalize_trace=finalize_trace,
+        maybe_checkpoint=maybe_checkpoint,
+        persist_human_decision=persist_decision,
+    )
+    runner = NexusIntakeRunner(
+        hitl=hitl,
+        human_hooks=human_hooks,
+        publish=publish,
+        restore_long_running=AsyncMock(),
+        execution_identity=None,
+    )
+    return runner, published
+
+
+def _patch_hitl_runtime_events(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _event_from_task_state(
+        task: Task,
+        *,
+        run_id: str,
+        message: str = "",
+        **kwargs: object,
+    ) -> object:
+        effective_run_id = run_id if str(run_id).startswith("run_") else RUN_ID
+        return runtime_event_from_task_state(
+            task,
+            run_id=effective_run_id,
+            attempt_id=ATTEMPT_ID,
+            message=message,
+        )
+
+    monkeypatch.setattr(
+        "intergrax.runtime.nexus.orchestration.hitl_runner.runtime_event_from_task_state",
+        _event_from_task_state,
+    )
+
+
+def _set_human_response(
+    task: Task,
+    *,
+    response_text: str,
+    verdict: HumanResponseVerdict,
+    pause_id: str,
+    human_request_id: str,
+) -> None:
+    task.options.human.response_text = response_text
+    task.options.human.verdict = verdict.value
+    task.options.human.pause_id = pause_id
+    task.options.human.human_request_id = human_request_id
+    task.sync_metadata()
+
+
 def test_valid_active_pause_approve_persists_canonical_resolution() -> None:
     task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
     _active_pause(task)
@@ -129,7 +228,7 @@ def test_resolution_is_immutable() -> None:
     task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
     _active_pause(task)
     resolution = _resolve(task, HumanResponseVerdict.APPROVE)
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         resolution.verdict = HumanResponseVerdict.REJECT
 
 
@@ -368,3 +467,110 @@ def test_valid_reject_persists_resolution_clears_pending_no_grant() -> None:
     task.runtime.governance.declarative_hitl_pending = _pending(task)
     with pytest.raises(DeclarativeHitlGrantError, match="not approve"):
         DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
+
+
+@pytest.mark.asyncio
+async def test_intake_runner_reject_preserves_evidence_before_cleanup(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_hitl_runtime_events(monkeypatch)
+    reject_text = "reject because destructive operation"
+    pause_id = "pause-reject"
+    human_request_id = "hr-reject"
+    task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
+    _active_pause(task, pause_id=pause_id, human_request_id=human_request_id)
+    _set_human_response(
+        task,
+        response_text=reject_text,
+        verdict=HumanResponseVerdict.REJECT,
+        pause_id=pause_id,
+        human_request_id=human_request_id,
+    )
+
+    store = SQLiteHumanDecisionStore(db_path=tmp_path / "human.db")
+    runner, published = _build_intake_runner_with_hitl(human_store=store)
+    lifecycle = TaskLifecycle()
+    trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+
+    outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
+
+    resolution = task.runtime.governance.hitl_resolution
+    assert resolution is not None
+    assert resolution.verdict is HumanResponseVerdict.REJECT
+    assert resolution.response_text == reject_text
+
+    rejection_events = [
+        event
+        for event in published
+        if getattr(event, "event_type", None) == RuntimeEventType.HUMAN_APPROVAL_RECEIVED
+    ]
+    assert len(rejection_events) == 1
+    assert rejection_events[0].payload["response"] == reject_text
+    assert rejection_events[0].payload["decision"] == HumanResponseVerdict.REJECT.value
+
+    decisions = store.list_for_task(TASK_ID, "t1")
+    assert len(decisions) == 1
+    assert decisions[0].verdict is HumanResponseVerdict.REJECT
+    assert decisions[0].response_text == reject_text
+
+    assert task.options.human.response_text is None
+    assert task.options.human.verdict is None
+    assert task.options.human.pause_id is None
+    assert task.options.human.human_request_id is None
+
+    assert outcome.early_result is not None
+    assert outcome.early_result.state is TaskState.FAILED
+    assert task.state is TaskState.FAILED
+
+
+@pytest.mark.asyncio
+async def test_intake_runner_escalate_preserves_evidence_before_cleanup(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_hitl_runtime_events(monkeypatch)
+    escalate_text = "escalate because policy unclear"
+    pause_id = "pause-escalate"
+    human_request_id = "hr-escalate"
+    task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
+    _active_pause(task, pause_id=pause_id, human_request_id=human_request_id)
+    _set_human_response(
+        task,
+        response_text=escalate_text,
+        verdict=HumanResponseVerdict.ESCALATE,
+        pause_id=pause_id,
+        human_request_id=human_request_id,
+    )
+
+    store = SQLiteHumanDecisionStore(db_path=tmp_path / "human.db")
+    runner, published = _build_intake_runner_with_hitl(human_store=store)
+    lifecycle = TaskLifecycle()
+    trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+
+    outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
+
+    resolution = task.runtime.governance.hitl_resolution
+    assert resolution is not None
+    assert resolution.verdict is HumanResponseVerdict.ESCALATE
+    assert resolution.response_text == escalate_text
+
+    decisions = store.list_for_task(TASK_ID, "t1")
+    assert len(decisions) == 1
+    assert decisions[0].verdict is HumanResponseVerdict.ESCALATE
+    assert decisions[0].response_text == escalate_text
+
+    escalation_events = [
+        event
+        for event in published
+        if getattr(event, "event_type", None) == RuntimeEventType.INTERRUPT_ESCALATED
+    ]
+    assert len(escalation_events) == 1
+
+    assert task.options.human.response_text is None
+    assert task.options.human.verdict is None
+    assert task.options.human.pause_id is None
+    assert task.options.human.human_request_id is None
+
+    assert outcome.early_result is not None
+    assert task.state == TaskState.WAITING_FOR_HUMAN
