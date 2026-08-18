@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 980" role="img">
+  <title>Intergrax Application Hosting lifecycle</title>
+  <desc>Conceptual diagram: Tier-3 application through HostedApplicationProfile and HostedApplicationEngine to hooks, components, readiness, READY, shutdown, classified exit, and HostedApplicationSupervisor restart or stop.</desc>
+  <rect width="1200" height="980" fill="#f6f8fb"/>
+  <rect x="32" y="28" width="1136" height="924" rx="22" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#1a1a2e">Application Hosting &#8212; lifecycle mental model</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" fill="#3d4f66">Engine owns one lifecycle; Supervisor may repeat it after classified exit</text>
+
+  <rect x="420" y="130" width="360" height="44" rx="10" fill="#f0f4f8" stroke="#5b6f82" stroke-width="2"/>
+  <text x="600" y="158" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#1a1a2e">TIER-3 APPLICATION</text>
+
+  <line x1="600" y1="174" x2="600" y2="198" stroke="#5b6f82" stroke-width="2"/>
+  <path d="M600 198 L594 214 L606 214 Z" fill="#5b6f82"/>
+
+  <rect x="320" y="214" width="560" height="48" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="600" y="244" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">HostedApplicationProfile</text>
+
+  <line x1="600" y1="266" x2="600" y2="290" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M600 290 L594 276 L606 276 Z" fill="#1a5fb4"/>
+
+  <rect x="280" y="290" width="640" height="52" rx="12" fill="#fff8e1" stroke="#c9a227" stroke-width="2.5"/>
+  <text x="600" y="322" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#1a1a2e">HostedApplicationEngine</text>
+
+  <line x1="600" y1="362" x2="600" y2="386" stroke="#c9a227" stroke-width="2"/>
+  <path d="M600 386 L594 372 L606 372 Z" fill="#c9a227"/>
+
+  <rect x="140" y="386" width="200" height="48" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="240" y="416" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">hooks</text>
+
+  <rect x="500" y="386" width="200" height="48" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="600" y="416" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">components</text>
+
+  <rect x="860" y="386" width="200" height="48" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="940" y="416" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">readiness</text>
+
+  <line x1="240" y1="434" x2="240" y2="470" stroke="#5b6f82" stroke-width="2"/>
+  <line x1="600" y1="434" x2="600" y2="470" stroke="#5b6f82" stroke-width="2"/>
+  <line x1="940" y1="434" x2="940" y2="470" stroke="#5b6f82" stroke-width="2"/>
+  <line x1="240" y1="470" x2="940" y2="470" stroke="#5b6f82" stroke-width="2"/>
+  <line x1="600" y1="470" x2="600" y2="494" stroke="#5b6f82" stroke-width="2"/>
+  <path d="M600 494 L594 480 L606 480 Z" fill="#5b6f82"/>
+
+  <rect x="460" y="494" width="280" height="48" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="600" y="524" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="19" font-weight="700" fill="#1a1a2e">READY</text>
+
+  <line x1="600" y1="546" x2="600" y2="570" stroke="#2e7d32" stroke-width="2"/>
+  <path d="M600 570 L594 556 L606 556 Z" fill="#2e7d32"/>
+
+  <rect x="360" y="570" width="480" height="44" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="600" y="598" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">shutdown requested</text>
+
+  <line x1="600" y1="614" x2="600" y2="638" stroke="#5b6f82" stroke-width="2"/>
+  <path d="M600 638 L594 624 L606 624 Z" fill="#5b6f82"/>
+
+  <rect x="300" y="638" width="600" height="44" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="600" y="666" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">drain &#8594; stop &#8594; release</text>
+
+  <line x1="600" y1="682" x2="600" y2="706" stroke="#5b6f82" stroke-width="2"/>
+  <path d="M600 706 L594 692 L606 692 Z" fill="#5b6f82"/>
+
+  <rect x="380" y="706" width="440" height="44" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="600" y="734" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">classified exit</text>
+
+  <line x1="600" y1="750" x2="600" y2="774" stroke="#5b6f82" stroke-width="2"/>
+  <path d="M600 774 L594 760 L606 760 Z" fill="#5b6f82"/>
+
+  <rect x="260" y="774" width="680" height="56" rx="14" fill="#2d1f4a" stroke="#6f42c1" stroke-width="2.5"/>
+  <text x="600" y="806" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#ffffff">HostedApplicationSupervisor</text>
+
+  <line x1="600" y1="830" x2="600" y2="854" stroke="#6f42c1" stroke-width="2"/>
+  <path d="M600 854 L594 840 L606 840 Z" fill="#6f42c1"/>
+
+  <rect x="200" y="854" width="240" height="48" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="320" y="884" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">restart</text>
+
+  <rect x="760" y="854" width="240" height="48" rx="10" fill="#ffffff" stroke="#5b6f82" stroke-width="2"/>
+  <text x="880" y="884" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="600" fill="#1a1a2e">stop</text>
+
+  <rect x="80" y="130" width="280" height="120" rx="12" fill="#fff5f5" stroke="#cf222e" stroke-width="1.5"/>
+  <text x="200" y="158" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#cf222e">NOT</text>
+  <text x="200" y="178" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#1a1a2e">task executor</text>
+  <text x="200" y="198" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#1a1a2e">cluster autoscaler</text>
+  <text x="200" y="218" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#1a1a2e">systemd / launchd</text>
+</svg>
