@@ -30,13 +30,13 @@
   - broad product production qualification
   - tool/integration internals except where directly required as boundary evidence
 - **Prior audit reference(s):** pre-Protocol-v2 working STRATEGIC_HARNESS_MODEL audit was revalidated; this Protocol v2 result at audited_sha is the canonical result. No prior Protocol v2 canonical layer result.
-- **post_sync_sha:** `363a8a1f10ea4198d479c3a708af6122ac72144b`
+- **post_sync_sha:** `def29be1adf2e099c300b7a8471c32b946e9c957`
 - **Exact audit-start time:** not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
 ### Correction provenance (Protocol v2 conformance — not a re-audit)
 
-- **initial audit-sync commit:** `363a8a1f10ea4198d479c3a708af6122ac72144b`
-- **initial traceability commit:** `1c6341021c830eeba365f23e000a8028aee0c676`
+- **initial_sync_sha:** `363a8a1f10ea4198d479c3a708af6122ac72144b`
+- **initial_traceability_sha:** `1c6341021c830eeba365f23e000a8028aee0c676`
 - Independent verification found documentation/protocol-conformance defects in the persisted layer artifact.
 - This correction completes required Protocol v2 evidence/schema fields.
 - **No finding meaning, severity, verdict, accepted status, or audited_sha changed.**
