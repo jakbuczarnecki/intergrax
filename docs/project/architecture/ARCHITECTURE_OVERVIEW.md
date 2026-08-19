@@ -111,51 +111,13 @@ Token Optimization is a **Featured platform-capability proof** with **PARTIAL** 
 
 Details belong in the owning [Token Optimization guide](../capabilities/token_optimization/README.md) and its [claim guardrails](../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
 
-## Multiplayer AI as a strategic platform direction
+## Strategic directions — intentionally secondary
 
-Multiplayer AI extends the operating model from a single governed request and execution path toward governed collaboration among multiple principals — humans, agents, services, and eventually external agents. This is architectural direction; today's runtime does not yet complete that evolution.
+Intergrax has longer-term architectural directions that may extend the current operating model when product evidence justifies them. These are strategic optionality — not current product proofs and not equivalent to the operating layer, LKW, or bounded capability evidence above.
 
-The planned Multiplayer layer coordinates platform primitives for Principal, Membership, Delegation, Shared Work, Artifacts, Decisions, ContextView, Activity, and AgentDirectory. It reuses existing UCL, Context Engineering, Memory, Knowledge/RAG, Token Optimization, HITL, execution/runtime, and evidence/provenance mechanisms without relabeling them as Multiplayer.
+- **Multiplayer AI** — extends governed execution toward collaboration among multiple principals (humans, agents, services, and eventually external agents). Architectural direction; today's runtime does not complete that evolution. The planned layer coordinates identity, authority, shared work, artifacts, decisions, and context views while reusing existing UCL, context, memory, knowledge/RAG, token optimization, HITL, execution, and evidence mechanisms. Details: [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_AI.md).
 
-```mermaid
-flowchart TB
-    PRINCIPALS[Human / Agent / Service / External Agent]
-    MP[Multiplayer layer<br/>identity · authority · shared work<br/>artifacts · decisions · context views]
-    GOV[Governed Intergrax execution]
-    RES[knowledge · tools · models · evidence]
-
-    PRINCIPALS --> MP
-    MP --> GOV
-    GOV --> RES
-```
-
-*Conceptual strategic architecture — not an implemented runtime topology.*
-
-Details belong in the [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_AI.md).
-
-## Platform extensibility as a strategic platform direction
-
-Intergrax already exposes multiple real extension mechanisms across integrations, tools, skills, RAG, Vendor Knowledge, security, policy, host composition, and other domains. Platform Plugins is the canonical architecture for coordinating independently packaged extensions at the package boundary — not a universal runtime wrapper that replaces domain contracts.
-
-```mermaid
-flowchart TB
-    PACKAGE[Independent plugin package]
-    COORD[Platform coordination<br/>identity · discovery · compatibility<br/>trust · qualification]
-    DOMAIN[Domain capability contract]
-    HOST[Host configuration / DI]
-    EXEC[Governed Intergrax execution]
-
-    PACKAGE --> COORD
-    COORD --> DOMAIN
-    DOMAIN --> HOST
-    HOST --> EXEC
-```
-
-*Conceptual target architecture — not proof that the full platform-level plugin lifecycle is implemented.*
-
-Platform Plugin is **not** a universal `PlatformPlugin.execute()`; it does **not** replace IntegrationPlugin, ToolPlugin, SkillPlugin, RAG contracts, Vendor Knowledge contracts, security or policy contracts, RuntimePlugin, or other domain-owned surfaces. It is **not** proof that every extension surface is already harmonized.
-
-Details belong in the [Platform Plugins architecture](PLATFORM_PLUGINS.md).
+- **Platform extensibility / Plugins** — coordinates independently packaged extensions at the package boundary. Domain-specific extension mechanisms already exist across integrations, tools, skills, RAG, Vendor Knowledge, security, policy, host composition, and other domains; the harmonized cross-platform plugin lifecycle is future work. Platform Plugin is **not** a universal `PlatformPlugin.execute()` and does **not** replace IntegrationPlugin, ToolPlugin, SkillPlugin, RAG contracts, Vendor Knowledge contracts, security or policy contracts, RuntimePlugin, or other domain-owned surfaces. Details: [Platform Plugins architecture](PLATFORM_PLUGINS.md).
 
 ## Architect review path
 

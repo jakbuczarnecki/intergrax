@@ -62,9 +62,7 @@ with Try LKW as the repository’s primary product action.
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
 | Explore Governed Execution | [Governed Execution](../architecture/GOVERNED_EXECUTION.md) |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
-| Explore multi-agent / collaborative AI direction | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) |
-| Explore platform extensibility / governed plugins | [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) |
-| Explore future ecosystem direction | [Agent Marketplace concept](../overview/AGENT_MARKETPLACE.md) |
+| Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) — see [Strategic directions](#strategic-directions) below |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
 | Compare Intergrax with modern agent/platform alternatives | [Alternatives and trade-offs](../overview/ALTERNATIVES_AND_TRADEOFFS.md) |
