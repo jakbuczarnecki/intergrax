@@ -31,7 +31,7 @@
 - **Prior audit reference(s):** [`NEXUS_EXECUTION_FLOW`](NEXUS_EXECUTION_FLOW.md) planning narrative; [`REASONING_AND_COGNITION`](../../project/architecture/REASONING_AND_COGNITION.md) cognition canon
 - **architecture_sync:** COMPLETE after Commit A
 - **plan_sync:** COMPLETE after Commit A
-- **post_sync_sha:** `pending Commit A`
+- **post_sync_sha:** `d7988045cfa550c4338eedc326b54933c4058541`
 
 ## Executive summary
 

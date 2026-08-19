@@ -29,6 +29,7 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     LiveCallProposalV1,
     LiveEvidenceRequirementV1,
     ValidatedEvidencePlanV1,
+    derive_product_evidence_obligations,
     validate_evidence_plan,
 )
 from local_workspace_application.workspaces.ask_models import AskRunStatus
@@ -149,6 +150,79 @@ def test_admissibility_empty_obligations_is_satisfied() -> None:
     )
     assert result.overall_status is EvidenceAdmissibilityStatusV1.SATISFIED
     assert result.requirement_evaluations == ()
+
+
+def test_product_obligations_do_not_derive_per_planned_live_call() -> None:
+    proposals = (
+        LiveCallProposalV1(
+            call_id="call-required",
+            live_access_binding_id="live-1",
+            capability_id=_CAP,
+            typed_capability_request={"item_key": "ITEM-1"},
+        ),
+        LiveCallProposalV1(
+            call_id="call-optional",
+            live_access_binding_id="live-1",
+            capability_id=_CAP,
+            typed_capability_request={"item_key": "ITEM-2"},
+        ),
+    )
+    obligations = derive_product_evidence_obligations(
+        mode=QueryPolicyModeV2.HYBRID,
+        include_indexed_retrieval=True,
+    )
+    assert len(obligations) == 1
+    assert obligations[0].requirement_id == "product:hybrid:indexed"
+    assert not any(
+        isinstance(item, LiveEvidenceRequirementV1) for item in obligations
+    )
+    del proposals
+
+
+def test_required_planned_call_satisfied_optional_planned_absent_is_satisfied() -> None:
+    obligations = (
+        IndexedEvidenceRequirementV1(
+            requirement_id="req-indexed",
+            semantic_role="Indexed grounding",
+        ),
+        LiveEvidenceRequirementV1(
+            requirement_id="req-live-required",
+            semantic_role="Required live call",
+            call_id="call-required",
+        ),
+    )
+    result = evaluate_evidence_admissibility(
+        obligations=obligations,
+        indexed_evidence=(_indexed_evidence(),),
+        live_evidence=(_live_evidence(call_id="call-required"),),
+    )
+    assert result.overall_status is EvidenceAdmissibilityStatusV1.SATISFIED
+
+
+def test_required_planned_call_absent_optional_present_is_unsatisfied() -> None:
+    obligations = (
+        IndexedEvidenceRequirementV1(
+            requirement_id="req-indexed",
+            semantic_role="Indexed grounding",
+        ),
+        LiveEvidenceRequirementV1(
+            requirement_id="req-live-required",
+            semantic_role="Required live call",
+            call_id="call-required",
+        ),
+    )
+    result = evaluate_evidence_admissibility(
+        obligations=obligations,
+        indexed_evidence=(_indexed_evidence(),),
+        live_evidence=(_live_evidence(call_id="call-optional"),),
+    )
+    assert result.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED
+    live_eval = next(
+        item
+        for item in result.requirement_evaluations
+        if item.requirement_id == "req-live-required"
+    )
+    assert live_eval.reason_code is RequirementAdmissibilityReasonCodeV1.LIVE_CALL_MISMATCH
 
 
 def test_admissibility_all_required_evidence_satisfied() -> None:

@@ -31,7 +31,7 @@
 - **Prior audit reference(s):** [`STRATEGIC_HARNESS_MODEL`](STRATEGIC_HARNESS_MODEL.md); [`IDENTITY_TRUST`](IDENTITY_TRUST.md)
 - **architecture_sync:** COMPLETE after Commit A
 - **plan_sync:** COMPLETE after Commit A
-- **post_sync_sha:** `pending Commit A`
+- **post_sync_sha:** `d7988045cfa550c4338eedc326b54933c4058541`
 
 ## Executive summary
 
