@@ -52,6 +52,9 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     WorkspaceLiveAccessBinding,
     WorkspaceQueryPolicyV2,
 )
+from local_workspace_application.workspaces.knowledge_live_access_service import (
+    WorkspaceLiveAccessRuntimeAuthority,
+)
 from local_workspace_application.workspaces.models import (
     Workspace,
     WorkspaceDocumentReference,
@@ -1308,4 +1311,338 @@ def test_v2_finalization_revalidates_and_persists_only_safe_failure(
     assert persisted == finalized
     assert persisted.error is not None
     assert persisted.error.message == "Evidence citations could not be verified."
+
+
+class _MutableConfiguration(_Configuration):
+    def disable_binding(self) -> None:
+        binding = self.value.live_access_bindings[0]
+        disabled = binding.model_copy(
+            update={"status": LiveAccessBindingStatusV1.DISABLED}
+        )
+        self.value = self.value.model_copy(
+            update={"live_access_bindings": (disabled,)}
+        )
+
+
+class _TenantConnectionPort:
+    def get_connection(self, *, tenant_id: str, connection_ref: str) -> object:
+        from intergrax.runtime.vendor_knowledge.tenant_connections import (
+            SafeTenantConnectionV1,
+            TenantConnectionAdministrativeStatus,
+        )
+
+        return SafeTenantConnectionV1(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+            provider_id="neutral_provider",
+            integration_kind=_KIND,
+            administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
+            safe_display_name="Neutral Connection",
+            configuration_version=1,
+            connected_principal_ref="principal-1",
+            created_at=_NOW,
+            updated_at=_NOW,
+        )
+
+
+class _RevokingIndexedRetriever:
+    def __init__(self, configuration: _MutableConfiguration) -> None:
+        self.configuration = configuration
+        self.calls = 0
+
+    async def retrieve(self, **_: object) -> tuple[IndexedWorkspaceEvidenceV1, ...]:
+        self.calls += 1
+        self.configuration.disable_binding()
+        return ()
+
+
+class _EnvelopeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    item_key: str
+
+
+class _RecordingLiveHandler:
+    provider_id = "neutral_provider"
+    integration_kind = _KIND
+    source_kind = "issues"
+    capability_id = "vendor.neutral_provider.issues.read"
+    contract_version = "1"
+    request_schema_ref = "schema://vendor-knowledge/live/neutral_provider/issues/read/request/v1"
+    result_schema_ref = "schema://vendor-knowledge/live/neutral_provider/issues/read/result/v1"
+    expected_request_model = BaseModel
+
+    def __init__(
+        self,
+        *,
+        failure: Exception | None = None,
+    ) -> None:
+        self.failure = failure
+        self.calls = 0
+
+    async def execute(self, *, integration: object, call: object, context: object):
+        del integration, context
+        self.calls += 1
+        if self.failure is not None:
+            raise self.failure
+        item = LiveCapabilityResultItemV1(
+            remote_item_id="item-1",
+            safe_display_name="Neutral live item",
+            content=_CONTENT,
+            content_hash=sha256(_CONTENT.encode()).hexdigest(),
+            retrieved_at=_NOW,
+            remote_updated_at=_NOW,
+        )
+        return LiveCapabilityExecutionResultV1(
+            call_id=call.call_id,
+            normalized_outcome=LiveExecutionOutcomeV1.COMPLETED,
+            items=(item,),
+            item_count=1,
+            byte_count=len(_CONTENT.encode()),
+            started_at=_NOW,
+            completed_at=_NOW,
+            receipt=None,
+        )
+
+
+class _RecordingIntegrationResolver:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def resolve(self, **_: object) -> object:
+        self.calls += 1
+        return object()
+
+
+def _runtime_authority_service(
+    *,
+    indexed_retriever: object,
+    handler: _RecordingLiveHandler,
+    configuration: _MutableConfiguration,
+    llm: _RecordingLLM,
+) -> tuple[
+    WorkspaceAskServiceV2,
+    _RecordingLiveHandler,
+    _RecordingIntegrationResolver,
+    WorkspaceLiveAccessRuntimeAuthority,
+]:
+    from local_workspace_application.workspaces.hybrid_ask_execution import (
+        LiveCapabilityExecutorV1,
+        LiveCapabilityHandlerRegistryV1,
+    )
+    resolver = _RecordingIntegrationResolver()
+    authority = WorkspaceLiveAccessRuntimeAuthority(
+        configuration_service=configuration,  # type: ignore[arg-type]
+        tenant_connection_port=_TenantConnectionPort(),  # type: ignore[arg-type]
+        capability_catalog=_Catalog(),  # type: ignore[arg-type]
+    )
+    live_executor = LiveCapabilityExecutorV1(
+        handler_registry=LiveCapabilityHandlerRegistryV1((handler,)),
+        integration_resolver=resolver,
+        runtime_authority=authority,
+        monotonic=lambda: 100.0,
+    )
+    orchestrator = KnowledgeQueryOrchestratorV1(
+        indexed_retriever=indexed_retriever,  # type: ignore[arg-type]
+        live_executor=live_executor,
+        clock=lambda: _NOW,
+        monotonic=lambda: 100.0,
+    )
+    repository = _Repository()
+    store = InMemoryDocumentStore()
+    ask_repository = WorkspaceAskRepository(store)
+    service = WorkspaceAskServiceV2(
+        workspace_service=_WorkspaceAuthority(),  # type: ignore[arg-type]
+        workspace_repository=repository,  # type: ignore[arg-type]
+        ask_repository=ask_repository,
+        configuration_service=configuration,  # type: ignore[arg-type]
+        capability_catalog=_Catalog(),  # type: ignore[arg-type]
+        request_envelope_validator=_EnvelopeValidator(),  # type: ignore[arg-type]
+        resource_scope_validator=_ScopeValidator(),
+        orchestrator=orchestrator,
+        llm_adapter=llm,
+        clock=lambda: _NOW,
+        run_id_factory=lambda: "run-c2",
+        plan_id_factory=lambda: "plan-c2",
+    )
+    return service, handler, resolver, authority
+
+
+def test_v2_mid_flight_binding_revoke_insufficient_evidence_without_provider() -> None:
+    llm = _RecordingLLM([_LIVE_ID])
+    configuration = _MutableConfiguration(
+        QueryPolicyModeV2.HYBRID,
+        LiveResultRetentionV1.EPHEMERAL,
+    )
+    handler = _RecordingLiveHandler()
+    service, handler, resolver, authority = _runtime_authority_service(
+        indexed_retriever=_RevokingIndexedRetriever(configuration),
+        handler=handler,
+        configuration=configuration,
+        llm=llm,
+    )
+    command = _command(
+        QueryPolicyModeV2.HYBRID,
+        required_evidence_obligations=(
+            LiveEvidenceRequirementV1(
+                requirement_id="required-live-call-1",
+                semantic_role="Required live proof",
+                call_id="call-1",
+            ),
+        ),
+    )
+
+    run = asyncio.run(service.ask(command))
+
+    assert run.status is AskRunStatus.INSUFFICIENT_EVIDENCE
+    assert run.answer is None
+    assert llm.calls == 0
+    assert handler.calls == 0
+    assert resolver.calls == 0
+    assert run.evidence_admissibility is not None
+    assert (
+        run.evidence_admissibility.overall_status
+        is EvidenceAdmissibilityStatusV1.UNSATISFIED
+    )
+    assert configuration.value.live_access_bindings[0].status is (
+        LiveAccessBindingStatusV1.DISABLED
+    )
+    assert authority.is_usable(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        live_access_binding_id="binding-1",
+        connection_ref="connection-1",
+        capability_id="vendor.neutral_provider.issues.read",
+    ) is False
+
+
+def test_v2_mid_flight_binding_active_allows_provider_and_satisfies_admissibility() -> None:
+    llm = _RecordingLLM([_LIVE_ID])
+    configuration = _MutableConfiguration(
+        QueryPolicyModeV2.LIVE_ONLY,
+        LiveResultRetentionV1.EPHEMERAL,
+    )
+    handler = _RecordingLiveHandler()
+    service, handler, resolver, authority = _runtime_authority_service(
+        indexed_retriever=_IndexedRetriever(()),
+        handler=handler,
+        configuration=configuration,
+        llm=llm,
+    )
+    command = _command(
+        QueryPolicyModeV2.LIVE_ONLY,
+        required_evidence_obligations=(
+            LiveEvidenceRequirementV1(
+                requirement_id="required-live-call-1",
+                semantic_role="Required live proof",
+                call_id="call-1",
+            ),
+        ),
+    )
+
+    run = asyncio.run(service.ask(command))
+
+    assert handler.calls == 1
+    assert resolver.calls == 1
+    assert authority.is_usable(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        live_access_binding_id="binding-1",
+        connection_ref="connection-1",
+        capability_id="vendor.neutral_provider.issues.read",
+    ) is True
+    assert run.status is AskRunStatus.COMPLETED
+    assert run.evidence_admissibility is not None
+    assert (
+        run.evidence_admissibility.overall_status
+        is EvidenceAdmissibilityStatusV1.SATISFIED
+    )
+    assert llm.calls == 1
+
+
+def test_v2_governance_binding_unavailable_maps_to_insufficient_evidence() -> None:
+    class _UnavailableBindingExecutor:
+        async def execute(self, **kwargs: object) -> LiveCapabilityExecutionResultV1:
+            call = kwargs["call"]
+            return LiveCapabilityExecutionResultV1(
+                call_id=call.call_id,
+                normalized_outcome=LiveExecutionOutcomeV1.FAILED,
+                item_count=0,
+                byte_count=0,
+                started_at=_NOW,
+                completed_at=_NOW,
+                error_code="live_binding_unavailable",
+                receipt=None,
+            )
+
+    llm = _RecordingLLM([_LIVE_ID])
+    indexed = _IndexedRetriever(())
+    orchestrator = KnowledgeQueryOrchestratorV1(
+        indexed_retriever=indexed,
+        live_executor=_UnavailableBindingExecutor(),  # type: ignore[arg-type]
+        clock=lambda: _NOW,
+        monotonic=lambda: 100.0,
+    )
+    repository = _Repository()
+    store = InMemoryDocumentStore()
+    ask_repository = WorkspaceAskRepository(store)
+    configuration = _Configuration(
+        QueryPolicyModeV2.LIVE_ONLY,
+        LiveResultRetentionV1.EPHEMERAL,
+    )
+    service = WorkspaceAskServiceV2(
+        workspace_service=_WorkspaceAuthority(),  # type: ignore[arg-type]
+        workspace_repository=repository,  # type: ignore[arg-type]
+        ask_repository=ask_repository,
+        configuration_service=configuration,  # type: ignore[arg-type]
+        capability_catalog=_Catalog(),  # type: ignore[arg-type]
+        request_envelope_validator=_EnvelopeValidator(),  # type: ignore[arg-type]
+        resource_scope_validator=_ScopeValidator(),
+        orchestrator=orchestrator,
+        llm_adapter=llm,
+        clock=lambda: _NOW,
+        run_id_factory=lambda: "run-gov",
+        plan_id_factory=lambda: "plan-gov",
+    )
+    command = _command(
+        QueryPolicyModeV2.LIVE_ONLY,
+        required_evidence_obligations=(
+            LiveEvidenceRequirementV1(
+                requirement_id="required-live-call-1",
+                semantic_role="Required live proof",
+                call_id="call-1",
+            ),
+        ),
+    )
+
+    run = asyncio.run(service.ask(command))
+
+    assert run.status is AskRunStatus.INSUFFICIENT_EVIDENCE
+    assert run.answer is None
+    assert llm.calls == 0
+    assert run.error is None
+
+
+def test_v2_technical_provider_failure_remains_failed_with_runtime_authority() -> None:
+    llm = _RecordingLLM([_LIVE_ID])
+    configuration = _MutableConfiguration(
+        QueryPolicyModeV2.LIVE_ONLY,
+        LiveResultRetentionV1.EPHEMERAL,
+    )
+    handler = _RecordingLiveHandler(failure=RuntimeError("provider transport failed"))
+    service, handler, resolver, _ = _runtime_authority_service(
+        indexed_retriever=_IndexedRetriever(()),
+        handler=handler,
+        configuration=configuration,
+        llm=llm,
+    )
+
+    run = asyncio.run(service.ask(_command(QueryPolicyModeV2.LIVE_ONLY)))
+
+    assert handler.calls == 1
+    assert resolver.calls == 1
+    assert run.status is AskRunStatus.FAILED
+    assert run.error is not None
+    assert run.error.code == "live_execution_failed"
+    assert llm.calls == 0
 

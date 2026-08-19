@@ -808,41 +808,51 @@ def mount_managed_workspace_routes(
             prefix=prefix,
         )
 
-    live_access_deps = (
-        tenant_connection_port,
-        tenant_live_capability_catalog,
+    resolved_live_capability_catalog = (
+        ask_capability_catalog
+        if ask_capability_catalog is not None
+        and not isinstance(ask_capability_catalog, UnavailableTenantLiveCapabilityCatalog)
+        else None
+    )
+    live_access_route_deps = (
+        connection_port_for_routes,
+        resolved_live_capability_catalog,
         live_access_remote_resource_lookup_port,
     )
     live_access_lifecycle_service: LiveAccessLifecycleService | None = None
     live_runtime_authority: WorkspaceLiveAccessRuntimeAuthority | None = None
-    if any(dep is not None for dep in live_access_deps):
-        if not all(dep is not None for dep in live_access_deps):
+    if (
+        connection_port_for_routes is not None
+        and resolved_live_capability_catalog is not None
+    ):
+        live_runtime_authority = WorkspaceLiveAccessRuntimeAuthority(
+            configuration_service=configuration_service,
+            tenant_connection_port=connection_port_for_routes,
+            capability_catalog=resolved_live_capability_catalog,
+        )
+    if any(dep is not None for dep in live_access_route_deps):
+        if not all(dep is not None for dep in live_access_route_deps):
             raise RuntimeError("live_access_wiring_incomplete")
-        assert tenant_connection_port is not None
-        assert tenant_live_capability_catalog is not None
+        assert connection_port_for_routes is not None
+        assert resolved_live_capability_catalog is not None
         assert live_access_remote_resource_lookup_port is not None
         assert connection_attachment_service is not None
         live_access_service = WorkspaceLiveAccessBindingService(
             repository=repository,
             configuration_service=configuration_service,
             mutation_engine=mutation_engine,
-            tenant_connection_port=tenant_connection_port,
-            capability_catalog=tenant_live_capability_catalog,
+            tenant_connection_port=connection_port_for_routes,
+            capability_catalog=resolved_live_capability_catalog,
             remote_resource_lookup_port=live_access_remote_resource_lookup_port,
         )
         live_access_lifecycle_service = LiveAccessLifecycleService(
             configuration_service=configuration_service,
             live_access_binding_service=live_access_service,
             connection_attachment_service=connection_attachment_service,
-            tenant_connection_port=tenant_connection_port,
-            capability_catalog=tenant_live_capability_catalog,
+            tenant_connection_port=connection_port_for_routes,
+            capability_catalog=resolved_live_capability_catalog,
         )
         app.state.lkw_live_access_lifecycle_service = live_access_lifecycle_service
-        live_runtime_authority = WorkspaceLiveAccessRuntimeAuthority(
-            configuration_service=configuration_service,
-            tenant_connection_port=tenant_connection_port,
-            capability_catalog=tenant_live_capability_catalog,
-        )
         mount_knowledge_live_access_routes(
             app,
             live_access_service=live_access_service,
@@ -1028,6 +1038,11 @@ def mount_managed_workspace_routes(
         )
 
     if ask_service_v2 is None:
+        if (
+            resolved_live_capability_catalog is not None
+            and live_runtime_authority is None
+        ):
+            raise RuntimeError("hybrid_ask_live_runtime_authority_unavailable")
         live_registration_registry = build_vendor_knowledge_live_registration_registry()
         published_live_registration = live_registration_registry.publish()
         ask_service_v2 = WorkspaceAskServiceV2(

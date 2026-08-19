@@ -16,6 +16,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.document_store import DocumentRecord
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.serving.workspace_routes import mount_managed_workspace_routes
@@ -1016,3 +1017,71 @@ def test_historical_operation_direct_get_without_index(api_bundle) -> None:
     assert get_response.json()["operation_id"] == "op-historical"
     assert list_response.status_code == 200
     assert list_response.json()["operations"] == []
+
+
+def test_ask_v2_indexed_only_composition_omits_runtime_authority(api_bundle) -> None:
+    _, _, _, _, app = api_bundle
+    live_executor = app.state.lkw_ask_service_v2._orchestrator._live_executor
+    assert live_executor._runtime_authority is None
+
+
+def test_ask_v2_runtime_authority_wired_from_resolved_host_deps(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from local_workspace_application.workspaces.knowledge_live_access_service import (
+        WorkspaceLiveAccessRuntimeAuthority,
+    )
+    from local_workspace_application.workspaces.sync_runtime import (
+        build_managed_workspace_sync_runtime,
+    )
+    from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
+
+    signing_key = "test-signing-key-" + ("a" * 48)
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    data_home = tmp_path / "data"
+    data_home.mkdir()
+    monkeypatch.setenv("DATA_HOME", str(data_home))
+    monkeypatch.setenv("LOCAL_WORKSPACE_CONNECTED_SOURCE_OPAQUE_REF_SIGNING_KEY", signing_key)
+    settings = replace(
+        LocalWorkspaceBackendSettings.from_env(),
+        data_home=str(data_home),
+        connected_source_opaque_ref_signing_key=signing_key,
+        slack_tenant_id=_TENANT,
+        connected_source_slack_connection_ref="connection-1",
+    )
+    executor = _FakeExecutor()
+    sync = ManagedWorkspaceSyncService(repo, executor)  # type: ignore[arg-type]
+    runtime = build_managed_workspace_sync_runtime(
+        document_store=store,
+        sync_service=sync,
+        repository=repo,
+    )
+    integration = SimpleNamespace(
+        provider_id="neutral_provider",
+        integration_kind=IntegrationCategory.WIKI_KNOWLEDGE.value,
+    )
+    class _RemoteLookup:
+        async def get_remote_resource(
+            self,
+            *,
+            tenant_id: str,
+            connection_ref: str,
+            remote_resource_id: str,
+        ) -> None:
+            del tenant_id, connection_ref, remote_resource_id
+            return None
+
+    app = FastAPI()
+    mount_managed_workspace_routes(
+        app,
+        task_executor=executor,  # type: ignore[arg-type]
+        settings=settings,
+        repository=repo,
+        sync_runtime=runtime,
+        legacy_local_integration=integration,
+        live_access_remote_resource_lookup_port=_RemoteLookup(),
+    )
+    live_executor = app.state.lkw_ask_service_v2._orchestrator._live_executor
+    assert isinstance(live_executor._runtime_authority, WorkspaceLiveAccessRuntimeAuthority)

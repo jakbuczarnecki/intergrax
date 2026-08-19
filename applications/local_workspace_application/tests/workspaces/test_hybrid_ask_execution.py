@@ -620,6 +620,41 @@ def test_unavailable_connection_is_normalized_without_handler_invocation() -> No
     assert handler.calls == []
 
 
+def test_runtime_authority_denied_skips_resolver_and_handler() -> None:
+    handler = _NeutralHandler((_item("item-1"),))
+    resolver = _RecordingResolver()
+
+    class _DenyAuthority:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def is_usable(self, **kwargs: object) -> bool:
+            self.calls += 1
+            return False
+
+    authority = _DenyAuthority()
+    executor = LiveCapabilityExecutorV1(
+        handler_registry=LiveCapabilityHandlerRegistryV1((handler,)),
+        integration_resolver=resolver,
+        runtime_authority=authority,
+    )
+    result = asyncio.run(
+        executor.execute(
+            run_id="run-1",
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            call=_call(),
+            audience=KnowledgeQueryAudienceV1.PERSONAL,
+            retention=LiveResultRetentionV1.EPHEMERAL,
+        )
+    )
+
+    assert authority.calls == 1
+    assert resolver.calls == []
+    assert handler.calls == []
+    assert result.error_code == "live_binding_unavailable"
+
+
 def test_live_execution_normalizes_items_ids_receipts_and_ephemeral_retention() -> None:
     handler = _NeutralHandler((_item("item-1"), _item("item-2")))
     executor, _ = _executor(handler)

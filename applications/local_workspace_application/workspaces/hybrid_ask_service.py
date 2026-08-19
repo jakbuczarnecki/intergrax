@@ -75,10 +75,17 @@ from intergrax.runtime.vendor_knowledge.live.contracts import (
     HARD_MAX_PROVIDER_REQUESTS,
     HARD_MAX_UPSTREAM_ITEMS,
 )
+from intergrax.runtime.vendor_knowledge.live.errors import LiveErrorCodeV1
 from intergrax.runtime.vendor_knowledge.live.schemas import SchemaRegistryV1
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     LiveCapabilityDescriptorV1,
     TenantLiveCapabilityCatalogPort,
+)
+
+_GOVERNANCE_LIVE_EVIDENCE_UNAVAILABLE_CODES = frozenset(
+    {
+        LiveErrorCodeV1.BINDING_UNAVAILABLE.value,
+    }
 )
 
 
@@ -343,7 +350,10 @@ class WorkspaceAskServiceV2:
                 provider_coverage=provider_coverage,
             )
 
-        if execution.error_code is not None:
+        if (
+            execution.error_code is not None
+            and execution.error_code not in _GOVERNANCE_LIVE_EVIDENCE_UNAVAILABLE_CODES
+        ):
             return self._finalize_failure(
                 initial,
                 code=execution.error_code,

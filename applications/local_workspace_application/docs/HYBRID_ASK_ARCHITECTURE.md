@@ -447,14 +447,31 @@ clock / timeout boundary
 
 ```text
 validated ExecutableLiveCallV1
-→ safe Connection projection (TenantConnectionPort)
-→ descriptor lookup (TenantLiveCapabilityCatalog)
-→ handler lookup (LiveCapabilityHandlerRegistry)
+→ call identity validation
+→ runtime authority revalidation (WorkspaceLiveAccessRuntimeAuthority)
 → existing integration resolution (TenantConnectionIntegrationResolverPort)
 → bounded handler execution (LiveCapabilityHandlerV1)
 → normalized transient live evidence (LiveWorkspaceEvidenceV1)
 → optional safe receipt
 ```
+
+Plan validation establishes **plan-time authorization** (binding was admissible to plan). Runtime authority establishes **execution-time authorization** (binding is still admissible to execute now). These are intentionally different checks; a validated plan snapshot must not bypass execution-time denial.
+
+```mermaid
+flowchart TD
+    A[Plan validation] --> B[Authorized then]
+    B --> C[Authority may change]
+    C --> D[Live execution]
+    D --> E{Runtime authority recheck}
+    E -->|ALLOW| F[Provider handler]
+    F --> G[Live evidence]
+    E -->|DENY| H[Provider calls = 0]
+    H --> I[Required live evidence missing]
+    I --> J[Evidence admissibility UNSATISFIED]
+    J --> K[INSUFFICIENT_EVIDENCE / no LLM]
+```
+
+Governed live-capable Workspace Ask composition must wire `WorkspaceLiveAccessRuntimeAuthority` from resolved host dependencies (`TenantConnectionPort` + `TenantLiveCapabilityCatalog`). `INDEXED_ONLY` composition may omit runtime authority.
 
 **Responsibilities:**
 
