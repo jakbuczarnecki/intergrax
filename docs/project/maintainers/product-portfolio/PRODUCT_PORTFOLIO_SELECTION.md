@@ -253,7 +253,7 @@ LKW is **not** a fifth result of the selection pipeline. It joins the later mult
 | These products are validated businesses | **Not claimed** |
 | Customer validation | **Not claimed** unless independently obtained later |
 | Product architecture for the four new applications | **Does not exist yet** |
-| Product implementation | **Does not exist yet** |
+| Implementation for the four newly selected applications | **Does not exist yet** |
 | Cross-product reuse | **Not proven** |
 | Intergrax as validated multi-product platform | **Does not follow from selection alone** |
 | Competitive positions and markets | **May change** |
