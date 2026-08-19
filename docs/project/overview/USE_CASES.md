@@ -8,7 +8,8 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 This is the canonical decision guide for a concrete question: **does Intergrax fit my workflow?** It evaluates stable user problems and responsibility fit. It does not replace the proof record, an outcome roadmap, or a product-specific evaluation.
 
-Intergrax is source-available and in active R&D. Current evidence is bounded; it is not a universal production-readiness, real-user, commercial-validation, or finished-SaaS claim.
+> [!NOTE]
+> Current evidence is bounded. Authoritative status and claim limits: [PROOFS.md](../proofs/PROOFS.md).
 
 ## At a glance
 
@@ -62,6 +63,8 @@ flowchart TD
 
 The diagram is a responsibility-based evaluation route, not a list of completed products. The textual sections below are the authoritative explanation.
 
+**Current evidence boundary:** LKW demonstrates bounded indexed Ask through production Hybrid Ask. **Mixed indexed + authorized live Hybrid Ask is not yet established**; complete live-provider access is incomplete. Real-user and commercial validation remain open — see [PROOFS](../proofs/PROOFS.md).
+
 ## Strongest current fit
 
 ### Private governed knowledge workspace
@@ -82,9 +85,7 @@ The diagram is a responsibility-based evaluation route, not a list of completed 
 
 **Current evidence class:** **STRONGEST CURRENT FIT**
 
-**Current proof:** LKW is the **Primary Product Proof**, **Backend Product Alpha / MVP**, with **PARTIAL** proof status. Bounded indexed Ask evidence exists, including the indexed path through production Hybrid Ask. Indexed Ask through production Hybrid Ask is boundedly demonstrated.
-
-**Validation gap:** Indexed Ask through production Hybrid Ask is boundedly demonstrated; authorized live evidence combined with indexed evidence is not yet established. Mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access is incomplete; real-user validation and commercial validation are incomplete. This is not a finished SaaS claim.
+**Current proof:** LKW is the **Primary Product Proof**, **Backend Product Alpha / MVP**, with **PARTIAL** proof status. Bounded indexed Ask evidence exists, including the indexed path through production Hybrid Ask.
 
 Canonical verification route: [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) via [PROOFS — LKW Primary Product Proof](../proofs/PROOFS.md#lkw--primary-product-proof).
 
@@ -104,8 +105,6 @@ Canonical verification route: [LKW Platform Proof](../../../applications/local_w
 
 **Fit:** **BOUNDED TECHNICAL FIT** when the product team can validate its own sources, permissions, user workflow, and acceptance criteria. The LKW evidence is the closest current product reference, but it does not automatically validate another product.
 
-**Validation gap:** product-specific outcome and repeated use remain to be proven.
-
 ### Specialized agent application
 
 **Who:** enterprise product team, AI engineering team, or solution or integration team.
@@ -121,8 +120,6 @@ Canonical verification route: [LKW Platform Proof](../../../applications/local_w
 **Fit:** **BOUNDED TECHNICAL FIT**. Intergrax supplies reusable application operating mechanisms; the adopting team builds and validates the specialized product.
 
 **Current proof:** builder scaffold and current architecture evidence support a reasonable technical evaluation. Start with [Build With Intergrax](../builders/BUILD_WITH_INTERGRAX.md).
-
-**Validation gap:** product-specific outcome remains to be proven.
 
 ### Evidence-aware automation or integration workflow
 
@@ -140,8 +137,6 @@ Canonical verification route: [LKW Platform Proof](../../../applications/local_w
 
 **Current proof:** supporting verification route — [BoundaryAttest case study](case-studies/BOUNDARYATTEST_ATTESTATION_POC.md).
 
-**Validation gap:** product-specific integration outcome and operational evidence remain to be proven.
-
 ### Governed context and prompt optimization
 
 **Who:** teams needing deterministic, policy-bounded context handling with reviewable receipts.
@@ -154,13 +149,13 @@ Canonical verification route: [LKW Platform Proof](../../../applications/local_w
 
 **Fit:** **BOUNDED TECHNICAL FIT**. Token Optimization is a **Featured platform-capability proof**, **PARTIAL**, with bounded evidence. See the [Token Optimization guide](../capabilities/token_optimization/README.md).
 
-**Validation gap:** universal token or cost reduction remains unproven.
+Bounded technical fits require product-specific validation; the adopting team owns acceptance criteria and repeated-use evidence.
 
 ## Not yet proven
 
-The stable outcome **“combine indexed knowledge with authorized live evidence”** is **NOT YET PROVEN**. Bounded indexed Ask evidence exists, but mixed indexed + authorized live Hybrid Ask with unified provenance remains incomplete. Complete live-provider access also remains incomplete.
+The stable outcome **“combine indexed knowledge with authorized live evidence”** is **NOT YET PROVEN**. Bounded indexed Ask evidence exists, but mixed indexed + authorized live Hybrid Ask with unified provenance remains incomplete.
 
-This distinction is about evidence, not whether the problem is meaningful. Real-user validation and commercial validation are incomplete. Universal production readiness is not claimed.
+This distinction is about evidence, not whether the problem is meaningful. See [PROOFS](../proofs/PROOFS.md) for the authoritative boundary.
 
 ## When another approach is better
 
@@ -187,14 +182,12 @@ Intergrax is a reusable foundation, not a universal replacement for a finished p
 
 ## What Intergrax does not currently offer
 
+These are decision shortcuts — not a substitute for [PROOFS](../proofs/PROOFS.md):
+
 - No finished hosted SaaS
 - No complete Hybrid Ask combining indexed and authorized live evidence
-- No complete multi-provider live access
-- No universal production certification
-- No compliance certification
-- No unrestricted open-source rights
+- No compliance certification or unrestricted open-source rights
 - No universal token or cost reduction
-- No automatic acceptance of every proposed use case
 
 ## Responsibility check
 

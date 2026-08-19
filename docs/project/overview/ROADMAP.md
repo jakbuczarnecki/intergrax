@@ -9,7 +9,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 This is the canonical public product roadmap for Intergrax. It describes what user and product outcomes must become true next, how those outcomes are evidenced, and when broader claims or expansion are justified.
 
 > [!WARNING]
-> Intergrax is **source-available** and under active R&D. LKW is the **Primary product proof**, **Backend Product Alpha / MVP**, and remains **PARTIAL**. This roadmap is **outcome-gated**, not a release-date commitment. **Real-user validation incomplete**. **Commercial validation incomplete**.
+> Outcome-gated roadmap — not a release-date commitment. LKW is **Primary product proof**, **Backend Product Alpha / MVP**, **PARTIAL**. Real-user and commercial validation remain open; see [PROOFS.md](../proofs/PROOFS.md).
 
 ## At a glance
 
@@ -20,7 +20,6 @@ This is the canonical public product roadmap for Intergrax. It describes what us
 | What is being established now | A repeatable supported LKW workflow **and** parallel problem/customer discovery |
 | Roadmap model | Outcome gates, not an implementation queue |
 | Discovery status | Problem/customer discovery in progress; not yet completed |
-| Current validation boundary | Real-user validation incomplete; commercial validation incomplete |
 | Release dates | No public date commitment |
 
 ## How to read this roadmap
@@ -73,7 +72,7 @@ Intergrax distinguishes three evidence classes. They must not be conflated.
 | **Solution / real-user validation** | Users can complete the workflow; results are useful and trusted; users reuse it; Intergrax improves the target workflow | **Later** — after a usable end-to-end workflow exists (VALIDATE gate) |
 | **Commercial validation** | Genuine commercial commitment, buying behavior, or authorized commercial engagement | **Separate later boundary** — not established by problem interviews |
 
-Problem interviews and discovery conversations are **not** commercial validation. None of these classes is complete today: **real-user validation incomplete**; **commercial validation incomplete**; problem/customer discovery is in progress, not finished.
+Problem interviews and discovery conversations are **not** commercial validation. None of these classes is complete today; problem/customer discovery is in progress, not finished.
 
 ## NOW — Make the primary workflow repeatable (and learn from users in parallel)
 
@@ -154,11 +153,11 @@ No provider, surface, or breadth item is promised in advance.
 
 **User / product outcome:** recurring validated use justifies improvements to operational reliability, deployment, diagnostics, permissions, supportability, or product packaging.
 
-**Evidence required:** real-user or partner use has exposed a concrete recurring need, and bounded evidence supports the proposed hardening or packaging decision. This stage does not create a general production-ready claim.
+**Evidence required:** real-user or partner use has exposed a concrete recurring need, and bounded evidence supports the proposed hardening or packaging decision.
 
 ## Supporting platform work
 
-Product need drives platform work. **Token Optimization** remains a **Featured platform-capability proof** with **PARTIAL** status and bounded evidence. It is a supporting reusable capability, not a separate public roadmap phase. **Universal savings are not claimed**.
+Product need drives platform work. **Token Optimization** remains a **Featured platform-capability proof** with **PARTIAL** status and bounded evidence. It is a supporting reusable capability, not a separate public roadmap phase.
 
 See the [Token Optimization guide](../capabilities/token_optimization/README.md) for its bounded proof and limitations.
 
@@ -221,13 +220,11 @@ No category is claimed as a proven buyer or ICP. See [Partners](../community/PAR
 - No finished hosted SaaS.
 - No claim that mixed indexed + authorized live Hybrid Ask is complete.
 - No claim of complete live-provider access or a complete provider catalog.
-- No completed problem/customer discovery.
-- No completed real-user validation.
-- No validated ICP or product-market fit.
-- No completed commercial validation or willingness-to-pay evidence.
-- No claim of universal production readiness.
-- No universal token-savings claim.
+- No completed problem/customer discovery, real-user validation, validated ICP, product-market fit, or commercial validation.
+- No claim of universal production readiness or universal token savings.
 - No fixed release-date commitment.
+
+Authoritative evidence boundaries: [PROOFS.md](../proofs/PROOFS.md).
 
 ## Reader routes
 
