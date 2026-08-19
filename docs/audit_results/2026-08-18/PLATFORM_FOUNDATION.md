@@ -30,7 +30,7 @@
 - **Prior audit reference(s):** PF-TIER-ENFORCEMENT snapshot `4c92e0a` (plan §6.1ax); Protocol v2 [`TIER_LAYER_BOUNDARIES`](TIER_LAYER_BOUNDARIES.md) (related TL-FIX-A themes)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** `—`
+- **post_sync_sha:** `60eff55ca7105cc8d277201c95785b4c037e3bd9`
 
 ## Executive summary
 
