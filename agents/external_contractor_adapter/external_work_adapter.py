@@ -27,6 +27,7 @@ from intergrax.contracts.external_work import (
     ExternalWorkStatus,
     ExternalWorkTimelineEvent,
     QuoteAcceptanceEvidence,
+    quote_acceptance_side_effect_scope_digest,
 )
 from intergrax.contracts.governed_continuation import (
     ContinuationReason,
@@ -342,6 +343,7 @@ class ExternalWorkAdapter:
             resolved_tenant = (
                 (tenant_id or "").strip() or acceptance.actor.tenant_id
             )
+            canonical_scope_digest = quote_acceptance_side_effect_scope_digest(acceptance)
             gate = self._evaluate_side_effect(
                 action=ACTION_ACCEPT_QUOTE,
                 kinds=(
@@ -349,7 +351,7 @@ class ExternalWorkAdapter:
                     MeaningfulSideEffectKind.MUTATION,
                 ),
                 side_effect_scope_id=idempotency_key,
-                side_effect_scope_digest=acceptance.scope_digest,
+                side_effect_scope_digest=canonical_scope_digest,
                 task_id=correlation.task_id,
                 run_id=correlation.run_id,
                 principal_id=resolved_principal,

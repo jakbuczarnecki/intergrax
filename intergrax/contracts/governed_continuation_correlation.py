@@ -4,15 +4,14 @@
 
 from __future__ import annotations
 
-import re
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.contracts.policy_action import PolicyAction
+from intergrax.contracts.validation import validate_content_digest
 
 _NON_EMPTY = Field(min_length=1)
-_CONTENT_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
 class ContinuationReason(StrEnum):
@@ -64,12 +63,7 @@ class GovernedContinuationCorrelation(BaseModel):
     def _validate_side_effect_scope_digest(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        normalized = value.strip()
-        if not normalized:
-            return None
-        if not _CONTENT_DIGEST_RE.match(normalized):
-            raise ValueError("digest must match sha256:<64 lowercase hex>")
-        return normalized
+        return validate_content_digest(value)
 
     @field_validator("policy_rule_id", "resource_scope", "source_step_id")
     @classmethod

@@ -16,6 +16,8 @@ from typing import Any, Final, Literal, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.contracts.validation import validate_content_digest
+
 SCHEMA_MEANINGFUL_SIDE_EFFECT_REQUEST_V1: Final = "meaningful_side_effect_request.v1"
 
 _NON_EMPTY = Field(min_length=1)
@@ -74,8 +76,7 @@ class MeaningfulSideEffectRequest(BaseModel):
 
     @field_validator("side_effect_scope_digest")
     @classmethod
-    def _strip_side_effect_scope_digest(cls, value: str | None) -> str | None:
+    def _validate_side_effect_scope_digest(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        normalized = value.strip()
-        return normalized or None
+        return validate_content_digest(value)

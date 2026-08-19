@@ -4,12 +4,11 @@
 
 from __future__ import annotations
 
-import re
 from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-_CONTENT_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+from intergrax.contracts.validation import validate_content_digest
 
 SCHEMA_GOVERNED_CONTINUATION_APPROVAL_GRANT_V1: Final = (
     "governed_continuation_approval_grant.v1"
@@ -74,9 +73,4 @@ class GovernedContinuationApprovalGrant(BaseModel):
     def _validate_side_effect_scope_digest(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        normalized = value.strip()
-        if not normalized:
-            return None
-        if not _CONTENT_DIGEST_RE.match(normalized):
-            raise ValueError("digest must match sha256:<64 lowercase hex>")
-        return normalized
+        return validate_content_digest(value)

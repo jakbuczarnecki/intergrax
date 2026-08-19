@@ -17,6 +17,11 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     reset_active_execution_identity,
 )
+from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
+from intergrax.contracts.external_work import (
+    QuoteAcceptanceEvidence,
+    quote_acceptance_side_effect_scope_digest,
+)
 from intergrax.contracts.governed_continuation import (
     ContinuationReason,
     GovernedContinuationRequest,
@@ -58,6 +63,20 @@ SCOPE_1 = "side-effect-scope-1"
 SCOPE_2 = "side-effect-scope-2"
 SCOPE_DIGEST_1 = "sha256:" + ("ab" * 32)
 SCOPE_DIGEST_2 = "sha256:" + ("cd" * 32)
+QUOTE_SCOPE_DIGEST_1 = quote_acceptance_side_effect_scope_digest(
+    QuoteAcceptanceEvidence(
+        acceptance_id="acc-1",
+        quote_id="quote-grant-1",
+        quote_version=1,
+        scope_digest=SCOPE_DIGEST_1,
+        actor=ActorIdentity(
+            kind=ActorKind.USER,
+            actor_id="principal-grant-1",
+            tenant_id="tenant-a",
+        ),
+        accepted_at="2026-08-18T12:00:00+00:00",
+    )
+)
 CONTINUATION_1 = "gcr_scope_1"
 CONTINUATION_2 = "gcr_scope_2"
 PAUSE_A = "pause-a"
@@ -379,6 +398,45 @@ def test_dynamic_context_cannot_change_grant_scope() -> None:
     assert grant.side_effect_scope_digest != "evil_digest"
     assert grant.run_id != "evil_run"
     assert grant.operation_id != "evil"
+
+
+def test_quote_acceptance_require_human_grant_preserves_canonical_digest() -> None:
+    continuation = GovernedContinuationRequest(
+        reason=ContinuationReason.QUOTE,
+        task_id=TASK_ID,
+        run_id=RUN_ID,
+        source_agent_id="external_contractor_adapter",
+        prompt="quote acceptance requires governed continuation",
+        continuation_request_id=CONTINUATION_1,
+        side_effect_scope_id=SCOPE_1,
+        side_effect_scope_digest=QUOTE_SCOPE_DIGEST_1,
+        operation_id="ACCEPT_QUOTE",
+        policy_rule_id=POLICY_RULE,
+        resource_scope=RESOURCE,
+        policy_action=PolicyAction.REQUIRE_HUMAN,
+        correlation={
+            "quote_id": "EVIL",
+            "quote_version": 999,
+            "scope_digest": "evil_digest",
+        },
+        context={
+            "quote_id": "EVIL",
+            "quote_version": 999,
+            "scope_digest": "evil_digest",
+        },
+    )
+    task = _task()
+    pause = _apply_governed_pause(task, continuation)
+    _approve_resolution(
+        task,
+        pause_id=pause.pause_id,
+        human_request_id=pause.human_request_id,
+    )
+    grant = GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
+    assert grant is not None
+    assert grant.side_effect_scope_digest == QUOTE_SCOPE_DIGEST_1
+    assert grant.side_effect_scope_digest != SCOPE_DIGEST_1
+    assert grant.side_effect_scope_digest != "evil_digest"
 
 
 def test_new_pause_clears_stale_grant() -> None:

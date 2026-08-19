@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""G5C-2B-1-R1 — External Work immutable scope provenance for governed continuation."""
+"""G5C-2B-1-R1/R2 — External Work immutable scope provenance for governed continuation."""
 
 from __future__ import annotations
 
@@ -19,6 +19,8 @@ from intergrax.contracts.external_work import (
     ExternalTaskCorrelation,
     ExternalWorkCreateRequest,
     QuoteAcceptanceEvidence,
+    QuoteAcceptanceScopeIdentity,
+    quote_acceptance_side_effect_scope_digest,
 )
 from intergrax.contracts.governed_continuation import ContinuationReason
 from intergrax.contracts.meaningful_side_effect import (
@@ -26,6 +28,7 @@ from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectRequest,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.contracts.validation import validate_content_digest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -40,6 +43,7 @@ _IDEM_KEY = "idem-shared-key"
 _TASK_ID = "task-ew-1"
 _RUN_ID = "run-ew-1"
 _PRINCIPAL = "principal-ew-1"
+_QUOTE_ID = "quote-1"
 
 
 class _CapturingEvaluator:
@@ -84,10 +88,15 @@ def _correlation() -> ExternalTaskCorrelation:
     )
 
 
-def _acceptance(*, scope_digest: str, quote_version: int = 1) -> QuoteAcceptanceEvidence:
+def _acceptance(
+    *,
+    scope_digest: str,
+    quote_version: int = 1,
+    quote_id: str = _QUOTE_ID,
+) -> QuoteAcceptanceEvidence:
     return QuoteAcceptanceEvidence(
         acceptance_id=f"acc-{quote_version}",
-        quote_id="quote-1",
+        quote_id=quote_id,
         quote_version=quote_version,
         scope_digest=scope_digest,
         actor=ActorIdentity(
@@ -96,6 +105,21 @@ def _acceptance(*, scope_digest: str, quote_version: int = 1) -> QuoteAcceptance
             tenant_id="tenant-a",
         ),
         accepted_at="2026-08-18T12:00:00+00:00",
+    )
+
+
+def _canonical_digest(
+    *,
+    scope_digest: str,
+    quote_version: int = 1,
+    quote_id: str = _QUOTE_ID,
+) -> str:
+    return quote_acceptance_side_effect_scope_digest(
+        _acceptance(
+            scope_digest=scope_digest,
+            quote_version=quote_version,
+            quote_id=quote_id,
+        )
     )
 
 
@@ -152,33 +176,69 @@ def test_same_idempotency_key_different_scope_digest_are_distinct() -> None:
     assert evaluator.requests[0].side_effect_scope_digest != evaluator.requests[1].side_effect_scope_digest
 
 
-def test_quote_acceptance_binds_scope_digest_not_idempotency_key_alone() -> None:
+def test_quote_acceptance_binds_canonical_scope_digest() -> None:
     adapter, evaluator = _adapter(
         PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl")
     )
-    acceptance = _acceptance(scope_digest=_DIGEST_1)
-    result = adapter._evaluate_side_effect(
-        action=ACTION_ACCEPT_QUOTE,
-        kinds=_COMMITMENT_MUTATION,
-        side_effect_scope_id=_IDEM_KEY,
-        side_effect_scope_digest=acceptance.scope_digest,
-        task_id=_TASK_ID,
-        run_id=_RUN_ID,
+    acceptance = _acceptance(scope_digest=_DIGEST_1, quote_version=1)
+    expected = quote_acceptance_side_effect_scope_digest(acceptance)
+    result = adapter.forward_quote_acceptance(
+        _correlation(),
+        acceptance,
+        idempotency_key=_IDEM_KEY,
         principal_id=_PRINCIPAL,
-        tenant_id=None,
-        resource=acceptance.scope_digest,
-        external_target="provider-1",
-        correlation={},
-        context={
-            "quote_id": acceptance.quote_id,
-            "quote_version": acceptance.quote_version,
-        },
-        continuation_reason=ContinuationReason.QUOTE,
+        enrich=False,
     )
-    assert evaluator.requests[0].side_effect_scope_digest == _DIGEST_1
+    assert evaluator.requests
+    captured = evaluator.requests[0]
+    assert captured.side_effect_scope_digest == expected
+    assert captured.side_effect_scope_digest != acceptance.scope_digest
     assert result.continuation is not None
     assert result.continuation.side_effect_scope_id == _IDEM_KEY
-    assert result.continuation.side_effect_scope_digest == _DIGEST_1
+    assert result.continuation.side_effect_scope_digest == expected
+
+
+def test_same_quote_idempotency_and_scope_digest_different_versions_are_distinct() -> None:
+    digest_v1 = _canonical_digest(scope_digest=_DIGEST_1, quote_version=1)
+    digest_v2 = _canonical_digest(scope_digest=_DIGEST_1, quote_version=2)
+    assert digest_v1 != digest_v2
+
+
+def test_same_quote_version_and_idempotency_different_scope_digests_are_distinct() -> None:
+    digest_d1 = _canonical_digest(scope_digest=_DIGEST_1, quote_version=1)
+    digest_d2 = _canonical_digest(scope_digest=_DIGEST_2, quote_version=1)
+    assert digest_d1 != digest_d2
+
+
+def test_different_quote_ids_produce_distinct_scope_digests() -> None:
+    digest_q1 = _canonical_digest(scope_digest=_DIGEST_1, quote_id="quote-a")
+    digest_q2 = _canonical_digest(scope_digest=_DIGEST_1, quote_id="quote-b")
+    assert digest_q1 != digest_q2
+
+
+def test_quote_scope_digest_ignores_spoofed_dynamic_context() -> None:
+    acceptance = _acceptance(scope_digest=_DIGEST_1, quote_version=1, quote_id=_QUOTE_ID)
+    expected = QuoteAcceptanceScopeIdentity.from_quote_acceptance_evidence(
+        acceptance
+    ).compute_side_effect_scope_digest()
+    adapter, evaluator = _adapter(
+        PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl")
+    )
+    adapter.forward_quote_acceptance(
+        _correlation(),
+        acceptance,
+        idempotency_key=_IDEM_KEY,
+        principal_id=_PRINCIPAL,
+        enrich=False,
+    )
+    assert evaluator.requests[0].side_effect_scope_digest == expected
+    assert expected != quote_acceptance_side_effect_scope_digest(
+        _acceptance(
+            scope_digest="sha256:" + ("ff" * 32),
+            quote_version=999,
+            quote_id="EVIL",
+        )
+    )
 
 
 def test_quote_scopes_with_same_idempotency_key_remain_distinct() -> None:
@@ -191,7 +251,7 @@ def test_quote_scopes_with_same_idempotency_key_remain_distinct() -> None:
             action=ACTION_ACCEPT_QUOTE,
             kinds=_COMMITMENT_MUTATION,
             side_effect_scope_id=_IDEM_KEY,
-            side_effect_scope_digest=acceptance.scope_digest,
+            side_effect_scope_digest=quote_acceptance_side_effect_scope_digest(acceptance),
             task_id=_TASK_ID,
             run_id=_RUN_ID,
             principal_id=_PRINCIPAL,
@@ -199,14 +259,11 @@ def test_quote_scopes_with_same_idempotency_key_remain_distinct() -> None:
             resource=acceptance.scope_digest,
             external_target="provider-1",
             correlation={},
-            context={
-                "quote_id": acceptance.quote_id,
-                "quote_version": acceptance.quote_version,
-            },
+            context={},
             continuation_reason=ContinuationReason.QUOTE,
         )
     digests = {req.side_effect_scope_digest for req in evaluator.requests}
-    assert digests == {_DIGEST_1, _DIGEST_2}
+    assert len(digests) == 2
 
 
 def test_cancel_uses_idempotency_key_without_fabricated_digest() -> None:
@@ -232,3 +289,18 @@ def test_cancel_uses_idempotency_key_without_fabricated_digest() -> None:
     captured = evaluator.requests[0]
     assert captured.side_effect_scope_id == cancel_idem
     assert captured.side_effect_scope_digest is None
+
+
+def test_malformed_side_effect_scope_digest_rejected_by_generic_contract() -> None:
+    with pytest.raises(ValueError, match="sha256"):
+        validate_content_digest("md5:abc")
+    with pytest.raises(ValueError, match="sha256"):
+        MeaningfulSideEffectRequest(
+            action=ACTION_ACCEPT_QUOTE,
+            kinds=_COMMITMENT_MUTATION,
+            side_effect_scope_id=_IDEM_KEY,
+            side_effect_scope_digest="sha256:" + ("AB" * 32),
+            task_id=_TASK_ID,
+            run_id=_RUN_ID,
+            principal_id=_PRINCIPAL,
+        )
