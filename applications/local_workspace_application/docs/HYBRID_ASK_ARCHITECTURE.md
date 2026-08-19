@@ -511,6 +511,8 @@ Confluence and Microsoft Graph live search require separate bounded contracts in
 **Status:** ACCEPTED proof infrastructure (COMM-5C3)
 **Scope:** real HTTP Vendor Knowledge live read only; no flagship orchestration; no YES/NO business decision.
 
+**Flagship end-to-end proof (COMM-5D):** [`proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md`](proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) — four-scenario ORION deployment readiness proof over real Hybrid Ask, admissibility, authority, and history.
+
 | Layer | Responsibility |
 |-------|----------------|
 | LKW Hybrid Ask | provider-neutral plan + `LiveCapabilityExecutorV1` |
