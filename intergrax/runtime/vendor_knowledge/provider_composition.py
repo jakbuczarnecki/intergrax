@@ -40,6 +40,13 @@ from intergrax.integrations.providers.issue_tracker.jira.integration import (
 from intergrax.integrations.providers.issue_tracker.jira.tenant_connection_factory import (
     JiraTenantConnectionIntegrationFactory,
 )
+from intergrax.integrations.providers.project_status.config import ProjectStatusIntegrationConfig
+from intergrax.integrations.providers.project_status.knowledge_read import (
+    PROJECT_STATUS_PROVIDER_ID,
+)
+from intergrax.integrations.providers.project_status.tenant_connection_factory import (
+    ProjectStatusTenantConnectionIntegrationFactory,
+)
 from intergrax.integrations.providers.relational_store.databricks.integration import (
     DATABRICKS_RELATIONAL_STORE_PROVIDER_ID,
 )
@@ -92,6 +99,7 @@ def build_default_vendor_knowledge_connection_factory_registry(
     google_client_factory: GoogleWorkspaceClientFactory | None = None,
     jira_http_client_factory: Callable[[JiraIntegrationConfig], Any] | None = None,
     confluence_http_client_factory: Callable[[ConfluenceIntegrationConfig], Any] | None = None,
+    project_status_http_client_factory: Callable[[ProjectStatusIntegrationConfig], Any] | None = None,
     databricks_connection_factory: Callable[[], Any] | None = None,
     discover_entry_points: bool = False,
 ) -> TenantConnectionIntegrationFactoryRegistry:
@@ -146,6 +154,16 @@ def build_default_vendor_knowledge_connection_factory_registry(
             integration_category=IntegrationCategory.WIKI_KNOWLEDGE,
             factory=ConfluenceTenantConnectionIntegrationFactory(
                 http_client_factory=confluence_http_client_factory,
+            ),
+        ),
+        (
+            PROJECT_STATUS_PROVIDER_ID,
+            IntegrationCategory.ISSUE_TRACKER,
+        ): VendorKnowledgeConnectionFactoryContribution(
+            provider_id=PROJECT_STATUS_PROVIDER_ID,
+            integration_category=IntegrationCategory.ISSUE_TRACKER,
+            factory=ProjectStatusTenantConnectionIntegrationFactory(
+                http_client_factory=project_status_http_client_factory,
             ),
         ),
         (

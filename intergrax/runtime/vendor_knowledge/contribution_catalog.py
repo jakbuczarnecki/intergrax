@@ -218,6 +218,9 @@ def _default_builtin_builders() -> tuple[VendorKnowledgeContributionFactory, ...
     from intergrax.runtime.vendor_knowledge.msgraph_contribution import (
         build_msgraph_vendor_knowledge_contribution,
     )
+    from intergrax.runtime.vendor_knowledge.project_status_contribution import (
+        build_project_status_vendor_knowledge_contribution,
+    )
     from intergrax.runtime.vendor_knowledge.slack_contribution import (
         build_slack_vendor_knowledge_contribution,
     )
@@ -229,6 +232,7 @@ def _default_builtin_builders() -> tuple[VendorKnowledgeContributionFactory, ...
         build_jira_vendor_knowledge_contribution,
         build_confluence_vendor_knowledge_contribution,
         build_databricks_vendor_knowledge_contribution,
+        build_project_status_vendor_knowledge_contribution,
     )
 
 

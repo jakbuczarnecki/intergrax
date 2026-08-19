@@ -104,7 +104,7 @@ def test_enabled_catalog_increments_builtin_counts(
     assert len(build_vendor_knowledge_adapter_registry(enabled).registered_keys()) == 13
     assert len(build_vendor_knowledge_source_plugin_registry(disabled).list_plugins()) == 12
     assert len(build_vendor_knowledge_source_plugin_registry(enabled).list_plugins()) == 13
-    assert sum(len(item.connection_factories) for item in disabled.list_contributions()) == 6
+    assert sum(len(item.connection_factories) for item in disabled.list_contributions()) == 7
     assert sum(len(item.connection_factories) for item in enabled.list_contributions()) == 7
 
 

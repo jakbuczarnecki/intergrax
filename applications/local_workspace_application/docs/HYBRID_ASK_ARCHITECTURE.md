@@ -506,6 +506,72 @@ not in the LKW Hybrid Ask roadmap.
 
 Confluence and Microsoft Graph live search require separate bounded contracts in Vendor Knowledge and must not be simulated through delta, reconciliation or full inventory.
 
+### 9.3 COMM-5C3 — controlled external Project Status proof boundary
+
+**Status:** ACCEPTED proof infrastructure (COMM-5C3)
+**Scope:** real HTTP Vendor Knowledge live read only; no flagship orchestration; no YES/NO business decision.
+
+| Layer | Responsibility |
+|-------|----------------|
+| LKW Hybrid Ask | provider-neutral plan + `LiveCapabilityExecutorV1` |
+| Vendor Knowledge | registration, typed request, handler, connection factory |
+| Tenant connection | `base_url`, timeout — **not** LLM-selectable |
+| Provider adapter | `vendor.project_status.project.read` |
+| **HTTP boundary** | loopback Project Status Service |
+| Proof instrumentation | external read request counter |
+
+```mermaid
+flowchart TB
+  subgraph platform["Intergrax platform"]
+    LKW["LKW Ask / LiveCapabilityExecutorV1"]
+    VK["Vendor Knowledge registry"]
+    TC["Tenant connection resolver"]
+    H["Project Status live handler"]
+    LKW --> VK --> TC --> H
+  end
+  subgraph external["External proof infrastructure"]
+    HTTP["HTTP boundary"]
+    SVC["Project Status Service"]
+    CTR["Control API (proof harness)"]
+    CNT["read request counter"]
+    SVC --> HTTP
+    SVC --> CTR
+    CTR -. proof only .-> CNT
+  end
+  H -->|"GET /projects/{id}/status"| HTTP
+  CTR -->|"PUT control state"| SVC
+```
+
+**State transition proof (deterministic, no provider reconfiguration):**
+
+```mermaid
+sequenceDiagram
+  participant P as Provider path
+  participant S as Project Status Service
+  participant C as Control API
+  Note over S: STATE A — SEC-417 OPEN
+  P->>S: HTTP read
+  S-->>P: blocker OPEN
+  C->>S: OPEN → CLOSED
+  Note over S: STATE B — SEC-417 CLOSED
+  P->>S: same HTTP read
+  S-->>P: blocker CLOSED
+```
+
+| Item | Value |
+|------|-------|
+| Service module | `proof_infrastructure.controlled_project_status_service` |
+| Run command | `uv run python -m proof_infrastructure.controlled_project_status_service --host 127.0.0.1 --port 8765` |
+| Read API | `GET /projects/{project_id}/status` |
+| Control API | `PUT /control/projects/{project_id}/status` |
+| Counter | `GET /control/request-count`, `POST /control/request-count/reset` |
+| Provider id | `project_status` |
+| Capability id | `vendor.project_status.project.read` |
+| Request model | `ProjectStatusReadLiveRequestV1.project_id` |
+| Fixture seed | ORION / readiness 94 / SEC-417 OPEN |
+
+**Retention:** live bodies remain **EPHEMERAL**; durable Ask keeps provenance/hash metadata only.
+
 ---
 
 ## 10. Unified evidence ABI

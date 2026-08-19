@@ -49,6 +49,10 @@ from intergrax.integrations.providers.issue_tracker.jira.integration import (
 from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import (
     JIRA_ISSUES_SOURCE_KIND,
 )
+from intergrax.integrations.providers.project_status.knowledge_read import (
+    PROJECT_STATUS_PROVIDER_ID,
+    PROJECT_STATUS_SOURCE_KIND,
+)
 from intergrax.integrations.providers.wiki_knowledge.confluence.integration import (
     CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
 )
@@ -109,10 +113,15 @@ def test_default_plugin_catalog_matches_all_implemented_source_adapters() -> Non
             )
         },
         (JIRA_ISSUE_TRACKER_PROVIDER_ID, IntegrationCategory.ISSUE_TRACKER, JIRA_ISSUES_SOURCE_KIND),
+        (
+            PROJECT_STATUS_PROVIDER_ID,
+            IntegrationCategory.ISSUE_TRACKER,
+            PROJECT_STATUS_SOURCE_KIND,
+        ),
         (CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID, IntegrationCategory.WIKI_KNOWLEDGE, CONFLUENCE_PAGES_SOURCE_KIND),
     }
     assert identities == expected
-    assert len(identities) == 12
+    assert len(identities) == 13
 
 
 def test_durable_plugin_declarations_have_registered_adapter_runtime() -> None:
@@ -183,7 +192,9 @@ def test_durable_plugin_declarations_have_registered_adapter_runtime() -> None:
     plugins = build_default_vendor_knowledge_source_plugin_registry()
     for plugin in plugins.list_plugins():
         durable = plugin.capability(VendorKnowledgeMode.DURABLE)
-        assert durable is not None
+        if durable is None:
+            assert plugin.capability(VendorKnowledgeMode.LIVE) is not None
+            continue
         expected_runtime_ref = (
             f"knowledge-adapter:{plugin.identity.provider_id}:"
             f"{plugin.identity.integration_category.value}:{plugin.identity.source_kind}"
