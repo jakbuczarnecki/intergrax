@@ -469,6 +469,7 @@ class WorkspaceAskServiceV2:
         )
         product_authoritative = derive_product_evidence_obligations(
             mode=command.requested_mode,
+            ordered_live_call_proposals=ordered_live_call_proposals,
             include_indexed_retrieval=include_indexed,
         )
         try:

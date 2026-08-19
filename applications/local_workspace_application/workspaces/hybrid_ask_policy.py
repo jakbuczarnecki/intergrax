@@ -240,21 +240,29 @@ class ProviderEvidencePlanV1(BaseModel):
 def derive_product_evidence_obligations(
     *,
     mode: QueryPolicyModeV2,
+    ordered_live_call_proposals: tuple[LiveCallProposalV1, ...],
     include_indexed_retrieval: bool,
 ) -> tuple[RequiredEvidenceObligationV1, ...]:
-    """Product-owned indexed admissibility obligation for generic HYBRID Workspace Ask.
-
-    Planned live calls belong to the execution plan; mandatory per-call live evidence
-    must be supplied explicitly by product/provider planning authority.
-    """
-    if mode is not QueryPolicyModeV2.HYBRID or not include_indexed_retrieval:
+    """Platform-owned minimum obligations for generic Workspace Ask planning."""
+    if mode is not QueryPolicyModeV2.HYBRID:
         return ()
-    return (
-        IndexedEvidenceRequirementV1(
-            requirement_id="product:hybrid:indexed",
-            semantic_role="Indexed corpus grounding",
-        ),
-    )
+    obligations: list[RequiredEvidenceObligationV1] = []
+    if include_indexed_retrieval:
+        obligations.append(
+            IndexedEvidenceRequirementV1(
+                requirement_id="product:hybrid:indexed",
+                semantic_role="Indexed corpus grounding",
+            )
+        )
+    for proposal in ordered_live_call_proposals:
+        obligations.append(
+            LiveEvidenceRequirementV1(
+                requirement_id=f"product:hybrid:live:{proposal.call_id}",
+                semantic_role="Planned live capability execution",
+                call_id=proposal.call_id,
+            )
+        )
+    return tuple(obligations)
 
 
 def compose_evidence_obligations(

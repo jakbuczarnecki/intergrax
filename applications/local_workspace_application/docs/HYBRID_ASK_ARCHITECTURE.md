@@ -236,27 +236,9 @@ RequiredEvidenceObligationV1 (discriminated union)
 
 Plan validation fails closed on duplicate `requirement_id`, unknown `call_id`, mode/type mismatch, or unknown indexed binding.
 
-#### 6.4.1 Obligation ownership (COMM-5C1-R1 / R2)
+#### 6.4.1 Obligation ownership (COMM-5C1-R1)
 
 Mandatory evidence requirements are **not client-removable**. The HTTP request does not authoritatively declare them.
-
-**Execution plan** (what we attempt) and **evidence contract** (what must exist for admissibility) are separate:
-
-```mermaid
-flowchart LR
-    P[Execution Plan] --> A[Live call A]
-    P --> B[Live call B]
-    R[Evidence Contract] --> I[Required indexed evidence]
-    R --> A
-    B --> O[Optional enrichment]
-```
-
-| Invariant | Meaning |
-|-----------|---------|
-| HYBRID requires indexed + live participation | Plan validation and citation rules still enforce indexed retrieval and live execution structure |
-| Planned calls are not automatically mandatory | `ordered_live_call_proposals` does not imply per-call `LiveEvidenceRequirementV1` |
-| Explicit obligations control admissibility | Product/provider planning supplies mandatory evidence requirements |
-| Caller may only strengthen | Additive obligations; duplicate `requirement_id` fails closed |
 
 ```mermaid
 flowchart TD
@@ -274,7 +256,7 @@ flowchart TD
 
 | Source | Role |
 |--------|------|
-| `derive_product_evidence_obligations` | Product-owned **indexed** admissibility obligation for generic HYBRID Workspace Ask — not per planned live call |
+| `derive_product_evidence_obligations` | Platform minimum for **HYBRID** generic Workspace Ask (indexed + per planned live call) |
 | `ProviderEvidencePlanV1.required_evidence_obligations` | Provider-owned obligations from `WorkspaceAskProviderStrategy.build_plan` |
 | `WorkspaceAskCommandV2.required_evidence_obligations` | **Additive only** — may strengthen, never replace authoritative minimum |
 | `compose_evidence_obligations` | Merges layers; duplicate `requirement_id` fails closed |
