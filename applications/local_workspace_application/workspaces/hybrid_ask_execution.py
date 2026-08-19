@@ -571,26 +571,11 @@ class LiveCapabilityExecutorV1:
 
         try:
             call.assert_identity()
-            handler = self._handler_registry.resolve(
-                provider_id=call.provider_id,
-                integration_kind=call.integration_kind,
-                capability_id=call.capability_id,
-                contract_version=call.contract_version,
-            )
         except (LookupError, ValueError):
             return self._failure(
                 call=call,
                 started_at=started_at,
                 error_code="live_capability_unavailable",
-                run_id=run_id,
-                retention=retention,
-            )
-
-        if not isinstance(call.validated_request, handler.expected_request_model):
-            return self._failure(
-                call=call,
-                started_at=started_at,
-                error_code="live_request_invalid",
                 run_id=run_id,
                 retention=retention,
             )
@@ -616,6 +601,31 @@ class LiveCapabilityExecutorV1:
                 )
 
         try:
+            handler = self._handler_registry.resolve(
+                provider_id=call.provider_id,
+                integration_kind=call.integration_kind,
+                capability_id=call.capability_id,
+                contract_version=call.contract_version,
+            )
+        except (LookupError, ValueError):
+            return self._failure(
+                call=call,
+                started_at=started_at,
+                error_code="live_capability_unavailable",
+                run_id=run_id,
+                retention=retention,
+            )
+
+        if not isinstance(call.validated_request, handler.expected_request_model):
+            return self._failure(
+                call=call,
+                started_at=started_at,
+                error_code="live_request_invalid",
+                run_id=run_id,
+                retention=retention,
+            )
+
+        try:
             integration = self._integration_resolver.resolve(
                 tenant_id=context.tenant_id,
                 connection_ref=call.connection_ref,
@@ -626,7 +636,7 @@ class LiveCapabilityExecutorV1:
             return self._failure(
                 call=call,
                 started_at=started_at,
-                error_code="live_binding_unavailable",
+                error_code="live_execution_failed",
                 run_id=run_id,
                 retention=retention,
             )

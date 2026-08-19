@@ -616,7 +616,7 @@ def test_unavailable_connection_is_normalized_without_handler_invocation() -> No
         )
     )
 
-    assert result.error_code == "live_binding_unavailable"
+    assert result.error_code == "live_execution_failed"
     assert handler.calls == []
 
 
