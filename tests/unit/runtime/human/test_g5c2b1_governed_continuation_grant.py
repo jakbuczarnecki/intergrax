@@ -59,6 +59,9 @@ ATTEMPT_ID = mint_attempt_id()
 OPERATION = "collaborative.document.delete"
 RESOURCE = "document-123"
 POLICY_RULE = "runtime.hitl"
+BUNDLE_ID = "bundle-grant-test"
+BUNDLE_VERSION = "1.0.0"
+BUNDLE_DIGEST = "sha256:" + ("11" * 32)
 SCOPE_1 = "side-effect-scope-1"
 SCOPE_2 = "side-effect-scope-2"
 SCOPE_DIGEST_1 = "sha256:" + ("ab" * 32)
@@ -94,6 +97,9 @@ def _continuation_request(
     task_id: str = TASK_ID,
     run_id: str = RUN_ID,
     side_effect_scope_digest: str | None = None,
+    policy_bundle_id: str = BUNDLE_ID,
+    policy_bundle_version: str = BUNDLE_VERSION,
+    policy_bundle_digest: str = BUNDLE_DIGEST,
 ) -> GovernedContinuationRequest:
     return GovernedContinuationRequest(
         reason=ContinuationReason.COMPLIANCE,
@@ -106,6 +112,9 @@ def _continuation_request(
         side_effect_scope_digest=side_effect_scope_digest,
         operation_id=operation_id,
         policy_rule_id=POLICY_RULE,
+        policy_bundle_id=policy_bundle_id,
+        policy_bundle_version=policy_bundle_version,
+        policy_bundle_digest=policy_bundle_digest,
         resource_scope=resource_scope,
         policy_action=PolicyAction.REQUIRE_HUMAN,
         correlation={
@@ -269,6 +278,9 @@ def test_exact_canonical_approve_creates_grant() -> None:
     assert grant.operation_id == OPERATION
     assert grant.resource_scope == RESOURCE
     assert grant.policy_rule_id == POLICY_RULE
+    assert grant.policy_bundle_id == BUNDLE_ID
+    assert grant.policy_bundle_version == BUNDLE_VERSION
+    assert grant.policy_bundle_digest == BUNDLE_DIGEST
     assert task.runtime.governance.governed_continuation_grant == grant
 
 
@@ -519,6 +531,9 @@ async def test_intake_runner_reject_clears_grant(
         operation_id=OPERATION,
         resource_scope=RESOURCE,
         policy_rule_id=POLICY_RULE,
+        policy_bundle_id=BUNDLE_ID,
+        policy_bundle_version=BUNDLE_VERSION,
+        policy_bundle_digest=BUNDLE_DIGEST,
         pause_id=PAUSE_A,
         human_request_id=HR_A,
         approved_at="2026-08-18T00:00:00+00:00",

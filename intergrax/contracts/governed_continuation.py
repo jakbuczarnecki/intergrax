@@ -18,16 +18,21 @@ reasons (security, legal, …) reuse the same shape without quote-specific types
 
 from __future__ import annotations
 
-from typing import Any, Final, Literal, Mapping
+from typing import Any, Final, Literal, Mapping, Self
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
 from intergrax.contracts.external_work import QuoteAcceptanceEvidence
 from intergrax.contracts.governed_continuation_correlation import (
     ContinuationReason,
     GovernedContinuationCorrelation,
+)
+from intergrax.contracts.policy_bundle_provenance import (
+    has_attested_policy_bundle_provenance,
+    strip_policy_bundle_provenance_identifier,
+    validate_policy_bundle_provenance_complete_or_absent,
 )
 from intergrax.contracts.runtime_policy import PolicyAction
 
@@ -91,6 +96,9 @@ class GovernedContinuationRequest(BaseModel):
     side_effect_scope_digest: str | None = None
     operation_id: str | None = None
     policy_rule_id: str | None = None
+    policy_bundle_id: str = ""
+    policy_bundle_version: str = ""
+    policy_bundle_digest: str = ""
     resource_scope: str | None = None
     policy_action: PolicyAction | None = None
     correlation: Mapping[str, Any] = Field(default_factory=dict)
@@ -120,6 +128,31 @@ class GovernedContinuationRequest(BaseModel):
         normalized = value.strip()
         return normalized or None
 
+    @field_validator(
+        "policy_bundle_id",
+        "policy_bundle_version",
+        "policy_bundle_digest",
+    )
+    @classmethod
+    def _strip_bundle_provenance(cls, value: str) -> str:
+        return strip_policy_bundle_provenance_identifier(value)
+
+    @model_validator(mode="after")
+    def _bundle_provenance_complete_or_absent(self) -> Self:
+        validate_policy_bundle_provenance_complete_or_absent(
+            self.policy_bundle_id,
+            self.policy_bundle_version,
+            self.policy_bundle_digest,
+        )
+        return self
+
+    def has_attested_policy_bundle_refs(self) -> bool:
+        return has_attested_policy_bundle_provenance(
+            self.policy_bundle_id,
+            self.policy_bundle_version,
+            self.policy_bundle_digest,
+        )
+
     @field_validator("task_id", "run_id", "source_agent_id", "prompt")
     @classmethod
     def _strip_required(cls, value: str) -> str:
@@ -148,6 +181,9 @@ class GovernedContinuationRequest(BaseModel):
             side_effect_scope_digest=self.side_effect_scope_digest,
             operation_id=self.operation_id,
             policy_rule_id=self.policy_rule_id,
+            policy_bundle_id=self.policy_bundle_id,
+            policy_bundle_version=self.policy_bundle_version,
+            policy_bundle_digest=self.policy_bundle_digest,
             resource_scope=self.resource_scope,
             policy_action=self.policy_action,
             source_step_id=self.source_step_id,

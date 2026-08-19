@@ -6,9 +6,16 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from typing import Self
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.policy_action import PolicyAction
+from intergrax.contracts.policy_bundle_provenance import (
+    has_attested_policy_bundle_provenance,
+    strip_policy_bundle_provenance_identifier,
+    validate_policy_bundle_provenance_complete_or_absent,
+)
 from intergrax.contracts.validation import validate_content_digest
 
 _NON_EMPTY = Field(min_length=1)
@@ -38,6 +45,9 @@ class GovernedContinuationCorrelation(BaseModel):
     side_effect_scope_digest: str | None = None
     operation_id: str = _NON_EMPTY
     policy_rule_id: str | None = None
+    policy_bundle_id: str = ""
+    policy_bundle_version: str = ""
+    policy_bundle_digest: str = ""
     resource_scope: str | None = None
     policy_action: PolicyAction | None = None
     source_step_id: str | None = None
@@ -72,3 +82,28 @@ class GovernedContinuationCorrelation(BaseModel):
             return None
         normalized = value.strip()
         return normalized or None
+
+    @field_validator(
+        "policy_bundle_id",
+        "policy_bundle_version",
+        "policy_bundle_digest",
+    )
+    @classmethod
+    def _strip_bundle_provenance(cls, value: str) -> str:
+        return strip_policy_bundle_provenance_identifier(value)
+
+    @model_validator(mode="after")
+    def _bundle_provenance_complete_or_absent(self) -> Self:
+        validate_policy_bundle_provenance_complete_or_absent(
+            self.policy_bundle_id,
+            self.policy_bundle_version,
+            self.policy_bundle_digest,
+        )
+        return self
+
+    def has_attested_policy_bundle_refs(self) -> bool:
+        return has_attested_policy_bundle_provenance(
+            self.policy_bundle_id,
+            self.policy_bundle_version,
+            self.policy_bundle_digest,
+        )

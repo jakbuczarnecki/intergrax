@@ -4,10 +4,15 @@
 
 from __future__ import annotations
 
-from typing import Final, Literal
+from typing import Final, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.policy_bundle_provenance import (
+    has_attested_policy_bundle_provenance,
+    strip_policy_bundle_provenance_identifier,
+    validate_policy_bundle_provenance_complete_or_absent,
+)
 from intergrax.contracts.validation import validate_content_digest
 
 SCHEMA_GOVERNED_CONTINUATION_APPROVAL_GRANT_V1: Final = (
@@ -38,6 +43,9 @@ class GovernedContinuationApprovalGrant(BaseModel):
     operation_id: str = _NON_EMPTY
     resource_scope: str | None = None
     policy_rule_id: str | None = None
+    policy_bundle_id: str = ""
+    policy_bundle_version: str = ""
+    policy_bundle_digest: str = ""
     pause_id: str = _NON_EMPTY
     human_request_id: str = _NON_EMPTY
     approved_at: str = _NON_EMPTY
@@ -67,6 +75,31 @@ class GovernedContinuationApprovalGrant(BaseModel):
             return None
         normalized = value.strip()
         return normalized or None
+
+    @field_validator(
+        "policy_bundle_id",
+        "policy_bundle_version",
+        "policy_bundle_digest",
+    )
+    @classmethod
+    def _strip_bundle_provenance(cls, value: str) -> str:
+        return strip_policy_bundle_provenance_identifier(value)
+
+    @model_validator(mode="after")
+    def _bundle_provenance_complete_or_absent(self) -> Self:
+        validate_policy_bundle_provenance_complete_or_absent(
+            self.policy_bundle_id,
+            self.policy_bundle_version,
+            self.policy_bundle_digest,
+        )
+        return self
+
+    def has_attested_policy_bundle_refs(self) -> bool:
+        return has_attested_policy_bundle_provenance(
+            self.policy_bundle_id,
+            self.policy_bundle_version,
+            self.policy_bundle_digest,
+        )
 
     @field_validator("side_effect_scope_digest")
     @classmethod
