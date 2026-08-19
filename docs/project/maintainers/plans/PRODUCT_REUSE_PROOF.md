@@ -96,12 +96,41 @@ Before implementation begins, the frozen T0 record must explain **why** Product 
 | **Meaningful difference from LKW** | Why this product stresses different boundaries |
 | **Starting Intergrax commit SHA** | Exact platform baseline for the experiment |
 | **Required platform-responsibility matrix** | Every platform responsibility Product #2 needs (see below) |
+| **Critical Reuse Set** | Subset of platform responsibilities whose reuse is essential to credibly demonstrate cross-product reuse for this experiment (see below) |
 | **Expected reuse candidates** | Which responsibilities are expected to be `REUSED_UNCHANGED` or `REUSED_CONFIGURED` |
 | **Known expected gaps** | Anticipated `EXTENDED_GENERALLY` or open questions |
 | **Measurement methodology** | How M1–M6 will be computed |
 | **PASS / PARTIAL / FAIL rules** | Frozen qualitative criteria (this contract) |
 
 T0 should be stored as a dated maintainer record linked from the Product #2 plan. The starting commit SHA must match the repository state at T0 freeze.
+
+### Critical Reuse Set
+
+Before Product #2 implementation begins, T0 must identify the **Critical Reuse Set**: the subset of required existing platform responsibilities whose reuse is **essential** for this specific experiment to credibly demonstrate the Intergrax cross-product thesis.
+
+Selection must be justified from:
+
+- the Product #2 workflow;
+- how it differs from LKW;
+- which existing Intergrax responsibilities the experiment is specifically expected to stress.
+
+It must **not** include capabilities merely to improve metrics.
+
+For every Critical Reuse Set entry, freeze at T0:
+
+| Field | Description |
+| ----- | ----------- |
+| **Responsibility** | The platform responsibility |
+| **Why critical** | Why this responsibility is essential to this experiment |
+| **Expected contract** | The existing Intergrax contract or mechanism expected to be consumed |
+
+**PASS requirement:** every Critical Reuse Set responsibility must finish as either `REUSED_UNCHANGED` or `REUSED_CONFIGURED`.
+
+If any Critical Reuse Set responsibility finishes as `EXTENDED_GENERALLY`, `PLATFORM_LEAK`, or is privately duplicated, the experiment **cannot** receive PASS.
+
+`EXTENDED_GENERALLY` on a Critical Reuse Set item may still permit **PARTIAL** if the architecture remains clean.
+
+M1 remains an exact descriptive percentage for the full responsibility matrix. This contract does **not** introduce a universal minimum M1 threshold.
 
 ---
 
@@ -198,11 +227,25 @@ if product == "Product2": ...
 
 ### M4 — Private Platform Duplication Count
 
-Number of required platform responsibilities that Product #2 implements **privately** instead of consuming the shared Intergrax mechanism, without a justified architectural reason documented at T0 or T1.
+Number of required platform responsibilities that were frozen at T0 as **platform** responsibilities and that Product #2 implements **privately** instead of consuming or generally extending the shared Intergrax mechanism.
 
 - **Hard target:** `0`.
+- **No post-hoc erasure:** T1 may explain a violation but may **not** retroactively make M4 zero through ordinary T1 reasoning.
 
-Examples of unjustified private duplication: a product-local policy engine, identity system, HITL mechanism, retry/recovery framework, evidence journal, execution runtime, or tool gateway when the shared responsibility should apply.
+If a responsibility is frozen at T0 as a platform responsibility and Product #2 privately implements it instead of using or generally extending the shared platform mechanism, M4 increments — regardless of later narrative justification.
+
+Post-hoc "justified private duplication" is **not** a successful category.
+
+**Legitimate mid-experiment classification changes** discovered during implementation require **all** of the following **before** implementing the affected path:
+
+1. a bounded architecture review;
+2. an explicit versioned deviation from T0 (date, rationale, old classification, new classification);
+3. independent review;
+4. an explicit statement that the change was **not** made because the implementation result was unfavorable.
+
+If the responsibility legitimately becomes `PRODUCT_OWNED`, document that versioned change. If it exposes a reusable platform gap, classify the implementation `EXTENDED_GENERALLY` — do not treat private duplication as success.
+
+Examples of private duplication that increment M4: a product-local policy engine, identity system, HITL mechanism, retry/recovery framework, evidence journal, execution runtime, or tool gateway when the shared responsibility was frozen at T0 as a platform responsibility.
 
 ### M5 — Boundary Integrity
 
@@ -240,7 +283,7 @@ Any of the following is an automatic architectural failure:
 
 1. **Product-specific branching in shared platform core** — e.g. product-identity conditionals in platform code paths.
 
-2. **Private rebuild of a platform responsibility** — Product #2 reimplements policy engine, identity, HITL, retry/recovery, evidence journal, execution runtime, tool gateway, or equivalent when the shared responsibility should be used.
+2. **Private rebuild of a platform responsibility** — Product #2 privately implements a responsibility frozen at T0 as a platform responsibility instead of consuming or generally extending the shared mechanism. T1 narrative cannot retroactively erase this; see M4.
 
 3. **Contract bypass** — Product #2 requires violating or bypassing existing platform contracts merely to make the workflow work.
 
@@ -265,7 +308,7 @@ product need
 
 Legitimate missing reusable capabilities are classified `EXTENDED_GENERALLY`, not `REUSED_UNCHANGED`.
 
-A proof with substantial platform expansion may be **PARTIAL** rather than **PASS**, even when the resulting architecture is sound. Do **not** treat every new platform change as failure.
+A proof with material platform expansion — including `EXTENDED_GENERALLY` on one or more Critical Reuse Set responsibilities — may be **PARTIAL** rather than **PASS**, even when the resulting architecture is sound. Do **not** treat every new platform change as failure.
 
 ---
 
@@ -279,7 +322,7 @@ Requires **all** of:
 
 - Product #2 is meaningfully different from LKW;
 - a real vertical slice works end to end;
-- shared responsibilities are substantially consumed through existing Intergrax contracts;
+- **every Critical Reuse Set responsibility** is `REUSED_UNCHANGED` or `REUSED_CONFIGURED`;
 - Core Product Hack Count (M3) = `0`;
 - Private Platform Duplication Count (M4) = `0`;
 - product / domain semantics remain product-owned;
@@ -291,13 +334,14 @@ Requires **all** of:
 ### PARTIAL
 
 - the product works and architecture remains clean;
-- but material platform expansion is required, reuse is weaker than expected, or important abstractions require general redesign.
+- one or more Critical Reuse Set responsibilities required `EXTENDED_GENERALLY`, but general platform evolution otherwise remains clean; or
+- material platform expansion is required, reuse is weaker than expected, or important abstractions require general redesign.
 
 A PARTIAL result remains useful and must be reported honestly.
 
 ### FAIL
 
-- any hard fail condition; or
+- any hard fail condition — including `PLATFORM_LEAK` on any responsibility or any Critical Reuse Set item; or
 - a result that cannot credibly test cross-product reuse.
 
 ---
@@ -310,6 +354,9 @@ After Product #2 vertical-slice completion, publish a T1 evidence record contain
 | ---- | ----------- |
 | T0 starting commit SHA | Frozen baseline |
 | Product #2 implementation end SHA | Final measured state |
+| Frozen Critical Reuse Set | T0 entries with responsibility, why critical, expected contract |
+| Critical Reuse Set final classification | Final category per Critical Reuse Set entry |
+| Versioned T0 deviations | Any legitimate mid-experiment classification changes with review record |
 | Final working vertical slice | What was demonstrated end to end |
 | Exact responsibility matrix | Final classification per responsibility |
 | M1–M6 results | All metrics with numerators and denominators |
