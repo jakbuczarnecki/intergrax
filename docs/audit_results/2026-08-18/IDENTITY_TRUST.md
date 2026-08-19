@@ -39,6 +39,14 @@
 - **plan_sync:** COMPLETE after commit A
 - **post_sync_sha:** `be52ca045443e906ef03f47fbd8cde1dbd1f6fbc`
 
+### Evidence-conformance correction — 2026-08-18
+
+- Initial publication omitted Protocol v2.2 line ranges in `Location`.
+- Initial publication also omitted the mandatory `Provider / backend abstraction` report section.
+- This correction adds only those required evidence/reporting elements.
+- `audited_sha`, observations, finding IDs, severity, category, confidence, verdict, operator decisions, remediation blocks, architecture targets and plan state are unchanged.
+- No remediation was implemented.
+
 ## Executive summary
 
 **Verdict: FAIL.** Six accepted findings (4 HIGH, 2 MEDIUM) show that verified credentials are not canonically bound to `RequestIdentity` on all Tier-3 intake paths, delegation `permission_scopes` are recorded but not enforced as effective child authority, HITL resolution binds the exact decision but not the authenticated approver, the shared HTTP resume path omits exact pause/request identifiers, residual HITL/lifecycle provenance still substitutes `TaskId` for `RunId`, and `ActorIdentity` remains a paper model with inconsistent wire semantics. Positive controls preserved: FastAPI Core `AuthProvider` → `AuthContext`, G5C exact task/pause/human_request correlation, Legal body-vs-context identity checks, and `IdentityProviderBackend` / `IntegrationProfile` abstraction. No new independent vendor/backend leakage finding in this layer.
@@ -61,10 +69,10 @@
 - **Claim falsified:** An authenticated Tier-3 request produces execution identity exclusively from the verified credential / authenticated principal, and untrusted request fields or metadata cannot redefine tenant/user/principal identity.
 - **Observation:** `RequestIdentity` is documented/typed as the authenticated principal. `runtime_request_to_agent_run` derives `tenant_id`/`user_id`/`principal_type`/`auth_subject` from `RuntimeRequest` fields and metadata; metadata `user_id` can override typed `request.user_id`. Harness identity-provider verification currently reduces verified identity to a boolean authentication result and discards the verified `IdentityUser` for downstream execution identity. Shared/product surfaces can construct `Task` `tenant_id`/`user_id` from request body independently of the verified credential. Research is a concrete bounded example; not every product host has this defect.
 - **Location:**
-  - `intergrax/contracts/agent_run.py` — `RequestIdentity` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/agents/runtime_request_bridge.py` — `runtime_request_to_agent_run` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/applications/_shared/harness_auth.py` — `is_harness_identity_token_valid` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `applications/research_application/serving/fastapi_router.py` — `ResearchRunService.run_pipeline` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/contracts/agent_run.py:L24-L39` — `RequestIdentity` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/agents/runtime_request_bridge.py:L24-L64` — `runtime_request_to_agent_run` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/applications/_shared/harness_auth.py:L94-L108` — `is_harness_identity_token_valid` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `applications/research_application/serving/fastapi_router.py:L25-L37` — `ResearchRunService.run_pipeline` @ `6fbc5e4928963ecd386456158b0753662fed209b`
 - **Reproduction:**
   1. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/contracts/agent_run.py` — `RequestIdentity` authenticated-principal docstring and fields.
   2. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/agents/runtime_request_bridge.py` — metadata `user_id` precedence over `request.user_id`.
@@ -84,11 +92,13 @@
 - **Claim falsified:** A delegated child execution is restricted to effective authority no broader than the parent and the delegation's declared permission scopes.
 - **Observation:** `DelegationSpec` and `SubtaskContract` carry `permission_scopes`. `narrow_delegation_scopes` exists. `GraphExecutor` validates depth / LLM budget / tool budget, but does not apply `permission_scopes` as effective child authority. Child request composition propagates delegation namespace and parent identifiers, not a narrowed effective authority envelope. `DELEGATION_GRANTED` observability records `permission_scopes` although runtime does not prove those scopes are enforced. `CollaborativeWorkAuthorityResolver` is a positive existing pattern for authoritative fail-closed narrowing; do not silently merge the two models in this persistence task.
 - **Location:**
-  - `intergrax/contracts/delegation.py` — `DelegationSpec.permission_scopes` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/contracts/subtask_contract.py` — `SubtaskContract.permission_scopes` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/interactions/actor_resolution.py` — `narrow_delegation_scopes` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/nexus/execution/graph_executor.py` — `GraphExecutor`, `_emit_delegation_granted`, `max_delegation_depth` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/collaborative_work/authority.py` — `CollaborativeWorkAuthorityResolver` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/contracts/delegation.py:L23-L30` — `DelegationSpec.permission_scopes` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/contracts/subtask_contract.py:L12-L19` — `SubtaskContract.permission_scopes` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/interactions/actor_resolution.py:L40-L51` — `narrow_delegation_scopes` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/execution/graph_executor.py:L113-L132` — `GraphExecutor` `max_delegation_depth` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/execution/graph_executor.py:L947-L973` — `_emit_delegation_granted` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/execution/graph_executor.py:L1037-L1043` — `max_delegation_depth` validation @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/collaborative_work/authority.py:L61-L98` — `CollaborativeWorkAuthorityResolver` @ `6fbc5e4928963ecd386456158b0753662fed209b`
 - **Reproduction:**
   1. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/contracts/delegation.py` — `permission_scopes` on `DelegationSpec`.
   2. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/runtime/interactions/actor_resolution.py` — `narrow_delegation_scopes` helper (no production enforcement path established).
@@ -108,11 +118,12 @@
 - **Claim falsified:** A human approval record proves both WHAT exact pause/request was decided and WHO the authenticated/authorized approver was.
 - **Observation:** Current G5C HITL correctly binds `task_id` + `pause_id` + `human_request_id` and rejects stale/forged mismatches; this is a positive control and must be explicitly preserved. `HumanApprovalResolution` / persisted `HumanDecisionRecord` do not carry a canonical verified approver principal with auth provenance. Persisted `HumanDecisionRecord.user_id` is populated from `task.user_id`, which identifies the task user rather than necessarily the human who approved. `HUMAN_APPROVAL_RECEIVED` evidence does not establish authenticated approver provenance.
 - **Location:**
-  - `intergrax/runtime/human/pause.py` — `HumanPauseCoordinator.resolve_human_response` exact-correlation guards @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/task/task_contract.py` — `HumanApprovalResolution` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/human/models.py` — `HumanDecisionRecord`, `build_human_decision_record` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/nexus/orchestration/human_response.py` — `persist_human_decision` (`user_id=task.user_id`) @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/nexus/orchestration/intake_runner.py` — `HUMAN_APPROVAL_RECEIVED` emission @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/human/pause.py:L199-L212` — `HumanPauseCoordinator.resolve_human_response` exact-correlation guards @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/task/task_contract.py:L96-L108` — `HumanApprovalResolution` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/human/models.py:L30-L43` — `HumanDecisionRecord` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/human/models.py:L53-L72` — `build_human_decision_record` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/orchestration/human_response.py:L39-L49` — `persist_human_decision` (`user_id=task.user_id`) @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/orchestration/intake_runner.py:L113-L125` — `HUMAN_APPROVAL_RECEIVED` emission @ `6fbc5e4928963ecd386456158b0753662fed209b`
 - **Reproduction:**
   1. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/runtime/human/pause.py` — pause/request mismatch rejection (positive control).
   2. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/runtime/task/task_contract.py` — `HumanApprovalResolution` fields (no approver principal).
@@ -132,10 +143,11 @@
 - **Claim falsified:** All supported resume surfaces materialize the exact `pause_id` and `human_request_id` required by canonical HITL resolution.
 - **Observation:** `NexusIntakeRunner` expects `TaskHumanInput.pause_id` + `human_request_id`. Shared `POST /v1/tasks/{task_id}/resume` accepts resume token and `operator_input`. `resume_task_with_token` copies verdict and `response_text` but does not materialize `pause_id`/`human_request_id` from checkpoint `pause_record`. `DebugHitlResumeService` already demonstrates the correct pattern by extracting those identifiers from the checkpoint.
 - **Location:**
-  - `intergrax/runtime/nexus/orchestration/intake_runner.py` — `NexusIntakeRunner.run` pause/request correlation @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/applications/_shared/harness_task_routes.py` — shared resume route @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/applications/_shared/task_control.py` — `resume_task_with_token` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/debug/hitl_service.py` — `DebugHitlResumeService.resume_with_human_response` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/orchestration/intake_runner.py:L69-L71` — pause/request correlation inputs @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/orchestration/intake_runner.py:L101-L111` — APPROVE resume requires bound identity @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/applications/_shared/harness_task_routes.py:L115-L137` — shared resume route @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/applications/_shared/task_control.py:L73-L90` — `resume_task_with_token` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/debug/hitl_service.py:L70-L75` — `DebugHitlResumeService.resume_with_human_response` pause/request materialization @ `6fbc5e4928963ecd386456158b0753662fed209b`
 - **Reproduction:**
   1. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/runtime/nexus/orchestration/intake_runner.py` — requires `pause_id` and `human_request_id` on resume.
   2. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/applications/_shared/task_control.py` — sets verdict/response only; no pause/request materialization.
@@ -156,13 +168,14 @@
 - **Claim falsified:** Once Nexus binds `ActiveExecutionIdentity`, all runtime/HITL/hook provenance uses the canonical `RunId` and `AttemptId` rather than reconstructing run identity from `TaskId`.
 - **Observation:** `NexusLoop` correctly binds `ActiveExecutionIdentity(run_id, attempt_id)`. APPROVE HITL path already uses the bound `run_id` + `attempt_id`. `human_approval_hook_context` and `nexus_lifecycle_hook_context` still construct `run_id` from `task.task_id`. REJECT / ESCALATE paths call `runtime_event_from_task_state` using `task.task_id` as `run_id`. `persist_human_decision` records `run_id=task.task_id`. Canonical `runtime_event_from_task_state` requires validated `RunId` and `AttemptId`. Therefore this is a partial migration, not a claim that all HITL is broken.
 - **Location:**
-  - `intergrax/contracts/execution_identity.py` — `ActiveExecutionIdentity` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/nexus/nexus_loop.py` — `ActiveExecutionIdentity` binding @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/nexus/orchestration/intake_runner.py` — APPROVE path uses bound identity @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/human/hitl_hooks.py` — `human_approval_hook_context` (`run_id=task.task_id`) @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/hooks/nexus_lifecycle_hooks.py` — `nexus_lifecycle_hook_context` (`run_id=task.task_id`) @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/nexus/orchestration/hitl_runner.py` — REJECT/ESCALATE `runtime_event_from_task_state(..., run_id=task.task_id)` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/nexus/orchestration/human_response.py` — `persist_human_decision` `run_id=task.task_id` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/contracts/execution_identity.py:L101-L123` — `ActiveExecutionIdentity` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/nexus_loop.py:L195-L199` — `ActiveExecutionIdentity` binding @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/orchestration/intake_runner.py:L101-L110` — APPROVE path uses bound identity @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/human/hitl_hooks.py:L52-L54` — `human_approval_hook_context` (`run_id=task.task_id`) @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/hooks/nexus_lifecycle_hooks.py:L35-L37` — `nexus_lifecycle_hook_context` (`run_id=task.task_id`) @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/orchestration/hitl_runner.py:L119-L121` — REJECT `runtime_event_from_task_state(..., run_id=task.task_id)` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/orchestration/hitl_runner.py:L165-L167` — ESCALATE `runtime_event_from_task_state(..., run_id=task.task_id)` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/nexus/orchestration/human_response.py:L49-L49` — `persist_human_decision` `run_id=task.task_id` @ `6fbc5e4928963ecd386456158b0753662fed209b`
 - **Reproduction:**
   1. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/runtime/nexus/orchestration/intake_runner.py` — APPROVE uses `execution_identity.require()`.
   2. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/runtime/human/hitl_hooks.py` — `run_id=task.task_id` in hook context.
@@ -182,9 +195,9 @@
 - **Claim falsified:** Intergrax has one canonical actor/principal identity model whose producer, resolver and authority semantics are consistently used on production execution paths.
 - **Observation:** `ActorIdentity` contains `kind`, `actor_id`, `tenant_id`, `delegated_from` and `permission_scopes`. `resolve_actor_from_task` and `narrow_delegation_scopes` exist but no production use was established in this audit. `TaskEnvelope.with_actor` writes `actor_kind` + `actor_id`. Resolver reads `service_id` for SERVICE, `agent_actor_id` for AGENT and `task.user_id` for USER, so writer and reader do not form one coherent wire contract. `ActorIdentity.allows_scope` treats empty scopes as unrestricted; do not call this independently exploitable because `ActorIdentity` is not currently proven to be the production authority gate.
 - **Location:**
-  - `intergrax/contracts/actor_identity.py` — `ActorIdentity`, `allows_scope` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/contracts/task_envelope.py` — `TaskEnvelope.with_actor` @ `6fbc5e4928963ecd386456158b0753662fed209b`
-  - `intergrax/runtime/interactions/actor_resolution.py` — `resolve_actor_from_task` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/contracts/actor_identity.py:L18-L32` — `ActorIdentity`, `allows_scope` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/contracts/task_envelope.py:L53-L57` — `TaskEnvelope.with_actor` @ `6fbc5e4928963ecd386456158b0753662fed209b`
+  - `intergrax/runtime/interactions/actor_resolution.py:L13-L33` — `resolve_actor_from_task` @ `6fbc5e4928963ecd386456158b0753662fed209b`
 - **Reproduction:**
   1. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/contracts/task_envelope.py` — `with_actor` writes `actor_kind`/`actor_id` metadata keys.
   2. `git show 6fbc5e4928963ecd386456158b0753662fed209b:intergrax/runtime/interactions/actor_resolution.py` — resolver reads `service_id`/`agent_actor_id`/`task.user_id` by kind.
@@ -193,15 +206,16 @@
 - **Impact:** Platform identity concepts exist in parallel without one mandatory principal/actor spine, encouraging paper abstractions and future inconsistent enforcement.
 - **Confidence:** CONFIRMED
 
-## Provider/backend abstraction classification matrix
+## Provider / backend abstraction
 
-| Concern | Canonical abstraction | Observed pattern | Classification | Notes |
-|---------|----------------------|------------------|----------------|-------|
-| Identity verification | `IdentityProviderBackend` | harness + integration profile wiring | ABSTRACTION_PRESERVED | positive control — verified user not propagated to execution identity (finding 01) |
-| FastAPI authentication | `AuthProvider` → `AuthContext` | middleware-resolved context | ABSTRACTION_PRESERVED | positive control — not all Tier-3 hosts consume it uniformly |
-| Integration profile | `IntegrationProfile` | composition-owned backend selection | ABSTRACTION_PRESERVED | no new vendor leakage |
+| concern | canonical abstraction | provider boundary / selection | observed provider(s) | classification | evidence / finding |
+|---------|-----------------------|-------------------------------|----------------------|----------------|--------------------|
+| Identity provider | `IdentityProviderBackend` | IntegrationProfile / Tier-3 identity wiring | harness + integration profile wiring | `ABSTRACTION_PRESERVED` | `intergrax/integrations/contracts/identity_provider.py:L32-L39`; `intergrax/applications/_shared/harness_auth.py:L87-L91` @ `6fbc5e4928963ecd386456158b0753662fed209b`; no new vendor/backend leakage finding in IDENTITY_TRUST |
+| FastAPI Core authentication | `AuthProvider` → `AuthContext` | middleware-resolved context | FastAPI Core auth middleware | `ABSTRACTION_PRESERVED` | `intergrax/fastapi_core/auth/provider.py:L13-L25`; `intergrax/fastapi_core/auth/context.py:L12-L22` @ `6fbc5e4928963ecd386456158b0753662fed209b`; positive control; finding 01 is principal-binding/adoption, not concrete-vendor leakage |
+| Application identity provider resolution | controlled Tier-3/provider resolution | composition-owned Tier-3 harness auth state | Tier-3 identity wiring | `COMPOSITION_ONLY` | `intergrax/applications/_shared/harness_auth.py:L87-L91` @ `6fbc5e4928963ecd386456158b0753662fed209b`; concrete identity provider selection remains outside generic runtime logic |
+| ActorIdentity / RequestIdentity | — | — | — | `NOT_APPLICABLE` | finding 06 is platform identity-contract coherence, not vendor coupling |
 
-**AUDIT-5 discovered no new independent vendor/backend leakage finding** in this layer.
+AUDIT-4 discovered no new independent provider/backend abstraction finding. IdentityProviderBackend and FastAPI Core AuthProvider remain valid provider-neutral boundaries on the inspected paths.
 
 ## Falsification log
 
