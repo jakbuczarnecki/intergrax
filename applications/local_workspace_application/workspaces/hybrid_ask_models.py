@@ -13,6 +13,9 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     LiveResultRetentionV1,
     QueryPolicyModeV2,
 )
+from local_workspace_application.workspaces.hybrid_ask_policy import (
+    RequiredEvidenceObligationV1,
+)
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.runtime.vendor_knowledge.live.contracts import (
@@ -270,6 +273,38 @@ class LiveCallEvidenceIdentityV1(BaseModel):
     capability_id: str
 
 
+class EvidenceAdmissibilityStatusV1(StrEnum):
+    SATISFIED = "satisfied"
+    UNSATISFIED = "unsatisfied"
+
+
+class RequirementEvaluationStatusV1(StrEnum):
+    SATISFIED = "satisfied"
+    UNSATISFIED = "unsatisfied"
+
+
+class RequirementAdmissibilityReasonCodeV1(StrEnum):
+    NO_MATCHING_EVIDENCE = "no_matching_evidence"
+    INDEXED_BINDING_MISMATCH = "indexed_binding_mismatch"
+    LIVE_CALL_MISMATCH = "live_call_mismatch"
+
+
+class RequiredEvidenceEvaluationV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    requirement_id: str = Field(..., min_length=1, max_length=128)
+    status: RequirementEvaluationStatusV1
+    matched_evidence_ids: tuple[str, ...] = ()
+    reason_code: RequirementAdmissibilityReasonCodeV1 | None = None
+
+
+class EvidenceAdmissibilityResultV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    overall_status: EvidenceAdmissibilityStatusV1
+    requirement_evaluations: tuple[RequiredEvidenceEvaluationV1, ...] = ()
+
+
 class WorkspaceAskRunV2(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -283,6 +318,8 @@ class WorkspaceAskRunV2(BaseModel):
     query_mode: QueryPolicyModeV2
     configuration_revision: int = Field(..., ge=0)
     plan_id: str = Field(..., min_length=1)
+    required_evidence_obligations: tuple[RequiredEvidenceObligationV1, ...] = ()
+    evidence_admissibility: EvidenceAdmissibilityResultV1 | None = None
     live_result_retention: LiveResultRetentionV1 = LiveResultRetentionV1.EPHEMERAL
     # Optional provider-strategy extension.  The generic Ask contract does not
     # interpret provider-specific coverage payloads.

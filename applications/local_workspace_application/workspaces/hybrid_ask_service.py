@@ -16,6 +16,9 @@ from local_workspace_application.workspaces.ask_models import (
     AskRunStatus,
 )
 from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
+from local_workspace_application.workspaces.hybrid_ask_admissibility import (
+    evaluate_execution_admissibility,
+)
 from local_workspace_application.workspaces.hybrid_ask_answer_assembler import (
     HybridAskAnswerAssemblerV2,
 )
@@ -24,6 +27,8 @@ from local_workspace_application.workspaces.hybrid_ask_execution import (
     KnowledgeQueryOrchestratorV1,
 )
 from local_workspace_application.workspaces.hybrid_ask_models import (
+    EvidenceAdmissibilityResultV1,
+    EvidenceAdmissibilityStatusV1,
     IndexedWorkspaceCitationV1,
     IndexedWorkspaceEvidenceV1,
     LiveWorkspaceCitationV1,
@@ -40,6 +45,7 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     HybridAskPolicyError,
     LiveCallProposalV1,
     LiveResourceScopeValidationPort,
+    RequiredEvidenceObligationV1,
     ResolvedLiveResourceScopeV1,
     ValidatedEvidencePlanV1,
     resolve_effective_query_policy,
@@ -200,6 +206,7 @@ class WorkspaceAskCommandV2(BaseModel):
     audience_context: AudienceContextV1
     indexed_max_results: int | None = Field(default=None, ge=1, le=500)
     ordered_live_call_proposals: tuple[LiveCallProposalV1, ...] = ()
+    required_evidence_obligations: tuple[RequiredEvidenceObligationV1, ...] = ()
     provider_request: Any | None = None
     request_id: str = Field(default_factory=lambda: str(uuid4()), min_length=1)
     run_id: str | None = Field(default=None, min_length=1)
@@ -346,6 +353,21 @@ class WorkspaceAskServiceV2:
             include_evidence = getattr(provider_expansion, "include_evidence", None)
             if callable(include_evidence):
                 evidence = _validate_provider_evidence(include_evidence(evidence))
+        admissibility = evaluate_execution_admissibility(
+            validated_plan=validated_plan,
+            execution=execution,
+        )
+        if admissibility.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED:
+            return self._finalize_success(
+                initial,
+                configuration=configuration,
+                execution=execution,
+                answer=None,
+                citations=[],
+                status=AskRunStatus.INSUFFICIENT_EVIDENCE,
+                provider_coverage=provider_coverage,
+                evidence_admissibility=admissibility,
+            )
         try:
             assembler = HybridAskAnswerAssemblerV2(self.llm_adapter)
             assembly = assembler.assemble(question=command.question, evidence=evidence)
@@ -358,6 +380,7 @@ class WorkspaceAskServiceV2:
                     citations=[],
                     status=AskRunStatus.INSUFFICIENT_EVIDENCE,
                     provider_coverage=provider_coverage,
+                    evidence_admissibility=admissibility,
                 )
             citations = self._project_citations(
                 assembly.used_evidence_ids,
@@ -379,6 +402,7 @@ class WorkspaceAskServiceV2:
                 citations=citations,
                 status=AskRunStatus.COMPLETED,
                 provider_coverage=provider_coverage,
+                evidence_admissibility=admissibility,
             )
         except WorkspaceAskV2Error as exc:
             return self._finalize_failure(
@@ -441,6 +465,7 @@ class WorkspaceAskServiceV2:
             mode=command.requested_mode,
             indexed_retrieval_directive=indexed_directive,
             ordered_live_call_proposals=ordered_live_call_proposals,
+            required_evidence_obligations=command.required_evidence_obligations,
             budget_snapshot=EffectiveLiveCallBudgetV1(
                 max_live_calls=effective_policy.max_live_calls,
                 max_total_duration_ms=effective_policy.max_total_duration_ms,
@@ -506,6 +531,7 @@ class WorkspaceAskServiceV2:
             query_mode=command.requested_mode,
             configuration_revision=configuration.configuration_revision,
             plan_id=validated_plan.plan.plan_id,
+            required_evidence_obligations=validated_plan.plan.required_evidence_obligations,
             live_result_retention=self._live_retention(configuration),
             provider_coverage=(
                 self._provider_strategy.coverage(
@@ -547,6 +573,7 @@ class WorkspaceAskServiceV2:
         citations: list[Any],
         status: AskRunStatus,
         provider_coverage: Any = None,
+        evidence_admissibility: EvidenceAdmissibilityResultV1 | None = None,
     ) -> WorkspaceAskRunV2:
         return self._finalize_run_model(
             initial,
@@ -561,6 +588,7 @@ class WorkspaceAskServiceV2:
                 "truncation_state": execution.truncation_state,
                 "partial_failure": execution.partial_failure,
                 "provider_coverage": provider_coverage,
+                "evidence_admissibility": evidence_admissibility,
                 "completed_at": self._clock(),
                 "error": None,
             },

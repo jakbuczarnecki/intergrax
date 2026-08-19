@@ -4,7 +4,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from enum import StrEnum
+from typing import Annotated, Any, Literal, Protocol, runtime_checkable
 
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     KnowledgeAudienceEligibilityV1,
@@ -191,6 +192,42 @@ class LiveCallProposalV1(BaseModel):
         return _reject_forbidden_model_controlled_fields(data)
 
 
+class IndexedEvidenceRequirementV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    requirement_type: Literal["indexed"] = "indexed"
+    requirement_id: str = Field(..., min_length=1, max_length=128)
+    semantic_role: str = Field(..., min_length=1, max_length=256)
+    indexed_source_binding_id: str | None = Field(
+        default=None, min_length=1, max_length=128
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_forbidden_fields(cls, data: Any) -> Any:
+        return _reject_forbidden_model_controlled_fields(data)
+
+
+class LiveEvidenceRequirementV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    requirement_type: Literal["live"] = "live"
+    requirement_id: str = Field(..., min_length=1, max_length=128)
+    semantic_role: str = Field(..., min_length=1, max_length=256)
+    call_id: str = Field(..., min_length=1, max_length=128)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_forbidden_fields(cls, data: Any) -> Any:
+        return _reject_forbidden_model_controlled_fields(data)
+
+
+RequiredEvidenceObligationV1 = Annotated[
+    IndexedEvidenceRequirementV1 | LiveEvidenceRequirementV1,
+    Field(discriminator="requirement_type"),
+]
+
+
 class EvidencePlanV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -201,6 +238,7 @@ class EvidencePlanV1(BaseModel):
     mode: QueryPolicyModeV2
     indexed_retrieval_directive: IndexedRetrievalDirectiveV1 | None = None
     ordered_live_call_proposals: tuple[LiveCallProposalV1, ...] = ()
+    required_evidence_obligations: tuple[RequiredEvidenceObligationV1, ...] = ()
     budget_snapshot: EffectiveLiveCallBudgetV1
     audience_context: AudienceContextV1
 
@@ -392,6 +430,35 @@ def _find_active_attachment(
     return None
 
 
+def _validate_required_evidence_obligations(
+    *,
+    plan: EvidencePlanV1,
+    configuration: WorkspaceKnowledgeConfigurationV1,
+    planned_call_ids: set[str],
+) -> None:
+    seen_requirement_ids: set[str] = set()
+    indexed_binding_ids = {
+        binding.indexed_source_binding_id for binding in configuration.indexed_sources
+    }
+    for obligation in plan.required_evidence_obligations:
+        if obligation.requirement_id in seen_requirement_ids:
+            raise HybridAskPolicyError("duplicate_requirement_id")
+        seen_requirement_ids.add(obligation.requirement_id)
+        if isinstance(obligation, IndexedEvidenceRequirementV1):
+            if plan.mode is QueryPolicyModeV2.LIVE_ONLY:
+                raise HybridAskPolicyError("required_evidence_mode_mismatch")
+            if (
+                obligation.indexed_source_binding_id is not None
+                and obligation.indexed_source_binding_id not in indexed_binding_ids
+            ):
+                raise HybridAskPolicyError("indexed_binding_not_found")
+        elif isinstance(obligation, LiveEvidenceRequirementV1):
+            if plan.mode is QueryPolicyModeV2.INDEXED_ONLY:
+                raise HybridAskPolicyError("required_evidence_mode_mismatch")
+            if obligation.call_id not in planned_call_ids:
+                raise HybridAskPolicyError("unknown_live_call_reference")
+
+
 def validate_evidence_plan(
     *,
     plan: EvidencePlanV1,
@@ -574,6 +641,12 @@ def validate_evidence_plan(
             max_provider_page_size=HARD_MAX_PROVIDER_PAGE_SIZE,
             max_content_bytes_per_item=HARD_MAX_CONTENT_BYTES_PER_ITEM,
         )
+
+    _validate_required_evidence_obligations(
+        plan=plan,
+        configuration=configuration,
+        planned_call_ids=seen_call_ids,
+    )
 
     return ValidatedEvidencePlanV1(
         plan=plan,

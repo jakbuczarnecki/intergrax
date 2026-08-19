@@ -170,6 +170,7 @@ EvidencePlanV1
 ├── mode: indexed_only | live_only | hybrid
 ├── indexed_retrieval_directive (optional per mode)
 ├── ordered_live_call_proposals: list[LiveCallProposalV1]
+├── required_evidence_obligations: list[RequiredEvidenceObligationV1]
 ├── budget_snapshot
 └── audience_context
 ```
@@ -216,6 +217,50 @@ arbitrary MCP tool
 ```
 
 These are resolved from committed configuration and registered capability descriptors.
+
+### 6.4 Required evidence obligations
+
+`EvidencePlanV1` may declare **typed, structural obligations** that execution must satisfy before answer synthesis:
+
+```text
+RequiredEvidenceObligationV1 (discriminated union)
+├── IndexedEvidenceRequirementV1
+│   ├── requirement_id (unique, nonblank)
+│   ├── semantic_role (audit/explanation only — not enforcement)
+│   └── indexed_source_binding_id (optional scope)
+└── LiveEvidenceRequirementV1
+    ├── requirement_id (unique, nonblank)
+    ├── semantic_role (audit/explanation only — not enforcement)
+    └── call_id (must reference a planned live call)
+```
+
+Plan validation fails closed on duplicate `requirement_id`, unknown `call_id`, mode/type mismatch, or unknown indexed binding.
+
+### 6.5 Evidence Admissibility gate
+
+After orchestration, a **deterministic evaluator** compares execution evidence against the validated obligations. It does not call providers, LLMs, or repositories.
+
+```mermaid
+flowchart TD
+    A[Evidence Plan] --> B[Required Evidence Obligations]
+    B --> C[Plan Validation]
+    C --> D[Execution]
+    D --> E{Admissibility Gate}
+    E -->|SATISFIED| F[Bounded LLM Synthesis]
+    E -->|UNSATISFIED| G[No Answer Synthesis]
+    F --> H[Citation Validation]
+    G --> I[Persist Run + Admissibility Result]
+    H --> I
+```
+
+| Invariant | Meaning |
+|-----------|---------|
+| Structural matching only | Satisfaction uses evidence type, `call_id`, and `indexed_source_binding_id` — never answer text or semantic labels |
+| Earlier gate | Admissibility runs **before** `HybridAskAnswerAssemblerV2` |
+| Defense in depth | Citation validation and HYBRID indexed+live citation rules remain after synthesis |
+| EPHEMERAL durability | Persisted runs store obligation snapshots, matched evidence IDs, and reason codes — never raw live bodies |
+
+**Why this matters:** evidence diversity (indexed **and** live present) is not the same as evidence **completeness** (every declared obligation structurally satisfied). Admissibility enforces completeness; citation rules enforce provenance integrity.
 
 ---
 
