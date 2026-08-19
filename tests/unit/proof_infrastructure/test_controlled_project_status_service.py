@@ -114,13 +114,15 @@ def test_invalid_project_status_payload_fails_safely(service_client: TestClient)
     assert missing.status_code == 404
 
 
-def test_real_http_server_contract() -> None:
+def test_real_http_server_contract_and_deterministic_shutdown() -> None:
     from proof_infrastructure.controlled_project_status_service.lifecycle import (
         ControlledProjectStatusServer,
     )
 
     server = ControlledProjectStatusServer.start()
     try:
+        health = httpx.get(f"{server.base_url}/health", timeout=2.0)
+        assert health.status_code == 200
         response = httpx.get(
             f"{server.base_url}/projects/{ORION_FIXTURE_PROJECT_ID}/status",
             timeout=2.0,
@@ -134,3 +136,7 @@ def test_real_http_server_contract() -> None:
         ).json()["read_request_count"] == 1
     finally:
         server.stop()
+
+    assert not server.thread.is_alive()
+    with pytest.raises(httpx.HTTPError):
+        httpx.get(f"{server.base_url}/health", timeout=1.0)

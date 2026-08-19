@@ -12,7 +12,7 @@ from intergrax.integrations.providers.project_status.knowledge_read import (
     ProjectStatusReadClient,
     ProjectStatusSnapshotV1,
 )
-from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.integrations.categories.collaboration import IssueTrackerIntegrationContract
 
 __all__ = [
     "PROJECT_STATUS_PROVIDER_ID",
@@ -22,7 +22,7 @@ __all__ = [
 ]
 
 
-class ProjectStatusIntegration:
+class ProjectStatusIntegration(IssueTrackerIntegrationContract):
     """Single public Project Status entrypoint for Vendor Knowledge live reads."""
 
     config: ProjectStatusIntegrationConfig = ProjectStatusIntegrationConfig(
@@ -47,8 +47,13 @@ class ProjectStatusIntegration:
         *,
         config: ProjectStatusIntegrationConfig | None = None,
     ) -> ProjectStatusIntegration:
-        integration = cls()
-        if config is not None:
-            integration.config = config
+        integration = cls.for_provider(
+            provider_id=PROJECT_STATUS_PROVIDER_ID,
+            display_name="Project Status",
+            config=config
+            or ProjectStatusIntegrationConfig(
+                base_url="http://127.0.0.1:8765",
+            ),
+        )
         integration._client = client
         return integration

@@ -27,6 +27,8 @@ class ControlledProjectStatusServer:
     base_url: str
     port: int
     store: ProjectStatusStore
+    server: uvicorn.Server
+    thread: threading.Thread
 
     @classmethod
     def start(cls, *, store: ProjectStatusStore | None = None) -> ControlledProjectStatusServer:
@@ -54,13 +56,23 @@ class ControlledProjectStatusServer:
                 time.sleep(0.02)
                 continue
             if response.status_code == 200:
-                return cls(base_url=base_url, port=port, store=status_store)
+                return cls(
+                    base_url=base_url,
+                    port=port,
+                    store=status_store,
+                    server=server,
+                    thread=thread,
+                )
             last_error = f"status={response.status_code}"
             time.sleep(0.02)
         server.should_exit = True
-        thread.join(timeout=2.0)
+        thread.join(timeout=5.0)
+        if thread.is_alive():
+            raise RuntimeError("project_status_service_startup_shutdown_timeout")
         raise RuntimeError(f"project_status_service_startup_failed: {last_error}")
 
     def stop(self) -> None:
-        # Daemon thread; process exit cleans up. Explicit stop is a no-op for tests.
-        return None
+        self.server.should_exit = True
+        self.thread.join(timeout=5.0)
+        if self.thread.is_alive():
+            raise RuntimeError("project_status_service_shutdown_timeout")

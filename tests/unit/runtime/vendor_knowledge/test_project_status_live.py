@@ -10,9 +10,14 @@ import pytest
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.project_status.bundle import create_project_status_integration
+from intergrax.integrations.providers.project_status.integration import ProjectStatusIntegration
 from intergrax.integrations.providers.project_status.knowledge_read import (
     PROJECT_STATUS_PROVIDER_ID,
     PROJECT_STATUS_SOURCE_KIND,
+)
+from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
+from intergrax.runtime.vendor_knowledge.live.bootstrap import (
+    build_vendor_knowledge_live_registration_registry,
 )
 from intergrax.runtime.vendor_knowledge.live import (
     EffectiveLiveCallBudgetV1,
@@ -21,6 +26,9 @@ from intergrax.runtime.vendor_knowledge.live import (
     LiveExecutionOutcomeV1,
     LiveResultRetentionV1,
 )
+from intergrax.runtime.vendor_knowledge.provider_composition import (
+    build_default_vendor_knowledge_connection_factory_registry,
+)
 from intergrax.runtime.vendor_knowledge.live.project_status import (
     PROJECT_STATUS_READ_CAPABILITY_ID,
     ProjectStatusReadLiveHandlerV1,
@@ -28,7 +36,21 @@ from intergrax.runtime.vendor_knowledge.live.project_status import (
     build_project_status_live_registration_bundles,
 )
 from intergrax.runtime.vendor_knowledge.live.registration import publish_live_registration_bundles
+from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
+    DocumentStoreTenantConnectionRepository,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+    TenantConnectionRehydrationStatus,
+    TenantConnectionRehydrator,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connections import (
+    TenantConnection,
+    TenantConnectionAdministrativeStatus,
+)
 from local_workspace_application.workspaces.hybrid_ask_execution import LiveCapabilityExecutorV1
+from local_workspace_application.workspaces.hybrid_ask_execution import (
+    KnowledgeConnectionRegistryIntegrationResolverV1,
+)
 from local_workspace_application.workspaces.hybrid_ask_policy import (
     ExecutableLiveCallV1,
     ResolvedLiveResourceScopeV1,
@@ -43,12 +65,16 @@ from proof_infrastructure.controlled_project_status_service.seed import (
     ORION_FIXTURE_BLOCKER_ID,
     ORION_FIXTURE_PROJECT_ID,
 )
+from tests.unit.runtime.vendor_knowledge.test_tenant_connection_document_store import (
+    ConditionalInMemoryDocumentStore,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
 
 _NOW = datetime(2026, 8, 19, 12, 0, tzinfo=UTC)
 _TENANT = "tenant-proof"
 _CONNECTION = "conn.project-status"
+_CREDENTIAL_REF = "secret.project-status"
 
 
 @pytest.fixture
@@ -105,6 +131,21 @@ class _ConnectionResolver:
     ) -> object:
         self.calls.append((tenant_id, connection_ref, provider_id, integration_kind))
         return self._integration
+
+
+class _RecordingSecretsStore:
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def get_secret(self, path: str, *, version: str | None = None) -> str:
+        self.calls.append(path)
+        return "project-status-proof-credential"
+
+    def put_secret(self, path: str, value: str) -> None:
+        return None
+
+    def delete_secret(self, path: str) -> None:
+        return None
 
 
 async def test_handler_reaches_real_http_service_and_normalizes_item(
@@ -199,6 +240,80 @@ async def test_live_capability_executor_uses_resolver_and_registered_handler(
     ).json()["read_request_count"] == 1
 
 
+async def test_live_capability_executor_rehydrates_project_status_from_tenant_connection(
+    project_status_server: ControlledProjectStatusServer,
+) -> None:
+    project_status_server.store.reset_read_request_count()
+    repository = DocumentStoreTenantConnectionRepository(ConditionalInMemoryDocumentStore())
+    connection = TenantConnection(
+        connection_ref=_CONNECTION,
+        tenant_id=_TENANT,
+        provider_id=PROJECT_STATUS_PROVIDER_ID,
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        safe_display_name="Project Status proof",
+        administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
+        credential_ref=_CREDENTIAL_REF,
+        validated_secret_free_config={
+            "base_url": project_status_server.base_url,
+            "timeout_seconds": 2.0,
+        },
+        configuration_version=1,
+        created_at=_NOW,
+        updated_at=_NOW,
+    )
+    repository.create(connection)
+    connection_registry = KnowledgeConnectionRegistry()
+    secrets = _RecordingSecretsStore()
+    rehydration = TenantConnectionRehydrator(
+        repository=repository,
+        secrets_store=secrets,
+        integration_factory=build_default_vendor_knowledge_connection_factory_registry(),
+        connection_registry=connection_registry,
+    )
+
+    result = rehydration.rehydrate_connection(
+        tenant_id=_TENANT,
+        connection_ref=_CONNECTION,
+    )
+
+    assert result.status is TenantConnectionRehydrationStatus.REGISTERED
+    assert secrets.calls == [_CREDENTIAL_REF]
+    integration = connection_registry.resolve(
+        tenant_id=_TENANT,
+        connection_ref=_CONNECTION,
+        provider_id=PROJECT_STATUS_PROVIDER_ID,
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+    )
+    assert isinstance(integration, ProjectStatusIntegration)
+    assert integration.provider_id == PROJECT_STATUS_PROVIDER_ID
+    assert integration.integration_kind == IntegrationCategory.ISSUE_TRACKER.value
+    assert integration.config.base_url == project_status_server.base_url
+
+    executor = LiveCapabilityExecutorV1(
+        published_registration=build_vendor_knowledge_live_registration_registry().publish(),
+        integration_resolver=KnowledgeConnectionRegistryIntegrationResolverV1(
+            connection_registry
+        ),
+        clock=lambda: _NOW,
+    )
+
+    execution = await executor.execute(
+        run_id="run-rehydrated-project-status",
+        tenant_id=_TENANT,
+        workspace_id="workspace-proof",
+        call=_executable_call(),
+        audience=KnowledgeQueryAudienceV1.PERSONAL,
+        retention=LiveResultRetentionV1.EPHEMERAL,
+    )
+
+    assert execution.normalized_outcome is LiveExecutionOutcomeV1.COMPLETED
+    assert execution.source_kind == PROJECT_STATUS_SOURCE_KIND
+    assert httpx.get(
+        f"{project_status_server.base_url}/control/request-count",
+        timeout=2.0,
+    ).json()["read_request_count"] == 1
+
+
 async def test_state_change_open_to_closed_without_provider_reconfiguration(
     project_status_server: ControlledProjectStatusServer,
 ) -> None:
@@ -255,6 +370,23 @@ async def test_state_change_open_to_closed_without_provider_reconfiguration(
         f"{project_status_server.base_url}/control/request-count",
         timeout=2.0,
     ).json()["read_request_count"] == 1
+
+
+async def test_knowledge_connection_registry_rejects_mismatched_project_status_identity(
+    project_status_server: ControlledProjectStatusServer,
+) -> None:
+    integration = create_project_status_integration(
+        base_url=project_status_server.base_url,
+    )
+    registry = KnowledgeConnectionRegistry()
+    with pytest.raises(ValueError, match="provider_id does not match"):
+        registry.register(
+            tenant_id=_TENANT,
+            connection_ref=_CONNECTION,
+            provider_id="wrong_provider",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            integration=integration,
+        )
 
 
 async def test_not_found_maps_to_live_provider_not_found(
