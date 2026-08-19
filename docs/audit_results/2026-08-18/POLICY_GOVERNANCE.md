@@ -2,7 +2,8 @@
 
 ## Metadata
 
-- **Campaign date:** 2026-08-18
+- **campaign_id:** `2026-08-18`
+- **campaign_started_at:** `2026-08-18`
 - **Layer code:** POLICY_GOVERNANCE
 - **Tier(s):** cross-domain Tier-0 policy contracts · Tier-1 runtime policy / meaningful-side-effect evaluation · Tier-2/3 product adapters
 - **layer_audited_at:** 2026-08-19

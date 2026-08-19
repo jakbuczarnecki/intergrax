@@ -2,7 +2,8 @@
 
 ## Metadata
 
-- **Campaign date:** 2026-08-18
+- **campaign_id:** `2026-08-18`
+- **campaign_started_at:** `2026-08-18`
 - **Layer code:** REASONING_PLANNING
 - **Tier(s):** Tier-1 Nexus planning · Tier-1 tool planning · Tier-2 cognitive patterns
 - **layer_audited_at:** 2026-08-19

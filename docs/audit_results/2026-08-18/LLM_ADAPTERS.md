@@ -2,7 +2,8 @@
 
 ## Metadata
 
-- **Campaign date:** 2026-08-18
+- **campaign_id:** `2026-08-18`
+- **campaign_started_at:** `2026-08-18`
 - **Layer code:** LLM_ADAPTERS
 - **Tier(s):** cross-domain Tier-0 LLM contracts · Tier-1 Nexus planning/classification · Tier-1 ACP `StepLLMRouter` · provider adapters
 - **layer_audited_at:** 2026-08-19

@@ -2,7 +2,8 @@
 
 ## Metadata
 
-- **Campaign date:** 2026-08-18
+- **campaign_id:** `2026-08-18`
+- **campaign_started_at:** `2026-08-18`
 - **Layer code:** EXECUTION_RUNTIME
 - **Tier(s):** Tier-1 Unified Execution Runtime · ACP/UAEP · HarnessKernel · cancellation/checkpoint
 - **layer_audited_at:** 2026-08-19
