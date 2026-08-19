@@ -1357,7 +1357,15 @@ LKW may expose reusable platform gaps during this implementation. Those gaps imp
 
 ---
 
-## 20. Final decision rule
+## 20. Cross-product reuse proof experiment
+
+When a later product is intentionally used to test cross-product platform reuse, the experiment must be **pre-registered** using [Cross-Product Reuse Proof Contract](PRODUCT_REUSE_PROOF.md) **before** Product #2 implementation begins.
+
+Product-first remains authoritative: the second product must originate from a real product hypothesis and customer or workflow evidence — not from a desire to exercise platform features or improve reuse metrics. The proof observes inheritance from Intergrax; it does not define the product.
+
+---
+
+## 21. Final decision rule
 
 When uncertain what to build next, use this rule:
 
