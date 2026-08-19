@@ -190,6 +190,32 @@ Verify (every harness PR):
 - May reference/absorb §6.1ax PF-TIER-ENFORCEMENT conceptually; do **not** mark PF-TIER-ENFORCEMENT Done merely because this block exists.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
 - **Not implemented** by audit persistence task AUDIT-20260818-TIER-LAYER-PERSIST.
+- **Cross-ref:** [`AUDIT-20260818-PLATFORM_FOUNDATION-01`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md) revalidates TL-FIX-A / §6.1ax scope; [`AUDIT-20260818-PLATFORM_FOUNDATION-04`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md) maps to deliverable **F** (integration-path protection).
+
+<a id="61ax-pf-proof-integrity--foundation-proof-gate-contract-protocol-v222-2026-08-18"></a>
+
+### PF-PROOF-INTEGRITY — Foundation proof and gate-contract parity (Protocol v2.2 · 2026-08-18)
+
+**Status:** `PLANNED`
+**Priority:** P1
+**Type:** Wire / Proof / Doc
+**Source:** [`AUDIT-20260818-PLATFORM_FOUNDATION-02`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md), [`AUDIT-20260818-PLATFORM_FOUNDATION-03`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md), [`AUDIT-20260818-PLATFORM_FOUNDATION-05`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Deliverable intent:**
+
+- foundation proof runners (`intergrax doctor --ci`, umbrella gates such as `check_audit_ideal_gates.py`) resolve scripts through one canonical path registry or equivalent strongly owned mechanism (`scripts/ci/script_paths.py` or successor)
+- required checks fail closed when a declared script cannot be resolved or executed — no PASS-like `skip missing` for required guards
+- umbrella gates execute the complete intended check set and collect failure state without short-circuiting after the first non-zero result
+- documented §6.1 harness PR gate contract and actual CI smoke/full wiring describe the same required enforcement — do not weaken the documented target to match current CI subset
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- PF-02/PF-03 are proof-runner defects — do **not** treat them as tier-model redesign.
+- PF-04 integration-path protection remains owned by **TL-FIX-A** / §6.1ax deliverable **F** — this block does not duplicate that work.
+- PF-06 (`DeploymentTier.PRODUCT`) remains subordinate cleanup under §6.1ax deliverable **H**.
+- **Not implemented** by audit persistence task AUDIT-20260818-PLATFORM_FOUNDATION-PERSIST.
 
 ### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae)
 

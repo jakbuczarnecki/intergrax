@@ -87,7 +87,8 @@ Execution flow: user/API (Tier-3) → Nexus intake (Tier-1) → selected agents 
 ## Current limitations
 
 - Tier-boundary enforcement is **partial** — scanner roots are manually enumerated; full package→tier classification is tracked as open work ([§6.1ax](../maintainers/plans/PLATFORM_FOUNDATION.md#61ax-pf-tier-enforcement--production-tier-boundary-qualification)).
-- Protocol v2 audit [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) records **target invariants only** — remediation not implemented by audit persistence alone.
+- Protocol v2 audits [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) and [`PLATFORM_FOUNDATION`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md) record **target invariants only** — remediation not implemented by audit persistence alone.
+- Foundation proof runners (`intergrax doctor --ci`, umbrella gates) have known path-resolution and fail-open gaps — tracked as **PF-PROOF-INTEGRITY** in plan; these are proof-runner defects, not reasons to redesign the four-tier model.
 - Extended platform depth and production gate registers live in satellites — not required for first-contact reading.
 
 ## Current maturity
@@ -108,7 +109,7 @@ Platform Foundation evidence is **gate- and audit-oriented**:
 - **CI gates:** `uv run pytest -m gate -q` · `uv run intergrax doctor --ci` (plan §6.1 default).
 - **Tier import guards:** `scripts/check_no_upward_application_imports.py`, `scripts/maintenance/check_intergrax_no_applications_imports.py`, `scripts/maintenance/check_agents_no_tier3_imports.py`.
 - **Harness evidence pack:** [`HARNESS_EVIDENCE_PACK.md`](../maintainers/plans/HARNESS_EVIDENCE_PACK.md) — smoke audit and artifact checker closeouts.
-- **Tier-boundary audits:** PF-TIER snapshot `4c92e0a` · Protocol v2 [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md).
+- **Tier-boundary audits:** PF-TIER snapshot `4c92e0a` · Protocol v2 [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) · [`PLATFORM_FOUNDATION`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md).
 - **Platform audit protocol:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 
 Gate green does **not** substitute for closed tier-enforcement qualification or customer production evidence.
@@ -317,6 +318,23 @@ Accepted Protocol v2 audit layer [`TIER_LAYER_BOUNDARIES`](../../audit_results/2
 5. **Consumer static-contract coverage** — static-contract/dynamic-reflection governance MUST cover material production consumer boundaries, including Tier-3 `applications/`, or have explicit typed exception ownership ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-05`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
 
 Remediation tracked as **TL-FIX-A** in [plan §6.1ax TL-FIX-A](../maintainers/plans/PLATFORM_FOUNDATION.md#61ax-tl-fix-a--executable-tier-ownership-protocol-v221-2026-08-18). **Not implemented** by audit persistence.
+
+<a id="protocol-v2-platform-foundation-target-invariants-2026-08-18"></a>
+
+### Protocol v2 platform foundation target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`PLATFORM_FOUNDATION`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Prior PF-TIER-ENFORCEMENT audit (`4c92e0a`) and [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) remain historical — not rewritten. Target state only:
+
+1. **Authoritative package→tier classification** — one canonical source feeds semantic forbidden-edge enforcement; unclassified production packages fail closed ([`AUDIT-20260818-PLATFORM_FOUNDATION-01`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md)); reuse **TL-FIX-A** / §6.1ax — no competing remediation architecture.
+2. **Fail-closed foundation proof runners** — `intergrax doctor --ci` and equivalent required checks MUST resolve scripts through one canonical path registry (or equivalent strongly owned mechanism) and MUST NOT treat missing required scripts as PASS-like skip ([`AUDIT-20260818-PLATFORM_FOUNDATION-02`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md)).
+3. **Complete umbrella gate execution** — umbrella gates resolve canonical script paths and execute the full intended check set, collecting failure state without short-circuiting remaining checks ([`AUDIT-20260818-PLATFORM_FOUNDATION-03`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md)).
+4. **Active integration-path protection** — the shared integration branch relied on for development MUST receive appropriate automated regression/tier protection; exact workflow design remains flexible ([`AUDIT-20260818-PLATFORM_FOUNDATION-04`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md)).
+5. **Gate-contract parity** — documented harness PR gate contract and actual CI wiring MUST describe the same required enforcement; do not weaken the target to match current CI subset ([`AUDIT-20260818-PLATFORM_FOUNDATION-05`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md)).
+6. **Legacy tier label cleanup** — remove `DeploymentTier.PRODUCT` / `TIER_PRODUCT` when revalidation confirms no production consumer ([`AUDIT-20260818-PLATFORM_FOUNDATION-06`](../../audit_results/2026-08-18/PLATFORM_FOUNDATION.md)).
+
+PF-02 and PF-03 are **proof-runner integrity** defects. They do **not** invalidate the four-tier topology or justify redesigning tier ownership.
+
+Remediation: **TL-FIX-A** / §6.1ax (PF-01, PF-04) and **PF-PROOF-INTEGRITY** (PF-02, PF-03, PF-05) in [plan](../maintainers/plans/PLATFORM_FOUNDATION.md). **Not implemented** by audit persistence.
 
 ## Relationship To “Layer 1 / 2 / 3” Naming
 

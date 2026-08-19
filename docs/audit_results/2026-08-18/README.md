@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — nine completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`) |
+| `scope` | Platform audit — ten completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -37,6 +37,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | LLM_ADAPTERS | COMPLETE | `b1e4de1d776acc64e8461f7dcdce09cd03d07b80` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `d7988045cfa550c4338eedc326b54933c4058541` | [LLM_ADAPTERS.md](LLM_ADAPTERS.md) |
 | REASONING_PLANNING | COMPLETE | `fe876d301df07ce22e438b0a55167275ccec32b5` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `d7988045cfa550c4338eedc326b54933c4058541` | [REASONING_PLANNING.md](REASONING_PLANNING.md) |
 | EXECUTION_RUNTIME | COMPLETE | `df7aaac19b20e84c06d6233492cdb4365a892f4f` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `d7988045cfa550c4338eedc326b54933c4058541` | [EXECUTION_RUNTIME.md](EXECUTION_RUNTIME.md) |
+| PLATFORM_FOUNDATION | COMPLETE | `f21d5c3dc417907acb50d597642d3892e704bd47` | FAIL | 0 | 5 | 0 | 1 | COMPLETE | COMPLETE | `—` | [PLATFORM_FOUNDATION.md](PLATFORM_FOUNDATION.md) |
 
 ## Finding register
 
@@ -100,6 +101,12 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-EXECUTION_RUNTIME-04 | EXECUTION_RUNTIME | HIGH | RELIABILITY | ACCEPTED | UER-FIX-D | — | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` | `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — UER-FIX-D | — | — | operator accepted 2026-08-19 |
 | AUDIT-20260818-EXECUTION_RUNTIME-05 | EXECUTION_RUNTIME | HIGH | RELIABILITY | ACCEPTED | UER-FIX-E | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — UER-FIX-E | — | — | operator accepted 2026-08-19 |
 | AUDIT-20260818-EXECUTION_RUNTIME-06 | EXECUTION_RUNTIME | MEDIUM | RELIABILITY | ACCEPTED | UER-FIX-E | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — UER-FIX-E | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-PLATFORM_FOUNDATION-01 | PLATFORM_FOUNDATION | HIGH | ARCHITECTURE DEFECT / PROOF | ACCEPTED | TL-FIX-A | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 platform foundation target invariants (2026-08-18)](#protocol-v2-platform-foundation-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — TL-FIX-A / §6.1ax PF-TIER-ENFORCEMENT | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-PLATFORM_FOUNDATION-02 | PLATFORM_FOUNDATION | HIGH | IMPLEMENTATION DEFECT / PROOF | ACCEPTED | PF-PROOF-INTEGRITY | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 platform foundation target invariants (2026-08-18)](#protocol-v2-platform-foundation-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — PF-PROOF-INTEGRITY | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-PLATFORM_FOUNDATION-03 | PLATFORM_FOUNDATION | HIGH | IMPLEMENTATION DEFECT / TEST GAP | ACCEPTED | PF-PROOF-INTEGRITY | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 platform foundation target invariants (2026-08-18)](#protocol-v2-platform-foundation-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — PF-PROOF-INTEGRITY | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-PLATFORM_FOUNDATION-04 | PLATFORM_FOUNDATION | HIGH | RELIABILITY / CI / PROOF | ACCEPTED | TL-FIX-A | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 platform foundation target invariants (2026-08-18)](#protocol-v2-platform-foundation-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — TL-FIX-A / §6.1ax PF-TIER-ENFORCEMENT | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-PLATFORM_FOUNDATION-05 | PLATFORM_FOUNDATION | HIGH | IMPLEMENTATION/ARCHITECTURE DRIFT | ACCEPTED | PF-PROOF-INTEGRITY | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 platform foundation target invariants (2026-08-18)](#protocol-v2-platform-foundation-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — PF-PROOF-INTEGRITY | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-PLATFORM_FOUNDATION-06 | PLATFORM_FOUNDATION | LOW | LEGACY / CONTRACT CLEANLINESS | ACCEPTED | TL-FIX-A | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 platform foundation target invariants (2026-08-18)](#protocol-v2-platform-foundation-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — §6.1ax PF-TIER-ENFORCEMENT deliverable H | — | — | operator accepted 2026-08-19 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
@@ -182,7 +189,7 @@ Ninth layer summary:
 | SHM-FIX-B | AUDIT-20260818-STRATEGIC_HARNESS_MODEL-06, 08, 09 | ACCEPTED / PLANNED | identity and typed context |
 | SHM-FIX-C | AUDIT-20260818-STRATEGIC_HARNESS_MODEL-05, 07 | ACCEPTED / PLANNED | host and platform neutrality |
 | SHM-FIX-D | AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10 | ACCEPTED / PLANNED | maturity recertification after A–C verification |
-| TL-FIX-A | AUDIT-20260818-TIER_LAYER_BOUNDARIES-01, 05 | ACCEPTED / PLANNED | executable tier ownership — not implemented in this persistence task |
+| TL-FIX-A | AUDIT-20260818-TIER_LAYER_BOUNDARIES-01, 05; AUDIT-20260818-PLATFORM_FOUNDATION-01, 04 | ACCEPTED / PLANNED | executable tier ownership + integration-path protection — not implemented in this persistence task |
 | TL-FIX-B | AUDIT-20260818-TIER_LAYER_BOUNDARIES-02 | ACCEPTED / PLANNED | single agent ownership |
 | TL-FIX-C | AUDIT-20260818-TIER_LAYER_BOUNDARIES-03 | ACCEPTED / PLANNED | product-neutral Tier-3 platform |
 | TL-FIX-D | AUDIT-20260818-TIER_LAYER_BOUNDARIES-04 | ACCEPTED / PLANNED | public application composition contract |
@@ -218,3 +225,4 @@ Ninth layer summary:
 | UER-FIX-C | AUDIT-20260818-EXECUTION_RUNTIME-03 | ACCEPTED / PLANNED | resume identity continuity |
 | UER-FIX-D | AUDIT-20260818-EXECUTION_RUNTIME-04 | ACCEPTED / PLANNED | runtime exception containment |
 | UER-FIX-E | AUDIT-20260818-EXECUTION_RUNTIME-05, 06 | ACCEPTED / PLANNED | cooperative cancellation and checkpoint invalidation |
+| PF-PROOF-INTEGRITY | AUDIT-20260818-PLATFORM_FOUNDATION-02, 03, 05 | ACCEPTED / PLANNED | foundation proof runners and CI/docs gate-contract parity — not implemented in this persistence task |
