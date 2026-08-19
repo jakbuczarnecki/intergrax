@@ -5,16 +5,17 @@
 from __future__ import annotations
 
 import asyncio
-import json
-from typing import Any
-
 import httpx
 
 from local_workspace_application.workspaces.ask_models import AskRunStatus
 from local_workspace_application.workspaces.hybrid_ask_models import (
     EvidenceAdmissibilityStatusV1,
     EvidenceTypeV1,
+    PersistedIndexedEvidenceV2,
     PersistedLiveEvidenceProvenanceV2,
+)
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    LiveAccessBindingStatusV1,
 )
 from proof_infrastructure.controlled_project_status_service.lifecycle import (
     ControlledProjectStatusServer,
@@ -28,7 +29,12 @@ from proof_infrastructure.controlled_project_status_service.seed import (
     seed_orion_fixture,
 )
 from proof_infrastructure.governed_hybrid_knowledge_proof.fixtures import (
+    DEPLOYMENT_POLICY_CONTENT,
     ORION_DEPLOYMENT_QUESTION,
+    PROOF_BINDING_ID,
+    PROOF_CONNECTION_REF,
+    PROOF_TENANT_ID,
+    PROOF_WORKSPACE_ID,
 )
 from proof_infrastructure.governed_hybrid_knowledge_proof.harness import (
     GovernedHybridKnowledgeHarness,
@@ -37,6 +43,8 @@ from proof_infrastructure.governed_hybrid_knowledge_proof.harness import (
 from proof_infrastructure.governed_hybrid_knowledge_proof.models import (
     FlagshipProofResultV1,
     FlagshipProofScenarioResultV1,
+    FlagshipScenarioChecksV1,
+    FlagshipScenarioMetricsV1,
     SemanticDecisionV1,
 )
 
@@ -54,13 +62,14 @@ def normalize_decision(*, answer: str | None, status: AskRunStatus) -> SemanticD
     return SemanticDecisionV1.CANNOT_DETERMINE
 
 
-def _assert_ephemeral_live_body_not_persisted(run_payload: dict[str, Any]) -> bool:
-    serialized = json.dumps(run_payload)
-    if "readiness_score" in serialized and "persisted_evidence" in serialized:
-        for item in run_payload.get("persisted_evidence", []):
-            if item.get("evidence_type") == "live" and "content" in item:
+def _assert_ephemeral_live_body_not_persisted(
+    persisted_evidence: tuple[PersistedIndexedEvidenceV2 | PersistedLiveEvidenceProvenanceV2, ...],
+) -> bool:
+    for item in persisted_evidence:
+        if item.evidence_type is EvidenceTypeV1.LIVE:
+            if not isinstance(item, PersistedLiveEvidenceProvenanceV2):
                 return False
-    return "readiness_score" not in serialized or '"content"' not in serialized
+    return True
 
 
 def _scenario_checks(
@@ -76,33 +85,56 @@ def _scenario_checks(
     expected_admissibility: str | None,
     ask_status: str | None,
     expected_ask_status: str | None,
-    extra_assertions: dict[str, bool],
+    extra_assertions: FlagshipScenarioChecksV1,
     run_id: str | None = None,
-    key_metrics: dict[str, Any] | None = None,
+    key_metrics: FlagshipScenarioMetricsV1 | None = None,
 ) -> FlagshipProofScenarioResultV1:
-    checks = {
-        "decision": observed == expected,
-        "http_reads": (
+    checks = FlagshipScenarioChecksV1(
+        decision=observed == expected,
+        http_reads=(
             http_reads == expected_http_reads
             if expected_http_reads is not None
             else True
         ),
-        "llm_calls": (
+        llm_calls=(
             llm_calls == expected_llm_calls if expected_llm_calls is not None else True
         ),
-        "admissibility": (
+        admissibility=(
             admissibility == expected_admissibility
             if expected_admissibility is not None
             else True
         ),
-        "ask_status": (
+        ask_status=(
             ask_status == expected_ask_status if expected_ask_status is not None else True
         ),
-        **extra_assertions,
-    }
-    passed = all(checks.values())
-    metrics = dict(key_metrics or {})
-    metrics["checks"] = checks
+        indexed_evidence_present=extra_assertions.indexed_evidence_present,
+        live_evidence_present=extra_assertions.live_evidence_present,
+        ephemeral_body_not_durable=extra_assertions.ephemeral_body_not_durable,
+        indexed_policy_present=extra_assertions.indexed_policy_present,
+        same_configuration_revision=extra_assertions.same_configuration_revision,
+        same_plan_policy_contract=extra_assertions.same_plan_policy_contract,
+        binding_disabled_before_live=extra_assertions.binding_disabled_before_live,
+        indexed_only_insufficient=extra_assertions.indexed_only_insufficient,
+    )
+    passed = all(
+        [
+            checks.decision,
+            checks.http_reads,
+            checks.llm_calls,
+            checks.admissibility,
+            checks.ask_status,
+            checks.indexed_evidence_present if checks.indexed_evidence_present is not None else True,
+            checks.live_evidence_present if checks.live_evidence_present is not None else True,
+            checks.ephemeral_body_not_durable if checks.ephemeral_body_not_durable is not None else True,
+            checks.indexed_policy_present if checks.indexed_policy_present is not None else True,
+            checks.same_configuration_revision if checks.same_configuration_revision is not None else True,
+            checks.same_plan_policy_contract if checks.same_plan_policy_contract is not None else True,
+            checks.binding_disabled_before_live if checks.binding_disabled_before_live is not None else True,
+            checks.indexed_only_insufficient if checks.indexed_only_insufficient is not None else True,
+        ]
+    )
+    metrics = key_metrics or FlagshipScenarioMetricsV1()
+    metrics = metrics.model_copy(update={"checks": checks})
     return FlagshipProofScenarioResultV1(
         name=name,
         passed=passed,
@@ -117,7 +149,11 @@ def _scenario_checks(
     )
 
 
-async def _run_ask(harness: GovernedHybridKnowledgeHarness, *, run_id: str) -> Any:
+async def _run_ask(harness: GovernedHybridKnowledgeHarness, *, run_id: str) -> tuple[
+    object,
+    int,
+    int,
+]:
     harness.reset_http_counter()
     llm_before = harness.llm.calls
     command = harness.build_command(run_id=run_id)
@@ -145,7 +181,7 @@ async def _run_all_scenarios(
     server: ControlledProjectStatusServer,
 ) -> FlagshipProofResultV1:
     seed_orion_fixture(server.store)
-    harness = build_harness(server=server)
+    harness = await build_harness(server=server)
 
     scenario_1_run_id = harness.next_run_id()
     run_1, http_1, llm_1 = await _run_ask(harness, run_id=scenario_1_run_id)
@@ -156,6 +192,12 @@ async def _run_all_scenarios(
     live_present = any(
         isinstance(item, PersistedLiveEvidenceProvenanceV2)
         for item in run_1.persisted_evidence
+    )
+    indexed_policy_present = any(
+        item.document_id == harness.indexed_stack.indexed_document_id
+        and item.evidence_type is EvidenceTypeV1.INDEXED
+        for item in run_1.persisted_evidence
+        if isinstance(item, PersistedIndexedEvidenceV2)
     )
     scenario_1 = _scenario_checks(
         name="01 REALITY — current blocker changes the decision",
@@ -173,23 +215,19 @@ async def _run_all_scenarios(
         expected_admissibility=EvidenceAdmissibilityStatusV1.SATISFIED.value,
         ask_status=run_1.status.value,
         expected_ask_status=AskRunStatus.COMPLETED.value,
-        extra_assertions={
-            "indexed_evidence_present": indexed_present,
-            "live_evidence_present": live_present,
-            "ephemeral_body_not_durable": _assert_ephemeral_live_body_not_persisted(
-                run_1.model_dump(mode="json")
+        extra_assertions=FlagshipScenarioChecksV1(
+            indexed_evidence_present=indexed_present,
+            live_evidence_present=live_present,
+            ephemeral_body_not_durable=_assert_ephemeral_live_body_not_persisted(
+                run_1.persisted_evidence
             ),
-            "indexed_policy_present": any(
-                item.document_id == "document-deployment-policy"
-                for item in run_1.persisted_evidence
-                if item.evidence_type is EvidenceTypeV1.INDEXED
-            ),
-        },
+            indexed_policy_present=indexed_policy_present,
+        ),
         run_id=run_1.run_id,
-        key_metrics={
-            "policy_revision": run_1.configuration_revision,
-            "plan_id": run_1.plan_id,
-        },
+        key_metrics=FlagshipScenarioMetricsV1(
+            policy_revision=run_1.configuration_revision,
+            plan_id=run_1.plan_id,
+        ),
     )
 
     _close_blocker(server)
@@ -212,19 +250,31 @@ async def _run_all_scenarios(
         expected_admissibility=EvidenceAdmissibilityStatusV1.SATISFIED.value,
         ask_status=run_2.status.value,
         expected_ask_status=AskRunStatus.COMPLETED.value,
-        extra_assertions={
-            "same_configuration_revision": (
+        extra_assertions=FlagshipScenarioChecksV1(
+            same_configuration_revision=(
                 run_2.configuration_revision == run_1.configuration_revision
             ),
-            "same_plan_policy_contract": run_2.question == ORION_DEPLOYMENT_QUESTION,
-        },
+            same_plan_policy_contract=run_2.question == ORION_DEPLOYMENT_QUESTION,
+        ),
         run_id=run_2.run_id,
     )
 
-    revoke_harness = build_harness(server=server, revoke_after_indexed=True)
+    revoke_harness = await build_harness(server=server, revoke_after_indexed=True)
     scenario_3_run_id = revoke_harness.next_run_id()
     run_3, http_3, llm_3 = await _run_ask(revoke_harness, run_id=scenario_3_run_id)
     decision_3 = normalize_decision(answer=run_3.answer, status=run_3.status)
+    disabled_configuration = revoke_harness.configuration_service.get_configuration(
+        tenant_id=PROOF_TENANT_ID,
+        workspace_id=PROOF_WORKSPACE_ID,
+    )
+    disabled_binding = next(
+        (
+            binding
+            for binding in disabled_configuration.live_access_bindings
+            if binding.live_access_binding_id == PROOF_BINDING_ID
+        ),
+        None,
+    )
     scenario_3 = _scenario_checks(
         name="03 AUTHORITY — revoked means physically not called",
         expected=SemanticDecisionV1.CANNOT_DETERMINE,
@@ -241,18 +291,26 @@ async def _run_all_scenarios(
         expected_admissibility=EvidenceAdmissibilityStatusV1.UNSATISFIED.value,
         ask_status=run_3.status.value,
         expected_ask_status=AskRunStatus.INSUFFICIENT_EVIDENCE.value,
-        extra_assertions={
-            "binding_disabled_before_live": (
-                revoke_harness.configuration.value.live_access_bindings[0].status.value
-                == "disabled"
+        extra_assertions=FlagshipScenarioChecksV1(
+            binding_disabled_before_live=(
+                disabled_binding is not None
+                and disabled_binding.status is LiveAccessBindingStatusV1.DISABLED
             ),
-            "indexed_only_insufficient": any(
+            indexed_only_insufficient=any(
                 item.evidence_type is EvidenceTypeV1.INDEXED
                 for item in run_3.persisted_evidence
             ),
-        },
+        ),
         run_id=run_3.run_id,
-        key_metrics={"revoke_boundary": "indexed_retrieval_before_live_execution"},
+        key_metrics=FlagshipScenarioMetricsV1(
+            revoke_boundary="canonical_disable_after_indexed_retrieval",
+            configuration_revision_before_disable=(
+                revoke_harness.indexed_retriever.configuration_revision_before_disable
+            ),
+            configuration_revision_after_disable=(
+                revoke_harness.indexed_retriever.configuration_revision_after_disable
+            ),
+        ),
     )
 
     historical = harness.service.get_run(
@@ -312,21 +370,21 @@ async def _run_all_scenarios(
         ),
         ask_status=historical.status.value,
         run_id=historical.run_id,
-        key_metrics={
-            "configuration_revision": historical.configuration_revision,
-            "plan_id": historical.plan_id,
-            "indexed_evidence_id": (
+        key_metrics=FlagshipScenarioMetricsV1(
+            configuration_revision=historical.configuration_revision,
+            plan_id=historical.plan_id,
+            indexed_evidence_id=(
                 indexed_provenance.evidence_id if indexed_provenance else None
             ),
-            "live_content_hash": (
+            live_content_hash=(
                 live_provenance.content_hash if live_provenance else None
             ),
-            "live_binding_id": (
+            live_binding_id=(
                 live_provenance.live_access_binding_id if live_provenance else None
             ),
-            "historical_live_body_retained": False,
-            "structural_provenance_only": True,
-        },
+            historical_live_body_retained=False,
+            structural_provenance_only=True,
+        ),
     )
 
     return FlagshipProofResultV1(
@@ -378,8 +436,8 @@ def _print_terminal(result: FlagshipProofResultV1) -> None:
             print(f"LLM calls: {scenario.llm_call_count}")
         print(f"Decision: {scenario.observed}")
         print(f"RESULT: {'PASS' if scenario.passed else 'FAIL'}")
-        if not scenario.passed:
-            print(f"Failed checks: {scenario.key_metrics.get('checks')}")
+        if not scenario.passed and scenario.key_metrics.checks is not None:
+            print(f"Failed checks: {scenario.key_metrics.checks.model_dump()}")
         print()
     print(_BANNER)
     print(f"{result.passed_count} / 4 PROOFS PASSED")

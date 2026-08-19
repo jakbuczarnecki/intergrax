@@ -216,15 +216,16 @@ RESULT: PASS
 | Layer | Component |
 |-------|-----------|
 | Application | `WorkspaceAskServiceV2` |
-| Indexed path | `WorkspaceIndexedEvidenceRetrieverV1` |
+| Indexed path | managed local document → `WorkspaceDocumentIndexingService` / `local.workspace.index` → `local.workspace.search` → `WorkspaceIndexedEvidenceRetrieverV1` |
+| Connection | `TenantConnection` → `TenantConnectionRehydrator` → `KnowledgeConnectionRegistry` → `KnowledgeConnectionRegistryIntegrationResolverV1` |
 | Live path | `LiveCapabilityExecutorV1` + `ProjectStatusReadLiveHandlerV1` |
-| Authority | `WorkspaceLiveAccessRuntimeAuthority` |
+| Authority revoke | `LiveAccessLifecycleService.disable` → `WorkspaceLiveAccessRuntimeAuthority` reload |
 | Admissibility | `evaluate_execution_admissibility` |
 | Synthesis | `HybridAskAnswerAssemblerV2` + deterministic proof LLM |
 | Persistence | `WorkspaceAskRepository.get_run_v2` |
 | External HTTP | `proof_infrastructure.controlled_project_status_service` |
 
-No fake authority, no fake provider, no demo hooks in production code.
+No fake search-result injection, no manual integration registration, no direct configuration mutation by the proof harness.
 
 ---
 
