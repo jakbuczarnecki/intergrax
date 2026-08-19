@@ -515,6 +515,19 @@ Agent/runtime/policy layers  →  enforce metering and reactions
 
 Tier-3 does **not** own global token accounting or the budget governor. STRICT product hosts: APP-PROD-7 gate expects COST profile + slices — see [production-gates satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md).
 
+<a id="protocol-v22-tier3-llm-uer-host-target-invariants-2026-08-18"></a>
+
+### Protocol v2.2 Tier-3 LLM/UER host target invariants (2026-08-18)
+
+Accepted [`LLM_ADAPTERS`](../../audit_results/2026-08-18/LLM_ADAPTERS.md) and [`EXECUTION_RUNTIME`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.md) cross-layer host findings (layer audited 2026-08-19). **Target state** — **ACCEPTED / PLANNED**; **not implemented** by audit persistence.
+
+1. Tier-3 composition selects/wires provider/model profile and canonical runtime policy environment.
+2. Selected/authorized model+provider identity must be execution-bound to the actual provider candidate invoked.
+3. Direct ACP host cannot silently create a different policy universe from application/Nexus policy composition.
+4. Provider failover candidates either receive per-candidate authorization or are members of an explicitly pre-authorized immutable candidate set.
+
+Remediation: **LLM-FIX-B/C**, **UER-FIX-A** in matching plans.
+
 <a id="protocol-v2-tier3-boundary-target-invariants-2026-08-18"></a>
 
 ## Protocol v2 target invariants (2026-08-18)

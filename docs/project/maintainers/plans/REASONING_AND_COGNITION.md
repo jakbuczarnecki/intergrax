@@ -92,3 +92,18 @@ Load **only** the satellite matching your task or cited gap ID.
 | S4 Decision + engine prompt | COG-PROD.3, COG-PROD.5 | `planning_runner.py`, `reasoning_wiring.py`, `scripts/maintenance/check_reasoning_gates.py`, tests |
 
 ---
+
+### Protocol v2.2 remediation — REASONING_PLANNING (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/REASONING_PLANNING.md`](../../audit_results/2026-08-18/REASONING_PLANNING.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-BATCH-PERSIST-2.
+
+| Block | Status | Findings | Acceptance intent |
+|-------|--------|----------|-------------------|
+| **RPL-FIX-D** | ACCEPTED / PLANNED | RPL-04 | Cognitive patterns preserve FAIL/HUMAN/REPLAN verdicts |
+| **RPL-FIX-E** | ACCEPTED / PLANNED | RPL-05 | Typed tool-planning outcomes (plan / no-tool / parse / forbidden / schema) |
+| **RPL-FIX-F** | ACCEPTED / PLANNED | RPL-06 | Remove product-shaped research decomposition from generic `TaskPlanner` |
+
+Cross-ref **RPL-FIX-A/B/C** in [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md).
+
+---

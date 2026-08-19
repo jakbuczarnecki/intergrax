@@ -836,6 +836,20 @@ Accepted [`IDENTITY_TRUST`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) fi
 
 Remediation block: **IDT-FIX-C**.
 
+<a id="protocol-v22-uer-resume-cancel-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 UER resume/cancel target invariants (2026-08-18)
+
+Accepted [`EXECUTION_RUNTIME`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.md) findings **03, 05, 06** (layer audited 2026-08-19). **Target state** — **ACCEPTED / PLANNED**; **not implemented** by audit persistence.
+
+1. Checkpoint contains enough identity to restore same `AttemptId` on non-retry resume.
+2. Cancellation reaches already-running ACP work via shared cooperative cancellation authority.
+3. Cancellation is checked at meaningful boundaries (iteration, LLM/tool/side-effect execution).
+4. Cancellation invalidates or tombstones resumable checkpoint authority.
+5. Cancelled checkpoint cannot later be treated as ordinary resumable state without a new explicit authorized transition.
+
+Remediation: **UER-FIX-C**, **UER-FIX-E** in matching plans.
+
 ## Unresolved documentation drift (outside this edit)
 
 Report only — not fixed in DOC-3Q scope:

@@ -232,6 +232,22 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 **Cross-domain:** FLOW-MAINT-01 · ORCH-MAINT-04 · LLM-MAINT-03.
 
+**Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
+
+---
+
+### Protocol v2.2 remediation — EXECUTION_RUNTIME resume/cancel (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/EXECUTION_RUNTIME.md`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-BATCH-PERSIST-2.
+
+| Block | Status | Findings | Acceptance intent |
+|-------|--------|----------|-------------------|
+| **UER-FIX-C** | ACCEPTED / PLANNED | UER-03 | Checkpoint restores AttemptId on non-retry resume |
+| **UER-FIX-E** | ACCEPTED / PLANNED | UER-05, UER-06 | Cancellation reaches active ACP; tombstone/invalidation of resumable checkpoints |
+
+Cross-ref **UER-FIX-A/B/D** in [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md).
+
 ---
 
 *End of Reliability, Failure Model, and HITL Implementation Plan.*

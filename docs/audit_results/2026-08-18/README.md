@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — layer sequence in progress; first five layers complete (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`) |
+| `scope` | Platform audit — nine completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -33,6 +33,10 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | PROVIDER_BACKEND_ABSTRACTION | COMPLETE | `7570e9b4508554a42bdf5cce2c987c56c6f2b80e` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `3fb36254bf58f3898dac16f0ae0fca3f01bb95d6` | [PROVIDER_BACKEND_ABSTRACTION.md](PROVIDER_BACKEND_ABSTRACTION.md) |
 | INTERFACE_TASK_INTAKE | COMPLETE | `2640d826da6f1a781e798326ff1b21b3a9f7c4cc` | FAIL | 0 | 3 | 3 | 0 | COMPLETE | COMPLETE | `f2550615df385e474508e08ce763b43cef7e980b` | [INTERFACE_TASK_INTAKE.md](INTERFACE_TASK_INTAKE.md) |
 | IDENTITY_TRUST | COMPLETE | `6fbc5e4928963ecd386456158b0753662fed209b` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `be52ca045443e906ef03f47fbd8cde1dbd1f6fbc` | [IDENTITY_TRUST.md](IDENTITY_TRUST.md) |
+| POLICY_GOVERNANCE | COMPLETE | `042cc9b50386cfcd4da30310c84d000dbf5d2718` | FAIL | 0 | 4 | 1 | 0 | COMPLETE | COMPLETE | `pending Commit A` | [POLICY_GOVERNANCE.md](POLICY_GOVERNANCE.md) |
+| LLM_ADAPTERS | COMPLETE | `b1e4de1d776acc64e8461f7dcdce09cd03d07b80` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `pending Commit A` | [LLM_ADAPTERS.md](LLM_ADAPTERS.md) |
+| REASONING_PLANNING | COMPLETE | `fe876d301df07ce22e438b0a55167275ccec32b5` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `pending Commit A` | [REASONING_PLANNING.md](REASONING_PLANNING.md) |
+| EXECUTION_RUNTIME | COMPLETE | `df7aaac19b20e84c06d6233492cdb4365a892f4f` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `pending Commit A` | [EXECUTION_RUNTIME.md](EXECUTION_RUNTIME.md) |
 
 ## Finding register
 
@@ -73,11 +77,34 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-IDENTITY_TRUST-05 | IDENTITY_TRUST | HIGH | IMPLEMENTATION DEFECT | ACCEPTED | IDT-FIX-D | — | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — [Protocol v2.2 execution identity closure target invariants (2026-08-18)](#protocol-v22-execution-identity-closure-target-invariants-2026-08-18) | `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — IDT-FIX-D | — | — | Related classification: OPERABILITY; operator accepted 2026-08-18 |
 | AUDIT-20260818-IDENTITY_TRUST-06 | IDENTITY_TRUST | MEDIUM | ARCHITECTURE DEFECT | ACCEPTED | IDT-FIX-A | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2.2 identity/trust target invariants (2026-08-18)](#protocol-v22-identitytrust-target-invariants-2026-08-18); `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — [Protocol v2.2 execution identity closure target invariants (2026-08-18)](#protocol-v22-execution-identity-closure-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — IDT-FIX-A | — | — | operator accepted 2026-08-18 |
 
+| AUDIT-20260818-POLICY_GOVERNANCE-01 | POLICY_GOVERNANCE | HIGH | ARCHITECTURE DEFECT | ACCEPTED | PG-FIX-A | — | `docs/project/architecture/GOVERNED_EXECUTION.md` | `docs/project/maintainers/plans/GOVERNED_EXECUTION.md` — PG-FIX-A | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-POLICY_GOVERNANCE-02 | POLICY_GOVERNANCE | HIGH | SECURITY | ACCEPTED | PG-FIX-B | — | `docs/project/architecture/GOVERNED_EXECUTION.md` | `docs/project/maintainers/plans/GOVERNED_EXECUTION.md` — PG-FIX-B | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-POLICY_GOVERNANCE-03 | POLICY_GOVERNANCE | HIGH | ARCHITECTURE DEFECT | ACCEPTED | PG-FIX-A | — | `docs/project/architecture/GOVERNED_EXECUTION.md` | `docs/project/maintainers/plans/GOVERNED_EXECUTION.md` — PG-FIX-A | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-POLICY_GOVERNANCE-04 | POLICY_GOVERNANCE | HIGH | IMPLEMENTATION/ARCHITECTURE DRIFT | ACCEPTED | PG-FIX-C | — | `docs/project/architecture/GOVERNED_EXECUTION.md` | `docs/project/maintainers/plans/GOVERNED_EXECUTION.md` — PG-FIX-C | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-POLICY_GOVERNANCE-05 | POLICY_GOVERNANCE | MEDIUM | ARCHITECTURE DEFECT | ACCEPTED | PG-FIX-D | — | `docs/project/architecture/GOVERNED_EXECUTION.md` | `docs/project/maintainers/plans/GOVERNED_EXECUTION.md` — PG-FIX-D | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-LLM_ADAPTERS-01 | LLM_ADAPTERS | HIGH | BOUNDARY VIOLATION | ACCEPTED | LLM-FIX-A | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — LLM-FIX-A | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-LLM_ADAPTERS-02 | LLM_ADAPTERS | HIGH | IMPLEMENTATION/ARCHITECTURE DRIFT | ACCEPTED | LLM-FIX-B | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — LLM-FIX-B | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-LLM_ADAPTERS-03 | LLM_ADAPTERS | HIGH | SECURITY | ACCEPTED | LLM-FIX-C | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — LLM-FIX-C | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-LLM_ADAPTERS-04 | LLM_ADAPTERS | HIGH | BOUNDARY VIOLATION | ACCEPTED | LLM-FIX-A | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — LLM-FIX-A | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-LLM_ADAPTERS-05 | LLM_ADAPTERS | MEDIUM | OPERABILITY | ACCEPTED | LLM-FIX-B | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — LLM-FIX-B | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-LLM_ADAPTERS-06 | LLM_ADAPTERS | MEDIUM | IMPLEMENTATION DEFECT | ACCEPTED | LLM-FIX-D | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — LLM-FIX-D | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-REASONING_PLANNING-01 | REASONING_PLANNING | HIGH | RELIABILITY | ACCEPTED | RPL-FIX-A | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — RPL-FIX-A | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-REASONING_PLANNING-02 | REASONING_PLANNING | HIGH | BOUNDARY VIOLATION | ACCEPTED | RPL-FIX-B | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — RPL-FIX-B | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-REASONING_PLANNING-03 | REASONING_PLANNING | HIGH | IMPLEMENTATION DEFECT | ACCEPTED | RPL-FIX-C | — | `docs/project/architecture/REASONING_AND_COGNITION.md` | `docs/project/maintainers/plans/REASONING_AND_COGNITION.md` — RPL-FIX-C | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-REASONING_PLANNING-04 | REASONING_PLANNING | HIGH | IMPLEMENTATION DEFECT | ACCEPTED | RPL-FIX-D | — | `docs/project/architecture/REASONING_AND_COGNITION.md` | `docs/project/maintainers/plans/REASONING_AND_COGNITION.md` — RPL-FIX-D | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-REASONING_PLANNING-05 | REASONING_PLANNING | MEDIUM | RELIABILITY | ACCEPTED | RPL-FIX-E | — | `docs/project/architecture/REASONING_AND_COGNITION.md` | `docs/project/maintainers/plans/REASONING_AND_COGNITION.md` — RPL-FIX-E | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-REASONING_PLANNING-06 | REASONING_PLANNING | MEDIUM | BOUNDARY VIOLATION | ACCEPTED | RPL-FIX-F | — | `docs/project/architecture/REASONING_AND_COGNITION.md` | `docs/project/maintainers/plans/REASONING_AND_COGNITION.md` — RPL-FIX-F | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-EXECUTION_RUNTIME-01 | EXECUTION_RUNTIME | HIGH | BOUNDARY VIOLATION | ACCEPTED | UER-FIX-A | — | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` | `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — UER-FIX-A | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-EXECUTION_RUNTIME-02 | EXECUTION_RUNTIME | HIGH | RELIABILITY | ACCEPTED | UER-FIX-B | — | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` | `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — UER-FIX-B | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-EXECUTION_RUNTIME-03 | EXECUTION_RUNTIME | HIGH | IMPLEMENTATION/ARCHITECTURE DRIFT | ACCEPTED | UER-FIX-C | — | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` | `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — UER-FIX-C | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-EXECUTION_RUNTIME-04 | EXECUTION_RUNTIME | HIGH | RELIABILITY | ACCEPTED | UER-FIX-D | — | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` | `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — UER-FIX-D | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-EXECUTION_RUNTIME-05 | EXECUTION_RUNTIME | HIGH | RELIABILITY | ACCEPTED | UER-FIX-E | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — UER-FIX-E | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-EXECUTION_RUNTIME-06 | EXECUTION_RUNTIME | MEDIUM | RELIABILITY | ACCEPTED | UER-FIX-E | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — UER-FIX-E | — | — | operator accepted 2026-08-19 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 5
+**Completed layers:** 9
 
 First layer summary:
 
@@ -114,7 +141,36 @@ Fifth layer summary:
 - **Systemic themes:** authenticated principal spine; delegated authority enforcement; human approver provenance; resume surface HITL correlation; execution identity closure on residual paths; actor/principal model coherence
 - **Recommended remediation order:** IDT-FIX-A → IDT-FIX-B → IDT-FIX-C → IDT-FIX-D (see layer report)
 
-**Cumulative (completed layers only):** 32 accepted findings — 0 CRITICAL, 17 HIGH, 15 MEDIUM, 0 LOW
+
+Sixth layer summary:
+
+- **Layer:** POLICY_GOVERNANCE — **FAIL** at `042cc9b50386cfcd4da30310c84d000dbf5d2718`
+- **Accepted findings:** 5 total — 0 CRITICAL, 4 HIGH, 1 MEDIUM, 0 LOW
+- **Systemic themes:** canonical side-effect spine; policy precedence; scoped approval consumption; explicit matching
+- **Recommended remediation order:** PG-FIX-A → PG-FIX-B → PG-FIX-C → PG-FIX-D (see layer report)
+
+Seventh layer summary:
+
+- **Layer:** LLM_ADAPTERS — **FAIL** at `b1e4de1d776acc64e8461f7dcdce09cd03d07b80`
+- **Accepted findings:** 6 total — 0 CRITICAL, 4 HIGH, 2 MEDIUM, 0 LOW
+- **Systemic themes:** universal PRE_MODEL boundary; decision-to-execution binding; governed failover; LLM identity closure
+- **Recommended remediation order:** LLM-FIX-A → LLM-FIX-B → LLM-FIX-C → LLM-FIX-D (see layer report)
+
+Eighth layer summary:
+
+- **Layer:** REASONING_PLANNING — **FAIL** at `fe876d301df07ce22e438b0a55167275ccec32b5`
+- **Accepted findings:** 6 total — 0 CRITICAL, 4 HIGH, 2 MEDIUM, 0 LOW
+- **Systemic themes:** plan integrity; production eligibility parity; replan closure; cognitive verdict integrity; tool-plan semantics; product-neutral planner core
+- **Recommended remediation order:** RPL-FIX-A → RPL-FIX-B → RPL-FIX-C → RPL-FIX-D → RPL-FIX-E → RPL-FIX-F (see layer report)
+
+Ninth layer summary:
+
+- **Layer:** EXECUTION_RUNTIME — **FAIL** at `df7aaac19b20e84c06d6233492cdb4365a892f4f`
+- **Accepted findings:** 6 total — 0 CRITICAL, 5 HIGH, 1 MEDIUM, 0 LOW
+- **Systemic themes:** canonical runtime policy propagation; atomic step commits; attempt continuity; exception containment; cooperative cancellation and checkpoint invalidation
+- **Recommended remediation order:** UER-FIX-A → UER-FIX-B → UER-FIX-C → UER-FIX-D → UER-FIX-E (see layer report)
+
+**Cumulative (completed layers only):** 55 accepted findings — 0 CRITICAL, 34 HIGH, 21 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -142,3 +198,23 @@ Fifth layer summary:
 | IDT-FIX-B | AUDIT-20260818-IDENTITY_TRUST-02 | ACCEPTED / PLANNED | delegated authority narrowing |
 | IDT-FIX-C | AUDIT-20260818-IDENTITY_TRUST-03, 04 | ACCEPTED / PLANNED | human decision provenance + resume surface alignment |
 | IDT-FIX-D | AUDIT-20260818-IDENTITY_TRUST-05 | ACCEPTED / PLANNED | execution identity closure on residual HITL/lifecycle paths |
+
+| PG-FIX-A | AUDIT-20260818-POLICY_GOVERNANCE-01, 03 | ACCEPTED / PLANNED | canonical side-effect spine — not implemented in this persistence task |
+| PG-FIX-B | AUDIT-20260818-POLICY_GOVERNANCE-02 | ACCEPTED / PLANNED | safe policy resolution semantics |
+| PG-FIX-C | AUDIT-20260818-POLICY_GOVERNANCE-04 | ACCEPTED / PLANNED | scoped approval consumption |
+| PG-FIX-D | AUDIT-20260818-POLICY_GOVERNANCE-05 | ACCEPTED / PLANNED | explicit policy matching |
+| LLM-FIX-A | AUDIT-20260818-LLM_ADAPTERS-01, 04 | ACCEPTED / PLANNED | universal inference boundary — not implemented in this persistence task |
+| LLM-FIX-B | AUDIT-20260818-LLM_ADAPTERS-02, 05 | ACCEPTED / PLANNED | decision-to-execution binding |
+| LLM-FIX-C | AUDIT-20260818-LLM_ADAPTERS-03 | ACCEPTED / PLANNED | governed failover |
+| LLM-FIX-D | AUDIT-20260818-LLM_ADAPTERS-06 | ACCEPTED / PLANNED | LLM execution identity closure; cross-ref IDT-FIX-D |
+| RPL-FIX-A | AUDIT-20260818-REASONING_PLANNING-01 | ACCEPTED / PLANNED | canonical plan integrity — not implemented in this persistence task |
+| RPL-FIX-B | AUDIT-20260818-REASONING_PLANNING-02 | ACCEPTED / PLANNED | planning/execution eligibility parity |
+| RPL-FIX-C | AUDIT-20260818-REASONING_PLANNING-03 | ACCEPTED / PLANNED | replan semantic closure |
+| RPL-FIX-D | AUDIT-20260818-REASONING_PLANNING-04 | ACCEPTED / PLANNED | cognitive verdict integrity |
+| RPL-FIX-E | AUDIT-20260818-REASONING_PLANNING-05 | ACCEPTED / PLANNED | tool-planning outcome semantics |
+| RPL-FIX-F | AUDIT-20260818-REASONING_PLANNING-06 | ACCEPTED / PLANNED | remove product-shaped core planning |
+| UER-FIX-A | AUDIT-20260818-EXECUTION_RUNTIME-01 | ACCEPTED / PLANNED | canonical runtime policy propagation — not implemented in this persistence task |
+| UER-FIX-B | AUDIT-20260818-EXECUTION_RUNTIME-02 | ACCEPTED / PLANNED | atomic step commit semantics |
+| UER-FIX-C | AUDIT-20260818-EXECUTION_RUNTIME-03 | ACCEPTED / PLANNED | resume identity continuity |
+| UER-FIX-D | AUDIT-20260818-EXECUTION_RUNTIME-04 | ACCEPTED / PLANNED | runtime exception containment |
+| UER-FIX-E | AUDIT-20260818-EXECUTION_RUNTIME-05, 06 | ACCEPTED / PLANNED | cooperative cancellation and checkpoint invalidation |

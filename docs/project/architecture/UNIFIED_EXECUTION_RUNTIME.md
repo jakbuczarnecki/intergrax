@@ -243,6 +243,20 @@ Accepted [`IDENTITY_TRUST`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) fi
 
 Remediation blocks: **IDT-FIX-D** (execution identity closure), **IDT-FIX-A** (principal spine). Finding 05 is internal provenance after valid execution identity is bound — not duplicate public intake TaskId/RunId minting ([`INTERFACE_TASK_INTAKE`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md)).
 
+<a id="protocol-v22-uer-runtime-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 UER runtime target invariants (2026-08-18)
+
+Accepted [`EXECUTION_RUNTIME`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.md) findings **01–06** (layer audited 2026-08-19). **Target state** — **ACCEPTED / PLANNED**; **not implemented** by audit persistence.
+
+1. One canonical runtime policy environment propagates across Nexus, AgentEngine, ACP/UAEP, and HarnessKernel (**UER-FIX-A**).
+2. Step outcome semantics are atomic: failure cannot leave committed platform state that contradicts `outcome_applied=false` (**UER-FIX-B**).
+3. Attempt identity: retry ⇒ new `AttemptId`; resume without retry ⇒ preserved `AttemptId` (**UER-FIX-C**).
+4. Runtime owns normal unexpected-exception containment: classify → terminal evidence → cleanup → typed FAILED result (**UER-FIX-D**).
+5. Replan/human/fail execution intent is preserved through runtime bridges (**UER-FIX-D** cross-ref RPL-FIX-C).
+
+Remediation blocks: **UER-FIX-A** … **UER-FIX-E** in [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md).
+
 ## Current maturity
 
 Architecture maturity: **A4** *(target)* — **current invariant closure reopened** by Protocol v2 [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)

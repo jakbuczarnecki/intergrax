@@ -600,6 +600,20 @@ Intergrax maps **Orchestrator creates plan** to Plane 1 (`NexusPlanningRunner`) 
 - Encode domain business rules inside universal planners
 - Call vendor LLM SDKs outside `LLMAdapter`
 
+<a id="protocol-v22-cognition-verdict-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 cognition verdict target invariants (2026-08-18)
+
+Accepted [`REASONING_PLANNING`](../../audit_results/2026-08-18/REASONING_PLANNING.md) findings **04–06** (layer audited 2026-08-19). **Target state** — **ACCEPTED / PLANNED**; **not implemented** by audit persistence.
+
+1. Canonical `CognitiveEvaluation` semantics: COMPLETE / CONTINUE / FAIL / HUMAN / REPLAN are authoritative.
+2. Framework patterns must not downgrade or erase verdict; phase completion cannot override FAIL/HUMAN/REPLAN.
+3. Distinguish LOCAL_REPLAN and NEXUS_REPLAN_REQUEST.
+4. Tool planning returns typed outcome semantics distinguishing tool plan, no-tool, parse failure, forbidden tool, schema failure (names may be target examples).
+5. Generic core planning must not contain product-specific decomposition logic.
+
+Remediation: **RPL-FIX-C/D/E/F** in [`plan/REASONING_AND_COGNITION.md`](../maintainers/plans/REASONING_AND_COGNITION.md).
+
 ### 7.3 What agents/applications MUST NOT do
 
 - Bypass `NexusPlanningRunner` to run multi-agent workflows privately
