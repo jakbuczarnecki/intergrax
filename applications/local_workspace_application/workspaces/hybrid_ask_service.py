@@ -45,9 +45,12 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     HybridAskPolicyError,
     LiveCallProposalV1,
     LiveResourceScopeValidationPort,
+    ProviderEvidencePlanV1,
     RequiredEvidenceObligationV1,
     ResolvedLiveResourceScopeV1,
     ValidatedEvidencePlanV1,
+    compose_evidence_obligations,
+    derive_product_evidence_obligations,
     resolve_effective_query_policy,
     validate_evidence_plan,
 )
@@ -447,6 +450,7 @@ class WorkspaceAskServiceV2:
         ):
             indexed_directive = self._indexed_directive(min(requested, maximum))
         ordered_live_call_proposals = tuple(command.ordered_live_call_proposals)
+        provider_authoritative: tuple[RequiredEvidenceObligationV1, ...] = ()
         if command.provider_request is not None:
             if self._provider_strategy is None:
                 raise HybridAskPolicyError("provider_strategy_unavailable")
@@ -457,6 +461,27 @@ class WorkspaceAskServiceV2:
             ordered_live_call_proposals = tuple(
                 provider_plan.ordered_live_call_proposals
             )
+            if isinstance(provider_plan, ProviderEvidencePlanV1):
+                provider_authoritative = provider_plan.required_evidence_obligations
+        include_indexed = command.requested_mode in (
+            QueryPolicyModeV2.INDEXED_ONLY,
+            QueryPolicyModeV2.HYBRID,
+        )
+        product_authoritative = derive_product_evidence_obligations(
+            mode=command.requested_mode,
+            ordered_live_call_proposals=ordered_live_call_proposals,
+            include_indexed_retrieval=include_indexed,
+        )
+        try:
+            authoritative_obligations = compose_evidence_obligations(
+                authoritative=compose_evidence_obligations(
+                    authoritative=product_authoritative,
+                    additional=provider_authoritative,
+                ),
+                additional=command.required_evidence_obligations,
+            )
+        except HybridAskPolicyError:
+            raise
         plan = EvidencePlanV1(
             plan_id=self._plan_id_factory(),
             tenant_id=command.tenant_id,
@@ -465,7 +490,7 @@ class WorkspaceAskServiceV2:
             mode=command.requested_mode,
             indexed_retrieval_directive=indexed_directive,
             ordered_live_call_proposals=ordered_live_call_proposals,
-            required_evidence_obligations=command.required_evidence_obligations,
+            required_evidence_obligations=authoritative_obligations,
             budget_snapshot=EffectiveLiveCallBudgetV1(
                 max_live_calls=effective_policy.max_live_calls,
                 max_total_duration_ms=effective_policy.max_total_duration_ms,

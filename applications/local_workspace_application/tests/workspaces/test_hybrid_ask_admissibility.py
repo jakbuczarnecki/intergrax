@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from hashlib import sha256
 
 import pytest
+from pydantic import ValidationError
 from local_workspace_application.workspaces.hybrid_ask_admissibility import (
     evaluate_evidence_admissibility,
     evaluate_execution_admissibility,
@@ -17,14 +18,6 @@ from local_workspace_application.workspaces.hybrid_ask_execution import (
     HybridAskLiveExecutionStatusV1,
     HybridAskTruncationStateV1,
     KnowledgeQueryExecutionResultV1,
-)
-from local_workspace_application.workspaces.hybrid_ask_models import (
-    AskAudienceV1,
-    EvidenceAdmissibilityStatusV1,
-    IndexedWorkspaceEvidenceV1,
-    LiveWorkspaceEvidenceV1,
-    RequirementAdmissibilityReasonCodeV1,
-    RequirementEvaluationStatusV1,
 )
 from local_workspace_application.workspaces.hybrid_ask_policy import (
     AudienceContextV1,
@@ -37,6 +30,23 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     LiveEvidenceRequirementV1,
     ValidatedEvidencePlanV1,
     validate_evidence_plan,
+)
+from local_workspace_application.workspaces.ask_models import AskRunStatus
+from local_workspace_application.workspaces.hybrid_ask_models import (
+    AskAudienceV1,
+    EvidenceAdmissibilityResultV1,
+    EvidenceAdmissibilityStatusV1,
+    EvidenceTypeV1,
+    IndexedWorkspaceCitationV1,
+    IndexedWorkspaceEvidenceV1,
+    LiveWorkspaceCitationV1,
+    LiveWorkspaceEvidenceV1,
+    PersistedIndexedEvidenceV2,
+    PersistedLiveEvidenceProvenanceV2,
+    RequirementAdmissibilityReasonCodeV1,
+    RequirementEvaluationStatusV1,
+    RequiredEvidenceEvaluationV1,
+    WorkspaceAskRunV2,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     QueryPolicyModeV2,
@@ -387,3 +397,487 @@ def test_plan_validation_rejects_unknown_live_call_reference() -> None:
             resource_scope_validator=_FakeScopeValidator(),
         )
     assert exc.value.error_code == "unknown_live_call_reference"
+
+
+def _persisted_indexed(
+    *,
+    evidence_id: str = "idx:ws-1:doc-1:chunk-1",
+    binding_id: str | None = "idx:binding-1",
+) -> PersistedIndexedEvidenceV2:
+    return PersistedIndexedEvidenceV2(
+        evidence_id=evidence_id,
+        safe_display_name="document.txt",
+        retrieved_at=_NOW,
+        content_hash=sha256(b"indexed").hexdigest(),
+        audience=AskAudienceV1.PERSONAL,
+        source_id="source-1",
+        document_id="document-1",
+        chunk_id="chunk-1",
+        indexed_source_binding_id=binding_id,
+    )
+
+
+def _persisted_live(
+    *,
+    evidence_id: str = "live:call-1:item-1",
+    call_id: str = "call-1",
+) -> PersistedLiveEvidenceProvenanceV2:
+    return PersistedLiveEvidenceProvenanceV2(
+        evidence_id=evidence_id,
+        safe_display_name="Live item",
+        retrieved_at=_NOW,
+        content_hash=sha256(b"live").hexdigest(),
+        audience=AskAudienceV1.PERSONAL,
+        provider_id=_PROVIDER,
+        live_access_binding_id="live-1",
+        connection_ref="conn.live",
+        capability_id=_CAP,
+        call_id=call_id,
+    )
+
+
+def _valid_satisfied_run_payload() -> dict[str, object]:
+    indexed = _persisted_indexed()
+    live = _persisted_live()
+    obligations = (
+        IndexedEvidenceRequirementV1(
+            requirement_id="req-indexed",
+            semantic_role="Indexed grounding",
+            indexed_source_binding_id=_INDEXED_BINDING,
+        ),
+        LiveEvidenceRequirementV1(
+            requirement_id="req-live",
+            semantic_role="Live grounding",
+            call_id="call-1",
+        ),
+    )
+    admissibility = EvidenceAdmissibilityResultV1(
+        overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+        requirement_evaluations=(
+            RequiredEvidenceEvaluationV1(
+                requirement_id="req-indexed",
+                status=RequirementEvaluationStatusV1.SATISFIED,
+                matched_evidence_ids=(indexed.evidence_id,),
+            ),
+            RequiredEvidenceEvaluationV1(
+                requirement_id="req-live",
+                status=RequirementEvaluationStatusV1.SATISFIED,
+                matched_evidence_ids=(live.evidence_id,),
+            ),
+        ),
+    )
+    return {
+        "run_id": "run-valid",
+        "tenant_id": _TENANT,
+        "workspace_id": _WORKSPACE,
+        "question": "Valid admissibility record?",
+        "status": AskRunStatus.COMPLETED,
+        "query_mode": QueryPolicyModeV2.HYBRID,
+        "configuration_revision": 1,
+        "plan_id": "plan-valid",
+        "required_evidence_obligations": obligations,
+        "evidence_admissibility": admissibility,
+        "created_at": _NOW,
+        "completed_at": _NOW,
+        "persisted_evidence": [indexed, live],
+        "citations": [
+            IndexedWorkspaceCitationV1(
+                evidence_id=indexed.evidence_id,
+                safe_display_name=indexed.safe_display_name,
+                retrieved_at=indexed.retrieved_at,
+                document_id=indexed.document_id,
+                source_id=indexed.source_id,
+                workspace_id=_WORKSPACE,
+                source_path="/docs/document.txt",
+                file_name="document.txt",
+            ),
+            LiveWorkspaceCitationV1(
+                evidence_id=live.evidence_id,
+                safe_display_name=live.safe_display_name,
+                retrieved_at=live.retrieved_at,
+                provider_id=live.provider_id,
+                connection_safe_label="Live connection",
+                capability_id=live.capability_id,
+                call_id=live.call_id,
+            ),
+        ],
+    }
+
+
+def _valid_unsatisfied_run_payload() -> dict[str, object]:
+    obligations = (
+        IndexedEvidenceRequirementV1(
+            requirement_id="req-indexed",
+            semantic_role="Indexed grounding",
+        ),
+    )
+    admissibility = EvidenceAdmissibilityResultV1(
+        overall_status=EvidenceAdmissibilityStatusV1.UNSATISFIED,
+        requirement_evaluations=(
+            RequiredEvidenceEvaluationV1(
+                requirement_id="req-indexed",
+                status=RequirementEvaluationStatusV1.UNSATISFIED,
+                reason_code=RequirementAdmissibilityReasonCodeV1.NO_MATCHING_EVIDENCE,
+            ),
+        ),
+    )
+    return {
+        "run_id": "run-insufficient",
+        "tenant_id": _TENANT,
+        "workspace_id": _WORKSPACE,
+        "question": "Missing indexed evidence?",
+        "status": AskRunStatus.INSUFFICIENT_EVIDENCE,
+        "query_mode": QueryPolicyModeV2.INDEXED_ONLY,
+        "configuration_revision": 1,
+        "plan_id": "plan-insufficient",
+        "required_evidence_obligations": obligations,
+        "evidence_admissibility": admissibility,
+        "created_at": _NOW,
+        "completed_at": _NOW,
+        "persisted_evidence": [],
+        "citations": [],
+    }
+
+
+def test_valid_satisfied_admissibility_run_reconstructs() -> None:
+    run = WorkspaceAskRunV2.model_validate(_valid_satisfied_run_payload())
+    assert run.evidence_admissibility is not None
+    assert run.evidence_admissibility.overall_status is EvidenceAdmissibilityStatusV1.SATISFIED
+
+
+def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
+    run = WorkspaceAskRunV2.model_validate(_valid_unsatisfied_run_payload())
+    assert run.evidence_admissibility is not None
+    assert run.evidence_admissibility.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED
+
+
+@pytest.mark.parametrize(
+    ("mutator", "expected_error"),
+    [
+        (
+            lambda payload: payload.update(
+                {
+                    "evidence_admissibility": payload["evidence_admissibility"].model_copy(
+                        update={
+                            "requirement_evaluations": (
+                                RequiredEvidenceEvaluationV1(
+                                    requirement_id="req-unknown",
+                                    status=RequirementEvaluationStatusV1.UNSATISFIED,
+                                    reason_code=RequirementAdmissibilityReasonCodeV1.NO_MATCHING_EVIDENCE,
+                                ),
+                            )
+                        }
+                    )
+                }
+            ),
+            "admissibility_unknown_requirement_id",
+        ),
+        (
+            lambda payload: payload.update(
+                {
+                    "evidence_admissibility": EvidenceAdmissibilityResultV1(
+                        overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        requirement_evaluations=(
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("idx:ws-1:doc-1:chunk-1",),
+                            ),
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("idx:ws-1:doc-1:chunk-1",),
+                            ),
+                        ),
+                    )
+                }
+            ),
+            "duplicate_admissibility_requirement_id",
+        ),
+        (
+            lambda payload: payload.update(
+                {
+                    "evidence_admissibility": EvidenceAdmissibilityResultV1(
+                        overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        requirement_evaluations=(
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=(),
+                            ),
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-live",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("live:call-1:item-1",),
+                            ),
+                        ),
+                    )
+                }
+            ),
+            "satisfied_evaluation_requires_matched_evidence",
+        ),
+        (
+            lambda payload: payload.update(
+                {
+                    "evidence_admissibility": EvidenceAdmissibilityResultV1(
+                        overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        requirement_evaluations=(
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("idx:ws-1:doc-1:chunk-1",),
+                                reason_code=RequirementAdmissibilityReasonCodeV1.NO_MATCHING_EVIDENCE,
+                            ),
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-live",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("live:call-1:item-1",),
+                            ),
+                        ),
+                    )
+                }
+            ),
+            "satisfied_evaluation_forbids_reason_code",
+        ),
+        (
+            lambda payload: payload.update(
+                {
+                    "evidence_admissibility": EvidenceAdmissibilityResultV1(
+                        overall_status=EvidenceAdmissibilityStatusV1.UNSATISFIED,
+                        requirement_evaluations=(
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.UNSATISFIED,
+                                matched_evidence_ids=("idx:ws-1:doc-1:chunk-1",),
+                                reason_code=RequirementAdmissibilityReasonCodeV1.NO_MATCHING_EVIDENCE,
+                            ),
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-live",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("live:call-1:item-1",),
+                            ),
+                        ),
+                    )
+                }
+            ),
+            "unsatisfied_evaluation_forbids_matched_evidence",
+        ),
+        (
+            lambda payload: payload.update(
+                {
+                    "evidence_admissibility": EvidenceAdmissibilityResultV1(
+                        overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        requirement_evaluations=(
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("idx:missing",),
+                            ),
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-live",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("live:call-1:item-1",),
+                            ),
+                        ),
+                    )
+                }
+            ),
+            "matched_evidence_not_persisted",
+        ),
+        (
+            lambda payload: payload.update(
+                {
+                    "evidence_admissibility": EvidenceAdmissibilityResultV1(
+                        overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        requirement_evaluations=(
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("live:call-1:item-1",),
+                            ),
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-live",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("live:call-1:item-1",),
+                            ),
+                        ),
+                    )
+                }
+            ),
+            "indexed_obligation_evidence_type_mismatch",
+        ),
+        (
+            lambda payload: payload.update(
+                {
+                    "evidence_admissibility": EvidenceAdmissibilityResultV1(
+                        overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        requirement_evaluations=(
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("idx:ws-1:doc-1:chunk-1",),
+                            ),
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-live",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("idx:ws-1:doc-1:chunk-1",),
+                            ),
+                        ),
+                    )
+                }
+            ),
+            "live_obligation_evidence_type_mismatch",
+        ),
+        (
+            lambda payload: payload.update(
+                {
+                    "evidence_admissibility": EvidenceAdmissibilityResultV1(
+                        overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        requirement_evaluations=(
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("idx:ws-1:doc-1:chunk-1",),
+                            ),
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-live",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("live:call-2:item-1",),
+                            ),
+                        ),
+                    ),
+                    "persisted_evidence": [
+                        _persisted_indexed(),
+                        _persisted_live(evidence_id="live:call-2:item-1", call_id="call-2"),
+                    ],
+                    "citations": [
+                        IndexedWorkspaceCitationV1(
+                            evidence_id="idx:ws-1:doc-1:chunk-1",
+                            safe_display_name="document.txt",
+                            retrieved_at=_NOW,
+                            document_id="document-1",
+                            source_id="source-1",
+                            workspace_id=_WORKSPACE,
+                            source_path="/docs/document.txt",
+                            file_name="document.txt",
+                        ),
+                        LiveWorkspaceCitationV1(
+                            evidence_id="live:call-2:item-1",
+                            safe_display_name="Live item",
+                            retrieved_at=_NOW,
+                            provider_id=_PROVIDER,
+                            connection_safe_label="Live connection",
+                            capability_id=_CAP,
+                            call_id="call-2",
+                        ),
+                    ],
+                }
+            ),
+            "live_obligation_call_id_mismatch",
+        ),
+        (
+            lambda payload: payload.update(
+                {
+                    "evidence_admissibility": EvidenceAdmissibilityResultV1(
+                        overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        requirement_evaluations=(
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("idx:other-binding",),
+                            ),
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-live",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("live:call-1:item-1",),
+                            ),
+                        ),
+                    ),
+                    "persisted_evidence": [
+                        _persisted_indexed(
+                            evidence_id="idx:other-binding",
+                            binding_id=_OTHER_BINDING,
+                        ),
+                        _persisted_live(),
+                    ],
+                    "citations": [
+                        IndexedWorkspaceCitationV1(
+                            evidence_id="idx:other-binding",
+                            safe_display_name="document.txt",
+                            retrieved_at=_NOW,
+                            document_id="document-1",
+                            source_id="source-1",
+                            workspace_id=_WORKSPACE,
+                            source_path="/docs/document.txt",
+                            file_name="document.txt",
+                        ),
+                        LiveWorkspaceCitationV1(
+                            evidence_id="live:call-1:item-1",
+                            safe_display_name="Live item",
+                            retrieved_at=_NOW,
+                            provider_id=_PROVIDER,
+                            connection_safe_label="Live connection",
+                            capability_id=_CAP,
+                            call_id="call-1",
+                        ),
+                    ],
+                }
+            ),
+            "indexed_obligation_binding_mismatch",
+        ),
+        (
+            lambda payload: payload.update(
+                {
+                    "evidence_admissibility": EvidenceAdmissibilityResultV1(
+                        overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        requirement_evaluations=(
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("idx:ws-1:doc-1:chunk-1",),
+                            ),
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-live",
+                                status=RequirementEvaluationStatusV1.UNSATISFIED,
+                                reason_code=RequirementAdmissibilityReasonCodeV1.NO_MATCHING_EVIDENCE,
+                            ),
+                        ),
+                    )
+                }
+            ),
+            "admissibility_overall_status_mismatch",
+        ),
+        (
+            lambda payload: payload.update(
+                {
+                    "status": AskRunStatus.COMPLETED,
+                    "evidence_admissibility": EvidenceAdmissibilityResultV1(
+                        overall_status=EvidenceAdmissibilityStatusV1.UNSATISFIED,
+                        requirement_evaluations=(
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-indexed",
+                                status=RequirementEvaluationStatusV1.UNSATISFIED,
+                                reason_code=RequirementAdmissibilityReasonCodeV1.NO_MATCHING_EVIDENCE,
+                            ),
+                            RequiredEvidenceEvaluationV1(
+                                requirement_id="req-live",
+                                status=RequirementEvaluationStatusV1.SATISFIED,
+                                matched_evidence_ids=("live:call-1:item-1",),
+                            ),
+                        ),
+                    ),
+                }
+            ),
+            "completed_run_requires_satisfied_admissibility",
+        ),
+    ],
+)
+def test_run_integrity_rejects_tampered_admissibility(
+    mutator: object,
+    expected_error: str,
+) -> None:
+    payload = _valid_satisfied_run_payload()
+    mutator(payload)
+    with pytest.raises(ValidationError) as exc:
+        WorkspaceAskRunV2.model_validate(payload)
+    assert expected_error in str(exc.value)

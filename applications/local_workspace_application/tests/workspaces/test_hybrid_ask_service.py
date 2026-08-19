@@ -29,10 +29,14 @@ from local_workspace_application.workspaces.hybrid_ask_models import (
 )
 from local_workspace_application.workspaces.hybrid_ask_policy import (
     AudienceContextV1,
+    HybridAskPolicyError,
     IndexedEvidenceRequirementV1,
     KnowledgeQueryAudienceV1,
+    LiveCallProposalV1,
     LiveEvidenceRequirementV1,
+    ProviderEvidencePlanV1,
     ResolvedLiveResourceScopeV1,
+    compose_evidence_obligations,
 )
 from local_workspace_application.workspaces.hybrid_ask_service import (
     WorkspaceAskCommandV2,
@@ -547,26 +551,8 @@ def test_v2_admissibility_satisfied_invokes_assembler_and_persists_result() -> N
         LiveResultRetentionV1.EPHEMERAL,
         llm,
     )
-    obligations = (
-        IndexedEvidenceRequirementV1(
-            requirement_id="req-indexed",
-            semantic_role="Indexed grounding",
-        ),
-        LiveEvidenceRequirementV1(
-            requirement_id="req-live",
-            semantic_role="Live grounding",
-            call_id="call-1",
-        ),
-    )
 
-    run = asyncio.run(
-        service.ask(
-            _command(
-                QueryPolicyModeV2.HYBRID,
-                required_evidence_obligations=obligations,
-            )
-        )
-    )
+    run = asyncio.run(service.ask(_command(QueryPolicyModeV2.HYBRID)))
 
     assert run.status is AskRunStatus.COMPLETED
     assert llm.calls == 1
@@ -575,12 +561,14 @@ def test_v2_admissibility_satisfied_invokes_assembler_and_persists_result() -> N
         run.evidence_admissibility.overall_status
         is EvidenceAdmissibilityStatusV1.SATISFIED
     )
-    assert run.required_evidence_obligations == obligations
+    obligation_ids = {item.requirement_id for item in run.required_evidence_obligations}
+    assert "product:hybrid:indexed" in obligation_ids
+    assert "product:hybrid:live:call-1" in obligation_ids
     assert {item.evidence_type.value for item in run.citations} == {"indexed", "live"}
     reloaded = repository.get_run_v2(tenant_id=_TENANT, run_id=run.run_id)
     assert reloaded is not None
     assert reloaded.evidence_admissibility == run.evidence_admissibility
-    assert reloaded.required_evidence_obligations == obligations
+    assert reloaded.required_evidence_obligations == run.required_evidence_obligations
 
 
 def test_v2_missing_required_indexed_evidence_skips_assembler() -> None:
@@ -704,6 +692,245 @@ def test_v2_missing_required_live_evidence_skips_assembler() -> None:
         is EvidenceAdmissibilityStatusV1.UNSATISFIED
     )
     assert _CONTENT not in json.dumps(run.model_dump(mode="json"))
+
+
+def test_v2_hybrid_product_obligations_derived_via_planning_path() -> None:
+    llm = _RecordingLLM([_indexed_evidence().evidence_id, _LIVE_ID])
+    service, _, _, _ = _service(
+        QueryPolicyModeV2.HYBRID,
+        LiveResultRetentionV1.EPHEMERAL,
+        llm,
+    )
+
+    run = asyncio.run(service.ask(_command(QueryPolicyModeV2.HYBRID)))
+
+    assert {item.requirement_id for item in run.required_evidence_obligations} == {
+        "product:hybrid:indexed",
+        "product:hybrid:live:call-1",
+    }
+    assert run.evidence_admissibility is not None
+    assert (
+        run.evidence_admissibility.overall_status
+        is EvidenceAdmissibilityStatusV1.SATISFIED
+    )
+
+
+def test_v2_hybrid_caller_cannot_remove_product_obligations() -> None:
+    llm = _RecordingLLM([_indexed_evidence().evidence_id, _LIVE_ID])
+    service, _, _, _ = _service(
+        QueryPolicyModeV2.HYBRID,
+        LiveResultRetentionV1.EPHEMERAL,
+        llm,
+    )
+
+    run = asyncio.run(
+        service.ask(
+            _command(
+                QueryPolicyModeV2.HYBRID,
+                required_evidence_obligations=(),
+            )
+        )
+    )
+
+    assert "product:hybrid:indexed" in {
+        item.requirement_id for item in run.required_evidence_obligations
+    }
+
+
+def test_v2_additive_caller_obligations_strengthen_product_contract() -> None:
+    llm = _RecordingLLM([_indexed_evidence().evidence_id, _LIVE_ID])
+    service, _, _, _ = _service(
+        QueryPolicyModeV2.HYBRID,
+        LiveResultRetentionV1.EPHEMERAL,
+        llm,
+    )
+    additional = (
+        IndexedEvidenceRequirementV1(
+            requirement_id="caller:extra-indexed",
+            semantic_role="Caller extra indexed proof",
+        ),
+    )
+
+    run = asyncio.run(
+        service.ask(
+            _command(
+                QueryPolicyModeV2.HYBRID,
+                required_evidence_obligations=additional,
+            )
+        )
+    )
+
+    obligation_ids = {item.requirement_id for item in run.required_evidence_obligations}
+    assert "product:hybrid:indexed" in obligation_ids
+    assert "caller:extra-indexed" in obligation_ids
+
+
+def test_v2_compose_rejects_conflicting_duplicate_requirement_id() -> None:
+    with pytest.raises(HybridAskPolicyError) as exc:
+        compose_evidence_obligations(
+            authoritative=(
+                IndexedEvidenceRequirementV1(
+                    requirement_id="dup",
+                    semantic_role="Authoritative",
+                ),
+            ),
+            additional=(
+                IndexedEvidenceRequirementV1(
+                    requirement_id="dup",
+                    semantic_role="Caller duplicate",
+                ),
+            ),
+        )
+    assert exc.value.error_code == "duplicate_requirement_id"
+
+
+def test_v2_indexed_only_without_product_contract_remains_obligation_free() -> None:
+    llm = _RecordingLLM([_indexed_evidence().evidence_id])
+    service, _, _, _ = _service(
+        QueryPolicyModeV2.INDEXED_ONLY,
+        LiveResultRetentionV1.EPHEMERAL,
+        llm,
+    )
+
+    run = asyncio.run(service.ask(_command(QueryPolicyModeV2.INDEXED_ONLY)))
+
+    assert run.required_evidence_obligations == ()
+    assert run.status is AskRunStatus.COMPLETED
+
+
+def test_v2_provider_strategy_supplies_authoritative_obligations() -> None:
+    provider_live_id = evidence_id_for_call(
+        provider_id="neutral_provider",
+        integration_kind=_KIND,
+        source_kind="issues",
+        capability_id="vendor.neutral_provider.issues.read",
+        contract_version="1",
+        live_access_binding_id="binding-1",
+        connection_ref="connection-1",
+        remote_resource_id=None,
+        call_id="provider-call-1",
+        remote_item_id="item-1",
+    )
+    class _ProviderStrategy:
+        def build_plan(
+            self,
+            *,
+            configuration: WorkspaceKnowledgeConfigurationV1,
+            request: object,
+        ) -> ProviderEvidencePlanV1:
+            del configuration, request
+            return ProviderEvidencePlanV1(
+                ordered_live_call_proposals=(
+                    LiveCallProposalV1(
+                        call_id="provider-call-1",
+                        live_access_binding_id="binding-1",
+                        capability_id="vendor.neutral_provider.issues.read",
+                        typed_capability_request={"item_key": "ITEM-1"},
+                    ),
+                ),
+                required_evidence_obligations=(
+                    LiveEvidenceRequirementV1(
+                        requirement_id="provider:live:provider-call-1",
+                        semantic_role="Provider live proof",
+                        call_id="provider-call-1",
+                    ),
+                ),
+            )
+
+        def build_expansion(self, **_: object) -> None:
+            return None
+
+        def coverage(self, **_: object) -> None:
+            return None
+
+    llm = _RecordingLLM([provider_live_id])
+    repository = _Repository()
+    store = InMemoryDocumentStore()
+    ask_repository = WorkspaceAskRepository(store)
+    configuration = _Configuration(
+        QueryPolicyModeV2.LIVE_ONLY,
+        LiveResultRetentionV1.EPHEMERAL,
+    )
+    service = WorkspaceAskServiceV2(
+        workspace_service=_WorkspaceAuthority(),  # type: ignore[arg-type]
+        workspace_repository=repository,  # type: ignore[arg-type]
+        ask_repository=ask_repository,
+        configuration_service=configuration,  # type: ignore[arg-type]
+        capability_catalog=_Catalog(),  # type: ignore[arg-type]
+        request_envelope_validator=_EnvelopeValidator(),  # type: ignore[arg-type]
+        resource_scope_validator=_ScopeValidator(),
+        orchestrator=KnowledgeQueryOrchestratorV1(
+            indexed_retriever=_IndexedRetriever(()),
+            live_executor=_LiveExecutor(),  # type: ignore[arg-type]
+            clock=lambda: _NOW,
+            monotonic=lambda: 100.0,
+        ),
+        llm_adapter=llm,
+        clock=lambda: _NOW,
+        run_id_factory=lambda: "run-provider-1",
+        plan_id_factory=lambda: "plan-provider-1",
+        provider_strategy=_ProviderStrategy(),
+    )
+    command = WorkspaceAskCommandV2(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        question="Provider-owned obligations?",
+        requested_mode=QueryPolicyModeV2.LIVE_ONLY,
+        audience_context=AudienceContextV1(
+            audience=KnowledgeQueryAudienceV1.PERSONAL
+        ),
+        provider_request=object(),
+        request_id="request-provider-1",
+    )
+
+    run = asyncio.run(service.ask(command))
+
+    assert run.required_evidence_obligations[0].requirement_id == "provider:live:provider-call-1"
+    assert run.evidence_admissibility is not None
+    assert (
+        run.evidence_admissibility.overall_status
+        is EvidenceAdmissibilityStatusV1.SATISFIED
+    )
+
+
+def test_v2_hybrid_missing_authoritative_evidence_skips_assembler() -> None:
+    llm = _RecordingLLM([_indexed_evidence().evidence_id, _LIVE_ID])
+    indexed = _IndexedRetriever(())
+    live = _LiveExecutor()
+    orchestrator = KnowledgeQueryOrchestratorV1(
+        indexed_retriever=indexed,
+        live_executor=live,  # type: ignore[arg-type]
+        clock=lambda: _NOW,
+        monotonic=lambda: 100.0,
+    )
+    repository = _Repository()
+    store = InMemoryDocumentStore()
+    ask_repository = WorkspaceAskRepository(store)
+    configuration = _Configuration(QueryPolicyModeV2.HYBRID, LiveResultRetentionV1.EPHEMERAL)
+    service = WorkspaceAskServiceV2(
+        workspace_service=_WorkspaceAuthority(),  # type: ignore[arg-type]
+        workspace_repository=repository,  # type: ignore[arg-type]
+        ask_repository=ask_repository,
+        configuration_service=configuration,  # type: ignore[arg-type]
+        capability_catalog=_Catalog(),  # type: ignore[arg-type]
+        request_envelope_validator=_EnvelopeValidator(),  # type: ignore[arg-type]
+        resource_scope_validator=_ScopeValidator(),
+        orchestrator=orchestrator,
+        llm_adapter=llm,
+        clock=lambda: _NOW,
+        run_id_factory=lambda: "run-adm-hybrid",
+        plan_id_factory=lambda: "plan-adm-hybrid",
+    )
+
+    run = asyncio.run(service.ask(_command(QueryPolicyModeV2.HYBRID)))
+
+    assert run.status is AskRunStatus.INSUFFICIENT_EVIDENCE
+    assert llm.calls == 0
+    assert run.evidence_admissibility is not None
+    assert (
+        run.evidence_admissibility.overall_status
+        is EvidenceAdmissibilityStatusV1.UNSATISFIED
+    )
 
 
 def test_v2_controlled_execution_failure_persists_and_reconstructs(

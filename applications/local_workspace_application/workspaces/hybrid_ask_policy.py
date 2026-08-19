@@ -228,6 +228,59 @@ RequiredEvidenceObligationV1 = Annotated[
 ]
 
 
+class ProviderEvidencePlanV1(BaseModel):
+    """Provider-owned live proposals and authoritative evidence obligations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    ordered_live_call_proposals: tuple[LiveCallProposalV1, ...] = ()
+    required_evidence_obligations: tuple[RequiredEvidenceObligationV1, ...] = ()
+
+
+def derive_product_evidence_obligations(
+    *,
+    mode: QueryPolicyModeV2,
+    ordered_live_call_proposals: tuple[LiveCallProposalV1, ...],
+    include_indexed_retrieval: bool,
+) -> tuple[RequiredEvidenceObligationV1, ...]:
+    """Platform-owned minimum obligations for generic Workspace Ask planning."""
+    if mode is not QueryPolicyModeV2.HYBRID:
+        return ()
+    obligations: list[RequiredEvidenceObligationV1] = []
+    if include_indexed_retrieval:
+        obligations.append(
+            IndexedEvidenceRequirementV1(
+                requirement_id="product:hybrid:indexed",
+                semantic_role="Indexed corpus grounding",
+            )
+        )
+    for proposal in ordered_live_call_proposals:
+        obligations.append(
+            LiveEvidenceRequirementV1(
+                requirement_id=f"product:hybrid:live:{proposal.call_id}",
+                semantic_role="Planned live capability execution",
+                call_id=proposal.call_id,
+            )
+        )
+    return tuple(obligations)
+
+
+def compose_evidence_obligations(
+    *,
+    authoritative: tuple[RequiredEvidenceObligationV1, ...],
+    additional: tuple[RequiredEvidenceObligationV1, ...],
+) -> tuple[RequiredEvidenceObligationV1, ...]:
+    """Additive strengthening; duplicate requirement_id fails closed."""
+    seen: set[str] = set()
+    composed: list[RequiredEvidenceObligationV1] = []
+    for obligation in (*authoritative, *additional):
+        if obligation.requirement_id in seen:
+            raise HybridAskPolicyError("duplicate_requirement_id")
+        seen.add(obligation.requirement_id)
+        composed.append(obligation)
+    return tuple(composed)
+
+
 class EvidencePlanV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

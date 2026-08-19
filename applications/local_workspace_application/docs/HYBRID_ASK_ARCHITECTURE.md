@@ -236,6 +236,35 @@ RequiredEvidenceObligationV1 (discriminated union)
 
 Plan validation fails closed on duplicate `requirement_id`, unknown `call_id`, mode/type mismatch, or unknown indexed binding.
 
+#### 6.4.1 Obligation ownership (COMM-5C1-R1)
+
+Mandatory evidence requirements are **not client-removable**. The HTTP request does not authoritatively declare them.
+
+```mermaid
+flowchart TD
+    Q[Question / Product Request] --> P[Product-owned planning]
+    P --> A[Authoritative Evidence Obligations]
+    A --> C{Additive caller obligations?}
+    C -->|strengthen only| E[Effective Obligations]
+    C -->|none| E
+    E --> V[Validated Evidence Plan]
+    V --> X[Execution]
+    X --> G{Admissibility Gate}
+    G -->|SATISFIED| S[Bounded LLM Synthesis]
+    G -->|UNSATISFIED| N[No Answer Synthesis]
+```
+
+| Source | Role |
+|--------|------|
+| `derive_product_evidence_obligations` | Platform minimum for **HYBRID** generic Workspace Ask (indexed + per planned live call) |
+| `ProviderEvidencePlanV1.required_evidence_obligations` | Provider-owned obligations from `WorkspaceAskProviderStrategy.build_plan` |
+| `WorkspaceAskCommandV2.required_evidence_obligations` | **Additive only** — may strengthen, never replace authoritative minimum |
+| `compose_evidence_obligations` | Merges layers; duplicate `requirement_id` fails closed |
+
+`semantic_role` is explanatory for audit — enforcement uses structural fields only (`call_id`, `indexed_source_binding_id`, evidence type).
+
+Persisted `WorkspaceAskRunV2` records are **self-consistent**: obligations, per-requirement evaluations, matched evidence IDs, persisted evidence, and final status must agree.
+
 ### 6.5 Evidence Admissibility gate
 
 After orchestration, a **deterministic evaluator** compares execution evidence against the validated obligations. It does not call providers, LLMs, or repositories.
