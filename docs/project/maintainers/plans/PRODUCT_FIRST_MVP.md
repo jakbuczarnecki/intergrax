@@ -46,16 +46,20 @@ The product therefore leads development. Platform improvement follows product pr
 The required loop is:
 
 ```text
-real user problem
-→ product hypothesis
-→ smallest valuable workflow
-→ working MVP
-→ real use or realistic validation
+problem discovery (parallel, from the start)
+↔ product hypothesis
+↔ smallest valuable workflow
+↔ implementation / proof
+→ usable workflow
+→ solution validation
+→ repeated use / pilot evidence
 → concrete blocker or repeated pattern
 → reusable platform improvement
 → product consumes the improvement
 → end-to-end validation
 ```
+
+A real-user problem should be investigated **before and during** MVP construction. Problem discovery and product development inform each other. Formal **solution validation** requires a usable end-to-end workflow; it does not require every intended product capability to exist first. This remains an engineering/product-development rule — not a substitute for building.
 
 The following loop is explicitly rejected:
 
@@ -70,6 +74,59 @@ generic platform idea
 ```
 
 Platform work is justified when it enables, protects, simplifies, or scales an active product workflow.
+
+---
+
+## Parallel problem and customer discovery
+
+Discovery runs **in parallel** with product and proof work. Its purpose is to learn whether a recurring problem exists and which workflows deserve deeper evaluation — **not** to prove Intergrax solves it.
+
+### Three evidence classes
+
+| Class | Question it answers | Timing |
+|-------|---------------------|--------|
+| **Problem / customer discovery** | Do target people experience recurring pain? Are alternatives insufficient? Is the workflow worth investigating? | Now — alongside MVP construction |
+| **Solution / real-user validation** | Can users complete the workflow? Are results useful and trusted? Do they reuse it? | After a usable end-to-end workflow exists |
+| **Commercial validation** | Is there genuine commercial commitment or buying behavior? | Separate later boundary |
+
+A ProofReceipt or technical proof is **not** user-value evidence. Problem interviews are **not** commercial validation. Real-user and commercial validation remain incomplete until explicitly evidenced.
+
+### Behavior-based discovery questions
+
+Prefer past-behavior prompts:
+
+- Tell me about the last time this happened.
+- What did you do?
+- Which systems or information were involved?
+- Where did the process fail or become slow?
+- How often does this happen?
+- What have you already tried?
+- What happens when an AI answer is wrong?
+- Who verifies sources or permissions?
+- Who owns the problem?
+- What would justify evaluating a different approach?
+
+Avoid leading questions such as "Would you use Intergrax?", "Do you like this idea?", or "Would you pay for a product that does X?"
+
+### Discovery signals
+
+**Strong:** problem described without prompting; repeated occurrence; manual workarounds; concrete insufficiency of existing solutions; meaningful organizational effort; desire to continue evaluation; domain or decision owner involvement; representative workflow or data offered for bounded evaluation.
+
+**Weak:** generic praise, "interesting," GitHub stars, likes, hypothetical willingness without concrete workflow behavior.
+
+Do not invent numerical market-validation thresholds without evidence.
+
+### Target participant hypotheses
+
+Treat segments as hypotheses, not validated ICPs. Starting hypotheses may include AI/engineering leaders building internal AI apps; CTOs or Heads of Engineering introducing AI into workflows; knowledge-intensive teams with controlled documentation; enterprise AI/automation teams with access and evidence requirements. **No category is a proven buyer.**
+
+### Discovery decision loop
+
+| Outcome | When |
+|---------|------|
+| **CONTINUE** | Recurring pain, credible workflow, reason to proceed |
+| **REVISE** | Real problem exists but user, workflow, or value hypothesis needs adjustment |
+| **STOP** | Evidence does not justify continued investment in that hypothesis |
 
 ---
 
@@ -123,7 +180,7 @@ The brief must answer the following questions.
 - What tools and habits do they already have?
 - What level of technical knowledge can be assumed?
 
-The first user must be concrete enough that product decisions can be made for that user.
+The first user must be concrete enough that product decisions can be made for that user. Treat the target segment as a **hypothesis** until problem discovery and later solution validation support it — do not claim a validated ICP from interviews alone.
 
 Avoid descriptions such as:
 
@@ -184,6 +241,8 @@ The MVP must answer:
 ### 4.7 Value measurement
 
 Define observable evidence that the MVP is valuable.
+
+Distinguish **problem discovery evidence** (recurring pain, credible workflow) from **solution validation evidence** (users complete the workflow, trust results, reuse it) and **commercial evidence** (authorized engagement or buying behavior). Only the latter two apply after a usable workflow exists; none should be claimed complete without documented proof.
 
 Possible measures include:
 
@@ -268,9 +327,10 @@ Use this decision order:
 2. Does it make the result useful, trustworthy, or repeatable?
 3. Does it remove a blocker preventing a user from trying the MVP?
 4. Does it enable real validation with a design partner?
-5. Is it a reusable platform improvement required by one of the above?
+5. Does it sharpen problem discovery or test a product hypothesis with a real conversation?
+6. Is it a reusable platform improvement required by one of the above?
 
-If the answer to all five is no, the task is not an active MVP priority.
+If the answer to all six is no, the task is not an active MVP priority.
 
 ---
 
@@ -1091,13 +1151,16 @@ The point at which the product is installable, operationally safe, supportable, 
 
 Do not make the complete 1.0 roadmap a prerequisite for MVP validation.
 
+Problem discovery should begin before or during MVP construction. Solution validation requires a usable workflow — not every planned capability. Discovery and implementation should inform each other throughout.
+
 The required sequence is:
 
 ```text
 product brief
+→ parallel problem discovery
 → MVP vertical slice
 → minimal packaging or access
-→ real validation
+→ solution validation (usable workflow required)
 → feedback-driven next priority
 → production hardening
 → broader release
