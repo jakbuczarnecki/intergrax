@@ -18,16 +18,16 @@ External product capabilities were verified against vendor primary documentation
 
 ## How to read each section
 
-Each alternative follows the same structure:
+Each alternative follows the same structure. Vendor capability facts come from primary sources; adopter responsibilities are **decision questions your team must settle** — not implied feature gaps.
 
-- **Best fit / strengths** — what the stack is designed to optimize for
+- **Best fit / strengths** — what the stack is designed to optimize for (vendor capability fact)
 - **Choose it when…** — honest recommendation cases
 - **What it already solves** — capability facts from primary sources (not an Intergrax gap list)
-- **What remains application/platform-owned** — responsibilities the adopting team still carries
-- **How Intergrax approaches responsibility differently** — architectural interpretation only
+- **Responsibilities / questions your team still needs to settle** — product semantics, organization-specific permissions, acceptance criteria, how multiple products share foundations, what evidence model reviewers require, and deployment/operational ownership — without implying the named stack lacks common platform facilities
+- **How Intergrax approaches responsibility differently** — architectural interpretation only (different center of responsibility, not missing-feature contrast)
 - **Current Intergrax evidence boundary** — what is proven today, not a competitiveness score
 
-Common platform facilities — persistence, memory, tracing, guardrails, approvals, workflows, durability — are **not** treated as Intergrax differentiators by default. Assume modern stacks may provide them unless a primary source states otherwise.
+Common platform facilities — persistence, memory, tracing, guardrails, approvals, workflows, durability, identity, HITL, observability — are **not** treated as Intergrax differentiators by default. Modern stacks may provide them; the comparison is about **where architectural responsibility sits**, not whether a capability exists somewhere in a vendor portfolio.
 
 ---
 
@@ -51,9 +51,9 @@ Lightweight agent loops, tool use, handoffs, and tracing oriented around OpenAI 
 
 Agent orchestration primitives, tool invocation, multi-agent handoffs, and integrated tracing within the SDK model — per vendor documentation.
 
-### What remains application/platform-owned
+### Responsibilities / questions your team still needs to settle
 
-Product semantics, organizational policy beyond SDK defaults, cross-application foundation reuse, deployment packaging, and evidence models required by your reviewers.
+Product semantics and acceptance criteria; organization-specific permissions and policy models beyond what you choose to adopt from SDK patterns; how multiple products share foundations; what evidence model your reviewers require; deployment packaging and operational ownership for your environment.
 
 ### How Intergrax approaches responsibility differently
 
@@ -67,7 +67,7 @@ Bounded LKW and platform-capability proofs — see [PROOFS.md](../proofs/PROOFS.
 
 ## Microsoft Agent Framework
 
-Primary source: [Microsoft Agent Framework overview](https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview) (verified 2026-08-18).
+Primary source: [Microsoft Agent Framework overview](https://learn.microsoft.com/en-us/agent-framework/overview/) (verified 2026-08-18).
 
 ### Best fit / strengths
 
@@ -85,9 +85,9 @@ Agent construction and orchestration aligned with Microsoft and Azure AI service
 
 Agent authoring, orchestration, and integration with Microsoft AI platform services — per vendor documentation.
 
-### What remains application/platform-owned
+### Responsibilities / questions your team still needs to settle
 
-Domain workflow semantics, product-specific validation, multi-product foundation sharing, and evidence models beyond default Microsoft wiring for your scenario.
+Domain workflow semantics and acceptance criteria; organization-specific permissions and policy models for your scenario; how multiple products share foundations; what evidence model auditors require; deployment and operational ownership across your Azure estate.
 
 ### How Intergrax approaches responsibility differently
 
@@ -119,9 +119,9 @@ Fine-grained **stateful graph orchestration** for agent workflows, with LangSmit
 
 Graph state machines, durable checkpoints, human-in-the-loop interruption patterns, and platform observability/evaluation tooling — per vendor documentation.
 
-### What remains application/platform-owned
+### Responsibilities / questions your team still needs to settle
 
-Product meaning, organizational policy models, cross-product foundation reuse, and canonical evidence semantics for your auditors.
+Product meaning and acceptance criteria; organization-specific permissions and policy models; how multiple products share foundations; what evidence model your auditors require; deployment and operational ownership around the LangGraph/LangSmith stack you operate.
 
 ### How Intergrax approaches responsibility differently
 
@@ -146,22 +146,22 @@ Temporal, DBOS, and Restate may appear in similar decision spaces as durable exe
 ### Choose it when…
 
 - **distributed durable workflow infrastructure** is the dominant requirement;
-- you need proven microservice-side orchestration and state management at scale;
+- microservice-side orchestration and durable state management are core platform requirements;
 - agent reasoning is one step inside a broader durable workflow platform you already operate.
 
-**Dapr may be stronger** when durable workflow and distributed runtime operations — not AI application operating-model consolidation — are the primary buying criteria.
+**Dapr may be the more natural choice** when durable workflow and distributed runtime operations — not AI application operating-model consolidation — are the primary buying criteria.
 
 ### What it already solves
 
 Durable workflow execution, activity orchestration, and agent-oriented building blocks on the Dapr runtime — per vendor documentation.
 
-### What remains application/platform-owned
+### Responsibilities / questions your team still needs to settle
 
-AI-specific governance semantics, knowledge boundaries, agent contracts, and product-layer UX — often composed above or beside the workflow runtime.
+AI-specific governance semantics, knowledge boundaries, and agent contracts for your products; acceptance criteria for agent behavior; how multiple AI products share foundations; what evidence model reviewers require; product-layer UX and operational ownership composed with the Dapr runtime you run.
 
 ### How Intergrax approaches responsibility differently
 
-Intergrax treats AI application **governance, agent contracts, consequential execution, recovery taxonomy, and canonical execution history** as first-class platform concerns for specialized AI products — not as responsibilities left entirely to workflow infrastructure plus ad hoc application code.
+Intergrax treats AI application **governance, agent contracts, consequential execution, recovery taxonomy, and canonical execution history** as first-class platform concerns for specialized AI products — consolidated in one application operating layer — while Dapr's documented scope centers durable distributed workflow and runtime building blocks.
 
 ### Current Intergrax evidence boundary
 
@@ -171,27 +171,27 @@ Durable operator-queue and production chaos claims are **not** made. Reliability
 
 ## Google ADK / Agents CLI ecosystem
 
-Primary source: [Google Agent Development Kit documentation](https://google.github.io/adk-docs/) (verified 2026-08-18).
+Primary sources: [Google Agent Development Kit documentation](https://google.github.io/adk-docs/), [Agents CLI — Getting started](https://google.github.io/agents-cli/guide/getting-started/), [Agents CLI — Quickstart tutorial](https://google.github.io/agents-cli/guide/quickstart-tutorial/), [Agents CLI reference](https://google.github.io/agents-cli/cli/) (verified 2026-08-18).
 
 ### Best fit / strengths
 
-Agent authoring, tool use, and a create → evaluate → deploy → observe path within Google's agent tooling ecosystem.
+Agent authoring and tool use via ADK; a documented **create → evaluate → deploy → observe** lifecycle via Agents CLI — per Google's Agents CLI guides and CLI reference.
 
 ### Choose it when…
 
-- you want Google's agent development and evaluation workflow as the center of gravity;
-- deployment and observability integrated with Google's agent tooling matter more than a self-hosted application operating layer;
+- you want Google's documented agent development, evaluation, deployment, and observability workflow as the center of gravity;
+- that Google Cloud–native lifecycle matters more than a self-hosted application operating layer;
 - you are building inside Google's agent platform rather than standardizing your own multi-product harness.
 
-**Google may currently provide a stronger create/evaluate/deploy/observe DX path** for teams committed to that ecosystem — this is an ecosystem-fit observation, not a measured Intergrax deficit score.
+**Google provides a documented integrated create/evaluate/deploy/observe lifecycle and may be the more natural choice when that Google Cloud–native lifecycle is the primary requirement.**
 
 ### What it already solves
 
-Agent definition, tool integration, evaluation hooks, and deployment-oriented workflows — per vendor documentation.
+ADK: agent definition and tool integration — per ADK documentation. Agents CLI: project scaffolding, evaluation, deployment, and observability workflows along the documented lifecycle — per Agents CLI getting-started, quickstart tutorial, and CLI reference.
 
-### What remains application/platform-owned
+### Responsibilities / questions your team still needs to settle
 
-Cross-product foundation reuse, self-hosting posture, license fit, and evidence models outside Google's tooling assumptions.
+How multiple products share foundations; self-hosting posture and license fit for your organization; organization-specific permissions and acceptance criteria; what evidence model reviewers require beyond the workflows you adopt from Google's tooling; deployment and operational ownership across your Google Cloud estate.
 
 ### How Intergrax approaches responsibility differently
 
@@ -199,7 +199,7 @@ Intergrax is source-available and centers a **governed multi-application operati
 
 ### Current Intergrax evidence boundary
 
-No claim of equivalent Google Cloud integration depth or DX velocity. See [PROOFS.md](../proofs/PROOFS.md) for what is demonstrated today.
+No claim of equivalent Google Cloud integration depth. See [PROOFS.md](../proofs/PROOFS.md) for what is demonstrated today.
 
 ---
 
@@ -215,7 +215,7 @@ Maximum control and the ability to select best-in-class components for each conc
 
 - you have a **strong internal platform team** with capacity to integrate and maintain multiple systems;
 - your requirements map cleanly to separable products (orchestration, policy, durability, observability);
-- you prefer composing proven components over adopting a consolidated application operating layer.
+- you prefer composing established components over adopting a consolidated application operating layer.
 
 **A strong internal platform team may reasonably prefer a custom best-of-breed stack** when integration cost is acceptable and you want explicit ownership of every layer.
 
@@ -223,9 +223,9 @@ Maximum control and the ability to select best-in-class components for each conc
 
 Each component solves its own primary concern — orchestration, policy, durability, tracing, identity — when integrated deliberately.
 
-### What remains application/platform-owned
+### Responsibilities / questions your team still needs to settle
 
-Integration between components: consistent execution identity, unified recovery taxonomy, correlated governance evidence, and keeping multiple AI products from diverging.
+Integration contracts between components; consistent execution identity and recovery taxonomy across the stack; correlated governance evidence; how multiple AI products share foundations without diverging; deployment and operational ownership for each component and the glue layer.
 
 ### How Intergrax approaches responsibility differently
 
