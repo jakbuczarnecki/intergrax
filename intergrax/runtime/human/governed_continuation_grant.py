@@ -16,6 +16,7 @@ from intergrax.runtime.task.task import Task
 __all__ = [
     "GovernedContinuationGrantCoordinator",
     "GovernedContinuationGrantError",
+    "grant_belongs_to_same_proposal_scope",
     "matches_current_requirement",
 ]
 
@@ -84,12 +85,93 @@ def matches_current_requirement(
     return True
 
 
+def grant_belongs_to_same_proposal_scope(
+    grant: GovernedContinuationApprovalGrant,
+    *,
+    side_effect: MeaningfulSideEffectRequest,
+    operation_id: str,
+    resource_scope: str | None,
+) -> bool:
+    """Identity-only same-proposal check — not sufficient to authorize execution."""
+    if grant.task_id != side_effect.task_id:
+        return False
+    if grant.run_id != side_effect.run_id:
+        return False
+
+    normalized_operation = operation_id.strip()
+    if not normalized_operation or grant.operation_id != normalized_operation:
+        return False
+
+    if grant.resource_scope != resource_scope:
+        return False
+
+    if grant.side_effect_scope_id != side_effect.side_effect_scope_id:
+        return False
+
+    grant_digest = grant.side_effect_scope_digest
+    current_digest = side_effect.side_effect_scope_digest
+    if grant_digest is None and current_digest is None:
+        pass
+    elif grant_digest is None or current_digest is None:
+        return False
+    elif grant_digest != current_digest:
+        return False
+
+    return True
+
+
 class GovernedContinuationGrantCoordinator:
     """Derive scoped continuation grant from canonical pause + approval — no global state."""
 
     @staticmethod
     def clear_grant(task: Task) -> None:
         task.runtime.governance.governed_continuation_grant = None
+
+    @staticmethod
+    def clear_obsolete_grant_for_proposal(
+        task: Task,
+        *,
+        side_effect: MeaningfulSideEffectRequest,
+        operation_id: str,
+        resource_scope: str | None,
+    ) -> bool:
+        """Clear a stored grant only when it belongs to the same proposal identity."""
+        gov = task.runtime.governance
+        stored = gov.governed_continuation_grant
+        if stored is None:
+            return False
+        if not grant_belongs_to_same_proposal_scope(
+            stored,
+            side_effect=side_effect,
+            operation_id=operation_id,
+            resource_scope=resource_scope,
+        ):
+            return False
+        gov.governed_continuation_grant = None
+        task.sync_metadata()
+        return True
+
+    @staticmethod
+    def consume_matching_grant(
+        task: Task,
+        *,
+        expected_grant_id: str,
+    ) -> GovernedContinuationApprovalGrant | None:
+        """Consume a matched grant before side-effect execution.
+
+        Verifies the stored grant still matches ``expected_grant_id`` (TOCTOU guard).
+        On success the grant is cleared and is not restored if ``execute()`` later fails —
+        at-most-once approval authorization, not exactly-once external execution.
+        """
+        gov = task.runtime.governance
+        stored = gov.governed_continuation_grant
+        if stored is None:
+            return None
+        if stored.grant_id != expected_grant_id:
+            return None
+        gov.governed_continuation_grant = None
+        task.sync_metadata()
+        return stored
 
     @staticmethod
     def _validate_resolution(task: Task) -> None:
