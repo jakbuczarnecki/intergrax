@@ -482,6 +482,15 @@ def _find_active_attachment(
     return None
 
 
+def validate_provider_obligation_provenance(
+    obligations: tuple[RequiredEvidenceObligationV1, ...],
+) -> None:
+    """Provider strategy may define obligations but not trusted policy provenance."""
+    for obligation in obligations:
+        if obligation.policy_origin is not None:
+            raise HybridAskPolicyError("provider_policy_origin_forbidden")
+
+
 def collect_policy_origins(
     obligations: tuple[RequiredEvidenceObligationV1, ...],
 ) -> tuple[RequirementOriginV1, ...]:

@@ -332,7 +332,7 @@ deployment-policy / rev18 / RULE-SEC-DEP-4
 |-----------|---------|
 | Origin explains WHY | `policy_origin` is explanatory provenance only |
 | Structural enforcement unchanged | Satisfaction still uses `call_id`, `indexed_source_binding_id`, evidence type |
-| Server-authoritative | Caller `WorkspaceAskCommandV2` obligations cannot set `policy_origin` |
+| Server-authoritative | Trusted `policy_origin` only from policy derivation (`ResolvedPolicyRulesPort` → `EvidenceObligationDerivationPort` → `map_derived_obligation`); product, provider, and caller layers must leave it `None` |
 | Basis consistency | Policy-derived obligations require matching `policy_basis` on plan and run |
 | One revision per document | Conflicting revisions for the same policy document fail closed |
 

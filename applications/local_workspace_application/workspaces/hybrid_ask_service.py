@@ -54,6 +54,7 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     derive_product_evidence_obligations,
     resolve_effective_query_policy,
     validate_evidence_plan,
+    validate_provider_obligation_provenance,
 )
 from local_workspace_application.workspaces.hybrid_ask_policy_derivation import (
     compose_authoritative_evidence_obligations,
@@ -536,6 +537,9 @@ class WorkspaceAskServiceV2:
                 provider_plan.ordered_live_call_proposals
             )
             if isinstance(provider_plan, ProviderEvidencePlanV1):
+                validate_provider_obligation_provenance(
+                    provider_plan.required_evidence_obligations
+                )
                 provider_authoritative = provider_plan.required_evidence_obligations
         try:
             ordered_live_call_proposals = merge_live_call_proposals(

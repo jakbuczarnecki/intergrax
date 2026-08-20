@@ -23,7 +23,12 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     AudienceContextV1,
     HybridAskPolicyError,
     IndexedEvidenceRequirementV1,
+    LiveCallProposalV1,
+    LiveEvidenceRequirementV1,
+    ProviderEvidencePlanV1,
+    derive_product_evidence_obligations,
     validate_policy_basis_consistency,
+    validate_provider_obligation_provenance,
 )
 from local_workspace_application.workspaces.hybrid_ask_service import (
     WorkspaceAskCommandV2,
@@ -35,7 +40,15 @@ from local_workspace_application.workspaces.hybrid_ask_policy_derivation import 
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveResultRetentionV1,
     QueryPolicyModeV2,
+    WorkspaceKnowledgeConfigurationV1,
 )
+from intergrax.runtime.vendor_knowledge.live.contracts import KnowledgeQueryAudienceV1
+from local_workspace_application.workspaces.ask_models import AskRunStatus
+from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
+from local_workspace_application.workspaces.hybrid_ask_execution import (
+    KnowledgeQueryOrchestratorV1,
+)
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from local_workspace_application.tests.workspaces.test_hybrid_ask_service import (
     _Catalog,
     _Configuration,
@@ -50,15 +63,86 @@ from local_workspace_application.tests.workspaces.test_hybrid_ask_service import
     _TENANT,
     _WORKSPACE,
 )
-from intergrax.runtime.vendor_knowledge.live.contracts import KnowledgeQueryAudienceV1
-from local_workspace_application.workspaces.ask_models import AskRunStatus
-from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
-from local_workspace_application.workspaces.hybrid_ask_execution import (
-    KnowledgeQueryOrchestratorV1,
-)
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 
 _NOW = datetime(2026, 1, 1, tzinfo=UTC)
+
+_SPOOFED_ORIGIN = RequirementOriginV1(
+    policy_document_id="deployment-policy",
+    revision_id="rev18",
+    rule_id="RULE-SEC-DEP-4",
+)
+
+
+def _provider_service(
+    *,
+    provider_strategy: object,
+    derivation_port: DeterministicEvidenceObligationDerivation | None = None,
+    policy_rules_port: _FixedPolicyRulesPort | None = None,
+    mode: QueryPolicyModeV2 = QueryPolicyModeV2.LIVE_ONLY,
+) -> tuple[WorkspaceAskServiceV2, _RecordingLLM, _LiveExecutor]:
+    llm = _RecordingLLM([])
+    live_executor = _LiveExecutor()
+    orchestrator = KnowledgeQueryOrchestratorV1(
+        indexed_retriever=_IndexedRetriever(()),
+        live_executor=live_executor,  # type: ignore[arg-type]
+        clock=lambda: _NOW,
+        monotonic=lambda: 100.0,
+    )
+    repository = _Repository()
+    ask_repository = WorkspaceAskRepository(InMemoryDocumentStore())
+    configuration = _Configuration(mode, LiveResultRetentionV1.EPHEMERAL)
+    service = WorkspaceAskServiceV2(
+        workspace_service=_WorkspaceAuthority(),  # type: ignore[arg-type]
+        workspace_repository=repository,  # type: ignore[arg-type]
+        ask_repository=ask_repository,
+        configuration_service=configuration,  # type: ignore[arg-type]
+        capability_catalog=_Catalog(),  # type: ignore[arg-type]
+        request_envelope_validator=_EnvelopeValidator(),  # type: ignore[arg-type]
+        resource_scope_validator=_ScopeValidator(),
+        orchestrator=orchestrator,
+        llm_adapter=llm,
+        clock=lambda: _NOW,
+        run_id_factory=lambda: "run-provider-spoof",
+        plan_id_factory=lambda: "plan-provider-spoof",
+        provider_strategy=provider_strategy,
+        evidence_obligation_derivation_port=derivation_port,
+        resolved_policy_rules_port=policy_rules_port,
+    )
+    return service, llm, live_executor
+
+
+class _SpoofingProviderStrategy:
+    def __init__(
+        self,
+        *,
+        obligations: tuple[IndexedEvidenceRequirementV1 | LiveEvidenceRequirementV1, ...],
+        proposals: tuple[LiveCallProposalV1, ...] = (),
+    ) -> None:
+        self._obligations = obligations
+        self._proposals = proposals
+
+    def build_plan(
+        self,
+        *,
+        configuration: WorkspaceKnowledgeConfigurationV1,
+        request: object,
+    ) -> ProviderEvidencePlanV1:
+        del configuration, request
+        return ProviderEvidencePlanV1(
+            ordered_live_call_proposals=self._proposals,
+            required_evidence_obligations=self._obligations,
+        )
+
+    def build_expansion(self, **_: object) -> None:
+        return None
+
+    def coverage(self, **_: object) -> None:
+        return None
+
+
+class _FixedPolicyRulesPort:
+    def resolve_policy_rules(self, **_: object):
+        return (_pentest_rule(),)
 
 
 def _pentest_rule() -> RequireIndexedEvidencePolicyRuleV1:
@@ -181,11 +265,6 @@ def test_workspace_ask_run_persists_policy_basis_and_origins() -> None:
     )
 
 
-class _FixedPolicyRulesPort:
-    def resolve_policy_rules(self, **_: object):
-        return (_pentest_rule(),)
-
-
 def test_service_path_preserves_policy_provenance_on_run() -> None:
     indexed = _IndexedRetriever((_indexed_evidence(),))
     orchestrator = KnowledgeQueryOrchestratorV1(
@@ -253,3 +332,148 @@ def test_service_path_preserves_policy_provenance_on_run() -> None:
     assert reloaded is not None
     assert reloaded.policy_basis == run.policy_basis
     assert reloaded.required_evidence_obligations == run.required_evidence_obligations
+
+
+def test_product_obligations_forbid_policy_origin() -> None:
+    obligations = derive_product_evidence_obligations(
+        mode=QueryPolicyModeV2.HYBRID,
+        include_indexed_retrieval=True,
+    )
+    assert obligations
+    for obligation in obligations:
+        assert obligation.policy_origin is None
+
+
+def test_provider_boundary_rejects_policy_origin() -> None:
+    with pytest.raises(HybridAskPolicyError) as exc:
+        validate_provider_obligation_provenance(
+            (
+                LiveEvidenceRequirementV1(
+                    requirement_id="provider:fake-policy",
+                    semantic_role="Spoofed provider origin",
+                    call_id="call-1",
+                    policy_origin=_SPOOFED_ORIGIN,
+                ),
+            )
+        )
+    assert exc.value.error_code == "provider_policy_origin_forbidden"
+
+
+def test_provider_cannot_spoof_live_policy_origin() -> None:
+    provider = _SpoofingProviderStrategy(
+        obligations=(
+            LiveEvidenceRequirementV1(
+                requirement_id="provider:fake-policy",
+                semantic_role="Spoofed provider origin",
+                call_id="provider-call-1",
+                policy_origin=_SPOOFED_ORIGIN,
+            ),
+        ),
+        proposals=(
+            LiveCallProposalV1(
+                call_id="provider-call-1",
+                live_access_binding_id="binding-1",
+                capability_id="vendor.neutral_provider.issues.read",
+                typed_capability_request={"item_key": "ITEM-1"},
+            ),
+        ),
+    )
+    service, llm, live_executor = _provider_service(provider_strategy=provider)
+    with pytest.raises(HybridAskPolicyError) as exc:
+        asyncio.run(
+            service.ask(
+                WorkspaceAskCommandV2(
+                    tenant_id=_TENANT,
+                    workspace_id=_WORKSPACE,
+                    question="Provider spoof?",
+                    requested_mode=QueryPolicyModeV2.LIVE_ONLY,
+                    audience_context=AudienceContextV1(
+                        audience=KnowledgeQueryAudienceV1.PERSONAL
+                    ),
+                    provider_request=object(),
+                )
+            )
+        )
+    assert exc.value.error_code == "provider_policy_origin_forbidden"
+    assert llm.calls == 0
+    assert live_executor.calls == 0
+
+
+def test_provider_cannot_spoof_indexed_policy_origin() -> None:
+    provider = _SpoofingProviderStrategy(
+        obligations=(
+            IndexedEvidenceRequirementV1(
+                requirement_id="provider:fake-indexed-policy",
+                semantic_role="Spoofed indexed provider origin",
+                policy_origin=_SPOOFED_ORIGIN,
+            ),
+        ),
+    )
+    service, llm, live_executor = _provider_service(provider_strategy=provider)
+    with pytest.raises(HybridAskPolicyError) as exc:
+        asyncio.run(
+            service.ask(
+                WorkspaceAskCommandV2(
+                    tenant_id=_TENANT,
+                    workspace_id=_WORKSPACE,
+                    question="Provider indexed spoof?",
+                    requested_mode=QueryPolicyModeV2.LIVE_ONLY,
+                    audience_context=AudienceContextV1(
+                        audience=KnowledgeQueryAudienceV1.PERSONAL
+                    ),
+                    provider_request=object(),
+                )
+            )
+        )
+    assert exc.value.error_code == "provider_policy_origin_forbidden"
+    assert llm.calls == 0
+    assert live_executor.calls == 0
+
+
+def test_matching_policy_basis_does_not_legitimize_provider_spoof() -> None:
+    provider = _SpoofingProviderStrategy(
+        obligations=(
+            LiveEvidenceRequirementV1(
+                requirement_id="provider:fake-policy",
+                semantic_role="Spoofed provider origin",
+                call_id="provider-call-1",
+                policy_origin=RequirementOriginV1(
+                    policy_document_id="deployment-policy",
+                    revision_id="rev18",
+                    rule_id="RULE-X",
+                ),
+            ),
+        ),
+        proposals=(
+            LiveCallProposalV1(
+                call_id="provider-call-1",
+                live_access_binding_id="binding-1",
+                capability_id="vendor.neutral_provider.issues.read",
+                typed_capability_request={"item_key": "ITEM-1"},
+            ),
+        ),
+    )
+    service, llm, live_executor = _provider_service(
+        provider_strategy=provider,
+        derivation_port=DeterministicEvidenceObligationDerivation(),
+        policy_rules_port=_FixedPolicyRulesPort(),
+        mode=QueryPolicyModeV2.HYBRID,
+    )
+    with pytest.raises(HybridAskPolicyError) as exc:
+        asyncio.run(
+            service.ask(
+                WorkspaceAskCommandV2(
+                    tenant_id=_TENANT,
+                    workspace_id=_WORKSPACE,
+                    question="Matching basis spoof?",
+                    requested_mode=QueryPolicyModeV2.HYBRID,
+                    audience_context=AudienceContextV1(
+                        audience=KnowledgeQueryAudienceV1.PERSONAL
+                    ),
+                    provider_request=object(),
+                )
+            )
+        )
+    assert exc.value.error_code == "provider_policy_origin_forbidden"
+    assert llm.calls == 0
+    assert live_executor.calls == 0
