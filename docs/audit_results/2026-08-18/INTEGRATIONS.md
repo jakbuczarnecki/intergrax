@@ -36,7 +36,7 @@
 - **Prior audit reference(s):** Protocol v2 [`PROVIDER_BACKEND_ABSTRACTION`](PROVIDER_BACKEND_ABSTRACTION.md) (PBA-FIX-B/C on INTEGRATIONS arch/plan); INTEGRATIONS-1A/1B/2A–2E **Done**; INTEGRATIONS-3A additive registry v2 **In progress**; INTEGRATIONS-3B **Planned**
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `3298f612e0a0d53f5d75e5eda8798ef5f11566c5`
 
 ## Executive summary
 
