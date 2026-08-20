@@ -36,7 +36,7 @@
 - **Prior audit reference(s):** ACP + ACP-CLOSE + ACP-FINISH **Done**; AUDIT-IDEAL §12–§20 **Done** (incl. 31.1 on-call); Protocol v2 [`STRATEGIC_HARNESS_MODEL`](STRATEGIC_HARNESS_MODEL.md), [`TIER_LAYER_BOUNDARIES`](TIER_LAYER_BOUNDARIES.md) (TL-FIX-B)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `995c34ee5b9ca355e9bf3ec02c425f51d6cedaf4`
 
 ## Executive summary
 
