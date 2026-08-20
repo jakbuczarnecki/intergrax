@@ -1,22 +1,29 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Run the controlled Project Status proof service on loopback HTTP."""
-
 from __future__ import annotations
 
-import argparse
+import os
 
 import uvicorn
 
 from proof_infrastructure.controlled_project_status_service.app import create_app
+from proof_infrastructure.controlled_project_status_service.mongo_state import (
+    create_project_status_store_from_env,
+)
+from proof_infrastructure.controlled_project_status_service.seed import (
+    ORION_FIXTURE_PROJECT_ID,
+    seed_orion_fixture,
+)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Controlled Project Status proof service")
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8765)
-    args = parser.parse_args()
-    uvicorn.run(create_app(), host=args.host, port=args.port, log_level="info")
+    store = create_project_status_store_from_env()
+    if store.get_status(ORION_FIXTURE_PROJECT_ID) is None:
+        seed_orion_fixture(store)
+    app = create_app(store=store)
+    host = os.environ.get("PROJECT_STATUS_HOST", "0.0.0.0")
+    port = int(os.environ.get("PROJECT_STATUS_PORT", "8080"))
+    uvicorn.run(app, host=host, port=port, log_level="info")
 
 
 if __name__ == "__main__":

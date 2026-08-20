@@ -13,12 +13,18 @@ from proof_infrastructure.controlled_governance_approval_service.seed import (
     ORION_FIXTURE_SUBJECT_ID,
     seed_orion_governance_fixture,
 )
+from proof_infrastructure.controlled_governance_approval_service.mongo_state import (
+    MongoGovernanceApprovalStore,
+)
 from proof_infrastructure.controlled_governance_approval_service.state import (
     GovernanceApprovalStore,
 )
 
 
-def create_app(*, store: GovernanceApprovalStore | None = None) -> FastAPI:
+def create_app(
+    *,
+    store: GovernanceApprovalStore | MongoGovernanceApprovalStore | None = None,
+) -> FastAPI:
     governance_store = store or GovernanceApprovalStore()
     if governance_store.get_governance(ORION_FIXTURE_SUBJECT_ID) is None:
         seed_orion_governance_fixture(governance_store)
@@ -47,6 +53,17 @@ def create_app(*, store: GovernanceApprovalStore | None = None) -> FastAPI:
     def reset_request_count() -> Response:
         governance_store.reset_read_request_count()
         return Response(status_code=204)
+
+    @app.post("/control/seed-orion", response_model=GovernanceApprovalResponseV1)
+    def control_seed_orion() -> GovernanceApprovalResponseV1:
+        return seed_orion_governance_fixture(governance_store)
+
+    @app.get("/control/fixture/{subject_id}", response_model=GovernanceApprovalResponseV1)
+    def control_read_fixture(subject_id: str) -> GovernanceApprovalResponseV1:
+        status = governance_store.get_governance(subject_id)
+        if status is None:
+            raise HTTPException(status_code=404, detail="subject_not_found")
+        return status
 
     @app.exception_handler(HTTPException)
     def _http_exception_handler(_: object, exc: HTTPException) -> JSONResponse:

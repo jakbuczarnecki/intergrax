@@ -13,10 +13,16 @@ from proof_infrastructure.controlled_project_status_service.models import (
     RequestCountResponseV1,
 )
 from proof_infrastructure.controlled_project_status_service.seed import seed_orion_fixture
+from proof_infrastructure.controlled_project_status_service.mongo_state import (
+    MongoProjectStatusStore,
+)
 from proof_infrastructure.controlled_project_status_service.state import ProjectStatusStore
 
 
-def create_app(*, store: ProjectStatusStore | None = None) -> FastAPI:
+def create_app(
+    *,
+    store: ProjectStatusStore | MongoProjectStatusStore | None = None,
+) -> FastAPI:
     status_store = store or ProjectStatusStore()
     if not status_store.get_status("ORION"):
         seed_orion_fixture(status_store)
@@ -79,6 +85,17 @@ def create_app(*, store: ProjectStatusStore | None = None) -> FastAPI:
     ) -> ProjectStatusReadBehaviorControlV1:
         status_store.set_read_behavior(control.behavior)
         return control
+
+    @app.post("/control/seed-orion", response_model=ProjectStatusResponseV1)
+    def control_seed_orion() -> ProjectStatusResponseV1:
+        return seed_orion_fixture(status_store)
+
+    @app.get("/control/fixture/{project_id}", response_model=ProjectStatusResponseV1)
+    def control_read_fixture(project_id: str) -> ProjectStatusResponseV1:
+        status = status_store.get_status(project_id)
+        if status is None:
+            raise HTTPException(status_code=404, detail="project_not_found")
+        return status
 
     @app.exception_handler(HTTPException)
     def _http_exception_handler(_: object, exc: HTTPException) -> JSONResponse:

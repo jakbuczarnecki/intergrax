@@ -13,10 +13,16 @@ from proof_infrastructure.controlled_change_approval_service.seed import (
     ORION_FIXTURE_CHANGE_ID,
     seed_orion_change_fixture,
 )
+from proof_infrastructure.controlled_change_approval_service.mongo_state import (
+    MongoChangeApprovalStore,
+)
 from proof_infrastructure.controlled_change_approval_service.state import ChangeApprovalStore
 
 
-def create_app(*, store: ChangeApprovalStore | None = None) -> FastAPI:
+def create_app(
+    *,
+    store: ChangeApprovalStore | MongoChangeApprovalStore | None = None,
+) -> FastAPI:
     change_store = store or ChangeApprovalStore()
     if change_store.get_change(ORION_FIXTURE_CHANGE_ID) is None:
         seed_orion_change_fixture(change_store)
@@ -45,6 +51,17 @@ def create_app(*, store: ChangeApprovalStore | None = None) -> FastAPI:
     def reset_request_count() -> Response:
         change_store.reset_read_request_count()
         return Response(status_code=204)
+
+    @app.post("/control/seed-orion", response_model=ChangeApprovalResponseV1)
+    def control_seed_orion() -> ChangeApprovalResponseV1:
+        return seed_orion_change_fixture(change_store)
+
+    @app.get("/control/fixture/{change_id}", response_model=ChangeApprovalResponseV1)
+    def control_read_fixture(change_id: str) -> ChangeApprovalResponseV1:
+        status = change_store.get_change(change_id)
+        if status is None:
+            raise HTTPException(status_code=404, detail="change_not_found")
+        return status
 
     @app.exception_handler(HTTPException)
     def _http_exception_handler(_: object, exc: HTTPException) -> JSONResponse:
