@@ -27,6 +27,23 @@ experience remains under productization.
 > **Backend Product Alpha / MVP**. **Real-user validation** and **commercial
 > validation** are incomplete.
 
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.svg"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.svg"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.svg"
+    alt="Specialized AI products share the Intergrax governed foundation and may evolve toward a connected ecosystem; Local Knowledge Workspace is Backend Product Alpha while four portfolio directions remain selected pre-bootstrap."
+  >
+</picture>
+
+**Current reality:** [Local Knowledge Workspace](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) is the active reference product at **Backend Product Alpha / MVP** with bounded proof paths — not LKW 1.0 or production readiness. The four additional portfolio directions (**Contract-to-Invoice Leakage / Recovery Operator**, **Supplier Disruption Response Operator**, **Third-Party Risk Decision Operator**, **Deployment / Change Guardian**) are **selected pre-bootstrap** market applications with frozen selection records only; their presence here does not imply implementation or runtime proof. The portfolio exists partly to test reuse of shared Intergrax foundations across materially different product classes.
+
 ---
 
 <a id="start-here"></a>

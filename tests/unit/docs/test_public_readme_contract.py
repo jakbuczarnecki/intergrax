@@ -16,6 +16,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
 PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 README_STRATEGIC_ASSETS_DIR = REPO_ROOT / "docs" / "project" / "assets" / "public" / "readme"
+ECOSYSTEM_HERO_LIGHT_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-ecosystem-hero-light.svg"
+ECOSYSTEM_HERO_DARK_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-ecosystem-hero-dark.svg"
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
 LKW_ASSETS_PREFIX = "applications/local_workspace_application/docs/assets/"
@@ -249,6 +251,21 @@ def _extract_picture_blocks(readme_text: str) -> list[str]:
     return _PICTURE_BLOCK.findall(readme_text)
 
 
+def test_ecosystem_hero_contract(readme_text: str) -> None:
+    """Root README ecosystem hero appears before Choose your path with controlled assets."""
+    choose_idx = readme_text.index("## Choose your path")
+    hero_light_ref = "docs/project/assets/public/readme/intergrax-ecosystem-hero-light.svg"
+    hero_dark_ref = "docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.svg"
+    assert readme_text.index(hero_light_ref) < choose_idx
+    assert readme_text.index(hero_dark_ref) < choose_idx
+    assert readme_text.index("<picture>") < choose_idx
+    assert ECOSYSTEM_HERO_LIGHT_PATH.is_file(), "Ecosystem hero light SVG is missing"
+    assert ECOSYSTEM_HERO_DARK_PATH.is_file(), "Ecosystem hero dark SVG is missing"
+    pair_violations = _validate_light_dark_pair(ECOSYSTEM_HERO_LIGHT_PATH, ECOSYSTEM_HERO_DARK_PATH)
+    assert not pair_violations, f"Ecosystem hero light/dark pair: {pair_violations}"
+    assert 'alt="Specialized AI products share the Intergrax governed foundation' in readme_text
+
+
 def test_lkw_visual_contract(readme_text: str) -> None:
     assert "applications/local_workspace_application/docs/assets/lkw-grounded-result-light.svg" in readme_text
     assert "applications/local_workspace_application/docs/assets/lkw-grounded-result-dark.svg" in readme_text
@@ -302,6 +319,7 @@ def test_readme_controlled_multi_visual_contract(readme_text: str) -> None:
 def test_strategic_light_dark_pair_convention() -> None:
     """Reusable pair validation for existing and future strategic SVG families."""
     for light_path, dark_path in (
+        (ECOSYSTEM_HERO_LIGHT_PATH, ECOSYSTEM_HERO_DARK_PATH),
         (HERO_LIGHT_PATH, HERO_DARK_PATH),
         (LKW_LIGHT_PATH, LKW_DARK_PATH),
     ):
@@ -356,7 +374,14 @@ def _collect_svg_violations(root: ET.Element) -> list[str]:
 
 @pytest.mark.parametrize(
     "svg_path",
-    [HERO_LIGHT_PATH, HERO_DARK_PATH, LKW_LIGHT_PATH, LKW_DARK_PATH],
+    [
+        ECOSYSTEM_HERO_LIGHT_PATH,
+        ECOSYSTEM_HERO_DARK_PATH,
+        HERO_LIGHT_PATH,
+        HERO_DARK_PATH,
+        LKW_LIGHT_PATH,
+        LKW_DARK_PATH,
+    ],
 )
 def test_svg_safety(svg_path: Path) -> None:
     root = _parse_svg(svg_path)
