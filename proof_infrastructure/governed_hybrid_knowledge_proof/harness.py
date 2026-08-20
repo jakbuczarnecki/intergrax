@@ -8,10 +8,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from hashlib import sha256
-from unittest.mock import patch
-
-from intergrax.contracts.execution_identity import mint_task_id
-
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.project_status.knowledge_read import (
     PROJECT_STATUS_PROVIDER_ID,
@@ -257,25 +253,11 @@ class _ProjectStatusCatalog:
         )
 
 
-class _ScopedTaskIdIndexedRetriever:
-    """Proof-local scope: WorkspaceIndexedEvidenceRetrieverV1 uses new_run_id for task_id."""
-
-    def __init__(self, inner: WorkspaceIndexedEvidenceRetrieverV1) -> None:
-        self._inner = inner
-
-    async def retrieve(self, **kwargs: object) -> tuple[IndexedWorkspaceEvidenceV1, ...]:
-        with patch(
-            "intergrax.runtime.task.task_run_bridge.new_run_id",
-            mint_task_id,
-        ):
-            return await self._inner.retrieve(**kwargs)  # type: ignore[arg-type]
-
-
 class _RevokeAfterIndexedRetriever:
     def __init__(
         self,
         *,
-        inner: _ScopedTaskIdIndexedRetriever,
+        inner: WorkspaceIndexedEvidenceRetrieverV1,
         lifecycle: LiveAccessLifecycleService,
         configuration_service: WorkspaceKnowledgeConfigurationService,
         revoke_after_indexed: bool,
@@ -559,12 +541,10 @@ async def build_harness(
         connection_ref=PROOF_CONNECTION_REF,
     )
 
-    inner_retriever = _ScopedTaskIdIndexedRetriever(
-        WorkspaceIndexedEvidenceRetrieverV1(
-            task_executor=indexed_stack.search_task_executor,  # type: ignore[arg-type]
-            workspace_repository=repository,
-            clock=clock or (lambda: PROOF_NOW),
-        )
+    inner_retriever = WorkspaceIndexedEvidenceRetrieverV1(
+        task_executor=indexed_stack.search_task_executor,  # type: ignore[arg-type]
+        workspace_repository=repository,
+        clock=clock or (lambda: PROOF_NOW),
     )
     indexed_retriever = _RevokeAfterIndexedRetriever(
         inner=inner_retriever,

@@ -296,13 +296,13 @@ class WorkspaceIndexedEvidenceRetrieverV1:
             attach_lkw_evidence_metadata,
         )
 
+        from intergrax.contracts.execution_identity import mint_task_id
         from intergrax.runtime.task.task import Task, TaskContext
-        from intergrax.runtime.task.task_run_bridge import new_run_id
 
         task = Task(
-            task_id=new_run_id(),
+            task_id=mint_task_id(),
             tenant_id=tenant_id,
-            user_id="lkw.managed_workspace.hybrid_ask",
+            user_id="lkw.managed_workspace",
             message=question,
             context=TaskContext(capability="local.workspace.search"),
             metadata={

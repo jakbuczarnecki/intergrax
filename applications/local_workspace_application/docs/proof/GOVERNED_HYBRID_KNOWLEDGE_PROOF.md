@@ -217,6 +217,7 @@ RESULT: PASS
 |-------|-----------|
 | Application | `WorkspaceAskServiceV2` |
 | Indexed path | managed local document → `WorkspaceDocumentIndexingService` / `local.workspace.index` → `local.workspace.search` → `WorkspaceIndexedEvidenceRetrieverV1` |
+| Indexed identity | normal tenant/workspace scope, managed-workspace service `user_id`, canonical `TaskId` — no proof identity/scope adapters |
 | Connection | `TenantConnection` → `TenantConnectionRehydrator` → `KnowledgeConnectionRegistry` → `KnowledgeConnectionRegistryIntegrationResolverV1` |
 | Live path | `LiveCapabilityExecutorV1` + `ProjectStatusReadLiveHandlerV1` |
 | Authority revoke | `LiveAccessLifecycleService.disable` → `WorkspaceLiveAccessRuntimeAuthority` reload |

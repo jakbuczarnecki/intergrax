@@ -38,24 +38,122 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 _HARNESS_PATH = (
     _REPO_ROOT / "proof_infrastructure/governed_hybrid_knowledge_proof/harness.py"
 )
+_INDEXED_BOOTSTRAP_PATH = (
+    _REPO_ROOT
+    / "proof_infrastructure/governed_hybrid_knowledge_proof/indexed_bootstrap.py"
+)
 
 
 def _harness_source() -> str:
     return _HARNESS_PATH.read_text(encoding="utf-8")
 
 
+def _indexed_bootstrap_source() -> str:
+    return _INDEXED_BOOTSTRAP_PATH.read_text(encoding="utf-8")
+
+
 def test_flagship_harness_has_no_demo_plumbing() -> None:
     source = _harness_source()
+    bootstrap_source = _indexed_bootstrap_source()
     forbidden = (
         "_SearchTaskResult",
         "_SearchTaskExecutor",
         "create_project_status_integration(",
-        "task_run_bridge.new_run_id =",
+        "task_run_bridge.new_run_id",
+        "_SearchUserScopeNeutralizer",
+        "_TaskIdCorrectingExecutor",
+        "_ScopedTaskIdIndexedRetriever",
+        'user_id": " "',
         "hasattr(",
         "getattr(",
     )
     for token in forbidden:
         assert token not in source
+        assert token not in bootstrap_source
+
+
+@pytest.mark.asyncio
+async def test_indexed_workspace_user_scope_contract() -> None:
+    import shutil
+
+    from local_workspace_application.workspaces.hybrid_ask_execution import (
+        WorkspaceIndexedEvidenceRetrieverV1,
+    )
+    from local_workspace_application.workspaces.hybrid_ask_policy import (
+        AudienceContextV1,
+        IndexedRetrievalDirectiveV1,
+        KnowledgeQueryAudienceV1,
+    )
+    from proof_infrastructure.governed_hybrid_knowledge_proof.fixtures import (
+        DEPLOYMENT_POLICY_CONTENT,
+        DEPLOYMENT_POLICY_FILENAME,
+        PROOF_INDEXED_SOURCE_ID,
+        PROOF_NOW,
+        PROOF_TENANT_ID,
+        PROOF_WORKSPACE_ID,
+    )
+    from proof_infrastructure.governed_hybrid_knowledge_proof.harness import (
+        _seed_knowledge_configuration,
+    )
+    from proof_infrastructure.governed_hybrid_knowledge_proof.indexed_bootstrap import (
+        bootstrap_indexed_proof_stack,
+    )
+
+    stack = await bootstrap_indexed_proof_stack(
+        tenant_id=PROOF_TENANT_ID,
+        workspace_id=PROOF_WORKSPACE_ID,
+        source_id=PROOF_INDEXED_SOURCE_ID,
+        policy_filename=DEPLOYMENT_POLICY_FILENAME,
+        policy_content=DEPLOYMENT_POLICY_CONTENT,
+        proof_now=PROOF_NOW,
+    )
+    try:
+        _seed_knowledge_configuration(stack.repository)
+        retriever = WorkspaceIndexedEvidenceRetrieverV1(
+            task_executor=stack.search_task_executor,  # type: ignore[arg-type]
+            workspace_repository=stack.repository,
+            clock=lambda: PROOF_NOW,
+        )
+        evidence = await retriever.retrieve(
+            tenant_id=PROOF_TENANT_ID,
+            workspace_id=PROOF_WORKSPACE_ID,
+            configuration_revision=1,
+            question="deployment readiness score",
+            directive=IndexedRetrievalDirectiveV1(max_results=5),
+            audience_context=AudienceContextV1(
+                audience=KnowledgeQueryAudienceV1.PERSONAL,
+            ),
+        )
+        assert len(evidence) >= 1
+        assert any(
+            item.document_id == stack.indexed_document_id for item in evidence
+        )
+
+        with pytest.raises(ValueError, match="indexed_configuration_revision_unavailable"):
+            await retriever.retrieve(
+                tenant_id="wrong-tenant",
+                workspace_id=PROOF_WORKSPACE_ID,
+                configuration_revision=1,
+                question="deployment readiness score",
+                directive=IndexedRetrievalDirectiveV1(max_results=5),
+                audience_context=AudienceContextV1(
+                    audience=KnowledgeQueryAudienceV1.PERSONAL,
+                ),
+            )
+
+        with pytest.raises(ValueError, match="indexed_configuration_revision_unavailable"):
+            await retriever.retrieve(
+                tenant_id=PROOF_TENANT_ID,
+                workspace_id="wrong-workspace",
+                configuration_revision=1,
+                question="deployment readiness score",
+                directive=IndexedRetrievalDirectiveV1(max_results=5),
+                audience_context=AudienceContextV1(
+                    audience=KnowledgeQueryAudienceV1.PERSONAL,
+                ),
+            )
+    finally:
+        shutil.rmtree(stack.temp_path, ignore_errors=True)
 
 
 @pytest.mark.asyncio

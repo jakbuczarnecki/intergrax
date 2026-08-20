@@ -87,19 +87,6 @@ def _build_proof_embedding_manager() -> EmbeddingManager:
   return EmbeddingManager(pipeline=pipeline)
 
 
-class _TaskIdCorrectingExecutor:
-  """Proof-local adapter: retriever mints run_* ids via new_run_id(); Task requires task_*."""
-
-  def __init__(self, inner: TaskExecutorPort) -> None:
-    self._inner = inner
-
-  async def execute(self, task: Task) -> TaskResult:
-    task_id = str(task.task_id)
-    if task_id.startswith("run_"):
-      task = task.model_copy(update={"task_id": f"task_{task_id[4:]}"})
-    return await self._inner.execute(task)
-
-
 @contextmanager
 def _proof_rag_embedding_patch() -> Iterator[None]:
     from intergrax.rag.bootstrap import rag_stack_bootstrap
@@ -156,27 +143,9 @@ class IndexedProofStack:
   @property
   def search_executions(self) -> int:
     inner = self.search_task_executor
-    if isinstance(inner, _SearchUserScopeNeutralizer):
-      inner = inner._inner
-    if isinstance(inner, _TaskIdCorrectingExecutor):
-      wrapped = inner._inner
-      if isinstance(wrapped, _SearchCountingTaskExecutor):
-        return wrapped.search_executions
     if isinstance(inner, _SearchCountingTaskExecutor):
       return inner.search_executions
     return 0
-
-
-class _SearchUserScopeNeutralizer:
-  """Strip hybrid-ask user_id before search so rag.retrieve does not filter workspace chunks."""
-
-  def __init__(self, inner: TaskExecutorPort) -> None:
-    self._inner = inner
-
-  async def execute(self, task: Task) -> TaskResult:
-    if task.context.capability == "local.workspace.search":
-      task = task.model_copy(update={"user_id": " "})
-    return await self._inner.execute(task)
 
 
 class _SearchCountingTaskExecutor:
@@ -257,10 +226,7 @@ async def bootstrap_indexed_proof_stack(
     task_enricher=task_enricher,
     readiness=lifecycle,
   )
-  counting_executor = _SearchCountingTaskExecutor(inner_executor)
-  search_executor = _SearchUserScopeNeutralizer(
-    _TaskIdCorrectingExecutor(counting_executor),
-  )
+  search_executor = _SearchCountingTaskExecutor(inner_executor)
   store = InMemoryDocumentStore()
   repository = ManagedWorkspaceRepository(store)
   workspace_service = ManagedWorkspaceService(repository)
