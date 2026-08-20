@@ -4,12 +4,12 @@
 
 **Maintainer-level pre-registered proof contract.**
 
-This document defines **how** Intergrax will later be evaluated for cross-product reuse across a second, meaningfully different real product. It freezes the experiment methodology **before** Product #2 implementation begins.
+This document defines **how** Intergrax will later be evaluated for cross-product reuse across a second, meaningfully different real product. It freezes the experiment methodology **before** implementation begins for **the preregistered product under evaluation**.
 
 This document does **not**:
 
-- choose the final Product #2;
-- build Product #2;
+- select or substitute portfolio products;
+- build any preregistered product;
 - claim that cross-product reuse has been demonstrated;
 - change public positioning or architecture;
 - establish a reuse percentage, faster development, lower cost, commercial validation, or validated second-product demand.
@@ -18,10 +18,23 @@ Cross-product reuse remains a **strategic hypothesis** in public documentation (
 
 ---
 
+## Applicability (multi-product program)
+
+This contract originated as the **Product #2** reuse proof methodology. The current multi-product program applies the **same methodology independently** to **each preregistered new product** used as a cross-product reuse experiment.
+
+- Each preregistered new product receives its **own** T0 baseline and T1 evidence record.
+- Results are **not** pooled into a single denominator across products.
+- One product's T0 does **not** govern another product's experiment.
+- LKW remains the **reference baseline** and receives **no** retroactive T0/T1 scoring.
+
+Where this document still uses historical "Product #2" wording for exposition, read it as **the preregistered product under evaluation** unless the context is explicitly historical.
+
+---
+
 ## Core principle
 
 ```text
-Product #2 exists to solve a real product problem.
+Each preregistered new product exists to solve a real product problem.
 
 The reuse proof observes what the product can inherit from Intergrax.
 
@@ -30,7 +43,7 @@ The product must NOT be invented or distorted merely to make Intergrax reuse loo
 Product-first remains authoritative.
 ```
 
-The [Product-First MVP Development Brief](PRODUCT_FIRST_MVP.md) governs all product development. When a second product is used to test platform reuse, that product must originate from a real product hypothesis — not from a desire to exercise platform features.
+The [Product-First MVP Development Brief](PRODUCT_FIRST_MVP.md) governs all product development. When a preregistered new product is used to test platform reuse, that product must originate from a real product hypothesis — not from a desire to exercise platform features.
 
 ---
 
@@ -45,9 +58,9 @@ private duplication of platform responsibilities?
 
 ---
 
-## Product #2 diversity gate
+## Diversity gate (per preregistered product)
 
-Product #2 must be **meaningfully different** from LKW. A renamed or reshaped LKW workflow does not provide credible cross-product evidence.
+Each preregistered new product used in the reuse experiment must be **meaningfully different** from LKW. A renamed or reshaped LKW workflow does not provide credible cross-product evidence.
 
 This contract does **not** freeze a specific market product. The concrete product must come from product or customer evidence.
 
@@ -71,7 +84,7 @@ A governed operations-style application is a strong **example** of this archetyp
 
 ### Diversity gate checklist (T0)
 
-Before implementation begins, the frozen T0 record must explain **why** Product #2 is meaningfully different from LKW across at least:
+Before implementation begins, the frozen T0 record must explain **why** the preregistered product under evaluation is meaningfully different from LKW across at least:
 
 - primary user job and pain;
 - primary workflow shape (read vs act, knowledge vs operations);
@@ -83,34 +96,34 @@ Before implementation begins, the frozen T0 record must explain **why** Product 
 
 ## T0 — Pre-registration baseline
 
-**Before the first Product #2 implementation commit**, freeze a T0 baseline. Once implementation begins, measurement rules may **not** be retroactively changed merely to improve the proof result. Any legitimate rule correction must be explicitly versioned, dated, and explained.
+**Before the first implementation commit for the preregistered product under evaluation**, freeze a T0 baseline. Once implementation begins, measurement rules may **not** be retroactively changed merely to improve the proof result. Any legitimate rule correction must be explicitly versioned, dated, and explained.
 
 ### Required T0 contents
 
 | Field | Description |
 | ----- | ----------- |
-| **Product hypothesis** | What Product #2 is and why it should exist |
+| **Product hypothesis** | What the preregistered product is and why it should exist |
 | **Target user** | First concrete user, not a generic segment |
 | **Real problem** | Observable pain and current alternatives |
 | **Primary workflow** | End-to-end observable steps |
 | **Meaningful difference from LKW** | Why this product stresses different boundaries |
 | **Starting Intergrax commit SHA** | Exact platform baseline for the experiment |
-| **Required platform-responsibility matrix** | Every platform responsibility Product #2 needs (see below) |
+| **Required platform-responsibility matrix** | Every platform responsibility the preregistered product needs (see below) |
 | **Critical Reuse Set** | Subset of platform responsibilities whose reuse is essential to credibly demonstrate cross-product reuse for this experiment (see below) |
 | **Expected reuse candidates** | Which responsibilities are expected to be `REUSED_UNCHANGED` or `REUSED_CONFIGURED` |
 | **Known expected gaps** | Anticipated `EXTENDED_GENERALLY` or open questions |
 | **Measurement methodology** | How M1–M6 will be computed |
 | **PASS / PARTIAL / FAIL rules** | Frozen qualitative criteria (this contract) |
 
-T0 should be stored as a dated maintainer record linked from the Product #2 plan. The starting commit SHA must match the repository state at T0 freeze.
+T0 should be stored as a dated maintainer record linked from the product plan for the preregistered product under evaluation. The starting commit SHA must match the repository state at T0 freeze.
 
 ### Critical Reuse Set
 
-Before Product #2 implementation begins, T0 must identify the **Critical Reuse Set**: the subset of required existing platform responsibilities whose reuse is **essential** for this specific experiment to credibly demonstrate the Intergrax cross-product thesis.
+Before the preregistered product under evaluation begins implementation, T0 must identify the **Critical Reuse Set**: the subset of required existing platform responsibilities whose reuse is **essential** for this specific experiment to credibly demonstrate the Intergrax cross-product thesis.
 
 Selection must be justified from:
 
-- the Product #2 workflow;
+- the preregistered product's workflow;
 - how it differs from LKW;
 - which existing Intergrax responsibilities the experiment is specifically expected to stress.
 
@@ -136,7 +149,7 @@ M1 remains an exact descriptive percentage for the full responsibility matrix. T
 
 ## Platform-responsibility matrix
 
-For every **platform responsibility** required by Product #2’s workflow, classify the **final** result as exactly one of the following categories. Report **all** categories — not only successful reuse.
+For every **platform responsibility** required by the preregistered product's workflow, classify the **final** result as exactly one of the following categories. Report **all** categories — not only successful reuse.
 
 ### Categories
 
@@ -164,7 +177,7 @@ Product-specific branching, private infrastructure duplication, bypass of shared
 
 ### Candidate responsibilities (include only what the workflow requires)
 
-At T0, consider — where Product #2 actually needs them:
+At T0, consider — where the preregistered product actually needs them:
 
 - execution identity;
 - tenant / principal context;
@@ -183,7 +196,7 @@ At T0, consider — where Product #2 actually needs them:
 - application composition;
 - other existing platform mechanisms genuinely required by the workflow.
 
-Do **not** require Product #2 to use capabilities it does not need merely to improve reuse metrics.
+Do **not** require the preregistered product to use capabilities it does not need merely to improve reuse metrics.
 
 ---
 
@@ -227,12 +240,12 @@ if product == "Product2": ...
 
 ### M4 — Private Platform Duplication Count
 
-Number of required platform responsibilities that were frozen at T0 as **platform** responsibilities and that Product #2 implements **privately** instead of consuming or generally extending the shared Intergrax mechanism.
+Number of required platform responsibilities that were frozen at T0 as **platform** responsibilities and that the preregistered product implements **privately** instead of consuming or generally extending the shared Intergrax mechanism.
 
 - **Hard target:** `0`.
 - **No post-hoc erasure:** T1 may explain a violation but may **not** retroactively make M4 zero through ordinary T1 reasoning.
 
-If a responsibility is frozen at T0 as a platform responsibility and Product #2 privately implements it instead of using or generally extending the shared platform mechanism, M4 increments — regardless of later narrative justification.
+If a responsibility is frozen at T0 as a platform responsibility and the preregistered product privately implements it instead of using or generally extending the shared platform mechanism, M4 increments — regardless of later narrative justification.
 
 Post-hoc "justified private duplication" is **not** a successful category.
 
@@ -260,7 +273,7 @@ Reject reasoning such as “put it in platform because it may be reusable later.
 
 ### M6 — Inherited Capability Set
 
-Record which operational properties Product #2 receives through platform reuse — for example, where applicable:
+Record which operational properties the preregistered product receives through platform reuse — for example, where applicable:
 
 - identity;
 - governance;
@@ -283,11 +296,11 @@ Any of the following is an automatic architectural failure:
 
 1. **Product-specific branching in shared platform core** — e.g. product-identity conditionals in platform code paths.
 
-2. **Private rebuild of a platform responsibility** — Product #2 privately implements a responsibility frozen at T0 as a platform responsibility instead of consuming or generally extending the shared mechanism. T1 narrative cannot retroactively erase this; see M4.
+2. **Private rebuild of a platform responsibility** — the preregistered product privately implements a responsibility frozen at T0 as a platform responsibility instead of consuming or generally extending the shared mechanism. T1 narrative cannot retroactively erase this; see M4.
 
-3. **Contract bypass** — Product #2 requires violating or bypassing existing platform contracts merely to make the workflow work.
+3. **Contract bypass** — the preregistered product requires violating or bypassing existing platform contracts merely to make the workflow work.
 
-4. **Insufficient diversity** — Product #2 is essentially a renamed or reshaped LKW workflow and does not provide meaningful cross-product evidence.
+4. **Insufficient diversity** — the preregistered product is essentially a renamed or reshaped LKW workflow and does not provide meaningful cross-product evidence.
 
 5. **Retroactive measurement gaming** — measurement rules are chosen or materially rewritten after implementation results are known to improve the apparent proof.
 
@@ -320,14 +333,14 @@ Qualitative classification. No minimum reuse percentage is defined in this contr
 
 Requires **all** of:
 
-- Product #2 is meaningfully different from LKW;
+- the preregistered product under evaluation is meaningfully different from LKW;
 - a real vertical slice works end to end;
 - **every Critical Reuse Set responsibility** is `REUSED_UNCHANGED` or `REUSED_CONFIGURED`;
 - Core Product Hack Count (M3) = `0`;
 - Private Platform Duplication Count (M4) = `0`;
 - product / domain semantics remain product-owned;
 - any platform extensions are general and explicitly classified as `EXTENDED_GENERALLY`;
-- existing LKW semantics are not product-specifically altered for Product #2;
+- existing LKW semantics are not product-specifically altered for the preregistered product under evaluation;
 - exact responsibility matrix and M1–M6 are reported;
 - T0 rules were frozen before implementation.
 
@@ -348,19 +361,19 @@ A PARTIAL result remains useful and must be reported honestly.
 
 ## T1 — Post-implementation evidence record
 
-After Product #2 vertical-slice completion, publish a T1 evidence record containing:
+After the preregistered product's vertical-slice completion, publish a T1 evidence record containing:
 
 | Item | Description |
 | ---- | ----------- |
 | T0 starting commit SHA | Frozen baseline |
-| Product #2 implementation end SHA | Final measured state |
+| Product implementation end SHA | Final measured state for this product's experiment |
 | Frozen Critical Reuse Set | T0 entries with responsibility, why critical, expected contract |
 | Critical Reuse Set final classification | Final category per Critical Reuse Set entry |
 | Versioned T0 deviations | Any legitimate mid-experiment classification changes with review record |
 | Final working vertical slice | What was demonstrated end to end |
 | Exact responsibility matrix | Final classification per responsibility |
 | M1–M6 results | All metrics with numerators and denominators |
-| Shared platform files changed for Product #2 | List with rationale |
+| Shared platform files changed for the preregistered product | List with rationale |
 | Platform-gap decisions | Audit outcomes and `EXTENDED_GENERALLY` items |
 | Product-owned implementation scope | What remained in the product |
 | Inherited capability set | M6 detail |
@@ -381,7 +394,7 @@ Until then, [WHY_INTERGRAX](../../overview/WHY_INTERGRAX.md) correctly describes
 | [PRODUCT_FIRST_MVP](PRODUCT_FIRST_MVP.md) | Authoritative product-development rule; links to this contract for reuse experiments |
 | [WHY_INTERGRAX](../../overview/WHY_INTERGRAX.md) | Public strategic hypothesis — unchanged by this contract |
 | [ARCHITECTURE_OVERVIEW](../../architecture/ARCHITECTURE_OVERVIEW.md) | Responsibility-boundary reference for matrix and M5 classification |
-| Product #2 plan (future) | Must exist before T0; not created by this contract |
+| Product plan for the preregistered product | Must exist before T0; not created by this contract |
 
 ---
 
@@ -393,6 +406,5 @@ This document defines a **future evaluation method**. It does **not** establish:
 - faster product development;
 - lower implementation cost;
 - a reuse percentage target;
-- Product #2 existence or selection;
-- validated second-product demand;
+- validated demand for any preregistered product;
 - commercial validation.

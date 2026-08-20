@@ -233,4 +233,4 @@ Contact Portfolio Control when:
 - **G5**, **G6**, major **G7** evidence;
 - **G8** recommendation.
 
-Detailed coordination: **MP-20** (future).
+Detailed cross-session handoffs are governed by [CROSS_SESSION_COORDINATION.md](../CROSS_SESSION_COORDINATION.md).

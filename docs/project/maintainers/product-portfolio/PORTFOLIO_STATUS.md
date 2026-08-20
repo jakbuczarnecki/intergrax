@@ -103,7 +103,7 @@ These positions are tracked for context but are **not** active program products.
 Evidence-supported at MP-15 closeout:
 
 - Third-Party Risk initial wedge still requires sharpening (selection caveat retained).
-- Supply Disruption commercial/GTM/integration complexity remains material (selection caveat retained).
+- Supplier Disruption commercial/GTM/integration complexity remains material (selection caveat retained).
 - No cross-product reuse has yet been proven.
 - New product architectures do not yet exist.
 - LKW reference baseline ingested; no retrospective accepted `PI-*` records from consumption alone.
@@ -123,7 +123,9 @@ At MP-20 closeout:
 7. ~~MP-21 Workspace Consistency Audit.~~ **Completed** — [WORKSPACE_CONSISTENCY_AUDIT.md](WORKSPACE_CONSISTENCY_AUDIT.md) — verdict **PASS WITH GAPS**; launch readiness **READY FOR MP-22**.
 8. **Next:** MP-22 Session Launch Pack.
 
-**Program facts (MP-21):** Six-session workspace audited at `0f6e2d7fe96498346d8ddcc05fe08caa68c00523`; no BLOCKER/MAJOR findings; residual gaps MP21-001–MP21-003 (links/refs only); VIS-3A and COMM remain external specialist streams; no sessions launched; product states unchanged from MP-20.
+**MP-21-R1:** residual consistency gaps resolved; post-remediation workspace clean for MP-22.
+
+**Program facts (MP-21):** Six-session workspace audited at `0f6e2d7fe96498346d8ddcc05fe08caa68c00523`; no BLOCKER/MAJOR findings; residual gaps MP21-001–MP21-006 remediated in MP-21-R1; VIS-3A and COMM remain external specialist streams; no sessions launched; product states unchanged from MP-20.
 
 LKW reference baseline remains accepted (**ACTIVE**). Four newly selected products remain **SELECTED** / Pre-bootstrap with G0 pending. No cross-product reuse claim exists.
 

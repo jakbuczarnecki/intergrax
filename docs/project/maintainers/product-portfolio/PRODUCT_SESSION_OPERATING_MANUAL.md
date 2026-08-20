@@ -526,7 +526,7 @@ Possible models:
 - Product Session implements under explicit G4-authorized shared scope;
 - another designated maintainer stream implements.
 
-Exact coordination belongs MP-20. No platform mutation without explicit ownership and accepted scope.
+Detailed cross-session handoffs are governed by [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md). No platform mutation without explicit ownership and accepted scope.
 
 ---
 
@@ -762,7 +762,7 @@ When a product fact may be used publicly, Product Session should be able to poin
 - exact limitation;
 - current status.
 
-Do not write marketing language as implementation truth. Detailed public handoff belongs MP-20.
+Do not write marketing language as implementation truth. Detailed cross-session handoffs are governed by [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md).
 
 ---
 
@@ -961,4 +961,4 @@ Product Session controls product execution.
 Portfolio Control controls gates, cross-product truth and shared-platform generalization.
 ```
 
-Detailed message / handoff protocol belongs MP-20.
+Detailed cross-session handoffs are governed by [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md).

@@ -254,3 +254,28 @@ The workspace is safe to proceed to Session Launch Pack assembly. Residual MINOR
 | [README.md](README.md) | Workspace index |
 | [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) | Live dashboard |
 | [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md) | Cross-session authority and handoffs |
+
+---
+
+## MP-21-R1 remediation / revalidation
+
+**Remediation task:** MP-21-R1 — Close Workspace Consistency Gaps Before Launch Pack
+**Remediation start HEAD:** `01f2046bfbb89f5b30545eab075f2d5ce82a857c`
+**Remediation commit:** *(recorded after commit)*
+
+Original audited verdict (**PASS WITH GAPS** at `0f6e2d7fe96498346d8ddcc05fe08caa68c00523`) is preserved above. This section records bounded corrections only.
+
+| Finding ID | Corrected file(s) | Status | Bounded revalidation |
+|------------|-------------------|--------|----------------------|
+| MP21-001 | `session-briefs/LKW.md` | **RESOLVED** | All seven `applications/` links use five-level relative path; paths resolve |
+| MP21-002 | `session-briefs/CONTRACT_RECOVERY.md`, `SUPPLIER_DISRUPTION.md`, `THIRD_PARTY_RISK.md`, `DEPLOYMENT_GUARDIAN.md`, `session-briefs/LKW.md`, `PRODUCT_SESSION_OPERATING_MANUAL.md` | **RESOLVED** | No `MP-20 (future)` / task-only coordination refs; canonical link to `CROSS_SESSION_COORDINATION.md` |
+| MP21-003 | `MULTI_PRODUCT_AUDIT_INTEGRATION.md` | **RESOLVED** | Cross-session handoff link targets `CROSS_SESSION_COORDINATION.md`, not `PORTFOLIO_STATUS.md` |
+| MP21-004 | `MULTI_PRODUCT_PROGRAM.md` | **RESOLVED** | `reviews/*` superseded; checkpoint/gate evidence in Portfolio Control artifacts + `docs/audit_results/` |
+| MP21-005 | `PORTFOLIO_STATUS.md` | **RESOLVED** | Risk line uses canonical short name **Supplier Disruption** |
+| MP21-006 | `PRODUCT_REUSE_PROOF.md` | **RESOLVED** | Applicability section: per-product T0/T1; no shared denominator; LKW no retroactive scoring |
+
+**Unresolved counts:** BLOCKER 0 · MAJOR 0 · MINOR 0 · OBSERVATION 0
+
+**Post-remediation consistency state:** **CLEAN / READY FOR MP-22**
+
+**Revalidated launch recommendation:** **READY FOR MP-22**

@@ -59,7 +59,7 @@ This problem stands on its own. A buyer or user would adopt LKW for knowledge-wo
 
 ## 4. Current authoritative starting state
 
-Derive execution status **only** from the authoritative [LKW IMPLEMENTATION_PLAN.md](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md). Do not hard-code stale historical tasks if the plan has moved.
+Derive execution status **only** from the authoritative [LKW IMPLEMENTATION_PLAN.md](../../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md). Do not hard-code stale historical tasks if the plan has moved.
 
 **Authoritative snapshot (from implementation plan):**
 
@@ -178,7 +178,7 @@ COMM may produce strong proof artifacts; COMM does **not** own Portfolio Control
 
 **Continue the authoritative LKW roadmap** — not G0 restart.
 
-First allowed action: advance `LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` through review/acceptance, then proceed to `LKW-INDEXED-SOURCE-LIFECYCLE-1` per [IMPLEMENTATION_PLAN.md](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
+First allowed action: advance `LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` through review/acceptance, then proceed to `LKW-INDEXED-SOURCE-LIFECYCLE-1` per [IMPLEMENTATION_PLAN.md](../../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
 
 Future material shared-platform pressure → **G4**.
 
@@ -192,7 +192,7 @@ Future targets (not claimed today):
 - **Consumer/platform conformance evidence** where useful for Intergrax (bounded platform proof, certification matrix scope).
 - **Real usage / market validation** — separately from technical proof; not invented here.
 
-Example proof trajectory already indexed: [LKW_PLATFORM_PROOF.md](../../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md), [GOVERNED_HYBRID_KNOWLEDGE_PROOF.md](../../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md).
+Example proof trajectory already indexed: [LKW_PLATFORM_PROOF.md](../../../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md), [GOVERNED_HYBRID_KNOWLEDGE_PROOF.md](../../../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md).
 
 ---
 
@@ -216,9 +216,9 @@ Example proof trajectory already indexed: [LKW_PLATFORM_PROOF.md](../../../../ap
 | Portfolio control | [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](../PORTFOLIO_CONTROL_OPERATING_MANUAL.md) |
 | Live portfolio state | [PORTFOLIO_STATUS.md](../PORTFOLIO_STATUS.md) |
 | Control card | [products/LKW.md](../products/LKW.md) |
-| Execution / current task | [IMPLEMENTATION_PLAN.md](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) |
-| Architecture | [ARCHITECTURE.md](../../../../applications/local_workspace_application/docs/ARCHITECTURE.md) |
-| Hybrid Ask | [HYBRID_ASK_ARCHITECTURE.md](../../../../applications/local_workspace_application/docs/HYBRID_ASK_ARCHITECTURE.md) |
+| Execution / current task | [IMPLEMENTATION_PLAN.md](../../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) |
+| Architecture | [ARCHITECTURE.md](../../../../../applications/local_workspace_application/docs/ARCHITECTURE.md) |
+| Hybrid Ask | [HYBRID_ASK_ARCHITECTURE.md](../../../../../applications/local_workspace_application/docs/HYBRID_ASK_ARCHITECTURE.md) |
 
 ---
 
@@ -231,6 +231,6 @@ Contact Portfolio Control when:
 - **proof / audit acceptance** requires central recording;
 - **major commercial or market evidence** emerges (separate from COMM proof).
 
-Do not write detailed transport protocol here — **MP-20** owns cross-session coordination rules.
+Do not write detailed transport protocol here — detailed cross-session handoffs are governed by [CROSS_SESSION_COORDINATION.md](../CROSS_SESSION_COORDINATION.md).
 
 VIS-3A presents approved public facts; Portfolio Control and Product Session remain sources for product state and accepted program truth.

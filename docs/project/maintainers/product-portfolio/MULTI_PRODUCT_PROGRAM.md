@@ -447,7 +447,7 @@ Later MP tasks will create the following. **Do not create them in MP-11.**
 | `PLATFORM_IMPACT_LEDGER.md` | Portfolio Control — origin and reuse of platform changes |
 | `DECISION_LOG.md` | Portfolio Control — accepted program decisions |
 | `products/*` | Per-product control cards |
-| `reviews/*` | Checkpoint review records |
+| Portfolio Control checkpoint / gate evidence | `PORTFOLIO_STATUS.md`, control cards, operating manuals, and canonical audits in `docs/audit_results/` — **not** a separate `reviews/*` workspace or parallel review engine |
 
 ---
 

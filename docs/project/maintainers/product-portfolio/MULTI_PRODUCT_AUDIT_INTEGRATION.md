@@ -272,7 +272,7 @@ Public docs do not consume raw unreviewed findings as marketing truth.
 
 Public capability, platform, and reuse claims should be downstream from accepted product, proof, and audit evidence.
 
-Detailed VIS-3A visual workflow is not defined here. [MP-20](PORTFOLIO_STATUS.md) owns cross-session handoffs.
+Detailed VIS-3A visual workflow is not defined here. Detailed cross-session handoffs are governed by [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md).
 
 ---
 
