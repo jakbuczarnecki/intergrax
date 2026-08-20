@@ -141,8 +141,8 @@ Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** — Canonical domain pair with normative store/lifecycle contracts, ADRs (MEM-001, MEM-002), and mapped cross-layer boundaries (CE, RAG, UCL); Post-L3 audit baseline **32/32 L3** and AUDIT-IDEAL memory rows closed ([plan](../maintainers/plans/MEMORY.md)).
-- **I4** — Core stores, consolidation, and vector recall paths wired through Nexus / `MemoryView`; phases MEM, MEM-DEPTH, MEM-VEC **Done** ([plan](../maintainers/plans/MEMORY.md) · implementation history satellite). Procedural memory remains **minimal**; LCI-4D **READY_FOR_REVIEW** — not I5.
-- **P2** — Lab/reference profiles and sqlite integration bundle ([implementation history](../maintainers/plans/satellites/MEMORY_implementation_history.md)); **public production qualification not claimed** — no Memory entry in the public proof catalog ([Evidence / proof](#evidence--proof)).
+- **I4** — Core stores, consolidation, and vector recall paths wired through Nexus / `MemoryView`; phases MEM, MEM-DEPTH, MEM-VEC **Done** ([plan](../maintainers/plans/MEMORY.md) · implementation history satellite). Procedural memory remains **minimal**; LCI-4D **READY_FOR_REVIEW** — not I5. Protocol v2 audit (2026-08-18) documents **accepted residual contract gaps** on LTM scope authority, episodic tenant binding, primary/secondary index lifecycle, profile concurrency, and MemoryView identity/retention — target invariants in [Protocol v2 Memory target invariants (2026-08-18)](#protocol-v2-memory-target-invariants-2026-08-18); **not** a maturity-axis downgrade of MEM / MEM-DEPTH / MEM-VEC delivery completion.
+- **P2** — Lab/reference profiles and sqlite integration bundle ([implementation history](../maintainers/plans/satellites/MEMORY_implementation_history.md)); **public production qualification not claimed** — no Memory entry in the public proof catalog ([Evidence / proof](#evidence--proof)). Protocol v2 accepted findings constrain scope authority, lifecycle reconciliation, and concurrency contracts — remediation **PLANNED**, not shipped.
 - **E3** — Gate suite and integration paths (vector LTM wiring, acceptance) cited in plan closeout; ADRs and audit slice. No dedicated public proof route — not E4/E5.
 
 > **Phase vs maturity:** MEM / MEM-DEPTH / MEM-VEC **Done** are **plan delivery states**, not production-readiness (P) claims.
@@ -556,3 +556,56 @@ For multi-agent `ExecutionGraph` nodes, `ContextManager.build_agent_context()` a
 | `TaskContextAssemblyOptions` | `max_prior_chars`, summary tiers |
 
 **AUDIT-IDEAL-16.1 / 16.2** (drift monitoring, semantic compression profile flags) — owner: [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §11; status **Done** in master register.
+
+<a id="protocol-v2-memory-target-invariants-2026-08-18"></a>
+
+## Protocol v2 Memory target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`MEMORY`](../../audit_results/2026-08-18/MEMORY.md) (**FAIL**, 7 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+**Finding 01 — LTM RetrievalService scope on every recall path**
+
+1. Every LTM retrieval, including `RetrievalService`-backed recall, carries the same canonical tenant/namespace/workspace `VectorStoreScope` as indexing and direct vector querying ([`AUDIT-20260818-MEMORY-01`](../../audit_results/2026-08-18/MEMORY.md)).
+2. Coordinate with [`RAG-SCOPE-CONTRACT-INTEGRITY`](RAG.md#protocol-v2-rag-target-invariants-2026-08-18) — do not build a second retrieval path ([`AUDIT-20260818-MEMORY-01`](../../audit_results/2026-08-18/MEMORY.md)).
+
+**Finding 02 — tenant-bound episodic index cannot switch tenant**
+
+3. A materialized tenant-bound episodic index cannot perform vector operations for a different tenant via per-call override ([`AUDIT-20260818-MEMORY-02`](../../audit_results/2026-08-18/MEMORY.md)).
+4. Either tenant identity is fixed at construction with per-call match enforcement, or the component is explicitly an unbound multi-tenant service under trusted canonical tenant authority ([`AUDIT-20260818-MEMORY-02`](../../audit_results/2026-08-18/MEMORY.md)).
+
+**Finding 03 — coordinated primary/secondary index lifecycle**
+
+5. Primary Memory lifecycle and derived vector index lifecycle are coordinated — forget/delete produce deterministic tombstones/removal for every derived memory index ([`AUDIT-20260818-MEMORY-03`](../../audit_results/2026-08-18/MEMORY.md)).
+6. Retry/reconciliation semantics for partial failure; primary store remains source of truth — "not returned" is not privacy deletion ([`AUDIT-20260818-MEMORY-03`](../../audit_results/2026-08-18/MEMORY.md)).
+7. Do not claim distributed transaction/exactly-once if unavailable ([`AUDIT-20260818-MEMORY-03`](../../audit_results/2026-08-18/MEMORY.md)).
+
+**Finding 04 — versioned optimistic concurrency on UserProfile mutation**
+
+8. Durable user-profile Memory mutation requires optimistic concurrency or another canonical atomic mutation contract using one revision authority ([`AUDIT-20260818-MEMORY-04`](../../audit_results/2026-08-18/MEMORY.md)).
+9. Concurrent conflicting writes fail explicitly or retry through a deterministic merge policy ([`AUDIT-20260818-MEMORY-04`](../../audit_results/2026-08-18/MEMORY.md)).
+10. Do not implement provider-specific locking as the platform contract ([`AUDIT-20260818-MEMORY-04`](../../audit_results/2026-08-18/MEMORY.md)).
+
+**Finding 05 — MemoryView scope from trusted execution identity**
+
+11. `MemoryView` authority derives from canonical trusted execution identity — not independently writable constructor arguments or mutable request metadata ([`AUDIT-20260818-MEMORY-05`](../../audit_results/2026-08-18/MEMORY.md)).
+12. All read/write/list/delete operations preserve the same scope boundary ([`AUDIT-20260818-MEMORY-05`](../../audit_results/2026-08-18/MEMORY.md)).
+13. Coordinate with IDENTITY_TRUST remediation — do not duplicate tenant identity in several independently writable fields ([`AUDIT-20260818-MEMORY-05`](../../audit_results/2026-08-18/MEMORY.md)).
+
+**Finding 06 — uniform retention across read surfaces**
+
+14. Retention semantics apply uniformly to every Memory read surface — `read`, `list`, and search ([`AUDIT-20260818-MEMORY-06`](../../audit_results/2026-08-18/MEMORY.md)).
+15. Prefer one canonical retention-filtering boundary rather than copying policy logic across callers ([`AUDIT-20260818-MEMORY-06`](../../audit_results/2026-08-18/MEMORY.md)).
+
+**Finding 07 — deterministic NOT_FOUND on unknown entry update**
+
+16. Unknown memory entry identity has explicit deterministic NOT_FOUND semantics ([`AUDIT-20260818-MEMORY-07`](../../audit_results/2026-08-18/MEMORY.md)).
+17. Never mutate/reindex an unrelated entry; never rely on loop-variable leakage ([`AUDIT-20260818-MEMORY-07`](../../audit_results/2026-08-18/MEMORY.md)).
+
+**Transitional boundary (preserved)**
+
+18. Primary stores remain source of truth; vector indexes remain secondary retrieval indexes — not rewritten ([§5](#5-canon-27--operational-stores), [§6.4](#64-ltm-vector-index-write-path-as-built--mem-vec-1)).
+19. Memory / RAG / Context Engineering ownership split is preserved — not collapsed ([Memory vs RAG vs Context Engineering](#memory-vs-rag-vs-context-engineering)).
+20. P2/E3 maturity honesty and procedural-memory-minimal posture are preserved — Protocol v2 findings are residual contract defects, not production-qualification claims ([Current maturity](#current-maturity)).
+21. Historical MEM / MEM-DEPTH / MEM-VEC plan **Done** rows remain valid delivery facts — not rewritten as current runtime claims ([plan](../maintainers/plans/MEMORY.md)).
+
+Remediation tracked as **MEMORY-SCOPE-AUTHORITY-INTEGRITY** (findings 01–02, 05), **MEMORY-DURABILITY-LIFECYCLE-INTEGRITY** (findings 03–04), and **MEMORY-READ-MUTATION-CONSISTENCY** (findings 06–07) in [plan](../maintainers/plans/MEMORY.md#protocol-v2-memory-remediation-2026-08-18). **Not implemented** by audit persistence.

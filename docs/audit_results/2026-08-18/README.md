@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — seventeen completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`) |
+| `scope` | Platform audit — eighteen completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -45,6 +45,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | CODE_CRAFT | COMPLETE | `f985ad342d0d6db38c9998df67f9cd7bc10bfa46` | FAIL | 2 | 5 | 0 | 0 | COMPLETE | COMPLETE | `a1bb2dc993f9bd6d4964d54e8882ec3507cfabbc` | [CODE_CRAFT.md](CODE_CRAFT.md) |
 | INTEGRATIONS | COMPLETE | `f15813cf5d2ffbd29f11a22daa1906a07e6ce23d` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `3298f612e0a0d53f5d75e5eda8798ef5f11566c5` | [INTEGRATIONS.md](INTEGRATIONS.md) |
 | RAG | COMPLETE | `81b344411596d4a4187193d97b20f610e21ca3ac` | FAIL | 0 | 3 | 3 | 0 | COMPLETE | COMPLETE | `bbe52a6355799929b27bc97802aa44acef7300c1` | [RAG.md](RAG.md) |
+| MEMORY | COMPLETE | `628e24130de34f291a416cb1cff9397a2b327dec` | FAIL | 0 | 5 | 2 | 0 | COMPLETE | COMPLETE | — | [MEMORY.md](MEMORY.md) |
 
 ## Finding register
 
@@ -155,11 +156,18 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-RAG-04 | RAG | MEDIUM | API / CONFIGURATION SEMANTICS DEFECT | ACCEPTED | RAG-CONFIGURATION-QUALIFICATION-INTEGRITY | — | `docs/project/architecture/RAG.md` — [Protocol v2 RAG target invariants (2026-08-18)](#protocol-v2-rag-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RAG.md` — RAG-CONFIGURATION-QUALIFICATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-RAG-05 | RAG | MEDIUM | VALIDATION GAP / FAIL-LATE | ACCEPTED | RAG-CONFIGURATION-QUALIFICATION-INTEGRITY | INTEGRATIONS-RUNTIME-BINDING-INTEGRITY | `docs/project/architecture/RAG.md` — [Protocol v2 RAG target invariants (2026-08-18)](#protocol-v2-rag-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RAG.md` — RAG-CONFIGURATION-QUALIFICATION-INTEGRITY | — | — | operator accepted 2026-08-20; coordinate INTEGRATIONS-3B |
 | AUDIT-20260818-RAG-06 | RAG | MEDIUM | OBSERVABILITY / AUDITABILITY DEFECT | ACCEPTED | RAG-OBSERVABILITY-IDENTITY | — | `docs/project/architecture/RAG.md` — [Protocol v2 RAG target invariants (2026-08-18)](#protocol-v2-rag-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RAG.md` — RAG-OBSERVABILITY-IDENTITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-MEMORY-01 | MEMORY | HIGH | SECURITY / TENANT ISOLATION DEFECT | ACCEPTED | MEMORY-SCOPE-AUTHORITY-INTEGRITY | RAG-SCOPE-CONTRACT-INTEGRITY | `docs/project/architecture/MEMORY.md` — [Protocol v2 Memory target invariants (2026-08-18)](#protocol-v2-memory-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MEMORY.md` — MEMORY-SCOPE-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20; downstream evidence of RAG-01 |
+| AUDIT-20260818-MEMORY-02 | MEMORY | HIGH | SECURITY / TENANT BOUNDARY DEFECT | ACCEPTED | MEMORY-SCOPE-AUTHORITY-INTEGRITY | — | `docs/project/architecture/MEMORY.md` — [Protocol v2 Memory target invariants (2026-08-18)](#protocol-v2-memory-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MEMORY.md` — MEMORY-SCOPE-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-MEMORY-03 | MEMORY | HIGH | PRIVACY / RETENTION / DATA-LIFECYCLE DEFECT | ACCEPTED | MEMORY-DURABILITY-LIFECYCLE-INTEGRITY | — | `docs/project/architecture/MEMORY.md` — [Protocol v2 Memory target invariants (2026-08-18)](#protocol-v2-memory-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MEMORY.md` — MEMORY-DURABILITY-LIFECYCLE-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-MEMORY-04 | MEMORY | HIGH | CONCURRENCY / CONSISTENCY ARCHITECTURE DEFECT | ACCEPTED | MEMORY-DURABILITY-LIFECYCLE-INTEGRITY | — | `docs/project/architecture/MEMORY.md` — [Protocol v2 Memory target invariants (2026-08-18)](#protocol-v2-memory-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MEMORY.md` — MEMORY-DURABILITY-LIFECYCLE-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-MEMORY-05 | MEMORY | HIGH | IDENTITY / AUTHORIZATION DEFECT | ACCEPTED | MEMORY-SCOPE-AUTHORITY-INTEGRITY | IDT-FIX-A, IDT-FIX-D | `docs/project/architecture/MEMORY.md` — [Protocol v2 Memory target invariants (2026-08-18)](#protocol-v2-memory-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MEMORY.md` — MEMORY-SCOPE-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20; coordinate IDENTITY_TRUST remediation |
+| AUDIT-20260818-MEMORY-06 | MEMORY | MEDIUM | RETENTION / CONTRACT CONSISTENCY DEFECT | ACCEPTED | MEMORY-READ-MUTATION-CONSISTENCY | — | `docs/project/architecture/MEMORY.md` — [Protocol v2 Memory target invariants (2026-08-18)](#protocol-v2-memory-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MEMORY.md` — MEMORY-READ-MUTATION-CONSISTENCY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-MEMORY-07 | MEMORY | MEDIUM | IMPLEMENTATION DEFECT / FAIL-LATE | ACCEPTED | MEMORY-READ-MUTATION-CONSISTENCY | — | `docs/project/architecture/MEMORY.md` — [Protocol v2 Memory target invariants (2026-08-18)](#protocol-v2-memory-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MEMORY.md` — MEMORY-READ-MUTATION-CONSISTENCY | — | — | operator accepted 2026-08-20 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 17
+**Completed layers:** 18
 
 First layer summary:
 
@@ -281,7 +289,14 @@ Seventeenth layer summary:
 - **Systemic themes:** canonical RetrievalService scope authority gap; duck-typed legacy candidate path vs RetrievalHit ABI; unbounded RagProfile/RetrievalRequest resource policy; misleading production preset naming; GraphRAG validation without Integration binding proof; retrieval telemetry tenant identity from wrong request field
 - **Recommended remediation order:** RAG-SCOPE-CONTRACT-INTEGRITY → RAG-CONFIGURATION-QUALIFICATION-INTEGRITY → RAG-OBSERVABILITY-IDENTITY (see layer report)
 
-**Cumulative (completed layers only):** 96 accepted findings — 2 CRITICAL, 61 HIGH, 33 MEDIUM, 0 LOW
+Eighteenth layer summary:
+
+- **Layer:** MEMORY — **FAIL** at `628e24130de34f291a416cb1cff9397a2b327dec`
+- **Accepted findings:** 7 total — 0 CRITICAL, 5 HIGH, 2 MEDIUM, 0 LOW
+- **Systemic themes:** LTM RetrievalService scope omission; episodic tenant-bound index per-call override; primary/secondary index lifecycle gap on forget/delete; UserProfile blind overwrite without versioned concurrency; MemoryView scope from independently writable identity; read/list retention asymmetry; update_memory_entry fail-late on unknown entry
+- **Recommended remediation order:** MEMORY-SCOPE-AUTHORITY-INTEGRITY → MEMORY-DURABILITY-LIFECYCLE-INTEGRITY → MEMORY-READ-MUTATION-CONSISTENCY (see layer report)
+
+**Cumulative (completed layers only):** 103 accepted findings — 2 CRITICAL, 66 HIGH, 35 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -347,3 +362,6 @@ Seventeenth layer summary:
 | RAG-SCOPE-CONTRACT-INTEGRITY | AUDIT-20260818-RAG-01, 02 | ACCEPTED / PLANNED | fail-closed scoped RetrievalService + one RetrievalHit ABI — not implemented in this persistence task |
 | RAG-CONFIGURATION-QUALIFICATION-INTEGRITY | AUDIT-20260818-RAG-03, 04, 05 | ACCEPTED / PLANNED | bounded resource policy, preset naming honesty, GraphRAG binding qualification; coordinate INTEGRATIONS-RUNTIME-BINDING-INTEGRITY — not implemented in this persistence task |
 | RAG-OBSERVABILITY-IDENTITY | AUDIT-20260818-RAG-06 | ACCEPTED / PLANNED | telemetry from request.scope.tenant_id — not implemented in this persistence task |
+| MEMORY-SCOPE-AUTHORITY-INTEGRITY | AUDIT-20260818-MEMORY-01, 02, 05 | ACCEPTED / PLANNED | LTM/episodic/TaskMemory canonical scope authority — coordinate RAG-SCOPE-CONTRACT-INTEGRITY and IDT-FIX-A/D — not implemented in this persistence task |
+| MEMORY-DURABILITY-LIFECYCLE-INTEGRITY | AUDIT-20260818-MEMORY-03, 04 | ACCEPTED / PLANNED | primary/secondary index lifecycle reconciliation and UserProfile optimistic concurrency — not implemented in this persistence task |
+| MEMORY-READ-MUTATION-CONSISTENCY | AUDIT-20260818-MEMORY-06, 07 | ACCEPTED / PLANNED | uniform retention visibility and deterministic update/not-found semantics — not implemented in this persistence task |
