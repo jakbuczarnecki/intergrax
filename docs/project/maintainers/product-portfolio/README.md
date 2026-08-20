@@ -68,6 +68,7 @@ Truth flows from accepted product/proof evidence → Portfolio Control → appro
 | Portfolio Control operating manual | **Defined** (MP-17) — [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) |
 | Product Session operating manual | **Defined** (MP-18) — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) |
 | Product-specific session briefs | **Created** (MP-19) — see [Product Session briefs](#product-session-briefs) |
+| Cross-session coordination contract | **Defined** (MP-20) — [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md) |
 | Product architectures for the four new applications | **Not yet designed** |
 | New product application scaffolding | **Not started** |
 | Cross-product reuse demonstration | **Not demonstrated** |
@@ -89,6 +90,7 @@ Truth flows from accepted product/proof evidence → Portfolio Control → appro
 | How Portfolio Control gates use the audit engine | [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) |
 | How does the central Portfolio Control Session operate? | [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) |
 | How does each Product Session operate? | [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) |
+| How do the sessions coordinate? | [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md) |
 | Product-first development principle | [PRODUCT_FIRST_MVP.md](../plans/PRODUCT_FIRST_MVP.md) |
 | LKW Portfolio Control Card | [products/LKW.md](products/LKW.md) |
 | LKW architecture | [LKW ARCHITECTURE.md](../../../../applications/local_workspace_application/docs/ARCHITECTURE.md) |
@@ -156,8 +158,12 @@ Do not duplicate brief content in this index.
 | [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) | Constitution |
 | [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md) | New-product bootstrap |
 | [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) | Central control behavior |
-| [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) | Per-product operating behavior |
+| [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) | Common product behavior |
+| [session-briefs/](session-briefs/) | Product-specific mission |
+| [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md) | Handoffs and authority between sessions and specialist streams |
 | [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) | Canonical audit integration |
+
+**MP-22** Session Launch Pack — future six launch prompts (Portfolio Control + five Product Sessions). VIS-3A and COMM remain external specialist streams unless a future task creates separate prompts.
 
 ## Planned workspace shape
 
@@ -167,10 +173,8 @@ Later program tasks (see [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) for current 
 - ~~MP-17 Portfolio Control Operating Manual~~ — **Completed** — [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md)
 - ~~MP-18 Product Session Operating Manual~~ — **Completed** — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md)
 - ~~MP-19 Product-Specific Session Briefs~~ — **Completed** — [session-briefs/](session-briefs/)
-- MP-20 Cross-Session Coordination Rules
+- ~~MP-20 Cross-Session Coordination Rules~~ — **Completed** — [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md)
 - MP-21 Workspace Consistency Audit
 - MP-22 Session Launch Pack
 
 Portfolio Control uses the canonical `docs/audit_results/` engine for actual audits. It does not create a competing audit workspace (no `reviews/*` audit system).
-
-Detailed cross-session handoffs remain MP-20; this index does not specify them.

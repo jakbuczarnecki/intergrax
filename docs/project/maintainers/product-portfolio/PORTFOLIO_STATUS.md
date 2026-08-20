@@ -2,7 +2,7 @@
 
 **Document type:** Maintainer-level operational control artifact  
 **Owner:** Portfolio Control Session  
-**Last verified:** 2026-08-20 (MP-19 Product-Specific Session Briefs)
+**Last verified:** 2026-08-20 (MP-20 Cross-Session Coordination Rules)
 
 ---
 
@@ -112,18 +112,18 @@ Evidence-supported at MP-15 closeout:
 
 ## Current portfolio actions
 
-At MP-19 closeout:
+At MP-20 closeout:
 
 1. ~~MP-15 Product Control Cards.~~ **Completed** — `products/*` control cards for all five program products.
 2. ~~MP-16 Multi-Product Audit Integration.~~ **Completed** — [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md).
 3. ~~MP-17 Portfolio Control Operating Manual.~~ **Completed** — [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md).
 4. ~~MP-18 Product Session Operating Manual.~~ **Completed** — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md).
 5. ~~MP-19 Product-Specific Session Briefs.~~ **Completed** — five durable briefs in [session-briefs/](session-briefs/).
-6. **Next:** MP-20 Cross-Session Coordination Rules.
-7. MP-21 Workspace Consistency Audit — **future**.
+6. ~~MP-20 Cross-Session Coordination Rules.~~ **Completed** — [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md).
+7. **Next:** MP-21 Workspace Consistency Audit.
 8. MP-22 Session Launch Pack — **future**.
 
-**Program facts (MP-19):** Five durable product-specific session briefs exist in [session-briefs/](session-briefs/); they are **not** launched Product Sessions; common operating model remains in [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md); no G0 / T0 / scaffold / implementation started by MP-19; no new architecture or cross-product reuse evidence created.
+**Program facts (MP-20):** Six-session topology coordination defined (Portfolio Control + five Product Sessions); VIS-3A and COMM explicitly external specialist streams; Product↔Portfolio, G4, G6/T1, audit, and public-fact flows defined in [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md); no sessions launched yet; product states unchanged from MP-19.
 
 LKW reference baseline remains accepted (**ACTIVE**). Four newly selected products remain **SELECTED** / Pre-bootstrap with G0 pending. No cross-product reuse claim exists.
 
@@ -141,6 +141,7 @@ Do not treat future actions as completed until Portfolio Control verifies eviden
 | How gates use the audit engine | [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) |
 | How central control operates | [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) |
 | How each Product Session operates | [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) |
+| How sessions coordinate | [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md) |
 | Product-specific session mission | [session-briefs/](session-briefs/) |
 | What product pressure did to Intergrax | [PLATFORM_IMPACT_LEDGER.md](PLATFORM_IMPACT_LEDGER.md) |
 | Why portfolio direction changed | [DECISION_LOG.md](DECISION_LOG.md) |
