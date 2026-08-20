@@ -37,7 +37,7 @@
 - **Prior audit reference(s):** ECC-0…ECC-6 **Done**; S7–S11 post-closeout **Done**; Full Harness LC internal evidence; Protocol v2 [`TOOLS`](TOOLS.md) (governed tool boundary); [`POLICY_GOVERNANCE`](POLICY_GOVERNANCE.md) (PG-FIX scoped approval); [`IDENTITY_TRUST`](IDENTITY_TRUST.md) (execution identity closure)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `a1bb2dc993f9bd6d4964d54e8882ec3507cfabbc`
 
 ## Executive summary
 

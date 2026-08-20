@@ -42,7 +42,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | AGENT_SYSTEM | COMPLETE | `654a7c0e3fe823a43a2620645848248023e1c64e` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `995c34ee5b9ca355e9bf3ec02c425f51d6cedaf4` | [AGENT_SYSTEM.md](AGENT_SYSTEM.md) |
 | TOOLS | COMPLETE | `65aaf33a6a6dba9b336162ec547cd677f4edad91` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `c6cc72056c60730516e6228856dbd1c8611c8c46` | [TOOLS.md](TOOLS.md) |
 | SKILLS | COMPLETE | `2df2f07d10aa19c4d62694f21858be501a3d6d18` | FAIL | 0 | 3 | 3 | 0 | COMPLETE | COMPLETE | `1d17272ceb2f486320e7265bfd62ca872961d74b` | [SKILLS.md](SKILLS.md) |
-| CODE_CRAFT | COMPLETE | `f985ad342d0d6db38c9998df67f9cd7bc10bfa46` | FAIL | 2 | 5 | 0 | 0 | COMPLETE | COMPLETE | — | [CODE_CRAFT.md](CODE_CRAFT.md) |
+| CODE_CRAFT | COMPLETE | `f985ad342d0d6db38c9998df67f9cd7bc10bfa46` | FAIL | 2 | 5 | 0 | 0 | COMPLETE | COMPLETE | `a1bb2dc993f9bd6d4964d54e8882ec3507cfabbc` | [CODE_CRAFT.md](CODE_CRAFT.md) |
 
 ## Finding register
 
