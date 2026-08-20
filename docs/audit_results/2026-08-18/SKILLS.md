@@ -38,7 +38,7 @@
 - **Prior audit reference(s):** SK-EXP through SK-EXP5 **Done**; AUDIT-IDEAL-12.1/12.2 **Done**; Protocol v2 [`TOOLS`](TOOLS.md) (TOOLS-01 monotonic tool authority — coordinate with SKILLS-03); [`AGENT_SYSTEM`](AGENT_SYSTEM.md) (contract integrity — separate layer)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `1d17272ceb2f486320e7265bfd62ca872961d74b`
 
 ## Executive summary
 
