@@ -36,7 +36,7 @@
 - **Prior audit reference(s):** legacy critic audits under `docs/audit_results/legacy/` — historical only; Protocol v2 snapshot at pinned SHA supersedes for campaign register
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `b3cf9846ae97e971d5d35efe4d28ba93d1b34a47`
 
 ## Executive summary
 
