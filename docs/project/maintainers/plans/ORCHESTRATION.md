@@ -341,6 +341,53 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 **Explicitly excluded:** CFG-14 full LKW hybrid E2E (product §6.3); FLOW-8 product host; active-active L0; new queue transport — [§6.3](PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
 
+<a id="61ax-orch-contract-integrity--protocol-v2-orchestration-contract-2026-08-18"></a>
+
+### ORCH-CONTRACT-INTEGRITY — Graph identity, typed config, profile ownership, static validation (Protocol v2 · 2026-08-18)
+
+**Status:** `PLANNED`
+**Priority:** P1
+**Type:** Arch / Wire / Proof
+**Source:** [`AUDIT-20260818-ORCHESTRATION-01`](../../audit_results/2026-08-18/ORCHESTRATION.md), [`AUDIT-20260818-ORCHESTRATION-02`](../../audit_results/2026-08-18/ORCHESTRATION.md), [`AUDIT-20260818-ORCHESTRATION-04`](../../audit_results/2026-08-18/ORCHESTRATION.md), [`AUDIT-20260818-ORCHESTRATION-05`](../../audit_results/2026-08-18/ORCHESTRATION.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Deliverable intent:**
+
+- canonical graph-node executable identity — one resolved agent id shared by roster validation and plan construction; `contract_id` / `agent_id` MUST NOT diverge
+- typed fail-fast execution-affecting orchestration configuration (`merge_strategy`, `multi_agent_order`, `retry_policy_name`, and peers with execution effect) — unknown values MUST NOT silently fall back
+- single canonical `OrchestrationProfile` ownership — clean-cut consolidation preferred; if two types remain required, explicit responsibility split plus typed bridge (no compatibility shims)
+- static `ApplicationGraphSpec` cycle rejection before runtime traffic / task execution
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Prior ORCH-* **Done** rows remain historical — do **not** mark them undone; this block owns residual Protocol v2 gaps discovered beyond harness closeout.
+- ORCH-03 delegation provenance is owned by **ORCH-DELEGATION-INTEGRITY** — not duplicated here.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- **Not implemented** by audit persistence task AUDIT-20260818-ORCHESTRATION-PERSIST.
+
+<a id="61ax-orch-delegation-integrity--protocol-v2-orchestration-delegation-2026-08-18"></a>
+
+### ORCH-DELEGATION-INTEGRITY — Exact delegation-edge provenance (Protocol v2 · 2026-08-18)
+
+**Status:** `PLANNED`
+**Priority:** P1
+**Type:** Wire / Proof
+**Source:** [`AUDIT-20260818-ORCHESTRATION-03`](../../audit_results/2026-08-18/ORCHESTRATION.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Deliverable intent:**
+
+- delegation parent identity, contract, budget, and provenance derive from the exact `DelegationEdge` — not first entry in mixed `depends_on` list
+- explicit policy for multiple delegation parents — unsupported cases fail static validation
+- deterministic tests for delegation provenance under mixed `DEPENDS_ON` + `DELEGATES_TO` topologies
+
+**Remediation rules:**
+
+- Revalidate against then-current `development` HEAD before implementation.
+- Depends conceptually on ORCH-CONTRACT-INTEGRITY graph validation posture but owns delegation-edge semantics exclusively.
+- **Not implemented** by audit persistence task AUDIT-20260818-ORCHESTRATION-PERSIST.
+
 ---
 
 ### Phase B — Extended Nexus

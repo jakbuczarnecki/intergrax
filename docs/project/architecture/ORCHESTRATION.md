@@ -13,7 +13,7 @@ Without a central orchestration model, each application could implement its own 
 Intergrax moves collaboration structure into **platform contracts and profiles** so every host configures the same dimensions — planner, classifier, graph, parallelism, merge, resilience — and Nexus executes them consistently.
 
 > [!NOTE]
-> **Maturity boundary:** Phase ORCH, ORCH-STRAT, ORCH-CONFIG, ORCH-5, and ORCH-6 are **Done** on the harness path (planner/classifier wiring, graph-spec seeding, parallel caps, strategy catalog, CFG simulation, queue adapter). That is **not** universal production qualification: every product graph, every strategy at scale, all queue backends, and customer operational windows still require separate evidence. See [Current maturity](#current-maturity) and [Harness-proven vs production-qualified](#harness-proven-vs-not-automatically-production-qualified).
+> **Maturity boundary:** Phase ORCH, ORCH-STRAT, ORCH-CONFIG, ORCH-5, and ORCH-6 are **Done** on the harness path (planner/classifier wiring, graph-spec seeding, parallel caps, strategy catalog, CFG simulation, queue adapter). That is **not** universal production qualification: every product graph, every strategy at scale, all queue backends, and customer operational windows still require separate evidence. Protocol v2 audit (2026-08-18 campaign) accepted residual contract/architecture gaps beyond prior closeout — see [Protocol v2 orchestration target invariants](#protocol-v2-orchestration-target-invariants-2026-08-18). See also [Current maturity](#current-maturity) and [Harness-proven vs production-qualified](#harness-proven-vs-not-automatically-production-qualified).
 
 **Primary audience:** Principal / Staff engineers and Tier-3 host authors configuring multi-agent collaboration — after the platform overview in the root README.
 
@@ -310,11 +310,25 @@ Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** — Clear ownership vs Nexus/UER/Reasoning; strategy catalog and CFG canon in production-gates satellite; `OrchestrationProfile` contract; adjacent-domain boundaries validated (ECP, REL, COG).
-- **I4** — ORCH-1–4, ORCH-STRAT, ORCH-CONFIG (11/11), ORCH-5, ORCH-6 **Done**; wiring, graph-spec conversion, parallel caps, swarm guard, classifier/planner kinds shipped. **Blocks I5:** uneven Tier-3 host adoption, product host deferrals (§59.2 satellite).
+- **I4** — ORCH-1–4, ORCH-STRAT, ORCH-CONFIG (11/11), ORCH-5, ORCH-6 **Done**; wiring, graph-spec conversion, parallel caps, swarm guard, classifier/planner kinds shipped. **Blocks I5:** uneven Tier-3 host adoption, product host deferrals (§59.2 satellite), and Protocol v2 residual contract gaps (graph identity, typed config, profile ownership, static cycle validation, delegation provenance) — **not implemented**.
 - **P2** — Harness/lab/reference profiles and strict-mode posture; **no** universal production handoff, operational SLO package, or per-customer qualification — `production_mode` ≠ **P4**.
 - **E3** — Unit/gate tests (`test_orchestration_wiring.py`, `test_graph_spec_to_plan.py`, `test_graph_executor_parallel_cap.py`) and bounded integration (`test_orchestration_cfg_simulation.py`). **No dedicated public Orchestration proof route** in [`PROOFS.md`](../proofs/PROOFS.md) — not E4/E5.
 
 > **Legacy vs taxonomy:** Historical **L3–L4** labels in [satellite §54](satellites/ORCHESTRATION_production_gates.md#54-maturity-and-gap-register) map primarily to **A4** and **E2–E3** — they do **not** automatically imply **P4** or uniform **I5**.
+
+### Protocol v2 orchestration target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`ORCHESTRATION`](../../audit_results/2026-08-18/ORCHESTRATION.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Prior Phase ORCH / ORCH-STRAT / ORCH-CONFIG / ORCH-5 / ORCH-6 **Done** rows remain historical delivery facts — not rewritten. Target state only:
+
+1. **Canonical graph-node executable identity** — each graph node MUST resolve once into one canonical executable agent identity before plan construction; `contract_id` and `agent_id` semantics MUST NOT diverge between roster validation and `PlanStep` emission ([`AUDIT-20260818-ORCHESTRATION-01`](../../audit_results/2026-08-18/ORCHESTRATION.md)).
+2. **Typed fail-fast orchestration configuration** — execution-affecting settings (`merge_strategy`, `multi_agent_order`, `retry_policy_name`, and peers with execution effect) MUST be typed and fail-fast; unknown values MUST NOT silently change execution semantics ([`AUDIT-20260818-ORCHESTRATION-02`](../../audit_results/2026-08-18/ORCHESTRATION.md)).
+3. **Exact delegation-edge provenance** — delegation parent identity, contract, budget, and provenance MUST derive from the exact `DelegationEdge`; unsupported multi-parent delegation MUST fail static validation rather than be resolved by dependency ordering ([`AUDIT-20260818-ORCHESTRATION-03`](../../audit_results/2026-08-18/ORCHESTRATION.md)).
+4. **Single canonical `OrchestrationProfile` ownership** — one owner for orchestration configuration semantics; if two profile types are genuinely required, responsibilities MUST be explicitly different and bridged through a typed mapping contract — not duplicate same-purpose schemas ([`AUDIT-20260818-ORCHESTRATION-04`](../../audit_results/2026-08-18/ORCHESTRATION.md)).
+5. **Static graph cycle rejection** — `ApplicationGraphSpec` MUST reject cyclic topology before the host serves traffic / before task execution ([`AUDIT-20260818-ORCHESTRATION-05`](../../audit_results/2026-08-18/ORCHESTRATION.md)).
+
+Orchestration still owns collaboration **structure**; Nexus executes tasks through that structure; UER owns per-node execution behavior — unchanged.
+
+Remediation: **ORCH-CONTRACT-INTEGRITY** (01, 02, 04, 05) and **ORCH-DELEGATION-INTEGRITY** (03) in [plan](../maintainers/plans/ORCHESTRATION.md). **Not implemented** by audit persistence.
 
 ## Evidence / proof
 

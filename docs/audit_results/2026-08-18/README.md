@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — ten completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`) |
+| `scope` | Platform audit — eleven completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -38,6 +38,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | REASONING_PLANNING | COMPLETE | `fe876d301df07ce22e438b0a55167275ccec32b5` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `d7988045cfa550c4338eedc326b54933c4058541` | [REASONING_PLANNING.md](REASONING_PLANNING.md) |
 | EXECUTION_RUNTIME | COMPLETE | `df7aaac19b20e84c06d6233492cdb4365a892f4f` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `d7988045cfa550c4338eedc326b54933c4058541` | [EXECUTION_RUNTIME.md](EXECUTION_RUNTIME.md) |
 | PLATFORM_FOUNDATION | COMPLETE | `f21d5c3dc417907acb50d597642d3892e704bd47` | FAIL | 0 | 5 | 0 | 1 | COMPLETE | COMPLETE | `60eff55ca7105cc8d277201c95785b4c037e3bd9` | [PLATFORM_FOUNDATION.md](PLATFORM_FOUNDATION.md) |
+| ORCHESTRATION | COMPLETE | `a784966681782bc58412af290c2978c1d1f152a3` | FAIL | 0 | 4 | 1 | 0 | COMPLETE | COMPLETE | `—` | [ORCHESTRATION.md](ORCHESTRATION.md) |
 
 ## Finding register
 
@@ -107,11 +108,16 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-PLATFORM_FOUNDATION-04 | PLATFORM_FOUNDATION | HIGH | RELIABILITY / CI / PROOF | ACCEPTED | TL-FIX-A | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 platform foundation target invariants (2026-08-18)](#protocol-v2-platform-foundation-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — TL-FIX-A / §6.1ax PF-TIER-ENFORCEMENT | — | — | operator accepted 2026-08-19 |
 | AUDIT-20260818-PLATFORM_FOUNDATION-05 | PLATFORM_FOUNDATION | HIGH | IMPLEMENTATION/ARCHITECTURE DRIFT | ACCEPTED | PF-PROOF-INTEGRITY | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 platform foundation target invariants (2026-08-18)](#protocol-v2-platform-foundation-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — PF-PROOF-INTEGRITY | — | — | operator accepted 2026-08-19 |
 | AUDIT-20260818-PLATFORM_FOUNDATION-06 | PLATFORM_FOUNDATION | LOW | LEGACY / CONTRACT CLEANLINESS | ACCEPTED | TL-FIX-A | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 platform foundation target invariants (2026-08-18)](#protocol-v2-platform-foundation-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — §6.1ax PF-TIER-ENFORCEMENT deliverable H | — | — | operator accepted 2026-08-19 |
+| AUDIT-20260818-ORCHESTRATION-01 | ORCHESTRATION | HIGH | IMPLEMENTATION DEFECT / CONTRACT DEFECT | ACCEPTED | ORCH-CONTRACT-INTEGRITY | — | `docs/project/architecture/ORCHESTRATION.md` — [Protocol v2 orchestration target invariants (2026-08-18)](#protocol-v2-orchestration-target-invariants-2026-08-18) | `docs/project/maintainers/plans/ORCHESTRATION.md` — ORCH-CONTRACT-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-ORCHESTRATION-02 | ORCHESTRATION | HIGH | CONTRACT DEFECT / FAIL-OPEN CONFIGURATION | ACCEPTED | ORCH-CONTRACT-INTEGRITY | — | `docs/project/architecture/ORCHESTRATION.md` — [Protocol v2 orchestration target invariants (2026-08-18)](#protocol-v2-orchestration-target-invariants-2026-08-18) | `docs/project/maintainers/plans/ORCHESTRATION.md` — ORCH-CONTRACT-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-ORCHESTRATION-03 | ORCHESTRATION | HIGH | IMPLEMENTATION DEFECT / GRAPH SEMANTICS | ACCEPTED | ORCH-DELEGATION-INTEGRITY | — | `docs/project/architecture/ORCHESTRATION.md` — [Protocol v2 orchestration target invariants (2026-08-18)](#protocol-v2-orchestration-target-invariants-2026-08-18) | `docs/project/maintainers/plans/ORCHESTRATION.md` — ORCH-DELEGATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-ORCHESTRATION-04 | ORCHESTRATION | HIGH | ARCHITECTURE DEFECT / DUPLICATE CONTRACT | ACCEPTED | ORCH-CONTRACT-INTEGRITY | — | `docs/project/architecture/ORCHESTRATION.md` — [Protocol v2 orchestration target invariants (2026-08-18)](#protocol-v2-orchestration-target-invariants-2026-08-18) | `docs/project/maintainers/plans/ORCHESTRATION.md` — ORCH-CONTRACT-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-ORCHESTRATION-05 | ORCHESTRATION | MEDIUM | VALIDATION GAP / FAIL-LATE | ACCEPTED | ORCH-CONTRACT-INTEGRITY | — | `docs/project/architecture/ORCHESTRATION.md` — [Protocol v2 orchestration target invariants (2026-08-18)](#protocol-v2-orchestration-target-invariants-2026-08-18) | `docs/project/maintainers/plans/ORCHESTRATION.md` — ORCH-CONTRACT-INTEGRITY | — | — | operator accepted 2026-08-20 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 9
+**Completed layers:** 11
 
 First layer summary:
 
@@ -177,7 +183,21 @@ Ninth layer summary:
 - **Systemic themes:** canonical runtime policy propagation; atomic step commits; attempt continuity; exception containment; cooperative cancellation and checkpoint invalidation
 - **Recommended remediation order:** UER-FIX-A → UER-FIX-B → UER-FIX-C → UER-FIX-D → UER-FIX-E (see layer report)
 
-**Cumulative (completed layers only):** 55 accepted findings — 0 CRITICAL, 34 HIGH, 21 MEDIUM, 0 LOW
+Tenth layer summary:
+
+- **Layer:** PLATFORM_FOUNDATION — **FAIL** at `f21d5c3dc417907acb50d597642d3892e704bd47`
+- **Accepted findings:** 6 total — 0 CRITICAL, 5 HIGH, 0 MEDIUM, 1 LOW
+- **Systemic themes:** authoritative tier enforcement proof; fail-closed foundation proof runners; integration-path protection; gate-contract parity
+- **Recommended remediation order:** TL-FIX-A → PF-PROOF-INTEGRITY (see layer report)
+
+Eleventh layer summary:
+
+- **Layer:** ORCHESTRATION — **FAIL** at `a784966681782bc58412af290c2978c1d1f152a3`
+- **Accepted findings:** 5 total — 0 CRITICAL, 4 HIGH, 1 MEDIUM, 0 LOW
+- **Systemic themes:** canonical graph-node executable identity; typed fail-fast orchestration configuration; exact delegation-edge provenance; single OrchestrationProfile ownership; static graph cycle rejection
+- **Recommended remediation order:** ORCH-CONTRACT-INTEGRITY → ORCH-DELEGATION-INTEGRITY (see layer report)
+
+**Cumulative (completed layers only):** 60 accepted findings — 0 CRITICAL, 38 HIGH, 22 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -226,3 +246,5 @@ Ninth layer summary:
 | UER-FIX-D | AUDIT-20260818-EXECUTION_RUNTIME-04 | ACCEPTED / PLANNED | runtime exception containment |
 | UER-FIX-E | AUDIT-20260818-EXECUTION_RUNTIME-05, 06 | ACCEPTED / PLANNED | cooperative cancellation and checkpoint invalidation |
 | PF-PROOF-INTEGRITY | AUDIT-20260818-PLATFORM_FOUNDATION-02, 03, 05 | ACCEPTED / PLANNED | foundation proof runners and CI/docs gate-contract parity — not implemented in this persistence task |
+| ORCH-CONTRACT-INTEGRITY | AUDIT-20260818-ORCHESTRATION-01, 02, 04, 05 | ACCEPTED / PLANNED | graph identity, typed fail-fast config, canonical OrchestrationProfile, static cycle validation — not implemented in this persistence task |
+| ORCH-DELEGATION-INTEGRITY | AUDIT-20260818-ORCHESTRATION-03 | ACCEPTED / PLANNED | exact delegation-edge provenance and multi-parent policy — not implemented in this persistence task |
