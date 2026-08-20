@@ -43,7 +43,9 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     EffectiveLiveCallBudgetV1,
     EvidencePlanV1,
     HybridAskPolicyError,
+    IndexedEvidenceRequirementV1,
     LiveCallProposalV1,
+    LiveEvidenceRequirementV1,
     LiveResourceScopeValidationPort,
     ProviderEvidencePlanV1,
     RequiredEvidenceObligationV1,
@@ -254,6 +256,13 @@ class WorkspaceAskCommandV2(BaseModel):
             and self.requested_mode is QueryPolicyModeV2.INDEXED_ONLY
         ):
             raise ValueError("provider_request_requires_live_mode")
+        for obligation in self.required_evidence_obligations:
+            if isinstance(obligation, IndexedEvidenceRequirementV1):
+                if obligation.policy_origin is not None:
+                    raise ValueError("caller_policy_origin_forbidden")
+            elif isinstance(obligation, LiveEvidenceRequirementV1):
+                if obligation.policy_origin is not None:
+                    raise ValueError("caller_policy_origin_forbidden")
         return self
 
 
@@ -496,6 +505,7 @@ class WorkspaceAskServiceV2:
         ordered_live_call_proposals = tuple(command.ordered_live_call_proposals)
         policy_derived_proposals: tuple[LiveCallProposalV1, ...] = ()
         policy_authoritative: tuple[RequiredEvidenceObligationV1, ...] = ()
+        policy_basis = None
         if self._evidence_obligation_derivation_port is not None:
             assert self._resolved_policy_rules_port is not None
             resolved_rules = self._resolved_policy_rules_port.resolve_policy_rules(
@@ -511,7 +521,7 @@ class WorkspaceAskServiceV2:
                     resolved_policy_rules=resolved_rules,
                 )
             )
-            policy_derived_proposals, policy_authoritative = (
+            policy_derived_proposals, policy_authoritative, policy_basis = (
                 map_derived_evidence_contract(derived_contract)
             )
         provider_authoritative: tuple[RequiredEvidenceObligationV1, ...] = ()
@@ -560,6 +570,7 @@ class WorkspaceAskServiceV2:
             indexed_retrieval_directive=indexed_directive,
             ordered_live_call_proposals=ordered_live_call_proposals,
             required_evidence_obligations=authoritative_obligations,
+            policy_basis=policy_basis,
             budget_snapshot=EffectiveLiveCallBudgetV1(
                 max_live_calls=effective_policy.max_live_calls,
                 max_total_duration_ms=effective_policy.max_total_duration_ms,
@@ -626,6 +637,7 @@ class WorkspaceAskServiceV2:
             configuration_revision=configuration.configuration_revision,
             plan_id=validated_plan.plan.plan_id,
             required_evidence_obligations=validated_plan.plan.required_evidence_obligations,
+            policy_basis=validated_plan.plan.policy_basis,
             live_result_retention=self._live_retention(configuration),
             provider_coverage=(
                 self._provider_strategy.coverage(

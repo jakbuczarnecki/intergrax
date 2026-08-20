@@ -14,12 +14,17 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     QueryPolicyModeV2,
 )
 from local_workspace_application.workspaces.hybrid_ask_policy import (
+    HybridAskPolicyError,
     IndexedEvidenceRequirementV1,
     LiveEvidenceRequirementV1,
     RequiredEvidenceObligationV1,
+    validate_policy_basis_consistency,
 )
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.runtime.evidence.obligation_derivation_contracts import (
+    PolicyEvidenceBasisV1,
+)
 from intergrax.runtime.vendor_knowledge.live.contracts import (
     LiveExecutionReceiptV1,
     safe_locator_or_none,
@@ -321,6 +326,7 @@ class WorkspaceAskRunV2(BaseModel):
     configuration_revision: int = Field(..., ge=0)
     plan_id: str = Field(..., min_length=1)
     required_evidence_obligations: tuple[RequiredEvidenceObligationV1, ...] = ()
+    policy_basis: PolicyEvidenceBasisV1 | None = None
     evidence_admissibility: EvidenceAdmissibilityResultV1 | None = None
     live_result_retention: LiveResultRetentionV1 = LiveResultRetentionV1.EPHEMERAL
     # Optional provider-strategy extension.  The generic Ask contract does not
@@ -346,6 +352,14 @@ class WorkspaceAskRunV2(BaseModel):
 
     @model_validator(mode="after")
     def _validate_run_integrity(self) -> Self:
+        try:
+            validate_policy_basis_consistency(
+                policy_basis=self.policy_basis,
+                obligations=self.required_evidence_obligations,
+            )
+        except HybridAskPolicyError as exc:
+            raise ValueError(exc.error_code) from None
+
         evidence_by_id: dict[str, EvidenceTypeV1] = {}
         live_evidence_by_id: dict[str, PersistedLiveEvidenceProvenanceV2] = {}
         live_evidence_by_call_id: dict[str, list[PersistedLiveEvidenceProvenanceV2]] = {}

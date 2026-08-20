@@ -37,6 +37,10 @@ from intergrax.runtime.vendor_knowledge.live.identity import (
     validate_capability_identity,
 )
 from intergrax.runtime.vendor_knowledge.live.schemas import SchemaRegistryV1
+from intergrax.runtime.evidence.obligation_derivation_contracts import (
+    PolicyEvidenceBasisV1,
+    RequirementOriginV1,
+)
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     LiveCapabilityDescriptorV1,
     TenantLiveCapabilityCatalogPort,
@@ -201,6 +205,7 @@ class IndexedEvidenceRequirementV1(BaseModel):
     indexed_source_binding_id: str | None = Field(
         default=None, min_length=1, max_length=128
     )
+    policy_origin: RequirementOriginV1 | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -215,6 +220,7 @@ class LiveEvidenceRequirementV1(BaseModel):
     requirement_id: str = Field(..., min_length=1, max_length=128)
     semantic_role: str = Field(..., min_length=1, max_length=256)
     call_id: str = Field(..., min_length=1, max_length=128)
+    policy_origin: RequirementOriginV1 | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -284,6 +290,7 @@ class EvidencePlanV1(BaseModel):
     indexed_retrieval_directive: IndexedRetrievalDirectiveV1 | None = None
     ordered_live_call_proposals: tuple[LiveCallProposalV1, ...] = ()
     required_evidence_obligations: tuple[RequiredEvidenceObligationV1, ...] = ()
+    policy_basis: PolicyEvidenceBasisV1 | None = None
     budget_snapshot: EffectiveLiveCallBudgetV1
     audience_context: AudienceContextV1
 
@@ -473,6 +480,42 @@ def _find_active_attachment(
         ):
             return attachment
     return None
+
+
+def collect_policy_origins(
+    obligations: tuple[RequiredEvidenceObligationV1, ...],
+) -> tuple[RequirementOriginV1, ...]:
+    origins: list[RequirementOriginV1] = []
+    for obligation in obligations:
+        if isinstance(obligation, IndexedEvidenceRequirementV1):
+            if obligation.policy_origin is not None:
+                origins.append(obligation.policy_origin)
+        elif isinstance(obligation, LiveEvidenceRequirementV1):
+            if obligation.policy_origin is not None:
+                origins.append(obligation.policy_origin)
+    return tuple(origins)
+
+
+def validate_policy_basis_consistency(
+    *,
+    policy_basis: PolicyEvidenceBasisV1 | None,
+    obligations: tuple[RequiredEvidenceObligationV1, ...],
+) -> None:
+    policy_origins = collect_policy_origins(obligations)
+    if not policy_origins:
+        return
+    if policy_basis is None:
+        raise HybridAskPolicyError("policy_basis_missing")
+    revision_by_document = {
+        reference.policy_document_id: reference.revision_id
+        for reference in policy_basis.policy_revisions
+    }
+    for origin in policy_origins:
+        basis_revision = revision_by_document.get(origin.policy_document_id)
+        if basis_revision is None:
+            raise HybridAskPolicyError("policy_origin_not_in_basis")
+        if basis_revision != origin.revision_id:
+            raise HybridAskPolicyError("policy_origin_revision_mismatch")
 
 
 def _validate_required_evidence_obligations(
@@ -691,6 +734,10 @@ def validate_evidence_plan(
         plan=plan,
         configuration=configuration,
         planned_call_ids=seen_call_ids,
+    )
+    validate_policy_basis_consistency(
+        policy_basis=plan.policy_basis,
+        obligations=plan.required_evidence_obligations,
     )
 
     return ValidatedEvidencePlanV1(

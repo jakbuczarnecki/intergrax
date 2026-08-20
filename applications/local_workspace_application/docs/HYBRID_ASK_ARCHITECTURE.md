@@ -302,6 +302,42 @@ flowchart TD
 
 Derivation ownership (F3-A): indexed rules emit obligations only; live rules emit **both** deterministic live-call proposals and matching live obligations so every live obligation references a planned call identity. `derivation_snapshot_id` is a stable hash over canonical typed inputs.
 
+#### 6.4.3 Policy provenance and basis (COMM-5F3-B)
+
+F3-B elevates F3-A source identity into canonical typed contracts that survive planning, validation, and run persistence.
+
+```mermaid
+flowchart TD
+    B[Policy Basis] --> R[Policy Revision]
+    R --> U[Rule]
+    U --> O[Requirement Origin]
+    O --> E[Evidence Obligation]
+    E --> P[Evidence Plan / Ask Run]
+```
+
+| Contract | Purpose |
+|----------|---------|
+| `RequirementOriginV1` | Explains **why** a policy-derived obligation exists (`policy_document_id`, `revision_id`, `rule_id`) |
+| `PolicyEvidenceBasisV1` | Authoritative set of policy revisions governing one derivation/plan/run, plus `derivation_snapshot_id` |
+
+Example chain:
+
+```text
+deployment-policy / rev18 / RULE-SEC-DEP-4
+  → requirement_id: policy:deployment-policy:RULE-SEC-DEP-4:pentest
+  → IndexedEvidenceRequirementV1.policy_origin
+```
+
+| Invariant | Meaning |
+|-----------|---------|
+| Origin explains WHY | `policy_origin` is explanatory provenance only |
+| Structural enforcement unchanged | Satisfaction still uses `call_id`, `indexed_source_binding_id`, evidence type |
+| Server-authoritative | Caller `WorkspaceAskCommandV2` obligations cannot set `policy_origin` |
+| Basis consistency | Policy-derived obligations require matching `policy_basis` on plan and run |
+| One revision per document | Conflicting revisions for the same policy document fail closed |
+
+`derivation_engine_version` is deferred: obligation outputs are fully determined by canonical typed rule inputs hashed into `derivation_snapshot_id`; algorithm identity is fixed to `DeterministicEvidenceObligationDerivation`.
+
 `semantic_role` is explanatory for audit — enforcement uses structural fields only (`call_id`, `indexed_source_binding_id`, evidence type).
 
 Persisted `WorkspaceAskRunV2` records are **self-consistent**: obligations, per-requirement evaluations, matched evidence IDs, persisted evidence, and final status must agree.

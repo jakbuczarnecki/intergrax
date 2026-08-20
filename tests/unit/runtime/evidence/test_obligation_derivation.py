@@ -22,6 +22,8 @@ from intergrax.runtime.evidence.obligation_derivation_contracts import (
     DerivedLiveEvidenceObligationV1,
     EvidenceObligationDerivationContextV1,
     EvidenceObligationDerivationError,
+    PolicyRevisionReferenceV1,
+    RequirementOriginV1,
     RequireIndexedEvidencePolicyRuleV1,
     RequireIndexedEvidenceRuleParametersV1,
     RequireLiveEvidencePolicyRuleV1,
@@ -36,6 +38,20 @@ _CONFIG_REVISION = 17
 _POLICY_DOC = "org-policy-generic"
 _POLICY_DOC_A = "deployment-policy"
 _POLICY_DOC_B = "security-policy"
+_POLICY_DOC_C = "release-policy"
+
+
+def _origin(
+    *,
+    policy_document_id: str,
+    revision_id: str,
+    rule_id: str,
+) -> RequirementOriginV1:
+    return RequirementOriginV1(
+        policy_document_id=policy_document_id,
+        revision_id=revision_id,
+        rule_id=rule_id,
+    )
 
 
 def _indexed_rule(
@@ -109,7 +125,13 @@ def test_revision_17_derives_three_authoritative_obligations() -> None:
     contract = engine.derive(_context(revision_id="17"))
 
     assert len(contract.derived_obligations) == 3
-    assert contract.source_rule_ids == ("RULE-A", "RULE-B", "RULE-C")
+    assert contract.policy_basis is not None
+    assert contract.policy_basis.policy_revisions == (
+        PolicyRevisionReferenceV1(
+            policy_document_id=_POLICY_DOC,
+            revision_id="17",
+        ),
+    )
     assert contract.derived_live_call_proposals == ()
     requirement_ids = tuple(
         obligation.requirement_id for obligation in contract.derived_obligations
@@ -127,7 +149,13 @@ def test_revision_18_adds_exactly_one_new_obligation() -> None:
     rev18 = engine.derive(_context(revision_id="18"))
 
     assert len(rev18.derived_obligations) == 4
-    assert rev18.source_rule_ids == ("RULE-A", "RULE-B", "RULE-C", "RULE-D")
+    assert rev18.policy_basis is not None
+    assert rev18.policy_basis.policy_revisions == (
+        PolicyRevisionReferenceV1(
+            policy_document_id=_POLICY_DOC,
+            revision_id="18",
+        ),
+    )
     assert rev17.derivation_snapshot_id != rev18.derivation_snapshot_id
 
     rev17_ids = {
@@ -165,6 +193,7 @@ def test_empty_policy_returns_empty_contract() -> None:
 
     assert contract.derived_obligations == ()
     assert contract.derived_live_call_proposals == ()
+    assert contract.policy_basis is None
     assert contract.derivation_snapshot_id == derive_derivation_snapshot_id(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
@@ -233,8 +262,17 @@ def test_same_rule_id_across_different_policies_succeeds() -> None:
         f"policy:{_POLICY_DOC_A}:RULE-1:deployment-index",
         f"policy:{_POLICY_DOC_B}:RULE-1:security-index",
     )
-    assert contract.source_policy_document_ids == (_POLICY_DOC_A, _POLICY_DOC_B)
-    assert contract.source_rule_ids == ("RULE-1", "RULE-1")
+    assert contract.policy_basis is not None
+    assert contract.policy_basis.policy_revisions == (
+        PolicyRevisionReferenceV1(
+            policy_document_id=_POLICY_DOC_A,
+            revision_id="rev1",
+        ),
+        PolicyRevisionReferenceV1(
+            policy_document_id=_POLICY_DOC_B,
+            revision_id="rev1",
+        ),
+    )
 
 
 def test_conflicting_policy_rule_revision_fails_closed() -> None:
@@ -310,16 +348,20 @@ def test_duplicate_requirement_id_fails_closed() -> None:
         DerivedIndexedEvidenceObligationV1(
             requirement_id=duplicate_id,
             semantic_role="First",
-            source_policy_document_id=_POLICY_DOC,
-            source_revision_id="17",
-            source_rule_id="RULE-A",
+            origin=_origin(
+                policy_document_id=_POLICY_DOC,
+                revision_id="17",
+                rule_id="RULE-A",
+            ),
         ),
         DerivedIndexedEvidenceObligationV1(
             requirement_id=duplicate_id,
             semantic_role="Second",
-            source_policy_document_id=_POLICY_DOC,
-            source_revision_id="17",
-            source_rule_id="RULE-B",
+            origin=_origin(
+                policy_document_id=_POLICY_DOC,
+                revision_id="17",
+                rule_id="RULE-B",
+            ),
         ),
     )
     with pytest.raises(EvidenceObligationDerivationError) as exc:
@@ -332,17 +374,21 @@ def test_unknown_live_call_reference_fails_closed() -> None:
         requirement_id=f"policy:{_POLICY_DOC}:RULE-LIVE:live-1",
         semantic_role="Live evidence",
         call_id="policy-call:missing",
-        source_policy_document_id=_POLICY_DOC,
-        source_revision_id="17",
-        source_rule_id="RULE-LIVE",
+        origin=_origin(
+            policy_document_id=_POLICY_DOC,
+            revision_id="17",
+            rule_id="RULE-LIVE",
+        ),
     )
     proposal = DerivedLiveCallProposalV1(
         call_id="policy-call:present",
         live_access_binding_id="binding-1",
         capability_id="vendor.generic.status.read",
-        source_policy_document_id=_POLICY_DOC,
-        source_revision_id="17",
-        source_rule_id="RULE-LIVE",
+        origin=_origin(
+            policy_document_id=_POLICY_DOC,
+            revision_id="17",
+            rule_id="RULE-LIVE",
+        ),
     )
     with pytest.raises(EvidenceObligationDerivationError) as exc:
         _validate_derived_contract(
@@ -357,9 +403,11 @@ def test_duplicate_call_id_fails_closed() -> None:
         call_id="policy-call:dup",
         live_access_binding_id="binding-1",
         capability_id="vendor.generic.status.read",
-        source_policy_document_id=_POLICY_DOC,
-        source_revision_id="17",
-        source_rule_id="RULE-LIVE-A",
+        origin=_origin(
+            policy_document_id=_POLICY_DOC,
+            revision_id="17",
+            rule_id="RULE-LIVE-A",
+        ),
     )
     with pytest.raises(EvidenceObligationDerivationError) as exc:
         _validate_derived_contract(
@@ -444,3 +492,166 @@ def test_caller_cannot_remove_policy_derived_authority() -> None:
             semantic_role="Caller additive",
         ),
     )
+
+
+def test_pentest_structural_origin() -> None:
+    engine = DeterministicEvidenceObligationDerivation()
+    rule = _indexed_rule(
+        policy_document_id="deployment-policy",
+        revision_id="rev18",
+        rule_id="RULE-SEC-DEP-4",
+        requirement_key="pentest",
+        semantic_role="Penetration test evidence",
+    )
+    contract = engine.derive(
+        EvidenceObligationDerivationContextV1(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            configuration_revision=_CONFIG_REVISION,
+            resolved_policy_rules=(rule,),
+        )
+    )
+
+    obligation = contract.derived_obligations[0]
+    assert obligation.requirement_id == (
+        "policy:deployment-policy:RULE-SEC-DEP-4:pentest"
+    )
+    assert obligation.origin.policy_document_id == "deployment-policy"
+    assert obligation.origin.revision_id == "rev18"
+    assert obligation.origin.rule_id == "RULE-SEC-DEP-4"
+
+
+def test_multi_policy_basis_canonical_ordering() -> None:
+    engine = DeterministicEvidenceObligationDerivation()
+    context = EvidenceObligationDerivationContextV1(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        configuration_revision=_CONFIG_REVISION,
+        resolved_policy_rules=(
+            _indexed_rule(
+                policy_document_id=_POLICY_DOC_A,
+                revision_id="rev18",
+                rule_id="RULE-1",
+                requirement_key="deployment-index",
+                semantic_role="Deployment evidence",
+            ),
+            _indexed_rule(
+                policy_document_id=_POLICY_DOC_C,
+                revision_id="rev12",
+                rule_id="RULE-1",
+                requirement_key="release-index",
+                semantic_role="Release evidence",
+            ),
+            _indexed_rule(
+                policy_document_id=_POLICY_DOC_B,
+                revision_id="rev7",
+                rule_id="RULE-1",
+                requirement_key="security-index",
+                semantic_role="Security evidence",
+            ),
+        ),
+    )
+    contract = engine.derive(context)
+
+    assert contract.policy_basis is not None
+    assert contract.policy_basis.policy_revisions == (
+        PolicyRevisionReferenceV1(
+            policy_document_id=_POLICY_DOC_A,
+            revision_id="rev18",
+        ),
+        PolicyRevisionReferenceV1(
+            policy_document_id=_POLICY_DOC_C,
+            revision_id="rev12",
+        ),
+        PolicyRevisionReferenceV1(
+            policy_document_id=_POLICY_DOC_B,
+            revision_id="rev7",
+        ),
+    )
+    origins = tuple(obligation.origin for obligation in contract.derived_obligations)
+    assert len(origins) == 3
+    assert {origin.policy_document_id for origin in origins} == {
+        _POLICY_DOC_A,
+        _POLICY_DOC_B,
+        _POLICY_DOC_C,
+    }
+
+
+def test_conflicting_policy_basis_revision_fails_closed() -> None:
+    engine = DeterministicEvidenceObligationDerivation()
+    context = EvidenceObligationDerivationContextV1(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        configuration_revision=_CONFIG_REVISION,
+        resolved_policy_rules=(
+            _indexed_rule(
+                policy_document_id=_POLICY_DOC_A,
+                revision_id="rev17",
+                rule_id="RULE-A",
+                requirement_key="deployment-a",
+                semantic_role="Deployment evidence A",
+            ),
+            _indexed_rule(
+                policy_document_id=_POLICY_DOC_A,
+                revision_id="rev18",
+                rule_id="RULE-B",
+                requirement_key="deployment-b",
+                semantic_role="Deployment evidence B",
+            ),
+        ),
+    )
+    with pytest.raises(EvidenceObligationDerivationError) as exc:
+        engine.derive(context)
+    assert exc.value.error_code == "conflicting_policy_basis_revision"
+
+
+def test_rev17_vs_rev18_structural_basis() -> None:
+    engine = DeterministicEvidenceObligationDerivation()
+    rev17 = engine.derive(
+        EvidenceObligationDerivationContextV1(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            configuration_revision=_CONFIG_REVISION,
+            resolved_policy_rules=(
+                _indexed_rule(
+                    policy_document_id=_POLICY_DOC_A,
+                    revision_id="rev17",
+                    rule_id="RULE-1",
+                    requirement_key="deployment-index",
+                    semantic_role="Deployment evidence",
+                ),
+            ),
+        )
+    )
+    rev18 = engine.derive(
+        EvidenceObligationDerivationContextV1(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            configuration_revision=_CONFIG_REVISION,
+            resolved_policy_rules=(
+                _indexed_rule(
+                    policy_document_id=_POLICY_DOC_A,
+                    revision_id="rev18",
+                    rule_id="RULE-1",
+                    requirement_key="deployment-index",
+                    semantic_role="Deployment evidence",
+                ),
+            ),
+        )
+    )
+
+    assert rev17.policy_basis is not None
+    assert rev18.policy_basis is not None
+    assert rev17.policy_basis.policy_revisions == (
+        PolicyRevisionReferenceV1(
+            policy_document_id=_POLICY_DOC_A,
+            revision_id="rev17",
+        ),
+    )
+    assert rev18.policy_basis.policy_revisions == (
+        PolicyRevisionReferenceV1(
+            policy_document_id=_POLICY_DOC_A,
+            revision_id="rev18",
+        ),
+    )
+    assert rev17.policy_basis != rev18.policy_basis

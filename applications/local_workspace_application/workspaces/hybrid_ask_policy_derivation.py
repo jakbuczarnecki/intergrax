@@ -18,6 +18,7 @@ from intergrax.runtime.evidence.obligation_derivation_contracts import (
     DerivedIndexedEvidenceObligationV1,
     DerivedLiveCallProposalV1,
     DerivedLiveEvidenceObligationV1,
+    PolicyEvidenceBasisV1,
 )
 
 
@@ -29,12 +30,14 @@ def map_derived_obligation(
             requirement_id=obligation.requirement_id,
             semantic_role=obligation.semantic_role,
             indexed_source_binding_id=obligation.indexed_source_binding_id,
+            policy_origin=obligation.origin,
         )
     if isinstance(obligation, DerivedLiveEvidenceObligationV1):
         return LiveEvidenceRequirementV1(
             requirement_id=obligation.requirement_id,
             semantic_role=obligation.semantic_role,
             call_id=obligation.call_id,
+            policy_origin=obligation.origin,
         )
     raise HybridAskPolicyError("derived_obligation_kind_unsupported")
 
@@ -57,6 +60,7 @@ def map_derived_evidence_contract(
 ) -> tuple[
     tuple[LiveCallProposalV1, ...],
     tuple[RequiredEvidenceObligationV1, ...],
+    PolicyEvidenceBasisV1 | None,
 ]:
     return (
         tuple(
@@ -67,6 +71,7 @@ def map_derived_evidence_contract(
             map_derived_obligation(obligation)
             for obligation in contract.derived_obligations
         ),
+        contract.policy_basis,
     )
 
 

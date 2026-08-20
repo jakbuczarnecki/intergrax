@@ -20,7 +20,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Annotated, Literal, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class EvidenceObligationDerivationError(RuntimeError):
@@ -103,6 +103,48 @@ class EvidenceObligationDerivationContextV1(BaseModel):
     resolved_policy_rules: tuple[ResolvedPolicyRuleV1, ...] = ()
 
 
+class RequirementOriginV1(BaseModel):
+    """Structural provenance for one policy-derived evidence obligation."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    policy_document_id: str = Field(..., min_length=1, max_length=128)
+    revision_id: str = Field(..., min_length=1, max_length=128)
+    rule_id: str = Field(..., min_length=1, max_length=128)
+
+
+class PolicyRevisionReferenceV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    policy_document_id: str = Field(..., min_length=1, max_length=128)
+    revision_id: str = Field(..., min_length=1, max_length=128)
+
+
+class PolicyEvidenceBasisV1(BaseModel):
+    """Authoritative policy revisions governing one derivation/plan/run."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    policy_revisions: tuple[PolicyRevisionReferenceV1, ...]
+    derivation_snapshot_id: str = Field(..., min_length=1, max_length=256)
+
+    @model_validator(mode="after")
+    def _validate_canonical_basis(self) -> PolicyEvidenceBasisV1:
+        seen_documents: set[str] = set()
+        previous_document_id: str | None = None
+        for reference in self.policy_revisions:
+            if reference.policy_document_id in seen_documents:
+                raise ValueError("duplicate_policy_document_in_basis")
+            seen_documents.add(reference.policy_document_id)
+            if (
+                previous_document_id is not None
+                and reference.policy_document_id < previous_document_id
+            ):
+                raise ValueError("policy_revisions_not_canonically_ordered")
+            previous_document_id = reference.policy_document_id
+        return self
+
+
 class DerivedIndexedEvidenceObligationV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -112,9 +154,7 @@ class DerivedIndexedEvidenceObligationV1(BaseModel):
     indexed_source_binding_id: str | None = Field(
         default=None, min_length=1, max_length=128
     )
-    source_policy_document_id: str = Field(..., min_length=1, max_length=128)
-    source_revision_id: str = Field(..., min_length=1, max_length=128)
-    source_rule_id: str = Field(..., min_length=1, max_length=128)
+    origin: RequirementOriginV1
 
 
 class DerivedLiveEvidenceObligationV1(BaseModel):
@@ -124,9 +164,7 @@ class DerivedLiveEvidenceObligationV1(BaseModel):
     requirement_id: str = Field(..., min_length=1, max_length=128)
     semantic_role: str = Field(..., min_length=1, max_length=256)
     call_id: str = Field(..., min_length=1, max_length=128)
-    source_policy_document_id: str = Field(..., min_length=1, max_length=128)
-    source_revision_id: str = Field(..., min_length=1, max_length=128)
-    source_rule_id: str = Field(..., min_length=1, max_length=128)
+    origin: RequirementOriginV1
 
 
 DerivedEvidenceObligationV1 = Annotated[
@@ -142,18 +180,14 @@ class DerivedLiveCallProposalV1(BaseModel):
     live_access_binding_id: str = Field(..., min_length=1, max_length=128)
     capability_id: str = Field(..., min_length=1, max_length=128)
     typed_capability_request: tuple[TypedCapabilityRequestEntryV1, ...] = ()
-    source_policy_document_id: str = Field(..., min_length=1, max_length=128)
-    source_revision_id: str = Field(..., min_length=1, max_length=128)
-    source_rule_id: str = Field(..., min_length=1, max_length=128)
+    origin: RequirementOriginV1
 
 
 class DerivedEvidenceContractV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     derivation_snapshot_id: str = Field(..., min_length=1, max_length=256)
-    source_policy_document_ids: tuple[str, ...] = ()
-    source_revision_ids: tuple[str, ...] = ()
-    source_rule_ids: tuple[str, ...] = ()
+    policy_basis: PolicyEvidenceBasisV1 | None = None
     derived_obligations: tuple[DerivedEvidenceObligationV1, ...] = ()
     derived_live_call_proposals: tuple[DerivedLiveCallProposalV1, ...] = ()
 
