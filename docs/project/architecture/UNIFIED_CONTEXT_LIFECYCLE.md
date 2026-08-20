@@ -205,8 +205,8 @@ Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** — Accepted [ADR-UCL-001](../technical/adr/entries/2026-08-01/ADR-UCL-001.md), closed CTX-UCL-1…6D + CLOSEOUT-1, explicit ownership and invariants in this hub; bounded **DURABLE_COMPACTION** runtime delivered under **TOKEN-10E**.
-- **I3** — **EPHEMERAL_ASSEMBLY** integrated on UCL-managed `PRIMARY_MODEL_CALL`; reuse, single-flight, recursion guards, legacy migration closed. **DURABLE_COMPACTION** bounded runtime delivered via **TOKEN-10E-1…4** (candidate, validation/receipts, SQLite storage, CAS activation). **Blocks I4:** rollback execution not implemented; durable compaction explicit/default-off with production enablement out of scope; no domain-wide UCL primary-path durable integration proof — closeout alone does not imply I4/I5. Protocol v2 audit (2026-08-18) documents **accepted residual governance and durable-lifecycle integrity gaps** on human-review enforcement, durable activation review proof, executable validation levels, revision-zero bootstrap coherence, and durable candidate repository ordering — remediation **PLANNED**, not shipped.
-- **P2** — Reference in-memory repository and lab/integration paths; no UCL-specific production handoff, SLO/runbook package, or customer operational evidence. Protocol v2 accepted findings constrain governed-review integrity, durable validation lifecycle, and revision genesis — remediation **PLANNED**, not shipped.
+- **I3** — **EPHEMERAL_ASSEMBLY** integrated on UCL-managed `PRIMARY_MODEL_CALL`; reuse, single-flight, recursion guards, legacy migration closed. **DURABLE_COMPACTION** bounded runtime delivered via **TOKEN-10E-1…4** (candidate, validation/receipts, SQLite storage, CAS activation). **Blocks I4:** rollback execution not implemented; durable compaction explicit/default-off with production enablement out of scope; no domain-wide UCL primary-path durable integration proof — closeout alone does not imply I4/I5.
+- **P2** — Reference in-memory repository and lab/integration paths; no UCL-specific production handoff, SLO/runbook package, or customer operational evidence.
 - **E3** — Closeout integration proofs (lookup hit reuse, same-key single-flight, different-key concurrency, executor failure release, UAEP/context-plan integration, recursion guard, legacy source guard). No dedicated public UCL proof route — not E4/E5.
 
 > **Task status vs taxonomy:** **ACCEPTED / CLOSED** on CTX-UCL phases records delivery state — not automatic **P4** or **E5**.
@@ -1325,49 +1325,3 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 - **Review UX** (when `require_human_review`) shows candidate summary before activation — application host responsibility; human-review UX remains out of TOKEN-10E scope.
 - **Rollback metadata** is compiled when policy requires it; **rollback execution** (restoring prior active revision) is **not implemented** — Memory/Session owns execution when delivered.
 - **Ephemeral assembly** may shorten what the model sees for one turn without changing stored history.
-
-<a id="protocol-v2-unified-context-lifecycle-target-invariants-2026-08-18"></a>
-
-## Protocol v2 Unified Context Lifecycle target invariants (2026-08-18)
-
-Accepted Protocol v2 audit layer [`UNIFIED_CONTEXT_LIFECYCLE`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
-
-**Finding 01 — human review governs lifecycle transition, not only persistence**
-
-1. When `require_human_review=True`, unreviewed transformed context must not become approved model-facing context or reusable durable state ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-01`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-2. `EphemeralArtifactPersistencePolicy.PERSIST_AFTER_HUMAN_REVIEW` fails closed until authoritative review evidence exists — no silent "use now, do not persist" degradation ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-01`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-3. Reuse canonical UER/Governed Execution approval evidence when wired — do not introduce caller-controlled approval booleans ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-01`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-
-**Finding 02 — durable MANUAL_REVIEW_THEN_COMPARE_AND_SWAP requires approval proof before CAS**
-
-4. `DurableCompactionPolicy.activation_mode` is enforced at activation time — not serialization-only ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-02`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-5. `MANUAL_REVIEW_THEN_COMPARE_AND_SWAP` requires trusted approval evidence scoped to exact tenant/context scope/candidate/revision before CAS ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-02`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-6. Memory/Session activation rejects missing review proof; Application Hosting may own UX — do not duplicate HITL infrastructure ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-02`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-
-**Finding 03 — minimum_validation_requirement maps to executable validation semantics**
-
-7. Every supported `minimum_validation_requirement` level (`STRUCTURAL`, `STRUCTURAL_AND_PROTECTED`, `FULL`) has explicit deterministic required validation stages and evidence ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-03`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-8. A stronger configured requirement cannot be satisfied by a weaker validator ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-03`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-9. If only one durable validation level is currently supported, remove unsupported enum values rather than retain paper controls ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-03`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-
-**Finding 04 — one explicit genesis revision model**
-
-10. One genesis revision model resolves the revision-zero bootstrap contradiction across durable source identity, validation eligibility, CAS activation, and persistence ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-04`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-11. Either (A) `active_revision=0` means "no active compacted revision" and `0 → 1` is legal throughout all contracts, or (B) bootstrap an explicit baseline revision at host/session creation and prove that invariant ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-04`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-
-**Finding 05 — durable candidate lifecycle distinguishes pre-validation candidate from reusable artifact**
-
-12. Repository lifecycle state distinguishes executor-valid candidate from durable-policy-valid reusable artifact ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-05`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-13. An artifact that fails required durable validation cannot remain canonical lookup-eligible — define deterministic invalidation/retry/replacement semantics ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-05`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-14. Ordering and reconciliation are explicit and testable — distributed transaction not required ([`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-05`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)).
-
-**Transitional boundary (preserved)**
-
-15. CE / Memory / Token Optimization / Nexus ownership model, reuse-before-create, same-key single-flight, and recursion invariants are preserved — not collapsed ([UCL ownership model](#ucl-ownership-model)).
-16. No universal distributed single-flight claim beyond evidenced SQLite + in-memory reference adapters ([Single-flight creation](#single-flight-creation)).
-17. A4/I3/P2/E3 maturity honesty, rollback execution **not implemented**, and human-review UX **not shipped** remain accurate ([Current maturity](#current-maturity)).
-18. Historical CTX-UCL-1…6D / CTX-UCL-CLOSEOUT-1 and TOKEN-10E-1…4 / TOKEN-10E **ACCEPTED / CLOSED** delivery facts remain valid — not rewritten as current runtime claims ([plan](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md)).
-
-Remediation tracked as **UCL-GOVERNED-REVIEW-INTEGRITY** (findings 01–02), **UCL-DURABLE-VALIDATION-INTEGRITY** (findings 03, 05), and **UCL-REVISION-GENESIS-INTEGRITY** (finding 04) in [plan](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md#protocol-v2-unified-context-lifecycle-remediation-2026-08-18). **Not implemented** by audit persistence.
-
----
