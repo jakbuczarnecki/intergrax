@@ -2603,3 +2603,47 @@ TRACE-BITEMP-4  → temporal knowledge query/audit
 **E** ordering ≠ **K** ordering ≠ Valid Time ≠ System Time. Combined reconstruction is **Historically Reproducible Execution State** — not “bitemporal state” and not “bitemporal execution state”.
 
 ---
+
+## Protocol v2 Observability evidence target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+**Finding 01 — evidence durability**
+
+1. Canonical evidence durability policy is **explicit** — persistence acceptance is distinct from in-memory bus history and subscriber dispatch ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+2. Support authoritative modes such as **evidence-required** / **audit-required** where persistence failure fails the execution or terminal evidence transition ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+3. Explicitly **best-effort** mode may allow execution to continue, but run/evidence state **must** be marked incomplete and observable — never silently equivalent to successful canonical acceptance ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+4. Harden the existing HOS spine/store path — **do not** create a second event bus or store ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+
+**Finding 02 — EventId idempotency**
+
+5. `EventId` replay is idempotent **only** when canonical event identity and content match the originally accepted event ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-02`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+6. Same `EventId` + different canonical event (tenant, task, run, attempt, type, payload) → explicit conflict / fail closed ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-02`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+7. Equivalence semantics are part of `RuntimeEventPersistence` conformance — all durable providers remain observationally equivalent ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-02`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+
+**Finding 03 — export safety**
+
+8. Every journal/log/vendor observability projection passes through one canonical content-safety/redaction policy ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-03`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+9. Journal export may emit references, safe envelopes, counts, and safe attributes — **must not** bypass `ObservabilityExportEnvelope` by serializing arbitrary `RuntimeEvent.payload` ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-03`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+10. Do **not** weaken the existing safe export boundary ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-03`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+
+**Finding 04 — journal completeness**
+
+11. A canonical full-run journal is either **proven complete**, **explicitly paginated** with continuation semantics, or **explicitly marked / fails** as truncated ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-04`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+12. Reuse positioned completeness machinery (`load_positioned_run_journal_through` semantics) — do **not** build another journal authority ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-04`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+13. Retain existing strict as-of prefix authority from TRACE-ASOF-1/2 — completeness gap is distinct from identity delivery already closed by TRACE-1C ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-04`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+
+**Finding 05 — tenant identity**
+
+14. Canonical persistence has **one tenant truth** ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-05`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+15. When both explicit persistence scope tenant and event tenant are supplied they **must** match exactly or fail ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-05`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+16. Prefer eventually deriving persistence scope from one trusted canonical tenant authority rather than independently writable values ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-05`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+
+**Finding 06 — ordering**
+
+17. Run-local `ExecutionEventPosition` is **not** a task-global ordering coordinate ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-06`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+18. Choose an explicit contract: task query groups runs and preserves canonical run-local order, defines a real task-level position/order, or clearly documents weaker ordering semantics ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-06`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+
+HOS single-spine architecture, `RuntimeEvent` / platform signal separation, Unified Run Journal read-model ownership, E/K/bitemporal boundaries, TRACE historical delivery facts, conservative A4/I4/P2/E3 honesty, and no universal distributed claims beyond existing evidence are preserved — remediation of these findings is **PLANNED**, not shipped.
+
+---

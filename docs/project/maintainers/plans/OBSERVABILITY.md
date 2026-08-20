@@ -152,6 +152,54 @@ Detailed delivery for later trace phases may live in other canonical plans. OBSE
 
 ---
 
+## Protocol v2 remediation — Observability evidence audit (2026-08-18)
+
+**Source:** Protocol v2 audit [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md) — **FAIL**, 6 ACCEPTED findings (2026-08-20). Historical TRACE-1/ASOF/BITEMP **Done / Closed** rows above are **not** reopened.
+
+<a id="obs-evidence-durability-integrity-2026-08-18"></a>
+
+### OBS-EVIDENCE-DURABILITY-INTEGRITY — canonical RuntimeEvent acceptance durability and EventId equivalence
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md), [`AUDIT-20260818-OBSERVABILITY_EVIDENCE-02`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)
+
+**Outcome (planning only):**
+
+- Explicit evidence-required vs best-effort durability on the existing `RuntimeEventBus` / `RuntimeEventPersistence` path — persistence acceptance distinct from in-memory history and subscriber dispatch.
+- Incomplete canonical evidence cannot masquerade as complete; best-effort mode marks incomplete state observably.
+- `EventId` replay validates full canonical event equivalence across all durable providers; conflicting reuse fails closed.
+- No second event bus or store.
+
+<a id="obs-export-content-integrity-2026-08-18"></a>
+
+### OBS-EXPORT-CONTENT-INTEGRITY — journal/log/vendor export subordinate to safe export boundary
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-OBSERVABILITY_EVIDENCE-03`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)
+
+**Outcome (planning only):**
+
+- All journal/log/vendor export passes through canonical redaction-safe `ObservabilityExportEnvelope` policy — no raw `RuntimeEvent.payload` escape via `journal_export`.
+- Cross-link existing OBS-EXPORT boundary (`export_boundary`, `export_bridge`, OBS-EXPORT-1/2) — do not weaken the safe export boundary; align default-on journal export with the same policy as vendor export plugins.
+
+<a id="obs-journal-identity-integrity-2026-08-18"></a>
+
+### OBS-JOURNAL-IDENTITY-INTEGRITY — journal completeness, tenant truth, ordering semantics
+
+**Priority:** P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-OBSERVABILITY_EVIDENCE-04`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md), [`AUDIT-20260818-OBSERVABILITY_EVIDENCE-05`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md), [`AUDIT-20260818-OBSERVABILITY_EVIDENCE-06`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)
+
+**Outcome (planning only):**
+
+- Full-run Unified Run Journal proves completeness, exposes pagination/continuation, or fails/marks truncated — reuse `load_positioned_run_journal_through()` completeness machinery; do not build another journal authority.
+- One tenant truth on append: persistence routing tenant and event tenant cannot diverge — coordinate [`IDENTITY_TRUST`](IDENTITY_TRUST.md) remediation where applicable.
+- Explicit task ordering contract: do not use run-local `ExecutionEventPosition` as task-global coordinate — group runs, define task-level order, or document weaker semantics.
+
+---
+
 ## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.

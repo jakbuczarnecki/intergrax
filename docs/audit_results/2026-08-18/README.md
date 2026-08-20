@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — twenty-one completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`, `CONTEXT_ENGINEERING`, `UNIFIED_CONTEXT_LIFECYCLE`, `MODALITY`) |
+| `scope` | Platform audit — twenty-two completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`, `CONTEXT_ENGINEERING`, `UNIFIED_CONTEXT_LIFECYCLE`, `MODALITY`, `OBSERVABILITY_EVIDENCE`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20; CONTEXT_ENGINEERING accepted 2026-08-20; UNIFIED_CONTEXT_LIFECYCLE accepted 2026-08-20; MODALITY accepted 2026-08-20 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20; CONTEXT_ENGINEERING accepted 2026-08-20; UNIFIED_CONTEXT_LIFECYCLE accepted 2026-08-20; MODALITY accepted 2026-08-20; OBSERVABILITY_EVIDENCE accepted 2026-08-20 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -49,6 +49,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | CONTEXT_ENGINEERING | COMPLETE | `86a153dac51529d4dfbf4edd0f684dacb689ae8a` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `8ec504fd79223d178688fd2dd99627ba26ab9a67` | [CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) |
 | UNIFIED_CONTEXT_LIFECYCLE | COMPLETE | `0f6e2d7fe96498346d8ddcc05fe08caa68c00523` | FAIL | 0 | 5 | 0 | 0 | COMPLETE | COMPLETE | `a69129927c80a8ec61d6eec894c63fbb93c6e67b` | [UNIFIED_CONTEXT_LIFECYCLE.md](UNIFIED_CONTEXT_LIFECYCLE.md) |
 | MODALITY | COMPLETE | `65e2c08f11be1db78f247380bafa4ac3d052a9f7` | FAIL | 1 | 4 | 0 | 0 | COMPLETE | COMPLETE | `e23721e809e4aa13cf40c650e9b97e3ab731c057` | [MODALITY.md](MODALITY.md) |
+| OBSERVABILITY_EVIDENCE | COMPLETE | `f21a85e88a6204a7fc83f0a4c091bc69c549aaf9` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | — | [OBSERVABILITY_EVIDENCE.md](OBSERVABILITY_EVIDENCE.md) |
 
 ## Finding register
 
@@ -182,11 +183,17 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-MODALITY-03 | MODALITY | HIGH | POLICY / FALSE SAFETY CONTROL | ACCEPTED | MODALITY-AUTHORITY-INTEGRITY | — | `docs/project/architecture/MODALITY.md` — [Protocol v2 Modality target invariants (2026-08-18)](#protocol-v2-modality-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MODALITY.md` — MODALITY-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-MODALITY-04 | MODALITY | HIGH | EXECUTION PLACEMENT / RESOURCE SAFETY | ACCEPTED | MODALITY-EXECUTION-INTEGRITY | — | `docs/project/architecture/MODALITY.md` — [Protocol v2 Modality target invariants (2026-08-18)](#protocol-v2-modality-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MODALITY.md` — MODALITY-EXECUTION-INTEGRITY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-MODALITY-05 | MODALITY | HIGH | INFERENCE INTEGRITY / SILENT STUB FALLBACK | ACCEPTED | MODALITY-EXECUTION-INTEGRITY | — | `docs/project/architecture/MODALITY.md` — [Protocol v2 Modality target invariants (2026-08-18)](#protocol-v2-modality-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MODALITY.md` — MODALITY-EXECUTION-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-OBSERVABILITY_EVIDENCE-01 | OBSERVABILITY_EVIDENCE | HIGH | EVIDENCE DURABILITY / FAIL-OPEN | ACCEPTED | OBS-EVIDENCE-DURABILITY-INTEGRITY | — | `docs/project/architecture/OBSERVABILITY.md` — [Protocol v2 Observability evidence target invariants (2026-08-18)](#protocol-v2-observability-evidence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/OBSERVABILITY.md` — OBS-EVIDENCE-DURABILITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-OBSERVABILITY_EVIDENCE-02 | OBSERVABILITY_EVIDENCE | HIGH | IDEMPOTENCY / EVIDENCE IDENTITY DEFECT | ACCEPTED | OBS-EVIDENCE-DURABILITY-INTEGRITY | — | `docs/project/architecture/OBSERVABILITY.md` — [Protocol v2 Observability evidence target invariants (2026-08-18)](#protocol-v2-observability-evidence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/OBSERVABILITY.md` — OBS-EVIDENCE-DURABILITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-OBSERVABILITY_EVIDENCE-03 | OBSERVABILITY_EVIDENCE | HIGH | SECURITY / DATA EXPORT / REDACTION BYPASS | ACCEPTED | OBS-EXPORT-CONTENT-INTEGRITY | PBA-FIX-B | `docs/project/architecture/OBSERVABILITY.md` — [Protocol v2 Observability evidence target invariants (2026-08-18)](#protocol-v2-observability-evidence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/OBSERVABILITY.md` — OBS-EXPORT-CONTENT-INTEGRITY | — | — | operator accepted 2026-08-20; cross-ref OBS-EXPORT boundary |
+| AUDIT-20260818-OBSERVABILITY_EVIDENCE-04 | OBSERVABILITY_EVIDENCE | HIGH | EVIDENCE COMPLETENESS / AUDIT INTEGRITY | ACCEPTED | OBS-JOURNAL-IDENTITY-INTEGRITY | — | `docs/project/architecture/OBSERVABILITY.md` — [Protocol v2 Observability evidence target invariants (2026-08-18)](#protocol-v2-observability-evidence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/OBSERVABILITY.md` — OBS-JOURNAL-IDENTITY-INTEGRITY | — | — | operator accepted 2026-08-20; reuse TRACE-ASOF positioned completeness |
+| AUDIT-20260818-OBSERVABILITY_EVIDENCE-05 | OBSERVABILITY_EVIDENCE | MEDIUM | TENANT IDENTITY / CONTRACT CONSISTENCY | ACCEPTED | OBS-JOURNAL-IDENTITY-INTEGRITY | IDT-FIX-A | `docs/project/architecture/OBSERVABILITY.md` — [Protocol v2 Observability evidence target invariants (2026-08-18)](#protocol-v2-observability-evidence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/OBSERVABILITY.md` — OBS-JOURNAL-IDENTITY-INTEGRITY | — | — | operator accepted 2026-08-20; coordinate IDENTITY_TRUST remediation |
+| AUDIT-20260818-OBSERVABILITY_EVIDENCE-06 | OBSERVABILITY_EVIDENCE | MEDIUM | ORDERING CONTRACT DEFECT | ACCEPTED | OBS-JOURNAL-IDENTITY-INTEGRITY | — | `docs/project/architecture/OBSERVABILITY.md` — [Protocol v2 Observability evidence target invariants (2026-08-18)](#protocol-v2-observability-evidence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/OBSERVABILITY.md` — OBS-JOURNAL-IDENTITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 21
+**Completed layers:** 22
 
 First layer summary:
 
@@ -336,7 +343,14 @@ Twenty-first layer summary:
 - **Systemic themes:** unrestricted local media path exfiltration to remote inference; fail-open empty ModalityProfile; paper deterministic-CV control; silent Celery→local placement fallback; remote provider slug stub substitution
 - **Recommended remediation order:** MODALITY-MEDIA-TRUST-BOUNDARY → MODALITY-AUTHORITY-INTEGRITY → MODALITY-EXECUTION-INTEGRITY (see layer report)
 
-**Cumulative (completed layers only):** 119 accepted findings — 3 CRITICAL, 79 HIGH, 37 MEDIUM, 0 LOW
+Twenty-second layer summary:
+
+- **Layer:** OBSERVABILITY_EVIDENCE — **FAIL** at `f21a85e88a6204a7fc83f0a4c091bc69c549aaf9`
+- **Accepted findings:** 6 total — 0 CRITICAL, 4 HIGH, 2 MEDIUM, 0 LOW
+- **Systemic themes:** fail-open canonical evidence durability on persistence errors; EventId-only idempotency without content equivalence; journal export redaction bypass; silently truncated full-run journal; divergent persistence/event tenant; run-local position as task-global order
+- **Recommended remediation order:** OBS-EVIDENCE-DURABILITY-INTEGRITY → OBS-EXPORT-CONTENT-INTEGRITY → OBS-JOURNAL-IDENTITY-INTEGRITY (see layer report)
+
+**Cumulative (completed layers only):** 125 accepted findings — 3 CRITICAL, 83 HIGH, 39 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -414,3 +428,6 @@ Twenty-first layer summary:
 | MODALITY-MEDIA-TRUST-BOUNDARY | AUDIT-20260818-MODALITY-01 | ACCEPTED / PLANNED | scoped authorized media identity and remote egress boundary — not implemented in this persistence task |
 | MODALITY-AUTHORITY-INTEGRITY | AUDIT-20260818-MODALITY-02, 03 | ACCEPTED / PLANNED | fail-closed ModalityProfile and deterministic-CV binding to effective adapter/model/artifact — cross-ref TOOLS-GOVERNED-BOUNDARY-INTEGRITY — not implemented in this persistence task |
 | MODALITY-EXECUTION-INTEGRITY | AUDIT-20260818-MODALITY-04, 05 | ACCEPTED / PLANNED | policy-truthful placement modes and provider slug truthfulness — not implemented in this persistence task |
+| OBS-EVIDENCE-DURABILITY-INTEGRITY | AUDIT-20260818-OBSERVABILITY_EVIDENCE-01, 02 | ACCEPTED / PLANNED | explicit evidence durability semantics and EventId canonical equivalence on existing HOS spine — not implemented in this persistence task |
+| OBS-EXPORT-CONTENT-INTEGRITY | AUDIT-20260818-OBSERVABILITY_EVIDENCE-03 | ACCEPTED / PLANNED | journal/log/vendor export subordinate to ObservabilityExportEnvelope boundary — cross-ref OBS-EXPORT / PBA-FIX-B — not implemented in this persistence task |
+| OBS-JOURNAL-IDENTITY-INTEGRITY | AUDIT-20260818-OBSERVABILITY_EVIDENCE-04, 05, 06 | ACCEPTED / PLANNED | journal completeness, tenant truth, task ordering semantics — reuse positioned completeness machinery — not implemented in this persistence task |
