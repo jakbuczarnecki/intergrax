@@ -17,6 +17,7 @@ from intergrax.runtime.nexus.config_types import ToolsContextScope
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
@@ -27,6 +28,9 @@ from intergrax.tools.tool_executor import ToolHandler
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, tools_agent_make_contract
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
+
+_BEYOND_PREVIEW_MARKER = "ENG1_TAIL_MARKER"
+_PREVIEW_BOUND = 400
 
 
 class _InA(BaseModel):
@@ -40,6 +44,35 @@ class _OutA(BaseModel):
 class _HandlerA(ToolHandler[_InA, _OutA]):
     def execute(self, request: ToolExecutionRequest[_InA]) -> _OutA:
         return _OutA(result=request.input.value)
+
+
+class _LongOut(BaseModel):
+    padding: str
+    decision_token: str
+
+
+class _LongIn(BaseModel):
+    pass
+
+
+class _LongHandler(ToolHandler[_LongIn, _LongOut]):
+    def execute(self, request: ToolExecutionRequest[_LongIn]) -> _LongOut:
+        _ = request
+        return _LongOut(padding="x" * 500, decision_token=_BEYOND_PREVIEW_MARKER)
+
+
+class _FailIn(BaseModel):
+    pass
+
+
+class _FailOut(BaseModel):
+    ok: bool = True
+
+
+class _FailHandler(ToolHandler[_FailIn, _FailOut]):
+    def execute(self, request: ToolExecutionRequest[_FailIn]) -> _FailOut:
+        _ = request
+        raise RuntimeError("tool execution failed on purpose for ENG-1 test")
 
 
 class _TwoRoundLLM(FakeLLMAdapter):
@@ -88,9 +121,11 @@ def _runtime_state(llm: FakeLLMAdapter) -> RuntimeState:
             user_id="user-1",
             session_id="session-1",
             tenant_id="tenant-1",
+            task_id=TaskId("task_00000000000000000000000000000001"),
+            run_id=RunId("run_00000000000000000000000000000001"),
             message="use tool",
         ),
-        run_id="run-loop",
+        run_id="run_00000000000000000000000000000002",
         messages_for_llm=[ChatMessage(role="user", content="use tool")],
     )
 
@@ -121,3 +156,129 @@ def test_bounded_tool_loop_two_iterations_native_messages() -> None:
     assert result.used_native_tool_messages is True
     assert any(msg.role == "tool" for msg in result.appended_messages)
     assert llm._round == 2
+
+
+class _LongOutputTwoRoundLLM(FakeLLMAdapter):
+    def __init__(self) -> None:
+        super().__init__(fixed_text="")
+        self._round = 0
+        self.second_round_saw_marker = False
+
+    def supports_tools(self) -> bool:
+        return True
+
+    def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
+        _ = tools_schema, kwargs
+        self._round += 1
+        if self._round == 1:
+            return LLMAdapterResponse(
+                content="",
+                tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id="tc-long",
+                        name="long.tool",
+                        arguments={},
+                    ),
+                ),
+            )
+        tool_messages = [msg for msg in messages if msg.role == "tool"]
+        assert len(tool_messages) == 1
+        tool_body = tool_messages[0].content or ""
+        self.second_round_saw_marker = _BEYOND_PREVIEW_MARKER in tool_body
+        if not self.second_round_saw_marker:
+            return LLMAdapterResponse(content="missing tail marker", tool_calls=())
+        return LLMAdapterResponse(content=f"confirmed:{_BEYOND_PREVIEW_MARKER}", tool_calls=())
+
+
+class _FailThenRecoverLLM(FakeLLMAdapter):
+    def __init__(self) -> None:
+        super().__init__(fixed_text="")
+        self._round = 0
+        self.second_round_saw_failure = False
+
+    def supports_tools(self) -> bool:
+        return True
+
+    def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
+        _ = tools_schema, kwargs
+        self._round += 1
+        if self._round == 1:
+            return LLMAdapterResponse(
+                content="",
+                tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id="tc-fail",
+                        name="fail.tool",
+                        arguments={},
+                    ),
+                ),
+            )
+        tool_messages = [msg for msg in messages if msg.role == "tool"]
+        assert len(tool_messages) == 1
+        self.second_round_saw_failure = "RuntimeError" in (tool_messages[0].content or "")
+        return LLMAdapterResponse(content="recovered after failure", tool_calls=())
+
+
+def test_model_facing_tool_result_preserves_output_beyond_trace_preview() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("long.tool", _LongIn, _LongOut),
+        _LongHandler(),
+    )
+    llm = _LongOutputTwoRoundLLM()
+    state = _runtime_state(llm)
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = ToolPlanningService(llm=llm, tools=registry)
+
+    result = run_bounded_tool_loop(
+        state=state,
+        invoker=invoker,
+        tool_planner=planner,
+        planner_input=[ChatMessage(role="user", content="use long tool")],
+        allowed_tool_ids=("long.tool",),
+        max_iterations=2,
+    )
+
+    trace = result.tool_traces[0]
+    full_json = _LongOut(padding="x" * 500, decision_token=_BEYOND_PREVIEW_MARKER).model_dump_json()
+    tool_messages = [msg for msg in result.appended_messages if msg.role == "tool"]
+
+    assert trace.output_preview is not None
+    assert len(trace.output_preview) <= _PREVIEW_BOUND
+    assert _BEYOND_PREVIEW_MARKER not in trace.output_preview
+    assert len(tool_messages) == 1
+    assert tool_messages[0].content == full_json
+    assert llm.second_round_saw_marker is True
+    assert result.stop_reason == "planner_final_answer"
+
+
+def test_failed_tool_keeps_bounded_trace_and_model_facing_error() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("fail.tool", _FailIn, _FailOut),
+        _FailHandler(),
+    )
+    llm = _FailThenRecoverLLM()
+    state = _runtime_state(llm)
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = ToolPlanningService(llm=llm, tools=registry)
+
+    result = run_bounded_tool_loop(
+        state=state,
+        invoker=invoker,
+        tool_planner=planner,
+        planner_input=[ChatMessage(role="user", content="use failing tool")],
+        allowed_tool_ids=("fail.tool",),
+        max_iterations=2,
+    )
+
+    trace = result.tool_traces[0]
+    tool_messages = [msg for msg in result.appended_messages if msg.role == "tool"]
+
+    assert trace.success is False
+    assert trace.output_preview is None
+    assert trace.error_message is not None
+    assert len(trace.error_message) <= _PREVIEW_BOUND
+    assert len(tool_messages) == 1
+    assert tool_messages[0].content == trace.error_message
+    assert llm.second_round_saw_failure is True

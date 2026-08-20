@@ -163,13 +163,14 @@ def test_mutating_calls_stay_serial_after_read_only_batch() -> None:
         PlannedToolCall(step_id="w1", tool_id="write.mutate", input=_In(value=2)),
         PlannedToolCall(step_id="r2", tool_id="read.b", input=_In(value=3)),
     ]
-    traces = execute_planned_tool_calls(
+    outcomes = execute_planned_tool_calls(
         state=state,
         invoker=invoker,
         calls=calls,
         idempotency_prefix="mixed",
         max_parallel_read_only=3,
     )
+    traces = [outcome.trace for outcome in outcomes]
     assert [trace.tool_name for trace in traces] == ["read.a", "write.mutate", "read.b"]
     assert traces[1].output_preview == '{"result":20}'
 

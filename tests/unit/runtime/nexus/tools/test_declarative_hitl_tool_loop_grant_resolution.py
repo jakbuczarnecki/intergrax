@@ -172,7 +172,7 @@ def test_unique_candidate_assigns_scope_only_to_target_and_executes_once() -> No
         PlannedToolCall(step_id="step-a", tool_id=_TOOL_A, input=_In(value=1)),
         PlannedToolCall(step_id="step-b", tool_id=_TOOL_B, input=_In(value=2)),
     ]
-    traces = execute_planned_tool_calls(
+    outcomes = execute_planned_tool_calls(
         state=state,
         invoker=invoker,
         calls=calls,
@@ -181,4 +181,4 @@ def test_unique_candidate_assigns_scope_only_to_target_and_executes_once() -> No
     )
     assert handler_a.calls == 1
     assert handler_b.calls == 1
-    assert len(traces) == 2
+    assert len(outcomes) == 2
