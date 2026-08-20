@@ -77,53 +77,6 @@ INVENT OR DISTORT PRODUCT TO EXERCISE IT
 
 Two mandatory session classes operate the program.
 
-### Final operating session topology
-
-The prepared operating model will ultimately launch **six parallel working sessions**:
-
-| # | Session |
-|---|---------|
-| 1 | Portfolio Control Session |
-| 2 | LKW Product Session |
-| 3 | Contract Recovery Product Session |
-| 4 | Supplier Disruption Product Session |
-| 5 | Third-Party Risk Product Session |
-| 6 | Deployment Guardian Product Session |
-
-**LKW in this topology:** existing reference product; reference baseline already ingested (MP-13); future independently operated Product Session; still excluded from retroactive T0 methodology. LKW is **not** outside the future Product Session topology.
-
-**Public vs operating count:** VIS-3A plans public presentation for **five products** (LKW plus the four newly selected products). Portfolio Control is **not** a public product. Do not confuse five public products with six operating sessions.
-
-### Parallel specialist streams (not part of the six)
-
-Two specialist streams interact with the program but are **not** Product Sessions and **not** Portfolio Control:
-
-| Stream | Owns | Does NOT own |
-|--------|------|--------------|
-| **VIS-3A** | Root README visual architecture; hero and product-card presentation; public platform/product narrative; visual hierarchy/navigation; common visual/template system for Product Presentation Documents | Product implementation truth; gate acceptance; product status; platform-impact classification; proof acceptance; commercial/customer validation claims |
-| **COMM** | Development/hardening of the strong LKW product/platform proof; proof execution/evidence within its authorized COMM roadmap | Portfolio governance; four new products; visual README design; cross-product platform classification |
-
-VIS-3A owns **how** public material is presented. COMM owns **LKW proof work** within its authorized scope. Neither replaces Portfolio Control.
-
-### Truth flow
-
-```text
-Product-owned implementation / architecture / proof
-and relevant specialist proof work (e.g. COMM for LKW)
-        ↓
-accepted evidence
-        ↓
-Portfolio Control state / gate assessment
-        ↓
-facts eligible for public presentation
-        ↓
-VIS-3A visual/public presentation
-```
-
-Public documentation is **never** the source of implementation truth. A Product Presentation Document may summarize accepted facts but may not create stronger product claims than its authoritative evidence.
-
-**MP-20 compatibility:** Detailed handoff protocols among Product Sessions, Portfolio Control, platform/shared-capability work triggered by G4, COMM/proof streams, and VIS/public documentation are reserved for MP-20. This document does not invent them prematurely.
-
 ### Product Session
 
 **One independent session per active product**, including LKW.

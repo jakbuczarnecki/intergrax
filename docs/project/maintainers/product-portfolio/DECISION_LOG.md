@@ -2,7 +2,7 @@
 
 **Document type:** Maintainer-level operational control artifact  
 **Owner:** Portfolio Control Session  
-**Last updated:** 2026-08-20 (MP-15 session topology addendum)
+**Last updated:** 2026-08-19 (MP-12 initial creation)
 
 ---
 
@@ -188,20 +188,6 @@ Full selection rationale: [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SEL
 | **Reason** | Products advance at different rates; portfolio guidance must be independent of synchronized phase gates. |
 | **Affected products** | All program products |
 | **Program effect** | Enables independent product pacing with central portfolio guidance |
-| **Status** | **ACTIVE** |
-
----
-
-### PD-009 — Six-session operating topology and specialist streams
-
-| Field | Value |
-|-------|-------|
-| **Date** | 2026-08-20 |
-| **Decision** | Final operating launch uses six parallel working sessions (1 Portfolio Control + 5 Product Sessions including LKW). VIS-3A and COMM are parallel specialist streams outside the six. Public product count remains five. |
-| **Trigger / evidence** | MP-15 session topology addendum |
-| **Reason** | Preserve LKW as future Product Session while distinguishing public presentation (VIS-3A) and LKW proof work (COMM) from portfolio governance. |
-| **Affected products** | All program products; VIS-3A; COMM |
-| **Program effect** | Supersedes any wording implying five working sessions only; truth flows product/proof → Portfolio Control → public presentation |
 | **Status** | **ACTIVE** |
 
 ---

@@ -114,12 +114,16 @@ Evidence-supported at MP-15 closeout:
 
 At MP-15 closeout:
 
-1. ~~MP-14 Product Bootstrap Rules.~~ **Completed** — [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md).
-2. ~~MP-15 Product Control Cards.~~ **Completed** — `products/*` control cards for all five program products.
-3. **Next:** MP-20 cross-session coordination contract (future).
-4. Review/Audit workspace and session-launch preparation remain **future**; not started.
+1. ~~MP-15 Product Control Cards.~~ **Completed** — `products/*` control cards for all five program products.
+2. **Next:** MP-16 Review / Audit Workspace.
+3. MP-17 Portfolio Control Operating Manual — **future**.
+4. MP-18 Product Session Operating Manual — **future**.
+5. MP-19 Product-Specific Session Briefs — **future**.
+6. MP-20 Cross-Session Coordination Rules — **future**.
+7. MP-21 Workspace Consistency Audit — **future**.
+8. MP-22 Session Launch Pack — **future**.
 
-LKW reference baseline remains accepted. Four newly selected products remain **SELECTED** / Pre-bootstrap. Architecture, G0, T0, and application scaffold do not exist yet. No cross-product reuse claim exists. Operating topology: 1 Portfolio Control + 5 Product Sessions; VIS-3A and COMM are parallel specialist streams.
+LKW reference baseline remains accepted. Four newly selected products remain **SELECTED** / Pre-bootstrap. Architecture, G0, T0, and application scaffold do not exist yet. No cross-product reuse claim exists.
 
 Do not treat future actions as completed until Portfolio Control verifies evidence and updates this document.
 

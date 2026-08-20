@@ -124,7 +124,15 @@ Control cards index portfolio state; architecture and roadmap remain product-own
 
 ## Planned workspace shape
 
-Later tasks will add:
+Later program tasks (see [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) for current next step):
 
+- MP-16 Review / Audit Workspace
+- MP-17 Portfolio Control Operating Manual
+- MP-18 Product Session Operating Manual
+- MP-19 Product-Specific Session Briefs
+- MP-20 Cross-Session Coordination Rules
+- MP-21 Workspace Consistency Audit
+- MP-22 Session Launch Pack
 - checkpoint reviews (`reviews/*`)
-- MP-20 cross-session coordination contract
+
+Detailed cross-session handoffs remain MP-20; this index does not specify them.
