@@ -34,7 +34,7 @@
 - **Prior audit reference(s):** legacy ECP audits under `docs/audit_results/legacy/` — historical only; Protocol v2 snapshot at pinned SHA supersedes for campaign register
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `9894be22c9d266584c88101ad8a89f9d2450f544`
 
 ## Executive summary
 
