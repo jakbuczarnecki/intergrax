@@ -2,7 +2,7 @@
 
 **Document type:** Maintainer-level operational control artifact  
 **Owner:** Portfolio Control Session  
-**Last verified:** 2026-08-20 (MP-16 Multi-Product Audit Integration)
+**Last verified:** 2026-08-20 (MP-17 Portfolio Control Operating Manual)
 
 ---
 
@@ -112,18 +112,18 @@ Evidence-supported at MP-15 closeout:
 
 ## Current portfolio actions
 
-At MP-16 closeout:
+At MP-17 closeout:
 
 1. ~~MP-15 Product Control Cards.~~ **Completed** — `products/*` control cards for all five program products.
 2. ~~MP-16 Multi-Product Audit Integration.~~ **Completed** — [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md).
-3. **Next:** MP-17 Portfolio Control Operating Manual.
-4. MP-18 Product Session Operating Manual — **future**.
+3. ~~MP-17 Portfolio Control Operating Manual.~~ **Completed** — [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md).
+4. **Next:** MP-18 Product Session Operating Manual.
 5. MP-19 Product-Specific Session Briefs — **future**.
 6. MP-20 Cross-Session Coordination Rules — **future**.
 7. MP-21 Workspace Consistency Audit — **future**.
 8. MP-22 Session Launch Pack — **future**.
 
-**Program facts (MP-16):** canonical audit engine reused from `docs/audit_results/`; no separate Portfolio Control audit engine created; G6 for preregistered new products will require PLATFORM CONSUMER AUDIT feeding T1; no G6 has been executed yet.
+**Program facts (MP-17):** Portfolio Control operating procedure defined; central session verifies repo/evidence independently; G4 and G6 responsibilities explicit; portfolio prioritization / pause / stop discipline explicit; no Product Session launched by MP-17 itself. Canonical audit engine reused from `docs/audit_results/`; no separate Portfolio Control audit engine created; G6 for preregistered new products will require PLATFORM CONSUMER AUDIT feeding T1; no G6 has been executed yet.
 
 LKW reference baseline remains accepted. Four newly selected products remain **SELECTED** / Pre-bootstrap. Architecture, G0, T0, and application scaffold do not exist yet. No cross-product reuse claim exists.
 
@@ -139,5 +139,6 @@ Do not treat future actions as completed until Portfolio Control verifies eviden
 | How the program operates | [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) |
 | How a new product must start | [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md) |
 | How gates use the audit engine | [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) |
+| How central control operates | [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) |
 | What product pressure did to Intergrax | [PLATFORM_IMPACT_LEDGER.md](PLATFORM_IMPACT_LEDGER.md) |
 | Why portfolio direction changed | [DECISION_LOG.md](DECISION_LOG.md) |
