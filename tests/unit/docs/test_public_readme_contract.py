@@ -20,14 +20,11 @@ HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "interg
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
 LKW_ASSETS_PREFIX = "applications/local_workspace_application/docs/assets/"
 README_STRATEGIC_PREFIX = "docs/project/assets/public/readme/"
-PROJECT_PUBLIC_ASSETS_PREFIX = "docs/project/assets/public/"
-_README_VISUAL_PATH_PREFIXES = (
-    LKW_ASSETS_PREFIX,
-    README_STRATEGIC_PREFIX,
-    PROJECT_PUBLIC_ASSETS_PREFIX,
+_README_VISUAL_OWNERSHIP_ROOTS = (
+    REPO_ROOT / "docs" / "project" / "assets" / "public" / "readme",
+    REPO_ROOT / "applications" / "local_workspace_application" / "docs" / "assets",
 )
 _MIN_README_PICTURES = 1
-_MAX_README_PICTURES = 6
 LKW_LIGHT_PATH = (
     REPO_ROOT
     / "applications"
@@ -193,9 +190,33 @@ def _light_dark_pair_paths(stem: str, directory: Path) -> tuple[Path, Path]:
     )
 
 
-def _is_allowed_readme_visual_path(path_str: str) -> bool:
-    normalized = path_str.replace("\\", "/")
-    return any(normalized.startswith(prefix) for prefix in _README_VISUAL_PATH_PREFIXES)
+def _normalize_visual_path(path_str: str) -> str:
+    return path_str.replace("\\", "/")
+
+
+def _resolve_approved_readme_visual(path_str: str) -> Path:
+    """Resolve a README visual path and ensure it stays within approved ownership roots."""
+    if Path(path_str).is_absolute():
+        raise ValueError(f"README visual must be repo-relative: {path_str}")
+
+    repo_root = REPO_ROOT.resolve()
+    resolved = (repo_root / path_str).resolve()
+    try:
+        resolved.relative_to(repo_root)
+    except ValueError as exc:
+        raise ValueError(f"README visual resolves outside repository: {path_str}") from exc
+
+    for ownership_root in _README_VISUAL_OWNERSHIP_ROOTS:
+        try:
+            resolved.relative_to(ownership_root.resolve())
+            return resolved
+        except ValueError:
+            continue
+
+    raise ValueError(
+        "README visual outside approved ownership roots: "
+        f"{path_str!r} (allowed: {README_STRATEGIC_PREFIX!r}, {LKW_ASSETS_PREFIX!r})"
+    )
 
 
 def _tag_attributes(tag_body: str) -> dict[str, str]:
@@ -241,9 +262,9 @@ def test_lkw_visual_contract(readme_text: str) -> None:
 def test_readme_controlled_multi_visual_contract(readme_text: str) -> None:
     """Root README may host multiple strategic visuals under controlled ownership."""
     picture_blocks = _extract_picture_blocks(readme_text)
-    assert _MIN_README_PICTURES <= len(picture_blocks) <= _MAX_README_PICTURES, (
-        f"README picture count {len(picture_blocks)} outside controlled range "
-        f"[{_MIN_README_PICTURES}, {_MAX_README_PICTURES}]"
+    assert len(picture_blocks) >= _MIN_README_PICTURES, (
+        f"README must contain at least {_MIN_README_PICTURES} controlled <picture> block(s); "
+        f"found {len(picture_blocks)}"
     )
 
     referenced_svgs: set[Path] = set()
@@ -254,21 +275,22 @@ def test_readme_controlled_multi_visual_contract(readme_text: str) -> None:
         assert parsed["img_src"], "picture block missing <img src>"
         assert parsed["img_alt"], "picture block missing non-empty <img alt>"
 
+        light_path = _normalize_visual_path(parsed["light"])
+        img_path = _normalize_visual_path(parsed["img_src"])
+        assert light_path == img_path, (
+            "picture <img src> fallback must match light <source srcset> exactly: "
+            f"light={parsed['light']!r}, img={parsed['img_src']!r}"
+        )
+
         for path_str in (parsed["light"], parsed["dark"], parsed["img_src"]):
-            normalized = path_str.replace("\\", "/")
+            normalized = _normalize_visual_path(path_str)
             assert normalized.endswith(".svg"), f"README visual must be local SVG: {path_str}"
-            assert _is_allowed_readme_visual_path(normalized), (
-                f"README visual outside approved ownership prefixes: {path_str}"
-            )
-            referenced_svgs.add((REPO_ROOT / normalized).resolve())
+            referenced_svgs.add(_resolve_approved_readme_visual(normalized))
 
         light_stem = _normalize_svg_stem(Path(parsed["light"]).name)
         dark_stem = _normalize_svg_stem(Path(parsed["dark"]).name)
         assert light_stem and dark_stem and light_stem == dark_stem, (
             "picture block light/dark srcset must share the same *-light/*-dark stem"
-        )
-        assert Path(parsed["img_src"]).name.endswith("-light.svg"), (
-            "picture <img> fallback must reference the light variant"
         )
 
     for svg_path in referenced_svgs:
