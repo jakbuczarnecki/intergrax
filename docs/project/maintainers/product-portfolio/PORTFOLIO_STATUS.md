@@ -2,7 +2,7 @@
 
 **Document type:** Maintainer-level operational control artifact  
 **Owner:** Portfolio Control Session  
-**Last verified:** 2026-08-20 (MP-21 Workspace Consistency Audit)
+**Last verified:** 2026-08-20 (MP-22 Session Launch Pack)
 
 ---
 
@@ -121,13 +121,19 @@ At MP-20 closeout:
 5. ~~MP-19 Product-Specific Session Briefs.~~ **Completed** — five durable briefs in [session-briefs/](session-briefs/).
 6. ~~MP-20 Cross-Session Coordination Rules.~~ **Completed** — [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md).
 7. ~~MP-21 Workspace Consistency Audit.~~ **Completed** — [WORKSPACE_CONSISTENCY_AUDIT.md](WORKSPACE_CONSISTENCY_AUDIT.md) — verdict **PASS WITH GAPS**; launch readiness **READY FOR MP-22**.
-8. **Next:** MP-22 Session Launch Pack.
+8. ~~MP-22 Session Launch Pack.~~ **Completed** — [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md) assembled at `901afb141f1b27140f74363b91eb7034f0cea4f4`.
+
+**MP-10→MP-22 preparation program:** **COMPLETED**
+
+**Launch Pack status:** **READY** — six sessions prepared, **NOT** automatically launched.
 
 **MP-21-R1:** residual consistency gaps resolved; post-remediation workspace clean for MP-22.
 
-**Program facts (MP-21):** Six-session workspace audited at `0f6e2d7fe96498346d8ddcc05fe08caa68c00523`; no BLOCKER/MAJOR findings; residual gaps MP21-001–MP21-006 remediated in MP-21-R1; VIS-3A and COMM remain external specialist streams; no sessions launched; product states unchanged from MP-20.
+**Program facts (MP-22 closeout):** Six ready-to-paste launch prompts published; VIS-3A and COMM remain external specialist streams; no sessions launched; product states unchanged from MP-21.
 
 LKW reference baseline remains accepted (**ACTIVE**). Four newly selected products remain **SELECTED** / Pre-bootstrap with G0 pending. No cross-product reuse claim exists.
+
+**Next program action:** Launch Portfolio Control + five Product Sessions using [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md).
 
 Do not treat future actions as completed until Portfolio Control verifies evidence and updates this document.
 

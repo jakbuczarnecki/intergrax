@@ -70,6 +70,7 @@ Truth flows from accepted product/proof evidence → Portfolio Control → appro
 | Product-specific session briefs | **Created** (MP-19) — see [Product Session briefs](#product-session-briefs) |
 | Cross-session coordination contract | **Defined** (MP-20) — [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md) |
 | Workspace consistency audit | **Completed** (MP-21) — [WORKSPACE_CONSISTENCY_AUDIT.md](WORKSPACE_CONSISTENCY_AUDIT.md) — verdict PASS WITH GAPS |
+| Session Launch Pack | **Completed** (MP-22) — [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md) — READY TO LAUNCH |
 | Product architectures for the four new applications | **Not yet designed** |
 | New product application scaffolding | **Not started** |
 | Cross-product reuse demonstration | **Not demonstrated** |
@@ -134,13 +135,13 @@ Control cards index portfolio state; architecture and roadmap remain product-own
 
 ## Product Session briefs
 
-Durable product-specific mission artifacts for future Product Session launch. **Not launched sessions** — consumed later by MP-22 Session Launch Pack.
+Durable product-specific mission artifacts for Product Session launch. Consumed by [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md).
 
 | Layer | Document | Role |
 |-------|----------|------|
 | Common operating behavior | [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) | How every Product Session operates |
 | Product-specific mission | `session-briefs/<PRODUCT>.md` | What this product is trying to prove/build |
-| Future session bootstrap | MP-22 Session Launch Pack | Assembled prompt from common rules + brief + current repo state |
+| Session bootstrap | [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md) | Ready-to-paste launch prompt per session |
 
 | Product | Session brief | Program state |
 |---------|---------------|---------------|
@@ -164,7 +165,20 @@ Do not duplicate brief content in this index.
 | [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md) | Handoffs and authority between sessions and specialist streams |
 | [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) | Canonical audit integration |
 
-**MP-22** Session Launch Pack — future six launch prompts (Portfolio Control + five Product Sessions). VIS-3A and COMM remain external specialist streams unless a future task creates separate prompts.
+**MP-22** Session Launch Pack — **Completed** — [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md). VIS-3A and COMM remain external specialist streams.
+
+## How do I launch the six sessions?
+
+See [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md). Open six independent sessions and paste exactly one prompt from:
+
+| Session | Launch prompt |
+|---------|---------------|
+| Portfolio Control | [session-launch/PORTFOLIO_CONTROL.md](session-launch/PORTFOLIO_CONTROL.md) |
+| LKW | [session-launch/LKW.md](session-launch/LKW.md) |
+| Contract Recovery | [session-launch/CONTRACT_RECOVERY.md](session-launch/CONTRACT_RECOVERY.md) |
+| Supplier Disruption | [session-launch/SUPPLIER_DISRUPTION.md](session-launch/SUPPLIER_DISRUPTION.md) |
+| Third-Party Risk | [session-launch/THIRD_PARTY_RISK.md](session-launch/THIRD_PARTY_RISK.md) |
+| Deployment Guardian | [session-launch/DEPLOYMENT_GUARDIAN.md](session-launch/DEPLOYMENT_GUARDIAN.md) |
 
 ## Planned workspace shape
 
@@ -176,6 +190,6 @@ Later program tasks (see [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) for current 
 - ~~MP-19 Product-Specific Session Briefs~~ — **Completed** — [session-briefs/](session-briefs/)
 - ~~MP-20 Cross-Session Coordination Rules~~ — **Completed** — [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md)
 - ~~MP-21 Workspace Consistency Audit~~ — **Completed** — [WORKSPACE_CONSISTENCY_AUDIT.md](WORKSPACE_CONSISTENCY_AUDIT.md)
-- MP-22 Session Launch Pack — **remaining final preparation step**
+- ~~MP-22 Session Launch Pack~~ — **Completed** — [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md)
 
 Portfolio Control uses the canonical `docs/audit_results/` engine for actual audits. It does not create a competing audit workspace (no `reviews/*` audit system).
