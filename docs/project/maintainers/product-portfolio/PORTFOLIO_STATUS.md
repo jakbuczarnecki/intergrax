@@ -2,7 +2,7 @@
 
 **Document type:** Maintainer-level operational control artifact  
 **Owner:** Portfolio Control Session  
-**Last verified:** 2026-08-20 (MP-18 Product Session Operating Manual)
+**Last verified:** 2026-08-20 (MP-19 Product-Specific Session Briefs)
 
 ---
 
@@ -112,20 +112,20 @@ Evidence-supported at MP-15 closeout:
 
 ## Current portfolio actions
 
-At MP-18 closeout:
+At MP-19 closeout:
 
 1. ~~MP-15 Product Control Cards.~~ **Completed** — `products/*` control cards for all five program products.
 2. ~~MP-16 Multi-Product Audit Integration.~~ **Completed** — [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md).
 3. ~~MP-17 Portfolio Control Operating Manual.~~ **Completed** — [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md).
 4. ~~MP-18 Product Session Operating Manual.~~ **Completed** — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md).
-5. **Next:** MP-19 Product-Specific Session Briefs.
-6. MP-20 Cross-Session Coordination Rules — **future**.
+5. ~~MP-19 Product-Specific Session Briefs.~~ **Completed** — five durable briefs in [session-briefs/](session-briefs/).
+6. **Next:** MP-20 Cross-Session Coordination Rules.
 7. MP-21 Workspace Consistency Audit — **future**.
 8. MP-22 Session Launch Pack — **future**.
 
-**Program facts (MP-18):** Common Product Session operating model defined in [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md); LKW prospective mode defined; four-new-product bootstrap mode defined; no Product Session launched yet; no G0 / T0 / implementation started by MP-18.
+**Program facts (MP-19):** Five durable product-specific session briefs exist in [session-briefs/](session-briefs/); they are **not** launched Product Sessions; common operating model remains in [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md); no G0 / T0 / scaffold / implementation started by MP-19; no new architecture or cross-product reuse evidence created.
 
-LKW reference baseline remains accepted. Four newly selected products remain **SELECTED** / Pre-bootstrap. Architecture, G0, T0, and application scaffold do not exist yet. No cross-product reuse claim exists.
+LKW reference baseline remains accepted (**ACTIVE**). Four newly selected products remain **SELECTED** / Pre-bootstrap with G0 pending. No cross-product reuse claim exists.
 
 Do not treat future actions as completed until Portfolio Control verifies evidence and updates this document.
 
@@ -141,5 +141,6 @@ Do not treat future actions as completed until Portfolio Control verifies eviden
 | How gates use the audit engine | [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) |
 | How central control operates | [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) |
 | How each Product Session operates | [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) |
+| Product-specific session mission | [session-briefs/](session-briefs/) |
 | What product pressure did to Intergrax | [PLATFORM_IMPACT_LEDGER.md](PLATFORM_IMPACT_LEDGER.md) |
 | Why portfolio direction changed | [DECISION_LOG.md](DECISION_LOG.md) |

@@ -67,6 +67,7 @@ Truth flows from accepted product/proof evidence → Portfolio Control → appro
 | Audit engine integration | **Defined** (MP-16) — [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) |
 | Portfolio Control operating manual | **Defined** (MP-17) — [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) |
 | Product Session operating manual | **Defined** (MP-18) — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) |
+| Product-specific session briefs | **Created** (MP-19) — see [Product Session briefs](#product-session-briefs) |
 | Product architectures for the four new applications | **Not yet designed** |
 | New product application scaffolding | **Not started** |
 | Cross-product reuse demonstration | **Not demonstrated** |
@@ -128,6 +129,26 @@ Portfolio Control owns all control cards. Product Sessions supply accepted produ
 
 Control cards index portfolio state; architecture and roadmap remain product-owned.
 
+## Product Session briefs
+
+Durable product-specific mission artifacts for future Product Session launch. **Not launched sessions** — consumed later by MP-22 Session Launch Pack.
+
+| Layer | Document | Role |
+|-------|----------|------|
+| Common operating behavior | [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) | How every Product Session operates |
+| Product-specific mission | `session-briefs/<PRODUCT>.md` | What this product is trying to prove/build |
+| Future session bootstrap | MP-22 Session Launch Pack | Assembled prompt from common rules + brief + current repo state |
+
+| Product | Session brief | Program state |
+|---------|---------------|---------------|
+| Local Knowledge Workspace (LKW) | [session-briefs/LKW.md](session-briefs/LKW.md) | ACTIVE reference product |
+| Contract Recovery | [session-briefs/CONTRACT_RECOVERY.md](session-briefs/CONTRACT_RECOVERY.md) | SELECTED / Pre-bootstrap |
+| Supplier Disruption | [session-briefs/SUPPLIER_DISRUPTION.md](session-briefs/SUPPLIER_DISRUPTION.md) | SELECTED / Pre-bootstrap |
+| Third-Party Risk | [session-briefs/THIRD_PARTY_RISK.md](session-briefs/THIRD_PARTY_RISK.md) | SELECTED / Pre-bootstrap |
+| Deployment Guardian | [session-briefs/DEPLOYMENT_GUARDIAN.md](session-briefs/DEPLOYMENT_GUARDIAN.md) | SELECTED / Pre-bootstrap |
+
+Do not duplicate brief content in this index.
+
 ## Document relationships
 
 | Document | Role |
@@ -145,7 +166,7 @@ Later program tasks (see [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) for current 
 - ~~MP-16 Multi-Product Audit Integration~~ — **Completed** — [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md)
 - ~~MP-17 Portfolio Control Operating Manual~~ — **Completed** — [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md)
 - ~~MP-18 Product Session Operating Manual~~ — **Completed** — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md)
-- MP-19 Product-Specific Session Briefs
+- ~~MP-19 Product-Specific Session Briefs~~ — **Completed** — [session-briefs/](session-briefs/)
 - MP-20 Cross-Session Coordination Rules
 - MP-21 Workspace Consistency Audit
 - MP-22 Session Launch Pack
