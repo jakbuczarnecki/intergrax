@@ -275,32 +275,9 @@ flowchart TD
 | Source | Role |
 |--------|------|
 | `derive_product_evidence_obligations` | Product-owned **indexed** admissibility obligation for generic HYBRID Workspace Ask — not per planned live call |
-| `EvidenceObligationDerivationPort` | Policy-derived authoritative obligations from already-resolved typed organizational rules (F3-A) |
 | `ProviderEvidencePlanV1.required_evidence_obligations` | Provider-owned obligations from `WorkspaceAskProviderStrategy.build_plan` |
 | `WorkspaceAskCommandV2.required_evidence_obligations` | **Additive only** — may strengthen, never replace authoritative minimum |
-| `compose_evidence_obligations` / `compose_authoritative_evidence_obligations` | Merges layers; duplicate `requirement_id` fails closed |
-
-#### 6.4.2 Policy-derived obligations (COMM-5F3-A)
-
-F3-A operates on **already-resolved typed policy rules**. Natural-language policy interpretation and rule resolution remain upstream of this boundary.
-
-```mermaid
-flowchart TD
-    R[Resolved Policy Rules] --> D[Obligation Derivation]
-    D --> C[Derived Evidence Contract]
-    C --> P[EvidencePlanV1]
-    P --> V[Plan Validation]
-    V --> X[Execution / Admissibility]
-```
-
-| Layer | Authority |
-|-------|-----------|
-| Product/base obligations | Authoritative minimum from product planning |
-| Policy-derived obligations | Authoritative from `EvidenceObligationDerivationPort` when configured |
-| Provider-derived obligations | Authoritative from provider strategy |
-| Caller obligations | Additive only — cannot remove prior layers |
-
-Derivation ownership (F3-A): indexed rules emit obligations only; live rules emit **both** deterministic live-call proposals and matching live obligations so every live obligation references a planned call identity. `derivation_snapshot_id` is a stable hash over canonical typed inputs.
+| `compose_evidence_obligations` | Merges layers; duplicate `requirement_id` fails closed |
 
 `semantic_role` is explanatory for audit — enforcement uses structural fields only (`call_id`, `indexed_source_binding_id`, evidence type).
 
