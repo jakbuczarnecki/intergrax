@@ -166,8 +166,8 @@ Implementation maturity: **I4**
 Production readiness: **P3**  
 Evidence maturity: **E4**
 
-- **A5** — Canonical domain pair with normative contracts (`KnowledgeDocument`, `VectorStoreScope`, ownership/replacement semantics), closed qualification tracks (RAG-FINAL, RAG-PROD, RAG-LIVE, RAG-ENT), and enforced invariants — global **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** ([§8](#8-live-claim-boundary-and-roadmap) below).
-- **I4** — Native ingest → index → retrieve path integrated through Nexus, `RetrievalService`, plugin registries, and host wiring; M-RAG-CONVERGE closeout — plan frozen at L3 control plane ([plan](../maintainers/plans/RAG.md)). Beta catalog providers and unsupported replacement paths remain explicit limits — not I5.
+- **A5** — Canonical domain pair with normative contracts (`KnowledgeDocument`, `VectorStoreScope`, ownership/replacement semantics), closed qualification tracks (RAG-FINAL, RAG-PROD, RAG-LIVE, RAG-ENT), and enforced invariants — global **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** ([§8](#8-live-claim-boundary-and-roadmap) below). Protocol v2 audit (2026-08-18) documents **accepted residual contract gaps** on canonical `RetrievalService` scope authority, `RetrievalHit` ABI enforcement, and resource-policy validation — target invariants in [Protocol v2 RAG target invariants (2026-08-18)](#protocol-v2-rag-target-invariants-2026-08-18); **not** a maturity-axis downgrade of bounded qualification evidence.
+- **I4** — Native ingest → index → retrieve path integrated through Nexus, `RetrievalService`, plugin registries, and host wiring; M-RAG-CONVERGE closeout — plan frozen at L3 control plane ([plan](../maintainers/plans/RAG.md)). Beta catalog providers and unsupported replacement paths remain explicit limits — not I5. Protocol v2 accepted findings constrain **canonical service contract enforcement** (scope-required retrieval, single `RetrievalHit` ABI, bounded profile/request policy) — remediation **PLANNED**, not shipped.
 - **P3** — Controlled production candidate: production deployment is approved only under explicit documented constraints and deployment controls ([`RAG_PRODUCTION_HANDOFF.md`](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md), [`RAG_OPERATOR_GUIDE.md`](../technical/guides/RAG_OPERATOR_GUIDE.md)); qualified providers have bounded environment-specific live evidence; operators must repeat qualification in their actual production infrastructure before making deployment-specific SLO claims. This is not P4 operational production evidence and not P5 enterprise evidence.
 - **E4** — Executable qualification evidence: RAG-PROD-13, RAG-LIVE-15A–15E live backend gates, offline/harness matrices in this hub. Public LKW proofs add **bounded** indexed-path E4 scenarios — scope does not cover the full RAG domain ([Evidence / proof](#evidence--proof)). No E5 production/customer evidence window claimed.
 
@@ -564,3 +564,53 @@ RAG-LIVE-15A-R2 PgVector, RAG-LIVE-15B-R2 Chroma and RAG-LIVE-15C-R2 Neo4j
 live records linked above.
 This document records what the system does, what is qualified, what is
 offline-only, what is beta, and the closed RAG-LIVE qualification boundary.
+
+<a id="protocol-v2-rag-target-invariants-2026-08-18"></a>
+
+## Protocol v2 RAG target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`RAG`](../../audit_results/2026-08-18/RAG.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+**Finding 01 — canonical production scope authority**
+
+1. Canonical production `RetrievalService` must require an authoritative `VectorStoreScope` before provider retrieval — absence of scope is not an ambient valid production state ([`AUDIT-20260818-RAG-01`](../../audit_results/2026-08-18/RAG.md)).
+2. Unscoped evaluation/lab retrieval, if retained, must use an explicitly non-production/test surface or typed execution mode ([`AUDIT-20260818-RAG-01`](../../audit_results/2026-08-18/RAG.md)).
+3. Do not create a second `RetrievalService` ([`AUDIT-20260818-RAG-01`](../../audit_results/2026-08-18/RAG.md)).
+4. `rag.retrieve` and Nexus `ContextBuilder` already require tenant scope — canonical service must match that invariant at the Tier-0 authority boundary ([`AUDIT-20260818-RAG-01`](../../audit_results/2026-08-18/RAG.md)).
+
+**Finding 02 — one native retriever result ABI**
+
+5. One canonical retriever result ABI: `RetrievalHit` → `RetrievalChunk` with provenance preserved ([`AUDIT-20260818-RAG-02`](../../audit_results/2026-08-18/RAG.md)).
+6. All production/native `RetrieverManager` implementations return `RetrievalHit` or fail contract validation ([`AUDIT-20260818-RAG-02`](../../audit_results/2026-08-18/RAG.md)).
+7. Remove or segregate `_candidates_to_chunks` duck-typed legacy adaptation on production retrieval — reranker configuration must not determine provenance strictness ([`AUDIT-20260818-RAG-02`](../../audit_results/2026-08-18/RAG.md)).
+
+**Finding 03 — bounded resource-policy contracts**
+
+8. `RagProfile` and `RetrievalRequest` are fail-fast resource-policy contracts with explicit production-safe ranges and cross-field invariants (`prefetch >= final`, positive limits, bounded hops/iterations, finite thresholds) ([`AUDIT-20260818-RAG-03`](../../audit_results/2026-08-18/RAG.md)).
+9. Invalid explicit env configuration fails startup/config validation — not silent dangerous runtime values ([`AUDIT-20260818-RAG-03`](../../audit_results/2026-08-18/RAG.md)).
+10. Do not silently clamp arbitrary production configuration in scattered runtime callers ([`AUDIT-20260818-RAG-03`](../../audit_results/2026-08-18/RAG.md)).
+
+**Finding 04 — production preset naming honesty**
+
+11. Production-named public presets must reflect production-qualified security/durability posture ([`AUDIT-20260818-RAG-04`](../../audit_results/2026-08-18/RAG.md)).
+12. Rename or remove the in-memory harness preset currently exposed as `production_rag_profile()` — durable GraphRAG production posture is `production_graph_rag_profile()` ([`AUDIT-20260818-RAG-04`](../../audit_results/2026-08-18/RAG.md)).
+13. Do not preserve misleading compatibility aliases without a real consumer requirement ([`AUDIT-20260818-RAG-04`](../../audit_results/2026-08-18/RAG.md)).
+
+**Finding 05 — GraphRAG production binding qualification**
+
+14. Production GraphRAG readiness proves consistency of requested `RagProfile` graph backend, actual `IntegrationProfile` graph-store binding, and approved provider qualification ([`AUDIT-20260818-RAG-05`](../../audit_results/2026-08-18/RAG.md)).
+15. A configuration string alone is not evidence of a bound durable graph provider ([`AUDIT-20260818-RAG-05`](../../audit_results/2026-08-18/RAG.md)).
+16. Coordinate with [`INTEGRATIONS-RUNTIME-BINDING-INTEGRITY`](INTEGRATIONS.md#protocol-v2-integrations-target-invariants-2026-08-18) — do not invent a parallel integration resolver ([`AUDIT-20260818-RAG-05`](../../audit_results/2026-08-18/RAG.md)).
+
+**Finding 06 — retrieval telemetry scope identity**
+
+17. Observability tenant identity derives from canonical execution scope — `request.scope.tenant_id` for scoped retrieval ([`AUDIT-20260818-RAG-06`](../../audit_results/2026-08-18/RAG.md)).
+18. Explicit non-tenant label only for intentionally unscoped lab/evaluation execution ([`AUDIT-20260818-RAG-06`](../../audit_results/2026-08-18/RAG.md)).
+19. Do not duplicate tenant identity as another independently writable `RetrievalRequest` field ([`AUDIT-20260818-RAG-06`](../../audit_results/2026-08-18/RAG.md)).
+
+**Transitional boundary (preserved)**
+
+20. Bounded RAG-PROD / RAG-LIVE qualification evidence and **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** global status remain valid within documented bounds — Protocol v2 findings are residual contract defects, not qualification retraction ([§10](#10-qualification-evidence-boundary)).
+21. Historical plan **Done** rows and handoff artifacts are preserved — not rewritten as current runtime claims ([plan](../maintainers/plans/RAG.md)).
+
+Remediation tracked as **RAG-SCOPE-CONTRACT-INTEGRITY** (findings 01–02), **RAG-CONFIGURATION-QUALIFICATION-INTEGRITY** (findings 03–05), and **RAG-OBSERVABILITY-IDENTITY** (finding 06) in [plan](../maintainers/plans/RAG.md#protocol-v2-rag-remediation-2026-08-18). **Not implemented** by audit persistence.
