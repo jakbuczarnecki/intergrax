@@ -33,7 +33,7 @@
 - **Prior audit reference(s):** legacy layer-29 audit [`docs/audit_results/2026-06-18/MODALITY.md`](../../audit_results/2026-06-18/MODALITY.md) — historical only; Protocol v2 snapshot at pinned SHA supersedes for campaign register
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `e23721e809e4aa13cf40c650e9b97e3ab731c057`
 
 ## Executive summary
 
