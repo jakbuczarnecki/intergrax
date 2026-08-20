@@ -45,3 +45,9 @@ class SecurityStatusReadBehaviorControlV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     behavior: SecurityStatusReadBehaviorV1
+
+
+class SecurityStatusRefreshControlV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    updated_at: datetime

@@ -29,3 +29,10 @@ class RequestCountResponseV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     read_request_count: int = Field(..., ge=0)
+
+
+class GovernanceApprovalSeedControlV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None

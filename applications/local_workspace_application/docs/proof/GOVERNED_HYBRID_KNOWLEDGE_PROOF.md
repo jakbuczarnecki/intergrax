@@ -339,3 +339,32 @@ proof runner
 ```
 
 Proof control (seed, failure injection, readiness) uses `ControlledSecurityStatusAdminPort` only — never production integration mutation.
+
+---
+
+## Advanced flagship proof (F3-F)
+
+Composes F3-A/B/C/D/E into one Docker-backed four-provider governed decision proof.
+
+```bash
+docker compose \
+  -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml \
+  up --build -d
+
+uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.advanced_flagship_proof
+```
+
+| Scenario | Expected |
+|----------|----------|
+| REV17 all satisfied | 4 policy-derived obligations, LLM = 1 |
+| REV18 stale security | same evidence, tighter policy, LLM = 0 |
+| REV18 fresh security | evidence refresh only, LLM = 1 |
+| Authority revoked | governance HTTP = 0, AUTHORITY_UNAVAILABLE |
+| Provider 503 | real security HTTP, PROVIDER_FAILED |
+| Malformed response | PROVIDER_RESPONSE_INVALID |
+| Vendor restart | persisted Mongo record survives process restart |
+| Structural history | REV17 vs REV18 policy basis / snapshot comparison |
+
+Tests: `tests/unit/proof_infrastructure/test_advanced_flagship_proof.py`
+
+**Admissibility note:** evidence can be admissible while the business answer remains negative — admissibility governs synthesis permission, not deployment approval.

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import threading
-from datetime import datetime
+from datetime import UTC, datetime
 
 from proof_infrastructure.controlled_project_status_service.models import (
     ProjectStatusReadBehaviorV1,
@@ -63,9 +63,11 @@ class MongoProjectStatusStore:
         update: ProjectStatusControlUpdateV1,
     ) -> ProjectStatusResponseV1:
         with self._lock:
-            current = self.get_status(project_id)
-            if current is None:
+            document = self._collection.find_one({"project_id": project_id})
+            if document is None:
                 raise KeyError("project_not_found")
+            payload = {key: value for key, value in document.items() if key != "_id"}
+            current = ProjectStatusResponseV1.model_validate(payload)
             updated = current.model_copy(
                 update={
                     "readiness_score": (
@@ -81,10 +83,14 @@ class MongoProjectStatusStore:
                     "status": (
                         update.status if update.status is not None else current.status
                     ),
-                    "updated_at": datetime.now().astimezone(),
+                    "updated_at": datetime.now(UTC),
                 }
             )
-            self.put_status(updated)
+            self._collection.replace_one(
+                {"project_id": project_id},
+                updated.model_dump(mode="json"),
+                upsert=True,
+            )
             return updated
 
     def read_request_count(self) -> int:

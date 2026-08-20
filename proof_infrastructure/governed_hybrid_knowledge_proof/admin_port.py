@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from proof_infrastructure.controlled_security_status_service.models import (
     SecurityStatusReadBehaviorControlV1,
     SecurityStatusReadBehaviorV1,
+    SecurityStatusRefreshControlV1,
     SecurityStatusResponseV1,
 )
 
@@ -46,6 +47,9 @@ class ControlledSecurityStatusAdminPort(Protocol):
 
     def read_safe_fixture_identity(self, *, project_id: str) -> SecurityStatusFixtureIdentityV1:
         """Read fixture identity without incrementing live read counters."""
+
+    def refresh_security_status(self, *, updated_at: datetime) -> SecurityStatusFixtureIdentityV1:
+        """Persist refreshed security evidence timestamp through vendor control plane."""
 
 
 def _fixture_identity_from_response(response: SecurityStatusResponseV1) -> SecurityStatusFixtureIdentityV1:
@@ -113,6 +117,17 @@ class HttpxControlledSecurityStatusAdminPort:
     def read_safe_fixture_identity(self, *, project_id: str) -> SecurityStatusFixtureIdentityV1:
         response = httpx.get(
             f"{self.base_url}/control/fixture/{project_id}",
+            timeout=self.timeout_seconds,
+        )
+        response.raise_for_status()
+        payload = SecurityStatusResponseV1.model_validate(response.json())
+        return _fixture_identity_from_response(payload)
+
+    def refresh_security_status(self, *, updated_at: datetime) -> SecurityStatusFixtureIdentityV1:
+        control = SecurityStatusRefreshControlV1(updated_at=updated_at)
+        response = httpx.post(
+            f"{self.base_url}/control/refresh-orion",
+            json=control.model_dump(mode="json"),
             timeout=self.timeout_seconds,
         )
         response.raise_for_status()

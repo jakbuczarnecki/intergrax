@@ -321,6 +321,7 @@ async def _assert_provider_failure_finalizes_canonically(
     harness: GovernedHybridKnowledgeHarness,
     *,
     run_id: str,
+    expected_reason: RequirementAdmissibilityReasonCodeV1,
     command: WorkspaceAskCommandV2 | None = None,
     setup: Callable[[], None] | None = None,
 ) -> None:
@@ -353,7 +354,7 @@ async def _assert_provider_failure_finalizes_canonically(
     assert len(live_evaluations) == 1
     assert (
         live_evaluations[0].reason_code
-        is RequirementAdmissibilityReasonCodeV1.NO_MATCHING_EVIDENCE
+        is expected_reason
     )
     reloaded = harness.service.get_run(tenant_id=PROOF_TENANT_ID, run_id=run_id)
     assert reloaded.status is AskRunStatus.INSUFFICIENT_EVIDENCE
@@ -368,6 +369,7 @@ async def test_attack_malformed_provider_payload_cannot_satisfy_obligation(
     await _assert_provider_failure_finalizes_canonically(
         harness,
         run_id="attack-f-malformed-json",
+        expected_reason=RequirementAdmissibilityReasonCodeV1.PROVIDER_RESPONSE_INVALID,
         setup=lambda: _set_read_behavior(
             project_status_server, ProjectStatusReadBehaviorV1.MALFORMED_JSON
         ),
@@ -382,6 +384,7 @@ async def test_attack_invalid_schema_provider_payload_cannot_satisfy_obligation(
     await _assert_provider_failure_finalizes_canonically(
         harness,
         run_id="attack-f-invalid-schema",
+        expected_reason=RequirementAdmissibilityReasonCodeV1.PROVIDER_RESPONSE_INVALID,
         setup=lambda: _set_read_behavior(
             project_status_server, ProjectStatusReadBehaviorV1.INVALID_SCHEMA
         ),
@@ -403,6 +406,7 @@ async def test_attack_provider_404_cannot_synthesize_answer(
     await _assert_provider_failure_finalizes_canonically(
         harness,
         run_id="attack-g-404",
+        expected_reason=RequirementAdmissibilityReasonCodeV1.PROVIDER_FAILED,
         command=command,
     )
 
@@ -415,6 +419,7 @@ async def test_attack_provider_5xx_cannot_synthesize_answer(
     await _assert_provider_failure_finalizes_canonically(
         harness,
         run_id="attack-g-5xx",
+        expected_reason=RequirementAdmissibilityReasonCodeV1.PROVIDER_FAILED,
         setup=lambda: _set_read_behavior(
             project_status_server, ProjectStatusReadBehaviorV1.HTTP_503
         ),

@@ -9,6 +9,7 @@ from proof_infrastructure.controlled_security_status_service.models import (
     RequestCountResponseV1,
     SecurityStatusReadBehaviorControlV1,
     SecurityStatusReadBehaviorV1,
+    SecurityStatusRefreshControlV1,
     SecurityStatusResponseV1,
 )
 from proof_infrastructure.controlled_security_status_service.seed import seed_orion_security_fixture
@@ -60,6 +61,13 @@ def create_app(*, store: SecurityStatusStore | None = None) -> FastAPI:
     @app.post("/control/seed-orion", response_model=SecurityStatusResponseV1)
     def control_seed_orion() -> SecurityStatusResponseV1:
         return seed_orion_security_fixture(security_store)
+
+    @app.post("/control/refresh-orion", response_model=SecurityStatusResponseV1)
+    def control_refresh_orion(control: SecurityStatusRefreshControlV1) -> SecurityStatusResponseV1:
+        return seed_orion_security_fixture(
+            security_store,
+            updated_at=control.updated_at,
+        )
 
     @app.get("/control/fixture/{project_id}", response_model=SecurityStatusResponseV1)
     def control_read_fixture(project_id: str) -> SecurityStatusResponseV1:

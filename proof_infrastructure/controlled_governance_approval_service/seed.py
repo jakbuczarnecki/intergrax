@@ -19,6 +19,8 @@ def seed_orion_governance_fixture(
     store: GovernanceApprovalStore,
     *,
     updated_at: datetime | None = None,
+    valid_from: datetime | None = None,
+    valid_until: datetime | None = None,
 ) -> GovernanceApprovalResponseV1:
     timestamp = updated_at or datetime(2026, 8, 19, 12, 0, tzinfo=UTC)
     status = GovernanceApprovalResponseV1(
@@ -26,6 +28,8 @@ def seed_orion_governance_fixture(
         decision_state=GovernanceDecisionStateV1.APPROVED,
         approved=True,
         updated_at=timestamp,
+        valid_from=valid_from,
+        valid_until=valid_until,
     )
     store.put_governance(status)
     return status

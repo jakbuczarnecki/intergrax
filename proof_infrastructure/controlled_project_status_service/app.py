@@ -12,7 +12,9 @@ from proof_infrastructure.controlled_project_status_service.models import (
     ProjectStatusResponseV1,
     RequestCountResponseV1,
 )
-from proof_infrastructure.controlled_project_status_service.seed import seed_orion_fixture
+from proof_infrastructure.controlled_project_status_service.seed import (
+    seed_orion_fixture,
+)
 from proof_infrastructure.controlled_project_status_service.mongo_state import (
     MongoProjectStatusStore,
 )

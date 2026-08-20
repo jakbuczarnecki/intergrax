@@ -449,6 +449,56 @@ uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.docker_per
 # explicit cleanup: docker compose ... down -v
 ```
 
+#### 6.4.7 Advanced flagship proof (COMM-5F3-F)
+
+F3-F composes accepted F3-A/B/C/D/E capabilities into one governed decision scenario. It is **not** a new platform feature campaign — proof infrastructure only.
+
+**Ordinary agent path:**
+
+```text
+question → LLM → tools → answer
+```
+
+**Intergrax governed path:**
+
+```text
+question
+→ policy-derived evidence requirements (DeterministicEvidenceObligationDerivation)
+→ qualified independent sources (4 providers / 4 connections / 4 capabilities)
+→ execution-time authority (WorkspaceLiveAccessRuntimeAuthority)
+→ temporal admissibility (max_age / valid_at)
+→ obligation-level outcomes (typed reason codes)
+→ deterministic admissibility gate
+→ LLM only if permitted
+→ persisted structural proof (WorkspaceAskRunV2)
+```
+
+**Flagship question:** `Can ORION be deployed to production tonight?` — proof fixture only; no ORION semantics in production platform code.
+
+**Docker topology (four independent vendor services):**
+
+| Source | Provider | Connection | Capability | Service | Persistence |
+|--------|----------|------------|------------|---------|-------------|
+| Project Status | `project_status` | `conn.flagship.project-status` | `vendor.project_status.project.read` | `project-status-vendor:8092` | `project_status_records` |
+| Security Status | `security_status` | `conn.flagship.security-status` | `vendor.security_status.security.read` | `security-status-vendor:8091` | `security_status_records` |
+| Change Approval | `change_approval` | `conn.flagship.change-approval` | `vendor.change_approval.change.read` | `change-approval-vendor:8093` | `change_approval_records` |
+| Governance Approval | `governance_approval` | `conn.flagship.governance-approval` | `vendor.governance_approval.approval.read` | `governance-approval-vendor:8094` | `governance_approval_records` |
+
+Shared MongoDB volume `governed_proof_vendor_data` is vendor-owned persistence only — Intergrax never reads Mongo directly.
+
+**Policy revisions:** REV17 (`security max_age = 24h`) vs REV18 (`security max_age = 1h`) change admissibility without application branching. Same underlying evidence can be admissible under REV17 and temporally invalid under REV18.
+
+**Admissibility vs business answer:** fresh evidence may report business-negative facts (for example `BLOCKED`); admissibility answers whether the LLM may synthesize — not whether deployment is approved.
+
+Proof command:
+
+```bash
+docker compose -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml up --build -d
+uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.advanced_flagship_proof
+```
+
+**Boundary invariants:** proof runner → typed admin/scenario abstractions → `WorkspaceAskServiceV2` → orchestrator → runtime authority → integrations → vendor HTTP → vendor persistence. Never proof runner → raw vendor HTTP / Mongo / provider internals.
+
 ### 6.5 Evidence Admissibility gate
 
 After orchestration, a **deterministic evaluator** compares execution evidence against the validated obligations. It does not call providers, LLMs, or repositories.

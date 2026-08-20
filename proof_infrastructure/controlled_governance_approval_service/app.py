@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from proof_infrastructure.controlled_governance_approval_service.models import (
     GovernanceApprovalResponseV1,
+    GovernanceApprovalSeedControlV1,
     RequestCountResponseV1,
 )
 from proof_infrastructure.controlled_governance_approval_service.seed import (
@@ -55,8 +56,14 @@ def create_app(
         return Response(status_code=204)
 
     @app.post("/control/seed-orion", response_model=GovernanceApprovalResponseV1)
-    def control_seed_orion() -> GovernanceApprovalResponseV1:
-        return seed_orion_governance_fixture(governance_store)
+    def control_seed_orion(
+        control: GovernanceApprovalSeedControlV1 | None = None,
+    ) -> GovernanceApprovalResponseV1:
+        return seed_orion_governance_fixture(
+            governance_store,
+            valid_from=control.valid_from if control is not None else None,
+            valid_until=control.valid_until if control is not None else None,
+        )
 
     @app.get("/control/fixture/{subject_id}", response_model=GovernanceApprovalResponseV1)
     def control_read_fixture(subject_id: str) -> GovernanceApprovalResponseV1:
