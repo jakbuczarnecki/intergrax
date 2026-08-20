@@ -36,7 +36,7 @@
 - **Prior audit reference(s):** Protocol v2 [`CONTEXT_ENGINEERING`](CONTEXT_ENGINEERING.md) (CE/UCL boundary — positive control); historical CTX-UCL / TOKEN-10E **ACCEPTED / CLOSED** rows remain valid delivery facts
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `a69129927c80a8ec61d6eec894c63fbb93c6e67b`
 
 ## Executive summary
 
