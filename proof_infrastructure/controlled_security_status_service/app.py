@@ -33,6 +33,8 @@ def create_app(*, store: SecurityStatusStore | None = None) -> FastAPI:
         status = security_store.read_security(project_id)
         if behavior is SecurityStatusReadBehaviorV1.HTTP_503:
             raise HTTPException(status_code=503, detail="controlled_server_unavailable")
+        if behavior is SecurityStatusReadBehaviorV1.MALFORMED_JSON:
+            return Response(content="{not-valid-json", media_type="application/json")
         if status is None:
             raise HTTPException(status_code=404, detail="project_not_found")
         return status

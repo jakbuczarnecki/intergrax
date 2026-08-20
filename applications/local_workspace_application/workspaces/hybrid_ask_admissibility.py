@@ -32,6 +32,32 @@ from intergrax.runtime.evidence.obligation_derivation_contracts import (
     ValidAtTemporalConstraintV1,
     ValidityIntervalEvidenceTemporalV1,
 )
+from intergrax.runtime.vendor_knowledge.live.failures import (
+    LiveCallFailureReasonV1,
+    LiveCallFailureV1,
+)
+
+# Obligation verdict priority for live requirements (highest wins):
+# 1. temporally valid matching evidence -> SATISFIED
+# 2. matching evidence failing temporal constraint -> EVIDENCE_TEMPORALLY_INVALID
+# 3. structural execution failure for exact call_id -> mapped failure reason
+# 4. other live evidence present but wrong call_id -> LIVE_CALL_MISMATCH
+# 5. otherwise -> NO_MATCHING_EVIDENCE
+
+_FAILURE_REASON_TO_ADMISSIBILITY: dict[
+    LiveCallFailureReasonV1,
+    RequirementAdmissibilityReasonCodeV1,
+] = {
+    LiveCallFailureReasonV1.AUTHORITY_UNAVAILABLE: (
+        RequirementAdmissibilityReasonCodeV1.AUTHORITY_UNAVAILABLE
+    ),
+    LiveCallFailureReasonV1.PROVIDER_FAILED: (
+        RequirementAdmissibilityReasonCodeV1.PROVIDER_FAILED
+    ),
+    LiveCallFailureReasonV1.PROVIDER_RESPONSE_INVALID: (
+        RequirementAdmissibilityReasonCodeV1.PROVIDER_RESPONSE_INVALID
+    ),
+}
 
 
 def _satisfies_temporal_constraint(
@@ -61,6 +87,16 @@ def _satisfies_temporal_constraint(
             <= evidence_temporal.valid_until
         )
     return False
+
+
+def _failure_for_call_id(
+    call_id: str,
+    live_call_failures: tuple[LiveCallFailureV1, ...],
+) -> LiveCallFailureV1 | None:
+    for failure in live_call_failures:
+        if failure.call_id == call_id:
+            return failure
+    return None
 
 
 def _evaluate_indexed_requirement(
@@ -121,26 +157,13 @@ def _evaluate_indexed_requirement(
 def _evaluate_live_requirement(
     requirement: LiveEvidenceRequirementV1,
     live_evidence: tuple[LiveWorkspaceEvidenceV1, ...],
+    live_call_failures: tuple[LiveCallFailureV1, ...],
     *,
     evaluated_at: datetime,
 ) -> RequiredEvidenceEvaluationV1:
     matched_items = tuple(
         item for item in live_evidence if item.call_id == requirement.call_id
     )
-    if not matched_items:
-        has_other_call_evidence = any(
-            item.call_id != requirement.call_id for item in live_evidence
-        )
-        reason = (
-            RequirementAdmissibilityReasonCodeV1.LIVE_CALL_MISMATCH
-            if has_other_call_evidence
-            else RequirementAdmissibilityReasonCodeV1.NO_MATCHING_EVIDENCE
-        )
-        return RequiredEvidenceEvaluationV1(
-            requirement_id=requirement.requirement_id,
-            status=RequirementEvaluationStatusV1.UNSATISFIED,
-            reason_code=reason,
-        )
     temporally_valid_ids = tuple(
         item.evidence_id
         for item in matched_items
@@ -156,11 +179,32 @@ def _evaluate_live_requirement(
             status=RequirementEvaluationStatusV1.SATISFIED,
             matched_evidence_ids=temporally_valid_ids,
         )
-    if requirement.temporal_constraint is not None:
+    if matched_items and requirement.temporal_constraint is not None:
         return RequiredEvidenceEvaluationV1(
             requirement_id=requirement.requirement_id,
             status=RequirementEvaluationStatusV1.UNSATISFIED,
             reason_code=RequirementAdmissibilityReasonCodeV1.EVIDENCE_TEMPORALLY_INVALID,
+        )
+    failure = _failure_for_call_id(requirement.call_id, live_call_failures)
+    if failure is not None:
+        return RequiredEvidenceEvaluationV1(
+            requirement_id=requirement.requirement_id,
+            status=RequirementEvaluationStatusV1.UNSATISFIED,
+            reason_code=_FAILURE_REASON_TO_ADMISSIBILITY[failure.reason],
+        )
+    if not matched_items:
+        has_other_call_evidence = any(
+            item.call_id != requirement.call_id for item in live_evidence
+        )
+        reason = (
+            RequirementAdmissibilityReasonCodeV1.LIVE_CALL_MISMATCH
+            if has_other_call_evidence
+            else RequirementAdmissibilityReasonCodeV1.NO_MATCHING_EVIDENCE
+        )
+        return RequiredEvidenceEvaluationV1(
+            requirement_id=requirement.requirement_id,
+            status=RequirementEvaluationStatusV1.UNSATISFIED,
+            reason_code=reason,
         )
     return RequiredEvidenceEvaluationV1(
         requirement_id=requirement.requirement_id,
@@ -174,6 +218,7 @@ def evaluate_evidence_admissibility(
     obligations: tuple[RequiredEvidenceObligationV1, ...],
     indexed_evidence: tuple[IndexedWorkspaceEvidenceV1, ...],
     live_evidence: tuple[LiveWorkspaceEvidenceV1, ...],
+    live_call_failures: tuple[LiveCallFailureV1, ...] = (),
     evaluated_at: datetime,
 ) -> EvidenceAdmissibilityResultV1:
     if evaluated_at.tzinfo is None or evaluated_at.utcoffset() is None:
@@ -199,6 +244,7 @@ def evaluate_evidence_admissibility(
                 _evaluate_live_requirement(
                     obligation,
                     live_evidence,
+                    live_call_failures,
                     evaluated_at=evaluated_at,
                 )
             )
@@ -227,5 +273,6 @@ def evaluate_execution_admissibility(
         obligations=validated_plan.plan.required_evidence_obligations,
         indexed_evidence=execution.indexed_evidence,
         live_evidence=execution.live_evidence,
+        live_call_failures=execution.live_call_failures,
         evaluated_at=evaluated_at,
     )

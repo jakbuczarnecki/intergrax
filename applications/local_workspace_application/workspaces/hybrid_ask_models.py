@@ -30,6 +30,7 @@ from intergrax.runtime.vendor_knowledge.live.contracts import (
     LiveExecutionReceiptV1,
     safe_locator_or_none,
 )
+from intergrax.runtime.vendor_knowledge.live.failures import LiveCallFailureV1
 
 _EVIDENCE_ID_INDEXED_PREFIX = "idx:"
 _EVIDENCE_ID_LIVE_PREFIX = "live:"
@@ -300,6 +301,9 @@ class RequirementAdmissibilityReasonCodeV1(StrEnum):
     INDEXED_BINDING_MISMATCH = "indexed_binding_mismatch"
     LIVE_CALL_MISMATCH = "live_call_mismatch"
     EVIDENCE_TEMPORALLY_INVALID = "evidence_temporally_invalid"
+    AUTHORITY_UNAVAILABLE = "authority_unavailable"
+    PROVIDER_FAILED = "provider_failed"
+    PROVIDER_RESPONSE_INVALID = "provider_response_invalid"
 
 
 class RequiredEvidenceEvaluationV1(BaseModel):
@@ -342,6 +346,7 @@ class WorkspaceAskRunV2(BaseModel):
     required_evidence_obligations: tuple[RequiredEvidenceObligationV1, ...] = ()
     policy_basis: PolicyEvidenceBasisV1 | None = None
     evidence_admissibility: EvidenceAdmissibilityResultV1 | None = None
+    live_call_failures: tuple[LiveCallFailureV1, ...] = ()
     live_result_retention: LiveResultRetentionV1 = LiveResultRetentionV1.EPHEMERAL
     # Optional provider-strategy extension.  The generic Ask contract does not
     # interpret provider-specific coverage payloads.

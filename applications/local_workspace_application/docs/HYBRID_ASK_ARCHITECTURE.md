@@ -404,6 +404,51 @@ Fresh evidence may still report business-negative provider facts (for example `B
 
 Persisted `WorkspaceAskRunV2` records are **self-consistent**: obligations, per-requirement evaluations, matched evidence IDs, persisted evidence, and final status must agree.
 
+#### 6.4.6 Obligation-level failure semantics (COMM-5F3-E)
+
+F3-E adds typed **per-call execution outcomes** and maps them to requirement-level admissibility reasons. It extends existing execution and admissibility contracts — no second error subsystem.
+
+```text
+Required evidence obligation
+    ↓
+planned live call execution
+    ├── SUCCESS → live evidence
+    ├── AUTHORITY_UNAVAILABLE → provider HTTP not executed
+    ├── PROVIDER_FAILED → provider dependency/transport failure
+    └── PROVIDER_RESPONSE_INVALID → HTTP succeeded but typed contract violated
+    ↓
+temporal check (when evidence exists)
+    ↓
+requirement verdict (SATISFIED / reason code)
+    ↓
+persisted WorkspaceAskRunV2 structural proof
+```
+
+| Priority | Live requirement outcome |
+|----------|---------------------------|
+| 1 | Temporally valid matching evidence → `SATISFIED` |
+| 2 | Matching evidence failing temporal constraint → `EVIDENCE_TEMPORALLY_INVALID` |
+| 3 | Structural execution failure for exact `call_id` → `AUTHORITY_UNAVAILABLE` / `PROVIDER_FAILED` / `PROVIDER_RESPONSE_INVALID` |
+| 4 | Other live evidence but wrong call → `LIVE_CALL_MISMATCH` |
+| 5 | Otherwise → `NO_MATCHING_EVIDENCE` |
+
+| Contract | Meaning |
+|----------|---------|
+| `LiveCallFailureV1` | `{call_id, reason}` — bounded structural failure; no raw provider bodies |
+| `KnowledgeQueryExecutionResultV1.live_call_failures` | successful evidence and failed calls may coexist in one Ask |
+| `RequirementAdmissibilityReasonCodeV1` | adds `authority_unavailable`, `provider_failed`, `provider_response_invalid` |
+| `WorkspaceAskRunV2.live_call_failures` | reloadable failure semantics without log inference |
+
+**Flagship proof direction (F3-F acceptance):** final governed decision proof MUST use vendor/system data persisted in Docker-backed external storage (`docker-compose.governed-hybrid-proof.yml` → MongoDB volume `governed_proof_vendor_data` → vendor HTTP → TenantConnection → runtime authority → capability execution → evidence → admissibility). In-process `Controlled*Server.start()` loopback services remain **test accelerators only** — not sufficient as the final external-system proof.
+
+Proof command (F3-E harness):
+
+```bash
+docker compose -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml up -d
+uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.docker_persistence_proof
+# explicit cleanup: docker compose ... down -v
+```
+
 ### 6.5 Evidence Admissibility gate
 
 After orchestration, a **deterministic evaluator** compares execution evidence against the validated obligations. It does not call providers, LLMs, or repositories.

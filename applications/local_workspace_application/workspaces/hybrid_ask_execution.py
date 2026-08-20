@@ -66,6 +66,10 @@ from intergrax.runtime.vendor_knowledge.live.contracts import (
     safe_locator_or_none,
 )
 from intergrax.runtime.vendor_knowledge.live.errors import LiveErrorCodeV1
+from intergrax.runtime.vendor_knowledge.live.failures import (
+    LiveCallFailureV1,
+    live_call_failure_for_error_code,
+)
 from intergrax.runtime.vendor_knowledge.live.identity import (
     validate_capability_identity,
 )
@@ -936,6 +940,7 @@ class KnowledgeQueryExecutionResultV1(BaseModel):
     mode: QueryPolicyModeV2
     indexed_evidence: tuple[IndexedWorkspaceEvidenceV1, ...] = ()
     live_evidence: tuple[LiveWorkspaceEvidenceV1, ...] = ()
+    live_call_failures: tuple[LiveCallFailureV1, ...] = ()
     receipts: tuple[LiveExecutionReceiptV1, ...] = ()
     indexed_retrieval_status: HybridAskIndexedRetrievalStatusV1
     live_execution_status: HybridAskLiveExecutionStatusV1
@@ -1000,6 +1005,7 @@ class KnowledgeQueryOrchestratorV1:
         plan = validated_plan.plan
         indexed: tuple[IndexedWorkspaceEvidenceV1, ...] = ()
         live: list[LiveWorkspaceEvidenceV1] = []
+        live_call_failures: list[LiveCallFailureV1] = []
         receipts: list[LiveExecutionReceiptV1] = []
         indexed_status = HybridAskIndexedRetrievalStatusV1.SKIPPED
         live_status = HybridAskLiveExecutionStatusV1.SKIPPED
@@ -1013,6 +1019,7 @@ class KnowledgeQueryOrchestratorV1:
                     plan=validated_plan,
                     indexed=indexed,
                     live=live,
+                    live_call_failures=live_call_failures,
                     receipts=receipts,
                     indexed_status=HybridAskIndexedRetrievalStatusV1.FAILED,
                     live_status=live_status,
@@ -1049,6 +1056,7 @@ class KnowledgeQueryOrchestratorV1:
                     plan=validated_plan,
                     indexed=(),
                     live=live,
+                    live_call_failures=live_call_failures,
                     receipts=receipts,
                     indexed_status=HybridAskIndexedRetrievalStatusV1.FAILED,
                     live_status=live_status,
@@ -1065,6 +1073,7 @@ class KnowledgeQueryOrchestratorV1:
                     plan=validated_plan,
                     indexed=indexed,
                     live=live,
+                    live_call_failures=live_call_failures,
                     receipts=receipts,
                     indexed_status=indexed_status,
                     live_status=HybridAskLiveExecutionStatusV1.FAILED,
@@ -1116,8 +1125,13 @@ class KnowledgeQueryOrchestratorV1:
                     if outcome.receipt is not None:
                         receipts.append(outcome.receipt)
                     if outcome.normalized_outcome is LiveExecutionOutcomeV1.FAILED:
-                        first_live_error = first_live_error or (
-                            outcome.error_code or "live_execution_failed"
+                        error_code = outcome.error_code or LiveErrorCodeV1.EXECUTION_FAILED.value
+                        first_live_error = first_live_error or error_code
+                        live_call_failures.append(
+                            live_call_failure_for_error_code(
+                                call_id=call.call_id,
+                                error_code=error_code,
+                            )
                         )
                         live_status = (
                             HybridAskLiveExecutionStatusV1.PARTIAL
@@ -1222,6 +1236,7 @@ class KnowledgeQueryOrchestratorV1:
                 plan=validated_plan,
                 indexed=indexed,
                 live=live,
+                live_call_failures=live_call_failures,
                 receipts=receipts,
                 indexed_status=indexed_status,
                 live_status=live_status,
@@ -1236,6 +1251,7 @@ class KnowledgeQueryOrchestratorV1:
             plan=validated_plan,
             indexed=indexed,
             live=live,
+            live_call_failures=live_call_failures,
             receipts=receipts,
             indexed_status=indexed_status,
             live_status=live_status,
@@ -1252,6 +1268,7 @@ class KnowledgeQueryOrchestratorV1:
         plan: ValidatedEvidencePlanV1,
         indexed: tuple[IndexedWorkspaceEvidenceV1, ...],
         live: list[LiveWorkspaceEvidenceV1],
+        live_call_failures: list[LiveCallFailureV1],
         receipts: list[LiveExecutionReceiptV1],
         indexed_status: HybridAskIndexedRetrievalStatusV1,
         live_status: HybridAskLiveExecutionStatusV1,
@@ -1266,6 +1283,7 @@ class KnowledgeQueryOrchestratorV1:
             mode=plan.plan.mode,
             indexed_evidence=indexed,
             live_evidence=tuple(live),
+            live_call_failures=tuple(live_call_failures),
             receipts=tuple(receipts),
             indexed_retrieval_status=indexed_status,
             live_execution_status=live_status,

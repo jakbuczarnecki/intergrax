@@ -38,6 +38,7 @@ class RequestCountResponseV1(BaseModel):
 class SecurityStatusReadBehaviorV1(StrEnum):
     NORMAL = "normal"
     HTTP_503 = "http_503"
+    MALFORMED_JSON = "malformed_json"
 
 
 class SecurityStatusReadBehaviorControlV1(BaseModel):

@@ -1,0 +1,77 @@
+# © Artur Czarnecki. All rights reserved.
+# Docker-backed vendor persistence overlay for COMM-5 F3-E / F3-F proof direction.
+# Run from repository root:
+# docker compose \
+#   -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml \
+#   up --build
+#
+# Teardown with volume cleanup:
+# docker compose \
+#   -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml \
+#   down -v
+
+services:
+  governed-proof-mongodb:
+    image: mongo:7.0.14
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${GOVERNED_PROOF_MONGODB_USERNAME:-intergrax}
+      MONGO_INITDB_ROOT_PASSWORD: ${GOVERNED_PROOF_MONGODB_PASSWORD:-intergrax-local-dev-only}
+      MONGO_INITDB_DATABASE: ${GOVERNED_PROOF_MONGODB_DATABASE:-governed_proof}
+    ports:
+      - "${GOVERNED_PROOF_MONGODB_HOST_PORT:-27019}:27017"
+    volumes:
+      - governed_proof_vendor_data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--username",
+          "${GOVERNED_PROOF_MONGODB_USERNAME:-intergrax}",
+          "--password",
+          "${GOVERNED_PROOF_MONGODB_PASSWORD:-intergrax-local-dev-only}",
+          "--authenticationDatabase",
+          "admin",
+          "--quiet",
+          "--eval",
+          "db.adminCommand('ping').ok",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  security-status-vendor:
+    image: python:3.12-slim
+    working_dir: /workspace
+    command:
+      [
+        "sh",
+        "-c",
+        "pip install --no-cache-dir fastapi uvicorn pymongo pydantic httpx && python -m proof_infrastructure.controlled_security_status_service",
+      ]
+    environment:
+      PYTHONPATH: /workspace
+      SECURITY_STATUS_MONGODB_URI: mongodb://${GOVERNED_PROOF_MONGODB_USERNAME:-intergrax}:${GOVERNED_PROOF_MONGODB_PASSWORD:-intergrax-local-dev-only}@governed-proof-mongodb:27017/${GOVERNED_PROOF_MONGODB_DATABASE:-governed_proof}?authSource=admin
+      SECURITY_STATUS_MONGODB_DATABASE: ${GOVERNED_PROOF_MONGODB_DATABASE:-governed_proof}
+      SECURITY_STATUS_MONGODB_COLLECTION: security_status_records
+      SECURITY_STATUS_HOST: 0.0.0.0
+      SECURITY_STATUS_PORT: "8080"
+    volumes:
+      - ../../..:/workspace:ro
+    ports:
+      - "${GOVERNED_PROOF_SECURITY_VENDOR_PORT:-8091}:8080"
+    depends_on:
+      governed-proof-mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  governed_proof_vendor_data:
