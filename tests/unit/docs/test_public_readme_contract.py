@@ -15,8 +15,19 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
 PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
+README_STRATEGIC_ASSETS_DIR = REPO_ROOT / "docs" / "project" / "assets" / "public" / "readme"
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
+LKW_ASSETS_PREFIX = "applications/local_workspace_application/docs/assets/"
+README_STRATEGIC_PREFIX = "docs/project/assets/public/readme/"
+PROJECT_PUBLIC_ASSETS_PREFIX = "docs/project/assets/public/"
+_README_VISUAL_PATH_PREFIXES = (
+    LKW_ASSETS_PREFIX,
+    README_STRATEGIC_PREFIX,
+    PROJECT_PUBLIC_ASSETS_PREFIX,
+)
+_MIN_README_PICTURES = 1
+_MAX_README_PICTURES = 6
 LKW_LIGHT_PATH = (
     REPO_ROOT
     / "applications"
@@ -82,6 +93,10 @@ _PERCENT_PATTERN = re.compile(r"\d+\s*%")
 
 _MERMAID_FENCE = re.compile(r"```mermaid\s*\n(.*?)```", re.DOTALL)
 _MD_LINK = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
+_PICTURE_BLOCK = re.compile(r"<picture>(.*?)</picture>", re.DOTALL | re.IGNORECASE)
+_SOURCE_TAG = re.compile(r"<source\b([^>]*)>", re.IGNORECASE)
+_IMG_TAG = re.compile(r"<img\b([^>]*)>", re.IGNORECASE)
+_ATTR_VALUE = re.compile(r'(\w+)="([^"]*)"')
 
 
 @pytest.fixture(scope="module")
@@ -147,17 +162,138 @@ def test_required_public_links(readme_text: str) -> None:
         assert link in readme_text, f"Missing required public link: {link}"
 
 
-def test_hero_contract(readme_text: str) -> None:
+def _normalize_svg_stem(filename: str) -> str | None:
+    if filename.endswith("-light.svg"):
+        return filename[: -len("-light.svg")]
+    if filename.endswith("-dark.svg"):
+        return filename[: -len("-dark.svg")]
+    return None
+
+
+def _validate_light_dark_pair(light_path: Path, dark_path: Path) -> list[str]:
+    violations: list[str] = []
+    if not light_path.is_file():
+        violations.append(f"missing light variant: {light_path.name}")
+    if not dark_path.is_file():
+        violations.append(f"missing dark variant: {dark_path.name}")
+    if light_path.is_file() and dark_path.is_file():
+        light_stem = _normalize_svg_stem(light_path.name)
+        dark_stem = _normalize_svg_stem(dark_path.name)
+        if light_stem is None or dark_stem is None:
+            violations.append("pair must use *-light.svg / *-dark.svg naming")
+        elif light_stem != dark_stem:
+            violations.append("light/dark stem mismatch")
+    return violations
+
+
+def _light_dark_pair_paths(stem: str, directory: Path) -> tuple[Path, Path]:
+    return (
+        directory / f"{stem}-light.svg",
+        directory / f"{stem}-dark.svg",
+    )
+
+
+def _is_allowed_readme_visual_path(path_str: str) -> bool:
+    normalized = path_str.replace("\\", "/")
+    return any(normalized.startswith(prefix) for prefix in _README_VISUAL_PATH_PREFIXES)
+
+
+def _tag_attributes(tag_body: str) -> dict[str, str]:
+    return {match.group(1).lower(): match.group(2) for match in _ATTR_VALUE.finditer(tag_body)}
+
+
+def _parse_picture_block(block: str) -> dict[str, str]:
+    light_src = dark_src = img_src = img_alt = ""
+    for source_match in _SOURCE_TAG.finditer(block):
+        attrs = _tag_attributes(source_match.group(1))
+        srcset = attrs.get("srcset", "").strip()
+        media = attrs.get("media", "").lower()
+        if "prefers-color-scheme: dark" in media:
+            dark_src = srcset
+        elif "prefers-color-scheme: light" in media:
+            light_src = srcset
+    for img_match in _IMG_TAG.finditer(block):
+        attrs = _tag_attributes(img_match.group(1))
+        img_src = attrs.get("src", "").strip()
+        img_alt = attrs.get("alt", "").strip()
+    return {
+        "light": light_src,
+        "dark": dark_src,
+        "img_src": img_src,
+        "img_alt": img_alt,
+    }
+
+
+def _extract_picture_blocks(readme_text: str) -> list[str]:
+    return _PICTURE_BLOCK.findall(readme_text)
+
+
+def test_lkw_visual_contract(readme_text: str) -> None:
     assert "applications/local_workspace_application/docs/assets/lkw-grounded-result-light.svg" in readme_text
     assert "applications/local_workspace_application/docs/assets/lkw-grounded-result-dark.svg" in readme_text
-    assert readme_text.count("<picture>") == 1
     assert 'alt="LKW quickstart flow' in readme_text
-    assert "docs/project/assets/public/intergrax-hero-light.svg" not in readme_text
-    assert "docs/project/assets/public/intergrax-hero-dark.svg" not in readme_text
-    assert HERO_LIGHT_PATH.is_file(), "Hero light SVG is missing"
-    assert HERO_DARK_PATH.is_file(), "Hero dark SVG is missing"
     assert LKW_LIGHT_PATH.is_file(), "LKW light SVG is missing"
     assert LKW_DARK_PATH.is_file(), "LKW dark SVG is missing"
+    pair_violations = _validate_light_dark_pair(LKW_LIGHT_PATH, LKW_DARK_PATH)
+    assert not pair_violations, f"LKW light/dark pair: {pair_violations}"
+
+
+def test_readme_controlled_multi_visual_contract(readme_text: str) -> None:
+    """Root README may host multiple strategic visuals under controlled ownership."""
+    picture_blocks = _extract_picture_blocks(readme_text)
+    assert _MIN_README_PICTURES <= len(picture_blocks) <= _MAX_README_PICTURES, (
+        f"README picture count {len(picture_blocks)} outside controlled range "
+        f"[{_MIN_README_PICTURES}, {_MAX_README_PICTURES}]"
+    )
+
+    referenced_svgs: set[Path] = set()
+    for block in picture_blocks:
+        parsed = _parse_picture_block(block)
+        assert parsed["light"], "picture block missing light <source>"
+        assert parsed["dark"], "picture block missing dark <source>"
+        assert parsed["img_src"], "picture block missing <img src>"
+        assert parsed["img_alt"], "picture block missing non-empty <img alt>"
+
+        for path_str in (parsed["light"], parsed["dark"], parsed["img_src"]):
+            normalized = path_str.replace("\\", "/")
+            assert normalized.endswith(".svg"), f"README visual must be local SVG: {path_str}"
+            assert _is_allowed_readme_visual_path(normalized), (
+                f"README visual outside approved ownership prefixes: {path_str}"
+            )
+            referenced_svgs.add((REPO_ROOT / normalized).resolve())
+
+        light_stem = _normalize_svg_stem(Path(parsed["light"]).name)
+        dark_stem = _normalize_svg_stem(Path(parsed["dark"]).name)
+        assert light_stem and dark_stem and light_stem == dark_stem, (
+            "picture block light/dark srcset must share the same *-light/*-dark stem"
+        )
+        assert Path(parsed["img_src"]).name.endswith("-light.svg"), (
+            "picture <img> fallback must reference the light variant"
+        )
+
+    for svg_path in referenced_svgs:
+        assert svg_path.is_file(), f"Referenced README SVG is missing: {svg_path}"
+        violations = _collect_svg_violations(_parse_svg(svg_path))
+        assert not violations, f"{svg_path.name}: {violations}"
+
+
+def test_strategic_light_dark_pair_convention() -> None:
+    """Reusable pair validation for existing and future strategic SVG families."""
+    for light_path, dark_path in (
+        (HERO_LIGHT_PATH, HERO_DARK_PATH),
+        (LKW_LIGHT_PATH, LKW_DARK_PATH),
+    ):
+        violations = _validate_light_dark_pair(light_path, dark_path)
+        assert not violations, f"{light_path.parent.name}/{light_path.stem}: {violations}"
+
+    future_stem = "intergrax-platform-map"
+    future_light, future_dark = _light_dark_pair_paths(future_stem, README_STRATEGIC_ASSETS_DIR)
+    assert future_light.name == "intergrax-platform-map-light.svg"
+    assert future_dark.name == "intergrax-platform-map-dark.svg"
+    assert _validate_light_dark_pair(future_light, future_dark) == [
+        "missing light variant: intergrax-platform-map-light.svg",
+        "missing dark variant: intergrax-platform-map-dark.svg",
+    ]
 
 
 def _parse_svg(path: Path) -> ET.Element:
@@ -207,10 +343,9 @@ def test_svg_safety(svg_path: Path) -> None:
 
 
 def test_visual_contract(readme_text: str) -> None:
-    """The concrete LKW proof visual is the only README visual."""
+    """Strategic root README visuals are SVG-based; Mermaid is not a substitute."""
     blocks = _MERMAID_FENCE.findall(readme_text)
     assert not blocks, "README should route conceptual architecture to its owner"
-    assert readme_text.count("<picture>") == 1
 
 
 def test_public_maturity_boundary(readme_text: str) -> None:
@@ -321,3 +456,5 @@ def test_public_architecture_sync() -> None:
     assert "PX-2" in text
     assert "product-first" in text.lower()
     assert "real product screenshots remain deferred" in text.lower()
+    assert "controlled multi-visual" in text.lower()
+    assert "docs/project/assets/public/readme/" in text
