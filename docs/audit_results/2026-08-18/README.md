@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — twelve completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`) |
+| `scope` | Platform audit — thirteen completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -40,6 +40,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | PLATFORM_FOUNDATION | COMPLETE | `f21d5c3dc417907acb50d597642d3892e704bd47` | FAIL | 0 | 5 | 0 | 1 | COMPLETE | COMPLETE | `60eff55ca7105cc8d277201c95785b4c037e3bd9` | [PLATFORM_FOUNDATION.md](PLATFORM_FOUNDATION.md) |
 | ORCHESTRATION | COMPLETE | `a784966681782bc58412af290c2978c1d1f152a3` | FAIL | 0 | 4 | 1 | 0 | COMPLETE | COMPLETE | `b33d5a5b5755ed76038ee10b51b90efbda34ecd7` | [ORCHESTRATION.md](ORCHESTRATION.md) |
 | AGENT_SYSTEM | COMPLETE | `654a7c0e3fe823a43a2620645848248023e1c64e` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `995c34ee5b9ca355e9bf3ec02c425f51d6cedaf4` | [AGENT_SYSTEM.md](AGENT_SYSTEM.md) |
+| TOOLS | COMPLETE | `65aaf33a6a6dba9b336162ec547cd677f4edad91` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | — | [TOOLS.md](TOOLS.md) |
 
 ## Finding register
 
@@ -120,11 +121,17 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-AGENT_SYSTEM-04 | AGENT_SYSTEM | HIGH | IDENTITY / ARCHITECTURE DEFECT | ACCEPTED | AGSYS-IDENTITY-PROJECTION | — | `docs/project/architecture/AGENT_DISTRIBUTION.md` — [Protocol v2 agent system identity projection invariants (2026-08-18)](#protocol-v2-agent-system-identity-projection-invariants-2026-08-18) | `docs/project/maintainers/plans/AGENT_DISTRIBUTION.md` — AGSYS-IDENTITY-PROJECTION | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-AGENT_SYSTEM-05 | AGENT_SYSTEM | HIGH | CONTRACT DEFECT / FAIL-OPEN CONFIGURATION | ACCEPTED | AGSYS-CONTRACT-INTEGRITY | — | `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — [Protocol v2 agent system target invariants (2026-08-18)](#protocol-v2-agent-system-target-invariants-2026-08-18) | `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` — AGSYS-CONTRACT-INTEGRITY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-AGENT_SYSTEM-06 | AGENT_SYSTEM | MEDIUM | IMPLEMENTATION / DOCUMENTATION DRIFT | ACCEPTED | AGSYS-CONTRACT-INTEGRITY | — | `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — [Protocol v2 agent system target invariants (2026-08-18)](#protocol-v2-agent-system-target-invariants-2026-08-18) | `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` — AGSYS-CONTRACT-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-TOOLS-01 | TOOLS | HIGH | ARCHITECTURE / AUTHORIZATION DEFECT | ACCEPTED | TOOLS-GOVERNED-BOUNDARY-INTEGRITY | — | `docs/project/architecture/TOOLS.md` — [Protocol v2 tools target invariants (2026-08-18)](#protocol-v2-tools-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TOOLS.md` — TOOLS-GOVERNED-BOUNDARY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-TOOLS-02 | TOOLS | HIGH | IMPLEMENTATION DEFECT / RESOURCE BOUNDARY | ACCEPTED | TOOLS-GOVERNED-BOUNDARY-INTEGRITY | — | `docs/project/architecture/TOOLS.md` — [Protocol v2 tools target invariants (2026-08-18)](#protocol-v2-tools-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TOOLS.md` — TOOLS-GOVERNED-BOUNDARY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-TOOLS-03 | TOOLS | HIGH | IMPLEMENTATION DEFECT / BUDGET GOVERNANCE | ACCEPTED | TOOLS-GOVERNED-BOUNDARY-INTEGRITY | — | `docs/project/architecture/TOOLS.md` — [Protocol v2 tools target invariants (2026-08-18)](#protocol-v2-tools-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TOOLS.md` — TOOLS-GOVERNED-BOUNDARY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-TOOLS-04 | TOOLS | HIGH | IDENTITY / IDEMPOTENCY DEFECT | ACCEPTED | TOOLS-SIDE-EFFECT-SAFETY | — | `docs/project/architecture/TOOLS.md` — [Protocol v2 tools target invariants (2026-08-18)](#protocol-v2-tools-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TOOLS.md` — TOOLS-SIDE-EFFECT-SAFETY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-TOOLS-05 | TOOLS | HIGH | SIDE-EFFECT / RETRY ARCHITECTURE DEFECT | ACCEPTED | TOOLS-SIDE-EFFECT-SAFETY | — | `docs/project/architecture/TOOLS.md` — [Protocol v2 tools target invariants (2026-08-18)](#protocol-v2-tools-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TOOLS.md` — TOOLS-SIDE-EFFECT-SAFETY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-TOOLS-06 | TOOLS | MEDIUM | FAILURE / IDEMPOTENCY STATE MODEL GAP | ACCEPTED | TOOLS-SIDE-EFFECT-SAFETY | — | `docs/project/architecture/TOOLS.md` — [Protocol v2 tools target invariants (2026-08-18)](#protocol-v2-tools-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TOOLS.md` — TOOLS-SIDE-EFFECT-SAFETY | — | — | operator accepted 2026-08-20 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 12
+**Completed layers:** 13
 
 First layer summary:
 
@@ -211,7 +218,14 @@ Twelfth layer summary:
 - **Systemic themes:** production eligibility gate inversion; mutable registered contract; allowed_tools bypass; registry identity rewrite; fail-open contract schema; on-call enforcement drift
 - **Recommended remediation order:** AGSYS-CONTRACT-INTEGRITY → AGSYS-IDENTITY-PROJECTION (see layer report)
 
-**Cumulative (completed layers only):** 66 accepted findings — 0 CRITICAL, 43 HIGH, 23 MEDIUM, 0 LOW
+Thirteenth layer summary:
+
+- **Layer:** TOOLS — **FAIL** at `65aaf33a6a6dba9b336162ec547cd677f4edad91`
+- **Accepted findings:** 6 total — 0 CRITICAL, 5 HIGH, 1 MEDIUM, 0 LOW
+- **Systemic themes:** monotonic permission intersection; real timeout boundary vs external cancellation limits; pre-invoke hard budget accounting; canonical idempotency operation identity; side-effect retry authorization; idempotency outcome-state semantics
+- **Recommended remediation order:** TOOLS-GOVERNED-BOUNDARY-INTEGRITY → TOOLS-SIDE-EFFECT-SAFETY (see layer report)
+
+**Cumulative (completed layers only):** 72 accepted findings — 0 CRITICAL, 48 HIGH, 24 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -264,3 +278,5 @@ Twelfth layer summary:
 | ORCH-DELEGATION-INTEGRITY | AUDIT-20260818-ORCHESTRATION-03 | ACCEPTED / PLANNED | exact delegation-edge provenance and multi-parent policy — not implemented in this persistence task |
 | AGSYS-CONTRACT-INTEGRITY | AUDIT-20260818-AGENT_SYSTEM-01, 02, 03, 05, 06 | ACCEPTED / PLANNED | production eligibility, immutable contract, canonical tool resolution, fail-fast schema, on-call parity — not implemented in this persistence task |
 | AGSYS-IDENTITY-PROJECTION | AUDIT-20260818-AGENT_SYSTEM-04 | ACCEPTED / PLANNED | registry bootstrap canonical identity preservation; cross-ref TL-FIX-B — not implemented in this persistence task |
+| TOOLS-GOVERNED-BOUNDARY-INTEGRITY | AUDIT-20260818-TOOLS-01, 02, 03 | ACCEPTED / PLANNED | permission intersection, effective timeout, pre-invoke budget — not implemented in this persistence task |
+| TOOLS-SIDE-EFFECT-SAFETY | AUDIT-20260818-TOOLS-04, 05, 06 | ACCEPTED / PLANNED | idempotency operation identity, retry safety, outcome-state model — not implemented in this persistence task |

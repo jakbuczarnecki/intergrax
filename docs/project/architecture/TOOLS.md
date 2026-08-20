@@ -18,7 +18,7 @@ Without a platform-owned tool runtime:
 Intergrax Tools addresses this through `ToolContract` / registry, layered permissions, planning and selection, `ToolRuntime`, invocation patterns, idempotency and resilience hooks, and observability on the platform event spine.
 
 > [!NOTE]
-> **Maturity boundary:** Phase **TOOL-ENG** is **closed** (36/36) with a gate-tested **200**-`tool_id` catalog and a mature invoke engine on the harness path. That is **not** universal production qualification: not every side-effect path is customer-qualified, governance wiring is **partial** on some external-effect surfaces, **TOKEN-TOOLS-1B** runtime compact-catalog wiring remains **Planned**, and **TOOL-PRODUCT-ROI** tools (`code.*`, `git.*`, `patch.*`, browser automation, research evidence) remain **Planned**. See [Current maturity](#current-maturity).
+> **Maturity boundary:** Phase **TOOL-ENG** is **closed** (36/36) with a gate-tested **200**-`tool_id` catalog and a mature invoke engine on the harness path. That is **not** universal production qualification: not every side-effect path is customer-qualified, governance wiring is **partial** on some external-effect surfaces, **TOKEN-TOOLS-1B** runtime compact-catalog wiring remains **Planned**, **TOOL-PRODUCT-ROI** tools (`code.*`, `git.*`, `patch.*`, browser automation, research evidence) remain **Planned**, and Protocol v2 audit (2026-08-18 campaign) accepted residual governed-boundary and side-effect safety gaps beyond prior closeout — see [Protocol v2 tools target invariants](#protocol-v2-tools-target-invariants-2026-08-18). See [Current maturity](#current-maturity).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring `ToolProfile`, plugins, and agent tool access — after the platform overview in the root README.
 
@@ -31,7 +31,7 @@ Intergrax Tools addresses this through `ToolContract` / registry, layered permis
 | **Tool intent** | LLM `tool_call`, planner proposal, or `ToolRequest` — **not** execution |
 | **Selection** | Which tools exist and which may this run use (host, agent/skill, policy, modality) |
 | **Planning** | Which tool(s) the model/planner proposes (`CatalogToolPlanner`, `ToolPlanningService`) |
-| **Effective permissions** | Intersection of `AgentContract`, skills, `ToolProfile`, `RuntimePolicyBundle`, modality, invoker scope |
+| **Effective permissions** | Monotonic intersection of host availability, agent/skill declaration, `RuntimePolicyBundle` / tool-scope policy, modality, invoker scope — explicit caller lists **narrow only**, never override stricter upstream authority |
 | **ToolRuntime** | Enforcement facade — policy-checked execution path agents and Nexus **must** use |
 | **Atomic invocation** | `ToolRuntime` → gateway → `RuntimeToolInvoker` → `ToolExecutor` → backend |
 | **Invocation patterns** | `single_pass`, bounded ReAct, parallel batch — reusable orchestration, not agent-private loops |
@@ -179,7 +179,7 @@ Engineering detail uses L0–L7 in [Selection detail](#selection-detail-layers);
 4. **Modality / plan narrowing** — modality profile, `ToolAccessPolicy`, selection strategy
 5. **Final per-call invoker check** — `ToolScopePolicy` on `RuntimeToolInvoker`
 
-**Invariant:** each layer may **narrow** access; no downstream layer may expand an upstream allowlist.
+**Invariant:** each layer may **narrow** access; no downstream layer may expand an upstream allowlist. Explicit per-call or invoker-supplied allow-lists MUST intersect with — not replace — `RuntimePolicyBundle.tool_access` and other stricter policy authorities (`resolve_allowed_tools_from_config` and canonical policy/tool-scope owners).
 
 ## AgentContract vs ToolProfile vs policy
 
@@ -275,11 +275,11 @@ Do **not** claim every mutating tool has exactly-once semantics across external 
 
 ### Idempotency
 
-`IdempotentToolInvoker` wraps the invoker when `ToolContract` declares `side_effects` and the request carries an `idempotency_key` — protecting against duplicate **platform** invocation. Platform idempotency support ≠ universal exactly-once guarantee for external vendors.
+`IdempotentToolInvoker` wraps the invoker when `ToolContract` declares `side_effects` and the request carries an `idempotency_key` — protecting against duplicate **platform** invocation. Idempotency identity MUST canonically bind `(tenant_id, idempotency_key)` to logical operation identity — at minimum `tool_id` and, when required, deterministic input/operation fingerprint via typed key contract (not loose hidden string concatenation). Repeated key with different operation identity MUST fail closed. Ledger outcome semantics MUST distinguish successful completion, known failed-before-effect, and failed-with-unknown-external-outcome — not collapse all returns into a single `COMPLETED` replay bucket. Platform idempotency support ≠ universal exactly-once guarantee for external vendors.
 
 ### Retry / timeout
 
-`ToolRetryPolicy` and runtime timeout are enforced in `RuntimeToolInvoker` — **R1 ToolRuntime layer** only; agents **must not** retry tool calls themselves. Retries are **not** always safe for mutating tools; policy and contract metadata govern whether retry is permitted.
+`ToolRetryPolicy` and runtime timeout are enforced in `RuntimeToolInvoker` — **R1 ToolRuntime layer** only; agents **must not** retry tool calls themselves. `ToolContract.timeout_ms` MUST represent a real caller-visible execution latency boundary — timeout handling MUST NOT synchronously wait for a timed-out worker to finish. Architecture MUST acknowledge that a local thread timeout cannot undo an already-running external side effect; cancellation/abandon semantics MUST be explicit (no unsafe thread killing). Automatic retry of side-effectful tools MUST be positively authorized — via idempotent operation semantics with correctly scoped identity, explicit retry-safe contract metadata, or retryable error classification. Unknown-outcome mutating failures MUST NOT be blindly retried. Do not claim universal exactly-once against external providers.
 
 ## Governance / HITL boundary
 
@@ -397,7 +397,7 @@ Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** — Clear Tool / Skill / Integration separation; stable `ToolContract` + `ToolRuntime`; layered selection/policy/invocation architecture; adjacent-domain boundaries validated; side-effect and governance boundaries documented honestly.
-- **I4** — Phase **TOOL-ENG** **closed** (36/36); `ToolRuntime`, planner, invocation patterns, scope/access policy, idempotency, MCP export, sandboxing, 200-tool catalog, conformance/gates. Not I5 — **TOKEN-TOOLS-1B**, **TOOL-PRODUCT-ROI**, optional L1 critic on tool output, and full meaningful-side-effect wiring remain open.
+- **I4** — Phase **TOOL-ENG** **closed** (36/36); `ToolRuntime`, planner, invocation patterns, scope/access policy, idempotency wrapper, MCP export, sandboxing, 200-tool catalog, conformance/gates. Not I5 — **TOKEN-TOOLS-1B**, **TOOL-PRODUCT-ROI**, optional L1 critic on tool output, full meaningful-side-effect wiring, and Protocol v2 residual gaps (permission intersection, effective timeout, pre-invoke budget, idempotency operation identity, side-effect retry authorization, outcome-state model) remain open — **not remediated** by audit persistence.
 - **P2** — Harness and lab qualification on core invoke/selection paths; not representative customer production qualification, universal side-effect SLO evidence, or runbook-backed operations (not P4).
 - **E3** — Unit/gate tests (contracts, selection, invoker, patterns, idempotency, schema export), integration paths (ACP invoke, bounded loop, plugin dual-mode e2e, runtime-bound catalog). No dedicated Tools-only public proof route in [`PROOFS.md`](../proofs/PROOFS.md); LKW exercises tool paths only in **bounded** supporting-foundation scope — not E4/E5.
 
@@ -420,6 +420,21 @@ Evidence maturity: **E3**
 | Integration | ACP `ctx.invoke_tool`, bounded tool loop, runtime-bound catalog, plugin dual-mode e2e (`test_plugin8_dual_mode_tool_e2e.py`) | Dedicated public tool-runtime proof |
 | Public proof | **Bounded** — LKW supporting paths only ([`PROOFS.md`](../proofs/PROOFS.md)); no Tools-domain entry | Side-effect qualification at product scale |
 | Production / customer | **None** cited for full domain qualification | Not E5 |
+
+### Protocol v2 tools target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`TOOLS`](../../audit_results/2026-08-18/TOOLS.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Prior Phase **TOOL-ENG** **closed** and AUDIT-IDEAL §11 **Done** rows remain historical delivery facts — not rewritten. Target state only:
+
+1. **Monotonic permission intersection** — effective tool permissions are host availability ∩ agent/skill declaration ∩ runtime policy ∩ modality ∩ per-call/invoker scope; explicit caller allow-lists intersect stricter authorities and MUST NOT override `RuntimePolicyBundle.tool_access` ([`AUDIT-20260818-TOOLS-01`](../../audit_results/2026-08-18/TOOLS.md)).
+2. **Real timeout boundary** — `ToolContract.timeout_ms` bounds caller-visible latency; timeout exit MUST NOT wait for timed-out worker completion; external side effects already in flight require explicit abandon/cancel semantics — no unsafe thread killing ([`AUDIT-20260818-TOOLS-02`](../../audit_results/2026-08-18/TOOLS.md)).
+3. **Pre-invoke hard budget** — hard tool-call budget reserved/checked before invocation crosses side-effect boundary; accounting uses authoritative invocation state; hard abort/HITL budget violations MUST NOT be swallowed as ordinary tools-context errors ([`AUDIT-20260818-TOOLS-03`](../../audit_results/2026-08-18/TOOLS.md)).
+4. **Canonical idempotency operation identity** — ledger keys bind to logical operation (minimum `tool_id`); cross-tool/cross-operation key collision fails closed ([`AUDIT-20260818-TOOLS-04`](../../audit_results/2026-08-18/TOOLS.md)).
+5. **Side-effect retry safety** — automatic retry of mutating tools requires positive authorization (idempotent semantics + scoped identity, retry-safe metadata, or retryable classification); unknown-outcome failures not blindly retried ([`AUDIT-20260818-TOOLS-05`](../../audit_results/2026-08-18/TOOLS.md)).
+6. **Idempotency outcome-state semantics** — ledger distinguishes success, failed-before-effect, and unknown-outcome failure for deterministic retry decisions ([`AUDIT-20260818-TOOLS-06`](../../audit_results/2026-08-18/TOOLS.md)).
+
+`ToolRuntime` remains the canonical execution spine; Tool / Skill / Integration ownership unchanged. Platform idempotency ≠ universal exactly-once against external providers.
+
+Remediation: **TOOLS-GOVERNED-BOUNDARY-INTEGRITY** (01, 02, 03) and **TOOLS-SIDE-EFFECT-SAFETY** (04, 05, 06) in [plan](../maintainers/plans/TOOLS.md). **Not implemented** by audit persistence.
 
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 
@@ -684,7 +699,7 @@ ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
 | Runtime events | `TOOL_REQUESTED`, `TOOL_COMPLETED` / `TOOL_FAILED` / `TOOL_DENIED` | §42.12 |
 | Ops filter | `ops:tool_audit` hint on tool events | [`OBSERVABILITY.md`](OBSERVABILITY.md) |
 | Agent loop summary | `run_bounded_tool_loop` / `ctx.invoke_tool` → `state.tool_traces` (`ToolCallTrace`) | Single-pass planner |
-| Budget | `enforce_tool_call_budget` → `BudgetEnforcer.check_tool_calls` | After each tool trace |
+| Budget | `enforce_tool_call_budget` → `BudgetEnforcer.check_tool_calls` | **Target:** reserve/check before crossing side-effect boundary; authoritative invocation accounting — not stale `tool_traces` mid-loop |
 | Security | `MiddlewarePipeline` `BEFORE/AFTER_TOOL_CALL` | Guardrails / injection scan |
 | Persisted run | `RunTraceWriter` / lab trace API | Post-mortem |
 
