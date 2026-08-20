@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — twenty completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`, `CONTEXT_ENGINEERING`, `UNIFIED_CONTEXT_LIFECYCLE`) |
+| `scope` | Platform audit — twenty-one completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`, `CONTEXT_ENGINEERING`, `UNIFIED_CONTEXT_LIFECYCLE`, `MODALITY`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20; CONTEXT_ENGINEERING accepted 2026-08-20; UNIFIED_CONTEXT_LIFECYCLE accepted 2026-08-20 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20; CONTEXT_ENGINEERING accepted 2026-08-20; UNIFIED_CONTEXT_LIFECYCLE accepted 2026-08-20; MODALITY accepted 2026-08-20 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -48,6 +48,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | MEMORY | COMPLETE | `628e24130de34f291a416cb1cff9397a2b327dec` | FAIL | 0 | 5 | 2 | 0 | COMPLETE | COMPLETE | `e1c3aa3f55dbc7231d1315ae8b8aa40bbd9914fe` | [MEMORY.md](MEMORY.md) |
 | CONTEXT_ENGINEERING | COMPLETE | `86a153dac51529d4dfbf4edd0f684dacb689ae8a` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `8ec504fd79223d178688fd2dd99627ba26ab9a67` | [CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) |
 | UNIFIED_CONTEXT_LIFECYCLE | COMPLETE | `0f6e2d7fe96498346d8ddcc05fe08caa68c00523` | FAIL | 0 | 5 | 0 | 0 | COMPLETE | COMPLETE | `a69129927c80a8ec61d6eec894c63fbb93c6e67b` | [UNIFIED_CONTEXT_LIFECYCLE.md](UNIFIED_CONTEXT_LIFECYCLE.md) |
+| MODALITY | COMPLETE | `65e2c08f11be1db78f247380bafa4ac3d052a9f7` | FAIL | 1 | 4 | 0 | 0 | COMPLETE | COMPLETE | — | [MODALITY.md](MODALITY.md) |
 
 ## Finding register
 
@@ -176,11 +177,16 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-03 | UNIFIED_CONTEXT_LIFECYCLE | HIGH | VALIDATION POLICY / PAPER CONTROL | ACCEPTED | UCL-DURABLE-VALIDATION-INTEGRITY | — | `docs/project/architecture/UNIFIED_CONTEXT_LIFECYCLE.md` — [Protocol v2 Unified Context Lifecycle target invariants (2026-08-18)](#protocol-v2-unified-context-lifecycle-target-invariants-2026-08-18) | `docs/project/maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md` — UCL-DURABLE-VALIDATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-04 | UNIFIED_CONTEXT_LIFECYCLE | HIGH | DURABILITY / BOOTSTRAP CONTRACT DEFECT | ACCEPTED | UCL-REVISION-GENESIS-INTEGRITY | — | `docs/project/architecture/UNIFIED_CONTEXT_LIFECYCLE.md` — [Protocol v2 Unified Context Lifecycle target invariants (2026-08-18)](#protocol-v2-unified-context-lifecycle-target-invariants-2026-08-18) | `docs/project/maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md` — UCL-REVISION-GENESIS-INTEGRITY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-05 | UNIFIED_CONTEXT_LIFECYCLE | HIGH | ARTIFACT LIFECYCLE / VALIDATION ORDERING DEFECT | ACCEPTED | UCL-DURABLE-VALIDATION-INTEGRITY | — | `docs/project/architecture/UNIFIED_CONTEXT_LIFECYCLE.md` — [Protocol v2 Unified Context Lifecycle target invariants (2026-08-18)](#protocol-v2-unified-context-lifecycle-target-invariants-2026-08-18) | `docs/project/maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md` — UCL-DURABLE-VALIDATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-MODALITY-01 | MODALITY | CRITICAL | SECURITY / LOCAL FILE EXFILTRATION | ACCEPTED | MODALITY-MEDIA-TRUST-BOUNDARY | — | `docs/project/architecture/MODALITY.md` — [Protocol v2 Modality target invariants (2026-08-18)](#protocol-v2-modality-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MODALITY.md` — MODALITY-MEDIA-TRUST-BOUNDARY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-MODALITY-02 | MODALITY | HIGH | GOVERNANCE / CAPABILITY AUTHORIZATION | ACCEPTED | MODALITY-AUTHORITY-INTEGRITY | TOOLS-GOVERNED-BOUNDARY-INTEGRITY | `docs/project/architecture/MODALITY.md` — [Protocol v2 Modality target invariants (2026-08-18)](#protocol-v2-modality-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MODALITY.md` — MODALITY-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20; cross-ref TOOLS-01 monotonic authority |
+| AUDIT-20260818-MODALITY-03 | MODALITY | HIGH | POLICY / FALSE SAFETY CONTROL | ACCEPTED | MODALITY-AUTHORITY-INTEGRITY | — | `docs/project/architecture/MODALITY.md` — [Protocol v2 Modality target invariants (2026-08-18)](#protocol-v2-modality-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MODALITY.md` — MODALITY-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-MODALITY-04 | MODALITY | HIGH | EXECUTION PLACEMENT / RESOURCE SAFETY | ACCEPTED | MODALITY-EXECUTION-INTEGRITY | — | `docs/project/architecture/MODALITY.md` — [Protocol v2 Modality target invariants (2026-08-18)](#protocol-v2-modality-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MODALITY.md` — MODALITY-EXECUTION-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-MODALITY-05 | MODALITY | HIGH | INFERENCE INTEGRITY / SILENT STUB FALLBACK | ACCEPTED | MODALITY-EXECUTION-INTEGRITY | — | `docs/project/architecture/MODALITY.md` — [Protocol v2 Modality target invariants (2026-08-18)](#protocol-v2-modality-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MODALITY.md` — MODALITY-EXECUTION-INTEGRITY | — | — | operator accepted 2026-08-20 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 20
+**Completed layers:** 21
 
 First layer summary:
 
@@ -323,7 +329,14 @@ Twentieth layer summary:
 - **Systemic themes:** human-review policy governs lifecycle transition not only persistence; durable activation ignores MANUAL_REVIEW_THEN_COMPARE_AND_SWAP; paper minimum_validation_requirement levels; revision-zero bootstrap contradiction; premature durable candidate repository publication before durable validation
 - **Recommended remediation order:** UCL-GOVERNED-REVIEW-INTEGRITY → UCL-DURABLE-VALIDATION-INTEGRITY → UCL-REVISION-GENESIS-INTEGRITY (see layer report)
 
-**Cumulative (completed layers only):** 114 accepted findings — 2 CRITICAL, 75 HIGH, 37 MEDIUM, 0 LOW
+Twenty-first layer summary:
+
+- **Layer:** MODALITY — **FAIL** at `65e2c08f11be1db78f247380bafa4ac3d052a9f7`
+- **Accepted findings:** 5 total — 1 CRITICAL, 4 HIGH, 0 MEDIUM, 0 LOW
+- **Systemic themes:** unrestricted local media path exfiltration to remote inference; fail-open empty ModalityProfile; paper deterministic-CV control; silent Celery→local placement fallback; remote provider slug stub substitution
+- **Recommended remediation order:** MODALITY-MEDIA-TRUST-BOUNDARY → MODALITY-AUTHORITY-INTEGRITY → MODALITY-EXECUTION-INTEGRITY (see layer report)
+
+**Cumulative (completed layers only):** 119 accepted findings — 3 CRITICAL, 79 HIGH, 37 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -398,3 +411,6 @@ Twentieth layer summary:
 | UCL-GOVERNED-REVIEW-INTEGRITY | AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-01, 02 | ACCEPTED / PLANNED | human review as authoritative gate for ephemeral use and durable activation — cross-link Governance/UER — not implemented in this persistence task |
 | UCL-DURABLE-VALIDATION-INTEGRITY | AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-03, 05 | ACCEPTED / PLANNED | executable validation levels and correct durable artifact lifecycle ordering — not implemented in this persistence task |
 | UCL-REVISION-GENESIS-INTEGRITY | AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-04 | ACCEPTED / PLANNED | consistent revision-zero bootstrap model across durable contracts and CAS — not implemented in this persistence task |
+| MODALITY-MEDIA-TRUST-BOUNDARY | AUDIT-20260818-MODALITY-01 | ACCEPTED / PLANNED | scoped authorized media identity and remote egress boundary — not implemented in this persistence task |
+| MODALITY-AUTHORITY-INTEGRITY | AUDIT-20260818-MODALITY-02, 03 | ACCEPTED / PLANNED | fail-closed ModalityProfile and deterministic-CV binding to effective adapter/model/artifact — cross-ref TOOLS-GOVERNED-BOUNDARY-INTEGRITY — not implemented in this persistence task |
+| MODALITY-EXECUTION-INTEGRITY | AUDIT-20260818-MODALITY-04, 05 | ACCEPTED / PLANNED | policy-truthful placement modes and provider slug truthfulness — not implemented in this persistence task |

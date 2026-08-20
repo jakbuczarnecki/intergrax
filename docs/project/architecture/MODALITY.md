@@ -552,6 +552,49 @@ Remaining incremental depth: remote serving operational hardening (MOD-MAINT-04 
 
 ---
 
+## Protocol v2 Modality target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`MODALITY`](../../audit_results/2026-08-18/MODALITY.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+**Finding 01 — media trust boundary**
+
+1. Agent-facing modality tools consume an **authorized scoped media reference**, not an unrestricted local filesystem pointer ([`AUDIT-20260818-MODALITY-01`](../../audit_results/2026-08-18/MODALITY.md)).
+2. Local bytes crossing a remote provider boundary require explicit authorized provenance and egress semantics — tenant/scope ownership, allowed source schemes/types, permitted sandbox roots where local paths are supported, MIME/content validation, size accounting ([`AUDIT-20260818-MODALITY-01`](../../audit_results/2026-08-18/MODALITY.md)).
+3. Remote providers must never receive bytes originating from an arbitrary caller-supplied host path ([`AUDIT-20260818-MODALITY-01`](../../audit_results/2026-08-18/MODALITY.md)).
+4. Reuse an existing canonical resource/evidence authority — do not create a Modality-specific duplicate authorization subsystem ([`AUDIT-20260818-MODALITY-01`](../../audit_results/2026-08-18/MODALITY.md)).
+
+**Finding 02 — ModalityProfile authority**
+
+5. No allowed plane means **no modality plane authority** — fail-closed empty profile semantics ([`AUDIT-20260818-MODALITY-02`](../../audit_results/2026-08-18/MODALITY.md)).
+6. No explicit tool allowlist must not silently become wildcard; wildcard/all semantics, if ever supported, must be explicit ([`AUDIT-20260818-MODALITY-02`](../../audit_results/2026-08-18/MODALITY.md)).
+7. ModalityProfile only **narrows** an already-authorized capability set — never silently means "no restriction" ([`AUDIT-20260818-MODALITY-02`](../../audit_results/2026-08-18/MODALITY.md)).
+8. Plane A must not be represented by an unrelated `websearch.*` tool prefix — Plane A remains LLMAdapter-owned ([`AUDIT-20260818-MODALITY-02`](../../audit_results/2026-08-18/MODALITY.md)).
+9. Cross-link TOOLS authority findings — do not add a second permission system ([`AUDIT-20260818-MODALITY-02`](../../audit_results/2026-08-18/MODALITY.md)).
+
+**Finding 03 — deterministic CV**
+
+10. Determinism is an explicit capability/property of the effective adapter/model/artifact execution tuple — not inferred from tool ID ([`AUDIT-20260818-MODALITY-03`](../../audit_results/2026-08-18/MODALITY.md)).
+11. When deterministic CV is required: selected adapter and artifact/model must be certified/declared compatible; incompatible caller-selected adapter/artifact must fail closed ([`AUDIT-20260818-MODALITY-03`](../../audit_results/2026-08-18/MODALITY.md)).
+12. Caller-provided `adapter_slug` cannot override host determinism requirements ([`AUDIT-20260818-MODALITY-03`](../../audit_results/2026-08-18/MODALITY.md)).
+
+**Finding 04 — placement integrity**
+
+13. Separate **mandatory offload** from **preference with permitted fallback** — e.g. REQUIRED_OFFLOAD / CELERY_REQUIRED fails closed when unavailable; PREFER_OFFLOAD_ALLOW_LOCAL permits local fallback explicitly ([`AUDIT-20260818-MODALITY-04`](../../audit_results/2026-08-18/MODALITY.md)).
+14. A host must be able to guarantee heavyweight adapters never execute in the application process when resource/isolation policy forbids it ([`AUDIT-20260818-MODALITY-04`](../../audit_results/2026-08-18/MODALITY.md)).
+15. Placement fallback must be observable and policy-controlled ([`AUDIT-20260818-MODALITY-04`](../../audit_results/2026-08-18/MODALITY.md)).
+
+**Finding 05 — provider truthfulness**
+
+16. Production-capable provider slugs represent the provider they name — no silent Stub substitution ([`AUDIT-20260818-MODALITY-05`](../../audit_results/2026-08-18/MODALITY.md)).
+17. Missing credentials/config → fail closed / explicit unavailable state; provider errors → typed provider failure ([`AUDIT-20260818-MODALITY-05`](../../audit_results/2026-08-18/MODALITY.md)).
+18. Legitimate zero detection → legitimate empty result; invalid response → validation failure ([`AUDIT-20260818-MODALITY-05`](../../audit_results/2026-08-18/MODALITY.md)).
+19. Stub adapters remain only as explicitly selected lab/test adapters with identifiable synthetic/test evidence ([`AUDIT-20260818-MODALITY-05`](../../audit_results/2026-08-18/MODALITY.md)).
+20. Clean-cut legacy `MlInferenceHostAdapter` compatibility façade rather than retaining a misleading remote slug ([`AUDIT-20260818-MODALITY-05`](../../audit_results/2026-08-18/MODALITY.md)).
+
+Historical W-ML/MODALITY-LC delivery facts, three-plane model, LLM/RAG/Tools/Integration ownership, and conservative plane-specific maturity claims above are preserved — remediation of these findings is **PLANNED**, not shipped.
+
+---
+
 ### Maintainer and Cursor context
 
 **Status:** Canonical architecture (domain pair 1:1)  

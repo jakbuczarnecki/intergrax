@@ -209,4 +209,53 @@ python scripts/maintenance/check_harness_adr.py
 
 ---
 
+## Protocol v2 remediation — Modality audit (2026-08-18)
+
+**Source:** Protocol v2 audit [`MODALITY`](../../audit_results/2026-08-18/MODALITY.md) — **FAIL**, 5 ACCEPTED findings (2026-08-20). Historical W-ML/MODALITY-LC rows above are **not** reopened.
+
+<a id="modality-media-trust-boundary-2026-08-18"></a>
+
+### MODALITY-MEDIA-TRUST-BOUNDARY — scoped authorized media identity and remote egress boundary
+
+**Priority:** P0
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-MODALITY-01`](../../audit_results/2026-08-18/MODALITY.md)
+
+**Outcome (planning only):**
+
+- Replace arbitrary caller filesystem path semantics with scoped authorized media identity and explicit remote egress boundary.
+- Reuse canonical resource/evidence authority if available — do not create a Modality-specific duplicate authorization subsystem.
+
+<a id="modality-authority-integrity-2026-08-18"></a>
+
+### MODALITY-AUTHORITY-INTEGRITY — fail-closed ModalityProfile and deterministic-CV binding
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-MODALITY-02`](../../audit_results/2026-08-18/MODALITY.md), [`AUDIT-20260818-MODALITY-03`](../../audit_results/2026-08-18/MODALITY.md)
+
+**Outcome (planning only):**
+
+- ModalityProfile becomes fail-closed: empty planes → no plane authority; empty explicit tool list → not wildcard unless explicitly declared.
+- Remove conceptual GENERATIVE_LLM → `websearch.*` mapping; Plane A remains LLMAdapter-owned.
+- Deterministic CV binds effective adapter/model/artifact tuple — caller adapter/model choice cannot override host requirement; cross-link [`TOOLS-GOVERNED-BOUNDARY-INTEGRITY`](TOOLS.md#tools-governed-boundary-integrity-2026-08-18).
+
+<a id="modality-execution-integrity-2026-08-18"></a>
+
+### MODALITY-EXECUTION-INTEGRITY — policy-truthful placement and provider slugs
+
+**Priority:** P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-MODALITY-04`](../../audit_results/2026-08-18/MODALITY.md), [`AUDIT-20260818-MODALITY-05`](../../audit_results/2026-08-18/MODALITY.md)
+
+**Outcome (planning only):**
+
+- Separate mandatory offload from fallback-permitted modes; mandatory offload failure is fail-closed and observable.
+- Named remote provider slugs cannot silently degrade to local/stub inference; zero detection is not provider failure; missing config is explicit unavailable state.
+- Clean-cut legacy `MlInferenceHostAdapter` stub compatibility façade.
+
+**Recommended remediation order (prioritization, not dependency graph):** MODALITY-MEDIA-TRUST-BOUNDARY → MODALITY-AUTHORITY-INTEGRITY → MODALITY-EXECUTION-INTEGRITY
+
+---
+
 *End of Modality Implementation Plan.*
