@@ -32,7 +32,7 @@
 - **Prior audit reference(s):** Phase ORCH / ORCH-STRAT / ORCH-CONFIG / ORCH-5 / ORCH-6 closeout (plan **Done** rows); legacy audits `docs/audit_results/2026-06-18/ORCHESTRATION.md`, `docs/audit_results/2026-06-19/ORCHESTRATION.md`
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** `—`
+- **post_sync_sha:** `b33d5a5b5755ed76038ee10b51b90efbda34ecd7`
 
 ## Executive summary
 
