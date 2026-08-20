@@ -203,6 +203,66 @@ TOKEN-10E-CLOSEOUT-1 → ready for review
 
 ---
 
+<a id="protocol-v2-unified-context-lifecycle-remediation-2026-08-18"></a>
+
+## Protocol v2 — Unified Context Lifecycle remediation (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-UNIFIED-CONTEXT-LIFECYCLE-PERSIST.
+
+> **Historical delivery boundary:** CTX-UCL-1…6D, CTX-UCL-CLOSEOUT-1, TOKEN-10E-1…4, and TOKEN-10E remain **ACCEPTED / CLOSED** historical facts. TOKEN-10E-CLOSEOUT-1 remains **READY_FOR_REVIEW**. Protocol-v2 remediation rows below address **residual defects** only — they do not reopen closed delivery rows.
+
+<a id="ucl-governed-review-integrity-2026-08-18"></a>
+
+### UCL-GOVERNED-REVIEW-INTEGRITY — authoritative human review for ephemeral use and durable activation
+
+**Priority:** P0
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-01`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md), [`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-02`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)
+
+**Outcome (planning only):**
+
+- Human review governs permitted lifecycle transition — not merely repository persistence — for ephemeral `PERSIST_AFTER_HUMAN_REVIEW` and durable activation where policy requires it.
+- Fail closed when review bridge unavailable; cross-link canonical Governance/UER approval authority ([`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md), [`UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md)) — no caller-controlled approval booleans.
+- `MANUAL_REVIEW_THEN_COMPARE_AND_SWAP` enforced at `SessionContextRevisionActivationService` with scoped approval evidence before CAS.
+
+<a id="ucl-durable-validation-integrity-2026-08-18"></a>
+
+### UCL-DURABLE-VALIDATION-INTEGRITY — executable validation levels and correct artifact lifecycle ordering
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-03`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md), [`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-05`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)
+
+**Outcome (planning only):**
+
+- `minimum_validation_requirement` levels map to explicit deterministic validation stages — remove unsupported enum values if only one level is implementable.
+- Repository lifecycle distinguishes executor-valid candidate from durable-policy-valid reusable artifact; rejected durable candidates are invalidated/retired with deterministic retry/replacement semantics.
+- No premature `store_validated_artifact()` publication before all required durable validation passes.
+
+<a id="ucl-revision-genesis-integrity-2026-08-18"></a>
+
+### UCL-REVISION-GENESIS-INTEGRITY — consistent revision-zero bootstrap model
+
+**Priority:** P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-UNIFIED_CONTEXT_LIFECYCLE-04`](../../audit_results/2026-08-18/UNIFIED_CONTEXT_LIFECYCLE.md)
+
+**Outcome (planning only):**
+
+- One genesis revision model across `DurableCompactionSourceIdentity`, validation eligibility, `SQLiteSessionContextRevisionStore`, and CAS activation — either legal `0 → 1` first transition or explicit baseline bootstrap at session creation.
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- Historical **ACCEPTED / CLOSED** CTX-UCL and TOKEN-10E rows remain historical facts — not rewritten as remediation completion.
+- **TOKEN-10E-CLOSEOUT-1** remains **READY_FOR_REVIEW** — not marked implemented/verified/closed by this remediation block.
+
+**Recommended remediation order (prioritization, not dependency graph):** UCL-GOVERNED-REVIEW-INTEGRITY → UCL-DURABLE-VALIDATION-INTEGRITY → UCL-REVISION-GENESIS-INTEGRITY
+
+---
+
 ## Deferred work
 
 | Item | Notes |

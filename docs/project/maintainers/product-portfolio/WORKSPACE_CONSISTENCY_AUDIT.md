@@ -261,7 +261,7 @@ The workspace is safe to proceed to Session Launch Pack assembly. Residual MINOR
 
 **Remediation task:** MP-21-R1 — Close Workspace Consistency Gaps Before Launch Pack
 **Remediation start HEAD:** `01f2046bfbb89f5b30545eab075f2d5ce82a857c`
-**Remediation commit:** *(recorded after commit)*
+**Remediation commit:** `dbd0d4a9b`
 
 Original audited verdict (**PASS WITH GAPS** at `0f6e2d7fe96498346d8ddcc05fe08caa68c00523`) is preserved above. This section records bounded corrections only.
 
