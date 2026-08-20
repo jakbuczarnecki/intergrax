@@ -2,7 +2,7 @@
 
 **Document type:** Maintainer-level operational control artifact  
 **Owner:** Portfolio Control Session  
-**Last verified:** 2026-08-20 (MP-14 Product Bootstrap Rules)
+**Last verified:** 2026-08-20 (MP-15 Product Control Cards)
 
 ---
 
@@ -76,10 +76,10 @@ Recommendation and priority are **separate dimensions**. Do not mix them.
 | Product | Role | Program State | Product Stage | Current Milestone | Recommendation | Priority | Platform Evidence State | Last Verified Evidence | Next Portfolio Gate |
 |---------|------|---------------|---------------|-------------------|----------------|----------|-------------------------|------------------------|---------------------|
 | Local Knowledge Workspace (LKW) | Existing reference product | **ACTIVE** | Advanced existing product | See [LKW IMPLEMENTATION_PLAN.md](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) — current task: LKW-PLUGIN-CAPABILITY-CONFIGURATION-1 (READY_FOR_REVIEW); next: LKW-INDEXED-SOURCE-LIFECYCLE-1 | **CONTINUE** | **HIGH** | Reference baseline accepted at `821eb7f6b2096de142822a29abc4546ee387a158` — [LKW control card](products/LKW.md) | [LKW IMPLEMENTATION_PLAN.md](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md); [LKW control card](products/LKW.md) | Next material product gate / G4 as triggered |
-| Contract-to-Invoice Leakage / Recovery Operator | Newly selected | **SELECTED** | Pre-bootstrap | G0 / product baseline pending | **CONTINUE** | **HIGH** | Reuse evidence: not started | [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §5; [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) §18 | G0 — product baseline |
-| Supplier Disruption Response Operator | Newly selected | **SELECTED** | Pre-bootstrap | G0 / product baseline pending | **CONTINUE** | **MEDIUM** | Reuse evidence: not started | [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §5; [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) §18 | G0 — product baseline |
-| Third-Party Risk Decision Operator | Newly selected | **SELECTED** | Pre-bootstrap | Initial wedge still requires sharpening; G0 pending | **CONTINUE** | **MEDIUM** | Reuse evidence: not started | [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §5; [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) §18 | G0 — product baseline |
-| Deployment / Change Guardian | Newly selected | **SELECTED** | Pre-bootstrap | G0 / product baseline pending | **CONTINUE** | **HIGH** | Reuse evidence: not started | [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §5; [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) §18 | G0 — product baseline |
+| Contract-to-Invoice Leakage / Recovery Operator | Newly selected | **SELECTED** | Pre-bootstrap | G0 / product baseline pending | **CONTINUE** | **HIGH** | Reuse evidence: not started | [contract-recovery control card](products/contract-recovery.md); [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §5 | G0 — product baseline |
+| Supplier Disruption Response Operator | Newly selected | **SELECTED** | Pre-bootstrap | G0 / product baseline pending | **CONTINUE** | **MEDIUM** | Reuse evidence: not started | [supplier-disruption control card](products/supplier-disruption.md); [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §5 | G0 — product baseline |
+| Third-Party Risk Decision Operator | Newly selected | **SELECTED** | Pre-bootstrap | Initial wedge still requires sharpening; G0 pending | **CONTINUE** | **MEDIUM** | Reuse evidence: not started | [third-party-risk control card](products/third-party-risk.md); [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §5 | G0 — product baseline |
+| Deployment / Change Guardian | Newly selected | **SELECTED** | Pre-bootstrap | G0 / product baseline pending | **CONTINUE** | **HIGH** | Reuse evidence: not started | [deployment-guardian control card](products/deployment-guardian.md); [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §5 | G0 — product baseline |
 
 **Architecture for all four newly selected products:** not started. No new product application folders exist.
 
@@ -100,7 +100,7 @@ These positions are tracked for context but are **not** active program products.
 
 ## Current portfolio risks
 
-Evidence-supported at MP-14 closeout:
+Evidence-supported at MP-15 closeout:
 
 - Third-Party Risk initial wedge still requires sharpening (selection caveat retained).
 - Supply Disruption commercial/GTM/integration complexity remains material (selection caveat retained).
@@ -112,13 +112,14 @@ Evidence-supported at MP-14 closeout:
 
 ## Current portfolio actions
 
-At MP-14 closeout:
+At MP-15 closeout:
 
 1. ~~MP-14 Product Bootstrap Rules.~~ **Completed** — [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md).
-2. **Next:** MP-15 Product Control Cards.
-3. Review/Audit workspace and session-launch preparation remain **future**; not started.
+2. ~~MP-15 Product Control Cards.~~ **Completed** — `products/*` control cards for all five program products.
+3. **Next:** MP-20 cross-session coordination contract (future).
+4. Review/Audit workspace and session-launch preparation remain **future**; not started.
 
-LKW reference baseline remains accepted. Four newly selected products remain **SELECTED** / Pre-bootstrap. Architecture, G0, T0, and application scaffold do not exist yet. No cross-product reuse claim exists.
+LKW reference baseline remains accepted. Four newly selected products remain **SELECTED** / Pre-bootstrap. Architecture, G0, T0, and application scaffold do not exist yet. No cross-product reuse claim exists. Operating topology: 1 Portfolio Control + 5 Product Sessions; VIS-3A and COMM are parallel specialist streams.
 
 Do not treat future actions as completed until Portfolio Control verifies evidence and updates this document.
 

@@ -31,6 +31,27 @@ Program control covers **all actively developed products** in the program:
 
 LKW was **not** selected by the MP-1→MP-8 market-selection pipeline. It is included because the portfolio controller must evaluate the effects of **all active Intergrax products** together.
 
+LKW is Product 0 / the existing reference product, baseline-ingested, supervised by Portfolio Control, and a **future independently operated Product Session**. Its historical reference baseline is different from the preregistered T0 used by the four newly selected products.
+
+---
+
+## Session topology
+
+**Six parallel working sessions** at full operating launch:
+
+1. Portfolio Control Session
+2. LKW Product Session
+3. Contract Recovery Product Session
+4. Supplier Disruption Product Session
+5. Third-Party Risk Product Session
+6. Deployment Guardian Product Session
+
+**Parallel specialist streams** (not part of the six): **VIS-3A** (public visual/documentation presentation) and **COMM** (LKW proof development within its authorized roadmap). Neither is Portfolio Control.
+
+**Public product set:** five products (LKW plus the four newly selected). Portfolio Control is not a public product.
+
+Truth flows from accepted product/proof evidence → Portfolio Control → approved public facts → VIS-3A presentation. Public documentation is never implementation truth.
+
 ---
 
 ## Current state
@@ -42,6 +63,7 @@ LKW was **not** selected by the MP-1→MP-8 market-selection pipeline. It is inc
 | Program governance contract | **Defined** — [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) |
 | Operational control artifacts | **Created** (MP-12) — see source-of-truth map below |
 | Product bootstrap contract | **Defined** (MP-14) — [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md) |
+| Product control cards | **Created** (MP-15) — see control-card table below |
 | Product architectures for the four new applications | **Not yet designed** |
 | New product application scaffolding | **Not started** |
 | Cross-product reuse demonstration | **Not demonstrated** |
@@ -88,15 +110,21 @@ Where exact implementation evidence exists, completion summaries alone are insuf
 
 ## Product control cards
 
+Portfolio Control owns all control cards. Product Sessions supply accepted product truth; VIS-3A consumes approved public facts downstream.
+
 | Product | Control card | Baseline status |
 |---------|--------------|-----------------|
 | Local Knowledge Workspace (LKW) | [products/LKW.md](products/LKW.md) | Reference baseline ingested (MP-13) |
+| Contract-to-Invoice Leakage / Recovery Operator | [products/contract-recovery.md](products/contract-recovery.md) | Pre-bootstrap (MP-15) |
+| Supplier Disruption Response Operator | [products/supplier-disruption.md](products/supplier-disruption.md) | Pre-bootstrap (MP-15) |
+| Third-Party Risk Decision Operator | [products/third-party-risk.md](products/third-party-risk.md) | Pre-bootstrap (MP-15) |
+| Deployment / Change Guardian | [products/deployment-guardian.md](products/deployment-guardian.md) | Pre-bootstrap (MP-15) |
 
-The `products/*` area expands as additional products receive baseline ingestion. Control cards index portfolio state; architecture and roadmap remain product-owned.
+Control cards index portfolio state; architecture and roadmap remain product-owned.
 
 ## Planned workspace shape
 
 Later tasks will add:
 
-- per-product control cards for newly selected products (`products/*`)
 - checkpoint reviews (`reviews/*`)
+- MP-20 cross-session coordination contract
