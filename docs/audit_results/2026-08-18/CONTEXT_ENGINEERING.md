@@ -35,7 +35,7 @@
 - **Prior audit reference(s):** Protocol v2 [`MEMORY`](MEMORY.md) (Memory/RAG/CE separation — positive control); historical CE-EXT / CE-ALIGN / CE-PROV-WIRE **Done** rows remain valid delivery facts
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `8ec504fd79223d178688fd2dd99627ba26ab9a67`
 
 ## Executive summary
 
