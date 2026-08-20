@@ -41,6 +41,7 @@ LKW was **not** selected by the MP-1→MP-8 market-selection pipeline. It is inc
 | Product selection record | **Frozen** — [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) |
 | Program governance contract | **Defined** — [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) |
 | Operational control artifacts | **Created** (MP-12) — see source-of-truth map below |
+| Product bootstrap contract | **Defined** (MP-14) — [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md) |
 | Product architectures for the four new applications | **Not yet designed** |
 | New product application scaffolding | **Not started** |
 | Cross-product reuse demonstration | **Not demonstrated** |
@@ -54,6 +55,7 @@ LKW was **not** selected by the MP-1→MP-8 market-selection pipeline. It is inc
 |----------|------------------------|
 | Why these products were selected | [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) |
 | How the program operates | [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) |
+| How must a new product start? | [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md) |
 | Where everything is now | [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) |
 | What product pressure did to Intergrax | [PLATFORM_IMPACT_LEDGER.md](PLATFORM_IMPACT_LEDGER.md) |
 | Why portfolio/program direction changed | [DECISION_LOG.md](DECISION_LOG.md) |
@@ -65,7 +67,9 @@ LKW was **not** selected by the MP-1→MP-8 market-selection pipeline. It is inc
 
 Product control cards are concise Portfolio Control indexes. They do not replace product-owned architecture or roadmap. LKW is baseline-ingested as the reference product.
 
-Do not duplicate LKW architecture or roadmap content here.
+Newly selected products start under [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md). They are not yet in implementation.
+
+Do not duplicate LKW architecture or roadmap content here. Do not duplicate bootstrap rules here.
 
 ---
 

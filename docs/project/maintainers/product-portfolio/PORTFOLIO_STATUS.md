@@ -2,7 +2,7 @@
 
 **Document type:** Maintainer-level operational control artifact  
 **Owner:** Portfolio Control Session  
-**Last verified:** 2026-08-20 (MP-13 LKW reference baseline ingestion)
+**Last verified:** 2026-08-20 (MP-14 Product Bootstrap Rules)
 
 ---
 
@@ -100,7 +100,7 @@ These positions are tracked for context but are **not** active program products.
 
 ## Current portfolio risks
 
-Evidence-supported at MP-13 closeout:
+Evidence-supported at MP-14 closeout:
 
 - Third-Party Risk initial wedge still requires sharpening (selection caveat retained).
 - Supply Disruption commercial/GTM/integration complexity remains material (selection caveat retained).
@@ -112,11 +112,13 @@ Evidence-supported at MP-13 closeout:
 
 ## Current portfolio actions
 
-At MP-13 closeout:
+At MP-14 closeout:
 
-1. ~~Perform LKW baseline ingestion (G0-equivalent for reference product).~~ **Completed** — [LKW control card](products/LKW.md) at baseline `821eb7f6b2096de142822a29abc4546ee387a158`.
-2. **Next:** MP-14 Product Bootstrap Rules for newly selected products.
-3. Prepare product-session launch — **future**; not started.
+1. ~~MP-14 Product Bootstrap Rules.~~ **Completed** — [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md).
+2. **Next:** MP-15 Product Control Cards.
+3. Review/Audit workspace and session-launch preparation remain **future**; not started.
+
+LKW reference baseline remains accepted. Four newly selected products remain **SELECTED** / Pre-bootstrap. Architecture, G0, T0, and application scaffold do not exist yet. No cross-product reuse claim exists.
 
 Do not treat future actions as completed until Portfolio Control verifies evidence and updates this document.
 
@@ -128,5 +130,6 @@ Do not treat future actions as completed until Portfolio Control verifies eviden
 |----------|----------|
 | Why products were selected | [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) |
 | How the program operates | [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) |
+| How a new product must start | [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md) |
 | What product pressure did to Intergrax | [PLATFORM_IMPACT_LEDGER.md](PLATFORM_IMPACT_LEDGER.md) |
 | Why portfolio direction changed | [DECISION_LOG.md](DECISION_LOG.md) |
