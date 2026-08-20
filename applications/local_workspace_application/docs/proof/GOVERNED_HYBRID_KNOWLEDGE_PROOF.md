@@ -294,3 +294,48 @@ flowchart TD
 Tests: `tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_adversarial.py`
 
 **Governance denial vs provider failure:** runtime authority or plan validation can stop execution before any live HTTP call (`HTTP = 0`). Provider failure occurs after the provider is authorized and called (`HTTP = 1`) but does not yield valid live evidence satisfying required obligations. In both cases synthesis is blocked (`LLM = 0`, `answer = None`), but provider failures finalize into a valid typed `INSUFFICIENT_EVIDENCE` run with `evidence_admissibility = UNSATISFIED` rather than an accidental validation error.
+
+---
+
+## Docker vendor persistence (F3-E-R1)
+
+The flagship COMM-5D proof uses an in-process controlled Project Status vendor. **F3-E-R1** adds a Docker-backed Mongo persistence proof for the controlled **Security Status** vendor.
+
+```bash
+docker compose \
+  -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml \
+  up -d --build
+
+uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.docker_persistence_proof
+```
+
+| Ownership | Responsibility |
+|-----------|----------------|
+| MongoDB | Persistence for the Dockerized controlled vendor only |
+| Security vendor | Domain access to vendor persistence via `MongoSecurityStatusStore` |
+| `SecurityStatusIntegration` | Intergrax-facing vendor read access |
+| `WorkspaceAskServiceV2` | Governed decision execution |
+| Proof runner | Scenario coordination only |
+
+**Boundary invariants:**
+
+- The flagship proof runner never talks directly to vendor storage or vendor HTTP. All vendor reads pass through Intergrax integration abstractions; proof-only administration and lifecycle operations pass through typed proof infrastructure ports (`ControlledSecurityStatusAdminPort`, `GovernedHybridDockerEnvironmentV1`).
+- MongoDB is an implementation detail of the Dockerized vendor and is never a direct evidence source for Intergrax.
+
+**Data flow (Docker R1):**
+
+```text
+proof runner
+→ GovernedHybridDockerEnvironmentV1 / GovernedSecurityDockerScenarioV1
+→ WorkspaceAskServiceV2
+→ KnowledgeQueryOrchestratorV1
+→ LiveCapabilityExecutorV1
+→ WorkspaceLiveAccessRuntimeAuthority
+→ SecurityStatusIntegration
+→ HttpxSecurityStatusReadClient
+→ controlled vendor HTTP
+→ MongoSecurityStatusStore
+→ MongoDB (named volume: governed_proof_vendor_data)
+```
+
+Proof control (seed, failure injection, readiness) uses `ControlledSecurityStatusAdminPort` only — never production integration mutation.

@@ -57,6 +57,17 @@ def create_app(*, store: SecurityStatusStore | None = None) -> FastAPI:
         security_store.set_read_behavior(control.behavior)
         return control
 
+    @app.post("/control/seed-orion", response_model=SecurityStatusResponseV1)
+    def control_seed_orion() -> SecurityStatusResponseV1:
+        return seed_orion_security_fixture(security_store)
+
+    @app.get("/control/fixture/{project_id}", response_model=SecurityStatusResponseV1)
+    def control_read_fixture(project_id: str) -> SecurityStatusResponseV1:
+        status = security_store.get_security(project_id)
+        if status is None:
+            raise HTTPException(status_code=404, detail="project_not_found")
+        return status
+
     @app.exception_handler(HTTPException)
     def _http_exception_handler(_: object, exc: HTTPException) -> JSONResponse:
         detail = exc.detail if isinstance(exc.detail, str) else "request_failed"

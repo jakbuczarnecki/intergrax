@@ -1,67 +1,24 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Docker-backed vendor persistence proof for COMM-5 F3-E."""
+"""Docker-backed vendor persistence proof for COMM-5 F3-E-R1."""
 
 from __future__ import annotations
 
 import asyncio
-import os
 import sys
 
-import httpx
-
-from intergrax.integrations.providers.security_status.client import HttpxSecurityStatusReadClient
-from intergrax.integrations.providers.security_status.config import SecurityStatusIntegrationConfig
-from intergrax.integrations.providers.security_status.integration import SecurityStatusIntegration
-from intergrax.runtime.vendor_knowledge.live.errors import LiveErrorCodeV1
-from intergrax.runtime.vendor_knowledge.live.failures import (
-    LiveCallFailureReasonV1,
-    live_call_failure_reason_for_error_code,
+from local_workspace_application.workspaces.ask_models import AskRunStatus
+from local_workspace_application.workspaces.hybrid_ask_models import (
+    EvidenceAdmissibilityStatusV1,
+    RequirementAdmissibilityReasonCodeV1,
+    RequirementEvaluationStatusV1,
 )
-from proof_infrastructure.controlled_project_status_service.seed import ORION_FIXTURE_PROJECT_ID
-from proof_infrastructure.controlled_security_status_service.models import (
-    SecurityStatusReadBehaviorV1,
+from proof_infrastructure.governed_hybrid_knowledge_proof.docker_environment import (
+    GovernedHybridDockerEnvironmentV1,
 )
-
-
-def _vendor_base_url() -> str:
-    return os.environ.get(
-        "GOVERNED_PROOF_SECURITY_VENDOR_URL",
-        "http://127.0.0.1:8091",
-    ).rstrip("/")
-
-
-def _wait_for_vendor(timeout_seconds: float = 60.0) -> None:
-    import time
-
-    deadline = time.monotonic() + timeout_seconds
-    last_error = "startup_timeout"
-    while time.monotonic() < deadline:
-        try:
-            response = httpx.get(f"{_vendor_base_url()}/health", timeout=2.0)
-        except httpx.HTTPError as exc:
-            last_error = str(exc)
-            continue
-        if response.status_code == 200:
-            return
-        last_error = f"status={response.status_code}"
-    raise RuntimeError(f"security_vendor_unavailable: {last_error}")
-
-
-async def _read_snapshot_status() -> str:
-    config = SecurityStatusIntegrationConfig(
-        base_url=_vendor_base_url(),
-        timeout_seconds=5.0,
-    )
-    client = HttpxSecurityStatusReadClient(config=config)
-    integration = SecurityStatusIntegration.from_client(client, config=config)
-    try:
-        snapshot = await integration.read_security_status(
-            project_id=ORION_FIXTURE_PROJECT_ID,
-        )
-    finally:
-        await client.aclose()
-    return snapshot.status
+from proof_infrastructure.governed_hybrid_knowledge_proof.security_docker_scenario import (
+    build_governed_security_docker_scenario,
+)
 
 
 async def _run_scenarios() -> tuple[bool, list[str]]:
@@ -74,55 +31,115 @@ async def _run_scenarios() -> tuple[bool, list[str]]:
         status = "PASS" if passed else "FAIL"
         lines.append(f"{status} {name}: {detail}")
 
-    _wait_for_vendor()
-    record("docker_vendor_reachable", True, _vendor_base_url())
+    environment = GovernedHybridDockerEnvironmentV1.from_defaults()
+    environment.ensure_ready()
+    scenario = await build_governed_security_docker_scenario(environment)
 
-    response = httpx.get(
-        f"{_vendor_base_url()}/projects/{ORION_FIXTURE_PROJECT_ID}/security-status",
-        timeout=5.0,
+    seeded = scenario.seed_baseline()
+    baseline = await scenario.ask(
+        run_id="docker-r1-baseline",
+        request_id="request-docker-r1-baseline",
     )
+    baseline_security = scenario.security_evaluation(baseline)
     record(
-        "vendor_seed_record_readable",
-        response.status_code == 200,
-        f"status_code={response.status_code}",
-    )
-    seeded_status = response.json().get("status") if response.status_code == 200 else None
-
-    integrated_status = await _read_snapshot_status()
-    record(
-        "intergrax_integration_reads_vendor",
-        integrated_status == seeded_status,
-        f"integrated={integrated_status}",
-    )
-
-    httpx.put(
-        f"{_vendor_base_url()}/control/read-behavior",
-        json={"behavior": SecurityStatusReadBehaviorV1.HTTP_503.value},
-        timeout=5.0,
-    )
-    failure_reason = live_call_failure_reason_for_error_code(
-        LiveErrorCodeV1.PROVIDER_TEMPORARILY_UNAVAILABLE.value,
-    )
-    record(
-        "provider_failure_reason",
-        failure_reason is LiveCallFailureReasonV1.PROVIDER_FAILED,
-        failure_reason.value,
+        "scenario_1_persisted_baseline",
+        baseline.status is AskRunStatus.COMPLETED
+        and baseline.evidence_admissibility is not None
+        and baseline.evidence_admissibility.overall_status
+        is EvidenceAdmissibilityStatusV1.SATISFIED
+        and baseline_security.status is RequirementEvaluationStatusV1.SATISFIED
+        and scenario.vendor_read_count() == 1
+        and scenario.llm.calls == 1,
+        (
+            f"status={baseline.status.value}, "
+            f"requirement={baseline_security.status.value}, "
+            f"llm={scenario.llm.calls}, "
+            f"vendor_reads={scenario.vendor_read_count()}, "
+            f"seeded_status={seeded.status}"
+        ),
     )
 
-    httpx.put(
-        f"{_vendor_base_url()}/control/read-behavior",
-        json={"behavior": SecurityStatusReadBehaviorV1.NORMAL.value},
-        timeout=5.0,
+    scenario.fail_provider()
+    failed = await scenario.ask(
+        run_id="docker-r1-provider-failure",
+        request_id="request-docker-r1-provider-failure",
     )
-    restored = httpx.get(
-        f"{_vendor_base_url()}/projects/{ORION_FIXTURE_PROJECT_ID}/security-status",
-        timeout=5.0,
+    failed_security = scenario.security_evaluation(failed)
+    security_call_id = (
+        failed.live_call_failures[0].call_id if failed.live_call_failures else ""
     )
-    restored_status = restored.json().get("status") if restored.status_code == 200 else None
     record(
-        "vendor_record_persisted_after_failure_recovery",
-        restored.status_code == 200 and restored_status == seeded_status,
-        f"status_code={restored.status_code}",
+        "scenario_2_real_provider_failure",
+        failed.status is AskRunStatus.INSUFFICIENT_EVIDENCE
+        and scenario.llm.calls == 0
+        and scenario.vendor_read_count() == 1
+        and failed_security.reason_code is RequirementAdmissibilityReasonCodeV1.PROVIDER_FAILED
+        and len(failed.live_call_failures) == 1
+        and security_call_id.endswith(":security-read"),
+        (
+            f"status={failed.status.value}, "
+            f"reason={failed_security.reason_code.value if failed_security.reason_code else 'none'}, "
+            f"call_id={security_call_id}, "
+            f"llm={scenario.llm.calls}, "
+            f"vendor_reads={scenario.vendor_read_count()}"
+        ),
+    )
+
+    reloaded = scenario.reload_run(run_id="docker-r1-provider-failure")
+    reloaded_security = scenario.security_evaluation(reloaded)
+    reloaded_call_id = (
+        reloaded.live_call_failures[0].call_id if reloaded.live_call_failures else ""
+    )
+    record(
+        "scenario_2_run_reload",
+        reloaded_security.reason_code is RequirementAdmissibilityReasonCodeV1.PROVIDER_FAILED
+        and len(reloaded.live_call_failures) == 1
+        and reloaded_call_id == security_call_id,
+        (
+            f"reason={reloaded_security.reason_code.value if reloaded_security.reason_code else 'none'}, "
+            f"call_id={reloaded_call_id}"
+        ),
+    )
+
+    scenario.recover_provider()
+    recovered = await scenario.ask(
+        run_id="docker-r1-recovery",
+        request_id="request-docker-r1-recovery",
+    )
+    recovered_security = scenario.security_evaluation(recovered)
+    record(
+        "scenario_3_service_recovery",
+        recovered.status is AskRunStatus.COMPLETED
+        and scenario.llm.calls == 1
+        and recovered_security.status is RequirementEvaluationStatusV1.SATISFIED
+        and scenario.assert_same_fixture(recovered),
+        (
+            f"status={recovered.status.value}, "
+            f"requirement={recovered_security.status.value}, "
+            f"llm={scenario.llm.calls}, "
+            f"same_record={scenario.assert_same_fixture(recovered)}"
+        ),
+    )
+
+    environment.restart_security_vendor()
+    persisted = await scenario.ask(
+        run_id="docker-r1-vendor-restart",
+        request_id="request-docker-r1-vendor-restart",
+    )
+    persisted_security = scenario.security_evaluation(persisted)
+    record(
+        "scenario_4_vendor_process_restart",
+        persisted.status is AskRunStatus.COMPLETED
+        and scenario.llm.calls == 1
+        and persisted_security.status is RequirementEvaluationStatusV1.SATISFIED
+        and scenario.assert_same_fixture(persisted),
+        (
+            "VENDOR PROCESS RESTARTED: YES; "
+            "MONGODB CONTAINER/VOLUME PRESERVED: YES; "
+            "RESEED AFTER RESTART: NO; "
+            f"RECORD STILL AVAILABLE THROUGH INTERGRAX: "
+            f"{'YES' if scenario.assert_same_fixture(persisted) else 'NO'}"
+        ),
     )
 
     return ok, lines
