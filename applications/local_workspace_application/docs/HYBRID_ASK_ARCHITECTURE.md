@@ -338,17 +338,19 @@ deployment-policy / rev18 / RULE-SEC-DEP-4
 
 `derivation_engine_version` is deferred: obligation outputs are fully determined by canonical typed rule inputs hashed into `derivation_snapshot_id`; algorithm identity is fixed to `DeterministicEvidenceObligationDerivation`.
 
-#### 6.4.4 Multi-provider evidence execution (COMM-5F3-C)
+#### 6.4.4 Multi-provider evidence execution (COMM-5F3-C / F3-C-R1)
 
 F3-C proves that one **derived evidence contract** can require independent live facts from multiple provider classes. Multi-call orchestration is **existing platform capability** (`KnowledgeQueryOrchestratorV1`); F3-C adds reusable provider integrations and a canonical multi-provider proof path.
+
+Proof strength (F3-C-R1): four independent provider classes, four independent connections, four independent capability identities, and **four independent controlled upstream HTTP services** (distinct loopback listeners, ports, and `base_url` values — not a bundled governance mega-server).
 
 ```text
 Derived Evidence Contract
     ↓
-REQ-readiness  → Connection project-status  / vendor.project_status.project.read
-REQ-security   → Connection security-status / vendor.security_status.security.read
-REQ-change     → Connection change-approval  / vendor.change_approval.change.read
-REQ-architecture → Connection governance-approval / vendor.governance_approval.approval.read
+REQ-readiness  → Project Status upstream / conn.project-status / vendor.project_status.project.read
+REQ-security   → Security Status upstream / conn.security-status / vendor.security_status.security.read
+REQ-change     → Change Management upstream / conn.change-approval / vendor.change_approval.change.read
+REQ-architecture → Governance upstream / conn.governance-approval / vendor.governance_approval.approval.read
     ↓
 per-call runtime authority (WorkspaceLiveAccessRuntimeAuthority)
     ↓
@@ -360,6 +362,7 @@ admissibility (structural call_id matching)
 | Invariant | Meaning |
 |-----------|---------|
 | No mega-provider | Each organizational authority is a distinct provider + connection + capability |
+| Independent upstreams | Proof uses four separate controlled HTTP services with distinct `base_url` values |
 | No new orchestrator | Same orchestrator loop; no parallel execution engine |
 | Policy-derived calls | Live proposals/obligations come from `EvidenceObligationDerivationPort`, not hand-built plans |
 | Evidence identity | Live evidence satisfies only its bound `call_id` |

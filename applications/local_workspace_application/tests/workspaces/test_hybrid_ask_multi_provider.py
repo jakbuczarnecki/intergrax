@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Multi-provider Hybrid Ask integration tests (COMM-5F3-C)."""
+"""Multi-provider Hybrid Ask integration tests (COMM-5F3-C / F3-C-R1)."""
 
 from __future__ import annotations
 
@@ -9,8 +9,6 @@ import json
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from hashlib import sha256
-from typing import Any
-
 import httpx
 import pytest
 from pydantic import BaseModel, ConfigDict
@@ -77,6 +75,7 @@ from intergrax.runtime.vendor_knowledge.tenant_connections import (
     TenantConnectionAdministrativeStatus,
 )
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
+    LiveCapabilityDescriptorV1,
     RepositoryTenantConnectionPort,
 )
 from intergrax.llm.messages import ChatMessage
@@ -126,15 +125,26 @@ from local_workspace_application.workspaces.knowledge_live_access_service import
     WorkspaceLiveAccessRuntimeAuthority,
 )
 from local_workspace_application.workspaces.models import Workspace
-from proof_infrastructure.controlled_governance_services.lifecycle import (
-    ControlledGovernanceServicesServer,
+from proof_infrastructure.controlled_change_approval_service.lifecycle import (
+    ControlledChangeApprovalServer,
 )
-from proof_infrastructure.controlled_governance_services.seed import (
+from proof_infrastructure.controlled_change_approval_service.seed import (
     ORION_FIXTURE_CHANGE_ID,
+)
+from proof_infrastructure.controlled_governance_approval_service.lifecycle import (
+    ControlledGovernanceApprovalServer,
+)
+from proof_infrastructure.controlled_governance_approval_service.seed import (
     ORION_FIXTURE_SUBJECT_ID,
 )
 from proof_infrastructure.controlled_project_status_service.lifecycle import (
     ControlledProjectStatusServer,
+)
+from proof_infrastructure.controlled_security_status_service.lifecycle import (
+    ControlledSecurityStatusServer,
+)
+from proof_infrastructure.controlled_security_status_service.models import (
+    SecurityStatusReadBehaviorV1,
 )
 from proof_infrastructure.controlled_project_status_service.models import (
     ProjectBlockerStatusV1,
@@ -161,7 +171,7 @@ _BINDING_SECURITY = "binding-security"
 _BINDING_CHANGE = "binding-change"
 _BINDING_GOVERNANCE = "binding-governance"
 
-_CONNECTION_DESCRIPTORS: dict[str, tuple[Any, ...]] = {
+_CONNECTION_DESCRIPTORS: dict[str, tuple[LiveCapabilityDescriptorV1, ...]] = {
     _CONN_READINESS: (build_project_status_read_descriptor(),),
     _CONN_SECURITY: (build_security_status_read_descriptor(),),
     _CONN_CHANGE: (build_change_approval_read_descriptor(),),
@@ -327,7 +337,7 @@ class _Catalog:
         tenant_id: str,
         connection_ref: str,
         remote_resource_id: str | None,
-    ) -> tuple[Any, ...]:
+    ) -> tuple[LiveCapabilityDescriptorV1, ...]:
         del tenant_id, remote_resource_id
         return _CONNECTION_DESCRIPTORS.get(connection_ref, ())
 
@@ -490,7 +500,9 @@ def _register_connections(
     repository: DocumentStoreTenantConnectionRepository,
     *,
     project_status_url: str,
-    governance_url: str,
+    security_status_url: str,
+    change_approval_url: str,
+    governance_approval_url: str,
 ) -> tuple[TenantConnection, ...]:
     connections = (
         TenantConnection(
@@ -518,7 +530,7 @@ def _register_connections(
             administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
             credential_ref="secret.security-status",
             validated_secret_free_config={
-                "base_url": governance_url,
+                "base_url": security_status_url,
                 "timeout_seconds": 2.0,
             },
             configuration_version=1,
@@ -534,7 +546,7 @@ def _register_connections(
             administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
             credential_ref="secret.change-approval",
             validated_secret_free_config={
-                "base_url": governance_url,
+                "base_url": change_approval_url,
                 "timeout_seconds": 2.0,
             },
             configuration_version=1,
@@ -550,7 +562,7 @@ def _register_connections(
             administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
             credential_ref="secret.governance-approval",
             validated_secret_free_config={
-                "base_url": governance_url,
+                "base_url": governance_approval_url,
                 "timeout_seconds": 2.0,
             },
             configuration_version=1,
@@ -566,18 +578,27 @@ def _register_connections(
 async def _build_service(
     *,
     project_status_server: ControlledProjectStatusServer,
-    governance_server: ControlledGovernanceServicesServer,
+    security_status_server: ControlledSecurityStatusServer,
+    change_approval_server: ControlledChangeApprovalServer,
+    governance_approval_server: ControlledGovernanceApprovalServer,
     bindings: tuple[WorkspaceLiveAccessBinding, ...],
     orchestrator: KnowledgeQueryOrchestratorV1 | None = None,
     configuration_service: _ConfigurationService | None = None,
-) -> tuple[WorkspaceAskServiceV2, _RecordingLLM, DocumentStoreTenantConnectionRepository]:
+) -> tuple[
+    WorkspaceAskServiceV2,
+    _RecordingLLM,
+    DocumentStoreTenantConnectionRepository,
+    tuple[TenantConnection, ...],
+]:
     configuration = _configuration(bindings=bindings)
     document_store = InMemoryDocumentStore()
     connection_repository = DocumentStoreTenantConnectionRepository(document_store)
     connections = _register_connections(
         connection_repository,
         project_status_url=project_status_server.base_url,
-        governance_url=governance_server.base_url,
+        security_status_url=security_status_server.base_url,
+        change_approval_url=change_approval_server.base_url,
+        governance_approval_url=governance_approval_server.base_url,
     )
     connection_registry = KnowledgeConnectionRegistry()
     rehydrator = TenantConnectionRehydrator(
@@ -635,7 +656,7 @@ async def _build_service(
         resolved_policy_rules_port=_FixedPolicyRulesPort(),
         schema_registry=published.schemas,
     )
-    return service, llm, connection_repository
+    return service, llm, connection_repository, connections
 
 
 class _MutableConfigurationService(_ConfigurationService):
@@ -711,8 +732,22 @@ def project_status_server() -> ControlledProjectStatusServer:
 
 
 @pytest.fixture
-def governance_server() -> ControlledGovernanceServicesServer:
-    server = ControlledGovernanceServicesServer.start()
+def security_status_server() -> ControlledSecurityStatusServer:
+    server = ControlledSecurityStatusServer.start()
+    yield server
+    server.stop()
+
+
+@pytest.fixture
+def change_approval_server() -> ControlledChangeApprovalServer:
+    server = ControlledChangeApprovalServer.start()
+    yield server
+    server.stop()
+
+
+@pytest.fixture
+def governance_approval_server() -> ControlledGovernanceApprovalServer:
+    server = ControlledGovernanceApprovalServer.start()
     yield server
     server.stop()
 
@@ -720,7 +755,9 @@ def governance_server() -> ControlledGovernanceServicesServer:
 @pytest.mark.asyncio
 async def test_multi_provider_derived_plan_executes_four_distinct_providers(
     project_status_server: ControlledProjectStatusServer,
-    governance_server: ControlledGovernanceServicesServer,
+    security_status_server: ControlledSecurityStatusServer,
+    change_approval_server: ControlledChangeApprovalServer,
+    governance_approval_server: ControlledGovernanceApprovalServer,
 ) -> None:
     httpx.put(
         f"{project_status_server.base_url}/control/projects/{ORION_FIXTURE_PROJECT_ID}/status",
@@ -735,11 +772,15 @@ async def test_multi_provider_derived_plan_executes_four_distinct_providers(
         timeout=2.0,
     )
     project_status_server.store.reset_read_request_count()
-    governance_server.store.reset_read_counts()
+    security_status_server.store.reset_read_request_count()
+    change_approval_server.store.reset_read_request_count()
+    governance_approval_server.store.reset_read_request_count()
 
-    service, llm, _ = await _build_service(
+    service, llm, _, connections = await _build_service(
         project_status_server=project_status_server,
-        governance_server=governance_server,
+        security_status_server=security_status_server,
+        change_approval_server=change_approval_server,
+        governance_approval_server=governance_approval_server,
         bindings=_all_success_bindings(),
     )
     command = WorkspaceAskCommandV2(
@@ -771,32 +812,103 @@ async def test_multi_provider_derived_plan_executes_four_distinct_providers(
         if isinstance(obligation, LiveEvidenceRequirementV1)
     }
     assert len(call_ids) == 4
-    connection_refs = {
-        item.connection_ref
-        for item in run.persisted_evidence
-        if item.evidence_type is EvidenceTypeV1.LIVE
+    live_evidence = [
+        item for item in run.persisted_evidence if item.evidence_type is EvidenceTypeV1.LIVE
+    ]
+    connection_refs = {item.connection_ref for item in live_evidence}
+    capability_ids = {item.capability_id for item in live_evidence}
+    provider_ids = {item.provider_id for item in live_evidence}
+    assert len(connection_refs) == 4
+    assert len(capability_ids) == 4
+    assert len(provider_ids) == 4
+    upstream_base_urls = {
+        connection.validated_secret_free_config["base_url"] for connection in connections
     }
-    capability_ids = {
-        item.capability_id
-        for item in run.persisted_evidence
-        if item.evidence_type is EvidenceTypeV1.LIVE
+    assert len(upstream_base_urls) == 4
+    assert upstream_base_urls == {
+        project_status_server.base_url,
+        security_status_server.base_url,
+        change_approval_server.base_url,
+        governance_approval_server.base_url,
     }
-    assert len(connection_refs) >= 3
-    assert len(capability_ids) >= 3
     assert project_status_server.store.read_request_count() == 1
-    security_reads, change_reads, governance_reads = governance_server.store.read_counts()
-    assert security_reads == 1
-    assert change_reads == 1
-    assert governance_reads == 1
+    assert security_status_server.store.read_request_count() == 1
+    assert change_approval_server.store.read_request_count() == 1
+    assert governance_approval_server.store.read_request_count() == 1
     for obligation in run.required_evidence_obligations:
         if isinstance(obligation, LiveEvidenceRequirementV1):
             assert obligation.policy_origin is not None
 
 
 @pytest.mark.asyncio
+async def test_multi_provider_security_upstream_failure_blocks_synthesis(
+    project_status_server: ControlledProjectStatusServer,
+    security_status_server: ControlledSecurityStatusServer,
+    change_approval_server: ControlledChangeApprovalServer,
+    governance_approval_server: ControlledGovernanceApprovalServer,
+) -> None:
+    httpx.put(
+        f"{project_status_server.base_url}/control/projects/{ORION_FIXTURE_PROJECT_ID}/status",
+        json={
+            "blockers": [
+                {
+                    "id": ORION_FIXTURE_BLOCKER_ID,
+                    "status": ProjectBlockerStatusV1.CLOSED.value,
+                }
+            ]
+        },
+        timeout=2.0,
+    )
+    httpx.put(
+        f"{security_status_server.base_url}/control/read-behavior",
+        json={"behavior": SecurityStatusReadBehaviorV1.HTTP_503.value},
+        timeout=2.0,
+    )
+    project_status_server.store.reset_read_request_count()
+    security_status_server.store.reset_read_request_count()
+    change_approval_server.store.reset_read_request_count()
+    governance_approval_server.store.reset_read_request_count()
+
+    service, llm, _, _ = await _build_service(
+        project_status_server=project_status_server,
+        security_status_server=security_status_server,
+        change_approval_server=change_approval_server,
+        governance_approval_server=governance_approval_server,
+        bindings=_all_success_bindings(),
+    )
+    run = await service.ask(
+        WorkspaceAskCommandV2(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            question="Can the deployment proceed under current governance policy?",
+            requested_mode=QueryPolicyModeV2.LIVE_ONLY,
+            audience_context=AudienceContextV1(
+                audience=KnowledgeQueryAudienceV1.PERSONAL
+            ),
+            run_id="run-multi-provider-security-failure",
+            request_id="request-multi-provider-security-failure",
+        )
+    )
+
+    assert run.status is AskRunStatus.INSUFFICIENT_EVIDENCE
+    assert llm.calls == 0
+    assert run.evidence_admissibility is not None
+    assert (
+        run.evidence_admissibility.overall_status
+        is not EvidenceAdmissibilityStatusV1.SATISFIED
+    )
+    assert project_status_server.store.read_request_count() == 1
+    assert security_status_server.store.read_request_count() == 1
+    assert change_approval_server.store.read_request_count() == 1
+    assert governance_approval_server.store.read_request_count() == 1
+
+
+@pytest.mark.asyncio
 async def test_multi_provider_revoked_binding_blocks_synthesis_without_provider_http(
     project_status_server: ControlledProjectStatusServer,
-    governance_server: ControlledGovernanceServicesServer,
+    security_status_server: ControlledSecurityStatusServer,
+    change_approval_server: ControlledChangeApprovalServer,
+    governance_approval_server: ControlledGovernanceApprovalServer,
 ) -> None:
     bindings = _all_success_bindings()
     configuration_service = _MutableConfigurationService(_configuration(bindings=bindings))
@@ -805,7 +917,9 @@ async def test_multi_provider_revoked_binding_blocks_synthesis_without_provider_
     connections = _register_connections(
         connection_repository,
         project_status_url=project_status_server.base_url,
-        governance_url=governance_server.base_url,
+        security_status_url=security_status_server.base_url,
+        change_approval_url=change_approval_server.base_url,
+        governance_approval_url=governance_approval_server.base_url,
     )
     connection_registry = KnowledgeConnectionRegistry()
     rehydrator = TenantConnectionRehydrator(
@@ -844,7 +958,9 @@ async def test_multi_provider_revoked_binding_blocks_synthesis_without_provider_
         binding_id=_BINDING_GOVERNANCE,
     )
     project_status_server.store.reset_read_request_count()
-    governance_server.store.reset_read_counts()
+    security_status_server.store.reset_read_request_count()
+    change_approval_server.store.reset_read_request_count()
+    governance_approval_server.store.reset_read_request_count()
     llm = _RecordingLLM()
     ask_repository = WorkspaceAskRepository(document_store)
     service = WorkspaceAskServiceV2(
@@ -883,9 +999,10 @@ async def test_multi_provider_revoked_binding_blocks_synthesis_without_provider_
 
     assert run.status is AskRunStatus.INSUFFICIENT_EVIDENCE
     assert llm.calls == 0
-    _, _, governance_reads = governance_server.store.read_counts()
-    assert governance_reads == 0
+    assert governance_approval_server.store.read_request_count() == 0
     assert project_status_server.store.read_request_count() >= 1
+    assert security_status_server.store.read_request_count() >= 1
+    assert change_approval_server.store.read_request_count() >= 1
 
 
 def test_multi_provider_wrong_call_id_cannot_cross_satisfy_obligation() -> None:

@@ -29,39 +29,18 @@ class SecurityStatusResponseV1(BaseModel):
     updated_at: datetime
 
 
-class ChangeApprovalStateV1(StrEnum):
-    APPROVED = "APPROVED"
-    PENDING = "PENDING"
-    REJECTED = "REJECTED"
-
-
-class ChangeApprovalResponseV1(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    change_id: str = Field(..., min_length=1, max_length=64)
-    approval_state: ChangeApprovalStateV1
-    approved: bool
-    updated_at: datetime
-
-
-class GovernanceDecisionStateV1(StrEnum):
-    APPROVED = "APPROVED"
-    PENDING = "PENDING"
-    REJECTED = "REJECTED"
-
-
-class GovernanceApprovalResponseV1(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    subject_id: str = Field(..., min_length=1, max_length=64)
-    decision_state: GovernanceDecisionStateV1
-    approved: bool
-    updated_at: datetime
-
-
 class RequestCountResponseV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    security_read_count: int = Field(..., ge=0)
-    change_read_count: int = Field(..., ge=0)
-    governance_read_count: int = Field(..., ge=0)
+    read_request_count: int = Field(..., ge=0)
+
+
+class SecurityStatusReadBehaviorV1(StrEnum):
+    NORMAL = "normal"
+    HTTP_503 = "http_503"
+
+
+class SecurityStatusReadBehaviorControlV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    behavior: SecurityStatusReadBehaviorV1

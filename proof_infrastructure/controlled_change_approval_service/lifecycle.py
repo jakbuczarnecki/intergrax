@@ -10,8 +10,8 @@ from dataclasses import dataclass
 import httpx
 import uvicorn
 
-from proof_infrastructure.controlled_governance_services.app import create_app
-from proof_infrastructure.controlled_governance_services.state import GovernanceServicesStore
+from proof_infrastructure.controlled_change_approval_service.app import create_app
+from proof_infrastructure.controlled_change_approval_service.state import ChangeApprovalStore
 
 
 def _free_port() -> int:
@@ -21,20 +21,20 @@ def _free_port() -> int:
 
 
 @dataclass(frozen=True, slots=True)
-class ControlledGovernanceServicesServer:
-    """Start and stop a real loopback HTTP governance services bundle for proof tests."""
+class ControlledChangeApprovalServer:
+    """Start and stop a real loopback HTTP Change Approval service for proof tests."""
 
     base_url: str
     port: int
-    store: GovernanceServicesStore
+    store: ChangeApprovalStore
     server: uvicorn.Server
     thread: threading.Thread
 
     @classmethod
-    def start(cls, *, store: GovernanceServicesStore | None = None) -> ControlledGovernanceServicesServer:
-        governance_store = store or GovernanceServicesStore()
+    def start(cls, *, store: ChangeApprovalStore | None = None) -> ControlledChangeApprovalServer:
+        change_store = store or ChangeApprovalStore()
         port = _free_port()
-        app = create_app(store=governance_store)
+        app = create_app(store=change_store)
         config = uvicorn.Config(
             app,
             host="127.0.0.1",
@@ -46,7 +46,7 @@ class ControlledGovernanceServicesServer:
         thread = threading.Thread(
             target=server.run,
             daemon=True,
-            name="governance-services-proof",
+            name="change-approval-proof",
         )
         thread.start()
         base_url = f"http://127.0.0.1:{port}"
@@ -63,7 +63,7 @@ class ControlledGovernanceServicesServer:
                 return cls(
                     base_url=base_url,
                     port=port,
-                    store=governance_store,
+                    store=change_store,
                     server=server,
                     thread=thread,
                 )
@@ -72,11 +72,11 @@ class ControlledGovernanceServicesServer:
         server.should_exit = True
         thread.join(timeout=5.0)
         if thread.is_alive():
-            raise RuntimeError("governance_services_startup_shutdown_timeout")
-        raise RuntimeError(f"governance_services_startup_failed: {last_error}")
+            raise RuntimeError("change_approval_service_startup_shutdown_timeout")
+        raise RuntimeError(f"change_approval_service_startup_failed: {last_error}")
 
     def stop(self) -> None:
         self.server.should_exit = True
         self.thread.join(timeout=5.0)
         if self.thread.is_alive():
-            raise RuntimeError("governance_services_shutdown_timeout")
+            raise RuntimeError("change_approval_service_shutdown_timeout")
