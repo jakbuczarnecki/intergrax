@@ -111,6 +111,52 @@ Provider runtime matrix:
 
 ---
 
+<a id="protocol-v2-integrations-remediation-2026-08-18"></a>
+
+### Protocol v2 — integrations remediation (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/INTEGRATIONS.md`](../../audit_results/2026-08-18/INTEGRATIONS.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-INTEGRATIONS-PERSIST.
+
+<a id="integrations-runtime-binding-integrity-2026-08-18"></a>
+
+#### INTEGRATIONS-RUNTIME-BINDING-INTEGRITY — typed pre-built instances, lifecycle eligibility, startup resolvability
+
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-INTEGRATIONS-01`](../../audit_results/2026-08-18/INTEGRATIONS.md), [`AUDIT-20260818-INTEGRATIONS-02`](../../audit_results/2026-08-18/INTEGRATIONS.md), [`AUDIT-20260818-INTEGRATIONS-03`](../../audit_results/2026-08-18/INTEGRATIONS.md)
+
+**Outcome (planning only):**
+
+- One fail-closed host provider binding boundary covering typed pre-built instances, lifecycle eligibility, and startup resolvability.
+- Pre-built instances must satisfy the same category contract identity as catalog-created providers — validate provider/category/integration identity without removing dependency injection.
+- Provider lifecycle status (`STABLE` / `BETA` / `DEPRECATED`) gains explicit runtime/bootstrap qualification semantics — not decorative metadata.
+- Host readiness proves every profile-selected integration is registered and resolvable by the active runtime authority — fail fast before serving work.
+- Coordinate with planned **INTEGRATIONS-3B** explicit registry-backed runtime binding rather than building a competing resolver; cross-link 3B deliverables while keeping Protocol v2 finding IDs traceable.
+- Registry v2 remains additive metadata today; do not claim 3B shipped until implementation lands.
+
+<a id="integrations-contract-metadata-integrity-2026-08-18"></a>
+
+#### INTEGRATIONS-CONTRACT-METADATA-INTEGRITY — lossless catalog metadata and canonical integration identity
+
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-INTEGRATIONS-04`](../../audit_results/2026-08-18/INTEGRATIONS.md), [`AUDIT-20260818-INTEGRATIONS-05`](../../audit_results/2026-08-18/INTEGRATIONS.md)
+
+**Outcome (planning only):**
+
+- Catalog `register_integration()` round-trips deployment/security metadata (`requires_local_container` and peers).
+- Conformance proof that registration preserves contractually meaningful provider metadata except documented normalization fields.
+- `PlatformIntegrationContract` enforces one canonical identity truth — derive `integration_id` from `provider_id:integration_kind` or validate strict equality at construction.
+- Registry v2 `(provider_id, category)` identity must not disagree with base integration contract identity.
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+
+**Recommended remediation order (prioritization, not dependency graph):** INTEGRATIONS-RUNTIME-BINDING-INTEGRITY → INTEGRATIONS-CONTRACT-METADATA-INTEGRITY
+
+---
+
 ## Phase H-INT-GRAPH — graph_store expansion (Planned)
 
 **Purpose:** New `graph_store` vendor slugs required before RAG adapters M-RAG.49–M-RAG.51.  

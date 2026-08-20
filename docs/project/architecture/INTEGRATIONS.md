@@ -357,6 +357,50 @@ The invariant is ownership-aware boundary enforcement — not a giant universal 
 
 Remediation tracked as **PBA-FIX-B** (findings 02, 04) and **PBA-FIX-C** (finding 03) in [plan](../maintainers/plans/INTEGRATIONS.md#protocol-v22-providerbackend-abstraction-remediation-2026-08-18). **Not implemented** by audit persistence.
 
+<a id="protocol-v2-integrations-target-invariants-2026-08-18"></a>
+
+## Protocol v2 integrations target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`INTEGRATIONS`](../../audit_results/2026-08-18/INTEGRATIONS.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+**Finding 01 — pre-built instance contract parity**
+
+1. Dependency-injected/pre-built integration instances must satisfy the exact canonical category-specific integration contract for the profile slot — same contract identity as catalog-created providers ([`AUDIT-20260818-INTEGRATIONS-01`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+2. Validate provider/category/integration identity as appropriate at the host binding boundary; do not remove dependency injection merely to solve validation ([`AUDIT-20260818-INTEGRATIONS-01`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+3. Do not introduce a second integration abstraction ([`AUDIT-20260818-INTEGRATIONS-01`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+
+**Finding 02 — provider lifecycle runtime qualification**
+
+4. Provider lifecycle status (`STABLE` / `BETA` / `DEPRECATED`) must have explicit runtime/bootstrap qualification semantics — not decorative metadata ([`AUDIT-20260818-INTEGRATIONS-02`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+5. Canonical production binding must not treat STABLE, BETA, and DEPRECATED as automatically equivalent ([`AUDIT-20260818-INTEGRATIONS-02`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+6. Typed host/provider qualification policy: stable default eligibility; beta explicit opt-in where desired; deprecated fail-closed for new production bindings or explicitly authorized compatibility posture ([`AUDIT-20260818-INTEGRATIONS-02`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+
+**Finding 03 — declared → registered → resolvable host readiness**
+
+7. Explicit host configuration must follow a deterministic declared → admitted/registered → resolvable lifecycle ([`AUDIT-20260818-INTEGRATIONS-03`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+8. Before host readiness, every selected integration must be proven resolvable by the active runtime authority — fail fast before serving work ([`AUDIT-20260818-INTEGRATIONS-03`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+9. Plugin declaration before registration may remain a supported authoring phase; production/startup validation must not defer catalog admission to first `resolve()` ([`AUDIT-20260818-INTEGRATIONS-03`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+
+**Finding 04 — catalog metadata round-trip**
+
+10. Catalog normalization must preserve all contractually meaningful provider metadata exactly, except explicitly documented normalization fields ([`AUDIT-20260818-INTEGRATIONS-04`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+11. Registration must round-trip deployment/security metadata such as `requires_local_container` ([`AUDIT-20260818-INTEGRATIONS-04`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+12. Finding is metadata-integrity — not proven active security bypass until remediation and verification ([`AUDIT-20260818-INTEGRATIONS-04`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+
+**Finding 05 — canonical integration identity**
+
+13. `PlatformIntegrationContract` has one canonical integration identity truth: `integration_id = provider_id:integration_kind` ([`AUDIT-20260818-INTEGRATIONS-05`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+14. Either derive `integration_id` from `provider_id` + `integration_kind` or validate strict equality at construction ([`AUDIT-20260818-INTEGRATIONS-05`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+15. Registry v2 `(provider_id, category)` identity and the base integration contract must not disagree ([`AUDIT-20260818-INTEGRATIONS-05`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+
+**Transitional boundary (preserved)**
+
+16. Registry v2 remains additive typed metadata — **not** universal runtime binding authority today ([`INTEGRATIONS-3A`](../../maintainers/plans/INTEGRATIONS.md)).
+17. **INTEGRATIONS-3B** explicit registry-backed runtime binding remains **Planned** — not shipped; remediation coordinates with 3B rather than a competing resolver ([`INTEGRATIONS-3B`](../../maintainers/plans/INTEGRATIONS.md)).
+18. Broad **194**-slug catalog scale does **not** imply universal production qualification ([catalog-scale ≠ production-qualification](#evidence-and-maturity)).
+
+Remediation tracked as **INTEGRATIONS-RUNTIME-BINDING-INTEGRITY** (findings 01–03) and **INTEGRATIONS-CONTRACT-METADATA-INTEGRITY** (findings 04–05) in [plan](../maintainers/plans/INTEGRATIONS.md#protocol-v2-integrations-remediation-2026-08-18). **Not implemented** by audit persistence.
+
 ## Engineering canon
 
 **Status:** Canonical architecture (domain pair 1:1)  
@@ -632,7 +676,7 @@ cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
 ctx = ToolWiringContext.from_integration_profile(profile)
 ```
 
-Resolution order (slug selection): explicit slug → profile binding → env → configuration error. Instance bindings bypass slug resolution and return the pre-built object directly.
+Resolution order (slug selection): explicit slug → profile binding → env → configuration error. Instance bindings bypass slug resolution and return the pre-built object directly — **target invariant (Protocol v2 audit):** pre-built instances must still satisfy the same category contract and canonical integration identity as catalog-created providers ([Protocol v2 integrations target invariants](#protocol-v2-integrations-target-invariants-2026-08-18)).
 
 #### Lifecycle ownership
 

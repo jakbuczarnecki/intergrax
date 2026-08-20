@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — fifteen completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`) |
+| `scope` | Platform audit — sixteen completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -43,6 +43,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | TOOLS | COMPLETE | `65aaf33a6a6dba9b336162ec547cd677f4edad91` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `c6cc72056c60730516e6228856dbd1c8611c8c46` | [TOOLS.md](TOOLS.md) |
 | SKILLS | COMPLETE | `2df2f07d10aa19c4d62694f21858be501a3d6d18` | FAIL | 0 | 3 | 3 | 0 | COMPLETE | COMPLETE | `1d17272ceb2f486320e7265bfd62ca872961d74b` | [SKILLS.md](SKILLS.md) |
 | CODE_CRAFT | COMPLETE | `f985ad342d0d6db38c9998df67f9cd7bc10bfa46` | FAIL | 2 | 5 | 0 | 0 | COMPLETE | COMPLETE | `a1bb2dc993f9bd6d4964d54e8882ec3507cfabbc` | [CODE_CRAFT.md](CODE_CRAFT.md) |
+| INTEGRATIONS | COMPLETE | `f15813cf5d2ffbd29f11a22daa1906a07e6ce23d` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | — | [INTEGRATIONS.md](INTEGRATIONS.md) |
 
 ## Finding register
 
@@ -142,11 +143,16 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-CODE_CRAFT-05 | CODE_CRAFT | HIGH | VERIFICATION / ISOLATION DEFECT | ACCEPTED | CODECRAFT-VERIFICATION-INTEGRITY | — | `docs/project/architecture/CODE_CRAFT.md` — [Protocol v2 CodeCraft target invariants (2026-08-18)](#protocol-v2-codecraft-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CODE_CRAFT.md` — CODECRAFT-VERIFICATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-CODE_CRAFT-06 | CODE_CRAFT | HIGH | ARCHITECTURE / SECURITY ISOLATION DEFECT | ACCEPTED | CODECRAFT-ISOLATION-INTEGRITY | — | `docs/project/architecture/CODE_CRAFT.md` — [Protocol v2 CodeCraft target invariants (2026-08-18)](#protocol-v2-codecraft-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CODE_CRAFT.md` — CODECRAFT-ISOLATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-CODE_CRAFT-07 | CODE_CRAFT | HIGH | SECURITY / PAPER CONTROL | ACCEPTED | CODECRAFT-ISOLATION-INTEGRITY | — | `docs/project/architecture/CODE_CRAFT.md` — [Protocol v2 CodeCraft target invariants (2026-08-18)](#protocol-v2-codecraft-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CODE_CRAFT.md` — CODECRAFT-ISOLATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-INTEGRATIONS-01 | INTEGRATIONS | HIGH | CONTRACT / AUTHORITY BYPASS | ACCEPTED | INTEGRATIONS-RUNTIME-BINDING-INTEGRITY | — | `docs/project/architecture/INTEGRATIONS.md` — [Protocol v2 integrations target invariants (2026-08-18)](#protocol-v2-integrations-target-invariants-2026-08-18) | `docs/project/maintainers/plans/INTEGRATIONS.md` — INTEGRATIONS-RUNTIME-BINDING-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-INTEGRATIONS-02 | INTEGRATIONS | HIGH | LIFECYCLE / PRODUCTION ROUTING DEFECT | ACCEPTED | INTEGRATIONS-RUNTIME-BINDING-INTEGRITY | — | `docs/project/architecture/INTEGRATIONS.md` — [Protocol v2 integrations target invariants (2026-08-18)](#protocol-v2-integrations-target-invariants-2026-08-18) | `docs/project/maintainers/plans/INTEGRATIONS.md` — INTEGRATIONS-RUNTIME-BINDING-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-INTEGRATIONS-03 | INTEGRATIONS | MEDIUM | CONFIGURATION VALIDATION GAP / FAIL-LATE | ACCEPTED | INTEGRATIONS-RUNTIME-BINDING-INTEGRITY | — | `docs/project/architecture/INTEGRATIONS.md` — [Protocol v2 integrations target invariants (2026-08-18)](#protocol-v2-integrations-target-invariants-2026-08-18) | `docs/project/maintainers/plans/INTEGRATIONS.md` — INTEGRATIONS-RUNTIME-BINDING-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-INTEGRATIONS-04 | INTEGRATIONS | MEDIUM | IMPLEMENTATION DEFECT / METADATA INTEGRITY | ACCEPTED | INTEGRATIONS-CONTRACT-METADATA-INTEGRITY | — | `docs/project/architecture/INTEGRATIONS.md` — [Protocol v2 integrations target invariants (2026-08-18)](#protocol-v2-integrations-target-invariants-2026-08-18) | `docs/project/maintainers/plans/INTEGRATIONS.md` — INTEGRATIONS-CONTRACT-METADATA-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-INTEGRATIONS-05 | INTEGRATIONS | MEDIUM | IDENTITY CONTRACT GAP | ACCEPTED | INTEGRATIONS-CONTRACT-METADATA-INTEGRITY | — | `docs/project/architecture/INTEGRATIONS.md` — [Protocol v2 integrations target invariants (2026-08-18)](#protocol-v2-integrations-target-invariants-2026-08-18) | `docs/project/maintainers/plans/INTEGRATIONS.md` — INTEGRATIONS-CONTRACT-METADATA-INTEGRITY | — | — | operator accepted 2026-08-20 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 15
+**Completed layers:** 16
 
 First layer summary:
 
@@ -254,7 +260,14 @@ Fifteenth layer summary:
 - **Systemic themes:** canonical execution identity binding for craft sessions; HITL approval from Governed Execution not tool input; narrow-only task override lattice; evidence-consuming promotion; same-sandbox verification; isolation anti-downgrade; runtime network egress enforcement
 - **Recommended remediation order:** CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY → CODECRAFT-VERIFICATION-INTEGRITY → CODECRAFT-ISOLATION-INTEGRITY (see layer report)
 
-**Cumulative (completed layers only):** 85 accepted findings — 2 CRITICAL, 56 HIGH, 27 MEDIUM, 0 LOW
+Sixteenth layer summary:
+
+- **Layer:** INTEGRATIONS — **FAIL** at `f15813cf5d2ffbd29f11a22daa1906a07e6ce23d`
+- **Accepted findings:** 5 total — 0 CRITICAL, 2 HIGH, 3 MEDIUM, 0 LOW
+- **Systemic themes:** pre-built instance contract bypass; lifecycle status without runtime qualification; fail-late manifest/catalog admission; catalog metadata round-trip loss; contradictory PlatformIntegrationContract identity
+- **Recommended remediation order:** INTEGRATIONS-RUNTIME-BINDING-INTEGRITY → INTEGRATIONS-CONTRACT-METADATA-INTEGRITY (see layer report)
+
+**Cumulative (completed layers only):** 90 accepted findings — 2 CRITICAL, 58 HIGH, 30 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -315,3 +328,5 @@ Fifteenth layer summary:
 | CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY | AUDIT-20260818-CODE_CRAFT-01, 02, 03 | ACCEPTED / PLANNED | session authority, canonical HITL, override lattice — not implemented in this persistence task |
 | CODECRAFT-VERIFICATION-INTEGRITY | AUDIT-20260818-CODE_CRAFT-04, 05 | ACCEPTED / PLANNED | promotion eligibility/evidence, same-sandbox verification — not implemented in this persistence task |
 | CODECRAFT-ISOLATION-INTEGRITY | AUDIT-20260818-CODE_CRAFT-06, 07 | ACCEPTED / PLANNED | isolation anti-downgrade, network egress enforcement — not implemented in this persistence task |
+| INTEGRATIONS-RUNTIME-BINDING-INTEGRITY | AUDIT-20260818-INTEGRATIONS-01, 02, 03 | ACCEPTED / PLANNED | typed pre-built instances, lifecycle eligibility, startup resolvability — coordinate with INTEGRATIONS-3B — not implemented in this persistence task |
+| INTEGRATIONS-CONTRACT-METADATA-INTEGRITY | AUDIT-20260818-INTEGRATIONS-04, 05 | ACCEPTED / PLANNED | lossless catalog metadata, canonical PlatformIntegrationContract identity — not implemented in this persistence task |
