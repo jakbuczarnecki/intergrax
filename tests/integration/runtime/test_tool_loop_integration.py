@@ -72,7 +72,7 @@ class _FailOut(BaseModel):
 class _FailHandler(ToolHandler[_FailIn, _FailOut]):
     def execute(self, request: ToolExecutionRequest[_FailIn]) -> _FailOut:
         _ = request
-        raise RuntimeError("tool execution failed on purpose for ENG-1 test")
+        raise RuntimeError("x" * 400 + _BEYOND_PREVIEW_MARKER)
 
 
 class _TwoRoundLLM(FakeLLMAdapter):
@@ -194,7 +194,7 @@ class _FailThenRecoverLLM(FakeLLMAdapter):
     def __init__(self) -> None:
         super().__init__(fixed_text="")
         self._round = 0
-        self.second_round_saw_failure = False
+        self.second_round_saw_marker = False
 
     def supports_tools(self) -> bool:
         return True
@@ -215,8 +215,11 @@ class _FailThenRecoverLLM(FakeLLMAdapter):
             )
         tool_messages = [msg for msg in messages if msg.role == "tool"]
         assert len(tool_messages) == 1
-        self.second_round_saw_failure = "RuntimeError" in (tool_messages[0].content or "")
-        return LLMAdapterResponse(content="recovered after failure", tool_calls=())
+        tool_body = tool_messages[0].content or ""
+        self.second_round_saw_marker = _BEYOND_PREVIEW_MARKER in tool_body
+        if not self.second_round_saw_marker:
+            return LLMAdapterResponse(content="missing tail marker", tool_calls=())
+        return LLMAdapterResponse(content=f"confirmed:{_BEYOND_PREVIEW_MARKER}", tool_calls=())
 
 
 def test_model_facing_tool_result_preserves_output_beyond_trace_preview() -> None:
@@ -274,11 +277,15 @@ def test_failed_tool_keeps_bounded_trace_and_model_facing_error() -> None:
 
     trace = result.tool_traces[0]
     tool_messages = [msg for msg in result.appended_messages if msg.role == "tool"]
+    full_error = f"RuntimeError: {'x' * 400 + _BEYOND_PREVIEW_MARKER}"
 
     assert trace.success is False
     assert trace.output_preview is None
     assert trace.error_message is not None
     assert len(trace.error_message) <= _PREVIEW_BOUND
+    assert _BEYOND_PREVIEW_MARKER not in trace.error_message
     assert len(tool_messages) == 1
-    assert tool_messages[0].content == trace.error_message
-    assert llm.second_round_saw_failure is True
+    assert tool_messages[0].content == full_error
+    assert _BEYOND_PREVIEW_MARKER in tool_messages[0].content
+    assert llm.second_round_saw_marker is True
+    assert result.stop_reason == "planner_final_answer"

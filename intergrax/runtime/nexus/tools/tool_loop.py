@@ -12,8 +12,6 @@ from dataclasses import dataclass, replace
 
 from pydantic import BaseModel
 
-from pydantic import BaseModel
-
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
@@ -151,7 +149,7 @@ def _trace_from_result(
     else:
         output_preview = None
         assert result.error is not None
-        error_msg = result.error.error_message
+        error_msg = result.error.error_message[:_TRACE_OUTPUT_PREVIEW_LIMIT]
     return ToolCallTrace(
         tool_name=call.tool_id,
         arguments=call.input.model_dump(),
