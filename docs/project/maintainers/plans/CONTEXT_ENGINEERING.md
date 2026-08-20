@@ -24,6 +24,62 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). CE owns `ContextPackOptimizer`, source-aware context compression, post-compression token recalculation, receipt references in provenance/metadata, and fallback to original fragments on validation failure.
 
+<a id="protocol-v2-context-engineering-remediation-2026-08-18"></a>
+
+## Protocol v2 — Context Engineering remediation (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/CONTEXT_ENGINEERING.md`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-CONTEXT-ENGINEERING-PERSIST.
+
+<a id="ce-policy-source-integrity-2026-08-18"></a>
+
+### CE-POLICY-SOURCE-INTEGRITY — required/mandatory source policy and trusted provenance
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-CONTEXT_ENGINEERING-01`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md), [`AUDIT-20260818-CONTEXT_ENGINEERING-02`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md), [`AUDIT-20260818-CONTEXT_ENGINEERING-03`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)
+
+**Outcome (planning only):**
+
+- Separate structural PRE-COLLECT policy validation from POST-COLLECT required-source enforcement in one policy module — no parallel gates.
+- Mandatory/required context survives every lossy selection stage or causes explicit governed assembly failure — reuse `ContextPlanner` required/protected semantics.
+- Provider identity authorizes emitted `ContextFragmentSource`; provider ID retained in provenance — no duplicate plugin trust machinery.
+
+<a id="ce-extension-runtime-integrity-2026-08-18"></a>
+
+### CE-EXTENSION-RUNTIME-INTEGRITY — registry extension contracts match execution
+
+**Priority:** P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-CONTEXT_ENGINEERING-04`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)
+
+**Outcome (planning only):**
+
+- Registry ranker/allocator/formatter/validator surfaces and `DefaultNexusContextEngine` execution semantics are identical — supported overrides execute with explicit ordering/contracts, or unsupported surfaces are removed from canonical claims.
+- A configured policy/safety validator must never be silently ignored — do not add a second CE engine.
+
+<a id="ce-contract-accounting-integrity-2026-08-18"></a>
+
+### CE-CONTRACT-ACCOUNTING-INTEGRITY — truthful accounting and fail-fast contracts
+
+**Priority:** P1/P2
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-CONTEXT_ENGINEERING-05`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md), [`AUDIT-20260818-CONTEXT_ENGINEERING-06`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)
+
+**Outcome (planning only):**
+
+- `ContextCompileResult.total_tokens` reports actual computed tokens — explicit overflow/failure when required content alone cannot fit; preserve adapter-aware preflight as ultimate window boundary.
+- `ContextAssemblyRequest` and `ContextDecisionSnapshot` fail fast on canonical identity, disjoint required/excluded sources, and bounded non-negative memory-entry limits — reuse existing identity validators where compatible.
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- Historical **Done** rows in this plan remain historical facts — not rewritten as remediation completion.
+- **TOKEN-CE-1B** and **TOKEN-CE-2** remain **Planned** — not marked implemented by this remediation block.
+
+**Recommended remediation order (prioritization, not dependency graph):** CE-POLICY-SOURCE-INTEGRITY → CE-EXTENSION-RUNTIME-INTEGRITY → CE-CONTRACT-ACCOUNTING-INTEGRITY
+
 ---
 
 ## Cursor read scope (token budget)

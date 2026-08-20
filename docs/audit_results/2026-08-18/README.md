@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — eighteen completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`) |
+| `scope` | Platform audit — nineteen completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`, `CONTEXT_ENGINEERING`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20; CONTEXT_ENGINEERING accepted 2026-08-20 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -46,6 +46,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | INTEGRATIONS | COMPLETE | `f15813cf5d2ffbd29f11a22daa1906a07e6ce23d` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `3298f612e0a0d53f5d75e5eda8798ef5f11566c5` | [INTEGRATIONS.md](INTEGRATIONS.md) |
 | RAG | COMPLETE | `81b344411596d4a4187193d97b20f610e21ca3ac` | FAIL | 0 | 3 | 3 | 0 | COMPLETE | COMPLETE | `bbe52a6355799929b27bc97802aa44acef7300c1` | [RAG.md](RAG.md) |
 | MEMORY | COMPLETE | `628e24130de34f291a416cb1cff9397a2b327dec` | FAIL | 0 | 5 | 2 | 0 | COMPLETE | COMPLETE | `e1c3aa3f55dbc7231d1315ae8b8aa40bbd9914fe` | [MEMORY.md](MEMORY.md) |
+| CONTEXT_ENGINEERING | COMPLETE | `86a153dac51529d4dfbf4edd0f684dacb689ae8a` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | — | [CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) |
 
 ## Finding register
 
@@ -163,11 +164,17 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-MEMORY-05 | MEMORY | HIGH | IDENTITY / AUTHORIZATION DEFECT | ACCEPTED | MEMORY-SCOPE-AUTHORITY-INTEGRITY | IDT-FIX-A, IDT-FIX-D | `docs/project/architecture/MEMORY.md` — [Protocol v2 Memory target invariants (2026-08-18)](#protocol-v2-memory-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MEMORY.md` — MEMORY-SCOPE-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20; coordinate IDENTITY_TRUST remediation |
 | AUDIT-20260818-MEMORY-06 | MEMORY | MEDIUM | RETENTION / CONTRACT CONSISTENCY DEFECT | ACCEPTED | MEMORY-READ-MUTATION-CONSISTENCY | — | `docs/project/architecture/MEMORY.md` — [Protocol v2 Memory target invariants (2026-08-18)](#protocol-v2-memory-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MEMORY.md` — MEMORY-READ-MUTATION-CONSISTENCY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-MEMORY-07 | MEMORY | MEDIUM | IMPLEMENTATION DEFECT / FAIL-LATE | ACCEPTED | MEMORY-READ-MUTATION-CONSISTENCY | — | `docs/project/architecture/MEMORY.md` — [Protocol v2 Memory target invariants (2026-08-18)](#protocol-v2-memory-target-invariants-2026-08-18) | `docs/project/maintainers/plans/MEMORY.md` — MEMORY-READ-MUTATION-CONSISTENCY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CONTEXT_ENGINEERING-01 | CONTEXT_ENGINEERING | HIGH | IMPLEMENTATION DEFECT / POLICY CONTRACT | ACCEPTED | CE-POLICY-SOURCE-INTEGRITY | — | `docs/project/architecture/CONTEXT_ENGINEERING.md` — [Protocol v2 Context Engineering target invariants (2026-08-18)](#protocol-v2-context-engineering-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` — CE-POLICY-SOURCE-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CONTEXT_ENGINEERING-02 | CONTEXT_ENGINEERING | HIGH | POLICY / MANDATORY-CONTEXT DEFECT | ACCEPTED | CE-POLICY-SOURCE-INTEGRITY | — | `docs/project/architecture/CONTEXT_ENGINEERING.md` — [Protocol v2 Context Engineering target invariants (2026-08-18)](#protocol-v2-context-engineering-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` — CE-POLICY-SOURCE-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CONTEXT_ENGINEERING-03 | CONTEXT_ENGINEERING | HIGH | SOURCE AUTHORITY / PROVENANCE DEFECT | ACCEPTED | CE-POLICY-SOURCE-INTEGRITY | — | `docs/project/architecture/CONTEXT_ENGINEERING.md` — [Protocol v2 Context Engineering target invariants (2026-08-18)](#protocol-v2-context-engineering-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` — CE-POLICY-SOURCE-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CONTEXT_ENGINEERING-04 | CONTEXT_ENGINEERING | HIGH | ARCHITECTURE / EXTENSIBILITY / POLICY ENFORCEMENT DRIFT | ACCEPTED | CE-EXTENSION-RUNTIME-INTEGRITY | — | `docs/project/architecture/CONTEXT_ENGINEERING.md` — [Protocol v2 Context Engineering target invariants (2026-08-18)](#protocol-v2-context-engineering-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` — CE-EXTENSION-RUNTIME-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CONTEXT_ENGINEERING-05 | CONTEXT_ENGINEERING | MEDIUM | ACCOUNTING / CONTRACT INTEGRITY DEFECT | ACCEPTED | CE-CONTRACT-ACCOUNTING-INTEGRITY | — | `docs/project/architecture/CONTEXT_ENGINEERING.md` — [Protocol v2 Context Engineering target invariants (2026-08-18)](#protocol-v2-context-engineering-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` — CE-CONTRACT-ACCOUNTING-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CONTEXT_ENGINEERING-06 | CONTEXT_ENGINEERING | MEDIUM | CONTRACT VALIDATION GAP | ACCEPTED | CE-CONTRACT-ACCOUNTING-INTEGRITY | — | `docs/project/architecture/CONTEXT_ENGINEERING.md` — [Protocol v2 Context Engineering target invariants (2026-08-18)](#protocol-v2-context-engineering-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CONTEXT_ENGINEERING.md` — CE-CONTRACT-ACCOUNTING-INTEGRITY | — | — | operator accepted 2026-08-20 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 18
+**Completed layers:** 19
 
 First layer summary:
 
@@ -296,7 +303,14 @@ Eighteenth layer summary:
 - **Systemic themes:** LTM RetrievalService scope omission; episodic tenant-bound index per-call override; primary/secondary index lifecycle gap on forget/delete; UserProfile blind overwrite without versioned concurrency; MemoryView scope from independently writable identity; read/list retention asymmetry; update_memory_entry fail-late on unknown entry
 - **Recommended remediation order:** MEMORY-SCOPE-AUTHORITY-INTEGRITY → MEMORY-DURABILITY-LIFECYCLE-INTEGRITY → MEMORY-READ-MUTATION-CONSISTENCY (see layer report)
 
-**Cumulative (completed layers only):** 103 accepted findings — 2 CRITICAL, 66 HIGH, 35 MEDIUM, 0 LOW
+Nineteenth layer summary:
+
+- **Layer:** CONTEXT_ENGINEERING — **FAIL** at `86a153dac51529d4dfbf4edd0f684dacb689ae8a`
+- **Accepted findings:** 6 total — 0 CRITICAL, 4 HIGH, 2 MEDIUM, 0 LOW
+- **Systemic themes:** pre-collect required-source policy unusability; ranker silent mandatory/required omission; unbound provider source authority; registry extension surfaces ignored by shipped engine; false compile-result token accounting; fail-late assembly request/decision snapshot validation
+- **Recommended remediation order:** CE-POLICY-SOURCE-INTEGRITY → CE-EXTENSION-RUNTIME-INTEGRITY → CE-CONTRACT-ACCOUNTING-INTEGRITY (see layer report)
+
+**Cumulative (completed layers only):** 109 accepted findings — 2 CRITICAL, 70 HIGH, 37 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -365,3 +379,6 @@ Eighteenth layer summary:
 | MEMORY-SCOPE-AUTHORITY-INTEGRITY | AUDIT-20260818-MEMORY-01, 02, 05 | ACCEPTED / PLANNED | LTM/episodic/TaskMemory canonical scope authority — coordinate RAG-SCOPE-CONTRACT-INTEGRITY and IDT-FIX-A/D — not implemented in this persistence task |
 | MEMORY-DURABILITY-LIFECYCLE-INTEGRITY | AUDIT-20260818-MEMORY-03, 04 | ACCEPTED / PLANNED | primary/secondary index lifecycle reconciliation and UserProfile optimistic concurrency — not implemented in this persistence task |
 | MEMORY-READ-MUTATION-CONSISTENCY | AUDIT-20260818-MEMORY-06, 07 | ACCEPTED / PLANNED | uniform retention visibility and deterministic update/not-found semantics — not implemented in this persistence task |
+| CE-POLICY-SOURCE-INTEGRITY | AUDIT-20260818-CONTEXT_ENGINEERING-01, 02, 03 | ACCEPTED / PLANNED | pre/post-collect policy separation, mandatory/required survival, provider source authority — not implemented in this persistence task |
+| CE-EXTENSION-RUNTIME-INTEGRITY | AUDIT-20260818-CONTEXT_ENGINEERING-04 | ACCEPTED / PLANNED | registry extension contracts match DefaultNexusContextEngine execution — not implemented in this persistence task |
+| CE-CONTRACT-ACCOUNTING-INTEGRITY | AUDIT-20260818-CONTEXT_ENGINEERING-05, 06 | ACCEPTED / PLANNED | truthful compile token accounting and fail-fast assembly contracts — not implemented in this persistence task |
