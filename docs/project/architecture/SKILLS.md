@@ -17,7 +17,7 @@ Without Skills:
 Skills address this through `SkillManifest`, catalog + runtime registry, `SkillProfile`, `SkillResolver`, transitive `requires_skills`, merge into `AgentContract`, plugin/import paths, and environment consistency checks.
 
 > [!NOTE]
-> **Maturity boundary:** SK-EXP through SK-EXP5 and the first-party catalog are **shipped and gate-tested** (**153** skills · **43** bundles). That proves composition scale on the harness path — **not** universal production qualification, not end-to-end prompt/policy bridge consumption on every host, and not permission to bypass `ToolRuntime` or Governance. See [Current maturity](#current-maturity).
+> **Maturity boundary:** SK-EXP through SK-EXP5 and the first-party catalog are **shipped and gate-tested** (**153** skills · **43** bundles — authoritative gate/register count; plan header drift tracked as [`AUDIT-20260818-SKILLS-06`](../../audit_results/2026-08-18/SKILLS.md)). That proves composition scale on the harness path — **not** universal production qualification, not end-to-end prompt/policy bridge consumption on every host, not permission to bypass `ToolRuntime` or Governance, and not closure of Protocol v2 authority/version/provenance gaps — see [Protocol v2 skills target invariants](#protocol-v2-skills-target-invariants-2026-08-18) and [Current maturity](#current-maturity).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring `SkillProfile`, plugins, and agent skill declarations — after the platform overview in the root README.
 
@@ -188,6 +188,8 @@ ResolvedSkillPack
 | Tool validation | When `tool_registry` provided, every `tool_id` must exist |
 | Unknown skill | `SkillResolutionError` at resolve / validate |
 | Authority | Resolver **composes contracts**; it does not make autonomous policy decisions |
+| Version identity | **Target:** one explicit model — version-pinned resolution **or** logical `skill_id` with runtime/profile owning resolved version. **Current as-built gap:** validation and resolution use `skill_id` only; registry current version may disagree with agent-declared `SkillManifest.version` ([`AUDIT-20260818-SKILLS-02`](../../audit_results/2026-08-18/SKILLS.md)) |
+| Provenance retention | **Target:** canonical `ResolvedSkillPack` snapshot bound to registered agent/runtime revision for audit and risk inspection. **Current as-built gap:** `AgentRegistry.register()` discards pack after `allowed_tools` merge ([`AUDIT-20260818-SKILLS-04`](../../audit_results/2026-08-18/SKILLS.md)) |
 
 ## requires_skills
 
@@ -215,7 +217,7 @@ ToolRuntime
 
 > **A Skill can require a Tool; it cannot bypass ToolRuntime or Governance.**
 
-`extend_tool_profile_for_skills()` may append skill-declared `tool_ids` to the host `ToolProfile` during Tier-3 wiring so resolver validation can succeed — that is **host tool availability configuration**, not autonomous permission expansion beyond host/policy rules.
+**Target invariant:** skill-required `tool_ids` must be ⊆ host `ToolProfile` availability; static environment validation fails with actionable diagnostics when not. **Current as-built gap:** `extend_tool_profile_for_skills()` appends skill-declared `tool_ids` to `ToolProfile.enabled` during Tier-3 wiring — silent host availability expansion ([`AUDIT-20260818-SKILLS-03`](../../audit_results/2026-08-18/SKILLS.md)); coordinate with TOOLS monotonic-authority invariant.
 
 ## Prompt and policy bridges (current as-built)
 
@@ -355,6 +357,21 @@ Evidence maturity: **E3**
 
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 
+### Protocol v2 skills target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`SKILLS`](../../audit_results/2026-08-18/SKILLS.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Prior SK-EXP / SK-BRIDGE **Done** rows remain historical delivery facts — not rewritten. Target state only:
+
+1. **Fail-closed host Skill authority** — production-shaped registration never interprets missing host `SkillRegistry` / `SkillProfile` projection as enable-all; explicit host registry/profile required; any all-catalog laboratory/bootstrap mode must be explicit and named, not an ambient `AgentRegistry` fallback ([`AUDIT-20260818-SKILLS-01`](../../audit_results/2026-08-18/SKILLS.md)).
+2. **Explicit Skill version identity** — choose one model: (A) version-pinned references resolve exact declared version, or (B) `AgentContract` declares logical skill identity and runtime/profile projection explicitly owns resolved version; no ambiguous id-only resolution against registry current version ([`AUDIT-20260818-SKILLS-02`](../../audit_results/2026-08-18/SKILLS.md)).
+3. **Non-expanding ToolProfile authority** — skill-required tools validate against host `ToolProfile` availability; requirements ⊆ availability or fail static validation; no silent append to `ToolProfile.enabled`; coordinate with TOOLS monotonic-authority invariant ([`AUDIT-20260818-SKILLS-03`](../../audit_results/2026-08-18/SKILLS.md)).
+4. **Canonical ResolvedSkillPack provenance** — resolved capability/risk snapshot has one durable or immutable runtime owner for execution/audit; preserve or reference canonical pack — do not duplicate Skill graph across structures ([`AUDIT-20260818-SKILLS-04`](../../audit_results/2026-08-18/SKILLS.md)).
+5. **Fail-fast SkillProfile references** — explicit enabled skill/bundle ids unknown to catalog/registry fail environment validation; no silent ignore ([`AUDIT-20260818-SKILLS-05`](../../audit_results/2026-08-18/SKILLS.md)).
+6. **Single catalog-count source of truth** — current skill/bundle counts derive from one authoritative gate/register; architecture and plan must not publish conflicting current counts ([`AUDIT-20260818-SKILLS-06`](../../audit_results/2026-08-18/SKILLS.md)).
+
+Skill / Tool / Agent / Integration ownership unchanged. Skills remain declarative composition — not a second execution runtime. SK-BRIDGE prompt/policy helpers remain **partial** on universal host consumption.
+
+Remediation: **SKILLS-AUTHORITY-INTEGRITY** (01, 03, 05), **SKILLS-IDENTITY-PROVENANCE** (02, 04), **SKILLS-EVIDENCE-SYNC** (06) in [plan](../maintainers/plans/SKILLS.md). **Not implemented** by audit persistence.
+
 ## Go deeper
 
 | Depth | Route |
@@ -373,7 +390,7 @@ Evidence maturity: **E3**
 ---
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Last updated:** 2026-08-18 — DOC-3M-R1 dynamic-selection candidate semantics; gate-tested **153** skills · **43** bundles; SK-BRIDGE helpers partial  
+**Last updated:** 2026-08-20 — Protocol v2 SKILLS audit target invariants; gate-tested **153** skills · **43** bundles (authoritative register); SK-BRIDGE helpers partial  
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/SKILLS.md`](../maintainers/plans/SKILLS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
@@ -592,7 +609,7 @@ registry.register(
 
 Environment intersection happens later via `ToolProfile` / `ToolAccessPolicy` — not inside the resolver.
 
-If `skill_registry` is omitted at register time, `AgentRegistry` bootstraps all catalog bundles (`register_all_catalog_bundles=True`).
+**Current as-built:** if `skill_registry` is omitted at register time, `AgentRegistry` bootstraps all catalog bundles (`register_all_catalog_bundles=True`) — **target invariant:** fail closed on canonical production path; see [Protocol v2 skills target invariants](#protocol-v2-skills-target-invariants-2026-08-18).
 
 ---
 

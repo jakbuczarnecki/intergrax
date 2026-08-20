@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — thirteen completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`) |
+| `scope` | Platform audit — fourteen completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -41,6 +41,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | ORCHESTRATION | COMPLETE | `a784966681782bc58412af290c2978c1d1f152a3` | FAIL | 0 | 4 | 1 | 0 | COMPLETE | COMPLETE | `b33d5a5b5755ed76038ee10b51b90efbda34ecd7` | [ORCHESTRATION.md](ORCHESTRATION.md) |
 | AGENT_SYSTEM | COMPLETE | `654a7c0e3fe823a43a2620645848248023e1c64e` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `995c34ee5b9ca355e9bf3ec02c425f51d6cedaf4` | [AGENT_SYSTEM.md](AGENT_SYSTEM.md) |
 | TOOLS | COMPLETE | `65aaf33a6a6dba9b336162ec547cd677f4edad91` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `c6cc72056c60730516e6228856dbd1c8611c8c46` | [TOOLS.md](TOOLS.md) |
+| SKILLS | COMPLETE | `2df2f07d10aa19c4d62694f21858be501a3d6d18` | FAIL | 0 | 3 | 3 | 0 | COMPLETE | COMPLETE | — | [SKILLS.md](SKILLS.md) |
 
 ## Finding register
 
@@ -127,11 +128,17 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-TOOLS-04 | TOOLS | HIGH | IDENTITY / IDEMPOTENCY DEFECT | ACCEPTED | TOOLS-SIDE-EFFECT-SAFETY | — | `docs/project/architecture/TOOLS.md` — [Protocol v2 tools target invariants (2026-08-18)](#protocol-v2-tools-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TOOLS.md` — TOOLS-SIDE-EFFECT-SAFETY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-TOOLS-05 | TOOLS | HIGH | SIDE-EFFECT / RETRY ARCHITECTURE DEFECT | ACCEPTED | TOOLS-SIDE-EFFECT-SAFETY | — | `docs/project/architecture/TOOLS.md` — [Protocol v2 tools target invariants (2026-08-18)](#protocol-v2-tools-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TOOLS.md` — TOOLS-SIDE-EFFECT-SAFETY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-TOOLS-06 | TOOLS | MEDIUM | FAILURE / IDEMPOTENCY STATE MODEL GAP | ACCEPTED | TOOLS-SIDE-EFFECT-SAFETY | — | `docs/project/architecture/TOOLS.md` — [Protocol v2 tools target invariants (2026-08-18)](#protocol-v2-tools-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TOOLS.md` — TOOLS-SIDE-EFFECT-SAFETY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-SKILLS-01 | SKILLS | HIGH | AUTHORIZATION / HOST-BOUNDARY DEFECT | ACCEPTED | SKILLS-AUTHORITY-INTEGRITY | — | `docs/project/architecture/SKILLS.md` — [Protocol v2 skills target invariants (2026-08-18)](#protocol-v2-skills-target-invariants-2026-08-18) | `docs/project/maintainers/plans/SKILLS.md` — SKILLS-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-SKILLS-02 | SKILLS | HIGH | CONTRACT / VERSION IDENTITY DEFECT | ACCEPTED | SKILLS-IDENTITY-PROVENANCE | — | `docs/project/architecture/SKILLS.md` — [Protocol v2 skills target invariants (2026-08-18)](#protocol-v2-skills-target-invariants-2026-08-18) | `docs/project/maintainers/plans/SKILLS.md` — SKILLS-IDENTITY-PROVENANCE | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-SKILLS-03 | SKILLS | HIGH | AUTHORIZATION / CAPABILITY EXPANSION DEFECT | ACCEPTED | SKILLS-AUTHORITY-INTEGRITY | — | `docs/project/architecture/SKILLS.md` — [Protocol v2 skills target invariants (2026-08-18)](#protocol-v2-skills-target-invariants-2026-08-18) | `docs/project/maintainers/plans/SKILLS.md` — SKILLS-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20; cross-ref TOOLS-01 monotonic authority |
+| AUDIT-20260818-SKILLS-04 | SKILLS | MEDIUM | PROVENANCE / CONTRACT COMPLETENESS GAP | ACCEPTED | SKILLS-IDENTITY-PROVENANCE | — | `docs/project/architecture/SKILLS.md` — [Protocol v2 skills target invariants (2026-08-18)](#protocol-v2-skills-target-invariants-2026-08-18) | `docs/project/maintainers/plans/SKILLS.md` — SKILLS-IDENTITY-PROVENANCE | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-SKILLS-05 | SKILLS | MEDIUM | CONFIGURATION VALIDATION GAP | ACCEPTED | SKILLS-AUTHORITY-INTEGRITY | — | `docs/project/architecture/SKILLS.md` — [Protocol v2 skills target invariants (2026-08-18)](#protocol-v2-skills-target-invariants-2026-08-18) | `docs/project/maintainers/plans/SKILLS.md` — SKILLS-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-SKILLS-06 | SKILLS | MEDIUM | DOCUMENTATION / EVIDENCE DRIFT | ACCEPTED | SKILLS-EVIDENCE-SYNC | — | `docs/project/architecture/SKILLS.md` — [Protocol v2 skills target invariants (2026-08-18)](#protocol-v2-skills-target-invariants-2026-08-18) | `docs/project/maintainers/plans/SKILLS.md` — SKILLS-EVIDENCE-SYNC | — | — | operator accepted 2026-08-20 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 13
+**Completed layers:** 14
 
 First layer summary:
 
@@ -225,7 +232,14 @@ Thirteenth layer summary:
 - **Systemic themes:** monotonic permission intersection; real timeout boundary vs external cancellation limits; pre-invoke hard budget accounting; canonical idempotency operation identity; side-effect retry authorization; idempotency outcome-state semantics
 - **Recommended remediation order:** TOOLS-GOVERNED-BOUNDARY-INTEGRITY → TOOLS-SIDE-EFFECT-SAFETY (see layer report)
 
-**Cumulative (completed layers only):** 72 accepted findings — 0 CRITICAL, 48 HIGH, 24 MEDIUM, 0 LOW
+Fourteenth layer summary:
+
+- **Layer:** SKILLS — **FAIL** at `2df2f07d10aa19c4d62694f21858be501a3d6d18`
+- **Accepted findings:** 6 total — 0 CRITICAL, 3 HIGH, 3 MEDIUM, 0 LOW
+- **Systemic themes:** fail-closed host Skill authority; explicit Skill version identity; non-expanding ToolProfile authority; canonical ResolvedSkillPack provenance; fail-fast SkillProfile references; catalog-count evidence sync
+- **Recommended remediation order:** SKILLS-AUTHORITY-INTEGRITY → SKILLS-IDENTITY-PROVENANCE → SKILLS-EVIDENCE-SYNC (see layer report)
+
+**Cumulative (completed layers only):** 78 accepted findings — 0 CRITICAL, 51 HIGH, 27 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -280,3 +294,6 @@ Thirteenth layer summary:
 | AGSYS-IDENTITY-PROJECTION | AUDIT-20260818-AGENT_SYSTEM-04 | ACCEPTED / PLANNED | registry bootstrap canonical identity preservation; cross-ref TL-FIX-B — not implemented in this persistence task |
 | TOOLS-GOVERNED-BOUNDARY-INTEGRITY | AUDIT-20260818-TOOLS-01, 02, 03 | ACCEPTED / PLANNED | permission intersection, effective timeout, pre-invoke budget — not implemented in this persistence task |
 | TOOLS-SIDE-EFFECT-SAFETY | AUDIT-20260818-TOOLS-04, 05, 06 | ACCEPTED / PLANNED | idempotency operation identity, retry safety, outcome-state model — not implemented in this persistence task |
+| SKILLS-AUTHORITY-INTEGRITY | AUDIT-20260818-SKILLS-01, 03, 05 | ACCEPTED / PLANNED | fail-closed host Skill authority, non-expanding ToolProfile, fail-fast profile references — not implemented in this persistence task |
+| SKILLS-IDENTITY-PROVENANCE | AUDIT-20260818-SKILLS-02, 04 | ACCEPTED / PLANNED | explicit Skill version identity, canonical ResolvedSkillPack provenance — not implemented in this persistence task |
+| SKILLS-EVIDENCE-SYNC | AUDIT-20260818-SKILLS-06 | ACCEPTED / PLANNED | catalog count single source of truth (docs-owned) — not implemented in this persistence task |
