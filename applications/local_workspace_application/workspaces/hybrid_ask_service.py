@@ -350,6 +350,22 @@ class WorkspaceAskServiceV2:
                 provider_coverage=provider_coverage,
             )
 
+        admissibility = evaluate_execution_admissibility(
+            validated_plan=validated_plan,
+            execution=execution,
+        )
+        if admissibility.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED:
+            return self._finalize_success(
+                initial,
+                configuration=configuration,
+                execution=execution,
+                answer=None,
+                citations=[],
+                status=AskRunStatus.INSUFFICIENT_EVIDENCE,
+                provider_coverage=provider_coverage,
+                evidence_admissibility=admissibility,
+            )
+
         if (
             execution.error_code is not None
             and execution.error_code not in _GOVERNANCE_LIVE_EVIDENCE_UNAVAILABLE_CODES
@@ -366,21 +382,6 @@ class WorkspaceAskServiceV2:
             include_evidence = getattr(provider_expansion, "include_evidence", None)
             if callable(include_evidence):
                 evidence = _validate_provider_evidence(include_evidence(evidence))
-        admissibility = evaluate_execution_admissibility(
-            validated_plan=validated_plan,
-            execution=execution,
-        )
-        if admissibility.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED:
-            return self._finalize_success(
-                initial,
-                configuration=configuration,
-                execution=execution,
-                answer=None,
-                citations=[],
-                status=AskRunStatus.INSUFFICIENT_EVIDENCE,
-                provider_coverage=provider_coverage,
-                evidence_admissibility=admissibility,
-            )
         try:
             assembler = HybridAskAnswerAssemblerV2(self.llm_adapter)
             assembly = assembler.assemble(question=command.question, evidence=evidence)

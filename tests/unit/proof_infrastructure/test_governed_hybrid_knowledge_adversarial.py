@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import timedelta
 from hashlib import sha256
 
@@ -316,20 +317,75 @@ async def test_attack_wrong_workspace_cannot_reuse_orion_binding(
     assert harness.llm.calls == llm_before
 
 
+async def _assert_provider_failure_finalizes_canonically(
+    harness: GovernedHybridKnowledgeHarness,
+    *,
+    run_id: str,
+    command: WorkspaceAskCommandV2 | None = None,
+    setup: Callable[[], None] | None = None,
+) -> None:
+    if setup is not None:
+        setup()
+    run, http_calls, llm_calls = await _run_ask(
+        harness,
+        run_id=run_id,
+        command=command,
+    )
+    live_present = any(
+        isinstance(item, PersistedLiveEvidenceProvenanceV2)
+        for item in run.persisted_evidence
+    )
+    assert http_calls == 1
+    assert llm_calls == 0
+    assert run.answer is None
+    assert not live_present
+    assert run.status is AskRunStatus.INSUFFICIENT_EVIDENCE
+    assert run.evidence_admissibility is not None
+    assert (
+        run.evidence_admissibility.overall_status
+        is EvidenceAdmissibilityStatusV1.UNSATISFIED
+    )
+    live_evaluations = [
+        item
+        for item in run.evidence_admissibility.requirement_evaluations
+        if item.requirement_id == "provider:orion:live-status"
+    ]
+    assert len(live_evaluations) == 1
+    assert (
+        live_evaluations[0].reason_code
+        is RequirementAdmissibilityReasonCodeV1.NO_MATCHING_EVIDENCE
+    )
+    reloaded = harness.service.get_run(tenant_id=PROOF_TENANT_ID, run_id=run_id)
+    assert reloaded.status is AskRunStatus.INSUFFICIENT_EVIDENCE
+    assert reloaded.evidence_admissibility == run.evidence_admissibility
+
+
 @pytest.mark.asyncio
 async def test_attack_malformed_provider_payload_cannot_satisfy_obligation(
     project_status_server,
 ) -> None:
     harness = await build_harness(server=project_status_server)
-    _set_read_behavior(project_status_server, ProjectStatusReadBehaviorV1.MALFORMED_JSON)
-    harness.reset_http_counter()
-    llm_before = harness.llm.calls
-    with pytest.raises(ValidationError, match="finalized_run_missing_admissibility"):
-        await harness.service.ask(
-            harness.build_command(run_id="attack-f-malformed-json")
-        )
-    assert harness.http_read_count() == 1
-    assert harness.llm.calls == llm_before
+    await _assert_provider_failure_finalizes_canonically(
+        harness,
+        run_id="attack-f-malformed-json",
+        setup=lambda: _set_read_behavior(
+            project_status_server, ProjectStatusReadBehaviorV1.MALFORMED_JSON
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_attack_invalid_schema_provider_payload_cannot_satisfy_obligation(
+    project_status_server,
+) -> None:
+    harness = await build_harness(server=project_status_server)
+    await _assert_provider_failure_finalizes_canonically(
+        harness,
+        run_id="attack-f-invalid-schema",
+        setup=lambda: _set_read_behavior(
+            project_status_server, ProjectStatusReadBehaviorV1.INVALID_SCHEMA
+        ),
+    )
 
 
 @pytest.mark.asyncio
@@ -344,12 +400,11 @@ async def test_attack_provider_404_cannot_synthesize_answer(
             )
         }
     )
-    harness.reset_http_counter()
-    llm_before = harness.llm.calls
-    with pytest.raises(ValidationError, match="finalized_run_missing_admissibility"):
-        await harness.service.ask(command)
-    assert harness.http_read_count() == 1
-    assert harness.llm.calls == llm_before
+    await _assert_provider_failure_finalizes_canonically(
+        harness,
+        run_id="attack-g-404",
+        command=command,
+    )
 
 
 @pytest.mark.asyncio
@@ -357,13 +412,13 @@ async def test_attack_provider_5xx_cannot_synthesize_answer(
     project_status_server,
 ) -> None:
     harness = await build_harness(server=project_status_server)
-    _set_read_behavior(project_status_server, ProjectStatusReadBehaviorV1.HTTP_503)
-    harness.reset_http_counter()
-    llm_before = harness.llm.calls
-    with pytest.raises(ValidationError, match="finalized_run_missing_admissibility"):
-        await harness.service.ask(harness.build_command(run_id="attack-g-5xx"))
-    assert harness.http_read_count() == 1
-    assert harness.llm.calls == llm_before
+    await _assert_provider_failure_finalizes_canonically(
+        harness,
+        run_id="attack-g-5xx",
+        setup=lambda: _set_read_behavior(
+            project_status_server, ProjectStatusReadBehaviorV1.HTTP_503
+        ),
+    )
 
 
 def test_attack_caller_cannot_downgrade_required_live_evidence() -> None:

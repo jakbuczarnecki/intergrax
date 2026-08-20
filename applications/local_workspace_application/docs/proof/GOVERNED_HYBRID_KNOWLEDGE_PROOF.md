@@ -280,8 +280,8 @@ flowchart TD
 | C — wrong connection/provider | plan validation reject | 0 | 0 | PASS |
 | D — wrong tenant | workspace scope reject | 0 | 0 | PASS |
 | E — wrong workspace | workspace scope reject | 0 | 0 | PASS |
-| F — malformed live payload | provider contract reject | 1 | 0 | PASS |
-| G — 404 / 5xx | provider failure; no synthesis | 1 | 0 | PASS |
+| F — malformed / invalid-schema live payload | provider called; admissibility UNSATISFIED | 1 | 0 | PASS |
+| G — 404 / 5xx | provider called; admissibility UNSATISFIED | 1 | 0 | PASS |
 | H — caller downgrade | typed contract reject | 0 | 0 | PASS |
 | I — stale plan | runtime revalidation deny | 0 | 0 | PASS |
 | J — connection disabled | connection authority deny | 0 | 0 | PASS |
@@ -292,3 +292,5 @@ flowchart TD
 | O — duplicate/replay | NOT REACHABLE BY CONTRACT | 0 | 0 | PASS |
 
 Tests: `tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_adversarial.py`
+
+**Governance denial vs provider failure:** runtime authority or plan validation can stop execution before any live HTTP call (`HTTP = 0`). Provider failure occurs after the provider is authorized and called (`HTTP = 1`) but does not yield valid live evidence satisfying required obligations. In both cases synthesis is blocked (`LLM = 0`, `answer = None`), but provider failures finalize into a valid typed `INSUFFICIENT_EVIDENCE` run with `evidence_admissibility = UNSATISFIED` rather than an accidental validation error.
