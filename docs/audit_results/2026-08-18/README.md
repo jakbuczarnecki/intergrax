@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — twenty-three completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`, `CONTEXT_ENGINEERING`, `UNIFIED_CONTEXT_LIFECYCLE`, `MODALITY`, `OBSERVABILITY_EVIDENCE`, `CRITIC_VERIFICATION`) |
+| `scope` | Platform audit — twenty-four completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`, `CONTEXT_ENGINEERING`, `UNIFIED_CONTEXT_LIFECYCLE`, `MODALITY`, `OBSERVABILITY_EVIDENCE`, `CRITIC_VERIFICATION`, `ADAPTIVE_HARNESS_INTELLIGENCE`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20; CONTEXT_ENGINEERING accepted 2026-08-20; UNIFIED_CONTEXT_LIFECYCLE accepted 2026-08-20; MODALITY accepted 2026-08-20; OBSERVABILITY_EVIDENCE accepted 2026-08-20; CRITIC_VERIFICATION accepted 2026-08-20 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20; CONTEXT_ENGINEERING accepted 2026-08-20; UNIFIED_CONTEXT_LIFECYCLE accepted 2026-08-20; MODALITY accepted 2026-08-20; OBSERVABILITY_EVIDENCE accepted 2026-08-20; CRITIC_VERIFICATION accepted 2026-08-20; ADAPTIVE_HARNESS_INTELLIGENCE accepted 2026-08-20 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -51,6 +51,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | MODALITY | COMPLETE | `65e2c08f11be1db78f247380bafa4ac3d052a9f7` | FAIL | 1 | 4 | 0 | 0 | COMPLETE | COMPLETE | `e23721e809e4aa13cf40c650e9b97e3ab731c057` | [MODALITY.md](MODALITY.md) |
 | OBSERVABILITY_EVIDENCE | COMPLETE | `f21a85e88a6204a7fc83f0a4c091bc69c549aaf9` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `d6c71def219a23f4a741fad73493416a66ed1adb` | [OBSERVABILITY_EVIDENCE.md](OBSERVABILITY_EVIDENCE.md) |
 | CRITIC_VERIFICATION | COMPLETE | `ee3dada06e3018434e5a0cca0cd8553edd5615b3` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `b3cf9846ae97e971d5d35efe4d28ba93d1b34a47` | [CRITIC_VERIFICATION.md](CRITIC_VERIFICATION.md) |
+| ADAPTIVE_HARNESS_INTELLIGENCE | COMPLETE | `173ec35c50679a352213b9412da46cdf5784f7df` | FAIL | 2 | 4 | 0 | 0 | COMPLETE | COMPLETE | — | [ADAPTIVE_HARNESS_INTELLIGENCE.md](ADAPTIVE_HARNESS_INTELLIGENCE.md) |
 
 ## Finding register
 
@@ -196,11 +197,17 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-CRITIC_VERIFICATION-04 | CRITIC_VERIFICATION | HIGH | TENANT IDENTITY / EVALUATION ISOLATION | ACCEPTED | CRITIC-EXECUTION-IDENTITY-INTEGRITY | IDT-FIX-A, OBS-JOURNAL-IDENTITY-INTEGRITY | `docs/project/architecture/CRITIC_VERIFICATION.md` — [Protocol v2 Critic verification target invariants (2026-08-18)](#protocol-v2-critic-verification-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — CRITIC-EXECUTION-IDENTITY-INTEGRITY | — | — | operator accepted 2026-08-20; coordinate IDENTITY_TRUST and OBSERVABILITY evidence identity remediation |
 | AUDIT-20260818-CRITIC_VERIFICATION-05 | CRITIC_VERIFICATION | MEDIUM | CONTRACT INTEGRITY | ACCEPTED | CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY | — | `docs/project/architecture/CRITIC_VERIFICATION.md` — [Protocol v2 Critic verification target invariants (2026-08-18)](#protocol-v2-critic-verification-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-CRITIC_VERIFICATION-06 | CRITIC_VERIFICATION | MEDIUM | RESOURCE BOUND / STATE CONTRACT | ACCEPTED | CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY | — | `docs/project/architecture/CRITIC_VERIFICATION.md` — [Protocol v2 Critic verification target invariants (2026-08-18)](#protocol-v2-critic-verification-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-01 | ADAPTIVE_HARNESS_INTELLIGENCE | CRITICAL | GOVERNANCE / CONFIGURATION MUTATION BYPASS | ACCEPTED | AHI-PROMOTION-AUTHORITY-INTEGRITY | — | `docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — [Protocol v2 Adaptive Harness Intelligence target invariants (2026-08-18)](#protocol-v2-adaptive-harness-intelligence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` — AHI-PROMOTION-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-02 | ADAPTIVE_HARNESS_INTELLIGENCE | CRITICAL | TENANT ISOLATION / CROSS-TENANT CONFIGURATION MUTATION | ACCEPTED | AHI-PROMOTION-AUTHORITY-INTEGRITY | — | `docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — [Protocol v2 Adaptive Harness Intelligence target invariants (2026-08-18)](#protocol-v2-adaptive-harness-intelligence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` — AHI-PROMOTION-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-03 | ADAPTIVE_HARNESS_INTELLIGENCE | HIGH | HUMAN APPROVAL / FAIL-OPEN | ACCEPTED | AHI-PROMOTION-AUTHORITY-INTEGRITY | PG-FIX-C, IDT-FIX-C | `docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — [Protocol v2 Adaptive Harness Intelligence target invariants (2026-08-18)](#protocol-v2-adaptive-harness-intelligence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` — AHI-PROMOTION-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20; cross-link Governance / IDENTITY_TRUST |
+| AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-04 | ADAPTIVE_HARNESS_INTELLIGENCE | HIGH | EVIDENCE QUALIFICATION / FAIL-OPEN GOVERNANCE | ACCEPTED | AHI-EVIDENCE-QUALIFICATION-INTEGRITY | — | `docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — [Protocol v2 Adaptive Harness Intelligence target invariants (2026-08-18)](#protocol-v2-adaptive-harness-intelligence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` — AHI-EVIDENCE-QUALIFICATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-05 | ADAPTIVE_HARNESS_INTELLIGENCE | HIGH | CONSISTENCY / PARTIAL COMMIT DEFECT | ACCEPTED | AHI-ACTIVATION-CONSISTENCY-INTEGRITY | — | `docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — [Protocol v2 Adaptive Harness Intelligence target invariants (2026-08-18)](#protocol-v2-adaptive-harness-intelligence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` — AHI-ACTIVATION-CONSISTENCY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-06 | ADAPTIVE_HARNESS_INTELLIGENCE | HIGH | CONCURRENCY / ACTIVE CONFIGURATION RACE | ACCEPTED | AHI-ACTIVATION-CONSISTENCY-INTEGRITY | UCL-REVISION-GENESIS-INTEGRITY | `docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — [Protocol v2 Adaptive Harness Intelligence target invariants (2026-08-18)](#protocol-v2-adaptive-harness-intelligence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` — AHI-ACTIVATION-CONSISTENCY-INTEGRITY | — | — | operator accepted 2026-08-20; reuse platform CAS/revision patterns |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 23
+**Completed layers:** 24
 
 First layer summary:
 
@@ -364,7 +371,14 @@ Twenty-third layer summary:
 - **Systemic themes:** rubric reference without resolved criteria; unproven producer/critic independence; judge prompt injection surface; tenant identity in optional context with default fallback; contradictory CriticVerdict construction; evaluator-loop budget expansion via malformed state
 - **Recommended remediation order:** CRITIC-SEMANTIC-AUTHORITY-INTEGRITY → CRITIC-EXECUTION-IDENTITY-INTEGRITY → CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY (see layer report)
 
-**Cumulative (completed layers only):** 131 accepted findings — 3 CRITICAL, 87 HIGH, 41 MEDIUM, 0 LOW
+Twenty-fourth layer summary:
+
+- **Layer:** ADAPTIVE_HARNESS_INTELLIGENCE — **FAIL** at `173ec35c50679a352213b9412da46cdf5784f7df`
+- **Accepted findings:** 6 total — 2 CRITICAL, 4 HIGH, 0 MEDIUM, 0 LOW
+- **Systemic themes:** promotion authority binding; tenant/scope ownership on lifecycle mutations; human approval fail-closed; action/stage-aware evidence qualification; recoverable activation consistency; CAS-fenced active pointer swap
+- **Recommended remediation order:** AHI-PROMOTION-AUTHORITY-INTEGRITY → AHI-EVIDENCE-QUALIFICATION-INTEGRITY → AHI-ACTIVATION-CONSISTENCY-INTEGRITY (see layer report)
+
+**Cumulative (completed layers only):** 137 accepted findings — 5 CRITICAL, 91 HIGH, 41 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -448,3 +462,6 @@ Twenty-third layer summary:
 | CRITIC-SEMANTIC-AUTHORITY-INTEGRITY | AUDIT-20260818-CRITIC_VERIFICATION-01, 02, 03 | ACCEPTED / PLANNED | rubric authority, judge independence, adversarial semantic verification — not implemented in this persistence task |
 | CRITIC-EXECUTION-IDENTITY-INTEGRITY | AUDIT-20260818-CRITIC_VERIFICATION-04 | ACCEPTED / PLANNED | canonical tenant/execution identity for critic evidence — coordinate IDT-FIX-A and OBS-JOURNAL-IDENTITY-INTEGRITY — not implemented in this persistence task |
 | CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY | AUDIT-20260818-CRITIC_VERIFICATION-05, 06 | ACCEPTED / PLANNED | verdict coherence and evaluator-loop boundedness — not implemented in this persistence task |
+| AHI-PROMOTION-AUTHORITY-INTEGRITY | AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-01, 02, 03 | ACCEPTED / PLANNED | scope-bound promotion decision binding proposal, gates, approval, tenant, exact version — cross-link Governance/IDENTITY_TRUST — not implemented in this persistence task |
+| AHI-EVIDENCE-QUALIFICATION-INTEGRITY | AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-04 | ACCEPTED / PLANNED | action/stage-aware gate completeness; missing mandatory production evidence never silently passes — not implemented in this persistence task |
+| AHI-ACTIVATION-CONSISTENCY-INTEGRITY | AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-05, 06 | ACCEPTED / PLANNED | recoverable transactional activation semantics and CAS-fenced active pointer swap — reuse platform CAS/revision patterns — not implemented in this persistence task |
