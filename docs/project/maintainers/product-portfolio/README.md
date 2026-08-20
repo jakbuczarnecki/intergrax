@@ -64,6 +64,7 @@ Truth flows from accepted product/proof evidence → Portfolio Control → appro
 | Operational control artifacts | **Created** (MP-12) — see source-of-truth map below |
 | Product bootstrap contract | **Defined** (MP-14) — [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md) |
 | Product control cards | **Created** (MP-15) — see control-card table below |
+| Audit engine integration | **Defined** (MP-16) — [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) |
 | Product architectures for the four new applications | **Not yet designed** |
 | New product application scaffolding | **Not started** |
 | Cross-product reuse demonstration | **Not demonstrated** |
@@ -82,6 +83,7 @@ Truth flows from accepted product/proof evidence → Portfolio Control → appro
 | What product pressure did to Intergrax | [PLATFORM_IMPACT_LEDGER.md](PLATFORM_IMPACT_LEDGER.md) |
 | Why portfolio/program direction changed | [DECISION_LOG.md](DECISION_LOG.md) |
 | Per-product reuse methodology | [PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_PROOF.md) |
+| How Portfolio Control gates use the audit engine | [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) |
 | Product-first development principle | [PRODUCT_FIRST_MVP.md](../plans/PRODUCT_FIRST_MVP.md) |
 | LKW Portfolio Control Card | [products/LKW.md](products/LKW.md) |
 | LKW architecture | [LKW ARCHITECTURE.md](../../../../applications/local_workspace_application/docs/ARCHITECTURE.md) |
@@ -126,13 +128,14 @@ Control cards index portfolio state; architecture and roadmap remain product-own
 
 Later program tasks (see [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) for current next step):
 
-- MP-16 Review / Audit Workspace
+- ~~MP-16 Multi-Product Audit Integration~~ — **Completed** — [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md)
 - MP-17 Portfolio Control Operating Manual
 - MP-18 Product Session Operating Manual
 - MP-19 Product-Specific Session Briefs
 - MP-20 Cross-Session Coordination Rules
 - MP-21 Workspace Consistency Audit
 - MP-22 Session Launch Pack
-- checkpoint reviews (`reviews/*`)
+
+Portfolio Control uses the canonical `docs/audit_results/` engine for actual audits. It does not create a competing audit workspace (no `reviews/*` audit system).
 
 Detailed cross-session handoffs remain MP-20; this index does not specify them.
