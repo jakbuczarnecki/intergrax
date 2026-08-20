@@ -376,14 +376,28 @@ Accepted Protocol v2 audit layer [`STRATEGIC_HARNESS_MODEL`](../../audit_results
 5. **Product-neutral core transport** — product/application vocabulary (e.g. domain-specific summary keys) must not live in core execution result transport ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-07`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
 6. **Maturity honesty** — historical ACP/AUDIT-IDEAL **Done** rows remain historical; **current** maturity must acknowledge unresolved accepted Protocol v2 findings until independently verified closed ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
 
+<a id="protocol-v2-agent-system-target-invariants-2026-08-18"></a>
+
+## Protocol v2 agent system target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`AGENT_SYSTEM`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence and lifecycle: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — not bug history.
+
+1. **Positive production eligibility** — production routing must fail closed; `production_eligible` must be positively established before an agent may participate in production routing; lifecycle state and operational metadata are additional gates, not substitutes ([`AUDIT-20260818-AGENT_SYSTEM-01`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+2. **Immutable registered contract truth** — registry execution truth must use immutable validated contract snapshots or an explicit versioned/validated transition mechanism; no ambient post-registration mutation of canonical routing/security state ([`AUDIT-20260818-AGENT_SYSTEM-02`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+3. **Canonical tool-permission resolution** — one canonical agent tool-permission declaration/resolution path via `skills` / `extra_tools` → `resolve_contract_tools`; authors must not bypass `SkillManifest` / `ToolContract` resolution by directly injecting resolved `allowed_tools` unless architecture explicitly defines a separate typed trusted binding surface ([`AUDIT-20260818-AGENT_SYSTEM-03`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+4. **Fail-fast contract schema** — canonical `AgentContract` must reject unknown fields (`extra="forbid"`); critical production/capability/permission/lifecycle metadata cannot silently disappear because of spelling or schema drift ([`AUDIT-20260818-AGENT_SYSTEM-05`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+5. **Operational metadata parity** — documented certification/lifecycle contract and actual assembly/routing enforcement must agree on required owner/on-call fields; if on-call is mandatory for production certification, enforce it; otherwise narrow the plan claim through an explicit architectural decision — do not silently weaken the target during audit persistence ([`AUDIT-20260818-AGENT_SYSTEM-06`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+
+Remediation tracked as **AGSYS-CONTRACT-INTEGRITY** in [plan](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md). Registry identity projection (**AGSYS-IDENTITY-PROJECTION**) owned by [Agent Distribution](AGENT_DISTRIBUTION.md). **Not implemented** by audit persistence.
+
 ## Current maturity
 
-Architecture maturity: **A4** *(target)* — **current invariant closure reopened** by Protocol v2 [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)
+Architecture maturity: **A4** *(target)* — **current invariant closure reopened** by Protocol v2 [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) and [`AGENT_SYSTEM`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)
 Implementation maturity: **I4** *(target)* — same reopening; prior ACP delivery remains historical
 Production readiness: **P2**  
 Evidence maturity: **E3**
 
-- **A4 (target)** — Normative contract, author/runtime ownership split, assembly model, registry/capability architecture, adjacent-domain boundaries (Nexus, UER, Tools, Memory, Reasoning, Distribution, Tier-3); AUDIT-IDEAL §12–§20 **Done** historically ([plan](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)). **Current:** accepted Protocol v2 findings `AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`…`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10` block architecture-complete claims until remediated and re-verified.
+- **A4 (target)** — Normative contract, author/runtime ownership split, assembly model, registry/capability architecture, adjacent-domain boundaries (Nexus, UER, Tools, Memory, Reasoning, Distribution, Tier-3); AUDIT-IDEAL §12–§20 **Done** historically ([plan](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)). **Current:** accepted Protocol v2 findings `AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`…`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10` and `AUDIT-20260818-AGENT_SYSTEM-01`…`AUDIT-20260818-AGENT_SYSTEM-06` block architecture-complete claims until remediated and re-verified.
 - **I4 (target)** — ACP + ACP-CLOSE + ACP-FINISH **Done** historically: `run()` / `on_next_step`, HarnessKernel path, fleet migration, registry snapshot, capability negotiation, prompt governance, lifecycle gates, production-gate implementation. Not I5 — uneven per-agent certification and host adoption; Protocol v2 execution-boundary and typing gaps remain open.
 - **P2** — Platform-ready gates and harness host depth (**ACP-CLOSE-PROD-* Done** historically); **no** universal product production handoff or per-customer operational package — `production_mode` ≠ **P4**; production host/profile wiring must become structural ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
 - **E3** — Unit/gate suite (`check_agent_acp_close_ci.py`, contract/author surface, registry, capability graph, lifecycle metadata), integration paths (Nexus/UAEP execution, cross-host reuse certification). **No dedicated public ACP proof route** in [`PROOFS.md`](../proofs/PROOFS.md) — not E4/E5.

@@ -58,6 +58,22 @@
 - If parallel work already fixed a finding, do not duplicate — independently verify before lifecycle advancement.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** only after campaign/remediation rollup confirms closure ([`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md)).
 
+### Protocol v2 remediation — AGENT_SYSTEM (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/AGENT_SYSTEM.md`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-AGENT-SYSTEM-PERSIST.
+
+| Block | Status | Findings | Scope |
+|-------|--------|----------|-------|
+| **AGSYS-CONTRACT-INTEGRITY** | ACCEPTED / PLANNED | [`AUDIT-20260818-AGENT_SYSTEM-01`](../../audit_results/2026-08-18/AGENT_SYSTEM.md), [`AUDIT-20260818-AGENT_SYSTEM-02`](../../audit_results/2026-08-18/AGENT_SYSTEM.md), [`AUDIT-20260818-AGENT_SYSTEM-03`](../../audit_results/2026-08-18/AGENT_SYSTEM.md), [`AUDIT-20260818-AGENT_SYSTEM-05`](../../audit_results/2026-08-18/AGENT_SYSTEM.md), [`AUDIT-20260818-AGENT_SYSTEM-06`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) | Positive `production_eligible` gate; immutable/versioned registered contract; canonical `allowed_tools` resolution; `extra="forbid"` on `AgentContract`; on-call enforcement vs claim parity (explicit ADR if narrowing) |
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Identity projection finding 04 owned by **AGSYS-IDENTITY-PROJECTION** in [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) — cross-reference registry bootstrap surface here; do not duplicate.
+- If parallel work already fixed a finding, do not duplicate — independently verify before lifecycle advancement.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+
 ---
 
 ## Phase TOKEN-ACP — Optional token optimization agent hints (Deferred)
