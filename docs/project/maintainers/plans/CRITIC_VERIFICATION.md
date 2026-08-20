@@ -90,3 +90,50 @@ Foreign **Platform / ORCH / FLOW / FAUDIT** registers were removed from this hub
 | CVL-BACKLOG-06 | P4 | FLOW-8 product reference host with critic demo | §6.3 deferred |
 
 ---
+
+## Protocol v2 remediation — Critic verification audit (2026-08-18)
+
+**Source:** Protocol v2 audit [`CRITIC_VERIFICATION`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md) — **FAIL**, 6 ACCEPTED findings (2026-08-20). Historical CRIT-V / CVL-LC / AUDIT-IDEAL **Done** rows above are **not** reopened.
+
+<a id="critic-semantic-authority-integrity-2026-08-18"></a>
+
+### CRITIC-SEMANTIC-AUTHORITY-INTEGRITY — rubric authority, judge independence, adversarial semantic verification
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-CRITIC_VERIFICATION-01`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md), [`AUDIT-20260818-CRITIC_VERIFICATION-02`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md), [`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)
+
+**Outcome (planning only):**
+
+- Named rubric refs resolve to actual versioned criteria with provenance evidence before L1; unresolvable configured rubric fails closed — reuse existing prompt/rubric registry authority; no second domain rule engine.
+- Independent verification profiles prove producer/critic separation at runtime or explicitly label self-judge non-independent modes — no vendor hard-coding.
+- Judge construction structurally isolates trusted rubric/instructions from untrusted candidate output; adversarial verification tests required; high-assurance profiles compose deterministic/authoritative evidence — no second LLM adapter path.
+
+<a id="critic-execution-identity-integrity-2026-08-18"></a>
+
+### CRITIC-EXECUTION-IDENTITY-INTEGRITY — canonical tenant/execution identity for critic evidence
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-CRITIC_VERIFICATION-04`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)
+
+**Outcome (planning only):**
+
+- Runtime critic reads/evidence bound to canonical tenant/task/run/attempt identity — not optional context maps or `"default"` fallbacks.
+- Missing tenant authority for tenant-scoped trajectory read fails closed.
+- Cross-link [`IDENTITY_TRUST`](IDENTITY_TRUST.md) (`IDT-FIX-A`, `IDT-FIX-D`) and [`OBSERVABILITY`](OBSERVABILITY.md) (`OBS-JOURNAL-IDENTITY-INTEGRITY`) identity remediation where applicable.
+
+<a id="critic-contract-boundedness-integrity-2026-08-18"></a>
+
+### CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY — verdict coherence and evaluator-loop boundedness
+
+**Priority:** P1/P2
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-CRITIC_VERIFICATION-05`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md), [`AUDIT-20260818-CRITIC_VERIFICATION-06`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)
+
+**Outcome (planning only):**
+
+- `CriticVerdict` enforces constructional consistency across pass/layer/action/failure fields — derived state or strict validators.
+- Evaluator-loop state validates non-negative iteration, worker identity consistency, exhausted semantics, and resume/reconstruction that cannot expand budget.
+
+---

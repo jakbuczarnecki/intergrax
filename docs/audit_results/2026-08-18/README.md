@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — twenty-two completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`, `CONTEXT_ENGINEERING`, `UNIFIED_CONTEXT_LIFECYCLE`, `MODALITY`, `OBSERVABILITY_EVIDENCE`) |
+| `scope` | Platform audit — twenty-three completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`, `CONTEXT_ENGINEERING`, `UNIFIED_CONTEXT_LIFECYCLE`, `MODALITY`, `OBSERVABILITY_EVIDENCE`, `CRITIC_VERIFICATION`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20; CONTEXT_ENGINEERING accepted 2026-08-20; UNIFIED_CONTEXT_LIFECYCLE accepted 2026-08-20; MODALITY accepted 2026-08-20; OBSERVABILITY_EVIDENCE accepted 2026-08-20 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20; CONTEXT_ENGINEERING accepted 2026-08-20; UNIFIED_CONTEXT_LIFECYCLE accepted 2026-08-20; MODALITY accepted 2026-08-20; OBSERVABILITY_EVIDENCE accepted 2026-08-20; CRITIC_VERIFICATION accepted 2026-08-20 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -50,6 +50,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | UNIFIED_CONTEXT_LIFECYCLE | COMPLETE | `0f6e2d7fe96498346d8ddcc05fe08caa68c00523` | FAIL | 0 | 5 | 0 | 0 | COMPLETE | COMPLETE | `a69129927c80a8ec61d6eec894c63fbb93c6e67b` | [UNIFIED_CONTEXT_LIFECYCLE.md](UNIFIED_CONTEXT_LIFECYCLE.md) |
 | MODALITY | COMPLETE | `65e2c08f11be1db78f247380bafa4ac3d052a9f7` | FAIL | 1 | 4 | 0 | 0 | COMPLETE | COMPLETE | `e23721e809e4aa13cf40c650e9b97e3ab731c057` | [MODALITY.md](MODALITY.md) |
 | OBSERVABILITY_EVIDENCE | COMPLETE | `f21a85e88a6204a7fc83f0a4c091bc69c549aaf9` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `d6c71def219a23f4a741fad73493416a66ed1adb` | [OBSERVABILITY_EVIDENCE.md](OBSERVABILITY_EVIDENCE.md) |
+| CRITIC_VERIFICATION | COMPLETE | `ee3dada06e3018434e5a0cca0cd8553edd5615b3` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | — | [CRITIC_VERIFICATION.md](CRITIC_VERIFICATION.md) |
 
 ## Finding register
 
@@ -189,11 +190,17 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-OBSERVABILITY_EVIDENCE-04 | OBSERVABILITY_EVIDENCE | HIGH | EVIDENCE COMPLETENESS / AUDIT INTEGRITY | ACCEPTED | OBS-JOURNAL-IDENTITY-INTEGRITY | — | `docs/project/architecture/OBSERVABILITY.md` — [Protocol v2 Observability evidence target invariants (2026-08-18)](#protocol-v2-observability-evidence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/OBSERVABILITY.md` — OBS-JOURNAL-IDENTITY-INTEGRITY | — | — | operator accepted 2026-08-20; reuse TRACE-ASOF positioned completeness |
 | AUDIT-20260818-OBSERVABILITY_EVIDENCE-05 | OBSERVABILITY_EVIDENCE | MEDIUM | TENANT IDENTITY / CONTRACT CONSISTENCY | ACCEPTED | OBS-JOURNAL-IDENTITY-INTEGRITY | IDT-FIX-A | `docs/project/architecture/OBSERVABILITY.md` — [Protocol v2 Observability evidence target invariants (2026-08-18)](#protocol-v2-observability-evidence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/OBSERVABILITY.md` — OBS-JOURNAL-IDENTITY-INTEGRITY | — | — | operator accepted 2026-08-20; coordinate IDENTITY_TRUST remediation |
 | AUDIT-20260818-OBSERVABILITY_EVIDENCE-06 | OBSERVABILITY_EVIDENCE | MEDIUM | ORDERING CONTRACT DEFECT | ACCEPTED | OBS-JOURNAL-IDENTITY-INTEGRITY | — | `docs/project/architecture/OBSERVABILITY.md` — [Protocol v2 Observability evidence target invariants (2026-08-18)](#protocol-v2-observability-evidence-target-invariants-2026-08-18) | `docs/project/maintainers/plans/OBSERVABILITY.md` — OBS-JOURNAL-IDENTITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CRITIC_VERIFICATION-01 | CRITIC_VERIFICATION | HIGH | VERIFICATION SEMANTICS / PAPER CONFIGURATION | ACCEPTED | CRITIC-SEMANTIC-AUTHORITY-INTEGRITY | — | `docs/project/architecture/CRITIC_VERIFICATION.md` — [Protocol v2 Critic verification target invariants (2026-08-18)](#protocol-v2-critic-verification-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — CRITIC-SEMANTIC-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CRITIC_VERIFICATION-02 | CRITIC_VERIFICATION | HIGH | VERIFICATION INDEPENDENCE / ARCHITECTURE DEFECT | ACCEPTED | CRITIC-SEMANTIC-AUTHORITY-INTEGRITY | — | `docs/project/architecture/CRITIC_VERIFICATION.md` — [Protocol v2 Critic verification target invariants (2026-08-18)](#protocol-v2-critic-verification-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — CRITIC-SEMANTIC-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CRITIC_VERIFICATION-03 | CRITIC_VERIFICATION | HIGH | VERIFICATION SECURITY / JUDGE INJECTION | ACCEPTED | CRITIC-SEMANTIC-AUTHORITY-INTEGRITY | — | `docs/project/architecture/CRITIC_VERIFICATION.md` — [Protocol v2 Critic verification target invariants (2026-08-18)](#protocol-v2-critic-verification-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — CRITIC-SEMANTIC-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CRITIC_VERIFICATION-04 | CRITIC_VERIFICATION | HIGH | TENANT IDENTITY / EVALUATION ISOLATION | ACCEPTED | CRITIC-EXECUTION-IDENTITY-INTEGRITY | IDT-FIX-A, OBS-JOURNAL-IDENTITY-INTEGRITY | `docs/project/architecture/CRITIC_VERIFICATION.md` — [Protocol v2 Critic verification target invariants (2026-08-18)](#protocol-v2-critic-verification-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — CRITIC-EXECUTION-IDENTITY-INTEGRITY | — | — | operator accepted 2026-08-20; coordinate IDENTITY_TRUST and OBSERVABILITY evidence identity remediation |
+| AUDIT-20260818-CRITIC_VERIFICATION-05 | CRITIC_VERIFICATION | MEDIUM | CONTRACT INTEGRITY | ACCEPTED | CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY | — | `docs/project/architecture/CRITIC_VERIFICATION.md` — [Protocol v2 Critic verification target invariants (2026-08-18)](#protocol-v2-critic-verification-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CRITIC_VERIFICATION-06 | CRITIC_VERIFICATION | MEDIUM | RESOURCE BOUND / STATE CONTRACT | ACCEPTED | CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY | — | `docs/project/architecture/CRITIC_VERIFICATION.md` — [Protocol v2 Critic verification target invariants (2026-08-18)](#protocol-v2-critic-verification-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY | — | — | operator accepted 2026-08-20 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 22
+**Completed layers:** 23
 
 First layer summary:
 
@@ -350,7 +357,14 @@ Twenty-second layer summary:
 - **Systemic themes:** fail-open canonical evidence durability on persistence errors; EventId-only idempotency without content equivalence; journal export redaction bypass; silently truncated full-run journal; divergent persistence/event tenant; run-local position as task-global order
 - **Recommended remediation order:** OBS-EVIDENCE-DURABILITY-INTEGRITY → OBS-EXPORT-CONTENT-INTEGRITY → OBS-JOURNAL-IDENTITY-INTEGRITY (see layer report)
 
-**Cumulative (completed layers only):** 125 accepted findings — 3 CRITICAL, 83 HIGH, 39 MEDIUM, 0 LOW
+Twenty-third layer summary:
+
+- **Layer:** CRITIC_VERIFICATION — **FAIL** at `ee3dada06e3018434e5a0cca0cd8553edd5615b3`
+- **Accepted findings:** 6 total — 0 CRITICAL, 4 HIGH, 2 MEDIUM, 0 LOW
+- **Systemic themes:** rubric reference without resolved criteria; unproven producer/critic independence; judge prompt injection surface; tenant identity in optional context with default fallback; contradictory CriticVerdict construction; evaluator-loop budget expansion via malformed state
+- **Recommended remediation order:** CRITIC-SEMANTIC-AUTHORITY-INTEGRITY → CRITIC-EXECUTION-IDENTITY-INTEGRITY → CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY (see layer report)
+
+**Cumulative (completed layers only):** 131 accepted findings — 3 CRITICAL, 87 HIGH, 41 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -431,3 +445,6 @@ Twenty-second layer summary:
 | OBS-EVIDENCE-DURABILITY-INTEGRITY | AUDIT-20260818-OBSERVABILITY_EVIDENCE-01, 02 | ACCEPTED / PLANNED | explicit evidence durability semantics and EventId canonical equivalence on existing HOS spine — not implemented in this persistence task |
 | OBS-EXPORT-CONTENT-INTEGRITY | AUDIT-20260818-OBSERVABILITY_EVIDENCE-03 | ACCEPTED / PLANNED | journal/log/vendor export subordinate to ObservabilityExportEnvelope boundary — cross-ref OBS-EXPORT / PBA-FIX-B — not implemented in this persistence task |
 | OBS-JOURNAL-IDENTITY-INTEGRITY | AUDIT-20260818-OBSERVABILITY_EVIDENCE-04, 05, 06 | ACCEPTED / PLANNED | journal completeness, tenant truth, task ordering semantics — reuse positioned completeness machinery — not implemented in this persistence task |
+| CRITIC-SEMANTIC-AUTHORITY-INTEGRITY | AUDIT-20260818-CRITIC_VERIFICATION-01, 02, 03 | ACCEPTED / PLANNED | rubric authority, judge independence, adversarial semantic verification — not implemented in this persistence task |
+| CRITIC-EXECUTION-IDENTITY-INTEGRITY | AUDIT-20260818-CRITIC_VERIFICATION-04 | ACCEPTED / PLANNED | canonical tenant/execution identity for critic evidence — coordinate IDT-FIX-A and OBS-JOURNAL-IDENTITY-INTEGRITY — not implemented in this persistence task |
+| CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY | AUDIT-20260818-CRITIC_VERIFICATION-05, 06 | ACCEPTED / PLANNED | verdict coherence and evaluator-loop boundedness — not implemented in this persistence task |
