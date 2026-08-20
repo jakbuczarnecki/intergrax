@@ -64,15 +64,12 @@ class BoundedReactPattern:
 
         while iterations < max_iters:
             iterations += 1
-            try:
-                llm_result, tool_plan = planner.plan_native_round(
-                    messages,
-                    allowed_tool_ids=allowed_tool_ids,
-                    run_id=state.run_id,
-                    tool_choice=tool_choice_for_mode(state.context.config.tools_mode),
-                )
-            except Exception:
-                break
+            llm_result, tool_plan = planner.plan_native_round(
+                messages,
+                allowed_tool_ids=allowed_tool_ids,
+                run_id=state.run_id,
+                tool_choice=tool_choice_for_mode(state.context.config.tools_mode),
+            )
 
             if llm_result.content and not tool_plan.calls:
                 stop_reason = "planner_final_answer"
