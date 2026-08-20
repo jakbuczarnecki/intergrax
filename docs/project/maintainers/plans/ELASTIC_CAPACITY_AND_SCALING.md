@@ -162,3 +162,68 @@ Load **only** the satellite matching your task or cited gap ID.
 | **P2-ARCH-11** | Clarify ECP production boundary and scaling governance | **Done** (2026-06-20) |
 
 ---
+
+## Protocol v2 remediation (2026-08-18) — ACCEPTED / PLANNED
+
+**Source:** [`docs/audit_results/2026-08-18/ELASTIC_CAPACITY_AND_SCALING.md`](../../audit_results/2026-08-18/ELASTIC_CAPACITY_AND_SCALING.md) · audited_sha `d2b65885ad1b472bf48254a1e7314dc6a53ca677` · verdict **FAIL** · 0 CRITICAL / 6 HIGH / 0 MEDIUM / 0 LOW · operator accepted 2026-08-20
+
+**Status rule:** all rows below are **ACCEPTED / PLANNED** only. Nothing **IMPLEMENTED**, **VERIFIED**, or **CLOSED** in this persistence task. Historical ECP wave **Done** rows above are **not** rewritten.
+
+### ECP-SIGNAL-ACTION-INTEGRITY — signal identity and action contract integrity
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P0 / P1 |
+| **Owns findings** | AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-01, AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-02 |
+| **Intent** | Capacity signals and actions carry exact target semantics; impossible or no-op actions cannot masquerade as successful capacity changes; applied evidence reflects actual backend effect |
+| **Primary modules** | `capacity/contracts.py`, `capacity/evaluator.py`, `capacity/provisioner.py`, `capacity/ceiling_patcher.py` |
+| **Architecture ref** | [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md) — [Protocol v2 elastic capacity and scaling target invariants (2026-08-18)](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md#protocol-v2-elastic-capacity-and-scaling-target-invariants-2026-08-18) §1–§2 |
+| **Status** | **ACCEPTED / PLANNED** |
+
+Deliverables (planned):
+
+| ID | Deliverable | Status | Priority |
+|----|-------------|--------|----------|
+| ECP-PV2-01 | Composite signal identity `(target, metric_name, scope)` in evaluator indexing and rule match | **Planned** | P0 |
+| ECP-PV2-02 | Fail-fast `ScalingRule` validation for thresholds, delta, action_kind/target compatibility, scale-down support | **Planned** | P0 |
+| ECP-PV2-03 | Provisioner outcome taxonomy APPLIED / NO_CHANGE / FAILED wired to events and metrics | **Planned** | P1 |
+
+### ECP-GOVERNED-ACTION-INTEGRITY — governed mutation and HITL authority
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P0 |
+| **Owns findings** | AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-03, AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-04 |
+| **Intent** | Capacity mutation and HITL use canonical Governed Execution / approval evidence; fail-closed where production policy requires authority |
+| **Cross-links** | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) — PG-FIX-C; [`IDENTITY_TRUST`](../../architecture/IDENTITY_TRUST.md) — IDT-FIX-C |
+| **Primary modules** | `capacity/action_gate.py`, `capacity/approval_queue.py`, `applications/_shared/scaling_wiring.py` |
+| **Architecture ref** | same Protocol v2 section §3–§4 |
+| **Status** | **ACCEPTED / PLANNED** |
+
+Deliverables (planned):
+
+| ID | Deliverable | Status | Priority |
+|----|-------------|--------|----------|
+| ECP-PV2-04 | Production posture binds `CapacityActionGate` to Governed Execution — missing required authority fails closed | **Planned** | P0 |
+| ECP-PV2-05 | HITL approval consumes canonical evidence (approver, scope, plan/actions, policy/version, decision time) | **Planned** | P0 |
+
+### ECP-DISTRIBUTED-EXECUTION-INTEGRITY — distributed limits and plan outcomes
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P0 / P1 |
+| **Owns findings** | AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-05, AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-06 |
+| **Intent** | Cooldown/rate limits remain correct across restart/multi-host execution; multi-action plans expose deterministic COMPLETE/PARTIAL/FAILED outcomes with reconciliation |
+| **Cross-links** | [`OBSERVABILITY.md`](OBSERVABILITY.md) evidence spine; platform distributed coordination / CAS patterns — reuse, do not duplicate |
+| **Primary modules** | `capacity/evaluator.py`, `capacity/scheduler.py`, `capacity/provisioner.py` |
+| **Architecture ref** | same Protocol v2 section §5–§6 |
+| **Status** | **ACCEPTED / PLANNED** |
+
+Deliverables (planned):
+
+| ID | Deliverable | Status | Priority |
+|----|-------------|--------|----------|
+| ECP-PV2-06 | Shared scope-aware cooldown/rate-limit authority; lifecycle planned/approved/attempted/applied/failed | **Planned** | P0 |
+| ECP-PV2-07 | Plan-level COMPLETE/PARTIAL/FAILED with per-action results and reconciliation obligations | **Planned** | P1 |
+
+---
