@@ -66,6 +66,7 @@ Truth flows from accepted product/proof evidence → Portfolio Control → appro
 | Product control cards | **Created** (MP-15) — see control-card table below |
 | Audit engine integration | **Defined** (MP-16) — [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) |
 | Portfolio Control operating manual | **Defined** (MP-17) — [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) |
+| Product Session operating manual | **Defined** (MP-18) — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) |
 | Product architectures for the four new applications | **Not yet designed** |
 | New product application scaffolding | **Not started** |
 | Cross-product reuse demonstration | **Not demonstrated** |
@@ -86,6 +87,7 @@ Truth flows from accepted product/proof evidence → Portfolio Control → appro
 | Per-product reuse methodology | [PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_PROOF.md) |
 | How Portfolio Control gates use the audit engine | [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) |
 | How does the central Portfolio Control Session operate? | [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) |
+| How does each Product Session operate? | [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) |
 | Product-first development principle | [PRODUCT_FIRST_MVP.md](../plans/PRODUCT_FIRST_MVP.md) |
 | LKW Portfolio Control Card | [products/LKW.md](products/LKW.md) |
 | LKW architecture | [LKW ARCHITECTURE.md](../../../../applications/local_workspace_application/docs/ARCHITECTURE.md) |
@@ -130,10 +132,11 @@ Control cards index portfolio state; architecture and roadmap remain product-own
 
 | Document | Role |
 |----------|------|
-| [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) | Constitution / governance |
-| [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md) | How new products start |
-| [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) | How canonical audit engine plugs into gates |
-| [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) | How central control actually operates |
+| [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) | Constitution |
+| [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md) | New-product bootstrap |
+| [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) | Central control behavior |
+| [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) | Per-product operating behavior |
+| [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) | Canonical audit integration |
 
 ## Planned workspace shape
 
@@ -141,7 +144,7 @@ Later program tasks (see [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) for current 
 
 - ~~MP-16 Multi-Product Audit Integration~~ — **Completed** — [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md)
 - ~~MP-17 Portfolio Control Operating Manual~~ — **Completed** — [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md)
-- MP-18 Product Session Operating Manual
+- ~~MP-18 Product Session Operating Manual~~ — **Completed** — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md)
 - MP-19 Product-Specific Session Briefs
 - MP-20 Cross-Session Coordination Rules
 - MP-21 Workspace Consistency Audit
