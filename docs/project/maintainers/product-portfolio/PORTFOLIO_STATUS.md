@@ -2,7 +2,7 @@
 
 **Document type:** Maintainer-level operational control artifact  
 **Owner:** Portfolio Control Session  
-**Last verified:** 2026-08-20 (MP-20 Cross-Session Coordination Rules)
+**Last verified:** 2026-08-20 (MP-21 Workspace Consistency Audit)
 
 ---
 
@@ -120,10 +120,10 @@ At MP-20 closeout:
 4. ~~MP-18 Product Session Operating Manual.~~ **Completed** — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md).
 5. ~~MP-19 Product-Specific Session Briefs.~~ **Completed** — five durable briefs in [session-briefs/](session-briefs/).
 6. ~~MP-20 Cross-Session Coordination Rules.~~ **Completed** — [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md).
-7. **Next:** MP-21 Workspace Consistency Audit.
-8. MP-22 Session Launch Pack — **future**.
+7. ~~MP-21 Workspace Consistency Audit.~~ **Completed** — [WORKSPACE_CONSISTENCY_AUDIT.md](WORKSPACE_CONSISTENCY_AUDIT.md) — verdict **PASS WITH GAPS**; launch readiness **READY FOR MP-22**.
+8. **Next:** MP-22 Session Launch Pack.
 
-**Program facts (MP-20):** Six-session topology coordination defined (Portfolio Control + five Product Sessions); VIS-3A and COMM explicitly external specialist streams; Product↔Portfolio, G4, G6/T1, audit, and public-fact flows defined in [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md); no sessions launched yet; product states unchanged from MP-19.
+**Program facts (MP-21):** Six-session workspace audited at `0f6e2d7fe96498346d8ddcc05fe08caa68c00523`; no BLOCKER/MAJOR findings; residual gaps MP21-001–MP21-003 (links/refs only); VIS-3A and COMM remain external specialist streams; no sessions launched; product states unchanged from MP-20.
 
 LKW reference baseline remains accepted (**ACTIVE**). Four newly selected products remain **SELECTED** / Pre-bootstrap with G0 pending. No cross-product reuse claim exists.
 

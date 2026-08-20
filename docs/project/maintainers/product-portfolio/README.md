@@ -69,6 +69,7 @@ Truth flows from accepted product/proof evidence → Portfolio Control → appro
 | Product Session operating manual | **Defined** (MP-18) — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) |
 | Product-specific session briefs | **Created** (MP-19) — see [Product Session briefs](#product-session-briefs) |
 | Cross-session coordination contract | **Defined** (MP-20) — [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md) |
+| Workspace consistency audit | **Completed** (MP-21) — [WORKSPACE_CONSISTENCY_AUDIT.md](WORKSPACE_CONSISTENCY_AUDIT.md) — verdict PASS WITH GAPS |
 | Product architectures for the four new applications | **Not yet designed** |
 | New product application scaffolding | **Not started** |
 | Cross-product reuse demonstration | **Not demonstrated** |
@@ -174,7 +175,7 @@ Later program tasks (see [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) for current 
 - ~~MP-18 Product Session Operating Manual~~ — **Completed** — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md)
 - ~~MP-19 Product-Specific Session Briefs~~ — **Completed** — [session-briefs/](session-briefs/)
 - ~~MP-20 Cross-Session Coordination Rules~~ — **Completed** — [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md)
-- MP-21 Workspace Consistency Audit
-- MP-22 Session Launch Pack
+- ~~MP-21 Workspace Consistency Audit~~ — **Completed** — [WORKSPACE_CONSISTENCY_AUDIT.md](WORKSPACE_CONSISTENCY_AUDIT.md)
+- MP-22 Session Launch Pack — **remaining final preparation step**
 
 Portfolio Control uses the canonical `docs/audit_results/` engine for actual audits. It does not create a competing audit workspace (no `reviews/*` audit system).
