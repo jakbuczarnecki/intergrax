@@ -16,8 +16,24 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
 PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 README_STRATEGIC_ASSETS_DIR = REPO_ROOT / "docs" / "project" / "assets" / "public" / "readme"
-ECOSYSTEM_HERO_LIGHT_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-ecosystem-hero-light.svg"
-ECOSYSTEM_HERO_DARK_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-ecosystem-hero-dark.svg"
+ECOSYSTEM_HERO_LIGHT_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-ecosystem-hero-light.png"
+ECOSYSTEM_HERO_DARK_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-ecosystem-hero-dark.png"
+PLATFORM_MAP_LIGHT_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-platform-map-light.png"
+PLATFORM_MAP_DARK_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-platform-map-dark.png"
+WHY_LIGHT_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-why-light.png"
+WHY_DARK_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-why-dark.png"
+GOVERNED_EXECUTION_LIGHT_PATH = (
+    README_STRATEGIC_ASSETS_DIR / "intergrax-governed-execution-light.png"
+)
+GOVERNED_EXECUTION_DARK_PATH = (
+    README_STRATEGIC_ASSETS_DIR / "intergrax-governed-execution-dark.png"
+)
+_STRATEGIC_PNG_PAIRS = (
+    (ECOSYSTEM_HERO_LIGHT_PATH, ECOSYSTEM_HERO_DARK_PATH),
+    (PLATFORM_MAP_LIGHT_PATH, PLATFORM_MAP_DARK_PATH),
+    (WHY_LIGHT_PATH, WHY_DARK_PATH),
+    (GOVERNED_EXECUTION_LIGHT_PATH, GOVERNED_EXECUTION_DARK_PATH),
+)
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
 LKW_ASSETS_PREFIX = "applications/local_workspace_application/docs/assets/"
@@ -26,7 +42,7 @@ _README_VISUAL_OWNERSHIP_ROOTS = (
     REPO_ROOT / "docs" / "project" / "assets" / "public" / "readme",
     REPO_ROOT / "applications" / "local_workspace_application" / "docs" / "assets",
 )
-_MIN_README_PICTURES = 1
+_MIN_README_PICTURES = 5
 LKW_LIGHT_PATH = (
     REPO_ROOT
     / "applications"
@@ -161,11 +177,10 @@ def test_required_public_links(readme_text: str) -> None:
         assert link in readme_text, f"Missing required public link: {link}"
 
 
-def _normalize_svg_stem(filename: str) -> str | None:
-    if filename.endswith("-light.svg"):
-        return filename[: -len("-light.svg")]
-    if filename.endswith("-dark.svg"):
-        return filename[: -len("-dark.svg")]
+def _normalize_light_dark_stem(filename: str) -> str | None:
+    for suffix in ("-light.svg", "-dark.svg", "-light.png", "-dark.png"):
+        if filename.endswith(suffix):
+            return filename[: -len(suffix)]
     return None
 
 
@@ -176,19 +191,21 @@ def _validate_light_dark_pair(light_path: Path, dark_path: Path) -> list[str]:
     if not dark_path.is_file():
         violations.append(f"missing dark variant: {dark_path.name}")
     if light_path.is_file() and dark_path.is_file():
-        light_stem = _normalize_svg_stem(light_path.name)
-        dark_stem = _normalize_svg_stem(dark_path.name)
+        light_stem = _normalize_light_dark_stem(light_path.name)
+        dark_stem = _normalize_light_dark_stem(dark_path.name)
         if light_stem is None or dark_stem is None:
-            violations.append("pair must use *-light.svg / *-dark.svg naming")
+            violations.append("pair must use *-light.* / *-dark.* naming")
         elif light_stem != dark_stem:
             violations.append("light/dark stem mismatch")
+        elif light_path.suffix != dark_path.suffix:
+            violations.append("light/dark extension mismatch")
     return violations
 
 
-def _light_dark_pair_paths(stem: str, directory: Path) -> tuple[Path, Path]:
+def _light_dark_pair_paths(stem: str, directory: Path, extension: str) -> tuple[Path, Path]:
     return (
-        directory / f"{stem}-light.svg",
-        directory / f"{stem}-dark.svg",
+        directory / f"{stem}-light{extension}",
+        directory / f"{stem}-dark{extension}",
     )
 
 
@@ -252,18 +269,66 @@ def _extract_picture_blocks(readme_text: str) -> list[str]:
 
 
 def test_ecosystem_hero_contract(readme_text: str) -> None:
-    """Root README ecosystem hero appears before Choose your path with controlled assets."""
+    """Root README ecosystem hero appears before Choose your path with controlled PNG assets."""
     choose_idx = readme_text.index("## Choose your path")
-    hero_light_ref = "docs/project/assets/public/readme/intergrax-ecosystem-hero-light.svg"
-    hero_dark_ref = "docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.svg"
+    hero_light_ref = "docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
+    hero_dark_ref = "docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.png"
+    assert "intergrax-ecosystem-hero-light.svg" not in readme_text
+    assert "intergrax-ecosystem-hero-dark.svg" not in readme_text
     assert readme_text.index(hero_light_ref) < choose_idx
     assert readme_text.index(hero_dark_ref) < choose_idx
     assert readme_text.index("<picture>") < choose_idx
-    assert ECOSYSTEM_HERO_LIGHT_PATH.is_file(), "Ecosystem hero light SVG is missing"
-    assert ECOSYSTEM_HERO_DARK_PATH.is_file(), "Ecosystem hero dark SVG is missing"
+    assert ECOSYSTEM_HERO_LIGHT_PATH.is_file(), "Ecosystem hero light PNG is missing"
+    assert ECOSYSTEM_HERO_DARK_PATH.is_file(), "Ecosystem hero dark PNG is missing"
     pair_violations = _validate_light_dark_pair(ECOSYSTEM_HERO_LIGHT_PATH, ECOSYSTEM_HERO_DARK_PATH)
     assert not pair_violations, f"Ecosystem hero light/dark pair: {pair_violations}"
     assert 'alt="Specialized AI products share the Intergrax governed foundation' in readme_text
+
+
+def test_platform_map_visual_contract(readme_text: str) -> None:
+    section_idx = readme_text.index("## Explore the Intergrax Platform")
+    table_marker = "| Platform area | What it provides | Explore |"
+    table_idx = readme_text.index(table_marker, section_idx)
+    light_ref = "docs/project/assets/public/readme/intergrax-platform-map-light.png"
+    dark_ref = "docs/project/assets/public/readme/intergrax-platform-map-dark.png"
+    assert section_idx < readme_text.index(light_ref) < table_idx
+    assert section_idx < readme_text.index(dark_ref) < table_idx
+    assert PLATFORM_MAP_LIGHT_PATH.is_file()
+    assert PLATFORM_MAP_DARK_PATH.is_file()
+    pair_violations = _validate_light_dark_pair(PLATFORM_MAP_LIGHT_PATH, PLATFORM_MAP_DARK_PATH)
+    assert not pair_violations, f"Platform map light/dark pair: {pair_violations}"
+    assert "Intergrax platform architecture map showing execution core" in readme_text
+
+
+def test_why_visual_contract(readme_text: str) -> None:
+    section_idx = readme_text.index("## Why this matters")
+    next_section_idx = readme_text.index("## Responsibility model", section_idx)
+    light_ref = "docs/project/assets/public/readme/intergrax-why-light.png"
+    dark_ref = "docs/project/assets/public/readme/intergrax-why-dark.png"
+    assert section_idx < readme_text.index(light_ref) < next_section_idx
+    assert section_idx < readme_text.index(dark_ref) < next_section_idx
+    assert WHY_LIGHT_PATH.is_file()
+    assert WHY_DARK_PATH.is_file()
+    pair_violations = _validate_light_dark_pair(WHY_LIGHT_PATH, WHY_DARK_PATH)
+    assert not pair_violations, f"Why Intergrax light/dark pair: {pair_violations}"
+    assert "rebuilding duplicated AI foundations per product" in readme_text
+
+
+def test_governed_execution_visual_contract(readme_text: str) -> None:
+    section_idx = readme_text.index("## AI execution should not be a black box")
+    light_ref = "docs/project/assets/public/readme/intergrax-governed-execution-light.png"
+    dark_ref = "docs/project/assets/public/readme/intergrax-governed-execution-dark.png"
+    assert section_idx < readme_text.index(light_ref)
+    assert section_idx < readme_text.index(dark_ref)
+    assert GOVERNED_EXECUTION_LIGHT_PATH.is_file()
+    assert GOVERNED_EXECUTION_DARK_PATH.is_file()
+    pair_violations = _validate_light_dark_pair(
+        GOVERNED_EXECUTION_LIGHT_PATH,
+        GOVERNED_EXECUTION_DARK_PATH,
+    )
+    assert not pair_violations, f"Governed execution light/dark pair: {pair_violations}"
+    assert "governed agentic execution loop" in readme_text
+    assert "request → context → agent / plan / decision → policy / approval" not in readme_text
 
 
 def test_lkw_visual_contract(readme_text: str) -> None:
@@ -285,6 +350,7 @@ def test_readme_controlled_multi_visual_contract(readme_text: str) -> None:
     )
 
     referenced_svgs: set[Path] = set()
+    referenced_pngs: set[Path] = set()
     for block in picture_blocks:
         parsed = _parse_picture_block(block)
         assert parsed["light"], "picture block missing light <source>"
@@ -301,14 +367,23 @@ def test_readme_controlled_multi_visual_contract(readme_text: str) -> None:
 
         for path_str in (parsed["light"], parsed["dark"], parsed["img_src"]):
             normalized = _normalize_visual_path(path_str)
-            assert normalized.endswith(".svg"), f"README visual must be local SVG: {path_str}"
-            referenced_svgs.add(_resolve_approved_readme_visual(normalized))
+            assert normalized.endswith((".svg", ".png")), (
+                f"README visual must be local SVG or PNG: {path_str}"
+            )
+            resolved = _resolve_approved_readme_visual(normalized)
+            if normalized.endswith(".svg"):
+                referenced_svgs.add(resolved)
+            else:
+                referenced_pngs.add(resolved)
 
-        light_stem = _normalize_svg_stem(Path(parsed["light"]).name)
-        dark_stem = _normalize_svg_stem(Path(parsed["dark"]).name)
+        light_stem = _normalize_light_dark_stem(Path(parsed["light"]).name)
+        dark_stem = _normalize_light_dark_stem(Path(parsed["dark"]).name)
         assert light_stem and dark_stem and light_stem == dark_stem, (
             "picture block light/dark srcset must share the same *-light/*-dark stem"
         )
+
+    for png_path in referenced_pngs:
+        assert png_path.is_file(), f"Referenced README PNG is missing: {png_path}"
 
     for svg_path in referenced_svgs:
         assert svg_path.is_file(), f"Referenced README SVG is missing: {svg_path}"
@@ -317,23 +392,16 @@ def test_readme_controlled_multi_visual_contract(readme_text: str) -> None:
 
 
 def test_strategic_light_dark_pair_convention() -> None:
-    """Reusable pair validation for existing and future strategic SVG families."""
-    for light_path, dark_path in (
-        (ECOSYSTEM_HERO_LIGHT_PATH, ECOSYSTEM_HERO_DARK_PATH),
-        (HERO_LIGHT_PATH, HERO_DARK_PATH),
-        (LKW_LIGHT_PATH, LKW_DARK_PATH),
-    ):
+    """Reusable pair validation for strategic PNG families and module-owned SVG families."""
+    for light_path, dark_path in _STRATEGIC_PNG_PAIRS:
         violations = _validate_light_dark_pair(light_path, dark_path)
         assert not violations, f"{light_path.parent.name}/{light_path.stem}: {violations}"
+        assert light_path.suffix == ".png"
+        assert dark_path.suffix == ".png"
 
-    future_stem = "intergrax-platform-map"
-    future_light, future_dark = _light_dark_pair_paths(future_stem, README_STRATEGIC_ASSETS_DIR)
-    assert future_light.name == "intergrax-platform-map-light.svg"
-    assert future_dark.name == "intergrax-platform-map-dark.svg"
-    assert _validate_light_dark_pair(future_light, future_dark) == [
-        "missing light variant: intergrax-platform-map-light.svg",
-        "missing dark variant: intergrax-platform-map-dark.svg",
-    ]
+    for light_path, dark_path in ((LKW_LIGHT_PATH, LKW_DARK_PATH),):
+        violations = _validate_light_dark_pair(light_path, dark_path)
+        assert not violations, f"{light_path.parent.name}/{light_path.stem}: {violations}"
 
 
 def _parse_svg(path: Path) -> ET.Element:
@@ -375,10 +443,6 @@ def _collect_svg_violations(root: ET.Element) -> list[str]:
 @pytest.mark.parametrize(
     "svg_path",
     [
-        ECOSYSTEM_HERO_LIGHT_PATH,
-        ECOSYSTEM_HERO_DARK_PATH,
-        HERO_LIGHT_PATH,
-        HERO_DARK_PATH,
         LKW_LIGHT_PATH,
         LKW_DARK_PATH,
     ],
@@ -390,7 +454,7 @@ def test_svg_safety(svg_path: Path) -> None:
 
 
 def test_visual_contract(readme_text: str) -> None:
-    """Strategic root README visuals are SVG-based; Mermaid is not a substitute."""
+    """Strategic root README visuals use controlled PNG pairs; Mermaid is not a substitute."""
     blocks = _MERMAID_FENCE.findall(readme_text)
     assert not blocks, "README should route conceptual architecture to its owner"
 

@@ -732,7 +732,7 @@ applications/local_workspace_application/docs/assets/
 → LKW product-proof visual (module-owned)
 ```
 
-Strategic root README visuals use reviewed self-contained SVG pairs (`*-light.svg` / `*-dark.svg`) inside `<picture>` blocks. Root README must not use Mermaid or ASCII as substitutes for those strategic SVG visuals.
+Strategic root README visuals use reviewed self-contained light-dark image pairs (`*-light.png` / `*-dark.png` for strategic root assets; module-owned product visuals may remain SVG) inside `<picture>` blocks. Root README must not use Mermaid or ASCII as substitutes for those strategic visual assets.
 
 Future strategic assets are validated when referenced; they are not mandatory before creation.
 
