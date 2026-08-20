@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 import httpx
 import pytest
@@ -35,6 +35,7 @@ from intergrax.runtime.evidence.obligation_derivation import (
     DeterministicEvidenceObligationDerivation,
 )
 from intergrax.runtime.evidence.obligation_derivation_contracts import (
+    MaxAgeTemporalConstraintV1,
     RequireLiveEvidencePolicyRuleV1,
     RequireLiveEvidenceRuleParametersV1,
     ResolvedPolicyRuleV1,
@@ -149,6 +150,9 @@ from proof_infrastructure.controlled_security_status_service.models import (
 from proof_infrastructure.controlled_project_status_service.models import (
     ProjectBlockerStatusV1,
 )
+from proof_infrastructure.controlled_security_status_service.seed import (
+    seed_orion_security_fixture,
+)
 from proof_infrastructure.controlled_project_status_service.seed import (
     ORION_FIXTURE_BLOCKER_ID,
     ORION_FIXTURE_PROJECT_ID,
@@ -205,7 +209,28 @@ def _live_rule(
     )
 
 
-def _deployment_policy_rules() -> tuple[ResolvedPolicyRuleV1, ...]:
+def _deployment_policy_rules(
+    *,
+    security_max_age_seconds: int | None = None,
+) -> tuple[ResolvedPolicyRuleV1, ...]:
+    security_parameters = RequireLiveEvidenceRuleParametersV1(
+        semantic_role="Security blocker status",
+        requirement_key="security",
+        capability_id=SECURITY_STATUS_READ_CAPABILITY_ID,
+        live_access_binding_id=_BINDING_SECURITY,
+        live_call_descriptor_ref="security-read",
+        typed_capability_request=(
+            TypedCapabilityRequestEntryV1(
+                key="project_id",
+                value=ORION_FIXTURE_PROJECT_ID,
+            ),
+        ),
+        temporal_constraint=(
+            None
+            if security_max_age_seconds is None
+            else MaxAgeTemporalConstraintV1(max_age_seconds=security_max_age_seconds)
+        ),
+    )
     return (
         _live_rule(
             policy_document_id="deployment-policy",
@@ -222,20 +247,11 @@ def _deployment_policy_rules() -> tuple[ResolvedPolicyRuleV1, ...]:
                 ),
             ),
         ),
-        _live_rule(
+        RequireLiveEvidencePolicyRuleV1(
             policy_document_id="security-policy",
+            revision_id=_POLICY_REV,
             rule_id="RULE-SECURITY",
-            requirement_key="security",
-            semantic_role="Security blocker status",
-            capability_id=SECURITY_STATUS_READ_CAPABILITY_ID,
-            live_access_binding_id=_BINDING_SECURITY,
-            live_call_descriptor_ref="security-read",
-            typed_request=(
-                TypedCapabilityRequestEntryV1(
-                    key="project_id",
-                    value=ORION_FIXTURE_PROJECT_ID,
-                ),
-            ),
+            parameters=security_parameters,
         ),
         _live_rule(
             policy_document_id="change-policy",
@@ -273,6 +289,16 @@ def _deployment_policy_rules() -> tuple[ResolvedPolicyRuleV1, ...]:
 class _FixedPolicyRulesPort:
     def resolve_policy_rules(self, **_: object) -> tuple[ResolvedPolicyRuleV1, ...]:
         return _deployment_policy_rules()
+
+
+class _TemporalPolicyRulesPort:
+    def __init__(self, *, security_max_age_seconds: int) -> None:
+        self._security_max_age_seconds = security_max_age_seconds
+
+    def resolve_policy_rules(self, **_: object) -> tuple[ResolvedPolicyRuleV1, ...]:
+        return _deployment_policy_rules(
+            security_max_age_seconds=self._security_max_age_seconds,
+        )
 
 
 class _RecordingSecretsStore:
@@ -584,6 +610,7 @@ async def _build_service(
     bindings: tuple[WorkspaceLiveAccessBinding, ...],
     orchestrator: KnowledgeQueryOrchestratorV1 | None = None,
     configuration_service: _ConfigurationService | None = None,
+    resolved_policy_rules_port: _FixedPolicyRulesPort | _TemporalPolicyRulesPort | None = None,
 ) -> tuple[
     WorkspaceAskServiceV2,
     _RecordingLLM,
@@ -653,7 +680,7 @@ async def _build_service(
         run_id_factory=lambda: "run-multi-provider",
         plan_id_factory=lambda: "plan-multi-provider",
         evidence_obligation_derivation_port=DeterministicEvidenceObligationDerivation(),
-        resolved_policy_rules_port=_FixedPolicyRulesPort(),
+        resolved_policy_rules_port=resolved_policy_rules_port or _FixedPolicyRulesPort(),
         schema_registry=published.schemas,
     )
     return service, llm, connection_repository, connections
@@ -1039,6 +1066,7 @@ def test_multi_provider_wrong_call_id_cannot_cross_satisfy_obligation() -> None:
         obligations=(readiness, security),
         indexed_evidence=(),
         live_evidence=(security_only,),
+        evaluated_at=_NOW,
     )
     readiness_eval = next(
         item
@@ -1049,4 +1077,135 @@ def test_multi_provider_wrong_call_id_cannot_cross_satisfy_obligation() -> None:
     assert (
         readiness_eval.reason_code
         is RequirementAdmissibilityReasonCodeV1.LIVE_CALL_MISMATCH
+    )
+
+
+async def _seed_fresh_provider_snapshots(
+    *,
+    project_status_server: ControlledProjectStatusServer,
+    security_status_server: ControlledSecurityStatusServer,
+    change_approval_server: ControlledChangeApprovalServer,
+    governance_approval_server: ControlledGovernanceApprovalServer,
+    security_updated_at: datetime,
+) -> None:
+    httpx.put(
+        f"{project_status_server.base_url}/control/projects/{ORION_FIXTURE_PROJECT_ID}/status",
+        json={
+            "blockers": [
+                {
+                    "id": ORION_FIXTURE_BLOCKER_ID,
+                    "status": ProjectBlockerStatusV1.CLOSED.value,
+                }
+            ]
+        },
+        timeout=2.0,
+    )
+    seed_orion_security_fixture(
+        security_status_server.store,
+        updated_at=security_updated_at,
+    )
+
+
+@pytest.mark.asyncio
+async def test_multi_provider_all_http_success_can_be_temporally_unsatisfied(
+    project_status_server: ControlledProjectStatusServer,
+    security_status_server: ControlledSecurityStatusServer,
+    change_approval_server: ControlledChangeApprovalServer,
+    governance_approval_server: ControlledGovernanceApprovalServer,
+) -> None:
+    await _seed_fresh_provider_snapshots(
+        project_status_server=project_status_server,
+        security_status_server=security_status_server,
+        change_approval_server=change_approval_server,
+        governance_approval_server=governance_approval_server,
+        security_updated_at=_NOW - timedelta(hours=2),
+    )
+    service, llm, _, _ = await _build_service(
+        project_status_server=project_status_server,
+        security_status_server=security_status_server,
+        change_approval_server=change_approval_server,
+        governance_approval_server=governance_approval_server,
+        bindings=_all_success_bindings(),
+        resolved_policy_rules_port=_TemporalPolicyRulesPort(
+            security_max_age_seconds=3_600,
+        ),
+    )
+    run = await service.ask(
+        WorkspaceAskCommandV2(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            question="Can the deployment proceed under current governance policy?",
+            requested_mode=QueryPolicyModeV2.LIVE_ONLY,
+            audience_context=AudienceContextV1(
+                audience=KnowledgeQueryAudienceV1.PERSONAL
+            ),
+            run_id="run-multi-provider-temporal-fail",
+            request_id="request-multi-provider-temporal-fail",
+        )
+    )
+    assert run.status is AskRunStatus.INSUFFICIENT_EVIDENCE
+    assert llm.calls == 0
+    assert run.evidence_admissibility is not None
+    assert (
+        run.evidence_admissibility.overall_status
+        is EvidenceAdmissibilityStatusV1.UNSATISFIED
+    )
+    security_eval = next(
+        item
+        for item in run.evidence_admissibility.requirement_evaluations
+        if item.requirement_id.endswith(":security")
+    )
+    assert (
+        security_eval.reason_code
+        is RequirementAdmissibilityReasonCodeV1.EVIDENCE_TEMPORALLY_INVALID
+    )
+    assert project_status_server.store.read_request_count() >= 1
+    assert security_status_server.store.read_request_count() >= 1
+    assert change_approval_server.store.read_request_count() >= 1
+    assert governance_approval_server.store.read_request_count() >= 1
+
+
+@pytest.mark.asyncio
+async def test_multi_provider_all_temporally_valid_reaches_llm(
+    project_status_server: ControlledProjectStatusServer,
+    security_status_server: ControlledSecurityStatusServer,
+    change_approval_server: ControlledChangeApprovalServer,
+    governance_approval_server: ControlledGovernanceApprovalServer,
+) -> None:
+    await _seed_fresh_provider_snapshots(
+        project_status_server=project_status_server,
+        security_status_server=security_status_server,
+        change_approval_server=change_approval_server,
+        governance_approval_server=governance_approval_server,
+        security_updated_at=_NOW - timedelta(minutes=30),
+    )
+    service, llm, _, _ = await _build_service(
+        project_status_server=project_status_server,
+        security_status_server=security_status_server,
+        change_approval_server=change_approval_server,
+        governance_approval_server=governance_approval_server,
+        bindings=_all_success_bindings(),
+        resolved_policy_rules_port=_TemporalPolicyRulesPort(
+            security_max_age_seconds=3_600,
+        ),
+    )
+    run = await service.ask(
+        WorkspaceAskCommandV2(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            question="Can the deployment proceed under current governance policy?",
+            requested_mode=QueryPolicyModeV2.LIVE_ONLY,
+            audience_context=AudienceContextV1(
+                audience=KnowledgeQueryAudienceV1.PERSONAL
+            ),
+            run_id="run-multi-provider-temporal-pass",
+            request_id="request-multi-provider-temporal-pass",
+        )
+    )
+    assert run.status is AskRunStatus.COMPLETED
+    assert llm.calls == 1
+    assert run.evidence_admissibility is not None
+    assert (
+        run.evidence_admissibility.overall_status
+        is EvidenceAdmissibilityStatusV1.SATISFIED
     )

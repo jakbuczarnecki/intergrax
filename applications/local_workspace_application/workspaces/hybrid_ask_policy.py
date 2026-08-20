@@ -40,6 +40,7 @@ from intergrax.runtime.vendor_knowledge.live.schemas import SchemaRegistryV1
 from intergrax.runtime.evidence.obligation_derivation_contracts import (
     PolicyEvidenceBasisV1,
     RequirementOriginV1,
+    TemporalConstraintV1,
 )
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     LiveCapabilityDescriptorV1,
@@ -205,6 +206,7 @@ class IndexedEvidenceRequirementV1(BaseModel):
     indexed_source_binding_id: str | None = Field(
         default=None, min_length=1, max_length=128
     )
+    temporal_constraint: TemporalConstraintV1 | None = None
     policy_origin: RequirementOriginV1 | None = None
 
     @model_validator(mode="before")
@@ -220,6 +222,7 @@ class LiveEvidenceRequirementV1(BaseModel):
     requirement_id: str = Field(..., min_length=1, max_length=128)
     semantic_role: str = Field(..., min_length=1, max_length=256)
     call_id: str = Field(..., min_length=1, max_length=128)
+    temporal_constraint: TemporalConstraintV1 | None = None
     policy_origin: RequirementOriginV1 | None = None
 
     @model_validator(mode="before")

@@ -36,6 +36,9 @@ from intergrax.runtime.vendor_knowledge.live import (
     LiveExecutionOutcomeV1,
     ValidatedLiveCapabilityCallV1,
 )
+from intergrax.runtime.evidence.obligation_derivation_contracts import (
+    PointInTimeEvidenceTemporalV1,
+)
 from intergrax.runtime.vendor_knowledge.live.contracts import content_sha256
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     CapabilityEffectV1,
@@ -160,6 +163,9 @@ class ProjectStatusReadLiveHandlerV1(LiveCapabilityHandlerV1):
                 content_hash=content_sha256(content),
                 retrieved_at=retrieved_at,
                 remote_updated_at=snapshot.updated_at,
+                temporal=PointInTimeEvidenceTemporalV1(
+                    effective_at=snapshot.updated_at,
+                ),
             )
             return LiveCapabilityExecutionResultV1(
                 call_id=call.call_id,

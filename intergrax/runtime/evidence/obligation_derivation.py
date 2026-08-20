@@ -25,6 +25,7 @@ from intergrax.runtime.evidence.obligation_derivation_contracts import (
     RequireLiveEvidencePolicyRuleV1,
     ResolvedPolicyRuleKindV1,
     ResolvedPolicyRuleV1,
+    TemporalConstraintV1,
     TypedCapabilityRequestEntryV1,
 )
 
@@ -42,6 +43,7 @@ class _CanonicalIndexedRuleParametersV1(BaseModel):
     semantic_role: str
     requirement_key: str
     indexed_source_binding_id: str | None
+    temporal_constraint: TemporalConstraintV1 | None
 
 
 class _CanonicalLiveRuleParametersV1(BaseModel):
@@ -53,6 +55,7 @@ class _CanonicalLiveRuleParametersV1(BaseModel):
     live_access_binding_id: str
     live_call_descriptor_ref: str
     typed_capability_request: tuple[_CanonicalTypedCapabilityRequestEntryV1, ...]
+    temporal_constraint: TemporalConstraintV1 | None
 
 
 class _CanonicalSerializedRuleV1(BaseModel):
@@ -120,6 +123,7 @@ def _serialize_rule(rule: ResolvedPolicyRuleV1) -> _CanonicalSerializedRuleV1:
             semantic_role=rule.parameters.semantic_role,
             requirement_key=rule.parameters.requirement_key,
             indexed_source_binding_id=rule.parameters.indexed_source_binding_id,
+            temporal_constraint=rule.parameters.temporal_constraint,
         )
         rule_kind = ResolvedPolicyRuleKindV1.REQUIRE_INDEXED_EVIDENCE.value
     else:
@@ -132,6 +136,7 @@ def _serialize_rule(rule: ResolvedPolicyRuleV1) -> _CanonicalSerializedRuleV1:
             typed_capability_request=_serialize_typed_request(
                 rule.parameters.typed_capability_request
             ),
+            temporal_constraint=rule.parameters.temporal_constraint,
         )
         rule_kind = ResolvedPolicyRuleKindV1.REQUIRE_LIVE_EVIDENCE.value
     return _CanonicalSerializedRuleV1(
@@ -213,6 +218,7 @@ def _derive_indexed_obligation(
         ),
         semantic_role=rule.parameters.semantic_role,
         indexed_source_binding_id=rule.parameters.indexed_source_binding_id,
+        temporal_constraint=rule.parameters.temporal_constraint,
         origin=_requirement_origin(rule),
     )
 
@@ -241,6 +247,7 @@ def _derive_live_artifacts(
         requirement_id=requirement_id,
         semantic_role=rule.parameters.semantic_role,
         call_id=call_id,
+        temporal_constraint=rule.parameters.temporal_constraint,
         origin=_requirement_origin(rule),
     )
     return proposal, obligation

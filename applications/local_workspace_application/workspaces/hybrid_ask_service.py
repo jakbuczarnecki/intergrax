@@ -396,6 +396,7 @@ class WorkspaceAskServiceV2:
         admissibility = evaluate_execution_admissibility(
             validated_plan=validated_plan,
             execution=execution,
+            evaluated_at=self._clock(),
         )
         if admissibility.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED:
             return self._finalize_success(
@@ -881,6 +882,7 @@ class WorkspaceAskServiceV2:
                 score=item.score,
                 safe_source_label=item.safe_source_label,
                 indexed_source_binding_id=item.indexed_source_binding_id,
+                temporal=item.temporal,
             )
             for item in execution.indexed_evidence
         ]
@@ -900,6 +902,7 @@ class WorkspaceAskServiceV2:
                 remote_updated_at=item.remote_updated_at,
                 truncated=item.truncated,
                 call_id=item.call_id,
+                temporal=item.temporal,
             )
             for item in execution.live_evidence
         ]

@@ -30,6 +30,7 @@ def map_derived_obligation(
             requirement_id=obligation.requirement_id,
             semantic_role=obligation.semantic_role,
             indexed_source_binding_id=obligation.indexed_source_binding_id,
+            temporal_constraint=obligation.temporal_constraint,
             policy_origin=obligation.origin,
         )
     if isinstance(obligation, DerivedLiveEvidenceObligationV1):
@@ -37,6 +38,7 @@ def map_derived_obligation(
             requirement_id=obligation.requirement_id,
             semantic_role=obligation.semantic_role,
             call_id=obligation.call_id,
+            temporal_constraint=obligation.temporal_constraint,
             policy_origin=obligation.origin,
         )
     raise HybridAskPolicyError("derived_obligation_kind_unsupported")

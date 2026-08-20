@@ -23,6 +23,7 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.runtime.evidence.obligation_derivation_contracts import (
+    EvidenceTemporalMetadataV1,
     PolicyEvidenceBasisV1,
 )
 from intergrax.runtime.vendor_knowledge.live.contracts import (
@@ -69,6 +70,7 @@ class IndexedWorkspaceEvidenceV1(BaseModel):
     score: float | None = None
     safe_source_label: str | None = None
     indexed_source_binding_id: str | None = None
+    temporal: EvidenceTemporalMetadataV1 | None = None
 
     @field_validator("evidence_id")
     @classmethod
@@ -104,6 +106,7 @@ class LiveWorkspaceEvidenceV1(BaseModel):
     safe_locator: str | None = None
     truncated: bool = False
     execution_receipt_id: str | None = None
+    temporal: EvidenceTemporalMetadataV1 | None = None
 
     @field_validator("evidence_id")
     @classmethod
@@ -154,6 +157,7 @@ class PersistedIndexedEvidenceV2(BaseModel):
     score: float | None = None
     safe_source_label: str | None = None
     indexed_source_binding_id: str | None = None
+    temporal: EvidenceTemporalMetadataV1 | None = None
 
     @field_validator("evidence_id")
     @classmethod
@@ -181,6 +185,7 @@ class PersistedLiveEvidenceProvenanceV2(BaseModel):
     remote_updated_at: datetime | None = None
     truncated: bool = False
     call_id: str = Field(..., min_length=1)
+    temporal: EvidenceTemporalMetadataV1 | None = None
 
     @field_validator("evidence_id")
     @classmethod
@@ -294,6 +299,7 @@ class RequirementAdmissibilityReasonCodeV1(StrEnum):
     NO_MATCHING_EVIDENCE = "no_matching_evidence"
     INDEXED_BINDING_MISMATCH = "indexed_binding_mismatch"
     LIVE_CALL_MISMATCH = "live_call_mismatch"
+    EVIDENCE_TEMPORALLY_INVALID = "evidence_temporally_invalid"
 
 
 class RequiredEvidenceEvaluationV1(BaseModel):
@@ -310,6 +316,14 @@ class EvidenceAdmissibilityResultV1(BaseModel):
 
     overall_status: EvidenceAdmissibilityStatusV1
     requirement_evaluations: tuple[RequiredEvidenceEvaluationV1, ...] = ()
+    evaluated_at: datetime
+
+    @field_validator("evaluated_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("evaluated_at_must_be_timezone_aware")
+        return value
 
 
 class WorkspaceAskRunV2(BaseModel):

@@ -17,10 +17,75 @@ Architectural ownership (F3-A):
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Literal, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+_MAX_TEMPORAL_AGE_SECONDS = 31_536_000
+
+
+def _require_timezone_aware(value: datetime, field_name: str) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{field_name}_must_be_timezone_aware")
+    return value
+
+
+class MaxAgeTemporalConstraintV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    kind: Literal["max_age"] = "max_age"
+    max_age_seconds: int = Field(..., ge=1, le=_MAX_TEMPORAL_AGE_SECONDS)
+
+
+class ValidAtTemporalConstraintV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    kind: Literal["valid_at"] = "valid_at"
+
+
+TemporalConstraintV1 = Annotated[
+    MaxAgeTemporalConstraintV1 | ValidAtTemporalConstraintV1,
+    Field(discriminator="kind"),
+]
+
+
+class PointInTimeEvidenceTemporalV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    kind: Literal["point_in_time"] = "point_in_time"
+    effective_at: datetime
+
+    @field_validator("effective_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        return _require_timezone_aware(value, "effective_at")
+
+
+class ValidityIntervalEvidenceTemporalV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    kind: Literal["validity_interval"] = "validity_interval"
+    valid_from: datetime
+    valid_until: datetime
+
+    @field_validator("valid_from", "valid_until")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        return _require_timezone_aware(value, "valid_from")
+
+    @model_validator(mode="after")
+    def _validate_interval(self) -> ValidityIntervalEvidenceTemporalV1:
+        if self.valid_until < self.valid_from:
+            raise ValueError("validity_interval_invalid")
+        return self
+
+
+EvidenceTemporalMetadataV1 = Annotated[
+    PointInTimeEvidenceTemporalV1 | ValidityIntervalEvidenceTemporalV1,
+    Field(discriminator="kind"),
+]
 
 
 class EvidenceObligationDerivationError(RuntimeError):
@@ -44,6 +109,7 @@ class RequireIndexedEvidenceRuleParametersV1(BaseModel):
     indexed_source_binding_id: str | None = Field(
         default=None, min_length=1, max_length=128
     )
+    temporal_constraint: TemporalConstraintV1 | None = None
 
 
 class TypedCapabilityRequestEntryV1(BaseModel):
@@ -62,6 +128,7 @@ class RequireLiveEvidenceRuleParametersV1(BaseModel):
     live_access_binding_id: str = Field(..., min_length=1, max_length=128)
     live_call_descriptor_ref: str = Field(..., min_length=1, max_length=128)
     typed_capability_request: tuple[TypedCapabilityRequestEntryV1, ...] = ()
+    temporal_constraint: TemporalConstraintV1 | None = None
 
 
 class RequireIndexedEvidencePolicyRuleV1(BaseModel):
@@ -154,6 +221,7 @@ class DerivedIndexedEvidenceObligationV1(BaseModel):
     indexed_source_binding_id: str | None = Field(
         default=None, min_length=1, max_length=128
     )
+    temporal_constraint: TemporalConstraintV1 | None = None
     origin: RequirementOriginV1
 
 
@@ -164,6 +232,7 @@ class DerivedLiveEvidenceObligationV1(BaseModel):
     requirement_id: str = Field(..., min_length=1, max_length=128)
     semantic_role: str = Field(..., min_length=1, max_length=256)
     call_id: str = Field(..., min_length=1, max_length=128)
+    temporal_constraint: TemporalConstraintV1 | None = None
     origin: RequirementOriginV1
 
 

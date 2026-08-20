@@ -600,6 +600,7 @@ def test_attack_wrong_call_evidence_cannot_satisfy_obligation() -> None:
         ),
         indexed_evidence=(),
         live_evidence=(_live_evidence_for_call(call_id="call-b"),),
+        evaluated_at=PROOF_NOW,
     )
     assert result.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED
     assert (

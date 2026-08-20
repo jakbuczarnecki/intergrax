@@ -147,6 +147,7 @@ def test_admissibility_empty_obligations_is_satisfied() -> None:
         obligations=(),
         indexed_evidence=(_indexed_evidence(),),
         live_evidence=(),
+        evaluated_at=_NOW,
     )
     assert result.overall_status is EvidenceAdmissibilityStatusV1.SATISFIED
     assert result.requirement_evaluations == ()
@@ -195,6 +196,7 @@ def test_required_planned_call_satisfied_optional_planned_absent_is_satisfied() 
         obligations=obligations,
         indexed_evidence=(_indexed_evidence(),),
         live_evidence=(_live_evidence(call_id="call-required"),),
+        evaluated_at=_NOW,
     )
     assert result.overall_status is EvidenceAdmissibilityStatusV1.SATISFIED
 
@@ -215,6 +217,7 @@ def test_required_planned_call_absent_optional_present_is_unsatisfied() -> None:
         obligations=obligations,
         indexed_evidence=(_indexed_evidence(),),
         live_evidence=(_live_evidence(call_id="call-optional"),),
+        evaluated_at=_NOW,
     )
     assert result.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED
     live_eval = next(
@@ -243,6 +246,7 @@ def test_admissibility_all_required_evidence_satisfied() -> None:
         obligations=obligations,
         indexed_evidence=(indexed,),
         live_evidence=(live,),
+        evaluated_at=_NOW,
     )
     assert result.overall_status is EvidenceAdmissibilityStatusV1.SATISFIED
     assert len(result.requirement_evaluations) == 2
@@ -262,6 +266,7 @@ def test_admissibility_missing_indexed_evidence_is_unsatisfied() -> None:
         ),
         indexed_evidence=(),
         live_evidence=(),
+        evaluated_at=_NOW,
     )
     assert result.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED
     evaluation = result.requirement_evaluations[0]
@@ -279,6 +284,7 @@ def test_admissibility_missing_live_evidence_is_unsatisfied() -> None:
         ),
         indexed_evidence=(),
         live_evidence=(),
+        evaluated_at=_NOW,
     )
     assert result.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED
 
@@ -294,6 +300,7 @@ def test_admissibility_wrong_live_call_cannot_satisfy_requirement() -> None:
         ),
         indexed_evidence=(),
         live_evidence=(_live_evidence(call_id="call-b"),),
+        evaluated_at=_NOW,
     )
     assert result.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED
     assert (
@@ -313,6 +320,7 @@ def test_admissibility_wrong_indexed_binding_cannot_satisfy_scoped_requirement()
         ),
         indexed_evidence=(_indexed_evidence(binding_id=_OTHER_BINDING),),
         live_evidence=(),
+        evaluated_at=_NOW,
     )
     assert result.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED
     assert (
@@ -333,6 +341,7 @@ def test_admissibility_scoped_indexed_binding_satisfied() -> None:
         ),
         indexed_evidence=(indexed,),
         live_evidence=(),
+        evaluated_at=_NOW,
     )
     assert result.overall_status is EvidenceAdmissibilityStatusV1.SATISFIED
     assert result.requirement_evaluations[0].matched_evidence_ids == (indexed.evidence_id,)
@@ -374,10 +383,12 @@ def test_execution_admissibility_is_deterministic_without_side_effects() -> None
     first = evaluate_execution_admissibility(
         validated_plan=plan,
         execution=execution,
+        evaluated_at=_NOW,
     )
     second = evaluate_execution_admissibility(
         validated_plan=plan,
         execution=execution,
+        evaluated_at=_NOW,
     )
     assert first == second
 
@@ -527,6 +538,7 @@ def _valid_satisfied_run_payload() -> dict[str, object]:
     )
     admissibility = EvidenceAdmissibilityResultV1(
         overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+        evaluated_at=_NOW,
         requirement_evaluations=(
             RequiredEvidenceEvaluationV1(
                 requirement_id="req-indexed",
@@ -587,6 +599,7 @@ def _valid_unsatisfied_run_payload() -> dict[str, object]:
     )
     admissibility = EvidenceAdmissibilityResultV1(
         overall_status=EvidenceAdmissibilityStatusV1.UNSATISFIED,
+        evaluated_at=_NOW,
         requirement_evaluations=(
             RequiredEvidenceEvaluationV1(
                 requirement_id="req-indexed",
@@ -651,6 +664,7 @@ def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
                 {
                     "evidence_admissibility": EvidenceAdmissibilityResultV1(
                         overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        evaluated_at=_NOW,
                         requirement_evaluations=(
                             RequiredEvidenceEvaluationV1(
                                 requirement_id="req-indexed",
@@ -673,6 +687,7 @@ def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
                 {
                     "evidence_admissibility": EvidenceAdmissibilityResultV1(
                         overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        evaluated_at=_NOW,
                         requirement_evaluations=(
                             RequiredEvidenceEvaluationV1(
                                 requirement_id="req-indexed",
@@ -695,6 +710,7 @@ def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
                 {
                     "evidence_admissibility": EvidenceAdmissibilityResultV1(
                         overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        evaluated_at=_NOW,
                         requirement_evaluations=(
                             RequiredEvidenceEvaluationV1(
                                 requirement_id="req-indexed",
@@ -718,6 +734,7 @@ def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
                 {
                     "evidence_admissibility": EvidenceAdmissibilityResultV1(
                         overall_status=EvidenceAdmissibilityStatusV1.UNSATISFIED,
+                        evaluated_at=_NOW,
                         requirement_evaluations=(
                             RequiredEvidenceEvaluationV1(
                                 requirement_id="req-indexed",
@@ -741,6 +758,7 @@ def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
                 {
                     "evidence_admissibility": EvidenceAdmissibilityResultV1(
                         overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        evaluated_at=_NOW,
                         requirement_evaluations=(
                             RequiredEvidenceEvaluationV1(
                                 requirement_id="req-indexed",
@@ -763,6 +781,7 @@ def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
                 {
                     "evidence_admissibility": EvidenceAdmissibilityResultV1(
                         overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        evaluated_at=_NOW,
                         requirement_evaluations=(
                             RequiredEvidenceEvaluationV1(
                                 requirement_id="req-indexed",
@@ -785,6 +804,7 @@ def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
                 {
                     "evidence_admissibility": EvidenceAdmissibilityResultV1(
                         overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        evaluated_at=_NOW,
                         requirement_evaluations=(
                             RequiredEvidenceEvaluationV1(
                                 requirement_id="req-indexed",
@@ -807,6 +827,7 @@ def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
                 {
                     "evidence_admissibility": EvidenceAdmissibilityResultV1(
                         overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        evaluated_at=_NOW,
                         requirement_evaluations=(
                             RequiredEvidenceEvaluationV1(
                                 requirement_id="req-indexed",
@@ -854,6 +875,7 @@ def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
                 {
                     "evidence_admissibility": EvidenceAdmissibilityResultV1(
                         overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        evaluated_at=_NOW,
                         requirement_evaluations=(
                             RequiredEvidenceEvaluationV1(
                                 requirement_id="req-indexed",
@@ -904,6 +926,7 @@ def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
                 {
                     "evidence_admissibility": EvidenceAdmissibilityResultV1(
                         overall_status=EvidenceAdmissibilityStatusV1.SATISFIED,
+                        evaluated_at=_NOW,
                         requirement_evaluations=(
                             RequiredEvidenceEvaluationV1(
                                 requirement_id="req-indexed",
@@ -927,6 +950,7 @@ def test_valid_unsatisfied_admissibility_run_reconstructs() -> None:
                     "status": AskRunStatus.COMPLETED,
                     "evidence_admissibility": EvidenceAdmissibilityResultV1(
                         overall_status=EvidenceAdmissibilityStatusV1.UNSATISFIED,
+                        evaluated_at=_NOW,
                         requirement_evaluations=(
                             RequiredEvidenceEvaluationV1(
                                 requirement_id="req-indexed",

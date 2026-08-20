@@ -38,6 +38,10 @@ from intergrax.runtime.vendor_knowledge.live import (
     LiveExecutionOutcomeV1,
     ValidatedLiveCapabilityCallV1,
 )
+from intergrax.runtime.evidence.obligation_derivation_contracts import (
+    PointInTimeEvidenceTemporalV1,
+    ValidityIntervalEvidenceTemporalV1,
+)
 from intergrax.runtime.vendor_knowledge.live.contracts import content_sha256
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     CapabilityEffectV1,
@@ -99,6 +103,17 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+def _evidence_temporal(
+    snapshot: GovernanceApprovalSnapshotV1,
+) -> PointInTimeEvidenceTemporalV1 | ValidityIntervalEvidenceTemporalV1:
+    if snapshot.valid_from is not None and snapshot.valid_until is not None:
+        return ValidityIntervalEvidenceTemporalV1(
+            valid_from=snapshot.valid_from,
+            valid_until=snapshot.valid_until,
+        )
+    return PointInTimeEvidenceTemporalV1(effective_at=snapshot.updated_at)
+
+
 def _normalized_content(snapshot: GovernanceApprovalSnapshotV1) -> str:
     payload = {
         "subject_id": snapshot.subject_id,
@@ -156,6 +171,7 @@ class GovernanceApprovalReadLiveHandlerV1(LiveCapabilityHandlerV1):
                 content_hash=content_sha256(content),
                 retrieved_at=retrieved_at,
                 remote_updated_at=snapshot.updated_at,
+                temporal=_evidence_temporal(snapshot),
             )
             return LiveCapabilityExecutionResultV1(
                 call_id=call.call_id,

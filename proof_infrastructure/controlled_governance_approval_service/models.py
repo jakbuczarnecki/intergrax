@@ -21,6 +21,8 @@ class GovernanceApprovalResponseV1(BaseModel):
     decision_state: GovernanceDecisionStateV1
     approved: bool
     updated_at: datetime
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
 
 
 class RequestCountResponseV1(BaseModel):

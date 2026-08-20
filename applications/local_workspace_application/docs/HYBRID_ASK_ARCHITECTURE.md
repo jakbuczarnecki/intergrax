@@ -370,6 +370,36 @@ admissibility (structural call_id matching)
 
 Reusable production integrations (provider-neutral): `project_status` (readiness), `security_status`, `change_approval`, `governance_approval`. ORION/deployment semantics live in proof fixtures only.
 
+#### 6.4.5 Temporal evidence admissibility (COMM-5F3-D)
+
+F3-D adds requirement-level **temporal admissibility** on top of F3-A/B/C structural matching. It is not a general bitemporal engine, historical reconstruction layer, or business-rule evaluator.
+
+```text
+Evidence requirement
+    ↓
+source/call structural match
+    ↓
+temporal_constraint (optional on obligation)
+    ↓
+semantic evidence temporal metadata
+    ↓
+evaluation at explicit evaluated_at
+    ↓
+SATISFIED / EVIDENCE_TEMPORALLY_INVALID
+```
+
+| Contract | Meaning |
+|----------|---------|
+| `MaxAgeTemporalConstraintV1` | `0 <= evaluated_at - effective_at <= max_age_seconds`; future-dated point evidence fails closed |
+| `ValidAtTemporalConstraintV1` | evidence validity interval must contain `evaluated_at` (`valid_from <= t <= valid_until`) |
+| `PointInTimeEvidenceTemporalV1` | semantic `effective_at` (not retrieval/persistence time) |
+| `ValidityIntervalEvidenceTemporalV1` | approval-style `valid_from` / `valid_until` on evidence |
+| `EvidenceAdmissibilityResultV1.evaluated_at` | authoritative evaluation instant for replayable proof |
+
+Temporal constraints are derived from typed policy rule parameters, preserved through derivation → plan → run, and hashed into `derivation_snapshot_id`. Requirement identity stays stable across policy revisions that only tighten or relax temporal bounds (for example rev17 `max_age=24h` vs rev18 `max_age=1h`).
+
+Fresh evidence may still report business-negative provider facts (for example `BLOCKED`); temporal admissibility judges **when** evidence is acceptable, not whether the fact is favorable.
+
 `semantic_role` is explanatory for audit — enforcement uses structural fields only (`call_id`, `indexed_source_binding_id`, evidence type).
 
 Persisted `WorkspaceAskRunV2` records are **self-consistent**: obligations, per-requirement evaluations, matched evidence IDs, persisted evidence, and final status must agree.

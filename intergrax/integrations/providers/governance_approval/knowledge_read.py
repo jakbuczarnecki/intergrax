@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Final
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 GOVERNANCE_APPROVAL_PROVIDER_ID: Final[str] = "governance_approval"
 GOVERNANCE_APPROVAL_SOURCE_KIND: Final[str] = "approval"
@@ -25,6 +25,8 @@ class GovernanceApprovalSnapshotV1(BaseModel):
     decision_state: GovernanceDecisionStateV1
     approved: bool
     updated_at: datetime
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
 
     @field_validator("subject_id")
     @classmethod
@@ -33,6 +35,25 @@ class GovernanceApprovalSnapshotV1(BaseModel):
         if not cleaned or cleaned != value:
             raise ValueError("subject_id_invalid")
         return cleaned
+
+    @field_validator("updated_at", "valid_from", "valid_until")
+    @classmethod
+    def _timezone_aware(cls, value: datetime | None) -> datetime | None:
+        if value is not None and (value.tzinfo is None or value.utcoffset() is None):
+            raise ValueError("governance_approval_timestamp_must_be_timezone_aware")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_validity_pair(self) -> GovernanceApprovalSnapshotV1:
+        if (self.valid_from is None) ^ (self.valid_until is None):
+            raise ValueError("governance_validity_interval_incomplete")
+        if (
+            self.valid_from is not None
+            and self.valid_until is not None
+            and self.valid_until < self.valid_from
+        ):
+            raise ValueError("governance_validity_interval_invalid")
+        return self
 
 
 class GovernanceApprovalNotFoundError(LookupError):

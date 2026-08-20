@@ -1160,6 +1160,7 @@ class KnowledgeQueryOrchestratorV1:
                                 remote_updated_at=item.remote_updated_at,
                                 safe_locator=item.safe_locator,
                                 truncated=item.truncated or outcome.truncated,
+                                temporal=item.temporal,
                             )
                         )
                     if outcome.truncated:
