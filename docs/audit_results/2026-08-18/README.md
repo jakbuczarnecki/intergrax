@@ -15,10 +15,10 @@
 | `status` | `IN_PROGRESS` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
 | `campaign_end_sha` | — |
-| `scope` | Platform audit — fourteen completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`) |
+| `scope` | Platform audit — fifteen completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`) |
 | `overall_verdict` | — |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -42,6 +42,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | AGENT_SYSTEM | COMPLETE | `654a7c0e3fe823a43a2620645848248023e1c64e` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `995c34ee5b9ca355e9bf3ec02c425f51d6cedaf4` | [AGENT_SYSTEM.md](AGENT_SYSTEM.md) |
 | TOOLS | COMPLETE | `65aaf33a6a6dba9b336162ec547cd677f4edad91` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `c6cc72056c60730516e6228856dbd1c8611c8c46` | [TOOLS.md](TOOLS.md) |
 | SKILLS | COMPLETE | `2df2f07d10aa19c4d62694f21858be501a3d6d18` | FAIL | 0 | 3 | 3 | 0 | COMPLETE | COMPLETE | `1d17272ceb2f486320e7265bfd62ca872961d74b` | [SKILLS.md](SKILLS.md) |
+| CODE_CRAFT | COMPLETE | `f985ad342d0d6db38c9998df67f9cd7bc10bfa46` | FAIL | 2 | 5 | 0 | 0 | COMPLETE | COMPLETE | — | [CODE_CRAFT.md](CODE_CRAFT.md) |
 
 ## Finding register
 
@@ -134,11 +135,18 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-SKILLS-04 | SKILLS | MEDIUM | PROVENANCE / CONTRACT COMPLETENESS GAP | ACCEPTED | SKILLS-IDENTITY-PROVENANCE | — | `docs/project/architecture/SKILLS.md` — [Protocol v2 skills target invariants (2026-08-18)](#protocol-v2-skills-target-invariants-2026-08-18) | `docs/project/maintainers/plans/SKILLS.md` — SKILLS-IDENTITY-PROVENANCE | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-SKILLS-05 | SKILLS | MEDIUM | CONFIGURATION VALIDATION GAP | ACCEPTED | SKILLS-AUTHORITY-INTEGRITY | — | `docs/project/architecture/SKILLS.md` — [Protocol v2 skills target invariants (2026-08-18)](#protocol-v2-skills-target-invariants-2026-08-18) | `docs/project/maintainers/plans/SKILLS.md` — SKILLS-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-20 |
 | AUDIT-20260818-SKILLS-06 | SKILLS | MEDIUM | DOCUMENTATION / EVIDENCE DRIFT | ACCEPTED | SKILLS-EVIDENCE-SYNC | — | `docs/project/architecture/SKILLS.md` — [Protocol v2 skills target invariants (2026-08-18)](#protocol-v2-skills-target-invariants-2026-08-18) | `docs/project/maintainers/plans/SKILLS.md` — SKILLS-EVIDENCE-SYNC | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CODE_CRAFT-01 | CODE_CRAFT | CRITICAL | SECURITY / TENANT ISOLATION / IDENTITY DEFECT | ACCEPTED | CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY | — | `docs/project/architecture/CODE_CRAFT.md` — [Protocol v2 CodeCraft target invariants (2026-08-18)](#protocol-v2-codecraft-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CODE_CRAFT.md` — CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CODE_CRAFT-02 | CODE_CRAFT | CRITICAL | GOVERNANCE / HITL AUTHORIZATION BYPASS | ACCEPTED | CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY | — | `docs/project/architecture/CODE_CRAFT.md` — [Protocol v2 CodeCraft target invariants (2026-08-18)](#protocol-v2-codecraft-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CODE_CRAFT.md` — CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CODE_CRAFT-03 | CODE_CRAFT | HIGH | AUTHORIZATION / CONFIGURATION ESCALATION | ACCEPTED | CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY | — | `docs/project/architecture/CODE_CRAFT.md` — [Protocol v2 CodeCraft target invariants (2026-08-18)](#protocol-v2-codecraft-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CODE_CRAFT.md` — CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CODE_CRAFT-04 | CODE_CRAFT | HIGH | VERIFICATION / PROMOTION INTEGRITY DEFECT | ACCEPTED | CODECRAFT-VERIFICATION-INTEGRITY | — | `docs/project/architecture/CODE_CRAFT.md` — [Protocol v2 CodeCraft target invariants (2026-08-18)](#protocol-v2-codecraft-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CODE_CRAFT.md` — CODECRAFT-VERIFICATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CODE_CRAFT-05 | CODE_CRAFT | HIGH | VERIFICATION / ISOLATION DEFECT | ACCEPTED | CODECRAFT-VERIFICATION-INTEGRITY | — | `docs/project/architecture/CODE_CRAFT.md` — [Protocol v2 CodeCraft target invariants (2026-08-18)](#protocol-v2-codecraft-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CODE_CRAFT.md` — CODECRAFT-VERIFICATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CODE_CRAFT-06 | CODE_CRAFT | HIGH | ARCHITECTURE / SECURITY ISOLATION DEFECT | ACCEPTED | CODECRAFT-ISOLATION-INTEGRITY | — | `docs/project/architecture/CODE_CRAFT.md` — [Protocol v2 CodeCraft target invariants (2026-08-18)](#protocol-v2-codecraft-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CODE_CRAFT.md` — CODECRAFT-ISOLATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
+| AUDIT-20260818-CODE_CRAFT-07 | CODE_CRAFT | HIGH | SECURITY / PAPER CONTROL | ACCEPTED | CODECRAFT-ISOLATION-INTEGRITY | — | `docs/project/architecture/CODE_CRAFT.md` — [Protocol v2 CodeCraft target invariants (2026-08-18)](#protocol-v2-codecraft-target-invariants-2026-08-18) | `docs/project/maintainers/plans/CODE_CRAFT.md` — CODECRAFT-ISOLATION-INTEGRITY | — | — | operator accepted 2026-08-20 |
 ## Audit rollup
 
 **Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
 
-**Completed layers:** 14
+**Completed layers:** 15
 
 First layer summary:
 
@@ -239,7 +247,14 @@ Fourteenth layer summary:
 - **Systemic themes:** fail-closed host Skill authority; explicit Skill version identity; non-expanding ToolProfile authority; canonical ResolvedSkillPack provenance; fail-fast SkillProfile references; catalog-count evidence sync
 - **Recommended remediation order:** SKILLS-AUTHORITY-INTEGRITY → SKILLS-IDENTITY-PROVENANCE → SKILLS-EVIDENCE-SYNC (see layer report)
 
-**Cumulative (completed layers only):** 78 accepted findings — 0 CRITICAL, 51 HIGH, 27 MEDIUM, 0 LOW
+Fifteenth layer summary:
+
+- **Layer:** CODE_CRAFT — **FAIL** at `f985ad342d0d6db38c9998df67f9cd7bc10bfa46`
+- **Accepted findings:** 7 total — 2 CRITICAL, 5 HIGH, 0 MEDIUM, 0 LOW
+- **Systemic themes:** canonical execution identity binding for craft sessions; HITL approval from Governed Execution not tool input; narrow-only task override lattice; evidence-consuming promotion; same-sandbox verification; isolation anti-downgrade; runtime network egress enforcement
+- **Recommended remediation order:** CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY → CODECRAFT-VERIFICATION-INTEGRITY → CODECRAFT-ISOLATION-INTEGRITY (see layer report)
+
+**Cumulative (completed layers only):** 85 accepted findings — 2 CRITICAL, 56 HIGH, 27 MEDIUM, 0 LOW
 
 ## Remediation rollup
 
@@ -297,3 +312,6 @@ Fourteenth layer summary:
 | SKILLS-AUTHORITY-INTEGRITY | AUDIT-20260818-SKILLS-01, 03, 05 | ACCEPTED / PLANNED | fail-closed host Skill authority, non-expanding ToolProfile, fail-fast profile references — not implemented in this persistence task |
 | SKILLS-IDENTITY-PROVENANCE | AUDIT-20260818-SKILLS-02, 04 | ACCEPTED / PLANNED | explicit Skill version identity, canonical ResolvedSkillPack provenance — not implemented in this persistence task |
 | SKILLS-EVIDENCE-SYNC | AUDIT-20260818-SKILLS-06 | ACCEPTED / PLANNED | catalog count single source of truth (docs-owned) — not implemented in this persistence task |
+| CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY | AUDIT-20260818-CODE_CRAFT-01, 02, 03 | ACCEPTED / PLANNED | session authority, canonical HITL, override lattice — not implemented in this persistence task |
+| CODECRAFT-VERIFICATION-INTEGRITY | AUDIT-20260818-CODE_CRAFT-04, 05 | ACCEPTED / PLANNED | promotion eligibility/evidence, same-sandbox verification — not implemented in this persistence task |
+| CODECRAFT-ISOLATION-INTEGRITY | AUDIT-20260818-CODE_CRAFT-06, 07 | ACCEPTED / PLANNED | isolation anti-downgrade, network egress enforcement — not implemented in this persistence task |
