@@ -37,7 +37,7 @@
 - **Prior audit reference(s):** Protocol v2 [`INTEGRATIONS`](INTEGRATIONS.md) (`INTEGRATIONS-RUNTIME-BINDING-INTEGRITY` — coordinate RAG-05); historical RAG-FINAL / RAG-PROD / RAG-LIVE **Done** / **CLOSED** rows remain valid qualification facts
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `bbe52a6355799929b27bc97802aa44acef7300c1`
 
 ## Executive summary
 

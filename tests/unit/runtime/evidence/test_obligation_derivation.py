@@ -34,17 +34,20 @@ _TENANT = "tenant-1"
 _WORKSPACE = "workspace-1"
 _CONFIG_REVISION = 17
 _POLICY_DOC = "org-policy-generic"
+_POLICY_DOC_A = "deployment-policy"
+_POLICY_DOC_B = "security-policy"
 
 
 def _indexed_rule(
     *,
+    policy_document_id: str = _POLICY_DOC,
     revision_id: str,
     rule_id: str,
     requirement_key: str,
     semantic_role: str,
 ) -> RequireIndexedEvidencePolicyRuleV1:
     return RequireIndexedEvidencePolicyRuleV1(
-        policy_document_id=_POLICY_DOC,
+        policy_document_id=policy_document_id,
         revision_id=revision_id,
         rule_id=rule_id,
         parameters=RequireIndexedEvidenceRuleParametersV1(
@@ -195,6 +198,110 @@ def test_duplicate_rule_id_fails_closed() -> None:
     with pytest.raises(EvidenceObligationDerivationError) as exc:
         engine.derive(context)
     assert exc.value.error_code == "duplicate_rule_id"
+
+
+def test_same_rule_id_across_different_policies_succeeds() -> None:
+    engine = DeterministicEvidenceObligationDerivation()
+    context = EvidenceObligationDerivationContextV1(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        configuration_revision=_CONFIG_REVISION,
+        resolved_policy_rules=(
+            _indexed_rule(
+                policy_document_id=_POLICY_DOC_A,
+                revision_id="rev1",
+                rule_id="RULE-1",
+                requirement_key="deployment-index",
+                semantic_role="Deployment evidence",
+            ),
+            _indexed_rule(
+                policy_document_id=_POLICY_DOC_B,
+                revision_id="rev1",
+                rule_id="RULE-1",
+                requirement_key="security-index",
+                semantic_role="Security evidence",
+            ),
+        ),
+    )
+    contract = engine.derive(context)
+
+    assert len(contract.derived_obligations) == 2
+    requirement_ids = tuple(
+        obligation.requirement_id for obligation in contract.derived_obligations
+    )
+    assert requirement_ids == (
+        f"policy:{_POLICY_DOC_A}:RULE-1:deployment-index",
+        f"policy:{_POLICY_DOC_B}:RULE-1:security-index",
+    )
+    assert contract.source_policy_document_ids == (_POLICY_DOC_A, _POLICY_DOC_B)
+    assert contract.source_rule_ids == ("RULE-1", "RULE-1")
+
+
+def test_conflicting_policy_rule_revision_fails_closed() -> None:
+    engine = DeterministicEvidenceObligationDerivation()
+    context = EvidenceObligationDerivationContextV1(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        configuration_revision=_CONFIG_REVISION,
+        resolved_policy_rules=(
+            _indexed_rule(
+                policy_document_id=_POLICY_DOC_A,
+                revision_id="rev1",
+                rule_id="RULE-1",
+                requirement_key="deployment-index",
+                semantic_role="Deployment evidence",
+            ),
+            _indexed_rule(
+                policy_document_id=_POLICY_DOC_A,
+                revision_id="rev2",
+                rule_id="RULE-1",
+                requirement_key="deployment-index-v2",
+                semantic_role="Deployment evidence v2",
+            ),
+        ),
+    )
+    with pytest.raises(EvidenceObligationDerivationError) as exc:
+        engine.derive(context)
+    assert exc.value.error_code == "conflicting_policy_rule_revision"
+
+
+def test_multi_policy_derivation_is_order_independent() -> None:
+    engine = DeterministicEvidenceObligationDerivation()
+    rule_a = _indexed_rule(
+        policy_document_id=_POLICY_DOC_A,
+        revision_id="rev1",
+        rule_id="RULE-1",
+        requirement_key="deployment-index",
+        semantic_role="Deployment evidence",
+    )
+    rule_b = _indexed_rule(
+        policy_document_id=_POLICY_DOC_B,
+        revision_id="rev1",
+        rule_id="RULE-1",
+        requirement_key="security-index",
+        semantic_role="Security evidence",
+    )
+    forward = EvidenceObligationDerivationContextV1(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        configuration_revision=_CONFIG_REVISION,
+        resolved_policy_rules=(rule_a, rule_b),
+    )
+    reverse = EvidenceObligationDerivationContextV1(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        configuration_revision=_CONFIG_REVISION,
+        resolved_policy_rules=(rule_b, rule_a),
+    )
+
+    forward_contract = engine.derive(forward)
+    reverse_contract = engine.derive(reverse)
+
+    assert forward_contract == reverse_contract
+    assert (
+        forward_contract.derivation_snapshot_id
+        == reverse_contract.derivation_snapshot_id
+    )
 
 
 def test_duplicate_requirement_id_fails_closed() -> None:
