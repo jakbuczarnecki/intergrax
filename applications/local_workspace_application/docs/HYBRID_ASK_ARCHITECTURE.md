@@ -338,6 +338,35 @@ deployment-policy / rev18 / RULE-SEC-DEP-4
 
 `derivation_engine_version` is deferred: obligation outputs are fully determined by canonical typed rule inputs hashed into `derivation_snapshot_id`; algorithm identity is fixed to `DeterministicEvidenceObligationDerivation`.
 
+#### 6.4.4 Multi-provider evidence execution (COMM-5F3-C)
+
+F3-C proves that one **derived evidence contract** can require independent live facts from multiple provider classes. Multi-call orchestration is **existing platform capability** (`KnowledgeQueryOrchestratorV1`); F3-C adds reusable provider integrations and a canonical multi-provider proof path.
+
+```text
+Derived Evidence Contract
+    ↓
+REQ-readiness  → Connection project-status  / vendor.project_status.project.read
+REQ-security   → Connection security-status / vendor.security_status.security.read
+REQ-change     → Connection change-approval  / vendor.change_approval.change.read
+REQ-architecture → Connection governance-approval / vendor.governance_approval.approval.read
+    ↓
+per-call runtime authority (WorkspaceLiveAccessRuntimeAuthority)
+    ↓
+independent provider execution + evidence outcomes (call_id-bound)
+    ↓
+admissibility (structural call_id matching)
+```
+
+| Invariant | Meaning |
+|-----------|---------|
+| No mega-provider | Each organizational authority is a distinct provider + connection + capability |
+| No new orchestrator | Same orchestrator loop; no parallel execution engine |
+| Policy-derived calls | Live proposals/obligations come from `EvidenceObligationDerivationPort`, not hand-built plans |
+| Evidence identity | Live evidence satisfies only its bound `call_id` |
+| Reused spine | Resolver, rehydration, handler registry, live executor unchanged |
+
+Reusable production integrations (provider-neutral): `project_status` (readiness), `security_status`, `change_approval`, `governance_approval`. ORION/deployment semantics live in proof fixtures only.
+
 `semantic_role` is explanatory for audit — enforcement uses structural fields only (`call_id`, `indexed_source_binding_id`, evidence type).
 
 Persisted `WorkspaceAskRunV2` records are **self-consistent**: obligations, per-requirement evaluations, matched evidence IDs, persisted evidence, and final status must agree.
