@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 
 from proof_infrastructure.controlled_project_status_service.models import (
     ProjectStatusControlUpdateV1,
+    ProjectStatusReadBehaviorV1,
     ProjectStatusResponseV1,
 )
 
@@ -18,11 +19,13 @@ class ProjectStatusStore:
         self._lock = threading.Lock()
         self._projects: dict[str, ProjectStatusResponseV1] = {}
         self._read_request_count = 0
+        self._read_behavior = ProjectStatusReadBehaviorV1.NORMAL
 
     def reset(self) -> None:
         with self._lock:
             self._projects.clear()
             self._read_request_count = 0
+            self._read_behavior = ProjectStatusReadBehaviorV1.NORMAL
 
     def put_status(self, status: ProjectStatusResponseV1) -> None:
         with self._lock:
@@ -74,3 +77,11 @@ class ProjectStatusStore:
     def reset_read_request_count(self) -> None:
         with self._lock:
             self._read_request_count = 0
+
+    def set_read_behavior(self, behavior: ProjectStatusReadBehaviorV1) -> None:
+        with self._lock:
+            self._read_behavior = behavior
+
+    def read_behavior(self) -> ProjectStatusReadBehaviorV1:
+        with self._lock:
+            return self._read_behavior

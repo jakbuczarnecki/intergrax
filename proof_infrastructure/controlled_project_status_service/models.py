@@ -57,3 +57,17 @@ class RequestCountResponseV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     read_request_count: int = Field(..., ge=0)
+
+
+class ProjectStatusReadBehaviorV1(StrEnum):
+    NORMAL = "normal"
+    MALFORMED_JSON = "malformed_json"
+    INVALID_SCHEMA = "invalid_schema"
+    HTTP_500 = "http_500"
+    HTTP_503 = "http_503"
+
+
+class ProjectStatusReadBehaviorControlV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    behavior: ProjectStatusReadBehaviorV1

@@ -242,4 +242,53 @@ Hybrid Ask architecture and COMM-5C3 Project Status boundary:
 
 ```bash
 uv run pytest tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_proof.py -v
+uv run pytest tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_adversarial.py -v
 ```
+
+---
+
+## Adversarial verification
+
+The following **adversarial invariants** are verified against the same real COMM-5D harness (`WorkspaceAskServiceV2`, indexed path, tenant connection, runtime authority, Project Status HTTP, admissibility, persistence). These are architectural proofs — not penetration-test certification.
+
+```mermaid
+flowchart TD
+  ATTACK["Adversarial input"]
+  PLAN["Plan validation"]
+  AUTH["Runtime authority"]
+  PROV["Provider contract"]
+  ADM["Admissibility gate"]
+  SYN["Answer synthesis"]
+
+  ATTACK --> PLAN
+  PLAN --> AUTH
+  AUTH --> PROV
+  PROV --> ADM
+  ADM --> SYN
+
+  PLAN -->|reject| STOP["Fail closed"]
+  AUTH -->|deny| STOP
+  PROV -->|reject| STOP
+  ADM -->|UNSATISFIED| STOP
+  SYN -->|blocked| STOP
+```
+
+| Attack | Expected defense | HTTP | LLM | Result |
+|--------|------------------|-----:|----:|--------|
+| A — required live missing | admissibility UNSATISFIED (indexed alone) | 0 | 0 | PASS |
+| B — mid-flight revoke | execution-time authority deny | 0 | 0 | PASS |
+| C — wrong connection/provider | plan validation reject | 0 | 0 | PASS |
+| D — wrong tenant | workspace scope reject | 0 | 0 | PASS |
+| E — wrong workspace | workspace scope reject | 0 | 0 | PASS |
+| F — malformed live payload | provider contract reject | 1 | 0 | PASS |
+| G — 404 / 5xx | provider failure; no synthesis | 1 | 0 | PASS |
+| H — caller downgrade | typed contract reject | 0 | 0 | PASS |
+| I — stale plan | runtime revalidation deny | 0 | 0 | PASS |
+| J — connection disabled | connection authority deny | 0 | 0 | PASS |
+| K — capability mismatch | plan validation reject | 0 | 0 | PASS |
+| L — EPHEMERAL leak | structural provenance only durable | 1 | 1 | PASS |
+| M — historical immutability | persisted run unchanged | 1 | 1 | PASS |
+| N — wrong call evidence | admissibility UNSATISFIED | 0 | 0 | PASS |
+| O — duplicate/replay | NOT REACHABLE BY CONTRACT | 0 | 0 | PASS |
+
+Tests: `tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_adversarial.py`

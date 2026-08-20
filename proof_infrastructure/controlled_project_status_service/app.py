@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 
 from proof_infrastructure.controlled_project_status_service.models import (
     ProjectStatusControlUpdateV1,
+    ProjectStatusReadBehaviorControlV1,
+    ProjectStatusReadBehaviorV1,
     ProjectStatusResponseV1,
     RequestCountResponseV1,
 )
@@ -26,9 +28,21 @@ def create_app(*, store: ProjectStatusStore | None = None) -> FastAPI:
     def health() -> dict[str, bool]:
         return {"ok": True}
 
-    @app.get("/projects/{project_id}/status", response_model=ProjectStatusResponseV1)
-    def read_project_status(project_id: str) -> ProjectStatusResponseV1:
+    @app.get("/projects/{project_id}/status", response_model=None)
+    def read_project_status(project_id: str) -> Response | ProjectStatusResponseV1:
+        behavior = status_store.read_behavior()
         status = status_store.read_status(project_id)
+        if behavior is ProjectStatusReadBehaviorV1.HTTP_500:
+            raise HTTPException(status_code=500, detail="controlled_server_error")
+        if behavior is ProjectStatusReadBehaviorV1.HTTP_503:
+            raise HTTPException(status_code=503, detail="controlled_server_unavailable")
+        if behavior is ProjectStatusReadBehaviorV1.MALFORMED_JSON:
+            return Response(content="{not-valid-json", media_type="application/json")
+        if behavior is ProjectStatusReadBehaviorV1.INVALID_SCHEMA:
+            return JSONResponse(
+                status_code=200,
+                content={"unexpected_field": "contract_invalid"},
+            )
         if status is None:
             raise HTTPException(status_code=404, detail="project_not_found")
         return status
@@ -58,6 +72,13 @@ def create_app(*, store: ProjectStatusStore | None = None) -> FastAPI:
     def reset_request_count() -> Response:
         status_store.reset_read_request_count()
         return Response(status_code=204)
+
+    @app.put("/control/read-behavior", response_model=ProjectStatusReadBehaviorControlV1)
+    def control_read_behavior(
+        control: ProjectStatusReadBehaviorControlV1,
+    ) -> ProjectStatusReadBehaviorControlV1:
+        status_store.set_read_behavior(control.behavior)
+        return control
 
     @app.exception_handler(HTTPException)
     def _http_exception_handler(_: object, exc: HTTPException) -> JSONResponse:
