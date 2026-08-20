@@ -2,7 +2,7 @@
 
 **Document type:** Maintainer-level operational control artifact  
 **Owner:** Portfolio Control Session  
-**Last updated:** 2026-08-19 (MP-12 initial creation)
+**Last updated:** 2026-08-20 (MP-13 LKW reference baseline ingestion)
 
 ---
 
@@ -36,9 +36,15 @@ Where exact implementation evidence exists, completion summaries alone are insuf
 
 ## Current ledger state
 
-**No accepted multi-product platform impact records exist yet.**
+**No accepted multi-product platform impact records exist.**
 
-LKW historical/platform pressure will be ingested later in MP-13 through an evidence-based baseline review. Do not retroactively invent ledger items before that review.
+MP-13 outcome (LKW reference baseline at `821eb7f6b2096de142822a29abc4546ee387a158`):
+
+- LKW reference baseline has been ingested — see [LKW control card](products/LKW.md).
+- No retrospective accepted `PI-*` records were created solely from capability consumption.
+- Historical origin remains unclaimed where exact causal evidence was not established.
+- Current candidate pressure (generic durable / indexed eligibility descriptor; LKW reports `UNKNOWN` today) belongs in the LKW control card as a **G4 CANDIDATE — NOT YET CLASSIFIED** finding. It must pass G4 before an `EXTENDED_GENERALLY` classification and ledger acceptance.
+- Do not fabricate `PI-001` or place the eligibility-descriptor candidate into this ledger as accepted platform evolution.
 
 ---
 

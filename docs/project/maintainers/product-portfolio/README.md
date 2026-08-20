@@ -44,7 +44,7 @@ LKW was **not** selected by the MP-1→MP-8 market-selection pipeline. It is inc
 | Product architectures for the four new applications | **Not yet designed** |
 | New product application scaffolding | **Not started** |
 | Cross-product reuse demonstration | **Not demonstrated** |
-| LKW baseline ingestion into portfolio control | **Pending** |
+| LKW baseline ingestion into portfolio control | **Completed** (MP-13) — [LKW control card](products/LKW.md) |
 
 ---
 
@@ -59,8 +59,11 @@ LKW was **not** selected by the MP-1→MP-8 market-selection pipeline. It is inc
 | Why portfolio/program direction changed | [DECISION_LOG.md](DECISION_LOG.md) |
 | Per-product reuse methodology | [PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_PROOF.md) |
 | Product-first development principle | [PRODUCT_FIRST_MVP.md](../plans/PRODUCT_FIRST_MVP.md) |
+| LKW Portfolio Control Card | [products/LKW.md](products/LKW.md) |
 | LKW architecture | [LKW ARCHITECTURE.md](../../../../applications/local_workspace_application/docs/ARCHITECTURE.md) |
 | LKW implementation roadmap | [LKW IMPLEMENTATION_PLAN.md](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) |
+
+Product control cards are concise Portfolio Control indexes. They do not replace product-owned architecture or roadmap. LKW is baseline-ingested as the reference product.
 
 Do not duplicate LKW architecture or roadmap content here.
 
@@ -79,9 +82,17 @@ Where exact implementation evidence exists, completion summaries alone are insuf
 
 ---
 
+## Product control cards
+
+| Product | Control card | Baseline status |
+|---------|--------------|-----------------|
+| Local Knowledge Workspace (LKW) | [products/LKW.md](products/LKW.md) | Reference baseline ingested (MP-13) |
+
+The `products/*` area expands as additional products receive baseline ingestion. Control cards index portfolio state; architecture and roadmap remain product-owned.
+
 ## Planned workspace shape
 
-Later tasks will add, without creating them now:
+Later tasks will add:
 
-- per-product control cards (`products/*`)
+- per-product control cards for newly selected products (`products/*`)
 - checkpoint reviews (`reviews/*`)

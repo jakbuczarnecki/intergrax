@@ -2,7 +2,7 @@
 
 **Document type:** Maintainer-level operational control artifact  
 **Owner:** Portfolio Control Session  
-**Last verified:** 2026-08-19 (MP-12 initial creation)
+**Last verified:** 2026-08-20 (MP-13 LKW reference baseline ingestion)
 
 ---
 
@@ -75,7 +75,7 @@ Recommendation and priority are **separate dimensions**. Do not mix them.
 
 | Product | Role | Program State | Product Stage | Current Milestone | Recommendation | Priority | Platform Evidence State | Last Verified Evidence | Next Portfolio Gate |
 |---------|------|---------------|---------------|-------------------|----------------|----------|-------------------------|------------------------|---------------------|
-| Local Knowledge Workspace (LKW) | Existing reference product | **ACTIVE** | Advanced existing product | See [LKW IMPLEMENTATION_PLAN.md](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) — current task: LKW-PLUGIN-CAPABILITY-CONFIGURATION-1 (READY_FOR_REVIEW); next: LKW-INDEXED-SOURCE-LIFECYCLE-1 | **CONTINUE** | **HIGH** | Baseline ingestion pending | [LKW IMPLEMENTATION_PLAN.md](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md); [LKW ARCHITECTURE.md](../../../../applications/local_workspace_application/docs/ARCHITECTURE.md) | G0-equivalent baseline ingestion |
+| Local Knowledge Workspace (LKW) | Existing reference product | **ACTIVE** | Advanced existing product | See [LKW IMPLEMENTATION_PLAN.md](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) — current task: LKW-PLUGIN-CAPABILITY-CONFIGURATION-1 (READY_FOR_REVIEW); next: LKW-INDEXED-SOURCE-LIFECYCLE-1 | **CONTINUE** | **HIGH** | Reference baseline accepted at `821eb7f6b2096de142822a29abc4546ee387a158` — [LKW control card](products/LKW.md) | [LKW IMPLEMENTATION_PLAN.md](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md); [LKW control card](products/LKW.md) | Next material product gate / G4 as triggered |
 | Contract-to-Invoice Leakage / Recovery Operator | Newly selected | **SELECTED** | Pre-bootstrap | G0 / product baseline pending | **CONTINUE** | **HIGH** | Reuse evidence: not started | [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §5; [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) §18 | G0 — product baseline |
 | Supplier Disruption Response Operator | Newly selected | **SELECTED** | Pre-bootstrap | G0 / product baseline pending | **CONTINUE** | **MEDIUM** | Reuse evidence: not started | [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §5; [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) §18 | G0 — product baseline |
 | Third-Party Risk Decision Operator | Newly selected | **SELECTED** | Pre-bootstrap | Initial wedge still requires sharpening; G0 pending | **CONTINUE** | **MEDIUM** | Reuse evidence: not started | [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §5; [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) §18 | G0 — product baseline |
@@ -100,25 +100,25 @@ These positions are tracked for context but are **not** active program products.
 
 ## Current portfolio risks
 
-Evidence-supported at MP-12 closeout:
+Evidence-supported at MP-13 closeout:
 
 - Third-Party Risk initial wedge still requires sharpening (selection caveat retained).
 - Supply Disruption commercial/GTM/integration complexity remains material (selection caveat retained).
 - No cross-product reuse has yet been proven.
 - New product architectures do not yet exist.
-- LKW historical platform pressure has not yet been baseline-ingested into the portfolio control record.
+- LKW reference baseline ingested; no retrospective accepted `PI-*` records from consumption alone.
 
 ---
 
 ## Current portfolio actions
 
-At MP-12 closeout:
+At MP-13 closeout:
 
-1. Perform LKW baseline ingestion (G0-equivalent for reference product).
-2. Define bootstrap rules for new products.
-3. Prepare product-session launch.
+1. ~~Perform LKW baseline ingestion (G0-equivalent for reference product).~~ **Completed** — [LKW control card](products/LKW.md) at baseline `821eb7f6b2096de142822a29abc4546ee387a158`.
+2. **Next:** MP-14 Product Bootstrap Rules for newly selected products.
+3. Prepare product-session launch — **future**; not started.
 
-Do not treat these as completed until Portfolio Control verifies evidence and updates this document.
+Do not treat future actions as completed until Portfolio Control verifies evidence and updates this document.
 
 ---
 
