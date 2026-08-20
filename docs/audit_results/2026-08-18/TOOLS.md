@@ -38,7 +38,7 @@
 - **Prior audit reference(s):** Phase **TOOL-ENG** **closed** (36/36); AUDIT-IDEAL §11 **Done**; Protocol v2 [`AGENT_SYSTEM`](AGENT_SYSTEM.md) (AGSYS-03 tool permission bypass — separate layer); [`POLICY_GOVERNANCE`](POLICY_GOVERNANCE.md) (PG-FIX tool-scope spine)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `c6cc72056c60730516e6228856dbd1c8611c8c46`
 
 ## Executive summary
 
