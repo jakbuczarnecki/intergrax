@@ -35,7 +35,7 @@
 - **Prior audit reference(s):** Protocol v2 [`RAG`](RAG.md) (`RAG-SCOPE-CONTRACT-INTEGRITY` — MEMORY-01 is downstream evidence); Protocol v2 [`IDENTITY_TRUST`](IDENTITY_TRUST.md) (`IDT-FIX-*` — coordinate MEMORY-05); historical MEM / MEM-DEPTH / MEM-VEC **Done** rows remain valid delivery facts
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `e1c3aa3f55dbc7231d1315ae8b8aa40bbd9914fe`
 
 ## Executive summary
 

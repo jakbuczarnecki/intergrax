@@ -45,7 +45,7 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | CODE_CRAFT | COMPLETE | `f985ad342d0d6db38c9998df67f9cd7bc10bfa46` | FAIL | 2 | 5 | 0 | 0 | COMPLETE | COMPLETE | `a1bb2dc993f9bd6d4964d54e8882ec3507cfabbc` | [CODE_CRAFT.md](CODE_CRAFT.md) |
 | INTEGRATIONS | COMPLETE | `f15813cf5d2ffbd29f11a22daa1906a07e6ce23d` | FAIL | 0 | 2 | 3 | 0 | COMPLETE | COMPLETE | `3298f612e0a0d53f5d75e5eda8798ef5f11566c5` | [INTEGRATIONS.md](INTEGRATIONS.md) |
 | RAG | COMPLETE | `81b344411596d4a4187193d97b20f610e21ca3ac` | FAIL | 0 | 3 | 3 | 0 | COMPLETE | COMPLETE | `bbe52a6355799929b27bc97802aa44acef7300c1` | [RAG.md](RAG.md) |
-| MEMORY | COMPLETE | `628e24130de34f291a416cb1cff9397a2b327dec` | FAIL | 0 | 5 | 2 | 0 | COMPLETE | COMPLETE | — | [MEMORY.md](MEMORY.md) |
+| MEMORY | COMPLETE | `628e24130de34f291a416cb1cff9397a2b327dec` | FAIL | 0 | 5 | 2 | 0 | COMPLETE | COMPLETE | `e1c3aa3f55dbc7231d1315ae8b8aa40bbd9914fe` | [MEMORY.md](MEMORY.md) |
 
 ## Finding register
 
