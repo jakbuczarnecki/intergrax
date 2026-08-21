@@ -2,7 +2,7 @@
 
 **Proof ID:** `TOOLS-ITERATIVE-SQL-INVESTIGATION`  
 **Domain:** TOOLS (platform proof — not product, not LKW)  
-**Status:** DESIGNED — deterministic infrastructure implemented (PP-3B)
+**Status:** EXECUTABLE (PP-3C)
 
 ## Claim
 
@@ -10,46 +10,83 @@ The bounded iterative tool runtime can use real SQL observations to drive subseq
 
 ## Why it matters
 
-This is the reference TOOLS domain platform proof. It exercises reusable investigation semantics (multi-hop tool selection, evidence dependencies, bounded termination) independent of any product workflow.
+Reference TOOLS domain platform proof. Exercises reusable investigation semantics (multi-hop tool selection, evidence dependencies, bounded termination) independent of any product workflow.
 
 ## Architecture under proof
 
 - [`docs/project/architecture/TOOLS.md`](../../../docs/project/architecture/TOOLS.md)
-- ToolPlanningService / bounded ReAct path (planned PP-3C)
-- ENG-5 investigation policy (planned)
-- ENG-6 InvestigationProof (planned)
+- `ToolPlanningService` / bounded ReAct via `run_bounded_tool_loop()`
+- ENG-5 investigation policy (`tools_investigation_policy`)
+- ENG-6 `InvestigationProof`
 
 ## Real boundaries
 
-| Boundary | PP-3B | Planned |
-|----------|-------|---------|
-| PostgreSQL | Real, isolated Docker | Same |
-| Intergrax tool runtime | Real `ToolRegistry` + `RuntimeToolInvoker` | Same |
-| SQL tool | Proof-owned read-only contract | Same |
-| Model provider | **Not yet** | PP-3C |
-| Bounded tool loop | **Not yet** | PP-3C |
+| Boundary | Status |
+|----------|--------|
+| PostgreSQL | Real, isolated Docker |
+| Intergrax tool runtime | Real `ToolRegistry` + `RuntimeToolInvoker` |
+| SQL tool | Proof-owned read-only contract |
+| Model provider | Real adapter from `INTERGRAX_LLM_*` |
+| Bounded tool loop | Canonical `run_bounded_tool_loop()` — no proof-local loop |
 
-## Deterministic infrastructure (PP-3B)
+## Canonical dataset lifecycle
 
-Implemented under this directory:
+**Source of truth:** deterministic generator + fixed seed + dataset version + row count + ground-truth invariant contract.
 
-| Artifact | Role |
+**No canonical CSV is committed.** Bulk CSV, if ever used, is temporary transport only.
+
+| Field | Value |
+|-------|-------|
+| `dataset_id` | `TOOLS-ITERATIVE-SQL-INVESTIGATION-DATASET` |
+| `dataset_version` | `v1` |
+| `seed` | `42` |
+| `row_count` | `100000` |
+| `ground_truth_version` | `A1-B1-C1` |
+| `schema_identity` | `proof.parcel_events/v1` |
+
+**Fingerprint:** canonical JSON of identity fields → SHA-256 (does not hash generated rows).
+
+**Setup semantics:** TRUNCATE → regenerate canonical 100k → reload → verify materialized PostgreSQL invariants. Model execution aborts if verification fails.
+
+Docker (`docker-compose.yml`) provides infrastructure only (PostgreSQL, roles, schema permissions). Experiment data materialization runs via `setup.py` / proof entrypoint — not Docker startup.
+
+## Model isolation from ground truth
+
+The real LLM receives only:
+
+- analyst-safe table/schema description
+- scenario question
+- tool contract
+- ENG-5 investigation policy (via `ToolPlanningService`)
+
+It does **not** receive `dataset.py`, planted constants, expected answers, invariant implementation, or fingerprint semantics that reveal hidden answers.
+
+## Scenarios
+
+| ID | Question (summary) | PASS focus |
+|----|-------------------|------------|
+| **A** | North delay rate vs other regions — strongest operational explanation | Multi-hop SQL evidence; anomaly segment; not volume-only trap; valid `InvestigationProof` |
+| **B** | Is heavier weight itself the likely cause of delays? | Global association then segmented verification; must not claim direct causation |
+| **C** | Are staffing shortages the reason for delays? | No fabricated staffing evidence; bounded missing-evidence conclusion |
+
+Typed semantic outcomes: `ScenarioAOutcome`, `ScenarioBOutcome`, `ScenarioCOutcome` in `evaluator.py`.
+
+## Provider requirements
+
+Configure via standard Intergrax env (no proof-specific HTTP client):
+
+| Variable | Role |
 |----------|------|
-| `dataset.py` | Deterministic synthetic logistics dataset (`parcel_events`) with planted A/B/C structure |
-| `sql_tool.py` | Read-only SQL validation, DB-level bounded fetch, typed output |
-| `runtime.py` | Wires canonical `create_postgresql_relational_store()` → proof tool → registry → invoker |
-| `docker-compose.yml` + `sql/bootstrap.sql` | Isolated PostgreSQL with read-only runtime role |
-| `contracts.py` | Typed Pydantic tool I/O (`platform_proof.sql.query`) |
+| `INTERGRAX_LLM_PROVIDER` | Required — adapter slug (native tool calling) |
+| `INTERGRAX_LLM_MODEL` | Required — model id |
+| Provider credential env | As required by selected adapter (e.g. API key); local `ollama` / `vllm` need no key |
 
-## Planned scenarios
+PostgreSQL:
 
-| Scenario | Planted signal | Expected investigation lesson |
-|----------|----------------|------------------------------|
-| **A** | North aggregate delay looks worse; naive hub counts implicate high-volume hub | Rate/segmentation reveals North + express + long_haul as true anomaly that explains North elevation |
-| **B** | Weight correlates with delay globally | Controlling for route/service removes weight as direct cause |
-| **C** | No staffing columns exist | Staffing causation is unresolvable from available evidence |
-
-Scenarios are **not executed** until PP-3C adds model + planner + bounded loop.
+| Variable | Default |
+|----------|---------|
+| `INTERGRAX_PP_SQL_INVESTIGATION_ADMIN_DSN` | `postgresql://proof_admin:proof_admin_local@localhost:5435/iterative_sql_proof` |
+| `INTERGRAX_PP_SQL_INVESTIGATION_DSN` | `postgresql://proof_runtime:proof_runtime_local@localhost:5435/iterative_sql_proof` |
 
 ## Setup
 
@@ -57,57 +94,62 @@ Scenarios are **not executed** until PP-3C adds model + planner + bounded loop.
 docker compose -f platform_proofs/tools/iterative_sql_investigation/docker-compose.yml up -d
 ```
 
-Environment (local disposable credentials):
+Validate dataset materialization only (no LLM):
 
-| Variable | Default |
-|----------|---------|
-| `INTERGRAX_PP_SQL_INVESTIGATION_ADMIN_DSN` | `postgresql://proof_admin:proof_admin_local@localhost:5435/iterative_sql_proof` |
-| `INTERGRAX_PP_SQL_INVESTIGATION_DSN` | `postgresql://proof_runtime:proof_runtime_local@localhost:5435/iterative_sql_proof` |
-
-Load dataset (admin credentials):
-
-```python
-from intergrax.integrations.providers.relational_store.postgresql import create_postgresql_relational_store
-from platform_proofs.tools.iterative_sql_investigation.dataset import bulk_load_parcel_events
-
-store = create_postgresql_relational_store(
-    dsn="postgresql://proof_admin:proof_admin_local@localhost:5435/iterative_sql_proof",
-    tenant_schema="proof",
-)
-store.connect()
-bulk_load_parcel_events(store, row_count=5000)
-store.close()
+```bash
+uv run python platform_proofs/tools/iterative_sql_investigation/run_proof.py --validate-only
 ```
+
+## Canonical proof run
+
+```bash
+uv run python platform_proofs/tools/iterative_sql_investigation/run_proof.py
+```
+
+Via suite runner (FULL or LIVE profile):
+
+```bash
+uv run python scripts/proof/run-intergrax-proof-suite.py --profile full
+```
+
+Manifest entry: `TOOLS-ITERATIVE-SQL-INVESTIGATION` in `scripts/proof/intergrax_proof_manifest.py`.
+
+## Invocation limits
+
+- `max_iterations`: 8
+- `max_tool_calls_per_round`: 2
+- `max_identical_tool_call_repeats`: 2
+- Existing runtime wall-time / budget semantics remain enabled
 
 ## SQL safety boundary
 
-1. **Proof-local validator** — single statement; SELECT/WITH only; rejects obvious mutating/admin keywords. Documented limits — not a general SQL parser.
-2. **Database authorization (authoritative)** — runtime role has CONNECT + schema USAGE + SELECT only; no INSERT/UPDATE/DELETE/DDL; `statement_timeout` configured.
-3. **Bounded results** — queries are wrapped with a subquery `LIMIT 201` so PostgreSQL returns at most 201 rows; visible cap is 200 with `truncated=True` when more exist.
+1. Proof-local validator — SELECT/WITH only
+2. Database authorization — runtime role read-only
+3. Bounded fetch — max 200 visible rows
 
 ## Limitations
 
-- PP-3B does not run LLM investigation or register the proof in `scripts/proof/intergrax_proof_manifest.py`.
-- SQL validator is proof-local and keyword-based; do not reuse as a universal SQL firewall.
-- Dataset is synthetic logistics fiction — no production business rules.
-- Subquery wrapping may not suit every advanced SQL dialect feature; proof scenarios use bounded SELECT/WITH only.
+- Semantic evaluator uses bounded heuristics on tool traces + final answer — not a second judge LLM
+- Provider API keys are not expressible as manifest `EnvRequirement` kinds; missing credentials fail at proof start (documented gap)
+- Not QUALIFIED — requires accepted real-model qualification under PP-4
+- Synthetic logistics dataset — no production rules
+- Does not prove product workflows, universal model certification, or production readiness
 
-## What this does NOT prove (yet)
+## What this does NOT prove
 
-- Real model-driven iterative investigation
-- InvestigationProof qualification
-- EXECUTABLE / QUALIFIED coverage
-- Public claim promotion in `docs/project/proofs/PROOFS.md`
-- Product workflow consumption (LKW or otherwise)
+- LKW or product Quick Start consumption
+- Public claim promotion (`docs/project/proofs/PROOFS.md` unchanged until PP-4/PP-5)
+- QUALIFIED coverage
+- Commercial or real-user validation
 
-## Educational explanation
+## PP-3B artifacts
 
-Naive SQL investigation often stops at the first aggregate that “looks wrong.” This proof plants deliberate traps — volume confounds counts, confounders mimic causation, missing variables block conclusions — so a bounded tool loop must chain evidence-dependent queries instead of jumping to a single headline number. PP-3B establishes the deterministic substrate (data, database permissions, bounded read-only tool, runtime wiring) so PP-3C can test whether the TOOLS runtime actually behaves that way under a real model.
-
-## NOT YET
-
-- Real model execution
-- InvestigationProof qualification
-- Canonical manifest registration
-- EXECUTABLE coverage promotion
-- Public claim promotion
+| Artifact | Role |
+|----------|------|
+| `dataset.py` | Deterministic generator + invariant contract |
+| `dataset_identity.py` / `setup.py` | Identity, fingerprint, materialization, DB verification |
+| `sql_tool.py` | Read-only SQL tool |
+| `runtime.py` | PostgreSQL → registry → invoker |
+| `investigation_runtime.py` | Canonical planner + bounded loop wiring |
+| `evaluator.py` / `proof_result.py` | Machine-checkable scenario outcomes |
+| `run_proof.py` | Canonical executable entrypoint |

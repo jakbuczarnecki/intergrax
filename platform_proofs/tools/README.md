@@ -4,7 +4,7 @@
 
 | Proof ID | Coverage | Notes |
 |----------|----------|-------|
-| `TOOLS-ITERATIVE-SQL-INVESTIGATION` | DESIGNED | PP-3B deterministic infrastructure (dataset, isolated PostgreSQL, bounded read-only SQL tool, runtime wiring). Not manifest-registered yet. |
+| `TOOLS-ITERATIVE-SQL-INVESTIGATION` | **EXECUTABLE** | PP-3C — canonical platform proof: real LLM + PostgreSQL + `run_bounded_tool_loop()`; registered in `scripts/proof/intergrax_proof_manifest.py` |
 
 See [PLATFORM_PROOF_MAP.md](../PLATFORM_PROOF_MAP.md) for canonical coverage labels.
 
