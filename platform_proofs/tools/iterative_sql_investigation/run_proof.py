@@ -10,7 +10,12 @@ import argparse
 import json
 import os
 import sys
+from pathlib import Path
 
+from platform_proofs.tools.iterative_sql_investigation.artifacts import (
+    allocate_run_directory,
+    write_proof_result,
+)
 from platform_proofs.tools.iterative_sql_investigation.dataset_identity import (
     PROOF_ID,
     DatasetIdentity,
@@ -65,6 +70,18 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Emit machine-readable proof result JSON on stdout.",
     )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help=(
+            "Root directory for generated proof artifacts "
+            "(default: .artifacts/proof/TOOLS-ITERATIVE-SQL-INVESTIGATION)."
+        ),
+    )
+    parser.add_argument(
+        "--artifact-run-id",
+        help="Optional run subdirectory name under --output-dir (default: UTC timestamp).",
+    )
     return parser
 
 
@@ -74,10 +91,16 @@ def _resolve_runtime_dsn(explicit: str | None) -> str:
     return os.environ.get(DSN_ENV, DEFAULT_RUNTIME_DSN).strip()
 
 
-def _print_summary(result: ToolsSqlInvestigationProofResult) -> None:
+def _print_summary(
+    result: ToolsSqlInvestigationProofResult,
+    *,
+    artifact_directory: Path | None = None,
+) -> None:
     print(f"proof_id={result.proof_id}")
     print(f"overall_pass={str(result.overall_pass).lower()}")
     print(f"dataset_fingerprint={result.dataset_fingerprint_sha256}")
+    if artifact_directory is not None:
+        print(f"artifact_dir={artifact_directory.as_posix()}")
     print(
         "model_provider="
         f"{result.model_provider.provider}/{result.model_provider.model}"
@@ -94,6 +117,20 @@ def _print_summary(result: ToolsSqlInvestigationProofResult) -> None:
                 f"scenario_{scenario.scenario_id.value}_reasons="
                 + ",".join(scenario.failure_reasons)
             )
+
+
+def _persist_proof_result(
+    result: ToolsSqlInvestigationProofResult,
+    *,
+    artifact_root: Path | None,
+    artifact_run_id: str | None,
+) -> Path:
+    run_directory = allocate_run_directory(
+        artifact_root=artifact_root,
+        run_id=artifact_run_id,
+    )
+    write_proof_result(result, run_directory=run_directory)
+    return run_directory
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -125,10 +162,15 @@ def main(argv: list[str] | None = None) -> int:
             fingerprint=fingerprint,
             reason=str(exc),
         )
+        artifact_directory = _persist_proof_result(
+            blocked,
+            artifact_root=args.output_dir,
+            artifact_run_id=args.artifact_run_id,
+        )
         if args.json:
             print(json.dumps(blocked.model_dump(mode="json"), sort_keys=True))
         else:
-            _print_summary(blocked)
+            _print_summary(blocked, artifact_directory=artifact_directory)
         return EXIT_PROVIDER if isinstance(exc, ProofProviderUnavailableError) else EXIT_CONFIG
 
     runtime_dsn = _resolve_runtime_dsn(args.runtime_dsn)
@@ -156,10 +198,15 @@ def main(argv: list[str] | None = None) -> int:
         scenarios=tuple(scenario_results),
         overall_pass=overall_pass,
     )
+    artifact_directory = _persist_proof_result(
+        result,
+        artifact_root=args.output_dir,
+        artifact_run_id=args.artifact_run_id,
+    )
     if args.json:
         print(json.dumps(result.model_dump(mode="json"), sort_keys=True))
     else:
-        _print_summary(result)
+        _print_summary(result, artifact_directory=artifact_directory)
     return EXIT_OK if overall_pass else EXIT_FAIL
 
 

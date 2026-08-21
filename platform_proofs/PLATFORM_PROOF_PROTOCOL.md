@@ -233,6 +233,12 @@ Reuse **`SuiteReceipt`** from `scripts/proof/` — do not invent a competing sui
 
 Do **not** merge `SuiteReceipt` with runtime/domain `ProofReceipt`. Preserve the current explicit separation documented in `intergrax_proof_contracts.py`.
 
+Every Platform Proof execution must also produce a human-readable **Proof Report**
+(self-contained HTML) per
+[`PLATFORM_PROOF_REPORT_STANDARD.md`](../docs/project/proofs/PLATFORM_PROOF_REPORT_STANDARD.md)
+(PP-REPORT-1). The report presents typed proof evidence; it is not an independent
+source of truth.
+
 ---
 
 ## L. Limitations

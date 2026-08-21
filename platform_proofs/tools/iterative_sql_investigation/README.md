@@ -114,6 +114,16 @@ uv run python scripts/proof/run-intergrax-proof-suite.py --profile full
 
 Manifest entry: `TOOLS-ITERATIVE-SQL-INVESTIGATION` in `scripts/proof/intergrax_proof_manifest.py`.
 
+## Generated artifacts
+
+Every non-`--validate-only` run persists machine-readable output under:
+
+```text
+.artifacts/proof/TOOLS-ITERATIVE-SQL-INVESTIGATION/<run-id>/proof-result.json
+```
+
+The repo-root `.artifacts/` tree is gitignored. Do not redirect stdout/stderr into the proof source tree; use the default artifact directory or `--output-dir` when overriding.
+
 ## Invocation limits
 
 - `max_iterations`: 8
