@@ -43,7 +43,7 @@
 - **Prior audit reference(s):** [`INTERFACE_TASK_INTAKE`](INTERFACE_TASK_INTAKE.md) (ITI-FIX-C direct-Nexus bypass — distinct from runner enricher parity); [`IDENTITY_TRUST`](IDENTITY_TRUST.md); [`POLICY_GOVERNANCE`](POLICY_GOVERNANCE.md); [`SECURITY_BOUNDARIES`](SECURITY_BOUNDARIES.md); [`OBSERVABILITY_EVIDENCE`](OBSERVABILITY_EVIDENCE.md)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `d4e3ec2398261e791deb946f26c52b336ed58371`
 
 ## Scope / ownership mapping
 
