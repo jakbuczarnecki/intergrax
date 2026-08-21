@@ -39,8 +39,6 @@ PLATFORM_PLUGINS_ARCH_PATH = REPO_ROOT / "docs" / "project" / "architecture" / "
 ROADMAP_PATH = REPO_ROOT / "docs" / "project" / "overview" / "ROADMAP.md"
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
-CATEGORY_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-category-map-light.svg"
-CATEGORY_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-category-map-dark.svg"
 
 _LEGAL_HEADER = (
     "<!--\n"
@@ -1046,14 +1044,6 @@ def test_use_cases_does_not_track_provider_rollouts() -> None:
         assert phrase not in normalized, (
             f"USE_CASES contains provider roadmap detail: {phrase}"
         )
-
-
-def test_why_category_map_assets_and_alt_text(why_text: str) -> None:
-    assert CATEGORY_LIGHT_PATH.is_file()
-    assert CATEGORY_DARK_PATH.is_file()
-    assert "intergrax-category-map-light.svg" in why_text
-    assert "intergrax-category-map-dark.svg" in why_text
-    assert 'alt="Responsibility map comparing' in why_text
 
 
 def test_why_readme_visual_alignment(why_text: str) -> None:

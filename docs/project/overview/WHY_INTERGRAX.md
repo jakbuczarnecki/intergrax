@@ -180,25 +180,6 @@ These approaches are not mutually exclusive. A real system may combine several o
 
 The question is: which layer of responsibility are you trying to buy or build?
 
-<a href="../assets/public/intergrax-category-map-light.svg">
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="../assets/public/intergrax-category-map-dark.svg"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="../assets/public/intergrax-category-map-light.svg"
-  >
-  <img
-    alt="Responsibility map comparing finished AI SaaS, workflow automation platforms, retrieval or knowledge toolkits, agent frameworks, custom in-house foundations and Intergrax by their primary value and what the adopting team still owns."
-    src="../assets/public/intergrax-category-map-light.svg"
-  >
-</picture>
-</a>
-
-This neutral map explains primary responsibility. Categories overlap.
-
 ### Choose by your primary need
 
 | Approach | Primary value | Your team still owns | Consider it when |
