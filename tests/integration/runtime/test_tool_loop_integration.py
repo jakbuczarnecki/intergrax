@@ -23,6 +23,9 @@ from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
+from intergrax.runtime.nexus.tools.tool_planner_protocol import IterativeToolPlannerProtocol
+from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
+from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.tool_executor import ToolHandler
@@ -452,3 +455,173 @@ def test_failed_tool_keeps_bounded_trace_and_model_facing_error() -> None:
     assert _BEYOND_PREVIEW_MARKER in tool_messages[0].content
     assert llm.second_round_saw_marker is True
     assert result.stop_reason == "planner_final_answer"
+
+
+class _BaseOnlyPlanner:
+    """Implements ToolPlannerProtocol only — no native iterative rounds."""
+
+    def plan_tools(
+        self,
+        input_data,
+        context=None,
+        *,
+        run_id: str,
+        allowed_tool_ids=None,
+        **kwargs,
+    ) -> ToolPlanDecision:
+        _ = input_data, context, run_id, allowed_tool_ids, kwargs
+        return ToolPlanDecision(
+            final_answer=None,
+            tool_plan=ToolCallPlan(
+                calls=[
+                    PlannedToolCall(
+                        step_id="tool",
+                        tool_id="alpha.tool",
+                        input=_InA(value=3),
+                    )
+                ]
+            ),
+            messages=[],
+        )
+
+
+class _CustomIterativePlanner:
+    """Custom iterative planner — not ToolPlanningService."""
+
+    def __init__(self) -> None:
+        self._round = 0
+
+    def plan_tools(
+        self,
+        input_data,
+        context=None,
+        *,
+        run_id: str,
+        allowed_tool_ids=None,
+        **kwargs,
+    ) -> ToolPlanDecision:
+        _ = input_data, context, run_id, allowed_tool_ids, kwargs
+        return ToolPlanDecision(
+            final_answer=None,
+            tool_plan=ToolCallPlan(calls=[]),
+            messages=[],
+        )
+
+    def plan_native_round(
+        self,
+        messages,
+        *,
+        allowed_tool_ids=None,
+        run_id=None,
+        tool_choice=None,
+        **kwargs,
+    ):
+        _ = messages, allowed_tool_ids, run_id, tool_choice, kwargs
+        self._round += 1
+        if self._round == 1:
+            return (
+                LLMAdapterResponse(
+                    content="",
+                    tool_calls=(
+                        LLMToolCall.from_openai_shape(
+                            call_id="custom-tc-1",
+                            name="alpha.tool",
+                            arguments={"value": 11},
+                        ),
+                    ),
+                ),
+                ToolCallPlan(
+                    calls=[
+                        PlannedToolCall(
+                            step_id="tool",
+                            tool_id="alpha.tool",
+                            input=_InA(value=11),
+                        )
+                    ]
+                ),
+            )
+        return LLMAdapterResponse(content="custom done", tool_calls=()), ToolCallPlan(calls=[])
+
+
+def test_custom_iterative_planner_runs_bounded_loop_without_degrading() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("alpha.tool", _InA, _OutA),
+        _HandlerA(),
+    )
+    llm = _TwoRoundLLM()
+    state = _runtime_state(llm)
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = _CustomIterativePlanner()
+    assert not isinstance(planner, ToolPlanningService)
+    assert isinstance(planner, IterativeToolPlannerProtocol)
+
+    result = run_bounded_tool_loop(
+        state=state,
+        invoker=invoker,
+        tool_planner=planner,
+        planner_input=[ChatMessage(role="user", content="use tool")],
+        allowed_tool_ids=("alpha.tool",),
+        max_iterations=2,
+    )
+
+    assert result.loop_iterations == 2
+    assert len(result.tool_traces) == 1
+    assert result.tool_traces[0].tool_name == "alpha.tool"
+    assert result.tool_traces[0].output_preview is not None
+    assert result.stop_reason == "planner_final_answer"
+    assert result.used_native_tool_messages is True
+    assert planner._round == 2
+
+
+def test_base_only_planner_rejected_for_multi_iteration_bounded_loop() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("alpha.tool", _InA, _OutA),
+        _HandlerA(),
+    )
+    llm = _TwoRoundLLM()
+    state = _runtime_state(llm)
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = _BaseOnlyPlanner()
+    assert not isinstance(planner, IterativeToolPlannerProtocol)
+
+    with pytest.raises(
+        TypeError,
+        match="Bounded iterative tool invocation \\(max_iterations > 1\\) requires",
+    ):
+        run_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=[ChatMessage(role="user", content="use tool")],
+            allowed_tool_ids=("alpha.tool",),
+            max_iterations=2,
+        )
+
+
+def test_base_only_planner_single_iteration_still_uses_single_pass() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("alpha.tool", _InA, _OutA),
+        _HandlerA(),
+    )
+    llm = _TwoRoundLLM()
+    state = _runtime_state(llm)
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = _BaseOnlyPlanner()
+
+    result = run_bounded_tool_loop(
+        state=state,
+        invoker=invoker,
+        tool_planner=planner,
+        planner_input=[ChatMessage(role="user", content="use tool")],
+        allowed_tool_ids=("alpha.tool",),
+        max_iterations=1,
+    )
+
+    assert result.loop_iterations == 1
+    assert len(result.tool_traces) == 1
+    assert result.tool_traces[0].tool_name == "alpha.tool"
+    assert result.stop_reason == "legacy_single_pass"
+    assert result.used_native_tool_messages is False

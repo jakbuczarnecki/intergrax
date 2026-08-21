@@ -7,15 +7,6 @@ It is a reusable governed foundation—an application operating layer around
 execution boundaries—so product teams do not rebuild policy, approvals,
 integrations, recovery, and evidence mechanisms for every workflow.
 
-**Local Knowledge Workspace (LKW)** is a private, governed AI knowledge workspace
-with **Slack as its primary daily-use conversational interface** for LKW 1.0.
-Add approved sources, ask over indexed knowledge from Slack or other supported
-clients, and inspect grounded answers with source references and persisted
-evidence. Reusable LKW HTTP and application APIs remain the backend boundary —
-Slack is the familiar work-surface direction, not the only client. A bounded
-Slack DM Ask path is live-verified today; the broader Slack-first daily-use
-experience remains under productization.
-
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Source-available](https://img.shields.io/badge/source--available-evaluation-6c5ce7.svg)](LICENSE)
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
@@ -43,6 +34,15 @@ experience remains under productization.
 </picture>
 
 **Current reality:** [Local Knowledge Workspace](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) is the active reference product at **Backend Product Alpha / MVP** with bounded proof paths — not LKW 1.0 or production readiness. The four additional portfolio directions (**Contract-to-Invoice Leakage / Recovery Operator**, **Supplier Disruption Response Operator**, **Third-Party Risk Decision Operator**, **Deployment / Change Guardian**) are **selected pre-bootstrap** market applications with frozen selection records only; their presence here does not imply implementation or runtime proof. The portfolio exists partly to test reuse of shared Intergrax foundations across materially different product classes.
+
+**Local Knowledge Workspace (LKW)** is a private, governed AI knowledge workspace
+with **Slack as its primary daily-use conversational interface** for LKW 1.0.
+Add approved sources, ask over indexed knowledge from Slack or other supported
+clients, and inspect grounded answers with source references and persisted
+evidence. Reusable LKW HTTP and application APIs remain the backend boundary —
+Slack is the familiar work-surface direction, not the only client. A bounded
+Slack DM Ask path is live-verified today; the broader Slack-first daily-use
+experience remains under productization.
 
 ---
 
@@ -91,6 +91,8 @@ not as a first-contact route.
     alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources."
   >
 </picture>
+
+[View full-size diagram](docs/project/assets/public/readme/intergrax-platform-map-light.png)
 
 | Platform area | What it provides | Explore |
 | --- | --- | --- |
@@ -261,6 +263,8 @@ for the category, problem, and fit.
   >
 </picture>
 
+[View full-size diagram](docs/project/assets/public/readme/intergrax-why-light.png)
+
 ## Responsibility model
 
 The root-level model is about responsibility, not a mandatory execution
@@ -297,6 +301,8 @@ Intergrax is designed so important actions do not disappear inside an opaque age
     alt="Illustrative governed agentic execution loop with iterative reasoning, capability selection, governance gate, optional human approval, durable state, evidence plane and validated outcome."
   >
 </picture>
+
+[View full-size diagram](docs/project/assets/public/readme/intergrax-governed-execution-light.png)
 
 A governed run can leave correlated runtime events, typed [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, and structured [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence.
 This is execution-level explainability, not hidden model reasoning.

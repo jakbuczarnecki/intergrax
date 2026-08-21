@@ -6,7 +6,7 @@
 **ADR:** [`ADR-HOST-001`](../../technical/adr/entries/2026-07-13/ADR-HOST-001.md)
 **First adopter/proof:** `applications/local_workspace_application`
 
-**Status:** Public hosting foundation and single-instance engine foundation complete. Process control, real instance ownership and supervision not started. APP-HOST-W2 closed (2026-07-14).
+**Status:** W1 public hosting foundation, W2 engine foundation, and W3 process control/supervision are **Done** (APP-HOST-4A–4E, 5A–5C, 9A, LKW 8A–8E). Remaining backlog: APP-HOST-3D, 5D/5E, 6, 7, 9B–9F. InteractionProfile, plugins, and OS service adapters remain **Planned**.
 
 ---
 
@@ -520,3 +520,63 @@ LKW adoption
 ```
 
 APP-HOST-9A (`run_hosted_application(profile)`) depends on at least APP-HOST-1A.2, APP-HOST-1F, APP-HOST-2F, APP-HOST-4 minimum foundation (4A/4C/4D/4E), and APP-HOST-5C, and must close before APP-HOST-8A.
+
+---
+
+## 11. Protocol v2 remediation — APPLICATION_HOSTING (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/APPLICATION_HOSTING.md`](../../audit_results/2026-08-18/APPLICATION_HOSTING.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-APPLICATION-HOSTING-PERSIST.
+
+#### HOSTING-RUNTIME-HEALTH-INTEGRITY — effective component failure policy after READY
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-APPLICATION_HOSTING-02`](../../audit_results/2026-08-18/APPLICATION_HOSTING.md)
+
+**Acceptance intent:**
+
+- Effective `ComponentFailureAction` remains enforceable throughout READY/runtime health evolution.
+- Every post-READY health transition maps through the registered action; `FAIL_HOST` triggers canonical hosted failure/control path eligible for supervisor classification/restart.
+- Do not build a second health subsystem.
+
+#### HOSTING-SHUTDOWN-EVIDENCE-INTEGRITY — lifecycle evidence and truthful shutdown classification
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-APPLICATION_HOSTING-01`](../../audit_results/2026-08-18/APPLICATION_HOSTING.md), [`03`](../../audit_results/2026-08-18/APPLICATION_HOSTING.md), [`04`](../../audit_results/2026-08-18/APPLICATION_HOSTING.md)
+
+**Acceptance intent:**
+
+- Public hosted lifecycle evidence reaches canonical Observability export authority; no silent NoOp evidence posture on production-capable public path.
+- Component stop failures propagate into aggregate shutdown phase outcome; failed stop cannot masquerade as COMPLETED.
+- Required durability flush failure makes terminal outcome non-clean; `CLEAN_STOP` requires required shutdown durability obligations to succeed.
+- Cross-link [`OBSERVABILITY_EVIDENCE` plan](OBSERVABILITY_EVIDENCE.md) — do not duplicate evidence infrastructure or create a hosting-specific event bus/store.
+
+#### HOSTING-INSTANCE-RECOVERY-INTEGRITY — PID reuse resistant stale recovery
+
+**Priority:** P1/P2
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-APPLICATION_HOSTING-05`](../../audit_results/2026-08-18/APPLICATION_HOSTING.md)
+
+**Acceptance intent:**
+
+- Local stale ownership recovery is robust against PID reuse while preserving native file-lock authority.
+- Process metadata used as an additional ownership fence distinguishes process incarnation, not PID alone.
+
+#### HOSTING-PLAN-STATE-INTEGRITY — plan header vs row register
+
+**Priority:** P2
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-APPLICATION_HOSTING-06`](../../audit_results/2026-08-18/APPLICATION_HOSTING.md)
+
+**Acceptance intent:**
+
+- Current-state summary is consistent with APP-HOST row register and architecture shipped W1/W2/W3 vs remaining backlog (3D, 5D/5E, 6, 7, 9B–9F).
+- Historical Done facts preserved.
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Historical Done rows (including LKW 8C–8E proof) remain historical delivery facts.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).

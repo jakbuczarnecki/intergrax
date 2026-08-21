@@ -27,7 +27,6 @@ from intergrax.integrations.providers.security_status.knowledge_read import (
 from intergrax.runtime.evidence.obligation_derivation import (
     DeterministicEvidenceObligationDerivation,
 )
-from intergrax.runtime.evidence.obligation_derivation_contracts import ResolvedPolicyRuleV1
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from intergrax.runtime.vendor_knowledge.live.bootstrap import (
     build_vendor_knowledge_live_registration_registry,
@@ -78,6 +77,7 @@ from local_workspace_application.workspaces.hybrid_ask_execution import (
 )
 from local_workspace_application.workspaces.hybrid_ask_models import (
     EvidenceAdmissibilityStatusV1,
+    RequiredEvidenceEvaluationV1,
     RequirementAdmissibilityReasonCodeV1,
     RequirementEvaluationStatusV1,
     WorkspaceAskRunV2,
@@ -129,7 +129,7 @@ from proof_infrastructure.governed_hybrid_knowledge_proof.flagship_policy import
     FLAGSHIP_QUESTION,
     FLAGSHIP_TENANT_ID,
     FLAGSHIP_WORKSPACE_ID,
-    build_flagship_deployment_policy_rules,
+    MutableFlagshipPolicyRulesPort,
 )
 
 _FLAGSHIP_NOW = datetime(2026, 8, 20, 12, 0, tzinfo=UTC)
@@ -144,14 +144,6 @@ _CONNECTION_DESCRIPTORS: dict[str, tuple[LiveCapabilityDescriptorV1, ...]] = {
     FLAGSHIP_CONN_CHANGE: (build_change_approval_read_descriptor(),),
     FLAGSHIP_CONN_GOVERNANCE: (build_governance_approval_read_descriptor(),),
 }
-
-
-class FlagshipPolicyRulesPort:
-    def __init__(self, *, policy_revision: str) -> None:
-        self._policy_revision = policy_revision
-
-    def resolve_policy_rules(self, **_: object) -> tuple[ResolvedPolicyRuleV1, ...]:
-        return build_flagship_deployment_policy_rules(policy_revision=self._policy_revision)
 
 
 class _RecordingSecretsStore:
@@ -194,7 +186,9 @@ class _Repository:
         return None
 
 
-class _MutableConfigurationService:
+class FlagshipMutableConfigurationServiceV1:
+    """Proof-only configuration service with explicit binding control."""
+
     def __init__(self, configuration: WorkspaceKnowledgeConfigurationV1) -> None:
         self._configuration = configuration
 
@@ -213,6 +207,15 @@ class _MutableConfigurationService:
             binding.model_copy(update={"status": LiveAccessBindingStatusV1.DISABLED})
             if binding.live_access_binding_id == binding_id
             else binding
+            for binding in self._configuration.live_access_bindings
+        )
+        self._configuration = self._configuration.model_copy(
+            update={"live_access_bindings": updated_bindings},
+        )
+
+    def enable_all_bindings(self) -> None:
+        updated_bindings = tuple(
+            binding.model_copy(update={"status": LiveAccessBindingStatusV1.ACTIVE})
             for binding in self._configuration.live_access_bindings
         )
         self._configuration = self._configuration.model_copy(
@@ -274,20 +277,31 @@ class _EmptyIndexedRetriever:
         return ()
 
 
-class _RevokingOrchestrator:
+class FlagshipControllableOrchestratorV1:
+    """Proof-only orchestrator wrapper with explicit one-shot authority control."""
+
     def __init__(
         self,
         *,
         inner: KnowledgeQueryOrchestratorV1,
-        configuration_service: _MutableConfigurationService,
-        binding_id: str,
+        configuration_service: FlagshipMutableConfigurationServiceV1,
+        governance_binding_id: str,
     ) -> None:
         self._inner = inner
         self._configuration_service = configuration_service
-        self._binding_id = binding_id
+        self._governance_binding_id = governance_binding_id
+        self._revoke_once_armed = False
+
+    def arm_governance_revocation_once(self) -> None:
+        self._revoke_once_armed = True
+
+    def disarm_revocation(self) -> None:
+        self._revoke_once_armed = False
 
     async def execute(self, **kwargs: object):
-        self._configuration_service.disable_binding(self._binding_id)
+        if self._revoke_once_armed:
+            self._configuration_service.disable_binding(self._governance_binding_id)
+            self._revoke_once_armed = False
         return await self._inner.execute(**kwargs)  # type: ignore[arg-type]
 
 
@@ -366,14 +380,29 @@ def _attachment(connection_ref: str) -> WorkspaceConnectionAttachment:
     )
 
 
+def _assert_unique_topology_values(
+    *,
+    connection_refs: tuple[str, ...],
+    capability_ids: tuple[str, ...],
+) -> None:
+    if len(connection_refs) != len(set(connection_refs)):
+        raise ValueError("duplicate_connection_ref_in_flagship_topology")
+    if len(capability_ids) != len(set(capability_ids)):
+        raise ValueError("duplicate_capability_id_in_flagship_topology")
+
+
 def _configuration(
     bindings: tuple[WorkspaceLiveAccessBinding, ...],
 ) -> WorkspaceKnowledgeConfigurationV1:
-    connection_refs = tuple({binding.connection_ref for binding in bindings})
+    connection_refs = tuple(binding.connection_ref for binding in bindings)
     capability_ids = tuple(
         capability
         for binding in bindings
         for capability in binding.allowed_capability_ids
+    )
+    _assert_unique_topology_values(
+        connection_refs=connection_refs,
+        capability_ids=capability_ids,
     )
     return WorkspaceKnowledgeConfigurationV1(
         tenant_id=FLAGSHIP_TENANT_ID,
@@ -502,7 +531,7 @@ async def build_flagship_docker_scenario(
             connection_ref=connection_ref,
         )
 
-    configuration_service = _MutableConfigurationService(configuration)
+    configuration_service = FlagshipMutableConfigurationServiceV1(configuration)
     authority = WorkspaceLiveAccessRuntimeAuthority(
         configuration_service=configuration_service,  # type: ignore[arg-type]
         tenant_connection_port=RepositoryTenantConnectionPort(connection_repository),
@@ -522,10 +551,13 @@ async def build_flagship_docker_scenario(
         live_executor=executor,
         clock=lambda: _FLAGSHIP_NOW,
     )
-    revoking_orchestrator = _RevokingOrchestrator(
+    controllable_orchestrator = FlagshipControllableOrchestratorV1(
         inner=inner_orchestrator,
         configuration_service=configuration_service,
-        binding_id=FLAGSHIP_BINDING_GOVERNANCE,
+        governance_binding_id=FLAGSHIP_BINDING_GOVERNANCE,
+    )
+    policy_port = MutableFlagshipPolicyRulesPort(
+        policy_revision=FLAGSHIP_POLICY_REV_17,
     )
     llm = _RecordingLLM()
     ask_repository = WorkspaceAskRepository(document_store)
@@ -539,15 +571,13 @@ async def build_flagship_docker_scenario(
             schema_registry=published.schemas,
         ),
         resource_scope_validator=BindingResourceScopeValidator(),
-        orchestrator=inner_orchestrator,
+        orchestrator=controllable_orchestrator,  # type: ignore[arg-type]
         llm_adapter=llm,
         clock=lambda: _FLAGSHIP_NOW,
         run_id_factory=lambda: "flagship-placeholder",
         plan_id_factory=lambda: "flagship-plan",
         evidence_obligation_derivation_port=DeterministicEvidenceObligationDerivation(),
-        resolved_policy_rules_port=FlagshipPolicyRulesPort(
-            policy_revision=FLAGSHIP_POLICY_REV_17,
-        ),
+        resolved_policy_rules_port=policy_port,
         schema_registry=published.schemas,
     )
     return FlagshipDockerScenarioV1(
@@ -555,8 +585,8 @@ async def build_flagship_docker_scenario(
         admin=environment.admin,
         service=service,
         llm=llm,
-        inner_orchestrator=inner_orchestrator,
-        revoking_orchestrator=revoking_orchestrator,
+        policy_port=policy_port,
+        controllable_orchestrator=controllable_orchestrator,
         configuration_service=configuration_service,
     )
 
@@ -567,9 +597,9 @@ class FlagshipDockerScenarioV1:
     admin: FlagshipVendorAdminFacadeV1
     service: WorkspaceAskServiceV2
     llm: _RecordingLLM
-    inner_orchestrator: KnowledgeQueryOrchestratorV1
-    revoking_orchestrator: _RevokingOrchestrator
-    configuration_service: _MutableConfigurationService
+    policy_port: MutableFlagshipPolicyRulesPort
+    controllable_orchestrator: FlagshipControllableOrchestratorV1
+    configuration_service: FlagshipMutableConfigurationServiceV1
 
     def seed_valid_baseline(
         self,
@@ -597,26 +627,16 @@ class FlagshipDockerScenarioV1:
         self.admin.governance.reset_read_request_count()
 
     def restore_active_bindings(self) -> None:
-        restored = tuple(
-            binding.model_copy(update={"status": LiveAccessBindingStatusV1.ACTIVE})
-            for binding in self.configuration_service._configuration.live_access_bindings
-        )
-        self.configuration_service._configuration = (
-            self.configuration_service._configuration.model_copy(
-                update={"live_access_bindings": restored},
-            )
-        )
+        self.configuration_service.enable_all_bindings()
 
     def set_policy_revision(self, *, policy_revision: str) -> None:
-        self.service._resolved_policy_rules_port = FlagshipPolicyRulesPort(  # noqa: SLF001
-            policy_revision=policy_revision,
-        )
+        self.policy_port.set_revision(policy_revision)
 
     def use_revoking_orchestrator(self) -> None:
-        self.service._orchestrator = self.revoking_orchestrator  # noqa: SLF001
+        self.controllable_orchestrator.arm_governance_revocation_once()
 
     def use_inner_orchestrator(self) -> None:
-        self.service._orchestrator = self.inner_orchestrator  # noqa: SLF001
+        self.controllable_orchestrator.disarm_revocation()
 
     async def ask(
         self,
@@ -642,7 +662,11 @@ class FlagshipDockerScenarioV1:
     def reload_run(self, *, run_id: str) -> WorkspaceAskRunV2:
         return self.service.get_run(tenant_id=FLAGSHIP_TENANT_ID, run_id=run_id)
 
-    def evaluation_for_suffix(self, run: WorkspaceAskRunV2, suffix: str):
+    def evaluation_for_suffix(
+        self,
+        run: WorkspaceAskRunV2,
+        suffix: str,
+    ) -> RequiredEvidenceEvaluationV1:
         if run.evidence_admissibility is None:
             raise RuntimeError("evidence_admissibility_missing")
         return next(

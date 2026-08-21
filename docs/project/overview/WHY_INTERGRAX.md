@@ -56,17 +56,22 @@ Some teams use **Harness AI** to describe this category: an operating layer arou
 
 Modern agent frameworks and platforms increasingly bundle runtime facilities that teams once assembled separately. The comparison is not whether those facilities exist somewhere in the stack, but **which layer owns primary responsibility** for product semantics, enforcement boundaries, consequential effects, canonical history, recovery posture, and evidence — and how much integration burden remains with the adopting team.
 
-```mermaid
-flowchart LR
-    P1[Product A] --> R1[Rebuilt foundations]
-    P2[Product B] --> R2[Rebuilt foundations]
-    P3[Product C] --> R3[Rebuilt foundations]
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/public/readme/intergrax-why-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/public/readme/intergrax-why-light.png"
+  >
+  <img
+    src="../assets/public/readme/intergrax-why-light.png"
+    alt="Comparison between duplicated per-product AI foundations and specialized products reusing a shared Intergrax foundation."
+  >
+</picture>
 
-    I[Intergrax reusable foundation]
-    I --> A[Specialized application A]
-    I --> B[Specialized application B]
-    I --> C[Specialized application C]
-```
+[View full-size diagram](../assets/public/readme/intergrax-why-light.png)
 
 The diagram contrasts rebuilding foundations per product with reusing one governed foundation. It does not imply that every future product is already implemented.
 

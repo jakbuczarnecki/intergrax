@@ -25,6 +25,23 @@ Primary audience: external architects, Principal or Staff engineers, CTOs, and t
 | **Knowledge, tools, integrations, and model systems** | Source data, remote services, business systems, tool effects, and model access | Are selected behind configured boundaries; they do not own the product workflow or end-user experience |
 | **Evidence and provenance** | Receipts, traces, provenance, and records for review, debugging, and governance | Is produced during execution; it does not certify production readiness, security, or commercial validation |
 
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/public/readme/intergrax-platform-map-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/public/readme/intergrax-platform-map-light.png"
+  >
+  <img
+    src="../assets/public/readme/intergrax-platform-map-light.png"
+    alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources."
+  >
+</picture>
+
+[View full-size diagram](../assets/public/readme/intergrax-platform-map-light.png)
+
 ## The operating model
 
 ```mermaid
@@ -83,13 +100,22 @@ The lifecycle is conceptual: the operating layer selects the resources needed fo
 
 **Governed Execution** (Governance & Policy Enforcement) is the platform capability that controls what execution may proceed under configured policy.
 
-```text
-agent / model proposes
-→ configured policy evaluates
-→ allow / deny / require human / other supported outcome
-→ authorized execution
-→ evidence
-```
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/public/readme/intergrax-governed-execution-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/public/readme/intergrax-governed-execution-light.png"
+  >
+  <img
+    src="../assets/public/readme/intergrax-governed-execution-light.png"
+    alt="Illustrative governed agentic execution loop with iterative reasoning, capability selection, governance gate, optional human approval, durable state, evidence plane and validated outcome."
+  >
+</picture>
+
+[View full-size diagram](../assets/public/readme/intergrax-governed-execution-light.png)
 
 The application defines what the business rule means. Intergrax provides reusable enforcement mechanisms — policy evaluation, boundary enforcement, canonical HITL, and governance evidence on wired paths. Complete platform-wide coverage and production qualification are **not** claimed.
 

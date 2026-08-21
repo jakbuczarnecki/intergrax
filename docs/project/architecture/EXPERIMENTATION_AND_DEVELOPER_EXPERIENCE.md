@@ -221,7 +221,7 @@ Application Hosting / deployment → makes candidate active
 | **Lab HTTP** (`POST /v1/mvp/simulate`, `POST /v1/mvp/replay`) | Optional exposure on lab host when `LAB_HARNESS=true`; behind `require_harness_auth` |
 | **Product API** | Outside DX ownership — Tier-3 application routes |
 
-Lab routes mount from `applications/lab_application/host/factory.py` only when `settings.harness` is true. CLI remains the reliable, fully-parameterized surface (HTTP replay wrapper does not pass tenant/run/trace-db args today).
+Lab routes mount from `applications/lab_application/host/factory.py` only when `settings.harness` is true. CLI remains the reliable, fully-parameterized surface. **MVP-EVOL.7** delivered route **exposure** (mount + harness auth); Protocol-v2 **DX-06** records residual functional defect — HTTP wrappers invoke argparse-bound CLI functions without arguments until a shared service layer exists.
 
 ## DX vs surrounding domains
 
@@ -673,3 +673,21 @@ Accepted Protocol v2.2 audit layer [`PROVIDER_BACKEND_ABSTRACTION`](../../audit_
 **Qualification:** MVP-EVOL and laboratory workflow maturity claims remain historical; the accepted audit gap above records target state only.
 
 Remediation tracked as **PBA-FIX-D** in [plan PBA-FIX-D](../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#protocol-v22-pba-fix-d--experiment-persistence-port-2026-08-18). **Not implemented** by audit persistence.
+
+<a id="protocol-v2-experimentation-and-developer-experience-target-invariants-2026-08-18"></a>
+
+## Protocol v2 experimentation and developer experience target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`](../../audit_results/2026-08-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) (**FAIL**, 7 ACCEPTED findings at `84b2477571650ade894f2d52a6b5398aa86922cc`). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+1. **Experiment ownership** — experiment and run evidence are tenant-scoped; every registry operation (`register`, `get`, `list`, `link_run`, `set_decision`) validates canonical tenant scope; cross-tenant experiment↔run linkage is impossible. Cross-link [`IDENTITY_TRUST`](IDENTITY_TRUST.md) — do not create DX-specific identity authority ([`AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-01`](../../audit_results/2026-08-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)).
+2. **Criteria authority** — active validation criteria are executable, versioned, and typed; stored criteria cannot silently be ignored by `evaluate_against_criteria`; either resolve criteria into canonical evaluation assets, use typed check specifications, or clean-cut unsupported fields ([`AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-02`](../../audit_results/2026-08-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)).
+3. **Evaluation identity** — satisfaction and online-evaluation bridges preserve canonical tenant + TaskId + RunId (+ AttemptId where required); no adaptive/evaluation aggregation consumes observations whose tenant ownership was discarded ([`AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-03`](../../audit_results/2026-08-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)).
+4. **KPI identity** — KPI definition identity is at least `tenant_id + kpi_id`; observations reference same-tenant definitions with validated linkage; cross-tenant definition collision is impossible ([`AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-04`](../../audit_results/2026-08-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)).
+5. **Run identity** — missing canonical RunId is an evidence-linkage failure; never synthesize or fallback RunId from TaskId; reuse canonical execution identity contracts ([`AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-05`](../../audit_results/2026-08-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)).
+6. **CLI/HTTP service boundary** — common typed service API; CLI and HTTP are adapters around the same service; HTTP routes must be executable with typed parameters — not direct invocation of argparse-bound CLI functions ([`AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-06`](../../audit_results/2026-08-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)). Preserve CLI as canonical developer interface; MVP-EVOL.7 route exposure remains a historical delivery fact.
+7. **Evidence persistence** — lab evidence stores have explicit concurrency semantics (lock/CAS/transaction/version) or explicit single-process constraint; reuse provider-neutral persistence ports — cross-link **PBA-FIX-D**, do not duplicate persistence architecture ([`AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-07`](../../audit_results/2026-08-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)).
+
+**Preserved boundaries (not reopened by audit):** Experimentation vs Application Hosting; Observability evidence ownership; replay reconstruction-only semantics; CLI-first model; G0–G2 honest infrastructure-readiness scope; A4/I3/P2/E3 maturity honesty; no remediation implementation claim.
+
+Remediation tracked in [plan Protocol v2 remediation](../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#protocol-v2-remediation-2026-08-18--accepted--planned). **Not implemented** by audit persistence.
