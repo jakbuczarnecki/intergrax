@@ -59,3 +59,6 @@ applications/local_workspace_application/docker/lkw-platform-proof-startup.log
 /.application-hosting-proof*.log
 /.background-task-proof*.log
 /.persistence*.log
+
+# Ad-hoc platform proof local output (repo root, e.g. PP-4A smoke runs)
+/.pp4a_*
