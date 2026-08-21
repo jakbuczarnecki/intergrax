@@ -119,6 +119,20 @@ def test_scenario_a3_supported_evidence_and_conclusion_passes() -> None:
     assert result.outcome_a.conclusion_supported is True
 
 
+def test_scenario_a4_hub_only_final_conclusion_fails() -> None:
+    snapshot = build_execution_snapshot(
+        traces=_sql_traces(*_scenario_a_sql()),
+        investigation_proof=_scenario_a_proof(),
+        stop_reason="planner_final_answer",
+        final_answer="North-Hub is the strongest supported explanation for elevated North delays.",
+    )
+    result = evaluate_scenario(ScenarioId.A, snapshot)
+    assert result.passed is False
+    assert result.outcome_a is not None
+    assert result.outcome_a.identifies_north_anomalous_segment is True
+    assert result.outcome_a.conclusion_supported is False
+
+
 def test_scenario_a_cannot_pass_from_sql_keywords_alone() -> None:
     snapshot = build_execution_snapshot(
         traces=_sql_traces(*_scenario_a_sql()),
@@ -137,8 +151,25 @@ def test_scenario_b1_global_association_only_fails() -> None:
     snapshot = build_execution_snapshot(
         traces=_sql_traces(
             "SELECT weight_kg, AVG(delayed::int) AS delay_rate FROM proof.parcel_events GROUP BY weight_kg",
+            "SELECT weight_kg, AVG(delayed::int) AS delay_rate FROM proof.parcel_events GROUP BY weight_kg",
         ),
-        investigation_proof=None,
+        investigation_proof=InvestigationProof(
+            steps=(
+                InvestigationProofStep(
+                    round_index=1,
+                    basis_tool_call_ids=(),
+                    next_tool_call_ids=("tc-1",),
+                    public_reason="global weight-delay association",
+                ),
+                InvestigationProofStep(
+                    round_index=2,
+                    basis_tool_call_ids=("tc-1",),
+                    next_tool_call_ids=("tc-2",),
+                    public_reason="repeat global check",
+                ),
+            ),
+            final_available_evidence_ids=("tc-1", "tc-2"),
+        ),
         stop_reason="planner_final_answer",
         final_answer=(
             "Heavier parcels correlate with delays globally, but direct causation is not established."
@@ -148,6 +179,28 @@ def test_scenario_b1_global_association_only_fails() -> None:
     assert result.passed is False
     assert result.outcome_b is not None
     assert result.outcome_b.detects_global_association is True
+    assert result.outcome_b.verifies_segmented_evidence is False
+
+
+def test_scenario_b3_combined_single_query_cannot_pass() -> None:
+    snapshot = build_execution_snapshot(
+        traces=_sql_traces(
+            (
+                "SELECT weight_kg, delayed, service_type, route_type, AVG(delayed::int) "
+                "FROM proof.parcel_events GROUP BY weight_kg, delayed, service_type, route_type"
+            ),
+        ),
+        investigation_proof=None,
+        stop_reason="planner_final_answer",
+        final_answer=(
+            "Weight correlates with delay globally, but within service_type and route_type segments "
+            "the association weakens — confounding, not direct causation."
+        ),
+    )
+    result = evaluate_scenario(ScenarioId.B, snapshot)
+    assert result.passed is False
+    assert "insufficient_tool_calls:1" in result.failure_reasons
+    assert result.outcome_b is not None
     assert result.outcome_b.verifies_segmented_evidence is False
 
 
