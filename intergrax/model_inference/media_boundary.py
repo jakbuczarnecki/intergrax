@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -13,13 +14,26 @@ from intergrax.model_inference.contracts import (
     VisionInferenceRequest,
 )
 
+
+@dataclass(frozen=True)
+class RemoteMediaEgressPolicy:
+    """Host/runtime authority for sending authorized local media to remote inference."""
+
+    permitted: bool = False
+
 REMOTE_EGRESS_VISION_ADAPTER_SLUGS: frozenset[str] = frozenset(
     {"vision_serving", "huggingface_inference"}
 )
 
 
 def adapter_requires_remote_egress(adapter_slug: str) -> bool:
+    """Return whether the effective adapter sends authorized local bytes outside the host."""
     return adapter_slug in REMOTE_EGRESS_VISION_ADAPTER_SLUGS
+
+
+def host_permits_remote_media_egress(policy: RemoteMediaEgressPolicy | None) -> bool:
+    """Return trusted host/runtime permission for remote media egress."""
+    return policy is not None and policy.permitted
 
 
 def parse_local_media_candidate(media_uri: str) -> Path:
@@ -56,15 +70,16 @@ def resolve_authorized_local_media(
     media_uri: str,
     *,
     roots: frozenset[str] | None,
-    remote_egress: bool,
+    remote_egress_permitted: bool = False,
 ) -> AuthorizedLocalMedia:
+    """Resolve caller media against read roots; egress must be minted separately by host policy."""
     if not roots:
         raise MediaAuthorizationError("read_allowlist_not_configured")
     candidate = parse_local_media_candidate(media_uri)
     resolved = resolve_path_within_allowlist_roots(candidate, roots)
     return AuthorizedLocalMedia(
         resolved_path=resolved,
-        remote_egress_permitted=remote_egress,
+        remote_egress_permitted=remote_egress_permitted,
     )
 
 

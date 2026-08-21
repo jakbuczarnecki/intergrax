@@ -12,6 +12,7 @@ from intergrax.model_inference.execution import (
 )
 from intergrax.model_inference.media_boundary import (
     adapter_requires_remote_egress,
+    host_permits_remote_media_egress,
     parse_local_media_candidate,
     resolve_authorized_local_media,
 )
@@ -58,12 +59,16 @@ def authorize_vision_media(
     *,
     adapter_slug: str,
 ) -> AuthorizedLocalMedia:
-    remote_egress = adapter_requires_remote_egress(adapter_slug)
-    return resolve_authorized_local_media(
+    read_authorized = resolve_authorized_local_media(
         media_uri,
         roots=ctx.read_allowlist_roots,
-        remote_egress=remote_egress,
+        remote_egress_permitted=False,
     )
+    if not adapter_requires_remote_egress(adapter_slug):
+        return read_authorized
+    if not host_permits_remote_media_egress(ctx.remote_media_egress_policy):
+        raise MediaAuthorizationError("remote_media_egress_not_authorized")
+    return read_authorized.model_copy(update={"remote_egress_permitted": True})
 
 
 def measure_authorized_media_bytes(media: AuthorizedLocalMedia) -> int:

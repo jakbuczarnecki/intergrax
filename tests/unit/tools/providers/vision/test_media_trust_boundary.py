@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -17,7 +18,8 @@ from intergrax.model_inference.contracts import (
     ModelArtifactFormat,
     VisionInferenceRequest,
 )
-from intergrax.model_inference.media_boundary import resolve_authorized_local_media
+from intergrax.model_inference.media_boundary import RemoteMediaEgressPolicy, resolve_authorized_local_media
+from intergrax.model_inference.registry.core import ModelInferenceRegistry
 from intergrax.runtime.modality.modality_profile import ModalityProfile
 from intergrax.tools.providers.speech.backends import MODEL_INFERENCE_REGISTRY_EXTRA_KEY
 from intergrax.tools.providers.vision.contracts import VisionDetectInput
@@ -39,10 +41,34 @@ def media_root(tmp_path: Path) -> Path:
 
 
 @pytest.fixture()
-def allowlisted_ctx(media_root: Path) -> ToolWiringContext:
+def remote_capable_registry() -> ModelInferenceRegistry:
+    registry = build_harness_model_inference_registry()
+    registry.register_vision_adapter(
+        TritonVisionServingAdapter(base_url="http://triton.local", model_name="yolo")
+    )
+    registry.register_vision_adapter(HuggingFaceInferenceVisionAdapter(api_key="test-key"))
+    registry.register_artifact(
+        ModelArtifact(
+            artifact_id="vision.triton.remote",
+            slug="vision_serving",
+            format=ModelArtifactFormat.REMOTE,
+        )
+    )
+    registry.register_artifact(
+        ModelArtifact(
+            artifact_id="vision.huggingface.remote",
+            slug="huggingface_inference",
+            format=ModelArtifactFormat.REMOTE,
+        )
+    )
+    return registry
+
+
+@pytest.fixture()
+def allowlisted_ctx(media_root: Path, remote_capable_registry: ModelInferenceRegistry) -> ToolWiringContext:
     return ToolWiringContext(
         read_allowlist_roots=frozenset({str(media_root.resolve())}),
-        extras={MODEL_INFERENCE_REGISTRY_EXTRA_KEY: build_harness_model_inference_registry()},
+        extras={MODEL_INFERENCE_REGISTRY_EXTRA_KEY: remote_capable_registry},
     )
 
 
@@ -55,11 +81,11 @@ def remote_artifact() -> ModelArtifact:
     )
 
 
-def _authorized(media_root: Path, relative: str, *, remote_egress: bool) -> AuthorizedLocalMedia:
+def _authorized(media_root: Path, relative: str, *, remote_egress_permitted: bool) -> AuthorizedLocalMedia:
     return resolve_authorized_local_media(
         relative,
         roots=frozenset({str(media_root.resolve())}),
-        remote_egress=remote_egress,
+        remote_egress_permitted=remote_egress_permitted,
     )
 
 
@@ -170,7 +196,7 @@ def test_authorized_local_file_remote_inference(
     mock_client.__exit__.return_value = None
     mock_client.post.return_value = mock_response
     adapter = TritonVisionServingAdapter(base_url="http://triton.local", model_name="yolo")
-    authorized = _authorized(media_root, "sample.png", remote_egress=True)
+    authorized = _authorized(media_root, "sample.png", remote_egress_permitted=True)
     with patch("intergrax.model_inference.adapters.triton_vision.httpx.Client", return_value=mock_client):
         result = adapter.detect(
             VisionInferenceRequest(
@@ -230,7 +256,7 @@ def test_ordinary_relative_path_within_root_allowed(media_root: Path) -> None:
     authorized = resolve_authorized_local_media(
         "nested/view.png",
         roots=frozenset({str(media_root.resolve())}),
-        remote_egress=False,
+        remote_egress_permitted=False,
     )
     assert authorized.resolved_path == image.resolve()
 
@@ -262,6 +288,149 @@ def test_remote_adapter_rejects_missing_authorized_media(
                 artifact=remote_artifact,
             )
         client_cls.assert_not_called()
+
+
+@pytest.fixture()
+def egress_permitted_ctx(allowlisted_ctx: ToolWiringContext) -> ToolWiringContext:
+    return replace(
+        allowlisted_ctx,
+        remote_media_egress_policy=RemoteMediaEgressPolicy(permitted=True),
+    )
+
+
+def _tracking_read_bytes_patch():
+    read_calls: list[Path] = []
+    original_read_bytes = Path.read_bytes
+
+    def tracking_read_bytes(self: Path) -> bytes:
+        read_calls.append(self)
+        return original_read_bytes(self)
+
+    return read_calls, tracking_read_bytes
+
+
+def test_read_allowed_egress_denied_triton_no_read_no_http(
+    allowlisted_ctx: ToolWiringContext,
+    media_root: Path,
+) -> None:
+    image = media_root / "sample.png"
+    image.write_bytes(b"authorized-image-bytes")
+    read_calls, tracking_read_bytes = _tracking_read_bytes_patch()
+    with patch.object(Path, "read_bytes", tracking_read_bytes):
+        with patch("intergrax.model_inference.adapters.triton_vision.httpx.Client") as client_cls:
+            with pytest.raises(MediaAuthorizationError, match="remote_media_egress_not_authorized"):
+                vision_detect(
+                    allowlisted_ctx,
+                    VisionDetectInput(
+                        media_uri=str(image.resolve()),
+                        adapter_slug="vision_serving",
+                        artifact_id="vision.triton.remote",
+                    ),
+                )
+            assert not read_calls
+            client_cls.assert_not_called()
+
+
+def test_read_allowed_egress_denied_hf_no_read_no_http(
+    allowlisted_ctx: ToolWiringContext,
+    media_root: Path,
+) -> None:
+    image = media_root / "sample.png"
+    image.write_bytes(b"authorized-image-bytes")
+    read_calls, tracking_read_bytes = _tracking_read_bytes_patch()
+    with patch.object(Path, "read_bytes", tracking_read_bytes):
+        with patch("intergrax.model_inference.adapters.huggingface_inference_vision.httpx.Client") as client_cls:
+            with pytest.raises(MediaAuthorizationError, match="remote_media_egress_not_authorized"):
+                vision_detect(
+                    allowlisted_ctx,
+                    VisionDetectInput(
+                        media_uri=str(image.resolve()),
+                        adapter_slug="huggingface_inference",
+                        artifact_id="vision.huggingface.remote",
+                    ),
+                )
+            assert not read_calls
+            client_cls.assert_not_called()
+
+
+def test_caller_cannot_self_authorize_remote_egress() -> None:
+    assert "remote_egress_permitted" not in VisionDetectInput.model_fields
+
+
+def test_trusted_egress_permitted_triton_sends_bytes(
+    egress_permitted_ctx: ToolWiringContext,
+    media_root: Path,
+) -> None:
+    payload_bytes = b"authorized-image-bytes"
+    image = media_root / "sample.png"
+    image.write_bytes(payload_bytes)
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json.return_value = {
+        "outputs": [{"label": "person", "confidence": 0.9, "bbox": {"x_min": 0.0, "y_min": 0.0, "x_max": 1.0, "y_max": 1.0}}]
+    }
+    mock_client = MagicMock()
+    mock_client.__enter__.return_value = mock_client
+    mock_client.__exit__.return_value = None
+    mock_client.post.return_value = mock_response
+    with patch("intergrax.model_inference.adapters.triton_vision.httpx.Client", return_value=mock_client):
+        output = vision_detect(
+            egress_permitted_ctx,
+            VisionDetectInput(
+                media_uri=str(image.resolve()),
+                adapter_slug="vision_serving",
+                artifact_id="vision.triton.remote",
+            ),
+        )
+    assert output.detections[0].label == "person"
+    import base64
+
+    sent_payload = mock_client.post.call_args.kwargs["json"]
+    assert base64.b64decode(sent_payload["inputs"][0]["data"][0]) == payload_bytes
+
+
+def test_trusted_egress_permitted_hf_sends_bytes(
+    egress_permitted_ctx: ToolWiringContext,
+    media_root: Path,
+) -> None:
+    payload_bytes = b"authorized-image-bytes"
+    image = media_root / "sample.png"
+    image.write_bytes(payload_bytes)
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json.return_value = [{"label": "cat", "score": 0.91}]
+    mock_client = MagicMock()
+    mock_client.__enter__.return_value = mock_client
+    mock_client.__exit__.return_value = None
+    mock_client.post.return_value = mock_response
+    with patch("intergrax.model_inference.adapters.huggingface_inference_vision.httpx.Client", return_value=mock_client):
+        output = vision_detect(
+            egress_permitted_ctx,
+            VisionDetectInput(
+                media_uri=str(image.resolve()),
+                adapter_slug="huggingface_inference",
+                artifact_id="vision.huggingface.remote",
+            ),
+        )
+    assert output.detections[0].label == "cat"
+
+
+def test_local_inference_allowed_without_remote_egress_policy(
+    allowlisted_ctx: ToolWiringContext,
+    media_root: Path,
+) -> None:
+    image = media_root / "sample.png"
+    image.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR")
+    with patch("intergrax.model_inference.adapters.triton_vision.httpx.Client") as client_cls:
+        with patch("intergrax.model_inference.adapters.huggingface_inference_vision.httpx.Client") as hf_client_cls:
+            authorized = authorize_vision_media(
+                allowlisted_ctx,
+                str(image.resolve()),
+                adapter_slug="onnxruntime",
+            )
+            assert authorized.remote_egress_permitted is False
+            client_cls.assert_not_called()
+            hf_client_cls.assert_not_called()
 
 
 def test_mod01_vulnerability_path_blocked_no_read_no_http(
