@@ -34,7 +34,7 @@
 - **Prior audit reference(s):** [`PLATFORM_FOUNDATION`](PLATFORM_FOUNDATION.md) (PF-PROOF-INTEGRITY); [`PROOF_RECEIPTS`](../project/architecture/PROOF_RECEIPTS.md) closed wave PROOF-RECEIPTS-1A–1E
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** `—`
+- **post_sync_sha:** `6e9e0190ad52674a8e5e04dba35c5542e2e72518`
 
 ## Scope / ownership mapping
 
