@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_valid
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
@@ -70,6 +71,7 @@ class Task(BaseModel):
     runtime: TaskRuntimeState = Field(default_factory=TaskRuntimeState)
     metadata: Dict[str, Any] = Field(default_factory=dict)
     canonical_identity: RequestIdentity | None = None
+    execution_authority: ParentExecutionAuthority | None = None
 
     _registry: Optional[Any] = PrivateAttr(default=None)
 
@@ -118,6 +120,7 @@ class Task(BaseModel):
             constraints=dict(constraints) if isinstance(constraints, dict) else {},
             metadata=meta,
             canonical_identity=self.canonical_identity,
+            execution_authority=self.execution_authority,
         )
 
     @classmethod
@@ -137,6 +140,7 @@ class Task(BaseModel):
             agent_id=envelope.agent_id,
             metadata=metadata,
             canonical_identity=envelope.canonical_identity,
+            execution_authority=envelope.execution_authority,
         )
 
     def to_runtime_request(self, *, run_id: RunId) -> "RuntimeRequest":
@@ -162,6 +166,7 @@ class Task(BaseModel):
             workspace_id=self.metadata.get("workspace_id"),
             metadata=metadata,
             canonical_identity=self.canonical_identity,
+            execution_authority=self.execution_authority,
             hitl_resolution=governance.hitl_resolution,
             hitl_pause_record=governance.pause_record,
         )

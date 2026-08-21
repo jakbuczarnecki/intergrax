@@ -15,11 +15,15 @@ from intergrax.contracts.delegation import DelegationSpec
 from intergrax.contracts.delegation_authority import (
     EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY,
     EFFECTIVE_PERMISSION_SCOPES_METADATA_KEY,
+    EXECUTION_AUTHORITY_UNRESTRICTED_METADATA_KEY,
     EXECUTION_PERMISSION_SCOPES_METADATA_KEY,
     DelegationAuthorityError,
+    EffectiveDelegationAuthority,
     ParentExecutionAuthority,
     mint_effective_delegation_authority,
     resolve_parent_execution_authority_for_node,
+    validate_effective_delegation_metadata_assertions,
+    validate_execution_authority_metadata_assertions,
 )
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
@@ -33,6 +37,7 @@ from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.interactions.actor_resolution import narrow_delegation_scopes
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.subagents.delegation_contract_enforcer import (
     DelegationToolPolicyError,
     enforce_subtask_tool_allowlist,
@@ -148,6 +153,7 @@ async def test_effective_authority_propagated_to_child_request() -> None:
         message="go",
         context=TaskContext(capability="cap.child"),
         metadata={EXECUTION_PERMISSION_SCOPES_METADATA_KEY: ["read", "write"]},
+        execution_authority=ParentExecutionAuthority.scoped(("read", "write")),
     )
     graph = ExecutionGraph(
         graph_id="g1",
@@ -167,6 +173,9 @@ async def test_effective_authority_propagated_to_child_request() -> None:
     with _bound_execution_identity():
         await executor.execute(graph, task)
     assert child.last_metadata[EFFECTIVE_PERMISSION_SCOPES_METADATA_KEY] == ["read"]
+    assert child.last_request is not None
+    assert isinstance(child.last_request.effective_delegation_authority, EffectiveDelegationAuthority)
+    assert child.last_request.effective_delegation_authority.effective_permission_scopes == ("read",)
 
 
 @pytest.mark.asyncio
@@ -185,6 +194,7 @@ async def test_delegation_granted_reports_effective_authority() -> None:
         message="go",
         context=TaskContext(capability="cap.child"),
         metadata={EXECUTION_PERMISSION_SCOPES_METADATA_KEY: ["read", "write"]},
+        execution_authority=ParentExecutionAuthority.scoped(("read", "write")),
     )
     graph = ExecutionGraph(
         graph_id="g1",
@@ -233,6 +243,7 @@ async def test_rejected_delegation_does_not_execute_child() -> None:
         message="go",
         context=TaskContext(capability="cap.child"),
         metadata={EXECUTION_PERMISSION_SCOPES_METADATA_KEY: ["read"]},
+        execution_authority=ParentExecutionAuthority.scoped(("read",)),
     )
     graph = ExecutionGraph(
         graph_id="g1",
@@ -273,6 +284,7 @@ async def test_rejected_delegation_does_not_emit_granted() -> None:
         message="go",
         context=TaskContext(capability="cap.child"),
         metadata={EXECUTION_PERMISSION_SCOPES_METADATA_KEY: ["read"]},
+        execution_authority=ParentExecutionAuthority.scoped(("read",)),
     )
     graph = ExecutionGraph(
         graph_id="g1",
@@ -307,3 +319,338 @@ def test_idt_fix_a_actor_identity_remains_identity_only() -> None:
     delegation = DelegationSpec(child_agent_id="child", permission_scopes=("read",))
     with pytest.raises(DelegationAuthorityError):
         narrow_delegation_scopes(actor, delegation)
+
+
+@pytest.mark.asyncio
+async def test_a1_metadata_cannot_self_grant_root_scope() -> None:
+    UaepPipelineStubAgent.run_log.clear()
+    child = UaepPipelineStubAgent(
+        agent_id="child",
+        capability="cap.child",
+        prefix="C",
+    )
+    registry = AgentRegistry()
+    registry.register(child)
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="go",
+        context=TaskContext(capability="cap.child"),
+        metadata={EXECUTION_PERMISSION_SCOPES_METADATA_KEY: ["admin"]},
+    )
+    graph = ExecutionGraph(
+        graph_id="g1",
+        task_id=task.task_id,
+        nodes=[
+            ExecutionNode(
+                node_id="n1",
+                agent_id="child",
+                delegation=DelegationSpec(
+                    child_agent_id="child",
+                    permission_scopes=("admin",),
+                ),
+            ),
+        ],
+    )
+    executor = GraphExecutor(registry)
+    with _bound_execution_identity():
+        executions, _, completed_graph, _ = await executor.execute(graph, task)
+    assert UaepPipelineStubAgent.run_log == []
+    node = completed_graph.node_by_id("n1")
+    assert node.execution_result is not None
+    assert node.execution_result.status is AgentExecutionStatus.FAILED
+    assert executions == []
+
+
+@pytest.mark.asyncio
+async def test_a2_metadata_cannot_self_grant_unrestricted() -> None:
+    UaepPipelineStubAgent.run_log.clear()
+    child = UaepPipelineStubAgent(
+        agent_id="child",
+        capability="cap.child",
+        prefix="C",
+    )
+    registry = AgentRegistry()
+    registry.register(child)
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="go",
+        context=TaskContext(capability="cap.child"),
+        metadata={EXECUTION_AUTHORITY_UNRESTRICTED_METADATA_KEY: True},
+    )
+    graph = ExecutionGraph(
+        graph_id="g1",
+        task_id=task.task_id,
+        nodes=[
+            ExecutionNode(
+                node_id="n1",
+                agent_id="child",
+                delegation=DelegationSpec(
+                    child_agent_id="child",
+                    permission_scopes=("admin",),
+                ),
+            ),
+        ],
+    )
+    bus = RuntimeEventBus(record_history=True)
+    executor = GraphExecutor(registry, event_bus=bus)
+    with _bound_execution_identity():
+        await executor.execute(graph, task)
+    assert UaepPipelineStubAgent.run_log == []
+    assert not any(
+        event.event_type is RuntimeEventType.DELEGATION_GRANTED for event in bus.history
+    )
+
+
+@pytest.mark.asyncio
+async def test_a3_trusted_typed_scoped_root() -> None:
+    child = UaepPipelineStubAgent(
+        agent_id="child",
+        capability="cap.child",
+        prefix="C",
+        track_request_metadata=True,
+    )
+    registry = AgentRegistry()
+    registry.register(child)
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="go",
+        context=TaskContext(capability="cap.child"),
+        execution_authority=ParentExecutionAuthority.scoped(("read", "write")),
+    )
+    graph = ExecutionGraph(
+        graph_id="g1",
+        task_id=task.task_id,
+        nodes=[
+            ExecutionNode(
+                node_id="n1",
+                agent_id="child",
+                delegation=DelegationSpec(
+                    child_agent_id="child",
+                    permission_scopes=("read",),
+                ),
+            ),
+        ],
+    )
+    executor = GraphExecutor(registry)
+    with _bound_execution_identity():
+        await executor.execute(graph, task)
+    assert child.last_request is not None
+    assert child.last_request.effective_delegation_authority is not None
+    assert child.last_request.effective_delegation_authority.effective_permission_scopes == ("read",)
+
+
+@pytest.mark.asyncio
+async def test_a4_trusted_typed_unrestricted_root() -> None:
+    child = UaepPipelineStubAgent(
+        agent_id="child",
+        capability="cap.child",
+        prefix="C",
+        track_request_metadata=True,
+    )
+    registry = AgentRegistry()
+    registry.register(child)
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="go",
+        context=TaskContext(capability="cap.child"),
+        execution_authority=ParentExecutionAuthority.unrestricted_root(),
+    )
+    graph = ExecutionGraph(
+        graph_id="g1",
+        task_id=task.task_id,
+        nodes=[
+            ExecutionNode(
+                node_id="n1",
+                agent_id="child",
+                delegation=DelegationSpec(
+                    child_agent_id="child",
+                    permission_scopes=("read",),
+                ),
+            ),
+        ],
+    )
+    executor = GraphExecutor(registry)
+    with _bound_execution_identity():
+        await executor.execute(graph, task)
+    assert child.last_request is not None
+    assert child.last_request.effective_delegation_authority is not None
+    assert child.last_request.effective_delegation_authority.effective_permission_scopes == ("read",)
+
+
+@pytest.mark.asyncio
+async def test_a5_conflicting_metadata_assertion_rejected() -> None:
+    child = UaepPipelineStubAgent(
+        agent_id="child",
+        capability="cap.child",
+        prefix="C",
+    )
+    registry = AgentRegistry()
+    registry.register(child)
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="go",
+        context=TaskContext(capability="cap.child"),
+        execution_authority=ParentExecutionAuthority.scoped(("read",)),
+        metadata={EXECUTION_PERMISSION_SCOPES_METADATA_KEY: ["admin"]},
+    )
+    graph = ExecutionGraph(
+        graph_id="g1",
+        task_id=task.task_id,
+        nodes=[
+            ExecutionNode(
+                node_id="n1",
+                agent_id="child",
+                delegation=DelegationSpec(
+                    child_agent_id="child",
+                    permission_scopes=("read",),
+                ),
+            ),
+        ],
+    )
+    executor = GraphExecutor(registry)
+    with _bound_execution_identity():
+        executions, _, _, _ = await executor.execute(graph, task)
+    assert executions
+    assert executions[0].status is AgentExecutionStatus.FAILED
+    assert "conflict" in executions[0].errors[0]
+
+
+def test_a5_metadata_conflict_validator() -> None:
+    trusted = ParentExecutionAuthority.scoped(("read",))
+    conflict = validate_execution_authority_metadata_assertions(
+        {EXECUTION_PERMISSION_SCOPES_METADATA_KEY: ["admin"]},
+        trusted,
+    )
+    assert conflict is not None
+
+
+@pytest.mark.asyncio
+async def test_b1_child_receives_typed_authority() -> None:
+    child = UaepPipelineStubAgent(
+        agent_id="child",
+        capability="cap.child",
+        prefix="C",
+        track_request_metadata=True,
+    )
+    registry = AgentRegistry()
+    registry.register(child)
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="go",
+        context=TaskContext(capability="cap.child"),
+        execution_authority=ParentExecutionAuthority.scoped(("read", "write")),
+    )
+    graph = ExecutionGraph(
+        graph_id="g1",
+        task_id=task.task_id,
+        nodes=[
+            ExecutionNode(
+                node_id="n1",
+                agent_id="child",
+                delegation=DelegationSpec(
+                    child_agent_id="child",
+                    permission_scopes=("read",),
+                ),
+            ),
+        ],
+    )
+    executor = GraphExecutor(registry)
+    with _bound_execution_identity():
+        await executor.execute(graph, task)
+    assert child.last_request is not None
+    authority = child.last_request.effective_delegation_authority
+    assert isinstance(authority, EffectiveDelegationAuthority)
+    assert authority.effective_permission_scopes == ("read",)
+
+
+def test_b2_metadata_cannot_modify_effective_authority() -> None:
+    trusted = EffectiveDelegationAuthority(
+        requested_permission_scopes=("read",),
+        parent_effective_scopes=("read", "write"),
+        parent_unrestricted=False,
+        effective_permission_scopes=("read",),
+    )
+    conflict = validate_effective_delegation_metadata_assertions(
+        {EFFECTIVE_PERMISSION_SCOPES_METADATA_KEY: ["admin"]},
+        trusted,
+    )
+    assert conflict is not None
+
+
+@pytest.mark.asyncio
+async def test_b3_nested_typed_authority_denies_overreach() -> None:
+    UaepPipelineStubAgent.run_log.clear()
+    parent = UaepPipelineStubAgent(
+        agent_id="parent",
+        capability="cap.parent",
+        prefix="P",
+    )
+    child = UaepPipelineStubAgent(
+        agent_id="child",
+        capability="cap.child",
+        prefix="C",
+    )
+    grandchild = UaepPipelineStubAgent(
+        agent_id="grandchild",
+        capability="cap.grandchild",
+        prefix="G",
+    )
+    registry = AgentRegistry()
+    registry.register(parent)
+    registry.register(child)
+    registry.register(grandchild)
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="go",
+        context=TaskContext(capability="cap.parent"),
+        execution_authority=ParentExecutionAuthority.scoped(("read", "write", "admin")),
+    )
+    graph = ExecutionGraph(
+        graph_id="nested",
+        task_id=task.task_id,
+        nodes=[
+            ExecutionNode(
+                node_id="parent",
+                agent_id="parent",
+                capability="cap.parent",
+            ),
+            ExecutionNode(
+                node_id="child",
+                agent_id="child",
+                capability="cap.child",
+                depends_on=["parent"],
+                delegation=DelegationSpec(
+                    child_agent_id="child",
+                    permission_scopes=("read", "write"),
+                ),
+            ),
+            ExecutionNode(
+                node_id="grandchild",
+                agent_id="grandchild",
+                capability="cap.grandchild",
+                depends_on=["child"],
+                delegation=DelegationSpec(
+                    child_agent_id="grandchild",
+                    permission_scopes=("admin",),
+                ),
+            ),
+        ],
+    )
+    executor = GraphExecutor(registry)
+    with _bound_execution_identity():
+        executions, _, completed_graph, _ = await executor.execute(graph, task)
+    assert grandchild._agent_id not in UaepPipelineStubAgent.run_log
+    grandchild_node = completed_graph.node_by_id("grandchild")
+    assert grandchild_node.execution_result is not None
+    assert grandchild_node.execution_result.status is AgentExecutionStatus.FAILED
+    child_node = completed_graph.node_by_id("child")
+    assert child_node.execution_result is not None
+    assert child_node.execution_result.status is AgentExecutionStatus.COMPLETED
+    assert len(executions) == 2

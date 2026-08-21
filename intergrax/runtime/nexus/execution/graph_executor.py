@@ -38,6 +38,8 @@ from intergrax.contracts.delegation_authority import (
     mint_effective_delegation_authority,
     resolve_parent_execution_authority_for_node,
     resolve_root_parent_execution_authority,
+    validate_effective_delegation_metadata_assertions,
+    validate_execution_authority_metadata_assertions,
 )
 from intergrax.contracts.agent_handoff import AgentHandoff, resolve_handoff_from_execution
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
@@ -217,7 +219,22 @@ class GraphExecutor:
             )
             return [failed], [], graph, False
 
-        root_execution_authority = resolve_root_parent_execution_authority(task.metadata)
+        root_execution_authority = resolve_root_parent_execution_authority(
+            task.execution_authority
+        )
+        authority_assertion_error = validate_execution_authority_metadata_assertions(
+            task.metadata,
+            root_execution_authority,
+        )
+        if authority_assertion_error is not None:
+            failed = AgentExecutionResult(
+                agent_id="",
+                run_id=self._require_run_id(),
+                status=AgentExecutionStatus.FAILED,
+                summary="",
+                errors=[authority_assertion_error],
+            )
+            return [failed], [], graph, False
 
         for batch in batches:
             if CancellationCoordinator.is_requested(task.metadata):
@@ -634,12 +651,25 @@ class GraphExecutor:
                     )
                 )
                 if isinstance(effective_authority, EffectiveDelegationAuthority):
+                    request.effective_delegation_authority = effective_authority
                     request.metadata[EFFECTIVE_PERMISSION_SCOPES_METADATA_KEY] = list(
                         effective_authority.effective_permission_scopes
                     )
                     request.metadata[REQUESTED_PERMISSION_SCOPES_METADATA_KEY] = list(
                         effective_authority.requested_permission_scopes
                     )
+                    metadata_conflict = validate_effective_delegation_metadata_assertions(
+                        request.metadata,
+                        effective_authority,
+                    )
+                    if metadata_conflict is not None:
+                        return AgentExecutionResult(
+                            agent_id=current_agent.get_contract().id,
+                            run_id=active_run_id,
+                            status=AgentExecutionStatus.FAILED,
+                            summary="",
+                            errors=[metadata_conflict],
+                        )
                 request.metadata["run_id"] = f"{task.task_id}:{node.node_id}"
                 if delegation.parent_run_id:
                     request.metadata[TaskMemoryMetadataKey.PARENT_RUN_ID] = delegation.parent_run_id

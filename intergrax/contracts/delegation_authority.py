@@ -58,17 +58,63 @@ REQUESTED_PERMISSION_SCOPES_METADATA_KEY = "requested_permission_scopes"
 
 
 def resolve_root_parent_execution_authority(
-    task_metadata: Mapping[str, Any],
+    execution_authority: ParentExecutionAuthority | None,
 ) -> ParentExecutionAuthority:
-    """Resolve trusted root authority from explicit task execution metadata only."""
-    if task_metadata.get(EXECUTION_AUTHORITY_UNRESTRICTED_METADATA_KEY) is True:
-        return ParentExecutionAuthority.unrestricted_root()
-    raw = task_metadata.get(EXECUTION_PERMISSION_SCOPES_METADATA_KEY)
-    if isinstance(raw, (list, tuple)):
-        scopes = tuple(str(scope) for scope in raw if str(scope))
-        if scopes:
-            return ParentExecutionAuthority.scoped(scopes)
-    return ParentExecutionAuthority.unknown()
+    """Resolve trusted root authority from typed task/runtime field only."""
+    if execution_authority is None:
+        return ParentExecutionAuthority.unknown()
+    return execution_authority
+
+
+def validate_execution_authority_metadata_assertions(
+    task_metadata: Mapping[str, Any],
+    trusted: ParentExecutionAuthority,
+) -> str | None:
+    """Fail-closed when legacy metadata asserts authority conflicting with typed root."""
+    unrestricted_asserted = (
+        task_metadata.get(EXECUTION_AUTHORITY_UNRESTRICTED_METADATA_KEY) is True
+    )
+    raw_scopes = task_metadata.get(EXECUTION_PERMISSION_SCOPES_METADATA_KEY)
+    asserted_scopes: tuple[str, ...] = ()
+    if isinstance(raw_scopes, (list, tuple)):
+        asserted_scopes = tuple(str(scope) for scope in raw_scopes if str(scope))
+
+    if unrestricted_asserted and not trusted.unrestricted:
+        return (
+            "execution_authority metadata asserts unrestricted "
+            "conflicting with typed root authority"
+        )
+
+    if asserted_scopes and not trusted.is_unknown and not trusted.unrestricted:
+        trusted_set = set(trusted.permission_scopes)
+        asserted_set = set(asserted_scopes)
+        if asserted_set != trusted_set:
+            return (
+                "execution_authority metadata scopes "
+                f"{sorted(asserted_set)!r} conflict with typed root "
+                f"{sorted(trusted_set)!r}"
+            )
+    return None
+
+
+def validate_effective_delegation_metadata_assertions(
+    request_metadata: Mapping[str, Any],
+    trusted: EffectiveDelegationAuthority,
+) -> str | None:
+    """Fail-closed when request metadata asserts effective scopes conflicting with typed authority."""
+    raw = request_metadata.get(EFFECTIVE_PERMISSION_SCOPES_METADATA_KEY)
+    if not isinstance(raw, (list, tuple)):
+        return None
+    asserted = tuple(str(scope) for scope in raw if str(scope))
+    if not asserted:
+        return None
+    if asserted != trusted.effective_permission_scopes:
+        return (
+            "effective_permission_scopes metadata "
+            f"{list(asserted)!r} conflicts with typed effective delegation authority "
+            f"{list(trusted.effective_permission_scopes)!r}"
+        )
+    return None
 
 
 def effective_delegation_to_parent_authority(

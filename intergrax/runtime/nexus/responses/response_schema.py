@@ -20,6 +20,10 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.delegation_authority import (
+    EffectiveDelegationAuthority,
+    ParentExecutionAuthority,
+)
 from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
 from intergrax.contracts.execution_identity import (
     RunId,
@@ -168,6 +172,12 @@ class RuntimeRequest:
     # Verified authenticated principal for execution identity (IDT-FIX-A).
     canonical_identity: Optional[RequestIdentity] = None
 
+    # Trusted root execution authority minted by host/runtime policy (IDT-FIX-B R1).
+    execution_authority: Optional[ParentExecutionAuthority] = None
+
+    # Typed effective delegation authority for delegated child execution (IDT-FIX-B R1).
+    effective_delegation_authority: Optional[EffectiveDelegationAuthority] = None
+
     # Typed pause lifecycle identity for resume validation (not authorization).
     hitl_pause_record: Optional[TaskPauseRecord] = None
 
@@ -189,6 +199,7 @@ class RuntimeRequest:
             workspace_id=self.workspace_id,
             metadata=dict(self.metadata),
             canonical_identity=self.canonical_identity,
+            execution_authority=self.execution_authority,
         )
 
     @classmethod
@@ -211,6 +222,7 @@ class RuntimeRequest:
             tenant_id=envelope.tenant_id,
             metadata=dict(envelope.metadata),
             canonical_identity=envelope.canonical_identity,
+            execution_authority=envelope.execution_authority,
         )
 
     # User-provided instructions (ChatGPT/Gemini-style)
