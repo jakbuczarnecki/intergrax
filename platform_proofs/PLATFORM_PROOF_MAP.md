@@ -29,7 +29,7 @@ Canonical domain topology: [intergrax_runtime_architecture.md](../docs/project/a
 | `REASONING_AND_COGNITION` | — | — | NO_PROOF | — | |
 | `AGENT_CONTRACTS_AND_ASSEMBLY` | — | — | NO_PROOF | — | |
 | `LLM_ADAPTERS` | — | — | NO_PROOF | — | `LKW-MODEL-RUNTIME` is product-scoped, not LLM-adapters domain proof |
-| `TOOLS` | Bounded iterative tool runtime uses real SQL observations to drive evidence-dependent follow-on calls and terminate with an explicit investigation chain under configured limits | `TOOLS-ITERATIVE-SQL-INVESTIGATION` | **DESIGNED** | Real LLM + real PostgreSQL + real Intergrax tool runtime | Reference design only in PP-2; implementation follows |
+| `TOOLS` | Bounded iterative tool runtime uses real SQL observations to drive evidence-dependent follow-on calls and terminate with an explicit investigation chain under configured limits | `TOOLS-ITERATIVE-SQL-INVESTIGATION` | **DESIGNED** | Real LLM + real PostgreSQL + real Intergrax tool runtime | PP-3B deterministic infrastructure under `platform_proofs/tools/iterative_sql_investigation/`; not manifest-registered; not EXECUTABLE yet |
 | `CODE_CRAFT` | — | — | NO_PROOF | — | |
 | `SKILLS` | — | — | NO_PROOF | — | |
 | `INTEGRATIONS` | — | — | NO_PROOF | — | |
@@ -55,7 +55,7 @@ Canonical domain topology: [intergrax_runtime_architecture.md](../docs/project/a
 
 ## TOOLS reference proof — design detail (`TOOLS-ITERATIVE-SQL-INVESTIGATION`)
 
-**Status:** DESIGNED only (PP-2). Not registered in manifest yet. Not executable.
+**Status:** DESIGNED only (PP-2 design; PP-3B deterministic infrastructure). Not registered in manifest yet. Not EXECUTABLE.
 
 ### Claim
 

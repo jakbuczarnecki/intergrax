@@ -1,13 +1,11 @@
-# TOOLS platform proof — reference placeholder
+# TOOLS platform proofs
 
-**Proof ID:** `TOOLS-ITERATIVE-SQL-INVESTIGATION`  
-**Coverage:** DESIGNED (documentation only in PP-2; no executable scenario yet)
+**Reference proof:** [`iterative_sql_investigation/README.md`](iterative_sql_investigation/README.md) — `TOOLS-ITERATIVE-SQL-INVESTIGATION`
 
-This directory is reserved for the first canonical TOOLS domain platform proof. Design and claim boundaries are documented in:
+| Proof ID | Coverage | Notes |
+|----------|----------|-------|
+| `TOOLS-ITERATIVE-SQL-INVESTIGATION` | DESIGNED | PP-3B deterministic infrastructure (dataset, isolated PostgreSQL, bounded read-only SQL tool, runtime wiring). Not manifest-registered yet. |
 
-- [PLATFORM_PROOF_MAP.md](../PLATFORM_PROOF_MAP.md) — TOOLS row
-- [PLATFORM_PROOF_PROTOCOL.md](../PLATFORM_PROOF_PROTOCOL.md) — methodology
+See [PLATFORM_PROOF_MAP.md](../PLATFORM_PROOF_MAP.md) for canonical coverage labels.
 
-**Do not** treat LKW product proofs as TOOLS platform proof evidence. Product execution ≠ platform-layer proof.
-
-Implementation and manifest registration follow in a later session.
+**Do not** treat LKW product proofs as TOOLS platform proof evidence.
