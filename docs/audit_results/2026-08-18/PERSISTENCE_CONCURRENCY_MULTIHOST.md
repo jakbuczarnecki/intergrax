@@ -38,7 +38,7 @@
 - **Prior audit reference(s):** [`PROVIDER_BACKEND_ABSTRACTION`](PROVIDER_BACKEND_ABSTRACTION.md); [`TOOLS`](TOOLS.md); [`MEMORY`](MEMORY.md); [`ADAPTIVE_HARNESS_INTELLIGENCE`](ADAPTIVE_HARNESS_INTELLIGENCE.md); [`ELASTIC_CAPACITY_AND_SCALING`](ELASTIC_CAPACITY_AND_SCALING.md)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `e17b2e75e3480c864c27a7bc5ad818e210d1f381`
 
 ## Scope / ownership mapping
 
