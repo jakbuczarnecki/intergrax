@@ -580,6 +580,22 @@ Accepted [`END_TO_END_SYSTEM`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.
 2. Tenant/model routing and LLM `RoutingContext` derive from the **runtime Task/Run execution identity** — not literal `tenant_id="default"` as product routing authority. Use a runtime `RoutingContextProvider` / execution-context bridge when the adapter is reused across tasks. Cross-link **IDENTITY_TRUST**, **LLM_ADAPTERS** — do not duplicate their findings.
 3. A surface must not reconstruct `UnifiedTaskRunner(nexus_loop)` independently when canonical wiring supplies reliability enrichment via `build_reliability_task_enricher()`. Cross-link **E2E-EXECUTION-CONTEXT-INTEGRITY**, **ITI-FIX-C**.
 
+<a id="protocol-v2-cross-layer-composition-qualification-target-invariants-2026-08-18"></a>
+
+### Protocol v2 cross-layer composition qualification target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`CROSS_LAYER_ARCHITECTURE`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md) (**FAIL**, CLA-03, CLA-05). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence. **No monolithic ProductionEngine.**
+
+**Conceptual inputs:** `TargetEnvironment` · materialized runtime identity · exact application/environment revision · exact component/capability qualification references · mandatory evidence freshness.
+
+**Conceptual outcomes:** `QUALIFIED` · `NOT_QUALIFIED` · `STALE` · `INCOMPLETE`.
+
+1. **Composition closure owner** — Tier-3/composition layer evaluates whether **all mandatory** components are simultaneously qualified for one target environment; each domain continues to own domain qualification (agent gates, plugin/provider qualification, hosting maturity, A/I/P/E axes, STRICT/PRODUCT profile, proof evidence).
+2. **No false union** — local gate scripts, partial CI smoke, or hub maturity summaries do **not** substitute for composition closure evidence.
+3. **Maturity requalification coupling** — when accepted findings affect production/evidence safety, composition and domain owners MUST record explicit maturity impact per [`MATURITY_TAXONOMY`](../technical/guides/MATURITY_TAXONOMY.md#finding-and-evidence-driven-maturity-impact-2026-08-18) before retaining prior four-axis claims.
+
+Remediation: **CLA-PRODUCTION-QUALIFICATION-INTEGRITY** in [plan](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md). Cross-link **SEC-***, **IDT-FIX-***, **PLATFORM-EXTENSIBILITY-***, **HOSTING-***, **LKW-PROOF-***, existing production-gates satellite — coordinate; do not duplicate.
+
 ---
 
 <a id="45-checklist-for-new-application-implementation"></a>

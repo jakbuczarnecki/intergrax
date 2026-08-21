@@ -294,4 +294,27 @@ Finding 05 remains owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](PLATFOR
 
 **Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
 
+<a id="cla-production-qualification-integrity-2026-08-18"></a>
+
+### CLA-PRODUCTION-QUALIFICATION-INTEGRITY — Composition qualification closure and maturity requalification (Protocol v2 · 2026-08-18)
+
+**Status:** `ACCEPTED / PLANNED`
+**Priority:** P0
+**Type:** Meta-architecture / composition qualification concept
+**Source:** [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-03`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md), [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-05`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Deliverable intent:**
+
+- define provider/domain-neutral composition qualification model (`QUALIFIED` / `NOT_QUALIFIED` / `STALE` / `INCOMPLETE`) — Tier-3 evaluates closure only
+- cross-link existing security, plugin, provider, identity, persistence, hosting, and E2E blocks — do not duplicate them
+- integrate finding/evidence-driven maturity impact semantics from [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md)
+- **No monolithic ProductionEngine** — domains retain domain qualification
+
+**Remediation rules:**
+
+- Revalidate against then-current `development` HEAD before implementation.
+- Hub A4/I3/P3/E3 summaries require explicit requalification decisions when accepted findings affect claimed scope.
+- **Not implemented** by audit persistence task AUDIT-20260818-CROSS-LAYER-ARCHITECTURE-PERSIST.
+
 ---

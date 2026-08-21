@@ -350,6 +350,18 @@ Accepted Protocol v2 audit layer [`PERSISTENCE_CONCURRENCY_MULTIHOST`](../../aud
 
 Platform Foundation MUST NOT become a persistence implementation domain. Remediation: **PCM-PERSISTENCE-TOPOLOGY-INTEGRITY** in [plan](../maintainers/plans/PLATFORM_FOUNDATION.md). Recovery-side invariants: [Reliability persistence/concurrency invariants](RELIABILITY_FAILURE_AND_HITL.md#protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18).
 
+<a id="protocol-v2-cross-layer-meta-architecture-target-invariants-2026-08-18"></a>
+
+### Protocol v2 cross-layer meta-architecture target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`CROSS_LAYER_ARCHITECTURE`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md) (**FAIL**, CLA-01, CLA-02, CLA-06). **Target state only** — **not implemented** by audit persistence:
+
+1. **Authoritative owner topology** — runtime hub maintains a complete architecture artifact classification register (DOMAIN / FEATURE / META_ARCHITECTURE / SUPPORTING_MODEL) and does not advertise a partial list as complete ([`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-01`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)).
+2. **SYSTEM_INVARIANTS synchronization** — compact cross-layer index reflects current durable concerns; new cross-layer rules MUST be indexed there after domain canon updates ([`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-02`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)).
+3. **Remediation DAG requirement** — campaign rollup MUST produce one cross-layer remediation dependency graph with relation vocabulary `depends_on`, `shares_authority_with`, `merge_into`, `supersedes`, `can_parallelize_with`, `verified_by` before normal campaign implementation ([`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-06`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)).
+
+Remediation: **CLA-CANON-TOPOLOGY-INTEGRITY** and **CLA-REMEDIATION-DAG-INTEGRITY** in [plan](../maintainers/plans/PLATFORM_FOUNDATION.md). **Not implemented** by audit persistence.
+
 ## Relationship To “Layer 1 / 2 / 3” Naming
 
 Earlier sections and diagrams may refer to **Layer 1 / 2 / 3**. Mapping:
