@@ -5,11 +5,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import Any, Optional, Protocol, Union, runtime_checkable
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.runtime.nexus.tools.tool_planning_policy import NativeToolChoice
 from intergrax.tools.core.tool_plan import ToolCallPlan
 from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 
@@ -38,10 +39,7 @@ class IterativeToolPlannerProtocol(ToolPlannerProtocol, Protocol):
         messages: list[ChatMessage],
         *,
         allowed_tool_ids: Sequence[str] | None = None,
-        run_id: str | None = None,
-        tool_choice: Union[str, dict[str, Any], None] = None,
-        prepared_tools_schema: Sequence[Mapping[str, Any]] | None = None,
-        prepared_tools_schema_hash: str | None = None,
-        prepared_messages_hash: str | None = None,
+        run_id: str,
+        tool_choice: NativeToolChoice | None = None,
     ) -> tuple[LLMAdapterResponse, ToolCallPlan]:
         ...

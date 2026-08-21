@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import inspect
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -50,7 +51,13 @@ def test_catalog_tool_planner_delegates_plan_native_round() -> None:
         allowed_tool_ids=None,
         run_id="run-1",
         tool_choice=None,
-        prepared_tools_schema=None,
-        prepared_tools_schema_hash=None,
-        prepared_messages_hash=None,
     )
+
+
+def test_iterative_tool_planner_protocol_exposes_minimal_plan_native_round() -> None:
+    sig = inspect.signature(IterativeToolPlannerProtocol.plan_native_round)
+    param_names = list(sig.parameters)
+    assert param_names == ["self", "messages", "allowed_tool_ids", "run_id", "tool_choice"]
+    assert "prepared_tools_schema" not in param_names
+    assert "prepared_tools_schema_hash" not in param_names
+    assert "prepared_messages_hash" not in param_names

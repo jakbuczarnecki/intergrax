@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
@@ -13,6 +13,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+from intergrax.runtime.nexus.tools.tool_planning_policy import NativeToolChoice
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.runtime.nexus.tools.tool_planner_trackable import ToolPlannerTrackable
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
@@ -97,18 +98,12 @@ class CatalogToolPlanner(ToolPlannerTrackable):
         messages: list[ChatMessage],
         *,
         allowed_tool_ids: Sequence[str] | None = None,
-        run_id: str | None = None,
-        tool_choice: Union[str, dict[str, Any], None] = None,
-        prepared_tools_schema: Sequence[Mapping[str, Any]] | None = None,
-        prepared_tools_schema_hash: str | None = None,
-        prepared_messages_hash: str | None = None,
+        run_id: str,
+        tool_choice: NativeToolChoice | None = None,
     ) -> tuple[LLMAdapterResponse, ToolCallPlan]:
         return self._service.plan_native_round(
             messages,
             allowed_tool_ids=allowed_tool_ids,
             run_id=run_id,
             tool_choice=tool_choice,
-            prepared_tools_schema=prepared_tools_schema,
-            prepared_tools_schema_hash=prepared_tools_schema_hash,
-            prepared_messages_hash=prepared_messages_hash,
         )
