@@ -460,22 +460,245 @@ def test_wrong_run_decision_does_not_authorize(tmp_path: Path) -> None:
         _sandbox(tmp_path, tenant_id=TENANT_A, task_id=TASK_X),
         profile=profile,
         hitl_store=store,
+        manager=CodeCraftSessionManager(),
     )
-    craft_id = _open_session(ctx, tenant_id=TENANT_A, task_id=TASK_X)
-    other_run = mint_run_id()
-    _approve(store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id, run_id=str(other_run))
-
-    token = bind_active_execution_identity(run_id=RUN_A, attempt_id=ATTEMPT_A)
+    token = _bind_run()
     try:
+        craft_id = _open_session(ctx, tenant_id=TENANT_A, task_id=TASK_X)
+        other_run = mint_run_id()
+        _approve(store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id, run_id=str(other_run))
+
         with patch("intergrax.runtime.codecraft.orchestrator.code_exec") as mocked_exec:
             out = codecraft_iterate(
                 ctx,
                 CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
             )
             mocked_exec.assert_not_called()
+        assert out.result.error == "hitl_pending"
     finally:
-        from intergrax.contracts.execution_identity import reset_active_execution_identity
+        _reset_run(token)
 
-        reset_active_execution_identity(token)
 
+def _bind_run(run_id: str = str(RUN_A)) -> object:
+    return bind_active_execution_identity(run_id=run_id, attempt_id=ATTEMPT_A)
+
+
+def _reset_run(token: object) -> None:
+    from intergrax.contracts.execution_identity import reset_active_execution_identity
+
+    reset_active_execution_identity(token)  # type: ignore[arg-type]
+
+
+def test_session_none_run_does_not_match_active_run(tmp_path: Path) -> None:
+    manager = CodeCraftSessionManager()
+    profile = CodeCraftProfile(mode="autonomous", require_tests=False)
+    ctx = _ctx(_sandbox(tmp_path, tenant_id=TENANT_A, task_id=TASK_X), profile=profile, manager=manager)
+    craft_id = _open_session(ctx, tenant_id=TENANT_A, task_id=TASK_X)
+    before = codecraft_get_state(
+        ctx,
+        CodeCraftGetStateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+    )
+    assert before.session is not None
+    assert before.session.run_id is None
+    snapshot = before.session.model_copy(deep=True)
+
+    token = _bind_run()
+    try:
+        state = codecraft_get_state(
+            ctx,
+            CodeCraftGetStateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+        )
+        assert state.found is False
+        assert state.session is None
+
+        with patch("intergrax.runtime.codecraft.orchestrator.code_exec") as mocked_exec:
+            out = codecraft_iterate(
+                ctx,
+                CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+            )
+            mocked_exec.assert_not_called()
+        assert out.result.error == "craft_session_ownership_mismatch"
+    finally:
+        _reset_run(token)
+
+    after = codecraft_get_state(
+        ctx,
+        CodeCraftGetStateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+    )
+    assert after.session == snapshot
+
+
+def test_different_run_session_rejects_operation(tmp_path: Path) -> None:
+    manager = CodeCraftSessionManager()
+    profile = CodeCraftProfile(mode="autonomous", require_tests=False)
+    run_one = mint_run_id()
+    run_two = mint_run_id()
+    ctx = _ctx(_sandbox(tmp_path, tenant_id=TENANT_A, task_id=TASK_X), profile=profile, manager=manager)
+
+    token = bind_active_execution_identity(run_id=run_one, attempt_id=ATTEMPT_A)
+    try:
+        craft_id = _open_session(ctx, tenant_id=TENANT_A, task_id=TASK_X)
+        opened = codecraft_get_state(
+            ctx,
+            CodeCraftGetStateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+        )
+        assert opened.session is not None
+        assert opened.session.run_id == str(run_one)
+    finally:
+        _reset_run(token)
+
+    token = bind_active_execution_identity(run_id=run_two, attempt_id=ATTEMPT_A)
+    try:
+        state = codecraft_get_state(
+            ctx,
+            CodeCraftGetStateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+        )
+        assert state.found is False
+
+        with patch("intergrax.runtime.codecraft.orchestrator.code_exec") as mocked_exec:
+            out = codecraft_iterate(
+                ctx,
+                CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+            )
+            mocked_exec.assert_not_called()
+        assert out.result.error == "craft_session_ownership_mismatch"
+    finally:
+        _reset_run(token)
+
+
+def test_approval_without_run_cannot_authorize_active_run(tmp_path: Path) -> None:
+    store = InMemoryHumanDecisionPersistence()
+    profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True, require_tests=False)
+    ctx = _ctx(
+        _sandbox(tmp_path, tenant_id=TENANT_A, task_id=TASK_X),
+        profile=profile,
+        hitl_store=store,
+        manager=CodeCraftSessionManager(),
+    )
+    token = _bind_run()
+    try:
+        craft_id = _open_session(ctx, tenant_id=TENANT_A, task_id=TASK_X)
+        _approve(store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id, run_id=None)
+
+        with patch("intergrax.runtime.codecraft.orchestrator.code_exec") as mocked_exec:
+            out = codecraft_iterate(
+                ctx,
+                CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+            )
+            mocked_exec.assert_not_called()
+        assert out.result.error == "hitl_pending"
+    finally:
+        _reset_run(token)
+
+
+def test_exact_run_approval_allows_iterate(tmp_path: Path) -> None:
+    store = InMemoryHumanDecisionPersistence()
+    profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True, require_tests=False)
+    ctx = _ctx(
+        _sandbox(tmp_path, tenant_id=TENANT_A, task_id=TASK_X),
+        profile=profile,
+        hitl_store=store,
+        manager=CodeCraftSessionManager(),
+    )
+    token = _bind_run()
+    try:
+        craft_id = _open_session(ctx, tenant_id=TENANT_A, task_id=TASK_X)
+        _approve(store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id, run_id=str(RUN_A))
+
+        out = codecraft_iterate(
+            ctx,
+            CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+        )
+        assert out.result.error != "hitl_pending"
+        assert out.result.error != "hitl_denied"
+    finally:
+        _reset_run(token)
+
+
+def test_codecraft_run_hitl_run_parity(tmp_path: Path) -> None:
+    store = InMemoryHumanDecisionPersistence()
+    profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True)
+    craft_id = "craft-run-hitl-parity"
+    ctx = _ctx(
+        _sandbox(tmp_path, tenant_id=TENANT_A, task_id=TASK_X),
+        profile=profile,
+        hitl_store=store,
+    )
+
+    token = _bind_run()
+    try:
+        with patch("intergrax.tools.providers.codecraft.service.code_exec") as mocked_exec:
+            pending = codecraft_run(
+                ctx,
+                CodeCraftRunToolInput(
+                    code="print('blocked')\n",
+                    tenant_id=TENANT_A,
+                    task_id=TASK_X,
+                    craft_id=craft_id,
+                ),
+            )
+            mocked_exec.assert_not_called()
+        assert pending.result.error == "hitl_pending"
+
+        wrong_run = mint_run_id()
+        _approve(store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id, run_id=str(wrong_run))
+        with patch("intergrax.tools.providers.codecraft.service.code_exec") as mocked_exec:
+            wrong = codecraft_run(
+                ctx,
+                CodeCraftRunToolInput(
+                    code="print('wrong')\n",
+                    tenant_id=TENANT_A,
+                    task_id=TASK_X,
+                    craft_id=craft_id,
+                ),
+            )
+            mocked_exec.assert_not_called()
+        assert wrong.result.error == "hitl_pending"
+
+        exact_store = InMemoryHumanDecisionPersistence()
+        exact_ctx = _ctx(
+            _sandbox(tmp_path, tenant_id=TENANT_A, task_id=TASK_X),
+            profile=profile,
+            hitl_store=exact_store,
+        )
+        _approve(exact_store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id, run_id=str(RUN_A))
+        out = codecraft_run(
+            exact_ctx,
+            CodeCraftRunToolInput(
+                code="print('approved')\n",
+                tenant_id=TENANT_A,
+                task_id=TASK_X,
+                craft_id=craft_id,
+            ),
+        )
+        assert out.result.success is True
+        assert "approved" in out.result.stdout
+    finally:
+        _reset_run(token)
+
+
+def test_caller_run_id_cannot_create_authority(tmp_path: Path) -> None:
+    store = InMemoryHumanDecisionPersistence()
+    profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True)
+    forged_run = mint_run_id()
+    craft_id = "craft-forged-run"
+    ctx = _ctx(
+        _sandbox(tmp_path, tenant_id=TENANT_A, task_id=TASK_X),
+        profile=profile,
+        hitl_store=store,
+    )
+    _approve(store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id, run_id=str(forged_run))
+
+    with patch("intergrax.tools.providers.codecraft.service.code_exec") as mocked_exec:
+        out = codecraft_run(
+            ctx,
+            CodeCraftRunToolInput(
+                code="print('forged')\n",
+                tenant_id=TENANT_A,
+                task_id=TASK_X,
+                craft_id=craft_id,
+                run_id=str(forged_run),
+            ),
+        )
+        mocked_exec.assert_not_called()
     assert out.result.error == "hitl_pending"

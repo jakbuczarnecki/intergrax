@@ -78,7 +78,7 @@ def resolve_codecraft_ownership(
     return CodeCraftSessionOwnership(
         tenant_id=trusted_tenant,
         task_id=trusted_task,
-        run_id=trusted_run or caller_run_id,
+        run_id=trusted_run,
     )
 
 
@@ -92,9 +92,7 @@ def matches_session_ownership(
         return False
     if session_task_id != ownership.task_id:
         return False
-    if ownership.run_id and session_run_id and session_run_id != ownership.run_id:
-        return False
-    return True
+    return session_run_id == ownership.run_id
 
 
 def _decision_matches_craft_scope(
@@ -107,7 +105,7 @@ def _decision_matches_craft_scope(
         return False
     if record.task_id != ownership.task_id:
         return False
-    if ownership.run_id and record.run_id and record.run_id != ownership.run_id:
+    if record.run_id != ownership.run_id:
         return False
     expected = codecraft_exec_hitl_notes(craft_id)
     return record.notes == expected or record.notes.startswith(f"{expected}:")
