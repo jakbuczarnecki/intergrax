@@ -20,15 +20,17 @@ ROUTE_TYPES: tuple[str, ...] = ("local", "regional", "long_haul")
 CARRIERS: tuple[str, ...] = ("CarrierA", "CarrierB", "CarrierC")
 
 # Planted structure (documented for scenarios A/B/C):
-# A — North aggregate delay rate is elevated; North-Volume hub dominates naive delayed counts;
-#     South + express + long_haul is the true high-rate segment.
+# A — North aggregate delay rate is elevated by a North segment; North-Volume hub dominates naive
+#     delayed counts but not normalized hub rates; North + express + long_haul is the true segment.
 # B — Weight correlates with delay globally via route/service confounding, not within segments.
 # C — No staffing variables exist in the schema.
-ANOMALY_SEGMENT = ("South", "express", "long_haul")
+ANOMALY_SEGMENT = ("North", "express", "long_haul")
+ANOMALY_PARCEL_MODULUS = 31
 HIGH_VOLUME_HUB = "North-Volume"
+ANOMALY_HUB = "North-Hub"
 TRUE_ANOMALY_RATE = 0.68
-NORTH_REGION_RATE = 0.21
 OTHER_REGION_RATE = 0.09
+NORTH_ELEVATION_MIN_DELTA = 0.01
 
 PARCEL_EVENTS_DDL = """
 CREATE TABLE IF NOT EXISTS proof.parcel_events (
@@ -108,7 +110,7 @@ def _region_for(parcel_id: int, seed: int) -> str:
 
 
 def _route_and_service(region: str, parcel_id: int, seed: int) -> tuple[str, str]:
-    if region == ANOMALY_SEGMENT[0] and parcel_id % 97 == 0:
+    if region == ANOMALY_SEGMENT[0] and parcel_id % ANOMALY_PARCEL_MODULUS == 0:
         return ANOMALY_SEGMENT[2], ANOMALY_SEGMENT[1]
     if region == "North":
         route_type = "long_haul" if parcel_id % 2 == 0 else "regional"
@@ -127,17 +129,20 @@ def _weight_kg(route_type: str, service_type: str, parcel_id: int, seed: int) ->
     return round(base + service_boost + jitter, 2)
 
 
-def _segment_delay_probability(region: str, route_type: str, service_type: str) -> float:
+def _segment_delay_probability(region: str, service_type: str, route_type: str) -> float:
     if (region, service_type, route_type) == ANOMALY_SEGMENT:
         return TRUE_ANOMALY_RATE
-    if region == "North":
-        return NORTH_REGION_RATE
     return OTHER_REGION_RATE
 
 
+def _delay_roll_unit(seed: int, parcel_id: int, region: str) -> float:
+    mixed_parcel = parcel_id * 31 + sum(map(ord, region))
+    return _deterministic_unit(seed + 53, mixed_parcel)
+
+
 def _is_delayed(region: str, route_type: str, service_type: str, parcel_id: int, seed: int) -> bool:
-    probability = _segment_delay_probability(region, route_type, service_type)
-    return _deterministic_unit(seed + 53, parcel_id) < probability
+    probability = _segment_delay_probability(region, service_type, route_type)
+    return _delay_roll_unit(seed, parcel_id, region) < probability
 
 
 def generate_parcel_events(*, row_count: int = DEFAULT_ROW_COUNT, seed: int = DEFAULT_SEED) -> list[ParcelEventRow]:
@@ -148,7 +153,12 @@ def generate_parcel_events(*, row_count: int = DEFAULT_ROW_COUNT, seed: int = DE
     for parcel_id in range(1, row_count + 1):
         region = _region_for(parcel_id, seed)
         route_type, service_type = _route_and_service(region, parcel_id, seed)
-        origin_hub = HIGH_VOLUME_HUB if region == "North" and parcel_id % 3 != 0 else f"{region}-Hub"
+        if (region, service_type, route_type) == ANOMALY_SEGMENT:
+            origin_hub = ANOMALY_HUB
+        elif region == "North" and parcel_id % 3 != 0:
+            origin_hub = HIGH_VOLUME_HUB
+        else:
+            origin_hub = f"{region}-Hub"
         destination_hub = f"{_pick(REGIONS, seed, parcel_id, 23)}-Dest"
         weight = _weight_kg(route_type, service_type, parcel_id, seed)
         distance = {"local": 35.0, "regional": 180.0, "long_haul": 620.0}[route_type]
@@ -189,9 +199,28 @@ def _delay_rate(rows: Sequence[ParcelEventRow], *, predicate) -> float:
     return sum(1 for row in filtered if row.delayed) / len(filtered)
 
 
+def _hub_delay_rates(rows: Sequence[ParcelEventRow]) -> dict[str, float]:
+    totals: dict[str, int] = {}
+    delayed: dict[str, int] = {}
+    for row in rows:
+        totals[row.origin_hub] = totals.get(row.origin_hub, 0) + 1
+        if row.delayed:
+            delayed[row.origin_hub] = delayed.get(row.origin_hub, 0) + 1
+    return {
+        hub: delayed.get(hub, 0) / totals[hub]
+        for hub in totals
+        if totals[hub] > 0
+    }
+
+
 def verify_dataset_invariants(rows: Sequence[ParcelEventRow]) -> dict[str, bool]:
     north_rate = _delay_rate(rows, predicate=lambda row: row.region == "North")
     non_north_rate = _delay_rate(rows, predicate=lambda row: row.region != "North")
+    north_rate_excluding_anomaly = _delay_rate(
+        rows,
+        predicate=lambda row: row.region == "North"
+        and (row.region, row.service_type, row.route_type) != ANOMALY_SEGMENT,
+    )
     anomaly_rate = _delay_rate(
         rows,
         predicate=lambda row: (row.region, row.service_type, row.route_type) == ANOMALY_SEGMENT,
@@ -201,6 +230,8 @@ def verify_dataset_invariants(rows: Sequence[ParcelEventRow]) -> dict[str, bool]
         if row.delayed:
             delayed_by_hub[row.origin_hub] = delayed_by_hub.get(row.origin_hub, 0) + 1
     naive_top_hub = max(delayed_by_hub, key=delayed_by_hub.get)
+    hub_rates = _hub_delay_rates(rows)
+    normalized_top_hub = max(hub_rates, key=hub_rates.get)
     segment_rates: dict[tuple[str, str, str], list[bool]] = {}
     for row in rows:
         key = (row.region, row.service_type, row.route_type)
@@ -247,7 +278,12 @@ def verify_dataset_invariants(rows: Sequence[ParcelEventRow]) -> dict[str, bool]
     return {
         "north_worse_than_non_north": north_rate > non_north_rate,
         "naive_hub_trap_is_high_volume": naive_top_hub == HIGH_VOLUME_HUB,
+        "high_volume_hub_not_highest_normalized_rate": normalized_top_hub != HIGH_VOLUME_HUB,
+        "true_anomaly_segment_in_north": ANOMALY_SEGMENT[0] == "North",
         "true_anomaly_segment_identified": top_segment == ANOMALY_SEGMENT and anomaly_rate > 0.5,
+        "anomaly_materially_elevates_north": (
+            north_rate - north_rate_excluding_anomaly >= NORTH_ELEVATION_MIN_DELTA
+        ),
         "global_weight_delay_correlation": global_heavy_rate > global_light_rate,
         "no_within_segment_weight_signal": not within_segment_weight_signal,
         "staffing_variables_absent": staffing_absent,

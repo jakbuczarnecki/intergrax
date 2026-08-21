@@ -45,7 +45,7 @@ Implemented under this directory:
 
 | Scenario | Planted signal | Expected investigation lesson |
 |----------|----------------|------------------------------|
-| **A** | North aggregate delay looks worse; naive hub counts implicate high-volume hub | Rate/segmentation reveals South + express + long_haul as true anomaly |
+| **A** | North aggregate delay looks worse; naive hub counts implicate high-volume hub | Rate/segmentation reveals North + express + long_haul as true anomaly that explains North elevation |
 | **B** | Weight correlates with delay globally | Controlling for route/service removes weight as direct cause |
 | **C** | No staffing columns exist | Staffing causation is unresolvable from available evidence |
 
