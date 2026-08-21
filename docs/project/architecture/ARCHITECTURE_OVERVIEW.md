@@ -10,8 +10,12 @@ How Intergrax separates the specialized product application, its application ope
 
 > [!NOTE]
 > Intergrax is source-available and in active R&D. This overview explains **responsibility boundaries** and **governed execution**; it is not the complete architecture canon or a production-readiness, security-certification, or commercial-validation claim. For first contact or persona routing, start at the [README](../../../README.md). For intent-based navigation when unsure which document to open, use the [Public Documentation Map](../community/PUBLIC_DOCUMENTATION_MAP.md). Use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) for deep implementation architecture.
+>
+> **Platform deep-dive route:** This document is the primary public route for understanding **how the Intergrax platform works** — technical mental model, responsibility boundaries, operating model, and platform composition. [Why Intergrax](../overview/WHY_INTERGRAX.md) owns category, problem, strategic fit, and alternatives; [PROOFS](../proofs/PROOFS.md) owns what is actually evidenced today.
 
-Primary audience: external architects, Principal or Staff engineers, CTOs, and technical evaluators comparing application operating boundaries.
+**Reader routing:** [Why Intergrax](../overview/WHY_INTERGRAX.md) → why the platform exists · **Architecture Overview** (this page) → how the platform works · [PROOFS](../proofs/PROOFS.md) → what is evidenced today.
+
+Primary audience: external architects, Principal or Staff engineers, CTOs, and technical evaluators comparing application operating boundaries — especially after the basic Intergrax thesis is understood.
 
 ---
 
@@ -24,6 +28,38 @@ Primary audience: external architects, Principal or Staff engineers, CTOs, and t
 | **Agent and model behavior** | Reasoning, inference, decision generation, and agent-specific domain behavior | Operates within the supplied context and governed execution; does not own policy, permissions, or evidence |
 | **Knowledge, tools, integrations, and model systems** | Source data, remote services, business systems, tool effects, and model access | Are selected behind configured boundaries; they do not own the product workflow or end-user experience |
 | **Evidence and provenance** | Receipts, traces, provenance, and records for review, debugging, and governance | Is produced during execution; it does not certify production readiness, security, or commercial validation |
+
+## Why this foundation exists
+
+Specialized AI products repeatedly need governed knowledge access, policy and approval, tools and integrations, context, recovery, evidence and provenance, and observability. Without a shared operating layer, each product rebuilds those boundaries independently. Intergrax centralizes reusable mechanisms for those responsibilities.
+
+For the category problem, strategic fit, and alternatives, see [Why Intergrax](../overview/WHY_INTERGRAX.md).
+
+## What this foundation enables
+
+The current architecture can support — and provides foundations for — product classes such as:
+
+- governed knowledge applications;
+- evidence-backed decision support;
+- controlled agent workflows with approvals;
+- applications that call external tools and systems under configured authority; and
+- reviewable, auditable AI-assisted workflows.
+
+These are intended capability directions, not claims that every class is fully production-proven or that platform-wide coverage is complete.
+
+## Platform leverage across products
+
+Multiple products can reuse shared governed mechanisms instead of rebuilding operating boundaries independently:
+
+| Stage | Illustrative pattern |
+| ----- | -------------------- |
+| Product A | Uses shared capability X (for example governed execution and evidence) |
+| Product B | Reuses X and exposes need for shared capability Y |
+| Product C | Reuses accepted X and Y for a new workflow |
+
+Products can reuse existing governed mechanisms, surface missing shared capability gaps, and avoid duplicating policy, integration, and evidence boundaries per application. **Real-user and commercial leverage of that reuse remains to be validated** — a strategic hypothesis, not measured acceleration or cost savings.
+
+## Platform Map
 
 <a href="../assets/public/readme/intergrax-platform-map-light.png">
 <picture>
@@ -43,6 +79,8 @@ Primary audience: external architects, Principal or Staff engineers, CTOs, and t
 </a>
 
 [View full-size diagram](../assets/public/readme/intergrax-platform-map-light.png)
+
+Use the [Platform Map on the README](../../../README.md#explore-the-intergrax-platform) to choose a platform area, open its canonical domain or feature hub, inspect maturity and evidence, and go deeper only when needed. The map is the visual index; this overview is the mental model behind it.
 
 ## The operating model
 
@@ -125,15 +163,27 @@ The application defines what the business rule means. Intergrax provides reusabl
 
 Details belong in the owning [Governed Execution architecture](GOVERNED_EXECUTION.md).
 
-## LKW as a product example
+## LKW as the active reference product
 
-Local Knowledge Workspace (LKW) is the **Primary product proof** at **Backend Product Alpha / MVP** with **PARTIAL** public proof status.
+Local Knowledge Workspace (LKW) is the **Active reference product** at **Backend Product Alpha / MVP** with **PARTIAL** public proof status. Product workflows and proof paths are separate concerns — LKW is a product, not a proof taxonomy label.
 
-| LKW-specific product responsibility | Shared Intergrax foundation |
-| ---------------------------------- | ---------------------------- |
+| LKW product responsibility | Shared Intergrax foundation |
+| -------------------------- | ---------------------------- |
 | Workspace workflow, approved-source choice, user-facing Ask, and product acceptance | Ingest and knowledge boundaries, governed Ask execution, evidence/provenance, and hosting/runtime mechanisms |
 
 The accepted indexed path demonstrates bounded ingest, indexed knowledge, grounded Ask, source references, and persisted execution evidence. Mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access, real-user validation, and commercial validation are not established. See [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) and the [PROOFS dashboard](../proofs/PROOFS.md).
+
+## How Intergrax is proven
+
+Public evidence is organized in three reader-level layers — [PROOFS](../proofs/PROOFS.md) is the source of truth:
+
+| Layer | What it covers | Example |
+| ----- | -------------- | ------- |
+| **A. Product-level evidence** | Bounded end-to-end product workflows | LKW product workflows and [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) paths |
+| **B. Capability-level evidence** | Bounded platform capability proofs where accepted | Token Optimization and other capability proofs listed in PROOFS |
+| **C. Architecture without dedicated public proof** | Implemented or architecturally mature domains without a dedicated public proof route | Domain hubs describe design and boundaries |
+
+**Distinction:** implemented ≠ bounded public proof ≠ production validation ≠ commercial validation. Absence of a dedicated public proof route does not mean absence of implementation; implementation alone is not a public proof claim.
 
 ## Token Optimization as a secondary capability example
 
@@ -153,10 +203,10 @@ Intergrax has longer-term architectural directions that may extend the current o
 
 Architecture-specific continuation — not a general documentation index.
 
-1. Understand this Architecture Overview as the project-level mental model.
-2. Explore the [Platform Map](../../../README.md#explore-the-intergrax-platform) for grouped platform areas and domain architecture entry points.
-3. Inspect [PROOFS](../proofs/PROOFS.md) for current bounded evidence and open validation gates.
-4. Use the [Evaluation Guide](../builders/EVALUATION_GUIDE.md) when you need a bounded technical evaluation of one claim.
-5. Go deeper via the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) and [runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (complete 24-domain index) — including the [Harness narrative](../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) when helpful.
+1. **Architecture Overview** (this page) — platform mental model and responsibility boundaries.
+2. **[Platform Map](../../../README.md#explore-the-intergrax-platform)** — choose a platform area and open its canonical domain or feature hub.
+3. **Domain / feature hub** — next level after this overview: definition, why it matters, maturity, visual, how it works, boundaries, evidence, and deeper canon (per the documentation design system).
+4. **[PROOFS](../proofs/PROOFS.md)** and owning proof documents — inspect bounded evidence for the chosen area; exact proof semantics live in the owning proof doc.
+5. **[Technical Documentation Map](../technical/DOCUMENTATION_MAP.md)** and [runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (complete 24-domain index) — implementation-level due diligence, including the [Harness narrative](../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) when helpful.
 
-The overview summarizes the architecture; proof documents establish current evidence; the technical map and runtime hub route implementation-level due diligence. None of these routes turns bounded evidence into a production, security, real-user, or commercial validation claim.
+Use the [Evaluation Guide](../builders/EVALUATION_GUIDE.md) when you need a bounded technical evaluation of one claim. The overview summarizes the architecture; proof documents establish current evidence; the technical map and runtime hub route deep review. None of these routes turns bounded evidence into a production, security, real-user, or commercial validation claim.

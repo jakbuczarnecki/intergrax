@@ -415,11 +415,13 @@ def test_lkw_quickstart_reader_literals_and_routes() -> None:
 
 
 def test_public_terminology(why_text: str, arch_text: str, build_text: str) -> None:
-    assert "Primary product proof" in why_text
+    assert "Active reference product" in why_text
+    assert "Primary product proof" not in why_text
     assert "Featured platform-capability proof" in why_text
     assert "PARTIAL" in why_text
 
-    assert "Primary product proof" in arch_text
+    assert "Active reference product" in arch_text
+    assert "Primary product proof" not in arch_text
     assert "Featured platform-capability proof" in arch_text
     assert "PARTIAL" in arch_text
 
@@ -453,6 +455,11 @@ def test_architecture_operating_layer_contract(arch_text: str) -> None:
         "required identity and permissions",
         "architect review path",
         "technical documentation map",
+        "platform deep-dive route",
+        "how the platform works",
+        "how intergrax is proven",
+        "product-level evidence",
+        "capability-level evidence",
     ):
         assert phrase in normalized, f"ARCHITECTURE missing semantic marker: {phrase}"
 
@@ -665,7 +672,8 @@ def test_architecture_platform_extensibility_section(arch_text: str) -> None:
         "domain-owned surfaces",
     ):
         assert phrase in normalized, f"ARCHITECTURE missing Platform Extensibility marker: {phrase}"
-    assert "primary product proof" in normalized
+    assert "active reference product" in normalized
+    assert "primary product proof" not in normalized
     assert "featured platform-capability proof" in normalized
     assert "partial" in normalized
     assert "strategic optionality" in normalized or "not current product proofs" in normalized

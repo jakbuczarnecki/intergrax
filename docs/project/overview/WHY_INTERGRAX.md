@@ -10,6 +10,8 @@ Intergrax exists for teams building specialized agent applications that would ot
 
 > [!NOTE]
 > This page explains the problem category and evaluation boundary. See [PROOFS.md](../proofs/PROOFS.md) for detailed evidence and claim limits.
+>
+> **Document roles:** Use this page when evaluating category, problem, fit, alternatives, and strategic/business thesis. Use [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) when evaluating architecture, responsibility boundaries, execution model, and platform composition.
 
 ---
 
@@ -225,9 +227,9 @@ Intergrax may coexist with model providers, retrieval systems, integration tools
 
 ## Current evidence and limits
 
-| Area | Classification | Status | Notes |
-| ---- | -------------- | ------ | ----- |
-| **LKW** | **Primary product proof** | **PARTIAL** | **Backend Product Alpha / MVP** — bounded application and platform proof. |
+| Item | Public role | Status | Notes |
+| ---- | ----------- | ------ | ----- |
+| **LKW** | **Active reference product** | **PARTIAL** | **Backend Product Alpha / MVP** — bounded product workflows; see product tour and platform proof paths. |
 | **Token Optimization** | **Featured platform-capability proof** | **PARTIAL** | Implemented deterministic mechanisms; bounded executable offline smoke proof. Manual vLLM prefix-cache evidence is separate — no public_evidence_eligible vLLM proof_id today. |
 
 **Evidence and detail:** [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Token Optimization guide](../capabilities/token_optimization/README.md) · [PROOFS.md](../proofs/PROOFS.md)
@@ -246,7 +248,7 @@ If the category appears relevant:
 |-------|------------|
 | [ALTERNATIVES_AND_TRADEOFFS.md](ALTERNATIVES_AND_TRADEOFFS.md) | Comparing Intergrax with named modern agent/platform alternatives and trade-offs |
 | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Reviewing current evidence |
-| [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Understanding technical boundaries |
+| [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Understanding how the platform works — canonical platform deep dive |
 | [docs/project/builders/BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) | Beginning a bounded build |
 | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) | Planning deeper application composition |
 | [docs/project/community/PARTNERS.md](../community/PARTNERS.md) | Discussing a bounded pilot |
