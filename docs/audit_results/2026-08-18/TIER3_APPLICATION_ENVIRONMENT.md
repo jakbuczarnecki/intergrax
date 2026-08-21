@@ -33,7 +33,7 @@
 - **Prior audit reference(s):** [`TIER_LAYER_BOUNDARIES`](TIER_LAYER_BOUNDARIES.md) TL-FIX-C/D; [`INTERFACE_TASK_INTAKE`](INTERFACE_TASK_INTAKE.md) ITI-FIX-*; [`IDENTITY_TRUST`](IDENTITY_TRUST.md) IDT-FIX-A
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `771f66c3a9bc708c005b25050fb0a7edb3720d0f`
 
 ## Executive summary
 
