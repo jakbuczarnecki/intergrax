@@ -41,7 +41,7 @@
 - **Prior audit reference(s):** all thirty-five completed Protocol-v2 layers at campaign baseline; this layer synthesizes meta-architecture gaps only — does not re-open per-domain findings
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** `—`
+- **post_sync_sha:** `5111162eb34477c8f507d427377c114214b9f7ac`
 
 ## Scope / ownership mapping
 
