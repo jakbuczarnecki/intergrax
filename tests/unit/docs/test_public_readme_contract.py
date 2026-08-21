@@ -80,12 +80,12 @@ LKW_DARK_PATH = (
 
 _SECTION_HEADINGS_ORDER = (
     "## Choose your path",
+    "## Why this matters",
     "## Local Knowledge Workspace (LKW)",
     "## Try LKW",
-    "## Why this matters",
     "## Explore the Intergrax Platform",
-    "## Responsibility model",
     "## AI execution should not be a black box",
+    "## Responsibility model",
     "## Platform capabilities",
     "## License and collaboration",
 )
@@ -185,11 +185,16 @@ def test_opening_architecture_differentiator(readme_text: str) -> None:
 def test_section_order(readme_text: str) -> None:
     positions = [readme_text.index(heading) for heading in _SECTION_HEADINGS_ORDER]
     assert positions == sorted(positions), "README section headings are out of required order"
-    lkw_idx = readme_text.index("## Local Knowledge Workspace (LKW)")
     why_idx = readme_text.index("## Why this matters")
+    lkw_idx = readme_text.index("## Local Knowledge Workspace (LKW)")
     explore_idx = readme_text.index("## Explore the Intergrax Platform")
-    assert lkw_idx < why_idx < explore_idx, (
-        "Required flow: LKW → Why this matters → Explore the Intergrax Platform"
+    assert why_idx < lkw_idx < explore_idx, (
+        "Required flow: Why this matters → LKW → Explore the Intergrax Platform"
+    )
+    ai_execution_idx = readme_text.index("## AI execution should not be a black box")
+    responsibility_idx = readme_text.index("## Responsibility model")
+    assert ai_execution_idx < responsibility_idx, (
+        "Platform differentiation (AI execution) must precede Responsibility model"
     )
 
 
@@ -426,10 +431,13 @@ def _assert_full_size_link_after_picture(section: str, light_png_ref: str) -> No
 
 
 def test_product_visual_order(readme_text: str) -> None:
-    """LKW governed hero is the first major product/proof visual; ecosystem hero follows."""
-    lkw_idx = readme_text.index(_LKW_GOVERNED_HERO_LIGHT)
+    """Gateway visuals lead with ecosystem hero; LKW governed hero follows deeper product proof."""
     ecosystem_idx = readme_text.index(_ECOSYSTEM_HERO_LIGHT)
-    assert lkw_idx < ecosystem_idx, "LKW governed hero must appear before ecosystem hero"
+    lkw_idx = readme_text.index(_LKW_GOVERNED_HERO_LIGHT)
+    why_light_idx = readme_text.index("docs/project/assets/public/readme/intergrax-why-light.png")
+    explore_idx = readme_text.index("## Explore the Intergrax Platform")
+    assert ecosystem_idx < lkw_idx, "Ecosystem hero must appear before LKW governed hero"
+    assert why_light_idx < explore_idx, "Why visual must appear before Explore the Intergrax Platform"
     ecosystem_picture_blocks = [
         block for block in _extract_picture_blocks(readme_text) if _ECOSYSTEM_HERO_LIGHT in block
     ]
@@ -441,19 +449,27 @@ def test_product_visual_order(readme_text: str) -> None:
 
 
 def test_ecosystem_hero_contract(readme_text: str) -> None:
-    """Ecosystem hero lives in future/portfolio context with controlled PNG assets."""
-    future_idx = readme_text.index("### Future strategic directions")
+    """Ecosystem hero is the first large strategic visual in the gateway block."""
+    choose_idx = readme_text.index("## Choose your path")
+    lkw_idx = readme_text.index("## Local Knowledge Workspace (LKW)")
+    capabilities_idx = readme_text.index("## Platform capabilities")
     hero_light_ref = _ECOSYSTEM_HERO_LIGHT
     hero_dark_ref = "docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.png"
+    hero_light_idx = readme_text.index(hero_light_ref)
+    hero_dark_idx = readme_text.index(hero_dark_ref)
     assert "intergrax-ecosystem-hero-light.svg" not in readme_text
     assert "intergrax-ecosystem-hero-dark.svg" not in readme_text
-    assert future_idx < readme_text.index(hero_light_ref)
-    assert future_idx < readme_text.index(hero_dark_ref)
+    assert hero_light_idx < choose_idx, "Ecosystem hero must appear before Choose your path"
+    assert hero_light_idx < lkw_idx, "Ecosystem hero must appear before LKW section"
+    assert hero_light_idx < capabilities_idx, "Ecosystem hero must appear before Platform capabilities"
+    assert hero_dark_idx < choose_idx
     assert ECOSYSTEM_HERO_LIGHT_PATH.is_file(), "Ecosystem hero light PNG is missing"
     assert ECOSYSTEM_HERO_DARK_PATH.is_file(), "Ecosystem hero dark PNG is missing"
     pair_violations = _validate_light_dark_pair(ECOSYSTEM_HERO_LIGHT_PATH, ECOSYSTEM_HERO_DARK_PATH)
     assert not pair_violations, f"Ecosystem hero light/dark pair: {pair_violations}"
     assert 'alt="Specialized AI products share the Intergrax governed foundation' in readme_text
+    future_idx = readme_text.index("### Future strategic directions")
+    assert hero_light_idx < future_idx, "Ecosystem hero must not remain in future-directions tail"
 
 
 def test_platform_map_visual_contract(readme_text: str) -> None:

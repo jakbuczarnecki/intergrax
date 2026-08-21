@@ -15,6 +15,23 @@ those mechanisms for every workflow.
 
 **[See LKW](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)** · **[Run LKW locally](applications/local_workspace_application/docs/product/QUICKSTART.md)** · **[Inspect Governed Evidence Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md)** · **[Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)**
 
+<a href="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
+    alt="Specialized AI products share the Intergrax governed foundation and may evolve toward a connected ecosystem; Local Knowledge Workspace is Backend Product Alpha while four portfolio directions remain selected pre-bootstrap."
+  >
+</picture>
+</a>
+
 > Intergrax is **source-available** and under **active R&D**. LKW is a
 > **Backend Product Alpha / MVP**. **Real-user validation** and **commercial
 > validation** are incomplete.
@@ -40,6 +57,38 @@ permissions, capability-specific material, or deeper technical documentation?
 Explore the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
 
 Questions? See the [FAQ](docs/project/overview/FAQ.md).
+
+---
+
+## Why this matters
+
+Building an impressive AI demo is easier than operating a controlled AI
+application that a team can review and trust. Teams repeatedly rebuild
+knowledge access, policy, integrations, approvals, and evidence foundations
+around each product.
+
+Intergrax centralizes reusable mechanisms so product teams can focus on the
+specialized workflow. Read [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)
+for the category, problem, and fit.
+
+<a href="docs/project/assets/public/readme/intergrax-why-light.png">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-why-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-why-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-why-light.png"
+    alt="Comparison between rebuilding duplicated AI foundations per product and reusing a shared Intergrax foundation beneath specialized products."
+  >
+</picture>
+</a>
+
+[View full-size diagram](docs/project/assets/public/readme/intergrax-why-light.png)
 
 ---
 
@@ -86,15 +135,10 @@ certification:
 #### B. Governed Evidence Decision Proof
 
 Advanced bounded proof inside the LKW application stack demonstrating governed
-answer admissibility over **live organizational evidence** (`LIVE_ONLY`):
-
-- four independent live providers / connections / capabilities (Docker-backed)
-- versioned policy-derived obligations (REV17 / REV18)
-- execution-time authority revalidation
-- temporal admissibility (`max_age`, `valid_at`)
-- typed failure semantics (authority, provider, temporal)
-- deterministic LLM suppression when admissibility is unsatisfied
-- persisted structural proof (policy basis, reason codes, reload)
+answer admissibility over **live organizational evidence** (`LIVE_ONLY`) —
+versioned policy-derived obligations, execution-time authority revalidation,
+temporal admissibility, typed failure semantics, deterministic LLM suppression
+when admissibility is unsatisfied, and persisted structural proof.
 
 This proof does **not** certify complete **indexed + authorized live Hybrid Ask**
 in a single admissibility gate. See the [Governed Evidence Decision Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md).
@@ -156,38 +200,6 @@ or all-provider certification.
 
 ---
 
-## Why this matters
-
-Building an impressive AI demo is easier than operating a controlled AI
-application that a team can review and trust. Teams repeatedly rebuild
-knowledge access, policy, integrations, approvals, and evidence foundations
-around each product.
-
-Intergrax centralizes reusable mechanisms so product teams can focus on the
-specialized workflow. Read [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)
-for the category, problem, and fit.
-
-<a href="docs/project/assets/public/readme/intergrax-why-light.png">
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/intergrax-why-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/intergrax-why-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/intergrax-why-light.png"
-    alt="Comparison between rebuilding duplicated AI foundations per product and reusing a shared Intergrax foundation beneath specialized products."
-  >
-</picture>
-</a>
-
-[View full-size diagram](docs/project/assets/public/readme/intergrax-why-light.png)
-
----
-
 <a id="explore-the-intergrax-platform"></a>
 ## Explore the Intergrax Platform
 
@@ -246,23 +258,6 @@ Project-level mental model:
 
 ---
 
-## Responsibility model
-
-The root-level model is about responsibility, not a mandatory execution
-sequence. A request uses only the configured resources its product context
-selects.
-
-| Responsibility | What it owns |
-| --- | --- |
-| **Specialized product application** | Product workflow, UX, business semantics, permissions, and acceptance |
-| **Intergrax** | Reusable application operating layer for policy and approval boundaries, controlled context, governed execution, recovery, observability, and evidence / provenance |
-| **Model / agent** | Reasoning, inference, and decision generation within supplied context and governed boundaries |
-| **Knowledge / tools / integrations / models** | Selected resources behind configured access and effect boundaries |
-| **Evidence / provenance** | Reviewable receipts, traces, and records produced during execution |
-
-See the [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md)
-for the complete responsibility model.
-
 ## AI execution should not be a black box
 
 Meaningful AI execution should be reconstructable, reviewable, and attributable.
@@ -298,6 +293,23 @@ Universal every-path production observability is not claimed.
 **Runnable evidence:** Inspect the current bounded LKW observability proof, including independently inspectable Elasticsearch/Kibana records, controlled Sentry problem signals, and persisted execution evidence.
 [LKW bounded observability proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Controlled Sentry proof](applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md)
 
+## Responsibility model
+
+The root-level model is about responsibility, not a mandatory execution
+sequence. A request uses only the configured resources its product context
+selects.
+
+| Responsibility | What it owns |
+| --- | --- |
+| **Specialized product application** | Product workflow, UX, business semantics, permissions, and acceptance |
+| **Intergrax** | Reusable application operating layer for policy and approval boundaries, controlled context, governed execution, recovery, observability, and evidence / provenance |
+| **Model / agent** | Reasoning, inference, and decision generation within supplied context and governed boundaries |
+| **Knowledge / tools / integrations / models** | Selected resources behind configured access and effect boundaries |
+| **Evidence / provenance** | Reviewable receipts, traces, and records produced during execution |
+
+See the [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md)
+for the complete responsibility model.
+
 <a id="platform-capabilities"></a>
 ## Platform capabilities
 
@@ -321,23 +333,6 @@ lack established runtime proof:
 | **Multiplayer AI** | Governed multi-principal collaboration among humans, agents, services, and external agents | **Architecture / roadmap stage** — runtime proof **not yet established** | [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) |
 | **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** — implementation stages planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
 | **Agent Marketplace** | Future ecosystem layer — discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT — NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/overview/AGENT_MARKETPLACE.md) |
-
-<a href="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png">
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
-    alt="Specialized AI products share the Intergrax governed foundation and may evolve toward a connected ecosystem; Local Knowledge Workspace is Backend Product Alpha while four portfolio directions remain selected pre-bootstrap."
-  >
-</picture>
-</a>
 
 ## License and collaboration
 
