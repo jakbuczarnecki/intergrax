@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.utils import attribute_access
+
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _PRODUCTION_FACTORY_MODULES = (
@@ -24,7 +26,7 @@ _PRODUCTION_FACTORY_MODULES = (
 def test_production_factories_require_registry_projection_parameter() -> None:
     for module_path, func_name in _PRODUCTION_FACTORY_MODULES:
         module = importlib.import_module(module_path)
-        factory = getattr(module, func_name)
+        factory = attribute_access.optional(module, func_name)
         signature = inspect.signature(factory)
         assert "registry_projection" in signature.parameters, module_path
         param = signature.parameters["registry_projection"]
