@@ -66,3 +66,46 @@ def test_db_observed_invariants_pass(require_proof_postgres: None) -> None:
     assert result.contract_checks["north_worse_than_non_north"] is True
     assert result.contract_checks["anomaly_segment_rate_above_half"] is True
     assert result.contract_checks["row_count_exact"] is True
+    assert result.contract_checks["staffing_columns_absent"] is True
+
+
+def test_staffing_absence_derived_from_postgres_metadata(require_proof_postgres: None) -> None:
+    from intergrax.integrations.providers.relational_store.postgresql import (
+        create_postgresql_relational_store,
+    )
+
+    from platform_proofs.tools.iterative_sql_investigation.setup import verify_staffing_columns_absent
+
+    dsn = os.environ.get(ADMIN_DSN_ENV, DEFAULT_ADMIN_DSN)
+    materialize_and_verify_dataset(admin_dsn=dsn)
+    store = create_postgresql_relational_store(dsn=dsn, tenant_schema="proof")
+    try:
+        store.connect()
+        assert verify_staffing_columns_absent(store) is True
+    finally:
+        store.close()
+
+
+def test_setup_fails_when_forbidden_staffing_column_present(require_proof_postgres: None) -> None:
+    from intergrax.integrations.providers.relational_store.postgresql import (
+        create_postgresql_relational_store,
+    )
+
+    from platform_proofs.tools.iterative_sql_investigation.setup import (
+        FORBIDDEN_STAFFING_COLUMNS,
+        verify_staffing_columns_absent,
+    )
+
+    forbidden = next(iter(FORBIDDEN_STAFFING_COLUMNS))
+    dsn = os.environ.get(ADMIN_DSN_ENV, DEFAULT_ADMIN_DSN)
+    materialize_and_verify_dataset(admin_dsn=dsn)
+    store = create_postgresql_relational_store(dsn=dsn, tenant_schema="proof")
+    try:
+        store.connect()
+        store.execute(f"ALTER TABLE proof.parcel_events ADD COLUMN {forbidden} INTEGER")
+        assert verify_staffing_columns_absent(store) is False
+    finally:
+        try:
+            store.execute(f"ALTER TABLE proof.parcel_events DROP COLUMN IF EXISTS {forbidden}")
+        finally:
+            store.close()

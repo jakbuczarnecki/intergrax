@@ -27,6 +27,16 @@ from platform_proofs.tools.iterative_sql_investigation.runtime import (
     DEFAULT_ADMIN_DSN,
 )
 
+FORBIDDEN_STAFFING_COLUMNS: frozenset[str] = frozenset(
+    {
+        "staff_count",
+        "staffing_level",
+        "headcount",
+        "staff_hours",
+        "workforce_count",
+    }
+)
+
 
 class DatasetSetupError(RuntimeError):
     """Canonical dataset materialization or verification failure."""
@@ -158,7 +168,21 @@ def _query_stats(store: RelationalStore) -> DbVerificationStats:
     )
 
 
-def _contract_checks(stats: DbVerificationStats) -> dict[str, bool]:
+def verify_staffing_columns_absent(store: RelationalStore) -> bool:
+    """Verify proof.parcel_events has none of the forbidden staffing evidence columns."""
+    rows = store.fetch_all(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'proof'
+          AND table_name = 'parcel_events'
+        """
+    )
+    columns = {str(row["column_name"]).lower() for row in rows}
+    return not columns.intersection(FORBIDDEN_STAFFING_COLUMNS)
+
+
+def _contract_checks(store: RelationalStore, stats: DbVerificationStats) -> dict[str, bool]:
     return {
         "row_count_exact": stats.total_rows == PROOF_ROW_COUNT,
         "north_worse_than_non_north": stats.north_delay_rate > stats.non_north_delay_rate,
@@ -166,7 +190,7 @@ def _contract_checks(stats: DbVerificationStats) -> dict[str, bool]:
         "high_volume_hub_not_highest_normalized_rate": stats.top_normalized_rate_hub != HIGH_VOLUME_HUB,
         "anomaly_segment_rate_above_half": stats.anomaly_segment_delay_rate > 0.5,
         "anomaly_materially_elevates_north": stats.north_elevation_delta >= NORTH_ELEVATION_MIN_DELTA,
-        "staffing_columns_absent": True,
+        "staffing_columns_absent": verify_staffing_columns_absent(store),
     }
 
 
@@ -193,7 +217,7 @@ def materialize_and_verify_dataset(
                 f"load row count mismatch: loaded={loaded} expected={resolved_identity.row_count}"
             )
         stats = _query_stats(store)
-        checks = _contract_checks(stats)
+        checks = _contract_checks(store, stats)
         result = DatasetSetupResult(
             identity=resolved_identity,
             fingerprint=fingerprint,

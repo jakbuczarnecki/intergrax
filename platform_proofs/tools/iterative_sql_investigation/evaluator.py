@@ -19,7 +19,7 @@ from platform_proofs.tools.iterative_sql_investigation.proof_result import (
 )
 from platform_proofs.tools.iterative_sql_investigation.scenarios import ScenarioId
 
-_NORMAL_TERMINATION = frozenset({"planner_final_answer", "max_iterations"})
+_SUCCESSFUL_TERMINATION = frozenset({"planner_final_answer"})
 _CAUSATION_CLAIMS = re.compile(
     r"\b(weight|heavier|heavy parcels?).{0,40}\b(cause|causes|causing|drives|responsible)\b",
     re.IGNORECASE,
@@ -34,7 +34,11 @@ _MISSING_EVIDENCE = re.compile(
     re.IGNORECASE,
 )
 _VOLUME_ONLY = re.compile(
-    r"\b(high[- ]volume|volume alone|sheer volume|parcel count).{0,40}\b(explain|cause|drives)\b",
+    r"\b(high[- ]volume|volume alone|sheer volume|parcel count|north[- ]volume).{0,40}\b(explain|cause|drives|root)\b",
+    re.IGNORECASE,
+)
+_NORTH_VOLUME_ROOT = re.compile(
+    r"\b(north[- ]volume).{0,50}\b(cause|causes|drives|explain|root|primary|main)\b",
     re.IGNORECASE,
 )
 
@@ -58,6 +62,27 @@ def _extract_sql_and_outputs(traces: Sequence[ToolCallTrace]) -> tuple[tuple[str
     return tuple(sql_texts), tuple(outputs)
 
 
+def investigation_proof_passes_eng6_chain(proof: InvestigationProof | None) -> bool:
+    """Post-hoc audit of ENG-6 evidence basis invariants on a completed proof."""
+    if proof is None or not proof.steps:
+        return False
+    available: set[str] = set()
+    for step in proof.steps:
+        if step.round_index > 1:
+            if available and not step.basis_tool_call_ids:
+                return False
+            unknown = [basis_id for basis_id in step.basis_tool_call_ids if basis_id not in available]
+            if unknown:
+                return False
+        available.update(step.next_tool_call_ids)
+    if proof.final_available_evidence_ids:
+        final = frozenset(proof.final_available_evidence_ids)
+        for step in proof.steps[1:]:
+            if any(basis_id not in final for basis_id in step.basis_tool_call_ids):
+                return False
+    return True
+
+
 def build_execution_snapshot(
     *,
     traces: Sequence[ToolCallTrace],
@@ -68,9 +93,7 @@ def build_execution_snapshot(
     sql_texts, output_texts = _extract_sql_and_outputs(traces)
     successful = sum(1 for trace in traces if trace.success)
     steps = len(investigation_proof.steps) if investigation_proof else 0
-    follow_up_ok = True
-    if investigation_proof and len(investigation_proof.steps) >= 2:
-        follow_up_ok = any(step.basis_tool_call_ids for step in investigation_proof.steps[1:])
+    follow_up_ok = investigation_proof_passes_eng6_chain(investigation_proof)
     return ScenarioExecutionSnapshot(
         stop_reason=stop_reason,
         successful_tool_calls=successful,
@@ -82,11 +105,65 @@ def build_execution_snapshot(
     )
 
 
-def _top_hub_analysis_present(snapshot: ScenarioExecutionSnapshot) -> bool:
-    sql = _combined_text(snapshot.sql_texts)
-    return "origin_hub" in sql and (
-        "avg" in sql or "rate" in sql or "delay" in sql or "delayed" in sql
+def _segment_tokens() -> tuple[str, str, str]:
+    region, service, route = ANOMALY_SEGMENT
+    return region.lower(), service.lower(), route.replace("_", " ")
+
+
+def _north_anomaly_evidence_investigation(sql_texts: Sequence[str], output_texts: Sequence[str]) -> bool:
+    """Evidence path: SQL/output shows relevant North anomaly investigation."""
+    evidence = _combined_text([*sql_texts, *output_texts])
+    region, service, route = _segment_tokens()
+    segment_probe = (
+        region in evidence
+        and service in evidence
+        and ("long_haul" in evidence or "long haul" in evidence or route in evidence)
     )
+    hub_probe = ANOMALY_HUB.lower() in evidence and (
+        "origin_hub" in evidence or "hub" in evidence
+    )
+    return segment_probe or hub_probe
+
+
+def _final_answer_identifies_north_segment(final_answer: str) -> bool:
+    """Final conclusion attributes the anomaly to the North service/route segment."""
+    answer = final_answer.lower()
+    region, service, route = _segment_tokens()
+    has_region = region in answer
+    has_service_route = service in answer and (
+        "long_haul" in answer or "long haul" in answer or route in answer
+    )
+    segment_named = has_region and has_service_route
+    hub_named = ANOMALY_HUB.lower() in answer and region in answer
+    return segment_named or hub_named
+
+
+def _final_answer_rejects_volume_only(final_answer: str) -> bool:
+    """Final conclusion must not treat sheer volume / North-Volume as the root explanation."""
+    if _VOLUME_ONLY.search(final_answer):
+        return False
+    if _NORTH_VOLUME_ROOT.search(final_answer):
+        return False
+    if re.search(
+        r"\bvolume\b.{0,30}\b(alone|only|primary|main|root)\b.{0,30}\b(explain|cause|driver)\b",
+        final_answer,
+        re.IGNORECASE,
+    ):
+        return False
+    return True
+
+
+def _global_weight_delay_association(sql_corpus: str) -> bool:
+    return "weight" in sql_corpus and ("delay" in sql_corpus or "delayed" in sql_corpus)
+
+
+def _confounder_control_segmentation(sql_corpus: str) -> bool:
+    """Segmented/control analysis over confounder dimensions (service_type / route_type)."""
+    if not _global_weight_delay_association(sql_corpus):
+        return False
+    has_confounder_axis = "service_type" in sql_corpus or "route_type" in sql_corpus
+    has_segmentation = "group by" in sql_corpus or "segment" in sql_corpus
+    return has_confounder_axis and has_segmentation
 
 
 def validate_platform_invariants(
@@ -102,47 +179,32 @@ def validate_platform_invariants(
         reasons.append("missing_investigation_proof")
     if snapshot.successful_tool_calls >= 3 and not snapshot.follow_up_has_valid_basis:
         reasons.append("follow_up_missing_evidence_basis")
-    if snapshot.stop_reason not in _NORMAL_TERMINATION:
-        reasons.append(f"abnormal_stop_reason:{snapshot.stop_reason}")
+    if snapshot.stop_reason not in _SUCCESSFUL_TERMINATION:
+        reasons.append(f"incomplete_termination:{snapshot.stop_reason}")
     return not reasons, tuple(reasons)
 
 
-def _segment_tokens() -> tuple[str, str, str]:
-    region, service, route = ANOMALY_SEGMENT
-    return region.lower(), service.lower(), route.replace("_", " ")
-
-
 def evaluate_scenario_a(snapshot: ScenarioExecutionSnapshot) -> ScenarioAOutcome:
-    corpus = _combined_text([snapshot.final_answer, *snapshot.sql_texts, *snapshot.output_texts])
-    region, service, route = _segment_tokens()
-    segment_signal = (
-        region in corpus
-        and service in corpus
-        and ("long_haul" in corpus or "long haul" in corpus or route in corpus)
-    ) or ANOMALY_HUB.lower() in corpus
-    rejects_volume = not _VOLUME_ONLY.search(snapshot.final_answer)
-    if _top_hub_analysis_present(snapshot):
-        rejects_volume = True
+    evidence_path = _north_anomaly_evidence_investigation(snapshot.sql_texts, snapshot.output_texts)
+    final_segment = _final_answer_identifies_north_segment(snapshot.final_answer)
+    rejects_volume = _final_answer_rejects_volume_only(snapshot.final_answer)
     return ScenarioAOutcome(
-        identifies_north_anomalous_segment=segment_signal,
+        identifies_north_anomalous_segment=evidence_path,
         rejects_volume_only_explanation=rejects_volume,
-        conclusion_supported=segment_signal and rejects_volume,
+        conclusion_supported=evidence_path and final_segment and rejects_volume,
     )
 
 
 def evaluate_scenario_b(snapshot: ScenarioExecutionSnapshot) -> ScenarioBOutcome:
     sql_corpus = _combined_text(snapshot.sql_texts)
-    global_assoc = "weight" in sql_corpus and ("delay" in sql_corpus or "delayed" in sql_corpus)
-    segmented = any(
-        token in sql_corpus
-        for token in ("group by", "service_type", "route_type", "segment")
-    ) and "weight" in sql_corpus
+    global_assoc = _global_weight_delay_association(sql_corpus)
+    segmented = _confounder_control_segmentation(sql_corpus)
     claims_causation = bool(_CAUSATION_CLAIMS.search(snapshot.final_answer))
     if re.search(r"\b(confound|correlation|within segment|controlled)\b", snapshot.final_answer, re.I):
         claims_causation = False
     return ScenarioBOutcome(
         detects_global_association=global_assoc,
-        verifies_segmented_evidence=segmented or global_assoc,
+        verifies_segmented_evidence=global_assoc and segmented,
         claims_direct_causation=claims_causation,
     )
 
