@@ -129,8 +129,10 @@ def _invoke_planned_call(
     run_post_tool_verify(state=state, invoker=invoker, trace=trace)
     if invoke_lock is not None:
         with invoke_lock:
+            state.tool_traces.append(trace)
             enforce_tool_call_budget(state)
     else:
+        state.tool_traces.append(trace)
         enforce_tool_call_budget(state)
     return PlannedToolCallOutcome(
         trace=trace,

@@ -4,7 +4,8 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+import time
+from unittest.mock import MagicMock
 
 import pytest
 from pydantic import BaseModel
@@ -21,7 +22,7 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.contracts.execution_identity import RunId, TaskId
-from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop
+from intergrax.runtime.nexus.tools.tool_loop import execute_planned_tool_calls, run_bounded_tool_loop
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
@@ -300,30 +301,117 @@ def test_bounded_tool_loop_planner_failure_propagates() -> None:
         )
 
 
-def test_bounded_tool_loop_budget_exceeded_propagates() -> None:
+def test_runbudget_max_tool_calls_aborts_after_second_invocation() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
-        _HandlerA(),
+        _CountingHandler(),
     )
-    llm = _TwoRoundLLM()
+    _CountingHandler.invocations = 0
+    llm = _AlwaysToolLLM()
     state = _runtime_state(llm)
+    state.context.config.run_budget = RunBudget(max_tool_calls=1)
+    state.context.config.budget_policy = BudgetPolicy(enforcement_mode=BudgetEnforcementMode.ABORT)
+    state.context.config.max_tool_iterations = 5
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    with patch(
-        "intergrax.runtime.nexus.tools.tool_loop.enforce_tool_call_budget",
-        side_effect=BudgetExceededError("Budget exceeded: max_tool_calls (2 > 1)"),
-    ):
-        with pytest.raises(BudgetExceededError, match="max_tool_calls"):
-            run_bounded_tool_loop(
-                state=state,
-                invoker=invoker,
-                tool_planner=planner,
-                planner_input=[ChatMessage(role="user", content="use tool")],
-                allowed_tool_ids=("alpha.tool",),
-                max_iterations=2,
-            )
+    with pytest.raises(BudgetExceededError, match="max_tool_calls"):
+        run_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=[ChatMessage(role="user", content="use tool")],
+            allowed_tool_ids=("alpha.tool",),
+            max_iterations=5,
+        )
+
+    assert _CountingHandler.invocations == 2
+    assert llm._round == 2
+    assert len(state.tool_traces) == 2
+    budget_events = [
+        event
+        for event in state.trace_events
+        if event.payload is not None
+        and isinstance(event.payload, BudgetExceededDiagV1)
+        and event.payload.budget_name == "max_tool_calls"
+    ]
+    assert len(budget_events) == 1
+    assert budget_events[0].payload.limit == 1
+    assert budget_events[0].payload.actual == 2
+
+
+def test_runbudget_max_tool_calls_allows_full_loop_without_double_count() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("alpha.tool", _InA, _OutA),
+        _CountingHandler(),
+    )
+    _CountingHandler.invocations = 0
+    llm = _TwoRoundLLM()
+    state = _runtime_state(llm)
+    state.context.config.run_budget = RunBudget(max_tool_calls=10)
+    state.context.config.budget_policy = BudgetPolicy(enforcement_mode=BudgetEnforcementMode.ABORT)
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = ToolPlanningService(llm=llm, tools=registry)
+
+    result = run_bounded_tool_loop(
+        state=state,
+        invoker=invoker,
+        tool_planner=planner,
+        planner_input=[ChatMessage(role="user", content="use tool")],
+        allowed_tool_ids=("alpha.tool",),
+        max_iterations=2,
+    )
+
+    assert _CountingHandler.invocations == 1
+    assert len(result.tool_traces) == 1
+    assert len(state.tool_traces) == 1
+    assert result.tool_traces[0] is state.tool_traces[0]
+
+
+class _SlowReadOnlyHandler(ToolHandler[_InA, _OutA]):
+    def execute(self, request: ToolExecutionRequest[_InA]) -> _OutA:
+        time.sleep(0.05)
+        return _OutA(result=request.input.value)
+
+
+def test_parallel_read_only_max_tool_calls_enforced_under_invoke_lock() -> None:
+    registry = ToolRegistry()
+    for tool_id in ("read.a", "read.b"):
+        registry.register(
+            tools_agent_make_contract(tool_id, _InA, _OutA),
+            _SlowReadOnlyHandler(),
+        )
+    state = _runtime_state(FakeLLMAdapter())
+    state.context.config.run_budget = RunBudget(max_tool_calls=1)
+    state.context.config.budget_policy = BudgetPolicy(enforcement_mode=BudgetEnforcementMode.ABORT)
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    calls = [
+        PlannedToolCall(step_id="s1", tool_id="read.a", input=_InA(value=1)),
+        PlannedToolCall(step_id="s2", tool_id="read.b", input=_InA(value=2)),
+    ]
+
+    with pytest.raises(BudgetExceededError, match="max_tool_calls"):
+        execute_planned_tool_calls(
+            state=state,
+            invoker=invoker,
+            calls=calls,
+            idempotency_prefix="budget-parallel",
+            max_parallel_read_only=2,
+        )
+
+    assert len(state.tool_traces) == 2
+    budget_events = [
+        event
+        for event in state.trace_events
+        if event.payload is not None
+        and isinstance(event.payload, BudgetExceededDiagV1)
+        and event.payload.budget_name == "max_tool_calls"
+    ]
+    assert len(budget_events) == 1
+    assert budget_events[0].payload.limit == 1
+    assert budget_events[0].payload.actual == 2
 
 
 class _LongOutputTwoRoundLLM(FakeLLMAdapter):
