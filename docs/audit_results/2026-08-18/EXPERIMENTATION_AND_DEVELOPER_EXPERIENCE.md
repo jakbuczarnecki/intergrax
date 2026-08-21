@@ -32,7 +32,7 @@
 - **Prior audit reference(s):** [`PROVIDER_BACKEND_ABSTRACTION`](PROVIDER_BACKEND_ABSTRACTION.md) PBA-FIX-D — experiment persistence port; historical MVP-EVOL plan rows — delivery facts only
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `06c505f78394a9309f33683ce136889dfa50ebbf`
 
 ## Executive summary
 
