@@ -174,3 +174,32 @@ LKW background-task workload
 - In-memory DocumentStore as live proof backend
 - Public LKW Step 9 before live proof succeeds (PROOF-RECEIPTS-1E)
 - Standalone IntegrationProfile wiring task — profile/config selection remains an architectural requirement, not a separately scheduled proof-receipt step
+
+---
+
+## J. Protocol v2 LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY (2026-08-18)
+
+Accepted [`LKW_PRODUCT_PROOF`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) findings **01–03** (2026-08-21). **ACCEPTED / PLANNED** — not IMPLEMENTED, VERIFIED, or CLOSED.
+
+| Item | Detail |
+|------|--------|
+| **Block** | LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY |
+| **Priority** | P0 |
+| **Findings** | LKW-PROOF-01, LKW-PROOF-02, LKW-PROOF-03 |
+| **Architecture** | [`architecture/PROOF_RECEIPTS.md`](../../architecture/PROOF_RECEIPTS.md) — Protocol v2 proof receipt target invariants |
+| **LKW consumer** | [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) — cross-link only |
+
+**Intent:** every promoted/current product proof can be mechanically tied to the exact code/build/environment it actually executed; historical evidence becomes stale rather than silently current when relevant code changes.
+
+**Deliverables (planned):**
+
+- Extend canonical `ProofReceipt` / suite receipt with mandatory execution provenance (source revision/tree, dirty posture, proof contract version, build/application identity, environment/profile fingerprint).
+- Dirty worktree → `NOT_PUBLIC_EVIDENCE` / fail public-evidence promotion on suite runner.
+- Certification validity envelope and `STALE_REVALIDATION_REQUIRED` semantics for matrices and public claims; preserve historical PASS artifacts.
+
+**Cross-links (shared proof system owns runner/manifest obligations):**
+
+- **LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY** — LKW-PROOF-04, LKW-PROOF-05 (`scripts/proof/intergrax_proof_manifest.py`, `intergrax_proof_runner.py`, `run-intergrax-proof-suite.py`)
+- **LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY** — LKW-PROOF-06 (profile semantics; LKW plan + `PROOFS.md`)
+
+Does **not** reopen closed PROOF-RECEIPTS-1A–1E as complete; extends the next provenance wave only.

@@ -101,7 +101,7 @@ incomplete, and complete live-provider access remains incomplete.
 
 **Trusted Ask proof:** `LKW-ASK-WORKSPACE-LIVE` — [authoritative live proof section](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
 
-**Governed Evidence Decision Proof:** `advanced_flagship_proof` — [canonical proof doc](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md)
+**Governed Evidence Decision Proof:** `advanced_flagship_proof` — [canonical proof doc](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) — **not** in canonical `intergrax_proof_manifest.py` today ([`LKW-PROOF-05`](../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md); accepted remediation)
 
 **Core platform proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`
 
@@ -227,6 +227,20 @@ Maintainer status and wording rules: [Public Proof and Claims Model](../maintain
 Public documentation references `proof_id` values only. Canonical membership,
 commands, profiles, and environment requirements live in
 `scripts/proof/intergrax_proof_manifest.py`.
+
+**Historical vs current evidence:** a recorded PASS or certification artifact at an earlier source revision remains valid **historical** evidence. **Current** public-evidence eligibility requires provenance/freshness qualification per [`PROOF_RECEIPTS`](../architecture/PROOF_RECEIPTS.md) Protocol v2 target invariants and [`LKW_PRODUCT_PROOF`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) — not implemented yet.
+
+**Profile semantics (honest current state):**
+
+| Profile | Includes Product Quick Start (`LKW-PRODUCT-QUICKSTART-*`) | Notes |
+|---------|--------------------------------------------------------------|-------|
+| `quick` | **No** | Repository quick suite only; do **not** infer Product Quick Start coverage |
+| `full` | **Yes** | Includes LKW product quickstart manifest entries |
+| `live` | **Yes** | Live proofs; see `PASS_WITH_BLOCKED` limitation below |
+
+**`--profile live` / `PASS_WITH_BLOCKED` limitation (accepted remediation):** when required live proofs are blocked by missing environment/provider requirements, the suite may currently aggregate to `PASS_WITH_BLOCKED` with shell exit code `0`. Do **not** infer complete live certification from exit `0` until [`LKW-PROOF-04`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) is remediated.
+
+**Manifest governance gap:** Governed Evidence Decision Proof (`advanced_flagship_proof`) is publicly documented but not yet a canonical manifest entry — see [`LKW-PROOF-05`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md).
 
 Run the repository-wide suite from the repository root:
 

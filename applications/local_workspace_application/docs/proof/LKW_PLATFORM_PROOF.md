@@ -72,6 +72,10 @@ A reviewer should not need to inspect raw Docker output or infer what to check f
 > [!NOTE]
 > A **bounded platform proof** validates specific platform and application mechanisms in documented environments. It is **not** product completion, commercial readiness, or universal production certification.
 
+**Historical vs current certification (Protocol v2 audit 2026-08-21):** checked-in certification matrix artifacts record bounded live PASS at specific source revisions (matrix generated 2026-07-21; Windows source `6b71a841...`; Linux Docker source `40a73fbb...`). Those remain **valid historical evidence**. Until [`LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY`](../../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) is remediated, certification freshness is **not** automatically current for the present tree — public docs must not imply silent revalidation on every source change. Current Protocol-v2 gaps do **not** erase historical PASS.
+
+**Governed Evidence Decision Proof manifest gap (accepted remediation):** `advanced_flagship_proof` is publicly documented with a direct module command but is **not** yet registered in the canonical `scripts/proof/intergrax_proof_manifest.py`. This is accepted audit debt ([`LKW-PROOF-05`](../../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md)), not silently fixed.
+
 ### Reviewer proof flow
 
 ```mermaid

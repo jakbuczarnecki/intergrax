@@ -146,6 +146,34 @@ Slack conversational frontend acceptance does not claim that Slack Knowledge
 indexing or Slack live evidence is complete. Those are separate integration
 tracks.
 
+## Protocol v2 LKW product proof remediation (2026-08-18)
+
+Accepted [`LKW_PRODUCT_PROOF`](../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) findings **01–06** (2026-08-21). All blocks below are **ACCEPTED / PLANNED** — not IMPLEMENTED, VERIFIED, or CLOSED.
+
+### LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY — P0/P1
+
+**Findings:** LKW-PROOF-04, LKW-PROOF-05  
+**Owner:** shared proof manifest/runner (`scripts/proof/`); LKW consumes manifest authority  
+
+- Explicit required vs optional proof membership in canonical manifest.
+- `--profile live` must not return shell success when required live proofs were blocked (`PASS_WITH_BLOCKED` limitation until remediated).
+- Fold Governed Evidence Decision Proof (`advanced_flagship_proof`) into canonical `ProofManifestEntry` and public reference governance — no second flagship proof path.
+
+### LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY — P2
+
+**Findings:** LKW-PROOF-06  
+**Owner:** LKW plan + [`PROOFS.md`](../../../docs/project/proofs/PROOFS.md)  
+
+- Make proof profile semantics explicit: `--profile quick` does **not** execute Product Quick Start today.
+- Either add bounded flagship LKW product smoke to QUICK or rename/document profiles so QUICK cannot be read as Product Quick Start coverage.
+
+### Cross-link — LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY — P0
+
+**Findings:** LKW-PROOF-01, LKW-PROOF-02, LKW-PROOF-03  
+**Primary owner:** [`docs/project/maintainers/plans/PROOF_RECEIPTS.md`](../../../docs/project/maintainers/plans/PROOF_RECEIPTS.md) — LKW consumes shared receipt/provenance authority; does not invent private receipt contract.
+
+This section does **not** change the current direct LKW roadmap task (`LKW-PLUGIN-CAPABILITY-CONFIGURATION-1`) or falsely mark Product 1.0 work complete.
+
 ## DIRECT ROADMAP TO LKW 1.0
 
 This is the one authoritative active execution order. It contains only work
