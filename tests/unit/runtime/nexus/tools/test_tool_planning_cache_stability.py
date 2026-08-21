@@ -574,6 +574,76 @@ def test_prune_drops_partial_multi_call_assistant_group() -> None:
     assert pruned == []
 
 
+def test_prune_drops_assistant_group_with_foreign_tool_result() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                }
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+        ChatMessage(role="tool", content="FOREIGN", tool_call_id="call-x"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert pruned == []
+
+
+def test_prune_drops_assistant_group_with_duplicate_tool_result() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                }
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+        ChatMessage(role="tool", content="EVIDENCE_A_DUP", tool_call_id="call-a"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert pruned == []
+
+
+def test_prune_drops_assistant_with_duplicate_declared_tool_call_ids() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                },
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "beta.tool", "arguments": "{}"},
+                },
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert pruned == []
+
+
 def test_prune_preserves_all_tool_results_for_single_assistant_multi_call() -> None:
     from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
 

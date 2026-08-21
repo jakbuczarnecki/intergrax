@@ -8,7 +8,7 @@ from __future__ import annotations
 import copy
 import json
 from collections.abc import Mapping, Sequence
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Union
 
 from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
@@ -133,19 +133,29 @@ def _build_non_native_planner_system_content(
     return "\n\n".join(sections)
 
 
-def _extract_assistant_tool_call_ids(
+class _AssistantToolCallSpec(NamedTuple):
+    valid: bool
+    required_ids: frozenset[str]
+
+
+def _parse_assistant_tool_call_ids(
     tool_calls: Sequence[dict] | None,
-) -> frozenset[str]:
+) -> _AssistantToolCallSpec:
     if not tool_calls:
-        return frozenset()
+        return _AssistantToolCallSpec(valid=True, required_ids=frozenset())
+    seen: set[str] = set()
     declared: set[str] = set()
     for tool_call in tool_calls:
         if not isinstance(tool_call, dict):
             continue
         call_id = tool_call.get("id")
-        if isinstance(call_id, str) and call_id:
-            declared.add(call_id)
-    return frozenset(declared)
+        if not isinstance(call_id, str) or not call_id:
+            continue
+        if call_id in seen:
+            return _AssistantToolCallSpec(valid=False, required_ids=frozenset())
+        seen.add(call_id)
+        declared.add(call_id)
+    return _AssistantToolCallSpec(valid=True, required_ids=frozenset(declared))
 
 
 def _prune_messages_for_openai(messages: List[ChatMessage]) -> List[ChatMessage]:
@@ -163,29 +173,42 @@ def _prune_messages_for_openai(messages: List[ChatMessage]) -> List[ChatMessage]
             continue
 
         if message.role == "assistant" and message.tool_calls:
-            required_ids = _extract_assistant_tool_call_ids(message.tool_calls)
+            spec = _parse_assistant_tool_call_ids(message.tool_calls)
+            if not spec.valid:
+                scan_index = index + 1
+                while scan_index < message_count and messages[scan_index].role == "tool":
+                    scan_index += 1
+                index = scan_index
+                continue
+
+            required_ids = spec.required_ids
             if not required_ids:
                 pruned.append(message)
                 index += 1
                 continue
 
             scan_index = index + 1
-            matched_ids: set[str] = set()
+            observed_ids: set[str] = set()
+            tool_group: list[ChatMessage] = []
+            group_valid = True
             while scan_index < message_count and messages[scan_index].role == "tool":
-                tool_call_id = messages[scan_index].tool_call_id
+                tool_message = messages[scan_index]
+                tool_call_id = tool_message.tool_call_id
                 if (
-                    isinstance(tool_call_id, str)
-                    and tool_call_id
-                    and tool_call_id in required_ids
+                    not isinstance(tool_call_id, str)
+                    or not tool_call_id
+                    or tool_call_id not in required_ids
+                    or tool_call_id in observed_ids
                 ):
-                    matched_ids.add(tool_call_id)
+                    group_valid = False
+                else:
+                    observed_ids.add(tool_call_id)
+                    tool_group.append(tool_message)
                 scan_index += 1
 
-            if matched_ids == set(required_ids):
+            if group_valid and observed_ids == set(required_ids):
                 pruned.append(message)
-                for tool_index in range(index + 1, scan_index):
-                    if messages[tool_index].role == "tool":
-                        pruned.append(messages[tool_index])
+                pruned.extend(tool_group)
                 index = scan_index
                 continue
 
