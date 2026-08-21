@@ -271,3 +271,71 @@ def test_validate_native_tool_plan_alignment_valid() -> None:
             ]
         ),
     )
+
+
+def test_validate_native_tool_plan_alignment_malformed_json_rejected() -> None:
+    with pytest.raises(NativeToolPlanAlignmentError, match="malformed"):
+        validate_native_tool_plan_alignment(
+            (
+                LLMToolCall(
+                    id="tc-1",
+                    name="probe.a",
+                    arguments_json="{BROKEN",
+                ),
+            ),
+            ToolCallPlan(
+                calls=[
+                    PlannedToolCall(
+                        step_id="tool",
+                        tool_id="probe.a",
+                        input=_EvidenceIn(),
+                    )
+                ]
+            ),
+        )
+
+
+@pytest.mark.parametrize("arguments_json", ["[]", '"x"'])
+def test_validate_native_tool_plan_alignment_non_object_json_rejected(
+    arguments_json: str,
+) -> None:
+    with pytest.raises(NativeToolPlanAlignmentError, match="JSON object"):
+        validate_native_tool_plan_alignment(
+            (
+                LLMToolCall(
+                    id="tc-1",
+                    name="probe.a",
+                    arguments_json=arguments_json,
+                ),
+            ),
+            ToolCallPlan(
+                calls=[
+                    PlannedToolCall(
+                        step_id="tool",
+                        tool_id="probe.a",
+                        input=_EvidenceIn(),
+                    )
+                ]
+            ),
+        )
+
+
+def test_validate_native_tool_plan_alignment_empty_json_with_defaults_valid() -> None:
+    validate_native_tool_plan_alignment(
+        (
+            LLMToolCall(
+                id="tc-1",
+                name="probe.a",
+                arguments_json="{}",
+            ),
+        ),
+        ToolCallPlan(
+            calls=[
+                PlannedToolCall(
+                    step_id="tool",
+                    tool_id="probe.a",
+                    input=_EvidenceIn(),
+                )
+            ]
+        ),
+    )

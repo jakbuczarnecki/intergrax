@@ -1726,6 +1726,28 @@ class _MisalignedCustomPlanner:
                     ]
                 ),
             )
+        if self._mismatch == "malformed_arguments":
+            return (
+                LLMAdapterResponse(
+                    content="",
+                    tool_calls=(
+                        LLMToolCall(
+                            id="tc-1",
+                            name="probe.a",
+                            arguments_json="{BROKEN",
+                        ),
+                    ),
+                ),
+                ToolCallPlan(
+                    calls=[
+                        PlannedToolCall(
+                            step_id="tool",
+                            tool_id="probe.a",
+                            input=_EvidenceIn(),
+                        )
+                    ]
+                ),
+            )
         raise AssertionError(f"unknown mismatch: {self._mismatch}")
 
 
@@ -1747,6 +1769,26 @@ def test_misaligned_custom_planner_rejected_before_tool_execution(
             invoker=invoker,
             tool_planner=planner,
             planner_input=[ChatMessage(role="user", content="misaligned planner")],
+            allowed_tool_ids=("probe.a", "probe.b"),
+            max_iterations=2,
+        )
+
+    assert planner._round == 1
+    assert len(state.tool_traces) == 0
+
+
+def test_malformed_native_arguments_rejected_before_tool_execution() -> None:
+    registry = _registry_with_probe_tools()
+    state = _runtime_state(FakeLLMAdapter())
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = _MisalignedCustomPlanner(mismatch="malformed_arguments")
+
+    with pytest.raises(NativeToolPlanAlignmentError, match="malformed"):
+        run_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=[ChatMessage(role="user", content="malformed native arguments")],
             allowed_tool_ids=("probe.a", "probe.b"),
             max_iterations=2,
         )

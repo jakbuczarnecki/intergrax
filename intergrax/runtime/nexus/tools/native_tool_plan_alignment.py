@@ -18,10 +18,14 @@ class NativeToolPlanAlignmentError(ValueError):
 def _canonical_llm_arguments(arguments_json: str) -> dict[str, object]:
     try:
         parsed = json.loads(arguments_json or "{}")
-    except json.JSONDecodeError:
-        parsed = {}
+    except json.JSONDecodeError as exc:
+        raise NativeToolPlanAlignmentError(
+            "native tool call arguments JSON is malformed"
+        ) from exc
     if not isinstance(parsed, dict):
-        return {}
+        raise NativeToolPlanAlignmentError(
+            "native tool call arguments must be a JSON object"
+        )
     return parsed
 
 
