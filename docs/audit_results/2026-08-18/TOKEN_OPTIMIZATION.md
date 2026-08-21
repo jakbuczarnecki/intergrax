@@ -33,7 +33,7 @@
 - **Prior audit reference(s):** [`LLM_ADAPTERS`](LLM_ADAPTERS.md); [`OBSERVABILITY_EVIDENCE`](OBSERVABILITY_EVIDENCE.md); [`CONTEXT_ENGINEERING`](CONTEXT_ENGINEERING.md)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `d35bfc5d1462a13a05b68afa1b0b4b4f45f76ab1`
 
 ## Executive summary
 
