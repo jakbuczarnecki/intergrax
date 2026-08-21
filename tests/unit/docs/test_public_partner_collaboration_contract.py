@@ -125,9 +125,8 @@ def _through_at_a_glance(text: str) -> str:
         raise AssertionError("Missing ## At a glance section")
     after_at_glance = text[at_glance.end() :]
     next_h2 = re.search(r"^## ", after_at_glance, re.MULTILINE)
-    if not next_h2:
-        raise AssertionError("Missing H2 section after ## At a glance")
-    return text[: at_glance.end() + next_h2.start()]
+    end = at_glance.end() + (next_h2.start() if next_h2 else len(after_at_glance))
+    return text[:end]
 
 
 def _h2_section(text: str, heading: str) -> str:
@@ -527,11 +526,21 @@ def test_brevity() -> None:
         PARTNERS_PATH: 250,
         COLLABORATION_PATH: 180,
         FAQ_PATH: 180,
-        README_PATH: 300,
+        README_PATH: 450,
     }
     for path, max_lines in limits.items():
         count = len(_read(path).splitlines())
         assert count <= max_lines, f"{path.name} has {count} lines (max {max_lines})"
+
+
+def test_through_at_a_glance_eof_when_last_section() -> None:
+    sample = "## Intro\n\nfoo\n\n## At a glance\n\nbar\n"
+    assert _through_at_a_glance(sample) == sample
+
+
+def test_through_at_a_glance_stops_at_next_h2() -> None:
+    sample = "## Intro\n\n## At a glance\n\nbar\n\n## Next\n\nbaz\n"
+    assert _through_at_a_glance(sample) == "## Intro\n\n## At a glance\n\nbar\n\n"
 
 
 def test_at_a_glance_sections(

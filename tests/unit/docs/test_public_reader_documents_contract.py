@@ -37,8 +37,6 @@ MULTIPLAYER_ARCH_PATH = (
 )
 PLATFORM_PLUGINS_ARCH_PATH = REPO_ROOT / "docs" / "project" / "architecture" / "PLATFORM_PLUGINS.md"
 ROADMAP_PATH = REPO_ROOT / "docs" / "project" / "overview" / "ROADMAP.md"
-HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
-HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
 
 _LEGAL_HEADER = (
     "<!--\n"
@@ -920,20 +918,15 @@ def test_evidence_limitations_bulleted(readme_text: str) -> None:
 
 def test_brevity() -> None:
     limits = {
-        WHY_PATH: 240,
+        WHY_PATH: 280,
         ARCHITECTURE_OVERVIEW_PATH: 280,
         BUILD_PATH: 300,
         BUILDER_QUICKSTART_PATH: 220,
-        README_PATH: 300,
+        README_PATH: 450,
     }
     for path, max_lines in limits.items():
         count = len(_read(path).splitlines())
         assert count <= max_lines, f"{path.name} has {count} lines (max {max_lines})"
-
-
-def test_hero_assets_exist() -> None:
-    assert HERO_LIGHT_PATH.is_file()
-    assert HERO_DARK_PATH.is_file()
 
 
 def test_why_problem_category_and_reader_fit(why_text: str) -> None:

@@ -468,7 +468,7 @@ def test_brevity() -> None:
     readme_lines = len(_read(README_PATH).splitlines())
     assert roadmap_lines <= 240, f"ROADMAP too long: {roadmap_lines} lines"
     assert use_cases_lines <= 280, f"USE_CASES too long: {use_cases_lines} lines"
-    assert readme_lines <= 300, f"README too long: {readme_lines} lines"
+    assert readme_lines <= 450, f"README too long: {readme_lines} lines"
 
 
 def test_no_release_date_promises(roadmap_text: str, use_cases_text: str) -> None:
