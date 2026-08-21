@@ -92,41 +92,6 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-### Protocol v2 remediation — SECURITY_BOUNDARIES (2026-08-18)
-
-**Audit:** [`docs/audit_results/2026-08-18/SECURITY_BOUNDARIES.md`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-SECURITY-BOUNDARIES-PERSIST.
-
-#### SEC-DATA-PROTECTION-INTEGRITY — encryption fail-closed and cryptographic honesty
-
-**Priority:** P0
-**Status:** `ACCEPTED / PLANNED`
-**Findings:** [`AUDIT-20260818-SECURITY_BOUNDARIES-03`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md)
-
-**Acceptance intent:**
-
-- Configured secure backend resolution failure blocks or fails startup when cryptographic protection is required.
-- No silent downgrade to `HarnessEnvelopeEncryptor` / Base64 envelope on product paths.
-- Lab/demo transforms explicitly labeled non-cryptographic; preserve `SecretsStorePayloadEncryptor` provider-neutral shape.
-
-#### SEC-AUDIT-AUTHORITY-INTEGRITY — durable immutable audit authority
-
-**Priority:** P1
-**Status:** `ACCEPTED / PLANNED`
-**Findings:** [`AUDIT-20260818-SECURITY_BOUNDARIES-06`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md)
-
-**Acceptance intent:**
-
-- Separate in-memory audit simulation from production audit authority.
-- Define `ImmutableSecurityAuditTrail` persistence port; multi-region qualification requires independently durable replicas and explicit replication/tamper evidence.
-- No specific cloud vendor required.
-
-Cross-link **SEC-DEFENSE-QUALIFICATION-INTEGRITY** in [`TIER3_APPLICATION_ENVIRONMENT` plan](TIER3_APPLICATION_ENVIRONMENT.md) for signing and defense toggle wiring that requires runtime enforcement position verification.
-
-**Remediation rules:** same as SHM-FIX block above.
-
----
-
 ## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.
