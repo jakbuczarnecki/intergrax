@@ -35,7 +35,7 @@
 - **Prior audit reference(s):** [`IDENTITY_TRUST`](IDENTITY_TRUST.md) (finding 01 — principal propagation); [`POLICY_GOVERNANCE`](POLICY_GOVERNANCE.md); [`PLATFORM_EXTENSIBILITY`](PLATFORM_EXTENSIBILITY.md)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** `—`
+- **post_sync_sha:** `5497229615aaa646486e5175a6679b41fbb65a6f`
 
 ## Scope / ownership mapping
 
