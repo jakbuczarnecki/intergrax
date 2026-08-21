@@ -432,6 +432,121 @@ async def test_idt_a9_matching_assertion_succeeds() -> None:
     assert task.user_id == "U1"
 
 
+def _research_runner_with_completed_task() -> AsyncMock:
+    runner = AsyncMock(spec=UnifiedTaskRunner)
+    runner.run_task.return_value = MagicMock(
+        task_id="task-1",
+        run_id="run-1",
+        state=MagicMock(value="completed"),
+        answer="ok",
+        metadata={},
+    )
+    return runner
+
+
+@pytest.mark.asyncio
+async def test_idt_r2_t1_research_task_receives_canonical_user_principal() -> None:
+    runner = _research_runner_with_completed_task()
+    service = ResearchRunService(task_runner=runner)
+    principal = HarnessAuthenticatedPrincipal(
+        tenant_id="A",
+        user_id="U1",
+        principal_type=PrincipalType.USER,
+        auth_subject="U1",
+        auth_mode="identity_provider",
+    )
+    canonical = harness_principal_to_request_identity(principal)
+    body = ResearchRunRequestV1(tenant_id="A", user_id="U1", message="summarize")
+    await service.run_pipeline(body, authenticated_principal=principal)
+    task = runner.run_task.await_args.args[0]
+    assert task.canonical_identity == canonical
+    assert task.canonical_identity is not None
+
+
+@pytest.mark.asyncio
+async def test_idt_r2_t2_research_service_principal_preserved() -> None:
+    runner = _research_runner_with_completed_task()
+    service = ResearchRunService(task_runner=runner)
+    principal = HarnessAuthenticatedPrincipal(
+        tenant_id="A",
+        user_id="platform-api",
+        principal_type=PrincipalType.SERVICE,
+        auth_subject="platform-api",
+        auth_mode="api_key",
+    )
+    canonical = harness_principal_to_request_identity(principal)
+    body = ResearchRunRequestV1(tenant_id="A", user_id="platform-api", message="summarize")
+    await service.run_pipeline(body, authenticated_principal=principal)
+    task = runner.run_task.await_args.args[0]
+    assert task.canonical_identity is not None
+    assert task.canonical_identity.principal_type is PrincipalType.SERVICE
+    assert task.canonical_identity.auth_subject == "platform-api"
+    task.agent_id = "research-agent"
+    runtime_request = task.to_runtime_request(run_id="run_a3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    agent_run = runtime_request_to_agent_run(runtime_request, contract=_BridgeContract())
+    assert agent_run.identity == canonical
+    assert agent_run.identity.principal_type is PrincipalType.SERVICE
+
+
+@pytest.mark.asyncio
+async def test_idt_r2_t3_user_end_to_end_principal_preservation() -> None:
+    runner = _research_runner_with_completed_task()
+    service = ResearchRunService(task_runner=runner)
+    principal = HarnessAuthenticatedPrincipal(
+        tenant_id="A",
+        user_id="U1",
+        principal_type=PrincipalType.USER,
+        auth_subject="U1",
+        auth_mode="identity_provider",
+    )
+    canonical = harness_principal_to_request_identity(principal)
+    body = ResearchRunRequestV1(tenant_id="A", user_id="U1", message="summarize")
+    await service.run_pipeline(body, authenticated_principal=principal)
+    task = runner.run_task.await_args.args[0]
+    assert task.canonical_identity == canonical
+    task.agent_id = "research-agent"
+    runtime_request = task.to_runtime_request(run_id="run_a3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    assert runtime_request.canonical_identity == canonical
+    agent_run = runtime_request_to_agent_run(runtime_request, contract=_BridgeContract())
+    assert agent_run.identity == canonical
+
+
+@pytest.mark.asyncio
+async def test_idt_r2_t4_metadata_cannot_override_after_research_task() -> None:
+    runner = _research_runner_with_completed_task()
+    service = ResearchRunService(task_runner=runner)
+    principal = HarnessAuthenticatedPrincipal(
+        tenant_id="A",
+        user_id="U1",
+        principal_type=PrincipalType.USER,
+        auth_subject="U1",
+        auth_mode="identity_provider",
+    )
+    canonical = harness_principal_to_request_identity(principal)
+    body = ResearchRunRequestV1(tenant_id="A", user_id="U1", message="summarize")
+    await service.run_pipeline(body, authenticated_principal=principal)
+    task = runner.run_task.await_args.args[0]
+    task.agent_id = "research-agent"
+    runtime_request = task.to_runtime_request(run_id="run_a3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    assert runtime_request.canonical_identity == canonical
+    runtime_request.metadata["tenant_id"] = "B"
+    with pytest.raises(ValueError, match="metadata tenant_id conflicts"):
+        runtime_request_to_agent_run(runtime_request, contract=_BridgeContract())
+    assert runtime_request.canonical_identity == canonical
+
+
+@pytest.mark.asyncio
+async def test_idt_r2_t5_legacy_local_research_path() -> None:
+    runner = _research_runner_with_completed_task()
+    service = ResearchRunService(task_runner=runner)
+    body = ResearchRunRequestV1(tenant_id="legacy-t", user_id="legacy-u", message="summarize")
+    await service.run_pipeline(body, authenticated_principal=None)
+    task = runner.run_task.await_args.args[0]
+    assert task.canonical_identity is None
+    assert task.tenant_id == "legacy-t"
+    assert task.user_id == "legacy-u"
+
+
 def test_idt_a10_actor_writer_reader_round_trip() -> None:
     envelope = TaskEnvelope(
         tenant_id="t1",

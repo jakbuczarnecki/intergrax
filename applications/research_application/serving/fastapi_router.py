@@ -16,6 +16,7 @@ from intergrax.applications._shared.harness_principal import (
     harness_principal_to_request_identity,
     reject_identity_assertion_conflicts,
 )
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
@@ -37,6 +38,7 @@ class ResearchRunService:
         *,
         authenticated_principal: HarnessAuthenticatedPrincipal | None = None,
     ) -> ResearchRunResponseV1:
+        canonical: RequestIdentity | None = None
         if authenticated_principal is not None:
             canonical = harness_principal_to_request_identity(authenticated_principal)
             reject_identity_assertion_conflicts(
@@ -61,6 +63,7 @@ class ResearchRunService:
                 capability="research.pipeline",
                 intent="research_summarize",
             ),
+            canonical_identity=canonical,
         )
         result = await self.task_runner.run_task(task)
         return ResearchRunResponseV1(
