@@ -80,6 +80,58 @@ def _partition_openai_responses_options(
     return client_kwargs, request_defaults
 
 
+def _map_tools_to_responses_api(
+    tools_schema: Sequence[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Map canonical Chat-Completions-style tool schema to Responses API shape."""
+    mapped: List[Dict[str, Any]] = []
+    for index, tool in enumerate(tools_schema):
+        if not isinstance(tool, dict):
+            raise ValueError(
+                "OpenAI Responses adapter: "
+                f"tools_schema[{index}] must be a dict, got {type(tool).__name__}"
+            )
+
+        if tool.get("type") != "function":
+            mapped.append(dict(tool))
+            continue
+
+        if "function" not in tool:
+            if isinstance(tool.get("name"), str) and tool["name"]:
+                mapped.append(dict(tool))
+                continue
+            raise ValueError(
+                "OpenAI Responses adapter: "
+                f"tools_schema[{index}] function tool requires nested 'function' "
+                "object or top-level 'name'"
+            )
+
+        fn = tool.get("function")
+        if not isinstance(fn, dict):
+            raise ValueError(
+                "OpenAI Responses adapter: "
+                f"tools_schema[{index}].function must be a dict, "
+                f"got {type(fn).__name__ if fn is not None else 'missing'}"
+            )
+
+        name = fn.get("name")
+        if not isinstance(name, str) or not name:
+            raise ValueError(
+                "OpenAI Responses adapter: "
+                f"tools_schema[{index}].function.name must be a non-empty string"
+            )
+
+        out: Dict[str, Any] = {"type": "function", "name": name}
+        if "description" in fn:
+            out["description"] = fn["description"]
+        if "parameters" in fn:
+            out["parameters"] = fn["parameters"]
+        if "strict" in fn:
+            out["strict"] = fn["strict"]
+        mapped.append(out)
+    return mapped
+
+
 class OpenAIChatResponsesAdapter(LLMAdapter):
     """
     OpenAI adapter based on the new Responses API.
@@ -371,10 +423,11 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
             mapped = self._map_messages_to_openai(messages)
             input_items = self._messages_to_responses_input(mapped)
+            responses_tools = _map_tools_to_responses_api(tools_schema)
             payload: Dict[str, Any] = dict(
                 model=self.model,
                 input=input_items,
-                tools=tools_schema,
+                tools=responses_tools,
                 stream=True,
             )
             if tool_choice is not None:
@@ -531,11 +584,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         try:
             mapped = self._map_messages_to_openai(messages)
             input_items = self._messages_to_responses_input(mapped)
+            responses_tools = _map_tools_to_responses_api(tools_schema)
 
             payload: Dict[str, Any] = dict(
                 model=self.model,
                 input=input_items,
-                tools=tools_schema,
+                tools=responses_tools,
             )
 
             if tool_choice is not None:
