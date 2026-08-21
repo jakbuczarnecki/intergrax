@@ -1,11 +1,12 @@
 # Intergrax
 
-Intergrax helps teams build specialized AI applications that use controlled
-knowledge and tools while keeping access, actions, and evidence reviewable.
+Intergrax helps teams build specialized AI applications where policy, authority,
+and evidence can determine whether an answer or action is allowed to proceed —
+instead of leaving that decision entirely to the model.
 
-It is a reusable governed foundation—an application operating layer around
-execution boundaries—so product teams do not rebuild policy, approvals,
-integrations, recovery, and evidence mechanisms for every workflow.
+It provides reusable governed foundations for knowledge, actions, approvals,
+integrations, recovery, and reviewable evidence so product teams do not rebuild
+those mechanisms for every workflow.
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Source-available](https://img.shields.io/badge/source--available-evaluation-6c5ce7.svg)](LICENSE)
@@ -18,30 +19,7 @@ integrations, recovery, and evidence mechanisms for every workflow.
 > **Backend Product Alpha / MVP**. **Real-user validation** and **commercial
 > validation** are incomplete.
 
-<a href="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png">
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
-    alt="Specialized AI products share the Intergrax governed foundation and may evolve toward a connected ecosystem; Local Knowledge Workspace is Backend Product Alpha while four portfolio directions remain selected pre-bootstrap."
-  >
-</picture>
-</a>
-
 **Current reality:** [Local Knowledge Workspace](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) is the active reference product at **Backend Product Alpha / MVP** with bounded proof paths — not production readiness. Additional portfolio directions are **selected pre-bootstrap** only; their presence does not imply implementation or runtime proof.
-
-**Local Knowledge Workspace (LKW)** is the active reference product through which
-Intergrax is being proven today. In its advanced governed proof (`LIVE_ONLY`),
-Intergrax determines whether required authorized evidence is admissible before an
-LLM may synthesize, and records why — without implying a complete indexed +
-authorized live Hybrid Ask or finished end-user UX.
 
 ---
 
@@ -67,10 +45,9 @@ Questions? See the [FAQ](docs/project/overview/FAQ.md).
 
 ## Local Knowledge Workspace (LKW)
 
-LKW is Intergrax's **reference product application**: approved knowledge,
-grounded Ask, source references, and persisted evidence. Intergrax provides the
-governed evidence mechanisms underneath — this section is LKW product and proof
-positioning, not generic platform marketing.
+LKW is a governed AI knowledge workspace for approved organizational knowledge,
+grounded Ask workflows, source references, and persisted evidence. Intergrax
+provides the governed evidence mechanisms underneath.
 
 ### Product workflow
 
@@ -86,10 +63,14 @@ approved knowledge
 1.0. A bounded DM Ask path is live-verified today; broader Slack workspace,
 source-management, and daily-use flows remain under productization.
 
-### What is proven today
+**Status:** Backend Product Alpha / MVP — **PARTIAL**
 
-LKW is the **Primary Product Proof**, classified as **Backend Product Alpha /
-MVP**, with **PARTIAL** status.
+**Accepted bounded proof paths:**
+
+- Product Quick Start
+- Governed Evidence Decision Proof
+- Trusted Ask
+- Core Platform Proof
 
 #### A. Product Quick Start
 
@@ -148,33 +129,9 @@ restart without resync/reindex.
 
 ## Try LKW
 
-One supported command takes you from the repository root to a grounded answer
-with a source citation over indexed knowledge — the canonical **Product Quick
-Start** path, separate from Slack DM setup. Detailed prerequisites and
-troubleshooting live in the [LKW Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md).
-
-**Windows:**
-
-```bat
-applications\local_workspace_application\scripts\run-lkw-product-quickstart-windows.bat
-```
-
-**Linux:**
-
-```sh
-./applications/local_workspace_application/scripts/run-lkw-product-quickstart-linux.sh
-```
-
-**macOS:**
-
-```sh
-./applications/local_workspace_application/scripts/run-lkw-product-quickstart-macos.sh
-```
-
-**Expected answer marker:** `AURORA-17` · **Expected source file:** `lkw_product_quickstart.txt`
-
-First run may download Docker images and configured models when Ollama is the
-selected provider; duration depends on your environment.
+Run the supported Product Quick Start on Windows, Linux, or macOS. The expected
+answer marker is `AURORA-17`. Prerequisites, commands, and troubleshooting live
+in the [LKW Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md).
 
 <a id="try-lkw"></a>
 
@@ -197,13 +154,46 @@ or all-provider certification.
 
 ---
 
+## Why this matters
+
+Building an impressive AI demo is easier than operating a controlled AI
+application that a team can review and trust. Teams repeatedly rebuild
+knowledge access, policy, integrations, approvals, and evidence foundations
+around each product.
+
+Intergrax centralizes reusable mechanisms so product teams can focus on the
+specialized workflow. Read [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)
+for the category, problem, and fit.
+
+<a href="docs/project/assets/public/readme/intergrax-why-light.png">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-why-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-why-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-why-light.png"
+    alt="Comparison between rebuilding duplicated AI foundations per product and reusing a shared Intergrax foundation beneath specialized products."
+  >
+</picture>
+</a>
+
+[View full-size diagram](docs/project/assets/public/readme/intergrax-why-light.png)
+
+---
+
 <a id="explore-the-intergrax-platform"></a>
 ## Explore the Intergrax Platform
 
 **What is Intergrax built from?** The platform is organized into human-readable
 areas below. Each area links to canonical **domain architecture** documents —
 the public entry points for *what* a subsystem should do. For cross-layer
-capabilities, see [multi-layer feature architecture](#platform-capabilities-and-directions).
+capabilities, see [Platform capabilities](#platform-capabilities) and
+[Future strategic directions](#future-strategic-directions).
 For deep engineering registers, use architecture **satellites** (on demand via the
 [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md)) —
 not as a first-contact route.
@@ -240,55 +230,19 @@ not as a first-contact route.
 | **Application Platform** | Tier-3 application environment and application hosting | [Tier-3 Application Environment](docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [Application Hosting](docs/project/architecture/APPLICATION_HOSTING.md) |
 | **Platform Foundations & Scale** | Core platform foundation, elastic capacity, modality, and developer experience | [Platform Foundation](docs/project/architecture/PLATFORM_FOUNDATION.md) · [Elastic Capacity & Scaling](docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md) · [Modality](docs/project/architecture/MODALITY.md) · [Experimentation & DX](docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
 
-Full domain index (24 architecture ↔ plan pairs):
+Full technical domain index:
 [runtime architecture hub](docs/project/architecture/intergrax_runtime_architecture.md).
 Project-level mental model:
 [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md).
 
-### How documentation is organized
-
-| Layer | Answers | Start here |
-| --- | --- | --- |
-| **First contact** | What is Intergrax, choose a path, platform map | This README |
-| **Intent routing** | I want to try / evaluate / build / review | [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md) |
-| **Architecture mental model** | Responsibility boundaries and system flow | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
-| **Domain architecture** | What a platform area should do | `docs/project/architecture/<DOMAIN>.md` |
-| **Feature architecture** | Cross-layer capabilities coordinating domains | `docs/project/capabilities/architecture/<FEATURE>.md` |
-| **Satellites** | Extended engineering depth (on demand) | Indexed from domain or feature hubs — not first-contact |
-| **Technical guides** | How to configure, build, extend, or operate | [Technical guides](docs/project/technical/guides/README.md) |
-| **Plans / ADR / proofs** | Implementation status, decisions, bounded evidence | [PROOFS](docs/project/proofs/PROOFS.md) · [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
+| Route | Start here |
+| --- | --- |
+| **Build** | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
+| **Understand architecture** | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
+| **Inspect evidence** | [PROOFS](docs/project/proofs/PROOFS.md) |
+| **Explore all documentation** | [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md) · [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
 
 ---
-
-## Why this matters
-
-Building an impressive AI demo is easier than operating a controlled AI
-application that a team can review and trust. Teams repeatedly rebuild
-knowledge access, policy, integrations, approvals, and evidence foundations
-around each product.
-
-Intergrax centralizes reusable mechanisms so product teams can focus on the
-specialized workflow. Read [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)
-for the category, problem, and fit.
-
-<a href="docs/project/assets/public/readme/intergrax-why-light.png">
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/intergrax-why-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/intergrax-why-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/intergrax-why-light.png"
-    alt="Comparison between rebuilding duplicated AI foundations per product and reusing a shared Intergrax foundation beneath specialized products."
-  >
-</picture>
-</a>
-
-[View full-size diagram](docs/project/assets/public/readme/intergrax-why-light.png)
 
 ## Responsibility model
 
@@ -342,32 +296,46 @@ Universal every-path production observability is not claimed.
 **Runnable evidence:** Inspect the current bounded LKW observability proof, including independently inspectable Elasticsearch/Kibana records, controlled Sentry problem signals, and persisted execution evidence.
 [LKW bounded observability proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Controlled Sentry proof](applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md)
 
-## What exists today
+<a id="platform-capabilities"></a>
+## Platform capabilities
 
-Status is capability-specific; implementation is not blanket proof of the whole
-platform.
-
-| Area | Role | Current status |
-| --- | --- | --- |
-| **LKW** | Primary Product Proof | **PARTIAL — Backend Product Alpha / MVP** |
-| **Other reusable foundations** | Supporting evidence | Varies by capability; inspect [PROOFS](docs/project/proofs/PROOFS.md) |
-
-Platform capability maturity is summarized in
-[Platform capabilities and directions](#platform-capabilities-and-directions) below.
-
-## Platform capabilities and directions
-
-Compact index of strategic platform capabilities. Status is bounded and
+Compact index of implemented and boundedly proven platform capabilities. Status is
 capability-specific; see linked architecture and proof routes for detail.
 
-| Capability / direction | What it adds | Current maturity | Explore |
+| Capability | What it adds | Current maturity | Explore |
 | --- | --- | --- | --- |
 | **Governed Execution** | Reusable policy and approval enforcement around agent decisions, tool/action boundaries and meaningful side effects, with canonical HITL and plugin-extensible policy rules | **IMPLEMENTED CORE — coverage / qualification ongoing** — complete platform-wide governance and production qualification **not established** | [Governed Execution](docs/project/architecture/GOVERNED_EXECUTION.md) |
 | **Observability & Auditability** | Shared observability spine for reconstructable, reviewable governed execution — runtime events, [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence; execution-level explainability, not hidden chain-of-thought | **IMPLEMENTED CORE + BOUNDED PROOF** — universal every-path production observability **not claimed** | [Observability](docs/project/architecture/OBSERVABILITY.md) · [LKW bounded observability proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Controlled Sentry proof](applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md) |
 | **Token Optimization** | Featured platform-capability proof — policy-governed context and prompt optimization with receipts, fallback, and bounded offline proof | **PARTIAL — bounded** — universal savings and production-proven savings **not established** | [Token Optimization guide](docs/project/capabilities/token_optimization/README.md) · [Claim guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md) |
+
+<a id="future-strategic-directions"></a>
+### Future strategic directions
+
+Selected portfolio and platform directions that are **not shipped today** or
+lack established runtime proof:
+
+| Direction | What it adds | Current maturity | Explore |
+| --- | --- | --- | --- |
 | **Multiplayer AI** | Governed multi-principal collaboration among humans, agents, services, and external agents | **Architecture / roadmap stage** — runtime proof **not yet established** | [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) |
 | **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** — implementation stages planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
 | **Agent Marketplace** | Future ecosystem layer — discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT — NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/overview/AGENT_MARKETPLACE.md) |
+
+<a href="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
+    alt="Specialized AI products share the Intergrax governed foundation and may evolve toward a connected ecosystem; Local Knowledge Workspace is Backend Product Alpha while four portfolio directions remain selected pre-bootstrap."
+  >
+</picture>
+</a>
 
 ## License and collaboration
 
