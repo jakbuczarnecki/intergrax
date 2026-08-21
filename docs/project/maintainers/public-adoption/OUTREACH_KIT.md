@@ -117,10 +117,13 @@ Hi,
 
 You indicated interest in local or governed knowledge workflows. I would value a structured review of whether the public documentation helps you evaluate a concrete workflow fit.
 
-Local Knowledge Workspace (LKW) is Intergrax's **active reference product** — a **Backend Product Alpha / MVP** with **PARTIAL** public status. Real-user and commercial validation are incomplete. LKW is not a finished product or commercially validated offering. For bounded evidence, see the linked LKW Platform Proof and [PROOFS](../../proofs/PROOFS.md).
+Local Knowledge Workspace (LKW) is Intergrax's **active reference product** — a **Backend Product Alpha / MVP** with **PARTIAL** public status. Real-user and commercial validation are incomplete. LKW is not a finished product or commercially validated offering. For bounded evidence, see the LKW Platform Proof and proof dashboard below.
 
 LKW Platform Proof:
 <pinned-lkw-proof-url>
+
+Proof dashboard:
+<pinned-proofs-url>
 
 Use Cases:
 <pinned-use-cases-url>
