@@ -852,6 +852,23 @@ Accepted [`EXECUTION_RUNTIME`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.
 
 Remediation: **UER-FIX-C**, **UER-FIX-E** in matching plans.
 
+<a id="protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18"></a>
+
+## Protocol v2 persistence/concurrency multihost target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`PERSISTENCE_CONCURRENCY_MULTIHOST`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md) (**FAIL**, 7 ACCEPTED findings, 2026-08-21). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). **Target state only** — **not implemented**:
+
+1. **Persistence topology classes** — declare `PROCESS_LOCAL`, `DURABLE_SINGLE_HOST`, and `SHARED_MULTI_HOST` capability classes; each stateful recovery mechanism (idempotency, compensation, checkpoints, scheduled resume) declares required capability for its deployment topology; STRICT/multi-host composition MUST mechanically reject process-local or otherwise insufficient stores ([`PCM-01`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md), [`PCM-06`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)); cross-link [Platform Foundation persistence topology invariants](PLATFORM_FOUNDATION.md#protocol-v2-persistence-topology-target-invariants-2026-08-18).
+2. **Idempotency uncertainty** — model execution uncertainty explicitly (claim/owner/fence, stale/uncertain state, reconciliation path); do not retry an uncertain irreversible effect blindly; do not claim exactly-once unless the complete external-effect protocol proves it ([`PCM-02`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+3. **Compensation claim semantics** — durable compensation consumption uses atomic claim: PENDING → CLAIMED/RUNNING(owner, lease/fence) → COMPLETED / RETRYABLE / FAILED; reuse canonical worker/message-bus primitives when suitable — no second generic queue engine ([`PCM-03`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+4. **Checkpoint monotonic/CAS semantics** — checkpoint mutation is version-fenced or monotonic (expected revision CAS, expected prior step/revision, or monotonic step assertion); stale writer receives explicit conflict; cross-link Agent Distribution `serving_pointer_revision` / binding revision CAS pattern — do not invent a separate locking architecture ([`PCM-04`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+5. **Scheduler single-host vs multi-host boundary** — keep existing single-process `LongRunningScheduler` adapter explicit and documented; shared/multi-host topology requires atomic due-item claim/lease/fence or canonical distributed worker/message bus with equivalent semantics ([`PCM-05`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+6. **Schema migration failure posture** — distinguish expected idempotent migration conditions from real persistence failures; unexpected migration/storage failure fails closed; eventual production schema evolution uses versioned migration authority rather than ad-hoc unconditional ALTER in store constructors ([`PCM-07`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+
+**Preserved boundaries:** Reliability owns recovery choice and side-effect coordination semantics — not storage backend implementation; Governance owns permission; Observability owns evidence; no universal ACID rollback claim; historical REL Done rows remain delivery facts; existing **PBA-FIX-A** / **IDT-FIX-C** remain **PLANNED**; process-local and durable-single-host stores remain valid for their declared topology.
+
+Remediation: **PCM-SIDE-EFFECT-COORDINATION-INTEGRITY**, **PCM-CHECKPOINT-SCHEDULER-INTEGRITY**, **PCM-SCHEMA-EVOLUTION-INTEGRITY** in [plan](../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md). **PCM-PERSISTENCE-TOPOLOGY-INTEGRITY** cross-linked to [Platform Foundation plan](../maintainers/plans/PLATFORM_FOUNDATION.md). **Not implemented** by audit persistence.
+
 ## Unresolved documentation drift (outside this edit)
 
 Report only — not fixed in DOC-3Q scope:

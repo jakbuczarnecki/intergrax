@@ -336,6 +336,20 @@ PF-02 and PF-03 are **proof-runner integrity** defects. They do **not** invalida
 
 Remediation: **TL-FIX-A** / §6.1ax (PF-01, PF-04) and **PF-PROOF-INTEGRITY** (PF-02, PF-03, PF-05) in [plan](../maintainers/plans/PLATFORM_FOUNDATION.md). **Not implemented** by audit persistence.
 
+<a id="protocol-v2-persistence-topology-target-invariants-2026-08-18"></a>
+
+### Protocol v2 persistence topology target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`PERSISTENCE_CONCURRENCY_MULTIHOST`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md) (**FAIL**, PCM-01 and PCM-06). Cross-layer invariant — Platform Foundation coordinates topology qualification; Reliability owns recovery mechanisms. **Target state only** — **not implemented**:
+
+1. **Domain store interfaces own semantics** — conditional mutation/CAS, lease/claim, transactional commit boundaries, and required isolation belong on domain persistence ports, not on a minimal backend facade alone ([`PCM-06`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+2. **Provider catalog supplies implementations** — a provider adapter MAY implement a domain port only when it can satisfy that port's guarantees; `intergrax/integrations/contracts/relational_store.py` may remain a basic backend facade ([`PROVIDER_BACKEND_ABSTRACTION`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
+3. **Production topology qualification** — declare persistence capability classes (`PROCESS_LOCAL`, `DURABLE_SINGLE_HOST`, `SHARED_MULTI_HOST`); STRICT/multi-host composition MUST verify required durability/concurrency capability per mechanism ([`PCM-01`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+4. **Provider swap ≠ concurrency semantics** — replacing SQLite with PostgreSQL (or Redis, etc.) does not create CAS/transaction/claim semantics when the domain port does not describe them.
+5. **Reuse existing CAS/revision patterns** — cross-link Agent Distribution `serving_pointer_revision` CAS, `binding_revision` optimistic locking, and atomic activation boundary precedent ([`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) §§23–25, §34) — do not create a universal ORM or platform transaction manager.
+
+Platform Foundation MUST NOT become a persistence implementation domain. Remediation: **PCM-PERSISTENCE-TOPOLOGY-INTEGRITY** in [plan](../maintainers/plans/PLATFORM_FOUNDATION.md). Recovery-side invariants: [Reliability persistence/concurrency invariants](RELIABILITY_FAILURE_AND_HITL.md#protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18).
+
 ## Relationship To “Layer 1 / 2 / 3” Naming
 
 Earlier sections and diagrams may refer to **Layer 1 / 2 / 3**. Mapping:
