@@ -9,7 +9,9 @@
 - `docs/project/architecture/<DOMAIN>.md`
 - `docs/project/capabilities/architecture/<FEATURE>.md`
 
-**Does not apply as a rewrite target in this phase:** satellites, plans, ADRs, root README, application product tours (except as reference examples).
+**Also applies to (by extension, PDOC-2):** `applications/<product>/docs/product/*_PRODUCT_TOUR.md` — same visual grammar and claim discipline as domain hubs; anatomy in §15.
+
+**Does not apply as a rewrite target in this phase:** satellites, plans, ADRs, root README.
 
 **Related:** [DOCUMENTATION_MAP.md](../DOCUMENTATION_MAP.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [guides/README.md](README.md)
 
@@ -442,8 +444,95 @@ The session should know:
 
 ---
 
-## 14. Unresolved architectural decisions
+## 14. Product Tour reference pattern (PDOC-2)
 
-None introduced by DOC-2. Existing DOC-1 topology (domain pairs, feature pairs, satellites, guides, plans, ADRs, proofs) is preserved.
+Product Tour documents reuse the **same** visual grammar, readability rules, and
+claim discipline as domain and feature hubs. This section does **not** create a
+separate product design system. Ownership of layers, promotion, and routing
+remains in
+[public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md)
+§ Product documentation contract.
+
+**Reference implementation (not a mandatory topology for every product):**
+[LKW_PRODUCT_TOUR.md](../../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)
+
+### 14.1 Canonical Product Tour anatomy
+
+Not every product needs identical heading text. **Roles and meaning** are
+canonical; presentation may adapt to the product.
+
+| # | Section role | Purpose |
+|---|--------------|---------|
+| 1 | Product name + one-line outcome | What the product delivers |
+| 2 | Early maturity / claim boundary | Honest status using vocabulary from `PUBLIC_PROOF_AND_CLAIMS_MODEL.md` |
+| 3 | At a glance | Compact scope table |
+| 4 | Business / user problem | Why the product exists |
+| 5 | Who the product is for | Primary audience |
+| 6 | Product workflow | Main steps the user follows |
+| 7 | User experience / main scenario | Concrete supported path |
+| 8 | Business or operational value | Outcome without proof inflation |
+| 9 | Why Intergrax / reused platform mechanisms | Reuse as a consequence of product construction (see §14.2) |
+| 10 | Architecture at a glance | High-level components and boundaries — link to Product Architecture |
+| 11 | Flagship product proof | Strongest accepted proof story — outcomes only |
+| 12 | Supporting proof highlights | Optional; where useful |
+| 13 | What is proven | Bounded positive claims |
+| 14 | What is NOT proven | Explicit limitations |
+| 15 | Try it / Quick Start | Primary executable route |
+| 16 | Technical review / Architecture | Deeper technical routes |
+| 17 | Go deeper / routes | Router to proof docs, `PROOFS.md`, and technical canon |
+
+Omit a subsection only when genuinely not applicable; state briefly why.
+
+### 14.2 Why Intergrax section — required concept
+
+Product Tour should show what the application **receives from the platform** as a
+consequence of how the product is built — not as a generic platform catalog.
+
+Preferred format:
+
+| Product need | Reused Intergrax capability |
+|--------------|----------------------------|
+| (example) Evidence semantics before synthesis | Governed execution / proof boundaries |
+| (example) Human approval on risky actions | Governance / HITL |
+| (example) External system access | Integrations |
+| (example) Durable runs across restarts | Runtime / recovery |
+| (example) Session and workspace context | Memory / context |
+| (example) Traceable outcomes | Observability / provenance |
+| (example) Bounded agent actions | Tools / actions |
+
+List only capabilities the product **actually uses**. Never distort a product
+merely to demonstrate Intergrax reuse.
+
+### 14.3 Product documentation visual standard
+
+Reuse §6–§7 of this design system. Product documentation should follow:
+
+```text
+explanation
+→ meaningful visual
+→ short explanation
+→ workflow / table
+→ proof visual where justified
+→ deeper technical route
+```
+
+Rules:
+
+- Product Tour should normally include a strong product, workflow, or
+  architecture visual when it materially improves understanding.
+- A flagship proof may have a dedicated visual when the proof is complex enough.
+- Visuals must be claim-safe: no fake finished UI, no decorative diagrams without
+  informational value, no mandatory visual count.
+- Reuse existing assets where valid.
+
+Proof visuals belong in proof sections or linked proof documents when detail
+would overwhelm the tour. Product Tour links to proof docs rather than
+duplicating manifest commands or receipt internals.
+
+---
+
+## 15. Unresolved architectural decisions
+
+None introduced by DOC-2 or PDOC-2. Existing DOC-1 topology (domain pairs, feature pairs, satellites, guides, plans, ADRs, proofs) is preserved. Product Tour anatomy extends the same design system; it does not add a parallel product documentation root.
 
 If a future hub modernization reveals a conflict between this design system and [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md), escalate to maintainers — do not create a third documentation root.

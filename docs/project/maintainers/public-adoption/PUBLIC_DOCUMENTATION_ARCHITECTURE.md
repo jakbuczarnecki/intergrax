@@ -14,7 +14,8 @@ This document is the canonical maintainer-facing contract for Intergrax public d
 - proof classification;
 - relationship between the public map and technical map;
 - placement rules for LKW and Token Optimization;
-- migration rules for the new root README and future public documents.
+- migration rules for the new root README and future public documents;
+- **product documentation contract** — roles, promotion levels, reader routing, and anti-duplication rules for application/product public docs.
 
 It does **not** replace:
 
@@ -755,6 +756,220 @@ applications/local_workspace_application/docs/assets/
 Strategic root README visuals use reviewed self-contained light-dark image pairs (`*-light.png` / `*-dark.png` for strategic root assets; module-owned product visuals may remain SVG) inside `<picture>` blocks. Root README must not use Mermaid or ASCII as substitutes for those strategic visual assets.
 
 Future strategic assets are validated when referenced; they are not mandatory before creation.
+
+---
+
+## Product documentation contract
+
+This subsection extends the frozen public-documentation ownership model to
+application/product documentation. It does **not** create a parallel taxonomy,
+design system, or proof registry. Reuse existing layers, status vocabulary from
+`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`, and the promotion pipeline already frozen
+above.
+
+### Core reader progression
+
+Freeze one product documentation progression:
+
+```text
+ROOT README
+→ Product Tour
+→ Quick Start / Flagship Proof / Product Architecture
+→ deeper product technical canon
+```
+
+`README.md` is the global gateway. Product Tour is the public product story.
+Quick Start is executable onboarding. Proof documents own bounded evidence.
+Product architecture owns technical product design. Implementation plan owns
+delivery state. No document should duplicate another document's ownership.
+
+### Document roles
+
+#### A. Root README product promotion
+
+**Role:**
+
+- expose a short product story only for sufficiently mature or accepted products;
+- explain problem, outcome, and current status;
+- optionally expose **one** flagship proof or visual when supported by accepted evidence;
+- route deeper.
+
+**README must not:**
+
+- become a full Product Tour;
+- list every product proof;
+- imply implementation for pre-bootstrap products.
+
+**Promotion pipeline** (reuse frozen pipeline):
+
+```text
+implementation
+→ acceptance
+→ appropriate live/user-like proof where required
+→ accepted evidence
+→ project projection
+→ optional README promotion
+```
+
+#### B. Product Tour
+
+**Role:**
+
+- human-facing product entry point;
+- business or user problem, product outcome, workflow, and user experience;
+- relationship to Intergrax and maturity or claim boundaries;
+- strongest accepted proof story;
+- routes to Quick Start, proof documents, architecture, and `PROOFS.md`.
+
+**It is not:**
+
+- a proof registry;
+- an implementation roadmap;
+- architecture canon;
+- a marketing hype page.
+
+Canonical anatomy and visual rhythm are defined in
+`DOCUMENTATION_DESIGN_SYSTEM.md` §14 Product Tour reference pattern.
+
+#### C. Quick Start
+
+**Role:**
+
+- easiest supported executable product path;
+- prerequisites, commands, and expected result;
+- not a substitute for Product Tour or deep proof.
+
+#### D. Product Proof / Flagship Proof
+
+**Role:**
+
+- bounded evidence for an exact scenario;
+- evidence semantics, limitations, and verification route.
+
+Allow **one flagship proof** plus supporting proofs. Do **not** require every
+product to copy the LKW F3–F topology. The flagship proof must test the core
+**business or product thesis** of that product.
+
+Product Tour surfaces only the strongest proof **outcomes**. Full proof detail
+belongs to proof documents, `PROOFS.md`, and the proof manifest. Do not
+duplicate commands, SHA tables, detailed assertions, or receipt internals into
+Product Tour.
+
+#### E. Product Architecture
+
+**Role:**
+
+- application-specific architecture;
+- major components and application ↔ Intergrax responsibility boundaries;
+- technical data and execution flows;
+- deeper product technical canon.
+
+#### F. Implementation Plan
+
+**Role:**
+
+- delivery state, tasks, and gates;
+- never a public claim dashboard.
+
+### Product promotion levels
+
+Reuse canonical status vocabulary from `PUBLIC_PROOF_AND_CLAIMS_MODEL.md`
+(`IMPLEMENTED`, `BOUNDED PROOF`, `PARTIAL`, `PLANNED`, `NOT CLAIMABLE`). Do
+not invent new maturity labels.
+
+| Situation | Public treatment |
+|-----------|------------------|
+| **Planned / pre-bootstrap product** | May appear only as clearly future or selected direction. No Product Tour proof claims required. No fake visual proof. |
+| **Active product without accepted product proof** | Product Tour may explain product concept and current implemented scope. Claim boundary must be explicit. README promotion remains conservative. |
+| **Active product with accepted bounded proof** | Product Tour may promote accepted proof. A `PROOFS.md` entry may exist. README may expose the strongest accepted product or proof story. |
+| **Real-user / commercial validation** | Requires separate accepted evidence. Technical proof never implies this. |
+
+### Flagship proof principle
+
+Every strategically important implemented product **should** converge toward one
+clearly identifiable **flagship product proof** once sufficient implementation
+exists. Pre-bootstrap products do not require a flagship proof.
+
+The proof must derive from the product's strongest business or product thesis.
+Conceptual examples only — do not claim these exist unless already implemented:
+
+| Product (conceptual) | Flagship thesis |
+|----------------------|-----------------|
+| LKW | Evidence admissibility before synthesis |
+| Contract-to-Invoice | Contract + delivery + invoice + approval → defensible leakage/recovery candidate |
+| Supplier Disruption | Supplier status + inventory + orders + alternatives → defensible response decision |
+| Deployment Guardian | Deployment + security + change approval + architecture → governed release/block decision |
+
+### Product proof hierarchy
+
+Reuse the evidence hierarchy in `PUBLIC_PROOF_AND_CLAIMS_MODEL.md`. At the
+product level, presentation may organize as:
+
+```text
+FLAGSHIP PRODUCT PROOF
+├ supporting functional proof
+├ adversarial/failure proof
+├ durability/restart proof
+└ integration/provider proof
+```
+
+where applicable. Supporting proof detail stays in proof documents — not in
+Product Tour prose.
+
+### Product directory role model
+
+Roles are canonical; exact filenames beyond existing conventions are
+product-specific. Do not force empty placeholder documents.
+
+```text
+applications/<product>/docs/
+
+product/
+  PRODUCT_TOUR.md
+  QUICKSTART.md
+
+proof/
+  flagship / product proof docs
+
+ARCHITECTURE.md
+BUILD_AND_DEPLOY.md          when applicable
+IMPLEMENTATION_PLAN.md
+assets/
+```
+
+### Product reader routing
+
+| From | Reader intent | Primary destination |
+|------|---------------|---------------------|
+| `README.md` | I am interested in this product | Product Tour |
+| Product Tour | I want to run it | Quick Start |
+| Product Tour | Prove it | flagship / product proof |
+| Product Tour | Show me how it is built | Product Architecture |
+| Product Tour | Show all current evidence | `docs/project/proofs/PROOFS.md` |
+| Product Architecture | Deeper technical or application docs | owning docs under `applications/<product>/docs/` |
+
+### Anti-duplication rule
+
+Freeze ownership:
+
+```text
+README summarizes Product Tour.
+Product Tour summarizes proof outcomes.
+Proof docs own proof semantics.
+Architecture owns product technical design.
+Implementation Plan owns delivery state.
+PROOFS.md owns the public evidence dashboard.
+```
+
+Copy **links**, not large paragraphs. Do not maintain parallel status tables
+across all documents.
+
+### PDOC-3 alignment note (record only)
+
+Existing public documents may still use older terminology such as **Primary
+Product Proof** while the current README uses product-first terminology. This
+task does not rewrite LKW or other public projections. Terminology alignment is
+an explicit follow-up for **PDOC-3**.
 
 ---
 
