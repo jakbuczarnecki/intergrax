@@ -65,6 +65,46 @@ FLAGSHIP_BINDING_GOVERNANCE = "binding-flagship-governance"
 _REV17_SECURITY_MAX_AGE_SECONDS = 86_400
 _REV18_SECURITY_MAX_AGE_SECONDS = 3_600
 
+_KNOWN_FLAGSHIP_POLICY_REVISIONS: frozenset[str] = frozenset(
+    {
+        FLAGSHIP_POLICY_REV_17,
+        FLAGSHIP_POLICY_REV_18,
+    }
+)
+
+
+class UnsupportedFlagshipPolicyRevisionError(ValueError):
+    """Raised when flagship proof receives an unknown policy revision."""
+
+    def __init__(self, policy_revision: str) -> None:
+        super().__init__(f"unsupported_flagship_policy_revision:{policy_revision}")
+        self.policy_revision = policy_revision
+
+
+def validate_flagship_policy_revision(policy_revision: str) -> str:
+    if policy_revision not in _KNOWN_FLAGSHIP_POLICY_REVISIONS:
+        raise UnsupportedFlagshipPolicyRevisionError(policy_revision)
+    return policy_revision
+
+
+class MutableFlagshipPolicyRulesPort:
+    """Proof-only policy port with explicit revision control."""
+
+    def __init__(self, *, policy_revision: str) -> None:
+        self._policy_revision = validate_flagship_policy_revision(policy_revision)
+
+    @property
+    def policy_revision(self) -> str:
+        return self._policy_revision
+
+    def set_revision(self, policy_revision: str) -> None:
+        self._policy_revision = validate_flagship_policy_revision(policy_revision)
+
+    def resolve_policy_rules(self, **_: object) -> tuple[ResolvedPolicyRuleV1, ...]:
+        return build_flagship_deployment_policy_rules(
+            policy_revision=self._policy_revision,
+        )
+
 
 def _live_rule(
     *,
@@ -99,15 +139,16 @@ def build_flagship_deployment_policy_rules(
     *,
     policy_revision: str,
 ) -> tuple[ResolvedPolicyRuleV1, ...]:
+    validated_revision = validate_flagship_policy_revision(policy_revision)
     security_max_age = (
         _REV17_SECURITY_MAX_AGE_SECONDS
-        if policy_revision == FLAGSHIP_POLICY_REV_17
+        if validated_revision == FLAGSHIP_POLICY_REV_17
         else _REV18_SECURITY_MAX_AGE_SECONDS
     )
     return (
         _live_rule(
             policy_document_id="deployment-policy",
-            revision_id=policy_revision,
+            revision_id=validated_revision,
             rule_id="RULE-READINESS",
             requirement_key="readiness",
             semantic_role="Project readiness status",
@@ -123,7 +164,7 @@ def build_flagship_deployment_policy_rules(
         ),
         _live_rule(
             policy_document_id="security-policy",
-            revision_id=policy_revision,
+            revision_id=validated_revision,
             rule_id="RULE-SECURITY",
             requirement_key="security",
             semantic_role="Security blocker status",
@@ -142,7 +183,7 @@ def build_flagship_deployment_policy_rules(
         ),
         _live_rule(
             policy_document_id="change-policy",
-            revision_id=policy_revision,
+            revision_id=validated_revision,
             rule_id="RULE-CHANGE",
             requirement_key="change",
             semantic_role="Change approval status",
@@ -158,7 +199,7 @@ def build_flagship_deployment_policy_rules(
         ),
         _live_rule(
             policy_document_id="architecture-policy",
-            revision_id=policy_revision,
+            revision_id=validated_revision,
             rule_id="RULE-ARCH",
             requirement_key="architecture",
             semantic_role="Architecture approval status",
