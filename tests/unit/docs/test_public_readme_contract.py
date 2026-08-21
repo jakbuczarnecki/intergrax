@@ -28,6 +28,24 @@ GOVERNED_EXECUTION_LIGHT_PATH = (
 GOVERNED_EXECUTION_DARK_PATH = (
     README_STRATEGIC_ASSETS_DIR / "intergrax-governed-execution-dark.png"
 )
+_FULL_SIZE_LINK_LABEL = "View full-size diagram"
+_STRATEGIC_FULL_SIZE_LINKS = (
+    (
+        "## Explore the Intergrax Platform",
+        "| Platform area | What it provides | Explore |",
+        "docs/project/assets/public/readme/intergrax-platform-map-light.png",
+    ),
+    (
+        "## Why this matters",
+        "## Responsibility model",
+        "docs/project/assets/public/readme/intergrax-why-light.png",
+    ),
+    (
+        "## AI execution should not be a black box",
+        "A governed run can leave correlated runtime events",
+        "docs/project/assets/public/readme/intergrax-governed-execution-light.png",
+    ),
+)
 _STRATEGIC_PNG_PAIRS = (
     (ECOSYSTEM_HERO_LIGHT_PATH, ECOSYSTEM_HERO_DARK_PATH),
     (PLATFORM_MAP_LIGHT_PATH, PLATFORM_MAP_DARK_PATH),
@@ -268,6 +286,26 @@ def _extract_picture_blocks(readme_text: str) -> list[str]:
     return _PICTURE_BLOCK.findall(readme_text)
 
 
+def _section_slice(readme_text: str, start_marker: str, end_marker: str) -> str:
+    start = readme_text.index(start_marker)
+    end = readme_text.index(end_marker, start + len(start_marker))
+    return readme_text[start:end]
+
+
+def _full_size_link_markdown(light_png_ref: str) -> str:
+    return f"[{_FULL_SIZE_LINK_LABEL}]({light_png_ref})"
+
+
+def _assert_full_size_link_after_picture(section: str, light_png_ref: str) -> None:
+    link = _full_size_link_markdown(light_png_ref)
+    assert link in section, f"Missing full-size link to {light_png_ref}"
+    picture_end = section.index("</picture>")
+    link_idx = section.index(link)
+    assert picture_end < link_idx, (
+        f"Full-size link must immediately follow <picture> block for {light_png_ref}"
+    )
+
+
 def test_ecosystem_hero_contract(readme_text: str) -> None:
     """Root README ecosystem hero appears before Choose your path with controlled PNG assets."""
     choose_idx = readme_text.index("## Choose your path")
@@ -312,6 +350,20 @@ def test_why_visual_contract(readme_text: str) -> None:
     pair_violations = _validate_light_dark_pair(WHY_LIGHT_PATH, WHY_DARK_PATH)
     assert not pair_violations, f"Why Intergrax light/dark pair: {pair_violations}"
     assert "rebuilding duplicated AI foundations per product" in readme_text
+
+
+def test_strategic_diagram_full_size_links(readme_text: str) -> None:
+    """Detailed strategic diagrams expose a light-PNG full-size link within their section."""
+    for start_marker, end_marker, light_png_ref in _STRATEGIC_FULL_SIZE_LINKS:
+        section = _section_slice(readme_text, start_marker, end_marker)
+        _assert_full_size_link_after_picture(section, light_png_ref)
+        assert (REPO_ROOT / light_png_ref).is_file(), f"Missing full-size PNG: {light_png_ref}"
+
+    hero_section = readme_text[: readme_text.index("## Choose your path")]
+    assert _FULL_SIZE_LINK_LABEL not in hero_section, "Hero must not include a full-size diagram link"
+
+    lkw_section = _section_slice(readme_text, "## Local Knowledge Workspace (LKW)", "---")
+    assert _FULL_SIZE_LINK_LABEL not in lkw_section, "LKW section must not include full-size diagram links"
 
 
 def test_governed_execution_visual_contract(readme_text: str) -> None:

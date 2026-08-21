@@ -92,6 +92,8 @@ not as a first-contact route.
   >
 </picture>
 
+[View full-size diagram](docs/project/assets/public/readme/intergrax-platform-map-light.png)
+
 | Platform area | What it provides | Explore |
 | --- | --- | --- |
 | **Runtime & Orchestration** | Unified execution, workflow orchestration, and Nexus execution paths | [Unified Execution Runtime](docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Orchestration](docs/project/architecture/ORCHESTRATION.md) · [Nexus Execution Flow](docs/project/architecture/NEXUS_EXECUTION_FLOW.md) |
@@ -261,6 +263,8 @@ for the category, problem, and fit.
   >
 </picture>
 
+[View full-size diagram](docs/project/assets/public/readme/intergrax-why-light.png)
+
 ## Responsibility model
 
 The root-level model is about responsibility, not a mandatory execution
@@ -297,6 +301,8 @@ Intergrax is designed so important actions do not disappear inside an opaque age
     alt="Illustrative governed agentic execution loop with iterative reasoning, capability selection, governance gate, optional human approval, durable state, evidence plane and validated outcome."
   >
 </picture>
+
+[View full-size diagram](docs/project/assets/public/readme/intergrax-governed-execution-light.png)
 
 A governed run can leave correlated runtime events, typed [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, and structured [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence.
 This is execution-level explainability, not hidden model reasoning.
