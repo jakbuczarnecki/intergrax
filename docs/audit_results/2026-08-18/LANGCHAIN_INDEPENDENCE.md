@@ -31,7 +31,7 @@
 - **Prior audit reference(s):** [`RAG`](RAG.md); [`LLM_ADAPTERS`](LLM_ADAPTERS.md); [`INTEGRATIONS`](INTEGRATIONS.md)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `1b1151cca`
 
 ## Executive summary
 
