@@ -9,6 +9,7 @@ from intergrax.contracts.idempotency_store import (
     IdempotencyStore,
     InvocationStatus,
 )
+from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.queueing.worker.execution import (
     execute_logical_task,
     IdempotencyLockConflictError,
@@ -22,6 +23,10 @@ class DummyOutput(BaseModel):
 
 
 class DummyIdempotencyStore(IdempotencyStore):
+    @property
+    def persistence_topology(self) -> PersistenceTopology:
+        return PersistenceTopology.PROCESS_LOCAL
+
     def __init__(self) -> None:
         self._store: dict[str, tuple[InvocationStatus, ToolExecutionResult]] = {}
 

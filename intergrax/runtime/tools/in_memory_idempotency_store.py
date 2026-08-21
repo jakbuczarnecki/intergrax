@@ -11,16 +11,16 @@ from intergrax.contracts.idempotency_store import (
     IdempotencyStore,
     InvocationStatus,
 )
+from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
 class InMemoryIdempotencyStore(IdempotencyStore):
-    """
-    In-memory ledger-based idempotency store.
+    """Process-local ledger — state is lost on process restart."""
 
-    NOT crash-safe (process-bound),
-    but enforces exactly-once semantics within a single runtime instance.
-    """
+    @property
+    def persistence_topology(self) -> PersistenceTopology:
+        return PersistenceTopology.PROCESS_LOCAL
 
     def __init__(self) -> None:
         self._store: Dict[

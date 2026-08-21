@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from intergrax.applications.contracts.application_host import ApplicationFeatures, ApplicationProfile
 from intergrax.applications.contracts.capability_alias import CapabilityGovernanceProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.codecraft.profile import CodeCraftProfile
@@ -64,6 +65,7 @@ class HostMeta(BaseModel):
     spec_version: str = "1.0.0"
     application_profile: ApplicationProfile = ApplicationProfile.LAB
     execution_mode: ExecutionMode = ExecutionMode.BALANCED
+    required_persistence_topology: PersistenceTopology = PersistenceTopology.PROCESS_LOCAL
     features: ApplicationFeatures = Field(default_factory=ApplicationFeatures.lab_defaults)
 
     @classmethod
@@ -72,6 +74,7 @@ class HostMeta(BaseModel):
             profile_id=profile_id,
             application_profile=ApplicationProfile.LAB,
             execution_mode=ExecutionMode.BALANCED,
+            required_persistence_topology=PersistenceTopology.PROCESS_LOCAL,
             features=ApplicationFeatures.lab_defaults(),
         )
 
@@ -81,6 +84,7 @@ class HostMeta(BaseModel):
             profile_id=profile_id,
             application_profile=ApplicationProfile.PRODUCT,
             execution_mode=ExecutionMode.STRICT,
+            required_persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
             features=ApplicationFeatures.product_defaults(),
         )
 

@@ -9,6 +9,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
@@ -28,14 +29,16 @@ class IdempotencyStore(ABC):
     """
     Ledger-based idempotency port for tool invocations.
 
-    Guarantees:
-    - tenant isolation
-    - crash safety (STARTED vs COMPLETED)
-    - prevention of duplicate side-effects
-    - deterministic retry semantics
-
-    Exactly-once semantics for side-effect tools.
+    Domain port — exposes ``persistence_topology`` for host deployment qualification.
+    Crash-state reconciliation and side-effect coordination semantics belong to
+    this port; see PCM-SIDE-EFFECT-COORDINATION-INTEGRITY for STARTED handling.
     """
+
+    @property
+    @abstractmethod
+    def persistence_topology(self) -> PersistenceTopology:
+        """Declared deployment topology this implementation can satisfy."""
+        ...
 
     @abstractmethod
     def get_status(

@@ -14,18 +14,16 @@ from intergrax.contracts.idempotency_store import (
     IdempotencyStore,
     InvocationStatus,
 )
+from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
 class SQLiteIdempotencyStore(IdempotencyStore):
-    """
-    Persistent SQLite-backed ledger for tool idempotency.
+    """Durable single-host ledger — local file SQLite, not a multi-host primitive."""
 
-    Guarantees:
-    - tenant isolation via composite primary key
-    - atomic STARTED via INSERT
-    - crash-safe semantics
-    """
+    @property
+    def persistence_topology(self) -> PersistenceTopology:
+        return PersistenceTopology.DURABLE_SINGLE_HOST
 
     def __init__(self, db_path: str) -> None:
         self._db_path = db_path

@@ -20,6 +20,7 @@ from intergrax.contracts.idempotency_store import (
     IdempotencyStore,
     InvocationStatus,
 )
+from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
@@ -27,17 +28,13 @@ class RedisIdempotencyStore(IdempotencyStore):
     """
     Redis-backed implementation of IdempotencyStore.
 
-    Ledger semantics:
-
-        NONE -> STARTED (lease) -> COMPLETED
-
-    Guarantees:
-    - atomic STARTED insertion
-    - atomic STARTED -> COMPLETED transition
-    - deterministic result replay
-    - multi-tenant isolation
-    - optional lease-based crash recovery
+    Ledger semantics: NONE -> STARTED (lease) -> COMPLETED.
+    Shared authoritative state for multi-host workers when Redis is the backend.
     """
+
+    @property
+    def persistence_topology(self) -> PersistenceTopology:
+        return PersistenceTopology.SHARED_MULTI_HOST
 
     def __init__(self, redis_client: Any) -> None:
         self._redis: Any = redis_client

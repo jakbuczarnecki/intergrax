@@ -1,0 +1,255 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""PCM-PERSISTENCE-TOPOLOGY-INTEGRITY — topology qualification tests (R3-A)."""
+
+from __future__ import annotations
+
+from typing import Any, Mapping, Optional, Sequence
+
+import pytest
+from pydantic import BaseModel
+
+from intergrax.applications._shared.reliability_assembly_resolver import (
+    assert_reliability_assembly_valid,
+    validate_reliability_wiring,
+)
+from intergrax.applications._shared.reliability_wiring import (
+    ApplicationReliabilityWiring,
+    wire_application_reliability,
+)
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    ReliabilityProfile,
+)
+from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.idempotency_store import IdempotencyStore, InvocationStatus
+from intergrax.contracts.persistence_topology import (
+    PersistenceTopology,
+    resolve_idempotency_store_topology,
+)
+from intergrax.distributed.providers.redis_idempotency_store import RedisIdempotencyStore
+from intergrax.integrations.contracts.relational_store import RelationalStore
+from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
+from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
+from intergrax.tools.execution_models import ToolExecutionResult
+
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
+
+
+class _DummyOutput(BaseModel):
+    value: str
+
+
+class _UndeclaredTopologyIdempotencyStore(IdempotencyStore):
+    """Test double with non-canonical topology declaration."""
+
+    @property
+    def persistence_topology(self) -> Any:
+        return "process_local"
+
+    def get_status(self, tenant_id: str, key: str) -> Optional[InvocationStatus]:
+        return None
+
+    def record_started(
+        self,
+        tenant_id: str,
+        key: str,
+        lease_seconds: Optional[int] = None,
+    ) -> None:
+        return None
+
+    def record_completed(
+        self,
+        tenant_id: str,
+        key: str,
+        result: ToolExecutionResult[BaseModel],
+        completed_ttl_seconds: Optional[int] = None,
+    ) -> None:
+        return None
+
+    def get_completed_result(
+        self,
+        tenant_id: str,
+        key: str,
+    ) -> Optional[ToolExecutionResult[BaseModel]]:
+        return None
+
+
+class _BrandNameOnlyIdempotencyStore(IdempotencyStore):
+    """Provider name alone must not grant SHARED_MULTI_HOST."""
+
+    @property
+    def persistence_topology(self) -> Any:
+        return None
+
+    def get_status(self, tenant_id: str, key: str) -> Optional[InvocationStatus]:
+        return None
+
+    def record_started(
+        self,
+        tenant_id: str,
+        key: str,
+        lease_seconds: Optional[int] = None,
+    ) -> None:
+        return None
+
+    def record_completed(
+        self,
+        tenant_id: str,
+        key: str,
+        result: ToolExecutionResult[BaseModel],
+        completed_ttl_seconds: Optional[int] = None,
+    ) -> None:
+        return None
+
+    def get_completed_result(
+        self,
+        tenant_id: str,
+        key: str,
+    ) -> Optional[ToolExecutionResult[BaseModel]]:
+        return None
+
+
+class _DummyRelationalStore:
+    def connect(self) -> None:
+        return None
+
+    def execute(self, sql: str, params: Sequence[Any] = ()) -> None:
+        return None
+
+    def fetch_all(self, sql: str, params: Sequence[Any] = ()) -> Sequence[Mapping[str, Any]]:
+        return ()
+
+    def close(self) -> None:
+        return None
+
+
+def _env_with_topology(
+    topology: PersistenceTopology,
+    *,
+    profile_id: str = "pcm.topology",
+) -> ApplicationEnvironmentProfile:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
+    env.meta = env.meta.model_copy(update={"required_persistence_topology": topology})
+    return env
+
+
+def _wiring_with_store(store: IdempotencyStore | None) -> ApplicationReliabilityWiring:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="pcm.wiring")
+    wiring = wire_application_reliability(env)
+    return ApplicationReliabilityWiring(
+        options=wiring.options,
+        idempotency_store=store,
+        circuit_breaker_config=wiring.circuit_breaker_config,
+    )
+
+
+def test_inmemory_store_classified_process_local() -> None:
+    store = InMemoryIdempotencyStore()
+    assert store.persistence_topology is PersistenceTopology.PROCESS_LOCAL
+
+
+def test_sqlite_store_classified_durable_single_host() -> None:
+    store = SQLiteIdempotencyStore(":memory:")
+    assert store.persistence_topology is PersistenceTopology.DURABLE_SINGLE_HOST
+
+
+def test_redis_store_classified_shared_multi_host() -> None:
+    class _FakeRedis:
+        def register_script(self, _script: str) -> object:
+            return object()
+
+    store = RedisIdempotencyStore(_FakeRedis())
+    assert store.persistence_topology is PersistenceTopology.SHARED_MULTI_HOST
+
+
+def test_durable_requirement_rejects_inmemory() -> None:
+    env = _env_with_topology(PersistenceTopology.DURABLE_SINGLE_HOST)
+    wiring = _wiring_with_store(InMemoryIdempotencyStore())
+    result = validate_reliability_wiring(wiring, env)
+    assert not result.valid
+    assert any("idempotency persistence topology mismatch" in e for e in result.errors)
+    assert any("required=durable_single_host provided=process_local" in e for e in result.errors)
+
+
+def test_durable_requirement_accepts_sqlite(tmp_path) -> None:
+    env = _env_with_topology(PersistenceTopology.DURABLE_SINGLE_HOST)
+    wiring = wire_application_reliability(env, idempotency_db_path=tmp_path / "idempotency.db")
+    result = validate_reliability_wiring(wiring, env)
+    assert result.valid
+
+
+def test_shared_requirement_rejects_inmemory() -> None:
+    env = _env_with_topology(PersistenceTopology.SHARED_MULTI_HOST)
+    wiring = _wiring_with_store(InMemoryIdempotencyStore())
+    result = validate_reliability_wiring(wiring, env)
+    assert not result.valid
+
+
+def test_shared_requirement_rejects_sqlite(tmp_path) -> None:
+    env = _env_with_topology(PersistenceTopology.SHARED_MULTI_HOST)
+    wiring = wire_application_reliability(env, idempotency_db_path=tmp_path / "idempotency.db")
+    result = validate_reliability_wiring(wiring, env)
+    assert not result.valid
+    assert any(
+        "required=shared_multi_host provided=durable_single_host" in error
+        for error in result.errors
+    )
+
+
+def test_unknown_store_capability_fails_closed() -> None:
+    env = _env_with_topology(PersistenceTopology.DURABLE_SINGLE_HOST)
+    store = _UndeclaredTopologyIdempotencyStore()
+    assert resolve_idempotency_store_topology(store) is None
+    wiring = _wiring_with_store(store)
+    result = validate_reliability_wiring(wiring, env)
+    assert not result.valid
+    assert any("provided=unknown" in error for error in result.errors)
+
+
+def test_process_local_lab_remains_supported() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="pcm.lab")
+    assert env.meta.required_persistence_topology is PersistenceTopology.PROCESS_LOCAL
+    wiring = wire_application_reliability(env)
+    assert_reliability_assembly_valid(wiring, env)
+
+
+def test_strictness_does_not_imply_shared_topology() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="pcm.strict")
+    env.execution_mode = ExecutionMode.STRICT
+    assert env.meta.required_persistence_topology is PersistenceTopology.PROCESS_LOCAL
+    wiring = wire_application_reliability(env)
+    assert_reliability_assembly_valid(wiring, env)
+
+    product = ApplicationEnvironmentProfile.product_defaults(profile_id="pcm.product")
+    assert product.execution_mode is ExecutionMode.STRICT
+    assert product.meta.required_persistence_topology is PersistenceTopology.DURABLE_SINGLE_HOST
+    assert product.meta.required_persistence_topology is not PersistenceTopology.SHARED_MULTI_HOST
+
+
+def test_generic_relational_store_is_not_domain_qualification() -> None:
+    store = _DummyRelationalStore()
+    assert isinstance(store, RelationalStore)
+    assert resolve_idempotency_store_topology(store) is None  # type: ignore[arg-type]
+
+
+def test_provider_name_does_not_grant_capability() -> None:
+    postgres_named = _BrandNameOnlyIdempotencyStore()
+    assert resolve_idempotency_store_topology(postgres_named) is None
+    env = _env_with_topology(PersistenceTopology.SHARED_MULTI_HOST)
+    wiring = _wiring_with_store(postgres_named)
+    result = validate_reliability_wiring(wiring, env)
+    assert not result.valid
+
+
+def test_topology_mismatch_error_evidence_without_secrets() -> None:
+    env = _env_with_topology(PersistenceTopology.SHARED_MULTI_HOST)
+    wiring = _wiring_with_store(InMemoryIdempotencyStore())
+    result = validate_reliability_wiring(wiring, env)
+    assert len(result.errors) == 1
+    error = result.errors[0]
+    assert "idempotency persistence topology mismatch" in error
+    assert "required=shared_multi_host" in error
+    assert "provided=process_local" in error
+    assert "redis://" not in error
+    assert "postgres" not in error.lower()
