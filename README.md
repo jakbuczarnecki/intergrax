@@ -12,7 +12,7 @@ integrations, recovery, and evidence mechanisms for every workflow.
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
 [![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44e.svg)](docs/project/proofs/PROOFS.md)
 
-**[See LKW](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)** · **[Run LKW locally](applications/local_workspace_application/docs/product/QUICKSTART.md)** · **[Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)**
+**[See LKW](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)** · **[Run LKW locally](applications/local_workspace_application/docs/product/QUICKSTART.md)** · **[Inspect Governed Evidence Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md)** · **[Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)**
 
 > Intergrax is **source-available** and under **active R&D**. LKW is a
 > **Backend Product Alpha / MVP**. **Real-user validation** and **commercial
@@ -35,16 +35,13 @@ integrations, recovery, and evidence mechanisms for every workflow.
 </picture>
 </a>
 
-**Current reality:** [Local Knowledge Workspace](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) is the active reference product at **Backend Product Alpha / MVP** with bounded proof paths — not LKW 1.0 or production readiness. The four additional portfolio directions (**Contract-to-Invoice Leakage / Recovery Operator**, **Supplier Disruption Response Operator**, **Third-Party Risk Decision Operator**, **Deployment / Change Guardian**) are **selected pre-bootstrap** market applications with frozen selection records only; their presence here does not imply implementation or runtime proof. The portfolio exists partly to test reuse of shared Intergrax foundations across materially different product classes.
+**Current reality:** [Local Knowledge Workspace](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) is the active reference product at **Backend Product Alpha / MVP** with bounded proof paths — not production readiness. Additional portfolio directions are **selected pre-bootstrap** only; their presence does not imply implementation or runtime proof.
 
-**Local Knowledge Workspace (LKW)** is a private, governed AI knowledge workspace
-with **Slack as its primary daily-use conversational interface** for LKW 1.0.
-Add approved sources, ask over indexed knowledge from Slack or other supported
-clients, and inspect grounded answers with source references and persisted
-evidence. Reusable LKW HTTP and application APIs remain the backend boundary —
-Slack is the familiar work-surface direction, not the only client. A bounded
-Slack DM Ask path is live-verified today; the broader Slack-first daily-use
-experience remains under productization.
+**Local Knowledge Workspace (LKW)** is the active reference product through which
+Intergrax is being proven today. In its advanced governed proof (`LIVE_ONLY`),
+Intergrax determines whether required authorized evidence is admissible before an
+LLM may synthesize, and records why — without implying a complete indexed +
+authorized live Hybrid Ask or finished end-user UX.
 
 ---
 
@@ -65,69 +62,6 @@ permissions, capability-specific material, or deeper technical documentation?
 Explore the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
 
 Questions? See the [FAQ](docs/project/overview/FAQ.md).
-
----
-
-<a id="explore-the-intergrax-platform"></a>
-## Explore the Intergrax Platform
-
-**What is Intergrax built from?** The platform is organized into human-readable
-areas below. Each area links to canonical **domain architecture** documents —
-the public entry points for *what* a subsystem should do. For cross-layer
-capabilities, see [multi-layer feature architecture](#platform-capabilities-and-directions).
-For deep engineering registers, use architecture **satellites** (on demand via the
-[Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md)) —
-not as a first-contact route.
-
-<a href="docs/project/assets/public/readme/intergrax-platform-map-light.png">
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/intergrax-platform-map-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/intergrax-platform-map-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/intergrax-platform-map-light.png"
-    alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources."
-  >
-</picture>
-</a>
-
-[View full-size diagram](docs/project/assets/public/readme/intergrax-platform-map-light.png)
-
-| Platform area | What it provides | Explore |
-| --- | --- | --- |
-| **Runtime & Orchestration** | Unified execution, workflow orchestration, and Nexus execution paths | [Unified Execution Runtime](docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Orchestration](docs/project/architecture/ORCHESTRATION.md) · [Nexus Execution Flow](docs/project/architecture/NEXUS_EXECUTION_FLOW.md) |
-| **Agents & Reasoning** | Agent contracts, reasoning and cognition, critic verification, adaptive harness intelligence | [Agent Contracts & Assembly](docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [Reasoning & Cognition](docs/project/architecture/REASONING_AND_COGNITION.md) · [Critic Verification](docs/project/architecture/CRITIC_VERIFICATION.md) · [Adaptive Harness Intelligence](docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
-| **Knowledge & Retrieval** | Retrieval, grounding, and knowledge-source integration boundaries | [RAG](docs/project/architecture/RAG.md) · [Knowledge Source Integrations](docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) |
-| **Memory & Context** | Durable memory, context engineering, and unified context lifecycle | [Memory](docs/project/architecture/MEMORY.md) · [Context Engineering](docs/project/architecture/CONTEXT_ENGINEERING.md) · [Unified Context Lifecycle](docs/project/architecture/UNIFIED_CONTEXT_LIFECYCLE.md) |
-| **Tools, Skills & Integrations** | Tools, skills, integrations, LLM adapters, and code-craft surfaces | [Tools](docs/project/architecture/TOOLS.md) · [Skills](docs/project/architecture/SKILLS.md) · [Integrations](docs/project/architecture/INTEGRATIONS.md) · [LLM Adapters](docs/project/architecture/LLM_ADAPTERS.md) · [Code Craft](docs/project/architecture/CODE_CRAFT.md) |
-| **Governance, HITL & Reliability** | Policy and approval enforcement, failure handling, and human-in-the-loop | [Governed Execution](docs/project/architecture/GOVERNED_EXECUTION.md) · [Reliability / Failure / HITL](docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md) |
-| **Observability & Evidence** | Runtime observability, proof receipts, and reviewable execution records | [Observability](docs/project/architecture/OBSERVABILITY.md) · [Proof Receipts](docs/project/architecture/PROOF_RECEIPTS.md) |
-| **Extensibility & Ecosystem** | Governed plugins, agent distribution, marketplace direction, multiplayer collaboration | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) · [Agent Distribution](docs/project/architecture/AGENT_DISTRIBUTION.md) · [Multiplayer AI](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) · [Agent Marketplace](docs/project/overview/AGENT_MARKETPLACE.md) |
-| **Application Platform** | Tier-3 application environment and application hosting | [Tier-3 Application Environment](docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [Application Hosting](docs/project/architecture/APPLICATION_HOSTING.md) |
-| **Platform Foundations & Scale** | Core platform foundation, elastic capacity, modality, and developer experience | [Platform Foundation](docs/project/architecture/PLATFORM_FOUNDATION.md) · [Elastic Capacity & Scaling](docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md) · [Modality](docs/project/architecture/MODALITY.md) · [Experimentation & DX](docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
-
-Full domain index (24 architecture ↔ plan pairs):
-[runtime architecture hub](docs/project/architecture/intergrax_runtime_architecture.md).
-Project-level mental model:
-[Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md).
-
-### How documentation is organized
-
-| Layer | Answers | Start here |
-| --- | --- | --- |
-| **First contact** | What is Intergrax, choose a path, platform map | This README |
-| **Intent routing** | I want to try / evaluate / build / review | [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md) |
-| **Architecture mental model** | Responsibility boundaries and system flow | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
-| **Domain architecture** | What a platform area should do | `docs/project/architecture/<DOMAIN>.md` |
-| **Feature architecture** | Cross-layer capabilities coordinating domains | `docs/project/capabilities/architecture/<FEATURE>.md` |
-| **Satellites** | Extended engineering depth (on demand) | Indexed from domain or feature hubs — not first-contact |
-| **Technical guides** | How to configure, build, extend, or operate | [Technical guides](docs/project/technical/guides/README.md) |
-| **Plans / ADR / proofs** | Implementation status, decisions, bounded evidence | [PROOFS](docs/project/proofs/PROOFS.md) · [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
 
 ---
 
@@ -250,6 +184,7 @@ selected provider; duration depends on your environment.
 | --- | --- |
 | [Product Tour](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) | Understand what the product experience looks like |
 | [Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md) | Run the canonical product path |
+| [Governed Evidence Decision Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) | Inspect advanced governed evidence admissibility over live organizational sources |
 | [Core Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) | Verify bounded infrastructure/platform behavior |
 
 **Core Platform Proof** is separate from Product Quick Start and Trusted Ask: a
@@ -259,6 +194,69 @@ and watched-folder indexing — not production readiness, commercial validation,
 or all-provider certification.
 
 **Proof families:** Product evaluation (`LKW-PRODUCT-QUICKSTART-*`), Core platform (`LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`), Indexed Hybrid Ask (`LKW-HYBRID-ASK-INDEXED`), Trusted Ask (`LKW-ASK-WORKSPACE-LIVE`), Governed Evidence Decision Proof (`advanced_flagship_proof`).
+
+---
+
+<a id="explore-the-intergrax-platform"></a>
+## Explore the Intergrax Platform
+
+**What is Intergrax built from?** The platform is organized into human-readable
+areas below. Each area links to canonical **domain architecture** documents —
+the public entry points for *what* a subsystem should do. For cross-layer
+capabilities, see [multi-layer feature architecture](#platform-capabilities-and-directions).
+For deep engineering registers, use architecture **satellites** (on demand via the
+[Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md)) —
+not as a first-contact route.
+
+<a href="docs/project/assets/public/readme/intergrax-platform-map-light.png">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-platform-map-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-platform-map-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-platform-map-light.png"
+    alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources."
+  >
+</picture>
+</a>
+
+[View full-size diagram](docs/project/assets/public/readme/intergrax-platform-map-light.png)
+
+| Platform area | What it provides | Explore |
+| --- | --- | --- |
+| **Runtime & Orchestration** | Unified execution, workflow orchestration, and Nexus execution paths | [Unified Execution Runtime](docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Orchestration](docs/project/architecture/ORCHESTRATION.md) · [Nexus Execution Flow](docs/project/architecture/NEXUS_EXECUTION_FLOW.md) |
+| **Agents & Reasoning** | Agent contracts, reasoning and cognition, critic verification, adaptive harness intelligence | [Agent Contracts & Assembly](docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [Reasoning & Cognition](docs/project/architecture/REASONING_AND_COGNITION.md) · [Critic Verification](docs/project/architecture/CRITIC_VERIFICATION.md) · [Adaptive Harness Intelligence](docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
+| **Knowledge & Retrieval** | Retrieval, grounding, and knowledge-source integration boundaries | [RAG](docs/project/architecture/RAG.md) · [Knowledge Source Integrations](docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) |
+| **Memory & Context** | Durable memory, context engineering, and unified context lifecycle | [Memory](docs/project/architecture/MEMORY.md) · [Context Engineering](docs/project/architecture/CONTEXT_ENGINEERING.md) · [Unified Context Lifecycle](docs/project/architecture/UNIFIED_CONTEXT_LIFECYCLE.md) |
+| **Tools, Skills & Integrations** | Tools, skills, integrations, LLM adapters, and code-craft surfaces | [Tools](docs/project/architecture/TOOLS.md) · [Skills](docs/project/architecture/SKILLS.md) · [Integrations](docs/project/architecture/INTEGRATIONS.md) · [LLM Adapters](docs/project/architecture/LLM_ADAPTERS.md) · [Code Craft](docs/project/architecture/CODE_CRAFT.md) |
+| **Governance, HITL & Reliability** | Policy and approval enforcement, failure handling, and human-in-the-loop | [Governed Execution](docs/project/architecture/GOVERNED_EXECUTION.md) · [Reliability / Failure / HITL](docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md) |
+| **Observability & Evidence** | Runtime observability, proof receipts, and reviewable execution records | [Observability](docs/project/architecture/OBSERVABILITY.md) · [Proof Receipts](docs/project/architecture/PROOF_RECEIPTS.md) |
+| **Extensibility & Ecosystem** | Governed plugins, agent distribution, marketplace direction, multiplayer collaboration | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) · [Agent Distribution](docs/project/architecture/AGENT_DISTRIBUTION.md) · [Multiplayer AI](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) · [Agent Marketplace](docs/project/overview/AGENT_MARKETPLACE.md) |
+| **Application Platform** | Tier-3 application environment and application hosting | [Tier-3 Application Environment](docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [Application Hosting](docs/project/architecture/APPLICATION_HOSTING.md) |
+| **Platform Foundations & Scale** | Core platform foundation, elastic capacity, modality, and developer experience | [Platform Foundation](docs/project/architecture/PLATFORM_FOUNDATION.md) · [Elastic Capacity & Scaling](docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md) · [Modality](docs/project/architecture/MODALITY.md) · [Experimentation & DX](docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
+
+Full domain index (24 architecture ↔ plan pairs):
+[runtime architecture hub](docs/project/architecture/intergrax_runtime_architecture.md).
+Project-level mental model:
+[Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md).
+
+### How documentation is organized
+
+| Layer | Answers | Start here |
+| --- | --- | --- |
+| **First contact** | What is Intergrax, choose a path, platform map | This README |
+| **Intent routing** | I want to try / evaluate / build / review | [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md) |
+| **Architecture mental model** | Responsibility boundaries and system flow | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
+| **Domain architecture** | What a platform area should do | `docs/project/architecture/<DOMAIN>.md` |
+| **Feature architecture** | Cross-layer capabilities coordinating domains | `docs/project/capabilities/architecture/<FEATURE>.md` |
+| **Satellites** | Extended engineering depth (on demand) | Indexed from domain or feature hubs — not first-contact |
+| **Technical guides** | How to configure, build, extend, or operate | [Technical guides](docs/project/technical/guides/README.md) |
+| **Plans / ADR / proofs** | Implementation status, decisions, bounded evidence | [PROOFS](docs/project/proofs/PROOFS.md) · [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
 
 ---
 

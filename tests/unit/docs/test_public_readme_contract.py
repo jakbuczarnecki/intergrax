@@ -82,6 +82,7 @@ _SECTION_HEADINGS_ORDER = (
     "## Choose your path",
     "## Local Knowledge Workspace (LKW)",
     "## Try LKW",
+    "## Explore the Intergrax Platform",
     "## Why this matters",
     "## Responsibility model",
     "## AI execution should not be a black box",
@@ -99,6 +100,7 @@ _REMOVED_STANDALONE_CAPABILITY_HEADINGS = (
 
 _REQUIRED_PUBLIC_LINKS = (
     "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
+    "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md",
     "docs/project/architecture/GOVERNED_EXECUTION.md",
     "docs/project/capabilities/token_optimization/README.md",
     "PROOFS.md",
@@ -154,6 +156,33 @@ def test_canonical_positioning(readme_text: str) -> None:
 def test_section_order(readme_text: str) -> None:
     positions = [readme_text.index(heading) for heading in _SECTION_HEADINGS_ORDER]
     assert positions == sorted(positions), "README section headings are out of required order"
+    assert readme_text.index("## Local Knowledge Workspace (LKW)") < readme_text.index(
+        "## Explore the Intergrax Platform"
+    ), "LKW section must appear before Explore the Intergrax Platform"
+
+
+def test_top_cta_governed_evidence_proof(readme_text: str) -> None:
+    """Top CTA exposes the advanced governed evidence proof route."""
+    top_block = readme_text[: readme_text.index("## Choose your path")]
+    assert "Inspect Governed Evidence Proof" in top_block
+    assert (
+        "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md"
+        in top_block
+    )
+
+
+def test_lkw_routes_governed_evidence_proof(readme_text: str) -> None:
+    routes_section = _section_slice(readme_text, "### LKW routes", "**Core Platform Proof**")
+    assert "Governed Evidence Decision Proof" in routes_section
+    assert (
+        "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md"
+        in routes_section
+    )
+    product_tour_idx = routes_section.index("Product Tour")
+    quick_start_idx = routes_section.index("Quick Start")
+    governed_idx = routes_section.index("Governed Evidence Decision Proof")
+    core_idx = routes_section.index("Core Platform Proof")
+    assert product_tour_idx < quick_start_idx < governed_idx < core_idx
 
 
 def test_platform_capabilities_table_contract(readme_text: str) -> None:
