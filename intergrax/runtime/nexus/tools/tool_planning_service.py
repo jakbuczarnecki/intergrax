@@ -133,26 +133,37 @@ def _build_non_native_planner_system_content(
     return "\n\n".join(sections)
 
 
+def _collect_declared_tool_call_ids(messages: Sequence[ChatMessage]) -> frozenset[str]:
+    declared: set[str] = set()
+    for message in messages:
+        if message.role != "assistant" or not message.tool_calls:
+            continue
+        for tool_call in message.tool_calls:
+            if not isinstance(tool_call, dict):
+                continue
+            call_id = tool_call.get("id")
+            if isinstance(call_id, str) and call_id:
+                declared.add(call_id)
+    return frozenset(declared)
+
+
 def _prune_messages_for_openai(messages: List[ChatMessage]) -> List[ChatMessage]:
     """
-    OpenAI requires tool messages only after the last assistant message with tool_calls.
+    Provider-safe transcript: keep complete assistant→tool exchanges; drop orphan tools.
     """
-    last_tc_idx: Optional[int] = None
-    for i in range(len(messages) - 1, -1, -1):
-        message = messages[i]
-        if message.role == "assistant" and message.tool_calls:
-            last_tc_idx = i
-            break
-
-    if last_tc_idx is None:
-        return [message for message in messages if message.role in ("system", "user", "assistant")]
-
+    declared_tool_call_ids = _collect_declared_tool_call_ids(messages)
     pruned: List[ChatMessage] = []
-    for i, message in enumerate(messages):
+    for message in messages:
         if message.role == "tool":
-            if i > last_tc_idx:
+            tool_call_id = message.tool_call_id
+            if (
+                isinstance(tool_call_id, str)
+                and tool_call_id
+                and tool_call_id in declared_tool_call_ids
+            ):
                 pruned.append(message)
-        else:
+            continue
+        if message.role in ("system", "user", "assistant"):
             pruned.append(message)
     return pruned
 
@@ -358,16 +369,15 @@ class ToolPlanningService:
                 self.tools,
                 allowed_tool_ids=allowed_tool_ids,
             )
-        pruned = _prune_messages_for_openai(
-            _build_native_planning_messages(
-                messages,
-                investigation_instructions=self.cfg.investigation_instructions,
-            )
-        )
+        pruned = _prune_messages_for_openai(list(messages))
         if prepared_messages_hash is not None:
             computed_messages_hash = compute_model_facing_messages_hash(pruned)
             if computed_messages_hash != prepared_messages_hash:
                 raise ValueError("prepared messages hash mismatch")
+        provider_messages = _build_native_planning_messages(
+            pruned,
+            investigation_instructions=self.cfg.investigation_instructions,
+        )
         effective_tool_choice = tool_choice if tool_choice is not None else "auto"
 
         _sync_routing_before_tool_planner_llm(
@@ -375,7 +385,7 @@ class ToolPlanningService:
             run_id=run_id,
         )
         result = self.llm.generate_with_tools(
-            pruned,
+            provider_messages,
             tools_schema,
             temperature=self.cfg.temperature,
             max_tokens=self.cfg.max_answer_tokens,

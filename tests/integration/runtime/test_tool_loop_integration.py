@@ -1152,7 +1152,7 @@ class _ProbeInA(BaseModel):
 
 
 class _ProbeOutA(BaseModel):
-    status: str = "partial evidence only"
+    status: str = "EVIDENCE_A"
 
 
 class _ProbeInB(BaseModel):
@@ -1160,7 +1160,7 @@ class _ProbeInB(BaseModel):
 
 
 class _ProbeOutB(BaseModel):
-    status: str = "verified"
+    status: str = "EVIDENCE_B"
 
 
 class _ProbeHandlerA(ToolHandler[_ProbeInA, _ProbeOutA]):
@@ -1220,9 +1220,10 @@ class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
             )
 
         tool_messages = [message for message in messages if message.role == "tool"]
+        tool_contents = [message.content or "" for message in tool_messages]
         if self._round == 2:
             assert len(tool_messages) == 1
-            assert "partial evidence only" in (tool_messages[0].content or "")
+            assert any("EVIDENCE_A" in content for content in tool_contents)
             return LLMAdapterResponse(
                 content="",
                 tool_calls=(
@@ -1235,8 +1236,9 @@ class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
             )
 
         assert self._round == 3
-        assert len(tool_messages) == 1
-        assert "verified" in (tool_messages[0].content or "")
+        assert len(tool_messages) == 2
+        assert any("EVIDENCE_A" in content for content in tool_contents)
+        assert any("EVIDENCE_B" in content for content in tool_contents)
         return LLMAdapterResponse(content="investigation complete", tool_calls=())
 
 
