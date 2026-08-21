@@ -50,6 +50,7 @@ Tier-3 solves this by keeping **one canonical composition path** from product de
 
 ## Flagship architecture visual
 
+<a href="assets/tier3-application-composition-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/tier3-application-composition-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/tier3-application-composition-light.svg">
@@ -58,6 +59,7 @@ Tier-3 solves this by keeping **one canonical composition path** from product de
     src="assets/tier3-application-composition-light.svg"
   >
 </picture>
+</a>
 
 ## Canonical composition flow
 

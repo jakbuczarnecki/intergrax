@@ -35,6 +35,7 @@ Memory **does not** decide what the model sees on a given turn — that is Conte
 
 ## Flagship architecture visual
 
+<a href="assets/memory-platform-position-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/memory-platform-position-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/memory-platform-position-light.svg">
@@ -43,6 +44,7 @@ Memory **does not** decide what the model sees on a given turn — that is Conte
     src="assets/memory-platform-position-light.svg"
   >
 </picture>
+</a>
 
 Memory sits between **execution state** and **model-facing context**. It remembers; Context Engineering selects; RAG retrieves external knowledge. None of the three are interchangeable.
 

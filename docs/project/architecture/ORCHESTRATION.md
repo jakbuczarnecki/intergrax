@@ -37,6 +37,7 @@ Intergrax moves collaboration structure into **platform contracts and profiles**
 
 ## Flagship architecture visual
 
+<a href="assets/orchestration-control-plane-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/orchestration-control-plane-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/orchestration-control-plane-light.svg">
@@ -45,6 +46,7 @@ Intergrax moves collaboration structure into **platform contracts and profiles**
     src="assets/orchestration-control-plane-light.svg"
   >
 </picture>
+</a>
 
 Tier-3 profiles shape orchestration; Orchestration still owns the configuration contract. Agents do not create private orchestration runtimes.
 

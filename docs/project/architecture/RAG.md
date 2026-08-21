@@ -35,6 +35,7 @@ Intergrax RAG addresses that gap with a native path from **authorized sources** 
 
 ## Flagship architecture visual
 
+<a href="assets/rag-platform-position-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/rag-platform-position-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/rag-platform-position-light.svg">
@@ -43,6 +44,7 @@ Intergrax RAG addresses that gap with a native path from **authorized sources** 
     src="assets/rag-platform-position-light.svg"
   >
 </picture>
+</a>
 
 RAG works on **knowledge sources** and produces **retrieval evidence** for Context Engineering. It is not user/session Memory and not the final context assembler.
 

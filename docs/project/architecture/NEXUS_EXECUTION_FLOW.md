@@ -35,6 +35,7 @@ Nexus enforces **one canonical task path**: every surface normalizes to `Task` â
 
 ## Flagship architecture visual
 
+<a href="assets/nexus-execution-flow-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/nexus-execution-flow-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/nexus-execution-flow-light.svg">
@@ -43,6 +44,7 @@ Nexus enforces **one canonical task path**: every surface normalizes to `Task` â
     src="assets/nexus-execution-flow-light.svg"
   >
 </picture>
+</a>
 
 The diagram shows the **task path**, not every runtime class. Retry, HITL, handoff, and merge stay on the same spine.
 

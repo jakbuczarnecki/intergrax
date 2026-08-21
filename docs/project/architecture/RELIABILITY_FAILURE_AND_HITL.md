@@ -59,6 +59,7 @@ Reliability keeps recovery **bounded**, **layered**, and **evidence-backed**.
 
 ## Flagship architecture visual
 
+<a href="assets/reliability-recovery-loop-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/reliability-recovery-loop-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/reliability-recovery-loop-light.svg">
@@ -67,6 +68,7 @@ Reliability keeps recovery **bounded**, **layered**, and **evidence-backed**.
     src="assets/reliability-recovery-loop-light.svg"
   >
 </picture>
+</a>
 
 > **Reliability decides recovery. Observability records recovery. Governance authorizes consequential actions.**
 

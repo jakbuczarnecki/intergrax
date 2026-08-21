@@ -50,6 +50,7 @@ Integrations address this through **`PlatformIntegrationContract`**, category-sp
 
 ## Flagship architecture visual
 
+<a href="assets/integration-boundary-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/integration-boundary-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/integration-boundary-light.svg">
@@ -58,6 +59,7 @@ Integrations address this through **`PlatformIntegrationContract`**, category-sp
     src="assets/integration-boundary-light.svg"
   >
 </picture>
+</a>
 
 **Mental model:**
 

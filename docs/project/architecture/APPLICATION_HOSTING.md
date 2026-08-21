@@ -45,6 +45,7 @@ Without Application Hosting:
 
 ## Flagship architecture visual
 
+<a href="assets/application-hosting-lifecycle-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/application-hosting-lifecycle-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/application-hosting-lifecycle-light.svg">
@@ -53,6 +54,7 @@ Without Application Hosting:
     src="assets/application-hosting-lifecycle-light.svg"
   >
 </picture>
+</a>
 
 **Primary mental model:**
 

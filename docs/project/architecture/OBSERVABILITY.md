@@ -46,6 +46,7 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
 
 ## Flagship architecture visual
 
+<a href="assets/observability-evidence-spine-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/observability-evidence-spine-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/observability-evidence-spine-light.svg">
@@ -54,6 +55,7 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
     src="assets/observability-evidence-spine-light.svg"
   >
 </picture>
+</a>
 
 **Primary mental model:**
 

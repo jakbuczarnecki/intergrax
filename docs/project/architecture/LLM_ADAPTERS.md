@@ -38,6 +38,7 @@ LLM Adapters solve this with a typed ABI, a normalized response envelope, a prov
 
 ## Flagship architecture visual
 
+<a href="assets/llm-adapter-boundary-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/llm-adapter-boundary-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/llm-adapter-boundary-light.svg">
@@ -46,6 +47,7 @@ LLM Adapters solve this with a typed ABI, a normalized response envelope, a prov
     src="assets/llm-adapter-boundary-light.svg"
   >
 </picture>
+</a>
 
 Runtime and agents call `LLMAdapter` — not OpenAI, Anthropic, or Ollama SDKs directly.
 

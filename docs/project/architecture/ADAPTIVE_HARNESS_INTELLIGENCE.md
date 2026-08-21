@@ -68,6 +68,7 @@ AHI supplies a **governed control plane** that closes the loop from execution ev
 
 ## Flagship architecture visual
 
+<a href="assets/adaptive-governed-loop-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/adaptive-governed-loop-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/adaptive-governed-loop-light.svg">
@@ -76,6 +77,7 @@ AHI supplies a **governed control plane** that closes the loop from execution ev
     src="assets/adaptive-governed-loop-light.svg"
   >
 </picture>
+</a>
 
 **Primary mental model:**
 

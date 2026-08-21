@@ -33,6 +33,7 @@ Agents **must not** implement ad hoc lifecycle, retry, HITL, or event semantics.
 
 ## Flagship architecture visual
 
+<a href="assets/unified-execution-runtime-lifecycle-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-runtime-lifecycle-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-runtime-lifecycle-light.svg">
@@ -41,6 +42,7 @@ Agents **must not** implement ad hoc lifecycle, retry, HITL, or event semantics.
     src="assets/unified-execution-runtime-lifecycle-light.svg"
   >
 </picture>
+</a>
 
 Retry keeps the same `TaskId` and `RunId` and mints a new `AttemptId`. Resume without retry preserves the same `AttemptId`. Each event carries a unique `EventId`.
 

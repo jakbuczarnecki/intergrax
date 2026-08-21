@@ -29,6 +29,7 @@ The three-plane model assigns clear ownership:
 
 ## Flagship architecture visual
 
+<a href="assets/modality-planes-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/modality-planes-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/modality-planes-light.svg">
@@ -37,6 +38,7 @@ The three-plane model assigns clear ownership:
     src="assets/modality-planes-light.svg"
   >
 </picture>
+</a>
 
 **Mental model:**
 
