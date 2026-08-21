@@ -13,6 +13,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.contracts.agent_run import RequestIdentity
+
 
 class TaskSlaClass(str, Enum):
     INTERACTIVE = "interactive"
@@ -42,6 +44,7 @@ class TaskEnvelope(BaseModel):
     risk_tier: TaskRiskTier = TaskRiskTier.LOW
     constraints: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    canonical_identity: RequestIdentity | None = None
 
     @field_validator("tenant_id", "user_id")
     @classmethod

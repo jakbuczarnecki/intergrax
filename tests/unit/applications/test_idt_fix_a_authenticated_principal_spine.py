@@ -14,11 +14,13 @@ from intergrax.applications._shared.harness_auth import (
     HarnessAuthState,
     resolve_harness_authenticated_principal,
 )
+from intergrax.applications._shared.identity_wiring import wire_application_identity
 from intergrax.applications._shared.harness_principal import (
     HarnessAuthenticatedPrincipal,
     harness_principal_to_request_identity,
     reject_identity_assertion_conflicts,
 )
+from intergrax.applications.contracts.environment_profile import IdentityProfile
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
 from intergrax.contracts.agent_run import RequestIdentity
@@ -34,6 +36,7 @@ from intergrax.fastapi_core.context import RequestContext
 from intergrax.integrations.contracts.identity_provider import IdentityUser
 from intergrax.runtime.interactions.actor_resolution import resolve_actor_from_envelope
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from legal_application.serving.schemas import LegalChatRequestV1
 from research_application.serving.fastapi_router import ResearchRunService
@@ -80,6 +83,202 @@ def _canonical_user_identity() -> RequestIdentity:
         principal_type=PrincipalType.USER,
         auth_subject="U1",
     )
+
+
+def _roundtrip_task_and_run_ids() -> tuple[str, str]:
+    return (
+        "task_a3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "run_a3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    )
+
+
+def test_idt_r1_t1_runtime_request_canonical_identity_round_trip() -> None:
+    canonical = RequestIdentity(
+        tenant_id="A",
+        user_id="U1",
+        principal_type=PrincipalType.USER,
+        auth_subject="S1",
+    )
+    task_id, run_id = _roundtrip_task_and_run_ids()
+    request = RuntimeRequest(
+        agent_id="a",
+        user_id="U1",
+        session_id="s",
+        message="hello",
+        task_id=task_id,
+        run_id=run_id,
+        tenant_id="A",
+        canonical_identity=canonical,
+    )
+    restored = RuntimeRequest.from_envelope(
+        request.to_envelope(),
+        task_id=task_id,
+        run_id=run_id,
+    )
+    assert restored.canonical_identity == canonical
+
+
+def test_idt_r1_t2_metadata_attack_rejected_after_envelope_round_trip() -> None:
+    canonical = _canonical_user_identity()
+    task_id, run_id = _roundtrip_task_and_run_ids()
+    request = RuntimeRequest(
+        agent_id="a",
+        user_id="U1",
+        session_id="s",
+        message="hello",
+        task_id=task_id,
+        run_id=run_id,
+        tenant_id="A",
+        canonical_identity=canonical,
+        metadata={"tenant_id": "B", "user_id": "U2"},
+    )
+    restored = RuntimeRequest.from_envelope(
+        request.to_envelope(),
+        task_id=task_id,
+        run_id=run_id,
+    )
+    assert restored.canonical_identity == canonical
+    with pytest.raises(ValueError, match="metadata tenant_id conflicts"):
+        runtime_request_to_agent_run(restored, contract=_BridgeContract())
+
+
+def test_idt_r1_t3_service_principal_type_survives_envelope_round_trip() -> None:
+    canonical = RequestIdentity(
+        tenant_id="A",
+        user_id="svc-ops",
+        principal_type=PrincipalType.SERVICE,
+        auth_subject="svc-ops",
+    )
+    task_id, run_id = _roundtrip_task_and_run_ids()
+    request = RuntimeRequest(
+        agent_id="a",
+        user_id="svc-ops",
+        session_id="s",
+        message="hello",
+        task_id=task_id,
+        run_id=run_id,
+        tenant_id="A",
+        canonical_identity=canonical,
+        metadata={"principal_type": "user"},
+    )
+    restored = RuntimeRequest.from_envelope(
+        request.to_envelope(),
+        task_id=task_id,
+        run_id=run_id,
+    )
+    assert restored.canonical_identity is not None
+    assert restored.canonical_identity.principal_type is PrincipalType.SERVICE
+    with pytest.raises(ValueError, match="metadata principal_type conflicts"):
+        runtime_request_to_agent_run(restored, contract=_BridgeContract())
+
+
+def test_idt_r1_t4_auth_subject_survives_envelope_round_trip() -> None:
+    canonical = RequestIdentity(
+        tenant_id="A",
+        user_id="U1",
+        principal_type=PrincipalType.USER,
+        auth_subject="S1",
+    )
+    task_id, run_id = _roundtrip_task_and_run_ids()
+    request = RuntimeRequest(
+        agent_id="a",
+        user_id="U1",
+        session_id="s",
+        message="hello",
+        task_id=task_id,
+        run_id=run_id,
+        tenant_id="A",
+        canonical_identity=canonical,
+    )
+    restored = RuntimeRequest.from_envelope(
+        request.to_envelope(),
+        task_id=task_id,
+        run_id=run_id,
+    )
+    assert restored.canonical_identity is not None
+    assert restored.canonical_identity.auth_subject == "S1"
+
+
+def test_idt_r1_t5_envelope_carries_no_raw_credential() -> None:
+    canonical = _canonical_user_identity()
+    task_id, run_id = _roundtrip_task_and_run_ids()
+    request = RuntimeRequest(
+        agent_id="a",
+        user_id="U1",
+        session_id="s",
+        message="hello",
+        task_id=task_id,
+        run_id=run_id,
+        tenant_id="A",
+        canonical_identity=canonical,
+    )
+    envelope = request.to_envelope()
+    assert envelope.canonical_identity == canonical
+    assert "canonical_identity" not in envelope.metadata
+    identity_payload = envelope.canonical_identity.model_dump() if envelope.canonical_identity else {}
+    assert set(identity_payload.keys()) == {
+        "tenant_id",
+        "user_id",
+        "principal_type",
+        "auth_subject",
+    }
+
+
+def test_idt_r1_t6_legacy_unauthenticated_envelope_round_trip() -> None:
+    task_id, run_id = _roundtrip_task_and_run_ids()
+    envelope = TaskEnvelope(tenant_id="legacy-t", user_id="legacy-u", message="go")
+    restored = RuntimeRequest.from_envelope(envelope, task_id=task_id, run_id=run_id)
+    assert restored.canonical_identity is None
+    agent_run = runtime_request_to_agent_run(restored, contract=_BridgeContract())
+    assert agent_run.identity.tenant_id == "legacy-t"
+    assert agent_run.identity.user_id == "legacy-u"
+
+
+def test_idt_r1_t7_unrelated_service_identity_not_borrowed_for_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "test-key")
+    app = FastAPI()
+    wire_application_identity(
+        app,
+        IdentityProfile(
+            require_api_key=False,
+            service_identities={
+                "billing": "billing-service",
+                "scheduler": "scheduler-service",
+            },
+        ),
+    )
+    assert app.state.harness_auth.api_key_principal_service_id == "harness-api-key"
+
+
+def test_idt_r1_t8_explicit_harness_service_identity_used_for_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "test-key")
+    app = FastAPI()
+    wire_application_identity(
+        app,
+        IdentityProfile(
+            require_api_key=False,
+            service_identities={"harness": "platform-api"},
+        ),
+    )
+    assert app.state.harness_auth.api_key_principal_service_id == "platform-api"
+
+
+def test_idt_r1_task_envelope_canonical_identity_round_trip() -> None:
+    canonical = _canonical_user_identity()
+    envelope = TaskEnvelope(
+        tenant_id="A",
+        user_id="U1",
+        message="go",
+        agent_id="echo",
+        canonical_identity=canonical,
+    )
+    task = Task.from_envelope(envelope)
+    assert task.canonical_identity == canonical
+    assert task.to_envelope().canonical_identity == canonical
 
 
 def test_idt_a1_verified_user_cannot_change_tenant_by_body() -> None:

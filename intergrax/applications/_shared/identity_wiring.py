@@ -52,9 +52,7 @@ def wire_application_identity(
                 f"{profile.api_key_env} is required when identity_profile.require_api_key=true "
                 "and no identity_provider integration is configured"
             )
-    api_key_service_id = profile.service_identities.get("harness")
-    if api_key_service_id is None and profile.service_identities:
-        api_key_service_id = next(iter(profile.service_identities.values()))
+    api_key_service_id = profile.service_identities.get("harness") or "harness-api-key"
     api_key_tenant_id = (os.environ.get("INTERGRAX_HARNESS_TENANT_ID") or "").strip() or None
     state = HarnessAuthState(
         identity_provider=identity_provider,
@@ -62,7 +60,7 @@ def wire_application_identity(
         resolved_api_key=resolved_api_key,
         tenant_required=profile.tenant_required,
         api_key_principal_tenant_id=api_key_tenant_id,
-        api_key_principal_service_id=api_key_service_id or "harness-api-key",
+        api_key_principal_service_id=api_key_service_id,
     )
     app.state.harness_auth = state
     apply_harness_auth_middleware(app, require_auth=profile.require_api_key)
