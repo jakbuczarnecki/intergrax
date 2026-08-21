@@ -22,9 +22,11 @@ class RestrictedPayloadEncryptor(Protocol):
 
 class HarnessEnvelopeEncryptor:
     """
-    Tier-0 envelope transform — stores ciphertext marker and secret ref.
+    Lab/test-only non-cryptographic encoding transform.
 
-    Tier-3 hosts SHOULD replace with a ``SecretsStore``-backed encryptor in production.
+    Applies Base64 encoding and envelope markers for harness demos. This does **not**
+    provide cryptographic protection and MUST NOT be selected by Tier-3 restricted
+    payload wiring when a ``SecretsStore`` integration is configured.
     """
 
     def __init__(self, *, prefix: str = "restricted") -> None:
