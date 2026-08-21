@@ -120,7 +120,7 @@ incomplete, and complete live-provider access remains incomplete.
 
 - Mixed indexed + authorized live Hybrid Ask remains incomplete.
 - Complete live-provider access remains incomplete.
-- Complete multi-source live capability remains incomplete.
+- Productized multi-source live capability across the intended LKW product experience remains incomplete — distinct from the bounded four-provider **LIVE_ONLY** Governed Evidence Decision Proof (`advanced_flagship_proof`).
 - Real-user validation is not established.
 - Commercial validation is not established.
 

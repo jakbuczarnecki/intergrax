@@ -233,6 +233,20 @@ credential/session → verified principal → canonical RequestIdentity / actor 
 4. `ActorIdentity` / `RequestIdentity` divergence must be resolved by one explicit canonical model or typed bridge.
 5. Product-specific intake may adapt credentials but must not invent parallel identity semantics.
 
+<a id="protocol-v2-security-boundaries-target-invariants-2026-08-18"></a>
+
+### Protocol v2 security boundaries target invariants (2026-08-18)
+
+Accepted [`SECURITY_BOUNDARIES`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+
+1. **Canonical authentication source** — one resolved authentication authority materializes credentials consumed by all middleware and route dependencies; no component re-reads a different env variable than the configured profile authority. Required configured credentials that cannot be materialized **fail startup** (**SEC-BND-01** / **SEC-AUTHORITY-BOUNDARY-INTEGRITY**).
+2. **Authentication ≠ authorization** — verified identity is propagated as a canonical authenticated principal, not reduced to boolean presence (**SEC-BND-02**). Cross-link **IDT-FIX-A** for principal spine — do not rewrite that block.
+3. **Admin scope explicit** — application/environment admin and Agent Platform control-plane operations require authorization bound to exact operation, `application_id`, `environment_id`, tenant/org, and principal; reuse Governance/identity authority — no second permission engine (**SEC-BND-02**).
+4. **Security toggle qualification** — profile `enabled=True` means enforceable and wired with a mechanically verified enforcement point; paper toggles without middleware/hook proof are **UNAVAILABLE/REQUIRED → fail assembly** (**SEC-BND-04**, **SEC-BND-05** / **SEC-DEFENSE-QUALIFICATION-INTEGRITY**).
+5. **Strict/product fail-closed** — STRICT/product assembly fails closed on missing mandatory security capability, including signing secret absence on product hosts and unqualified defense toggles (**SEC-BND-04**, **SEC-BND-05**).
+
+Historical Tier-3 **Done** delivery facts, maturity score, and existing **IDT-FIX-A** remediation remain valid — coordinate; do not duplicate IDENTITY_TRUST-01/02 ownership.
+
 ## Current implementation state
 
 | Mechanism | State |

@@ -11,8 +11,9 @@ LKW is the **Primary Product Proof** and currently a **Backend Product Alpha / M
 | Item | Meaning |
 |------|---------|
 | Product | Local Knowledge Workspace |
-| Current scope | Indexed knowledge from approved sources |
-| User result | Grounded answer with a source reference |
+| Primary product experience | Indexed knowledge from approved sources |
+| Primary user result | Grounded answer with a source reference |
+| Advanced bounded proof | Governed live evidence admissibility through the [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) |
 | Inspectable evidence | Source and persisted Ask-run verification |
 | Maturity | Backend Product Alpha / MVP |
 | Primary next action | Run the supported LKW Quick Start |
