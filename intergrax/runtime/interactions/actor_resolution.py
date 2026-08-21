@@ -6,6 +6,11 @@ from __future__ import annotations
 
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.delegation import DelegationSpec
+from intergrax.contracts.delegation_authority import (
+    DelegationAuthorityError,
+    ParentExecutionAuthority,
+    mint_effective_delegation_authority,
+)
 from intergrax.contracts.request_identity_spine import request_identity_to_actor_identity
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.runtime.task.task import Task
@@ -46,11 +51,17 @@ def narrow_delegation_scopes(
     parent: ActorIdentity,
     delegation: DelegationSpec,
 ) -> tuple[str, ...]:
-    """Child scopes must be subset of parent scopes when parent declares scopes."""
-    child_scopes = delegation.permission_scopes
-    if not parent.permission_scopes:
-        return child_scopes
-    if not child_scopes:
-        return parent.permission_scopes
-    narrowed = tuple(s for s in child_scopes if s in parent.permission_scopes)
-    return narrowed
+    """Return effective delegated scopes; empty ActorIdentity scopes are unknown, not unlimited."""
+    parent_authority = (
+        ParentExecutionAuthority.scoped(parent.permission_scopes)
+        if parent.permission_scopes
+        else ParentExecutionAuthority.unknown()
+    )
+    try:
+        effective = mint_effective_delegation_authority(
+            parent=parent_authority,
+            requested_permission_scopes=delegation.permission_scopes,
+        )
+    except DelegationAuthorityError:
+        raise
+    return effective.effective_permission_scopes
