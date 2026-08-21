@@ -62,7 +62,7 @@ docs/audit_results/
 | Campaign | started_at | completed_at | status | campaign_start_sha | campaign_end_sha | scope | overall_verdict |
 |----------|------------|--------------|--------|--------------------|------------------|-------|-----------------|
 | [2026-08-20](2026-08-20/README.md) | 2026-08-20 | 2026-08-20 | COMPLETE | `654a7c0e3fe823a43a2620645848248023e1c64e` | publication commit (COMM-5F) | Flagship proof acceptance — COMM-5 governed hybrid knowledge (CTO / principal architect) | B — DIFFERENTIATED COMPOSITION (72/100) |
-| [2026-08-18](2026-08-18/README.md) | 2026-08-18 | `2026-08-21T10:01:40Z` | COMPLETE | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | — | Platform audit — 36 completed audit units; 217 ACCEPTED findings (8 CRITICAL / 150 HIGH / 58 MEDIUM / 1 LOW) | `FAIL` |
+| [2026-08-18](2026-08-18/README.md) | 2026-08-18 | `2026-08-21T10:01:40Z` | COMPLETE | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | `edb744940162ecaf317af71a918bb1cac98d19e3` | Platform audit — 36 completed audit units; 217 ACCEPTED findings (8 CRITICAL / 150 HIGH / 58 MEDIUM / 1 LOW) | `FAIL` |
 
 ### Registry lifecycle
 
