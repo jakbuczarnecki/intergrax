@@ -29,6 +29,56 @@ from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
+# OpenAI SDK Client(...) kwargs — must never reach responses.create/stream.
+_OPENAI_CLIENT_CONSTRUCTOR_KEYS: frozenset[str] = frozenset(
+    {
+        "api_key",
+        "organization",
+        "project",
+        "base_url",
+        "timeout",
+        "max_retries",
+        "default_headers",
+        "default_query",
+        "http_client",
+        "_strict_response_validation",
+    }
+)
+
+# Adapter/profile identity and LLMCallConfig resilience — not Responses API request kwargs.
+_OPENAI_ADAPTER_ONLY_KEYS: frozenset[str] = frozenset(
+    {
+        "model",
+        "client",
+        "context_window_tokens",
+        "max_tokens",
+        "timeout_sec",
+        "max_retries",
+        "retry_backoff_sec",
+        "retry_on_status",
+        "calls_per_minute",
+        "circuit_breaker_threshold",
+        "circuit_breaker_cooldown_sec",
+        "use_distributed_rate_limit",
+    }
+)
+
+
+def _partition_openai_responses_options(
+    defaults: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Split profile/constructor kwargs into Client(...) vs responses.create/stream defaults."""
+    client_kwargs: dict[str, Any] = {}
+    request_defaults: dict[str, Any] = {}
+    for key, value in defaults.items():
+        if key in _OPENAI_CLIENT_CONSTRUCTOR_KEYS:
+            client_kwargs[key] = value
+        elif key in _OPENAI_ADAPTER_ONLY_KEYS:
+            continue
+        else:
+            request_defaults[key] = value
+    return client_kwargs, request_defaults
+
 
 class OpenAIChatResponsesAdapter(LLMAdapter):
     """
@@ -79,26 +129,26 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
     def __init__(self, client: Optional[Client] = None, model: Optional[str] = None, **defaults):
         super().__init__()
+        defaults.pop("model", None)
+        defaults.pop("client", None)
         self._apply_defaults_call_config(defaults)
-
-        api_key = os.getenv(self.ENV_API_KEY)
 
         resolved_model = model or self.DEFAULT_MODEL
 
-        if client is None:
+        client_kwargs, self.request_defaults = _partition_openai_responses_options(defaults)
 
+        if client is None:
+            api_key = client_kwargs.pop("api_key", None) or os.getenv(self.ENV_API_KEY)
             if not api_key:
                 raise RuntimeError(
                     "OPENAI_API_KEY not found in environment variables."
                 )
-
-            client = Client(api_key=api_key)
+            client = Client(api_key=api_key, **client_kwargs)
 
         self.client: Client = client
         self.model: str = resolved_model
 
         self.model_name_for_token_estimation = self.model
-        self.defaults = defaults
         self._context_window_tokens: int = init_adapter_context_window_tokens(
             provider=LLMProvider.OPENAI,
             model=self.model,
@@ -182,7 +232,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 payload["max_output_tokens"] = max_tokens
 
             api_response: Response = self._execute(
-                lambda: self.client.responses.create(**payload, **self.defaults)
+                lambda: self.client.responses.create(**payload, **self.request_defaults)
             )
 
             output_text = self._collect_output_text(api_response)
@@ -246,7 +296,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
 
-            with self.client.responses.stream(**payload, **self.defaults) as stream:
+            with self.client.responses.stream(**payload, **self.request_defaults) as stream:
                 for ev in stream:
                     if ev.type == "response.output_text.delta":
                         delta = ev.delta
@@ -332,7 +382,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
 
-            with self.client.responses.stream(**payload, **self.defaults) as stream:
+            with self.client.responses.stream(**payload, **self.request_defaults) as stream:
                 for ev in stream:
                     if ev.type == "response.output_text.delta":
                         delta = ev.delta or ""
@@ -433,7 +483,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 payload["max_output_tokens"] = max_tokens
 
             api_response: Response = self._execute(
-                lambda: self.client.responses.create(**payload, **self.defaults)
+                lambda: self.client.responses.create(**payload, **self.request_defaults)
             )
             raw = self._collect_output_text(api_response)
             response = adapter_response_from_openai_responses(
@@ -495,7 +545,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 payload["max_output_tokens"] = max_tokens
 
             api_response: Response = self._execute(
-                lambda: self.client.responses.create(**payload, **self.defaults)
+                lambda: self.client.responses.create(**payload, **self.request_defaults)
             )
 
             content = self._collect_output_text(api_response)
