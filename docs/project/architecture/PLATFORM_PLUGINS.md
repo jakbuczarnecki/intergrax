@@ -859,6 +859,23 @@ Testable statements for audits and PLATFORM-PLUGIN-9 closeout:
 
 ---
 
+<a id="protocol-v2-platform-extensibility-target-invariants-2026-08-18"></a>
+
+## Protocol v2 platform extensibility target invariants (2026-08-18)
+
+Accepted [`PLATFORM_EXTENSIBILITY`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md) findings **01–06** (audit unit **PLATFORM_EXTENSIBILITY**, owning program **PLATFORM_PLUGINS**, 2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+
+1. **Evidence-derived qualification authority** — production qualification status is derived/validated against a versioned qualification policy and required evidence set; callers cannot create authoritative production qualification merely by setting `QualificationStatus.PRODUCTION_QUALIFIED`. Reuse `intergrax.core.qualification`; **no** second qualification engine ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-01`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+2. **Package vs capability/domain qualification scope** — package qualification may be a prerequisite, but capability/domain admission binds separately where the domain requires it: distribution identity + domain + exact capability/entry point + qualification policy + evidence. Package-level bundle lookup must not blanket-apply one qualification to every entry point in a multi-capability distribution ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-03`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+3. **Exact manifest capability ↔ admission binding** — production admission binds exact distribution + manifest identity/hash + exact `CapabilityDescriptor` / entry point + qualification result. Undeclared capabilities cannot inherit production admission from another capability in the same distribution ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-04`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+4. **Cross-domain admission coverage** — each supported public PEP domain retains its domain loader/registry but consumes one shared pre-registration production-admission contract in strict/product profiles. Policy Rule/Definition loader is the reference partial implementation today; **no** global runtime plugin loader ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-02`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+5. **Typed manifest-resolution evidence** — installed manifest resolution returns a typed result (VALID / ABSENT / INVALID / UNREADABLE) with safe reason codes; absent and invalid manifests must not collapse to indistinguishable `compatibility=None` diagnostics ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-05`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+6. **Explicit process-lifetime discovery/cache lifecycle** — freeze policy **A** (installed plugin set immutable for process lifetime; package changes require restart) **or** **B** (controlled versioned rediscovery/cache invalidation). Do not leave lifecycle semantics as incidental `_EP_SPECS_CACHE` behavior ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-06`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+
+**Preserved:** package-level coordination concept; domain contracts as runtime owners; taxonomy PEP/IP/HCE/IEP/NE; **no** universal `PlatformPlugin.execute()`; **no** unified sandbox/DI/registry; trusted-in-process model; DO-NOT-UNIFY list (§23); historical PLATFORM-PLUGIN-1..9 completion facts; current **PROVIDER-QUAL** track state (§18.3) — cross-link for provider-scoped evidence, do not duplicate. Protocol-v2 FAIL documents residual gaps only; it does **not** erase program history or claim remediation is implemented.
+
+---
+
 ## 28. Evidence and references
 
 | Artifact | Role |
