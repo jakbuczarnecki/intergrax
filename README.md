@@ -18,6 +18,7 @@ integrations, recovery, and evidence mechanisms for every workflow.
 > **Backend Product Alpha / MVP**. **Real-user validation** and **commercial
 > validation** are incomplete.
 
+<a href="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -32,6 +33,7 @@ integrations, recovery, and evidence mechanisms for every workflow.
     alt="Specialized AI products share the Intergrax governed foundation and may evolve toward a connected ecosystem; Local Knowledge Workspace is Backend Product Alpha while four portfolio directions remain selected pre-bootstrap."
   >
 </picture>
+</a>
 
 **Current reality:** [Local Knowledge Workspace](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) is the active reference product at **Backend Product Alpha / MVP** with bounded proof paths — not LKW 1.0 or production readiness. The four additional portfolio directions (**Contract-to-Invoice Leakage / Recovery Operator**, **Supplier Disruption Response Operator**, **Third-Party Risk Decision Operator**, **Deployment / Change Guardian**) are **selected pre-bootstrap** market applications with frozen selection records only; their presence here does not imply implementation or runtime proof. The portfolio exists partly to test reuse of shared Intergrax foundations across materially different product classes.
 
@@ -77,6 +79,7 @@ For deep engineering registers, use architecture **satellites** (on demand via t
 [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md)) —
 not as a first-contact route.
 
+<a href="docs/project/assets/public/readme/intergrax-platform-map-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -91,6 +94,7 @@ not as a first-contact route.
     alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources."
   >
 </picture>
+</a>
 
 [View full-size diagram](docs/project/assets/public/readme/intergrax-platform-map-light.png)
 
@@ -129,6 +133,11 @@ Project-level mental model:
 
 ## Local Knowledge Workspace (LKW)
 
+LKW is Intergrax's **reference product application**: approved knowledge,
+grounded Ask, source references, and persisted evidence. Intergrax provides the
+governed evidence mechanisms underneath — this section is LKW product and proof
+positioning, not generic platform marketing.
+
 ### Product workflow
 
 ```text
@@ -139,40 +148,56 @@ approved knowledge
 → sources / persisted evidence
 ```
 
-**Product Quick Start** is the easiest supported local executable proof path:
-indexed Ask V1 over a bundled sample document (`AURORA-17` is the expected
-success marker). It does **not** require Slack setup.
-
 **Slack** is the primary daily-use conversational interface direction for LKW
 1.0. A bounded DM Ask path is live-verified today; broader Slack workspace,
 source-management, and daily-use flows remain under productization.
 
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="applications/local_workspace_application/docs/assets/lkw-grounded-result-dark.svg"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="applications/local_workspace_application/docs/assets/lkw-grounded-result-light.svg"
-  >
-  <img
-    alt="LKW quickstart flow showing the approved sample file lkw_product_quickstart.txt, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification."
-    src="applications/local_workspace_application/docs/assets/lkw-grounded-result-light.svg"
-  >
-</picture>
-
-This visual represents the documented Quick Start, not a finished UI
-screenshot; dynamic workspace and Ask-run IDs are omitted.
-
-### What is boundedly proven today
+### What is proven today
 
 LKW is the **Primary Product Proof**, classified as **Backend Product Alpha /
 MVP**, with **PARTIAL** status.
 
-**Primary executable product path:** [Product Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md)
-exercises **indexed Ask V1** — not Hybrid Ask certification, Trusted Ask
-durability, or Core Platform Proof.
+#### A. Product Quick Start
+
+The easiest supported local executable product path — indexed Ask V1, not Hybrid Ask
+certification:
+
+- **indexed Ask V1** over a bundled sample document
+- **AURORA-17** is the expected success marker
+- one-command onboarding — does **not** require Slack setup
+
+[Run Product Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md)
+
+#### B. Governed Evidence Decision Proof
+
+Advanced bounded proof inside the LKW application stack demonstrating governed
+answer admissibility over **live organizational evidence** (`LIVE_ONLY`):
+
+- four independent live providers / connections / capabilities (Docker-backed)
+- versioned policy-derived obligations (REV17 / REV18)
+- execution-time authority revalidation
+- temporal admissibility (`max_age`, `valid_at`)
+- typed failure semantics (authority, provider, temporal)
+- deterministic LLM suppression when admissibility is unsatisfied
+- persisted structural proof (policy basis, reason codes, reload)
+
+This proof does **not** certify complete **indexed + authorized live Hybrid Ask**
+in a single admissibility gate. See the [Governed Evidence Decision Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md).
+
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png"
+  >
+  <img
+    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four live organizational sources, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
+    src="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png"
+  >
+</picture>
 
 **Separate bounded technical evidence:** indexed Hybrid Ask branch
 (`LKW-HYBRID-ASK-INDEXED`) is a **real application code path** for indexed retrieval.
@@ -233,7 +258,7 @@ execution, background processing, persisted reviewable evidence, hosting/recover
 and watched-folder indexing — not production readiness, commercial validation,
 or all-provider certification.
 
-**Proof families:** Product evaluation (`LKW-PRODUCT-QUICKSTART-*`), Core platform (`LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`), Indexed Hybrid Ask (`LKW-HYBRID-ASK-INDEXED`), Trusted Ask (`LKW-ASK-WORKSPACE-LIVE`).
+**Proof families:** Product evaluation (`LKW-PRODUCT-QUICKSTART-*`), Core platform (`LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`), Indexed Hybrid Ask (`LKW-HYBRID-ASK-INDEXED`), Trusted Ask (`LKW-ASK-WORKSPACE-LIVE`), Governed Evidence Decision Proof (`advanced_flagship_proof`).
 
 ---
 
@@ -248,6 +273,7 @@ Intergrax centralizes reusable mechanisms so product teams can focus on the
 specialized workflow. Read [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)
 for the category, problem, and fit.
 
+<a href="docs/project/assets/public/readme/intergrax-why-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -262,6 +288,7 @@ for the category, problem, and fit.
     alt="Comparison between rebuilding duplicated AI foundations per product and reusing a shared Intergrax foundation beneath specialized products."
   >
 </picture>
+</a>
 
 [View full-size diagram](docs/project/assets/public/readme/intergrax-why-light.png)
 
@@ -287,6 +314,7 @@ for the complete responsibility model.
 Meaningful AI execution should be reconstructable, reviewable, and attributable.
 Intergrax is designed so important actions do not disappear inside an opaque agent loop.
 
+<a href="docs/project/assets/public/readme/intergrax-governed-execution-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -301,6 +329,7 @@ Intergrax is designed so important actions do not disappear inside an opaque age
     alt="Illustrative governed agentic execution loop with iterative reasoning, capability selection, governance gate, optional human approval, durable state, evidence plane and validated outcome."
   >
 </picture>
+</a>
 
 [View full-size diagram](docs/project/assets/public/readme/intergrax-governed-execution-light.png)
 

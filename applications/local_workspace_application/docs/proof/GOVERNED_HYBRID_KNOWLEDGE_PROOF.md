@@ -2,6 +2,27 @@
 
 **Intergrax determines what evidence is required for an answer to be admissible, resolves it through authorized indexed and live sources, revalidates authority at execution time, and preserves structural proof of why a past answer was valid.**
 
+> **Scope note:** COMM-5 bounded proof paths collectively exercise indexed and live
+> evidence mechanisms. The **Advanced Flagship proof (F3-F)** — the public
+> **Governed Evidence Decision Proof** — is specifically **LIVE_ONLY** with four
+> independent live providers. Complete indexed + authorized live Hybrid Ask in a
+> single admissibility gate remains **not proven**.
+
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/lkw-governed-evidence-gate-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/lkw-governed-evidence-gate-light.png"
+  >
+  <img
+    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four live organizational sources, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
+    src="../assets/lkw-governed-evidence-gate-light.png"
+  >
+</picture>
+
 ```mermaid
 flowchart LR
   POLICY["Approved Indexed Policy"]
@@ -301,6 +322,21 @@ Tests: `tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_adversari
 
 The flagship COMM-5D proof uses an in-process controlled Project Status vendor. **F3-E-R1** adds a Docker-backed Mongo persistence proof for the controlled **Security Status** vendor.
 
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/lkw-external-evidence-authority-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/lkw-external-evidence-authority-light.png"
+  >
+  <img
+    alt="LKW advanced proof showing four independent live provider connections and Docker-backed vendor state accessed only through integration abstractions."
+    src="../assets/lkw-external-evidence-authority-light.png"
+  >
+</picture>
+
 ```bash
 docker compose \
   -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml \
@@ -345,6 +381,36 @@ Proof control (seed, failure injection, readiness) uses `ControlledSecurityStatu
 ## Advanced flagship proof (F3-F)
 
 Composes F3-A/B/C/D/E into one Docker-backed four-provider governed decision proof.
+
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/lkw-policy-revision-admissibility-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/lkw-policy-revision-admissibility-light.png"
+  >
+  <img
+    alt="LKW policy revision proof showing the same two-hour security evidence accepted under REV17 with a 24-hour max age and rejected under REV18 with a one-hour max age."
+    src="../assets/lkw-policy-revision-admissibility-light.png"
+  >
+</picture>
+
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/lkw-evidence-failure-semantics-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/lkw-evidence-failure-semantics-light.png"
+  >
+  <img
+    alt="LKW evidence failure proof distinguishing authority unavailable, provider failure, invalid provider response, and temporally invalid evidence, each suppressing LLM synthesis."
+    src="../assets/lkw-evidence-failure-semantics-light.png"
+  >
+</picture>
 
 ```bash
 docker compose \

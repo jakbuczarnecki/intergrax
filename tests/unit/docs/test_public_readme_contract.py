@@ -67,7 +67,7 @@ LKW_LIGHT_PATH = (
     / "local_workspace_application"
     / "docs"
     / "assets"
-    / "lkw-grounded-result-light.svg"
+    / "lkw-governed-evidence-gate-light.png"
 )
 LKW_DARK_PATH = (
     REPO_ROOT
@@ -75,7 +75,7 @@ LKW_DARK_PATH = (
     / "local_workspace_application"
     / "docs"
     / "assets"
-    / "lkw-grounded-result-dark.svg"
+    / "lkw-governed-evidence-gate-dark.png"
 )
 
 _SECTION_HEADINGS_ORDER = (
@@ -384,11 +384,18 @@ def test_governed_execution_visual_contract(readme_text: str) -> None:
 
 
 def test_lkw_visual_contract(readme_text: str) -> None:
-    assert "applications/local_workspace_application/docs/assets/lkw-grounded-result-light.svg" in readme_text
-    assert "applications/local_workspace_application/docs/assets/lkw-grounded-result-dark.svg" in readme_text
-    assert 'alt="LKW quickstart flow' in readme_text
-    assert LKW_LIGHT_PATH.is_file(), "LKW light SVG is missing"
-    assert LKW_DARK_PATH.is_file(), "LKW dark SVG is missing"
+    assert (
+        "applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png"
+        in readme_text
+    )
+    assert (
+        "applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-dark.png"
+        in readme_text
+    )
+    assert "lkw-grounded-result" not in readme_text
+    assert 'alt="LKW advanced governed proof' in readme_text
+    assert LKW_LIGHT_PATH.is_file(), "LKW governed evidence gate light PNG is missing"
+    assert LKW_DARK_PATH.is_file(), "LKW governed evidence gate dark PNG is missing"
     pair_violations = _validate_light_dark_pair(LKW_LIGHT_PATH, LKW_DARK_PATH)
     assert not pair_violations, f"LKW light/dark pair: {pair_violations}"
 
@@ -490,19 +497,6 @@ def _collect_svg_violations(root: ET.Element) -> list[str]:
         violations.append("missing desc")
 
     return violations
-
-
-@pytest.mark.parametrize(
-    "svg_path",
-    [
-        LKW_LIGHT_PATH,
-        LKW_DARK_PATH,
-    ],
-)
-def test_svg_safety(svg_path: Path) -> None:
-    root = _parse_svg(svg_path)
-    violations = _collect_svg_violations(root)
-    assert not violations, f"{svg_path.name}: {violations}"
 
 
 def test_visual_contract(readme_text: str) -> None:

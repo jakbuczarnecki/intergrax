@@ -355,8 +355,9 @@ def test_project_projections_synchronize_accepted_lkw_boundaries() -> None:
     assert "production-proven savings" in proofs
     assert not _INTERNAL_TASK_PATTERN.search(proofs_text)
     assert not _INTERNAL_TASK_PATTERN.search(tour_text)
-    assert "lkw-grounded-result-light.svg" in tour_text
-    assert "lkw-grounded-result-dark.svg" in tour_text
+    assert "lkw-governed-evidence-gate-light.png" in tour_text
+    assert "lkw-governed-evidence-gate-dark.png" in tour_text
+    assert "lkw-grounded-result" not in tour_text
 
 
 def test_lkw_quickstart_reader_literals_and_routes() -> None:
@@ -1184,8 +1185,10 @@ def test_lkw_product_tour_presentation_contract() -> None:
     normalized = " ".join(_normalize(text).split())
 
     assert "<picture>" in text
-    assert "lkw-grounded-result-light.svg" in text
-    assert "lkw-grounded-result-dark.svg" in text
+    assert "lkw-governed-evidence-gate-light.png" in text
+    assert "lkw-governed-evidence-gate-dark.png" in text
+    assert "lkw-grounded-result" not in text
+    assert "governed evidence decision proof" in normalized
     assert "## The LKW experience" in text
     assert "## What this proves" in text
     assert "## Current boundary" in text

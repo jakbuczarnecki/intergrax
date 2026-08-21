@@ -244,6 +244,7 @@ Product Quick Start and Core Platform Proof use separate execution lifecycles. S
 ## Other routes
 
 - Product orientation: [LKW Product Tour](LKW_PRODUCT_TOUR.md)
+- Advanced governed evidence proof: [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md)
 - Proof status dashboard: [docs/project/proofs/PROOFS.md](../../../../docs/project/proofs/PROOFS.md)
 - Builder route: [Builder Quick Start](../../../../docs/project/builders/BUILDER_QUICKSTART.md)
 - Deeper build planning: [docs/project/builders/BUILD_WITH_INTERGRAX.md](../../../../docs/project/builders/BUILD_WITH_INTERGRAX.md)

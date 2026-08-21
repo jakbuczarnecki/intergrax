@@ -125,9 +125,9 @@ This aligns with `README.md` (Hybrid Ask combining indexed and authorized live e
 | Failure semantics | Product troubleshooting scope | AUTHORITY_UNAVAILABLE, PROVIDER_FAILED, PROVIDER_RESPONSE_INVALID, EVIDENCE_TEMPORALLY_INVALID |
 | LLM gating | Grounded answer on indexed hit | LLM only when overall admissibility SATISFIED |
 | Persistence proof | Ask run + source citation | Structural admissibility + reason codes + vendor restart |
-| Visual | `lkw-grounded-result-{light,dark}.svg` | Future: `intergrax-governed-evidence-gate-{light,dark}.png` |
+| Visual | *(removed)* `lkw-grounded-result-{light,dark}.svg` | `lkw-governed-evidence-gate-{light,dark}.png` in `applications/local_workspace_application/docs/assets/` |
 | Public placement | README “Try LKW”, QUICKSTART | README “what is proven”, PROOFS, GOVERNED_HYBRID_KNOWLEDGE_PROOF |
-| Ownership | **LKW reference product** | **Intergrax platform** mechanisms via LKW `WorkspaceAskServiceV2` |
+| Ownership | **LKW reference product** | **LKW reference application** assets; **Intergrax platform** mechanisms via LKW `WorkspaceAskServiceV2` |
 
 **Critical rule:** Do not conflate A and B. The Quick Start visual must remain labeled as onboarding / indexed Ask — not as the full Intergrax governed-evidence story.
 
@@ -212,7 +212,11 @@ Intergrax determines what evidence is required, whether authorized sources satis
 
 ## 9. Visual Story Pack
 
-Four future assets — **text specification only**. Generate externally (ChatGPT/user). Filenames use light/dark pairs consistent with `docs/project/assets/public/readme/`.
+Four assets — light/dark pairs in `applications/local_workspace_application/docs/assets/`.
+
+> **Post-G1 ownership refinement:** the Advanced Flagship visuals are LKW reference
+> application assets, while Intergrax remains the underlying platform mechanism.
+> Global Intergrax README assets remain in `docs/project/assets/public/readme/`.
 
 ---
 
@@ -220,8 +224,8 @@ Four future assets — **text specification only**. Generate externally (ChatGPT
 
 **Working filenames:**
 
-- `docs/project/assets/public/readme/intergrax-governed-evidence-gate-light.png`
-- `docs/project/assets/public/readme/intergrax-governed-evidence-gate-dark.png`
+- `applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png`
+- `applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-dark.png`
 
 | Field | Specification |
 |-------|---------------|
@@ -248,8 +252,8 @@ Four future assets — **text specification only**. Generate externally (ChatGPT
 
 **Working filenames:**
 
-- `docs/project/assets/public/readme/intergrax-policy-revision-admissibility-light.png`
-- `docs/project/assets/public/readme/intergrax-policy-revision-admissibility-dark.png`
+- `applications/local_workspace_application/docs/assets/lkw-policy-revision-admissibility-light.png`
+- `applications/local_workspace_application/docs/assets/lkw-policy-revision-admissibility-dark.png`
 
 | Field | Specification |
 |-------|---------------|
@@ -268,8 +272,8 @@ Four future assets — **text specification only**. Generate externally (ChatGPT
 
 **Working filenames:**
 
-- `docs/project/assets/public/readme/intergrax-evidence-failure-semantics-light.png`
-- `docs/project/assets/public/readme/intergrax-evidence-failure-semantics-dark.png`
+- `applications/local_workspace_application/docs/assets/lkw-evidence-failure-semantics-light.png`
+- `applications/local_workspace_application/docs/assets/lkw-evidence-failure-semantics-dark.png`
 
 | Field | Specification |
 |-------|---------------|
@@ -287,8 +291,8 @@ Four future assets — **text specification only**. Generate externally (ChatGPT
 
 **Working filenames:**
 
-- `docs/project/assets/public/readme/intergrax-external-evidence-authority-light.png`
-- `docs/project/assets/public/readme/intergrax-external-evidence-authority-dark.png`
+- `applications/local_workspace_application/docs/assets/lkw-external-evidence-authority-light.png`
+- `applications/local_workspace_application/docs/assets/lkw-external-evidence-authority-dark.png`
 
 | Field | Specification |
 |-------|---------------|
@@ -305,7 +309,7 @@ Four future assets — **text specification only**. Generate externally (ChatGPT
 
 ## 10. Visual style contract
 
-Audited family: `docs/project/assets/public/readme/` (PNG, light/dark pairs).
+Audited family: `applications/local_workspace_application/docs/assets/` (PNG, light/dark pairs). Global Intergrax README assets: `docs/project/assets/public/readme/`.
 
 | Characteristic | Observable convention |
 |----------------|----------------------|
@@ -352,21 +356,20 @@ Future ChatGPT-generated assets should match this family for README cohesion.
 1. Ecosystem hero  
 2. Choose your path  
 3. Platform map  
-4. LKW section → Quick Start visual (`lkw-grounded-result`) → “What is boundedly proven” → Try LKW  
+4. LKW section → **What is proven today** (Product Quick Start + Governed Evidence Decision Proof) → governed evidence gate visual → Try LKW
 
 **Recommended future hierarchy:**
 
-1. Ecosystem hero *(unchanged)*  
-2. Choose your path *(unchanged)*  
-3. Platform map *(unchanged)*  
-4. **LKW product positioning** *(short — unchanged intent)*  
-5. **What is proven today** *(expand: Product Quick Start + Governed Evidence Decision Proof as separate bullets)*  
-6. **New governed decision hero (Visual 1)** — platform differentiation  
-7. **Product Quick Start** subsection with existing AURORA-17 visual — explicitly “onboarding / indexed Ask”  
-8. Try LKW commands *(unchanged)*  
-9. Deeper doc routes *(PROOFS, GOVERNED_HYBRID_KNOWLEDGE_PROOF)*  
+1. Ecosystem hero *(unchanged)*
+2. Choose your path *(unchanged)*
+3. Platform map *(unchanged)*
+4. **LKW product positioning** *(short — unchanged intent)*
+5. **What is proven today** *(Product Quick Start + Governed Evidence Decision Proof as separate bullets)*
+6. **Governed decision hero (Visual 1)** — platform differentiation in Governed Evidence section
+7. **Try LKW** commands *(unchanged)*
+8. Deeper doc routes *(PROOFS, GOVERNED_HYBRID_KNOWLEDGE_PROOF)*
 
-**Consistency:** Current README already separates Quick Start from hybrid certification textually; it lacks a flagship visual and explicit Advanced Flagship proof row. Recommended hierarchy **extends** current structure without removing the AURORA visual — only reorders so governed proof appears **before** Quick Start visual, not instead of it.
+**Consistency:** README separates Quick Start from Governed Evidence Proof textually and visually. The legacy Quick Start SVG (`lkw-grounded-result`) is removed; Product Quick Start remains documented without a dedicated diagram.
 
 ---
 
