@@ -199,7 +199,6 @@ class RuntimeRequest:
             workspace_id=self.workspace_id,
             metadata=dict(self.metadata),
             canonical_identity=self.canonical_identity,
-            execution_authority=self.execution_authority,
         )
 
     @classmethod
@@ -222,7 +221,6 @@ class RuntimeRequest:
             tenant_id=envelope.tenant_id,
             metadata=dict(envelope.metadata),
             canonical_identity=envelope.canonical_identity,
-            execution_authority=envelope.execution_authority,
         )
 
     # User-provided instructions (ChatGPT/Gemini-style)

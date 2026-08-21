@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from typing import Iterator
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
@@ -29,9 +30,11 @@ from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
     mint_run_id,
+    mint_task_id,
     reset_active_execution_identity,
 )
 from intergrax.contracts.subtask_contract import SubtaskContract
+from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.interactions.actor_resolution import narrow_delegation_scopes
@@ -654,3 +657,175 @@ async def test_b3_nested_typed_authority_denies_overreach() -> None:
     assert child_node.execution_result is not None
     assert child_node.execution_result.status is AgentExecutionStatus.COMPLETED
     assert len(executions) == 2
+
+
+def test_r2_1_public_task_envelope_cannot_accept_root_authority() -> None:
+    with pytest.raises(ValidationError):
+        TaskEnvelope(
+            tenant_id="t",
+            user_id="u",
+            message="x",
+            execution_authority={
+                "permission_scopes": [],
+                "unrestricted": True,
+            },
+        )
+
+
+def test_r2_2_from_envelope_does_not_create_authority() -> None:
+    envelope = TaskEnvelope(tenant_id="t", user_id="u", message="x")
+    task = Task.from_envelope(envelope)
+    assert task.execution_authority is None
+
+
+@pytest.mark.asyncio
+async def test_r2_3_caller_metadata_and_envelope_cannot_grant_authority() -> None:
+    UaepPipelineStubAgent.run_log.clear()
+    child = UaepPipelineStubAgent(
+        agent_id="child",
+        capability="cap.child",
+        prefix="C",
+    )
+    registry = AgentRegistry()
+    registry.register(child)
+    envelope = TaskEnvelope(
+        tenant_id="t1",
+        user_id="u1",
+        message="go",
+        metadata={
+            EXECUTION_PERMISSION_SCOPES_METADATA_KEY: ["admin"],
+            EXECUTION_AUTHORITY_UNRESTRICTED_METADATA_KEY: True,
+        },
+    )
+    task = Task.from_envelope(envelope)
+    assert task.execution_authority is None
+    graph = ExecutionGraph(
+        graph_id="g1",
+        task_id=task.task_id,
+        nodes=[
+            ExecutionNode(
+                node_id="n1",
+                agent_id="child",
+                delegation=DelegationSpec(
+                    child_agent_id="child",
+                    permission_scopes=("admin",),
+                ),
+            ),
+        ],
+    )
+    bus = RuntimeEventBus(record_history=True)
+    executor = GraphExecutor(registry, event_bus=bus)
+    with _bound_execution_identity():
+        executions, _, _, _ = await executor.execute(graph, task)
+    assert UaepPipelineStubAgent.run_log == []
+    assert not any(
+        event.event_type is RuntimeEventType.DELEGATION_GRANTED for event in bus.history
+    )
+    assert executions
+    assert executions[0].status is AgentExecutionStatus.FAILED
+    assert "conflict" in executions[0].errors[0].lower()
+
+
+@pytest.mark.asyncio
+async def test_r2_4_trusted_host_enrichment_works() -> None:
+    child = UaepPipelineStubAgent(
+        agent_id="child",
+        capability="cap.child",
+        prefix="C",
+        track_request_metadata=True,
+    )
+    registry = AgentRegistry()
+    registry.register(child)
+    envelope = TaskEnvelope(tenant_id="t1", user_id="u1", message="go")
+    task = Task.from_envelope(envelope).with_trusted_execution_authority(
+        ParentExecutionAuthority.scoped(("read", "write"))
+    )
+    graph = ExecutionGraph(
+        graph_id="g1",
+        task_id=task.task_id,
+        nodes=[
+            ExecutionNode(
+                node_id="n1",
+                agent_id="child",
+                delegation=DelegationSpec(
+                    child_agent_id="child",
+                    permission_scopes=("read",),
+                ),
+            ),
+        ],
+    )
+    executor = GraphExecutor(registry)
+    with _bound_execution_identity():
+        await executor.execute(graph, task)
+    assert child.last_request is not None
+    assert child.last_request.effective_delegation_authority is not None
+    assert child.last_request.effective_delegation_authority.effective_permission_scopes == ("read",)
+
+
+@pytest.mark.asyncio
+async def test_r2_5_trusted_unrestricted_host_authority() -> None:
+    child = UaepPipelineStubAgent(
+        agent_id="child",
+        capability="cap.child",
+        prefix="C",
+        track_request_metadata=True,
+    )
+    registry = AgentRegistry()
+    registry.register(child)
+    envelope = TaskEnvelope(tenant_id="t1", user_id="u1", message="go")
+    task = Task.from_envelope(envelope).with_trusted_execution_authority(
+        ParentExecutionAuthority.unrestricted_root()
+    )
+    graph = ExecutionGraph(
+        graph_id="g1",
+        task_id=task.task_id,
+        nodes=[
+            ExecutionNode(
+                node_id="n1",
+                agent_id="child",
+                delegation=DelegationSpec(
+                    child_agent_id="child",
+                    permission_scopes=("read",),
+                ),
+            ),
+        ],
+    )
+    executor = GraphExecutor(registry)
+    with _bound_execution_identity():
+        await executor.execute(graph, task)
+    assert child.last_request is not None
+    assert child.last_request.effective_delegation_authority is not None
+    assert child.last_request.effective_delegation_authority.effective_permission_scopes == ("read",)
+
+
+def test_r2_6_public_envelope_cannot_set_effective_child_authority() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    trusted_child = EffectiveDelegationAuthority(
+        requested_permission_scopes=("admin",),
+        parent_effective_scopes=("admin",),
+        parent_unrestricted=False,
+        effective_permission_scopes=("admin",),
+    )
+    request = RuntimeRequest(
+        agent_id="child",
+        user_id="u1",
+        session_id="s1",
+        message="go",
+        task_id=task_id,
+        run_id=run_id,
+        tenant_id="t1",
+        execution_authority=ParentExecutionAuthority.scoped(("read", "write")),
+        effective_delegation_authority=trusted_child,
+    )
+    envelope = request.to_envelope()
+    restored = RuntimeRequest.from_envelope(envelope, task_id=task_id, run_id=run_id)
+    assert restored.execution_authority is None
+    assert restored.effective_delegation_authority is None
+    with pytest.raises(ValidationError):
+        TaskEnvelope(
+            tenant_id="t1",
+            user_id="u1",
+            message="go",
+            effective_delegation_authority=trusted_child.model_dump(),
+        )

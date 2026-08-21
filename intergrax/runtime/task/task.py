@@ -120,7 +120,6 @@ class Task(BaseModel):
             constraints=dict(constraints) if isinstance(constraints, dict) else {},
             metadata=meta,
             canonical_identity=self.canonical_identity,
-            execution_authority=self.execution_authority,
         )
 
     @classmethod
@@ -140,8 +139,13 @@ class Task(BaseModel):
             agent_id=envelope.agent_id,
             metadata=metadata,
             canonical_identity=envelope.canonical_identity,
-            execution_authority=envelope.execution_authority,
         )
+
+    def with_trusted_execution_authority(
+        self, authority: ParentExecutionAuthority
+    ) -> Task:
+        """Assign host/runtime-minted authority after the public intake boundary."""
+        return self.model_copy(update={"execution_authority": authority})
 
     def to_runtime_request(self, *, run_id: RunId) -> "RuntimeRequest":
         from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
