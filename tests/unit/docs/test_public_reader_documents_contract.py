@@ -322,12 +322,15 @@ def test_project_projections_synchronize_accepted_lkw_boundaries() -> None:
     tour = " ".join(_normalize(tour_text).split())
 
     for text, name in ((proofs, "PROOFS"), (tour, "LKW Product Tour")):
-        assert "primary product proof" in text, f"{name} omits LKW proof role"
         assert "backend product alpha / mvp" in text, f"{name} omits LKW maturity"
         assert "partial" in text, f"{name} omits LKW partial status"
         assert "real-user validation" in text, f"{name} omits real-user boundary"
         assert "commercial validation" in text, f"{name} omits commercial boundary"
         assert "complete live-provider access" in text, f"{name} omits live-provider boundary"
+
+    assert "active reference product" in proofs, "PROOFS omits LKW product identity"
+    assert "primary product proof" not in proofs, "PROOFS must not identify LKW as proof"
+    assert "primary product proof" not in tour, "LKW Product Tour must stay product-first"
 
     assert "bounded indexed hybrid ask branch" in proofs
     assert "indexedonly" in proofs
@@ -413,11 +416,13 @@ def test_lkw_quickstart_reader_literals_and_routes() -> None:
 
 
 def test_public_terminology(why_text: str, arch_text: str, build_text: str) -> None:
-    assert "Primary product proof" in why_text
+    assert "Active reference product" in why_text
+    assert "Primary product proof" not in why_text
     assert "Featured platform-capability proof" in why_text
     assert "PARTIAL" in why_text
 
-    assert "Primary product proof" in arch_text
+    assert "Active reference product" in arch_text
+    assert "Primary product proof" not in arch_text
     assert "Featured platform-capability proof" in arch_text
     assert "PARTIAL" in arch_text
 
@@ -451,6 +456,11 @@ def test_architecture_operating_layer_contract(arch_text: str) -> None:
         "required identity and permissions",
         "architect review path",
         "technical documentation map",
+        "platform deep-dive route",
+        "how the platform works",
+        "how intergrax is proven",
+        "product-level evidence",
+        "capability-level evidence",
     ):
         assert phrase in normalized, f"ARCHITECTURE missing semantic marker: {phrase}"
 
@@ -663,7 +673,8 @@ def test_architecture_platform_extensibility_section(arch_text: str) -> None:
         "domain-owned surfaces",
     ):
         assert phrase in normalized, f"ARCHITECTURE missing Platform Extensibility marker: {phrase}"
-    assert "primary product proof" in normalized
+    assert "active reference product" in normalized
+    assert "primary product proof" not in normalized
     assert "featured platform-capability proof" in normalized
     assert "partial" in normalized
     assert "strategic optionality" in normalized or "not current product proofs" in normalized
@@ -1021,7 +1032,7 @@ def test_use_cases_workflow_fit_and_ownership_contract() -> None:
         "not yet proven",
         "not a fit",
         "private governed knowledge workspace",
-        "primary product proof",
+        "active reference product",
         "backend product alpha / mvp",
         "partial",
         "product team remains responsible",
@@ -1213,8 +1224,14 @@ def test_lkw_product_tour_presentation_contract() -> None:
     assert "lkw-grounded-result" not in text
     assert "governed evidence decision proof" in normalized
     assert "## The LKW experience" in text
+    assert "## Why Intergrax" in text
+    assert "## Architecture at a glance" in text
     assert "## What this proves" in text
     assert "## Current boundary" in text
     assert "not a screenshot of a finished application ui" in normalized
     assert "[LKW Quick Start](QUICKSTART.md)" in text
-    assert normalized.index("## the lkw experience") < normalized.index("## current boundary")
+    assert "../ARCHITECTURE.md" in text
+    assert normalized.index("## the lkw experience") < normalized.index(
+        "## flagship proof"
+    )
+    assert normalized.index("## flagship proof") < normalized.index("## current boundary")

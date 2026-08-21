@@ -127,7 +127,11 @@ class AdaptationExecutor:
         task_class: str,
         version_id: str,
     ) -> CanaryPromotionResult:
-        record = self._require_version(version_id)
+        record = self._require_scoped_version(
+            version_id,
+            tenant_id=tenant_id,
+            task_class=task_class,
+        )
         if record.status != ProfileVersionStatus.SHADOW:
             raise ValueError(f"Canary promotion requires shadow status, got {record.status.value}")
         promoted = self._lifecycle_manager.transition(version_id, target=ProfileVersionStatus.CANARY)
@@ -146,9 +150,14 @@ class AdaptationExecutor:
         task_class: str,
         version_id: str,
     ) -> ApplyProfileResult:
+        record = self._validate_apply_promotion_authority(
+            package,
+            tenant_id=tenant_id,
+            task_class=task_class,
+            version_id=version_id,
+        )
         if self._approval_store is not None:
             require_policy_learning_approval(package, approval_store=self._approval_store)
-        record = self._require_version(version_id)
         if record.status not in {ProfileVersionStatus.SHADOW, ProfileVersionStatus.CANARY}:
             raise ValueError(
                 f"Apply requires shadow or canary status, got {record.status.value}"
@@ -224,8 +233,61 @@ class AdaptationExecutor:
             rolled_back_version_id=current.version_id,
         )
 
-    def _require_version(self, version_id: str) -> ProfileVersionRecord:
+    def _require_scoped_version(
+        self,
+        version_id: str,
+        *,
+        tenant_id: str,
+        task_class: str,
+        artifact_type: ProfileArtifactType | None = None,
+    ) -> ProfileVersionRecord:
         record = self._profile_store.get(version_id)
         if record is None:
             raise ValueError(f"Unknown profile version: {version_id}")
+        if record.tenant_id != tenant_id:
+            raise ValueError(
+                "Profile version tenant mismatch: "
+                f"expected {tenant_id!r}, got {record.tenant_id!r}"
+            )
+        if record.task_class != task_class:
+            raise ValueError(
+                "Profile version task_class mismatch: "
+                f"expected {task_class!r}, got {record.task_class!r}"
+            )
+        if artifact_type is not None and record.artifact_type != artifact_type:
+            raise ValueError(
+                "Profile version artifact_type mismatch: "
+                f"expected {artifact_type.value!r}, got {record.artifact_type.value!r}"
+            )
+        return record
+
+    def _validate_apply_promotion_authority(
+        self,
+        package: AdaptationProposalPackage,
+        *,
+        tenant_id: str,
+        task_class: str,
+        version_id: str,
+    ) -> ProfileVersionRecord:
+        if not package.passed_all_gates:
+            raise ValueError("Cannot apply a proposal that failed governance gates")
+        draft = package.candidate.profile_draft
+        if draft is None:
+            raise ValueError("Apply requires a ProfileVersionDraft")
+        if version_id != draft.version_id:
+            raise ValueError(
+                "Apply version_id mismatch: "
+                f"package authorizes {draft.version_id!r}, got {version_id!r}"
+            )
+        record = self._require_scoped_version(
+            version_id,
+            tenant_id=tenant_id,
+            task_class=task_class,
+            artifact_type=draft.artifact_type,
+        )
+        if record.created_by != package.proposal_id:
+            raise ValueError(
+                "Profile version lineage mismatch: "
+                f"created_by {record.created_by!r} != proposal {package.proposal_id!r}"
+            )
         return record

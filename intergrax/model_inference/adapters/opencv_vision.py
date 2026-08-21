@@ -4,9 +4,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from urllib.parse import unquote, urlparse
-
 from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.model_inference.contracts import (
     ExtendedVisionInferenceAdapter,
@@ -20,6 +17,7 @@ from intergrax.model_inference.contracts import (
     VisionSegment,
     VisionSegmentationResult,
 )
+from intergrax.model_inference.media_boundary import local_media_path_from_request
 
 
 def _import_cv2():
@@ -42,7 +40,7 @@ class OpenCvVisionInferenceAdapter(ExtendedVisionInferenceAdapter):
     slug = "onnxruntime"
 
     def detect(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionInferenceResult:
-        regions = _contour_regions(request.media_uri, top_k=request.top_k)
+        regions = _contour_regions(request, top_k=request.top_k)
         detections = [
             VisionDetection(label="contour.region", confidence=region.confidence, bbox=region.bbox)
             for region in regions
@@ -54,7 +52,7 @@ class OpenCvVisionInferenceAdapter(ExtendedVisionInferenceAdapter):
         )
 
     def segment(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionSegmentationResult:
-        regions = _contour_regions(request.media_uri, top_k=request.top_k)
+        regions = _contour_regions(request, top_k=request.top_k)
         segments = [
             VisionSegment(label="contour.segment", confidence=region.confidence, bbox=region.bbox)
             for region in regions
@@ -66,7 +64,7 @@ class OpenCvVisionInferenceAdapter(ExtendedVisionInferenceAdapter):
         )
 
     def ocr_regions(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionOcrResult:
-        image_path = _resolve_media_path(request.media_uri)
+        image_path = local_media_path_from_request(request)
         text = _ocr_text(image_path)
         return VisionOcrResult(
             request_id=request.request_id,
@@ -89,9 +87,9 @@ class _ContourRegion:
         self.bbox = bbox
 
 
-def _contour_regions(media_uri: str, *, top_k: int) -> list[_ContourRegion]:
+def _contour_regions(request: VisionInferenceRequest, *, top_k: int) -> list[_ContourRegion]:
     cv2 = _import_cv2()
-    image_path = _resolve_media_path(media_uri)
+    image_path = local_media_path_from_request(request)
     image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
     if image is None:
         raise FileNotFoundError(f"Unable to read image: {image_path}")
@@ -118,7 +116,7 @@ def _contour_regions(media_uri: str, *, top_k: int) -> list[_ContourRegion]:
     return regions
 
 
-def _ocr_text(image_path: Path) -> str:
+def _ocr_text(image_path) -> str:
     try:
         import pytesseract
     except ImportError:
@@ -127,13 +125,3 @@ def _ocr_text(image_path: Path) -> str:
     if image is None:
         return ""
     return (pytesseract.image_to_string(image) or "").strip() or "[empty]"
-
-
-def _resolve_media_path(media_uri: str) -> Path:
-    if media_uri.startswith("file://"):
-        parsed = urlparse(media_uri)
-        path_str = unquote(parsed.path)
-        if path_str.startswith("/") and len(path_str) > 2 and path_str[2] == ":":
-            path_str = path_str[1:]
-        return Path(path_str)
-    return Path(media_uri)

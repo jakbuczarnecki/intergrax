@@ -66,6 +66,31 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             public_evidence_eligible=True,
         ),
         ProofManifestEntry(
+            proof_id="TOOLS-ITERATIVE-SQL-INVESTIGATION",
+            title="TOOLS iterative SQL investigation platform proof",
+            domain="tools",
+            profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
+            proof_kind="iterative_sql_investigation",
+            command=_uv_repo_python(
+                "platform_proofs/tools/iterative_sql_investigation/run_proof.py",
+            ),
+            environment_requirements=(
+                EnvRequirement(kind=EnvRequirementKind.COMMAND_AVAILABLE, name="uv"),
+                EnvRequirement(kind=EnvRequirementKind.DOCKER_AVAILABLE, name="docker"),
+                EnvRequirement(
+                    kind=EnvRequirementKind.ENV_PRESENT,
+                    name="INTERGRAX_LLM_PROVIDER",
+                ),
+                EnvRequirement(
+                    kind=EnvRequirementKind.ENV_PRESENT,
+                    name="INTERGRAX_LLM_MODEL",
+                ),
+            ),
+            safety_class=ProofSafetyClass.LOCAL_MUTATING,
+            timeout_seconds=3600,
+            public_evidence_eligible=False,
+        ),
+        ProofManifestEntry(
             proof_id="LKW-MODEL-RUNTIME",
             title="LKW model runtime portability proof",
             domain="lkw",

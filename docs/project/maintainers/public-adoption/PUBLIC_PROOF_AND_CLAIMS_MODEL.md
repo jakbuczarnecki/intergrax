@@ -196,13 +196,18 @@ When sources disagree, apply **claim audit rules** (§11): use the lower support
 
 | Item | Contract |
 |------|----------|
-| Public role | LKW is the Primary product proof |
+| Public role | LKW is the Active reference product |
 | Overall public classification | PARTIAL |
 | Product maturity | Backend Product Alpha / MVP |
 | Accepted proof owner | `../../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` and referenced evidence |
 | Detailed implementation owner | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` |
 | Public claim snapshot | `../../../../docs/project/proofs/PROOFS.md` |
 | Non-duplication rule | Current tasks, slices, dependencies and next steps remain only in the implementation plan |
+
+**LKW product identity ≠ LKW proof/evidence paths.** The Active reference product role
+describes LKW as a product entry — not a proof classification. Accepted LKW proof
+documents (for example `LKW_PLATFORM_PROOF.md` and referenced bounded paths) provide
+technical evidence; they do not substitute for LKW product identity.
 
 The implementation plan may advance without changing `../../../../docs/project/proofs/PROOFS.md`.
 

@@ -18,6 +18,7 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     reset_active_execution_identity,
 )
+from intergrax.utils import attribute_access
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.human.declarative_hitl_grant import (
@@ -502,7 +503,7 @@ async def test_intake_runner_reject_preserves_evidence_before_cleanup(
     rejection_events = [
         event
         for event in published
-        if getattr(event, "event_type", None) == RuntimeEventType.HUMAN_APPROVAL_RECEIVED
+        if attribute_access.optional(event, "event_type", None) == RuntimeEventType.HUMAN_APPROVAL_RECEIVED
     ]
     assert len(rejection_events) == 1
     assert rejection_events[0].payload["response"] == reject_text
@@ -561,7 +562,7 @@ async def test_intake_runner_escalate_preserves_evidence_before_cleanup(
     escalation_events = [
         event
         for event in published
-        if getattr(event, "event_type", None) == RuntimeEventType.INTERRUPT_ESCALATED
+        if attribute_access.optional(event, "event_type", None) == RuntimeEventType.INTERRUPT_ESCALATED
     ]
     assert len(escalation_events) == 1
 

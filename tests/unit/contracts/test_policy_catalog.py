@@ -9,6 +9,7 @@ from typing import Any, get_args, get_origin
 import pytest
 from pydantic import ValidationError
 
+from intergrax.utils import attribute_access
 from intergrax.contracts.policy_catalog import PolicyDefinition, PolicyDefinitionSource
 
 pytestmark = [pytest.mark.unit]
@@ -73,7 +74,7 @@ def test_unknown_fields_rejected() -> None:
 @pytest.mark.parametrize("field_name", _REQUIRED_FIELDS)
 def test_whitespace_normalized_on_required_fields(field_name: str) -> None:
     definition = _definition(**{field_name: f"  value-for-{field_name}  "})
-    assert getattr(definition, field_name) == f"value-for-{field_name}"
+    assert attribute_access.optional(definition, field_name) == f"value-for-{field_name}"
 
 
 def test_description_whitespace_normalized() -> None:

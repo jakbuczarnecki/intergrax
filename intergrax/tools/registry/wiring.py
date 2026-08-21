@@ -34,6 +34,7 @@ from intergrax.integrations.contracts.security_scanner import SecurityScannerBac
 from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
+from intergrax.model_inference.media_boundary import RemoteMediaEgressPolicy
 from intergrax.tools.registry.runtime_bindings import (
     AgentRegistryBinding,
     HumanDecisionStoreBinding,
@@ -113,6 +114,7 @@ class ToolWiringContext:
     skill_resolver: SkillResolverBinding | None = None
     user_profile_manager: UserProfileManagerBinding | None = None
     read_allowlist_roots: frozenset[str] | None = None
+    remote_media_egress_policy: RemoteMediaEgressPolicy | None = None
     run_budget: Any | None = None
     cost_envelopes: tuple[Any, ...] = ()
     cost_quotas: tuple[Any, ...] = ()

@@ -11,6 +11,7 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
 )
+from intergrax.utils import attribute_access
 from intergrax.applications._shared.registry_projection import (
     MaterializedRegistryProjection,
     RegistryProjectionInputBundle,
@@ -155,7 +156,7 @@ def _manifest_with_contract_ids(manifest: ApplicationManifest) -> ApplicationMan
         if binding.contract_id is not None:
             agents.append(binding)
             continue
-        class_contract = getattr(binding.agent_type, "contract_id", None)
+        class_contract = attribute_access.optional(binding.agent_type, "contract_id", None)
         if isinstance(class_contract, str) and class_contract.strip():
             agents.append(binding.model_copy(update={"contract_id": class_contract.strip()}))
             continue

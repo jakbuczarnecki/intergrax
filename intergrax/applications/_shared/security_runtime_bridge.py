@@ -14,10 +14,13 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
 from intergrax.runtime.security.encryption_transform import (
-    HarnessEnvelopeEncryptor,
     RestrictedPayloadEncryptor,
     SecretsStorePayloadEncryptor,
 )
+
+
+class RestrictedPayloadEncryptorResolutionError(RuntimeError):
+    """Raised when a declared secrets_store cannot be materialized for encryption."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +43,8 @@ def _secrets_store_configured(env: ApplicationEnvironmentProfile) -> bool:
     profile = env.integration_profile
     if profile is None:
         return False
+    if profile.instance_for_category(IntegrationCategory.SECRETS_STORE) is not None:
+        return True
     slug = profile.slug_for_category(IntegrationCategory.SECRETS_STORE)
     return bool(slug and slug.strip())
 
@@ -50,20 +55,32 @@ def resolve_restricted_payload_encryptor(
     """
     Resolve encryptor for RESTRICTED payloads (SEC-ENT-1).
 
-    Prefer live ``SecretsStore`` from integration profile; fall back to harness envelope.
+    Returns ``None`` when no ``SecretsStore`` integration is declared.
+    Raises :class:`RestrictedPayloadEncryptorResolutionError` when a store is
+    declared but cannot be materialized (fail-closed).
     """
     if env is None or not _secrets_store_configured(env):
         return None
     profile = env.integration_profile
     if profile is None:
-        return HarnessEnvelopeEncryptor()
-    try:
-        from intergrax.integrations._shared.conformance import assert_secrets_store
+        raise RestrictedPayloadEncryptorResolutionError(
+            "secrets_store integration is declared but integration_profile is missing",
+        )
+    from intergrax.integrations._shared.conformance import assert_secrets_store
 
+    try:
         store = profile.resolve(IntegrationCategory.SECRETS_STORE)
-        return SecretsStorePayloadEncryptor(assert_secrets_store(store))
-    except Exception:
-        return HarnessEnvelopeEncryptor()
+    except Exception as exc:
+        raise RestrictedPayloadEncryptorResolutionError(
+            "failed to resolve configured secrets_store integration for encryption",
+        ) from exc
+    try:
+        validated = assert_secrets_store(store)
+    except Exception as exc:
+        raise RestrictedPayloadEncryptorResolutionError(
+            "resolved secrets_store backend does not satisfy SecretsStore contract",
+        ) from exc
+    return SecretsStorePayloadEncryptor(validated)
 
 
 def resolve_security_wiring_options(

@@ -4,14 +4,17 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from urllib.parse import unquote, urlparse
-
-from intergrax.model_inference.contracts import ExtendedVisionInferenceAdapter, VisionInferenceAdapter
+from intergrax.model_inference.contracts import AuthorizedLocalMedia, MediaAuthorizationError, ExtendedVisionInferenceAdapter, VisionInferenceAdapter
 from intergrax.model_inference.execution import (
     MODALITY_EXECUTOR_EXTRA_KEY,
     ModalityInferenceExecutor,
     build_modality_inference_executor,
+)
+from intergrax.model_inference.media_boundary import (
+    adapter_requires_remote_egress,
+    host_permits_remote_media_egress,
+    parse_local_media_candidate,
+    resolve_authorized_local_media,
 )
 from intergrax.model_inference.registry import ModelInferenceRegistry
 from intergrax.model_inference.adapters.stub_vision import StubVisionInferenceAdapter
@@ -50,18 +53,50 @@ def assert_artifact_allowed(profile: ModalityProfile | None, artifact_id: str) -
         raise ValueError(f"artifact_id {artifact_id!r} not allowed by ModalityProfile {profile.profile_id!r}")
 
 
-def measure_media_bytes(media_uri: str) -> int:
-    """Return on-disk byte size for a local media URI, or ``0`` when unknown."""
-    path = _resolve_media_path(media_uri)
+def authorize_vision_media(
+    ctx: ToolWiringContext,
+    media_uri: str,
+    *,
+    adapter_slug: str,
+) -> AuthorizedLocalMedia:
+    read_authorized = resolve_authorized_local_media(
+        media_uri,
+        roots=ctx.read_allowlist_roots,
+        remote_egress_permitted=False,
+    )
+    if not adapter_requires_remote_egress(adapter_slug):
+        return read_authorized
+    if not host_permits_remote_media_egress(ctx.remote_media_egress_policy):
+        raise MediaAuthorizationError("remote_media_egress_not_authorized")
+    return read_authorized.model_copy(update={"remote_egress_permitted": True})
+
+
+def measure_authorized_media_bytes(media: AuthorizedLocalMedia) -> int:
+    path = media.resolved_path
     if not path.is_file():
         return 0
     return path.stat().st_size
 
 
-def assert_media_within_limit(profile: ModalityProfile | None, media_uri: str) -> None:
+def measure_media_bytes(media_uri: str) -> int:
+    """Return byte size for local file URIs; ``0`` for non-local schemes (speech stub URIs)."""
+    stripped = media_uri.strip()
+    if not stripped or ("://" in stripped and not stripped.startswith("file://")):
+        return 0
+    try:
+        candidate = parse_local_media_candidate(stripped)
+        resolved = candidate.expanduser().resolve()
+    except MediaAuthorizationError:
+        return 0
+    if not resolved.is_file():
+        return 0
+    return resolved.stat().st_size
+
+
+def assert_media_within_limit(profile: ModalityProfile | None, media: AuthorizedLocalMedia) -> None:
     if profile is None or profile.max_media_bytes is None:
         return
-    size = measure_media_bytes(media_uri)
+    size = measure_authorized_media_bytes(media)
     if size <= 0:
         return
     if size > profile.max_media_bytes:
@@ -70,17 +105,34 @@ def assert_media_within_limit(profile: ModalityProfile | None, media_uri: str) -
         )
 
 
+def prepare_authorized_vision_media(
+    ctx: ToolWiringContext,
+    profile: ModalityProfile | None,
+    media_uri: str,
+    *,
+    adapter_slug: str,
+) -> AuthorizedLocalMedia:
+    authorized = authorize_vision_media(ctx, media_uri, adapter_slug=adapter_slug)
+    assert_media_within_limit(profile, authorized)
+    return authorized
+
+
 def as_extended_adapter(adapter: VisionInferenceAdapter) -> ExtendedVisionInferenceAdapter:
     if isinstance(adapter, ExtendedVisionInferenceAdapter):
         return adapter
     return StubVisionInferenceAdapter()
 
 
-def _resolve_media_path(media_uri: str) -> Path:
-    if media_uri.startswith("file://"):
-        parsed = urlparse(media_uri)
-        path_str = unquote(parsed.path)
-        if path_str.startswith("/") and len(path_str) > 2 and path_str[2] == ":":
-            path_str = path_str[1:]
-        return Path(path_str)
-    return Path(media_uri)
+__all__ = [
+    "MediaAuthorizationError",
+    "assert_artifact_allowed",
+    "assert_media_within_limit",
+    "as_extended_adapter",
+    "authorize_vision_media",
+    "measure_authorized_media_bytes",
+    "measure_media_bytes",
+    "prepare_authorized_vision_media",
+    "resolve_executor",
+    "resolve_modality_profile",
+    "resolve_registry",
+]

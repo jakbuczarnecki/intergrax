@@ -38,7 +38,6 @@ class CodeCraftStartToolInput(CodeCraftContextFields):
 class CodeCraftIterateToolInput(CodeCraftContextFields):
     craft_id: str
     patch_diagnostics: str = ""
-    hitl_approved: bool = False
     timeout_s: float = Field(default=30.0, ge=1.0, le=600.0)
 
 

@@ -69,12 +69,16 @@ def test_codecraft_run_denied_when_mode_disabled() -> None:
     assert out.result.error == "codecraft_mode_disabled"
 
 
-def test_codecraft_run_static_gate_blocks_forbidden_import() -> None:
+def test_codecraft_run_static_gate_blocks_forbidden_import(sandbox_session: SandboxSession) -> None:
     profile = CodeCraftProfile(mode="autonomous")
-    ctx = ToolWiringContext(extras={"codecraft_profile": profile})
+    ctx = ToolWiringContext(sandbox_session=sandbox_session, extras={"codecraft_profile": profile})
     out = codecraft_run(
         ctx,
-        CodeCraftRunToolInput(code="import os\nprint('nope')\n"),
+        CodeCraftRunToolInput(
+            code="import os\nprint('nope')\n",
+            tenant_id="tenant-1",
+            task_id="task-1",
+        ),
     )
     assert out.result.success is False
     assert "forbidden_import" in out.result.static_gate.rule_ids
@@ -86,7 +90,7 @@ def test_codecraft_run_denied_without_sandbox_in_autonomous_mode() -> None:
     ctx = ToolWiringContext(extras={"codecraft_profile": profile})
     out = codecraft_run(ctx, CodeCraftRunToolInput(code="print('ok')\n"))
     assert out.result.success is False
-    assert out.result.error == "sandbox_session_not_configured"
+    assert out.result.error == "codecraft_execution_scope_unavailable"
 
 
 def test_codecraft_run_executes_in_sandbox(sandbox_session: SandboxSession) -> None:

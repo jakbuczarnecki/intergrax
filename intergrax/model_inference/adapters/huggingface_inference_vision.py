@@ -5,14 +5,13 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from typing import Any
 
 import httpx
 
-from intergrax.model_inference.adapters.opencv_vision import _resolve_media_path
 from intergrax.model_inference.adapters.stub_vision import StubVisionInferenceAdapter
 from intergrax.model_inference.contracts import (
+    MediaAuthorizationError,
     ModelArtifact,
     VisionBoundingBox,
     VisionDetection,
@@ -20,6 +19,7 @@ from intergrax.model_inference.contracts import (
     VisionInferenceRequest,
     VisionInferenceResult,
 )
+from intergrax.model_inference.media_boundary import require_remote_egress_bytes
 
 
 class HuggingFaceInferenceVisionAdapter(VisionInferenceAdapter):
@@ -47,8 +47,10 @@ class HuggingFaceInferenceVisionAdapter(VisionInferenceAdapter):
     def detect(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionInferenceResult:
         if not self._api_key:
             return self._fallback.detect(request, artifact=artifact)
-        image_path = _resolve_media_path(request.media_uri)
-        raw = Path(image_path).read_bytes()
+        try:
+            raw = require_remote_egress_bytes(request)
+        except MediaAuthorizationError:
+            raise
         url = f"https://api-inference.huggingface.co/models/{self._model_id}"
         headers = {"Authorization": f"Bearer {self._api_key}"}
         with httpx.Client(timeout=self._timeout) as client:

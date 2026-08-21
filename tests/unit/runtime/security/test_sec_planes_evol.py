@@ -134,10 +134,11 @@ async def test_encryption_denied_emits_platform_signal() -> None:
 
 @pytest.mark.asyncio
 async def test_encryption_middleware_transforms_restricted_payload() -> None:
+    store = _FakeSecretsStore()
     middleware = EncryptionEnforcementMiddleware(
         enforcement_enabled=True,
         secrets_store_configured=True,
-        encryptor=HarnessEnvelopeEncryptor(),
+        encryptor=SecretsStorePayloadEncryptor(store),
     )
     ctx = HookContext(
         run_id="run-enc",
@@ -152,8 +153,9 @@ async def test_encryption_middleware_transforms_restricted_payload() -> None:
     assert result.modified_payload is not None
     value = result.modified_payload["value"]
     assert isinstance(value, dict)
-    assert "__harness_encrypted_ref" in value
+    assert value["__secret_ref"] == "restricted/run-enc/payload"
     assert "secret" not in value
+    assert store.stored["restricted/run-enc/payload"] == "top-secret"
 
 
 def test_secrets_store_encryptor_persists_and_replaces_inline_secret() -> None:

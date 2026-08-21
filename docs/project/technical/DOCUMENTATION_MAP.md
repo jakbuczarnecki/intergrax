@@ -30,6 +30,7 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | Work with Cursor (AI agent) | [AGENTS.md](../../../AGENTS.md) + [AGENT_INSTRUCTIONS.md](guides/AGENT_INSTRUCTIONS.md) |
 | Cursor token budget (F2 / F3) | [CURSOR_TOKEN_SETUP.md](guides/CURSOR_TOKEN_SETUP.md) |
 | Platform audit procedure | [audit_results/README.md](../../audit_results/README.md) |
+| **Platform proofs** (methodology, coverage map) | [platform_proofs/README.md](../../../platform_proofs/README.md) |
 | Conduct a platform audit | [audit_results/AUDIT_PROTOCOL.md](../../audit_results/AUDIT_PROTOCOL.md) |
 | Remediate accepted audit findings | [audit_results/AUDIT_REMEDIATION_PROTOCOL.md](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md) |
 | Audit campaigns and historical results | [audit_results/](../../audit_results/) |
@@ -66,6 +67,7 @@ Domain pair index (24 names): [architecture hub § Domain pair index](../archite
 | [AGENT_INSTRUCTIONS.md](guides/AGENT_INSTRUCTIONS.md) | Full AI agent reference (routing, verification, ADR, O1 output) | Human onboarding doc |
 | [.cursor/rules/](../../../.cursor/rules/README.md) | Always-on / triggered Cursor rules | Replacement for AGENT_INSTRUCTIONS |
 | [bootstrap/*.txt](../maintainers/bootstrap/README.md) | Copy-paste **first message** for a new agent chat (HEP, CI preflight, micro implement) | Stored audit results |
+| [platform_proofs/](../../../platform_proofs/) | **Platform mechanism proofs** — protocol, coverage map, authoring; execution via `scripts/proof/` | Product proofs, public dashboard, duplicate runners |
 | [audit_results/](../../audit_results/) | **Canonical** platform audit methodology, campaigns, results, remediation status | Architecture canon or implementation plan |
 | [audit_results/AUDIT_PROTOCOL.md](../../audit_results/AUDIT_PROTOCOL.md) | Model-executable adversarial audit instruction | Per-domain generated prompts |
 | [audit_results/AUDIT_REMEDIATION_PROTOCOL.md](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md) | Remediation workflow from accepted findings | Duplicate audit narrative in plans |
@@ -95,6 +97,7 @@ Authoring: [AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) · Tier-3: 
 
 | Goal | Start here |
 |------|------------|
+| Design / run platform proof | [platform_proofs/PLATFORM_PROOF_AUTHORING_GUIDE.md](../../../platform_proofs/PLATFORM_PROOF_AUTHORING_GUIDE.md) |
 | Conduct platform audit | [audit_results/AUDIT_PROTOCOL.md](../../audit_results/AUDIT_PROTOCOL.md) |
 | Remediate accepted findings | [audit_results/AUDIT_REMEDIATION_PROTOCOL.md](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md) |
 | Implement plan / HEP step | [bootstrap/hep_step.txt](../maintainers/bootstrap/hep_step.txt) or [micro_implement.txt](../maintainers/bootstrap/micro_implement.txt) |

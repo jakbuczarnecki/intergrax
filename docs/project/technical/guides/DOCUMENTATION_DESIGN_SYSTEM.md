@@ -9,7 +9,7 @@
 - `docs/project/architecture/<DOMAIN>.md`
 - `docs/project/capabilities/architecture/<FEATURE>.md`
 
-**Also applies to (by extension, PDOC-2):** `applications/<product>/docs/product/*_PRODUCT_TOUR.md` — same visual grammar and claim discipline as domain hubs; anatomy in §15.
+**Also applies to (by extension, PDOC-2):** `applications/<product>/docs/product/*_PRODUCT_TOUR.md` — same visual grammar and claim discipline as domain hubs; anatomy in §14.
 
 **Does not apply as a rewrite target in this phase:** satellites, plans, ADRs, root README.
 

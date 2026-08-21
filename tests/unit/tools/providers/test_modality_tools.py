@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from intergrax.model_inference.bootstrap import build_harness_model_inference_registry
+from intergrax.model_inference.opencv_availability import opencv_runtime_available
 from intergrax.tools.providers.ml.contracts import MlPredictInput
 from intergrax.tools.providers.ml.service import ml_predict
 from intergrax.tools.providers.speech.backends import (
@@ -19,12 +20,16 @@ from intergrax.tools.providers.vision.service import vision_detect
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
-def _harness_tool_ctx() -> ToolWiringContext:
+def _harness_tool_ctx(golden: Path | None = None) -> ToolWiringContext:
+    roots: frozenset[str] | None = None
+    if golden is not None:
+        roots = frozenset({str(golden.parent.resolve())})
     return ToolWiringContext(
+        read_allowlist_roots=roots,
         extras={
             SPEECH_BACKEND_EXTRA_KEY: StubSpeechBackend(),
             MODEL_INFERENCE_REGISTRY_EXTRA_KEY: build_harness_model_inference_registry(),
-        }
+        },
     )
 
 
@@ -37,12 +42,13 @@ def test_speech_synthesize_stub_returns_audio_uri() -> None:
     assert output.character_count == len("hello harness")
 
 
+@pytest.mark.skipif(not opencv_runtime_available(), reason="opencv-python-headless runtime unavailable")
 def test_vision_detect_opencv_returns_detection() -> None:
     golden = Path(__file__).resolve().parents[3] / "fixtures" / "vision_golden" / "sample_target.png"
     if not golden.is_file():
         pytest.skip("golden vision fixture not present")
     output = vision_detect(
-        _harness_tool_ctx(),
+        _harness_tool_ctx(golden),
         VisionDetectInput(media_uri=golden.resolve().as_uri()),
     )
     assert output.detections

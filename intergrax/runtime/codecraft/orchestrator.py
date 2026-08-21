@@ -19,6 +19,12 @@ from intergrax.codecraft.static_gate import StaticCodeGate
 from intergrax.codecraft.test_runner import CraftTestRunner
 from intergrax.runtime.codecraft.cv_bridge import iteration_cvl_verdict
 from intergrax.runtime.codecraft.ephemeral_registry import get_ephemeral_registry_store
+from intergrax.runtime.codecraft.ownership import (
+    CodeCraftOwnershipError,
+    CodeCraftSessionOwnership,
+    resolve_codecraft_exec_authorization,
+    resolve_codecraft_ownership,
+)
 from intergrax.runtime.codecraft.sandbox_resolver import resolve_craft_sandbox_session
 from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager, get_session_manager
 from intergrax.runtime.codecraft.trace import CodeCraftTraceEmitter
@@ -89,15 +95,29 @@ class CodeCraftOrchestrator:
         if not profile.generation_allowed():
             return None, self._deny_result("codecraft_mode_disabled", craft_id=craft_id, mode=profile.mode)
 
-        session = self._sessions.open(
-            goal=goal,
-            task_id=task_id,
-            tenant_id=tenant_id,
-            mode=profile.mode,
-            language=language,
-            max_iterations=profile.max_iterations,
-            craft_id=craft_id,
-        )
+        try:
+            ownership = resolve_codecraft_ownership(
+                self._ctx,
+                caller_tenant_id=tenant_id,
+                caller_task_id=task_id,
+            )
+        except CodeCraftOwnershipError as exc:
+            return None, self._deny_result(exc.code, craft_id=craft_id, mode=profile.mode)
+
+        try:
+            session = self._sessions.open(
+                goal=goal,
+                ownership=ownership,
+                mode=profile.mode,
+                language=language,
+                max_iterations=profile.max_iterations,
+                craft_id=craft_id,
+            )
+        except CodeCraftOwnershipError as exc:
+            return None, self._deny_result(exc.code, craft_id=craft_id, mode=profile.mode)
+
+        tenant_id = ownership.tenant_id
+        task_id = ownership.task_id
         self._emitter.session_opened(
             craft_id=session.craft_id,
             mode=profile.mode,
@@ -124,7 +144,7 @@ class CodeCraftOrchestrator:
         session = session.model_copy(
             update={"ephemeral_tool_ids": list(ephemeral.list_tools())},
         )
-        self._sessions.save(session)
+        self._sessions.save_owned(session, ownership)
         return session, None
 
     def iterate(
@@ -135,16 +155,30 @@ class CodeCraftOrchestrator:
         tenant_id: str,
         agent_id: str = "",
         patch_diagnostics: str = "",
-        hitl_approved: bool = False,
         timeout_s: float = 30.0,
     ) -> tuple[CodeCraftSession | None, CraftResult]:
         profile = resolve_codecraft_profile(self._ctx)
         if profile is None:
             return None, self._deny_result("codecraft_profile_missing", craft_id=craft_id)
 
-        session = self._sessions.get(craft_id)
-        if session is None or session.disposed:
+        try:
+            ownership = resolve_codecraft_ownership(
+                self._ctx,
+                caller_tenant_id=tenant_id,
+                caller_task_id=task_id,
+            )
+        except CodeCraftOwnershipError as exc:
+            return None, self._deny_result(exc.code, craft_id=craft_id, mode=profile.mode)
+
+        try:
+            session = self._sessions.get_owned(craft_id, ownership)
+        except CodeCraftOwnershipError as exc:
+            return None, self._deny_result(exc.code, craft_id=craft_id, mode=profile.mode)
+        if session is None:
             return None, self._deny_result("craft_session_not_found", craft_id=craft_id, mode=profile.mode)
+
+        tenant_id = ownership.tenant_id
+        task_id = ownership.task_id
 
         if session.iteration >= session.max_iterations:
             return session, self._deny_result("max_iterations_exceeded", craft_id=craft_id, mode=profile.mode)
@@ -185,7 +219,7 @@ class CodeCraftOrchestrator:
                 static_gate=gate,
                 verdict="revise",
             )
-            session = self._append_iteration(session, record, code=code)
+            session = self._append_iteration(session, record, code=code, ownership=ownership)
             return session, self._craft_result_from_session(session, gate=gate, verdict="revise")
 
         if profile.mode in ("dry_run", "assist_only"):
@@ -200,7 +234,7 @@ class CodeCraftOrchestrator:
                     "status": "closed",
                 },
             )
-            self._sessions.save(session)
+            self._sessions.save_owned(session, ownership)
             return session, CraftResult(
                 craft_id=craft_id,
                 success=True,
@@ -210,31 +244,38 @@ class CodeCraftOrchestrator:
                 verdict="promote" if profile.mode == "assist_only" else "continue",
             )
 
-        needs_hitl = profile.mode == "supervised" or profile.require_hitl_before_exec
-        if needs_hitl and not hitl_approved and not session.hitl_approved:
+        exec_auth = resolve_codecraft_exec_authorization(
+            self._ctx,
+            profile=profile,
+            ownership=ownership,
+            craft_id=craft_id,
+        )
+        if not exec_auth.authorized:
             session = session.model_copy(
                 update={
                     "code": code,
-                    "pending_hitl": True,
-                    "status": "pending_hitl",
+                    "pending_hitl": exec_auth.pending_hitl,
+                    "status": "pending_hitl" if exec_auth.pending_hitl else session.status,
                 },
             )
-            self._sessions.save(session)
-            self._emitter.hitl_requested(
-                craft_id=craft_id,
-                mode=profile.mode,
-                reason="supervised_exec_approval",
-                tenant_id=tenant_id,
-                task_id=task_id,
-                agent_id=agent_id,
-            )
+            self._sessions.save_owned(session, ownership)
+            if exec_auth.pending_hitl:
+                self._emitter.hitl_requested(
+                    craft_id=craft_id,
+                    mode=profile.mode,
+                    reason="supervised_exec_approval",
+                    tenant_id=tenant_id,
+                    task_id=task_id,
+                    agent_id=agent_id,
+                )
+            error = exec_auth.error or ("hitl_denied" if exec_auth.denied else "hitl_pending")
             return session, CraftResult(
                 craft_id=craft_id,
                 success=False,
                 mode=profile.mode,
                 static_gate=gate,
-                error="hitl_pending",
-                verdict="continue",
+                error=error,
+                verdict="continue" if exec_auth.pending_hitl else "abort",
             )
 
         if profile.security_scan_before_exec and not self._security_scan_passed(code):
@@ -358,19 +399,20 @@ class CodeCraftOrchestrator:
             exit_code=exit_code,
         )
         structured = {"stdout": stdout, "success": exec_success and (test_result.skipped or test_result.passed)}
+        hitl_was_required = profile.mode == "supervised" or profile.require_hitl_before_exec
         session = session.model_copy(
             update={
                 "code": code,
                 "iteration": next_iteration,
                 "total_exec_time_s": session.total_exec_time_s + ((duration_ms or 0.0) / 1000.0),
                 "pending_hitl": False,
-                "hitl_approved": hitl_approved or session.hitl_approved,
+                "hitl_approved": session.hitl_approved or hitl_was_required,
                 "sandbox_session_id": sandbox_session_id or session.sandbox_session_id,
                 "structured_output": structured,
                 "status": "closed" if verdict == "promote" else "open",
             },
         )
-        session = self._append_iteration(session, record, code=code)
+        session = self._append_iteration(session, record, code=code, ownership=ownership)
         return session, CraftResult(
             craft_id=craft_id,
             success=exec_success and (test_result.skipped or test_result.passed),
@@ -385,11 +427,38 @@ class CodeCraftOrchestrator:
             verdict=verdict,
         )
 
-    def get_state(self, craft_id: str) -> CodeCraftSession | None:
-        return self._sessions.get(craft_id)
+    def get_state(
+        self,
+        craft_id: str,
+        *,
+        ownership: CodeCraftSessionOwnership,
+    ) -> CodeCraftSession | None:
+        try:
+            return self._sessions.get_owned(craft_id, ownership)
+        except CodeCraftOwnershipError:
+            return None
 
-    def dispose(self, craft_id: str, *, tenant_id: str, task_id: str, agent_id: str = "") -> CodeCraftSession | None:
-        session = self._sessions.dispose(craft_id)
+    def dispose(
+        self,
+        craft_id: str,
+        *,
+        tenant_id: str,
+        task_id: str,
+        agent_id: str = "",
+    ) -> CodeCraftSession | None:
+        try:
+            ownership = resolve_codecraft_ownership(
+                self._ctx,
+                caller_tenant_id=tenant_id,
+                caller_task_id=task_id,
+            )
+        except CodeCraftOwnershipError:
+            return None
+
+        try:
+            session = self._sessions.dispose_owned(craft_id, ownership)
+        except CodeCraftOwnershipError:
+            return None
         if session is None:
             return None
         get_ephemeral_registry_store(self._ctx).dispose(craft_id)
@@ -398,17 +467,39 @@ class CodeCraftOrchestrator:
         self._emitter.disposed(
             craft_id=craft_id,
             mode=mode,
-            tenant_id=tenant_id,
-            task_id=task_id,
+            tenant_id=ownership.tenant_id,
+            task_id=ownership.task_id,
             agent_id=agent_id,
         )
         return session
 
-    def promote(self, craft_id: str) -> CraftResult:
-        session = self._sessions.get(craft_id)
+    def promote(
+        self,
+        craft_id: str,
+        *,
+        tenant_id: str,
+        task_id: str,
+    ) -> CraftResult:
         profile = resolve_codecraft_profile(self._ctx)
-        if session is None or profile is None:
-            return self._deny_result("craft_session_not_found", craft_id=craft_id)
+        if profile is None:
+            return self._deny_result("codecraft_profile_missing", craft_id=craft_id)
+
+        try:
+            ownership = resolve_codecraft_ownership(
+                self._ctx,
+                caller_tenant_id=tenant_id,
+                caller_task_id=task_id,
+            )
+        except CodeCraftOwnershipError as exc:
+            return self._deny_result(exc.code, craft_id=craft_id, mode=profile.mode)
+
+        try:
+            session = self._sessions.get_owned(craft_id, ownership)
+        except CodeCraftOwnershipError as exc:
+            return self._deny_result(exc.code, craft_id=craft_id, mode=profile.mode)
+        if session is None:
+            return self._deny_result("craft_session_not_found", craft_id=craft_id, mode=profile.mode)
+
         promoter = CraftResultPromoter()
         result = promoter.promote_session(session, schema_ref=profile.promotion_schema_ref)
         self._emitter.promoted(
@@ -418,17 +509,24 @@ class CodeCraftOrchestrator:
             tenant_id=session.tenant_id,
             task_id=session.task_id,
         )
-        self._sessions.save(session.model_copy(update={"promoted": True}))
+        self._sessions.save_owned(session.model_copy(update={"promoted": True}), ownership)
         return result
 
-    def _append_iteration(self, session: CodeCraftSession, record: IterationRecord, *, code: str) -> CodeCraftSession:
+    def _append_iteration(
+        self,
+        session: CodeCraftSession,
+        record: IterationRecord,
+        *,
+        code: str,
+        ownership: CodeCraftSessionOwnership,
+    ) -> CodeCraftSession:
         updated = session.model_copy(
             update={
                 "code": code,
                 "iterations": [*session.iterations, record],
             },
         )
-        self._sessions.save(updated)
+        self._sessions.save_owned(updated, ownership)
         return updated
 
     @staticmethod

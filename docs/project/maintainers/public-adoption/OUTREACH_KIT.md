@@ -18,7 +18,7 @@ Canonical public positioning is defined in [INTERGRAX_PUBLIC_POSITIONING.md](../
 
 - Say **source-available**, not **open source**.
 - Say **active R&D**, not **production-ready**.
-- Say **Primary product proof** for LKW, not **finished product**.
+- Say **Active reference product** for LKW, not **finished product**.
 - Say **Backend Product Alpha / MVP** and **PARTIAL** for LKW maturity.
 - Say **Featured platform-capability proof** and **PARTIAL** for Token Optimization.
 - Say **real-user validation incomplete** and **commercial validation incomplete**.
@@ -117,7 +117,7 @@ Hi,
 
 You indicated interest in local or governed knowledge workflows. I would value a structured review of whether the public documentation helps you evaluate a concrete workflow fit.
 
-Local Knowledge Workspace (LKW) is Intergrax's **Primary product proof** — a **Backend Product Alpha / MVP** classified as **PARTIAL**. Real-user and commercial validation are incomplete. LKW is not a finished product or commercially validated offering.
+Local Knowledge Workspace (LKW) is Intergrax's **active reference product** — a **Backend Product Alpha / MVP** with **PARTIAL** public status. Real-user and commercial validation are incomplete. LKW is not a finished product or commercially validated offering. For bounded evidence, see the linked LKW Platform Proof and [PROOFS](../../proofs/PROOFS.md).
 
 LKW Platform Proof:
 <pinned-lkw-proof-url>

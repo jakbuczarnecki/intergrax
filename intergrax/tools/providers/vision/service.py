@@ -18,8 +18,8 @@ from intergrax.tools.providers.vision.contracts import (
 from intergrax.tools.providers.vision.inference_support import (
     as_extended_adapter,
     assert_artifact_allowed,
-    assert_media_within_limit,
-    measure_media_bytes,
+    measure_authorized_media_bytes,
+    prepare_authorized_vision_media,
     resolve_executor,
     resolve_modality_profile,
     resolve_registry,
@@ -31,19 +31,20 @@ VISION_SEGMENT_TOOL_ID = "vision.segment"
 VISION_OCR_REGIONS_TOOL_ID = "vision.ocr_regions"
 
 
-def _record_vision_media(ctx: ToolWiringContext, media_uri: str) -> None:
-    record_media_bytes(ctx, measure_media_bytes(media_uri))
-
-
 def vision_detect(ctx: ToolWiringContext, payload: VisionDetectInput) -> VisionDetectOutput:
     profile = resolve_modality_profile(ctx)
     assert_artifact_allowed(profile, payload.artifact_id)
-    assert_media_within_limit(profile, payload.media_uri)
-    _record_vision_media(ctx, payload.media_uri)
     registry = resolve_registry(ctx)
+    adapter = registry.get_vision_adapter(payload.adapter_slug)
+    authorized = prepare_authorized_vision_media(
+        ctx,
+        profile,
+        payload.media_uri,
+        adapter_slug=payload.adapter_slug,
+    )
+    record_media_bytes(ctx, measure_authorized_media_bytes(authorized))
     executor = resolve_executor(ctx)
     artifact = registry.get_artifact(payload.artifact_id)
-    adapter = registry.get_vision_adapter(payload.adapter_slug)
     request_id = uuid.uuid4().hex
     started = time.perf_counter()
     result = executor.run_detect(
@@ -54,6 +55,7 @@ def vision_detect(ctx: ToolWiringContext, payload: VisionDetectInput) -> VisionD
             request_id=request_id,
             artifact_id=artifact.artifact_id,
             media_uri=payload.media_uri,
+            authorized_local_media=authorized,
             top_k=payload.top_k,
         ),
     )
@@ -64,12 +66,17 @@ def vision_detect(ctx: ToolWiringContext, payload: VisionDetectInput) -> VisionD
 def vision_segment(ctx: ToolWiringContext, payload: VisionSegmentInput) -> VisionSegmentOutput:
     profile = resolve_modality_profile(ctx)
     assert_artifact_allowed(profile, payload.artifact_id)
-    assert_media_within_limit(profile, payload.media_uri)
-    _record_vision_media(ctx, payload.media_uri)
     registry = resolve_registry(ctx)
+    adapter = as_extended_adapter(registry.get_vision_adapter(payload.adapter_slug))
+    authorized = prepare_authorized_vision_media(
+        ctx,
+        profile,
+        payload.media_uri,
+        adapter_slug=payload.adapter_slug,
+    )
+    record_media_bytes(ctx, measure_authorized_media_bytes(authorized))
     executor = resolve_executor(ctx)
     artifact = registry.get_artifact(payload.artifact_id)
-    adapter = as_extended_adapter(registry.get_vision_adapter(payload.adapter_slug))
     request_id = uuid.uuid4().hex
     started = time.perf_counter()
     result = executor.run_segment(
@@ -80,6 +87,7 @@ def vision_segment(ctx: ToolWiringContext, payload: VisionSegmentInput) -> Visio
             request_id=request_id,
             artifact_id=artifact.artifact_id,
             media_uri=payload.media_uri,
+            authorized_local_media=authorized,
             top_k=payload.top_k,
         ),
     )
@@ -90,12 +98,17 @@ def vision_segment(ctx: ToolWiringContext, payload: VisionSegmentInput) -> Visio
 def vision_ocr_regions(ctx: ToolWiringContext, payload: VisionOcrRegionsInput) -> VisionOcrRegionsOutput:
     profile = resolve_modality_profile(ctx)
     assert_artifact_allowed(profile, payload.artifact_id)
-    assert_media_within_limit(profile, payload.media_uri)
-    _record_vision_media(ctx, payload.media_uri)
     registry = resolve_registry(ctx)
+    adapter = as_extended_adapter(registry.get_vision_adapter(payload.adapter_slug))
+    authorized = prepare_authorized_vision_media(
+        ctx,
+        profile,
+        payload.media_uri,
+        adapter_slug=payload.adapter_slug,
+    )
+    record_media_bytes(ctx, measure_authorized_media_bytes(authorized))
     executor = resolve_executor(ctx)
     artifact = registry.get_artifact(payload.artifact_id)
-    adapter = as_extended_adapter(registry.get_vision_adapter(payload.adapter_slug))
     request_id = uuid.uuid4().hex
     started = time.perf_counter()
     result = executor.run_ocr_regions(
@@ -106,6 +119,7 @@ def vision_ocr_regions(ctx: ToolWiringContext, payload: VisionOcrRegionsInput) -
             request_id=request_id,
             artifact_id=artifact.artifact_id,
             media_uri=payload.media_uri,
+            authorized_local_media=authorized,
             top_k=payload.top_k,
         ),
     )

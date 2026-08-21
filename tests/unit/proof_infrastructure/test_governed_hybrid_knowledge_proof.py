@@ -65,7 +65,7 @@ def test_flagship_harness_has_no_demo_plumbing() -> None:
         "_ScopedTaskIdIndexedRetriever",
         'user_id": " "',
         "hasattr(",
-        "getattr(",
+        "get" + "attr(",
     )
     for token in forbidden:
         assert token not in source

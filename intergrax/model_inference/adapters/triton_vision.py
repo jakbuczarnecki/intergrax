@@ -6,14 +6,13 @@ from __future__ import annotations
 
 import base64
 import os
-from pathlib import Path
 from typing import Any
 
 import httpx
 
-from intergrax.model_inference.adapters.opencv_vision import _resolve_media_path
 from intergrax.model_inference.adapters.stub_vision import StubVisionInferenceAdapter
 from intergrax.model_inference.contracts import (
+    MediaAuthorizationError,
     ModelArtifact,
     VisionBoundingBox,
     VisionDetection,
@@ -21,6 +20,7 @@ from intergrax.model_inference.contracts import (
     VisionInferenceRequest,
     VisionInferenceResult,
 )
+from intergrax.model_inference.media_boundary import require_remote_egress_bytes
 
 
 class TritonVisionServingAdapter(VisionInferenceAdapter):
@@ -50,8 +50,10 @@ class TritonVisionServingAdapter(VisionInferenceAdapter):
     def detect(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionInferenceResult:
         if not self._base_url:
             return self._fallback.detect(request, artifact=artifact)
-        image_path = _resolve_media_path(request.media_uri)
-        raw = Path(image_path).read_bytes()
+        try:
+            raw = require_remote_egress_bytes(request)
+        except MediaAuthorizationError:
+            raise
         encoded = base64.b64encode(raw).decode("ascii")
         url = f"{self._base_url}/v2/models/{self._model_name}/infer"
         payload: dict[str, Any] = {

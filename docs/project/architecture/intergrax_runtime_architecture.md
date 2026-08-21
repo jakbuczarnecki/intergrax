@@ -13,6 +13,7 @@
 **Doc boundaries (Experimentation/DX):** [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) — architecture vs Cursor/workflow rules placement (P2-ARCH-13)
 **Audit:** [`../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Idea intake (Mode I):** [`../maintainers/bootstrap/idea_audit.txt`](../maintainers/bootstrap/idea_audit.txt) · **Cursor bootstrap:** [`../maintainers/bootstrap`](../maintainers/bootstrap) · **Domain audit prompts:** [`../maintainers/audit`](../maintainers/audit) · **Architecture audit results:** [`audit_results/`](../../audit_results/README.md) · **Implementation journal:** [`../maintainers/implementation-journal`](../maintainers/implementation-journal/README.md)
 **Authoring:** [`../technical/guides`](../technical/guides)
+**Platform proofs:** [`../../../platform_proofs/README.md`](../../../platform_proofs/README.md) — reusable platform mechanism proof methodology and coverage map (execution via [`scripts/proof/`](../../../scripts/proof/); public dashboard [`../proofs/PROOFS.md`](../proofs/PROOFS.md))
 
 ---
 

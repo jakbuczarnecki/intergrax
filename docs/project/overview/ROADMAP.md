@@ -9,7 +9,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 This is the canonical public product roadmap for Intergrax. It describes what user and product outcomes must become true next, how those outcomes are evidenced, and when broader claims or expansion are justified.
 
 > [!WARNING]
-> Outcome-gated roadmap — not a release-date commitment. LKW is **Primary product proof**, **Backend Product Alpha / MVP**, **PARTIAL**. Real-user and commercial validation remain open; see [PROOFS.md](../proofs/PROOFS.md).
+> Outcome-gated roadmap — not a release-date commitment. LKW is the **Active reference product**, **Backend Product Alpha / MVP**, **PARTIAL**. Real-user and commercial validation remain open; see [PROOFS.md](../proofs/PROOFS.md).
 
 ## At a glance
 

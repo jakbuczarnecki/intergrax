@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final
 
+from intergrax.utils import attribute_access
 from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
@@ -180,7 +181,7 @@ def _scope_for_scoped_name(fullname: str) -> _ArtifactImportScope | None:
 def _scope_for_import_target(target: object | None) -> _ArtifactImportScope | None:
     if target is None:
         return None
-    target_name = getattr(target, "__name__", None)
+    target_name = attribute_access.optional(target, "__name__", None)
     if not isinstance(target_name, str):
         return None
     return _scope_for_scoped_name(target_name)
@@ -580,7 +581,7 @@ def _load_callable_from_site_packages(
         site_packages=site_packages,
     )
     module = _import_scoped_module(scope, module_path)
-    target = getattr(module, attr_name, None)
+    target = attribute_access.optional(module, attr_name, None)
     if target is None:
         raise RuntimeAgentFactoryResolutionError(
             f"factory attribute {attr_name!r} missing from module {module_path!r}"

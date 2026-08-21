@@ -47,9 +47,9 @@ class UltralyticsVisionInferenceAdapter(VisionInferenceAdapter):
 
 
 def _resolve_media_path_from_request(request: VisionInferenceRequest) -> str:
-    from intergrax.model_inference.adapters.opencv_vision import _resolve_media_path
+    from intergrax.model_inference.media_boundary import local_media_path_from_request
 
-    return str(_resolve_media_path(request.media_uri))
+    return str(local_media_path_from_request(request))
 
 
 def _map_ultralytics_results(results: object, *, request_id: str) -> list:

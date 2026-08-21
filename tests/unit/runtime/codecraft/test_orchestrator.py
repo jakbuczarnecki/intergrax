@@ -14,9 +14,13 @@ from intergrax.applications._shared.codecraft_wiring import (
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.codecraft.profile import CodeCraftProfile
+from intergrax.contracts.execution_identity import bind_active_execution_identity, mint_attempt_id, mint_run_id
 from intergrax.runtime.codecraft.adaptive_trigger import evaluate_craft_trigger
+from intergrax.runtime.codecraft.ownership import codecraft_exec_hitl_notes
 from intergrax.runtime.codecraft.orchestrator import CodeCraftOrchestrator
 from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager
+from intergrax.runtime.human.models import HumanResponseVerdict, build_human_decision_record
+from intergrax.runtime.human.persistence_contract import InMemoryHumanDecisionPersistence
 from intergrax.runtime.sandbox.session import SandboxSession
 from intergrax.tools.providers.codecraft.service import (
     codecraft_dispose,
@@ -100,31 +104,50 @@ def test_codecraft_session_start_iterate_dispose(craft_ctx: ToolWiringContext) -
 
 def test_supervised_mode_requires_hitl(craft_ctx: ToolWiringContext) -> None:
     profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True, require_tests=False)
+    store = InMemoryHumanDecisionPersistence()
     ctx = ToolWiringContext(
         sandbox_session=craft_ctx.sandbox_session,
+        human_decision_store=store,
         extras={
             "codecraft_profile": profile,
             "codecraft_session_manager": CodeCraftSessionManager(),
         },
     )
-    start_out = codecraft_start(ctx, CodeCraftStartToolInput(goal="demo", task_id="t", tenant_id="t"))
-    assert start_out.session is not None
-    iter_out = codecraft_iterate(
-        ctx,
-        CodeCraftIterateToolInput(craft_id=start_out.session.craft_id, task_id="t", tenant_id="t"),
-    )
-    assert iter_out.result.error == "hitl_pending"
+    run_id = mint_run_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=mint_attempt_id())
+    try:
+        start_out = codecraft_start(
+            ctx,
+            CodeCraftStartToolInput(goal="demo", task_id="task-1", tenant_id="tenant-1"),
+        )
+        assert start_out.session is not None
+        craft_id = start_out.session.craft_id
+        iter_out = codecraft_iterate(
+            ctx,
+            CodeCraftIterateToolInput(craft_id=craft_id, task_id="task-1", tenant_id="tenant-1"),
+        )
+        assert iter_out.result.error == "hitl_pending"
 
-    iter_ok = codecraft_iterate(
-        ctx,
-        CodeCraftIterateToolInput(
-            craft_id=start_out.session.craft_id,
-            task_id="t",
-            tenant_id="t",
-            hitl_approved=True,
-        ),
-    )
-    assert iter_ok.result.error != "hitl_pending"
+        store.record(
+            build_human_decision_record(
+                task_id="task-1",
+                tenant_id="tenant-1",
+                user_id="operator",
+                verdict=HumanResponseVerdict.APPROVE,
+                response_text="ok",
+                run_id=str(run_id),
+                notes=codecraft_exec_hitl_notes(craft_id),
+            ),
+        )
+        iter_ok = codecraft_iterate(
+            ctx,
+            CodeCraftIterateToolInput(craft_id=craft_id, task_id="task-1", tenant_id="tenant-1"),
+        )
+        assert iter_ok.result.error != "hitl_pending"
+    finally:
+        from intergrax.contracts.execution_identity import reset_active_execution_identity
+
+        reset_active_execution_identity(token)
 
 
 def test_wire_application_codecraft_enables_tools() -> None:
@@ -160,10 +183,10 @@ def test_orchestrator_max_iterations(craft_ctx: ToolWiringContext) -> None:
     profile = CodeCraftProfile(mode="autonomous", max_iterations=1, require_tests=False)
     craft_ctx.extras["codecraft_profile"] = profile
     orch = CodeCraftOrchestrator(craft_ctx)
-    session, _ = orch.start(goal="g", task_id="t", tenant_id="t")
+    session, _ = orch.start(goal="g", task_id="task-1", tenant_id="tenant-1")
     assert session is not None
-    orch.iterate(craft_id=session.craft_id, task_id="t", tenant_id="t")
-    session2, result = orch.iterate(craft_id=session.craft_id, task_id="t", tenant_id="t")
+    orch.iterate(craft_id=session.craft_id, task_id="task-1", tenant_id="tenant-1")
+    session2, result = orch.iterate(craft_id=session.craft_id, task_id="task-1", tenant_id="tenant-1")
     assert result.error == "max_iterations_exceeded" or (session2 and session2.iteration >= 1)
 
 
@@ -171,11 +194,14 @@ def test_orchestrator_exec_budget_exhausted(craft_ctx: ToolWiringContext) -> Non
     profile = CodeCraftProfile(mode="autonomous", max_total_exec_time_s=1.0, require_tests=False)
     craft_ctx.extras["codecraft_profile"] = profile
     orch = CodeCraftOrchestrator(craft_ctx)
-    session, _ = orch.start(goal="g", task_id="t", tenant_id="t")
+    session, _ = orch.start(goal="g", task_id="task-1", tenant_id="tenant-1")
     assert session is not None
+    from intergrax.runtime.codecraft.ownership import resolve_codecraft_ownership
+
+    ownership = resolve_codecraft_ownership(craft_ctx, caller_tenant_id="tenant-1", caller_task_id="task-1")
     session = session.model_copy(update={"total_exec_time_s": 1.0})
-    orch._sessions.save(session)  # noqa: SLF001 — budget precondition
-    _, result = orch.iterate(craft_id=session.craft_id, task_id="t", tenant_id="t")
+    orch._sessions.save_owned(session, ownership)  # noqa: SLF001 — budget precondition
+    _, result = orch.iterate(craft_id=session.craft_id, task_id="task-1", tenant_id="tenant-1")
     assert result.error == "max_total_exec_time_exceeded"
 
 

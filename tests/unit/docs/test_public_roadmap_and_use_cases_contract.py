@@ -258,13 +258,15 @@ def test_first_screen_contract(roadmap_text: str, use_cases_text: str) -> None:
         "backend product alpha / mvp",
         "partial",
         "proofs",
+        "active reference product",
     ):
         assert phrase in roadmap_early, f"ROADMAP missing boundary phrase: {phrase}"
     for provider in ("slack", "google", "microsoft", "jira"):
         assert provider not in roadmap_early, f"ROADMAP first screen names provider: {provider}"
 
     use_cases_early = _normalize(_through_at_a_glance(use_cases_text))
-    assert "primary product proof" in use_cases_early
+    assert "active reference product" in use_cases_early
+    assert "primary product proof" not in use_cases_early
     assert "backend product alpha / mvp" in use_cases_early
 
 

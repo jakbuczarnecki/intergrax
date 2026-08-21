@@ -56,7 +56,7 @@ without copying either roadmap.
 
 | Proof path | Public classification | Current public status | What it demonstrates | Verify | Detailed roadmap |
 |------------|------------------------|----------------------|----------------------|--------|------------------|
-| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) · [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Core Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#core-platform-proof) | [LKW implementation plan](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) |
+| **LKW** | Active reference product | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) · [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Core Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#core-platform-proof) | [LKW implementation plan](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) |
 | **Token Optimization** | Featured platform-capability proof | 🟡 **PARTIAL** | Deterministic optimization pipeline, cache-aware execution, bounded offline smoke proof | [Token Optimization guide](../capabilities/token_optimization/README.md) | [Token Optimization plan](../capabilities/plan/TOKEN_OPTIMIZATION.md) |
 
 `Verify` answers **what has been demonstrated?**
@@ -68,9 +68,11 @@ foundations do not inherit a blanket platform-wide **IMPLEMENTED** status.
 
 ---
 
-## LKW — Primary product proof
+## LKW — Active reference product evidence
 
-**Role:** Primary product proof · **Product status:** Backend Product Alpha / MVP
+**Role:** Active reference product · **Product status:** Backend Product Alpha / MVP
+
+This section enumerates accepted bounded proof paths for the active reference product.
 
 **Primary executable path:** [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) —
 indexed **Ask V1** product evaluation with one command per supported OS, managed
