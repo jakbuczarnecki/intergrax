@@ -530,7 +530,13 @@ def test_readme_routing(readme_text: str) -> None:
     assert "Intergrax helps teams build" in readme_text
     assert "Try LKW" in readme_text
     assert "bounded dm ask path is live-verified" in normalized
-    assert "Primary Product Proof" in readme_text
+    for phrase in (
+        "active reference product",
+        "backend product alpha / mvp",
+        "bounded proof paths",
+        "partial",
+    ):
+        assert phrase in normalized, f"README missing LKW product marker: {phrase!r}"
     assert "Backend Product Alpha /" in readme_text
     assert "Featured platform-capability proof" in readme_text
 
@@ -546,7 +552,12 @@ def test_readme_multiplayer_positioning(readme_text: str) -> None:
     ):
         assert phrase in normalized, f"README missing Multiplayer marker: {phrase}"
     assert "featured platform-capability proof" in normalized
-    assert "primary product proof" in normalized
+    for phrase in (
+        "active reference product",
+        "backend product alpha / mvp",
+        "bounded proof paths",
+    ):
+        assert phrase in normalized, f"README missing LKW bounded product marker: {phrase!r}"
     forbidden_positive = (
         "production multiplayer",
         "complete multi-agent collaboration",
@@ -591,7 +602,12 @@ def test_readme_platform_extensibility_positioning(readme_text: str) -> None:
         "complete third-party install-to-runtime e2e proof not yet established",
     ):
         assert phrase in normalized, f"README missing Platform Extensibility marker: {phrase}"
-    assert "primary product proof" in normalized
+    for phrase in (
+        "active reference product",
+        "backend product alpha / mvp",
+        "bounded proof paths",
+    ):
+        assert phrase in normalized, f"README missing LKW bounded product marker: {phrase!r}"
     assert "featured platform-capability proof" in normalized
     assert "partial" in normalized
     forbidden_positive = (
@@ -903,8 +919,17 @@ def test_readme_install_sequence(readme_text: str) -> None:
         assert chain not in readme_text, f"README chains install commands: {chain!r}"
 
     assert "## Try LKW" in readme_text
-    for script in _LKW_QUICKSTART_SCRIPTS:
-        assert script in readme_text, f"README missing LKW quickstart script: {script!r}"
+    assert (
+        "applications/local_workspace_application/docs/product/QUICKSTART.md"
+        in readme_text
+    )
+    normalized = " ".join(_normalize(readme_text).split())
+    for phrase in (
+        "lkw quick start",
+        "prerequisites, commands, and troubleshooting live",
+        "run the supported product quick start",
+    ):
+        assert phrase in normalized, f"README missing Try LKW delegation marker: {phrase!r}"
 
 
 def test_evidence_limitations_bulleted(readme_text: str) -> None:
