@@ -18,6 +18,9 @@ from intergrax.runtime.nexus.tools.investigation_proof import (
     build_investigation_proof_step,
     collect_available_evidence_ids,
 )
+from intergrax.runtime.nexus.tools.native_tool_plan_alignment import (
+    validate_native_tool_plan_alignment,
+)
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.patterns.single_pass import SinglePassPattern
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
@@ -104,6 +107,8 @@ class BoundedReactPattern:
             if not tool_plan.calls:
                 stop_reason = "empty_tool_calls"
                 break
+
+            validate_native_tool_plan_alignment(llm_result.tool_calls, tool_plan)
 
             proof_steps.append(
                 build_investigation_proof_step(

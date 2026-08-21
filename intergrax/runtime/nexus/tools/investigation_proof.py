@@ -9,6 +9,9 @@ from dataclasses import dataclass
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.runtime.nexus.tools.native_planner_transcript import (
+    canonical_native_planner_messages,
+)
 
 _EVIDENCE_BASIS_PREFIX = "EVIDENCE_BASIS:"
 _PURPOSE_PREFIX = "PURPOSE:"
@@ -43,10 +46,11 @@ class ParsedPublicDecisionNote:
 
 
 def collect_available_evidence_ids(messages: Sequence[ChatMessage]) -> tuple[str, ...]:
-    """Return tool_call_id handles from prior valid role=tool observations."""
+    """Return tool_call_id handles from model-visible canonical native transcript."""
+    canonical = canonical_native_planner_messages(messages)
     ids: list[str] = []
     seen: set[str] = set()
-    for message in messages:
+    for message in canonical:
         if message.role != "tool":
             continue
         tool_call_id = message.tool_call_id
@@ -79,30 +83,31 @@ def _parse_basis_value(raw: str) -> tuple[str, ...]:
 
 
 def parse_public_decision_note(content: str) -> ParsedPublicDecisionNote:
-    """Parse the compact ENG-6 public decision-note envelope."""
-    basis_raw: str | None = None
-    purpose_raw: str | None = None
-    for line in content.splitlines():
-        stripped = line.strip()
-        if stripped.startswith(_EVIDENCE_BASIS_PREFIX):
-            basis_raw = stripped[len(_EVIDENCE_BASIS_PREFIX) :]
-        elif stripped.startswith(_PURPOSE_PREFIX):
-            purpose_raw = stripped[len(_PURPOSE_PREFIX) :]
-    if basis_raw is None:
+    """Parse the strict ENG-6 two-line public decision-note envelope."""
+    lines = content.splitlines()
+    if len(lines) != 2:
+        raise InvestigationProofValidationError(
+            "malformed public decision note: envelope must be exactly two lines"
+        )
+    basis_line = lines[0].strip()
+    purpose_line = lines[1].strip()
+    if not basis_line.startswith(_EVIDENCE_BASIS_PREFIX):
         raise InvestigationProofValidationError(
             "malformed public decision note: missing EVIDENCE_BASIS"
         )
-    if purpose_raw is None:
+    if not purpose_line.startswith(_PURPOSE_PREFIX):
         raise InvestigationProofValidationError(
             "malformed public decision note: missing PURPOSE"
         )
-    purpose = purpose_raw.strip()
+    purpose = purpose_line[len(_PURPOSE_PREFIX) :].strip()
     if not purpose:
         raise InvestigationProofValidationError(
             "malformed public decision note: empty PURPOSE"
         )
     return ParsedPublicDecisionNote(
-        basis_tool_call_ids=_parse_basis_value(basis_raw),
+        basis_tool_call_ids=_parse_basis_value(
+            basis_line[len(_EVIDENCE_BASIS_PREFIX) :]
+        ),
         public_reason=purpose,
     )
 

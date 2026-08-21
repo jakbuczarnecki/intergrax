@@ -24,6 +24,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.nexus.tools.tool_loop import execute_planned_tool_calls, run_bounded_tool_loop
 from intergrax.runtime.nexus.tools.investigation_proof import InvestigationProofValidationError
+from intergrax.runtime.nexus.tools.native_tool_plan_alignment import NativeToolPlanAlignmentError
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.tool_planning_prompts import investigation_policy_prompt
@@ -1557,7 +1558,7 @@ def _registry_with_probe_tools() -> ToolRegistry:
             "EVIDENCE_BASIS: evidence-a,evidence-a\nPURPOSE: inspect subgroup",
             "duplicate basis tool_call_id",
         ),
-        ("not-a-valid-note", "missing EVIDENCE_BASIS"),
+        ("not-a-valid-note", "exactly two lines"),
     ],
 )
 def test_investigation_proof_invalid_follow_up_rejected_before_tool_b(
@@ -1583,3 +1584,172 @@ def test_investigation_proof_invalid_follow_up_rejected_before_tool_b(
     assert llm._round == 2
     assert len(state.tool_traces) == 1
     assert state.tool_traces[0].tool_name == "probe.a"
+
+
+class _OrphanBasisFollowUpLLM(FakeLLMAdapter):
+    def __init__(self) -> None:
+        super().__init__(fixed_text="")
+        self._round = 0
+
+    def supports_tools(self) -> bool:
+        return True
+
+    def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
+        _ = messages, tools_schema, kwargs
+        self._round += 1
+        if self._round == 1:
+            return LLMAdapterResponse(
+                content="",
+                tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id="evidence-a",
+                        name="probe.a",
+                        arguments={"label": "a"},
+                    ),
+                ),
+            )
+        return LLMAdapterResponse(
+            content=_decision_note("fake-x", purpose="inspect orphan basis"),
+            tool_calls=(
+                LLMToolCall.from_openai_shape(
+                    call_id="evidence-b",
+                    name="probe.b",
+                    arguments={"label": "b"},
+                ),
+            ),
+        )
+
+
+def test_orphan_raw_evidence_basis_rejected_before_second_tool() -> None:
+    registry = _registry_with_probe_tools()
+    llm = _OrphanBasisFollowUpLLM()
+    state = _runtime_state(llm)
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = ToolPlanningService(llm=llm, tools=registry)
+
+    with pytest.raises(InvestigationProofValidationError, match="unknown basis tool_call_id"):
+        run_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=[
+                ChatMessage(role="tool", content="orphan", tool_call_id="fake-x"),
+                ChatMessage(role="user", content="objective"),
+            ],
+            allowed_tool_ids=("probe.a", "probe.b"),
+            max_iterations=3,
+        )
+
+    assert llm._round == 2
+    assert len(state.tool_traces) == 1
+    assert state.tool_traces[0].tool_name == "probe.a"
+
+
+class _MisalignedCustomPlanner:
+    def __init__(self, *, mismatch: str) -> None:
+        self._round = 0
+        self._mismatch = mismatch
+
+    def plan_tools(
+        self,
+        input_data,
+        context=None,
+        *,
+        run_id: str,
+        allowed_tool_ids=None,
+        **kwargs,
+    ) -> ToolPlanDecision:
+        _ = input_data, context, run_id, allowed_tool_ids, kwargs
+        return ToolPlanDecision(
+            final_answer=None,
+            tool_plan=ToolCallPlan(calls=[]),
+            messages=[],
+        )
+
+    def plan_native_round(
+        self,
+        messages,
+        *,
+        allowed_tool_ids=None,
+        run_id=None,
+        tool_choice=None,
+        **kwargs,
+    ):
+        _ = messages, allowed_tool_ids, run_id, tool_choice, kwargs
+        self._round += 1
+        llm_call = LLMToolCall.from_openai_shape(
+            call_id="tc-1",
+            name="probe.a",
+            arguments={"label": "a"},
+        )
+        llm_call_b = LLMToolCall.from_openai_shape(
+            call_id="tc-2",
+            name="probe.b",
+            arguments={"label": "b"},
+        )
+        if self._mismatch == "name":
+            return (
+                LLMAdapterResponse(content="", tool_calls=(llm_call,)),
+                ToolCallPlan(
+                    calls=[
+                        PlannedToolCall(
+                            step_id="tool",
+                            tool_id="probe.b",
+                            input=_EvidenceIn(label="a"),
+                        )
+                    ]
+                ),
+            )
+        if self._mismatch == "count":
+            return (
+                LLMAdapterResponse(content="", tool_calls=(llm_call, llm_call_b)),
+                ToolCallPlan(
+                    calls=[
+                        PlannedToolCall(
+                            step_id="tool",
+                            tool_id="probe.a",
+                            input=_EvidenceIn(label="a"),
+                        )
+                    ]
+                ),
+            )
+        if self._mismatch == "arguments":
+            return (
+                LLMAdapterResponse(content="", tool_calls=(llm_call,)),
+                ToolCallPlan(
+                    calls=[
+                        PlannedToolCall(
+                            step_id="tool",
+                            tool_id="probe.a",
+                            input=_EvidenceIn(label="expected"),
+                        )
+                    ]
+                ),
+            )
+        raise AssertionError(f"unknown mismatch: {self._mismatch}")
+
+
+@pytest.mark.parametrize(
+    "mismatch",
+    ["name", "count", "arguments"],
+)
+def test_misaligned_custom_planner_rejected_before_tool_execution(
+    mismatch: str,
+) -> None:
+    registry = _registry_with_probe_tools()
+    state = _runtime_state(FakeLLMAdapter())
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = _MisalignedCustomPlanner(mismatch=mismatch)
+
+    with pytest.raises(NativeToolPlanAlignmentError):
+        run_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=[ChatMessage(role="user", content="misaligned planner")],
+            allowed_tool_ids=("probe.a", "probe.b"),
+            max_iterations=2,
+        )
+
+    assert planner._round == 1
+    assert len(state.tool_traces) == 0
