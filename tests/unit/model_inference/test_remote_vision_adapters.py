@@ -6,7 +6,7 @@ import pytest
 
 from intergrax.model_inference.adapters.huggingface_inference_vision import HuggingFaceInferenceVisionAdapter
 from intergrax.model_inference.adapters.triton_vision import TritonVisionServingAdapter
-from intergrax.model_inference.contracts import ModelArtifact, ModelArtifactFormat, VisionInferenceRequest
+from intergrax.model_inference.contracts import AuthorizedLocalMedia, ModelArtifact, ModelArtifactFormat, VisionInferenceRequest
 
 
 @pytest.fixture()
@@ -46,12 +46,17 @@ def test_triton_http_parses_detections(artifact: ModelArtifact, tmp_path) -> Non
     mock_client.__exit__.return_value = None
     mock_client.post.return_value = mock_response
     adapter = TritonVisionServingAdapter(base_url="http://triton.local", model_name="yolo")
+    authorized = AuthorizedLocalMedia(
+        resolved_path=image.resolve(),
+        remote_egress_permitted=True,
+    )
     with patch("intergrax.model_inference.adapters.triton_vision.httpx.Client", return_value=mock_client):
         result = adapter.detect(
             VisionInferenceRequest(
                 request_id="r2",
                 artifact_id=artifact.artifact_id,
                 media_uri=image.resolve().as_uri(),
+                authorized_local_media=authorized,
             ),
             artifact=artifact,
         )

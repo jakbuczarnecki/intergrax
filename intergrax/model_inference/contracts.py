@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
+from pathlib import Path
 
 from pydantic import BaseModel, Field
 
@@ -40,10 +41,27 @@ class VisionDetection(BaseModel):
     bbox: VisionBoundingBox
 
 
+class MediaSourceKind(str, Enum):
+    LOCAL_FILE = "local_file"
+
+
+class MediaAuthorizationError(ValueError):
+    """Raised when caller media is not authorized for inference access."""
+
+
+class AuthorizedLocalMedia(BaseModel):
+    """Resolved local media authorized through ToolWiringContext read roots."""
+
+    source_kind: MediaSourceKind = MediaSourceKind.LOCAL_FILE
+    resolved_path: Path
+    remote_egress_permitted: bool = False
+
+
 class VisionInferenceRequest(BaseModel):
     request_id: str
     artifact_id: str
     media_uri: str
+    authorized_local_media: AuthorizedLocalMedia | None = None
     top_k: int = Field(default=5, ge=1, le=100)
 
 
