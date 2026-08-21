@@ -32,7 +32,7 @@
 - **Prior audit reference(s):** [`OBSERVABILITY_EVIDENCE`](OBSERVABILITY_EVIDENCE.md); [`TIER3_APPLICATION_ENVIRONMENT`](TIER3_APPLICATION_ENVIRONMENT.md)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `2ca992940f10e998afe819eaa02eaa1ca71cf8a0`
 
 ## Executive summary
 
