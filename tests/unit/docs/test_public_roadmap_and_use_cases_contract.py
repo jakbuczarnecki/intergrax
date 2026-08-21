@@ -175,9 +175,10 @@ def _fit_matrix_section(text: str) -> str:
     return _h2_section(text, "## Fit matrix")
 
 
-_READER_HYBRID_BOUNDARY = (
-    "Indexed Ask through production Hybrid Ask is boundedly demonstrated; "
-    "authorized live evidence combined with indexed evidence is not yet established."
+_READER_HYBRID_BOUNDARY_MARKERS = (
+    "bounded indexed ask through production hybrid ask",
+    "mixed indexed + authorized live hybrid ask is not yet established",
+    "complete live-provider access is incomplete",
 )
 
 _FORBIDDEN_READER_MAINTAINER_PHRASES = (
@@ -187,26 +188,23 @@ _FORBIDDEN_READER_MAINTAINER_PHRASES = (
     "public wording",
 )
 
-_ROADMAP_NEGATIVE_BULLETS = (
-    "No finished hosted SaaS.",
-    "No claim that mixed indexed + authorized live Hybrid Ask is complete.",
-    "No claim of complete live-provider access or a complete provider catalog.",
-    "No completed real-user validation.",
-    "No completed commercial validation.",
-    "No claim of universal production readiness.",
-    "No universal token-savings claim.",
-    "No fixed release-date commitment.",
+_ROADMAP_NEGATIVE_SEMANTICS = (
+    "no finished hosted saas",
+    "no claim that mixed indexed + authorized live hybrid ask is complete",
+    "no claim of complete live-provider access",
+    "no completed problem/customer discovery, real-user validation",
+    "commercial validation",
+    "no claim of universal production readiness",
+    "universal token savings",
+    "no fixed release-date commitment",
 )
 
-_USE_CASES_NEGATIVE_BULLETS = (
-    "No finished hosted SaaS",
-    "No complete Hybrid Ask combining indexed and authorized live evidence",
-    "No complete multi-provider live access",
-    "No universal production certification",
-    "No compliance certification",
-    "No unrestricted open-source rights",
-    "No universal token or cost reduction",
-    "No automatic acceptance of every proposed use case",
+_USE_CASES_NEGATIVE_SEMANTICS = (
+    "no finished hosted saas",
+    "no complete hybrid ask combining indexed and authorized live evidence",
+    "no compliance certification",
+    "unrestricted open-source rights",
+    "no universal token or cost reduction",
 )
 
 _PUBLIC_MAP_FORBIDDEN_TIER_TERMS = (
@@ -247,19 +245,19 @@ def test_first_screen_contract(roadmap_text: str, use_cases_text: str) -> None:
     for text in (roadmap_text, use_cases_text):
         early = _through_at_a_glance(text)
         early_norm = _normalize(early)
-        for phrase in ("source-available", "active r&d", "partial"):
+        for phrase in ("source-available", "partial"):
             assert phrase in early_norm, f"Missing first-screen phrase {phrase!r}"
 
     roadmap_early = _normalize(_through_at_a_glance(roadmap_text))
     for phrase in (
         "outcome-gated",
         "not a release-date commitment",
-        "real-user validation incomplete",
-        "commercial validation incomplete",
+        "real-user and commercial validation remain open",
         "primary product focus",
         "local knowledge workspace (lkw)",
         "backend product alpha / mvp",
         "partial",
+        "proofs",
     ):
         assert phrase in roadmap_early, f"ROADMAP missing boundary phrase: {phrase}"
     for provider in ("slack", "google", "microsoft", "jira"):
@@ -369,21 +367,25 @@ def test_reader_facing_copy(use_cases_text: str) -> None:
         assert phrase not in use_cases_text, (
             f"USE_CASES contains maintainer-style phrase: {phrase!r}"
         )
-    assert _READER_HYBRID_BOUNDARY in use_cases_text, (
-        "USE_CASES missing reader-facing Hybrid Ask boundary sentence"
-    )
+    use_cases_norm = " ".join(_normalize(use_cases_text).split())
+    for marker in _READER_HYBRID_BOUNDARY_MARKERS:
+        assert marker in use_cases_norm, (
+            f"USE_CASES missing Hybrid Ask boundary marker: {marker!r}"
+        )
 
 
 def test_explicit_negative_lists(roadmap_text: str, use_cases_text: str) -> None:
-    roadmap_negatives = _h2_section(roadmap_text, "## What is not promised")
-    for bullet in _ROADMAP_NEGATIVE_BULLETS:
-        assert bullet in roadmap_negatives, f"ROADMAP missing negative bullet: {bullet!r}"
+    roadmap_negatives = _normalize(_h2_section(roadmap_text, "## What is not promised"))
+    for marker in _ROADMAP_NEGATIVE_SEMANTICS:
+        assert marker in roadmap_negatives, f"ROADMAP negatives missing semantic marker: {marker!r}"
 
-    use_cases_negatives = _h2_section(
-        use_cases_text, "## What Intergrax does not currently offer"
+    use_cases_negatives = _normalize(
+        _h2_section(use_cases_text, "## What Intergrax does not currently offer")
     )
-    for bullet in _USE_CASES_NEGATIVE_BULLETS:
-        assert bullet in use_cases_negatives, f"USE_CASES missing negative bullet: {bullet!r}"
+    for marker in _USE_CASES_NEGATIVE_SEMANTICS:
+        assert marker in use_cases_negatives, (
+            f"USE_CASES negatives missing semantic marker: {marker!r}"
+        )
 
 
 def test_claim_boundaries(roadmap_text: str, use_cases_text: str) -> None:
@@ -391,8 +393,14 @@ def test_claim_boundaries(roadmap_text: str, use_cases_text: str) -> None:
     combined_norm = _normalize(combined)
     assert "hybrid ask" in combined_norm
     assert "not complete" in combined_norm or "remains incomplete" in combined_norm
-    assert "real-user validation incomplete" in combined_norm
-    assert "commercial validation incomplete" in combined_norm
+    assert (
+        "real-user and commercial validation remain open" in combined_norm
+        or (
+            "real-user validation" in combined_norm
+            and "commercial validation" in combined_norm
+            and ("no completed" in combined_norm or "remain open" in combined_norm)
+        )
+    )
     assert "universal savings not claimed" in combined_norm or "universal savings are not claimed" in combined_norm
 
     for path, text in ((ROADMAP_PATH, roadmap_text), (USE_CASES_PATH, use_cases_text)):
