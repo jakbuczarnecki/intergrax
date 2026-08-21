@@ -12,8 +12,11 @@ before tool loops finish.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from intergrax.runtime.nexus.budget.budget_enforcer import BudgetEnforcer
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.utils.time_provider import SystemTimeProvider
 
 
 def _enforcer(state: RuntimeState) -> BudgetEnforcer | None:
@@ -54,5 +57,36 @@ def enforce_tool_call_budget(state: RuntimeState) -> None:
         enc.check_tool_calls(
             run_id=state.run_id,
             tool_calls=len(state.tool_traces),
+            state=state,
+        )
+
+
+def run_elapsed_seconds(state: RuntimeState) -> float:
+    """Wall-clock elapsed time since ``RuntimeState.started_at_utc``."""
+    started = datetime.fromisoformat(state.started_at_utc)
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    return (SystemTimeProvider.utc_now() - started).total_seconds()
+
+
+def record_planner_iteration_and_enforce(state: RuntimeState) -> None:
+    """Before each bounded ReAct planner round; increments run-level planner iteration count."""
+    state.planner_iteration_count += 1
+    enc = _enforcer(state)
+    if enc is not None:
+        enc.check_planner_iterations(
+            run_id=state.run_id,
+            planner_iterations=state.planner_iteration_count,
+            state=state,
+        )
+
+
+def enforce_wall_time_budget(state: RuntimeState) -> None:
+    """Mid-run wall-time check using canonical ``RuntimeState.started_at_utc``."""
+    enc = _enforcer(state)
+    if enc is not None:
+        enc.check_wall_time(
+            run_id=state.run_id,
+            elapsed_seconds=run_elapsed_seconds(state),
             state=state,
         )

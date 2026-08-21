@@ -12,7 +12,9 @@ from pydantic import BaseModel
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.runtime.nexus.budget.budget_diagnostics import BudgetExceededDiagV1
 from intergrax.runtime.nexus.budget.budget_enforcer import BudgetExceededError
+from intergrax.runtime.nexus.budget.budget_models import BudgetEnforcementMode, BudgetPolicy, RunBudget
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.config_types import ToolsContextScope
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -625,3 +627,428 @@ def test_base_only_planner_single_iteration_still_uses_single_pass() -> None:
     assert result.tool_traces[0].tool_name == "alpha.tool"
     assert result.stop_reason == "legacy_single_pass"
     assert result.used_native_tool_messages is False
+
+
+class _CountingHandler(ToolHandler[_InA, _OutA]):
+    invocations: int = 0
+
+    def execute(self, request: ToolExecutionRequest[_InA]) -> _OutA:
+        _CountingHandler.invocations += 1
+        return _OutA(result=request.input.value)
+
+
+class _MultiCallRoundPlanner:
+    def __init__(self, *, rounds: int) -> None:
+        self._round = 0
+        self._max_rounds = rounds
+
+    def plan_tools(
+        self,
+        input_data,
+        context=None,
+        *,
+        run_id: str,
+        allowed_tool_ids=None,
+        **kwargs,
+    ) -> ToolPlanDecision:
+        _ = input_data, context, run_id, allowed_tool_ids, kwargs
+        return ToolPlanDecision(
+            final_answer=None,
+            tool_plan=ToolCallPlan(calls=[]),
+            messages=[],
+        )
+
+    def plan_native_round(
+        self,
+        messages,
+        *,
+        allowed_tool_ids=None,
+        run_id=None,
+        tool_choice=None,
+        **kwargs,
+    ):
+        _ = messages, allowed_tool_ids, run_id, tool_choice, kwargs
+        self._round += 1
+        if self._round <= self._max_rounds:
+            calls = [
+                PlannedToolCall(
+                    step_id=f"tool-{index}",
+                    tool_id="alpha.tool",
+                    input=_InA(value=index),
+                )
+                for index in range(self._round + 1)
+            ]
+            tool_calls = tuple(
+                LLMToolCall.from_openai_shape(
+                    call_id=f"tc-{index}",
+                    name="alpha.tool",
+                    arguments={"value": index},
+                )
+                for index in range(self._round + 1)
+            )
+            return (
+                LLMAdapterResponse(content="", tool_calls=tool_calls),
+                ToolCallPlan(calls=calls),
+            )
+        return LLMAdapterResponse(content="done", tool_calls=()), ToolCallPlan(calls=[])
+
+
+def test_per_round_tool_call_limit_rejects_before_invocation() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("alpha.tool", _InA, _OutA),
+        _CountingHandler(),
+    )
+    _CountingHandler.invocations = 0
+    llm = _TwoRoundLLM()
+    state = _runtime_state(llm)
+    state.context.config.max_tool_calls_per_round = 1
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = _MultiCallRoundPlanner(rounds=3)
+
+    with pytest.raises(ValueError, match="max_tool_calls_per_round"):
+        run_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=[ChatMessage(role="user", content="use tool")],
+            allowed_tool_ids=("alpha.tool",),
+            max_iterations=3,
+        )
+
+    assert _CountingHandler.invocations == 0
+
+
+def test_runbudget_planner_iterations_emits_diag_and_aborts() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("alpha.tool", _InA, _OutA),
+        _HandlerA(),
+    )
+    llm = _AlwaysToolLLM()
+    state = _runtime_state(llm)
+    state.context.config.run_budget = RunBudget(max_planner_iterations=1)
+    state.context.config.budget_policy = BudgetPolicy(enforcement_mode=BudgetEnforcementMode.ABORT)
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = ToolPlanningService(llm=llm, tools=registry)
+
+    with pytest.raises(BudgetExceededError, match="max_planner_iterations"):
+        run_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=[ChatMessage(role="user", content="use tool")],
+            allowed_tool_ids=("alpha.tool",),
+            max_iterations=3,
+        )
+
+    assert llm._round == 1
+    budget_events = [
+        event
+        for event in state.trace_events
+        if event.payload is not None
+        and isinstance(event.payload, BudgetExceededDiagV1)
+        and event.payload.budget_name == "max_planner_iterations"
+    ]
+    assert len(budget_events) == 1
+    assert budget_events[0].payload.limit == 1
+    assert budget_events[0].payload.actual == 2
+
+
+def test_wall_time_budget_aborts_before_next_planner_round() -> None:
+    from datetime import datetime, timedelta, timezone
+
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("alpha.tool", _InA, _OutA),
+        _HandlerA(),
+    )
+    llm = _AlwaysToolLLM()
+    state = _runtime_state(llm)
+    state.context.config.run_budget = RunBudget(max_wall_time_seconds=1.0)
+    state.context.config.budget_policy = BudgetPolicy(enforcement_mode=BudgetEnforcementMode.ABORT)
+    state.started_at_utc = (datetime.now(timezone.utc) - timedelta(seconds=5)).isoformat()
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = ToolPlanningService(llm=llm, tools=registry)
+
+    with pytest.raises(BudgetExceededError, match="max_wall_time_seconds"):
+        run_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=[ChatMessage(role="user", content="use tool")],
+            allowed_tool_ids=("alpha.tool",),
+            max_iterations=3,
+        )
+
+    assert llm._round == 1
+
+
+class _RepeatCallPlanner:
+    def __init__(self, *, rounds: int, value: int) -> None:
+        self._round = 0
+        self._max_rounds = rounds
+        self._value = value
+
+    def plan_tools(
+        self,
+        input_data,
+        context=None,
+        *,
+        run_id: str,
+        allowed_tool_ids=None,
+        **kwargs,
+    ) -> ToolPlanDecision:
+        _ = input_data, context, run_id, allowed_tool_ids, kwargs
+        return ToolPlanDecision(
+            final_answer=None,
+            tool_plan=ToolCallPlan(calls=[]),
+            messages=[],
+        )
+
+    def plan_native_round(
+        self,
+        messages,
+        *,
+        allowed_tool_ids=None,
+        run_id=None,
+        tool_choice=None,
+        **kwargs,
+    ):
+        _ = messages, allowed_tool_ids, run_id, tool_choice, kwargs
+        self._round += 1
+        if self._round <= self._max_rounds:
+            return (
+                LLMAdapterResponse(
+                    content="",
+                    tool_calls=(
+                        LLMToolCall.from_openai_shape(
+                            call_id=f"tc-{self._round}",
+                            name="alpha.tool",
+                            arguments={"value": self._value},
+                        ),
+                    ),
+                ),
+                ToolCallPlan(
+                    calls=[
+                        PlannedToolCall(
+                            step_id="tool",
+                            tool_id="alpha.tool",
+                            input=_InA(value=self._value),
+                        )
+                    ]
+                ),
+            )
+        return LLMAdapterResponse(content="done", tool_calls=()), ToolCallPlan(calls=[])
+
+
+def test_identical_call_repeat_limit_rejects_before_third_execution() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("alpha.tool", _InA, _OutA),
+        _CountingHandler(),
+    )
+    _CountingHandler.invocations = 0
+    state = _runtime_state(_TwoRoundLLM())
+    state.context.config.max_identical_tool_call_repeats = 2
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = _RepeatCallPlanner(rounds=3, value=7)
+
+    with pytest.raises(RuntimeError, match="max_identical_tool_call_repeats"):
+        run_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=[ChatMessage(role="user", content="repeat")],
+            allowed_tool_ids=("alpha.tool",),
+            max_iterations=3,
+        )
+
+    assert _CountingHandler.invocations == 2
+
+
+class _AlternatingInputPlanner:
+    def __init__(self) -> None:
+        self._round = 0
+        self.sequence = (7, 8, 7)
+
+    def plan_tools(
+        self,
+        input_data,
+        context=None,
+        *,
+        run_id: str,
+        allowed_tool_ids=None,
+        **kwargs,
+    ) -> ToolPlanDecision:
+        _ = input_data, context, run_id, allowed_tool_ids, kwargs
+        return ToolPlanDecision(
+            final_answer=None,
+            tool_plan=ToolCallPlan(calls=[]),
+            messages=[],
+        )
+
+    def plan_native_round(
+        self,
+        messages,
+        *,
+        allowed_tool_ids=None,
+        run_id=None,
+        tool_choice=None,
+        **kwargs,
+    ):
+        _ = messages, allowed_tool_ids, run_id, tool_choice, kwargs
+        self._round += 1
+        if self._round <= len(self.sequence):
+            value = self.sequence[self._round - 1]
+            return (
+                LLMAdapterResponse(
+                    content="",
+                    tool_calls=(
+                        LLMToolCall.from_openai_shape(
+                            call_id=f"tc-{self._round}",
+                            name="alpha.tool",
+                            arguments={"value": value},
+                        ),
+                    ),
+                ),
+                ToolCallPlan(
+                    calls=[
+                        PlannedToolCall(
+                            step_id="tool",
+                            tool_id="alpha.tool",
+                            input=_InA(value=value),
+                        )
+                    ]
+                ),
+            )
+        return LLMAdapterResponse(content="done", tool_calls=()), ToolCallPlan(calls=[])
+
+
+def test_identical_call_guard_tracks_inputs_independently() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("alpha.tool", _InA, _OutA),
+        _HandlerA(),
+    )
+    state = _runtime_state(_TwoRoundLLM())
+    state.context.config.max_identical_tool_call_repeats = 2
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = _AlternatingInputPlanner()
+
+    result = run_bounded_tool_loop(
+        state=state,
+        invoker=invoker,
+        tool_planner=planner,
+        planner_input=[ChatMessage(role="user", content="alternate")],
+        allowed_tool_ids=("alpha.tool",),
+        max_iterations=4,
+    )
+
+    assert result.stop_reason == "planner_final_answer"
+    assert len(result.tool_traces) == 3
+    assert [trace.arguments["value"] for trace in result.tool_traces] == [7, 8, 7]
+
+
+class _PartialFailureHandler(ToolHandler[_InA, _OutA]):
+    def execute(self, request: ToolExecutionRequest[_InA]) -> _OutA:
+        if request.input.value == 0:
+            raise RuntimeError("soft tool failure")
+        return _OutA(result=request.input.value)
+
+
+class _MixedOutcomeRoundPlanner:
+    def __init__(self) -> None:
+        self._round = 0
+
+    def plan_tools(
+        self,
+        input_data,
+        context=None,
+        *,
+        run_id: str,
+        allowed_tool_ids=None,
+        **kwargs,
+    ) -> ToolPlanDecision:
+        _ = input_data, context, run_id, allowed_tool_ids, kwargs
+        return ToolPlanDecision(
+            final_answer=None,
+            tool_plan=ToolCallPlan(calls=[]),
+            messages=[],
+        )
+
+    def plan_native_round(
+        self,
+        messages,
+        *,
+        allowed_tool_ids=None,
+        run_id=None,
+        tool_choice=None,
+        **kwargs,
+    ):
+        _ = allowed_tool_ids, run_id, tool_choice, kwargs
+        self._round += 1
+        if self._round == 1:
+            return (
+                LLMAdapterResponse(
+                    content="",
+                    tool_calls=(
+                        LLMToolCall.from_openai_shape(
+                            call_id="tc-ok",
+                            name="alpha.tool",
+                            arguments={"value": 5},
+                        ),
+                        LLMToolCall.from_openai_shape(
+                            call_id="tc-fail",
+                            name="alpha.tool",
+                            arguments={"value": 0},
+                        ),
+                    ),
+                ),
+                ToolCallPlan(
+                    calls=[
+                        PlannedToolCall(
+                            step_id="tool-ok",
+                            tool_id="alpha.tool",
+                            input=_InA(value=5),
+                        ),
+                        PlannedToolCall(
+                            step_id="tool-fail",
+                            tool_id="alpha.tool",
+                            input=_InA(value=0),
+                        ),
+                    ]
+                ),
+            )
+        tool_messages = [msg for msg in messages if msg.role == "tool"]
+        assert len(tool_messages) == 2
+        assert any("soft tool failure" in (msg.content or "") for msg in tool_messages)
+        assert any('"result":5' in (msg.content or "") for msg in tool_messages)
+        return LLMAdapterResponse(content="mixed recovered", tool_calls=()), ToolCallPlan(calls=[])
+
+
+def test_partial_tool_failure_continues_with_both_observations() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("alpha.tool", _InA, _OutA),
+        _PartialFailureHandler(),
+    )
+    state = _runtime_state(_TwoRoundLLM())
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = _MixedOutcomeRoundPlanner()
+
+    result = run_bounded_tool_loop(
+        state=state,
+        invoker=invoker,
+        tool_planner=planner,
+        planner_input=[ChatMessage(role="user", content="mixed")],
+        allowed_tool_ids=("alpha.tool",),
+        max_iterations=2,
+    )
+
+    assert result.stop_reason == "planner_final_answer"
+    assert len(result.tool_traces) == 2
+    assert result.tool_traces[0].success is True
+    assert result.tool_traces[1].success is False
+    tool_messages = [msg for msg in result.appended_messages if msg.role == "tool"]
+    assert len(tool_messages) == 2
