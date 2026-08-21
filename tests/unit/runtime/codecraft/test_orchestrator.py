@@ -14,6 +14,7 @@ from intergrax.applications._shared.codecraft_wiring import (
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.codecraft.profile import CodeCraftProfile
+from intergrax.contracts.execution_identity import bind_active_execution_identity, mint_attempt_id, mint_run_id
 from intergrax.runtime.codecraft.adaptive_trigger import evaluate_craft_trigger
 from intergrax.runtime.codecraft.ownership import codecraft_exec_hitl_notes
 from intergrax.runtime.codecraft.orchestrator import CodeCraftOrchestrator
@@ -112,33 +113,41 @@ def test_supervised_mode_requires_hitl(craft_ctx: ToolWiringContext) -> None:
             "codecraft_session_manager": CodeCraftSessionManager(),
         },
     )
-    start_out = codecraft_start(
-        ctx,
-        CodeCraftStartToolInput(goal="demo", task_id="task-1", tenant_id="tenant-1"),
-    )
-    assert start_out.session is not None
-    craft_id = start_out.session.craft_id
-    iter_out = codecraft_iterate(
-        ctx,
-        CodeCraftIterateToolInput(craft_id=craft_id, task_id="task-1", tenant_id="tenant-1"),
-    )
-    assert iter_out.result.error == "hitl_pending"
+    run_id = mint_run_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=mint_attempt_id())
+    try:
+        start_out = codecraft_start(
+            ctx,
+            CodeCraftStartToolInput(goal="demo", task_id="task-1", tenant_id="tenant-1"),
+        )
+        assert start_out.session is not None
+        craft_id = start_out.session.craft_id
+        iter_out = codecraft_iterate(
+            ctx,
+            CodeCraftIterateToolInput(craft_id=craft_id, task_id="task-1", tenant_id="tenant-1"),
+        )
+        assert iter_out.result.error == "hitl_pending"
 
-    store.record(
-        build_human_decision_record(
-            task_id="task-1",
-            tenant_id="tenant-1",
-            user_id="operator",
-            verdict=HumanResponseVerdict.APPROVE,
-            response_text="ok",
-            notes=codecraft_exec_hitl_notes(craft_id),
-        ),
-    )
-    iter_ok = codecraft_iterate(
-        ctx,
-        CodeCraftIterateToolInput(craft_id=craft_id, task_id="task-1", tenant_id="tenant-1"),
-    )
-    assert iter_ok.result.error != "hitl_pending"
+        store.record(
+            build_human_decision_record(
+                task_id="task-1",
+                tenant_id="tenant-1",
+                user_id="operator",
+                verdict=HumanResponseVerdict.APPROVE,
+                response_text="ok",
+                run_id=str(run_id),
+                notes=codecraft_exec_hitl_notes(craft_id),
+            ),
+        )
+        iter_ok = codecraft_iterate(
+            ctx,
+            CodeCraftIterateToolInput(craft_id=craft_id, task_id="task-1", tenant_id="tenant-1"),
+        )
+        assert iter_ok.result.error != "hitl_pending"
+    finally:
+        from intergrax.contracts.execution_identity import reset_active_execution_identity
+
+        reset_active_execution_identity(token)
 
 
 def test_wire_application_codecraft_enables_tools() -> None:

@@ -352,28 +352,33 @@ def test_rejected_decision_blocks_execution(tmp_path: Path) -> None:
         profile=profile,
         hitl_store=store,
     )
-    craft_id = _open_session(ctx, tenant_id=TENANT_A, task_id=TASK_X)
-    store.record(
-        build_human_decision_record(
-            task_id=TASK_X,
-            tenant_id=TENANT_A,
-            user_id="operator",
-            verdict=HumanResponseVerdict.REJECT,
-            response_text="no",
-            notes=codecraft_exec_hitl_notes(craft_id),
-        ),
-    )
-
-    with patch("intergrax.runtime.codecraft.orchestrator.code_exec") as mocked_exec:
-        out = codecraft_iterate(
-            ctx,
-            CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+    token = _bind_run()
+    try:
+        craft_id = _open_session(ctx, tenant_id=TENANT_A, task_id=TASK_X)
+        store.record(
+            build_human_decision_record(
+                task_id=TASK_X,
+                tenant_id=TENANT_A,
+                user_id="operator",
+                verdict=HumanResponseVerdict.REJECT,
+                response_text="no",
+                run_id=str(RUN_A),
+                notes=codecraft_exec_hitl_notes(craft_id),
+            ),
         )
-        mocked_exec.assert_not_called()
-    assert out.result.error == "hitl_denied"
+
+        with patch("intergrax.runtime.codecraft.orchestrator.code_exec") as mocked_exec:
+            out = codecraft_iterate(
+                ctx,
+                CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+            )
+            mocked_exec.assert_not_called()
+        assert out.result.error == "hitl_denied"
+    finally:
+        _reset_run(token)
 
 
-def test_valid_authoritative_approval_allows_iterate(tmp_path: Path) -> None:
+def test_no_active_run_unscoped_approve_does_not_authorize_iterate(tmp_path: Path) -> None:
     store = InMemoryHumanDecisionPersistence()
     profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True, require_tests=False)
     ctx = _ctx(
@@ -383,14 +388,15 @@ def test_valid_authoritative_approval_allows_iterate(tmp_path: Path) -> None:
         manager=CodeCraftSessionManager(),
     )
     craft_id = _open_session(ctx, tenant_id=TENANT_A, task_id=TASK_X)
-    _approve(store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id)
+    _approve(store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id, run_id=None)
 
-    out = codecraft_iterate(
-        ctx,
-        CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
-    )
-    assert out.result.error != "hitl_pending"
-    assert out.result.error != "hitl_denied"
+    with patch("intergrax.runtime.codecraft.orchestrator.code_exec") as mocked_exec:
+        out = codecraft_iterate(
+            ctx,
+            CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+        )
+        mocked_exec.assert_not_called()
+    assert out.result.error == "hitl_pending"
 
 
 def test_codecraft_run_hitl_parity_without_approval(tmp_path: Path) -> None:
@@ -405,7 +411,7 @@ def test_codecraft_run_hitl_parity_without_approval(tmp_path: Path) -> None:
     assert out.result.error == "hitl_pending"
 
 
-def test_codecraft_run_hitl_parity_with_approval(tmp_path: Path) -> None:
+def test_no_active_run_unscoped_approve_does_not_authorize_codecraft_run(tmp_path: Path) -> None:
     store = InMemoryHumanDecisionPersistence()
     profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True)
     ctx = _ctx(
@@ -414,18 +420,37 @@ def test_codecraft_run_hitl_parity_with_approval(tmp_path: Path) -> None:
         hitl_store=store,
     )
     craft_id = "craft-run-parity"
-    _approve(store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id)
-    out = codecraft_run(
-        ctx,
-        CodeCraftRunToolInput(
-            code="print('approved')\n",
-            tenant_id=TENANT_A,
-            task_id=TASK_X,
-            craft_id=craft_id,
-        ),
+    _approve(store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id, run_id=None)
+    with patch("intergrax.tools.providers.codecraft.service.code_exec") as mocked_exec:
+        out = codecraft_run(
+            ctx,
+            CodeCraftRunToolInput(
+                code="print('approved')\n",
+                tenant_id=TENANT_A,
+                task_id=TASK_X,
+                craft_id=craft_id,
+            ),
+        )
+        mocked_exec.assert_not_called()
+    assert out.result.error == "hitl_pending"
+    assert out.result.success is False
+
+
+def test_autonomous_without_hitl_no_canonical_run_regression(tmp_path: Path) -> None:
+    manager = CodeCraftSessionManager()
+    profile = CodeCraftProfile(mode="autonomous", require_hitl_before_exec=False, require_tests=False)
+    ctx = _ctx(
+        _sandbox(tmp_path, tenant_id=TENANT_A, task_id=TASK_X),
+        profile=profile,
+        manager=manager,
     )
-    assert out.result.success is True
-    assert "approved" in out.result.stdout
+    craft_id = _open_session(ctx, tenant_id=TENANT_A, task_id=TASK_X)
+    out = codecraft_iterate(
+        ctx,
+        CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+    )
+    assert out.result.error != "hitl_pending"
+    assert out.result.error != "hitl_denied"
 
 
 def test_non_exec_modes_regression_without_hitl(tmp_path: Path) -> None:
@@ -591,7 +616,7 @@ def test_approval_without_run_cannot_authorize_active_run(tmp_path: Path) -> Non
         _reset_run(token)
 
 
-def test_exact_run_approval_allows_iterate(tmp_path: Path) -> None:
+def test_active_run_exact_approve_still_works_iterate(tmp_path: Path) -> None:
     store = InMemoryHumanDecisionPersistence()
     profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True, require_tests=False)
     ctx = _ctx(
@@ -615,7 +640,7 @@ def test_exact_run_approval_allows_iterate(tmp_path: Path) -> None:
         _reset_run(token)
 
 
-def test_codecraft_run_hitl_run_parity(tmp_path: Path) -> None:
+def test_active_run_exact_approve_still_works_codecraft_run(tmp_path: Path) -> None:
     store = InMemoryHumanDecisionPersistence()
     profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True)
     craft_id = "craft-run-hitl-parity"

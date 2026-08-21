@@ -123,6 +123,9 @@ def resolve_codecraft_exec_authorization(
     if not needs_hitl:
         return CodeCraftExecAuthorization(authorized=True)
 
+    if ownership.run_id is None:
+        return CodeCraftExecAuthorization(authorized=False, pending_hitl=True, error="hitl_pending")
+
     store = ctx.human_decision_store
     if store is None or not isinstance(store, HumanDecisionStoreBinding):
         return CodeCraftExecAuthorization(authorized=False, pending_hitl=True, error="hitl_pending")
