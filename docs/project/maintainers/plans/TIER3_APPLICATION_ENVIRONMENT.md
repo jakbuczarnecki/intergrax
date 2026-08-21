@@ -189,3 +189,50 @@ Finding 05 remains owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](PLATFOR
 **Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
 
 ---
+
+### Protocol v2 remediation — TIER3_APPLICATION_ENVIRONMENT (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/TIER3_APPLICATION_ENVIRONMENT.md`](../../audit_results/2026-08-18/TIER3_APPLICATION_ENVIRONMENT.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-TIER3-APPLICATION-ENVIRONMENT-PERSIST.
+
+#### T3-COMPOSITION-AUTHORITY-INTEGRITY — typed configuration authority and blocking conformance
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-TIER3_APPLICATION_ENVIRONMENT-01`](../../audit_results/2026-08-18/TIER3_APPLICATION_ENVIRONMENT.md), [`04`](../../audit_results/2026-08-18/TIER3_APPLICATION_ENVIRONMENT.md), [`06`](../../audit_results/2026-08-18/TIER3_APPLICATION_ENVIRONMENT.md)
+
+**Acceptance intent:**
+
+- Canonical Tier-3 composition has one typed configuration authority and blocking conformance semantics where required.
+- Product/STRICT required profile/roster invariant violations fail closed; advisory mode is explicit policy only.
+- Integration-profile authority is contractual — conflicting authoritative inputs rejected or typed-merge resolved.
+- Platform-significant wiring artifacts (including policy/governance) use typed contracts, not `Any`.
+- Cross-link **TL-FIX-C/D** where ownership overlaps; do not duplicate boundary remediation.
+
+#### T3-RUNTIME-SCOPE-INTEGRITY — canonical event spine and execution-scoped sandbox identity
+
+**Priority:** P0
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-TIER3_APPLICATION_ENVIRONMENT-02`](../../audit_results/2026-08-18/TIER3_APPLICATION_ENVIRONMENT.md), [`03`](../../audit_results/2026-08-18/TIER3_APPLICATION_ENVIRONMENT.md)
+
+**Acceptance intent:**
+
+- Tier-3 reuses the canonical `RuntimeEventBus` from the runtime composition root; no silent local bus minting in canonical production wiring.
+- Task-scoped sandbox session materializes from canonical execution identity (tenant + TaskId / required scope); no synthetic `harness/bootstrap` runtime ownership in reusable production paths.
+- Cross-link [`OBSERVABILITY_EVIDENCE` plan](OBSERVABILITY_EVIDENCE.md) and [`IDENTITY_TRUST` plan](IDENTITY_TRUST.md) / **IDT-FIX-A** — do not create parallel event or identity subsystems.
+
+#### T3-SNAPSHOT-PROVENANCE-INTEGRITY — Task/Run ↔ EnvironmentSnapshot binding
+
+**Priority:** P1/P2
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-TIER3_APPLICATION_ENVIRONMENT-05`](../../audit_results/2026-08-18/TIER3_APPLICATION_ENVIRONMENT.md)
+
+**Acceptance intent:**
+
+- Configuration snapshot evidence is explicitly bound to the Task/Run execution that consumed it.
+- Deploy snapshot semantics and execution binding evidence are distinct and provable.
+- Reuse canonical execution identity; separate typed binding artifact is acceptable.
+
+**Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
+
+---

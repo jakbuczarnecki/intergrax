@@ -539,6 +539,21 @@ Accepted [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOU
 3. Platform-owned resolution of composition cycles (TL-FIX-D).
 4. Governed dynamic access at consumer boundaries (TL-FIX-A / Platform Foundation).
 
+<a id="protocol-v2-tier3-application-environment-target-invariants-2026-08-18"></a>
+
+### Protocol v2 Tier-3 application environment target invariants (2026-08-18)
+
+Accepted [`TIER3_APPLICATION_ENVIRONMENT`](../../audit_results/2026-08-18/TIER3_APPLICATION_ENVIRONMENT.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+
+1. **Authoritative conformance** — distinguish diagnostic validation from blocking composition conformance. For product/STRICT composition, required profile/roster invariant violations **fail closed**. Lab/advisory mode, if retained, must be explicit policy — not hard-coded `fail_on_violation=False`. Do not create another conformance subsystem.
+2. **Event spine ownership** — one authoritative `RuntimeEventBus` per runtime composition. The owning higher-level runtime composition root creates/resolves it once and passes the same instance through Tier-3/platform wiring. Standalone lab/test composition may explicitly request/create an isolated bus; canonical production wiring must not silently create one. Cross-link [`OBSERVABILITY_EVIDENCE`](OBSERVABILITY_EVIDENCE.md) rather than create another event architecture.
+3. **Sandbox execution scope** — Tier-3 configures sandbox capability/provider; task-scoped sandbox session is materialized from canonical runtime execution identity (tenant + TaskId / required scope) at the execution boundary. No reusable production sandbox session may carry synthetic `harness/bootstrap` ownership. Cross-link [`IDENTITY_TRUST`](IDENTITY_TRUST.md) and sandbox ownership.
+4. **Integration configuration authority** — one canonical effective integration-profile authority. If Manifest is only a default/reference source, say so contractually and resolve into `ApplicationEnvironmentProfile` before runtime wiring. If explicit overrides are supported, use typed override/merge semantics. Conflicting authoritative profiles fail explicitly rather than silently resolve through truthiness precedence.
+5. **Snapshot execution provenance** — deploy configuration snapshot and execution binding evidence have explicit semantics. For Task intake, canonical evidence must prove Task/Run identity ↔ exact `EnvironmentSnapshot`. This may be a separate typed binding rather than adding every execution field to `EnvironmentSnapshot` itself. Reuse canonical execution identity.
+6. **Typed composition boundary** — platform-significant canonical wiring artifacts use concrete types, Protocols, or typed unions/generics. In particular policy/governance artifacts must not be typed as arbitrary `Any`. Keep dynamic/`Any` values only at genuine edge adapters where unavoidable.
+
+Historical Tier-3 **Done** delivery facts and existing **TL-FIX-C/D**, **ITI-FIX-***, **IDT-FIX-A** remediation remain **PLANNED** — coordinate; do not duplicate.
+
 ---
 
 <a id="45-checklist-for-new-application-implementation"></a>
