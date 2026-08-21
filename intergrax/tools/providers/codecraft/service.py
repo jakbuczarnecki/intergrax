@@ -14,8 +14,14 @@ from intergrax.codecraft.contracts import CodeCraftRunInput, CraftResult, Static
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.codecraft.static_gate import StaticCodeGate
 from intergrax.runtime.codecraft.ephemeral_registry import get_ephemeral_registry_store
+from intergrax.runtime.codecraft.ownership import (
+    CodeCraftOwnershipError,
+    resolve_codecraft_exec_authorization,
+    resolve_codecraft_ownership,
+)
 from intergrax.runtime.codecraft.orchestrator import CodeCraftOrchestrator, resolve_codecraft_profile
 from intergrax.runtime.codecraft.sandbox_resolver import resolve_craft_sandbox_session
+from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager
 from intergrax.runtime.codecraft.trace import CodeCraftTraceEmitter
 from intergrax.tools.providers.codecraft.contracts import (
     CodeCraftDisposeToolInput,
@@ -85,7 +91,6 @@ def codecraft_iterate(ctx: ToolWiringContext, params: CodeCraftIterateToolInput)
         tenant_id=params.tenant_id,
         agent_id=params.agent_id,
         patch_diagnostics=params.patch_diagnostics,
-        hitl_approved=params.hitl_approved,
         timeout_s=params.timeout_s,
     )
     return CodeCraftIterateToolOutput(
@@ -97,7 +102,16 @@ def codecraft_iterate(ctx: ToolWiringContext, params: CodeCraftIterateToolInput)
 
 def codecraft_get_state(ctx: ToolWiringContext, params: CodeCraftGetStateToolInput) -> CodeCraftGetStateToolOutput:
     orch = _orchestrator(ctx, params.run_id)
-    session = orch.get_state(params.craft_id)
+    try:
+        ownership = resolve_codecraft_ownership(
+            ctx,
+            caller_tenant_id=params.tenant_id,
+            caller_task_id=params.task_id,
+            caller_run_id=params.run_id,
+        )
+    except CodeCraftOwnershipError:
+        return CodeCraftGetStateToolOutput(session=None, found=False)
+    session = orch.get_state(params.craft_id, ownership=ownership)
     return CodeCraftGetStateToolOutput(session=session, found=session is not None)
 
 
@@ -118,7 +132,11 @@ def codecraft_dispose(ctx: ToolWiringContext, params: CodeCraftDisposeToolInput)
 
 def codecraft_promote(ctx: ToolWiringContext, params: CodeCraftPromoteToolInput) -> CodeCraftPromoteToolOutput:
     orch = _orchestrator(ctx, params.run_id)
-    result = orch.promote(params.craft_id)
+    result = orch.promote(
+        params.craft_id,
+        tenant_id=params.tenant_id,
+        task_id=params.task_id,
+    )
     return CodeCraftPromoteToolOutput(result=result)
 
 
@@ -126,6 +144,22 @@ def codecraft_list_ephemeral_tools(
     ctx: ToolWiringContext,
     params: CodeCraftListEphemeralToolsInput,
 ) -> CodeCraftListEphemeralToolsOutput:
+    try:
+        ownership = resolve_codecraft_ownership(
+            ctx,
+            caller_tenant_id=params.tenant_id,
+            caller_task_id=params.task_id,
+            caller_run_id=params.run_id,
+        )
+    except CodeCraftOwnershipError:
+        return CodeCraftListEphemeralToolsOutput(craft_id=params.craft_id, tool_ids=[])
+    manager = ctx.extras.get("codecraft_session_manager")
+    if isinstance(manager, CodeCraftSessionManager):
+        try:
+            if manager.get_owned(params.craft_id, ownership) is None:
+                return CodeCraftListEphemeralToolsOutput(craft_id=params.craft_id, tool_ids=[])
+        except CodeCraftOwnershipError:
+            return CodeCraftListEphemeralToolsOutput(craft_id=params.craft_id, tool_ids=[])
     registry = get_ephemeral_registry_store(ctx).for_craft(params.craft_id)
     return CodeCraftListEphemeralToolsOutput(
         craft_id=params.craft_id,
@@ -169,16 +203,15 @@ def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> Code
             ),
         )
 
-    emitter.session_opened(
-        craft_id=craft_id,
-        mode=profile.mode,
-        tenant_id=params.tenant_id,
-        task_id=params.task_id,
-        agent_id=params.agent_id,
-    )
-
     if profile.mode == "disabled":
         gate = StaticGateResult(passed=False, rule_ids=["mode_disabled"], message="codecraft mode disabled")
+        emitter.session_opened(
+            craft_id=craft_id,
+            mode=profile.mode,
+            tenant_id=params.tenant_id,
+            task_id=params.task_id,
+            agent_id=params.agent_id,
+        )
         emitter.static_gate(
             craft_id=craft_id,
             mode=profile.mode,
@@ -208,37 +241,43 @@ def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> Code
         )
 
     gate = StaticCodeGate(profile).scan(params.code, language=params.language)
-    emitter.static_gate(
-        craft_id=craft_id,
-        mode=profile.mode,
-        passed=gate.passed,
-        rule_ids=tuple(gate.rule_ids),
-        tenant_id=params.tenant_id,
-        task_id=params.task_id,
-        agent_id=params.agent_id,
-    )
 
-    if not gate.passed:
-        emitter.disposed(
+    if profile.mode in ("dry_run", "assist_only"):
+        emitter.session_opened(
             craft_id=craft_id,
             mode=profile.mode,
             tenant_id=params.tenant_id,
             task_id=params.task_id,
             agent_id=params.agent_id,
         )
-        return CodeCraftRunToolOutput(
-            result=CraftResult(
-                craft_id=craft_id,
-                success=False,
-                mode=profile.mode,
-                static_gate=gate,
-                error=gate.message or "static_gate_failed",
-                verdict="revise",
-            ),
-            trace_event_count=len(emitter.events),
+        emitter.static_gate(
+            craft_id=craft_id,
+            mode=profile.mode,
+            passed=gate.passed,
+            rule_ids=tuple(gate.rule_ids),
+            tenant_id=params.tenant_id,
+            task_id=params.task_id,
+            agent_id=params.agent_id,
         )
-
-    if profile.mode in ("dry_run", "assist_only"):
+        if not gate.passed:
+            emitter.disposed(
+                craft_id=craft_id,
+                mode=profile.mode,
+                tenant_id=params.tenant_id,
+                task_id=params.task_id,
+                agent_id=params.agent_id,
+            )
+            return CodeCraftRunToolOutput(
+                result=CraftResult(
+                    craft_id=craft_id,
+                    success=False,
+                    mode=profile.mode,
+                    static_gate=gate,
+                    error=gate.message or "static_gate_failed",
+                    verdict="revise",
+                ),
+                trace_event_count=len(emitter.events),
+            )
         structured: dict[str, str] = {}
         if profile.mode == "assist_only":
             structured["code"] = params.code
@@ -261,6 +300,103 @@ def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> Code
             trace_event_count=len(emitter.events),
         )
 
+    try:
+        ownership = resolve_codecraft_ownership(
+            ctx,
+            caller_tenant_id=params.tenant_id,
+            caller_task_id=params.task_id,
+            caller_run_id=params.run_id,
+        )
+    except CodeCraftOwnershipError as exc:
+        gate = StaticGateResult(passed=False, rule_ids=[exc.code], message=exc.code)
+        return CodeCraftRunToolOutput(
+            result=CraftResult(
+                craft_id=craft_id,
+                success=False,
+                mode=profile.mode,
+                static_gate=gate,
+                error=exc.code,
+                verdict="abort",
+            ),
+            trace_event_count=len(emitter.events),
+        )
+
+    trace_tenant_id = ownership.tenant_id
+    trace_task_id = ownership.task_id
+
+    emitter.session_opened(
+        craft_id=craft_id,
+        mode=profile.mode,
+        tenant_id=trace_tenant_id,
+        task_id=trace_task_id,
+        agent_id=params.agent_id,
+    )
+    emitter.static_gate(
+        craft_id=craft_id,
+        mode=profile.mode,
+        passed=gate.passed,
+        rule_ids=tuple(gate.rule_ids),
+        tenant_id=trace_tenant_id,
+        task_id=trace_task_id,
+        agent_id=params.agent_id,
+    )
+
+    if not gate.passed:
+        emitter.disposed(
+            craft_id=craft_id,
+            mode=profile.mode,
+            tenant_id=trace_tenant_id,
+            task_id=trace_task_id,
+            agent_id=params.agent_id,
+        )
+        return CodeCraftRunToolOutput(
+            result=CraftResult(
+                craft_id=craft_id,
+                success=False,
+                mode=profile.mode,
+                static_gate=gate,
+                error=gate.message or "static_gate_failed",
+                verdict="revise",
+            ),
+            trace_event_count=len(emitter.events),
+        )
+
+    exec_auth = resolve_codecraft_exec_authorization(
+        ctx,
+        profile=profile,
+        ownership=ownership,
+        craft_id=craft_id,
+    )
+    if not exec_auth.authorized:
+        if exec_auth.pending_hitl:
+            emitter.hitl_requested(
+                craft_id=craft_id,
+                mode=profile.mode,
+                reason="supervised_exec_approval",
+                tenant_id=trace_tenant_id,
+                task_id=trace_task_id,
+                agent_id=params.agent_id,
+            )
+        emitter.disposed(
+            craft_id=craft_id,
+            mode=profile.mode,
+            tenant_id=trace_tenant_id,
+            task_id=trace_task_id,
+            agent_id=params.agent_id,
+        )
+        error = exec_auth.error or ("hitl_denied" if exec_auth.denied else "hitl_pending")
+        return CodeCraftRunToolOutput(
+            result=CraftResult(
+                craft_id=craft_id,
+                success=False,
+                mode=profile.mode,
+                static_gate=gate,
+                error=error,
+                verdict="continue" if exec_auth.pending_hitl else "abort",
+            ),
+            trace_event_count=len(emitter.events),
+        )
+
     if profile.security_scan_before_exec and not _security_scan_passed(ctx, params.code):
         gate = StaticGateResult(
             passed=False,
@@ -270,8 +406,8 @@ def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> Code
         emitter.disposed(
             craft_id=craft_id,
             mode=profile.mode,
-            tenant_id=params.tenant_id,
-            task_id=params.task_id,
+            tenant_id=trace_tenant_id,
+            task_id=trace_task_id,
             agent_id=params.agent_id,
         )
         return CodeCraftRunToolOutput(
@@ -289,15 +425,15 @@ def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> Code
     sandbox = resolve_craft_sandbox_session(
         ctx,
         profile,
-        tenant_id=params.tenant_id,
-        task_id=params.task_id,
+        tenant_id=trace_tenant_id,
+        task_id=trace_task_id,
     )
     if sandbox is None:
         emitter.disposed(
             craft_id=craft_id,
             mode=profile.mode,
-            tenant_id=params.tenant_id,
-            task_id=params.task_id,
+            tenant_id=trace_tenant_id,
+            task_id=trace_task_id,
             agent_id=params.agent_id,
         )
         return CodeCraftRunToolOutput(
@@ -332,16 +468,16 @@ def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> Code
         sandbox_session_id=exec_out.session_id,
         exit_code=exit_code,
         success=exec_out.success,
-        tenant_id=params.tenant_id,
-        task_id=params.task_id,
+        tenant_id=trace_tenant_id,
+        task_id=trace_task_id,
         agent_id=params.agent_id,
         duration_ms=duration_ms,
     )
     emitter.disposed(
         craft_id=craft_id,
         mode=profile.mode,
-        tenant_id=params.tenant_id,
-        task_id=params.task_id,
+        tenant_id=trace_tenant_id,
+        task_id=trace_task_id,
         agent_id=params.agent_id,
     )
 

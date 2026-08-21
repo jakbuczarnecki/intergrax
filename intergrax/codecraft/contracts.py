@@ -47,6 +47,7 @@ class CodeCraftSession(BaseModel):
     craft_id: str
     task_id: str
     tenant_id: str
+    run_id: str | None = None
     goal: str
     mode: str
     language: str = "python"
