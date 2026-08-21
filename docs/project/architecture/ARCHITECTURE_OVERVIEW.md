@@ -61,7 +61,7 @@ Products can reuse existing governed mechanisms, surface missing shared capabili
 
 ## Platform Map
 
-<a href="../assets/public/readme/intergrax-platform-map-light.png">
+<a href="../assets/public/readme/fullsize/intergrax-platform-map.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -78,7 +78,7 @@ Products can reuse existing governed mechanisms, surface missing shared capabili
 </picture>
 </a>
 
-[View full-size diagram](../assets/public/readme/intergrax-platform-map-light.png)
+[View full-size diagram](../assets/public/readme/fullsize/intergrax-platform-map.md)
 
 Use the [Platform Map on the README](../../../README.md#explore-the-intergrax-platform) to choose a platform area, open its canonical domain or feature hub, inspect maturity and evidence, and go deeper only when needed. The map is the visual index; this overview is the mental model behind it.
 
@@ -140,7 +140,7 @@ The lifecycle is conceptual: the operating layer selects the resources needed fo
 
 **Governed Execution** (Governance & Policy Enforcement) is the platform capability that controls what execution may proceed under configured policy.
 
-<a href="../assets/public/readme/intergrax-governed-execution-light.png">
+<a href="../assets/public/readme/fullsize/intergrax-governed-execution.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -157,7 +157,7 @@ The lifecycle is conceptual: the operating layer selects the resources needed fo
 </picture>
 </a>
 
-[View full-size diagram](../assets/public/readme/intergrax-governed-execution-light.png)
+[View full-size diagram](../assets/public/readme/fullsize/intergrax-governed-execution.md)
 
 The application defines what the business rule means. Intergrax provides reusable enforcement mechanisms — policy evaluation, boundary enforcement, canonical HITL, and governance evidence on wired paths. Complete platform-wide coverage and production qualification are **not** claimed.
 

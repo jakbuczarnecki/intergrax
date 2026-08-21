@@ -35,7 +35,7 @@ Nexus enforces **one canonical task path**: every surface normalizes to `Task` â
 
 ## Flagship architecture visual
 
-<a href="assets/nexus-execution-flow-light.svg">
+<a href="assets/fullsize/nexus-execution-flow.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/nexus-execution-flow-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/nexus-execution-flow-light.svg">

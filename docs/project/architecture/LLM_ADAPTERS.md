@@ -38,7 +38,7 @@ LLM Adapters solve this with a typed ABI, a normalized response envelope, a prov
 
 ## Flagship architecture visual
 
-<a href="assets/llm-adapter-boundary-light.svg">
+<a href="assets/fullsize/llm-adapter-boundary.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/llm-adapter-boundary-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/llm-adapter-boundary-light.svg">

@@ -35,7 +35,7 @@ Intergrax RAG addresses that gap with a native path from **authorized sources** 
 
 ## Flagship architecture visual
 
-<a href="assets/rag-platform-position-light.svg">
+<a href="assets/fullsize/rag-platform-position.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/rag-platform-position-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/rag-platform-position-light.svg">

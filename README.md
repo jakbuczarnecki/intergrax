@@ -15,7 +15,7 @@ those mechanisms for every workflow.
 
 **[See LKW](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)** · **[Run LKW locally](applications/local_workspace_application/docs/product/QUICKSTART.md)** · **[Inspect Governed Evidence Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md)** · **[Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)**
 
-<a href="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png">
+<a href="docs/project/assets/public/readme/fullsize/intergrax-ecosystem-hero.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -71,7 +71,7 @@ Intergrax centralizes reusable mechanisms so product teams can focus on the
 specialized workflow. Read [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)
 for the category, problem, and fit.
 
-<a href="docs/project/assets/public/readme/intergrax-why-light.png">
+<a href="docs/project/assets/public/readme/fullsize/intergrax-why.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -88,7 +88,7 @@ for the category, problem, and fit.
 </picture>
 </a>
 
-[View full-size diagram](docs/project/assets/public/readme/intergrax-why-light.png)
+[View full-size diagram](docs/project/assets/public/readme/fullsize/intergrax-why.md)
 
 ---
 
@@ -143,7 +143,7 @@ when admissibility is unsatisfied, and persisted structural proof.
 This proof does **not** certify complete **indexed + authorized live Hybrid Ask**
 in a single admissibility gate. See the [Governed Evidence Decision Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md).
 
-<a href="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png">
+<a href="applications/local_workspace_application/docs/assets/fullsize/lkw-governed-evidence-gate.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -212,7 +212,7 @@ For deep engineering registers, use architecture **satellites** (on demand via t
 [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md)) —
 not as a first-contact route.
 
-<a href="docs/project/assets/public/readme/intergrax-platform-map-light.png">
+<a href="docs/project/assets/public/readme/fullsize/intergrax-platform-map.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -229,7 +229,7 @@ not as a first-contact route.
 </picture>
 </a>
 
-[View full-size diagram](docs/project/assets/public/readme/intergrax-platform-map-light.png)
+[View full-size diagram](docs/project/assets/public/readme/fullsize/intergrax-platform-map.md)
 
 | Platform area | What it provides | Explore |
 | --- | --- | --- |
@@ -263,7 +263,7 @@ Project-level mental model:
 Meaningful AI execution should be reconstructable, reviewable, and attributable.
 Intergrax is designed so important actions do not disappear inside an opaque agent loop.
 
-<a href="docs/project/assets/public/readme/intergrax-governed-execution-light.png">
+<a href="docs/project/assets/public/readme/fullsize/intergrax-governed-execution.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -280,7 +280,7 @@ Intergrax is designed so important actions do not disappear inside an opaque age
 </picture>
 </a>
 
-[View full-size diagram](docs/project/assets/public/readme/intergrax-governed-execution-light.png)
+[View full-size diagram](docs/project/assets/public/readme/fullsize/intergrax-governed-execution.md)
 
 A governed run can leave correlated runtime events, typed [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, and structured [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence.
 This is execution-level explainability, not hidden model reasoning.

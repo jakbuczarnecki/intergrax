@@ -46,7 +46,7 @@ Intergrax Tools addresses this through `ToolContract` / registry, layered permis
 
 ## Flagship architecture visual
 
-<a href="assets/tool-runtime-boundary-light.svg">
+<a href="assets/fullsize/tool-runtime-boundary.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/tool-runtime-boundary-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/tool-runtime-boundary-light.svg">

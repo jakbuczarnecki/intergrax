@@ -48,7 +48,7 @@ Skills address this through `SkillManifest`, catalog + runtime registry, `SkillP
 
 ## Flagship architecture visual
 
-<a href="assets/skill-resolution-boundary-light.svg">
+<a href="assets/fullsize/skill-resolution-boundary.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/skill-resolution-boundary-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/skill-resolution-boundary-light.svg">

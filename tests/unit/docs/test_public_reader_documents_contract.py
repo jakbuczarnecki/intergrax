@@ -1093,7 +1093,7 @@ def test_why_readme_visual_alignment(why_text: str) -> None:
     assert "../assets/public/readme/intergrax-why-light.png" in why_text
     assert "../assets/public/readme/intergrax-why-dark.png" in why_text
     assert "Rebuilt foundations" not in why_text
-    assert "[View full-size diagram](../assets/public/readme/intergrax-why-light.png)" in why_text
+    assert "[View full-size diagram](../assets/public/readme/fullsize/intergrax-why.md)" in why_text
 
 
 def test_architecture_readme_visual_alignment(arch_text: str) -> None:
@@ -1103,11 +1103,11 @@ def test_architecture_readme_visual_alignment(arch_text: str) -> None:
     assert "../assets/public/readme/intergrax-governed-execution-dark.png" in arch_text
     assert "agent / model proposes" not in arch_text
     assert (
-        "[View full-size diagram](../assets/public/readme/intergrax-platform-map-light.png)"
+        "[View full-size diagram](../assets/public/readme/fullsize/intergrax-platform-map.md)"
         in arch_text
     )
     assert (
-        "[View full-size diagram](../assets/public/readme/intergrax-governed-execution-light.png)"
+        "[View full-size diagram](../assets/public/readme/fullsize/intergrax-governed-execution.md)"
         in arch_text
     )
 

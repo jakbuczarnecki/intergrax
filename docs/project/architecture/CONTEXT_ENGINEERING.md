@@ -33,7 +33,7 @@ CE is **not** a memory store, document retriever, prompt registry, LLM adapter, 
 
 ## Flagship architecture visual
 
-<a href="assets/context-engineering-platform-position-light.svg">
+<a href="assets/fullsize/context-engineering-platform-position.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/context-engineering-platform-position-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/context-engineering-platform-position-light.svg">

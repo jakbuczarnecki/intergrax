@@ -44,7 +44,7 @@ The Reasoning and Cognition Layer (RCL) addresses this through **typed contracts
 
 ## Flagship architecture visual
 
-<a href="assets/reasoning-cognition-planes-light.svg">
+<a href="assets/fullsize/reasoning-cognition-planes.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/reasoning-cognition-planes-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/reasoning-cognition-planes-light.svg">

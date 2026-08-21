@@ -124,7 +124,7 @@ It demonstrates versioned policy-derived obligations, four independent live prov
 
 It is **LIVE_ONLY** — complete indexed + authorized live Hybrid Ask remains **not proven**.
 
-<a href="../assets/lkw-governed-evidence-gate-light.png">
+<a href="../assets/fullsize/lkw-governed-evidence-gate.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"

@@ -46,7 +46,7 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
 
 ## Flagship architecture visual
 
-<a href="assets/observability-evidence-spine-light.svg">
+<a href="assets/fullsize/observability-evidence-spine.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/observability-evidence-spine-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/observability-evidence-spine-light.svg">

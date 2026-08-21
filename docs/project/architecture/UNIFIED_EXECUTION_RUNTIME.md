@@ -33,7 +33,7 @@ Agents **must not** implement ad hoc lifecycle, retry, HITL, or event semantics.
 
 ## Flagship architecture visual
 
-<a href="assets/unified-execution-runtime-lifecycle-light.svg">
+<a href="assets/fullsize/unified-execution-runtime-lifecycle.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-runtime-lifecycle-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-runtime-lifecycle-light.svg">

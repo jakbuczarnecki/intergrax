@@ -58,7 +58,7 @@ ACP solves this through:
 
 ## Flagship architecture visual
 
-<a href="assets/agent-contract-assembly-light.svg">
+<a href="assets/fullsize/agent-contract-assembly.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/agent-contract-assembly-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/agent-contract-assembly-light.svg">

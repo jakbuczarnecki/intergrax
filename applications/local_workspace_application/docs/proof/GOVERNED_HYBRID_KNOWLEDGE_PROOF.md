@@ -8,7 +8,7 @@
 > independent live providers. Complete indexed + authorized live Hybrid Ask in a
 > single admissibility gate remains **not proven**.
 
-<a href="../assets/lkw-governed-evidence-gate-light.png">
+<a href="../assets/fullsize/lkw-governed-evidence-gate.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -113,7 +113,7 @@ does **not** mean deployment is approved, the business result is positive, or th
 answer is guaranteed correct. Evidence may be admissible while provider facts still
 indicate BLOCKED/NO.
 
-<a href="../assets/lkw-policy-revision-admissibility-light.png">
+<a href="../assets/fullsize/lkw-policy-revision-admissibility.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -183,7 +183,7 @@ provider facts until evidence is refreshed.
 
 ## Failure semantics
 
-<a href="../assets/lkw-evidence-failure-semantics-light.png">
+<a href="../assets/fullsize/lkw-evidence-failure-semantics.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -221,7 +221,7 @@ an accidental validation error.
 
 ## External vendor truth and persistence
 
-<a href="../assets/lkw-external-evidence-authority-light.png">
+<a href="../assets/fullsize/lkw-external-evidence-authority.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"

@@ -35,7 +35,7 @@ Memory **does not** decide what the model sees on a given turn — that is Conte
 
 ## Flagship architecture visual
 
-<a href="assets/memory-platform-position-light.svg">
+<a href="assets/fullsize/memory-platform-position.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/memory-platform-position-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/memory-platform-position-light.svg">

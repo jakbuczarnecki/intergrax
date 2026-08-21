@@ -56,7 +56,7 @@ CVL provides **typed primitives, orchestration, telemetry, and policy gates** so
 
 ## Flagship architecture visual
 
-<a href="assets/critic-verification-stack-light.svg">
+<a href="assets/fullsize/critic-verification-stack.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/critic-verification-stack-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/critic-verification-stack-light.svg">
