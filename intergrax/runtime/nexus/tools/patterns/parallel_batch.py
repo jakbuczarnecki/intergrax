@@ -49,13 +49,14 @@ class ParallelBatchPattern:
             return ToolInvocationResult(stop_reason="empty_tool_calls")
 
         max_parallel = max(1, int(state.context.config.max_parallel_tool_calls))
-        traces = execute_planned_tool_calls(
+        outcomes = execute_planned_tool_calls(
             state=state,
             invoker=invoker,
             calls=tool_plan.calls,
             idempotency_prefix=state.run_id,
             max_parallel_read_only=max_parallel,
         )
+        traces = [outcome.trace for outcome in outcomes]
         aggregate = ToolInvocationAggregate.from_traces(traces)
         return ToolInvocationResult(
             tool_traces=list(traces),

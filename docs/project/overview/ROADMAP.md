@@ -9,7 +9,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 This is the canonical public product roadmap for Intergrax. It describes what user and product outcomes must become true next, how those outcomes are evidenced, and when broader claims or expansion are justified.
 
 > [!WARNING]
-> Intergrax is **source-available** and under active R&D. LKW is the **Primary product proof**, **Backend Product Alpha / MVP**, and remains **PARTIAL**. This roadmap is **outcome-gated**, not a release-date commitment. **Real-user validation incomplete**. **Commercial validation incomplete**.
+> Outcome-gated roadmap — not a release-date commitment. LKW is **Primary product proof**, **Backend Product Alpha / MVP**, **PARTIAL**. Real-user and commercial validation remain open; see [PROOFS.md](../proofs/PROOFS.md).
 
 ## At a glance
 
@@ -17,9 +17,9 @@ This is the canonical public product roadmap for Intergrax. It describes what us
 |----------|--------|
 | Primary product focus | Local Knowledge Workspace (LKW) |
 | Current maturity | Backend Product Alpha / MVP — PARTIAL |
-| What is being established now | A repeatable supported LKW workflow |
+| What is being established now | A repeatable supported LKW workflow **and** parallel problem/customer discovery |
 | Roadmap model | Outcome gates, not an implementation queue |
-| Current validation boundary | Real-user validation incomplete; commercial validation incomplete |
+| Discovery status | Problem/customer discovery in progress; not yet completed |
 | Release dates | No public date commitment |
 
 ## How to read this roadmap
@@ -32,19 +32,55 @@ If you need to decide whether Intergrax fits your problem today, start with [USE
 
 ```mermaid
 flowchart LR
+    subgraph parallel [Runs in parallel from NOW]
+        PD[Problem / customer discovery]
+    end
     A[Current bounded product proof]
     A --> B[Repeatable primary workflow]
     B --> C[Complete intended knowledge outcome]
-    C --> D[Real-user value and repeat use]
+    PD -.->|informs| B
+    PD -.->|informs| C
+    C --> D[Solution validation and repeat use]
     D --> E[Evidence-driven expansion]
     E --> F[Validated hardening and packaging]
 ```
 
-The sequence is conceptual and has no dates. Each transition requires evidence before the next stage is treated as achieved.
+The sequence is conceptual and has no dates. Each product transition requires evidence before the next stage is treated as achieved.
 
-## NOW — Make the primary workflow repeatable
+**Parallel discovery** runs alongside product and proof work from NOW. Discovery informs what gets built; it does not wait for a complete intended LKW workflow. The formal **solution-validation** gate (VALIDATE) begins only once the intended workflow is usable end to end.
+
+```text
+problem discovery
+↔ product hypothesis
+↔ smallest valuable workflow
+↔ implementation / proof
+→ usable workflow
+→ solution validation
+→ repeated use / pilot evidence
+→ evidence-driven expansion
+```
+
+This loop supports rapid evidence-driven product decisions — not endless research or process overhead.
+
+## Three evidence classes
+
+Intergrax distinguishes three evidence classes. They must not be conflated.
+
+| Class | What it establishes | When it applies |
+|-------|---------------------|-----------------|
+| **Problem / customer discovery** | Target people experience a recurring problem; current alternatives have meaningful friction; the workflow is worth investigating | **Now** — in parallel with product development |
+| **Solution / real-user validation** | Users can complete the workflow; results are useful and trusted; users reuse it; Intergrax improves the target workflow | **Later** — after a usable end-to-end workflow exists (VALIDATE gate) |
+| **Commercial validation** | Genuine commercial commitment, buying behavior, or authorized commercial engagement | **Separate later boundary** — not established by problem interviews |
+
+Problem interviews and discovery conversations are **not** commercial validation. None of these classes is complete today; problem/customer discovery is in progress, not finished.
+
+## NOW — Make the primary workflow repeatable (and learn from users in parallel)
 
 **User / product outcome:** LKW becomes a dependable supported workflow that an evaluator can run, repeat, restart, and recover without ad hoc developer reconstruction.
+
+**Parallel discovery outcome:** learn who experiences the problem, what real workflow causes it, what users do today, where time/trust/risk/manual effort concentrates, which alternatives or workarounds they use, how often the problem occurs, what outcome matters, who owns or decides around the problem, and which workflows deserve deeper product evaluation.
+
+Discovery does **not** require a complete LKW workflow. It informs product hypotheses while implementation and proof proceed.
 
 | User / product outcome | Evidence required before calling it achieved |
 |-------------------------|-----------------------------------------------|
@@ -73,7 +109,7 @@ The next stage is a product outcome, not a commitment to a particular provider, 
 
 ## VALIDATE — Establish real-user value and repeat use
 
-Real-user validation is a distinct gate. Internal tests, maintainers, and technical evaluators do not by themselves constitute external validation.
+**Solution / real-user validation** is a distinct gate from problem/customer discovery and from commercial validation. Internal tests, maintainers, and technical evaluators do not by themselves constitute external validation.
 
 **User / product outcomes to learn:**
 
@@ -91,7 +127,7 @@ Real-user validation is a distinct gate. Internal tests, maintainers, and techni
 | Repeat use is meaningful | Evidence shows whether users return and what they would continue using |
 | Friction and trust failures are understood | Observed blockers and trust breaks are recorded well enough to choose the next product decision |
 
-This gate begins only after the intended workflow is usable end-to-end. No internal testing result is presented as real-user validation.
+The **formal solution-validation gate** begins only after the intended workflow is usable end-to-end. That boundary applies to **solution validation**, not to problem/customer discovery — discovery starts earlier and runs in parallel. No internal testing result or discovery interview is presented as real-user validation or commercial validation.
 
 ## EXPAND — Evidence-driven expansion
 
@@ -117,11 +153,11 @@ No provider, surface, or breadth item is promised in advance.
 
 **User / product outcome:** recurring validated use justifies improvements to operational reliability, deployment, diagnostics, permissions, supportability, or product packaging.
 
-**Evidence required:** real-user or partner use has exposed a concrete recurring need, and bounded evidence supports the proposed hardening or packaging decision. This stage does not create a general production-ready claim.
+**Evidence required:** real-user or partner use has exposed a concrete recurring need, and bounded evidence supports the proposed hardening or packaging decision.
 
 ## Supporting platform work
 
-Product need drives platform work. **Token Optimization** remains a **Featured platform-capability proof** with **PARTIAL** status and bounded evidence. It is a supporting reusable capability, not a separate public roadmap phase. **Universal savings are not claimed**.
+Product need drives platform work. **Token Optimization** remains a **Featured platform-capability proof** with **PARTIAL** status and bounded evidence. It is a supporting reusable capability, not a separate public roadmap phase.
 
 See the [Token Optimization guide](../capabilities/token_optimization/README.md) for its bounded proof and limitations.
 
@@ -133,9 +169,46 @@ See the [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_A
 
 See the [Platform Plugins architecture](../architecture/PLATFORM_PLUGINS.md) for the strategic direction and current boundaries.
 
+## Discovery signals and decision discipline
+
+Use discovery to inform product decisions — not to substitute for building or for later solution validation.
+
+**Strong signals** may include:
+
+- the problem is described without prompting from Intergrax;
+- it occurs repeatedly;
+- users already perform manual workarounds;
+- existing solutions are insufficient for a concrete reason;
+- the organization spends meaningful time or effort addressing it;
+- the participant wants to continue into evaluation;
+- a domain owner or decision owner joins;
+- representative workflow or data is offered for a bounded evaluation.
+
+**Weak signals** include generic praise, "interesting," GitHub stars, likes, or hypothetical willingness without concrete workflow behavior.
+
+**Discovery decisions** (no rigid numerical thresholds):
+
+| Outcome | When |
+|---------|------|
+| **CONTINUE** | Recurring pain, credible workflow, and a reason to proceed |
+| **REVISE** | A real problem exists but the user, workflow, or value hypothesis needs adjustment |
+| **STOP** | Evidence does not justify continued investment in that hypothesis |
+
+## Target participant hypotheses
+
+Target participant categories are **hypotheses**, not validated ICPs. Useful starting hypotheses may include:
+
+- AI / engineering leaders building internal AI applications;
+- CTO / Heads of Engineering introducing AI into organizational workflows;
+- knowledge-intensive teams with controlled documentation and workflows;
+- enterprise AI / automation teams combining multiple systems with access and evidence requirements.
+
+No category is claimed as a proven buyer or ICP. See [Partners](../community/PARTNERS.md) for governed pilot routes when evaluation deepens.
+
 ## Decision principles
 
 - **Application first** — product workflow drives platform work.
+- **Discovery informs build** — problem/customer discovery runs in parallel; it does not wait for product completion.
 - **Evidence before promotion** — bounded proof and claim boundaries precede broader wording.
 - **Demand before integration breadth** — breadth follows a validated workflow.
 - **Explicit permission and responsibility boundaries** — see [LICENSE](../../../LICENSE) and [COLLABORATION.md](../community/COLLABORATION.md).
@@ -147,11 +220,11 @@ See the [Platform Plugins architecture](../architecture/PLATFORM_PLUGINS.md) for
 - No finished hosted SaaS.
 - No claim that mixed indexed + authorized live Hybrid Ask is complete.
 - No claim of complete live-provider access or a complete provider catalog.
-- No completed real-user validation.
-- No completed commercial validation.
-- No claim of universal production readiness.
-- No universal token-savings claim.
+- No completed problem/customer discovery, real-user validation, validated ICP, product-market fit, or commercial validation.
+- No claim of universal production readiness or universal token savings.
 - No fixed release-date commitment.
+
+Authoritative evidence boundaries: [PROOFS.md](../proofs/PROOFS.md).
 
 ## Reader routes
 

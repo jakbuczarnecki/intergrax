@@ -27,6 +27,7 @@ from intergrax.contracts.external_work import (
     ExternalWorkStatus,
     ExternalWorkTimelineEvent,
     QuoteAcceptanceEvidence,
+    quote_acceptance_side_effect_scope_digest,
 )
 from intergrax.contracts.governed_continuation import (
     ContinuationReason,
@@ -215,6 +216,8 @@ class ExternalWorkAdapter:
             create_gate = self._evaluate_side_effect(
                 action=ACTION_CREATE_EXTERNAL_WORK,
                 kinds=(MeaningfulSideEffectKind.MUTATION,),
+                side_effect_scope_id=request.idempotency_key,
+                side_effect_scope_digest=request.scope_digest,
                 task_id=request.task_id,
                 run_id=request.run_id,
                 principal_id=principal_id,
@@ -340,12 +343,15 @@ class ExternalWorkAdapter:
             resolved_tenant = (
                 (tenant_id or "").strip() or acceptance.actor.tenant_id
             )
+            canonical_scope_digest = quote_acceptance_side_effect_scope_digest(acceptance)
             gate = self._evaluate_side_effect(
                 action=ACTION_ACCEPT_QUOTE,
                 kinds=(
                     MeaningfulSideEffectKind.COMMITMENT,
                     MeaningfulSideEffectKind.MUTATION,
                 ),
+                side_effect_scope_id=idempotency_key,
+                side_effect_scope_digest=canonical_scope_digest,
                 task_id=correlation.task_id,
                 run_id=correlation.run_id,
                 principal_id=resolved_principal,
@@ -431,6 +437,8 @@ class ExternalWorkAdapter:
             gate = self._evaluate_side_effect(
                 action=ACTION_CANCEL_EXTERNAL_WORK,
                 kinds=(MeaningfulSideEffectKind.MUTATION,),
+                side_effect_scope_id=idempotency_key,
+                side_effect_scope_digest=None,
                 task_id=correlation.task_id,
                 run_id=correlation.run_id,
                 principal_id=principal_id,
@@ -702,6 +710,8 @@ class ExternalWorkAdapter:
         *,
         action: str,
         kinds: tuple[MeaningfulSideEffectKind, ...],
+        side_effect_scope_id: str,
+        side_effect_scope_digest: str | None,
         task_id: str,
         run_id: str | None,
         principal_id: str | None,
@@ -774,10 +784,28 @@ class ExternalWorkAdapter:
                 metadata={"side_effect_action": action},
             )
 
+        resolved_scope_id = side_effect_scope_id.strip()
+        if not resolved_scope_id:
+            return ExternalWorkAdapterResult(
+                used=False,
+                reason="side_effect_scope_id_missing",
+                error_code=ExternalWorkErrorCode.INVALID_REQUEST,
+                error_message="meaningful side effect requires side_effect_scope_id",
+                error_retryable=False,
+                policy_decision=PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="meaningful_side_effect_scope_id_missing",
+                    policy_rule_id="adapter.side_effect_scope_id",
+                ),
+                metadata={"side_effect_action": action},
+            )
+
         try:
             request = MeaningfulSideEffectRequest(
                 action=action,
                 kinds=kinds,
+                side_effect_scope_id=resolved_scope_id,
+                side_effect_scope_digest=side_effect_scope_digest,
                 task_id=resolved_task,
                 run_id=resolved_run,
                 principal_id=resolved_principal,
@@ -825,6 +853,8 @@ class ExternalWorkAdapter:
                 policy_rule_id=decision.policy_rule_id,
                 resource_scope=resource,
                 policy_action=decision.action,
+                side_effect_scope_id=resolved_scope_id,
+                side_effect_scope_digest=side_effect_scope_digest,
                 correlation=dict(correlation),
                 context={
                     "side_effect_action": action,

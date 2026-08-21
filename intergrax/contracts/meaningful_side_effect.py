@@ -16,6 +16,8 @@ from typing import Any, Final, Literal, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.contracts.validation import validate_content_digest
+
 SCHEMA_MEANINGFUL_SIDE_EFFECT_REQUEST_V1: Final = "meaningful_side_effect_request.v1"
 
 _NON_EMPTY = Field(min_length=1)
@@ -45,6 +47,8 @@ class MeaningfulSideEffectRequest(BaseModel):
     )
     action: str = _NON_EMPTY
     kinds: tuple[MeaningfulSideEffectKind, ...] = Field(min_length=1)
+    side_effect_scope_id: str = _NON_EMPTY
+    side_effect_scope_digest: str | None = None
     task_id: str = _NON_EMPTY
     run_id: str = _NON_EMPTY
     principal_id: str | None = None
@@ -54,7 +58,7 @@ class MeaningfulSideEffectRequest(BaseModel):
     correlation: Mapping[str, Any] = Field(default_factory=dict)
     context: Mapping[str, Any] = Field(default_factory=dict)
 
-    @field_validator("action", "task_id", "run_id")
+    @field_validator("action", "side_effect_scope_id", "task_id", "run_id")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()
@@ -69,3 +73,10 @@ class MeaningfulSideEffectRequest(BaseModel):
             return None
         normalized = value.strip()
         return normalized or None
+
+    @field_validator("side_effect_scope_digest")
+    @classmethod
+    def _validate_side_effect_scope_digest(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return validate_content_digest(value)

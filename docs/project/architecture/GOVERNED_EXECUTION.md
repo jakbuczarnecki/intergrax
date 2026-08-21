@@ -330,6 +330,22 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 
 ---
 
+<a id="protocol-v22-policy-governance-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 policy/governance target invariants (2026-08-18)
+
+Accepted [`POLICY_GOVERNANCE`](../../audit_results/2026-08-18/POLICY_GOVERNANCE.md) findings **01–05** (layer audited 2026-08-19). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-BATCH-PERSIST-2.
+
+1. **One canonical meaningful-side-effect authorization spine** — product adapters may adapt domain requests but must not own an independent policy semantics path (**PG-FIX-A**).
+2. **Composable effective authorization** — principal/effective authority, tenant/workspace, resource, external target, effect kind, operation/action, and exact side-effect scope id/digest (**PG-FIX-A**).
+3. **Explicit deterministic policy resolution** — broad ALLOW must not accidentally shadow a more-specific DENY because of list order (**PG-FIX-B**).
+4. **Scoped human approval grant** — canonical grant authorizes exactly the approved continuation/operation; neither global ALLOW nor mere untrusted evidence (**PG-FIX-C**).
+5. **Explicit policy matching** — critical matching uses typed fields; no hidden `rule_id` suffix dispatch (**PG-FIX-D**).
+
+Remediation blocks: **PG-FIX-A**, **PG-FIX-B**, **PG-FIX-C**, **PG-FIX-D** in [`plan/GOVERNED_EXECUTION.md`](../maintainers/plans/GOVERNED_EXECUTION.md).
+
+---
+
 ## Relationship to adjacent capabilities
 
 | Capability | Relationship |

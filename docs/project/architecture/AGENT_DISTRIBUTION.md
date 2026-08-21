@@ -1142,6 +1142,19 @@ AP-10 implements the projection mechanism; AP-9 architecture **requires** this a
 
 Registry snapshots (`registry_snapshot_store`) SHOULD include `effective_roster_revision_id`, `runtime_revision_id`, `traffic_serving_revision_id`, and installation/binding ids for audit — not as install DB.
 
+<a id="protocol-v2-agent-system-identity-projection-invariants-2026-08-18"></a>
+
+### Protocol v2 agent system identity projection invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`AGENT_SYSTEM`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) (**FAIL**, finding 04 ACCEPTED). Target state only — complements §6 identity model; does not create a second identity subsystem.
+
+1. **Canonical identity preservation** — registry projection must preserve canonical package/contract identity (`AgentContract.id`, `logical_agent_id`, distribution identity tuple); registry-local dictionary aliases must not silently rewrite `AgentContract.id` ([`AUDIT-20260818-AGENT_SYSTEM-04`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+2. **Fail-closed mismatch** — identity mismatch between bootstrap key and package-declared contract id must fail closed, or a distinct explicit typed alias/binding contract must own alias semantics ([`AUDIT-20260818-AGENT_SYSTEM-04`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+3. **Bootstrap vs activated truth** — distinguish any temporary manifest-only/bootstrap compatibility path (e.g. `AgentRegistry.from_agents(dict)`) from canonical activated runtime projection truth populated at traffic commit ([`AUDIT-20260818-AGENT_SYSTEM-04`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+4. **Ownership cross-link** — reuse §6 identity model and **TL-FIX-B** single-implementation-authority invariants; Tier-1 registry execution remains a projection — Distribution owns identity authority, not a competing registry identity mechanism ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+
+Remediation tracked as **AGSYS-IDENTITY-PROJECTION** in [plan](../maintainers/plans/AGENT_DISTRIBUTION.md) with ACP registry bootstrap cross-reference. **Not implemented** by audit persistence.
+
 ---
 
 ## 22. Nexus routing boundary

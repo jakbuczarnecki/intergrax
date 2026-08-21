@@ -529,8 +529,8 @@ def test_builtin_parity_and_live_unchanged_with_external_plugin() -> None:
     )
     assert len(build_default_vendor_knowledge_adapter_registry().registered_keys()) == 12
     assert len(build_default_vendor_knowledge_source_plugin_registry().list_plugins()) == 12
-    assert sum(len(item.connection_factories) for item in disabled.list_contributions()) == 6
-    assert sum(len(item.connection_factories) for item in enabled.list_contributions()) == 7
+    assert sum(len(item.connection_factories) for item in disabled.list_contributions()) == 7
+    assert sum(len(item.connection_factories) for item in enabled.list_contributions()) == 8
     live_disabled = build_vendor_knowledge_live_registration_registry()
     live_enabled = build_vendor_knowledge_live_registration_registry(
         discover_entry_points=True,

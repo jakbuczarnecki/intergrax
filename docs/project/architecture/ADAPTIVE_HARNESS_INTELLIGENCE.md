@@ -780,6 +780,50 @@ AHI ≠ foundation-model training.
 
 ---
 
+## Protocol v2 Adaptive Harness Intelligence target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`ADAPTIVE_HARNESS_INTELLIGENCE`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+**Finding 01 — promotion authority**
+
+1. Production profile activation consumes one authoritative promotion artifact binding `proposal_id`, exact profile version, tenant, task class, artifact type, governance result, authority level, required approvals, and promotion/verification evidence where required ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-01`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+2. `AdaptationExecutor.apply()` must enforce `passed_all_gates` and prove `version_id` lineage from the governing package — failed gates or unrelated version fail closed ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-01`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+3. Do **not** create a second governance pipeline ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-01`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+
+**Finding 02 — tenant/scope ownership**
+
+4. Every adaptive lifecycle mutation is scope-bound — resolved record must match exact `tenant_id` + `task_class` + `artifact_type` + `version_id` ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-02`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+5. Cross-tenant or cross-task profile activation is impossible — cross-scope mismatch fails closed ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-02`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+6. Prefer a typed `ProfileVersionRef` / promotion identity rather than several independent writable strings ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-02`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+
+**Finding 03 — human approval**
+
+7. Human-required promotion fails closed when approval evidence authority is unavailable ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-03`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+8. `human_approver_id` declaration ≠ approval evidence — reuse canonical Governance / HITL approval evidence ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-03`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+9. Approval evidence is scoped to exact proposal/version/tenant/change ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-03`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+
+**Finding 04 — evidence qualification**
+
+10. Distinguish optional recommendation evidence from mandatory production promotion evidence ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-04`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+11. Missing mandatory production evidence is **NOT QUALIFIED**, not PASS ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-04`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+12. `passed_all_gates` must mean all gates required for the intended action/stage were actually evaluated and passed ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-04`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+
+**Finding 05 — activation consistency**
+
+13. Profile statuses and active pointer are one recoverable logical operation ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-05`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+14. Activation carries `operation_id`, expected active version, new version, explicit state-transition outcome, idempotency, and reconciliation after partial failure ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-05`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+15. Provider-neutral atomic/CAS semantic contract — not one physical database transaction across all providers ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-05`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+
+**Finding 06 — concurrency**
+
+16. Active pointer mutation uses expected-version CAS/fencing — `expected_active_version_id` + `new_active_version_id` ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-06`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+17. Concurrent stale promotion → explicit conflict, not silent last-write-wins ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-06`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+18. Reuse Intergrax existing CAS/revision-fence patterns where appropriate ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-06`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+
+**Preserved invariants:** evidence → proposal → governance → version → shadow → canary → apply model; proposal ≠ permission ≠ deployment; profile version immutability/lineage; Governance ownership; recommendation-only default; A4/I3/P2/E2 honesty; TOKEN-AHI partial state; ADAS planned state; historical W-ADAPT delivery facts; no remediation implementation claim.
+
+---
+
 ## Appendix references
 
 - **Mapping to code:** `intergrax/runtime/adaptive/`, `intergrax/runtime/architecture/adaptive_governance.py`

@@ -20,7 +20,7 @@ Without a platform-owned ephemeral codegen path:
 CodeCraft addresses this through `CodeCraftOrchestrator`, typed `CodeCraftProfile`, static gate (L0), governed sandbox execution, bounded iteration, CVL verification, typed promotion via `CraftResult`, and ephemeral lifecycle semantics.
 
 > [!NOTE]
-> **Maturity boundary:** Phases **ECC-0…ECC-6** and post-closeout **S7–S11** are **Done** on the harness path, with **Full Harness LC** internal evidence. That is **not** universal production qualification for arbitrary generated-code execution: `local` isolation is workspace-level dev substrate, `container` isolation is not yet a distinct OCI boundary, `network_egress` is a profile contract with **partial** runtime enforcement, `cloud`/`container` tiers may fall back to local when hosted substrate is unresolved, and hostile-code / sandbox-escape evidence is not claimed. See [Current maturity](#current-maturity).
+> **Maturity boundary:** Phases **ECC-0…ECC-6** and post-closeout **S7–S11** are **Done** on the harness path, with **Full Harness LC** internal evidence. That is **not** universal production qualification for arbitrary generated-code execution: Protocol v2 audit [`CODE_CRAFT`](../../audit_results/2026-08-18/CODE_CRAFT.md) records **2 CRITICAL** authority defects (session identity binding, HITL self-assertion) that invalidate any unconditional production-safe interpretation until remediated; `local` isolation is workspace-level dev substrate, `container` isolation is not yet a distinct OCI boundary, `network_egress` is a profile contract with **partial** runtime enforcement, `cloud`/`container` tiers may fall back to local when hosted substrate is unresolved, and hostile-code / sandbox-escape evidence is not claimed. See [Protocol v2 CodeCraft target invariants](#protocol-v2-codecraft-target-invariants-2026-08-18) and [Current maturity](#current-maturity).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and application authors configuring `CodeCraftProfile` and `codecraft.*` tool access — after the platform overview in the root README.
 
@@ -470,13 +470,27 @@ Phase tracker and maintenance queues: [plan](../maintainers/plans/CODE_CRAFT.md)
 
 Architecture maturity: **A4**  
 Implementation maturity: **I4**  
-Production readiness: **P2**  
+Production readiness: **P1**  
 Evidence maturity: **E3**
 
-- **A4** — Canonical domain pair; orchestrator/session/profile separation; Tool / Sandbox / Governance / CVL boundaries; fail-closed design; promotion semantics; isolation model documented; P2-ARCH-12 safety boundary ([plan](../maintainers/plans/CODE_CRAFT.md)).
-- **I4** — ECC-0…ECC-6 + S7–S11 **Done**: orchestrator, profile wiring, static gate, sandbox execution, bounded loop, test runner, promotion, ephemeral registry, trace, HITL/policy integration on harness path.
-- **P2** — Lab/reference hosts and harness CFG exercise CodeCraft paths; **public production qualification for arbitrary generated-code execution not claimed** — `local` tier is workspace isolation, `container` OCI runner not distinct, `network_egress` enforcement partial, strict isolation-tier fail-closed downgrade protection not yet proven, no hostile-code or sandbox-escape production evidence.
+- **A4** — Canonical domain pair; orchestrator/session/profile separation; Tool / Sandbox / Governance / CVL boundaries; promotion semantics; isolation model documented honestly; P2-ARCH-12 safety boundary ([plan](../maintainers/plans/CODE_CRAFT.md)). Protocol v2 gaps (authority, HITL, promotion evidence, isolation downgrade, egress) recorded as target invariants — not closed.
+- **I4** — ECC-0…ECC-6 + S7–S11 **Done**: orchestrator, profile wiring, static gate, sandbox execution, bounded loop, test runner, promotion, ephemeral registry, trace, HITL/policy hooks on harness path. **Not I5** — session authority not bound to runtime-trusted identity; HITL approval caller-assertable; promotion does not consume verification evidence; test/execution sandbox binding diverges.
+- **P1** — Harness and lab paths exercise CodeCraft; **unconditional production-safe interpretation invalidated** by Protocol v2 **CRITICAL** authority defects (01 session isolation, 02 HITL bypass). Effective posture for arbitrary/untrusted generated code is lab/reference only until **CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY** closes. Additional P2 blockers remain: `local` tier workspace isolation, `container` OCI runner not distinct, `network_egress` enforcement partial, isolation-tier silent downgrade, no hostile-code production evidence.
 - **E3** — Unit/gate suite (`check_codecraft_layer.py`, orchestrator and provider tests), Full Harness LC internal evidence. **No** dedicated public proof route in [`docs/project/proofs/PROOFS.md`](../proofs/PROOFS.md) — not E4/E5.
+
+### Protocol v2 CodeCraft target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`CODE_CRAFT`](../../audit_results/2026-08-18/CODE_CRAFT.md) (**FAIL**, 7 ACCEPTED findings — 2 CRITICAL). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Prior ECC/S7–S11 **Done** rows remain historical delivery facts — not rewritten. Target state only:
+
+1. **Canonical execution identity binding** — craft session authority bound to runtime-trusted tenant/task/run identity; every stateful operation validates ownership; `craft_id` alone is not authorization; conflicting `open()` must fail closed ([`AUDIT-20260818-CODE_CRAFT-01`](../../audit_results/2026-08-18/CODE_CRAFT.md)).
+2. **Canonical HITL approval** — HITL approval originates from Governed Execution / UER state, never tool input; `codecraft.run` and iterative lifecycle converge on the same governance boundary ([`AUDIT-20260818-CODE_CRAFT-02`](../../audit_results/2026-08-18/CODE_CRAFT.md)).
+3. **Narrow-only task override lattice** — `task_metadata.codecraft_mode` may only narrow host CodeCraft authority unless trusted policy explicitly approves expansion; host `disabled` cannot become executable from metadata ([`AUDIT-20260818-CODE_CRAFT-03`](../../audit_results/2026-08-18/CODE_CRAFT.md)).
+4. **Evidence-consuming promotion** — promotion eligible only from verified session state; must preserve real gate/verdict/test/HITL evidence; must never fabricate success; `promotion_schema_ref` fail-closed when configured ([`AUDIT-20260818-CODE_CRAFT-04`](../../audit_results/2026-08-18/CODE_CRAFT.md)).
+5. **Same-sandbox verification** — tests and verdict bind to the same sandbox/artifact identity as execution; no silent re-resolution of a different substrate ([`AUDIT-20260818-CODE_CRAFT-05`](../../audit_results/2026-08-18/CODE_CRAFT.md)).
+6. **Isolation anti-downgrade** — required `cloud`/`container` tier fails closed when eligible substrate cannot resolve; no silent local downgrade unless explicit trusted downgrade policy ([`AUDIT-20260818-CODE_CRAFT-06`](../../audit_results/2026-08-18/CODE_CRAFT.md)).
+7. **Runtime egress enforcement** — `network_egress` is substrate-enforced capability; `deny` requires provable outbound denial before exec; fail closed when substrate cannot satisfy posture ([`AUDIT-20260818-CODE_CRAFT-07`](../../audit_results/2026-08-18/CODE_CRAFT.md)).
+
+CodeCraft / Sandbox / Tools / Governance / CVL ownership unchanged. `CodeCraftOrchestrator` remains canonical lifecycle owner. Remediation: **CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY** (01–03), **CODECRAFT-VERIFICATION-INTEGRITY** (04–05), **CODECRAFT-ISOLATION-INTEGRITY** (06–07) in [plan](../maintainers/plans/CODE_CRAFT.md). **Not implemented** by audit persistence.
 
 ## Evidence / proof
 
@@ -525,7 +539,7 @@ Evidence maturity: **E3**
 **Audit layer:** 11b (Ephemeral Code Craft)  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
 **Implementation:** `intergrax/codecraft` · `intergrax/runtime/codecraft` · `intergrax/tools/providers/codecraft`  
-**Last updated:** 2026-08-18 — **DOC-3L-R1** sandbox isolation truth reconciliation; **P2-ARCH-12** safety boundary
+**Last updated:** 2026-08-20 — Protocol v2 CODE_CRAFT audit target invariants; production readiness **P1** (CRITICAL authority defects); **DOC-3L-R1** sandbox isolation truth reconciliation; **P2-ARCH-12** safety boundary
 
 ### Cursor read scope (token budget)
 

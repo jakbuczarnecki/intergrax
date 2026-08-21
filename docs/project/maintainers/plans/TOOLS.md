@@ -147,3 +147,56 @@ Deferred:     hierarchical LLM category pass (default OFF) · optional L1 critic
 - Browser automation without product driver
 
 ---
+
+<a id="tools-governed-boundary-integrity--protocol-v2-tools-2026-08-18"></a>
+
+### TOOLS-GOVERNED-BOUNDARY-INTEGRITY — Permission intersection, effective timeout, pre-invoke budget (Protocol v2 · 2026-08-18)
+
+**Status:** `PLANNED`
+**Priority:** P1
+**Type:** Arch / Wire / Proof
+**Source:** [`AUDIT-20260818-TOOLS-01`](../../audit_results/2026-08-18/TOOLS.md), [`AUDIT-20260818-TOOLS-02`](../../audit_results/2026-08-18/TOOLS.md), [`AUDIT-20260818-TOOLS-03`](../../audit_results/2026-08-18/TOOLS.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Deliverable intent:**
+
+- monotonic permission intersection — `resolve_allowed_tools_from_config` and canonical policy/tool-scope owners intersect explicit caller allow-lists with `RuntimePolicyBundle.tool_access`; no caller list expands stricter upstream authority
+- real `ToolContract.timeout_ms` boundary — caller-visible latency cap; timeout handling does not synchronously wait for timed-out worker; explicit abandon/cancel semantics for in-flight external effects (no unsafe thread killing)
+- pre-invoke hard tool-call budget — reserve/check before side-effect boundary; authoritative invocation accounting (not stale mid-loop `tool_traces`); hard abort/HITL budget violations preserve canonical semantics and are not swallowed as ordinary tools-context errors
+- reuse `RunBudget` / `BudgetEnforcer` — no second budget subsystem
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Prior **TOOL-ENG** **Done** / **closed** rows remain historical — do **not** mark them undone; this block owns Protocol v2 governed-boundary gaps beyond harness closeout.
+- Side-effect idempotency/retry/outcome gaps owned by **TOOLS-SIDE-EFFECT-SAFETY** — not duplicated here.
+- Cross-ref **PG-FIX** / policy spine where tool-scope intersection overlaps Governed Execution — reuse canonical owners, no parallel policy evaluator.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- **Not implemented** by audit persistence task AUDIT-20260818-TOOLS-PERSIST.
+
+<a id="tools-side-effect-safety--protocol-v2-tools-2026-08-18"></a>
+
+### TOOLS-SIDE-EFFECT-SAFETY — Idempotency identity, retry authorization, outcome states (Protocol v2 · 2026-08-18)
+
+**Status:** `PLANNED`
+**Priority:** P1
+**Type:** Arch / Wire / Proof
+**Source:** [`AUDIT-20260818-TOOLS-04`](../../audit_results/2026-08-18/TOOLS.md), [`AUDIT-20260818-TOOLS-05`](../../audit_results/2026-08-18/TOOLS.md), [`AUDIT-20260818-TOOLS-06`](../../audit_results/2026-08-18/TOOLS.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Deliverable intent:**
+
+- canonical idempotency operation identity — typed key contract binding `(tenant_id, idempotency_key)` to logical operation (minimum `tool_id`; deterministic input/operation fingerprint when required); cross-tool/cross-operation collision fails closed
+- side-effect retry safety — automatic retry of mutating tools requires positive authorization (idempotent semantics + scoped identity, explicit retry-safe metadata, or retryable error classification); unknown-outcome mutating failures not blindly retried
+- idempotency outcome-state model — ledger distinguishes successful completion, failed-before-effect, and failed-with-unknown-external-outcome; `record_completed` MUST NOT treat all failures as safe replay `COMPLETED`
+- do **not** claim universal exactly-once against external providers
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Prior **TOOL-ENG** idempotency wrapper **Done** rows remain historical delivery facts.
+- Governed-boundary ordering (budget/timeout/permissions) owned by **TOOLS-GOVERNED-BOUNDARY-INTEGRITY** — not duplicated here.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- **Not implemented** by audit persistence task AUDIT-20260818-TOOLS-PERSIST.
+
+---

@@ -50,6 +50,29 @@
 
 ---
 
+### Protocol v2.2 remediation — IDENTITY_TRUST (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/IDENTITY_TRUST.md`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+#### IDT-FIX-C — Human decision provenance
+
+**Status:** `ACCEPTED / PLANNED`
+**Source:** [`AUDIT-20260818-IDENTITY_TRUST-03`](../../audit_results/2026-08-18/IDENTITY_TRUST.md), [`AUDIT-20260818-IDENTITY_TRUST-04`](../../audit_results/2026-08-18/IDENTITY_TRUST.md)
+
+**Acceptance criteria:**
+
+- Canonical approver principal evidence on persisted human decision records.
+- Exact pause/request identity preserved on every supported resume path.
+- Shared HTTP resume reaches same invariant as debug/canonical resume (`DebugHitlResumeService` pattern).
+- Stale/wrong approver correlation fails closed.
+- Token/secret not persisted in decision evidence.
+- Existing G5C exact pause/request guarantees preserved.
+
+**Remediation rules:** same as PBA-FIX-A block above.
+
+---
+
 ## Architecture documentation (P2)
 
 | ID | Task | Status |
@@ -208,6 +231,22 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 **Suggested PR order:** REL-MAINT-01 → REL-MAINT-02 → REL-MAINT-03 → REL-MAINT-04.
 
 **Cross-domain:** FLOW-MAINT-01 · ORCH-MAINT-04 · LLM-MAINT-03.
+
+**Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
+
+---
+
+### Protocol v2.2 remediation — EXECUTION_RUNTIME resume/cancel (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/EXECUTION_RUNTIME.md`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-BATCH-PERSIST-2.
+
+| Block | Status | Findings | Acceptance intent |
+|-------|--------|----------|-------------------|
+| **UER-FIX-C** | ACCEPTED / PLANNED | UER-03 | Checkpoint restores AttemptId on non-retry resume |
+| **UER-FIX-E** | ACCEPTED / PLANNED | UER-05, UER-06 | Cancellation reaches active ACP; tombstone/invalidation of resumable checkpoints |
+
+Cross-ref **UER-FIX-A/B/D** in [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md).
 
 ---
 

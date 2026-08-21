@@ -19,7 +19,6 @@ from intergrax.tools.core.tool_plan import ToolCallPlan
 ToolInvocationStopReason = Literal[
     "empty_tool_calls",
     "max_iterations",
-    "budget_exceeded",
     "planner_final_answer",
     "legacy_single_pass",
 ]

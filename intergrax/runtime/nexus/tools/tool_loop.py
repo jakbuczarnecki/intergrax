@@ -8,8 +8,9 @@ import json
 import threading
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import replace
-from typing import TYPE_CHECKING
+from dataclasses import dataclass, replace
+
+from pydantic import BaseModel
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
@@ -40,10 +41,18 @@ from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
 )
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.tools.core.tool_plan import PlannedToolCall
-from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult, ToolModelObservation
 
-if TYPE_CHECKING:
-    pass
+_TRACE_OUTPUT_PREVIEW_LIMIT = 400
+
+
+@dataclass(frozen=True, slots=True)
+class PlannedToolCallOutcome:
+    """Diagnostic trace plus model-facing observation from one planned invoke."""
+
+    trace: ToolCallTrace
+    model_observation: ToolModelObservation
+
 
 # Backward-compatible aliases (TOOL-ENG-6 consumers).
 BoundedToolLoopResult = ToolInvocationResult
@@ -93,7 +102,7 @@ def _invoke_planned_call(
     invoke_lock: threading.Lock | None = None,
     assignment_state: DeclarativeHitlScopeAssignmentState | None = None,
     unique_candidate: UniqueDeclarativeHitlCandidate | None = None,
-) -> ToolCallTrace:
+) -> PlannedToolCallOutcome:
     req = _build_planned_request(
         state=state,
         call=call,
@@ -123,16 +132,24 @@ def _invoke_planned_call(
             enforce_tool_call_budget(state)
     else:
         enforce_tool_call_budget(state)
-    return trace
+    return PlannedToolCallOutcome(
+        trace=trace,
+        model_observation=ToolModelObservation.from_execution_result(result),
+    )
 
 
-def _trace_from_result(call: PlannedToolCall, result: object) -> ToolCallTrace:
+def _trace_from_result(
+    call: PlannedToolCall,
+    result: ToolExecutionResult[BaseModel],
+) -> ToolCallTrace:
     if result.success:
-        output_preview = result.output.model_dump_json()[:400]
+        assert result.output is not None
+        output_preview = result.output.model_dump_json()[:_TRACE_OUTPUT_PREVIEW_LIMIT]
         error_msg = None
     else:
         output_preview = None
-        error_msg = result.error.error_message
+        assert result.error is not None
+        error_msg = result.error.error_message[:_TRACE_OUTPUT_PREVIEW_LIMIT]
     return ToolCallTrace(
         tool_name=call.tool_id,
         arguments=call.input.model_dump(),
@@ -154,7 +171,7 @@ def execute_planned_tool_calls(
     calls: Sequence[PlannedToolCall],
     idempotency_prefix: str,
     max_parallel_read_only: int = 1,
-) -> list[ToolCallTrace]:
+) -> list[PlannedToolCallOutcome]:
     if not calls:
         return []
     assignment_state = (
@@ -205,7 +222,7 @@ def execute_planned_tool_calls(
         ]
 
     indexed = list(enumerate(calls))
-    results: dict[int, ToolCallTrace] = {}
+    results: dict[int, PlannedToolCallOutcome] = {}
     read_only = [(index, call) for index, call in indexed if not _call_has_side_effects(invoker, call)]
     mutating = [(index, call) for index, call in indexed if _call_has_side_effects(invoker, call)]
 
@@ -241,7 +258,7 @@ def append_native_tool_messages(
     *,
     assistant_content: str,
     tool_calls: Sequence[LLMToolCall],
-    traces: Sequence[ToolCallTrace],
+    outcomes: Sequence[PlannedToolCallOutcome],
 ) -> None:
     if not tool_calls:
         return
@@ -252,12 +269,11 @@ def append_native_tool_messages(
             tool_calls=[_tool_call_openai_dict(tc) for tc in tool_calls],
         )
     )
-    for tool_call, trace in zip(tool_calls, traces, strict=False):
-        body = trace.output_preview or trace.error_message or ""
+    for tool_call, outcome in zip(tool_calls, outcomes, strict=False):
         messages.append(
             ChatMessage(
                 role="tool",
-                content=body,
+                content=outcome.model_observation.content,
                 tool_call_id=tool_call.id,
                 name=tool_call.name,
             )

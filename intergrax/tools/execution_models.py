@@ -41,8 +41,29 @@ class ToolExecutionError:
     error_message: str
 
 
-from dataclasses import dataclass
-from typing import Generic, Optional
+@dataclass(frozen=True, slots=True)
+class ToolModelObservation:
+    """
+    Model-facing serialized tool outcome for native ``role=tool`` messages.
+
+    Distinct from diagnostic trace previews (bounded observability).
+    """
+
+    content: str
+
+    @classmethod
+    def from_execution_result(
+        cls,
+        result: "ToolExecutionResult[OutModelT]",
+    ) -> "ToolModelObservation":
+        if result.success:
+            if result.output is None:
+                raise ValueError("successful ToolExecutionResult requires output")
+            return cls(content=result.output.model_dump_json())
+        if result.error is None:
+            raise ValueError("failed ToolExecutionResult requires error")
+        return cls(content=result.error.error_message)
+
 
 @dataclass(frozen=True)
 class ToolExecutionResult(Generic[OutModelT]):

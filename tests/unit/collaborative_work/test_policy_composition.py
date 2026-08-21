@@ -391,6 +391,7 @@ def test_runtime_meaningful_side_effect_deny_survives_composition() -> None:
     side_effect_request = MeaningfulSideEffectRequest(
         action="ACCEPT_QUOTE",
         kinds=(MeaningfulSideEffectKind.COMMITMENT,),
+        side_effect_scope_id="scope-quote-1",
         task_id="task-1",
         run_id="run-1",
         principal_id=_ACTING,

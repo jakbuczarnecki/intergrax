@@ -64,15 +64,12 @@ class BoundedReactPattern:
 
         while iterations < max_iters:
             iterations += 1
-            try:
-                llm_result, tool_plan = planner.plan_native_round(
-                    messages,
-                    allowed_tool_ids=allowed_tool_ids,
-                    run_id=state.run_id,
-                    tool_choice=tool_choice_for_mode(state.context.config.tools_mode),
-                )
-            except Exception:
-                break
+            llm_result, tool_plan = planner.plan_native_round(
+                messages,
+                allowed_tool_ids=allowed_tool_ids,
+                run_id=state.run_id,
+                tool_choice=tool_choice_for_mode(state.context.config.tools_mode),
+            )
 
             if llm_result.content and not tool_plan.calls:
                 stop_reason = "planner_final_answer"
@@ -82,19 +79,19 @@ class BoundedReactPattern:
                 stop_reason = "empty_tool_calls"
                 break
 
-            round_traces = execute_planned_tool_calls(
+            round_outcomes = execute_planned_tool_calls(
                 state=state,
                 invoker=invoker,
                 calls=tool_plan.calls,
                 idempotency_prefix=f"{state.run_id}:loop{iterations}",
             )
-            all_traces.extend(round_traces)
+            all_traces.extend(outcome.trace for outcome in round_outcomes)
             before = len(messages)
             append_native_tool_messages(
                 messages,
                 assistant_content=llm_result.content,
                 tool_calls=llm_result.tool_calls,
-                traces=round_traces,
+                outcomes=round_outcomes,
             )
             appended.extend(messages[before:])
 

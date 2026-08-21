@@ -17,7 +17,6 @@ decided, by Tier-2.
 
 from __future__ import annotations
 
-import re
 from datetime import datetime, timezone
 from enum import StrEnum
 from typing import Any, Final, Literal, Mapping
@@ -33,10 +32,16 @@ from pydantic import (
 
 from intergrax.contracts.actor_identity import ActorIdentity
 from intergrax.contracts.money import MoneyAmount
-from intergrax.contracts.validation import ValidationResult
+from intergrax.contracts.validation import (
+    ValidationResult,
+    compute_sha256_content_digest,
+    validate_content_digest,
+)
 
-# Same digest shape as hosted profile digests (``sha256:<64 lowercase hex>``).
-_CONTENT_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+__all__ = (
+    "validate_content_digest",
+)
+
 _NON_EMPTY_ID = Field(min_length=1)
 
 SCHEMA_COMMERCIAL_QUOTE_V1: Final = "commercial_quote.v1"
@@ -49,14 +54,8 @@ SCHEMA_EXTERNAL_WORK_SNAPSHOT_V1: Final = "external_work_snapshot.v1"
 SCHEMA_EXTERNAL_WORK_TIMELINE_EVENT_V1: Final = "external_work_timeline_event.v1"
 SCHEMA_EXTERNAL_PROVIDER_EVIDENCE_REF_V1: Final = "external_provider_evidence_ref.v1"
 SCHEMA_EXTERNAL_WORK_PROVIDER_DESCRIPTOR_V1: Final = "external_work_provider_descriptor.v1"
-
-
-def validate_content_digest(value: str) -> str:
-    """Validate a content digest string using the platform ``sha256:`` convention."""
-    normalized = value.strip()
-    if not _CONTENT_DIGEST_RE.match(normalized):
-        raise ValueError("digest must match sha256:<64 lowercase hex>")
-    return normalized
+SCHEMA_QUOTE_ACCEPTANCE_SCOPE_IDENTITY_V1: Final = "quote_acceptance_scope_identity.v1"
+_QUOTE_ACCEPTANCE_SCOPE_FIELD_SEP: Final = "\x1e"
 
 
 def _require_aware_utc(value: datetime, *, field_name: str) -> datetime:
@@ -301,6 +300,69 @@ class QuoteAcceptanceEvidence(BaseModel):
             return None
         normalized = value.strip()
         return normalized or None
+
+
+class QuoteAcceptanceScopeIdentity(BaseModel):
+    """Typed exact quote proposal identity for governed side-effect scope binding."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["quote_acceptance_scope_identity.v1"] = (
+        SCHEMA_QUOTE_ACCEPTANCE_SCOPE_IDENTITY_V1
+    )
+    quote_id: str = _NON_EMPTY_ID
+    quote_version: int = Field(ge=1)
+    scope_digest: str = Field(min_length=1)
+
+    @field_validator("quote_id")
+    @classmethod
+    def _strip_quote_id(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("quote_id must be non-empty")
+        return normalized
+
+    @field_validator("scope_digest")
+    @classmethod
+    def _validate_scope_digest(cls, value: str) -> str:
+        return validate_content_digest(value)
+
+    @classmethod
+    def from_quote_acceptance_evidence(
+        cls,
+        acceptance: QuoteAcceptanceEvidence,
+    ) -> QuoteAcceptanceScopeIdentity:
+        """Derive exact proposal identity from typed acceptance evidence only."""
+        return cls(
+            quote_id=acceptance.quote_id,
+            quote_version=acceptance.quote_version,
+            scope_digest=acceptance.scope_digest,
+        )
+
+    def canonical_encoding_bytes(self) -> bytes:
+        """Versioned delimiter-safe encoding of explicit typed fields."""
+        payload = _QUOTE_ACCEPTANCE_SCOPE_FIELD_SEP.join(
+            (
+                self.schema_version,
+                self.quote_id,
+                str(self.quote_version),
+                self.scope_digest,
+            )
+        )
+        return payload.encode("utf-8")
+
+    def compute_side_effect_scope_digest(self) -> str:
+        """Canonical digest binding quote_id, quote_version, and material scope."""
+        return compute_sha256_content_digest(self.canonical_encoding_bytes())
+
+
+def quote_acceptance_side_effect_scope_digest(
+    acceptance: QuoteAcceptanceEvidence,
+) -> str:
+    """Map typed quote acceptance evidence to generic side-effect scope digest."""
+    return QuoteAcceptanceScopeIdentity.from_quote_acceptance_evidence(
+        acceptance
+    ).compute_side_effect_scope_digest()
 
 
 class ExternalDeliverableRef(BaseModel):

@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Why Intergrax
 
-Intergrax exists for teams building specialized agent applications that would otherwise rebuild controlled knowledge access, policy, tools, evidence, context, approvals, recovery, and observability around every model-driven workflow. It is a reusable governed foundation for those application operating boundaries; the project is source-available and in active R&D, with bounded current evidence rather than a universal production-readiness claim.
+Intergrax exists for teams building specialized agent applications that would otherwise rebuild controlled knowledge access, policy, tools, evidence, context, approvals, recovery, and observability around every model-driven workflow. It is a reusable governed foundation for those application operating boundaries — source-available, with current evidence and claim boundaries documented in [PROOFS.md](../proofs/PROOFS.md).
 
 > [!NOTE]
 > This page explains the problem category and evaluation boundary. See [PROOFS.md](../proofs/PROOFS.md) for detailed evidence and claim limits.
@@ -38,7 +38,7 @@ Model calls and agent behavior are only one part of a specialized application. A
 - failure handling and recovery; and
 - observability.
 
-These are recurring engineering responsibilities, not a claim that every mechanism above is universally production-proven. Without a reusable operating foundation, each application rebuilds substantial control and execution infrastructure, with the resulting inconsistency and maintenance burden spread across products.
+These are recurring engineering responsibilities. Without a reusable operating foundation, each application rebuilds substantial control and execution infrastructure, with the resulting inconsistency and maintenance burden spread across products.
 
 ---
 
@@ -50,11 +50,11 @@ Some teams use **Harness AI** to describe this category: an operating layer arou
 
 | Layer | Primary responsibility |
 | ----- | ---------------------- |
-| Model or agent framework | Model access, agent behavior, and reasoning or orchestration primitives. |
-| Intergrax | Reusable application operating boundaries around knowledge, policy, tools, evidence, context, and governed execution. |
+| Model or agent framework / platform | Model access, agent behavior, orchestration primitives, and often adjacent runtime facilities such as tracing, persistence, guardrails, workflows, or HITL — depending on the chosen stack. |
+| Intergrax | Reusable application operating boundaries around knowledge, policy, tools, evidence, context, and governed execution across specialized products. |
 | Product application | Domain workflow, UX, deployment, required permissions, and product-specific validation. |
 
-An agent framework or model API can help an application reason and act, but it does not by itself settle how knowledge is bounded, which tools may execute, what evidence is retained, when a person must approve an action, or how failures are recovered and reviewed.
+Modern agent frameworks and platforms increasingly bundle runtime facilities that teams once assembled separately. The comparison is not whether those facilities exist somewhere in the stack, but **which layer owns primary responsibility** for product semantics, enforcement boundaries, consequential effects, canonical history, recovery posture, and evidence — and how much integration burden remains with the adopting team.
 
 ```mermaid
 flowchart LR
@@ -93,15 +93,41 @@ Intergrax does not remove those responsibilities. It is intended to reduce repea
 
 ---
 
+## How Intergrax approaches responsibility
+
+This section states the public differentiation spine in plain language — an architectural responsibility model, not a feature scorecard.
+
+1. **Product owns meaning; platform owns enforcement.** Your application defines what permission means, which actions need approval, and what outcomes are acceptable. Intergrax supplies reusable mechanisms that evaluate and enforce those rules at configured execution boundaries.
+
+2. **Governance spans explicit execution boundaries.** Policy, denial, and human approval attach to named steps in execution rather than living only in scattered application conditionals.
+
+3. **Consequential external effects cross an explicit governed boundary.** Tool calls and meaningful side effects are authorized and recorded through platform mechanisms on wired paths — separate from model reasoning itself.
+
+4. **Execution has structural identity and canonical history.** Runs, attempts, and events carry typed identity so operators can reconstruct what happened without treating an external trace UI as the only source of truth.
+
+5. **Recovery distinguishes retry, idempotency, compensation, degradation, and HITL.** Failure handling is classified and bounded. Agents may express recovery intent; the runtime owns budgets, layers, and stop conditions.
+
+6. **Important execution can produce structured evidence, not telemetry alone.** Governance and execution transitions can be correlated with persisted evidence where mechanisms are connected — beyond unstructured log lines.
+
+7. **Agent authors own domain behavior; agents are not private runtimes.** Agents declare contracts and implement domain decisions. The platform owns safe execution, tracing, budgets, and lifecycle — not a second hidden scheduler or policy engine inside each agent.
+
+Other stacks can implement similar patterns. Intergrax deliberately consolidates these responsibilities into a shared application operating model intended to serve multiple specialized products.
+
+For named modern frameworks and platforms — including cases where another stack may be the better fit — see [Compare modern alternatives and trade-offs](ALTERNATIVES_AND_TRADEOFFS.md).
+
+---
+
 ## Business and strategic thesis
+
+Cross-product reuse, commercial outcomes, and adopter profiles below are strategic hypotheses — not measured results. Commercial and real-user validation remain open; see [Commercialization gates](#commercialization-gates).
 
 ### Repeated organizational cost
 
-When multiple AI applications each build policy boundaries, knowledge access, tool and integration controls, approval handling, evidence and provenance, recovery, and observability separately, the organization duplicates engineering effort. Implementations diverge, maintenance burden spreads across products, and review surfaces become inconsistent. This is a duplication and fragmentation problem — not a claim of measured savings.
+When multiple AI applications each build policy boundaries, knowledge access, tool and integration controls, approval handling, evidence and provenance, recovery, and observability separately, the organization duplicates engineering effort. Implementations diverge, maintenance burden spreads across products, and review surfaces become inconsistent.
 
 ### Potential sponsor and adopter profiles
 
-Commercial validation remains incomplete. Potential adopter or sponsor profiles include:
+Potential adopter or sponsor profiles include:
 
 - a CTO or VP Engineering responsible for multiple AI product initiatives;
 - an AI platform or enablement team standardizing governed application foundations;
@@ -110,15 +136,15 @@ Commercial validation remains incomplete. Potential adopter or sponsor profiles 
 
 ### LKW as the current product wedge
 
-LKW is the current product path used to test this thesis. It exercises whether a reusable governed foundation can support a concrete, understandable workflow: approved knowledge → grounded Ask → source and evidence → persistence and reviewability. This is bounded product and platform proof — not product-market fit.
+LKW is the current product path used to test this thesis. It exercises whether a reusable governed foundation can support a concrete, understandable workflow: approved knowledge → grounded Ask → source and evidence → persistence and reviewability.
 
 ### Compounding value hypothesis
 
-If multiple specialized applications reuse the same policy, integration, context, evidence, recovery, observability, and execution foundations, investment in those shared mechanisms may support more than one product: each additional application can reuse existing governed capabilities, expose missing capability gaps, and strengthen the reusable foundation. This is a strategic hypothesis, not a measured commercial result.
+If multiple specialized applications reuse the same policy, integration, context, evidence, recovery, observability, and execution foundations, investment in those shared mechanisms may support more than one product: each additional application can reuse existing governed capabilities, expose missing capability gaps, and strengthen the reusable foundation.
 
 ### Commercialization gates
 
-The following remain open before commercial validation can be claimed:
+The following remain open before broader commercial claims are justified:
 
 - real-user validation and repeated usage;
 - workflow-level value in representative conditions;
@@ -141,7 +167,7 @@ Intergrax is for:
 
 ## Where Intergrax fits
 
-These approaches are not mutually exclusive. A real system may combine several of them, and the comparison is about primary responsibility rather than a feature scorecard or superiority claim.
+These approaches are not mutually exclusive. A real system may combine several of them; the comparison is about primary responsibility, not a feature scorecard.
 
 The question is: which layer of responsibility are you trying to buy or build?
 
@@ -160,7 +186,7 @@ The question is: which layer of responsibility are you trying to buy or build?
   >
 </picture>
 
-This neutral map explains primary responsibility. Categories overlap, and no universal superiority or feature parity is claimed.
+This neutral map explains primary responsibility. Categories overlap.
 
 ### Choose by your primary need
 
@@ -169,7 +195,7 @@ This neutral map explains primary responsibility. Categories overlap, and no uni
 | Finished AI SaaS | Ready-made end-user product | Adoption and workflow fit | You need a ready-made end-user product |
 | Workflow automation platform | Connect systems and process steps | AI-specific behavior and evidence semantics | You need process and system automation |
 | Retrieval or knowledge toolkit | Retrieval, indexing and grounding components | Product, orchestration, policy and operations | You need retrieval and grounding components |
-| Agent framework | Compose agent behavior and orchestration | Product controls, runtime governance and evidence | You need agent behavior and orchestration |
+| Agent framework or agent platform | Compose agent behavior, orchestration, and often adjacent runtime facilities (tracing, persistence, guardrails, workflows, HITL) within that stack's model | Product semantics, multi-application operating model, and how foundations are shared across products | You need agent behavior and orchestration as the primary deliverable |
 | Custom in-house foundation | Maximum design control | Every shared layer and its maintenance | You need complete design control and can maintain the platform |
 | Intergrax | Reusable governed foundation for specialized AI applications | Product workflow, UX, deployment choices, required permissions, product-specific validation, and business responsibility | You need to build a specialized governed AI application on reusable policy, knowledge, integration, execution, and evidence foundations |
 
@@ -195,11 +221,11 @@ flowchart TD
 | You need governed execution, evidence, and knowledge access in a specialized product | Finished SaaS needed immediately — not building your own application |
 | You want reusable platform foundations instead of a new runtime per product | You want a simple prompt prototype only |
 | You are evaluating infrastructure for multiple agent-backed applications | You expect a no-code workflow builder |
-| You can accept bounded proof and active R&D | You require an unrestricted open-source license |
+| You can accept bounded proof while evaluating fit | You require an unrestricted open-source license |
 | Governance, policy, and evidence matter to your reviewers | You have no governance or evidence requirements |
 | You want to own a specialized application while reusing its operating foundation | You do not want to own an application or its product-specific validation |
 
-Other frameworks and tools may suit different needs. This guide does not dismiss them.
+Other frameworks and tools may suit different needs. This guide does not dismiss them. For named modern alternatives and explicit trade-offs — including when another stack may be the better choice — see [ALTERNATIVES_AND_TRADEOFFS.md](ALTERNATIVES_AND_TRADEOFFS.md).
 
 Intergrax may coexist with model providers, retrieval systems, integration tools and application-specific components. The category map does not claim that these approaches are mutually exclusive.
 
@@ -214,9 +240,7 @@ Intergrax may coexist with model providers, retrieval systems, integration tools
 
 **Evidence and detail:** [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Token Optimization guide](../capabilities/token_optimization/README.md) · [PROOFS.md](../proofs/PROOFS.md)
 
-The bounded indexed Hybrid Ask path is not the same as a completed mixed indexed + authorized live workflow: **mixed indexed + authorized live Hybrid Ask remains incomplete**. Real-user validation and commercial validation are incomplete. Universal production readiness and universal token savings are not claimed.
-
-Detailed evidence and claim boundaries belong in [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md), not in this category overview.
+**Decision-critical boundary:** mixed indexed + authorized live Hybrid Ask remains incomplete. Full evidence status, claim limits, and NOT CLAIMABLE boundaries are authoritative in [PROOFS.md](../proofs/PROOFS.md).
 
 ---
 
@@ -228,6 +252,7 @@ If the category appears relevant:
 
 | Route | Use it for |
 |-------|------------|
+| [ALTERNATIVES_AND_TRADEOFFS.md](ALTERNATIVES_AND_TRADEOFFS.md) | Comparing Intergrax with named modern agent/platform alternatives and trade-offs |
 | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Reviewing current evidence |
 | [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Understanding technical boundaries |
 | [docs/project/builders/BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) | Beginning a bounded build |

@@ -49,14 +49,14 @@ class SinglePassPattern:
         if tool_plan is None or not tool_plan.calls:
             return ToolInvocationResult(stop_reason="empty_tool_calls")
 
-        traces = execute_planned_tool_calls(
+        outcomes = execute_planned_tool_calls(
             state=state,
             invoker=invoker,
             calls=tool_plan.calls,
             idempotency_prefix=state.run_id,
         )
         return ToolInvocationResult(
-            tool_traces=traces,
+            tool_traces=[outcome.trace for outcome in outcomes],
             loop_iterations=1,
             stop_reason="legacy_single_pass",
         )

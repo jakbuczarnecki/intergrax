@@ -4,7 +4,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from enum import StrEnum
+from typing import Annotated, Any, Literal, Protocol, runtime_checkable
 
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     KnowledgeAudienceEligibilityV1,
@@ -36,6 +37,11 @@ from intergrax.runtime.vendor_knowledge.live.identity import (
     validate_capability_identity,
 )
 from intergrax.runtime.vendor_knowledge.live.schemas import SchemaRegistryV1
+from intergrax.runtime.evidence.obligation_derivation_contracts import (
+    PolicyEvidenceBasisV1,
+    RequirementOriginV1,
+    TemporalConstraintV1,
+)
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     LiveCapabilityDescriptorV1,
     TenantLiveCapabilityCatalogPort,
@@ -191,6 +197,91 @@ class LiveCallProposalV1(BaseModel):
         return _reject_forbidden_model_controlled_fields(data)
 
 
+class IndexedEvidenceRequirementV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    requirement_type: Literal["indexed"] = "indexed"
+    requirement_id: str = Field(..., min_length=1, max_length=128)
+    semantic_role: str = Field(..., min_length=1, max_length=256)
+    indexed_source_binding_id: str | None = Field(
+        default=None, min_length=1, max_length=128
+    )
+    temporal_constraint: TemporalConstraintV1 | None = None
+    policy_origin: RequirementOriginV1 | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_forbidden_fields(cls, data: Any) -> Any:
+        return _reject_forbidden_model_controlled_fields(data)
+
+
+class LiveEvidenceRequirementV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    requirement_type: Literal["live"] = "live"
+    requirement_id: str = Field(..., min_length=1, max_length=128)
+    semantic_role: str = Field(..., min_length=1, max_length=256)
+    call_id: str = Field(..., min_length=1, max_length=128)
+    temporal_constraint: TemporalConstraintV1 | None = None
+    policy_origin: RequirementOriginV1 | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_forbidden_fields(cls, data: Any) -> Any:
+        return _reject_forbidden_model_controlled_fields(data)
+
+
+RequiredEvidenceObligationV1 = Annotated[
+    IndexedEvidenceRequirementV1 | LiveEvidenceRequirementV1,
+    Field(discriminator="requirement_type"),
+]
+
+
+class ProviderEvidencePlanV1(BaseModel):
+    """Provider-owned live proposals and authoritative evidence obligations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    ordered_live_call_proposals: tuple[LiveCallProposalV1, ...] = ()
+    required_evidence_obligations: tuple[RequiredEvidenceObligationV1, ...] = ()
+
+
+def derive_product_evidence_obligations(
+    *,
+    mode: QueryPolicyModeV2,
+    include_indexed_retrieval: bool,
+) -> tuple[RequiredEvidenceObligationV1, ...]:
+    """Product-owned indexed admissibility obligation for generic HYBRID Workspace Ask.
+
+    Planned live calls belong to the execution plan; mandatory per-call live evidence
+    must be supplied explicitly by product/provider planning authority.
+    """
+    if mode is not QueryPolicyModeV2.HYBRID or not include_indexed_retrieval:
+        return ()
+    return (
+        IndexedEvidenceRequirementV1(
+            requirement_id="product:hybrid:indexed",
+            semantic_role="Indexed corpus grounding",
+        ),
+    )
+
+
+def compose_evidence_obligations(
+    *,
+    authoritative: tuple[RequiredEvidenceObligationV1, ...],
+    additional: tuple[RequiredEvidenceObligationV1, ...],
+) -> tuple[RequiredEvidenceObligationV1, ...]:
+    """Additive strengthening; duplicate requirement_id fails closed."""
+    seen: set[str] = set()
+    composed: list[RequiredEvidenceObligationV1] = []
+    for obligation in (*authoritative, *additional):
+        if obligation.requirement_id in seen:
+            raise HybridAskPolicyError("duplicate_requirement_id")
+        seen.add(obligation.requirement_id)
+        composed.append(obligation)
+    return tuple(composed)
+
+
 class EvidencePlanV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -201,6 +292,8 @@ class EvidencePlanV1(BaseModel):
     mode: QueryPolicyModeV2
     indexed_retrieval_directive: IndexedRetrievalDirectiveV1 | None = None
     ordered_live_call_proposals: tuple[LiveCallProposalV1, ...] = ()
+    required_evidence_obligations: tuple[RequiredEvidenceObligationV1, ...] = ()
+    policy_basis: PolicyEvidenceBasisV1 | None = None
     budget_snapshot: EffectiveLiveCallBudgetV1
     audience_context: AudienceContextV1
 
@@ -392,6 +485,80 @@ def _find_active_attachment(
     return None
 
 
+def validate_provider_obligation_provenance(
+    obligations: tuple[RequiredEvidenceObligationV1, ...],
+) -> None:
+    """Provider strategy may define obligations but not trusted policy provenance."""
+    for obligation in obligations:
+        if obligation.policy_origin is not None:
+            raise HybridAskPolicyError("provider_policy_origin_forbidden")
+
+
+def collect_policy_origins(
+    obligations: tuple[RequiredEvidenceObligationV1, ...],
+) -> tuple[RequirementOriginV1, ...]:
+    origins: list[RequirementOriginV1] = []
+    for obligation in obligations:
+        if isinstance(obligation, IndexedEvidenceRequirementV1):
+            if obligation.policy_origin is not None:
+                origins.append(obligation.policy_origin)
+        elif isinstance(obligation, LiveEvidenceRequirementV1):
+            if obligation.policy_origin is not None:
+                origins.append(obligation.policy_origin)
+    return tuple(origins)
+
+
+def validate_policy_basis_consistency(
+    *,
+    policy_basis: PolicyEvidenceBasisV1 | None,
+    obligations: tuple[RequiredEvidenceObligationV1, ...],
+) -> None:
+    policy_origins = collect_policy_origins(obligations)
+    if not policy_origins:
+        return
+    if policy_basis is None:
+        raise HybridAskPolicyError("policy_basis_missing")
+    revision_by_document = {
+        reference.policy_document_id: reference.revision_id
+        for reference in policy_basis.policy_revisions
+    }
+    for origin in policy_origins:
+        basis_revision = revision_by_document.get(origin.policy_document_id)
+        if basis_revision is None:
+            raise HybridAskPolicyError("policy_origin_not_in_basis")
+        if basis_revision != origin.revision_id:
+            raise HybridAskPolicyError("policy_origin_revision_mismatch")
+
+
+def _validate_required_evidence_obligations(
+    *,
+    plan: EvidencePlanV1,
+    configuration: WorkspaceKnowledgeConfigurationV1,
+    planned_call_ids: set[str],
+) -> None:
+    seen_requirement_ids: set[str] = set()
+    indexed_binding_ids = {
+        binding.indexed_source_binding_id for binding in configuration.indexed_sources
+    }
+    for obligation in plan.required_evidence_obligations:
+        if obligation.requirement_id in seen_requirement_ids:
+            raise HybridAskPolicyError("duplicate_requirement_id")
+        seen_requirement_ids.add(obligation.requirement_id)
+        if isinstance(obligation, IndexedEvidenceRequirementV1):
+            if plan.mode is QueryPolicyModeV2.LIVE_ONLY:
+                raise HybridAskPolicyError("required_evidence_mode_mismatch")
+            if (
+                obligation.indexed_source_binding_id is not None
+                and obligation.indexed_source_binding_id not in indexed_binding_ids
+            ):
+                raise HybridAskPolicyError("indexed_binding_not_found")
+        elif isinstance(obligation, LiveEvidenceRequirementV1):
+            if plan.mode is QueryPolicyModeV2.INDEXED_ONLY:
+                raise HybridAskPolicyError("required_evidence_mode_mismatch")
+            if obligation.call_id not in planned_call_ids:
+                raise HybridAskPolicyError("unknown_live_call_reference")
+
+
 def validate_evidence_plan(
     *,
     plan: EvidencePlanV1,
@@ -574,6 +741,16 @@ def validate_evidence_plan(
             max_provider_page_size=HARD_MAX_PROVIDER_PAGE_SIZE,
             max_content_bytes_per_item=HARD_MAX_CONTENT_BYTES_PER_ITEM,
         )
+
+    _validate_required_evidence_obligations(
+        plan=plan,
+        configuration=configuration,
+        planned_call_ids=seen_call_ids,
+    )
+    validate_policy_basis_consistency(
+        policy_basis=plan.policy_basis,
+        obligations=plan.required_evidence_obligations,
+    )
 
     return ValidatedEvidencePlanV1(
         plan=plan,

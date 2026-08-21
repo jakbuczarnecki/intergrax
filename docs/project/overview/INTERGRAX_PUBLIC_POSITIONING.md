@@ -238,6 +238,10 @@ Category-level uncertainty:
 Compare common approaches
 → WHY_INTERGRAX.md#where-intergrax-fits
 
+Named modern alternatives:
+Compare modern alternatives and trade-offs
+→ ALTERNATIVES_AND_TRADEOFFS.md
+
 Concrete fit after category orientation:
 Check workflow fit
 → USE_CASES.md
@@ -363,12 +367,17 @@ Harness AI must not be presented as a recognized market category without evidenc
 
 ## Differentiators
 
-Express these through user outcomes, not subsystem names:
+Express differentiation through outcomes and responsibility boundaries, not subsystem names or market labels. The public spine is:
 
-1. **Product-first development** — real applications and user workflows lead development.
-2. **Controlled execution and evidence** — policy, human-in-the-loop gates, trace, and evidence are execution concerns, not optional decorations.
-3. **Reusable foundations across applications** — multiple products reuse shared infrastructure instead of rebuilding the same foundations.
-4. **Clear responsibility boundaries** — applications own product environment; orchestration coordinates work; agents make domain decisions; the harness controls execution and evidence.
+1. **Product owns meaning; platform owns enforcement** — applications define business rules, permissions, and acceptable outcomes; Intergrax supplies reusable enforcement mechanisms at configured execution boundaries.
+2. **Governance spans explicit execution boundaries** — policy evaluation, approval, and denial attach to named execution steps rather than living only in ad hoc application code.
+3. **Consequential external effects cross an explicit governed boundary** — meaningful side effects and tool actions are authorized and recorded through platform mechanisms on wired paths.
+4. **Execution has structural identity and canonical history** — runs, attempts, and events carry typed identity so history can be reconstructed without treating vendor telemetry as the source of truth.
+5. **Recovery distinguishes retry, idempotency, compensation, degradation, and HITL** — failure handling is classified and bounded rather than left to hidden agent loops.
+6. **Important execution can produce structured evidence, not telemetry alone** — governance and execution transitions can be correlated with persisted evidence where mechanisms are connected.
+7. **Agent authors own domain behavior; agents are not private runtimes** — agents declare contracts and domain decisions; the platform owns safe execution, not a second hidden runtime per agent.
+
+These are architectural responsibility choices. They are not claims that every boundary is universally complete, that competitors cannot implement similar patterns, or that Intergrax is uniquely capable because it implements a listed mechanism.
 
 Do not claim:
 
@@ -378,7 +387,8 @@ Do not claim:
 - enterprise readiness;
 - completed market validation;
 - commercial validation;
-- universal superiority over other frameworks.
+- universal superiority over other frameworks;
+- measured cross-product reuse or compounding value without evidence.
 
 Do not claim a measured delivery-time reduction unless supported by the proof-and-claims model.
 
@@ -386,7 +396,13 @@ Do not claim a measured delivery-time reduction unless supported by the proof-an
 
 ## Category and alternative positioning
 
-The category comparison is owned by [`WHY_INTERGRAX.md#where-intergrax-fits`](WHY_INTERGRAX.md#where-intergrax-fits). It compares common solution categories by primary responsibility, what the adopting team still owns, and when the approach may fit.
+Intergrax maintains **two governed comparison surfaces**. They serve different reader questions and must not be merged into one scorecard.
+
+### A. Category comparison
+
+Owner: [`WHY_INTERGRAX.md#where-intergrax-fits`](WHY_INTERGRAX.md#where-intergrax-fits)
+
+The category comparison compares common solution **categories** by primary responsibility, what the adopting team still owns, and when the approach may fit. It does not name vendors and does not publish a feature winner scorecard.
 
 Freeze these categories:
 
@@ -407,7 +423,7 @@ what the adopting team still owns
 when the approach may fit
 ```
 
-Freeze these rules:
+Freeze these category rules:
 
 - comparisons are category-level, not vendor-level;
 - categories overlap;
@@ -418,9 +434,33 @@ Freeze these rules:
 - no competitor performance, pricing, security or maturity claim is made;
 - no vendor logo or trademark is used;
 - no scorecard, winner or ranking is published;
-- Intergrax maturity and proof boundaries remain visible.
+- Intergrax maturity and proof boundaries remain visible;
+- modern agent frameworks and platforms may include persistence, HITL, tracing, guardrails, workflows, and other runtime facilities — category comparison is about **primary responsibility**, not missing features.
 
-The comparison is a responsibility map, not a claim that Intergrax already provides every listed foundation completely or at production maturity. The detailed route is [WHY_INTERGRAX.md#where-intergrax-fits](WHY_INTERGRAX.md#where-intergrax-fits).
+The category comparison is a responsibility map, not a claim that Intergrax already provides every listed foundation completely or at production maturity.
+
+### B. Named alternatives comparison
+
+Owner: [`ALTERNATIVES_AND_TRADEOFFS.md`](ALTERNATIVES_AND_TRADEOFFS.md)
+
+The named-alternatives document may name real frameworks and platforms. It answers when another modern stack may be the better choice and when Intergrax may be worth evaluating. It is decision-oriented, not competitive marketing.
+
+Freeze these named-comparison rules:
+
+1. Primary-source-backed factual claims only.
+2. Include an explicit **externally verified on** date for competitor capability facts.
+3. No feature winner scorecard.
+4. No blanket checkmark or cross comparisons.
+5. State where an alternative is a better choice.
+6. State where Intergrax has a different responsibility model.
+7. Do not claim unique capability merely because Intergrax implements it.
+8. No universal superiority claims.
+9. Avoid volatile pricing, benchmark, security, maturity, or market-share claims.
+10. Separate competitor capability facts, Intergrax architectural interpretation, and Intergrax evidence boundary.
+11. If a factual external claim cannot be supported by the accepted COMM-1 source set, omit it rather than infer it.
+12. **Harness AI** remains descriptive only, never the differentiator.
+
+Named competitor claims must remain conservative. Intergrax claims in this surface remain bounded by [`PROOFS.md`](../proofs/PROOFS.md).
 
 ## Category clarification
 
@@ -432,7 +472,7 @@ Intergrax is **not**:
 - a no-code builder;
 - a claim to replace every existing framework.
 
-Intergrax **combines** reusable application foundations with concrete product paths and bounded proofs. Category-level comparison belongs in [WHY_INTERGRAX.md#where-intergrax-fits](WHY_INTERGRAX.md#where-intergrax-fits); do not name or attack specific competitors here.
+Intergrax **combines** reusable application foundations with concrete product paths and bounded proofs. Category-level comparison belongs in [WHY_INTERGRAX.md#where-intergrax-fits](WHY_INTERGRAX.md#where-intergrax-fits). Named modern alternatives belong in [ALTERNATIVES_AND_TRADEOFFS.md](ALTERNATIVES_AND_TRADEOFFS.md). Do not name or attack specific competitors in first-contact copy or this contract's category section.
 
 ---
 
@@ -525,6 +565,8 @@ Do not place license or architecture before the concrete product explanation.
 | Topic | Owner |
 |-------|-------|
 | Exact first-contact copy, product hierarchy, audience value and CTA language | This document (`INTERGRAX_PUBLIC_POSITIONING.md`) |
+| Category-level comparison (no vendor names) | `WHY_INTERGRAX.md#where-intergrax-fits` |
+| Named modern alternatives and decision trade-offs | `ALTERNATIVES_AND_TRADEOFFS.md` |
 | PX phase status and experience gates | `PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md` |
 | Document layers and reader routes | `PUBLIC_DOCUMENTATION_ARCHITECTURE.md` |
 | Current public proof status | `PROOFS.md` |

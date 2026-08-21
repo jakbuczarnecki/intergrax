@@ -60,6 +60,9 @@ from intergrax.integrations.providers.issue_tracker.jira.integration import (
 from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import (
     JIRA_ISSUES_SOURCE_KIND,
 )
+from intergrax.integrations.providers.project_status.knowledge_read import (
+    PROJECT_STATUS_PROVIDER_ID,
+)
 from intergrax.integrations.providers.relational_store.databricks.integration import (
     DATABRICKS_RELATIONAL_STORE_PROVIDER_ID,
 )
@@ -273,6 +276,10 @@ def test_current_provider_families_represent_all_twelve_source_tuples() -> None:
             IntegrationCategory.ISSUE_TRACKER,
         ),
         _contribution_for(
+            PROJECT_STATUS_PROVIDER_ID,
+            IntegrationCategory.ISSUE_TRACKER,
+        ),
+        _contribution_for(
             CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
             IntegrationCategory.WIKI_KNOWLEDGE,
         ),
@@ -283,8 +290,8 @@ def test_current_provider_families_represent_all_twelve_source_tuples() -> None:
         for identity in contribution.source_identities
     )
 
-    assert len(identities) == 12
-    assert len({identity.key for identity in identities}) == 12
+    assert len(identities) == 13
+    assert len({identity.key for identity in identities}) == 13
     assert sum(len(contribution.adapters) for contribution in contributions) == 12
     assert (
         sum(len(contribution.indexed_materializers) for contribution in contributions)
@@ -298,6 +305,7 @@ def test_current_provider_families_represent_all_twelve_source_tuples() -> None:
     )
     assert all(
         plugin.supports(VendorKnowledgeMode.DURABLE)
+        or plugin.identity.provider_id == PROJECT_STATUS_PROVIDER_ID
         for contribution in contributions
         for plugin in contribution.source_plugins
     )

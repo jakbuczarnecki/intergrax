@@ -558,6 +558,59 @@ Anti-flapping: hysteresis band + per-rule cooldown + `max_actions_per_hour`.
 
 ---
 
+## Protocol v2 elastic capacity and scaling target invariants (2026-08-18)
+
+Protocol v2 audit **FAIL** at `d2b65885ad1b472bf48254a1e7314dc6a53ca677` — six accepted HIGH findings. This section records **target invariants** for remediation; it does **not** claim they are implemented. Historical ECP delivery facts, backpressure vs scaling boundary, HPA/Celery complementary positioning, opt-in policy default, graceful scale-down limitation, and current **A4 · I3 · P2 · E3** maturity remain unchanged.
+
+### 1. Signal identity
+
+- Canonical capacity signal identity is **`(target, metric_name, required scope)`**, not metric name alone.
+- `ScalingEvaluator` MUST index and match signals under that composite identity.
+- A rule MUST consume only signals whose `target` (and scope, when present) exactly matches the rule.
+- Same metric name on different targets MUST NOT collide in evaluation.
+
+### 2. Scaling contract integrity
+
+- `ScalingRule` MUST reject at construction/validation time:
+  - `scale_up_threshold <= scale_down_threshold`
+  - non-positive base delta where positive delta is required
+  - incompatible `action_kind` / `target` pairs
+  - scale-down triggers for action kinds that do not support scale-down
+- Backend apply outcome MUST distinguish **`APPLIED`**, **`NO_CHANGE`**, and **`FAILED`**.
+- Capacity evidence (`SCALE_APPLIED`, metrics, audit events) MUST reflect **actual** capacity effect — a no-op backend result MUST NOT masquerade as applied success.
+
+### 3. Governance authority
+
+- Capacity-mutating production posture MUST have explicit authority semantics on the action gate.
+- When production policy requires Governed Execution approval, missing/unavailable required Governance authority MUST **fail closed**.
+- Reuse canonical [`GOVERNED_EXECUTION`](GOVERNED_EXECUTION.md) — do **not** introduce a second permission engine parallel to the platform spine.
+- Reference host wiring that omits Governance callback is an **accepted gap** for lab posture only; production target state requires bound authority.
+
+### 4. HITL authority
+
+- HITL-gated capacity actions MUST consume canonical approval evidence bound to:
+  - exact plan and actions
+  - scope / tenant / environment
+  - approver identity
+  - policy / version
+  - decision time and expiry where applicable
+- Local `plan_id` approval without authoritative human decision evidence is **not** production-qualified.
+- Reuse canonical Governance / HITL approval authority — do not treat in-memory queue possession as proof of human decision.
+
+### 5. Distributed anti-flapping
+
+- Production cooldown and `max_actions_per_hour` bounds MUST survive process restart and multi-host execution via a **shared scope-aware state authority** or equivalent version-fenced coordination contract.
+- Lifecycle MUST distinguish **planned**, **approved**, **attempted**, **applied**, and **failed** — rate-limit accounting MUST NOT advance on plan generation alone when execution is deferred, denied, or fails.
+- Restart or horizontal scale-out MUST NOT silently reset global policy bounds.
+
+### 6. Plan consistency
+
+- Multi-action `ScalingActionPlan` execution MUST produce authoritative **per-action** and **plan-level** outcomes: **`COMPLETE`**, **`PARTIAL`**, **`FAILED`** as appropriate.
+- Partial plans MUST create deterministic compensation / reconciliation obligations.
+- A distributed physical transaction is not required; **logical consistency and recoverability** are.
+
+---
+
 ## Maintainer and Cursor context
 
 **Status:** Canonical architecture (domain pair 1:1)  

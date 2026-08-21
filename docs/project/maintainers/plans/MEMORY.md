@@ -14,6 +14,62 @@
 
 **LCI-4D decision:** Memory indexing preserves stable identity, tenant, namespace, workspace, provenance and user metadata without using user metadata as system scope transport. Session and profile vector writes use `VectorStoreRecord` with `VectorStoreScope`; LCI-5A remains planned for the next native text-loader stream.
 
+<a id="protocol-v2-memory-remediation-2026-08-18"></a>
+
+## Protocol v2 — Memory remediation (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/MEMORY.md`](../../audit_results/2026-08-18/MEMORY.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-MEMORY-PERSIST.
+
+<a id="memory-scope-authority-integrity-2026-08-18"></a>
+
+### MEMORY-SCOPE-AUTHORITY-INTEGRITY — one canonical tenant/task/workspace authority
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-MEMORY-01`](../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-02`](../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-05`](../../audit_results/2026-08-18/MEMORY.md)
+
+**Outcome (planning only):**
+
+- Every LTM retrieval path, including `RetrievalService`-backed recall, supplies the same canonical `VectorStoreScope` as indexing and direct vector querying — coordinate with [`RAG-SCOPE-CONTRACT-INTEGRITY`](RAG.md#rag-scope-contract-integrity-2026-08-18); no second retrieval path.
+- Tenant-bound episodic index cannot switch tenant via per-call override — fixed construction identity or explicit unbound multi-tenant service under trusted authority.
+- `MemoryView` scope derives from canonical trusted execution identity; all read/write/list/delete preserve the same boundary — coordinate IDENTITY_TRUST remediation (`IDT-FIX-A`, `IDT-FIX-D`).
+
+<a id="memory-durability-lifecycle-integrity-2026-08-18"></a>
+
+### MEMORY-DURABILITY-LIFECYCLE-INTEGRITY — concurrent mutation and index lifecycle
+
+**Priority:** P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-MEMORY-03`](../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-04`](../../audit_results/2026-08-18/MEMORY.md)
+
+**Outcome (planning only):**
+
+- Primary-memory forget/delete and derived vector indexes share one lifecycle with deterministic tombstones/removal and retry/reconciliation for partial failure — primary store remains source of truth.
+- `UserProfile` mutation uses versioned optimistic concurrency or another canonical atomic mutation contract with one revision authority — conflicting writes fail explicitly or retry through deterministic merge policy.
+- Do not claim universal distributed transactions.
+
+<a id="memory-read-mutation-consistency-2026-08-18"></a>
+
+### MEMORY-READ-MUTATION-CONSISTENCY — uniform retention and deterministic updates
+
+**Priority:** P1/P2
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-MEMORY-06`](../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-07`](../../audit_results/2026-08-18/MEMORY.md)
+
+**Outcome (planning only):**
+
+- Retention semantics apply uniformly across `read`, `list`, and search — one canonical retention-filtering boundary.
+- Unknown memory entry updates return explicit deterministic NOT_FOUND — no loop-variable leakage or unrelated re-index.
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- Historical **Done** rows in this plan remain historical facts — not rewritten as remediation completion.
+
+**Recommended remediation order (prioritization, not dependency graph):** MEMORY-SCOPE-AUTHORITY-INTEGRITY → MEMORY-DURABILITY-LIFECYCLE-INTEGRITY → MEMORY-READ-MUTATION-CONSISTENCY
+
 ---
 
 ## Cursor read scope (token budget)

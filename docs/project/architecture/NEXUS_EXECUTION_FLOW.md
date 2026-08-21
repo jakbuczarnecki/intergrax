@@ -217,6 +217,43 @@ surface-specific edge parsing
 
 Remediation blocks: **ITI-FIX-B** (identity), **ITI-FIX-C** (runner convergence + typed executor). Cross-reference Tier-3 intake normalization (**ITI-FIX-A**) in [`TIER3_APPLICATION_ENVIRONMENT`](TIER3_APPLICATION_ENVIRONMENT.md).
 
+<a id="protocol-v22-delegated-authority-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 delegated authority target invariants (2026-08-18)
+
+Accepted [`IDENTITY_TRUST`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) finding **02** (2026-08-18). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+1. Delegated authority **MUST** be ≤ parent effective authority.
+2. Declared `permission_scopes` must become enforced effective child authority, not observability-only metadata.
+3. Child tool/memory/integration/side-effect capabilities must respect effective delegated authority where applicable.
+4. `DELEGATION_GRANTED` must describe effective enforced authority.
+5. Reuse existing platform authority/policy mechanisms where possible rather than inventing a second private authority engine.
+
+Remediation block: **IDT-FIX-B**. Positive reference pattern: `CollaborativeWorkAuthorityResolver` (do not silently merge models).
+
+<a id="protocol-v22-llm-inference-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 LLM inference target invariants (2026-08-18)
+
+Accepted [`LLM_ADAPTERS`](../../audit_results/2026-08-18/LLM_ADAPTERS.md) findings **01–06** (layer audited 2026-08-19). **Target state** — **ACCEPTED / PLANNED**; **not implemented** by audit persistence.
+
+1. Every actual provider-bound inference, including classifier and planner retries, crosses canonical inference/PRE_MODEL boundary.
+2. Planning/model decision, execution candidate, and trace identity agree on provider/model and `RunId`/`AttemptId`.
+
+Remediation: **LLM-FIX-A/B/C/D** in [`plan/NEXUS_EXECUTION_FLOW.md`](../maintainers/plans/NEXUS_EXECUTION_FLOW.md) and [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md).
+
+<a id="protocol-v22-reasoning-planning-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 reasoning/planning target invariants (2026-08-18)
+
+Accepted [`REASONING_PLANNING`](../../audit_results/2026-08-18/REASONING_PLANNING.md) findings **01–06** (layer audited 2026-08-19). **Target state** — **ACCEPTED / PLANNED**; **not implemented** by audit persistence.
+
+1. `NexusPlan` is fully structurally validated before PLAN_CREATED/PLANNED.
+2. Planning agent eligibility uses the same effective routability semantics as execution.
+3. Task-level replan is a typed runtime/Nexus transition, distinct from local cognition replan.
+
+Remediation: **RPL-FIX-A/B/C** in matching plans.
+
 ## Scenario capability (summary)
 
 | Capability | State |

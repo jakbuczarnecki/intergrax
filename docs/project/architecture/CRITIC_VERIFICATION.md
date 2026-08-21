@@ -520,6 +520,55 @@ Anchor for cross-doc links (e.g. [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLO
 
 ---
 
+## Protocol v2 Critic verification target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`CRITIC_VERIFICATION`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+**Finding 01 — rubric authority**
+
+1. Named rubric references are **executable configuration**, not labels ([`AUDIT-20260818-CRITIC_VERIFICATION-01`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+2. A configured rubric reference must resolve before L1 to stable/versioned rubric identity, criteria, optional reference context, and provenance/version evidence ([`AUDIT-20260818-CRITIC_VERIFICATION-01`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+3. Unresolvable configured rubric → **fail closed** — do not substitute generic criteria silently ([`AUDIT-20260818-CRITIC_VERIFICATION-01`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+4. Reuse existing prompt/rubric registry authority if present — **do not** build a second domain rule engine ([`AUDIT-20260818-CRITIC_VERIFICATION-01`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+
+**Finding 02 — judge independence**
+
+5. Distinguish explicitly between **self-judge** (non-independent) and **independent judge** modes ([`AUDIT-20260818-CRITIC_VERIFICATION-02`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+6. When a verification profile claims independent semantic verification, effective producer and critic execution identities must satisfy a versioned independence policy (dedicated profile, model/model-family, provider, or other qualification) and be **provable** at runtime ([`AUDIT-20260818-CRITIC_VERIFICATION-02`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+7. Self-judge may be allowed for low-assurance mode but must be labeled non-independent — never presented as independent verification ([`AUDIT-20260818-CRITIC_VERIFICATION-02`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+8. Do **not** hard-code one vendor ([`AUDIT-20260818-CRITIC_VERIFICATION-02`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+
+**Finding 03 — adversarial semantic verification**
+
+9. Candidate output is **untrusted evidence**, never judge instruction authority ([`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+10. Judge construction must structurally separate trusted verification instructions/rubric from untrusted candidate material ([`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+11. Adversarial verification tests for instruction-bearing candidate output are required ([`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+12. High-assurance correctness must not depend solely on a manipulable LLM score — compose deterministic/authoritative evidence according to profile ([`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+13. Do **not** create a second LLM adapter path ([`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+
+**Finding 04 — execution identity**
+
+14. Critic tenant/task/run/attempt scope derives from **trusted canonical execution identity** — not arbitrary `dict[str, Any]` context ([`AUDIT-20260818-CRITIC_VERIFICATION-04`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+15. No `"default"` tenant fallback for runtime trajectory verification ([`AUDIT-20260818-CRITIC_VERIFICATION-04`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+16. Missing tenant authority for tenant-scoped trajectory read → **fail closed** ([`AUDIT-20260818-CRITIC_VERIFICATION-04`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+17. Reuse existing `TaskId` / `RunId` / `AttemptId` and tenant authority contracts where applicable ([`AUDIT-20260818-CRITIC_VERIFICATION-04`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+
+**Finding 05 — verdict integrity**
+
+18. `CriticVerdict` is **constructionally consistent** — prefer derived state or strict validators ([`AUDIT-20260818-CRITIC_VERIFICATION-05`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+19. Overall pass iff all required executed layers pass ([`AUDIT-20260818-CRITIC_VERIFICATION-05`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+20. Passing verdict cannot recommend failure/revision/HITL; failure reasons must match failed layers; action semantics coherent with scope/layer failure ([`AUDIT-20260818-CRITIC_VERIFICATION-05`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+
+**Finding 06 — evaluator loop boundedness**
+
+21. Evaluator-loop boundedness is guaranteed by the **state contract**, not caller discipline ([`AUDIT-20260818-CRITIC_VERIFICATION-06`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+22. Require non-negative iteration, worker/node identity consistency, no transition past `max_iterations`, explicit exhausted state semantics ([`AUDIT-20260818-CRITIC_VERIFICATION-06`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+23. Resume/reconstruction cannot reset or expand the iteration budget ([`AUDIT-20260818-CRITIC_VERIFICATION-06`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+
+L0 → L1 → L2 model, Critic vs Reliability vs Governance separation, CVL vs OECP separation, historical CRIT-V / CVL-LC delivery facts, conservative A4/I4/P2/E3 honesty, and no claim that remediation is implemented are preserved — remediation of these findings is **PLANNED**, not shipped.
+
+---
+
 ## Maintainer and Cursor context
 
 **Status:** Canonical architecture (domain pair 1:1)  

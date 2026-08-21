@@ -822,6 +822,34 @@ Accepted Protocol v2.2 audit layer [`PROVIDER_BACKEND_ABSTRACTION`](../../audit_
 
 Remediation tracked as **PBA-FIX-A** in [plan PBA-FIX-A](../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md#protocol-v22-pba-fix-a--long-running-checkpoint-port-consumption-2026-08-18). **Not implemented** by audit persistence.
 
+<a id="protocol-v22-human-decision-provenance-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 human decision provenance target invariants (2026-08-18)
+
+Accepted [`IDENTITY_TRUST`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) findings **03, 04** (2026-08-18). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+1. Exact `task_id` + `pause_id` + `human_request_id` correlation remains mandatory (preserve existing G5C fail-closed guarantees).
+2. Canonical human decision evidence must additionally preserve verified approver principal provenance.
+3. Do not persist secrets/tokens in decision evidence.
+4. All supported resume surfaces must reconstruct exact pause/request correlation from authoritative checkpoint/pause state.
+5. Raw response text/verdict alone must never become equivalent to canonical approval evidence.
+
+Remediation block: **IDT-FIX-C**.
+
+<a id="protocol-v22-uer-resume-cancel-target-invariants-2026-08-18"></a>
+
+## Protocol v2.2 UER resume/cancel target invariants (2026-08-18)
+
+Accepted [`EXECUTION_RUNTIME`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.md) findings **03, 05, 06** (layer audited 2026-08-19). **Target state** — **ACCEPTED / PLANNED**; **not implemented** by audit persistence.
+
+1. Checkpoint contains enough identity to restore same `AttemptId` on non-retry resume.
+2. Cancellation reaches already-running ACP work via shared cooperative cancellation authority.
+3. Cancellation is checked at meaningful boundaries (iteration, LLM/tool/side-effect execution).
+4. Cancellation invalidates or tombstones resumable checkpoint authority.
+5. Cancelled checkpoint cannot later be treated as ordinary resumable state without a new explicit authorized transition.
+
+Remediation: **UER-FIX-C**, **UER-FIX-E** in matching plans.
+
 ## Unresolved documentation drift (outside this edit)
 
 Report only — not fixed in DOC-3Q scope:

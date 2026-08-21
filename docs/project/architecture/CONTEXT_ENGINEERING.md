@@ -209,8 +209,8 @@ Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** — Canonical domain pair with normative contracts (`ContextFragment`, `ContextAssemblyRequest`, assembly pipeline), [ADR-CTX-001](../technical/adr/entries/2026-06-12/ADR-CTX-001.md), mapped boundaries to Memory, RAG, and UCL; CE-EXT and CE-ALIGN closeouts ([plan](../maintainers/plans/CONTEXT_ENGINEERING.md)).
-- **I3** — Core assembly works on ACP (`ContextCompiler` hot path), graph, and UCL-managed UAEP/session paths (`DefaultNexusContextEngine.assemble()` → `resolve_ucl_context_plan()` when engine + `llm_adapter` wired); unified plugin catalog and CE-PROV-WIRE builtins shipped; UCL **EPHEMERAL_ASSEMBLY** closeout integrated on `PRIMARY_MODEL_CALL`. **Non-uniform coverage (blocks I4):** `ContextOrchestrator` **L2** (codebase preset only); `ContextManager` presentation fallback outside UCL-managed primary path; **TOKEN-CE-1B** runtime wiring and **TOKEN-CE-2** regression gates **planned**; OTel on compile path **L2.5**; **`DURABLE_COMPACTION` runtime execution not implemented** (UCL canon). Closeout alone does not imply domain-wide I4/I5.
-- **P2** — Internal/lab deployment with documented hybrid paths; historical audit **production-ready** wording refers to the **budgeted assembly spine** on qualified hot paths, **not** taxonomy **P4** (no CE-domain production handoff, SLO/runbook package, or public production qualification).
+- **I3** — Core assembly works on ACP (`ContextCompiler` hot path), graph, and UCL-managed UAEP/session paths (`DefaultNexusContextEngine.assemble()` → `resolve_ucl_context_plan()` when engine + `llm_adapter` wired); unified plugin catalog and CE-PROV-WIRE builtins shipped; UCL **EPHEMERAL_ASSEMBLY** closeout integrated on `PRIMARY_MODEL_CALL`. **Non-uniform coverage (blocks I4):** `ContextOrchestrator` **L2** (codebase preset only); `ContextManager` presentation fallback outside UCL-managed primary path; **TOKEN-CE-1B** runtime wiring and **TOKEN-CE-2** regression gates **planned**; OTel on compile path **L2.5**; **`DURABLE_COMPACTION` runtime execution not implemented** (UCL canon). Closeout alone does not imply domain-wide I4/I5. Protocol v2 audit (2026-08-18) documents **accepted residual contract gaps** on pre-collect required-source policy, ranker mandatory-context omission, provider source authority, registry extension drift, compile-result token accounting, and assembly snapshot validation — target invariants in [Protocol v2 Context Engineering target invariants (2026-08-18)](#protocol-v2-context-engineering-target-invariants-2026-08-18); **not** a maturity-axis downgrade of CE-EXT / CE-ALIGN / CE-PROV-WIRE delivery completion.
+- **P2** — Internal/lab deployment with documented hybrid paths; historical audit **production-ready** wording refers to the **budgeted assembly spine** on qualified hot paths, **not** taxonomy **P4** (no CE-domain production handoff, SLO/runbook package, or public production qualification). Protocol v2 accepted findings constrain policy/source integrity, extension execution parity, and contract accounting — remediation **PLANNED**, not shipped.
 - **E3** — Unit/gate evidence (`evaluate_context_engineering()`, wiring checks, integration tests on ACP/graph paths), audit slice, ADRs. No dedicated public proof route — not E4/E5.
 
 > **Legacy vs taxonomy:** Historical **L3+ engine / L3 control plane** labels in [§2](#2-production-readiness-verdict-2026-06-12-post-ce-ext)–[§3](#3-maturity-score-audit-map-l0l4) map primarily to **A4** and **E2–E3** — they do **not** automatically imply **P4** or uniform **I4**.
@@ -527,5 +527,55 @@ class AssembledContext:
 | `ContextFragment` | `intergrax/context/contracts.py` | **Shipped** |
 | `ContextPluginRegistry` | `intergrax/context/registry.py` | **Shipped** |
 | `AgentContextHints` | `intergrax/contracts/agent_context_hints.py` | **Shipped** (CE-5.1) |
+
+<a id="protocol-v2-context-engineering-target-invariants-2026-08-18"></a>
+
+## Protocol v2 Context Engineering target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`CONTEXT_ENGINEERING`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+
+**Finding 01 — separate PRE-COLLECT from POST-COLLECT policy gates**
+
+1. Structural PRE-COLLECT validation validates request policy shape and contradictions only — it does not require collected evidence that cannot exist yet ([`AUDIT-20260818-CONTEXT_ENGINEERING-01`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+2. POST-COLLECT enforcement validates required source presence and exclusions after provider collection ([`AUDIT-20260818-CONTEXT_ENGINEERING-01`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+3. Preserve one policy module — do not create parallel gates ([`AUDIT-20260818-CONTEXT_ENGINEERING-01`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+
+**Finding 02 — mandatory/required context survives every lossy stage**
+
+4. No stage may silently delete mandatory or required context ([`AUDIT-20260818-CONTEXT_ENGINEERING-02`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+5. Quality evaluation may reject mandatory context quality, but the result must be an explicit governed assembly failure, not omission ([`AUDIT-20260818-CONTEXT_ENGINEERING-02`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+6. After every stage capable of dropping fragments, final assembly must prove all required sources and mandatory policy fragments remain represented, or fail explicitly — reuse `ContextPlanner` required/protected semantics ([`AUDIT-20260818-CONTEXT_ENGINEERING-02`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+
+**Finding 03 — provider identity authorizes emitted source**
+
+7. Provider identity and emitted `ContextFragmentSource` authority are bound — every collected fragment must originate from a provider authorized for that source type ([`AUDIT-20260818-CONTEXT_ENGINEERING-03`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+8. Provider ID remains available in provenance/audit evidence ([`AUDIT-20260818-CONTEXT_ENGINEERING-03`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+9. Stronger qualification for policy/system source providers may reuse existing plugin governance — do not invent duplicate trust machinery ([`AUDIT-20260818-CONTEXT_ENGINEERING-03`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+
+**Finding 04 — plugin override surfaces match shipped engine behavior**
+
+10. Registry extension contracts and `DefaultNexusContextEngine` execution semantics are identical — supported ranker/allocator/formatter/validator overrides are executed with explicit ordering, or unsupported surfaces are removed from canonical claims ([`AUDIT-20260818-CONTEXT_ENGINEERING-04`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+11. A configured policy/safety validator must never be silently ignored ([`AUDIT-20260818-CONTEXT_ENGINEERING-04`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+12. Do not add a second CE engine to solve extension drift ([`AUDIT-20260818-CONTEXT_ENGINEERING-04`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+
+**Finding 05 — truthful ContextCompileResult token accounting**
+
+13. `ContextCompileResult.total_tokens` always reports actual computed tokens — never cap reported totals to budget when message content exceeds it ([`AUDIT-20260818-CONTEXT_ENGINEERING-05`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+14. If required/current-turn content alone cannot fit, fail explicitly or expose an explicit overflow state ([`AUDIT-20260818-CONTEXT_ENGINEERING-05`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+15. Preserve adapter-aware final `verify_context_preflight` as the ultimate model-window boundary ([`AUDIT-20260818-CONTEXT_ENGINEERING-05`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+
+**Finding 06 — fail-fast assembly request and decision snapshots**
+
+16. `ContextAssemblyRequest` enforces non-empty canonical identity/scope values and disjoint required/excluded source sets at construction ([`AUDIT-20260818-CONTEXT_ENGINEERING-06`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+17. `ContextDecisionSnapshot` validates bounded non-negative `max_memory_entries_in_context` ([`AUDIT-20260818-CONTEXT_ENGINEERING-06`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+18. Reuse existing `TaskId`/`RunId` identity validators where semantically compatible — do not introduce independently writable duplicate identity fields ([`AUDIT-20260818-CONTEXT_ENGINEERING-06`](../../audit_results/2026-08-18/CONTEXT_ENGINEERING.md)).
+
+**Transitional boundary (preserved)**
+
+19. `ContextPlanner` / UCL assembly spine, single global input budget authority, and Memory/RAG/UCL ownership boundaries are preserved — not collapsed ([Context Engineering vs Unified Context Lifecycle](#context-engineering-vs-unified-context-lifecycle)).
+20. I3/P2 maturity honesty, uneven hot-path coverage, TOKEN-CE-1B/TOKEN-CE-2 **Planned**, and `DURABLE_COMPACTION` **not implemented** remain accurate ([Current maturity](#current-maturity)).
+21. Historical CE-EXT / CE-ALIGN / CE-PROV-WIRE plan **Done** rows remain valid delivery facts — not rewritten as current runtime claims ([plan](../maintainers/plans/CONTEXT_ENGINEERING.md)).
+
+Remediation tracked as **CE-POLICY-SOURCE-INTEGRITY** (findings 01–03), **CE-EXTENSION-RUNTIME-INTEGRITY** (finding 04), and **CE-CONTRACT-ACCOUNTING-INTEGRITY** (findings 05–06) in [plan](../maintainers/plans/CONTEXT_ENGINEERING.md#protocol-v2-context-engineering-remediation-2026-08-18). **Not implemented** by audit persistence.
 
 ---

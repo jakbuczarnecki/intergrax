@@ -63,6 +63,67 @@ It is retained as evidence, not as a second current-state matrix.
 
 ---
 
+<a id="protocol-v2-rag-remediation-2026-08-18"></a>
+
+## Protocol v2 — RAG remediation (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/RAG.md`](../../audit_results/2026-08-18/RAG.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-RAG-PERSIST.
+
+<a id="rag-scope-contract-integrity-2026-08-18"></a>
+
+### RAG-SCOPE-CONTRACT-INTEGRITY — fail-closed scoped retrieval and one native result ABI
+
+**Priority:** P0/P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-RAG-01`](../../audit_results/2026-08-18/RAG.md), [`AUDIT-20260818-RAG-02`](../../audit_results/2026-08-18/RAG.md)
+
+**Outcome (planning only):**
+
+- Canonical production `RetrievalService` requires authoritative `VectorStoreScope` before provider retrieval — unscoped retrieval is not an ambient valid production state.
+- Unscoped lab/evaluation retrieval, if retained, uses an explicitly non-production/test surface or typed execution mode — not absence of scope on the canonical service.
+- One canonical retriever result ABI: `RetrievalHit` → `RetrievalChunk` with provenance preserved regardless of reranker configuration.
+- Remove or segregate duck-typed `_candidates_to_chunks` legacy adaptation on production retrieval paths.
+- Do not create a second `RetrievalService`.
+
+<a id="rag-configuration-qualification-integrity-2026-08-18"></a>
+
+### RAG-CONFIGURATION-QUALIFICATION-INTEGRITY — bounded resource policy and GraphRAG qualification binding
+
+**Priority:** P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-RAG-03`](../../audit_results/2026-08-18/RAG.md), [`AUDIT-20260818-RAG-04`](../../audit_results/2026-08-18/RAG.md), [`AUDIT-20260818-RAG-05`](../../audit_results/2026-08-18/RAG.md)
+
+**Outcome (planning only):**
+
+- `RagProfile` and `RetrievalRequest` become fail-fast resource-policy contracts with explicit production-safe ranges and cross-field invariants.
+- Invalid explicit env configuration fails startup/config validation — not silent dangerous runtime values.
+- Production-named presets reflect actual security/durability posture — rename or remove misleading `production_rag_profile()` harness preset; durable GraphRAG production posture remains `production_graph_rag_profile()`.
+- GraphRAG production validation binds profile graph-backend intent to actual `IntegrationProfile` graph-store binding and approved provider qualification — coordinate with [`INTEGRATIONS-RUNTIME-BINDING-INTEGRITY`](INTEGRATIONS.md#integrations-runtime-binding-integrity-2026-08-18); no parallel integration resolver.
+
+<a id="rag-observability-identity-2026-08-18"></a>
+
+### RAG-OBSERVABILITY-IDENTITY — telemetry from canonical retrieval scope
+
+**Priority:** P1/P2
+**Status:** `ACCEPTED / PLANNED`
+**Finding:** [`AUDIT-20260818-RAG-06`](../../audit_results/2026-08-18/RAG.md)
+
+**Outcome (planning only):**
+
+- Scoped retrieval telemetry uses `request.scope.tenant_id` — not a duplicate writable `tenant_id` request field.
+- Explicit non-tenant label only for intentionally unscoped lab/evaluation execution.
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- Historical **Done** rows in this plan and qualification handoffs remain historical facts — not rewritten as remediation completion.
+
+**Recommended remediation order (prioritization, not dependency graph):** RAG-SCOPE-CONTRACT-INTEGRITY → RAG-CONFIGURATION-QUALIFICATION-INTEGRITY → RAG-OBSERVABILITY-IDENTITY
+
+---
+
 ## Phase AUDIT-IDEAL — RAG gap register (layer 14)
 
 > Historical phase register. Do not interpret row statuses as current

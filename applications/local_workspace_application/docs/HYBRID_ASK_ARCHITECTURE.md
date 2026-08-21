@@ -170,6 +170,7 @@ EvidencePlanV1
 ├── mode: indexed_only | live_only | hybrid
 ├── indexed_retrieval_directive (optional per mode)
 ├── ordered_live_call_proposals: list[LiveCallProposalV1]
+├── required_evidence_obligations: list[RequiredEvidenceObligationV1]
 ├── budget_snapshot
 └── audience_context
 ```
@@ -216,6 +217,313 @@ arbitrary MCP tool
 ```
 
 These are resolved from committed configuration and registered capability descriptors.
+
+### 6.4 Required evidence obligations
+
+`EvidencePlanV1` may declare **typed, structural obligations** that execution must satisfy before answer synthesis:
+
+```text
+RequiredEvidenceObligationV1 (discriminated union)
+├── IndexedEvidenceRequirementV1
+│   ├── requirement_id (unique, nonblank)
+│   ├── semantic_role (audit/explanation only — not enforcement)
+│   └── indexed_source_binding_id (optional scope)
+└── LiveEvidenceRequirementV1
+    ├── requirement_id (unique, nonblank)
+    ├── semantic_role (audit/explanation only — not enforcement)
+    └── call_id (must reference a planned live call)
+```
+
+Plan validation fails closed on duplicate `requirement_id`, unknown `call_id`, mode/type mismatch, or unknown indexed binding.
+
+#### 6.4.1 Obligation ownership (COMM-5C1-R1 / R2)
+
+Mandatory evidence requirements are **not client-removable**. The HTTP request does not authoritatively declare them.
+
+**Execution plan** (what we attempt) and **evidence contract** (what must exist for admissibility) are separate:
+
+```mermaid
+flowchart LR
+    P[Execution Plan] --> A[Live call A]
+    P --> B[Live call B]
+    R[Evidence Contract] --> I[Required indexed evidence]
+    R --> A
+    B --> O[Optional enrichment]
+```
+
+| Invariant | Meaning |
+|-----------|---------|
+| HYBRID requires indexed + live participation | Plan validation and citation rules still enforce indexed retrieval and live execution structure |
+| Planned calls are not automatically mandatory | `ordered_live_call_proposals` does not imply per-call `LiveEvidenceRequirementV1` |
+| Explicit obligations control admissibility | Product/provider planning supplies mandatory evidence requirements |
+| Caller may only strengthen | Additive obligations; duplicate `requirement_id` fails closed |
+
+```mermaid
+flowchart TD
+    Q[Question / Product Request] --> P[Product-owned planning]
+    P --> A[Authoritative Evidence Obligations]
+    A --> C{Additive caller obligations?}
+    C -->|strengthen only| E[Effective Obligations]
+    C -->|none| E
+    E --> V[Validated Evidence Plan]
+    V --> X[Execution]
+    X --> G{Admissibility Gate}
+    G -->|SATISFIED| S[Bounded LLM Synthesis]
+    G -->|UNSATISFIED| N[No Answer Synthesis]
+```
+
+| Source | Role |
+|--------|------|
+| `derive_product_evidence_obligations` | Product-owned **indexed** admissibility obligation for generic HYBRID Workspace Ask — not per planned live call |
+| `EvidenceObligationDerivationPort` | Policy-derived authoritative obligations from already-resolved typed organizational rules (F3-A) |
+| `ProviderEvidencePlanV1.required_evidence_obligations` | Provider-owned obligations from `WorkspaceAskProviderStrategy.build_plan` |
+| `WorkspaceAskCommandV2.required_evidence_obligations` | **Additive only** — may strengthen, never replace authoritative minimum |
+| `compose_evidence_obligations` / `compose_authoritative_evidence_obligations` | Merges layers; duplicate `requirement_id` fails closed |
+
+#### 6.4.2 Policy-derived obligations (COMM-5F3-A)
+
+F3-A operates on **already-resolved typed policy rules**. Natural-language policy interpretation and rule resolution remain upstream of this boundary.
+
+```mermaid
+flowchart TD
+    R[Resolved Policy Rules] --> D[Obligation Derivation]
+    D --> C[Derived Evidence Contract]
+    C --> P[EvidencePlanV1]
+    P --> V[Plan Validation]
+    V --> X[Execution / Admissibility]
+```
+
+| Layer | Authority |
+|-------|-----------|
+| Product/base obligations | Authoritative minimum from product planning |
+| Policy-derived obligations | Authoritative from `EvidenceObligationDerivationPort` when configured |
+| Provider-derived obligations | Authoritative from provider strategy |
+| Caller obligations | Additive only — cannot remove prior layers |
+
+Derivation ownership (F3-A): indexed rules emit obligations only; live rules emit **both** deterministic live-call proposals and matching live obligations so every live obligation references a planned call identity. `derivation_snapshot_id` is a stable hash over canonical typed inputs.
+
+#### 6.4.3 Policy provenance and basis (COMM-5F3-B)
+
+F3-B elevates F3-A source identity into canonical typed contracts that survive planning, validation, and run persistence.
+
+```mermaid
+flowchart TD
+    B[Policy Basis] --> R[Policy Revision]
+    R --> U[Rule]
+    U --> O[Requirement Origin]
+    O --> E[Evidence Obligation]
+    E --> P[Evidence Plan / Ask Run]
+```
+
+| Contract | Purpose |
+|----------|---------|
+| `RequirementOriginV1` | Explains **why** a policy-derived obligation exists (`policy_document_id`, `revision_id`, `rule_id`) |
+| `PolicyEvidenceBasisV1` | Authoritative set of policy revisions governing one derivation/plan/run, plus `derivation_snapshot_id` |
+
+Example chain:
+
+```text
+deployment-policy / rev18 / RULE-SEC-DEP-4
+  → requirement_id: policy:deployment-policy:RULE-SEC-DEP-4:pentest
+  → IndexedEvidenceRequirementV1.policy_origin
+```
+
+| Invariant | Meaning |
+|-----------|---------|
+| Origin explains WHY | `policy_origin` is explanatory provenance only |
+| Structural enforcement unchanged | Satisfaction still uses `call_id`, `indexed_source_binding_id`, evidence type |
+| Server-authoritative | Trusted `policy_origin` only from policy derivation (`ResolvedPolicyRulesPort` → `EvidenceObligationDerivationPort` → `map_derived_obligation`); product, provider, and caller layers must leave it `None` |
+| Basis consistency | Policy-derived obligations require matching `policy_basis` on plan and run |
+| One revision per document | Conflicting revisions for the same policy document fail closed |
+
+`derivation_engine_version` is deferred: obligation outputs are fully determined by canonical typed rule inputs hashed into `derivation_snapshot_id`; algorithm identity is fixed to `DeterministicEvidenceObligationDerivation`.
+
+#### 6.4.4 Multi-provider evidence execution (COMM-5F3-C / F3-C-R1)
+
+F3-C proves that one **derived evidence contract** can require independent live facts from multiple provider classes. Multi-call orchestration is **existing platform capability** (`KnowledgeQueryOrchestratorV1`); F3-C adds reusable provider integrations and a canonical multi-provider proof path.
+
+Proof strength (F3-C-R1): four independent provider classes, four independent connections, four independent capability identities, and **four independent controlled upstream HTTP services** (distinct loopback listeners, ports, and `base_url` values — not a bundled governance mega-server).
+
+```text
+Derived Evidence Contract
+    ↓
+REQ-readiness  → Project Status upstream / conn.project-status / vendor.project_status.project.read
+REQ-security   → Security Status upstream / conn.security-status / vendor.security_status.security.read
+REQ-change     → Change Management upstream / conn.change-approval / vendor.change_approval.change.read
+REQ-architecture → Governance upstream / conn.governance-approval / vendor.governance_approval.approval.read
+    ↓
+per-call runtime authority (WorkspaceLiveAccessRuntimeAuthority)
+    ↓
+independent provider execution + evidence outcomes (call_id-bound)
+    ↓
+admissibility (structural call_id matching)
+```
+
+| Invariant | Meaning |
+|-----------|---------|
+| No mega-provider | Each organizational authority is a distinct provider + connection + capability |
+| Independent upstreams | Proof uses four separate controlled HTTP services with distinct `base_url` values |
+| No new orchestrator | Same orchestrator loop; no parallel execution engine |
+| Policy-derived calls | Live proposals/obligations come from `EvidenceObligationDerivationPort`, not hand-built plans |
+| Evidence identity | Live evidence satisfies only its bound `call_id` |
+| Reused spine | Resolver, rehydration, handler registry, live executor unchanged |
+
+Reusable production integrations (provider-neutral): `project_status` (readiness), `security_status`, `change_approval`, `governance_approval`. ORION/deployment semantics live in proof fixtures only.
+
+#### 6.4.5 Temporal evidence admissibility (COMM-5F3-D)
+
+F3-D adds requirement-level **temporal admissibility** on top of F3-A/B/C structural matching. It is not a general bitemporal engine, historical reconstruction layer, or business-rule evaluator.
+
+```text
+Evidence requirement
+    ↓
+source/call structural match
+    ↓
+temporal_constraint (optional on obligation)
+    ↓
+semantic evidence temporal metadata
+    ↓
+evaluation at explicit evaluated_at
+    ↓
+SATISFIED / EVIDENCE_TEMPORALLY_INVALID
+```
+
+| Contract | Meaning |
+|----------|---------|
+| `MaxAgeTemporalConstraintV1` | `0 <= evaluated_at - effective_at <= max_age_seconds`; future-dated point evidence fails closed |
+| `ValidAtTemporalConstraintV1` | evidence validity interval must contain `evaluated_at` (`valid_from <= t <= valid_until`) |
+| `PointInTimeEvidenceTemporalV1` | semantic `effective_at` (not retrieval/persistence time) |
+| `ValidityIntervalEvidenceTemporalV1` | approval-style `valid_from` / `valid_until` on evidence |
+| `EvidenceAdmissibilityResultV1.evaluated_at` | authoritative evaluation instant for replayable proof |
+
+Temporal constraints are derived from typed policy rule parameters, preserved through derivation → plan → run, and hashed into `derivation_snapshot_id`. Requirement identity stays stable across policy revisions that only tighten or relax temporal bounds (for example rev17 `max_age=24h` vs rev18 `max_age=1h`).
+
+Fresh evidence may still report business-negative provider facts (for example `BLOCKED`); temporal admissibility judges **when** evidence is acceptable, not whether the fact is favorable.
+
+`semantic_role` is explanatory for audit — enforcement uses structural fields only (`call_id`, `indexed_source_binding_id`, evidence type).
+
+Persisted `WorkspaceAskRunV2` records are **self-consistent**: obligations, per-requirement evaluations, matched evidence IDs, persisted evidence, and final status must agree.
+
+#### 6.4.6 Obligation-level failure semantics (COMM-5F3-E)
+
+F3-E adds typed **per-call execution outcomes** and maps them to requirement-level admissibility reasons. It extends existing execution and admissibility contracts — no second error subsystem.
+
+```text
+Required evidence obligation
+    ↓
+planned live call execution
+    ├── SUCCESS → live evidence
+    ├── AUTHORITY_UNAVAILABLE → provider HTTP not executed
+    ├── PROVIDER_FAILED → provider dependency/transport failure
+    └── PROVIDER_RESPONSE_INVALID → HTTP succeeded but typed contract violated
+    ↓
+temporal check (when evidence exists)
+    ↓
+requirement verdict (SATISFIED / reason code)
+    ↓
+persisted WorkspaceAskRunV2 structural proof
+```
+
+| Priority | Live requirement outcome |
+|----------|---------------------------|
+| 1 | Temporally valid matching evidence → `SATISFIED` |
+| 2 | Matching evidence failing temporal constraint → `EVIDENCE_TEMPORALLY_INVALID` |
+| 3 | Structural execution failure for exact `call_id` → `AUTHORITY_UNAVAILABLE` / `PROVIDER_FAILED` / `PROVIDER_RESPONSE_INVALID` |
+| 4 | Other live evidence but wrong call → `LIVE_CALL_MISMATCH` |
+| 5 | Otherwise → `NO_MATCHING_EVIDENCE` |
+
+| Contract | Meaning |
+|----------|---------|
+| `LiveCallFailureV1` | `{call_id, reason}` — bounded structural failure; no raw provider bodies |
+| `KnowledgeQueryExecutionResultV1.live_call_failures` | successful evidence and failed calls may coexist in one Ask |
+| `RequirementAdmissibilityReasonCodeV1` | adds `authority_unavailable`, `provider_failed`, `provider_response_invalid` |
+| `WorkspaceAskRunV2.live_call_failures` | reloadable failure semantics without log inference |
+
+**Flagship proof direction (F3-F acceptance):** final governed decision proof MUST use vendor/system data persisted in Docker-backed external storage (`docker-compose.governed-hybrid-proof.yml` → MongoDB volume `governed_proof_vendor_data` → vendor HTTP → TenantConnection → runtime authority → capability execution → evidence → admissibility). In-process `Controlled*Server.start()` loopback services remain **test accelerators only** — not sufficient as the final external-system proof.
+
+Proof command (F3-E harness):
+
+```bash
+docker compose -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml up -d
+uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.docker_persistence_proof
+# explicit cleanup: docker compose ... down -v
+```
+
+#### 6.4.7 Advanced flagship proof (COMM-5F3-F)
+
+F3-F composes accepted F3-A/B/C/D/E capabilities into one governed decision scenario. It is **not** a new platform feature campaign — proof infrastructure only.
+
+**Ordinary agent path:**
+
+```text
+question → LLM → tools → answer
+```
+
+**Intergrax governed path:**
+
+```text
+question
+→ policy-derived evidence requirements (DeterministicEvidenceObligationDerivation)
+→ qualified independent sources (4 providers / 4 connections / 4 capabilities)
+→ execution-time authority (WorkspaceLiveAccessRuntimeAuthority)
+→ temporal admissibility (max_age / valid_at)
+→ obligation-level outcomes (typed reason codes)
+→ deterministic admissibility gate
+→ LLM only if permitted
+→ persisted structural proof (WorkspaceAskRunV2)
+```
+
+**Flagship question:** `Can ORION be deployed to production tonight?` — proof fixture only; no ORION semantics in production platform code.
+
+**Docker topology (four independent vendor services):**
+
+| Source | Provider | Connection | Capability | Service | Persistence |
+|--------|----------|------------|------------|---------|-------------|
+| Project Status | `project_status` | `conn.flagship.project-status` | `vendor.project_status.project.read` | `project-status-vendor:8092` | `project_status_records` |
+| Security Status | `security_status` | `conn.flagship.security-status` | `vendor.security_status.security.read` | `security-status-vendor:8091` | `security_status_records` |
+| Change Approval | `change_approval` | `conn.flagship.change-approval` | `vendor.change_approval.change.read` | `change-approval-vendor:8093` | `change_approval_records` |
+| Governance Approval | `governance_approval` | `conn.flagship.governance-approval` | `vendor.governance_approval.approval.read` | `governance-approval-vendor:8094` | `governance_approval_records` |
+
+Shared MongoDB volume `governed_proof_vendor_data` is vendor-owned persistence only — Intergrax never reads Mongo directly.
+
+**Policy revisions:** REV17 (`security max_age = 24h`) vs REV18 (`security max_age = 1h`) change admissibility without application branching. Same underlying evidence can be admissible under REV17 and temporally invalid under REV18.
+
+**Admissibility vs business answer:** fresh evidence may report business-negative facts (for example `BLOCKED`); admissibility answers whether the LLM may synthesize — not whether deployment is approved.
+
+Proof command:
+
+```bash
+docker compose -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml up --build -d
+uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.advanced_flagship_proof
+```
+
+**Boundary invariants:** proof runner → typed admin/scenario abstractions → `WorkspaceAskServiceV2` → orchestrator → runtime authority → integrations → vendor HTTP → vendor persistence. Never proof runner → raw vendor HTTP / Mongo / provider internals.
+
+### 6.5 Evidence Admissibility gate
+
+After orchestration, a **deterministic evaluator** compares execution evidence against the validated obligations. It does not call providers, LLMs, or repositories.
+
+```mermaid
+flowchart TD
+    A[Evidence Plan] --> B[Required Evidence Obligations]
+    B --> C[Plan Validation]
+    C --> D[Execution]
+    D --> E{Admissibility Gate}
+    E -->|SATISFIED| F[Bounded LLM Synthesis]
+    E -->|UNSATISFIED| G[No Answer Synthesis]
+    F --> H[Citation Validation]
+    G --> I[Persist Run + Admissibility Result]
+    H --> I
+```
+
+| Invariant | Meaning |
+|-----------|---------|
+| Structural matching only | Satisfaction uses evidence type, `call_id`, and `indexed_source_binding_id` — never answer text or semantic labels |
+| Earlier gate | Admissibility runs **before** `HybridAskAnswerAssemblerV2` |
+| Defense in depth | Citation validation and HYBRID indexed+live citation rules remain after synthesis |
+| EPHEMERAL durability | Persisted runs store obligation snapshots, matched evidence IDs, and reason codes — never raw live bodies |
+
+**Why this matters:** evidence diversity (indexed **and** live present) is not the same as evidence **completeness** (every declared obligation structurally satisfied). Admissibility enforces completeness; citation rules enforce provenance integrity.
 
 ---
 
@@ -355,14 +663,31 @@ clock / timeout boundary
 
 ```text
 validated ExecutableLiveCallV1
-→ safe Connection projection (TenantConnectionPort)
-→ descriptor lookup (TenantLiveCapabilityCatalog)
-→ handler lookup (LiveCapabilityHandlerRegistry)
+→ call identity validation
+→ runtime authority revalidation (WorkspaceLiveAccessRuntimeAuthority)
 → existing integration resolution (TenantConnectionIntegrationResolverPort)
 → bounded handler execution (LiveCapabilityHandlerV1)
 → normalized transient live evidence (LiveWorkspaceEvidenceV1)
 → optional safe receipt
 ```
+
+Plan validation establishes **plan-time authorization** (binding was admissible to plan). Runtime authority establishes **execution-time authorization** (binding is still admissible to execute now). These are intentionally different checks; a validated plan snapshot must not bypass execution-time denial.
+
+```mermaid
+flowchart TD
+    A[Plan validation] --> B[Authorized then]
+    B --> C[Authority may change]
+    C --> D[Live execution]
+    D --> E{Runtime authority recheck}
+    E -->|ALLOW| F[Provider handler]
+    F --> G[Live evidence]
+    E -->|DENY| H[Provider calls = 0]
+    H --> I[Required live evidence missing]
+    I --> J[Evidence admissibility UNSATISFIED]
+    J --> K[INSUFFICIENT_EVIDENCE / no LLM]
+```
+
+Governed live-capable Workspace Ask composition must wire `WorkspaceLiveAccessRuntimeAuthority` from resolved host dependencies (`TenantConnectionPort` + `TenantLiveCapabilityCatalog`). `INDEXED_ONLY` composition may omit runtime authority.
 
 **Responsibilities:**
 
@@ -396,6 +721,74 @@ not in the LKW Hybrid Ask roadmap.
 ### 9.2 Deferred provider notes (documentation only)
 
 Confluence and Microsoft Graph live search require separate bounded contracts in Vendor Knowledge and must not be simulated through delta, reconciliation or full inventory.
+
+### 9.3 COMM-5C3 — controlled external Project Status proof boundary
+
+**Status:** ACCEPTED proof infrastructure (COMM-5C3)
+**Scope:** real HTTP Vendor Knowledge live read only; no flagship orchestration; no YES/NO business decision.
+
+**Flagship end-to-end proof (COMM-5D):** [`proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md`](proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) — four-scenario ORION deployment readiness proof over real Hybrid Ask, admissibility, authority, and history.
+
+| Layer | Responsibility |
+|-------|----------------|
+| LKW Hybrid Ask | provider-neutral plan + `LiveCapabilityExecutorV1` |
+| Vendor Knowledge | registration, typed request, handler, connection factory |
+| Tenant connection | `base_url`, timeout — **not** LLM-selectable |
+| Provider adapter | `vendor.project_status.project.read` |
+| **HTTP boundary** | loopback Project Status Service |
+| Proof instrumentation | external read request counter |
+
+```mermaid
+flowchart TB
+  subgraph platform["Intergrax platform"]
+    LKW["LKW Ask / LiveCapabilityExecutorV1"]
+    VK["Vendor Knowledge registry"]
+    TC["Tenant connection resolver"]
+    H["Project Status live handler"]
+    LKW --> VK --> TC --> H
+  end
+  subgraph external["External proof infrastructure"]
+    HTTP["HTTP boundary"]
+    SVC["Project Status Service"]
+    CTR["Control API (proof harness)"]
+    CNT["read request counter"]
+    SVC --> HTTP
+    SVC --> CTR
+    CTR -. proof only .-> CNT
+  end
+  H -->|"GET /projects/{id}/status"| HTTP
+  CTR -->|"PUT control state"| SVC
+```
+
+**State transition proof (deterministic, no provider reconfiguration):**
+
+```mermaid
+sequenceDiagram
+  participant P as Provider path
+  participant S as Project Status Service
+  participant C as Control API
+  Note over S: STATE A — SEC-417 OPEN
+  P->>S: HTTP read
+  S-->>P: blocker OPEN
+  C->>S: OPEN → CLOSED
+  Note over S: STATE B — SEC-417 CLOSED
+  P->>S: same HTTP read
+  S-->>P: blocker CLOSED
+```
+
+| Item | Value |
+|------|-------|
+| Service module | `proof_infrastructure.controlled_project_status_service` |
+| Run command | `uv run python -m proof_infrastructure.controlled_project_status_service --host 127.0.0.1 --port 8765` |
+| Read API | `GET /projects/{project_id}/status` |
+| Control API | `PUT /control/projects/{project_id}/status` |
+| Counter | `GET /control/request-count`, `POST /control/request-count/reset` |
+| Provider id | `project_status` |
+| Capability id | `vendor.project_status.project.read` |
+| Request model | `ProjectStatusReadLiveRequestV1.project_id` |
+| Fixture seed | ORION / readiness 94 / SEC-417 OPEN |
+
+**Retention:** live bodies remain **EPHEMERAL**; durable Ask keeps provenance/hash metadata only.
 
 ---
 

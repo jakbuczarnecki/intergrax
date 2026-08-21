@@ -14,6 +14,7 @@ from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventTyp
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
 from intergrax.runtime.human.declarative_hitl_grant import DeclarativeHitlGrantCoordinator
+from intergrax.runtime.human.governed_continuation_grant import GovernedContinuationGrantCoordinator
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
@@ -78,6 +79,7 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
+            GovernedContinuationGrantCoordinator.clear_grant(task)
             result = await self.hitl.handle_human_rejection(
                 task, trace_emitter, lifecycle
             )
@@ -92,6 +94,7 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
+            GovernedContinuationGrantCoordinator.clear_grant(task)
             result = await self.hitl.handle_human_escalation(
                 task, trace_emitter, lifecycle
             )
@@ -132,6 +135,9 @@ class NexusIntakeRunner:
             )
             if task.runtime.governance.declarative_hitl_pending is not None:
                 DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
+                task.sync_metadata()
+            if task.runtime.governance.human_request is not None:
+                GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
                 task.sync_metadata()
             HumanPauseCoordinator.clear_pause(task)
             clear_consumed_human_input(task)

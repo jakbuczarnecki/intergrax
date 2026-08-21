@@ -355,6 +355,7 @@ async def run_tools_context(state: RuntimeState) -> None:
     error_message: Optional[str] = None
     loop_pattern_id: Optional[str] = None
     loop_stop_reason: Optional[str] = None
+    pending_failure: BaseException | None = None
     tool_selection_mode = state.context.config.tool_selection_mode
     tool_invocation_mode = state.context.config.tool_invocation_mode
 
@@ -452,6 +453,7 @@ async def run_tools_context(state: RuntimeState) -> None:
 
         if isinstance(exc, DeclarativePolicyHitlPauseRequired):
             raise
+        pending_failure = exc
         error_type = type(exc).__name__
         error_message = str(exc)
 
@@ -474,3 +476,6 @@ async def run_tools_context(state: RuntimeState) -> None:
         ),
     )
     merge_provider_metadata_into_request(state)
+
+    if pending_failure is not None:
+        raise pending_failure

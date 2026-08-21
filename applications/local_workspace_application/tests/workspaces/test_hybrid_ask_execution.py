@@ -358,6 +358,69 @@ class _SearchTaskExecutor:
         return self.result
 
 
+class _CapturingSearchTaskExecutor:
+    def __init__(self, result: _SearchTaskResult) -> None:
+        self.result = result
+        self.last_task: object | None = None
+
+    async def execute(self, task: object) -> _SearchTaskResult:
+        self.last_task = task
+        return self.result
+
+
+def _capturing_retriever(
+    binding: WorkspaceIndexedSourceBinding,
+) -> tuple[WorkspaceIndexedEvidenceRetrieverV1, _CapturingSearchTaskExecutor]:
+    repo = _AuthoritativeRepository(binding)
+    result = _SearchTaskResult(
+        [
+            {
+                "document_id": "document-1",
+                "source_id": binding.source_id,
+                "workspace_id": _WORKSPACE,
+                "source_path": "docs/document.txt",
+                "file_name": "document.txt",
+                "score": 0.9,
+                "snippet": "indexed content",
+                "metadata": {"indexed_source_binding_id": binding.indexed_source_binding_id},
+            }
+        ]
+    )
+    executor = _CapturingSearchTaskExecutor(result)
+    retriever = WorkspaceIndexedEvidenceRetrieverV1(
+        task_executor=executor,  # type: ignore[arg-type]
+        workspace_repository=repo,  # type: ignore[arg-type]
+        clock=lambda: _NOW,
+    )
+    return retriever, executor
+
+
+def test_indexed_retriever_mints_canonical_task_id() -> None:
+    from intergrax.contracts.execution_identity import validate_task_id
+    from intergrax.runtime.task.task import Task
+
+    retriever, executor = _capturing_retriever(_indexed_binding())
+    _retrieve_authoritative(retriever)
+    assert executor.last_task is not None
+    task = executor.last_task
+    assert isinstance(task, Task)
+    validate_task_id(task.task_id)
+    assert str(task.task_id).startswith("task_")
+    assert not str(task.task_id).startswith("run_")
+
+
+def test_indexed_retriever_uses_managed_workspace_service_identity_for_search() -> None:
+    from intergrax.runtime.task.task import Task
+
+    retriever, executor = _capturing_retriever(_indexed_binding())
+    _retrieve_authoritative(retriever)
+    assert executor.last_task is not None
+    task = executor.last_task
+    assert isinstance(task, Task)
+    assert task.user_id == "lkw.managed_workspace"
+    assert task.user_id.strip() != ""
+
+
 def _authoritative_retriever(
     binding: WorkspaceIndexedSourceBinding,
     *,
@@ -616,8 +679,43 @@ def test_unavailable_connection_is_normalized_without_handler_invocation() -> No
         )
     )
 
-    assert result.error_code == "live_binding_unavailable"
+    assert result.error_code == "live_execution_failed"
     assert handler.calls == []
+
+
+def test_runtime_authority_denied_skips_resolver_and_handler() -> None:
+    handler = _NeutralHandler((_item("item-1"),))
+    resolver = _RecordingResolver()
+
+    class _DenyAuthority:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def is_usable(self, **kwargs: object) -> bool:
+            self.calls += 1
+            return False
+
+    authority = _DenyAuthority()
+    executor = LiveCapabilityExecutorV1(
+        handler_registry=LiveCapabilityHandlerRegistryV1((handler,)),
+        integration_resolver=resolver,
+        runtime_authority=authority,
+    )
+    result = asyncio.run(
+        executor.execute(
+            run_id="run-1",
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            call=_call(),
+            audience=KnowledgeQueryAudienceV1.PERSONAL,
+            retention=LiveResultRetentionV1.EPHEMERAL,
+        )
+    )
+
+    assert authority.calls == 1
+    assert resolver.calls == []
+    assert handler.calls == []
+    assert result.error_code == "live_binding_unavailable"
 
 
 def test_live_execution_normalizes_items_ids_receipts_and_ephemeral_retention() -> None:

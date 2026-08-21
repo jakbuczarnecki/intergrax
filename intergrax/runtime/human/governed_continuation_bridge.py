@@ -63,8 +63,13 @@ def compose_governed_continuation_from_enforcement(
         ),
         operation_id=enforcement_operation_id,
         policy_rule_id=decision.policy_rule_id,
+        policy_bundle_id=decision.policy_bundle_id,
+        policy_bundle_version=decision.policy_bundle_version,
+        policy_bundle_digest=decision.policy_bundle_digest,
         resource_scope=resource_scope,
         policy_action=decision.action,
+        side_effect_scope_id=side_effect.side_effect_scope_id,
+        side_effect_scope_digest=side_effect.side_effect_scope_digest,
     )
 
 

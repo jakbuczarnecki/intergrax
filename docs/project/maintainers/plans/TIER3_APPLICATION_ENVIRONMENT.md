@@ -151,3 +151,41 @@ Finding 05 remains owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](PLATFOR
 **Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
 
 ---
+
+### Protocol v2.2 remediation — IDENTITY_TRUST (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/IDENTITY_TRUST.md`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+#### IDT-FIX-A — Authenticated principal spine
+
+**Status:** `ACCEPTED / PLANNED`
+**Source:** [`AUDIT-20260818-IDENTITY_TRUST-01`](../../audit_results/2026-08-18/IDENTITY_TRUST.md), [`AUDIT-20260818-IDENTITY_TRUST-06`](../../audit_results/2026-08-18/IDENTITY_TRUST.md)
+
+**Acceptance criteria:**
+
+- One canonical verified-principal → `RequestIdentity` path for authenticated Tier-3 intake.
+- No untrusted metadata/body override of verified `tenant_id` / `user_id` / principal fields.
+- Resolve `ActorIdentity` / `RequestIdentity` ownership and wire semantics (writer/reader contract).
+- Product/reference-host conformance tests eventually required.
+- No credential/token persistence in runtime state.
+
+**Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
+
+---
+
+### Protocol v2.2 remediation — LLM_ADAPTERS (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/LLM_ADAPTERS.md`](../../audit_results/2026-08-18/LLM_ADAPTERS.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-BATCH-PERSIST-2.
+
+| Block | Status | Findings | Dependencies | Acceptance intent |
+|-------|--------|----------|--------------|-------------------|
+| **LLM-FIX-A** | ACCEPTED / PLANNED | [`AUDIT-20260818-LLM_ADAPTERS-01`](../../audit_results/2026-08-18/LLM_ADAPTERS.md), [`04`](../../audit_results/2026-08-18/LLM_ADAPTERS.md) | — | Universal PRE_MODEL/inference boundary for classifier, planner, and per-retry inference |
+| **LLM-FIX-B** | ACCEPTED / PLANNED | [`AUDIT-20260818-LLM_ADAPTERS-02`](../../audit_results/2026-08-18/LLM_ADAPTERS.md), [`05`](../../audit_results/2026-08-18/LLM_ADAPTERS.md) | — | Decision-to-execution model/provider binding; trace attributes actual runtime provider |
+| **LLM-FIX-C** | ACCEPTED / PLANNED | [`AUDIT-20260818-LLM_ADAPTERS-03`](../../audit_results/2026-08-18/LLM_ADAPTERS.md) | LLM-FIX-A | Governed failover: per-candidate authorization or pre-authorized immutable candidate set |
+| **LLM-FIX-D** | ACCEPTED / PLANNED | [`AUDIT-20260818-LLM_ADAPTERS-06`](../../audit_results/2026-08-18/LLM_ADAPTERS.md) | IDT-FIX-D | LLM execution identity closure on planning/classification paths |
+
+**Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
+
+---

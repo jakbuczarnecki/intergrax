@@ -26,6 +26,22 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 - Revalidate finding against then-current `development` HEAD before implementation.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
 
+### Protocol v2 remediation — AGENT_SYSTEM (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/AGENT_SYSTEM.md`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-AGENT-SYSTEM-PERSIST.
+
+| Block | Status | Findings | Acceptance intent |
+|-------|--------|----------|-------------------|
+| **AGSYS-IDENTITY-PROJECTION** | ACCEPTED / PLANNED | [`AUDIT-20260818-AGENT_SYSTEM-04`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) | Registry projection preserves canonical package/contract identity; `AgentRegistry.from_agents` dict-key rewrite fails closed or uses explicit typed alias contract; clean-cut removal preferred if no required consumer; distinguish bootstrap compatibility from activated runtime projection truth; cross-ref [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) registry bootstrap and **TL-FIX-B** single-authority invariants |
+
+**Remediation rules:**
+
+- Revalidate finding against then-current `development` HEAD before implementation.
+- Contract/routing integrity findings 01–03, 05–06 owned by **AGSYS-CONTRACT-INTEGRITY** in [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) — cross-reference only; do not duplicate.
+- **TL-FIX-B** remains separate ownership for colliding Tier-1/Tier-2 concrete implementations; AGSYS-IDENTITY-PROJECTION addresses registry bootstrap identity rewrite — explicitly cross-link where bootstrap could admit competing identities.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+
 ## Architecture delivery (AGENT-PLATFORM-2) — Done
 
 | Item | Status |

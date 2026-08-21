@@ -121,6 +121,7 @@ class HumanPauseCoordinator:
         gov = task.runtime.governance
         if execution.human_request is not None:
             gov.hitl_resolution = None
+            gov.governed_continuation_grant = None
             HumanTimeoutCoordinator.attach_to_task(task, execution.human_request)
         if execution.execution_interrupt is not None:
             gov.execution_interrupt = execution.execution_interrupt

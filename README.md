@@ -27,6 +27,23 @@ experience remains under productization.
 > **Backend Product Alpha / MVP**. **Real-user validation** and **commercial
 > validation** are incomplete.
 
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
+    alt="Specialized AI products share the Intergrax governed foundation and may evolve toward a connected ecosystem; Local Knowledge Workspace is Backend Product Alpha while four portfolio directions remain selected pre-bootstrap."
+  >
+</picture>
+
+**Current reality:** [Local Knowledge Workspace](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) is the active reference product at **Backend Product Alpha / MVP** with bounded proof paths — not LKW 1.0 or production readiness. The four additional portfolio directions (**Contract-to-Invoice Leakage / Recovery Operator**, **Supplier Disruption Response Operator**, **Third-Party Risk Decision Operator**, **Deployment / Change Guardian**) are **selected pre-bootstrap** market applications with frozen selection records only; their presence here does not imply implementation or runtime proof. The portfolio exists partly to test reuse of shared Intergrax foundations across materially different product classes.
+
 ---
 
 <a id="start-here"></a>
@@ -59,6 +76,21 @@ capabilities, see [multi-layer feature architecture](#platform-capabilities-and-
 For deep engineering registers, use architecture **satellites** (on demand via the
 [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md)) —
 not as a first-contact route.
+
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-platform-map-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-platform-map-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-platform-map-light.png"
+    alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources."
+  >
+</picture>
 
 | Platform area | What it provides | Explore |
 | --- | --- | --- |
@@ -214,6 +246,21 @@ Intergrax centralizes reusable mechanisms so product teams can focus on the
 specialized workflow. Read [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)
 for the category, problem, and fit.
 
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-why-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-why-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-why-light.png"
+    alt="Comparison between rebuilding duplicated AI foundations per product and reusing a shared Intergrax foundation beneath specialized products."
+  >
+</picture>
+
 ## Responsibility model
 
 The root-level model is about responsibility, not a mandatory execution
@@ -236,12 +283,20 @@ for the complete responsibility model.
 Meaningful AI execution should be reconstructable, reviewable, and attributable.
 Intergrax is designed so important actions do not disappear inside an opaque agent loop.
 
-```text
-request → context → agent / plan / decision → policy / approval
-       → model / RAG / tool → validation → result → evidence
-                              ↓
-                 reviewable execution record
-```
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-governed-execution-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-governed-execution-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-governed-execution-light.png"
+    alt="Illustrative governed agentic execution loop with iterative reasoning, capability selection, governance gate, optional human approval, durable state, evidence plane and validated outcome."
+  >
+</picture>
 
 A governed run can leave correlated runtime events, typed [`DecisionRecord`](docs/project/architecture/REASONING_AND_COGNITION.md) artifacts, and structured [`ProofReceipt`](docs/project/architecture/PROOF_RECEIPTS.md) evidence.
 This is execution-level explainability, not hidden model reasoning.

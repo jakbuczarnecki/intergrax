@@ -53,6 +53,7 @@ def _request(action: str = "CREATE_EXTERNAL_WORK") -> MeaningfulSideEffectReques
     return MeaningfulSideEffectRequest(
         action=action,
         kinds=(MeaningfulSideEffectKind.MUTATION,),
+        side_effect_scope_id="scope-default",
         task_id="t1",
         run_id="r1",
         principal_id="u1",

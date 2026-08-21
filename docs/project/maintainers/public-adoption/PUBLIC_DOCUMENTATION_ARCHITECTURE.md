@@ -707,6 +707,37 @@ The canonical alt-text meaning identifies `lkw_product_quickstart.txt`, the ques
 
 ---
 
+## 4b. Root README controlled multi-visual contract
+
+Root `README.md` may include multiple strategic visuals when each:
+
+- serves a specific informational function;
+- shortens time-to-understanding;
+- is not decorative;
+- does not exceed accepted evidence or authoritative module sources;
+- provides accessible light and dark variants;
+- keeps a textual or navigational alternative in README or linked canonical docs;
+- does not replace authoritative tables, status routes, or proof dashboards;
+- remains GitHub-renderable.
+
+Products and outcomes may be visually foregrounded; Intergrax remains the shared enabling foundation. Platform architecture stays explicitly visible and must not be reduced to a product-specific framework representation.
+
+**Asset ownership**
+
+```text
+docs/project/assets/public/readme/
+→ root README strategic visuals (ecosystem hero, platform map, shared-foundation, governed execution, etc.)
+
+applications/local_workspace_application/docs/assets/
+→ LKW product-proof visual (module-owned)
+```
+
+Strategic root README visuals use reviewed self-contained light-dark image pairs (`*-light.png` / `*-dark.png` for strategic root assets; module-owned product visuals may remain SVG) inside `<picture>` blocks. Root README must not use Mermaid or ASCII as substitutes for those strategic visual assets.
+
+Future strategic assets are validated when referenced; they are not mandatory before creation.
+
+---
+
 ## 5. Token Optimization placement contract
 
 **Canonical main guide:**

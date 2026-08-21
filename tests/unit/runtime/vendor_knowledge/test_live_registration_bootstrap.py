@@ -212,7 +212,7 @@ def test_default_bootstrap_is_deterministic_and_publishes_tenant_descriptors() -
     first_keys = tuple(item.descriptor.capability_id for item in first.list_registrations())
     second_keys = tuple(item.descriptor.capability_id for item in second.list_registrations())
     assert first_keys == second_keys
-    assert len(first_keys) == 8
+    assert len(first_keys) == 9
 
     catalog = _RecordingCatalog()
     published = first.publish_to_tenant_catalog(catalog)

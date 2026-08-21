@@ -13,12 +13,24 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     LiveResultRetentionV1,
     QueryPolicyModeV2,
 )
+from local_workspace_application.workspaces.hybrid_ask_policy import (
+    HybridAskPolicyError,
+    IndexedEvidenceRequirementV1,
+    LiveEvidenceRequirementV1,
+    RequiredEvidenceObligationV1,
+    validate_policy_basis_consistency,
+)
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.runtime.evidence.obligation_derivation_contracts import (
+    EvidenceTemporalMetadataV1,
+    PolicyEvidenceBasisV1,
+)
 from intergrax.runtime.vendor_knowledge.live.contracts import (
     LiveExecutionReceiptV1,
     safe_locator_or_none,
 )
+from intergrax.runtime.vendor_knowledge.live.failures import LiveCallFailureV1
 
 _EVIDENCE_ID_INDEXED_PREFIX = "idx:"
 _EVIDENCE_ID_LIVE_PREFIX = "live:"
@@ -59,6 +71,7 @@ class IndexedWorkspaceEvidenceV1(BaseModel):
     score: float | None = None
     safe_source_label: str | None = None
     indexed_source_binding_id: str | None = None
+    temporal: EvidenceTemporalMetadataV1 | None = None
 
     @field_validator("evidence_id")
     @classmethod
@@ -94,6 +107,7 @@ class LiveWorkspaceEvidenceV1(BaseModel):
     safe_locator: str | None = None
     truncated: bool = False
     execution_receipt_id: str | None = None
+    temporal: EvidenceTemporalMetadataV1 | None = None
 
     @field_validator("evidence_id")
     @classmethod
@@ -144,6 +158,7 @@ class PersistedIndexedEvidenceV2(BaseModel):
     score: float | None = None
     safe_source_label: str | None = None
     indexed_source_binding_id: str | None = None
+    temporal: EvidenceTemporalMetadataV1 | None = None
 
     @field_validator("evidence_id")
     @classmethod
@@ -171,6 +186,7 @@ class PersistedLiveEvidenceProvenanceV2(BaseModel):
     remote_updated_at: datetime | None = None
     truncated: bool = False
     call_id: str = Field(..., min_length=1)
+    temporal: EvidenceTemporalMetadataV1 | None = None
 
     @field_validator("evidence_id")
     @classmethod
@@ -270,6 +286,50 @@ class LiveCallEvidenceIdentityV1(BaseModel):
     capability_id: str
 
 
+class EvidenceAdmissibilityStatusV1(StrEnum):
+    SATISFIED = "satisfied"
+    UNSATISFIED = "unsatisfied"
+
+
+class RequirementEvaluationStatusV1(StrEnum):
+    SATISFIED = "satisfied"
+    UNSATISFIED = "unsatisfied"
+
+
+class RequirementAdmissibilityReasonCodeV1(StrEnum):
+    NO_MATCHING_EVIDENCE = "no_matching_evidence"
+    INDEXED_BINDING_MISMATCH = "indexed_binding_mismatch"
+    LIVE_CALL_MISMATCH = "live_call_mismatch"
+    EVIDENCE_TEMPORALLY_INVALID = "evidence_temporally_invalid"
+    AUTHORITY_UNAVAILABLE = "authority_unavailable"
+    PROVIDER_FAILED = "provider_failed"
+    PROVIDER_RESPONSE_INVALID = "provider_response_invalid"
+
+
+class RequiredEvidenceEvaluationV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    requirement_id: str = Field(..., min_length=1, max_length=128)
+    status: RequirementEvaluationStatusV1
+    matched_evidence_ids: tuple[str, ...] = ()
+    reason_code: RequirementAdmissibilityReasonCodeV1 | None = None
+
+
+class EvidenceAdmissibilityResultV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    overall_status: EvidenceAdmissibilityStatusV1
+    requirement_evaluations: tuple[RequiredEvidenceEvaluationV1, ...] = ()
+    evaluated_at: datetime
+
+    @field_validator("evaluated_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("evaluated_at_must_be_timezone_aware")
+        return value
+
+
 class WorkspaceAskRunV2(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -283,6 +343,10 @@ class WorkspaceAskRunV2(BaseModel):
     query_mode: QueryPolicyModeV2
     configuration_revision: int = Field(..., ge=0)
     plan_id: str = Field(..., min_length=1)
+    required_evidence_obligations: tuple[RequiredEvidenceObligationV1, ...] = ()
+    policy_basis: PolicyEvidenceBasisV1 | None = None
+    evidence_admissibility: EvidenceAdmissibilityResultV1 | None = None
+    live_call_failures: tuple[LiveCallFailureV1, ...] = ()
     live_result_retention: LiveResultRetentionV1 = LiveResultRetentionV1.EPHEMERAL
     # Optional provider-strategy extension.  The generic Ask contract does not
     # interpret provider-specific coverage payloads.
@@ -307,6 +371,14 @@ class WorkspaceAskRunV2(BaseModel):
 
     @model_validator(mode="after")
     def _validate_run_integrity(self) -> Self:
+        try:
+            validate_policy_basis_consistency(
+                policy_basis=self.policy_basis,
+                obligations=self.required_evidence_obligations,
+            )
+        except HybridAskPolicyError as exc:
+            raise ValueError(exc.error_code) from None
+
         evidence_by_id: dict[str, EvidenceTypeV1] = {}
         live_evidence_by_id: dict[str, PersistedLiveEvidenceProvenanceV2] = {}
         live_evidence_by_call_id: dict[str, list[PersistedLiveEvidenceProvenanceV2]] = {}
@@ -411,7 +483,103 @@ class WorkspaceAskRunV2(BaseModel):
                 if not has_indexed or not has_live:
                     raise ValueError("completed_hybrid_requires_indexed_and_live_citations")
 
+        self._validate_evidence_admissibility_integrity(
+            evidence_by_id=evidence_by_id,
+            live_evidence_by_id=live_evidence_by_id,
+        )
+
         return self
+
+    def _validate_evidence_admissibility_integrity(
+        self,
+        *,
+        evidence_by_id: dict[str, EvidenceTypeV1],
+        live_evidence_by_id: dict[str, PersistedLiveEvidenceProvenanceV2],
+    ) -> None:
+        obligations = self.required_evidence_obligations
+        admissibility = self.evidence_admissibility
+        if admissibility is None:
+            if obligations and self.completed_at is not None:
+                raise ValueError("finalized_run_missing_admissibility")
+            return
+
+        obligation_by_id: dict[str, RequiredEvidenceObligationV1] = {
+            item.requirement_id: item for item in obligations
+        }
+        if len(obligation_by_id) != len(obligations):
+            raise ValueError("duplicate_obligation_requirement_id")
+
+        indexed_evidence_by_id: dict[str, PersistedIndexedEvidenceV2] = {}
+        for item in self.persisted_evidence:
+            if isinstance(item, PersistedIndexedEvidenceV2):
+                indexed_evidence_by_id[item.evidence_id] = item
+
+        seen_evaluation_ids: set[str] = set()
+        for evaluation in admissibility.requirement_evaluations:
+            if evaluation.requirement_id in seen_evaluation_ids:
+                raise ValueError("duplicate_admissibility_requirement_id")
+            seen_evaluation_ids.add(evaluation.requirement_id)
+            obligation = obligation_by_id.get(evaluation.requirement_id)
+            if obligation is None:
+                raise ValueError("admissibility_unknown_requirement_id")
+
+            if evaluation.status is RequirementEvaluationStatusV1.SATISFIED:
+                if not evaluation.matched_evidence_ids:
+                    raise ValueError("satisfied_evaluation_requires_matched_evidence")
+                if evaluation.reason_code is not None:
+                    raise ValueError("satisfied_evaluation_forbids_reason_code")
+            else:
+                if evaluation.matched_evidence_ids:
+                    raise ValueError("unsatisfied_evaluation_forbids_matched_evidence")
+                if evaluation.reason_code is None:
+                    raise ValueError("unsatisfied_evaluation_requires_reason_code")
+
+            for evidence_id in evaluation.matched_evidence_ids:
+                evidence_type = evidence_by_id.get(evidence_id)
+                if evidence_type is None:
+                    raise ValueError("matched_evidence_not_persisted")
+                if isinstance(obligation, IndexedEvidenceRequirementV1):
+                    if evidence_type is not EvidenceTypeV1.INDEXED:
+                        raise ValueError("indexed_obligation_evidence_type_mismatch")
+                    indexed_item = indexed_evidence_by_id.get(evidence_id)
+                    if indexed_item is None:
+                        raise ValueError("matched_indexed_evidence_not_persisted")
+                    if (
+                        obligation.indexed_source_binding_id is not None
+                        and indexed_item.indexed_source_binding_id
+                        != obligation.indexed_source_binding_id
+                    ):
+                        raise ValueError("indexed_obligation_binding_mismatch")
+                elif isinstance(obligation, LiveEvidenceRequirementV1):
+                    if evidence_type is not EvidenceTypeV1.LIVE:
+                        raise ValueError("live_obligation_evidence_type_mismatch")
+                    live_item = live_evidence_by_id.get(evidence_id)
+                    if live_item is None:
+                        raise ValueError("matched_live_evidence_not_persisted")
+                    if live_item.call_id != obligation.call_id:
+                        raise ValueError("live_obligation_call_id_mismatch")
+
+        if seen_evaluation_ids != set(obligation_by_id):
+            raise ValueError("admissibility_evaluation_obligation_mismatch")
+
+        all_satisfied = all(
+            item.status is RequirementEvaluationStatusV1.SATISFIED
+            for item in admissibility.requirement_evaluations
+        )
+        expected_overall = (
+            EvidenceAdmissibilityStatusV1.SATISFIED
+            if all_satisfied
+            else EvidenceAdmissibilityStatusV1.UNSATISFIED
+        )
+        if admissibility.overall_status is not expected_overall:
+            raise ValueError("admissibility_overall_status_mismatch")
+
+        if obligations:
+            if (
+                self.status is AskRunStatus.COMPLETED
+                and admissibility.overall_status is not EvidenceAdmissibilityStatusV1.SATISFIED
+            ):
+                raise ValueError("completed_run_requires_satisfied_admissibility")
 
     def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         data = super().model_dump(**kwargs)

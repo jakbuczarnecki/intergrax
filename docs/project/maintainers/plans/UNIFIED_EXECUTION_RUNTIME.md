@@ -55,6 +55,43 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
+### Protocol v2.2 remediation — IDENTITY_TRUST (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/IDENTITY_TRUST.md`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+#### IDT-FIX-D — Execution identity closure
+
+**Status:** `ACCEPTED / PLANNED`
+**Source:** [`AUDIT-20260818-IDENTITY_TRUST-05`](../../audit_results/2026-08-18/IDENTITY_TRUST.md)
+
+**Acceptance criteria:**
+
+- No production HITL/lifecycle/runtime-event path substitutes `TaskId` for `RunId`.
+- Canonical `RunId` + `AttemptId` obtained from `ActiveExecutionIdentity` or explicit canonical runtime context.
+- APPROVE / REJECT / ESCALATE parity across HITL verdict branches.
+- Hooks/events carry correct execution identity.
+- Contract/gate tests cover all three HITL verdict branches and lifecycle provenance.
+
+**Remediation rules:** same as SHM-FIX block above.
+
+---
+
+### Protocol v2.2 remediation — EXECUTION_RUNTIME (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/EXECUTION_RUNTIME.md`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-BATCH-PERSIST-2.
+
+| Block | Status | Findings | Acceptance intent |
+|-------|--------|----------|-------------------|
+| **UER-FIX-A** | ACCEPTED / PLANNED | UER-01 | Canonical runtime policy propagation into direct ACP/UAEP/kernel |
+| **UER-FIX-B** | ACCEPTED / PLANNED | UER-02 | Atomic step commit; no state contradicting `outcome_applied=false` |
+| **UER-FIX-C** | ACCEPTED / PLANNED | UER-03 | Resume without retry preserves AttemptId; checkpoint carries identity |
+| **UER-FIX-D** | ACCEPTED / PLANNED | UER-04 | Normal runtime exceptions → typed FAILED terminal results |
+| **UER-FIX-E** | ACCEPTED / PLANNED | UER-05, UER-06 | Cooperative ACP cancellation + checkpoint invalidation |
+
+---
+
 ## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.

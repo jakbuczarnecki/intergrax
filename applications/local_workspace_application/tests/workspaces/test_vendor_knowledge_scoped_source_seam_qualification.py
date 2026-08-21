@@ -531,14 +531,14 @@ def test_builtin_parity_with_external_discovery_disabled() -> None:
     )
     assert len(build_vendor_knowledge_adapter_registry(disabled_catalog).registered_keys()) == 12
     assert len(build_vendor_knowledge_source_plugin_registry(disabled_catalog).list_plugins()) == 12
-    assert sum(len(item.connection_factories) for item in disabled_catalog.list_contributions()) == 6
+    assert sum(len(item.connection_factories) for item in disabled_catalog.list_contributions()) == 7
     discovery_count, materializer_count = _count_application_hooks(discover_entry_points=False)
     assert discovery_count == 10
     assert materializer_count == 10
     assert materializer_count == len(
         default_connected_source_materializer_registry(discover_entry_points=False)._by_runtime_ref
     )
-    assert len(build_vendor_knowledge_live_registration_registry(discover_entry_points=False).list_registrations()) == 8
+    assert len(build_vendor_knowledge_live_registration_registry(discover_entry_points=False).list_registrations()) == 9
 
 
 def test_external_discovery_enabled_adds_reference_hooks() -> None:

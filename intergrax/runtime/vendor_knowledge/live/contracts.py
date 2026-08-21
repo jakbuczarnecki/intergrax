@@ -13,6 +13,9 @@ from urllib.parse import parse_qsl, urlparse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.evidence.obligation_derivation_contracts import (
+    EvidenceTemporalMetadataV1,
+)
 from intergrax.runtime.vendor_knowledge.live.identity import (
     LIVE_CONTRACT_VERSION,
     validate_capability_identity,
@@ -198,6 +201,7 @@ class LiveCapabilityResultItemV1(BaseModel):
     remote_updated_at: datetime | None = None
     safe_locator: str | None = Field(default=None, max_length=2048)
     truncated: bool = False
+    temporal: EvidenceTemporalMetadataV1 | None = None
 
     _validate_ids = field_validator("remote_item_id", "safe_display_name")(
         lambda value, info: _nonblank(value, info.field_name, 512)

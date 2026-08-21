@@ -16,6 +16,9 @@ from local_workspace_application.workspaces.ask_models import (
     AskRunStatus,
 )
 from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
+from local_workspace_application.workspaces.hybrid_ask_admissibility import (
+    evaluate_execution_admissibility,
+)
 from local_workspace_application.workspaces.hybrid_ask_answer_assembler import (
     HybridAskAnswerAssemblerV2,
 )
@@ -24,6 +27,8 @@ from local_workspace_application.workspaces.hybrid_ask_execution import (
     KnowledgeQueryOrchestratorV1,
 )
 from local_workspace_application.workspaces.hybrid_ask_models import (
+    EvidenceAdmissibilityResultV1,
+    EvidenceAdmissibilityStatusV1,
     IndexedWorkspaceCitationV1,
     IndexedWorkspaceEvidenceV1,
     LiveWorkspaceCitationV1,
@@ -38,12 +43,23 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     EffectiveLiveCallBudgetV1,
     EvidencePlanV1,
     HybridAskPolicyError,
+    IndexedEvidenceRequirementV1,
     LiveCallProposalV1,
+    LiveEvidenceRequirementV1,
     LiveResourceScopeValidationPort,
+    ProviderEvidencePlanV1,
+    RequiredEvidenceObligationV1,
     ResolvedLiveResourceScopeV1,
     ValidatedEvidencePlanV1,
+    derive_product_evidence_obligations,
     resolve_effective_query_policy,
     validate_evidence_plan,
+    validate_provider_obligation_provenance,
+)
+from local_workspace_application.workspaces.hybrid_ask_policy_derivation import (
+    compose_authoritative_evidence_obligations,
+    map_derived_evidence_contract,
+    merge_live_call_proposals,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveResultRetentionV1,
@@ -66,10 +82,22 @@ from intergrax.runtime.vendor_knowledge.live.contracts import (
     HARD_MAX_PROVIDER_REQUESTS,
     HARD_MAX_UPSTREAM_ITEMS,
 )
+from intergrax.runtime.vendor_knowledge.live.errors import LiveErrorCodeV1
 from intergrax.runtime.vendor_knowledge.live.schemas import SchemaRegistryV1
+from intergrax.runtime.evidence.obligation_derivation_contracts import (
+    EvidenceObligationDerivationContextV1,
+    EvidenceObligationDerivationPort,
+    ResolvedPolicyRuleV1,
+)
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     LiveCapabilityDescriptorV1,
     TenantLiveCapabilityCatalogPort,
+)
+
+_GOVERNANCE_LIVE_EVIDENCE_UNAVAILABLE_CODES = frozenset(
+    {
+        LiveErrorCodeV1.BINDING_UNAVAILABLE.value,
+    }
 )
 
 
@@ -101,6 +129,19 @@ def _validate_provider_evidence(value: object) -> tuple[WorkspaceEvidence, ...]:
             raise WorkspaceAskV2Error("citation_validation_failed")
         validated.append(item)
     return tuple(validated)
+
+
+class ResolvedPolicyRulesPort(Protocol):
+    """Server-side resolved organizational policy rules for obligation derivation."""
+
+    def resolve_policy_rules(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        configuration_revision: int,
+    ) -> tuple[ResolvedPolicyRuleV1, ...]:
+        ...
 
 
 class WorkspaceAskProviderStrategy(Protocol):
@@ -200,6 +241,7 @@ class WorkspaceAskCommandV2(BaseModel):
     audience_context: AudienceContextV1
     indexed_max_results: int | None = Field(default=None, ge=1, le=500)
     ordered_live_call_proposals: tuple[LiveCallProposalV1, ...] = ()
+    required_evidence_obligations: tuple[RequiredEvidenceObligationV1, ...] = ()
     provider_request: Any | None = None
     request_id: str = Field(default_factory=lambda: str(uuid4()), min_length=1)
     run_id: str | None = Field(default=None, min_length=1)
@@ -215,6 +257,13 @@ class WorkspaceAskCommandV2(BaseModel):
             and self.requested_mode is QueryPolicyModeV2.INDEXED_ONLY
         ):
             raise ValueError("provider_request_requires_live_mode")
+        for obligation in self.required_evidence_obligations:
+            if isinstance(obligation, IndexedEvidenceRequirementV1):
+                if obligation.policy_origin is not None:
+                    raise ValueError("caller_policy_origin_forbidden")
+            elif isinstance(obligation, LiveEvidenceRequirementV1):
+                if obligation.policy_origin is not None:
+                    raise ValueError("caller_policy_origin_forbidden")
         return self
 
 
@@ -239,6 +288,8 @@ class WorkspaceAskServiceV2:
         run_id_factory: Callable[[], str] = lambda: str(uuid4()),
         plan_id_factory: Callable[[], str] = lambda: str(uuid4()),
         provider_strategy: WorkspaceAskProviderStrategy | None = None,
+        evidence_obligation_derivation_port: EvidenceObligationDerivationPort | None = None,
+        resolved_policy_rules_port: ResolvedPolicyRulesPort | None = None,
     ) -> None:
         self._workspaces = workspace_service
         self._workspace_repository = workspace_repository
@@ -255,6 +306,15 @@ class WorkspaceAskServiceV2:
         self._run_id_factory = run_id_factory
         self._plan_id_factory = plan_id_factory
         self._provider_strategy = provider_strategy
+        self._evidence_obligation_derivation_port = (
+            evidence_obligation_derivation_port
+        )
+        self._resolved_policy_rules_port = resolved_policy_rules_port
+        if (
+            evidence_obligation_derivation_port is not None
+            and resolved_policy_rules_port is None
+        ):
+            raise ValueError("resolved_policy_rules_port_required")
 
     @property
     def llm_adapter(self) -> LLMAdapter:
@@ -333,7 +393,27 @@ class WorkspaceAskServiceV2:
                 provider_coverage=provider_coverage,
             )
 
-        if execution.error_code is not None:
+        admissibility = evaluate_execution_admissibility(
+            validated_plan=validated_plan,
+            execution=execution,
+            evaluated_at=self._clock(),
+        )
+        if admissibility.overall_status is EvidenceAdmissibilityStatusV1.UNSATISFIED:
+            return self._finalize_success(
+                initial,
+                configuration=configuration,
+                execution=execution,
+                answer=None,
+                citations=[],
+                status=AskRunStatus.INSUFFICIENT_EVIDENCE,
+                provider_coverage=provider_coverage,
+                evidence_admissibility=admissibility,
+            )
+
+        if (
+            execution.error_code is not None
+            and execution.error_code not in _GOVERNANCE_LIVE_EVIDENCE_UNAVAILABLE_CODES
+        ):
             return self._finalize_failure(
                 initial,
                 code=execution.error_code,
@@ -358,6 +438,7 @@ class WorkspaceAskServiceV2:
                     citations=[],
                     status=AskRunStatus.INSUFFICIENT_EVIDENCE,
                     provider_coverage=provider_coverage,
+                    evidence_admissibility=admissibility,
                 )
             citations = self._project_citations(
                 assembly.used_evidence_ids,
@@ -379,6 +460,7 @@ class WorkspaceAskServiceV2:
                 citations=citations,
                 status=AskRunStatus.COMPLETED,
                 provider_coverage=provider_coverage,
+                evidence_admissibility=admissibility,
             )
         except WorkspaceAskV2Error as exc:
             return self._finalize_failure(
@@ -423,6 +505,28 @@ class WorkspaceAskServiceV2:
         ):
             indexed_directive = self._indexed_directive(min(requested, maximum))
         ordered_live_call_proposals = tuple(command.ordered_live_call_proposals)
+        policy_derived_proposals: tuple[LiveCallProposalV1, ...] = ()
+        policy_authoritative: tuple[RequiredEvidenceObligationV1, ...] = ()
+        policy_basis = None
+        if self._evidence_obligation_derivation_port is not None:
+            assert self._resolved_policy_rules_port is not None
+            resolved_rules = self._resolved_policy_rules_port.resolve_policy_rules(
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                configuration_revision=configuration.configuration_revision,
+            )
+            derived_contract = self._evidence_obligation_derivation_port.derive(
+                EvidenceObligationDerivationContextV1(
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    configuration_revision=configuration.configuration_revision,
+                    resolved_policy_rules=resolved_rules,
+                )
+            )
+            policy_derived_proposals, policy_authoritative, policy_basis = (
+                map_derived_evidence_contract(derived_contract)
+            )
+        provider_authoritative: tuple[RequiredEvidenceObligationV1, ...] = ()
         if command.provider_request is not None:
             if self._provider_strategy is None:
                 raise HybridAskPolicyError("provider_strategy_unavailable")
@@ -433,6 +537,35 @@ class WorkspaceAskServiceV2:
             ordered_live_call_proposals = tuple(
                 provider_plan.ordered_live_call_proposals
             )
+            if isinstance(provider_plan, ProviderEvidencePlanV1):
+                validate_provider_obligation_provenance(
+                    provider_plan.required_evidence_obligations
+                )
+                provider_authoritative = provider_plan.required_evidence_obligations
+        try:
+            ordered_live_call_proposals = merge_live_call_proposals(
+                authoritative=policy_derived_proposals,
+                additional=ordered_live_call_proposals,
+            )
+        except HybridAskPolicyError:
+            raise
+        include_indexed = command.requested_mode in (
+            QueryPolicyModeV2.INDEXED_ONLY,
+            QueryPolicyModeV2.HYBRID,
+        )
+        product_authoritative = derive_product_evidence_obligations(
+            mode=command.requested_mode,
+            include_indexed_retrieval=include_indexed,
+        )
+        try:
+            authoritative_obligations = compose_authoritative_evidence_obligations(
+                product=product_authoritative,
+                policy_derived=policy_authoritative,
+                provider=provider_authoritative,
+                caller_additive=command.required_evidence_obligations,
+            )
+        except HybridAskPolicyError:
+            raise
         plan = EvidencePlanV1(
             plan_id=self._plan_id_factory(),
             tenant_id=command.tenant_id,
@@ -441,6 +574,8 @@ class WorkspaceAskServiceV2:
             mode=command.requested_mode,
             indexed_retrieval_directive=indexed_directive,
             ordered_live_call_proposals=ordered_live_call_proposals,
+            required_evidence_obligations=authoritative_obligations,
+            policy_basis=policy_basis,
             budget_snapshot=EffectiveLiveCallBudgetV1(
                 max_live_calls=effective_policy.max_live_calls,
                 max_total_duration_ms=effective_policy.max_total_duration_ms,
@@ -506,6 +641,8 @@ class WorkspaceAskServiceV2:
             query_mode=command.requested_mode,
             configuration_revision=configuration.configuration_revision,
             plan_id=validated_plan.plan.plan_id,
+            required_evidence_obligations=validated_plan.plan.required_evidence_obligations,
+            policy_basis=validated_plan.plan.policy_basis,
             live_result_retention=self._live_retention(configuration),
             provider_coverage=(
                 self._provider_strategy.coverage(
@@ -547,6 +684,7 @@ class WorkspaceAskServiceV2:
         citations: list[Any],
         status: AskRunStatus,
         provider_coverage: Any = None,
+        evidence_admissibility: EvidenceAdmissibilityResultV1 | None = None,
     ) -> WorkspaceAskRunV2:
         return self._finalize_run_model(
             initial,
@@ -556,11 +694,13 @@ class WorkspaceAskServiceV2:
                 "citations": citations,
                 "persisted_evidence": self._project_persisted_evidence(execution),
                 "execution_receipts": self._project_receipts(execution),
+                "live_call_failures": execution.live_call_failures,
                 "indexed_retrieval_status": execution.indexed_retrieval_status,
                 "live_execution_status": execution.live_execution_status,
                 "truncation_state": execution.truncation_state,
                 "partial_failure": execution.partial_failure,
                 "provider_coverage": provider_coverage,
+                "evidence_admissibility": evidence_admissibility,
                 "completed_at": self._clock(),
                 "error": None,
             },
@@ -590,6 +730,7 @@ class WorkspaceAskServiceV2:
                 "citations": [],
                 "persisted_evidence": self._project_persisted_evidence(execution),
                 "execution_receipts": self._project_receipts(execution),
+                "live_call_failures": execution.live_call_failures,
                 "indexed_retrieval_status": execution.indexed_retrieval_status,
                 "live_execution_status": execution.live_execution_status,
                 "truncation_state": execution.truncation_state,
@@ -743,6 +884,7 @@ class WorkspaceAskServiceV2:
                 score=item.score,
                 safe_source_label=item.safe_source_label,
                 indexed_source_binding_id=item.indexed_source_binding_id,
+                temporal=item.temporal,
             )
             for item in execution.indexed_evidence
         ]
@@ -762,6 +904,7 @@ class WorkspaceAskServiceV2:
                 remote_updated_at=item.remote_updated_at,
                 truncated=item.truncated,
                 call_id=item.call_id,
+                temporal=item.temporal,
             )
             for item in execution.live_evidence
         ]

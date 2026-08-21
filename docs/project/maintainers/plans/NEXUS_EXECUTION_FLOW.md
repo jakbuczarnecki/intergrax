@@ -71,6 +71,48 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
+### Protocol v2.2 remediation — IDENTITY_TRUST (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/IDENTITY_TRUST.md`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+
+#### IDT-FIX-B — Delegated authority narrowing
+
+**Status:** `ACCEPTED / PLANNED`
+**Source:** [`AUDIT-20260818-IDENTITY_TRUST-02`](../../audit_results/2026-08-18/IDENTITY_TRUST.md)
+
+**Acceptance criteria:**
+
+- Child authority is explicit and typed.
+- Child authority cannot exceed parent effective authority.
+- `permission_scopes` are enforced, not just emitted in `DELEGATION_GRANTED`.
+- Tool/memory/side-effect gates receive effective delegation authority where relevant.
+- Delegation event reports effective enforced authority.
+- Tests prove over-broad child scope is denied/fail-closed.
+
+**Remediation rules:** same as INTERFACE_TASK_INTAKE block above.
+
+---
+
+### Protocol v2.2 remediation — LLM_ADAPTERS + REASONING_PLANNING (2026-08-18)
+
+**Audit:** [`LLM_ADAPTERS`](../../audit_results/2026-08-18/LLM_ADAPTERS.md) · [`REASONING_PLANNING`](../../audit_results/2026-08-18/REASONING_PLANNING.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-BATCH-PERSIST-2.
+
+| Block | Status | Findings | Acceptance intent |
+|-------|--------|----------|-------------------|
+| **LLM-FIX-A** | ACCEPTED / PLANNED | LLM-01, LLM-04 | Classifier + planner retries cross canonical inference boundary |
+| **LLM-FIX-B** | ACCEPTED / PLANNED | LLM-02, LLM-05 | Decision plane matches execution plane; trace identity agrees |
+| **LLM-FIX-C** | ACCEPTED / PLANNED | LLM-03 | Governed failover candidates |
+| **LLM-FIX-D** | ACCEPTED / PLANNED | LLM-06 | Canonical RunId on LLM calls; cross-ref **IDT-FIX-D** |
+| **RPL-FIX-A** | ACCEPTED / PLANNED | RPL-01 | Full structural plan validation before PLAN_CREATED |
+| **RPL-FIX-B** | ACCEPTED / PLANNED | RPL-02 | Planning/execution production eligibility parity |
+| **RPL-FIX-C** | ACCEPTED / PLANNED | RPL-03 | Typed NEXUS_REPLAN_REQUEST closure vs LOCAL_REPLAN |
+
+**Remediation rules:** same as INTERFACE_TASK_INTAKE block above.
+
+---
+
 ### 6.1aj Harness implementation queue — Nexus execution depth (closed)
 
 **Purpose:** Single ordered list for **Phase FLOW** (Band 2aj). **Closed 2026-06-09** — **18/18 harness Done** (FLOW-8 harness ORCH-CONFIG.5); product host **Deferred** §6.3. Ongoing: **§6.1** maintenance only.
