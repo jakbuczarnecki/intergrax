@@ -102,6 +102,8 @@ def build_execution_snapshot(
         investigation_proof_steps=steps,
         follow_up_has_valid_basis=follow_up_ok,
         final_answer=final_answer.strip(),
+        tool_traces=tuple(traces),
+        investigation_proof=investigation_proof,
     )
 
 

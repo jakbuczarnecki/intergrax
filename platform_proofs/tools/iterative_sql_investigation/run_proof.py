@@ -9,17 +9,25 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
+import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 from platform_proofs.tools.iterative_sql_investigation.artifacts import (
     allocate_run_directory,
+    write_evidence,
     write_proof_result,
 )
 from platform_proofs.tools.iterative_sql_investigation.dataset_identity import (
     PROOF_ID,
     DatasetIdentity,
     compute_dataset_fingerprint,
+)
+from platform_proofs.tools.iterative_sql_investigation.evidence_builder import (
+    ToolsSqlInvestigationEvidenceBuildContext,
+    build_tools_sql_investigation_evidence,
 )
 from platform_proofs.tools.iterative_sql_investigation.investigation_runtime import (
     ProofConfigurationError,
@@ -30,8 +38,11 @@ from platform_proofs.tools.iterative_sql_investigation.investigation_runtime imp
     run_investigation_scenario,
 )
 from platform_proofs.tools.iterative_sql_investigation.proof_result import (
+    ScenarioExecutionSnapshot,
+    ScenarioRunResult,
     ToolsSqlInvestigationProofResult,
 )
+from scripts.proof.intergrax_proof_contracts import ProofProfile
 from platform_proofs.tools.iterative_sql_investigation.runtime import (
     DSN_ENV,
     DEFAULT_RUNTIME_DSN,
@@ -119,22 +130,66 @@ def _print_summary(
             )
 
 
-def _persist_proof_result(
+def _read_git_metadata() -> tuple[str, bool]:
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(__file__).resolve().parents[3],
+            check=True,
+            capture_output=True,
+            text=True,
+            shell=False,
+        )
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=Path(__file__).resolve().parents[3],
+            check=True,
+            capture_output=True,
+            text=True,
+            shell=False,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown", False
+    return commit.stdout.strip(), bool(status.stdout.strip())
+
+
+def _persist_artifacts(
     result: ToolsSqlInvestigationProofResult,
     *,
     artifact_root: Path | None,
     artifact_run_id: str | None,
+    started_at: datetime,
+    finished_at: datetime,
+    scenario_snapshots: tuple[ScenarioExecutionSnapshot, ...] = (),
 ) -> Path:
     run_directory = allocate_run_directory(
         artifact_root=artifact_root,
         run_id=artifact_run_id,
     )
     write_proof_result(result, run_directory=run_directory)
+    source_revision, source_dirty = _read_git_metadata()
+    execution_id = artifact_run_id or run_directory.name
+    evidence = build_tools_sql_investigation_evidence(
+        ToolsSqlInvestigationEvidenceBuildContext(
+            proof_result=result,
+            scenario_snapshots=scenario_snapshots,
+            started_at=started_at,
+            finished_at=finished_at,
+            source_revision=source_revision,
+            source_dirty=source_dirty,
+            execution_profile=ProofProfile.FULL,
+            platform=platform.system().lower(),
+            runtime_version=platform.python_version(),
+            execution_id=execution_id,
+        )
+    )
+    write_evidence(evidence, run_directory=run_directory)
     return run_directory
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
+    started_at = datetime.now(UTC)
     identity = DatasetIdentity.canonical()
     fingerprint = compute_dataset_fingerprint(identity)
 
@@ -162,10 +217,13 @@ def main(argv: list[str] | None = None) -> int:
             fingerprint=fingerprint,
             reason=str(exc),
         )
-        artifact_directory = _persist_proof_result(
+        finished_at = datetime.now(UTC)
+        artifact_directory = _persist_artifacts(
             blocked,
             artifact_root=args.output_dir,
             artifact_run_id=args.artifact_run_id,
+            started_at=started_at,
+            finished_at=finished_at,
         )
         if args.json:
             print(json.dumps(blocked.model_dump(mode="json"), sort_keys=True))
@@ -175,19 +233,21 @@ def main(argv: list[str] | None = None) -> int:
 
     runtime_dsn = _resolve_runtime_dsn(args.runtime_dsn)
     proof_runtime = build_proof_sql_runtime(dsn=runtime_dsn)
-    scenario_results: list = []
+    scenario_results: list[ScenarioRunResult] = []
+    scenario_snapshots: list[ScenarioExecutionSnapshot] = []
     try:
         for scenario in ALL_SCENARIOS:
-            scenario_results.append(
-                run_investigation_scenario(
-                    scenario=scenario,
-                    llm=llm,
-                    proof_runtime=proof_runtime,
-                )
+            scenario_result, snapshot = run_investigation_scenario(
+                scenario=scenario,
+                llm=llm,
+                proof_runtime=proof_runtime,
             )
+            scenario_results.append(scenario_result)
+            scenario_snapshots.append(snapshot)
     finally:
         proof_runtime.close()
 
+    finished_at = datetime.now(UTC)
     overall_pass = all(item.passed for item in scenario_results)
     result = ToolsSqlInvestigationProofResult(
         proof_id=PROOF_ID,
@@ -198,10 +258,13 @@ def main(argv: list[str] | None = None) -> int:
         scenarios=tuple(scenario_results),
         overall_pass=overall_pass,
     )
-    artifact_directory = _persist_proof_result(
+    artifact_directory = _persist_artifacts(
         result,
         artifact_root=args.output_dir,
         artifact_run_id=args.artifact_run_id,
+        started_at=started_at,
+        finished_at=finished_at,
+        scenario_snapshots=tuple(scenario_snapshots),
     )
     if args.json:
         print(json.dumps(result.model_dump(mode="json"), sort_keys=True))

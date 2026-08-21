@@ -7,6 +7,12 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+from scripts.proof.intergrax_platform_proof_evidence import PlatformProofEvidence
+from scripts.proof.intergrax_platform_proof_evidence_io import (
+    EVIDENCE_FILENAME,
+    write_evidence_json,
+)
+
 from platform_proofs.tools.iterative_sql_investigation.dataset_identity import PROOF_ID
 from platform_proofs.tools.iterative_sql_investigation.proof_result import (
     ToolsSqlInvestigationProofResult,
@@ -48,3 +54,12 @@ def write_proof_result(
         encoding="utf-8",
     )
     return path
+
+
+def write_evidence(
+    evidence: PlatformProofEvidence,
+    *,
+    run_directory: Path,
+) -> Path:
+    """Persist generic Platform Proof evidence JSON under the run directory."""
+    return write_evidence_json(evidence, proof_directory=run_directory)
