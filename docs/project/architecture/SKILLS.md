@@ -48,6 +48,7 @@ Skills address this through `SkillManifest`, catalog + runtime registry, `SkillP
 
 ## Flagship architecture visual
 
+<a href="assets/skill-resolution-boundary-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/skill-resolution-boundary-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/skill-resolution-boundary-light.svg">
@@ -56,6 +57,7 @@ Skills address this through `SkillManifest`, catalog + runtime registry, `SkillP
     src="assets/skill-resolution-boundary-light.svg"
   >
 </picture>
+</a>
 
 **Mental model:**
 

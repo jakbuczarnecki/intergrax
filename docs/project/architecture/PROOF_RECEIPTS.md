@@ -239,3 +239,18 @@ Public Steps 9 / Steps 12–13 in `LKW_PLATFORM_PROOF.md` document Mongo Express
 | DocumentStore vendor contract | `intergrax/runtime/integrations/document_store.py` |
 | MongoDB provider | `intergrax/integrations/providers/document_store/mongodb` |
 | LKW proof schedule | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` §LKW-PR |
+
+---
+
+## N. Protocol v2 proof receipt target invariants (2026-08-18)
+
+Accepted [`LKW_PRODUCT_PROOF`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) findings **01–03** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence. Coordinate **LKW-PROOF-04** / **LKW-PROOF-05** manifest/runner obligations in shared proof infrastructure.
+
+1. **Exact source/build identity** — canonical `ProofReceipt` and public-evidence promotion require mandatory execution provenance: source revision and/or tree digest, application/build identity, and proof contract/version beyond receipt schema alone (**LKW-PROOF-02**).
+2. **Dirty-state qualification** — dirty worktree disqualifies public-evidence eligibility / `NOT_PUBLIC_EVIDENCE` promotion; local diagnostic runs may remain allowed (**LKW-PROOF-01**).
+3. **Environment/profile fingerprint** — record relevant environment/profile fingerprint with each receipt and suite receipt (**LKW-PROOF-02**).
+4. **Historical vs current/stale evidence** — historical PASS receipts remain valid historical evidence; **current** certification requires validity envelope match; relevant source/dependency change → `STALE_REVALIDATION_REQUIRED` — never rewrite old PASS as false (**LKW-PROOF-03**).
+5. **Certification validity/invalidation** — certification matrices and public claims must bind to exact source revision, dependency/proof closure digest, proof contract version, and environment profile (**LKW-PROOF-03**).
+6. **No mutable current claim from old receipt alone** — no current product/certification claim may be derived solely from an old PASS receipt without freshness qualification (**LKW-PROOF-03**).
+
+LKW and product docs consume this authority — they do **not** define a private receipt contract. Closed PROOF-RECEIPTS-1A–1E delivery facts remain historical; this block extends target design only.

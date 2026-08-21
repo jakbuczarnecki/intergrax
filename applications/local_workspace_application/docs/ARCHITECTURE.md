@@ -2062,3 +2062,16 @@ known canonical reference; an index/reference fingerprint or ownership
 mismatch fails closed. Paginated ownership lookup validates the canonical
 reference before returning it and reports missing canonical rows as orphan
 index evidence, without scanning the workspace.
+
+## Protocol v2 LKW product proof target invariants (2026-08-18)
+
+Accepted [`LKW_PRODUCT_PROOF`](../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+
+1. **Canonical proof evidence consumption** — LKW proof claims consume canonical platform proof evidence through shared `ProofManifest`, suite runner, and `ProofReceipt` contracts ([`PROOF_RECEIPTS`](../../../docs/project/architecture/PROOF_RECEIPTS.md)); LKW does **not** create private proof receipt semantics (**LKW-PROOF-01**, **LKW-PROOF-02** / **LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY**).
+2. **Current ≠ historical proof** — a historical PASS or certification artifact remains valid historical evidence, but **current** proof/certification requires a validity envelope matching present source revision/tree, dependency closure, proof contract version, and environment profile; relevant change → `STALE_REVALIDATION_REQUIRED` without rewriting old evidence (**LKW-PROOF-03**).
+3. **Manifest-owned public proofs** — every publicly executable flagship proof, including Governed Evidence Decision Proof, belongs to one canonical `ProofManifestEntry`; no second public proof path (**LKW-PROOF-05** / **LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY**).
+4. **Suite success qualification** — requested required live proof membership is explicit; `--profile live` must not return shell success when required live proofs were blocked unless manifest marks them optional and operator opts into partial live explicitly (**LKW-PROOF-04**).
+5. **Profile semantics** — `--profile quick` must not be interpreted as Product Quick Start coverage unless manifest/profile docs explicitly include bounded flagship LKW product smoke (**LKW-PROOF-06** / **LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY**).
+6. **Product status unchanged by proof** — product status remains **Backend Product Alpha / MVP**; proof never upgrades product, commercial, or production status by implication; complete indexed + authorized-live Hybrid Ask, real-user validation, and commercial validation remain explicitly unclaimed.
+
+Historical LKW certification JSON/matrix artifacts and closed proof waves remain historical facts — coordinate with [`PROOF_RECEIPTS`](../../../docs/project/architecture/PROOF_RECEIPTS.md); do not invent a second LKW proof framework.

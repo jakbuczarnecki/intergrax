@@ -250,4 +250,86 @@ Cross-ref **UER-FIX-A/B/D** in [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTIO
 
 ---
 
+<a id="protocol-v2-pcm-side-effect-coordination-integrity-2026-08-18"></a>
+
+### Protocol v2 — PCM-SIDE-EFFECT-COORDINATION-INTEGRITY (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)
+**Status:** `ACCEPTED / PLANNED`
+**Priority:** P0
+**Findings:** PCM-02, PCM-03 (`AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-02`, `-03`)
+
+**Deliverable intent:**
+
+- model idempotency execution uncertainty explicitly (claim/owner/fence, stale/uncertain state, governed reconciliation)
+- do not claim exactly-once unless complete external-effect protocol proves it
+- durable compensation consumption with atomic claim: PENDING → CLAIMED/RUNNING(owner, lease/fence) → COMPLETED / RETRYABLE / FAILED
+- reuse canonical worker/message-bus primitives when suitable — no second generic queue engine
+- cross-link TOOLS idempotency remediation and Governance operator reconciliation where required
+
+**Remediation rules:** same as PBA-FIX-A block above. **Not implemented** by audit persistence task AUDIT-20260818-PERSISTENCE-CONCURRENCY-MULTIHOST-PERSIST. Cross-link **PCM-PERSISTENCE-TOPOLOGY-INTEGRITY** in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
+
+---
+
+<a id="protocol-v2-pcm-checkpoint-scheduler-integrity-2026-08-18"></a>
+
+### Protocol v2 — PCM-CHECKPOINT-SCHEDULER-INTEGRITY (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)
+**Status:** `ACCEPTED / PLANNED`
+**Priority:** P0/P1
+**Findings:** PCM-04, PCM-05 (`AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-04`, `-05`)
+
+**Deliverable intent:**
+
+- checkpoint mutation version-fenced / monotonic (expected revision CAS, expected prior step/revision, or monotonic step assertion)
+- stale checkpoint writer receives explicit conflict
+- keep single-process `LongRunningScheduler` limitation explicit until distributed implementation verified
+- shared/multi-host topology: atomic due-item claim/lease/fence or canonical distributed worker/message bus with equivalent semantics
+- reuse Agent Distribution CAS/lease/worker precedent — do not invent separate locking architecture
+
+**Remediation rules:** same as PBA-FIX-A block above. **Not implemented** by audit persistence task AUDIT-20260818-PERSISTENCE-CONCURRENCY-MULTIHOST-PERSIST. Coordinate **PBA-FIX-A** checkpoint port consumption — do not reopen historical REL Done rows.
+
+---
+
+<a id="protocol-v2-pcm-schema-evolution-integrity-2026-08-18"></a>
+
+### Protocol v2 — PCM-SCHEMA-EVOLUTION-INTEGRITY (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)
+**Status:** `ACCEPTED / PLANNED`
+**Priority:** P2
+**Findings:** PCM-07 (`AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-07`)
+
+**Deliverable intent:**
+
+- explicit schema inspection/versioning or recognize only expected already-present migration conditions
+- unexpected migration/storage failure fails closed at startup
+- eventual production schema evolution through versioned migration authority — not ad-hoc unconditional ALTER in store constructors swallowing all `OperationalError`
+
+**Remediation rules:** same as PBA-FIX-A block above. **Not implemented** by audit persistence task AUDIT-20260818-PERSISTENCE-CONCURRENCY-MULTIHOST-PERSIST.
+
+---
+
+<a id="protocol-v2-e2e-async-outcome-integrity-2026-08-18"></a>
+
+### Protocol v2 — E2E-ASYNC-OUTCOME-INTEGRITY (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/END_TO_END_SYSTEM.md`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md)
+**Status:** `ACCEPTED / PLANNED`
+**Priority:** P0/P1
+**Findings:** E2E-04, E2E-06 (`AUDIT-20260818-END_TO_END_SYSTEM-04`, `-06`)
+
+**Deliverable intent:**
+
+- durable async terminal outcome: `TaskId` + `RunId` → durable `TaskResult` / result reference / journal projection recoverable after process restart
+- async index may store reference rather than duplicate full payload; completed tasks remain user-retrievable outcomes, not status-only records
+- external async errors: stable `reason_code`, safe message, correlation/run identifier — internal diagnostics per redaction policy
+- cross-link **OBS-EVIDENCE-*** / Unified Run Journal where appropriate; cross-link **SEC-DATA-PROTECTION-INTEGRITY** for safe error mapping — do not duplicate observability durability or security boundary blocks
+- registry/control exact-execution binding owned by **E2E-CONTROL-AUTHORITY-INTEGRITY** in [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) — coordinate; do not duplicate
+
+**Remediation rules:** same as PBA-FIX-A block above. **Not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
+
+---
+
 *End of Reliability, Failure Model, and HITL Implementation Plan.*

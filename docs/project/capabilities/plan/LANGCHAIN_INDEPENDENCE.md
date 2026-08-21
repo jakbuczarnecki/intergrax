@@ -633,3 +633,53 @@ This task does not optionalize the chat Ollama adapter.
 explicit and non-default-reachable. No removal task is planned; future
 deprecation or removal requires an independent product/architecture decision.
 
+---
+
+## Protocol v2 remediation — LANGCHAIN_INDEPENDENCE (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md`](../../audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-LANGCHAIN-INDEPENDENCE-PERSIST.
+
+#### LCI-COMPATIBILITY-SCOPE-INTEGRITY — trusted scope injection and provider-hit identity validation
+
+**Priority:** P0
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-LANGCHAIN_INDEPENDENCE-01`](../../audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md), [`02`](../../audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md)
+
+**Acceptance intent:**
+
+- Compatibility conversion receives trusted canonical scope separately; foreign LangChain/provider metadata may only match/confirm trusted scope; mismatch fails closed.
+- `from_legacy_rag_hit` and equivalent legacy/provider paths verify returned routing identity against expected trusted scope.
+- Cross-link [`RAG`](../../maintainers/plans/RAG.md) **RAG-SCOPE-CONTRACT-INTEGRITY** and [`IDENTITY_TRUST`](../../maintainers/plans/IDENTITY_TRUST.md) where applicable.
+- Do not create a second document contract.
+
+#### LCI-BOUNDARY-ENFORCEMENT-INTEGRITY — conditional provider exemption and robust static dynamic-import detection
+
+**Priority:** P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-LANGCHAIN_INDEPENDENCE-03`](../../audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md), [`04`](../../audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md)
+
+**Acceptance intent:**
+
+- Boundary guard enforces conditional compatibility rules across every allowed provider family, not directory-wide trust.
+- Equivalent eager/optional-boundary enforcement applies to `llm_adapters/providers` as well as `integrations/providers`.
+- Common statically resolvable `importlib` / `import_module` aliases are detected with adversarial regression fixtures.
+
+#### LCI-PACKAGING-EVIDENCE-INTEGRITY — explicit compatibility packaging semantics and current conformance evidence
+
+**Priority:** P1/P2
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-LANGCHAIN_INDEPENDENCE-05`](../../audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md), [`06`](../../audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md)
+
+**Acceptance intent:**
+
+- Compatibility opt-in semantics are truthful: either parsing extras are LangChain-free and loader dependencies live only in named compatibility extras, or packaging/docs explicitly declare transitive opt-in.
+- Historical migration inventory remains historical evidence; a separate mechanically generated/current conformance record is pinned to a specific SHA.
+- Do not rewrite historical inventory evidence as if it never existed.
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Historical LCI-0A..8A closeout rows remain historical delivery facts — do not reopen or rewrite as incomplete.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+

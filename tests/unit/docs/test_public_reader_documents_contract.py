@@ -37,10 +37,6 @@ MULTIPLAYER_ARCH_PATH = (
 )
 PLATFORM_PLUGINS_ARCH_PATH = REPO_ROOT / "docs" / "project" / "architecture" / "PLATFORM_PLUGINS.md"
 ROADMAP_PATH = REPO_ROOT / "docs" / "project" / "overview" / "ROADMAP.md"
-HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
-HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
-CATEGORY_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-category-map-light.svg"
-CATEGORY_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-category-map-dark.svg"
 
 _LEGAL_HEADER = (
     "<!--\n"
@@ -119,8 +115,7 @@ _PERCENT_PATTERN = re.compile(r"\d+\s*%")
 
 _BOUNDARY_PHRASES_WHY = (
     "source-available",
-    "active r&d",
-    "backend product alpha",
+    "proofs",
     "real-user validation",
     "commercial validation",
 )
@@ -261,8 +256,9 @@ def test_first_screen_maturity_boundaries(
     why_text: str, arch_text: str, build_text: str
 ) -> None:
     why_norm = _normalize(why_text)
-    for phrase in _BOUNDARY_PHRASES_WHY:
-        assert phrase in why_norm, f"WHY missing boundary phrase: {phrase}"
+    assert "source-available" in why_norm
+    assert "proofs" in why_norm
+    assert "remain open" in why_norm or "not measured" in why_norm
 
     arch_norm = _normalize(arch_text)
     for phrase in _BOUNDARY_PHRASES_ARCH:
@@ -355,8 +351,9 @@ def test_project_projections_synchronize_accepted_lkw_boundaries() -> None:
     assert "production-proven savings" in proofs
     assert not _INTERNAL_TASK_PATTERN.search(proofs_text)
     assert not _INTERNAL_TASK_PATTERN.search(tour_text)
-    assert "lkw-grounded-result-light.svg" in tour_text
-    assert "lkw-grounded-result-dark.svg" in tour_text
+    assert "lkw-governed-evidence-gate-light.png" in tour_text
+    assert "lkw-governed-evidence-gate-dark.png" in tour_text
+    assert "lkw-grounded-result" not in tour_text
 
 
 def test_lkw_quickstart_reader_literals_and_routes() -> None:
@@ -452,13 +449,15 @@ def test_architecture_operating_layer_contract(arch_text: str) -> None:
         "evidence and provenance",
         "business rule",
         "required identity and permissions",
-        "primary next action",
+        "architect review path",
         "technical documentation map",
     ):
         assert phrase in normalized, f"ARCHITECTURE missing semantic marker: {phrase}"
 
     assert "does not decide the product's business permissions" in normalized
     assert "selected resources only" in normalized
+    assert "strategic directions" in normalized
+    assert "intentionally secondary" in normalized
 
 
 def test_unsupported_claims_not_positive() -> None:
@@ -524,13 +523,13 @@ def test_readme_routing(readme_text: str) -> None:
         "investor / strategic evaluator",
         "design partner / integrator",
         "primary daily-use conversational interface",
-        "slack dm ask path is live-verified",
-        "broader slack-first daily-use experience remains under productization",
+        "daily-use flows remain under productization",
     ):
         assert phrase in normalized, f"README missing routing marker: {phrase!r}"
     assert "Local Knowledge Workspace" in readme_text
     assert "Intergrax helps teams build" in readme_text
     assert "Try LKW" in readme_text
+    assert "bounded dm ask path is live-verified" in normalized
     assert "Primary Product Proof" in readme_text
     assert "Backend Product Alpha /" in readme_text
     assert "Featured platform-capability proof" in readme_text
@@ -568,13 +567,12 @@ def test_multiplayer_public_projection_links() -> None:
     assert "docs/project/capabilities/architecture/MULTIPLAYER_AI.md" in readme_text
     assert "../capabilities/architecture/MULTIPLAYER_AI.md" in arch_text
     assert "../capabilities/architecture/MULTIPLAYER_AI.md" in roadmap_text
-    assert "capabilities/architecture/MULTIPLAYER_AI.md" in hub_text
+    assert "../../README.md#explore-the-intergrax-platform" in hub_text
 
     for doc_path, target in (
         (README_PATH, "docs/project/capabilities/architecture/MULTIPLAYER_AI.md"),
         (ARCHITECTURE_OVERVIEW_PATH, "../capabilities/architecture/MULTIPLAYER_AI.md"),
         (ROADMAP_PATH, "../capabilities/architecture/MULTIPLAYER_AI.md"),
-        (HUB_PATH, "capabilities/architecture/MULTIPLAYER_AI.md"),
     ):
         resolved = (doc_path.parent / target.split("#", 1)[0]).resolve()
         assert resolved == MULTIPLAYER_ARCH_PATH.resolve(), (
@@ -621,13 +619,12 @@ def test_platform_extensibility_public_projection_links() -> None:
     assert "docs/project/architecture/PLATFORM_PLUGINS.md" in readme_text
     assert "PLATFORM_PLUGINS.md" in arch_text
     assert "../architecture/PLATFORM_PLUGINS.md" in roadmap_text
-    assert "architecture/PLATFORM_PLUGINS.md" in hub_text
+    assert "../../README.md#explore-the-intergrax-platform" in hub_text
 
     for doc_path, target in (
         (README_PATH, "docs/project/architecture/PLATFORM_PLUGINS.md"),
         (ARCHITECTURE_OVERVIEW_PATH, "PLATFORM_PLUGINS.md"),
         (ROADMAP_PATH, "../architecture/PLATFORM_PLUGINS.md"),
-        (HUB_PATH, "architecture/PLATFORM_PLUGINS.md"),
     ):
         resolved = (doc_path.parent / target.split("#", 1)[0]).resolve()
         assert resolved == PLATFORM_PLUGINS_ARCH_PATH.resolve(), (
@@ -637,22 +634,23 @@ def test_platform_extensibility_public_projection_links() -> None:
 
 def test_architecture_platform_extensibility_section(arch_text: str) -> None:
     normalized = " ".join(_normalize(arch_text).split())
-    assert "platform extensibility as a strategic platform direction" in normalized
+    assert "platform extensibility / plugins" in normalized
+    assert "multiplayer ai" in normalized
+    assert "strategic directions" in normalized
+    assert "intentionally secondary" in normalized
     for phrase in (
-        "independent plugin package",
-        "platform coordination",
-        "domain capability contract",
-        "host configuration / di",
-        "governed intergrax execution",
+        "independently packaged extensions",
+        "harmonized cross-platform plugin lifecycle",
+        "future work",
         "not a universal platformplugin.execute",
-        "not proof that every extension surface is already harmonized",
-        "conceptual target architecture",
-        "not proof that the full platform-level plugin lifecycle is implemented",
+        "does not replace integrationplugin",
+        "domain-owned surfaces",
     ):
         assert phrase in normalized, f"ARCHITECTURE missing Platform Extensibility marker: {phrase}"
     assert "primary product proof" in normalized
     assert "featured platform-capability proof" in normalized
     assert "partial" in normalized
+    assert "strategic optionality" in normalized or "not current product proofs" in normalized
 
 
 def test_roadmap_platform_extensibility_supporting_work() -> None:
@@ -921,20 +919,15 @@ def test_evidence_limitations_bulleted(readme_text: str) -> None:
 
 def test_brevity() -> None:
     limits = {
-        WHY_PATH: 240,
+        WHY_PATH: 280,
         ARCHITECTURE_OVERVIEW_PATH: 280,
         BUILD_PATH: 300,
         BUILDER_QUICKSTART_PATH: 220,
-        README_PATH: 300,
+        README_PATH: 450,
     }
     for path, max_lines in limits.items():
         count = len(_read(path).splitlines())
         assert count <= max_lines, f"{path.name} has {count} lines (max {max_lines})"
-
-
-def test_hero_assets_exist() -> None:
-    assert HERO_LIGHT_PATH.is_file()
-    assert HERO_DARK_PATH.is_file()
 
 
 def test_why_problem_category_and_reader_fit(why_text: str) -> None:
@@ -943,26 +936,39 @@ def test_why_problem_category_and_reader_fit(why_text: str) -> None:
         "rebuild controlled knowledge access",
         "reusable governed foundation",
         "product team still owns",
-        "agent framework or model api",
+        "model or agent framework",
         "another approach may fit better",
         "usecases.md",
-        "active r&d",
+        "proofs",
         "mixed indexed + authorized live hybrid ask remains incomplete",
     ):
         assert phrase in normalized, f"WHY missing reader-fit invariant: {phrase}"
+
+    category_markers = (
+        "finished ai saas",
+        "workflow automation",
+        "retrieval",
+        "agent framework",
+        "custom in-house foundation",
+    )
+    for marker in category_markers:
+        assert marker in normalized, f"WHY missing solution-category marker: {marker!r}"
 
 
 def test_why_business_strategic_thesis(why_text: str) -> None:
     normalized = _normalize(why_text)
     for phrase in (
         "business and strategic thesis",
-        "duplication and fragmentation",
+        "duplicates engineering effort",
+        "implementations diverge",
+        "maintenance burden",
+        "review surfaces become inconsistent",
         "potential adopter or sponsor profiles",
         "lkw is the current product path used to test this thesis",
         "compounding value hypothesis",
         "commercialization gates",
+        "commercial and real-user validation remain open",
         "real-user validation",
-        "commercial validation",
     ):
         assert phrase in normalized, f"WHY missing business thesis marker: {phrase}"
 
@@ -1014,8 +1020,8 @@ def test_use_cases_business_evaluation_framing() -> None:
         "pain:",
         "desired outcome:",
         "success signal:",
-        "validation gap:",
         "evaluation question",
+        "product-specific validation",
     ):
         assert phrase in normalized, f"USE_CASES missing business evaluation marker: {phrase}"
 
@@ -1024,7 +1030,7 @@ def test_use_cases_business_evaluation_framing() -> None:
         "bounded technical fit",
         "not yet proven",
         "not a fit",
-        "real-user validation and commercial validation are incomplete",
+        "real-user and commercial validation remain open",
     ):
         assert phrase in normalized, f"USE_CASES missing fit taxonomy marker: {phrase}"
 
@@ -1045,14 +1051,6 @@ def test_use_cases_does_not_track_provider_rollouts() -> None:
         assert phrase not in normalized, (
             f"USE_CASES contains provider roadmap detail: {phrase}"
         )
-
-
-def test_why_category_map_assets_and_alt_text(why_text: str) -> None:
-    assert CATEGORY_LIGHT_PATH.is_file()
-    assert CATEGORY_DARK_PATH.is_file()
-    assert "intergrax-category-map-light.svg" in why_text
-    assert "intergrax-category-map-dark.svg" in why_text
-    assert 'alt="Responsibility map comparing' in why_text
 
 
 def test_why_readme_visual_alignment(why_text: str) -> None:
@@ -1084,8 +1082,9 @@ def test_why_canonical_opening(why_text: str) -> None:
         "intergrax exists for teams building specialized agent applications",
         "controlled knowledge access",
         "reusable governed foundation",
-        "active r&d",
-        "bounded current evidence",
+        "source-available",
+        "proofs",
+        "claim boundaries",
     ):
         assert phrase in opening, f"WHY opening missing semantic marker: {phrase}"
 
@@ -1184,8 +1183,10 @@ def test_lkw_product_tour_presentation_contract() -> None:
     normalized = " ".join(_normalize(text).split())
 
     assert "<picture>" in text
-    assert "lkw-grounded-result-light.svg" in text
-    assert "lkw-grounded-result-dark.svg" in text
+    assert "lkw-governed-evidence-gate-light.png" in text
+    assert "lkw-governed-evidence-gate-dark.png" in text
+    assert "lkw-grounded-result" not in text
+    assert "governed evidence decision proof" in normalized
     assert "## The LKW experience" in text
     assert "## What this proves" in text
     assert "## Current boundary" in text

@@ -52,6 +52,7 @@ ECP is the Harness **capacity architecture and governed scaling layer** — not 
 
 ## Flagship architecture visual
 
+<a href="assets/elastic-capacity-loop-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/elastic-capacity-loop-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/elastic-capacity-loop-light.svg">
@@ -60,6 +61,7 @@ ECP is the Harness **capacity architecture and governed scaling layer** — not 
     src="assets/elastic-capacity-loop-light.svg"
   >
 </picture>
+</a>
 
 ## How it works
 

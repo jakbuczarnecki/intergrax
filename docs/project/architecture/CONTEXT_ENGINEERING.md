@@ -33,6 +33,7 @@ CE is **not** a memory store, document retriever, prompt registry, LLM adapter, 
 
 ## Flagship architecture visual
 
+<a href="assets/context-engineering-platform-position-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/context-engineering-platform-position-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/context-engineering-platform-position-light.svg">
@@ -41,6 +42,7 @@ CE is **not** a memory store, document retriever, prompt registry, LLM adapter, 
     src="assets/context-engineering-platform-position-light.svg"
   >
 </picture>
+</a>
 
 Source domains feed Context Engineering; CE does not own their persistence or retrieval. Tier-3 `ContextProfile` and plugin configuration shape assembly — CE still owns the pipeline.
 

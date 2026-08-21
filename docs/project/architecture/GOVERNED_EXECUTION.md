@@ -130,6 +130,7 @@ Conceptual boundary classes in the governance plane model:
 | **Meaningful external side effect** | Authorization for effects that leave the bounded runtime |
 | **Output** | Pre-output policy bridges where wired |
 | **Replay / post-run governance** | Post-run evaluation, metrics, and guard mechanisms |
+| **Control-plane mutation** | Authorization/evidence for state-changing control-plane operations (activation, rollback, capacity, live task control, plugin/config admission) — **target taxonomy**; live coverage **GAP** |
 
 These classes describe **where policy may apply** in the platform model. **Current implementation coverage varies by boundary.** Do not infer a uniform evaluation-point API or complete platform-wide coverage from this list.
 
@@ -182,6 +183,7 @@ Frozen audit baseline (G3) closed only where a live mechanism is wired to a mand
 | **MEANINGFUL_SIDE_EFFECT** | **PARTIAL** | `MeaningfulSideEffectAuthorizationBoundary` (collaborative-work) · `MeaningfulSideEffectEvaluator` at adapter boundary | `ExternalWorkAdapter._evaluate_side_effect` before provider call (runtime-only) · `MeaningfulSideEffectAuthorizationBoundary.authorize` (collaborative-work) | Not every runtime side-effect path is wired through `MeaningfulSideEffectAuthorizationBoundary`; collaborative-work hosts must inject the boundary |
 | **PRE_OUTPUT** | **COVERED** | `PolicyEngine.evaluate_pre_output` | `HarnessKernel._policy_post_check` (terminal step) · `apply_pre_output_policy` in `NexusLoop._finish_task` | Non-terminal harness steps skip post-output evaluation by design |
 | **POST_RUN** | **PARTIAL** | `GovernanceService` → `ExecutionGuard.evaluate_run` | `invoke_post_run_governance` at `NexusLoop._finish_task` and `UAEPExecutor.execute` completion when `governance_service` is configured | Runs without an injected `GovernanceService` skip post-run evaluation by configuration |
+| **CONTROL_PLANE_MUTATION** | **GAP** | Domain-specialized executors (Agent Distribution, AHI, ECP, task-control, Platform Plugins) | Target: shared authority context before mutating active platform/application state — **not** a universal mutation executor | Minimum context: principal, tenant/scope, resource identity, current/target revision, risk, approval evidence, mutation/idempotency identity — see [Protocol v2 control-plane target invariants](#protocol-v2-control-plane-mutation-target-invariants-2026-08-18) |
 
 ---
 
@@ -343,6 +345,19 @@ Accepted [`POLICY_GOVERNANCE`](../../audit_results/2026-08-18/POLICY_GOVERNANCE.
 5. **Explicit policy matching** — critical matching uses typed fields; no hidden `rule_id` suffix dispatch (**PG-FIX-D**).
 
 Remediation blocks: **PG-FIX-A**, **PG-FIX-B**, **PG-FIX-C**, **PG-FIX-D** in [`plan/GOVERNED_EXECUTION.md`](../maintainers/plans/GOVERNED_EXECUTION.md).
+
+<a id="protocol-v2-control-plane-mutation-target-invariants-2026-08-18"></a>
+
+## Protocol v2 control-plane mutation target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`CROSS_LAYER_ARCHITECTURE`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md) (**FAIL**, CLA-04). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-CROSS-LAYER-ARCHITECTURE-PERSIST.
+
+1. **CONTROL_PLANE_MUTATION evaluation class** — extend Governance Evaluation Point taxonomy with state-changing control-plane mutations distinct from in-run tool/side-effect and post-run governance paths.
+2. **Minimum shared authority context** — principal; tenant/scope; resource identity; current revision/state; requested target revision/state; risk; approval evidence; mutation/idempotency identity.
+3. **Specialized domain executors** — Agent Distribution activation/rollback, AHI apply/rollback, ECP capacity mutations, live task autonomy changes, plugin/config activation/admission remain domain-owned — no universal `GovernanceEngine` or universal mutation executor.
+4. **Coverage honesty** — G3B marks **CONTROL_PLANE_MUTATION** as **GAP** until domain consumers converge on the shared boundary; do not claim platform-wide live coverage.
+
+Remediation: **CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY** in [`plan/GOVERNED_EXECUTION.md`](../maintainers/plans/GOVERNED_EXECUTION.md). Cross-link **E2E-CONTROL-AUTHORITY-INTEGRITY**, **AHI-***, **ECP-GOVERNED-ACTION-INTEGRITY**, Agent Distribution activation, Platform Plugins admission — coordinate; do not duplicate.
 
 ---
 

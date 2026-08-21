@@ -37,7 +37,7 @@ _STRATEGIC_FULL_SIZE_LINKS = (
     ),
     (
         "## Why this matters",
-        "## Responsibility model",
+        "---",
         "docs/project/assets/public/readme/intergrax-why-light.png",
     ),
     (
@@ -67,7 +67,7 @@ LKW_LIGHT_PATH = (
     / "local_workspace_application"
     / "docs"
     / "assets"
-    / "lkw-grounded-result-light.svg"
+    / "lkw-governed-evidence-gate-light.png"
 )
 LKW_DARK_PATH = (
     REPO_ROOT
@@ -75,7 +75,7 @@ LKW_DARK_PATH = (
     / "local_workspace_application"
     / "docs"
     / "assets"
-    / "lkw-grounded-result-dark.svg"
+    / "lkw-governed-evidence-gate-dark.png"
 )
 
 _SECTION_HEADINGS_ORDER = (
@@ -83,10 +83,10 @@ _SECTION_HEADINGS_ORDER = (
     "## Local Knowledge Workspace (LKW)",
     "## Try LKW",
     "## Why this matters",
+    "## Explore the Intergrax Platform",
     "## Responsibility model",
     "## AI execution should not be a black box",
-    "## What exists today",
-    "## Platform capabilities and directions",
+    "## Platform capabilities",
     "## License and collaboration",
 )
 
@@ -99,6 +99,7 @@ _REMOVED_STANDALONE_CAPABILITY_HEADINGS = (
 
 _REQUIRED_PUBLIC_LINKS = (
     "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md",
+    "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md",
     "docs/project/architecture/GOVERNED_EXECUTION.md",
     "docs/project/capabilities/token_optimization/README.md",
     "PROOFS.md",
@@ -130,6 +131,13 @@ _PICTURE_BLOCK = re.compile(r"<picture>(.*?)</picture>", re.DOTALL | re.IGNORECA
 _SOURCE_TAG = re.compile(r"<source\b([^>]*)>", re.IGNORECASE)
 _IMG_TAG = re.compile(r"<img\b([^>]*)>", re.IGNORECASE)
 _ATTR_VALUE = re.compile(r'(\w+)="([^"]*)"')
+_LKW_GOVERNED_HERO_LIGHT = (
+    "applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png"
+)
+_ECOSYSTEM_HERO_LIGHT = "docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
+_QUICKSTART_SCRIPT_PATTERN = re.compile(
+    r"run-lkw-product-quickstart-(windows|linux|macos)\.(bat|sh)"
+)
 
 
 @pytest.fixture(scope="module")
@@ -151,22 +159,133 @@ def test_canonical_positioning(readme_text: str) -> None:
     assert "Intergrax helps teams build" in readme_text
 
 
+def test_opening_architecture_differentiator(readme_text: str) -> None:
+    """Opening states policy/evidence/admissibility differentiator without brittle prose."""
+    opening = readme_text[: readme_text.index("## Choose your path")]
+    normalized = re.sub(r"[*_`]", "", opening).lower()
+    assert "policy" in normalized
+    assert "evidence" in normalized
+    assert (
+        "allowed to proceed" in normalized
+        or "admissib" in normalized
+        or "determine whether" in normalized
+    )
+    assert "instead of leaving" in normalized or "entirely to the model" in normalized
+    forbidden = (
+        "guaranteed correctness",
+        "hallucination prevention",
+        "production ready",
+        "complete governance everywhere",
+        "complete hybrid ask",
+    )
+    for phrase in forbidden:
+        assert phrase not in normalized, f"Forbidden opening claim: {phrase}"
+
+
 def test_section_order(readme_text: str) -> None:
     positions = [readme_text.index(heading) for heading in _SECTION_HEADINGS_ORDER]
     assert positions == sorted(positions), "README section headings are out of required order"
+    lkw_idx = readme_text.index("## Local Knowledge Workspace (LKW)")
+    why_idx = readme_text.index("## Why this matters")
+    explore_idx = readme_text.index("## Explore the Intergrax Platform")
+    assert lkw_idx < why_idx < explore_idx, (
+        "Required flow: LKW → Why this matters → Explore the Intergrax Platform"
+    )
+
+
+def test_top_cta_governed_evidence_proof(readme_text: str) -> None:
+    """Top CTA exposes the advanced governed evidence proof route."""
+    top_block = readme_text[: readme_text.index("## Choose your path")]
+    assert "Inspect Governed Evidence Proof" in top_block
+    assert (
+        "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md"
+        in top_block
+    )
+
+
+def test_lkw_routes_governed_evidence_proof(readme_text: str) -> None:
+    routes_section = _section_slice(readme_text, "### LKW routes", "**Core Platform Proof**")
+    assert "Governed Evidence Decision Proof" in routes_section
+    assert (
+        "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md"
+        in routes_section
+    )
+    product_tour_idx = routes_section.index("Product Tour")
+    quick_start_idx = routes_section.index("Quick Start")
+    governed_idx = routes_section.index("Governed Evidence Decision Proof")
+    core_idx = routes_section.index("Core Platform Proof")
+    assert product_tour_idx < quick_start_idx < governed_idx < core_idx
+
+
+def test_lkw_product_positioning(readme_text: str) -> None:
+    """LKW section is product-first; Primary Product Proof terminology removed."""
+    lkw_section = _section_slice(readme_text, "## Local Knowledge Workspace (LKW)", "## Try LKW")
+    normalized = re.sub(r"[*_`]", "", lkw_section).lower()
+    assert "primary product proof" not in normalized
+    assert "reference product application" not in normalized
+    assert "governed ai knowledge workspace" in normalized or "approved organizational knowledge" in normalized
+    assert "backend product alpha / mvp" in normalized
+    assert "accepted bounded proof paths" in normalized
+
+
+def test_try_lkw_compressed(readme_text: str) -> None:
+    """Gateway README delegates OS commands to Quick Start doc."""
+    try_section = _section_slice(readme_text, "## Try LKW", "### LKW routes")
+    assert "AURORA-17" in try_section
+    assert "applications/local_workspace_application/docs/product/QUICKSTART.md" in try_section
+    assert _QUICKSTART_SCRIPT_PATTERN.search(try_section) is None, (
+        "Root README must not duplicate per-OS quick start command blocks"
+    )
+    assert try_section.count("```") == 0, "Try LKW must not include fenced command blocks"
+
+
+def test_what_exists_today_removed(readme_text: str) -> None:
+    assert "## What exists today" not in readme_text
+
+
+def test_docs_taxonomy_compressed(readme_text: str) -> None:
+    assert "### How documentation is organized" not in readme_text
+    assert "docs/project/architecture/<DOMAIN>.md" not in readme_text
+    assert "docs/project/capabilities/architecture/<FEATURE>.md" not in readme_text
+    assert "24 architecture" not in readme_text.lower()
+    assert "architecture ↔ plan pairs" not in readme_text
+    assert "Full technical domain index" in readme_text
+    for route in (
+        "Builder Quick Start",
+        "Architecture Overview",
+        "PROOFS",
+        "Public Documentation Map",
+        "Technical Documentation Map",
+    ):
+        assert route in readme_text, f"Missing compact docs route: {route}"
 
 
 def test_platform_capabilities_table_contract(readme_text: str) -> None:
-    assert "## Platform capabilities and directions" in readme_text
+    assert "## Platform capabilities" in readme_text
+    assert "### Future strategic directions" in readme_text
+    current_section = _section_slice(
+        readme_text,
+        "## Platform capabilities",
+        "### Future strategic directions",
+    )
+    future_section = _section_slice(
+        readme_text,
+        "### Future strategic directions",
+        "## License and collaboration",
+    )
     for capability in (
         "Governed Execution",
         "Observability & Auditability",
         "Token Optimization",
+    ):
+        assert capability in current_section, f"Missing current capability row: {capability}"
+    for direction in (
         "Multiplayer AI",
         "Platform Extensibility",
         "Agent Marketplace",
     ):
-        assert capability in readme_text, f"Missing platform capability row: {capability}"
+        assert direction in future_section, f"Missing future direction row: {direction}"
+        assert direction not in current_section, f"Future direction leaked into current table: {direction}"
     for heading in _REMOVED_STANDALONE_CAPABILITY_HEADINGS:
         assert heading not in readme_text, f"Duplicated standalone section returned: {heading}"
 
@@ -306,16 +425,30 @@ def _assert_full_size_link_after_picture(section: str, light_png_ref: str) -> No
     )
 
 
+def test_product_visual_order(readme_text: str) -> None:
+    """LKW governed hero is the first major product/proof visual; ecosystem hero follows."""
+    lkw_idx = readme_text.index(_LKW_GOVERNED_HERO_LIGHT)
+    ecosystem_idx = readme_text.index(_ECOSYSTEM_HERO_LIGHT)
+    assert lkw_idx < ecosystem_idx, "LKW governed hero must appear before ecosystem hero"
+    ecosystem_picture_blocks = [
+        block for block in _extract_picture_blocks(readme_text) if _ECOSYSTEM_HERO_LIGHT in block
+    ]
+    assert len(ecosystem_picture_blocks) == 1, "Ecosystem hero must appear exactly once"
+    lkw_picture_blocks = [
+        block for block in _extract_picture_blocks(readme_text) if _LKW_GOVERNED_HERO_LIGHT in block
+    ]
+    assert len(lkw_picture_blocks) == 1, "LKW governed hero must appear exactly once"
+
+
 def test_ecosystem_hero_contract(readme_text: str) -> None:
-    """Root README ecosystem hero appears before Choose your path with controlled PNG assets."""
-    choose_idx = readme_text.index("## Choose your path")
-    hero_light_ref = "docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
+    """Ecosystem hero lives in future/portfolio context with controlled PNG assets."""
+    future_idx = readme_text.index("### Future strategic directions")
+    hero_light_ref = _ECOSYSTEM_HERO_LIGHT
     hero_dark_ref = "docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.png"
     assert "intergrax-ecosystem-hero-light.svg" not in readme_text
     assert "intergrax-ecosystem-hero-dark.svg" not in readme_text
-    assert readme_text.index(hero_light_ref) < choose_idx
-    assert readme_text.index(hero_dark_ref) < choose_idx
-    assert readme_text.index("<picture>") < choose_idx
+    assert future_idx < readme_text.index(hero_light_ref)
+    assert future_idx < readme_text.index(hero_dark_ref)
     assert ECOSYSTEM_HERO_LIGHT_PATH.is_file(), "Ecosystem hero light PNG is missing"
     assert ECOSYSTEM_HERO_DARK_PATH.is_file(), "Ecosystem hero dark PNG is missing"
     pair_violations = _validate_light_dark_pair(ECOSYSTEM_HERO_LIGHT_PATH, ECOSYSTEM_HERO_DARK_PATH)
@@ -340,7 +473,7 @@ def test_platform_map_visual_contract(readme_text: str) -> None:
 
 def test_why_visual_contract(readme_text: str) -> None:
     section_idx = readme_text.index("## Why this matters")
-    next_section_idx = readme_text.index("## Responsibility model", section_idx)
+    next_section_idx = readme_text.index("---", section_idx)
     light_ref = "docs/project/assets/public/readme/intergrax-why-light.png"
     dark_ref = "docs/project/assets/public/readme/intergrax-why-dark.png"
     assert section_idx < readme_text.index(light_ref) < next_section_idx
@@ -384,11 +517,15 @@ def test_governed_execution_visual_contract(readme_text: str) -> None:
 
 
 def test_lkw_visual_contract(readme_text: str) -> None:
-    assert "applications/local_workspace_application/docs/assets/lkw-grounded-result-light.svg" in readme_text
-    assert "applications/local_workspace_application/docs/assets/lkw-grounded-result-dark.svg" in readme_text
-    assert 'alt="LKW quickstart flow' in readme_text
-    assert LKW_LIGHT_PATH.is_file(), "LKW light SVG is missing"
-    assert LKW_DARK_PATH.is_file(), "LKW dark SVG is missing"
+    assert _LKW_GOVERNED_HERO_LIGHT in readme_text
+    assert (
+        "applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-dark.png"
+        in readme_text
+    )
+    assert "lkw-grounded-result" not in readme_text
+    assert 'alt="LKW advanced governed proof' in readme_text
+    assert LKW_LIGHT_PATH.is_file(), "LKW governed evidence gate light PNG is missing"
+    assert LKW_DARK_PATH.is_file(), "LKW governed evidence gate dark PNG is missing"
     pair_violations = _validate_light_dark_pair(LKW_LIGHT_PATH, LKW_DARK_PATH)
     assert not pair_violations, f"LKW light/dark pair: {pair_violations}"
 
@@ -492,19 +629,6 @@ def _collect_svg_violations(root: ET.Element) -> list[str]:
     return violations
 
 
-@pytest.mark.parametrize(
-    "svg_path",
-    [
-        LKW_LIGHT_PATH,
-        LKW_DARK_PATH,
-    ],
-)
-def test_svg_safety(svg_path: Path) -> None:
-    root = _parse_svg(svg_path)
-    violations = _collect_svg_violations(root)
-    assert not violations, f"{svg_path.name}: {violations}"
-
-
 def test_visual_contract(readme_text: str) -> None:
     """Strategic root README visuals use controlled PNG pairs; Mermaid is not a substitute."""
     blocks = _MERMAID_FENCE.findall(readme_text)
@@ -579,6 +703,7 @@ def test_lkw_proof_boundary(readme_text: str) -> None:
         or "incomplete" in lower
     )
     assert "real application code path" in lower or "production code path" in lower
+    assert "live_only" in lower
 
 
 def test_proof_dashboard_route(readme_text: str) -> None:
@@ -604,7 +729,7 @@ def test_relative_links(readme_text: str) -> None:
 
 def test_quick_start_anchor(readme_text: str) -> None:
     assert "## Try LKW" in readme_text
-    assert "run-lkw-product-quickstart" in readme_text
+    assert "applications/local_workspace_application/docs/product/QUICKSTART.md" in readme_text
     for anchor in _COMPATIBILITY_ANCHORS:
         assert f'id="{anchor}"' in readme_text, f"Missing compatibility anchor: {anchor}"
 

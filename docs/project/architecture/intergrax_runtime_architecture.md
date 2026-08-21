@@ -1,6 +1,6 @@
 # Intergrax Runtime Architecture
 
-> **Technical index** — complete 24-domain architecture ↔ plan register and cross-layer feature pairs. For the public project-level mental model, see [Architecture Overview](ARCHITECTURE_OVERVIEW.md). First contact: [README](../../../README.md).
+> **Technical index** — primary domain-pair index, architecture artifact classification register, and cross-layer feature pairs. The twenty-four-row table below is **not** the complete owner set — see [Architecture artifact classification register](#architecture-artifact-classification-register). For the public project-level mental model, see [Architecture Overview](ARCHITECTURE_OVERVIEW.md). First contact: [README](../../../README.md).
 
 **Hub only** — domain architecture and implementation are paired 1:1 under `.` and `../maintainers/plans`; multi-layer features are paired 1:1 under `../capabilities/architecture` and `../capabilities/plan`.
 **Architecture principles:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — canonical rules for platform capability ownership, domain creation, application adoption, and proof order (meta-architecture governance; not a domain pair).
@@ -38,7 +38,7 @@ Current feature pairs:
 
 ---
 
-## Domain pair index (24)
+## Domain pair index (primary 24)
 
 | # | Domain | Architecture | Plan |
 |---|--------|--------------|------|
@@ -68,6 +68,31 @@ Current feature pairs:
 | 24 | `UNIFIED_CONTEXT_LIFECYCLE` | [`UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) | [`../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md`](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md) — lifecycle owner for conversation context optimization; [`ADR-UCL-001`](../technical/adr/entries/2026-08-01/ADR-UCL-001.md) |
 
 **Plan-only hubs (no 1:1 architecture basename):** [`../maintainers/plans/HARNESS_EVIDENCE_PACK.md`](../maintainers/plans/HARNESS_EVIDENCE_PACK.md) · [`../maintainers/plans/IDEAL_HARNESS_L3.md`](../maintainers/plans/IDEAL_HARNESS_L3.md) · [`../maintainers/plans/AUDIT_IDEAL_2026.md`](../maintainers/plans/AUDIT_IDEAL_2026.md) · [`../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) (satellite architecture under `satellites`).
+
+
+<a id="architecture-artifact-classification-register"></a>
+
+## Architecture artifact classification register
+
+Every canonical architecture artifact is classified **exactly once**. Do not promote every markdown file under `docs/project/architecture/` to a domain automatically.
+
+| Class | Meaning | Examples |
+|-------|---------|----------|
+| **META_ARCHITECTURE** | Platform-wide governance or hub index — not a 1:1 domain pair | [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · this hub |
+| **DOMAIN** | One reusable capability — canonical architecture + implementation plan pair | All rows in [Domain pair index (primary 24)](#domain-pair-index-primary-24) plus additional canonical pairs below |
+| **FEATURE** | Cross-layer coordination — feature architecture/plan pair; domain owners retain runtime semantics | [`../capabilities/README.md`](../capabilities/README.md) · `TOKEN_OPTIMIZATION` · `LANGCHAIN_INDEPENDENCE` |
+| **SUPPORTING_MODEL / SATELLITE** | Typed model, ADR-backed adjunct, or domain satellite — subordinate to a domain owner | [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md) · [`APPLICATION_DEPENDENCY_MODEL.md`](APPLICATION_DEPENDENCY_MODEL.md) · domain `satellites/` |
+
+**Additional canonical DOMAIN pairs** (not in the primary twenty-four-row table — [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-01`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)):
+
+| Domain | Architecture | Plan |
+|--------|--------------|------|
+| `GOVERNED_EXECUTION` | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) | [`../maintainers/plans/GOVERNED_EXECUTION.md`](../maintainers/plans/GOVERNED_EXECUTION.md) |
+| `AGENT_DISTRIBUTION` | [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) | [`../maintainers/plans/AGENT_DISTRIBUTION.md`](../maintainers/plans/AGENT_DISTRIBUTION.md) |
+| `PLATFORM_PLUGINS` | [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) | [`../maintainers/plans/PLATFORM_PLUGINS.md`](../maintainers/plans/PLATFORM_PLUGINS.md) |
+| `PROOF_RECEIPTS` | [`PROOF_RECEIPTS.md`](PROOF_RECEIPTS.md) | [`../maintainers/plans/PROOF_RECEIPTS.md`](../maintainers/plans/PROOF_RECEIPTS.md) |
+
+**Cross-layer index:** [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) — compact `SYS-INV-*` authority; domain pairs remain semantic owners. **Remediation:** **CLA-CANON-TOPOLOGY-INTEGRITY** in [`PLATFORM_FOUNDATION` plan](../maintainers/plans/PLATFORM_FOUNDATION.md) — **ACCEPTED / PLANNED** only.
 
 ---
 

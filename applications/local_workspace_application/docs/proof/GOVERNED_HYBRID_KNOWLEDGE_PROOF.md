@@ -2,6 +2,33 @@
 
 **Intergrax determines what evidence is required for an answer to be admissible, resolves it through authorized indexed and live sources, revalidates authority at execution time, and preserves structural proof of why a past answer was valid.**
 
+> **Scope note:** COMM-5 bounded proof paths collectively exercise indexed and live
+> evidence mechanisms. The **Advanced Flagship proof (F3-F)** — the public
+> **Governed Evidence Decision Proof** — is specifically **LIVE_ONLY** with four
+> independent live providers. Complete indexed + authorized live Hybrid Ask in a
+> single admissibility gate remains **not proven**.
+
+<a href="../assets/lkw-governed-evidence-gate-light.png">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/lkw-governed-evidence-gate-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/lkw-governed-evidence-gate-light.png"
+  >
+  <img
+    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four live organizational sources, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
+    src="../assets/lkw-governed-evidence-gate-light.png"
+  >
+</picture>
+</a>
+
+*Conceptual COMM-5 evidence model. The F3-F Advanced Flagship below is **LIVE_ONLY**
+and receives versioned policy rules through the policy-resolution boundary; it does
+not perform indexed policy retrieval.*
+
 ```mermaid
 flowchart LR
   POLICY["Approved Indexed Policy"]
@@ -34,7 +61,290 @@ flowchart LR
 
 ---
 
-## Quick start
+## What is proven today
+
+The strongest accepted public evidence is the **Governed Evidence Decision Proof**
+(**Advanced Flagship / F3-F**): a **LIVE_ONLY**, multi-provider, bounded governed
+evidence proof over Docker-backed organizational sources.
+
+F3-F demonstrates that Intergrax can derive mandatory live evidence obligations
+from versioned policy rules, acquire four independent live sources through
+authorized connections and capabilities, revalidate authority at execution time,
+apply temporal admissibility, classify typed evidence failures, suppress LLM
+synthesis when admissibility is unsatisfied, and persist structural proof of why
+a past answer was or was not permitted.
+
+Earlier bounded proofs — indexed policy plus a single live provider (COMM-5D),
+adversarial hardening, and Docker vendor-persistence foundations — remain valid
+building blocks documented under [Earlier proof lineage](#earlier-proof-lineage).
+
+---
+
+## Governed Evidence Decision Proof (Advanced Flagship / F3-F)
+
+| | |
+|---|---|
+| **Public name** | Governed Evidence Decision Proof |
+| **Internal** | Advanced Flagship Proof / F3-F |
+| **Mode** | **LIVE_ONLY** |
+| **Question** | Can ORION be deployed to production tonight? |
+
+**Core demonstrated behavior:**
+
+- four policy-derived mandatory live evidence obligations
+- four independent live providers
+- four connections
+- four capabilities
+- execution-time authority revalidation
+- temporal admissibility
+- typed failure semantics
+- mandatory inadmissibility suppresses LLM
+- structural reason persistence across run reload
+- Docker-backed vendor truth
+- vendor restart without reseed
+
+**Claim boundary:** F3-F is a **multi-provider**, **LIVE_ONLY**, **bounded
+governed evidence proof**. It is **not** complete indexed + authorized live Hybrid
+Ask certification. COMM-5 collectively exercises indexed and live mechanisms across
+separate bounded paths; F3-F itself exercises **live evidence only**.
+
+**Admissibility note:** `SATISFIED` means the evidence gate permits synthesis. It
+does **not** mean deployment is approved, the business result is positive, or the
+answer is guaranteed correct. Evidence may be admissible while provider facts still
+indicate BLOCKED/NO.
+
+<a href="../assets/lkw-policy-revision-admissibility-light.png">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/lkw-policy-revision-admissibility-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/lkw-policy-revision-admissibility-light.png"
+  >
+  <img
+    alt="LKW policy revision proof showing the same two-hour security evidence accepted under REV17 with a 24-hour max age and rejected under REV18 with a one-hour max age."
+    src="../assets/lkw-policy-revision-admissibility-light.png"
+  >
+</picture>
+</a>
+
+Composes F3-A/B/C/D/E into one Docker-backed four-provider governed decision proof.
+
+---
+
+## How to run the Advanced Flagship
+
+**Prerequisites:** Python 3.12, `uv`, repo checkout, Docker. No cloud credentials.
+
+```bash
+docker compose \
+  -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml \
+  up --build -d
+
+uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.advanced_flagship_proof
+```
+
+**Duration:** Docker-backed proof (minutes on a developer machine, depending on image build).
+
+Tests: `tests/unit/proof_infrastructure/test_advanced_flagship_proof.py`
+
+---
+
+## Flagship scenario matrix
+
+| Scenario | Expected |
+|----------|----------|
+| REV17 all satisfied | 4 policy-derived obligations, LLM = 1 |
+| REV18 stale security | same evidence, tighter policy, LLM = 0 |
+| REV18 fresh security | evidence refresh only, LLM = 1 |
+| Authority revoked | governance HTTP = 0, AUTHORITY_UNAVAILABLE |
+| Provider 503 | real security HTTP, PROVIDER_FAILED |
+| Malformed response | PROVIDER_RESPONSE_INVALID |
+| Vendor restart | persisted Mongo record survives process restart |
+| Structural history | REV17 vs REV18 policy basis / snapshot comparison |
+
+---
+
+## Policy revision story
+
+The flagship proof uses versioned deployment policy rules. Under **REV17**, the
+same two-hour-old security evidence satisfies a 24-hour maximum-age obligation and
+admissibility is **SATISFIED**. Under **REV18**, the policy tightens to a one-hour
+maximum age on the same evidence snapshot — admissibility becomes **UNSATISFIED** and
+LLM synthesis is suppressed (`LLM = 0`). After a fresh security evidence refresh
+only, **REV18** admissibility returns to **SATISFIED** (`LLM = 1`).
+
+Policy revision changes admissibility requirements without changing the underlying
+provider facts until evidence is refreshed.
+
+---
+
+## Failure semantics
+
+<a href="../assets/lkw-evidence-failure-semantics-light.png">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/lkw-evidence-failure-semantics-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/lkw-evidence-failure-semantics-light.png"
+  >
+  <img
+    alt="LKW evidence failure proof distinguishing authority unavailable, provider failure, invalid provider response, and temporally invalid evidence, each suppressing LLM synthesis."
+    src="../assets/lkw-evidence-failure-semantics-light.png"
+  >
+</picture>
+</a>
+
+The flagship proof distinguishes typed failure paths that all suppress LLM synthesis:
+
+| Failure class | Trigger (flagship) | HTTP to provider | LLM | Admissibility |
+|---------------|-------------------|------------------|-----|---------------|
+| Authority unavailable | binding revoked before live call | 0 | 0 | UNSATISFIED |
+| Provider failed | real HTTP, vendor returns 503 | 1 | 0 | UNSATISFIED |
+| Provider response invalid | malformed provider payload | 1 | 0 | UNSATISFIED |
+| Temporally invalid evidence | policy max-age tightened (REV18 stale) | prior reads | 0 | UNSATISFIED |
+
+**Governance denial vs provider failure:** runtime authority or plan validation can
+stop execution before any live HTTP call (`HTTP = 0`). Provider failure occurs after
+the provider is authorized and called (`HTTP = 1`) but does not yield valid live
+evidence satisfying required obligations. In both cases synthesis is blocked
+(`LLM = 0`, `answer = None`), but provider failures finalize into a valid typed
+`INSUFFICIENT_EVIDENCE` run with `evidence_admissibility = UNSATISFIED` rather than
+an accidental validation error.
+
+---
+
+## External vendor truth and persistence
+
+<a href="../assets/lkw-external-evidence-authority-light.png">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/lkw-external-evidence-authority-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/lkw-external-evidence-authority-light.png"
+  >
+  <img
+    alt="LKW advanced proof showing four independent live provider connections and Docker-backed vendor state accessed only through integration abstractions."
+    src="../assets/lkw-external-evidence-authority-light.png"
+  >
+</picture>
+</a>
+
+The Advanced Flagship uses four independent Docker-backed live providers accessed
+only through Intergrax integration abstractions — never through direct proof-harness
+HTTP or storage mutation.
+
+**F3-E-R1** (Security Status vendor) established Docker-backed Mongo persistence
+for one controlled vendor. F3-F extends that pattern across four providers and proves
+vendor restart without reseed: persisted Mongo records survive controlled vendor
+process restart.
+
+| Ownership | Responsibility |
+|-----------|----------------|
+| MongoDB | Persistence for Dockerized controlled vendors only |
+| Controlled vendors | Domain access to vendor persistence via typed stores |
+| Integration layer | Intergrax-facing vendor read access |
+| `WorkspaceAskServiceV2` | Governed decision execution |
+| Proof runner | Scenario coordination only |
+
+**Boundary invariants:**
+
+- The flagship proof runner never talks directly to vendor storage or vendor HTTP. All vendor reads pass through Intergrax integration abstractions; proof-only administration and lifecycle operations pass through typed proof infrastructure ports (`ControlledSecurityStatusAdminPort`, `GovernedHybridDockerEnvironmentV1`).
+- MongoDB is an implementation detail of Dockerized vendors and is never a direct evidence source for Intergrax.
+
+**Data flow (Docker flagship):**
+
+```text
+proof runner
+→ GovernedHybridDockerEnvironmentV1 / GovernedSecurityDockerScenarioV1
+→ WorkspaceAskServiceV2
+→ KnowledgeQueryOrchestratorV1
+→ LiveCapabilityExecutorV1
+→ WorkspaceLiveAccessRuntimeAuthority
+→ SecurityStatusIntegration (and three additional provider integrations)
+→ controlled vendor HTTP
+→ MongoSecurityStatusStore (per vendor)
+→ MongoDB (named volume: governed_proof_vendor_data)
+```
+
+Proof control (seed, failure injection, readiness) uses typed proof admin ports only — never production integration mutation.
+
+Optional focused Docker persistence runner (F3-E-R1 building block):
+
+```bash
+docker compose \
+  -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml \
+  up -d --build
+
+uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.docker_persistence_proof
+```
+
+---
+
+## Structural proof and reload
+
+The flagship **Structural history** scenario compares persisted Ask runs across
+**REV17** and **REV18**, demonstrating that structural proof records the policy
+basis, required obligations, admissibility outcome, and answer permission at execution
+time — not a replay of raw live payload bodies.
+
+**Limitation (explicit):** EPHEMERAL live bodies are **not** durably retained.
+Historical proof uses structural identity — `content_hash`, binding/capability IDs,
+timestamps, admissibility — not raw live payload replay.
+
+The **Vendor restart** scenario proves that Docker-backed vendor state survives
+controlled process restart without reseed, while structural Ask-run proof remains
+inspectable across reload.
+
+---
+
+## Explicit limitations
+
+| Boundary | Status |
+|----------|--------|
+| F3-F mode | **LIVE_ONLY** — not mixed indexed + authorized live Hybrid Ask |
+| Product Quick Start | Separate indexed onboarding path — not this proof |
+| Admissibility | Permits synthesis only — not deployment approval or positive business outcome |
+| Live payload replay | EPHEMERAL bodies not durably retained |
+| Production readiness | Not claimed |
+| Real enterprise vendor deployment | Not claimed |
+| Universal vendor interoperability | Not claimed |
+| Real-user / commercial validation | Not established |
+
+Complete indexed + authorized live Hybrid Ask in a single admissibility gate remains
+**not proven**.
+
+---
+
+## Earlier proof lineage
+
+The Advanced Flagship was assembled from earlier bounded slices:
+
+```text
+COMM-5D (indexed policy + single live provider)
+  → adversarial hardening
+  → temporal / failure / provider-persistence foundations (F3-E-R1)
+  → F3-F Advanced Flagship (four live providers, LIVE_ONLY)
+```
+
+These proofs remain valid evidence for the mechanisms they exercise. They are
+**building blocks**, not the final public flagship story.
+
+### COMM-5D — indexed policy + single live provider
+
+The COMM-5D proof demonstrated indexed deployment policy plus a single authorized
+**Project Status** live provider across four scenarios: Reality, Freshness, Authority,
+and History.
+
+#### Quick start (COMM-5D)
 
 **Prerequisites:** Python 3.12, `uv`, repo checkout. No cloud credentials. No manual HTTP service.
 
@@ -50,9 +360,7 @@ uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof --json
 
 **Duration:** local deterministic proof (seconds on a developer machine).
 
----
-
-## What this proof demonstrates
+#### What COMM-5D demonstrated
 
 | Guarantee | Mechanism exercised |
 |-----------|---------------------|
@@ -63,11 +371,9 @@ uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof --json
 | Provider non-invocation is measurable | Project Status `read_request_count` |
 | Structural historical proof | `WorkspaceAskServiceV2.get_run` / `WorkspaceAskRepository` |
 
-This document claims **Intergrax behavior only** — not comparisons to other platforms.
+This slice claims **Intergrax behavior only** — not comparisons to other platforms.
 
----
-
-## Story — ORION deployment readiness
+#### Story — ORION deployment readiness
 
 **Project:** ORION  
 **Question (all scenarios):** `Is ORION ready for deployment?`
@@ -84,9 +390,7 @@ A project is ready for deployment only when:
 
 **External live status (controlled HTTP):** readiness `94`, blocker `SEC-417`.
 
----
-
-## 01 — Reality matters
+#### 01 — Reality matters
 
 ```mermaid
 sequenceDiagram
@@ -107,9 +411,7 @@ sequenceDiagram
 | Admissibility | SATISFIED |
 | Decision | **NO** |
 
----
-
-## 02 — Freshness matters
+#### 02 — Freshness matters
 
 Only external state changes: `SEC-417` OPEN → CLOSED.
 
@@ -128,9 +430,7 @@ stateDiagram-v2
 | Admissibility | SATISFIED |
 | Decision | **YES** |
 
----
-
-## 03 — Authority matters
+#### 03 — Authority matters
 
 Binding ACTIVE during planning; **DISABLED** after indexed retrieval, before live HTTP.
 
@@ -153,9 +453,7 @@ flowchart TD
 | Ask status | `INSUFFICIENT_EVIDENCE` |
 | Decision | **CANNOT DETERMINE** |
 
----
-
-## 04 — History matters
+#### 04 — History matters
 
 Current live state may be CLOSED; historical Ask #1 still explains **why NO was valid then**.
 
@@ -170,11 +468,7 @@ flowchart LR
   RUN --> ANS["answer NO"]
 ```
 
-**Limitation (explicit):** EPHEMERAL live bodies are **not** durably retained. Historical proof uses structural identity — `content_hash`, binding/capability IDs, timestamps, admissibility — not raw live payload replay.
-
----
-
-## Expected terminal output (representative)
+#### Expected terminal output (COMM-5D, representative)
 
 ```text
 ============================================================
@@ -209,9 +503,7 @@ RESULT: PASS
 ============================================================
 ```
 
----
-
-## Real boundaries exercised
+#### Real boundaries exercised (COMM-5D)
 
 | Layer | Component |
 |-------|-----------|
@@ -228,26 +520,7 @@ RESULT: PASS
 
 No fake search-result injection, no manual integration registration, no direct configuration mutation by the proof harness.
 
----
-
-## Architecture deep link
-
-Hybrid Ask architecture and COMM-5C3 Project Status boundary:
-
-[`HYBRID_ASK_ARCHITECTURE.md`](../HYBRID_ASK_ARCHITECTURE.md)
-
----
-
-## Automated tests
-
-```bash
-uv run pytest tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_proof.py -v
-uv run pytest tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_adversarial.py -v
-```
-
----
-
-## Adversarial verification
+### Adversarial verification
 
 The following **adversarial invariants** are verified against the same real COMM-5D harness (`WorkspaceAskServiceV2`, indexed path, tenant connection, runtime authority, Project Status HTTP, admissibility, persistence). These are architectural proofs — not penetration-test certification.
 
@@ -293,78 +566,18 @@ flowchart TD
 
 Tests: `tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_adversarial.py`
 
-**Governance denial vs provider failure:** runtime authority or plan validation can stop execution before any live HTTP call (`HTTP = 0`). Provider failure occurs after the provider is authorized and called (`HTTP = 1`) but does not yield valid live evidence satisfying required obligations. In both cases synthesis is blocked (`LLM = 0`, `answer = None`), but provider failures finalize into a valid typed `INSUFFICIENT_EVIDENCE` run with `evidence_admissibility = UNSATISFIED` rather than an accidental validation error.
-
 ---
 
-## Docker vendor persistence (F3-E-R1)
+## Architecture and tests
 
-The flagship COMM-5D proof uses an in-process controlled Project Status vendor. **F3-E-R1** adds a Docker-backed Mongo persistence proof for the controlled **Security Status** vendor.
+Hybrid Ask architecture and COMM-5C3 Project Status boundary:
 
-```bash
-docker compose \
-  -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml \
-  up -d --build
+[`HYBRID_ASK_ARCHITECTURE.md`](../HYBRID_ASK_ARCHITECTURE.md)
 
-uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.docker_persistence_proof
-```
-
-| Ownership | Responsibility |
-|-----------|----------------|
-| MongoDB | Persistence for the Dockerized controlled vendor only |
-| Security vendor | Domain access to vendor persistence via `MongoSecurityStatusStore` |
-| `SecurityStatusIntegration` | Intergrax-facing vendor read access |
-| `WorkspaceAskServiceV2` | Governed decision execution |
-| Proof runner | Scenario coordination only |
-
-**Boundary invariants:**
-
-- The flagship proof runner never talks directly to vendor storage or vendor HTTP. All vendor reads pass through Intergrax integration abstractions; proof-only administration and lifecycle operations pass through typed proof infrastructure ports (`ControlledSecurityStatusAdminPort`, `GovernedHybridDockerEnvironmentV1`).
-- MongoDB is an implementation detail of the Dockerized vendor and is never a direct evidence source for Intergrax.
-
-**Data flow (Docker R1):**
-
-```text
-proof runner
-→ GovernedHybridDockerEnvironmentV1 / GovernedSecurityDockerScenarioV1
-→ WorkspaceAskServiceV2
-→ KnowledgeQueryOrchestratorV1
-→ LiveCapabilityExecutorV1
-→ WorkspaceLiveAccessRuntimeAuthority
-→ SecurityStatusIntegration
-→ HttpxSecurityStatusReadClient
-→ controlled vendor HTTP
-→ MongoSecurityStatusStore
-→ MongoDB (named volume: governed_proof_vendor_data)
-```
-
-Proof control (seed, failure injection, readiness) uses `ControlledSecurityStatusAdminPort` only — never production integration mutation.
-
----
-
-## Advanced flagship proof (F3-F)
-
-Composes F3-A/B/C/D/E into one Docker-backed four-provider governed decision proof.
+### Automated tests
 
 ```bash
-docker compose \
-  -f applications/local_workspace_application/docker/docker-compose.governed-hybrid-proof.yml \
-  up --build -d
-
-uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.advanced_flagship_proof
+uv run pytest tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_proof.py -v
+uv run pytest tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_adversarial.py -v
+uv run pytest tests/unit/proof_infrastructure/test_advanced_flagship_proof.py -v
 ```
-
-| Scenario | Expected |
-|----------|----------|
-| REV17 all satisfied | 4 policy-derived obligations, LLM = 1 |
-| REV18 stale security | same evidence, tighter policy, LLM = 0 |
-| REV18 fresh security | evidence refresh only, LLM = 1 |
-| Authority revoked | governance HTTP = 0, AUTHORITY_UNAVAILABLE |
-| Provider 503 | real security HTTP, PROVIDER_FAILED |
-| Malformed response | PROVIDER_RESPONSE_INVALID |
-| Vendor restart | persisted Mongo record survives process restart |
-| Structural history | REV17 vs REV18 policy basis / snapshot comparison |
-
-Tests: `tests/unit/proof_infrastructure/test_advanced_flagship_proof.py`
-
-**Admissibility note:** evidence can be admissible while the business answer remains negative — admissibility governs synthesis permission, not deployment approval.

@@ -217,6 +217,77 @@ Verify (every harness PR):
 - PF-06 (`DeploymentTier.PRODUCT`) remains subordinate cleanup under §6.1ax deliverable **H**.
 - **Not implemented** by audit persistence task AUDIT-20260818-PLATFORM_FOUNDATION-PERSIST.
 
+<a id="protocol-v2-pcm-persistence-topology-integrity-2026-08-18"></a>
+
+### PCM-PERSISTENCE-TOPOLOGY-INTEGRITY — Cross-layer persistence topology qualification (Protocol v2 · 2026-08-18)
+
+**Status:** `ACCEPTED / PLANNED`
+**Priority:** P0
+**Type:** Arch / Wire / Proof
+**Source:** [`AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-01`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md), [`AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-06`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Deliverable intent:**
+
+- persistence capability classes: `PROCESS_LOCAL`, `DURABLE_SINGLE_HOST`, `SHARED_MULTI_HOST`
+- each stateful runtime mechanism declares required persistence capability for its deployment topology
+- STRICT/multi-host composition mechanically rejects process-local or otherwise insufficient stores
+- domain persistence ports own concurrency semantics (CAS, lease/claim, transactional commit, required isolation)
+- provider catalog supplies implementations that satisfy domain port guarantees — not merely minimal `RelationalStore` facades
+- cross-link [`PROVIDER_BACKEND_ABSTRACTION`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md), [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) recovery-side blocks, Agent Distribution CAS target pattern ([`AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md) §§23–25, §34)
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Platform Foundation coordinates topology qualification — does **not** become a persistence implementation domain.
+- Redis distributed idempotency and other provider capabilities remain valid when they prove required semantics — stay provider-neutral.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- **Not implemented** by audit persistence task AUDIT-20260818-PERSISTENCE-CONCURRENCY-MULTIHOST-PERSIST.
+
+<a id="cla-canon-topology-integrity-2026-08-18"></a>
+
+### CLA-CANON-TOPOLOGY-INTEGRITY — Authoritative ownership topology and invariant index (Protocol v2 · 2026-08-18)
+
+**Status:** `ACCEPTED / PLANNED`
+**Priority:** P0
+**Type:** Meta-architecture / documentation
+**Source:** [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-01`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md), [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-02`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Deliverable intent:**
+
+- one complete architecture artifact classification register in runtime hub (DOMAIN / FEATURE / META_ARCHITECTURE / SUPPORTING_MODEL)
+- classify omitted canonical pairs (`GOVERNED_EXECUTION`, `AGENT_DISTRIBUTION`, `PLATFORM_PLUGINS`, `PROOF_RECEIPTS`) without auto-promoting every architecture markdown file
+- refresh [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) as compact current cross-layer index — domain documents remain semantic owners
+
+**Remediation rules:**
+
+- Revalidate against then-current `development` HEAD before implementation.
+- Do **not** duplicate per-domain Protocol-v2 findings verbatim into SYSTEM_INVARIANTS.
+- **Not implemented** by audit persistence task AUDIT-20260818-CROSS-LAYER-ARCHITECTURE-PERSIST.
+
+<a id="cla-remediation-dag-integrity-2026-08-18"></a>
+
+### CLA-REMEDIATION-DAG-INTEGRITY — Cross-layer remediation dependency graph (Protocol v2 · 2026-08-18)
+
+**Status:** `ACCEPTED / PLANNED`
+**Priority:** P0 — before normal campaign remediation implementation
+**Type:** Campaign coordination / meta-architecture
+**Source:** [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-06`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Deliverable intent:**
+
+- campaign rollup produces **one** cross-layer remediation DAG before implementation starts
+- relation vocabulary: `depends_on`, `shares_authority_with`, `merge_into`, `supersedes`, `can_parallelize_with`, `verified_by`
+- prefer one canonical authority fix followed by consumer migrations — not parallel duplicate abstractions
+- **Do not build the final detailed DAG in the CROSS_LAYER_ARCHITECTURE persistence task** — belongs to CAMPAIGN_ROLLUP after this layer is persisted
+
+**Remediation rules:**
+
+- DAG is planning artifact only until operator authorizes implementation waves.
+- **Not implemented** by audit persistence task AUDIT-20260818-CROSS-LAYER-ARCHITECTURE-PERSIST.
+
 ### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae)
 
 **Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done**; EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** — `certify core` → `trace export` → `evidence live-core` → `evidence posture` / `evidence posture export`. EVID-CORE-FU-01 adds selected local no-network live Tier-0 probes with mock LLM/tools. It does not replace deterministic CORE certification and is not full runtime certification.

@@ -7,11 +7,11 @@ Use, modification, or distribution without written permission is prohibited.
 # LangChain Independence — Multi-layer Feature Architecture
 
 **Status:** LCI-0A–0C **APPROVED**; LCI-1A–1D **APPROVED**; LCI-2A–2F **APPROVED**; LCI-3A–3D **APPROVED**; LCI-4A–4D **APPROVED**; LCI-5A–5C **APPROVED**; LCI-6A–6E **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-7A–7D **APPROVED**; FINAL SYSTEM GATE **APPROVED**; LCI-8A **APPROVED**; LangChain Independence **COMPLETE / APPROVED**.
-**Roadmap status:** COMPLETE / APPROVED — no active implementation task remains.
+**Roadmap status:** COMPLETE / APPROVED — historical LCI program closed; Protocol-v2 residual remediation **ACCEPTED / PLANNED** (2026-08-21).
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** NONE — PROGRAM CLOSED
+**Current active task:** NONE — PROGRAM CLOSED; Protocol-v2 remediation blocks **PLANNED** only
 **LangGraph decision:** KEEP_OPTIONAL — retain the optional legacy boundary; any future deprecation/removal requires a separately approved product/architecture decision
 **Next task after acceptance:** NONE — PROGRAM CLOSED
 
@@ -344,6 +344,21 @@ Sub-models: `KnowledgeDocumentIdentity` (persistent IDs + lineage), `KnowledgeDo
 | **CI wiring** | PR smoke (`ci-smoke`) and full governance (`gate-governance-tier`) via `scripts/maintenance/check_langchain_boundary.py` |
 | **LangGraph guard relationship** | `check_langgraph_not_required.py` remains — core packaging/non-optional LangGraph dependency guard; `LCI-0B` covers all LangGraph production imports in protected zones with inventory-backed grandfathering |
 | **Register maintenance** | When a grandfathered import is removed during debt paydown, delete the matching register entry in the same change |
+
+---
+
+## Protocol v2 langchain independence target invariants (2026-08-18)
+
+Accepted [`LANGCHAIN_INDEPENDENCE`](../../../audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+
+1. **Trusted scope injection** — compatibility conversion (`from_langchain_document` and callers) receives trusted canonical scope (`tenant_id`, `namespace`, `workspace_id`) separately from foreign metadata. Foreign LangChain or provider metadata may only match or confirm trusted scope; mismatch fails closed. Untrusted metadata cannot establish tenant/workspace/namespace authority. Cross-link [`RAG`](../../architecture/RAG.md) **RAG-SCOPE-CONTRACT-INTEGRITY** and **IDENTITY_TRUST** where applicable.
+2. **Provider-hit identity validation** — legacy/provider conversion (`from_legacy_rag_hit` and equivalent paths) receives expected trusted scope and verifies returned routing identity against it. Provider-returned metadata cannot mint system ownership or provenance authority. Do not create a second document contract.
+3. **Conditional provider exemption** — boundary guard allows specific reviewed compatibility boundaries/capabilities, not entire provider directories. Equivalent eager/optional-boundary enforcement applies to every allowed provider family (`integrations/providers`, `llm_adapters/providers`, `compat/langchain`, `legacy`). New provider compatibility use requires explicit qualification.
+4. **Robust static dynamic-import detection** — LCI-0B tracks common statically resolvable `importlib` aliases and `import_module` aliases (`import importlib as il`, `from importlib import import_module`, etc.) with adversarial regression fixtures. No need for general Python execution or unrestricted dynamic analysis.
+5. **Explicit compatibility packaging semantics** — either native parsing extras remain LangChain-free and compatibility loader dependencies live only in named compatibility extras (`llm-langchain-ollama`, `rag-langchain-loaders`, `rag-langchain-embeddings`, `rag-langchain-splitters`, `langgraph-legacy`), or docs/package contract explicitly declares transitive opt-in (e.g. `parsing-office` / `parsing-pdf` → `langchain-community`).
+6. **Historical inventory vs current conformance evidence** — preserve historical migration inventory (`LANGCHAIN_INDEPENDENCE_dependency_inventory.md` pinned to migration-era SHA) as historical evidence; maintain a separate mechanically generated/current conformance evidence record pinned to a specific repository SHA. Architecture must not present stale inventory counts as current-state proof.
+
+Preserved: LangChain-free core strategy; **KEEP_OPTIONAL** LangGraph decision; historical LCI-0A..8A delivery/APPROVED facts; native `KnowledgeDocument` ownership; native Ollama default; optional compatibility philosophy. Protocol-v2 FAIL does not undo historical migration delivery.
 
 ---
 

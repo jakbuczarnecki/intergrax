@@ -33,6 +33,7 @@ Agents **must not** implement ad hoc lifecycle, retry, HITL, or event semantics.
 
 ## Flagship architecture visual
 
+<a href="assets/unified-execution-runtime-lifecycle-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-runtime-lifecycle-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-runtime-lifecycle-light.svg">
@@ -41,6 +42,7 @@ Agents **must not** implement ad hoc lifecycle, retry, HITL, or event semantics.
     src="assets/unified-execution-runtime-lifecycle-light.svg"
   >
 </picture>
+</a>
 
 Retry keeps the same `TaskId` and `RunId` and mints a new `AttemptId`. Resume without retry preserves the same `AttemptId`. Each event carries a unique `EventId`.
 
@@ -256,6 +258,19 @@ Accepted [`EXECUTION_RUNTIME`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.
 5. Replan/human/fail execution intent is preserved through runtime bridges (**UER-FIX-D** cross-ref RPL-FIX-C).
 
 Remediation blocks: **UER-FIX-A** … **UER-FIX-E** in [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md).
+
+<a id="protocol-v2-security-runtime-target-invariants-2026-08-18"></a>
+
+## Protocol v2 security runtime target invariants (2026-08-18)
+
+Accepted [`SECURITY_BOUNDARIES`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md) findings **03–06** (2026-08-21). **Target state** — **ACCEPTED / PLANNED**; **not implemented** by audit persistence.
+
+1. **Encryption fail-closed** — when cryptographic protection is required, configured secure backend resolution failure **blocks or fails startup**; no silent downgrade to non-cryptographic transforms (**SEC-BND-03** / **SEC-DATA-PROTECTION-INTEGRITY**).
+2. **Cryptographic vs lab transform** — `HarnessEnvelopeEncryptor` and similar transforms must be explicitly LAB/DEMO/non-cryptographic or replaced with real cryptography; a contract named `RestrictedPayloadEncryptor` must not claim cryptographic security for Base64 encoding. Preserve `SecretsStorePayloadEncryptor` provider-neutral architecture.
+3. **Security defense qualification** — runtime enforcement position for security toggles (including retrieval-poisoning defense) must be proven at assembly; cross-link **SEC-DEFENSE-QUALIFICATION-INTEGRITY** in Tier-3 plan where wiring originates.
+4. **Action-signature enforcement** — critical operations require exact signed action evidence (action, actor, tenant, resource, revision/nonce, expiry) immediately before effect; verification failure blocks effect; signing supplements Governance authorization (**SEC-BND-05**).
+5. **Durable audit authority** — separate in-memory audit simulation from production audit authority; multi-region qualification requires independently durable replicas and explicit replication/tamper evidence (**SEC-BND-06** / **SEC-AUDIT-AUTHORITY-INTEGRITY**).
+6. **No second Governance engine** — authorization for signed or audited operations reuses canonical Governance/identity authority.
 
 ## Current maturity
 

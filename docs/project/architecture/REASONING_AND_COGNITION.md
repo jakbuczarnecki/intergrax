@@ -44,6 +44,7 @@ The Reasoning and Cognition Layer (RCL) addresses this through **typed contracts
 
 ## Flagship architecture visual
 
+<a href="assets/reasoning-cognition-planes-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/reasoning-cognition-planes-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/reasoning-cognition-planes-light.svg">
@@ -52,6 +53,7 @@ The Reasoning and Cognition Layer (RCL) addresses this through **typed contracts
     src="assets/reasoning-cognition-planes-light.svg"
   >
 </picture>
+</a>
 
 Plane 3 (tool planner → `ToolPlanDecision` → `ToolRuntime`) follows the same typed-contract pattern inside each step — see [Tool cognition](#tool-cognition).
 

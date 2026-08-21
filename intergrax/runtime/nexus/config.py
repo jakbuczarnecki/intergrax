@@ -234,6 +234,13 @@ class RuntimeConfig:
     # Max concurrent read-only tool invocations per batch (TOOL-ENG-9). 1 = always serial.
     max_parallel_tool_calls: int = 8
 
+    # Max planned tool calls per planner round/batch (ENG-4 loop safety; not a RunBudget substitute).
+    max_tool_calls_per_round: int = 16
+
+    # Max executions of the same (tool_id, validated input) within one bounded ReAct loop.
+    # None disables identical-call repetition protection.
+    max_identical_tool_call_repeats: Optional[int] = None
+
     tool_invoker: Optional[RuntimeToolInvoker] = None
 
     idempotency_store: Optional[IdempotencyStore] = None
@@ -479,3 +486,14 @@ class RuntimeConfig:
                 raise TypeError("execution_slot_warn_threshold_ms must be int or None.")
             if self.execution_slot_warn_threshold_ms < 0:
                 raise ValueError("execution_slot_warn_threshold_ms must be >= 0.")
+
+        if not isinstance(self.max_tool_calls_per_round, int):
+            raise TypeError("max_tool_calls_per_round must be an int.")
+        if self.max_tool_calls_per_round < 1:
+            raise ValueError("max_tool_calls_per_round must be >= 1.")
+
+        if self.max_identical_tool_call_repeats is not None:
+            if not isinstance(self.max_identical_tool_call_repeats, int):
+                raise TypeError("max_identical_tool_call_repeats must be an int or None.")
+            if self.max_identical_tool_call_repeats < 1:
+                raise ValueError("max_identical_tool_call_repeats must be >= 1 when provided.")

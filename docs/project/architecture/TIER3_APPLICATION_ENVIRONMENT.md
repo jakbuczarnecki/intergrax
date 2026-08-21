@@ -50,6 +50,7 @@ Tier-3 solves this by keeping **one canonical composition path** from product de
 
 ## Flagship architecture visual
 
+<a href="assets/tier3-application-composition-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/tier3-application-composition-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/tier3-application-composition-light.svg">
@@ -58,6 +59,7 @@ Tier-3 solves this by keeping **one canonical composition path** from product de
     src="assets/tier3-application-composition-light.svg"
   >
 </picture>
+</a>
 
 ## Canonical composition flow
 
@@ -230,6 +232,20 @@ credential/session → verified principal → canonical RequestIdentity / actor 
 3. One canonical principal/actor contract must connect Tier-3 intake with runtime execution identity.
 4. `ActorIdentity` / `RequestIdentity` divergence must be resolved by one explicit canonical model or typed bridge.
 5. Product-specific intake may adapt credentials but must not invent parallel identity semantics.
+
+<a id="protocol-v2-security-boundaries-target-invariants-2026-08-18"></a>
+
+### Protocol v2 security boundaries target invariants (2026-08-18)
+
+Accepted [`SECURITY_BOUNDARIES`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+
+1. **Canonical authentication source** — one resolved authentication authority materializes credentials consumed by all middleware and route dependencies; no component re-reads a different env variable than the configured profile authority. Required configured credentials that cannot be materialized **fail startup** (**SEC-BND-01** / **SEC-AUTHORITY-BOUNDARY-INTEGRITY**).
+2. **Authentication ≠ authorization** — verified identity is propagated as a canonical authenticated principal, not reduced to boolean presence (**SEC-BND-02**). Cross-link **IDT-FIX-A** for principal spine — do not rewrite that block.
+3. **Admin scope explicit** — application/environment admin and Agent Platform control-plane operations require authorization bound to exact operation, `application_id`, `environment_id`, tenant/org, and principal; reuse Governance/identity authority — no second permission engine (**SEC-BND-02**).
+4. **Security toggle qualification** — profile `enabled=True` means enforceable and wired with a mechanically verified enforcement point; paper toggles without middleware/hook proof are **UNAVAILABLE/REQUIRED → fail assembly** (**SEC-BND-04**, **SEC-BND-05** / **SEC-DEFENSE-QUALIFICATION-INTEGRITY**).
+5. **Strict/product fail-closed** — STRICT/product assembly fails closed on missing mandatory security capability, including signing secret absence on product hosts and unqualified defense toggles (**SEC-BND-04**, **SEC-BND-05**).
+
+Historical Tier-3 **Done** delivery facts, maturity score, and existing **IDT-FIX-A** remediation remain valid — coordinate; do not duplicate IDENTITY_TRUST-01/02 ownership.
 
 ## Current implementation state
 
@@ -553,6 +569,32 @@ Accepted [`TIER3_APPLICATION_ENVIRONMENT`](../../audit_results/2026-08-18/TIER3_
 6. **Typed composition boundary** — platform-significant canonical wiring artifacts use concrete types, Protocols, or typed unions/generics. In particular policy/governance artifacts must not be typed as arbitrary `Any`. Keep dynamic/`Any` values only at genuine edge adapters where unavoidable.
 
 Historical Tier-3 **Done** delivery facts and existing **TL-FIX-C/D**, **ITI-FIX-***, **IDT-FIX-A** remediation remain **PLANNED** — coordinate; do not duplicate.
+
+<a id="protocol-v2-end-to-end-system-tier3-composition-target-invariants-2026-08-18"></a>
+
+### Protocol v2 END_TO_END_SYSTEM Tier-3 composition target invariants (2026-08-18)
+
+Accepted [`END_TO_END_SYSTEM`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md) findings **01, 02** (2026-08-21). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
+
+1. Tier-3 materializes **one configured task execution service** (`UnifiedTaskRunner` + mandatory host-owned enricher) and passes that same instance to HTTP, MCP, queue, and other supported execution surfaces.
+2. Tenant/model routing and LLM `RoutingContext` derive from the **runtime Task/Run execution identity** — not literal `tenant_id="default"` as product routing authority. Use a runtime `RoutingContextProvider` / execution-context bridge when the adapter is reused across tasks. Cross-link **IDENTITY_TRUST**, **LLM_ADAPTERS** — do not duplicate their findings.
+3. A surface must not reconstruct `UnifiedTaskRunner(nexus_loop)` independently when canonical wiring supplies reliability enrichment via `build_reliability_task_enricher()`. Cross-link **E2E-EXECUTION-CONTEXT-INTEGRITY**, **ITI-FIX-C**.
+
+<a id="protocol-v2-cross-layer-composition-qualification-target-invariants-2026-08-18"></a>
+
+### Protocol v2 cross-layer composition qualification target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`CROSS_LAYER_ARCHITECTURE`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md) (**FAIL**, CLA-03, CLA-05). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence. **No monolithic ProductionEngine.**
+
+**Conceptual inputs:** `TargetEnvironment` · materialized runtime identity · exact application/environment revision · exact component/capability qualification references · mandatory evidence freshness.
+
+**Conceptual outcomes:** `QUALIFIED` · `NOT_QUALIFIED` · `STALE` · `INCOMPLETE`.
+
+1. **Composition closure owner** — Tier-3/composition layer evaluates whether **all mandatory** components are simultaneously qualified for one target environment; each domain continues to own domain qualification (agent gates, plugin/provider qualification, hosting maturity, A/I/P/E axes, STRICT/PRODUCT profile, proof evidence).
+2. **No false union** — local gate scripts, partial CI smoke, or hub maturity summaries do **not** substitute for composition closure evidence.
+3. **Maturity requalification coupling** — when accepted findings affect production/evidence safety, composition and domain owners MUST record explicit maturity impact per [`MATURITY_TAXONOMY`](../technical/guides/MATURITY_TAXONOMY.md#finding-and-evidence-driven-maturity-impact-2026-08-18) before retaining prior four-axis claims.
+
+Remediation: **CLA-PRODUCTION-QUALIFICATION-INTEGRITY** in [plan](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md). Cross-link **SEC-***, **IDT-FIX-***, **PLATFORM-EXTENSIBILITY-***, **HOSTING-***, **LKW-PROOF-***, existing production-gates satellite — coordinate; do not duplicate.
 
 ---
 

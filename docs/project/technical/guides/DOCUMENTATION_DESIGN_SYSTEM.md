@@ -256,12 +256,16 @@ Documentation is a public engineering showcase. Choose the **simplest visual for
 **Preferred markup when light/dark matters:**
 
 ```html
+<a href="...-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="...-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="...-light.svg">
   <img alt="..." src="...-light.svg">
 </picture>
+</a>
 ```
+
+**Clickable physical assets:** every physical visual asset shown to a public reader must be directly clickable to open the full-size source file. Wrap light/dark `<picture>` blocks in `<a href="...">` using the fallback `<img src>` target (normally the light asset). An explicit `[View full-size diagram](...)` link may remain alongside the clickable image; both must point to the same canonical fallback asset. Mermaid diagrams are not subject to this asset-linking rule. Do not use JavaScript lightboxes or custom CSS for GitHub zoom behavior.
 
 **SVG requirements:**
 

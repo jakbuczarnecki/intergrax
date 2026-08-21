@@ -59,6 +59,7 @@ Reliability keeps recovery **bounded**, **layered**, and **evidence-backed**.
 
 ## Flagship architecture visual
 
+<a href="assets/reliability-recovery-loop-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/reliability-recovery-loop-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/reliability-recovery-loop-light.svg">
@@ -67,6 +68,7 @@ Reliability keeps recovery **bounded**, **layered**, and **evidence-backed**.
     src="assets/reliability-recovery-loop-light.svg"
   >
 </picture>
+</a>
 
 > **Reliability decides recovery. Observability records recovery. Governance authorizes consequential actions.**
 
@@ -849,6 +851,35 @@ Accepted [`EXECUTION_RUNTIME`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.
 5. Cancelled checkpoint cannot later be treated as ordinary resumable state without a new explicit authorized transition.
 
 Remediation: **UER-FIX-C**, **UER-FIX-E** in matching plans.
+
+<a id="protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18"></a>
+
+## Protocol v2 persistence/concurrency multihost target invariants (2026-08-18)
+
+Accepted Protocol v2 audit layer [`PERSISTENCE_CONCURRENCY_MULTIHOST`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md) (**FAIL**, 7 ACCEPTED findings, 2026-08-21). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). **Target state only** — **not implemented**:
+
+1. **Persistence topology classes** — declare `PROCESS_LOCAL`, `DURABLE_SINGLE_HOST`, and `SHARED_MULTI_HOST` capability classes; each stateful recovery mechanism (idempotency, compensation, checkpoints, scheduled resume) declares required capability for its deployment topology; STRICT/multi-host composition MUST mechanically reject process-local or otherwise insufficient stores ([`PCM-01`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md), [`PCM-06`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)); cross-link [Platform Foundation persistence topology invariants](PLATFORM_FOUNDATION.md#protocol-v2-persistence-topology-target-invariants-2026-08-18).
+2. **Idempotency uncertainty** — model execution uncertainty explicitly (claim/owner/fence, stale/uncertain state, reconciliation path); do not retry an uncertain irreversible effect blindly; do not claim exactly-once unless the complete external-effect protocol proves it ([`PCM-02`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+3. **Compensation claim semantics** — durable compensation consumption uses atomic claim: PENDING → CLAIMED/RUNNING(owner, lease/fence) → COMPLETED / RETRYABLE / FAILED; reuse canonical worker/message-bus primitives when suitable — no second generic queue engine ([`PCM-03`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+4. **Checkpoint monotonic/CAS semantics** — checkpoint mutation is version-fenced or monotonic (expected revision CAS, expected prior step/revision, or monotonic step assertion); stale writer receives explicit conflict; cross-link Agent Distribution `serving_pointer_revision` / binding revision CAS pattern — do not invent a separate locking architecture ([`PCM-04`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+5. **Scheduler single-host vs multi-host boundary** — keep existing single-process `LongRunningScheduler` adapter explicit and documented; shared/multi-host topology requires atomic due-item claim/lease/fence or canonical distributed worker/message bus with equivalent semantics ([`PCM-05`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+6. **Schema migration failure posture** — distinguish expected idempotent migration conditions from real persistence failures; unexpected migration/storage failure fails closed; eventual production schema evolution uses versioned migration authority rather than ad-hoc unconditional ALTER in store constructors ([`PCM-07`](../../audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md)).
+
+**Preserved boundaries:** Reliability owns recovery choice and side-effect coordination semantics — not storage backend implementation; Governance owns permission; Observability owns evidence; no universal ACID rollback claim; historical REL Done rows remain delivery facts; existing **PBA-FIX-A** / **IDT-FIX-C** remain **PLANNED**; process-local and durable-single-host stores remain valid for their declared topology.
+
+Remediation: **PCM-SIDE-EFFECT-COORDINATION-INTEGRITY**, **PCM-CHECKPOINT-SCHEDULER-INTEGRITY**, **PCM-SCHEMA-EVOLUTION-INTEGRITY** in [plan](../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md). **PCM-PERSISTENCE-TOPOLOGY-INTEGRITY** cross-linked to [Platform Foundation plan](../maintainers/plans/PLATFORM_FOUNDATION.md). **Not implemented** by audit persistence.
+
+<a id="protocol-v2-end-to-end-system-asynccontrol-target-invariants-2026-08-18"></a>
+
+## Protocol v2 END_TO_END_SYSTEM async/control target invariants (2026-08-18)
+
+Accepted [`END_TO_END_SYSTEM`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md) findings **04, 05, 06** (2026-08-21). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
+
+1. **Durable async terminal outcome** — durable async status includes durable terminal-outcome reachability: `TaskId` + `RunId` → durable `TaskResult` / result reference / execution-journal projection. The async index may store a reference rather than duplicate full result payload. After restart a completed task remains retrievable as a completed user outcome, not status-only evidence. Cross-link [`OBSERVABILITY_EVIDENCE`](OBSERVABILITY_EVIDENCE.md) / Unified Run Journal where a durable canonical result projection already exists — do not duplicate observability durability defects.
+2. **Safe external async errors** — separate internal diagnostic evidence from external error contract. External: stable `reason_code`, safe message, correlation/run identifier. Internal observability: full controlled exception detail per redaction policy. Cross-link **SECURITY_BOUNDARIES**, **OBSERVABILITY_EVIDENCE** — do not duplicate either subsystem.
+3. **Control operations bind exact active execution** — task-control cancel/autonomy and registry unregister target the registration owned by the concrete execution identity. Cross-link **E2E-CONTROL-AUTHORITY-INTEGRITY** in [`NEXUS_EXECUTION_FLOW`](NEXUS_EXECUTION_FLOW.md).
+
+Historical REL Done rows and existing **PCM-***, **UER-FIX-*** remediation remain delivery facts / **PLANNED** — coordinate; do not duplicate PCM checkpoint CAS/multi-host defects.
 
 ## Unresolved documentation drift (outside this edit)
 

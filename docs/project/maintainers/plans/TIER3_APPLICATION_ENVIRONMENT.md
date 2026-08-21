@@ -236,3 +236,85 @@ Finding 05 remains owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](PLATFOR
 **Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
 
 ---
+
+### Protocol v2 remediation — END_TO_END_SYSTEM (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/END_TO_END_SYSTEM.md`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
+
+#### E2E-EXECUTION-CONTEXT-INTEGRITY — Tier-3 configured runner composition
+
+**Priority:** P0
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-END_TO_END_SYSTEM-01`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md), [`02`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md)
+**Owner:** Tier-3 host composition — primary delivery for tenant-aware LLM wiring and one configured runner passed to all surfaces.
+
+**Acceptance intent:**
+
+- Tier-3 materializes one configured `UnifiedTaskRunner` (with `build_reliability_task_enricher()` or equivalent mandatory enrichment) and injects it into HTTP, MCP, queue, and supported surfaces.
+- `resolve_environment_llm_adapter()` / Nexus LLM wiring uses runtime Task/Run tenant identity — not literal `tenant_id="default"` for product routing.
+- HTTP/MCP/etc. consume the same configured execution semantics.
+- Cross-link [`NEXUS_EXECUTION_FLOW` plan](NEXUS_EXECUTION_FLOW.md) **E2E-EXECUTION-CONTEXT-INTEGRITY**, **ITI-FIX-C**, **LLM-FIX-*** — coordinate; do not duplicate.
+
+**Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
+
+---
+
+### Protocol v2 remediation — SECURITY_BOUNDARIES (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/SECURITY_BOUNDARIES.md`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-SECURITY-BOUNDARIES-PERSIST.
+
+#### SEC-AUTHORITY-BOUNDARY-INTEGRITY — one authentication authority and explicit admin authorization
+
+**Priority:** P0
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-SECURITY_BOUNDARIES-01`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md), [`02`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md)
+
+**Acceptance intent:**
+
+- Resolve authentication once into one typed authority object injected into middleware/dependencies; no component re-reads a different env variable.
+- Required configured credential that cannot be materialized fails startup.
+- Materialize canonical `AuthenticatedPrincipal` (subject, tenant, roles/scopes, provider/evidence); evaluate authorization policy bound to exact operation, `application_id`, `environment_id`, tenant/org, principal.
+- Cross-link **IDT-FIX-A** and **POLICY_GOVERNANCE** — do not create a second permission engine.
+
+#### SEC-DEFENSE-QUALIFICATION-INTEGRITY — proven security toggles and critical action signing
+
+**Priority:** P1
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-SECURITY_BOUNDARIES-04`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md), [`05`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md)
+
+**Acceptance intent:**
+
+- Security capabilities use explicit qualification state: DISABLED / ENFORCED-PROVEN / UNAVAILABLE-REQUIRED → fail assembly.
+- No security toggle reports enabled unless enforcement point exists and is mechanically verified.
+- Product signing enabled ⇒ missing configured secret fails closed; no `harness-dev-signing-key` fallback on product hosts.
+- Real critical operations require exact signed action evidence immediately before effect; verification failure blocks effect.
+- Cross-link runtime enforcement in [`UNIFIED_EXECUTION_RUNTIME` plan](UNIFIED_EXECUTION_RUNTIME.md) — **SEC-DEFENSE-QUALIFICATION-INTEGRITY** where runtime position is required.
+
+**Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
+
+<a id="cla-production-qualification-integrity-2026-08-18"></a>
+
+### CLA-PRODUCTION-QUALIFICATION-INTEGRITY — Composition qualification closure and maturity requalification (Protocol v2 · 2026-08-18)
+
+**Status:** `ACCEPTED / PLANNED`
+**Priority:** P0
+**Type:** Meta-architecture / composition qualification concept
+**Source:** [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-03`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md), [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-05`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)
+**Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
+
+**Deliverable intent:**
+
+- define provider/domain-neutral composition qualification model (`QUALIFIED` / `NOT_QUALIFIED` / `STALE` / `INCOMPLETE`) — Tier-3 evaluates closure only
+- cross-link existing security, plugin, provider, identity, persistence, hosting, and E2E blocks — do not duplicate them
+- integrate finding/evidence-driven maturity impact semantics from [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md)
+- **No monolithic ProductionEngine** — domains retain domain qualification
+
+**Remediation rules:**
+
+- Revalidate against then-current `development` HEAD before implementation.
+- Hub A4/I3/P3/E3 summaries require explicit requalification decisions when accepted findings affect claimed scope.
+- **Not implemented** by audit persistence task AUDIT-20260818-CROSS-LAYER-ARCHITECTURE-PERSIST.
+
+---

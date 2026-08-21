@@ -11,14 +11,14 @@
 | `campaign_id` | `2026-08-18` |
 | `campaign_token` | `20260818` |
 | `started_at` | 2026-08-18 (UTC) |
-| `completed_at` | — |
-| `status` | `IN_PROGRESS` |
+| `completed_at` | `2026-08-21T10:01:40Z` |
+| `status` | `COMPLETE` |
 | `campaign_start_sha` | `9658224495c775fcefd55ab52bbcc7a94c84fb50` |
-| `campaign_end_sha` | — |
-| `scope` | Platform audit — twenty-nine completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`, `CONTEXT_ENGINEERING`, `UNIFIED_CONTEXT_LIFECYCLE`, `MODALITY`, `OBSERVABILITY_EVIDENCE`, `CRITIC_VERIFICATION`, `ADAPTIVE_HARNESS_INTELLIGENCE`, `ELASTIC_CAPACITY_AND_SCALING`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`, `TIER3_APPLICATION_ENVIRONMENT`, `APPLICATION_HOSTING`, `TOKEN_OPTIMIZATION`) |
-| `overall_verdict` | — |
+| `campaign_end_sha` | `edb744940162ecaf317af71a918bb1cac98d19e3` |
+| `scope` | Platform audit — thirty-six completed audit units (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`, `PLATFORM_FOUNDATION`, `ORCHESTRATION`, `AGENT_SYSTEM`, `TOOLS`, `SKILLS`, `CODE_CRAFT`, `INTEGRATIONS`, `RAG`, `MEMORY`, `CONTEXT_ENGINEERING`, `UNIFIED_CONTEXT_LIFECYCLE`, `MODALITY`, `OBSERVABILITY_EVIDENCE`, `CRITIC_VERIFICATION`, `ADAPTIVE_HARNESS_INTELLIGENCE`, `ELASTIC_CAPACITY_AND_SCALING`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`, `TIER3_APPLICATION_ENVIRONMENT`, `APPLICATION_HOSTING`, `TOKEN_OPTIMIZATION`, `LANGCHAIN_INDEPENDENCE`, `PLATFORM_EXTENSIBILITY`, `PERSISTENCE_CONCURRENCY_MULTIHOST`, `SECURITY_BOUNDARIES`, `LKW_PRODUCT_PROOF`, `END_TO_END_SYSTEM`, `CROSS_LAYER_ARCHITECTURE`) |
+| `overall_verdict` | `FAIL` |
 | `audit_method` | falsification-first, evidence-driven, no preference for PASS or FAIL |
-| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20; CONTEXT_ENGINEERING accepted 2026-08-20; UNIFIED_CONTEXT_LIFECYCLE accepted 2026-08-20; MODALITY accepted 2026-08-20; OBSERVABILITY_EVIDENCE accepted 2026-08-20; CRITIC_VERIFICATION accepted 2026-08-20; ADAPTIVE_HARNESS_INTELLIGENCE accepted 2026-08-20; ELASTIC_CAPACITY_AND_SCALING accepted 2026-08-20; EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE accepted 2026-08-21; TIER3_APPLICATION_ENVIRONMENT accepted 2026-08-21; APPLICATION_HOSTING accepted 2026-08-21; TOKEN_OPTIMIZATION accepted 2026-08-21 |
+| `operator_decision` | STRATEGIC_HARNESS_MODEL accepted 2026-08-18; TIER_LAYER_BOUNDARIES accepted 2026-08-18; PROVIDER_BACKEND_ABSTRACTION accepted 2026-08-18; INTERFACE_TASK_INTAKE accepted 2026-08-18; IDENTITY_TRUST accepted 2026-08-18; POLICY_GOVERNANCE accepted 2026-08-19; LLM_ADAPTERS accepted 2026-08-19; REASONING_PLANNING accepted 2026-08-19; EXECUTION_RUNTIME accepted 2026-08-19; PLATFORM_FOUNDATION accepted 2026-08-19; ORCHESTRATION accepted 2026-08-20; AGENT_SYSTEM accepted 2026-08-20; TOOLS accepted 2026-08-20; SKILLS accepted 2026-08-20; CODE_CRAFT accepted 2026-08-20; INTEGRATIONS accepted 2026-08-20; RAG accepted 2026-08-20; MEMORY accepted 2026-08-20; CONTEXT_ENGINEERING accepted 2026-08-20; UNIFIED_CONTEXT_LIFECYCLE accepted 2026-08-20; MODALITY accepted 2026-08-20; OBSERVABILITY_EVIDENCE accepted 2026-08-20; CRITIC_VERIFICATION accepted 2026-08-20; ADAPTIVE_HARNESS_INTELLIGENCE accepted 2026-08-20; ELASTIC_CAPACITY_AND_SCALING accepted 2026-08-20; EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE accepted 2026-08-21; TIER3_APPLICATION_ENVIRONMENT accepted 2026-08-21; APPLICATION_HOSTING accepted 2026-08-21; TOKEN_OPTIMIZATION accepted 2026-08-21; LANGCHAIN_INDEPENDENCE accepted 2026-08-21; PLATFORM_EXTENSIBILITY accepted 2026-08-21; PERSISTENCE_CONCURRENCY_MULTIHOST accepted 2026-08-21; SECURITY_BOUNDARIES accepted 2026-08-21; LKW_PRODUCT_PROOF accepted 2026-08-21; END_TO_END_SYSTEM accepted 2026-08-21; CROSS_LAYER_ARCHITECTURE accepted 2026-08-21 |
 
 Exact audit-start time was not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
@@ -57,6 +57,13 @@ Exact audit-start time was not captured before first Protocol v2 persistence; da
 | TIER3_APPLICATION_ENVIRONMENT | COMPLETE | `6ed70b6f3231a1514876244872b441c02cde788d` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `771f66c3a9bc708c005b25050fb0a7edb3720d0f` | [TIER3_APPLICATION_ENVIRONMENT.md](TIER3_APPLICATION_ENVIRONMENT.md) |
 | APPLICATION_HOSTING | COMPLETE | `a323dfa7a95292725a925a8b4c4370adc947adf7` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `2ca992940f10e998afe819eaa02eaa1ca71cf8a0` | [APPLICATION_HOSTING.md](APPLICATION_HOSTING.md) |
 | TOKEN_OPTIMIZATION | COMPLETE | `061e03f6dc6160d8f857fbda29d1d6848d040a8d` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `d35bfc5d1462a13a05b68afa1b0b4b4f45f76ab1` | [TOKEN_OPTIMIZATION.md](TOKEN_OPTIMIZATION.md) |
+| LANGCHAIN_INDEPENDENCE | COMPLETE | `70c947c889f40222e5efb191241bdd8fa9035b17` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `1b1151cca` | [LANGCHAIN_INDEPENDENCE.md](LANGCHAIN_INDEPENDENCE.md) |
+| PLATFORM_EXTENSIBILITY | COMPLETE | `70c947c889f40222e5efb191241bdd8fa9035b17` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `658348bb9fc3bd3bc58dce81c9dc9f5d2efc00e8` | [PLATFORM_EXTENSIBILITY.md](PLATFORM_EXTENSIBILITY.md) |
+| PERSISTENCE_CONCURRENCY_MULTIHOST | COMPLETE | `a786e3a2202b105f0d3a38afff8f79ea34255f05` | FAIL | 0 | 6 | 1 | 0 | COMPLETE | COMPLETE | `e17b2e75e3480c864c27a7bc5ad818e210d1f381` | [PERSISTENCE_CONCURRENCY_MULTIHOST.md](PERSISTENCE_CONCURRENCY_MULTIHOST.md) |
+| SECURITY_BOUNDARIES | COMPLETE | `6005514aee4f8c39bb15554876f69d83a3459f8d` | FAIL | 3 | 3 | 0 | 0 | COMPLETE | COMPLETE | `5497229615aaa646486e5175a6679b41fbb65a6f` | [SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md) |
+| LKW_PRODUCT_PROOF | COMPLETE | `563076c553fd7b9d2611b71fd4137b8164a58d81` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `6e9e0190ad52674a8e5e04dba35c5542e2e72518` | [LKW_PRODUCT_PROOF.md](LKW_PRODUCT_PROOF.md) |
+| END_TO_END_SYSTEM | COMPLETE | `563076c553fd7b9d2611b71fd4137b8164a58d81` | FAIL | 0 | 4 | 2 | 0 | COMPLETE | COMPLETE | `d4e3ec2398261e791deb946f26c52b336ed58371` | [END_TO_END_SYSTEM.md](END_TO_END_SYSTEM.md) |
+| CROSS_LAYER_ARCHITECTURE | COMPLETE | `ac2a7107393cbf63953c1cfbc9757891aed91de0` | FAIL | 0 | 5 | 1 | 0 | COMPLETE | COMPLETE | `5111162eb34477c8f507d427377c114214b9f7ac` | [CROSS_LAYER_ARCHITECTURE.md](CROSS_LAYER_ARCHITECTURE.md) |
 
 ## Finding register
 
@@ -239,11 +246,55 @@ Authoritative current lifecycle for remediation. Immutable observation and evide
 | AUDIT-20260818-TOKEN_OPTIMIZATION-04 | TOKEN_OPTIMIZATION | HIGH | OBSERVABILITY / PAPER POLICY | ACCEPTED | TOKEN-MEASUREMENT-EVIDENCE-INTEGRITY | — | `docs/project/capabilities/architecture/TOKEN_OPTIMIZATION.md` — [Protocol v2 token optimization target invariants (2026-08-18)](#protocol-v2-token-optimization-target-invariants-2026-08-18) | `docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md` — TOKEN-MEASUREMENT-EVIDENCE-INTEGRITY | — | — | operator accepted 2026-08-21; cross-link OBSERVABILITY_EVIDENCE |
 | AUDIT-20260818-TOKEN_OPTIMIZATION-05 | TOKEN_OPTIMIZATION | MEDIUM | RECEIPT IDENTITY / AUDIT PROVENANCE | ACCEPTED | TOKEN-MEASUREMENT-EVIDENCE-INTEGRITY | — | `docs/project/capabilities/architecture/TOKEN_OPTIMIZATION.md` — [Protocol v2 token optimization target invariants (2026-08-18)](#protocol-v2-token-optimization-target-invariants-2026-08-18) | `docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md` — TOKEN-MEASUREMENT-EVIDENCE-INTEGRITY | — | — | operator accepted 2026-08-21 |
 | AUDIT-20260818-TOKEN_OPTIMIZATION-06 | TOKEN_OPTIMIZATION | MEDIUM | DOCUMENTATION / LIFECYCLE DRIFT | ACCEPTED | TOKEN-DOCUMENTATION-LIFECYCLE-INTEGRITY | — | `docs/project/capabilities/architecture/TOKEN_OPTIMIZATION.md` — [Protocol v2 token optimization target invariants (2026-08-18)](#protocol-v2-token-optimization-target-invariants-2026-08-18) | `docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md` — TOKEN-DOCUMENTATION-LIFECYCLE-INTEGRITY | — | — | operator accepted 2026-08-21; preserve TOKEN-10H NOT QUALIFIED |
+| AUDIT-20260818-LANGCHAIN_INDEPENDENCE-01 | LANGCHAIN_INDEPENDENCE | HIGH | SECURITY / SCOPE AUTHORITY | ACCEPTED | LCI-COMPATIBILITY-SCOPE-INTEGRITY | — | `docs/project/capabilities/architecture/LANGCHAIN_INDEPENDENCE.md` — [Protocol v2 langchain independence target invariants (2026-08-18)](#protocol-v2-langchain-independence-target-invariants-2026-08-18) | `docs/project/capabilities/plan/LANGCHAIN_INDEPENDENCE.md` — LCI-COMPATIBILITY-SCOPE-INTEGRITY | — | — | operator accepted 2026-08-21; cross-link RAG-SCOPE-CONTRACT-INTEGRITY |
+| AUDIT-20260818-LANGCHAIN_INDEPENDENCE-02 | LANGCHAIN_INDEPENDENCE | HIGH | SECURITY / PROVIDER TRUST BOUNDARY | ACCEPTED | LCI-COMPATIBILITY-SCOPE-INTEGRITY | — | `docs/project/capabilities/architecture/LANGCHAIN_INDEPENDENCE.md` — [Protocol v2 langchain independence target invariants (2026-08-18)](#protocol-v2-langchain-independence-target-invariants-2026-08-18) | `docs/project/capabilities/plan/LANGCHAIN_INDEPENDENCE.md` — LCI-COMPATIBILITY-SCOPE-INTEGRITY | — | — | operator accepted 2026-08-21; cross-link RAG-SCOPE-CONTRACT-INTEGRITY / IDENTITY_TRUST |
+| AUDIT-20260818-LANGCHAIN_INDEPENDENCE-03 | LANGCHAIN_INDEPENDENCE | HIGH | ARCHITECTURE ENFORCEMENT / FAIL-OPEN ALLOWLIST | ACCEPTED | LCI-BOUNDARY-ENFORCEMENT-INTEGRITY | — | `docs/project/capabilities/architecture/LANGCHAIN_INDEPENDENCE.md` — [Protocol v2 langchain independence target invariants (2026-08-18)](#protocol-v2-langchain-independence-target-invariants-2026-08-18) | `docs/project/capabilities/plan/LANGCHAIN_INDEPENDENCE.md` — LCI-BOUNDARY-ENFORCEMENT-INTEGRITY | — | — | operator accepted 2026-08-21 |
+| AUDIT-20260818-LANGCHAIN_INDEPENDENCE-04 | LANGCHAIN_INDEPENDENCE | HIGH | ARCHITECTURE ENFORCEMENT / STATIC-GATE BYPASS | ACCEPTED | LCI-BOUNDARY-ENFORCEMENT-INTEGRITY | — | `docs/project/capabilities/architecture/LANGCHAIN_INDEPENDENCE.md` — [Protocol v2 langchain independence target invariants (2026-08-18)](#protocol-v2-langchain-independence-target-invariants-2026-08-18) | `docs/project/capabilities/plan/LANGCHAIN_INDEPENDENCE.md` — LCI-BOUNDARY-ENFORCEMENT-INTEGRITY | — | — | operator accepted 2026-08-21 |
+| AUDIT-20260818-LANGCHAIN_INDEPENDENCE-05 | LANGCHAIN_INDEPENDENCE | MEDIUM | PACKAGING / CONTRACT DRIFT | ACCEPTED | LCI-PACKAGING-EVIDENCE-INTEGRITY | — | `docs/project/capabilities/architecture/LANGCHAIN_INDEPENDENCE.md` — [Protocol v2 langchain independence target invariants (2026-08-18)](#protocol-v2-langchain-independence-target-invariants-2026-08-18) | `docs/project/capabilities/plan/LANGCHAIN_INDEPENDENCE.md` — LCI-PACKAGING-EVIDENCE-INTEGRITY | — | — | operator accepted 2026-08-21 |
+| AUDIT-20260818-LANGCHAIN_INDEPENDENCE-06 | LANGCHAIN_INDEPENDENCE | MEDIUM | EVIDENCE / DOCUMENTATION DRIFT | ACCEPTED | LCI-PACKAGING-EVIDENCE-INTEGRITY | — | `docs/project/capabilities/architecture/LANGCHAIN_INDEPENDENCE.md` — [Protocol v2 langchain independence target invariants (2026-08-18)](#protocol-v2-langchain-independence-target-invariants-2026-08-18) | `docs/project/capabilities/plan/LANGCHAIN_INDEPENDENCE.md` — LCI-PACKAGING-EVIDENCE-INTEGRITY | — | — | operator accepted 2026-08-21; preserve historical migration inventory |
+| AUDIT-20260818-PLATFORM_EXTENSIBILITY-01 | PLATFORM_EXTENSIBILITY | HIGH | QUALIFICATION AUTHORITY / SELF-ATTESTATION | ACCEPTED | PLATFORM-EXTENSIBILITY-QUALIFICATION-AUTHORITY-INTEGRITY | — | `docs/project/architecture/PLATFORM_PLUGINS.md` — [Protocol v2 platform extensibility target invariants (2026-08-18)](#protocol-v2-platform-extensibility-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_PLUGINS.md` — PLATFORM-EXTENSIBILITY-QUALIFICATION-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-21; reuse intergrax.core.qualification |
+| AUDIT-20260818-PLATFORM_EXTENSIBILITY-02 | PLATFORM_EXTENSIBILITY | HIGH | ARCHITECTURE / PARTIAL PRODUCTION ENFORCEMENT | ACCEPTED | PLATFORM-EXTENSIBILITY-ADMISSION-COVERAGE-INTEGRITY | — | `docs/project/architecture/PLATFORM_PLUGINS.md` — [Protocol v2 platform extensibility target invariants (2026-08-18)](#protocol-v2-platform-extensibility-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_PLUGINS.md` — PLATFORM-EXTENSIBILITY-ADMISSION-COVERAGE-INTEGRITY | — | — | operator accepted 2026-08-21; Policy loader reference partial enforcement |
+| AUDIT-20260818-PLATFORM_EXTENSIBILITY-03 | PLATFORM_EXTENSIBILITY | HIGH | QUALIFICATION SCOPE / OVER-BROAD AUTHORITY | ACCEPTED | PLATFORM-EXTENSIBILITY-QUALIFICATION-AUTHORITY-INTEGRITY | — | `docs/project/architecture/PLATFORM_PLUGINS.md` — [Protocol v2 platform extensibility target invariants (2026-08-18)](#protocol-v2-platform-extensibility-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_PLUGINS.md` — PLATFORM-EXTENSIBILITY-QUALIFICATION-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-21 |
+| AUDIT-20260818-PLATFORM_EXTENSIBILITY-04 | PLATFORM_EXTENSIBILITY | HIGH | MANIFEST / QUALIFICATION BINDING | ACCEPTED | PLATFORM-EXTENSIBILITY-QUALIFICATION-AUTHORITY-INTEGRITY | — | `docs/project/architecture/PLATFORM_PLUGINS.md` — [Protocol v2 platform extensibility target invariants (2026-08-18)](#protocol-v2-platform-extensibility-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_PLUGINS.md` — PLATFORM-EXTENSIBILITY-QUALIFICATION-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-21 |
+| AUDIT-20260818-PLATFORM_EXTENSIBILITY-05 | PLATFORM_EXTENSIBILITY | MEDIUM | DIAGNOSTICS / EVIDENCE QUALITY | ACCEPTED | PLATFORM-EXTENSIBILITY-LIFECYCLE-EVIDENCE-INTEGRITY | — | `docs/project/architecture/PLATFORM_PLUGINS.md` — [Protocol v2 platform extensibility target invariants (2026-08-18)](#protocol-v2-platform-extensibility-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_PLUGINS.md` — PLATFORM-EXTENSIBILITY-LIFECYCLE-EVIDENCE-INTEGRITY | — | — | operator accepted 2026-08-21 |
+| AUDIT-20260818-PLATFORM_EXTENSIBILITY-06 | PLATFORM_EXTENSIBILITY | MEDIUM | LIFECYCLE / DISCOVERY CONSISTENCY | ACCEPTED | PLATFORM-EXTENSIBILITY-LIFECYCLE-EVIDENCE-INTEGRITY | — | `docs/project/architecture/PLATFORM_PLUGINS.md` — [Protocol v2 platform extensibility target invariants (2026-08-18)](#protocol-v2-platform-extensibility-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_PLUGINS.md` — PLATFORM-EXTENSIBILITY-LIFECYCLE-EVIDENCE-INTEGRITY | — | — | operator accepted 2026-08-21 |
+| AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-01 | PERSISTENCE_CONCURRENCY_MULTIHOST | HIGH | PRODUCTION TOPOLOGY / FAIL-OPEN PERSISTENCE | ACCEPTED | PCM-PERSISTENCE-TOPOLOGY-INTEGRITY | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 persistence topology target invariants (2026-08-18)](#protocol-v2-persistence-topology-target-invariants-2026-08-18); `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2 persistence/concurrency multihost target invariants (2026-08-18)](#protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — PCM-PERSISTENCE-TOPOLOGY-INTEGRITY | — | — | operator accepted 2026-08-21; PCM-01 |
+| AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-02 | PERSISTENCE_CONCURRENCY_MULTIHOST | HIGH | IDEMPOTENCY / CRASH CONSISTENCY | ACCEPTED | PCM-SIDE-EFFECT-COORDINATION-INTEGRITY | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2 persistence/concurrency multihost target invariants (2026-08-18)](#protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — PCM-SIDE-EFFECT-COORDINATION-INTEGRITY | — | — | operator accepted 2026-08-21; PCM-02; cross-link TOOLS |
+| AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-03 | PERSISTENCE_CONCURRENCY_MULTIHOST | HIGH | MULTI-WORKER / DUPLICATE SIDE EFFECT | ACCEPTED | PCM-SIDE-EFFECT-COORDINATION-INTEGRITY | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2 persistence/concurrency multihost target invariants (2026-08-18)](#protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — PCM-SIDE-EFFECT-COORDINATION-INTEGRITY | — | — | operator accepted 2026-08-21; PCM-03 |
+| AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-04 | PERSISTENCE_CONCURRENCY_MULTIHOST | HIGH | CHECKPOINT CONSISTENCY / LOST UPDATE | ACCEPTED | PCM-CHECKPOINT-SCHEDULER-INTEGRITY | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2 persistence/concurrency multihost target invariants (2026-08-18)](#protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — PCM-CHECKPOINT-SCHEDULER-INTEGRITY | — | — | operator accepted 2026-08-21; PCM-04; cross-link AGENT_DISTRIBUTION CAS |
+| AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-05 | PERSISTENCE_CONCURRENCY_MULTIHOST | HIGH | SCHEDULER / MULTI-HOST DUPLICATE RESUME | ACCEPTED | PCM-CHECKPOINT-SCHEDULER-INTEGRITY | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2 persistence/concurrency multihost target invariants (2026-08-18)](#protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — PCM-CHECKPOINT-SCHEDULER-INTEGRITY | — | — | operator accepted 2026-08-21; PCM-05 |
+| AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-06 | PERSISTENCE_CONCURRENCY_MULTIHOST | HIGH | ARCHITECTURE / PROVIDER SUBSTITUTABILITY | ACCEPTED | PCM-PERSISTENCE-TOPOLOGY-INTEGRITY | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 persistence topology target invariants (2026-08-18)](#protocol-v2-persistence-topology-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — PCM-PERSISTENCE-TOPOLOGY-INTEGRITY | — | — | operator accepted 2026-08-21; PCM-06; cross-link PBA / AGENT_DISTRIBUTION |
+| AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-07 | PERSISTENCE_CONCURRENCY_MULTIHOST | MEDIUM | SCHEMA EVOLUTION / FAIL-OPEN STARTUP | ACCEPTED | PCM-SCHEMA-EVOLUTION-INTEGRITY | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2 persistence/concurrency multihost target invariants (2026-08-18)](#protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — PCM-SCHEMA-EVOLUTION-INTEGRITY | — | — | operator accepted 2026-08-21; PCM-07 |
+| AUDIT-20260818-SECURITY_BOUNDARIES-01 | SECURITY_BOUNDARIES | CRITICAL | AUTHENTICATION BOUNDARY / IMPLEMENTATION DEFECT | ACCEPTED | SEC-AUTHORITY-BOUNDARY-INTEGRITY | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 security boundaries target invariants (2026-08-18)](#protocol-v2-security-boundaries-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — SEC-AUTHORITY-BOUNDARY-INTEGRITY | — | — | operator accepted 2026-08-21; SEC-BND-01 |
+| AUDIT-20260818-SECURITY_BOUNDARIES-02 | SECURITY_BOUNDARIES | CRITICAL | AUTHORIZATION BOUNDARY / PRIVILEGE ESCALATION | ACCEPTED | SEC-AUTHORITY-BOUNDARY-INTEGRITY | IDT-FIX-A | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 security boundaries target invariants (2026-08-18)](#protocol-v2-security-boundaries-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — SEC-AUTHORITY-BOUNDARY-INTEGRITY | — | — | operator accepted 2026-08-21; SEC-BND-02; cross-link IDT-FIX-A, POLICY_GOVERNANCE |
+| AUDIT-20260818-SECURITY_BOUNDARIES-03 | SECURITY_BOUNDARIES | CRITICAL | DATA PROTECTION / FAIL-OPEN ENCRYPTION | ACCEPTED | SEC-DATA-PROTECTION-INTEGRITY | — | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — [Protocol v2 security runtime target invariants (2026-08-18)](#protocol-v2-security-runtime-target-invariants-2026-08-18) | `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — SEC-DATA-PROTECTION-INTEGRITY | — | — | operator accepted 2026-08-21; SEC-BND-03 |
+| AUDIT-20260818-SECURITY_BOUNDARIES-04 | SECURITY_BOUNDARIES | HIGH | PAPER SECURITY CONTROL / IMPLEMENTATION-ARCHITECTURE DRIFT | ACCEPTED | SEC-DEFENSE-QUALIFICATION-INTEGRITY | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 security boundaries target invariants (2026-08-18)](#protocol-v2-security-boundaries-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — SEC-DEFENSE-QUALIFICATION-INTEGRITY | — | — | operator accepted 2026-08-21; SEC-BND-04 |
+| AUDIT-20260818-SECURITY_BOUNDARIES-05 | SECURITY_BOUNDARIES | HIGH | CRITICAL ACTION INTEGRITY / PAPER CONTROL | ACCEPTED | SEC-DEFENSE-QUALIFICATION-INTEGRITY | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 security boundaries target invariants (2026-08-18)](#protocol-v2-security-boundaries-target-invariants-2026-08-18); `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — [Protocol v2 security runtime target invariants (2026-08-18)](#protocol-v2-security-runtime-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — SEC-DEFENSE-QUALIFICATION-INTEGRITY | — | — | operator accepted 2026-08-21; SEC-BND-05 |
+| AUDIT-20260818-SECURITY_BOUNDARIES-06 | SECURITY_BOUNDARIES | HIGH | AUDIT EVIDENCE / FALSE MULTI-REGION QUALIFICATION | ACCEPTED | SEC-AUDIT-AUTHORITY-INTEGRITY | — | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — [Protocol v2 security runtime target invariants (2026-08-18)](#protocol-v2-security-runtime-target-invariants-2026-08-18) | `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — SEC-AUDIT-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-21; SEC-BND-06 |
+| AUDIT-20260818-LKW_PRODUCT_PROOF-01 | LKW_PRODUCT_PROOF | HIGH | PROOF PROVENANCE / SOURCE IDENTITY | ACCEPTED | LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY | — | `docs/project/architecture/PROOF_RECEIPTS.md` — [Protocol v2 proof receipt target invariants (2026-08-18)](#protocol-v2-proof-receipt-target-invariants-2026-08-18); `applications/local_workspace_application/docs/ARCHITECTURE.md` — [Protocol v2 LKW product proof target invariants (2026-08-18)](#protocol-v2-lkw-product-proof-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PROOF_RECEIPTS.md` — LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY | — | — | operator accepted 2026-08-21; LKW-PROOF-01 |
+| AUDIT-20260818-LKW_PRODUCT_PROOF-02 | LKW_PRODUCT_PROOF | HIGH | PROOF RECEIPT / EXECUTION PROVENANCE | ACCEPTED | LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY | — | `docs/project/architecture/PROOF_RECEIPTS.md` — [Protocol v2 proof receipt target invariants (2026-08-18)](#protocol-v2-proof-receipt-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PROOF_RECEIPTS.md` — LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY | — | — | operator accepted 2026-08-21; LKW-PROOF-02 |
+| AUDIT-20260818-LKW_PRODUCT_PROOF-03 | LKW_PRODUCT_PROOF | HIGH | CERTIFICATION FRESHNESS / CLAIM VALIDITY | ACCEPTED | LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY | — | `docs/project/architecture/PROOF_RECEIPTS.md` — [Protocol v2 proof receipt target invariants (2026-08-18)](#protocol-v2-proof-receipt-target-invariants-2026-08-18); `applications/local_workspace_application/docs/ARCHITECTURE.md` — [Protocol v2 LKW product proof target invariants (2026-08-18)](#protocol-v2-lkw-product-proof-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PROOF_RECEIPTS.md` — LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY | — | — | operator accepted 2026-08-21; LKW-PROOF-03 |
+| AUDIT-20260818-LKW_PRODUCT_PROOF-04 | LKW_PRODUCT_PROOF | HIGH | PROOF SUITE / FALSE SUCCESS | ACCEPTED | LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY | — | `applications/local_workspace_application/docs/ARCHITECTURE.md` — [Protocol v2 LKW product proof target invariants (2026-08-18)](#protocol-v2-lkw-product-proof-target-invariants-2026-08-18) | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` — LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY | — | — | operator accepted 2026-08-21; LKW-PROOF-04; shared manifest/runner ownership |
+| AUDIT-20260818-LKW_PRODUCT_PROOF-05 | LKW_PRODUCT_PROOF | HIGH | PROOF GOVERNANCE / SECOND PUBLIC PROOF PATH | ACCEPTED | LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY | — | `applications/local_workspace_application/docs/ARCHITECTURE.md` — [Protocol v2 LKW product proof target invariants (2026-08-18)](#protocol-v2-lkw-product-proof-target-invariants-2026-08-18) | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` — LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY | — | — | operator accepted 2026-08-21; LKW-PROOF-05; cross-link PROOFS.md |
+| AUDIT-20260818-LKW_PRODUCT_PROOF-06 | LKW_PRODUCT_PROOF | MEDIUM | PROOF PROFILE / REVIEWER SEMANTICS | ACCEPTED | LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY | — | `applications/local_workspace_application/docs/ARCHITECTURE.md` — [Protocol v2 LKW product proof target invariants (2026-08-18)](#protocol-v2-lkw-product-proof-target-invariants-2026-08-18) | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` — LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY | — | — | operator accepted 2026-08-21; LKW-PROOF-06; cross-link PROOFS.md |
+| AUDIT-20260818-END_TO_END_SYSTEM-01 | END_TO_END_SYSTEM | HIGH | CROSS-LAYER IDENTITY / MODEL ROUTING | ACCEPTED | E2E-EXECUTION-CONTEXT-INTEGRITY | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 END_TO_END_SYSTEM Tier-3 composition target invariants (2026-08-18)](#protocol-v2-end-to-end-system-tier3-composition-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — E2E-EXECUTION-CONTEXT-INTEGRITY | — | — | operator accepted 2026-08-21; E2E-01; cross-link IDENTITY_TRUST, LLM_ADAPTERS |
+| AUDIT-20260818-END_TO_END_SYSTEM-02 | END_TO_END_SYSTEM | HIGH | SURFACE PARITY / RUNTIME SEMANTICS | ACCEPTED | E2E-EXECUTION-CONTEXT-INTEGRITY | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` — [Protocol v2 END_TO_END_SYSTEM target invariants (2026-08-18)](#protocol-v2-end-to-end-system-target-invariants-2026-08-18); `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 END_TO_END_SYSTEM Tier-3 composition target invariants (2026-08-18)](#protocol-v2-end-to-end-system-tier3-composition-target-invariants-2026-08-18) | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — E2E-EXECUTION-CONTEXT-INTEGRITY; `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — E2E-EXECUTION-CONTEXT-INTEGRITY | — | — | operator accepted 2026-08-21; E2E-02; distinct from ITI-FIX-C direct-Nexus bypass |
+| AUDIT-20260818-END_TO_END_SYSTEM-03 | END_TO_END_SYSTEM | HIGH | CONTROL PLANE / GOVERNANCE BYPASS | ACCEPTED | E2E-CONTROL-AUTHORITY-INTEGRITY | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` — [Protocol v2 END_TO_END_SYSTEM target invariants (2026-08-18)](#protocol-v2-end-to-end-system-target-invariants-2026-08-18) | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — E2E-CONTROL-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-21; E2E-03; cross-link POLICY_GOVERNANCE, SEC-AUTHORITY-BOUNDARY-INTEGRITY |
+| AUDIT-20260818-END_TO_END_SYSTEM-04 | END_TO_END_SYSTEM | HIGH | ASYNC WORKFLOW / TERMINAL RESULT DURABILITY | ACCEPTED | E2E-ASYNC-OUTCOME-INTEGRITY | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2 END_TO_END_SYSTEM async/control target invariants (2026-08-18)](#protocol-v2-end-to-end-system-asynccontrol-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — E2E-ASYNC-OUTCOME-INTEGRITY | — | — | operator accepted 2026-08-21; E2E-04; cross-link OBSERVABILITY_EVIDENCE |
+| AUDIT-20260818-END_TO_END_SYSTEM-05 | END_TO_END_SYSTEM | MEDIUM | ACTIVE EXECUTION REGISTRY / CONCURRENCY | ACCEPTED | E2E-CONTROL-AUTHORITY-INTEGRITY | — | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` — [Protocol v2 END_TO_END_SYSTEM target invariants (2026-08-18)](#protocol-v2-end-to-end-system-target-invariants-2026-08-18); `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2 END_TO_END_SYSTEM async/control target invariants (2026-08-18)](#protocol-v2-end-to-end-system-asynccontrol-target-invariants-2026-08-18) | `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` — E2E-CONTROL-AUTHORITY-INTEGRITY | — | — | operator accepted 2026-08-21; E2E-05 |
+| AUDIT-20260818-END_TO_END_SYSTEM-06 | END_TO_END_SYSTEM | MEDIUM | ERROR BOUNDARY / INFORMATION LEAKAGE | ACCEPTED | E2E-ASYNC-OUTCOME-INTEGRITY | — | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2 END_TO_END_SYSTEM async/control target invariants (2026-08-18)](#protocol-v2-end-to-end-system-asynccontrol-target-invariants-2026-08-18) | `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md` — E2E-ASYNC-OUTCOME-INTEGRITY | — | — | operator accepted 2026-08-21; E2E-06; cross-link SECURITY_BOUNDARIES, OBSERVABILITY_EVIDENCE |
+
+| AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-01 | CROSS_LAYER_ARCHITECTURE | HIGH | ARCHITECTURE TOPOLOGY / OWNERSHIP AUTHORITY | ACCEPTED | CLA-CANON-TOPOLOGY-INTEGRITY | — | `docs/project/architecture/intergrax_runtime_architecture.md` — [Architecture artifact classification register](../../project/architecture/intergrax_runtime_architecture.md#architecture-artifact-classification-register); `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 cross-layer meta-architecture target invariants (2026-08-18)](../../project/architecture/PLATFORM_FOUNDATION.md#protocol-v2-cross-layer-meta-architecture-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — CLA-CANON-TOPOLOGY-INTEGRITY | — | — | operator accepted 2026-08-21; CLA-01 |
+| AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-02 | CROSS_LAYER_ARCHITECTURE | HIGH | CROSS-LAYER CANON / ARCHITECTURE DRIFT | ACCEPTED | CLA-CANON-TOPOLOGY-INTEGRITY | — | `docs/project/technical/guides/SYSTEM_INVARIANTS.md` — §13 Cross-layer concern index; `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 cross-layer meta-architecture target invariants (2026-08-18)](../../project/architecture/PLATFORM_FOUNDATION.md#protocol-v2-cross-layer-meta-architecture-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — CLA-CANON-TOPOLOGY-INTEGRITY | — | — | operator accepted 2026-08-21; CLA-02 |
+| AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-03 | CROSS_LAYER_ARCHITECTURE | HIGH | PRODUCTION AUTHORITY / COMPOSITION QUALIFICATION | ACCEPTED | CLA-PRODUCTION-QUALIFICATION-INTEGRITY | — | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 cross-layer composition qualification target invariants (2026-08-18)](../../project/architecture/TIER3_APPLICATION_ENVIRONMENT.md#protocol-v2-cross-layer-composition-qualification-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — CLA-PRODUCTION-QUALIFICATION-INTEGRITY | — | — | operator accepted 2026-08-21; CLA-03; cross-link SEC/PLUGIN/HOSTING/E2E blocks |
+| AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-04 | CROSS_LAYER_ARCHITECTURE | HIGH | GOVERNANCE TOPOLOGY / CONTROL PLANE | ACCEPTED | CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY | — | `docs/project/architecture/GOVERNED_EXECUTION.md` — [Protocol v2 control-plane mutation target invariants (2026-08-18)](../../project/architecture/GOVERNED_EXECUTION.md#protocol-v2-control-plane-mutation-target-invariants-2026-08-18) | `docs/project/maintainers/plans/GOVERNED_EXECUTION.md` — CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY | — | — | operator accepted 2026-08-21; CLA-04; cross-link AHI/ECP/Agent Distribution/E2E-CONTROL |
+| AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-05 | CROSS_LAYER_ARCHITECTURE | HIGH | MATURITY AUTHORITY / REQUALIFICATION | ACCEPTED | CLA-PRODUCTION-QUALIFICATION-INTEGRITY | — | `docs/project/technical/guides/MATURITY_TAXONOMY.md` — [Finding- and evidence-driven maturity impact (2026-08-18)](../../project/technical/guides/MATURITY_TAXONOMY.md#finding-and-evidence-driven-maturity-impact-2026-08-18); `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 cross-layer composition qualification target invariants (2026-08-18)](../../project/architecture/TIER3_APPLICATION_ENVIRONMENT.md#protocol-v2-cross-layer-composition-qualification-target-invariants-2026-08-18) | `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — CLA-PRODUCTION-QUALIFICATION-INTEGRITY | — | — | operator accepted 2026-08-21; CLA-05 |
+| AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-06 | CROSS_LAYER_ARCHITECTURE | MEDIUM | REMEDIATION ARCHITECTURE / DEPENDENCY MANAGEMENT | ACCEPTED | CLA-REMEDIATION-DAG-INTEGRITY | — | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 cross-layer meta-architecture target invariants (2026-08-18)](../../project/architecture/PLATFORM_FOUNDATION.md#protocol-v2-cross-layer-meta-architecture-target-invariants-2026-08-18) | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — CLA-REMEDIATION-DAG-INTEGRITY | — | — | operator accepted 2026-08-21; CLA-06; final DAG belongs to CAMPAIGN_ROLLUP — not built in persistence task |
 ## Audit rollup
 
-**Status:** pending — campaign `IN_PROGRESS`; frozen at audit `COMPLETE` only.
+**Status:** frozen — campaign audit lifecycle `COMPLETE`; section D.1 audit baseline (Protocol v2.2 § C2). Remediation progress belongs in section D.2 only.
 
-**Completed layers:** 29
+**Completed layers:** 36
 
 First layer summary:
 
@@ -449,11 +500,204 @@ Twenty-ninth layer summary:
 - **Systemic themes:** character counts labeled measured tokens; substring-only protected-region validation; lossy validation bypass via policy/descriptor; disconnected observability emission helper; content-fingerprint receipt identity; architecture/plan TOKEN-10G/H/I lifecycle drift
 - **Recommended remediation order:** TOKEN-MEASUREMENT-EVIDENCE-INTEGRITY → TOKEN-PROTECTED-TRANSFORMATION-INTEGRITY → TOKEN-DOCUMENTATION-LIFECYCLE-INTEGRITY (see layer report)
 
-**Cumulative (completed layers only):** 174 accepted findings — 5 CRITICAL, 119 HIGH, 49 MEDIUM, 1 LOW
+Thirtieth layer summary:
+
+- **Layer:** LANGCHAIN_INDEPENDENCE — **FAIL** at `70c947c889f40222e5efb191241bdd8fa9035b17`
+- **Accepted findings:** 6 total — 0 CRITICAL, 4 HIGH, 2 MEDIUM, 0 LOW
+- **Systemic themes:** compatibility scope authority from foreign metadata; provider-hit identity minting; directory-wide boundary allowlist; importlib alias static-gate bypass; parsing-extra LangChain transitive opt-in; stale inventory conformance evidence
+- **Recommended remediation order:** LCI-COMPATIBILITY-SCOPE-INTEGRITY → LCI-BOUNDARY-ENFORCEMENT-INTEGRITY → LCI-PACKAGING-EVIDENCE-INTEGRITY (see layer report)
+
+Thirty-first layer summary:
+
+- **Layer:** PLATFORM_EXTENSIBILITY — **FAIL** at `70c947c889f40222e5efb191241bdd8fa9035b17`
+- **Accepted findings:** 6 total — 0 CRITICAL, 4 HIGH, 2 MEDIUM, 0 LOW
+- **Systemic themes:** self-attested production qualification; partial cross-domain admission enforcement; package-level qualification over-broad scope; manifest capability admission binding gap; manifest resolution diagnostics collapse; incidental discovery cache lifecycle
+- **Recommended remediation order:** PLATFORM-EXTENSIBILITY-QUALIFICATION-AUTHORITY-INTEGRITY → PLATFORM-EXTENSIBILITY-ADMISSION-COVERAGE-INTEGRITY → PLATFORM-EXTENSIBILITY-LIFECYCLE-EVIDENCE-INTEGRITY (see layer report)
+
+Thirty-second layer summary:
+
+- **Layer:** PERSISTENCE_CONCURRENCY_MULTIHOST — **FAIL** at `a786e3a2202b105f0d3a38afff8f79ea34255f05`
+- **Accepted findings:** 7 total — 0 CRITICAL, 6 HIGH, 1 MEDIUM, 0 LOW
+- **Systemic themes:** fail-open production topology for idempotency; idempotency crash inconsistency and false exactly-once claim; compensation duplicate consumption; checkpoint lost update; scheduler multi-host duplicate resume; minimal RelationalStore vs domain concurrency semantics; schema migration fail-open startup
+- **Recommended remediation order:** PCM-PERSISTENCE-TOPOLOGY-INTEGRITY → PCM-SIDE-EFFECT-COORDINATION-INTEGRITY → PCM-CHECKPOINT-SCHEDULER-INTEGRITY → PCM-SCHEMA-EVOLUTION-INTEGRITY (see layer report)
+
+Thirty-third layer summary:
+
+- **Layer:** SECURITY_BOUNDARIES — **FAIL** at `6005514aee4f8c39bb15554876f69d83a3459f8d`
+- **Accepted findings:** 6 total — 3 CRITICAL, 3 HIGH, 0 MEDIUM, 0 LOW
+- **Systemic themes:** split authentication source resolution; authentication treated as admin authorization; fail-open encryption downgrade to Base64 envelope; paper security toggles without enforcement; bootstrap-only critical action signing; in-process multi-region audit simulation
+- **Recommended remediation order:** SEC-AUTHORITY-BOUNDARY-INTEGRITY → SEC-DATA-PROTECTION-INTEGRITY → SEC-DEFENSE-QUALIFICATION-INTEGRITY → SEC-AUDIT-AUTHORITY-INTEGRITY (see layer report)
+
+Thirty-fourth layer summary:
+
+- **Layer:** LKW_PRODUCT_PROOF — **FAIL** at `563076c553fd7b9d2611b71fd4137b8164a58d81`
+- **Accepted findings:** 6 total — 0 CRITICAL, 5 HIGH, 1 MEDIUM, 0 LOW
+- **Systemic themes:** proof source identity vs dirty worktree; ProofReceipt execution provenance gap; certification freshness without invalidation envelope; live suite false success via PASS_WITH_BLOCKED; second public flagship proof outside manifest; quick profile vs Product Quick Start semantic ambiguity
+- **Recommended remediation order:** LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY → LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY → LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY (see layer report)
+
+Thirty-fifth layer summary:
+
+- **Layer:** END_TO_END_SYSTEM — **FAIL** at `563076c553fd7b9d2611b71fd4137b8164a58d81`
+- **Accepted findings:** 6 total — 0 CRITICAL, 4 HIGH, 2 MEDIUM, 0 LOW
+- **Systemic themes:** default-tenant LLM routing at Nexus wiring; MCP vs HTTP runner enricher parity; autonomy mutation without Governance authorization; async terminal status without durable TaskResult after restart; ActiveTaskRegistry silent TaskId overwrite; raw exception strings on async status API
+- **Recommended remediation order:** E2E-EXECUTION-CONTEXT-INTEGRITY → E2E-CONTROL-AUTHORITY-INTEGRITY → E2E-ASYNC-OUTCOME-INTEGRITY (see layer report)
+
+
+Thirty-sixth layer summary:
+
+- **Layer:** CROSS_LAYER_ARCHITECTURE — **FAIL** at `ac2a7107393cbf63953c1cfbc9757891aed91de0`
+- **Accepted findings:** 6 total — 0 CRITICAL, 5 HIGH, 1 MEDIUM, 0 LOW
+- **Systemic themes:** incomplete runtime hub owner register; stale SYSTEM_INVARIANTS cross-layer index; missing composition qualification closure; control-plane mutation taxonomy gap; maturity requalification semantics; remediation DAG requirement before campaign implementation
+- **Recommended remediation order:** CLA-CANON-TOPOLOGY-INTEGRITY → CLA-PRODUCTION-QUALIFICATION-INTEGRITY → CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY → CLA-REMEDIATION-DAG-INTEGRITY (final DAG in CAMPAIGN_ROLLUP — see layer report)
+
+**Cumulative (completed layers only):** 217 accepted findings — 8 CRITICAL, 150 HIGH, 58 MEDIUM, 1 LOW
+
+### Campaign audit verdict (frozen)
+
+| Field | Value |
+|-------|-------|
+| `overall_verdict` | `FAIL` |
+| `completed_audit_units` | 36 |
+| `accepted_findings` | 217 (8 CRITICAL / 150 HIGH / 58 MEDIUM / 1 LOW) |
+| `remediation_status_at_closeout` | not begun — all 217 findings remain `ACCEPTED` audit backlog |
+
+Historical audit verdict only. Remediation has **not** been implemented by campaign closeout. `COMPLETE` means audit lifecycle complete only — not remediation complete. A future audit campaign, not remediation alone, may establish a new overall verdict. Original per-layer snapshots remain immutable; future remediation may update only allowed mutable lifecycle fields in this register.
+
+### Systemic conclusion (frozen)
+
+The fundamental Intergrax architecture is **not** rejected.
+
+Campaign `FAIL` primarily reflects incomplete production-grade enforcement, authority convergence, durability, qualification, and evidence closure across layers — not a requirement to rewrite the platform.
+
+**Valid ownership boundaries preserved:**
+
+- Tier-3 composes
+- Nexus orchestrates
+- UER executes governed steps
+- Tier-2 agents own domain decisions
+- ToolRuntime owns agent-invokable effects
+- Governance owns permission semantics
+- Observability owns execution evidence
+- Application Hosting owns process lifecycle
+- ECP owns capacity mutation
+- AHI owns governed adaptation
+- LKW/products consume/prove the platform rather than own its universal mechanisms
+
+### Master remediation programs (umbrella coordination)
+
+These programs coordinate existing remediation blocks listed in section D.2. They do **not** delete, rename, replace, or close original remediation block IDs.
+
+#### R1 — IDENTITY-AUTHORITY-SPINE (P0)
+
+One canonical principal/execution/scope authority.
+
+Covers families including: IDT-FIX, SEC authority, tenant/run identity in LLM/RAG/Memory/Critic/DX/E2E, CodeCraft ownership.
+
+Order: canonical authority contract → propagation → consumer migrations → cross-tenant negative verification.
+
+#### R2 — GOVERNED-MUTATION-SIDE-EFFECT-SPINE (P0)
+
+One permission/evidence semantics for meaningful side effects and control-plane mutations.
+
+Covers: PG-FIX, Tools side effects, AHI apply/promotion, ECP scaling, CodeCraft approval/promotion, E2E autonomy, Agent Distribution activation consumers, CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY.
+
+Depends on R1 and relevant R3 primitives.
+
+#### R3 — DURABLE-STATE-CONCURRENCY-SPINE (P0)
+
+Canonical durability/concurrency primitives without a GlobalStore: revision/CAS, ownership/lease/fencing, mutation identity/idempotency, atomic transition + recovery, durable completion, schema evolution qualification.
+
+Covers PCM, AHI activation consistency, checkpoints, compensation, schedulers, async outcomes, profile pointers, and related durable state.
+
+#### R4 — EXECUTION-SEMANTICS-CONVERGENCE (P0/P1)
+
+All supported surfaces and agent paths consume the same configured execution semantics.
+
+Covers: SHM, ITI, UER, Orchestration, Agent System, Tools/Skills runtime convergence, Tier-3 composition, E2E execution/control.
+
+Depends on R1, R2 core authority, relevant R3 durability.
+
+#### R5 — EVIDENCE-PROOF-SPINE (P1)
+
+One execution-evidence/proof provenance model tied to exact execution identity, exact source/build identity, environment/profile identity, proof contract/version, and durable evidence.
+
+Covers Observability, Hosting evidence, ProofReceipts, LKW proof, DX evidence, and Token evidence.
+
+Depends on R1, R3, R4.
+
+#### R6 — COMPOSITION-QUALIFICATION-CLOSURE (P1)
+
+Materialized application composition is qualified only when every mandatory component/capability/evidence obligation is qualified for the same target environment.
+
+Outcome vocabulary: `QUALIFIED`, `NOT_QUALIFIED`, `STALE`, `INCOMPLETE`. No monolithic ProductionEngine.
+
+Depends on stable R1–R5 inputs and R7 qualifications where applicable.
+
+#### R7 — KNOWLEDGE-MODEL-CONTEXT-INTEGRITY (P1)
+
+Preserve separate domains (RAG ≠ Memory ≠ Context ≠ UCL ≠ LLM ≠ Critic ≠ Modality ≠ Token Optimization) but converge them on shared identity, scope, provenance, policy, budget, and evidence.
+
+Depends on R1, R4, R5, and relevant R2.
+
+#### R8 — PLATFORM-CANON-RECERTIFICATION
+
+**R8-A — P0 preparation before normal remediation:** authoritative ownership topology, current `SYSTEM_INVARIANTS`, remediation DAG.
+
+**R8-B — after R1–R7:** composition requalification, proof reruns, maturity re-evaluation, new independent audit campaign.
+
+Historical 2026-08-18 verdict remains `FAIL` permanently.
+
+### Master dependency DAG
+
+```text
+R8-A
+  → R1 || R3
+
+R1 + R3
+  → R2
+
+R1 + R2 + relevant R3
+  → R4
+
+R1 + R3 + R4
+  → R5
+
+R1 + R4 + R5
+  → R7
+
+R1 + R2 + R3 + R4 + R5 + applicable R7
+  → R6
+
+R6 + R7
+  → R8-B / new audit
+```
+
+**Safe parallelism:** R1 and R3; consumer migrations after shared primitive contracts freeze; substantial R5 and R7 work after R4 foundation stabilizes.
+
+### CRITICAL finding execution order (recommended first waves)
+
+Preserve immutable original IDs/severities.
+
+| Wave | Findings |
+|------|----------|
+| C0 | SEC-BND-01, SEC-BND-02, SEC-BND-03 |
+| C1 | AHI-01, AHI-02 |
+| C2 | CODECRAFT-01, CODECRAFT-02 |
+| C3 | MOD-01 |
+
+### Cross-layer systemic themes (rollup)
+
+- fragmented principal/execution/scope authority across intake, identity, LLM, RAG, Memory, Critic, DX, E2E, and CodeCraft paths
+- permission and side-effect semantics not uniformly enforced before meaningful mutations (Tools, Governance, AHI, ECP, CodeCraft, E2E control plane)
+- durability/concurrency primitives incomplete for production multi-host operation (PCM, checkpoints, idempotency, compensation, schedulers)
+- execution-semantics divergence across SHM, ITI, UER, Orchestration, Agent System, Tools/Skills, Tier-3 composition, and E2E surfaces
+- evidence/proof provenance gaps (Observability, Hosting, ProofReceipts, LKW, DX, Token)
+- composition qualification closure and maturity requalification semantics not yet authoritative (TIER3, CLA, PLATFORM_EXTENSIBILITY, LKW)
+- knowledge/context domain boundaries present but shared identity/scope/provenance/policy convergence incomplete
 
 ## Remediation rollup
 
-**Status:** not started — campaign audit still `IN_PROGRESS`; normal remediation queue builds after campaign `COMPLETE` unless operator scopes work to named findings.
+**Status:** not started — campaign audit `COMPLETE`; 217 findings remain `ACCEPTED` remediation backlog. No finding is `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED`.
 
 | remediation_block | findings | status | notes |
 |-------------------|----------|--------|-------|
@@ -552,3 +796,23 @@ Twenty-ninth layer summary:
 | TOKEN-MEASUREMENT-EVIDENCE-INTEGRITY | AUDIT-20260818-TOKEN_OPTIMIZATION-01, 04, 05 | ACCEPTED / PLANNED | canonical token measurement, execution-scoped receipt identity, HOS emission authority — cross-link LLM_ADAPTERS / OBSERVABILITY_EVIDENCE — not implemented in this persistence task |
 | TOKEN-PROTECTED-TRANSFORMATION-INTEGRITY | AUDIT-20260818-TOKEN_OPTIMIZATION-02, 03 | ACCEPTED / PLANNED | occurrence-aware protected-region validation and mandatory lossy validation — cross-link CONTEXT_ENGINEERING / TOOLS / RAG / MEMORY — not implemented in this persistence task |
 | TOKEN-DOCUMENTATION-LIFECYCLE-INTEGRITY | AUDIT-20260818-TOKEN_OPTIMIZATION-06 | ACCEPTED / PLANNED | architecture/plan TOKEN-10G/H/I current-state parity — preserve NOT QUALIFIED — not implemented in this persistence task |
+| LCI-COMPATIBILITY-SCOPE-INTEGRITY | AUDIT-20260818-LANGCHAIN_INDEPENDENCE-01, 02 | ACCEPTED / PLANNED | trusted scope injection and provider-hit identity validation — cross-link RAG-SCOPE-CONTRACT-INTEGRITY / IDENTITY_TRUST — not implemented in this persistence task |
+| LCI-BOUNDARY-ENFORCEMENT-INTEGRITY | AUDIT-20260818-LANGCHAIN_INDEPENDENCE-03, 04 | ACCEPTED / PLANNED | conditional provider exemption and importlib alias detection — not implemented in this persistence task |
+| LCI-PACKAGING-EVIDENCE-INTEGRITY | AUDIT-20260818-LANGCHAIN_INDEPENDENCE-05, 06 | ACCEPTED / PLANNED | explicit compatibility packaging semantics and current conformance evidence pinning — preserve historical inventory — not implemented in this persistence task |
+| PLATFORM-EXTENSIBILITY-QUALIFICATION-AUTHORITY-INTEGRITY | AUDIT-20260818-PLATFORM_EXTENSIBILITY-01, 03, 04 | ACCEPTED / PLANNED | evidence-derived qualification and exact package+capability admission binding — reuse intergrax.core.qualification — cross-link PROVIDER-QUAL — not implemented in this persistence task |
+| PLATFORM-EXTENSIBILITY-ADMISSION-COVERAGE-INTEGRITY | AUDIT-20260818-PLATFORM_EXTENSIBILITY-02 | ACCEPTED / PLANNED | shared production-admission boundary across PEP domains — no global plugin runtime — not implemented in this persistence task |
+| PLATFORM-EXTENSIBILITY-LIFECYCLE-EVIDENCE-INTEGRITY | AUDIT-20260818-PLATFORM_EXTENSIBILITY-05, 06 | ACCEPTED / PLANNED | typed manifest resolution and explicit discovery/cache lifecycle policy — not implemented in this persistence task |
+| PCM-PERSISTENCE-TOPOLOGY-INTEGRITY | AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-01, 06 | ACCEPTED / PLANNED | persistence capability classes and domain port concurrency semantics — cross-link PBA / RELIABILITY / Agent Distribution CAS — not implemented in this persistence task |
+| PCM-SIDE-EFFECT-COORDINATION-INTEGRITY | AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-02, 03 | ACCEPTED / PLANNED | idempotency uncertainty and compensation atomic claim — cross-link TOOLS / Governance — not implemented in this persistence task |
+| PCM-CHECKPOINT-SCHEDULER-INTEGRITY | AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-04, 05 | ACCEPTED / PLANNED | checkpoint monotonic/CAS and scheduler/work-dispatch claim semantics — reuse Agent Distribution CAS/lease — not implemented in this persistence task |
+| PCM-SCHEMA-EVOLUTION-INTEGRITY | AUDIT-20260818-PERSISTENCE_CONCURRENCY_MULTIHOST-07 | ACCEPTED / PLANNED | fail-closed schema migration vs expected idempotent conditions — not implemented in this persistence task |
+| SEC-AUTHORITY-BOUNDARY-INTEGRITY | AUDIT-20260818-SECURITY_BOUNDARIES-01, 02 | ACCEPTED / PLANNED | one authentication authority and explicit admin authorization — cross-link IDT-FIX-A, POLICY_GOVERNANCE — not implemented in this persistence task |
+| SEC-DATA-PROTECTION-INTEGRITY | AUDIT-20260818-SECURITY_BOUNDARIES-03 | ACCEPTED / PLANNED | encryption fail-closed; no Base64-as-encryption downgrade — not implemented in this persistence task |
+| SEC-DEFENSE-QUALIFICATION-INTEGRITY | AUDIT-20260818-SECURITY_BOUNDARIES-04, 05 | ACCEPTED / PLANNED | proven security toggles and critical action signing — cross-link UER runtime enforcement — not implemented in this persistence task |
+| SEC-AUDIT-AUTHORITY-INTEGRITY | AUDIT-20260818-SECURITY_BOUNDARIES-06 | ACCEPTED / PLANNED | durable immutable audit authority vs in-memory simulation — not implemented in this persistence task |
+| LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY | AUDIT-20260818-LKW_PRODUCT_PROOF-01, 02, 03 | ACCEPTED / PLANNED | exact source/build/environment binding; dirty disqualifies public evidence; certification freshness envelope — primary owner PROOF_RECEIPTS — not implemented in this persistence task |
+| LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY | AUDIT-20260818-LKW_PRODUCT_PROOF-04, 05 | ACCEPTED / PLANNED | manifest-owned suite success; fold advanced_flagship_proof into canonical manifest — shared scripts/proof ownership — not implemented in this persistence task |
+| LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY | AUDIT-20260818-LKW_PRODUCT_PROOF-06 | ACCEPTED / PLANNED | quick profile vs Product Quick Start naming honesty — cross-link PROOFS.md — not implemented in this persistence task |
+| E2E-EXECUTION-CONTEXT-INTEGRITY | AUDIT-20260818-END_TO_END_SYSTEM-01, 02 | ACCEPTED / PLANNED | one configured runner + Task/Run-derived routing identity — cross-link ITI-FIX-C, IDENTITY_TRUST, LLM-FIX-* — not implemented in this persistence task |
+| E2E-CONTROL-AUTHORITY-INTEGRITY | AUDIT-20260818-END_TO_END_SYSTEM-03, 05 | ACCEPTED / PLANNED | governed autonomy transitions + ownership-aware ActiveTaskRegistry — cross-link POLICY_GOVERNANCE, SEC-AUTHORITY-BOUNDARY-INTEGRITY — not implemented in this persistence task |
+| E2E-ASYNC-OUTCOME-INTEGRITY | AUDIT-20260818-END_TO_END_SYSTEM-04, 06 | ACCEPTED / PLANNED | durable async terminal outcome + safe external error contract — cross-link OBS-EVIDENCE-*, SEC-DATA-PROTECTION-INTEGRITY — not implemented in this persistence task |

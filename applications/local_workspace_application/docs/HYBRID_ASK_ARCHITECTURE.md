@@ -398,6 +398,21 @@ SATISFIED / EVIDENCE_TEMPORALLY_INVALID
 
 Temporal constraints are derived from typed policy rule parameters, preserved through derivation → plan → run, and hashed into `derivation_snapshot_id`. Requirement identity stays stable across policy revisions that only tighten or relax temporal bounds (for example rev17 `max_age=24h` vs rev18 `max_age=1h`).
 
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="assets/lkw-policy-revision-admissibility-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="assets/lkw-policy-revision-admissibility-light.png"
+  >
+  <img
+    alt="LKW policy revision proof showing the same two-hour security evidence accepted under REV17 with a 24-hour max age and rejected under REV18 with a one-hour max age."
+    src="assets/lkw-policy-revision-admissibility-light.png"
+  >
+</picture>
+
 Fresh evidence may still report business-negative provider facts (for example `BLOCKED`); temporal admissibility judges **when** evidence is acceptable, not whether the fact is favorable.
 
 `semantic_role` is explanatory for audit — enforcement uses structural fields only (`call_id`, `indexed_source_binding_id`, evidence type).
@@ -438,6 +453,21 @@ persisted WorkspaceAskRunV2 structural proof
 | `KnowledgeQueryExecutionResultV1.live_call_failures` | successful evidence and failed calls may coexist in one Ask |
 | `RequirementAdmissibilityReasonCodeV1` | adds `authority_unavailable`, `provider_failed`, `provider_response_invalid` |
 | `WorkspaceAskRunV2.live_call_failures` | reloadable failure semantics without log inference |
+
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="assets/lkw-evidence-failure-semantics-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="assets/lkw-evidence-failure-semantics-light.png"
+  >
+  <img
+    alt="LKW evidence failure proof distinguishing authority unavailable, provider failure, invalid provider response, and temporally invalid evidence, each suppressing LLM synthesis."
+    src="assets/lkw-evidence-failure-semantics-light.png"
+  >
+</picture>
 
 **Flagship proof direction (F3-F acceptance):** final governed decision proof MUST use vendor/system data persisted in Docker-backed external storage (`docker-compose.governed-hybrid-proof.yml` → MongoDB volume `governed_proof_vendor_data` → vendor HTTP → TenantConnection → runtime authority → capability execution → evidence → admissibility). In-process `Controlled*Server.start()` loopback services remain **test accelerators only** — not sufficient as the final external-system proof.
 
@@ -485,6 +515,21 @@ question
 | Governance Approval | `governance_approval` | `conn.flagship.governance-approval` | `vendor.governance_approval.approval.read` | `governance-approval-vendor:8094` | `governance_approval_records` |
 
 Shared MongoDB volume `governed_proof_vendor_data` is vendor-owned persistence only — Intergrax never reads Mongo directly.
+
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="assets/lkw-external-evidence-authority-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="assets/lkw-external-evidence-authority-light.png"
+  >
+  <img
+    alt="LKW advanced proof showing four independent live provider connections and Docker-backed vendor state accessed only through integration abstractions."
+    src="assets/lkw-external-evidence-authority-light.png"
+  >
+</picture>
 
 **Policy revisions:** REV17 (`security max_age = 24h`) vs REV18 (`security max_age = 1h`) change admissibility without application branching. Same underlying evidence can be admissible under REV17 and temporally invalid under REV18.
 

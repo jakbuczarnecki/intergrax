@@ -692,18 +692,38 @@ The Product Tour does not own execution instructions. The Quick Start does not o
 
 ## 4a. LKW visual evidence ownership
 
-PX-4 owns the neutral documentation visual for the supported indexed LKW Quick Start. It presents a concrete indexed result: the approved sample source, managed intake and indexing, the user question, the grounded answer, the source reference, and persisted Ask-run verification.
+PX-4 owns neutral documentation visuals for LKW product and proof stories.
 
-The canonical assets are:
+**Global Intergrax README assets:**
 
 ```text
-applications/local_workspace_application/docs/assets/lkw-grounded-result-light.svg
-applications/local_workspace_application/docs/assets/lkw-grounded-result-dark.svg
+docs/project/assets/public/readme/
 ```
 
-The root `README.md` is the primary placement and `applications/local_workspace_application/docs/product/QUICKSTART.md` is the secondary placement. The visual is not a UI screenshot and makes no Hybrid, live-provider, or production claim.
+**LKW-specific product/proof assets:**
 
-The canonical alt-text meaning identifies `lkw_product_quickstart.txt`, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification.
+```text
+applications/local_workspace_application/docs/assets/
+```
+
+The canonical LKW public visual family:
+
+```text
+applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png
+applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-dark.png
+applications/local_workspace_application/docs/assets/lkw-policy-revision-admissibility-light.png
+applications/local_workspace_application/docs/assets/lkw-policy-revision-admissibility-dark.png
+applications/local_workspace_application/docs/assets/lkw-evidence-failure-semantics-light.png
+applications/local_workspace_application/docs/assets/lkw-evidence-failure-semantics-dark.png
+applications/local_workspace_application/docs/assets/lkw-external-evidence-authority-light.png
+applications/local_workspace_application/docs/assets/lkw-external-evidence-authority-dark.png
+```
+
+Do not copy LKW proof visuals into `docs/project/assets/public/readme/`.
+
+The root `README.md` uses **Visual 1** (`lkw-governed-evidence-gate`) in the LKW section. Deeper visuals (2–4) belong in proof and architecture docs. Visuals are not UI screenshots and make no complete Hybrid Ask, production readiness, or commercial validation claim.
+
+**Product Quick Start** remains documented textually (indexed Ask V1, **AURORA-17**) without a dedicated Quick Start diagram — the governed evidence gate visual represents the advanced proof story, not the indexed onboarding path.
 
 ---
 

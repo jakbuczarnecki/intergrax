@@ -182,6 +182,38 @@ Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qu
 
 ---
 
+## Protocol v2 platform extensibility remediation (2026-08-18 audit)
+
+Accepted audit unit [`PLATFORM_EXTENSIBILITY`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md) (**FAIL**, 6 ACCEPTED findings, `audited_sha` `70c947c889f40222e5efb191241bdd8fa9035b17`, operator accepted 2026-08-21). Canonical architecture target: [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) — [Protocol v2 platform extensibility target invariants (2026-08-18)](../../architecture/PLATFORM_PLUGINS.md#protocol-v2-platform-extensibility-target-invariants-2026-08-18).
+
+**Status rule:** all blocks below are **ACCEPTED / PLANNED** only. Do **not** mark IMPLEMENTED, VERIFIED, CLOSED, or DONE in this section. Do **not** reopen historical PLATFORM-PLUGIN-1..9 rows. Cross-link **PROVIDER-QUAL** (§ PROVIDER-QUAL track) for provider-scoped evidence — do not duplicate or overwrite ongoing PROVIDER-QUAL work.
+
+### PLATFORM-EXTENSIBILITY-QUALIFICATION-AUTHORITY-INTEGRITY
+
+**Priority:** P0  
+**Findings:** `AUDIT-20260818-PLATFORM_EXTENSIBILITY-01`, `03`, `04`  
+**Status:** ACCEPTED / PLANNED
+
+Production qualification becomes evidence-derived and bound to the exact package + capability being admitted. Reuse `intergrax.core.qualification` and domain-specific qualification; **no** second qualification engine. Package qualification may remain a prerequisite; capability/domain admission binds distribution + domain + exact EP + policy + evidence. Production admission binds distribution + manifest identity/hash + capability descriptor/EP + qualification result.
+
+### PLATFORM-EXTENSIBILITY-ADMISSION-COVERAGE-INTEGRITY
+
+**Priority:** P0/P1  
+**Findings:** `AUDIT-20260818-PLATFORM_EXTENSIBILITY-02`  
+**Status:** ACCEPTED / PLANNED
+
+All supported public PEP domains consume the common production-admission boundary in strict/product profiles while retaining domain loaders/contracts/registries. Extend Policy loader pattern; **no** global runtime plugin loader.
+
+### PLATFORM-EXTENSIBILITY-LIFECYCLE-EVIDENCE-INTEGRITY
+
+**Priority:** P1/P2  
+**Findings:** `AUDIT-20260818-PLATFORM_EXTENSIBILITY-05`, `06`  
+**Status:** ACCEPTED / PLANNED
+
+Manifest failures remain diagnosable (VALID / ABSENT / INVALID / UNREADABLE + safe reason codes). Installed-plugin lifecycle/discovery cache semantics become explicit (immutable process lifetime **or** controlled rediscovery) — not incidental cache behavior.
+
+---
+
 ## References
 
 - Extension author guide: [`technical/guides/EXTENSION_AUTHOR_GUIDE.md`](../../technical/guides/EXTENSION_AUTHOR_GUIDE.md)

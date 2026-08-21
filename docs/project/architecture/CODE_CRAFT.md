@@ -50,6 +50,7 @@ CodeCraft addresses this through `CodeCraftOrchestrator`, typed `CodeCraftProfil
 
 ## Flagship architecture visual
 
+<a href="assets/codecraft-runtime-boundary-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/codecraft-runtime-boundary-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/codecraft-runtime-boundary-light.svg">
@@ -58,6 +59,7 @@ CodeCraft addresses this through `CodeCraftOrchestrator`, typed `CodeCraftProfil
     src="assets/codecraft-runtime-boundary-light.svg"
   >
 </picture>
+</a>
 
 **Mental model:**
 

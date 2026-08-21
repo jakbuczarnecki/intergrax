@@ -222,10 +222,32 @@ Common **safe** combinations readers should understand:
 
 ---
 
+
+<a id="finding-and-evidence-driven-maturity-impact-2026-08-18"></a>
+
+## Finding- and evidence-driven maturity impact (2026-08-18)
+
+Accepted Protocol v2 audit layer [`CROSS_LAYER_ARCHITECTURE`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md) (**FAIL**, CLA-05). **Target state only** — **not implemented** by audit persistence.
+
+When a finding is **ACCEPTED**, domain and composition owners MUST record an explicit maturity impact decision. **Severity alone MUST NOT automatically downgrade maturity.** Production/evidence-safety findings MUST trigger an explicit requalification review.
+
+| Impact | Meaning |
+|--------|---------|
+| **NO_CHANGE** | Accepted finding is outside the claimed maturity scope (bounded qualification documents why) |
+| **RESTRICTED** | Prior claim remains only for a narrower scope/environment/profile until remediation closes |
+| **REQUALIFICATION_REQUIRED** | Prior four-axis tuple cannot stand without new bounded evidence — re-run qualification before external claim |
+| **DOWNGRADE_REQUIRED** | Prior claim is falsified for the advertised scope — lower axis level(s) until remediation and reverification |
+
+A maturity claim may remain **P3** (or any level) only with explicit bounded qualification proving the defect is outside the claimed production posture. Hub summaries and legacy labels are not substitutes for this decision.
+
+Remediation: **CLA-PRODUCTION-QUALIFICATION-INTEGRITY** in [`TIER3_APPLICATION_ENVIRONMENT` plan](../../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) — **ACCEPTED / PLANNED** only.
+
+
 ## 6. Maintenance
 
 | Event | Action |
 |-------|--------|
+| Accepted audit finding (production/evidence safety) | Record maturity impact (**NO_CHANGE** / **RESTRICTED** / **REQUALIFICATION_REQUIRED** / **DOWNGRADE_REQUIRED**) before retaining prior four-axis claim |
 | Domain maturity changes | Update domain pair Maturity Statement; adjust hub summary if needed |
 | New closeout gate or evidence script | Document which **E** level it satisfies in domain architecture |
 | Layer Completion sign-off | Replace undifferentiated "production-ready" with four-axis tuple in final report |

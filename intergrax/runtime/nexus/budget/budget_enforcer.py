@@ -70,6 +70,38 @@ class BudgetEnforcer:
         if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
             raise BudgetExceededError(f"Budget exceeded: max_tool_calls ({tool_calls} > {limit})")
 
+    def check_planner_iterations(
+        self,
+        *,
+        run_id: str,
+        planner_iterations: int,
+        state: RuntimeState,
+    ) -> None:
+        limit = self._budget.max_planner_iterations
+        if limit is None:
+            return
+        if planner_iterations <= limit:
+            return
+
+        state.trace_event(
+            component=TraceComponent.POLICY,
+            step="budget_exceeded",
+            level=TraceLevel.ERROR,
+            message="Budget exceeded: max_planner_iterations",
+            payload=BudgetExceededDiagV1(
+                run_id=run_id,
+                budget_name="max_planner_iterations",
+                limit=limit,
+                actual=planner_iterations,
+                enforcement_mode=self._policy.enforcement_mode.value,
+            ),
+        )
+
+        if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
+            raise BudgetExceededError(
+                f"Budget exceeded: max_planner_iterations ({planner_iterations} > {limit})"
+            )
+
     def check_rag_invocations(
         self,
         *,

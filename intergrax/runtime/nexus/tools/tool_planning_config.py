@@ -9,6 +9,7 @@ from typing import Optional
 
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.tools.tool_planning_prompts import (
+    investigation_policy_prompt,
     planner_prompt,
     system_context_template,
     system_prompt,
@@ -24,12 +25,14 @@ class ToolPlanningConfig:
     system_instructions: str = ""
     system_context_template: str = ""
     planner_instructions: str = ""
+    investigation_instructions: str = ""
 
     @classmethod
     def default(
         cls,
         *,
         planner_prompt_id: str = "tools_agent_planner",
+        investigation_prompt_id: str = "tools_investigation_policy",
         registry: YamlPromptRegistry | None = None,
         catalog_path: str | None = None,
     ) -> ToolPlanningConfig:
@@ -39,6 +42,10 @@ class ToolPlanningConfig:
             system_context_template=system_context_template(**prompt_kwargs),
             planner_instructions=planner_prompt(
                 prompt_id=planner_prompt_id,
+                **prompt_kwargs,
+            ),
+            investigation_instructions=investigation_policy_prompt(
+                prompt_id=investigation_prompt_id,
                 **prompt_kwargs,
             ),
         )

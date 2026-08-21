@@ -26,6 +26,16 @@ def planner_prompt(
     return reg.resolve_localized(prompt_id).system
 
 
+def investigation_policy_prompt(
+    *,
+    prompt_id: str = "tools_investigation_policy",
+    registry: YamlPromptRegistry | None = None,
+    catalog_path: str | None = None,
+) -> str:
+    reg = _resolve_registry(registry=registry, catalog_path=catalog_path)
+    return reg.resolve_localized(prompt_id).system
+
+
 def system_prompt(
     *,
     registry: YamlPromptRegistry | None = None,

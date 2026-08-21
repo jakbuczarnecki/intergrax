@@ -7,6 +7,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.nexus.budget.budget_ticks import (
+    enforce_wall_time_budget,
+    record_planner_iteration_and_enforce,
+)
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.patterns.single_pass import SinglePassPattern
@@ -18,6 +22,8 @@ from intergrax.runtime.nexus.tools.tool_loop import (
     _coerce_messages,
     append_native_tool_messages,
     execute_planned_tool_calls,
+    record_identical_tool_call_fingerprints,
+    validate_identical_tool_call_repeats,
 )
 from intergrax.runtime.nexus.tools.tool_planning_policy import tool_choice_for_mode
 from intergrax.runtime.nexus.tools.tool_planner_protocol import (
@@ -69,8 +75,13 @@ class BoundedReactPattern:
         all_traces: list = []
         iterations = 0
         stop_reason: ToolInvocationStopReason = "max_iterations"
+        fingerprint_counts: dict[str, int] = {}
+        loop_cfg = state.context.config
 
         while iterations < max_iters:
+            if iterations >= 1:
+                enforce_wall_time_budget(state)
+            record_planner_iteration_and_enforce(state)
             iterations += 1
             llm_result, tool_plan = planner.plan_native_round(
                 messages,
@@ -87,6 +98,12 @@ class BoundedReactPattern:
                 stop_reason = "empty_tool_calls"
                 break
 
+            validate_identical_tool_call_repeats(
+                tool_plan.calls,
+                fingerprint_counts=fingerprint_counts,
+                max_repeats=loop_cfg.max_identical_tool_call_repeats,
+            )
+            record_identical_tool_call_fingerprints(tool_plan.calls, fingerprint_counts)
             round_outcomes = execute_planned_tool_calls(
                 state=state,
                 invoker=invoker,

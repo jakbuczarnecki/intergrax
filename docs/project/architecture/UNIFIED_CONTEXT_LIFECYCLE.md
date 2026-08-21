@@ -54,6 +54,7 @@ UCL is **not** another Context Engine, Memory store, summarizer, Token Optimizat
 
 ## Flagship architecture visual
 
+<a href="assets/ucl-lifecycle-light.svg">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/ucl-lifecycle-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/ucl-lifecycle-light.svg">
@@ -62,6 +63,7 @@ UCL is **not** another Context Engine, Memory store, summarizer, Token Optimizat
     src="assets/ucl-lifecycle-light.svg"
   >
 </picture>
+</a>
 
 ```text
 EPHEMERAL_ASSEMBLY   ✅ integrated

@@ -113,6 +113,40 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
+### Protocol v2 remediation — END_TO_END_SYSTEM (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/END_TO_END_SYSTEM.md`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
+
+#### E2E-EXECUTION-CONTEXT-INTEGRITY — configured runner + routing identity
+
+**Priority:** P0
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-END_TO_END_SYSTEM-01`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md), [`02`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md)
+
+**Acceptance intent:**
+
+- Every supported surface receives the same configured execution service with mandatory host-owned enrichment.
+- Runtime identity/routing context derives from the concrete Task/Run — no hard-coded default tenant in product execution routing.
+- Cross-link **ITI-FIX-C**, **IDENTITY_TRUST**, **LLM-FIX-*** — do not duplicate those blocks.
+
+#### E2E-CONTROL-AUTHORITY-INTEGRITY — governed control + registry ownership
+
+**Priority:** P0
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-END_TO_END_SYSTEM-03`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md), [`05`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md)
+
+**Acceptance intent:**
+
+- Live task control operates on the exact execution identity (`TaskId` + `RunId`/registration token).
+- Security-sensitive state transitions (autonomy) require canonical Governance authorization and durable authority evidence.
+- `ActiveTaskRegistry` registration is ownership-aware — no silent overwrite; unregister removes only owned registration.
+- Cross-link **POLICY_GOVERNANCE**, **SEC-AUTHORITY-BOUNDARY-INTEGRITY** — reuse canonical Governance; no second policy engine.
+
+**Remediation rules:** same as INTERFACE_TASK_INTAKE block above.
+
+---
+
 ### 6.1aj Harness implementation queue — Nexus execution depth (closed)
 
 **Purpose:** Single ordered list for **Phase FLOW** (Band 2aj). **Closed 2026-06-09** — **18/18 harness Done** (FLOW-8 harness ORCH-CONFIG.5); product host **Deferred** §6.3. Ongoing: **§6.1** maintenance only.

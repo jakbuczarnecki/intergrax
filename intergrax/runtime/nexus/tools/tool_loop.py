@@ -129,8 +129,10 @@ def _invoke_planned_call(
     run_post_tool_verify(state=state, invoker=invoker, trace=trace)
     if invoke_lock is not None:
         with invoke_lock:
+            state.tool_traces.append(trace)
             enforce_tool_call_budget(state)
     else:
+        state.tool_traces.append(trace)
         enforce_tool_call_budget(state)
     return PlannedToolCallOutcome(
         trace=trace,
@@ -164,6 +166,66 @@ def _call_has_side_effects(invoker: RuntimeToolInvoker, call: PlannedToolCall) -
     return invoker.registry.get(call.tool_id).contract.side_effects
 
 
+def planned_tool_call_fingerprint(call: PlannedToolCall) -> str:
+    """Deterministic fingerprint from tool_id and validated Pydantic input."""
+    payload = call.input.model_dump(mode="json")
+    canonical_input = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return f"{call.tool_id}\x1e{canonical_input}"
+
+
+def validate_round_tool_call_count(state: RuntimeState, planned_count: int) -> None:
+    """Reject a planner round atomically before any tool side effects."""
+    limit = state.context.config.max_tool_calls_per_round
+    if planned_count <= limit:
+        return
+    raise ValueError(
+        f"Planned tool calls ({planned_count}) exceed max_tool_calls_per_round ({limit})"
+    )
+
+
+def validate_identical_tool_call_repeats(
+    calls: Sequence[PlannedToolCall],
+    *,
+    fingerprint_counts: dict[str, int],
+    max_repeats: int | None,
+) -> None:
+    """
+    Reject a round when executing it would exceed ``max_identical_tool_call_repeats``.
+
+    Counts are per (tool_id, validated input) fingerprint within one bounded loop.
+    ``max_repeats=2`` allows two executions; the third identical call is rejected
+    before invocation.
+    """
+    if max_repeats is None or not calls:
+        return
+
+    pending: dict[str, int] = {}
+    sample_tool_id: dict[str, str] = {}
+    for call in calls:
+        fingerprint = planned_tool_call_fingerprint(call)
+        pending[fingerprint] = pending.get(fingerprint, 0) + 1
+        sample_tool_id[fingerprint] = call.tool_id
+
+    for fingerprint, delta in pending.items():
+        projected = fingerprint_counts.get(fingerprint, 0) + delta
+        if projected > max_repeats:
+            tool_id = sample_tool_id[fingerprint]
+            raise RuntimeError(
+                "Identical tool call repeat limit exceeded for "
+                f"{tool_id}: projected executions {projected} > "
+                f"max_identical_tool_call_repeats ({max_repeats})"
+            )
+
+
+def record_identical_tool_call_fingerprints(
+    calls: Sequence[PlannedToolCall],
+    fingerprint_counts: dict[str, int],
+) -> None:
+    for call in calls:
+        fingerprint = planned_tool_call_fingerprint(call)
+        fingerprint_counts[fingerprint] = fingerprint_counts.get(fingerprint, 0) + 1
+
+
 def execute_planned_tool_calls(
     *,
     state: RuntimeState,
@@ -174,6 +236,7 @@ def execute_planned_tool_calls(
 ) -> list[PlannedToolCallOutcome]:
     if not calls:
         return []
+    validate_round_tool_call_count(state, len(calls))
     assignment_state = (
         DeclarativeHitlScopeAssignmentState()
         if state.declarative_hitl_grant is not None

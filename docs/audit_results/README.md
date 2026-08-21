@@ -62,7 +62,7 @@ docs/audit_results/
 | Campaign | started_at | completed_at | status | campaign_start_sha | campaign_end_sha | scope | overall_verdict |
 |----------|------------|--------------|--------|--------------------|------------------|-------|-----------------|
 | [2026-08-20](2026-08-20/README.md) | 2026-08-20 | 2026-08-20 | COMPLETE | `654a7c0e3fe823a43a2620645848248023e1c64e` | publication commit (COMM-5F) | Flagship proof acceptance — COMM-5 governed hybrid knowledge (CTO / principal architect) | B — DIFFERENTIATED COMPOSITION (72/100) |
-| [2026-08-18](2026-08-18/README.md) | 2026-08-18 | — | IN_PROGRESS | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | — | Platform audit — 9 layers complete (`STRATEGIC_HARNESS_MODEL`, `TIER_LAYER_BOUNDARIES`, `PROVIDER_BACKEND_ABSTRACTION`, `INTERFACE_TASK_INTAKE`, `IDENTITY_TRUST`, `POLICY_GOVERNANCE`, `LLM_ADAPTERS`, `REASONING_PLANNING`, `EXECUTION_RUNTIME`) | — |
+| [2026-08-18](2026-08-18/README.md) | 2026-08-18 | `2026-08-21T10:01:40Z` | COMPLETE | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | `edb744940162ecaf317af71a918bb1cac98d19e3` | Platform audit — 36 completed audit units; 217 ACCEPTED findings (8 CRITICAL / 150 HIGH / 58 MEDIUM / 1 LOW) | `FAIL` |
 
 ### Registry lifecycle
 
@@ -95,7 +95,7 @@ This root `README.md` is:
 
 Results under [legacy/](legacy/README.md) were produced under superseded protocols (Legacy Audit Protocol v1, plan-satellite audit registers). They are useful for historical comparison only — **not** evidence of current platform maturity.
 
-**Protocol v2.2** (this tree, from 2026-08-18) is model-driven and periodic. v2.2 additionally requires provider/backend abstraction discipline, dependency inversion, concrete vendor isolation behind provider adapters, and proof that consumers use abstractions rather than paper interfaces. Active campaign: [2026-08-18](2026-08-18/README.md) — nine layers complete through `EXECUTION_RUNTIME` **FAIL** (55 ACCEPTED findings: 34 HIGH, 21 MEDIUM); campaign `IN_PROGRESS`. Campaign directory date is campaign start date; per-layer reports carry `layer_audited_at` when layer audit date differs.
+**Protocol v2.2** (this tree, from 2026-08-18) is model-driven and periodic. v2.2 additionally requires provider/backend abstraction discipline, dependency inversion, concrete vendor isolation behind provider adapters, and proof that consumers use abstractions rather than paper interfaces. Latest platform audit campaign: [2026-08-18](2026-08-18/README.md) — `COMPLETE` at `2026-08-21T10:01:40Z`, **FAIL** (36 audit units; 217 ACCEPTED findings: 8 CRITICAL / 150 HIGH / 58 MEDIUM / 1 LOW); remediation not begun. Campaign directory date is campaign start date; per-layer reports carry `layer_audited_at` when layer audit date differs.
 
 ### Audit scope shapes (Protocol v2.2)
 

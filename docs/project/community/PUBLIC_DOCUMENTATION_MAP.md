@@ -116,13 +116,26 @@ Product Tour
 → Platform Proof
 ```
 
-Start with the [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) to understand the experience without running anything. From there, choose the [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) to run the supported indexed path or the [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) to inspect bounded technical evidence.
+Start with the [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) to understand the experience without running anything. From there, choose the [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) to run the supported indexed path, the [Governed Evidence Decision Proof](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) for advanced bounded live evidence admissibility, or the [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) to inspect bounded technical evidence.
+
+### Governed Evidence Decision Proof
+
+**Bounded evidence admissibility proof — LKW application stack**
+
+LKW demonstrates governed answer admissibility over live organizational evidence
+through the **Governed Evidence Decision Proof** (`LIVE_ONLY`, four independent
+Docker-backed providers, policy-derived obligations, execution-time authority,
+temporal admissibility, typed failure semantics, LLM gating, persisted structural
+proof). This is **not** complete indexed + authorized live Hybrid Ask
+certification and **not** full Governed Execution domain certification.
+
+[Open the Governed Evidence Decision Proof](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md)
 
 ### Governed Execution
 
 **Platform capability — implemented mechanisms; consolidation / qualification ongoing**
 
-Intergrax provides reusable policy and approval enforcement around agent decisions, tool and action boundaries, meaningful side effects, canonical HITL, and plugin-extensible policy rules. Meaningful enforcement slices exist on bounded paths; a dedicated accepted public Governed Execution proof is **not yet established**.
+Intergrax provides reusable policy and approval enforcement around agent decisions, tool and action boundaries, meaningful side effects, canonical HITL, and plugin-extensible policy rules. Meaningful enforcement slices exist on bounded paths; a dedicated accepted public **Governed Execution** domain proof is **not yet established**. The Governed Evidence Decision Proof above exercises bounded evidence admissibility — not full Governed Execution certification.
 
 [Open the Governed Execution architecture](../architecture/GOVERNED_EXECUTION.md)
 

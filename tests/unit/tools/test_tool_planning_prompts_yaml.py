@@ -8,6 +8,7 @@ import pytest
 
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.tools.tool_planning_prompts import (
+    investigation_policy_prompt,
     planner_prompt,
     system_context_template,
     system_prompt,
@@ -27,6 +28,7 @@ def test_tools_agent_yaml_registry_contains_all_prompts() -> None:
     assert registry.resolve_localized("tools_agent_system")
     assert registry.resolve_localized("tools_agent_planner")
     assert registry.resolve_localized("tools_agent_context")
+    assert registry.resolve_localized("tools_investigation_policy")
 
 
 def test_tool_planning_system_prompt_exact_contract() -> None:
@@ -59,3 +61,21 @@ def test_tool_planning_context_template_exact_contract() -> None:
 
     rendered = template.format(context="ABC")
     assert rendered.rstrip() == "Session context:\nABC".rstrip()
+
+
+def test_tools_investigation_policy_yaml_contract() -> None:
+    text = investigation_policy_prompt()
+    lowered = text.lower()
+    _assert_non_empty_str(text)
+    assert "investigation and evidence policy" in lowered
+    assert "observation" in lowered
+    assert "observed facts" in lowered
+    assert "inferred" in lowered
+    assert "evidence gap" in lowered or "material evidence" in lowered
+    assert "contradict" in lowered
+    assert "correlation" in lowered
+    assert "causation" in lowered
+    assert "uncertainty" in lowered or "limitation" in lowered
+    assert "stop when" in lowered or "unlikely to materially change" in lowered
+    assert "chain-of-thought" not in lowered
+    assert "private reasoning" not in lowered

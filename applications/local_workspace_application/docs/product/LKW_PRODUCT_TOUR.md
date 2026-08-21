@@ -11,30 +11,48 @@ LKW is the **Primary Product Proof** and currently a **Backend Product Alpha / M
 | Item | Meaning |
 |------|---------|
 | Product | Local Knowledge Workspace |
-| Current scope | Indexed knowledge from approved sources |
-| User result | Grounded answer with a source reference |
+| Primary product experience | Indexed knowledge from approved sources |
+| Primary user result | Grounded answer with a source reference |
+| Advanced bounded proof | Governed live evidence admissibility through the [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) |
 | Inspectable evidence | Source and persisted Ask-run verification |
 | Maturity | Backend Product Alpha / MVP |
 | Primary next action | Run the supported LKW Quick Start |
 | Run it | [LKW Quick Start](QUICKSTART.md) |
 | Technical review | [LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md) |
 
+## Product Quick Start versus Governed Evidence Proof
+
+LKW offers two distinct public proof stories:
+
+| Path | What it is | What you get |
+|------|------------|--------------|
+| **Product Quick Start** | Indexed, grounded onboarding path | One-command indexed Ask V1; **AURORA-17** success marker |
+| **Governed Evidence Decision Proof** | Bounded advanced proof inside the LKW application stack | Governed answer admissibility over **live organizational evidence** (`LIVE_ONLY`) |
+
+**Product Quick Start** is the easiest runnable product evaluation: approved sample knowledge, managed upload, indexed Ask, source citation, and persisted Ask-run verification.
+
+**Governed Evidence Decision Proof** demonstrates versioned policy-derived obligations, four independent live providers, execution-time authority, temporal admissibility, typed failure semantics, LLM gating, and persisted structural proof over Docker-backed vendor truth. It is **LIVE_ONLY** — complete indexed + authorized live Hybrid Ask remains **not certified**.
+
+See the [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) for the canonical technical narrative.
+
+<a href="../assets/lkw-governed-evidence-gate-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
-    srcset="../assets/lkw-grounded-result-dark.svg"
+    srcset="../assets/lkw-governed-evidence-gate-dark.png"
   >
   <source
     media="(prefers-color-scheme: light)"
-    srcset="../assets/lkw-grounded-result-light.svg"
+    srcset="../assets/lkw-governed-evidence-gate-light.png"
   >
   <img
-    alt="LKW quickstart flow showing the approved sample file lkw_product_quickstart.txt, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification."
-    src="../assets/lkw-grounded-result-light.svg"
+    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four live organizational sources, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
+    src="../assets/lkw-governed-evidence-gate-light.png"
   >
 </picture>
+</a>
 
-This is a neutral representation of the supported indexed workflow, not a finished application UI screenshot.
+This visual represents the governed evidence proof story — not the Product Quick Start indexed path and not a finished application UI screenshot.
 
 ## Choose the right LKW route
 
@@ -114,6 +132,7 @@ This tour does **not** represent:
 | Route | Use it for |
 |-------|------------|
 | [LKW Platform Proof](../proof/LKW_PLATFORM_PROOF.md) | Inspect deeper technical evidence |
+| [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) | Advanced governed evidence admissibility proof |
 | [docs/project/proofs/PROOFS.md](../../../../docs/project/proofs/PROOFS.md) | Check current evidence status |
 | [docs/project/overview/USE_CASES.md](../../../../docs/project/overview/USE_CASES.md) | Check whether the use case fits |
 | [Evaluation Guide](../../../../docs/project/builders/EVALUATION_GUIDE.md) | Evaluate one bounded claim fairly |

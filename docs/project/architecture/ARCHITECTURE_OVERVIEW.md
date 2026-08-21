@@ -25,6 +25,7 @@ Primary audience: external architects, Principal or Staff engineers, CTOs, and t
 | **Knowledge, tools, integrations, and model systems** | Source data, remote services, business systems, tool effects, and model access | Are selected behind configured boundaries; they do not own the product workflow or end-user experience |
 | **Evidence and provenance** | Receipts, traces, provenance, and records for review, debugging, and governance | Is produced during execution; it does not certify production readiness, security, or commercial validation |
 
+<a href="../assets/public/readme/intergrax-platform-map-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -39,6 +40,7 @@ Primary audience: external architects, Principal or Staff engineers, CTOs, and t
     alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources."
   >
 </picture>
+</a>
 
 [View full-size diagram](../assets/public/readme/intergrax-platform-map-light.png)
 
@@ -100,6 +102,7 @@ The lifecycle is conceptual: the operating layer selects the resources needed fo
 
 **Governed Execution** (Governance & Policy Enforcement) is the platform capability that controls what execution may proceed under configured policy.
 
+<a href="../assets/public/readme/intergrax-governed-execution-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -114,6 +117,7 @@ The lifecycle is conceptual: the operating layer selects the resources needed fo
     alt="Illustrative governed agentic execution loop with iterative reasoning, capability selection, governance gate, optional human approval, durable state, evidence plane and validated outcome."
   >
 </picture>
+</a>
 
 [View full-size diagram](../assets/public/readme/intergrax-governed-execution-light.png)
 

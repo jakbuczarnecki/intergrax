@@ -92,6 +92,7 @@ incomplete, and complete live-provider access remains incomplete.
 | **Product Quick Start / indexed Ask V1** | 🧪 **BOUNDED PROOF** · supported product-evaluation path | One-command local execution of the canonical LKW application path: managed sample upload → indexing → grounded indexed Ask → source citation → persisted Ask-run verification — [run it](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Indexed knowledge only; script-driven; no polished end-user UI; not the Hybrid Ask verification path; not production readiness; no real-user or commercial validation |
 | **Indexed Hybrid Ask** | 🧪 **BOUNDED PROOF** | Bounded indexed branch through production Hybrid Ask `indexed_only`; some proofs validate retrieval and boundary behavior even when answer assembly returns insufficient evidence | Not Product Quick Start; not mixed indexed + authorized-live Hybrid Ask; not production readiness or commercial validation |
 | **Trusted Ask / durable indexed workspace Ask** | 🧪 **BOUNDED PROOF** | Current runtime image through Ollama generation and embeddings, workspace source sync, Qdrant indexed retrieval, completed first Ask with evidence, non-destructive restart, completed second Ask without resync/reindex, and unchanged persisted first Ask run | Indexed knowledge only; bounded local runtime; no mixed indexed + authorized-live Hybrid Ask; no universal provider, production, or commercial claims |
+| **Governed Evidence Decision Proof** | 🧪 **BOUNDED PROOF** | Advanced bounded proof inside LKW stack: four policy-derived live obligations, four independent Docker-backed providers/connections/capabilities, execution-time authority, temporal admissibility, typed failure semantics, LLM suppression on unsatisfied admissibility, persisted structural proof, vendor restart without reseed — [canonical proof doc](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) | **LIVE_ONLY**; not Product Quick Start; not complete indexed + authorized-live Hybrid Ask certification; not production readiness, commercial validation, or real-user validation |
 | **Core Platform Proof** | 🧪 **BOUNDED PROOF** | Real application startup/readiness, durable knowledge and execution, background processing, persisted reviewable evidence, hosting/recovery, and watched-folder indexing (Elasticsearch/Kibana observability, Sentry problem signals, MongoDB ProofReceipts) | Bounded to documented verified proof profiles; not production readiness, commercial validation, or all-provider certification |
 
 **Product Quick Start proofs:** `LKW-PRODUCT-QUICKSTART-WINDOWS`, `LKW-PRODUCT-QUICKSTART-LINUX`, `LKW-PRODUCT-QUICKSTART-MACOS`
@@ -99,6 +100,8 @@ incomplete, and complete live-provider access remains incomplete.
 **Indexed Hybrid Ask proof:** `LKW-HYBRID-ASK-INDEXED`
 
 **Trusted Ask proof:** `LKW-ASK-WORKSPACE-LIVE` — [authoritative live proof section](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
+
+**Governed Evidence Decision Proof:** `advanced_flagship_proof` — [canonical proof doc](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) — **not** in canonical `intergrax_proof_manifest.py` today ([`LKW-PROOF-05`](../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md); accepted remediation)
 
 **Core platform proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`
 
@@ -117,7 +120,7 @@ incomplete, and complete live-provider access remains incomplete.
 
 - Mixed indexed + authorized live Hybrid Ask remains incomplete.
 - Complete live-provider access remains incomplete.
-- Complete multi-source live capability remains incomplete.
+- Productized multi-source live capability across the intended LKW product experience remains incomplete — distinct from the bounded four-provider **LIVE_ONLY** Governed Evidence Decision Proof (`advanced_flagship_proof`).
 - Real-user validation is not established.
 - Commercial validation is not established.
 
@@ -224,6 +227,20 @@ Maintainer status and wording rules: [Public Proof and Claims Model](../maintain
 Public documentation references `proof_id` values only. Canonical membership,
 commands, profiles, and environment requirements live in
 `scripts/proof/intergrax_proof_manifest.py`.
+
+**Historical vs current evidence:** a recorded PASS or certification artifact at an earlier source revision remains valid **historical** evidence. **Current** public-evidence eligibility requires provenance/freshness qualification per [`PROOF_RECEIPTS`](../architecture/PROOF_RECEIPTS.md) Protocol v2 target invariants and [`LKW_PRODUCT_PROOF`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) — not implemented yet.
+
+**Profile semantics (honest current state):**
+
+| Profile | Includes Product Quick Start (`LKW-PRODUCT-QUICKSTART-*`) | Notes |
+|---------|--------------------------------------------------------------|-------|
+| `quick` | **No** | Repository quick suite only; do **not** infer Product Quick Start coverage |
+| `full` | **Yes** | Includes LKW product quickstart manifest entries |
+| `live` | **Yes** | Live proofs; see `PASS_WITH_BLOCKED` limitation below |
+
+**`--profile live` / `PASS_WITH_BLOCKED` limitation (accepted remediation):** when required live proofs are blocked by missing environment/provider requirements, the suite may currently aggregate to `PASS_WITH_BLOCKED` with shell exit code `0`. Do **not** infer complete live certification from exit `0` until [`LKW-PROOF-04`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) is remediated.
+
+**Manifest governance gap:** Governed Evidence Decision Proof (`advanced_flagship_proof`) is publicly documented but not yet a canonical manifest entry — see [`LKW-PROOF-05`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md).
 
 Run the repository-wide suite from the repository root:
 

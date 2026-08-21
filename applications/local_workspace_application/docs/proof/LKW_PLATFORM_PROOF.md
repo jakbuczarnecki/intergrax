@@ -23,8 +23,10 @@ This document is the guided reviewer path for the proof families below:
 ```text
 LKW Platform Proof
 ├── Core Platform Proof
-├── Managed Workspace proof
+├── Product Quick Start proof
+├── Indexed Hybrid Ask proof
 ├── Trusted Ask / Qdrant durability proof
+├── Governed Evidence Decision Proof
 └── optional OS-specific proofs
 ```
 
@@ -69,6 +71,10 @@ A reviewer should not need to inspect raw Docker output or infer what to check f
 
 > [!NOTE]
 > A **bounded platform proof** validates specific platform and application mechanisms in documented environments. It is **not** product completion, commercial readiness, or universal production certification.
+
+**Historical vs current certification (Protocol v2 audit 2026-08-21):** checked-in certification matrix artifacts record bounded live PASS at specific source revisions (matrix generated 2026-07-21; Windows source `6b71a841...`; Linux Docker source `40a73fbb...`). Those remain **valid historical evidence**. Until [`LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY`](../../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) is remediated, certification freshness is **not** automatically current for the present tree — public docs must not imply silent revalidation on every source change. Current Protocol-v2 gaps do **not** erase historical PASS.
+
+**Governed Evidence Decision Proof manifest gap (accepted remediation):** `advanced_flagship_proof` is publicly documented with a direct module command but is **not** yet registered in the canonical `scripts/proof/intergrax_proof_manifest.py`. This is accepted audit debt ([`LKW-PROOF-05`](../../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md)), not silently fixed.
 
 ### Reviewer proof flow
 
@@ -116,6 +122,27 @@ The numbered steps below are the concrete technical evidence for these outcomes.
 
 Trusted Ask / durable workspace Ask is a separate proof family:
 `LKW-ASK-WORKSPACE-LIVE` — see [Trusted Ask Workspace (MVP-2)](#trusted-ask-workspace-mvp-2).
+
+Governed Evidence Decision Proof is a separate advanced bounded proof family:
+`advanced_flagship_proof` — see [Governed Evidence Decision Proof](#governed-evidence-decision-proof).
+
+## Governed Evidence Decision Proof
+
+Advanced bounded proof inside the LKW application stack demonstrating governed
+answer admissibility over **live organizational evidence** (`LIVE_ONLY`).
+
+| What it demonstrates | Boundary |
+| --- | --- |
+| Four policy-derived live obligations from versioned deployment policy | Not Product Quick Start |
+| Four independent Docker-backed vendor integrations | Not complete indexed + live Hybrid Ask |
+| Execution-time authority revalidation | Not production readiness or commercial validation |
+| Temporal admissibility (REV17 / REV18 policy revision) | Not universal vendor certification |
+| Typed failure semantics and LLM suppression | Not real-user validation |
+| Persisted structural proof with reloadable reason codes | Does not replace Core Platform Proof |
+
+**Proof command:** `uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.advanced_flagship_proof`
+
+**Canonical narrative:** [Governed Evidence Decision Proof](GOVERNED_HYBRID_KNOWLEDGE_PROOF.md)
 
 ## Optional operating-system interaction claims
 

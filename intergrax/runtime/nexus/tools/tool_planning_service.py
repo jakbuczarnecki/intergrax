@@ -8,7 +8,7 @@ from __future__ import annotations
 import copy
 import json
 from collections.abc import Mapping, Sequence
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Union
 
 from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
@@ -106,27 +106,119 @@ def _build_openai_tools_schema(
     return build_tool_planning_schema(registry, allowed_tool_ids=allowed_tool_ids)
 
 
+def _build_native_planning_messages(
+    messages: Sequence[ChatMessage],
+    *,
+    investigation_instructions: str,
+) -> List[ChatMessage]:
+    """Model-facing messages for one native round — does not mutate caller list."""
+    model_messages = list(messages)
+    policy = investigation_instructions.strip()
+    if not policy:
+        return model_messages
+    return [ChatMessage(role="system", content=policy), *model_messages]
+
+
+def _build_non_native_planner_system_content(
+    *,
+    planner_instructions: str,
+    investigation_instructions: str,
+    tools_desc: list[dict[str, Any]],
+) -> str:
+    sections: list[str] = [planner_instructions]
+    policy = investigation_instructions.strip()
+    if policy:
+        sections.append(policy)
+    sections.append("TOOLS=\n" + json.dumps(tools_desc, ensure_ascii=False))
+    return "\n\n".join(sections)
+
+
+class _AssistantToolCallSpec(NamedTuple):
+    valid: bool
+    required_ids: frozenset[str]
+
+
+def _parse_assistant_tool_call_ids(
+    tool_calls: Sequence[dict] | None,
+) -> _AssistantToolCallSpec:
+    if not tool_calls:
+        return _AssistantToolCallSpec(valid=True, required_ids=frozenset())
+    seen: set[str] = set()
+    declared: set[str] = set()
+    for tool_call in tool_calls:
+        if not isinstance(tool_call, dict):
+            continue
+        call_id = tool_call.get("id")
+        if not isinstance(call_id, str) or not call_id:
+            continue
+        if call_id in seen:
+            return _AssistantToolCallSpec(valid=False, required_ids=frozenset())
+        seen.add(call_id)
+        declared.add(call_id)
+    return _AssistantToolCallSpec(valid=True, required_ids=frozenset(declared))
+
+
 def _prune_messages_for_openai(messages: List[ChatMessage]) -> List[ChatMessage]:
     """
-    OpenAI requires tool messages only after the last assistant message with tool_calls.
+    Provider-safe transcript: keep complete ordered assistant→tool exchanges only.
     """
-    last_tc_idx: Optional[int] = None
-    for i in range(len(messages) - 1, -1, -1):
-        message = messages[i]
-        if message.role == "assistant" and message.tool_calls:
-            last_tc_idx = i
-            break
-
-    if last_tc_idx is None:
-        return [message for message in messages if message.role in ("system", "user", "assistant")]
-
     pruned: List[ChatMessage] = []
-    for i, message in enumerate(messages):
+    index = 0
+    message_count = len(messages)
+    while index < message_count:
+        message = messages[index]
+
         if message.role == "tool":
-            if i > last_tc_idx:
+            index += 1
+            continue
+
+        if message.role == "assistant" and message.tool_calls:
+            spec = _parse_assistant_tool_call_ids(message.tool_calls)
+            if not spec.valid:
+                scan_index = index + 1
+                while scan_index < message_count and messages[scan_index].role == "tool":
+                    scan_index += 1
+                index = scan_index
+                continue
+
+            required_ids = spec.required_ids
+            if not required_ids:
                 pruned.append(message)
-        else:
+                index += 1
+                continue
+
+            scan_index = index + 1
+            observed_ids: set[str] = set()
+            tool_group: list[ChatMessage] = []
+            group_valid = True
+            while scan_index < message_count and messages[scan_index].role == "tool":
+                tool_message = messages[scan_index]
+                tool_call_id = tool_message.tool_call_id
+                if (
+                    not isinstance(tool_call_id, str)
+                    or not tool_call_id
+                    or tool_call_id not in required_ids
+                    or tool_call_id in observed_ids
+                ):
+                    group_valid = False
+                else:
+                    observed_ids.add(tool_call_id)
+                    tool_group.append(tool_message)
+                scan_index += 1
+
+            if group_valid and observed_ids == set(required_ids):
+                pruned.append(message)
+                pruned.extend(tool_group)
+                index = scan_index
+                continue
+
+            index = scan_index if scan_index > index + 1 else index + 1
+            continue
+
+        if message.role in ("system", "user", "assistant"):
             pruned.append(message)
+        index += 1
+
     return pruned
 
 
@@ -237,9 +329,11 @@ class ToolPlanningService:
 
         plan_intro = ChatMessage(
             role="system",
-            content=self.cfg.planner_instructions
-            + "\nTOOLS=\n"
-            + json.dumps(tools_desc, ensure_ascii=False),
+            content=_build_non_native_planner_system_content(
+                planner_instructions=self.cfg.planner_instructions,
+                investigation_instructions=self.cfg.investigation_instructions,
+                tools_desc=tools_desc,
+            ),
         )
 
         if len(messages) and messages[0].role == "system":
@@ -334,6 +428,10 @@ class ToolPlanningService:
             computed_messages_hash = compute_model_facing_messages_hash(pruned)
             if computed_messages_hash != prepared_messages_hash:
                 raise ValueError("prepared messages hash mismatch")
+        provider_messages = _build_native_planning_messages(
+            pruned,
+            investigation_instructions=self.cfg.investigation_instructions,
+        )
         effective_tool_choice = tool_choice if tool_choice is not None else "auto"
 
         _sync_routing_before_tool_planner_llm(
@@ -341,7 +439,7 @@ class ToolPlanningService:
             run_id=run_id,
         )
         result = self.llm.generate_with_tools(
-            pruned,
+            provider_messages,
             tools_schema,
             temperature=self.cfg.temperature,
             max_tokens=self.cfg.max_answer_tokens,

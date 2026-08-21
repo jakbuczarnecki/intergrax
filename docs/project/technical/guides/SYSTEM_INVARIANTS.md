@@ -9,7 +9,7 @@
 
 ## 1. Purpose
 
-Intergrax spreads **non-negotiable architectural rules** across 22 domain pairs, ADRs, and CI gates. This document is the **single cross-layer authority** — normative MUST / MUST NOT / SHOULD rules plus a terse `SYS-INV-*` index with CI pointers.
+Intergrax spreads **non-negotiable architectural rules** across domain pairs, feature pairs, additional canonical architecture owners, ADRs, and CI gates. The runtime hub [classification register](../../architecture/intergrax_runtime_architecture.md#architecture-artifact-classification-register) is the authoritative owner topology index. This document is the **single cross-layer authority** — normative MUST / MUST NOT / SHOULD rules plus a terse `SYS-INV-*` index with CI pointers.
 
 **This file is not a second canon.** When semantics change, update the domain architecture first, then adjust the cross-layer rule and §5 row here. Do not copy long tables from ACP / APP / ORCH into this guide.
 
@@ -207,6 +207,26 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 **Canon:** [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · hub [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 
 ---
+
+
+## 13. Cross-layer concern index (2026-08-18)
+
+Compact index of durable cross-layer concerns added or reinforced by Protocol v2 campaign findings. **Domain documents remain semantic owners** — do not copy audit findings verbatim here.
+
+| Concern | Cross-layer rule (summary) | Canon |
+|---------|---------------------------|-------|
+| **Production qualification closure** | Tier-3/composition layer evaluates whether all mandatory components are simultaneously qualified for one target environment — domains own domain qualification only | [TIER3_APPLICATION_ENVIRONMENT.md](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md#protocol-v2-cross-layer-composition-qualification-target-invariants-2026-08-18) |
+| **Control-plane mutation governance** | State-changing control-plane mutations require a shared authority context (principal, scope, resource/revision, risk, approval evidence, mutation identity) — domain executors remain specialized | [GOVERNED_EXECUTION.md](../../architecture/GOVERNED_EXECUTION.md#protocol-v2-control-plane-mutation-target-invariants-2026-08-18) |
+| **Persistence topology / concurrency** | STRICT/multi-host composition must declare required persistence capability per mechanism; domain ports own CAS/lease/transaction semantics | [PLATFORM_FOUNDATION.md](../../architecture/PLATFORM_FOUNDATION.md#protocol-v2-persistence-topology-target-invariants-2026-08-18) |
+| **Proof / evidence provenance** | Structured proof outcomes are authoritative via platform receipt/store contracts — reviewer markdown is not source of truth | [PROOF_RECEIPTS.md](../../architecture/PROOF_RECEIPTS.md) |
+| **Security fail-closed authority** | One authentication authority; security toggles and critical actions fail closed when enforcement is required but unproven | [SECURITY_BOUNDARIES](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md) target invariants · [TIER3_APPLICATION_ENVIRONMENT.md](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) |
+| **Hosting lifecycle / evidence ownership** | Application Hosting owns lifecycle; canonical observability export owns execution evidence — not ad-hoc host logs | [APPLICATION_HOSTING.md](../../architecture/APPLICATION_HOSTING.md) |
+| **Plugin qualification / admission** | Plugin admission and activation mutate active state under governed qualification — not generic runtime bypass | [PLATFORM_PLUGINS.md](../../architecture/PLATFORM_PLUGINS.md) · [PLATFORM_EXTENSIBILITY](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md) |
+| **Execution-context convergence** | Supported surfaces share one configured runner; routing/control identity derives from Task/Run — not surface-local defaults | [NEXUS_EXECUTION_FLOW.md](../../architecture/NEXUS_EXECUTION_FLOW.md) · [TIER3_APPLICATION_ENVIRONMENT.md](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) |
+| **Maturity requalification** | Accepted findings affecting production/evidence safety require explicit maturity impact decision — severity alone does not auto-downgrade | [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md#finding-and-evidence-driven-maturity-impact-2026-08-18) |
+
+Remediation: **CLA-CANON-TOPOLOGY-INTEGRITY** — **ACCEPTED / PLANNED** only.
+
 
 ## 4. Execution stack (L1–L4)
 

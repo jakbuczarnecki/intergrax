@@ -453,6 +453,227 @@ def test_mismatching_prepared_messages_hash_fails_before_adapter_call() -> None:
     assert adapter.generate_with_tools_calls == 0
 
 
+def test_prune_drops_orphan_tool_messages_without_matching_call_id() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(role="system", content="SYNTH-SYSTEM"),
+        ChatMessage(role="assistant", content="SYNTH-ASSISTANT", tool_calls=[]),
+        ChatMessage(role="tool", content="SYNTH-ORPHAN", tool_call_id="call-1"),
+        ChatMessage(role="user", content="SYNTH-USER"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert [message.role for message in pruned] == ["system", "assistant", "user"]
+
+
+def test_prune_preserves_complete_multi_round_tool_exchanges() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(role="user", content="SYNTH-USER"),
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                }
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-b",
+                    "type": "function",
+                    "function": {"name": "beta.tool", "arguments": "{}"},
+                }
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_B", tool_call_id="call-b"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    tool_messages = [message for message in pruned if message.role == "tool"]
+    assert len(tool_messages) == 2
+    assert {message.content for message in tool_messages} == {"EVIDENCE_A", "EVIDENCE_B"}
+
+
+def test_prune_drops_tool_before_declaration() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(role="tool", content="ORPHAN_EARLY", tool_call_id="call-a"),
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                }
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert [message.role for message in pruned] == ["assistant", "tool"]
+    assert pruned[1].content == "EVIDENCE_A"
+
+
+def test_prune_drops_incomplete_assistant_tool_call_exchange() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(role="user", content="SYNTH-USER"),
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                }
+            ],
+        ),
+        ChatMessage(role="user", content="SYNTH-FOLLOWUP"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert [message.role for message in pruned] == ["user", "user"]
+    assert not any(message.tool_calls for message in pruned if message.role == "assistant")
+
+
+def test_prune_drops_partial_multi_call_assistant_group() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                },
+                {
+                    "id": "call-b",
+                    "type": "function",
+                    "function": {"name": "beta.tool", "arguments": "{}"},
+                },
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert pruned == []
+
+
+def test_prune_drops_assistant_group_with_foreign_tool_result() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                }
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+        ChatMessage(role="tool", content="FOREIGN", tool_call_id="call-x"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert pruned == []
+
+
+def test_prune_drops_assistant_group_with_duplicate_tool_result() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                }
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+        ChatMessage(role="tool", content="EVIDENCE_A_DUP", tool_call_id="call-a"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert pruned == []
+
+
+def test_prune_drops_assistant_with_duplicate_declared_tool_call_ids() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                },
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "beta.tool", "arguments": "{}"},
+                },
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert pruned == []
+
+
+def test_prune_preserves_all_tool_results_for_single_assistant_multi_call() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(role="user", content="SYNTH-USER"),
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                },
+                {
+                    "id": "call-b",
+                    "type": "function",
+                    "function": {"name": "beta.tool", "arguments": "{}"},
+                },
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+        ChatMessage(role="tool", content="EVIDENCE_B", tool_call_id="call-b"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    tool_messages = [message for message in pruned if message.role == "tool"]
+    assert len(tool_messages) == 2
+    assert {message.content for message in tool_messages} == {"EVIDENCE_A", "EVIDENCE_B"}
+
+
 def test_message_hash_calculated_after_pruning() -> None:
     registry = _single_tool_registry()
     schema = build_tool_planning_schema(registry)

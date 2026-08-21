@@ -56,6 +56,7 @@ Some teams use **Harness AI** to describe this category: an operating layer arou
 
 Modern agent frameworks and platforms increasingly bundle runtime facilities that teams once assembled separately. The comparison is not whether those facilities exist somewhere in the stack, but **which layer owns primary responsibility** for product semantics, enforcement boundaries, consequential effects, canonical history, recovery posture, and evidence — and how much integration burden remains with the adopting team.
 
+<a href="../assets/public/readme/intergrax-why-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -70,6 +71,7 @@ Modern agent frameworks and platforms increasingly bundle runtime facilities tha
     alt="Comparison between duplicated per-product AI foundations and specialized products reusing a shared Intergrax foundation."
   >
 </picture>
+</a>
 
 [View full-size diagram](../assets/public/readme/intergrax-why-light.png)
 
@@ -143,6 +145,8 @@ Potential adopter or sponsor profiles include:
 
 LKW is the current product path used to test this thesis. It exercises whether a reusable governed foundation can support a concrete, understandable workflow: approved knowledge → grounded Ask → source and evidence → persistence and reviewability.
 
+LKW also serves as the **reference application** for the bounded **Governed Evidence Decision Proof** — demonstrating governed answer admissibility over live organizational evidence with policy-derived obligations, execution-time authority, temporal rules, and persisted structural proof. See the [Governed Evidence Decision Proof](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) and [PROOFS.md](../proofs/PROOFS.md).
+
 ### Compounding value hypothesis
 
 If multiple specialized applications reuse the same policy, integration, context, evidence, recovery, observability, and execution foundations, investment in those shared mechanisms may support more than one product: each additional application can reuse existing governed capabilities, expose missing capability gaps, and strengthen the reusable foundation.
@@ -175,23 +179,6 @@ Intergrax is for:
 These approaches are not mutually exclusive. A real system may combine several of them; the comparison is about primary responsibility, not a feature scorecard.
 
 The question is: which layer of responsibility are you trying to buy or build?
-
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="../assets/public/intergrax-category-map-dark.svg"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="../assets/public/intergrax-category-map-light.svg"
-  >
-  <img
-    alt="Responsibility map comparing finished AI SaaS, workflow automation platforms, retrieval or knowledge toolkits, agent frameworks, custom in-house foundations and Intergrax by their primary value and what the adopting team still owns."
-    src="../assets/public/intergrax-category-map-light.svg"
-  >
-</picture>
-
-This neutral map explains primary responsibility. Categories overlap.
 
 ### Choose by your primary need
 
