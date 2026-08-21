@@ -80,11 +80,14 @@ def test_web_url_pass_wording_protects_insufficient_evidence_boundary(
 
 
 def test_proofs_surface_lkw_product_quickstart_taxonomy(proofs_text: str) -> None:
-    lkw_section = proofs_text.split("## LKW — Primary product proof", 1)[1].split(
+    lkw_section = proofs_text.split("## LKW — Active reference product evidence", 1)[1].split(
         "\n---\n", 1
     )[0]
 
     assert "Product Quick Start" in lkw_section
+    assert "Active reference product" in lkw_section
+    assert "Primary product proof" not in lkw_section
+    assert "accepted bounded proof paths" in lkw_section.lower()
     assert "indexed Ask V1" in lkw_section or "Ask V1" in lkw_section
     assert "../../../applications/local_workspace_application/docs/product/QUICKSTART.md" in lkw_section
 
@@ -120,7 +123,7 @@ def test_proofs_surface_lkw_product_quickstart_taxonomy(proofs_text: str) -> Non
 
 
 def test_proofs_additional_bounded_lkw_proof_table_structure(proofs_text: str) -> None:
-    lkw_section = proofs_text.split("## LKW — Primary product proof", 1)[1].split(
+    lkw_section = proofs_text.split("## LKW — Active reference product evidence", 1)[1].split(
         "\n---\n", 1
     )[0]
     assert "### Additional bounded LKW proof paths" in lkw_section
@@ -137,6 +140,7 @@ def test_maintainer_lkw_classification_is_active_reference_product(
         "## 7.", 1
     )[0]
     assert "Active reference product" in lkw_section
+    assert "Primary product proof" not in lkw_section
     assert "LKW is the Primary product proof" not in lkw_section
     assert "PARTIAL" in lkw_section
     assert "Backend Product Alpha / MVP" in lkw_section

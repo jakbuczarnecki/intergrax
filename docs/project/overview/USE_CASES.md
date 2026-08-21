@@ -15,7 +15,7 @@ This is the canonical decision guide for a concrete question: **does Intergrax f
 
 | Decision question | Current answer |
 |-------------------|----------------|
-| Strongest current fit | Private governed knowledge workspace — **Primary product proof**, **Backend Product Alpha / MVP**, **PARTIAL** |
+| Strongest current fit | Private governed knowledge workspace — **Active reference product**, **Backend Product Alpha / MVP**, **PARTIAL** |
 | Bounded technical fit | Specialized governed applications and context workflows; a **Reasonable technical evaluation** may be appropriate |
 | Not a fit today | Finished SaaS immediately, no-code automation, retrieval primitives only, or unrestricted OSS — another approach may fit better |
 | Primary next action | Review [PROOFS](../proofs/PROOFS.md) before evaluation or partner discussion |
@@ -85,9 +85,9 @@ The diagram is a responsibility-based evaluation route, not a list of completed 
 
 **Current evidence class:** **STRONGEST CURRENT FIT**
 
-**Current proof:** LKW is the **Primary Product Proof**, **Backend Product Alpha / MVP**, with **PARTIAL** proof status. Bounded indexed Ask evidence exists, including the indexed path through production Hybrid Ask.
+**Current evidence:** LKW is the **Active reference product**, **Backend Product Alpha / MVP**, with **PARTIAL** public status. Bounded indexed Ask evidence exists, including the indexed path through production Hybrid Ask.
 
-Canonical verification route: [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) via [PROOFS — LKW Primary Product Proof](../proofs/PROOFS.md#lkw--primary-product-proof).
+Canonical verification route: [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) via [PROOFS — LKW Active reference product evidence](../proofs/PROOFS.md#lkw--active-reference-product-evidence).
 
 ## Other bounded technical fits
 

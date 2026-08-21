@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Intergrax Evaluation Guide
 
-Intergrax is **source-available** and under **active R&D**. **LKW** is the **Primary Product Proof**, classified as **Backend Product Alpha / MVP** and **PARTIAL**. **Real-user validation** and **commercial validation** remain incomplete. The [LICENSE](../../../LICENSE) is authoritative.
+Intergrax is **source-available** and under **active R&D**. **LKW** is the **Active reference product**, classified as **Backend Product Alpha / MVP** and **PARTIAL**. **Real-user validation** and **commercial validation** remain incomplete. The [LICENSE](../../../LICENSE) is authoritative.
 
 This is a self-service method for one bounded technical/product evaluation. It is not a Builder Quick Start, application composition plan, proof status dashboard, external-reader validation protocol, generic test runner, or production certification procedure.
 

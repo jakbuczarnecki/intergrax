@@ -12,7 +12,7 @@ If your team runs a **private or controlled knowledge workflow** — approved so
 
 That is the purpose of a partner or design-partner discussion: not a generic product tour, but a focused evaluation of one real workflow against current evidence and boundaries.
 
-Intergrax is strongest today at **governed private knowledge workflows** where teams need combinations of approved knowledge, grounded results, explicit access boundaries, evidence traceability, and reviewable execution. LKW is the **Primary Product Proof** (**Backend Product Alpha / MVP**, **PARTIAL**). Not every listed capability is fully production-qualified; a pilot is how you judge fit for your specific workflow.
+Intergrax is strongest today at **governed private knowledge workflows** where teams need combinations of approved knowledge, grounded results, explicit access boundaries, evidence traceability, and reviewable execution. LKW is the **Active reference product** (**Backend Product Alpha / MVP**, **PARTIAL**). Not every listed capability is fully production-qualified; a pilot is how you judge fit for your specific workflow.
 
 Primary audience: a CTO, partner, integrator, or design partner with one concrete workflow to evaluate.
 

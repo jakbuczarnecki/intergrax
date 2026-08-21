@@ -106,7 +106,7 @@ Bounded product and capability proof routes — not a second proof dashboard. Fo
 
 ### Local Knowledge Workspace
 
-**Primary Product Proof** — **Backend Product Alpha / MVP** — **PARTIAL**
+**Active reference product** — **Backend Product Alpha / MVP** — **PARTIAL**
 
 Local Knowledge Workspace (LKW) is the current primary product-development and platform-validation program. The reader route is:
 
@@ -151,7 +151,7 @@ Intergrax includes a deterministic, policy-governed Token Optimization Engine wi
 
 ## Strategic directions
 
-Future ecosystem and platform directions — **not** current product proofs and **not** equivalent to shipped platform domains. These remain lower priority than accepted evidence above. Compact status also appears in the [README platform capabilities table](../../../README.md#platform-capabilities-and-directions).
+Future ecosystem and platform directions — **not** current product proofs and **not** equivalent to shipped platform domains. These remain lower priority than accepted evidence above. Compact status also appears in the [README platform capabilities table](../../../README.md#platform-capabilities) and [future strategic directions](../../../README.md#future-strategic-directions).
 
 ### Multiplayer AI
 

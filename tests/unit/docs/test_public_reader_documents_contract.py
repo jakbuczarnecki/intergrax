@@ -328,7 +328,8 @@ def test_project_projections_synchronize_accepted_lkw_boundaries() -> None:
         assert "commercial validation" in text, f"{name} omits commercial boundary"
         assert "complete live-provider access" in text, f"{name} omits live-provider boundary"
 
-    assert "primary product proof" in proofs, "PROOFS omits LKW proof role"
+    assert "active reference product" in proofs, "PROOFS omits LKW product identity"
+    assert "primary product proof" not in proofs, "PROOFS must not identify LKW as proof"
     assert "primary product proof" not in tour, "LKW Product Tour must stay product-first"
 
     assert "bounded indexed hybrid ask branch" in proofs
@@ -1031,7 +1032,7 @@ def test_use_cases_workflow_fit_and_ownership_contract() -> None:
         "not yet proven",
         "not a fit",
         "private governed knowledge workspace",
-        "primary product proof",
+        "active reference product",
         "backend product alpha / mvp",
         "partial",
         "product team remains responsible",

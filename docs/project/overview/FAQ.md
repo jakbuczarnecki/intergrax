@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Intergrax FAQ
 
-Intergrax is **source-available** and under **active R&D**. LKW is the **Primary Product Proof**, classified as **Backend Product Alpha / MVP**, and remains **PARTIAL**. Real-user and commercial validation are incomplete.
+Intergrax is **source-available** and under **active R&D**. LKW is the **Active reference product**, classified as **Backend Product Alpha / MVP**, and remains **PARTIAL**. Real-user and commercial validation are incomplete.
 
 This is a concise first-contact router. It does not replace the document that owns a detailed question or the legally authoritative [LICENSE](../../../LICENSE).
 
@@ -36,7 +36,7 @@ It is not a finished SaaS, a retrieval toolkit, or a universal replacement for o
 
 ## What is LKW?
 
-Local Knowledge Workspace is the **Primary Product Proof**: **Backend Product Alpha / MVP**, **PARTIAL**. It demonstrates a bounded indexed-knowledge workflow with a grounded answer, source reference, and persisted Ask run. [PROOFS](../proofs/PROOFS.md) owns current evidence status.
+Local Knowledge Workspace is the **Active reference product**: **Backend Product Alpha / MVP**, **PARTIAL**. It is a bounded indexed-knowledge product workflow; current evidence status and proof paths belong to [PROOFS](../proofs/PROOFS.md) and [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md).
 
 ## What is proven today?
 
