@@ -15,7 +15,9 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.openai_responses_adapter import (
     OpenAIChatResponsesAdapter,
+    _OpenAIToolNameMapping,
     _map_tools_to_responses_api,
+    _prepare_responses_tools_and_mapping,
 )
 from intergrax.llm_adapters.registry.profile import LLMProfile
 
@@ -30,6 +32,20 @@ _CANONICAL_SQL_TOOL = [
         "function": {
             "name": "sql_query",
             "description": "Run a bounded SQL query",
+            "parameters": {
+                "type": "object",
+                "properties": {"sql": {"type": "string"}},
+                "required": ["sql"],
+            },
+        },
+    }
+]
+_PLATFORM_PROOF_SQL_TOOL = [
+    {
+        "type": "function",
+        "function": {
+            "name": "platform_proof.sql.query",
+            "description": "Run bounded platform proof SQL",
             "parameters": {
                 "type": "object",
                 "properties": {"sql": {"type": "string"}},
@@ -371,3 +387,149 @@ def test_tool_choice_string_values_pass_through_unchanged() -> None:
             run_id=f"r-{choice}",
         )
         assert client.responses.create.call_args.kwargs["tool_choice"] == choice
+
+
+def test_dotted_canonical_tool_name_maps_to_provider_safe_alias() -> None:
+    provider_tools, mapping = _prepare_responses_tools_and_mapping(_PLATFORM_PROOF_SQL_TOOL)
+    assert provider_tools[0]["name"] == "platform_proof_sql_query"
+    assert mapping.to_provider("platform_proof.sql.query") == "platform_proof_sql_query"
+    assert "." not in provider_tools[0]["name"]
+
+
+def test_provider_alias_maps_back_to_canonical_tool_call_name() -> None:
+    client = MagicMock()
+    function_call = SimpleNamespace(
+        type="function_call",
+        call_id="call_pp_sql",
+        name="platform_proof_sql_query",
+        arguments='{"sql":"SELECT 1"}',
+    )
+    response = MagicMock()
+    response.usage = MagicMock(input_tokens=4, output_tokens=2)
+    response.output_text = ""
+    response.output = [function_call]
+    response.status = "completed"
+    client.responses.create.return_value = response
+
+    adapter = _capture_create_client(client)
+    result = adapter.generate_with_tools(
+        [ChatMessage(role="user", content="run sql")],
+        _PLATFORM_PROOF_SQL_TOOL,
+        run_id="r1",
+    )
+
+    assert len(result.tool_calls) == 1
+    assert result.tool_calls[0].name == "platform_proof.sql.query"
+
+
+def test_collision_produces_unique_provider_names_and_reverse_maps() -> None:
+    tools = [
+        {"type": "function", "function": {"name": "a.b", "parameters": {"type": "object"}}},
+        {"type": "function", "function": {"name": "a_b", "parameters": {"type": "object"}}},
+    ]
+    provider_tools, mapping = _prepare_responses_tools_and_mapping(tools)
+    provider_names = [tool["name"] for tool in provider_tools]
+    assert len(set(provider_names)) == 2
+    assert mapping.to_provider("a_b") == "a_b"
+    assert mapping.to_provider("a.b") != "a_b"
+    assert mapping.to_canonical(mapping.to_provider("a.b")) == "a.b"
+    assert mapping.to_canonical("a_b") == "a_b"
+
+
+def test_tool_name_mapping_is_deterministic_for_same_tool_set() -> None:
+    tools = [
+        {"type": "function", "function": {"name": "a.b", "parameters": {"type": "object"}}},
+        {"type": "function", "function": {"name": "a_b", "parameters": {"type": "object"}}},
+    ]
+    first_tools, first_mapping = _prepare_responses_tools_and_mapping(tools)
+    second_tools, second_mapping = _prepare_responses_tools_and_mapping(tools)
+    assert [tool["name"] for tool in first_tools] == [tool["name"] for tool in second_tools]
+    assert first_mapping.canonical_to_provider == second_mapping.canonical_to_provider
+
+
+def test_generate_with_tools_sends_provider_safe_dotted_tool_name() -> None:
+    client = MagicMock()
+    client.responses.create.return_value = _mock_create_response(output_text="ok")
+    adapter = _capture_create_client(client)
+
+    adapter.generate_with_tools(
+        [ChatMessage(role="user", content="hello")],
+        _PLATFORM_PROOF_SQL_TOOL,
+        run_id="r1",
+    )
+
+    sent_tool = client.responses.create.call_args.kwargs["tools"][0]
+    assert sent_tool["name"] == "platform_proof_sql_query"
+    assert _PLATFORM_PROOF_SQL_TOOL[0]["function"]["name"] == "platform_proof.sql.query"
+
+
+def test_stream_with_tools_uses_same_provider_name_mapping() -> None:
+    client = MagicMock()
+    stream_cm = MagicMock()
+    stream_inner = MagicMock()
+    stream_inner.__iter__.return_value = iter([])
+    stream_inner.get_final_response.return_value = _mock_create_response(output_text="done")
+    stream_cm.__enter__.return_value = stream_inner
+    stream_cm.__exit__.return_value = False
+    client.responses.stream.return_value = stream_cm
+
+    adapter = _capture_create_client(client)
+    list(
+        adapter.stream_with_tools(
+            [ChatMessage(role="user", content="tools-stream")],
+            _PLATFORM_PROOF_SQL_TOOL,
+            run_id="r2",
+        )
+    )
+
+    sent_tool = client.responses.stream.call_args.kwargs["tools"][0]
+    assert sent_tool["name"] == "platform_proof_sql_query"
+
+
+def test_named_tool_choice_maps_canonical_name_to_provider_alias() -> None:
+    client = MagicMock()
+    client.responses.create.return_value = _mock_create_response(output_text="ok")
+    adapter = _capture_create_client(client)
+
+    adapter.generate_with_tools(
+        [ChatMessage(role="user", content="x")],
+        _PLATFORM_PROOF_SQL_TOOL,
+        tool_choice={"type": "function", "name": "platform_proof.sql.query"},
+        run_id="r1",
+    )
+
+    assert client.responses.create.call_args.kwargs["tool_choice"] == {
+        "type": "function",
+        "name": "platform_proof_sql_query",
+    }
+
+
+def test_unknown_provider_tool_name_fails_closed() -> None:
+    client = MagicMock()
+    function_call = SimpleNamespace(
+        type="function_call",
+        call_id="call_unknown",
+        name="unexpected_alias",
+        arguments="{}",
+    )
+    response = MagicMock()
+    response.usage = MagicMock(input_tokens=1, output_tokens=1)
+    response.output_text = ""
+    response.output = [function_call]
+    response.status = "completed"
+    client.responses.create.return_value = response
+
+    adapter = _capture_create_client(client)
+    with pytest.raises(ValueError, match="unknown provider tool name 'unexpected_alias'"):
+        adapter.generate_with_tools(
+            [ChatMessage(role="user", content="x")],
+            _PLATFORM_PROOF_SQL_TOOL,
+            run_id="r1",
+        )
+
+
+def test_openai_tool_name_mapping_direct_collision_behavior() -> None:
+    mapping = _OpenAIToolNameMapping(["a_b", "a.b"])
+    assert mapping.to_provider("a_b") == "a_b"
+    assert mapping.to_provider("a.b") != "a_b"
+    assert mapping.to_canonical(mapping.to_provider("a.b")) == "a.b"

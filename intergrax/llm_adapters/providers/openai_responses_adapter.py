@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 from intergrax.utils import attribute_access
+import hashlib
 import json
 import os
+import re
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
 from openai import Client
@@ -62,6 +64,165 @@ _OPENAI_ADAPTER_ONLY_KEYS: frozenset[str] = frozenset(
         "use_distributed_rate_limit",
     }
 )
+
+_OPENAI_TOOL_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+_OPENAI_TOOL_NAME_MAX_LEN = 64
+_OPENAI_TOOL_NAME_HASH_LEN = 8
+
+
+def _is_openai_tool_name_valid(name: str) -> bool:
+    return bool(_OPENAI_TOOL_NAME_PATTERN.match(name))
+
+
+def _sanitize_openai_tool_name_base(canonical: str) -> str:
+    base = re.sub(r"[^a-zA-Z0-9_-]", "_", canonical)
+    return base or "tool"
+
+
+def _openai_tool_name_collision_suffix(canonical: str) -> str:
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return f"__{digest[:_OPENAI_TOOL_NAME_HASH_LEN]}"
+
+
+class _OpenAIToolNameMapping:
+    """Per-request reversible canonical ↔ OpenAI provider-safe tool name mapping."""
+
+    def __init__(self, canonical_names: Sequence[str]) -> None:
+        self.canonical_to_provider: dict[str, str] = {}
+        self.provider_to_canonical: dict[str, str] = {}
+        used_provider_names: set[str] = set()
+
+        for canonical in canonical_names:
+            if (
+                _is_openai_tool_name_valid(canonical)
+                and canonical not in used_provider_names
+            ):
+                self._assign(canonical, canonical, used_provider_names)
+
+        for canonical in canonical_names:
+            if canonical in self.canonical_to_provider:
+                continue
+
+            base = _sanitize_openai_tool_name_base(canonical)
+            if len(base) > _OPENAI_TOOL_NAME_MAX_LEN:
+                base = base[:_OPENAI_TOOL_NAME_MAX_LEN]
+
+            if base not in used_provider_names:
+                self._assign(canonical, base, used_provider_names)
+                continue
+
+            suffix = _openai_tool_name_collision_suffix(canonical)
+            max_base_len = _OPENAI_TOOL_NAME_MAX_LEN - len(suffix)
+            if max_base_len < 1:
+                raise ValueError(
+                    "OpenAI Responses adapter: "
+                    f"unable to derive provider-safe tool name for {canonical!r}"
+                )
+            provider_name = f"{base[:max_base_len]}{suffix}"
+            if provider_name in used_provider_names:
+                raise ValueError(
+                    "OpenAI Responses adapter: "
+                    f"tool name collision for {canonical!r} after hash suffix"
+                )
+            self._assign(canonical, provider_name, used_provider_names)
+
+    def _assign(
+        self,
+        canonical: str,
+        provider: str,
+        used_provider_names: set[str],
+    ) -> None:
+        if not _is_openai_tool_name_valid(provider):
+            raise ValueError(
+                "OpenAI Responses adapter: "
+                f"derived provider tool name {provider!r} for canonical {canonical!r} "
+                f"does not match {_OPENAI_TOOL_NAME_PATTERN.pattern}"
+            )
+        self.canonical_to_provider[canonical] = provider
+        self.provider_to_canonical[provider] = canonical
+        used_provider_names.add(provider)
+
+    def to_provider(self, canonical: str) -> str:
+        try:
+            return self.canonical_to_provider[canonical]
+        except KeyError as exc:
+            raise ValueError(
+                "OpenAI Responses adapter: "
+                f"unknown canonical tool name {canonical!r} for provider mapping"
+            ) from exc
+
+    def to_canonical(self, provider: str) -> str:
+        try:
+            return self.provider_to_canonical[provider]
+        except KeyError as exc:
+            raise ValueError(
+                "OpenAI Responses adapter: "
+                f"unknown provider tool name {provider!r}; refusing to dispatch"
+            ) from exc
+
+
+def _extract_canonical_tool_names(tools_schema: Sequence[Dict[str, Any]]) -> List[str]:
+    names: List[str] = []
+    for index, tool in enumerate(tools_schema):
+        if not isinstance(tool, dict):
+            continue
+        if tool.get("type") != "function":
+            continue
+        if isinstance(tool.get("name"), str) and tool["name"]:
+            names.append(tool["name"])
+            continue
+        fn = tool.get("function")
+        if isinstance(fn, dict) and isinstance(fn.get("name"), str) and fn["name"]:
+            names.append(fn["name"])
+            continue
+        raise ValueError(
+            "OpenAI Responses adapter: "
+            f"tools_schema[{index}] function tool requires a non-empty name"
+        )
+    return names
+
+
+def _apply_tool_name_mapping_to_responses_tools(
+    mapped_tools: Sequence[Dict[str, Any]],
+    name_mapping: _OpenAIToolNameMapping,
+) -> List[Dict[str, Any]]:
+    provider_tools: List[Dict[str, Any]] = []
+    for tool in mapped_tools:
+        if (
+            isinstance(tool, dict)
+            and tool.get("type") == "function"
+            and isinstance(tool.get("name"), str)
+            and tool["name"]
+        ):
+            out = dict(tool)
+            out["name"] = name_mapping.to_provider(out["name"])
+            provider_tools.append(out)
+        else:
+            provider_tools.append(dict(tool) if isinstance(tool, dict) else tool)
+    return provider_tools
+
+
+def _map_tool_choice_to_provider(
+    tool_choice: Union[str, Dict[str, Any]],
+    name_mapping: _OpenAIToolNameMapping,
+) -> Union[str, Dict[str, Any]]:
+    if isinstance(tool_choice, str):
+        return tool_choice
+    if not isinstance(tool_choice, dict):
+        return tool_choice
+    out = dict(tool_choice)
+    if out.get("type") == "function" and isinstance(out.get("name"), str) and out["name"]:
+        out["name"] = name_mapping.to_provider(out["name"])
+    return out
+
+
+def _prepare_responses_tools_and_mapping(
+    tools_schema: Sequence[Dict[str, Any]],
+) -> tuple[List[Dict[str, Any]], _OpenAIToolNameMapping]:
+    mapped_tools = _map_tools_to_responses_api(tools_schema)
+    name_mapping = _OpenAIToolNameMapping(_extract_canonical_tool_names(tools_schema))
+    provider_tools = _apply_tool_name_mapping_to_responses_tools(mapped_tools, name_mapping)
+    return provider_tools, name_mapping
 
 
 def _partition_openai_responses_options(
@@ -423,7 +584,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
             mapped = self._map_messages_to_openai(messages)
             input_items = self._messages_to_responses_input(mapped)
-            responses_tools = _map_tools_to_responses_api(tools_schema)
+            responses_tools, tool_name_mapping = _prepare_responses_tools_and_mapping(
+                tools_schema
+            )
             payload: Dict[str, Any] = dict(
                 model=self.model,
                 input=input_items,
@@ -431,7 +594,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 stream=True,
             )
             if tool_choice is not None:
-                payload["tool_choice"] = tool_choice
+                payload["tool_choice"] = _map_tool_choice_to_provider(
+                    tool_choice, tool_name_mapping
+                )
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
 
@@ -448,7 +613,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 if resp is None:
                     raise RuntimeError("OpenAI responses stream did not return a final response")
 
-                native_tool_calls = self._extract_tool_calls_from_response(resp)
+                native_tool_calls = self._extract_tool_calls_from_response(
+                    resp, tool_name_mapping
+                )
                 final_content = self._collect_output_text(resp) or "".join(buf)
                 final_response = adapter_response_from_openai_responses(
                     resp,
@@ -481,7 +648,11 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 error_type=err_type,
             )
 
-    def _extract_tool_calls_from_response(self, response: Response) -> List[Dict[str, Any]]:
+    def _extract_tool_calls_from_response(
+        self,
+        response: Response,
+        tool_name_mapping: _OpenAIToolNameMapping,
+    ) -> List[Dict[str, Any]]:
         native_tool_calls: List[Dict[str, Any]] = []
         for item in response.output or []:
             if item.type != "function_call":
@@ -489,11 +660,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             args = item.arguments
             if not isinstance(args, str):
                 args = json.dumps(args, ensure_ascii=False)
+            canonical_name = tool_name_mapping.to_canonical(item.name)
             native_tool_calls.append(
                 {
                     "id": item.call_id,
                     "type": "function",
-                    "function": {"name": item.name, "arguments": args},
+                    "function": {"name": canonical_name, "arguments": args},
                 }
             )
         return native_tool_calls
@@ -584,7 +756,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         try:
             mapped = self._map_messages_to_openai(messages)
             input_items = self._messages_to_responses_input(mapped)
-            responses_tools = _map_tools_to_responses_api(tools_schema)
+            responses_tools, tool_name_mapping = _prepare_responses_tools_and_mapping(
+                tools_schema
+            )
 
             payload: Dict[str, Any] = dict(
                 model=self.model,
@@ -593,7 +767,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             )
 
             if tool_choice is not None:
-                payload["tool_choice"] = tool_choice
+                payload["tool_choice"] = _map_tool_choice_to_provider(
+                    tool_choice, tool_name_mapping
+                )
 
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
@@ -603,7 +779,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             )
 
             content = self._collect_output_text(api_response)
-            native_tool_calls = self._extract_tool_calls_from_response(api_response)
+            native_tool_calls = self._extract_tool_calls_from_response(
+                api_response, tool_name_mapping
+            )
             response = adapter_response_from_openai_responses(
                 api_response,
                 model=self.model,
