@@ -35,7 +35,7 @@
 - **Prior audit reference(s):** [`POLICY_GOVERNANCE`](POLICY_GOVERNANCE.md); [`INTEGRATIONS`](INTEGRATIONS.md); [`TOOLS`](TOOLS.md)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
-- **post_sync_sha:** —
+- **post_sync_sha:** `658348bb9fc3bd3bc58dce81c9dc9f5d2efc00e8`
 
 ## Scope / ownership mapping
 
