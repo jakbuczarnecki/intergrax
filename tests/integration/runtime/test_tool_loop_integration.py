@@ -25,6 +25,7 @@ from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.nexus.tools.tool_loop import execute_planned_tool_calls, run_bounded_tool_loop
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
+from intergrax.runtime.nexus.tools.tool_planning_prompts import investigation_policy_prompt
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.runtime.nexus.tools.tool_planner_protocol import IterativeToolPlannerProtocol
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
@@ -1140,3 +1141,183 @@ def test_partial_tool_failure_continues_with_both_observations() -> None:
     assert result.tool_traces[1].success is False
     tool_messages = [msg for msg in result.appended_messages if msg.role == "tool"]
     assert len(tool_messages) == 2
+
+
+_INVESTIGATION_POLICY_MARKER = "Investigation and evidence policy"
+_NON_NATIVE_JSON_PROTOCOL_MARKER = "You do not have native tool-calling"
+
+
+class _ProbeInA(BaseModel):
+    query: str = "status"
+
+
+class _ProbeOutA(BaseModel):
+    status: str = "partial evidence only"
+
+
+class _ProbeInB(BaseModel):
+    confirm: bool = True
+
+
+class _ProbeOutB(BaseModel):
+    status: str = "verified"
+
+
+class _ProbeHandlerA(ToolHandler[_ProbeInA, _ProbeOutA]):
+    invocations: int = 0
+
+    def execute(self, request: ToolExecutionRequest[_ProbeInA]) -> _ProbeOutA:
+        _ProbeHandlerA.invocations += 1
+        _ = request
+        return _ProbeOutA()
+
+
+class _ProbeHandlerB(ToolHandler[_ProbeInB, _ProbeOutB]):
+    invocations: int = 0
+
+    def execute(self, request: ToolExecutionRequest[_ProbeInB]) -> _ProbeOutB:
+        _ProbeHandlerB.invocations += 1
+        _ = request
+        return _ProbeOutB()
+
+
+def _assert_investigation_policy_provider_messages(messages: list[ChatMessage]) -> None:
+    system_contents = [message.content or "" for message in messages if message.role == "system"]
+    policy_count = sum(1 for content in system_contents if _INVESTIGATION_POLICY_MARKER in content)
+    assert policy_count == 1
+    assert not any(_NON_NATIVE_JSON_PROTOCOL_MARKER in content for content in system_contents)
+    persistent_system = [
+        content
+        for content in system_contents
+        if _INVESTIGATION_POLICY_MARKER not in content
+    ]
+    assert not any(_INVESTIGATION_POLICY_MARKER in content for content in persistent_system)
+
+
+class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
+    def __init__(self) -> None:
+        super().__init__(fixed_text="")
+        self._round = 0
+
+    def supports_tools(self) -> bool:
+        return True
+
+    def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
+        _ = tools_schema, kwargs
+        self._round += 1
+        _assert_investigation_policy_provider_messages(list(messages))
+
+        if self._round == 1:
+            return LLMAdapterResponse(
+                content="",
+                tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id="tc-probe-a",
+                        name="probe.a",
+                        arguments={"query": "status"},
+                    ),
+                ),
+            )
+
+        tool_messages = [message for message in messages if message.role == "tool"]
+        if self._round == 2:
+            assert len(tool_messages) == 1
+            assert "partial evidence only" in (tool_messages[0].content or "")
+            return LLMAdapterResponse(
+                content="",
+                tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id="tc-probe-b",
+                        name="probe.b",
+                        arguments={"confirm": True},
+                    ),
+                ),
+            )
+
+        assert self._round == 3
+        assert len(tool_messages) == 1
+        assert "verified" in (tool_messages[0].content or "")
+        return LLMAdapterResponse(content="investigation complete", tool_calls=())
+
+
+def test_bounded_react_native_investigation_policy_once_per_provider_call() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("probe.a", _ProbeInA, _ProbeOutA),
+        _ProbeHandlerA(),
+    )
+    registry.register(
+        tools_agent_make_contract("probe.b", _ProbeInB, _ProbeOutB),
+        _ProbeHandlerB(),
+    )
+    _ProbeHandlerA.invocations = 0
+    _ProbeHandlerB.invocations = 0
+    llm = _InvestigationPolicyThreeRoundLLM()
+    state = _runtime_state(llm)
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = ToolPlanningService(llm=llm, tools=registry)
+    loop_messages = [ChatMessage(role="user", content="investigate evidence")]
+
+    result = run_bounded_tool_loop(
+        state=state,
+        invoker=invoker,
+        tool_planner=planner,
+        planner_input=loop_messages,
+        allowed_tool_ids=("probe.a", "probe.b"),
+        max_iterations=3,
+    )
+
+    assert llm._round == 3
+    assert _ProbeHandlerA.invocations == 1
+    assert _ProbeHandlerB.invocations == 1
+    assert len(result.tool_traces) == 2
+    assert result.stop_reason == "planner_final_answer"
+    assert not any(
+        _INVESTIGATION_POLICY_MARKER in (message.content or "")
+        for message in loop_messages
+    )
+    assert not any(
+        _INVESTIGATION_POLICY_MARKER in (message.content or "")
+        for message in result.appended_messages
+    )
+
+
+class _NonNativePlanningCaptureLLM(FakeLLMAdapter):
+    def __init__(self) -> None:
+        super().__init__(fixed_text='{"call_tool": {"name": "alpha.tool", "arguments": {"value": 3}}}')
+        self.last_messages: list[ChatMessage] = []
+
+    def supports_tools(self) -> bool:
+        return False
+
+    def generate_messages(self, messages, **kwargs):  # type: ignore[no-untyped-def]
+        _ = kwargs
+        self.last_messages = list(messages)
+        return super().generate_messages(messages, **kwargs)
+
+
+def test_non_native_planning_receives_json_protocol_and_investigation_policy() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("alpha.tool", _InA, _OutA),
+        _HandlerA(),
+    )
+    llm = _NonNativePlanningCaptureLLM()
+    planner = ToolPlanningService(llm=llm, tools=registry)
+
+    decision = planner.plan_tools(
+        "use alpha",
+        run_id="run-non-native-policy",
+        allowed_tool_ids=("alpha.tool",),
+    )
+
+    system_contents = [message.content or "" for message in llm.last_messages if message.role == "system"]
+    combined = "\n\n".join(system_contents)
+    assert _NON_NATIVE_JSON_PROTOCOL_MARKER in combined
+    assert '{"call_tool":' in combined
+    assert _INVESTIGATION_POLICY_MARKER in combined
+    assert decision.tool_plan is not None
+    assert len(decision.tool_plan.calls) == 1
+    assert decision.tool_plan.calls[0].tool_id == "alpha.tool"
+    assert decision.tool_plan.calls[0].input.value == 3
+    assert investigation_policy_prompt().strip() in combined

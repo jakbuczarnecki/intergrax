@@ -106,6 +106,33 @@ def _build_openai_tools_schema(
     return build_tool_planning_schema(registry, allowed_tool_ids=allowed_tool_ids)
 
 
+def _build_native_planning_messages(
+    messages: Sequence[ChatMessage],
+    *,
+    investigation_instructions: str,
+) -> List[ChatMessage]:
+    """Model-facing messages for one native round — does not mutate caller list."""
+    model_messages = list(messages)
+    policy = investigation_instructions.strip()
+    if not policy:
+        return model_messages
+    return [ChatMessage(role="system", content=policy), *model_messages]
+
+
+def _build_non_native_planner_system_content(
+    *,
+    planner_instructions: str,
+    investigation_instructions: str,
+    tools_desc: list[dict[str, Any]],
+) -> str:
+    sections: list[str] = [planner_instructions]
+    policy = investigation_instructions.strip()
+    if policy:
+        sections.append(policy)
+    sections.append("TOOLS=\n" + json.dumps(tools_desc, ensure_ascii=False))
+    return "\n\n".join(sections)
+
+
 def _prune_messages_for_openai(messages: List[ChatMessage]) -> List[ChatMessage]:
     """
     OpenAI requires tool messages only after the last assistant message with tool_calls.
@@ -237,9 +264,11 @@ class ToolPlanningService:
 
         plan_intro = ChatMessage(
             role="system",
-            content=self.cfg.planner_instructions
-            + "\nTOOLS=\n"
-            + json.dumps(tools_desc, ensure_ascii=False),
+            content=_build_non_native_planner_system_content(
+                planner_instructions=self.cfg.planner_instructions,
+                investigation_instructions=self.cfg.investigation_instructions,
+                tools_desc=tools_desc,
+            ),
         )
 
         if len(messages) and messages[0].role == "system":
@@ -329,7 +358,12 @@ class ToolPlanningService:
                 self.tools,
                 allowed_tool_ids=allowed_tool_ids,
             )
-        pruned = _prune_messages_for_openai(list(messages))
+        pruned = _prune_messages_for_openai(
+            _build_native_planning_messages(
+                messages,
+                investigation_instructions=self.cfg.investigation_instructions,
+            )
+        )
         if prepared_messages_hash is not None:
             computed_messages_hash = compute_model_facing_messages_hash(pruned)
             if computed_messages_hash != prepared_messages_hash:

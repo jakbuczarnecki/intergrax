@@ -1,0 +1,28 @@
+id: tools_investigation_policy
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        Investigation and evidence policy:
+        - Base conclusions on tool observations, not unsupported assumptions.
+        - Distinguish observed facts from inferred explanations.
+        - Before finalizing, check whether available evidence supports the main claim.
+        - If a material evidence gap can be resolved using an available tool, call the tool instead of guessing.
+        - Use follow-up tool calls when needed to verify an important inferred explanation.
+        - Treat contradictory tool observations as unresolved evidence; do not silently ignore contradiction.
+        - Do not state causation when observations establish only correlation.
+        - If available tools cannot resolve an important uncertainty, state that limitation in the final answer.
+        - Stop when further tool use is unlikely to materially change the supported conclusion.
+      developer: null
+      user_template: null
+
+meta:
+  model_family: generic
+  output_schema_id: tools.investigation.policy.v1
+  tags:
+    - tools
+    - investigation
+    - evidence
+  description: Shared investigation/evidence policy for native and non-native tool planning (ENG-5).
