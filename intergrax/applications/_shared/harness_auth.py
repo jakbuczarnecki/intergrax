@@ -79,6 +79,23 @@ def is_harness_api_key_valid(
     return hmac.compare_digest(provided, expected)
 
 
+def _harness_api_key_authenticates(
+    *,
+    x_api_key: str | None = None,
+    authorization: str | None = None,
+    request: Request | None = None,
+) -> bool:
+    """Return True only when API key authority is configured and credentials match."""
+    expected = _expected_api_key_for_request(request)
+    if expected is None:
+        return False
+    return is_harness_api_key_valid(
+        x_api_key=x_api_key,
+        authorization=authorization,
+        expected_api_key=expected,
+    )
+
+
 def require_harness_api_key(
     request: Request,
     x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
@@ -168,7 +185,7 @@ def require_harness_auth(
     authorization: Annotated[str | None, Header()] = None,
 ) -> None:
     """Enforce static API key and/or OIDC bearer token when configured."""
-    if is_harness_api_key_valid(
+    if _harness_api_key_authenticates(
         x_api_key=x_api_key,
         authorization=authorization,
         request=request,
@@ -244,7 +261,7 @@ class HarnessApiKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.url.path in _HARNESS_AUTH_EXEMPT_PATHS:
             return await call_next(request)
-        if is_harness_api_key_valid(
+        if _harness_api_key_authenticates(
             x_api_key=request.headers.get("X-Api-Key"),
             authorization=request.headers.get("Authorization"),
             request=request,

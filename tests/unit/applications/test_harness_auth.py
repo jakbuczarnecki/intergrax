@@ -8,10 +8,12 @@ from fastapi.testclient import TestClient
 
 from intergrax.applications._shared.harness_auth import (
     HarnessAuthState,
+    HarnessApiKeyMiddleware,
     apply_harness_auth_middleware,
     is_harness_api_key_valid,
     require_agent_platform_admin_auth,
     require_harness_api_key,
+    require_harness_auth,
     resolve_harness_api_key,
 )
 from intergrax.applications._shared.identity_wiring import wire_application_identity
@@ -53,6 +55,29 @@ class _FakeIdentityProvider:
 
     def list_tenants(self, *, limit: int = 50) -> tuple[()]:
         return ()
+
+
+def _idp_only_auth_state(*, valid_token: str = "valid-idp-token") -> HarnessAuthState:
+    return HarnessAuthState(
+        identity_provider=_FakeIdentityProvider(valid_token=valid_token),
+        require_api_key=True,
+        resolved_api_key=None,
+    )
+
+
+def _api_key_only_auth_state(*, api_key: str = "lab-key") -> HarnessAuthState:
+    return HarnessAuthState(
+        require_api_key=True,
+        resolved_api_key=api_key,
+    )
+
+
+def _local_dev_auth_state() -> HarnessAuthState:
+    return HarnessAuthState(
+        require_api_key=False,
+        resolved_api_key=None,
+        identity_provider=None,
+    )
 
 
 def test_resolve_harness_api_key_unset(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -278,3 +303,110 @@ def test_sec_bnd_02_invalid_token_still_rejected(
 
     client = TestClient(app)
     assert client.get("/admin", headers={"Authorization": "Bearer wrong-token"}).status_code == 401
+
+
+def test_sec_r1_idp_only_dependency_fail_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("INTERGRAX_HARNESS_API_KEY", raising=False)
+    app = FastAPI()
+    app.state.harness_auth = _idp_only_auth_state()
+
+    @app.get("/protected", dependencies=[Depends(require_harness_auth)])
+    def protected() -> dict[str, str]:
+        return {"ok": "yes"}
+
+    client = TestClient(app)
+    assert client.get("/protected").status_code == 401
+    assert (
+        client.get("/protected", headers={"Authorization": "Bearer wrong-token"}).status_code
+        == 401
+    )
+    assert (
+        client.get("/protected", headers={"Authorization": "Bearer valid-idp-token"}).status_code
+        == 200
+    )
+
+
+def test_sec_r1_idp_only_middleware_fail_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("INTERGRAX_HARNESS_API_KEY", raising=False)
+    app = FastAPI()
+    app.state.harness_auth = _idp_only_auth_state()
+    app.add_middleware(HarnessApiKeyMiddleware)
+
+    @app.get("/protected")
+    def protected() -> dict[str, str]:
+        return {"ok": "yes"}
+
+    client = TestClient(app)
+    assert client.get("/protected").status_code == 401
+    assert (
+        client.get("/protected", headers={"Authorization": "Bearer wrong-token"}).status_code
+        == 401
+    )
+    assert (
+        client.get("/protected", headers={"Authorization": "Bearer valid-idp-token"}).status_code
+        == 200
+    )
+
+
+def test_sec_r1_api_key_only_require_harness_auth(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("INTERGRAX_HARNESS_API_KEY", raising=False)
+    app = FastAPI()
+    app.state.harness_auth = _api_key_only_auth_state()
+
+    @app.get("/protected", dependencies=[Depends(require_harness_auth)])
+    def protected() -> dict[str, str]:
+        return {"ok": "yes"}
+
+    client = TestClient(app)
+    assert client.get("/protected").status_code == 401
+    assert client.get("/protected", headers={"X-Api-Key": "wrong-key"}).status_code == 401
+    assert client.get("/protected", headers={"X-Api-Key": "lab-key"}).status_code == 200
+
+
+def test_sec_r1_api_key_plus_idp_or_semantics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("INTERGRAX_HARNESS_API_KEY", raising=False)
+    app = FastAPI()
+    app.state.harness_auth = HarnessAuthState(
+        identity_provider=_FakeIdentityProvider(valid_token="valid-idp-token"),
+        require_api_key=True,
+        resolved_api_key="lab-key",
+    )
+
+    @app.get("/protected", dependencies=[Depends(require_harness_auth)])
+    def protected() -> dict[str, str]:
+        return {"ok": "yes"}
+
+    client = TestClient(app)
+    assert client.get("/protected").status_code == 401
+    assert (
+        client.get("/protected", headers={"Authorization": "Bearer wrong-token"}).status_code
+        == 401
+    )
+    assert client.get("/protected", headers={"X-Api-Key": "lab-key"}).status_code == 200
+    assert (
+        client.get("/protected", headers={"Authorization": "Bearer valid-idp-token"}).status_code
+        == 200
+    )
+
+
+def test_sec_r1_explicit_local_dev_bypass(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("INTERGRAX_HARNESS_API_KEY", raising=False)
+    app = FastAPI()
+    app.state.harness_auth = _local_dev_auth_state()
+
+    @app.get("/protected", dependencies=[Depends(require_harness_auth)])
+    def protected() -> dict[str, str]:
+        return {"ok": "yes"}
+
+    client = TestClient(app)
+    assert client.get("/protected").status_code == 200
