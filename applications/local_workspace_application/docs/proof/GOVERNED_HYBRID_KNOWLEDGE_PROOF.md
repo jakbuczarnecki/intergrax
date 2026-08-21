@@ -23,6 +23,10 @@
   >
 </picture>
 
+*Conceptual COMM-5 evidence model. The F3-F Advanced Flagship below is **LIVE_ONLY**
+and receives versioned policy rules through the policy-resolution boundary; it does
+not perform indexed policy retrieval.*
+
 ```mermaid
 flowchart LR
   POLICY["Approved Indexed Policy"]
@@ -62,7 +66,7 @@ The strongest accepted public evidence is the **Governed Evidence Decision Proof
 evidence proof over Docker-backed organizational sources.
 
 F3-F demonstrates that Intergrax can derive mandatory live evidence obligations
-from versioned indexed policy, acquire four independent live sources through
+from versioned policy rules, acquire four independent live sources through
 authorized connections and capabilities, revalidate authority at execution time,
 apply temporal admissibility, classify typed evidence failures, suppress LLM
 synthesis when admissibility is unsatisfied, and persist structural proof of why
@@ -161,7 +165,7 @@ Tests: `tests/unit/proof_infrastructure/test_advanced_flagship_proof.py`
 
 ## Policy revision story
 
-The flagship proof uses versioned indexed deployment policy. Under **REV17**, the
+The flagship proof uses versioned deployment policy rules. Under **REV17**, the
 same two-hour-old security evidence satisfies a 24-hour maximum-age obligation and
 admissibility is **SATISFIED**. Under **REV18**, the policy tightens to a one-hour
 maximum age on the same evidence snapshot — admissibility becomes **UNSATISFIED** and
