@@ -5,16 +5,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.runtime.nexus.tools.tool_planner_trackable import ToolPlannerTrackable
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
+from intergrax.tools.core.tool_plan import ToolCallPlan
 from intergrax.tools.registry import ToolRegistry, ToolWiringContext, build_registry_from_profile
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
@@ -88,4 +90,25 @@ class CatalogToolPlanner(ToolPlannerTrackable):
             context=context,
             run_id=run_id,
             allowed_tool_ids=allowed_tool_ids,
+        )
+
+    def plan_native_round(
+        self,
+        messages: list[ChatMessage],
+        *,
+        allowed_tool_ids: Sequence[str] | None = None,
+        run_id: str | None = None,
+        tool_choice: Union[str, dict[str, Any], None] = None,
+        prepared_tools_schema: Sequence[Mapping[str, Any]] | None = None,
+        prepared_tools_schema_hash: str | None = None,
+        prepared_messages_hash: str | None = None,
+    ) -> tuple[LLMAdapterResponse, ToolCallPlan]:
+        return self._service.plan_native_round(
+            messages,
+            allowed_tool_ids=allowed_tool_ids,
+            run_id=run_id,
+            tool_choice=tool_choice,
+            prepared_tools_schema=prepared_tools_schema,
+            prepared_tools_schema_hash=prepared_tools_schema_hash,
+            prepared_messages_hash=prepared_messages_hash,
         )

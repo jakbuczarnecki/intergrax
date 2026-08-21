@@ -20,8 +20,10 @@ from intergrax.runtime.nexus.tools.tool_loop import (
     execute_planned_tool_calls,
 )
 from intergrax.runtime.nexus.tools.tool_planning_policy import tool_choice_for_mode
-from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
-from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
+from intergrax.runtime.nexus.tools.tool_planner_protocol import (
+    IterativeToolPlannerProtocol,
+    ToolPlannerProtocol,
+)
 from intergrax.tools.core.tool_plan import ToolCallPlan
 
 
@@ -44,7 +46,7 @@ class BoundedReactPattern:
         planner_input: str | list[ChatMessage],
     ) -> ToolInvocationResult:
         max_iters = max(1, int(max_iterations))
-        if max_iters == 1 or not isinstance(planner, ToolPlanningService):
+        if max_iters == 1:
             single = SinglePassPattern()
             return single.execute(
                 state=state,
@@ -54,6 +56,12 @@ class BoundedReactPattern:
                 allowed_tool_ids=allowed_tool_ids,
                 max_iterations=1,
                 planner_input=planner_input,
+            )
+
+        if not isinstance(planner, IterativeToolPlannerProtocol):
+            raise TypeError(
+                "Bounded iterative tool invocation (max_iterations > 1) requires "
+                "a planner implementing IterativeToolPlannerProtocol"
             )
 
         messages = _coerce_messages(planner_input)
