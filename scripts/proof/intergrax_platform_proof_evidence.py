@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -23,6 +23,23 @@ PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION = "intergrax.platform_proof_evidence.v1"
 
 _SECRET_FIELD_PATTERN = re.compile(
     r"(secret|password|token|api[_-]?key|authorization|credential)",
+    re.IGNORECASE,
+)
+
+REPORT_SAFE_REDACTION_PLACEHOLDER = "[REDACTED]"
+
+# Defense-in-depth only — primary guarantee is explicit ReportSafeText ownership.
+_BEARER_HEADER_PATTERN = re.compile(
+    r"(Authorization:\s*Bearer\s+)(\S+)",
+    re.IGNORECASE,
+)
+_BEARER_TOKEN_PATTERN = re.compile(r"\bBearer\s+\S+", re.IGNORECASE)
+_ENV_SECRET_ASSIGNMENT_PATTERN = re.compile(
+    r"\b([A-Z][A-Z0-9_]*(?:TOKEN|PASSWORD|API_KEY)|OPENAI_API_KEY|ANTHROPIC_API_KEY)=([^\s&'\"\\]+)",
+    re.IGNORECASE,
+)
+_CREDENTIAL_URL_PATTERN = re.compile(
+    r"([a-z][a-z0-9+.-]*://)([^:@/\s]+):([^@/\s]+)@",
     re.IGNORECASE,
 )
 
@@ -54,7 +71,120 @@ class ReportSafeVisibility(StrEnum):
     REDACTED = "REDACTED"
 
 
-ReportSafeScalar = str | int | float | bool | None
+class ReportSafeTextSourceKind(StrEnum):
+    PROOF_AUTHORED = "PROOF_AUTHORED"
+    RUNTIME_SANITIZED = "RUNTIME_SANITIZED"
+    RUNTIME_EXPLICIT = "RUNTIME_EXPLICIT"
+
+
+def sanitize_untrusted_report_text(text: str) -> tuple[str, bool]:
+    """Deterministic defense-in-depth redaction for common secret-bearing patterns."""
+    redaction_applied = False
+    sanitized = text
+
+    def _replace(pattern: re.Pattern[str], repl: str | re.Pattern[str]) -> None:
+        nonlocal sanitized, redaction_applied
+        updated = pattern.sub(repl, sanitized)
+        if updated != sanitized:
+            redaction_applied = True
+            sanitized = updated
+
+    _replace(
+        _BEARER_HEADER_PATTERN,
+        rf"\1{REPORT_SAFE_REDACTION_PLACEHOLDER}",
+    )
+    _replace(_BEARER_TOKEN_PATTERN, f"Bearer {REPORT_SAFE_REDACTION_PLACEHOLDER}")
+    _replace(_ENV_SECRET_ASSIGNMENT_PATTERN, rf"\1={REPORT_SAFE_REDACTION_PLACEHOLDER}")
+    _replace(
+        _CREDENTIAL_URL_PATTERN,
+        rf"\1{REPORT_SAFE_REDACTION_PLACEHOLDER}:{REPORT_SAFE_REDACTION_PLACEHOLDER}@",
+    )
+    return sanitized, redaction_applied
+
+
+class ReportSafeText(BaseModel):
+    """Text explicitly approved for human report rendering."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    text: str
+    visibility: ReportSafeVisibility = ReportSafeVisibility.REPORT_SAFE
+    redaction_applied: bool = False
+    source_kind: ReportSafeTextSourceKind = ReportSafeTextSourceKind.PROOF_AUTHORED
+
+    @model_validator(mode="after")
+    def _validate_redacted_payload(self) -> ReportSafeText:
+        if self.visibility == ReportSafeVisibility.REDACTED:
+            if self.text != REPORT_SAFE_REDACTION_PLACEHOLDER:
+                raise ValueError("redacted ReportSafeText must not expose original value")
+            if not self.redaction_applied:
+                raise ValueError("redacted ReportSafeText must set redaction_applied")
+        return self
+
+    @classmethod
+    def require_non_empty(cls, value: ReportSafeText, *, field_name: str) -> ReportSafeText:
+        if not value.text.strip():
+            raise ValueError(f"{field_name} must not be empty")
+        return value
+
+
+def proof_authored_report_safe_text(text: str) -> ReportSafeText:
+    """Static or proof-builder-controlled text approved for reporting."""
+    return ReportSafeText(
+        text=text,
+        visibility=ReportSafeVisibility.REPORT_SAFE,
+        redaction_applied=False,
+        source_kind=ReportSafeTextSourceKind.PROOF_AUTHORED,
+    )
+
+
+def sanitized_runtime_report_safe_text(text: str) -> ReportSafeText:
+    """Runtime/provider text sanitized before report-safe persistence."""
+    sanitized, redaction_applied = sanitize_untrusted_report_text(text)
+    return ReportSafeText(
+        text=sanitized,
+        visibility=ReportSafeVisibility.REPORT_SAFE,
+        redaction_applied=redaction_applied,
+        source_kind=ReportSafeTextSourceKind.RUNTIME_SANITIZED,
+    )
+
+
+def explicit_runtime_report_safe_text(text: str) -> ReportSafeText:
+    """Runtime text explicitly approved for reporting (defense-in-depth sanitization)."""
+    sanitized, redaction_applied = sanitize_untrusted_report_text(text)
+    return ReportSafeText(
+        text=sanitized,
+        visibility=ReportSafeVisibility.REPORT_SAFE,
+        redaction_applied=redaction_applied,
+        source_kind=ReportSafeTextSourceKind.RUNTIME_EXPLICIT,
+    )
+
+
+def redacted_report_safe_text() -> ReportSafeText:
+    """Placeholder for values that must not appear in human reports."""
+    return ReportSafeText(
+        text=REPORT_SAFE_REDACTION_PLACEHOLDER,
+        visibility=ReportSafeVisibility.REDACTED,
+        redaction_applied=True,
+        source_kind=ReportSafeTextSourceKind.RUNTIME_SANITIZED,
+    )
+
+
+def _reject_raw_report_safe_str(value: object) -> object:
+    if isinstance(value, str):
+        raise ValueError(
+            "raw runtime string cannot be used for report-safe fields; "
+            "wrap with proof_authored_report_safe_text, "
+            "sanitized_runtime_report_safe_text, or explicit_runtime_report_safe_text"
+        )
+    return value
+
+
+ReportSafeScalar = int | float | bool | None
+ReportSafeFieldValue = Annotated[
+    ReportSafeScalar | ReportSafeText | tuple[ReportSafeScalar | ReportSafeText, ...],
+    Field(union_mode="left_to_right"),
+]
 
 
 class ReportSafeField(BaseModel):
@@ -62,8 +192,13 @@ class ReportSafeField(BaseModel):
 
     name: str = Field(min_length=1)
     visibility: ReportSafeVisibility
-    value: ReportSafeScalar | tuple[ReportSafeScalar, ...] | None = None
+    value: ReportSafeFieldValue | None = None
     is_secret: bool = False
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def _reject_raw_str_value(cls, value: object) -> object:
+        return _reject_raw_report_safe_str(value)
 
     @model_validator(mode="after")
     def _reject_secret_as_report_safe(self) -> ReportSafeField:
@@ -80,7 +215,9 @@ class ReportSafePayload(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     visibility: ReportSafeVisibility = ReportSafeVisibility.REPORT_SAFE
-    summary: str = ""
+    summary: ReportSafeText = Field(
+        default_factory=lambda: proof_authored_report_safe_text("")
+    )
     fields: tuple[ReportSafeField, ...] = ()
 
 
@@ -218,10 +355,17 @@ class ToolInvocationEvidence(BaseModel):
     call_id: str | None = None
     safe_arguments: ReportSafePayload | None = None
     success: bool
-    output_summary: str = ""
+    output_summary: ReportSafeText = Field(
+        default_factory=lambda: proof_authored_report_safe_text("")
+    )
     bounded_output: ReportSafePayload | None = None
     duration_ms: int | None = Field(default=None, ge=0)
-    error: str | None = None
+    error: ReportSafeText | None = None
+
+    @field_validator("output_summary", "error", mode="before")
+    @classmethod
+    def _reject_raw_str_fields(cls, value: object) -> object:
+        return _reject_raw_report_safe_str(value)
 
 
 class ProofExecutionStep(BaseModel):
@@ -231,9 +375,9 @@ class ProofExecutionStep(BaseModel):
 
     step_index: int = Field(ge=0)
     step_id: str = Field(min_length=1)
-    purpose: str = Field(min_length=1)
+    purpose: ReportSafeText
     evidence_basis_ids: tuple[str, ...] = ()
-    action: str = Field(min_length=1)
+    action: ReportSafeText
     input: ReportSafePayload | None = None
     observation: ReportSafePayload | None = None
     evidence_created_ids: tuple[str, ...] = ()
@@ -242,7 +386,13 @@ class ProofExecutionStep(BaseModel):
     duration_ms: int | None = Field(default=None, ge=0)
     participant_id: str | None = None
     tool_invocation: ToolInvocationEvidence | None = None
-    error: str | None = None
+    error: ReportSafeText | None = None
+
+    @model_validator(mode="after")
+    def _validate_required_text(self) -> ProofExecutionStep:
+        ReportSafeText.require_non_empty(self.purpose, field_name="purpose")
+        ReportSafeText.require_non_empty(self.action, field_name="action")
+        return self
 
 
 class FinalOutputEvidence(BaseModel):
@@ -250,7 +400,9 @@ class FinalOutputEvidence(BaseModel):
 
     present: bool
     output_type: str = "text"
-    content: str = ""
+    content: ReportSafeText = Field(
+        default_factory=lambda: proof_authored_report_safe_text("")
+    )
     report_safe: bool = True
     evidence_basis_ids: tuple[str, ...] = ()
 
@@ -261,7 +413,9 @@ class EvaluatorCheckEvidence(BaseModel):
     check_id: str = Field(min_length=1)
     label: str = Field(min_length=1)
     passed: bool
-    explanation: str = ""
+    explanation: ReportSafeText = Field(
+        default_factory=lambda: proof_authored_report_safe_text("")
+    )
     evidence_ids: tuple[str, ...] = ()
 
 
@@ -289,14 +443,19 @@ class FailureEvidence(BaseModel):
 
     classification: FailureClassification
     boundary: str = ""
-    message: str = Field(min_length=1)
+    message: ReportSafeText
     completed_milestones: tuple[str, ...] = ()
     failed_milestone: str | None = None
     skipped_not_reached: tuple[str, ...] = ()
     provider_error_code: str | None = None
     exception_type: str | None = None
     evidence_ids: tuple[str, ...] = ()
-    safe_diagnostic: str | None = None
+    safe_diagnostic: ReportSafeText | None = None
+
+    @model_validator(mode="after")
+    def _validate_message(self) -> FailureEvidence:
+        ReportSafeText.require_non_empty(self.message, field_name="message")
+        return self
 
 
 class ScenarioEvidence(BaseModel):
@@ -368,7 +527,9 @@ class EvidenceNode(BaseModel):
     evidence_id: str = Field(min_length=1)
     kind: EvidenceNodeKind
     label: str = Field(min_length=1)
-    summary: str = ""
+    summary: ReportSafeText = Field(
+        default_factory=lambda: proof_authored_report_safe_text("")
+    )
     producing_step_id: str | None = None
 
 

@@ -62,6 +62,9 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     ToolInvocationEvidence,
     ToolsSqlInvestigationExtension,
     ToolsSqlObservationEvidence,
+    explicit_runtime_report_safe_text,
+    proof_authored_report_safe_text,
+    sanitized_runtime_report_safe_text,
 )
 from scripts.proof.intergrax_platform_proof_evidence_io import build_artifact_identity
 from scripts.proof.intergrax_proof_contracts import ProofProfile
@@ -130,12 +133,12 @@ def _duration_ms(started_at: datetime, finished_at: datetime | None) -> int | No
 
 def _safe_sql_arguments(sql: str) -> ReportSafePayload:
     return ReportSafePayload(
-        summary="SQL query arguments",
+        summary=proof_authored_report_safe_text("SQL query arguments"),
         fields=(
             ReportSafeField(
                 name="sql",
                 visibility=ReportSafeVisibility.REPORT_SAFE,
-                value=sql,
+                value=explicit_runtime_report_safe_text(sql),
             ),
         ),
     )
@@ -143,12 +146,12 @@ def _safe_sql_arguments(sql: str) -> ReportSafePayload:
 
 def _safe_output_preview(preview: str) -> ReportSafePayload:
     return ReportSafePayload(
-        summary="Bounded SQL result preview",
+        summary=proof_authored_report_safe_text("Bounded SQL result preview"),
         fields=(
             ReportSafeField(
                 name="output_preview",
                 visibility=ReportSafeVisibility.REPORT_SAFE,
-                value=preview,
+                value=explicit_runtime_report_safe_text(preview),
             ),
         ),
     )
@@ -322,7 +325,9 @@ def _build_evaluator_checks(
                 reason.startswith("insufficient_tool_calls")
                 for reason in scenario.failure_reasons
             ),
-            explanation=f"successful_tool_calls={scenario.successful_tool_calls}",
+            explanation=proof_authored_report_safe_text(
+                f"successful_tool_calls={scenario.successful_tool_calls}"
+            ),
             evidence_ids=trace_evidence_ids[:1],
         ),
         EvaluatorCheckEvidence(
@@ -330,14 +335,16 @@ def _build_evaluator_checks(
             label="Valid evidence-dependent follow-up chain",
             passed=snapshot.follow_up_has_valid_basis
             or scenario.investigation_proof_steps == 0,
-            explanation=f"investigation_proof_steps={scenario.investigation_proof_steps}",
+            explanation=proof_authored_report_safe_text(
+                f"investigation_proof_steps={scenario.investigation_proof_steps}"
+            ),
             evidence_ids=trace_evidence_ids,
         ),
         EvaluatorCheckEvidence(
             check_id="termination",
             label="Normal bounded termination",
             passed=scenario.stop_reason == "planner_final_answer",
-            explanation=f"stop_reason={scenario.stop_reason}",
+            explanation=proof_authored_report_safe_text(f"stop_reason={scenario.stop_reason}"),
             evidence_ids=(),
         ),
     ]
@@ -347,7 +354,9 @@ def _build_evaluator_checks(
                 check_id="scenario_a_semantics",
                 label="Scenario A semantic outcome",
                 passed=scenario.outcome_a.conclusion_supported,
-                explanation="North anomaly supported; volume-only rejected.",
+                explanation=proof_authored_report_safe_text(
+                    "North anomaly supported; volume-only rejected."
+                ),
                 evidence_ids=(final_evidence_id,),
             )
         )
@@ -358,7 +367,9 @@ def _build_evaluator_checks(
                 label="Scenario B semantic outcome",
                 passed=not scenario.outcome_b.claims_direct_causation
                 and scenario.outcome_b.verifies_segmented_evidence,
-                explanation="Segmented evidence without direct causation claim.",
+                explanation=proof_authored_report_safe_text(
+                    "Segmented evidence without direct causation claim."
+                ),
                 evidence_ids=(final_evidence_id,),
             )
         )
@@ -369,7 +380,9 @@ def _build_evaluator_checks(
                 label="Scenario C semantic outcome",
                 passed=scenario.outcome_c.reports_missing_evidence
                 and not scenario.outcome_c.claims_staffing_cause,
-                explanation="Missing staffing evidence acknowledged.",
+                explanation=proof_authored_report_safe_text(
+                    "Missing staffing evidence acknowledged."
+                ),
                 evidence_ids=(final_evidence_id,),
             )
         )
@@ -422,14 +435,16 @@ def _build_scenario_steps(
         basis_ids = tuple(
             _evidence_id_for_call(basis_id) for basis_id in basis_by_call.get(call_id, ())
         )
-        purpose = purpose_by_call.get(call_id) or f"Execute SQL tool call for scenario {scenario_id.value}"
+        purpose = purpose_by_call.get(call_id) or (
+            f"Execute SQL tool call for scenario {scenario_id.value}"
+        )
         steps.append(
             ProofExecutionStep(
                 step_index=index,
                 step_id=f"{scenario_id.value.lower()}-step-{index + 1}",
-                purpose=purpose,
+                purpose=proof_authored_report_safe_text(purpose),
                 evidence_basis_ids=basis_ids,
-                action=f"Invoke {trace.tool_name}",
+                action=proof_authored_report_safe_text(f"Invoke {trace.tool_name}"),
                 input=_safe_sql_arguments(sql) if sql else None,
                 observation=_safe_output_preview(trace.output_preview or "")
                 if trace.output_preview
@@ -445,13 +460,23 @@ def _build_scenario_steps(
                     call_id=call_id,
                     safe_arguments=_safe_sql_arguments(sql) if sql else None,
                     success=trace.success,
-                    output_summary=(trace.output_preview or "")[:240],
+                    output_summary=explicit_runtime_report_safe_text(
+                        (trace.output_preview or "")[:240]
+                    ),
                     bounded_output=_safe_output_preview(trace.output_preview or "")
                     if trace.output_preview
                     else None,
-                    error=trace.error_message,
+                    error=(
+                        sanitized_runtime_report_safe_text(trace.error_message)
+                        if trace.error_message
+                        else None
+                    ),
                 ),
-                error=trace.error_message,
+                error=(
+                    sanitized_runtime_report_safe_text(trace.error_message)
+                    if trace.error_message
+                    else None
+                ),
             )
         )
     return tuple(steps)
@@ -474,7 +499,9 @@ def _build_scenario_graph(
                 evidence_id=evidence_id,
                 kind=EvidenceNodeKind.TOOL_RESULT,
                 label=f"Tool result {call_id}",
-                summary=(trace.output_preview or "")[:120],
+                summary=explicit_runtime_report_safe_text(
+                    (trace.output_preview or "")[:120]
+                ),
                 producing_step_id=step_id,
             )
         )
@@ -511,7 +538,7 @@ def _build_scenario_graph(
                 evidence_id=final_id,
                 kind=EvidenceNodeKind.FINAL_ANSWER,
                 label="Final answer",
-                summary=snapshot.final_answer[:120],
+                summary=explicit_runtime_report_safe_text(snapshot.final_answer[:120]),
             )
         )
         node_ids.add(final_id)
@@ -559,7 +586,7 @@ def _build_scenario_evidence(
         final_output=FinalOutputEvidence(
             present=bool(snapshot.final_answer.strip()),
             output_type="text",
-            content=snapshot.final_answer,
+            content=explicit_runtime_report_safe_text(snapshot.final_answer),
             report_safe=True,
             evidence_basis_ids=tuple(
                 _evidence_id_for_call(_tool_call_id(trace, index))
@@ -571,7 +598,9 @@ def _build_scenario_evidence(
         failure=(
             FailureEvidence(
                 classification=FailureClassification.MODEL_BEHAVIOR_FAILURE,
-                message="; ".join(scenario.failure_reasons) or "scenario failed",
+                message=sanitized_runtime_report_safe_text(
+                    "; ".join(scenario.failure_reasons) or "scenario failed"
+                ),
                 evidence_ids=(f"evidence-final-answer-{scenario.scenario_id.value.lower()}",),
             )
             if not scenario.passed
@@ -642,7 +671,7 @@ def _blocked_failure(result: ToolsSqlInvestigationProofResult) -> FailureEvidenc
         classification = FailureClassification.PROVIDER_CONFIGURATION
     return FailureEvidence(
         classification=classification,
-        message=reason,
+        message=sanitized_runtime_report_safe_text(reason),
         completed_milestones=("dataset identity resolved",),
         failed_milestone="provider or runtime configuration",
         skipped_not_reached=(
@@ -730,7 +759,7 @@ def build_tools_sql_investigation_evidence(
         final_output=FinalOutputEvidence(
             present=bool(final_answer.strip()),
             output_type="text",
-            content=final_answer,
+            content=explicit_runtime_report_safe_text(final_answer),
             report_safe=True,
         )
         if final_answer.strip()

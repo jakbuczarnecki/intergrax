@@ -43,15 +43,24 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     ExecutionMetadataEvidence,
     FailureClassification,
     FailureEvidence,
+    FinalOutputEvidence,
     PlatformProofEvidence,
     ProofClaimEvidence,
     ProofEvidenceExecutionStatus,
     ProofIdentityEvidence,
     ProvenanceEvidence,
-    ReproductionEvidence,
     ReportSafeField,
     ReportSafePayload,
+    ReportSafeText,
+    ReportSafeTextSourceKind,
     ReportSafeVisibility,
+    ReproductionEvidence,
+    ToolInvocationEvidence,
+    explicit_runtime_report_safe_text,
+    proof_authored_report_safe_text,
+    redacted_report_safe_text,
+    sanitized_runtime_report_safe_text,
+    sanitize_untrusted_report_text,
     execution_status_from_proof_status,
 )
 from scripts.proof.intergrax_platform_proof_evidence_io import (
@@ -231,7 +240,7 @@ def test_crash_partial_evidence_serializes() -> None:
     )
     failure = FailureEvidence(
         classification=FailureClassification.UNKNOWN,
-        message="OpenAI request failed",
+        message=sanitized_runtime_report_safe_text("OpenAI request failed"),
         completed_milestones=("dataset verified", "adapter constructed"),
         failed_milestone="OpenAI request",
         skipped_not_reached=("model function call", "SQL execution", "scenarios B/C"),
@@ -247,6 +256,7 @@ def test_crash_partial_evidence_serializes() -> None:
     assert payload["execution"]["status"] == "CRASH"
     assert payload["scenarios"] == []
     assert payload["failure"]["failed_milestone"] == "OpenAI request"
+    assert payload["failure"]["message"]["text"] == "OpenAI request failed"
 
 
 def test_execution_step_preserves_operational_fields() -> None:
@@ -256,9 +266,9 @@ def test_execution_step_preserves_operational_fields() -> None:
         _build_context(_base_result(overall_pass=True, scenarios=(scenario,)), snapshots=(snapshot,))
     )
     step = evidence.scenarios[0].steps[1]
-    assert step.purpose == "inspect segment"
+    assert step.purpose.text == "inspect segment"
     assert step.evidence_basis_ids == ("evidence-tc-1",)
-    assert PLATFORM_PROOF_SQL_QUERY_TOOL_ID in step.action
+    assert PLATFORM_PROOF_SQL_QUERY_TOOL_ID in step.action.text
     assert step.observation is not None
     assert step.evidence_created_ids == ("evidence-tc-2",)
 
@@ -281,10 +291,149 @@ def test_report_safe_payload_rejects_secret_field() -> None:
                 ReportSafeField(
                     name="api_key",
                     visibility=ReportSafeVisibility.REPORT_SAFE,
-                    value="super-secret",
+                    value=proof_authored_report_safe_text("super-secret"),
                 ),
             )
         )
+
+
+def test_report_safe_field_rejects_raw_runtime_string() -> None:
+    with pytest.raises(ValueError, match="raw runtime string"):
+        ReportSafeField(
+            name="output",
+            visibility=ReportSafeVisibility.REPORT_SAFE,
+            value="Authorization: Bearer fake-secret-value",
+        )
+
+
+def test_report_safe_text_serializes() -> None:
+    safe = explicit_runtime_report_safe_text("North express long_haul rate 0.68")
+    payload = safe.model_dump(mode="json")
+    assert payload["text"] == "North express long_haul rate 0.68"
+    assert payload["visibility"] == "REPORT_SAFE"
+    assert payload["source_kind"] == "RUNTIME_EXPLICIT"
+
+
+def test_sanitize_bearer_header() -> None:
+    sanitized, redaction_applied = sanitize_untrusted_report_text(
+        "Authorization: Bearer fake-secret-value"
+    )
+    assert redaction_applied is True
+    assert "fake-secret-value" not in sanitized
+    assert "Bearer [REDACTED]" in sanitized
+
+
+def test_sanitize_env_assignment() -> None:
+    sanitized, redaction_applied = sanitize_untrusted_report_text(
+        "missing config OPENAI_API_KEY=fake-secret"
+    )
+    assert redaction_applied is True
+    assert "fake-secret" not in sanitized
+    assert "OPENAI_API_KEY=[REDACTED]" in sanitized
+
+
+def test_sanitize_credential_url() -> None:
+    sanitized, redaction_applied = sanitize_untrusted_report_text(
+        "connect postgresql://proof_user:proof_pass@localhost:5432/proof_db"
+    )
+    assert redaction_applied is True
+    assert "proof_pass" not in sanitized
+    assert "[REDACTED]:[REDACTED]@" in sanitized
+
+
+def test_ordinary_sql_unchanged() -> None:
+    sql = (
+        "SELECT service_type, route_type, AVG(delayed::int) "
+        "FROM proof.parcel_events WHERE region='North' "
+        "GROUP BY service_type, route_type"
+    )
+    safe = explicit_runtime_report_safe_text(sql)
+    assert safe.text == sql
+    assert safe.redaction_applied is False
+
+
+def test_ordinary_sql_output_preview_unchanged() -> None:
+    preview = "North express long_haul rate 0.68"
+    safe = explicit_runtime_report_safe_text(preview)
+    assert safe.text == preview
+    assert safe.redaction_applied is False
+
+
+def test_provider_error_without_secret_remains_readable() -> None:
+    message = "400 Invalid tools[0].name"
+    safe = sanitized_runtime_report_safe_text(message)
+    assert safe.text == message
+    assert safe.redaction_applied is False
+
+
+def test_provider_error_with_fake_token_redacted_in_serialization() -> None:
+    failure = FailureEvidence(
+        classification=FailureClassification.PROVIDER_CONFIGURATION,
+        message=sanitized_runtime_report_safe_text(
+            "provider rejected request Authorization: Bearer fake-secret-value"
+        ),
+    )
+    payload = failure.model_dump(mode="json")
+    serialized = json.dumps(payload)
+    assert "fake-secret-value" not in serialized
+    assert "Bearer [REDACTED]" in payload["message"]["text"]
+
+
+def test_final_model_answer_explicitly_report_safe() -> None:
+    answer = "North delays are driven by the North express long_haul segment."
+    final_output = FinalOutputEvidence(
+        present=True,
+        content=explicit_runtime_report_safe_text(answer),
+        report_safe=True,
+    )
+    assert final_output.content.source_kind is ReportSafeTextSourceKind.RUNTIME_EXPLICIT
+    assert final_output.content.text == answer
+
+
+def test_redacted_text_does_not_expose_original_value() -> None:
+    redacted = redacted_report_safe_text()
+    payload = redacted.model_dump(mode="json")
+    assert payload["visibility"] == "REDACTED"
+    assert payload["text"] == "[REDACTED]"
+    assert payload["redaction_applied"] is True
+
+
+def test_tool_invocation_rejects_raw_runtime_summary() -> None:
+    with pytest.raises(ValueError, match="raw runtime string"):
+        ToolInvocationEvidence(
+            tool_id="sql-query",
+            success=True,
+            output_summary="Authorization: Bearer fake-secret-value",
+        )
+
+
+def test_failure_evidence_builder_redacts_provider_secret() -> None:
+    traces = (
+        ToolCallTrace(
+            tool_name=PLATFORM_PROOF_SQL_QUERY_TOOL_ID,
+            arguments=SqlQueryInput(sql="SELECT 1").model_dump(),
+            output_preview="",
+            success=False,
+            error_message="Authorization: Bearer fake-secret-value",
+            raw_trace={"tool_call_id": "tc-err"},
+        ),
+    )
+    snapshot = build_execution_snapshot(
+        traces=traces,
+        investigation_proof=None,
+        stop_reason="provider_error",
+        final_answer="",
+    )
+    scenario = evaluate_scenario(ScenarioId.A, snapshot)
+    evidence = build_tools_sql_investigation_evidence(
+        _build_context(_base_result(overall_pass=False, scenarios=(scenario,)), snapshots=(snapshot,))
+    )
+    serialized = io_serialize(evidence)
+    assert "fake-secret-value" not in serialized
+    step = evidence.scenarios[0].steps[0]
+    assert step.tool_invocation is not None
+    assert step.tool_invocation.error is not None
+    assert "Bearer [REDACTED]" in step.tool_invocation.error.text
 
 
 def test_evaluator_checks_reference_graph_evidence_ids() -> None:
