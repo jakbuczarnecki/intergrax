@@ -12,7 +12,10 @@ from intergrax.applications._shared.agent_platform_admin_routes import (
     mount_agent_platform_admin_routes,
 )
 from intergrax.applications._shared.harness_auth import HarnessAuthState
-from intergrax.integrations.contracts.identity_provider import IdentityUser
+from intergrax.integrations.contracts.identity_provider import (
+    AGENT_PLATFORM_ADMIN_ROLE,
+    IdentityUser,
+)
 from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     _DIGEST,
     _META_REF,
@@ -31,13 +34,19 @@ _CATALOG = "/v1/agent-platform/catalog/agents"
 
 
 class _FakeIdentityProvider:
-    def __init__(self, *, valid_token: str) -> None:
+    def __init__(
+        self,
+        *,
+        valid_token: str,
+        roles: tuple[str, ...] = (AGENT_PLATFORM_ADMIN_ROLE,),
+    ) -> None:
         self._valid_token = valid_token
+        self._roles = roles
 
     def verify_token(self, token: str) -> IdentityUser:
         if token != self._valid_token:
             raise ValueError("invalid token")
-        return IdentityUser(user_id="admin-user")
+        return IdentityUser(user_id="admin-user", roles=self._roles)
 
     def userinfo(self, token: str) -> IdentityUser:
         return self.verify_token(token)

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import hmac
 import os
 from dataclasses import dataclass
 from typing import Annotated
@@ -12,7 +13,11 @@ from fastapi import Header, HTTPException, Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-from intergrax.integrations.contracts.identity_provider import IdentityProviderBackend
+from intergrax.integrations.contracts.identity_provider import (
+    IdentityProviderBackend,
+    IdentityUser,
+    identity_user_has_agent_platform_admin_authority,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,33 +26,27 @@ class HarnessAuthState:
 
     identity_provider: IdentityProviderBackend | None = None
     require_api_key: bool = False
+    resolved_api_key: str | None = None
 
 
-def resolve_harness_api_key() -> str | None:
-    """Return configured key, or ``None`` when harness auth is disabled."""
+def _legacy_default_harness_api_key() -> str | None:
+    """Resolve the default harness env key for unwired legacy hosts."""
     raw = (os.getenv("INTERGRAX_HARNESS_API_KEY") or "").strip()
     return raw or None
 
 
-def require_harness_api_key(
-    x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
-    authorization: Annotated[str | None, Header()] = None,
-) -> None:
-    """
-    Enforce ``INTERGRAX_HARNESS_API_KEY`` when set.
+def resolve_harness_api_key() -> str | None:
+    """Return the default harness env key for unwired legacy hosts."""
+    return _legacy_default_harness_api_key()
 
-    Accepts ``X-Api-Key`` or ``Authorization: Bearer <key>``.
-    When the env var is unset, all requests pass (local dev default).
-    """
-    expected = resolve_harness_api_key()
-    if expected is None:
-        return
 
-    if not is_harness_api_key_valid(x_api_key=x_api_key, authorization=authorization):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing harness API key",
-        )
+def _expected_api_key_for_request(request: Request | None) -> str | None:
+    if request is None:
+        return _legacy_default_harness_api_key()
+    state = _harness_auth_state_from_request(request)
+    if state is not None:
+        return state.resolved_api_key
+    return _legacy_default_harness_api_key()
 
 
 def _extract_provided_key(
@@ -65,13 +64,62 @@ def is_harness_api_key_valid(
     *,
     x_api_key: str | None = None,
     authorization: str | None = None,
+    expected_api_key: str | None = None,
+    request: Request | None = None,
 ) -> bool:
-    """Return whether headers satisfy ``INTERGRAX_HARNESS_API_KEY`` when configured."""
-    expected = resolve_harness_api_key()
+    """Return whether headers satisfy the effective configured API key authority."""
+    expected = expected_api_key
+    if expected is None:
+        expected = _expected_api_key_for_request(request)
     if expected is None:
         return True
     provided = _extract_provided_key(x_api_key=x_api_key, authorization=authorization)
-    return bool(provided) and provided == expected
+    if not provided:
+        return False
+    return hmac.compare_digest(provided, expected)
+
+
+def _harness_api_key_authenticates(
+    *,
+    x_api_key: str | None = None,
+    authorization: str | None = None,
+    request: Request | None = None,
+) -> bool:
+    """Return True only when API key authority is configured and credentials match."""
+    expected = _expected_api_key_for_request(request)
+    if expected is None:
+        return False
+    return is_harness_api_key_valid(
+        x_api_key=x_api_key,
+        authorization=authorization,
+        expected_api_key=expected,
+    )
+
+
+def require_harness_api_key(
+    request: Request,
+    x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
+    authorization: Annotated[str | None, Header()] = None,
+) -> None:
+    """
+    Enforce the effective harness API key when configured.
+
+    Accepts ``X-Api-Key`` or ``Authorization: Bearer <key>``.
+    When no key authority is configured, all requests pass (local dev default).
+    """
+    expected = _expected_api_key_for_request(request)
+    if expected is None:
+        return
+
+    if not is_harness_api_key_valid(
+        x_api_key=x_api_key,
+        authorization=authorization,
+        expected_api_key=expected,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing harness API key",
+        )
 
 
 def _harness_auth_state_from_request(request: Request) -> HarnessAuthState | None:
@@ -91,21 +139,44 @@ def _identity_provider_from_request(request: Request) -> IdentityProviderBackend
     return None
 
 
+def verify_harness_bearer_identity(
+    *,
+    authorization: str | None,
+    identity_provider: IdentityProviderBackend,
+) -> IdentityUser | None:
+    """Validate bearer token and return the provider-normalized authenticated principal."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    token = authorization[7:].strip()
+    if not token:
+        return None
+    try:
+        user = identity_provider.verify_token(token)
+    except Exception:  # noqa: BLE001 — auth boundary
+        return None
+    if not user.user_id.strip():
+        return None
+    return user
+
+
 def is_harness_identity_token_valid(
     *,
     authorization: str | None,
     identity_provider: IdentityProviderBackend,
 ) -> bool:
-    if not authorization or not authorization.lower().startswith("bearer "):
-        return False
-    token = authorization[7:].strip()
-    if not token:
-        return False
-    try:
-        user = identity_provider.verify_token(token)
-    except Exception:  # noqa: BLE001 — auth boundary
-        return False
-    return bool(user.user_id)
+    return verify_harness_bearer_identity(
+        authorization=authorization,
+        identity_provider=identity_provider,
+    ) is not None
+
+
+def _local_dev_auth_bypass_allowed(state: HarnessAuthState | None) -> bool:
+    return (
+        state is not None
+        and not state.require_api_key
+        and state.resolved_api_key is None
+        and state.identity_provider is None
+    )
 
 
 def require_harness_auth(
@@ -114,7 +185,11 @@ def require_harness_auth(
     authorization: Annotated[str | None, Header()] = None,
 ) -> None:
     """Enforce static API key and/or OIDC bearer token when configured."""
-    if is_harness_api_key_valid(x_api_key=x_api_key, authorization=authorization):
+    if _harness_api_key_authenticates(
+        x_api_key=x_api_key,
+        authorization=authorization,
+        request=request,
+    ):
         return
     identity_provider = _identity_provider_from_request(request)
     if identity_provider is not None and is_harness_identity_token_valid(
@@ -122,7 +197,10 @@ def require_harness_auth(
         identity_provider=identity_provider,
     ):
         return
-    if resolve_harness_api_key() is None and identity_provider is None:
+    state = _harness_auth_state_from_request(request)
+    if _local_dev_auth_bypass_allowed(state):
+        return
+    if _expected_api_key_for_request(request) is None and identity_provider is None:
         return
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -138,29 +216,33 @@ def require_agent_platform_admin_auth(
     """
     Fail-closed admin auth for Agent Platform control-plane routes (AP-11).
 
-    Allows valid harness API key or configured identity-provider bearer tokens.
-    When no credentials are configured, rejects unless the host explicitly wired
-    ``HarnessAuthState(require_api_key=False)`` for local development profiles.
+    Allows the resolved harness API key or identity-provider bearer tokens that
+    carry explicit Agent Platform admin authority. When no credentials are
+    configured, rejects unless the host explicitly wired a local development
+    profile with ``HarnessAuthState(require_api_key=False)``.
     """
-    expected_api_key = resolve_harness_api_key()
+    expected_api_key = _expected_api_key_for_request(request)
     if expected_api_key is not None and is_harness_api_key_valid(
         x_api_key=x_api_key,
         authorization=authorization,
+        expected_api_key=expected_api_key,
     ):
         return
     identity_provider = _identity_provider_from_request(request)
-    if identity_provider is not None and is_harness_identity_token_valid(
-        authorization=authorization,
-        identity_provider=identity_provider,
-    ):
-        return
+    if identity_provider is not None:
+        user = verify_harness_bearer_identity(
+            authorization=authorization,
+            identity_provider=identity_provider,
+        )
+        if user is not None:
+            if identity_user_has_agent_platform_admin_authority(user):
+                return
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Agent platform admin authorization required",
+            )
     state = _harness_auth_state_from_request(request)
-    if (
-        state is not None
-        and not state.require_api_key
-        and expected_api_key is None
-        and state.identity_provider is None
-    ):
+    if _local_dev_auth_bypass_allowed(state):
         return
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -179,9 +261,10 @@ class HarnessApiKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.url.path in _HARNESS_AUTH_EXEMPT_PATHS:
             return await call_next(request)
-        if is_harness_api_key_valid(
+        if _harness_api_key_authenticates(
             x_api_key=request.headers.get("X-Api-Key"),
             authorization=request.headers.get("Authorization"),
+            request=request,
         ):
             return await call_next(request)
         identity_provider = _identity_provider_from_request(request)
@@ -190,7 +273,10 @@ class HarnessApiKeyMiddleware(BaseHTTPMiddleware):
             identity_provider=identity_provider,
         ):
             return await call_next(request)
-        if resolve_harness_api_key() is None and identity_provider is None:
+        state = _harness_auth_state_from_request(request)
+        if _local_dev_auth_bypass_allowed(state):
+            return await call_next(request)
+        if _expected_api_key_for_request(request) is None and identity_provider is None:
             return await call_next(request)
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -206,6 +292,9 @@ def apply_harness_auth_middleware(app, *, require_auth: bool = False) -> None:
         state = app.state.harness_auth
     except AttributeError:
         state = None
-    identity_configured = isinstance(state, HarnessAuthState) and state.identity_provider is not None
-    if resolve_harness_api_key() is not None or identity_configured:
+    if isinstance(state, HarnessAuthState):
+        if state.resolved_api_key is not None or state.identity_provider is not None:
+            app.add_middleware(HarnessApiKeyMiddleware)
+        return
+    if _legacy_default_harness_api_key() is not None:
         app.add_middleware(HarnessApiKeyMiddleware)

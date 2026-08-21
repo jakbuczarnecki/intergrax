@@ -44,16 +44,18 @@ def wire_application_identity(
     When ``require_api_key`` is true and no key is configured, startup should fail
     in the host factory (same guard as lab strict harness).
     """
+    resolved_api_key = (os.environ.get(profile.api_key_env) or "").strip() or None
+    identity_provider = resolve_identity_provider_backend(integration_profile)
     if profile.require_api_key:
-        key = (os.environ.get(profile.api_key_env) or "").strip()
-        if not key and resolve_identity_provider_backend(integration_profile) is None:
+        if not resolved_api_key and identity_provider is None:
             raise ValueError(
                 f"{profile.api_key_env} is required when identity_profile.require_api_key=true "
                 "and no identity_provider integration is configured"
             )
     state = HarnessAuthState(
-        identity_provider=resolve_identity_provider_backend(integration_profile),
+        identity_provider=identity_provider,
         require_api_key=profile.require_api_key,
+        resolved_api_key=resolved_api_key,
     )
     app.state.harness_auth = state
     apply_harness_auth_middleware(app, require_auth=profile.require_api_key)
