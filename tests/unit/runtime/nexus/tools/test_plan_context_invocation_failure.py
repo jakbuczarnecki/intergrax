@@ -65,6 +65,48 @@ async def test_run_tools_context_emits_tools_summary_then_propagates_failure() -
     assert payload.used_tools is False
 
 
+class _MetadataMergeExplodedError(RuntimeError):
+    pass
+
+
+@pytest.mark.asyncio
+async def test_run_tools_context_failure_reraises_before_metadata_merge() -> None:
+    state = build_runtime_state_for_tests(run_id="run_tools_ctx_metadata_order")
+    state.context.config.tools_mode = "auto"
+    state.context.config.tool_invoker = object()
+    state.context.config.tool_planner = object()
+    state.messages_for_llm = [ChatMessage(role="user", content="use tool")]
+    planner_input = [ChatMessage(role="user", content="use tool")]
+
+    with (
+        patch(
+            "intergrax.runtime.nexus.tools.plan_context_invocation.resolve_tool_planner_input",
+            return_value=planner_input,
+        ),
+        patch(
+            "intergrax.runtime.nexus.tools.plan_context_invocation.resolve_tool_registry",
+            return_value=None,
+        ),
+        patch(
+            "intergrax.runtime.nexus.tools.plan_context_invocation.run_bounded_tool_loop",
+            side_effect=_ToolLoopExplodedError("tool loop exploded deterministically"),
+        ),
+        patch(
+            "intergrax.runtime.nexus.tools.plan_context_invocation.merge_provider_metadata_into_request",
+            side_effect=_MetadataMergeExplodedError("metadata merge must not run on failure"),
+        ) as merge_mock,
+        pytest.raises(_ToolLoopExplodedError, match="tool loop exploded deterministically"),
+    ):
+        await run_tools_context(state)
+
+    merge_mock.assert_not_called()
+    tools_events = [event for event in state.trace_events if event.step == "tools"]
+    assert len(tools_events) == 1
+    payload = tools_events[0].payload
+    assert isinstance(payload, ToolsSummaryDiagV1)
+    assert payload.error_type == "_ToolLoopExplodedError"
+
+
 def _hitl_error(*, run_id: str) -> DeclarativePolicyHitlRequiredError:
     return DeclarativePolicyHitlRequiredError(
         run_id=run_id,
