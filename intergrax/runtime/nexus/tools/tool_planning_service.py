@@ -133,38 +133,69 @@ def _build_non_native_planner_system_content(
     return "\n\n".join(sections)
 
 
-def _collect_declared_tool_call_ids(messages: Sequence[ChatMessage]) -> frozenset[str]:
+def _extract_assistant_tool_call_ids(
+    tool_calls: Sequence[dict] | None,
+) -> frozenset[str]:
+    if not tool_calls:
+        return frozenset()
     declared: set[str] = set()
-    for message in messages:
-        if message.role != "assistant" or not message.tool_calls:
+    for tool_call in tool_calls:
+        if not isinstance(tool_call, dict):
             continue
-        for tool_call in message.tool_calls:
-            if not isinstance(tool_call, dict):
-                continue
-            call_id = tool_call.get("id")
-            if isinstance(call_id, str) and call_id:
-                declared.add(call_id)
+        call_id = tool_call.get("id")
+        if isinstance(call_id, str) and call_id:
+            declared.add(call_id)
     return frozenset(declared)
 
 
 def _prune_messages_for_openai(messages: List[ChatMessage]) -> List[ChatMessage]:
     """
-    Provider-safe transcript: keep complete assistant→tool exchanges; drop orphan tools.
+    Provider-safe transcript: keep complete ordered assistant→tool exchanges only.
     """
-    declared_tool_call_ids = _collect_declared_tool_call_ids(messages)
     pruned: List[ChatMessage] = []
-    for message in messages:
+    index = 0
+    message_count = len(messages)
+    while index < message_count:
+        message = messages[index]
+
         if message.role == "tool":
-            tool_call_id = message.tool_call_id
-            if (
-                isinstance(tool_call_id, str)
-                and tool_call_id
-                and tool_call_id in declared_tool_call_ids
-            ):
-                pruned.append(message)
+            index += 1
             continue
+
+        if message.role == "assistant" and message.tool_calls:
+            required_ids = _extract_assistant_tool_call_ids(message.tool_calls)
+            if not required_ids:
+                pruned.append(message)
+                index += 1
+                continue
+
+            scan_index = index + 1
+            matched_ids: set[str] = set()
+            while scan_index < message_count and messages[scan_index].role == "tool":
+                tool_call_id = messages[scan_index].tool_call_id
+                if (
+                    isinstance(tool_call_id, str)
+                    and tool_call_id
+                    and tool_call_id in required_ids
+                ):
+                    matched_ids.add(tool_call_id)
+                scan_index += 1
+
+            if matched_ids == set(required_ids):
+                pruned.append(message)
+                for tool_index in range(index + 1, scan_index):
+                    if messages[tool_index].role == "tool":
+                        pruned.append(messages[tool_index])
+                index = scan_index
+                continue
+
+            index = scan_index if scan_index > index + 1 else index + 1
+            continue
+
         if message.role in ("system", "user", "assistant"):
             pruned.append(message)
+        index += 1
+
     return pruned
 
 

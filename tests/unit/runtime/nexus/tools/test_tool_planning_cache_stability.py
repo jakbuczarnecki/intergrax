@@ -502,6 +502,78 @@ def test_prune_preserves_complete_multi_round_tool_exchanges() -> None:
     assert {message.content for message in tool_messages} == {"EVIDENCE_A", "EVIDENCE_B"}
 
 
+def test_prune_drops_tool_before_declaration() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(role="tool", content="ORPHAN_EARLY", tool_call_id="call-a"),
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                }
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert [message.role for message in pruned] == ["assistant", "tool"]
+    assert pruned[1].content == "EVIDENCE_A"
+
+
+def test_prune_drops_incomplete_assistant_tool_call_exchange() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(role="user", content="SYNTH-USER"),
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                }
+            ],
+        ),
+        ChatMessage(role="user", content="SYNTH-FOLLOWUP"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert [message.role for message in pruned] == ["user", "user"]
+    assert not any(message.tool_calls for message in pruned if message.role == "assistant")
+
+
+def test_prune_drops_partial_multi_call_assistant_group() -> None:
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    messages = [
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call-a",
+                    "type": "function",
+                    "function": {"name": "alpha.tool", "arguments": "{}"},
+                },
+                {
+                    "id": "call-b",
+                    "type": "function",
+                    "function": {"name": "beta.tool", "arguments": "{}"},
+                },
+            ],
+        ),
+        ChatMessage(role="tool", content="EVIDENCE_A", tool_call_id="call-a"),
+    ]
+    pruned = _prune_messages_for_openai(list(messages))
+    assert pruned == []
+
+
 def test_prune_preserves_all_tool_results_for_single_assistant_multi_call() -> None:
     from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
 
