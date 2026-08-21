@@ -3074,6 +3074,55 @@ feat: add token optimization contracts and receipts
 
 ---
 
+## Protocol v2 remediation — TOKEN_OPTIMIZATION (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/TOKEN_OPTIMIZATION.md`](../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-TOKEN-OPTIMIZATION-PERSIST.
+
+#### TOKEN-MEASUREMENT-EVIDENCE-INTEGRITY — canonical measurement, receipt identity, observability authority
+
+**Priority:** P0
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-TOKEN_OPTIMIZATION-01`](../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md), [`04`](../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md), [`05`](../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md)
+
+**Acceptance intent:**
+
+- Token savings, receipts, and emitted evidence use truthful canonical measurement units; character counts are never labeled `MEASURED` tokens.
+- Execution-scoped receipt/evidence identity is distinct from transformation/content fingerprint.
+- Effective `TokenOptimizationPolicy.emit_observability` binds to canonical HOS emission; no disconnected second emission-policy truth.
+- Cross-link [`LLM_ADAPTERS`](../../maintainers/plans/LLM_ADAPTERS.md) and [`OBSERVABILITY`](../../maintainers/plans/OBSERVABILITY.md) / [`OBSERVABILITY_EVIDENCE`](../../maintainers/plans/OBSERVABILITY_EVIDENCE.md).
+
+#### TOKEN-PROTECTED-TRANSFORMATION-INTEGRITY — occurrence-aware preservation and mandatory validation
+
+**Priority:** P0
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-TOKEN_OPTIMIZATION-02`](../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md), [`03`](../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md)
+
+**Acceptance intent:**
+
+- Protected-content preservation is occurrence/structure aware; substring existence alone is insufficient.
+- Platform minimum validation cannot be disabled by lossy plugin/policy configuration.
+- Cross-link [`CONTEXT_ENGINEERING`](../../maintainers/plans/CONTEXT_ENGINEERING.md), [`TOOLS`](../../maintainers/plans/TOOLS.md), [`RAG`](../../maintainers/plans/RAG.md), [`MEMORY`](../../maintainers/plans/MEMORY.md) where source-specific validators are owned.
+
+#### TOKEN-DOCUMENTATION-LIFECYCLE-INTEGRITY — architecture/plan current-state parity
+
+**Priority:** P2
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-TOKEN_OPTIMIZATION-06`](../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md)
+
+**Acceptance intent:**
+
+- Feature architecture and plan carry the same TOKEN-10G/H/I current state without rewriting historical qualification evidence.
+- **TOKEN-10H** remains honestly **NOT QUALIFIED**; **TOKEN-10I** remains **BLOCKED_HARDWARE_CAPACITY_FINAL**.
+
+**Remediation rules:**
+
+- Revalidate each finding against then-current `development` HEAD before implementation.
+- Historical TOKEN closeout rows (TOKEN-1..9, TOKEN-10E/F/F-EVIDENCE-EXTENSION, TOKEN-10G/H evidence) remain historical delivery facts.
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+
+---
+
 ## Explicit exclusions
 
 Token Optimization does not:

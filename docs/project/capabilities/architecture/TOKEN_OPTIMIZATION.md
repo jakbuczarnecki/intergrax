@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Architecture
 
-**Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G READY_FOR_REVIEW**; **TOKEN-10H PLANNED / NOT STARTED**.
+**Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G CLOSED**; **TOKEN-10H CLOSED / NOT QUALIFIED**; **TOKEN-10I BLOCKED_HARDWARE_CAPACITY_FINAL**.
 **Feature plan (1:1):** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)
 **Source audit instruction:** [`../../../audit_results/TOKEN_OPTIMIZATION.md`](../../../audit_results/TOKEN_OPTIMIZATION.md)
 **Primary anchor domain:** `CONTEXT_ENGINEERING`
@@ -1465,6 +1465,21 @@ Live native Ollama E2E (`tests/e2e/token_optimization/test_llm_router_ollama_liv
 6. Do not report token savings without quality/safety validation.
 7. Do not treat output terseness as sufficient token optimization.
 8. Do not apply adaptive compression automatically until telemetry and policy governance are in place.
+
+---
+
+## Protocol v2 token optimization target invariants (2026-08-18)
+
+Accepted [`TOKEN_OPTIMIZATION`](../../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+
+1. **Measurement authority** — only canonical tokenizer/provider measurements use the TOKENS unit and `MEASURED` confidence via the existing LLM-adapter/tokenizer path. Character-based approximation is a different unit with `ESTIMATED` / `NOT_COMPARABLE` semantics. No proof, cost calculation, promotion gate, or savings percentage may treat characters as measured tokens. Cross-link [`LLM_ADAPTERS`](../../architecture/LLM_ADAPTERS.md); do not create a second tokenizer.
+2. **Protected-region integrity** — protected-region validation is occurrence-aware. Preserve exact value, required multiplicity, region kind, and required structural relation/order where relevant. RAG/evidence/tool/schema-sensitive content additionally uses source-specific structural validators rather than substring existence alone. Cross-link [`CONTEXT_ENGINEERING`](../../architecture/CONTEXT_ENGINEERING.md), [`TOOLS`](../../architecture/TOOLS.md), [`RAG`](../../architecture/RAG.md), [`MEMORY`](../../architecture/MEMORY.md) where source-specific validators are owned.
+3. **Lossy-extension safety** — LOSSY transformation always requires the platform minimum validation contract. Plugins may strengthen validation requirements but may not disable canonical minimum safety. Invalid `TokenOptimizationPolicy` / layer-descriptor combinations fail at construction/resolution before layer execution. Do not rely on plugin self-declaration as safety authority.
+4. **Observability authority** — one effective Token Optimization policy resolves both transformation behavior and receipt/observability obligations. When `emit_observability` is required, pipeline/runtime outcome crosses the canonical HOS emission boundary. Missing emission authority is an explicit degraded/failure posture, not a silent independent default-off helper. Cross-link [`OBSERVABILITY_EVIDENCE`](../../architecture/OBSERVABILITY_EVIDENCE.md); do not create a private Token Optimization telemetry bus.
+5. **Receipt identity** — separate deterministic transformation/content fingerprint from receipt/evidence identity. If `receipt_id` denotes an execution receipt it must be unique or scope-bound to concrete execution evidence (`run_id`, `step_id`, tenant attribution). Do not use a content fingerprint as global receipt identity.
+6. **Lifecycle current state** — architecture and plan expose one current lifecycle truth: **TOKEN-10G CLOSED**; **TOKEN-10H CLOSED / NOT QUALIFIED** (`MODEL_BEHAVIOR_MISMATCH`, 14/16, STABLE); **TOKEN-10I BLOCKED_HARDWARE_CAPACITY_FINAL**. Preserve historical sequencing; do not convert NOT QUALIFIED into success.
+
+Preserved: Token Optimization remains a cross-layer platform capability, not LKW-owned logic; LKW remains a later product client/proof; TOKEN-1..9 and TOKEN-10E/F/F-EVIDENCE-EXTENSION closure facts unchanged; findings harden the existing capability — no second engine required.
 
 ---
 
