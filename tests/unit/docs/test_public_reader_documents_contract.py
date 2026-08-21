@@ -1055,6 +1055,29 @@ def test_why_category_map_assets_and_alt_text(why_text: str) -> None:
     assert 'alt="Responsibility map comparing' in why_text
 
 
+def test_why_readme_visual_alignment(why_text: str) -> None:
+    assert "../assets/public/readme/intergrax-why-light.png" in why_text
+    assert "../assets/public/readme/intergrax-why-dark.png" in why_text
+    assert "Rebuilt foundations" not in why_text
+    assert "[View full-size diagram](../assets/public/readme/intergrax-why-light.png)" in why_text
+
+
+def test_architecture_readme_visual_alignment(arch_text: str) -> None:
+    assert "../assets/public/readme/intergrax-platform-map-light.png" in arch_text
+    assert "../assets/public/readme/intergrax-platform-map-dark.png" in arch_text
+    assert "../assets/public/readme/intergrax-governed-execution-light.png" in arch_text
+    assert "../assets/public/readme/intergrax-governed-execution-dark.png" in arch_text
+    assert "agent / model proposes" not in arch_text
+    assert (
+        "[View full-size diagram](../assets/public/readme/intergrax-platform-map-light.png)"
+        in arch_text
+    )
+    assert (
+        "[View full-size diagram](../assets/public/readme/intergrax-governed-execution-light.png)"
+        in arch_text
+    )
+
+
 def test_why_canonical_opening(why_text: str) -> None:
     opening = _normalize("\n".join(why_text.splitlines()[:13]))
     for phrase in (
