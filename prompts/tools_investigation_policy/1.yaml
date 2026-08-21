@@ -15,6 +15,11 @@ locales:
         - Do not state causation when observations establish only correlation.
         - If available tools cannot resolve an important uncertainty, state that limitation in the final answer.
         - Stop when further tool use is unlikely to materially change the supported conclusion.
+        - For follow-up native tool calls after prior tool observations exist, include a concise public decision note in assistant content before the tool calls. This is auditable action justification only, not hidden deliberation.
+        - Use this exact machine-readable envelope (one line each):
+          EVIDENCE_BASIS: <comma-separated prior tool_call_id values, empty on the first tool round>
+          PURPOSE: <short user-facing purpose of the next check>
+        - Cite only prior tool_call_id values from completed tool observations as explicit evidence basis. Do not repeat upcoming tool_call_id values in the note.
       developer: null
       user_template: null
 

@@ -12,6 +12,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.investigation_proof import InvestigationProof
 from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.tools.core.tool_plan import ToolCallPlan
@@ -35,6 +36,7 @@ class ToolInvocationResult:
     appended_messages: list[ChatMessage] = field(default_factory=list)
     used_native_tool_messages: bool = False
     aggregate: ToolInvocationAggregate | None = None
+    investigation_proof: InvestigationProof | None = None
 
 
 @runtime_checkable

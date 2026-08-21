@@ -23,6 +23,7 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.nexus.tools.tool_loop import execute_planned_tool_calls, run_bounded_tool_loop
+from intergrax.runtime.nexus.tools.investigation_proof import InvestigationProofValidationError
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.tool_planning_prompts import investigation_policy_prompt
@@ -39,6 +40,11 @@ pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 _BEYOND_PREVIEW_MARKER = "ENG1_TAIL_MARKER"
 _PREVIEW_BOUND = 400
+
+
+def _decision_note(*basis_ids: str, purpose: str) -> str:
+    basis = ",".join(basis_ids)
+    return f"EVIDENCE_BASIS: {basis}\nPURPOSE: {purpose}"
 
 
 class _InA(BaseModel):
@@ -187,8 +193,20 @@ class _AlwaysToolLLM(FakeLLMAdapter):
     def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
         _ = messages, tools_schema, kwargs
         self._round += 1
+        if self._round == 1:
+            return LLMAdapterResponse(
+                content="",
+                tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id=f"tc-{self._round}",
+                        name="alpha.tool",
+                        arguments={"value": self._round},
+                    ),
+                ),
+            )
+        prior_basis = tuple(f"tc-{index}" for index in range(1, self._round))
         return LLMAdapterResponse(
-            content="",
+            content=_decision_note(*prior_basis, purpose="continue investigation"),
             tool_calls=(
                 LLMToolCall.from_openai_shape(
                     call_id=f"tc-{self._round}",
@@ -775,8 +793,17 @@ class _MultiCallRoundPlanner:
                 )
                 for index in range(self._round + 1)
             )
+            if self._round == 1:
+                content = ""
+            else:
+                prior_basis = [
+                    f"tc-{index}"
+                    for prior_round in range(1, self._round)
+                    for index in range(prior_round + 1)
+                ]
+                content = _decision_note(*prior_basis, purpose="continue per-round batch")
             return (
-                LLMAdapterResponse(content="", tool_calls=tool_calls),
+                LLMAdapterResponse(content=content, tool_calls=tool_calls),
                 ToolCallPlan(calls=calls),
             )
         return LLMAdapterResponse(content="done", tool_calls=()), ToolCallPlan(calls=[])
@@ -907,9 +934,15 @@ class _RepeatCallPlanner:
         _ = messages, allowed_tool_ids, run_id, tool_choice, kwargs
         self._round += 1
         if self._round <= self._max_rounds:
+            prior_basis = tuple(f"tc-{index}" for index in range(1, self._round))
+            content = (
+                ""
+                if self._round == 1
+                else _decision_note(*prior_basis, purpose="repeat check")
+            )
             return (
                 LLMAdapterResponse(
-                    content="",
+                    content=content,
                     tool_calls=(
                         LLMToolCall.from_openai_shape(
                             call_id=f"tc-{self._round}",
@@ -990,9 +1023,15 @@ class _AlternatingInputPlanner:
         self._round += 1
         if self._round <= len(self.sequence):
             value = self.sequence[self._round - 1]
+            prior_basis = tuple(f"tc-{index}" for index in range(1, self._round))
+            content = (
+                ""
+                if self._round == 1
+                else _decision_note(*prior_basis, purpose="alternate input check")
+            )
             return (
                 LLMAdapterResponse(
-                    content="",
+                    content=content,
                     tool_calls=(
                         LLMToolCall.from_openai_shape(
                             call_id=f"tc-{self._round}",
@@ -1225,7 +1264,7 @@ class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
             assert len(tool_messages) == 1
             assert any("EVIDENCE_A" in content for content in tool_contents)
             return LLMAdapterResponse(
-                content="",
+                content=_decision_note("tc-probe-a", purpose="confirm subgroup from first probe"),
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
                         call_id="tc-probe-b",
@@ -1323,3 +1362,224 @@ def test_non_native_planning_receives_json_protocol_and_investigation_policy() -
     assert decision.tool_plan.calls[0].tool_id == "alpha.tool"
     assert decision.tool_plan.calls[0].input.value == 3
     assert investigation_policy_prompt().strip() in combined
+
+
+class _EvidenceIn(BaseModel):
+    label: str = "probe"
+
+
+class _EvidenceOut(BaseModel):
+    payload: str = "EVIDENCE"
+
+
+class _EvidenceHandler(ToolHandler[_EvidenceIn, _EvidenceOut]):
+    def __init__(self, *, payload: str) -> None:
+        self._payload = payload
+
+    def execute(self, request: ToolExecutionRequest[_EvidenceIn]) -> _EvidenceOut:
+        _ = request
+        return _EvidenceOut(payload=self._payload)
+
+
+class _MultiHopInvestigationLLM(FakeLLMAdapter):
+    def __init__(self) -> None:
+        super().__init__(fixed_text="")
+        self._round = 0
+
+    def supports_tools(self) -> bool:
+        return True
+
+    def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
+        _ = tools_schema, kwargs
+        self._round += 1
+        _assert_investigation_policy_provider_messages(list(messages))
+
+        if self._round == 1:
+            return LLMAdapterResponse(
+                content="",
+                tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id="evidence-a",
+                        name="probe.a",
+                        arguments={"label": "a"},
+                    ),
+                ),
+            )
+
+        tool_messages = [message for message in messages if message.role == "tool"]
+        tool_contents = [message.content or "" for message in tool_messages]
+
+        if self._round == 2:
+            assert len(tool_messages) == 1
+            assert any("EVIDENCE_A" in content for content in tool_contents)
+            return LLMAdapterResponse(
+                content=_decision_note("evidence-a", purpose="inspect suspected subgroup"),
+                tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id="evidence-b",
+                        name="probe.b",
+                        arguments={"label": "b"},
+                    ),
+                ),
+            )
+
+        if self._round == 3:
+            assert len(tool_messages) == 2
+            assert any("EVIDENCE_A" in content for content in tool_contents)
+            assert any("EVIDENCE_B" in content for content in tool_contents)
+            return LLMAdapterResponse(
+                content=_decision_note(
+                    "evidence-a",
+                    "evidence-b",
+                    purpose="verify normalized effect",
+                ),
+                tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id="evidence-c",
+                        name="probe.c",
+                        arguments={"label": "c"},
+                    ),
+                ),
+            )
+
+        assert self._round == 4
+        assert len(tool_messages) == 3
+        return LLMAdapterResponse(content="final investigation answer", tool_calls=())
+
+
+def test_bounded_react_multi_hop_investigation_proof() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("probe.a", _EvidenceIn, _EvidenceOut),
+        _EvidenceHandler(payload="EVIDENCE_A"),
+    )
+    registry.register(
+        tools_agent_make_contract("probe.b", _EvidenceIn, _EvidenceOut),
+        _EvidenceHandler(payload="EVIDENCE_B"),
+    )
+    registry.register(
+        tools_agent_make_contract("probe.c", _EvidenceIn, _EvidenceOut),
+        _EvidenceHandler(payload="EVIDENCE_C"),
+    )
+    llm = _MultiHopInvestigationLLM()
+    state = _runtime_state(llm)
+    state.context.config.max_tool_iterations = 4
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = ToolPlanningService(llm=llm, tools=registry)
+
+    result = run_bounded_tool_loop(
+        state=state,
+        invoker=invoker,
+        tool_planner=planner,
+        planner_input=[ChatMessage(role="user", content="investigate multi-hop")],
+        allowed_tool_ids=("probe.a", "probe.b", "probe.c"),
+        max_iterations=4,
+    )
+
+    proof = result.investigation_proof
+    assert proof is not None
+    assert result.stop_reason == "planner_final_answer"
+    assert llm._round == 4
+    assert len(result.tool_traces) == 3
+    assert len(proof.steps) == 3
+
+    step1, step2, step3 = proof.steps
+    assert step1.round_index == 1
+    assert step1.basis_tool_call_ids == ()
+    assert step1.next_tool_call_ids == ("evidence-a",)
+    assert step2.basis_tool_call_ids == ("evidence-a",)
+    assert step2.next_tool_call_ids == ("evidence-b",)
+    assert step2.public_reason == "inspect suspected subgroup"
+    assert step3.basis_tool_call_ids == ("evidence-a", "evidence-b")
+    assert step3.next_tool_call_ids == ("evidence-c",)
+    assert step3.public_reason == "verify normalized effect"
+    assert proof.final_available_evidence_ids == (
+        "evidence-a",
+        "evidence-b",
+        "evidence-c",
+    )
+
+
+class _InvalidProofFollowUpLLM(FakeLLMAdapter):
+    def __init__(self, *, round2_content: str) -> None:
+        super().__init__(fixed_text="")
+        self._round = 0
+        self._round2_content = round2_content
+
+    def supports_tools(self) -> bool:
+        return True
+
+    def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
+        _ = tools_schema, kwargs
+        self._round += 1
+        if self._round == 1:
+            return LLMAdapterResponse(
+                content="",
+                tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id="evidence-a",
+                        name="probe.a",
+                        arguments={"label": "a"},
+                    ),
+                ),
+            )
+        return LLMAdapterResponse(
+            content=self._round2_content,
+            tool_calls=(
+                LLMToolCall.from_openai_shape(
+                    call_id="evidence-b",
+                    name="probe.b",
+                    arguments={"label": "b"},
+                ),
+            ),
+        )
+
+
+def _registry_with_probe_tools() -> ToolRegistry:
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("probe.a", _EvidenceIn, _EvidenceOut),
+        _EvidenceHandler(payload="EVIDENCE_A"),
+    )
+    registry.register(
+        tools_agent_make_contract("probe.b", _EvidenceIn, _EvidenceOut),
+        _EvidenceHandler(payload="EVIDENCE_B"),
+    )
+    return registry
+
+
+@pytest.mark.parametrize(
+    ("round2_content", "match"),
+    [
+        (_decision_note("missing-id", purpose="inspect subgroup"), "unknown basis tool_call_id"),
+        (_decision_note(purpose="inspect subgroup"), "follow-up tool round requires explicit evidence basis"),
+        (
+            "EVIDENCE_BASIS: evidence-a,evidence-a\nPURPOSE: inspect subgroup",
+            "duplicate basis tool_call_id",
+        ),
+        ("not-a-valid-note", "missing EVIDENCE_BASIS"),
+    ],
+)
+def test_investigation_proof_invalid_follow_up_rejected_before_tool_b(
+    round2_content: str,
+    match: str,
+) -> None:
+    registry = _registry_with_probe_tools()
+    llm = _InvalidProofFollowUpLLM(round2_content=round2_content)
+    state = _runtime_state(llm)
+    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    planner = ToolPlanningService(llm=llm, tools=registry)
+
+    with pytest.raises(InvestigationProofValidationError, match=match):
+        run_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=[ChatMessage(role="user", content="invalid proof")],
+            allowed_tool_ids=("probe.a", "probe.b"),
+            max_iterations=3,
+        )
+
+    assert llm._round == 2
+    assert len(state.tool_traces) == 1
+    assert state.tool_traces[0].tool_name == "probe.a"

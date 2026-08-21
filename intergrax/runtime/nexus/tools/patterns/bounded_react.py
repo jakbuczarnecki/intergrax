@@ -12,6 +12,12 @@ from intergrax.runtime.nexus.budget.budget_ticks import (
     record_planner_iteration_and_enforce,
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.tools.investigation_proof import (
+    InvestigationProof,
+    InvestigationProofStep,
+    build_investigation_proof_step,
+    collect_available_evidence_ids,
+)
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.patterns.single_pass import SinglePassPattern
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
@@ -77,6 +83,7 @@ class BoundedReactPattern:
         stop_reason: ToolInvocationStopReason = "max_iterations"
         fingerprint_counts: dict[str, int] = {}
         loop_cfg = state.context.config
+        proof_steps: list[InvestigationProofStep] = []
 
         while iterations < max_iters:
             if iterations >= 1:
@@ -97,6 +104,15 @@ class BoundedReactPattern:
             if not tool_plan.calls:
                 stop_reason = "empty_tool_calls"
                 break
+
+            proof_steps.append(
+                build_investigation_proof_step(
+                    round_index=iterations,
+                    assistant_content=llm_result.content,
+                    tool_calls=llm_result.tool_calls,
+                    messages_before_round=messages,
+                )
+            )
 
             validate_identical_tool_call_repeats(
                 tool_plan.calls,
@@ -120,10 +136,21 @@ class BoundedReactPattern:
             )
             appended.extend(messages[before:])
 
+        investigation_proof: InvestigationProof | None = None
+        if proof_steps:
+            final_available_evidence_ids: tuple[str, ...] = ()
+            if stop_reason == "planner_final_answer":
+                final_available_evidence_ids = collect_available_evidence_ids(messages)
+            investigation_proof = InvestigationProof(
+                steps=tuple(proof_steps),
+                final_available_evidence_ids=final_available_evidence_ids,
+            )
+
         return ToolInvocationResult(
             tool_traces=all_traces,
             loop_iterations=iterations,
             stop_reason=stop_reason,
             appended_messages=appended,
             used_native_tool_messages=True,
+            investigation_proof=investigation_proof,
         )
