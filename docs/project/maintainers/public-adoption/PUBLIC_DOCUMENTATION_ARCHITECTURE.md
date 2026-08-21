@@ -371,11 +371,14 @@ Each document owns one primary responsibility. Do not duplicate ownership across
 
 | Classification | Role |
 |----------------|------|
-| **LKW Platform Proof** | Primary product proof |
+| **LKW (Active reference product)** | Product-first public product entry — Product Tour and Quick Start routes; not a proof classification |
+| **LKW Platform Proof** | Bounded technical LKW proof / evidence path |
 | **Token Optimization Engine** | Featured platform-capability proof |
 | **Case studies** | Secondary bounded evidence |
 
-Product proof and platform-capability proof are complementary but not interchangeable. LKW demonstrates a real application workflow; Token Optimization demonstrates a reusable platform mechanism. Neither replaces the other.
+LKW product identity and LKW proof/evidence paths are distinct. LKW Platform Proof
+provides bounded technical evidence; it does not define LKW product identity. Token
+Optimization demonstrates a reusable platform mechanism. Neither replaces the other.
 
 ### Layer 4 — Technical due diligence
 
@@ -652,7 +655,7 @@ The Builder Quick Start does not own product trial instructions. The LKW Quick S
 
 ## 4. LKW placement contract
 
-- LKW is the primary product-development and product-proof path.
+- LKW is the active reference product.
 - README must show LKW through a user workflow before infrastructure details.
 - LKW remains Backend Product Alpha / MVP.
 - LKW does not claim completed commercial or real-user validation.
@@ -964,12 +967,12 @@ PROOFS.md owns the public evidence dashboard.
 Copy **links**, not large paragraphs. Do not maintain parallel status tables
 across all documents.
 
-### PDOC-3 alignment note (record only)
+### PDOC-5B alignment note (record only)
 
 Existing public documents may still use older terminology such as **Primary
-Product Proof** while the current README uses product-first terminology. This
-task does not rewrite LKW or other public projections. Terminology alignment is
-an explicit follow-up for **PDOC-3**.
+product proof** while canonical contracts now use product-first semantics. This
+contract does not rewrite LKW or other public projections. Terminology alignment
+is an explicit follow-up for **PDOC-5B**.
 
 ---
 
@@ -1068,7 +1071,7 @@ the performance gate.
 | `FAQ.md` | Mixed general, architecture and legal FAQ | Layer 2 concise first-contact FAQ | `FAQ.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `ROADMAP.md` | Public product-validation roadmap | Layer 2 outcome-gated public roadmap | `ROADMAP.md` | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
 | `COLLABORATION.md` | Mixed collaboration and maintainer-control document | Layer 2 practical collaboration and permission-request router | `COLLABORATION.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
-| `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` | LKW guided proof | Primary product proof | LKW proof docs | stable |
+| `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` | LKW guided proof | Bounded technical LKW proof / evidence | LKW proof docs | stable |
 | `docs/project/capabilities/token_optimization/README.md` | Token Optimization guide | Featured platform-capability proof entry | Token Optimization docs | stable (this task) |
 | `docs/project/technical/DOCUMENTATION_MAP.md` | Technical/developer navigation | Layer 4 technical map | `docs/project/technical/DOCUMENTATION_MAP.md` | stable |
 | `docs/project/maintainers/public-adoption/README.md` | Maintainer adoption controls | Layer 5 maintainer index | `docs/project/maintainers/public-adoption/` | stable (this task) |

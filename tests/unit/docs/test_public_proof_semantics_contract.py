@@ -13,6 +13,10 @@ _MAINTAINER_MODEL = (
     _REPO_ROOT
     / "docs/project/maintainers/public-adoption/PUBLIC_PROOF_AND_CLAIMS_MODEL.md"
 )
+_DOC_ARCH = (
+    _REPO_ROOT
+    / "docs/project/maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
+)
 _TOKEN_GUIDE = _REPO_ROOT / "docs/project/capabilities/token_optimization/README.md"
 
 
@@ -24,6 +28,11 @@ def proofs_text() -> str:
 @pytest.fixture
 def maintainer_model_text() -> str:
     return _MAINTAINER_MODEL.read_text(encoding="utf-8")
+
+
+@pytest.fixture
+def doc_arch_text() -> str:
+    return _DOC_ARCH.read_text(encoding="utf-8")
 
 
 def test_token_offline_proof_not_masquerading_as_vllm_claim(proofs_text: str) -> None:
@@ -119,6 +128,53 @@ def test_proofs_additional_bounded_lkw_proof_table_structure(proofs_text: str) -
     assert "| Capability | Status | What it demonstrates | Limitation |" in supporting_table
     assert "| Web URL knowledge intake |" in supporting_table
     assert "| Ollama / vLLM model runtime portability |" in supporting_table
+
+
+def test_maintainer_lkw_classification_is_active_reference_product(
+    maintainer_model_text: str,
+) -> None:
+    lkw_section = maintainer_model_text.split("## 6. LKW classification rules", 1)[1].split(
+        "## 7.", 1
+    )[0]
+    assert "Active reference product" in lkw_section
+    assert "LKW is the Primary product proof" not in lkw_section
+    assert "PARTIAL" in lkw_section
+    assert "Backend Product Alpha / MVP" in lkw_section
+    assert "LKW_PLATFORM_PROOF.md" in lkw_section
+    assert "IMPLEMENTATION_PLAN.md" in lkw_section
+    assert "PROOFS.md" in lkw_section
+    assert "LKW product identity" in lkw_section
+    assert "proof/evidence paths" in lkw_section
+    assert "bounded live proof" in maintainer_model_text
+    assert "product workflow proof" in maintainer_model_text
+    assert "implemented code" in maintainer_model_text
+    assert "≠ live proof" in maintainer_model_text
+
+
+def test_doc_arch_lkw_product_separated_from_proof_identity(doc_arch_text: str) -> None:
+    lkw_placement = doc_arch_text.split("## 4. LKW placement contract", 1)[1].split(
+        "## 4a.", 1
+    )[0]
+    layer3 = doc_arch_text.split("### Layer 3 — Proofs and capability spotlights", 1)[1].split(
+        "### Layer 4", 1
+    )[0]
+
+    assert "active reference product" in lkw_placement.lower()
+    assert "primary product-development and product-proof path" not in lkw_placement.lower()
+    assert "LKW_PRODUCT_TOUR.md" in lkw_placement
+    assert "QUICKSTART.md" in lkw_placement
+    assert "LKW_PLATFORM_PROOF.md" in lkw_placement
+    assert "product quickstart ≠ platform proof" in lkw_placement.lower()
+
+    assert "Active reference product" in layer3
+    assert "Bounded technical LKW proof" in layer3
+    assert "Primary product proof" not in layer3
+    assert "Featured platform-capability proof" in layer3
+    assert "does not define LKW product identity" in layer3
+
+    assert "PROOFS.md" in doc_arch_text
+    assert "public evidence dashboard" in doc_arch_text.lower()
+    assert "PDOC-5B" in doc_arch_text
 
 
 def test_maintainer_contract_contains_executable_binding_rules(
