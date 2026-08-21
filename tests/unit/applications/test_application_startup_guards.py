@@ -107,6 +107,9 @@ def test_lkw_dockerfile_uses_minimal_agent_closure() -> None:
     assert "COPY agents/ ./agents/" in text
     assert "COPY agents/local_indexer/" not in text
     assert "uv sync --frozen --no-dev --project applications/local_workspace_application" in text
+    assert 'CMD ["uvicorn", "local_workspace_application.host.main:app"' not in text
+    assert 'CMD ["python", "-m", "local_workspace_application.host.main"]' in text
+    assert "LOCAL_WORKSPACE_REFERENCE_PRODUCTION=1" in text
     pyproject = (
         REPO / "applications" / "local_workspace_application" / "pyproject.toml"
     ).read_text(encoding="utf-8")
@@ -127,7 +130,7 @@ def test_local_workspace_factory_http_only_startup(monkeypatch: pytest.MonkeyPat
     monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
 
     from local_workspace_application.host.factory import create_local_workspace_backend_app
-from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
+    from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
 
     app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection())
     assert app.title

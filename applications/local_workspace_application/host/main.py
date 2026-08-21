@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
@@ -12,6 +14,13 @@ from intergrax.applications._shared.production_host_composition import (
 )
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
+    create_reference_production_process_composition,
+)
+from intergrax.applications._shared.reference_production_lifecycle import (
+    ReferenceProductionLifecycleLauncher,
+)
+from local_workspace_application.host.reference_lifecycle_input import (
+    build_local_workspace_reference_lifecycle_input,
 )
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
@@ -24,9 +33,9 @@ load_dotenv()
 
 _STRICT_RUN_MESSAGE = (
     "Local Workspace STRICT production requires explicit lifecycle deploy/activate before serving. "
-    "Wire ReferenceProductionLifecycleLauncher with explicit lifecycle input, then "
-    "create_local_workspace_process_app(process_composition=...) or use hosted foreground "
-    "with an activated composition."
+    "Use run_reference_production() or wire ReferenceProductionLifecycleLauncher with "
+    "build_local_workspace_reference_lifecycle_input(), then "
+    "create_local_workspace_process_app(process_composition=...) with the same composition."
 )
 
 
@@ -65,9 +74,36 @@ def create_app(
 app = StrictProductionAsgiPlaceholder(application_package="local_workspace_application")
 
 
+def run_reference_production() -> None:
+    """Explicit reference path: lifecycle deploy/activate then serve on one composition."""
+    import uvicorn
+
+    composition = create_reference_production_process_composition()
+    projection_input, activation_request = build_local_workspace_reference_lifecycle_input()
+    ReferenceProductionLifecycleLauncher(composition).deploy_and_activate(
+        projection_input,
+        activation_request,
+    )
+    host = os.environ.get("LOCAL_WORKSPACE_BACKEND_HOST", "0.0.0.0")
+    port = int(os.environ.get("LOCAL_WORKSPACE_BACKEND_PORT", "8020"))
+    uvicorn.run(
+        create_local_workspace_process_app(process_composition=composition),
+        host=host,
+        port=port,
+        reload=False,
+    )
+
+
 def run() -> None:
     import sys
 
+    if os.environ.get("LOCAL_WORKSPACE_REFERENCE_PRODUCTION", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }:
+        run_reference_production()
+        return
     print(_STRICT_RUN_MESSAGE, file=sys.stderr)
     raise SystemExit(1)
 
