@@ -6,20 +6,25 @@ from __future__ import annotations
 
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.delegation import DelegationSpec
+from intergrax.contracts.request_identity_spine import request_identity_to_actor_identity
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.runtime.task.task import Task
 
 
 def resolve_actor_from_task(task: Task) -> ActorIdentity:
     """Map task fields to a typed actor identity."""
-    kind = ActorKind.USER
-    actor_id = task.user_id or "anonymous"
-    if task.metadata.get("actor_kind") == ActorKind.SERVICE.value:
+    actor_kind_raw = task.metadata.get("actor_kind")
+    if actor_kind_raw == ActorKind.SERVICE.value:
         kind = ActorKind.SERVICE
-        actor_id = str(task.metadata.get("service_id", actor_id))
-    elif task.metadata.get("actor_kind") == ActorKind.AGENT.value:
+        actor_id = str(task.metadata.get("actor_id") or task.user_id or "anonymous")
+    elif actor_kind_raw == ActorKind.AGENT.value:
         kind = ActorKind.AGENT
-        actor_id = str(task.metadata.get("agent_actor_id", task.agent_id or actor_id))
+        actor_id = str(
+            task.metadata.get("actor_id") or task.agent_id or task.user_id or "anonymous"
+        )
+    else:
+        kind = ActorKind.USER
+        actor_id = task.user_id or "anonymous"
 
     scopes_raw = task.metadata.get("permission_scopes", ())
     scopes = tuple(scopes_raw) if isinstance(scopes_raw, (list, tuple)) else ()

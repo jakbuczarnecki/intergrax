@@ -7,9 +7,18 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 
+from intergrax.applications._shared.harness_auth import (
+    HarnessAuthenticatedPrincipal,
+    require_harness_auth,
+    resolve_harness_authenticated_principal,
+)
+from intergrax.applications._shared.harness_principal import (
+    harness_principal_to_request_identity,
+    reject_identity_assertion_conflicts,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import new_run_id
+from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from research_application.serving.schemas import ResearchRunRequestV1, ResearchRunResponseV1
 
@@ -22,12 +31,30 @@ class ResearchRunService:
     def from_nexus_loop(cls, nexus_loop: NexusLoop) -> ResearchRunService:
         return cls(task_runner=UnifiedTaskRunner(nexus_loop))
 
-    async def run_pipeline(self, body: ResearchRunRequestV1) -> ResearchRunResponseV1:
-        run_id = new_run_id()
+    async def run_pipeline(
+        self,
+        body: ResearchRunRequestV1,
+        *,
+        authenticated_principal: HarnessAuthenticatedPrincipal | None = None,
+    ) -> ResearchRunResponseV1:
+        if authenticated_principal is not None:
+            canonical = harness_principal_to_request_identity(authenticated_principal)
+            reject_identity_assertion_conflicts(
+                canonical=canonical,
+                asserted_tenant_id=body.tenant_id,
+                asserted_user_id=body.user_id,
+            )
+            tenant_id = canonical.tenant_id
+            user_id = canonical.user_id or body.user_id
+        else:
+            tenant_id = body.tenant_id
+            user_id = body.user_id
+
+        task_id, run_id = mint_intake_execution_identity()
         task = Task(
-            task_id=run_id,
-            tenant_id=body.tenant_id,
-            user_id=body.user_id,
+            task_id=task_id,
+            tenant_id=tenant_id,
+            user_id=user_id,
             session_id=body.session_id,
             message=body.message,
             context=TaskContext(
@@ -56,9 +83,20 @@ def mount_research_routes(
     router = APIRouter(prefix=prefix, tags=["research"])
 
     @router.post("/run", response_model=ResearchRunResponseV1)
-    async def research_run(body: ResearchRunRequestV1) -> ResearchRunResponseV1:
+    async def research_run(
+        body: ResearchRunRequestV1,
+        _: None = Depends(require_harness_auth),
+        authenticated_principal: HarnessAuthenticatedPrincipal | None = Depends(
+            resolve_harness_authenticated_principal
+        ),
+    ) -> ResearchRunResponseV1:
         try:
-            return await service.run_pipeline(body)
+            return await service.run_pipeline(
+                body,
+                authenticated_principal=authenticated_principal,
+            )
+        except HTTPException:
+            raise
         except Exception as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,

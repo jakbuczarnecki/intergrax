@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
 from intergrax.contracts.execution_identity import (
     RunId,
@@ -163,6 +164,9 @@ class RuntimeRequest:
 
     # Typed generic HITL resume authority (canonical HumanApprovalResolution only).
     hitl_resolution: Optional[HumanApprovalResolution] = None
+
+    # Verified authenticated principal for execution identity (IDT-FIX-A).
+    canonical_identity: Optional[RequestIdentity] = None
 
     # Typed pause lifecycle identity for resume validation (not authorization).
     hitl_pause_record: Optional[TaskPauseRecord] = None
