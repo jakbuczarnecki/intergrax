@@ -570,6 +570,16 @@ Accepted [`TIER3_APPLICATION_ENVIRONMENT`](../../audit_results/2026-08-18/TIER3_
 
 Historical Tier-3 **Done** delivery facts and existing **TL-FIX-C/D**, **ITI-FIX-***, **IDT-FIX-A** remediation remain **PLANNED** — coordinate; do not duplicate.
 
+<a id="protocol-v2-end-to-end-system-tier3-composition-target-invariants-2026-08-18"></a>
+
+### Protocol v2 END_TO_END_SYSTEM Tier-3 composition target invariants (2026-08-18)
+
+Accepted [`END_TO_END_SYSTEM`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md) findings **01, 02** (2026-08-21). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
+
+1. Tier-3 materializes **one configured task execution service** (`UnifiedTaskRunner` + mandatory host-owned enricher) and passes that same instance to HTTP, MCP, queue, and other supported execution surfaces.
+2. Tenant/model routing and LLM `RoutingContext` derive from the **runtime Task/Run execution identity** — not literal `tenant_id="default"` as product routing authority. Use a runtime `RoutingContextProvider` / execution-context bridge when the adapter is reused across tasks. Cross-link **IDENTITY_TRUST**, **LLM_ADAPTERS** — do not duplicate their findings.
+3. A surface must not reconstruct `UnifiedTaskRunner(nexus_loop)` independently when canonical wiring supplies reliability enrichment via `build_reliability_task_enricher()`. Cross-link **E2E-EXECUTION-CONTEXT-INTEGRITY**, **ITI-FIX-C**.
+
 ---
 
 <a id="45-checklist-for-new-application-implementation"></a>

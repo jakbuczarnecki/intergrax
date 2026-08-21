@@ -237,6 +237,29 @@ Finding 05 remains owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION` plan](PLATFOR
 
 ---
 
+### Protocol v2 remediation — END_TO_END_SYSTEM (2026-08-18)
+
+**Audit:** [`docs/audit_results/2026-08-18/END_TO_END_SYSTEM.md`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
+
+#### E2E-EXECUTION-CONTEXT-INTEGRITY — Tier-3 configured runner composition
+
+**Priority:** P0
+**Status:** `ACCEPTED / PLANNED`
+**Findings:** [`AUDIT-20260818-END_TO_END_SYSTEM-01`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md), [`02`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md)
+**Owner:** Tier-3 host composition — primary delivery for tenant-aware LLM wiring and one configured runner passed to all surfaces.
+
+**Acceptance intent:**
+
+- Tier-3 materializes one configured `UnifiedTaskRunner` (with `build_reliability_task_enricher()` or equivalent mandatory enrichment) and injects it into HTTP, MCP, queue, and supported surfaces.
+- `resolve_environment_llm_adapter()` / Nexus LLM wiring uses runtime Task/Run tenant identity — not literal `tenant_id="default"` for product routing.
+- HTTP/MCP/etc. consume the same configured execution semantics.
+- Cross-link [`NEXUS_EXECUTION_FLOW` plan](NEXUS_EXECUTION_FLOW.md) **E2E-EXECUTION-CONTEXT-INTEGRITY**, **ITI-FIX-C**, **LLM-FIX-*** — coordinate; do not duplicate.
+
+**Remediation rules:** same as TIER_LAYER_BOUNDARIES block above.
+
+---
+
 ### Protocol v2 remediation — SECURITY_BOUNDARIES (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/SECURITY_BOUNDARIES.md`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)

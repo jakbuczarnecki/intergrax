@@ -869,6 +869,18 @@ Accepted Protocol v2 audit layer [`PERSISTENCE_CONCURRENCY_MULTIHOST`](../../aud
 
 Remediation: **PCM-SIDE-EFFECT-COORDINATION-INTEGRITY**, **PCM-CHECKPOINT-SCHEDULER-INTEGRITY**, **PCM-SCHEMA-EVOLUTION-INTEGRITY** in [plan](../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md). **PCM-PERSISTENCE-TOPOLOGY-INTEGRITY** cross-linked to [Platform Foundation plan](../maintainers/plans/PLATFORM_FOUNDATION.md). **Not implemented** by audit persistence.
 
+<a id="protocol-v2-end-to-end-system-asynccontrol-target-invariants-2026-08-18"></a>
+
+## Protocol v2 END_TO_END_SYSTEM async/control target invariants (2026-08-18)
+
+Accepted [`END_TO_END_SYSTEM`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md) findings **04, 05, 06** (2026-08-21). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
+
+1. **Durable async terminal outcome** — durable async status includes durable terminal-outcome reachability: `TaskId` + `RunId` → durable `TaskResult` / result reference / execution-journal projection. The async index may store a reference rather than duplicate full result payload. After restart a completed task remains retrievable as a completed user outcome, not status-only evidence. Cross-link [`OBSERVABILITY_EVIDENCE`](OBSERVABILITY_EVIDENCE.md) / Unified Run Journal where a durable canonical result projection already exists — do not duplicate observability durability defects.
+2. **Safe external async errors** — separate internal diagnostic evidence from external error contract. External: stable `reason_code`, safe message, correlation/run identifier. Internal observability: full controlled exception detail per redaction policy. Cross-link **SECURITY_BOUNDARIES**, **OBSERVABILITY_EVIDENCE** — do not duplicate either subsystem.
+3. **Control operations bind exact active execution** — task-control cancel/autonomy and registry unregister target the registration owned by the concrete execution identity. Cross-link **E2E-CONTROL-AUTHORITY-INTEGRITY** in [`NEXUS_EXECUTION_FLOW`](NEXUS_EXECUTION_FLOW.md).
+
+Historical REL Done rows and existing **PCM-***, **UER-FIX-*** remediation remain delivery facts / **PLANNED** — coordinate; do not duplicate PCM checkpoint CAS/multi-host defects.
+
 ## Unresolved documentation drift (outside this edit)
 
 Report only — not fixed in DOC-3Q scope:

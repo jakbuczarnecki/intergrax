@@ -256,6 +256,19 @@ Accepted [`REASONING_PLANNING`](../../audit_results/2026-08-18/REASONING_PLANNIN
 
 Remediation: **RPL-FIX-A/B/C** in matching plans.
 
+<a id="protocol-v2-end-to-end-system-target-invariants-2026-08-18"></a>
+
+## Protocol v2 END_TO_END_SYSTEM target invariants (2026-08-18)
+
+Accepted [`END_TO_END_SYSTEM`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md) findings **02, 03, 05** (2026-08-21). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
+
+1. Supported surfaces consume one **configured task execution service** — same mandatory host-owned `task_enricher` and runner guarantees — not independent `UnifiedTaskRunner(nexus_loop)` reconstruction per surface. Cross-link **E2E-EXECUTION-CONTEXT-INTEGRITY** and **ITI-FIX-C** (direct-Nexus bypass is a separate recorded defect; this invariant is **equal enricher semantics**).
+2. `ActiveTaskRegistry` registration is **ownership-aware**: bind `TaskId` to concrete execution identity (`RunId`/attempt/registration token) or treat duplicate `TaskId` as explicit conflict; `unregister` removes only the owned registration — no silent overwrite. Cross-link **E2E-CONTROL-AUTHORITY-INTEGRITY**.
+3. Autonomy and other security-sensitive task-control mutations cross **canonical Governance authorization** (authenticated principal + Task/Run + requested transition → authorized transition evidence → runtime application). Do not create a second task-control policy engine. Cross-link **POLICY_GOVERNANCE**, **SECURITY_BOUNDARIES**.
+4. Preserve one Nexus execution spine (`Task` → `UnifiedTaskRunner` → `NexusLoop` → `TaskResult`); no second end-to-end runtime subsystem.
+
+Historical harness FLOW Done facts and existing **ITI-FIX-***, **IDT-FIX-***, **LLM-FIX-*** remediation remain **PLANNED** — coordinate; do not duplicate.
+
 ## Scenario capability (summary)
 
 | Capability | State |
