@@ -8,6 +8,7 @@
 > independent live providers. Complete indexed + authorized live Hybrid Ask in a
 > single admissibility gate remains **not proven**.
 
+<a href="../assets/lkw-governed-evidence-gate-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -22,6 +23,7 @@
     src="../assets/lkw-governed-evidence-gate-light.png"
   >
 </picture>
+</a>
 
 *Conceptual COMM-5 evidence model. The F3-F Advanced Flagship below is **LIVE_ONLY**
 and receives versioned policy rules through the policy-resolution boundary; it does
@@ -111,6 +113,7 @@ does **not** mean deployment is approved, the business result is positive, or th
 answer is guaranteed correct. Evidence may be admissible while provider facts still
 indicate BLOCKED/NO.
 
+<a href="../assets/lkw-policy-revision-admissibility-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -125,6 +128,7 @@ indicate BLOCKED/NO.
     src="../assets/lkw-policy-revision-admissibility-light.png"
   >
 </picture>
+</a>
 
 Composes F3-A/B/C/D/E into one Docker-backed four-provider governed decision proof.
 
@@ -179,6 +183,7 @@ provider facts until evidence is refreshed.
 
 ## Failure semantics
 
+<a href="../assets/lkw-evidence-failure-semantics-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -193,6 +198,7 @@ provider facts until evidence is refreshed.
     src="../assets/lkw-evidence-failure-semantics-light.png"
   >
 </picture>
+</a>
 
 The flagship proof distinguishes typed failure paths that all suppress LLM synthesis:
 
@@ -215,6 +221,7 @@ an accidental validation error.
 
 ## External vendor truth and persistence
 
+<a href="../assets/lkw-external-evidence-authority-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -229,6 +236,7 @@ an accidental validation error.
     src="../assets/lkw-external-evidence-authority-light.png"
   >
 </picture>
+</a>
 
 The Advanced Flagship uses four independent Docker-backed live providers accessed
 only through Intergrax integration abstractions — never through direct proof-harness

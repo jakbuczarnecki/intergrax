@@ -99,6 +99,7 @@ answer admissibility over **live organizational evidence** (`LIVE_ONLY`):
 This proof does **not** certify complete **indexed + authorized live Hybrid Ask**
 in a single admissibility gate. See the [Governed Evidence Decision Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md).
 
+<a href="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -113,6 +114,7 @@ in a single admissibility gate. See the [Governed Evidence Decision Proof](appli
     src="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png"
   >
 </picture>
+</a>
 
 **Separate bounded technical evidence:** indexed Hybrid Ask branch
 (`LKW-HYBRID-ASK-INDEXED`) is a **real application code path** for indexed retrieval.

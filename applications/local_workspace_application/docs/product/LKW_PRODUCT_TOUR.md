@@ -35,6 +35,7 @@ LKW offers two distinct public proof stories:
 
 See the [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) for the canonical technical narrative.
 
+<a href="../assets/lkw-governed-evidence-gate-light.png">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -49,6 +50,7 @@ See the [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PR
     src="../assets/lkw-governed-evidence-gate-light.png"
   >
 </picture>
+</a>
 
 This visual represents the governed evidence proof story — not the Product Quick Start indexed path and not a finished application UI screenshot.
 
