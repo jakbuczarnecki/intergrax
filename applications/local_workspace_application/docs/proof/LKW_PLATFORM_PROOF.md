@@ -63,7 +63,7 @@ A reviewer should not need to inspect raw Docker output or infer what to check f
 
 | | |
 |---|---|
-| **Role** | Primary product proof |
+| **Role** | Bounded LKW technical proof |
 | **Product status** | Backend Product Alpha / MVP |
 | **Current proof scope** | Bounded application and platform behavior |
 | **Primary evidence** | Core Platform Proof claims, certification matrix, ProofReceipt documents in MongoDB |
