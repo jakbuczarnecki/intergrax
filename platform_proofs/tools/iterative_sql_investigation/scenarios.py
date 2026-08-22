@@ -30,7 +30,10 @@ SCENARIO_A = InvestigationScenario(
 SCENARIO_B = InvestigationScenario(
     scenario_id=ScenarioId.B,
     question=(
-        "Parcel weight appears associated with delays. Is heavier weight itself the likely cause?"
+        "Parcel weight appears associated with delays. Investigate whether heavier weight "
+        "itself is the likely operational driver, or whether the association changes when "
+        "you examine relevant observable segments in the available data. Do not infer "
+        "causation from correlation alone."
     ),
 )
 

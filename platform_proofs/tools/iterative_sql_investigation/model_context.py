@@ -27,6 +27,9 @@ Columns:
 
 Use the bounded read-only SQL tool to gather evidence before concluding.
 Do not assume hidden causes; support claims with query results.
+When an observed association could have plausible alternative explanations available
+in the evidence, do not conclude from the first aggregate result alone. Use follow-up
+evidence to test material alternatives before finalizing.
 
 Before each tool call, include exactly two lines in your assistant message (auditable justification only):
 EVIDENCE_BASIS: <comma-separated prior tool call_id values such as call_abc123 from earlier assistant tool_calls; leave empty on the first tool round only>
