@@ -93,6 +93,84 @@ def should_publish_canonical_output(
     return True
 
 
+def _cleanup_publish_temp_directory(path: Path) -> None:
+    if path.exists():
+        shutil.rmtree(path, ignore_errors=True)
+
+
+def _install_staged_canonical_output(
+    *,
+    package_root: Path,
+    canonical_output: Path,
+    staging_output: Path,
+) -> PublicationResult:
+    """Swap staged NEW into canonical output; rollback OLD on install failure."""
+    backup_root = package_root / f".proof-publish-backup-{uuid.uuid4().hex}"
+    if not _path_within_root(backup_root, package_root):
+        return PublicationResult(
+            status=PublicationStatus.FAILED,
+            published_output_path=None,
+            diagnostic_code="output_path_escape",
+            diagnostic_summary="backup path escapes package root",
+        )
+
+    if not canonical_output.exists():
+        try:
+            staging_output.rename(canonical_output)
+        except OSError as exc:
+            return PublicationResult(
+                status=PublicationStatus.FAILED,
+                published_output_path=None,
+                diagnostic_code="canonical_output_publish_failed",
+                diagnostic_summary=str(exc),
+            )
+        return PublicationResult(
+            status=PublicationStatus.PUBLISHED,
+            published_output_path=canonical_output,
+            diagnostic_code="canonical_output_published",
+            diagnostic_summary="canonical_output_published",
+        )
+
+    try:
+        canonical_output.rename(backup_root)
+    except OSError as exc:
+        return PublicationResult(
+            status=PublicationStatus.FAILED,
+            published_output_path=None,
+            diagnostic_code="canonical_output_publish_failed",
+            diagnostic_summary=str(exc),
+        )
+
+    try:
+        staging_output.rename(canonical_output)
+    except OSError as exc:
+        try:
+            if canonical_output.exists():
+                shutil.rmtree(canonical_output, ignore_errors=True)
+            backup_root.rename(canonical_output)
+        except OSError as rollback_exc:
+            return PublicationResult(
+                status=PublicationStatus.FAILED,
+                published_output_path=None,
+                diagnostic_code="canonical_output_publish_rollback_failed",
+                diagnostic_summary=f"install_failed={exc}; rollback_failed={rollback_exc}",
+            )
+        return PublicationResult(
+            status=PublicationStatus.FAILED,
+            published_output_path=None,
+            diagnostic_code="canonical_output_publish_failed",
+            diagnostic_summary=str(exc),
+        )
+
+    _cleanup_publish_temp_directory(backup_root)
+    return PublicationResult(
+        status=PublicationStatus.PUBLISHED,
+        published_output_path=canonical_output,
+        diagnostic_code="canonical_output_published",
+        diagnostic_summary="canonical_output_published",
+    )
+
+
 def _copy_declared_artifact(
     *,
     candidate_directory: Path,
@@ -180,14 +258,10 @@ def publish_verified_proof_artifacts(
                 )
 
         canonical_output.parent.mkdir(parents=True, exist_ok=True)
-        if canonical_output.exists():
-            shutil.rmtree(canonical_output)
-        staging_output.rename(canonical_output)
-        return PublicationResult(
-            status=PublicationStatus.PUBLISHED,
-            published_output_path=canonical_output,
-            diagnostic_code="canonical_output_published",
-            diagnostic_summary="canonical_output_published",
+        return _install_staged_canonical_output(
+            package_root=package_root,
+            canonical_output=canonical_output,
+            staging_output=staging_output,
         )
     except OSError as exc:
         return PublicationResult(
@@ -197,8 +271,7 @@ def publish_verified_proof_artifacts(
             diagnostic_summary=str(exc),
         )
     finally:
-        if staging_root.exists():
-            shutil.rmtree(staging_root, ignore_errors=True)
+        _cleanup_publish_temp_directory(staging_root)
 
 
 def apply_canonical_publication(

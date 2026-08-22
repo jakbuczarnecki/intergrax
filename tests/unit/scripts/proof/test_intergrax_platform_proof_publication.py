@@ -537,6 +537,163 @@ def test_staged_publish_failure_does_not_leave_mixed_old_new_artifact_set(
     assert json.loads((package_root / "output" / "proof-result.json").read_text())["marker"] == "run-a"
 
 
+def _publish_with_flaky_rename(
+    candidate: Path,
+    package_root: Path,
+    *,
+    fail_on_rename_attempt: int,
+    fail_rollback: bool = False,
+) -> tuple[object, int]:
+    entry = _entry()
+    spec = _spec(entry, package_root=package_root)
+    summary = verify_platform_proof_artifacts(
+        proof_artifact_directory=candidate,
+        spec=spec,
+    )
+    rename_attempts = 0
+    real_rename = Path.rename
+
+    def _flaky_rename(self: Path, target: Path) -> None:
+        nonlocal rename_attempts
+        rename_attempts += 1
+        if rename_attempts == fail_on_rename_attempt:
+            raise OSError("simulated swap failure")
+        if fail_rollback and rename_attempts == fail_on_rename_attempt + 1:
+            raise OSError("simulated rollback failure")
+        return real_rename(self, target)
+
+    with patch.object(Path, "rename", _flaky_rename):
+        publication = publish_verified_proof_artifacts(
+            candidate_directory=candidate,
+            spec=spec,
+            artifact_summary=summary,
+        )
+    return publication, rename_attempts
+
+
+def test_first_publish_without_previous_output_installs_new(tmp_path: Path) -> None:
+    package_root = tmp_path / "pkg"
+    candidate = tmp_path / "candidate"
+    _write_candidate_set(candidate, marker="run-first")
+    _verify_and_publish(candidate, package_root)
+    output = package_root / "output"
+    assert output.is_dir()
+    assert json.loads((output / "proof-result.json").read_text())["marker"] == "run-first"
+
+
+def test_swap_failure_restores_old_byte_for_byte(tmp_path: Path) -> None:
+    package_root = tmp_path / "pkg"
+    candidate_a = tmp_path / "candidate-a"
+    candidate_b = tmp_path / "candidate-b"
+    _write_candidate_set(candidate_a, marker="run-a")
+    _verify_and_publish(candidate_a, package_root)
+    old_bytes = {
+        name: (package_root / "output" / name).read_bytes()
+        for name in ("evidence.json", "proof-result.json", "report.html")
+    }
+    _write_candidate_set(candidate_b, marker="run-b")
+    publication, _ = _publish_with_flaky_rename(
+        candidate_b,
+        package_root,
+        fail_on_rename_attempt=2,
+    )
+    assert publication.status == PublicationStatus.FAILED
+    output = package_root / "output"
+    for name, content in old_bytes.items():
+        assert (output / name).read_bytes() == content
+
+
+def test_swap_failure_preserves_all_canonical_files_from_old_set(tmp_path: Path) -> None:
+    package_root = tmp_path / "pkg"
+    candidate_a = tmp_path / "candidate-a"
+    candidate_b = tmp_path / "candidate-b"
+    _write_candidate_set(candidate_a, marker="run-a")
+    _verify_and_publish(candidate_a, package_root)
+    _write_candidate_set(candidate_b, marker="run-b")
+    publication, _ = _publish_with_flaky_rename(
+        candidate_b,
+        package_root,
+        fail_on_rename_attempt=2,
+    )
+    assert publication.status == PublicationStatus.FAILED
+    assert json.loads((package_root / "output" / "proof-result.json").read_text())["marker"] == "run-a"
+    assert "run-a" in (package_root / "output" / "report.html").read_text()
+
+
+def test_swap_failure_leaves_no_mixed_artifact_set(tmp_path: Path) -> None:
+    package_root = tmp_path / "pkg"
+    candidate_a = tmp_path / "candidate-a"
+    candidate_b = tmp_path / "candidate-b"
+    _write_candidate_set(candidate_a, marker="run-a")
+    _verify_and_publish(candidate_a, package_root)
+    _write_candidate_set(candidate_b, marker="run-b")
+    publication, _ = _publish_with_flaky_rename(
+        candidate_b,
+        package_root,
+        fail_on_rename_attempt=2,
+    )
+    assert publication.status == PublicationStatus.FAILED
+    output = package_root / "output"
+    assert {path.name for path in output.iterdir()} == {
+        "evidence.json",
+        "proof-result.json",
+        "report.html",
+    }
+    for name in ("evidence.json", "proof-result.json", "report.html"):
+        assert "run-b" not in (output / name).read_bytes().decode("utf-8", errors="replace")
+
+
+def test_successful_replacement_removes_backup_directory(tmp_path: Path) -> None:
+    package_root = tmp_path / "pkg"
+    candidate_a = tmp_path / "candidate-a"
+    candidate_b = tmp_path / "candidate-b"
+    _write_candidate_set(candidate_a, marker="run-a")
+    _verify_and_publish(candidate_a, package_root)
+    _write_candidate_set(candidate_b, marker="run-b")
+    _verify_and_publish(candidate_b, package_root)
+    backups = list(package_root.glob(".proof-publish-backup-*"))
+    assert backups == []
+
+
+def test_failed_replacement_cleans_staging_directories(tmp_path: Path) -> None:
+    package_root = tmp_path / "pkg"
+    candidate_a = tmp_path / "candidate-a"
+    candidate_b = tmp_path / "candidate-b"
+    _write_candidate_set(candidate_a, marker="run-a")
+    _verify_and_publish(candidate_a, package_root)
+    _write_candidate_set(candidate_b, marker="run-b")
+    publication, _ = _publish_with_flaky_rename(
+        candidate_b,
+        package_root,
+        fail_on_rename_attempt=2,
+    )
+    assert publication.status == PublicationStatus.FAILED
+    staging_dirs = [
+        path
+        for path in package_root.iterdir()
+        if path.name.startswith(".proof-publish-")
+        and not path.name.startswith(".proof-publish-backup-")
+    ]
+    assert staging_dirs == []
+
+
+def test_rollback_failure_reports_explicit_diagnostic(tmp_path: Path) -> None:
+    package_root = tmp_path / "pkg"
+    candidate_a = tmp_path / "candidate-a"
+    candidate_b = tmp_path / "candidate-b"
+    _write_candidate_set(candidate_a, marker="run-a")
+    _verify_and_publish(candidate_a, package_root)
+    _write_candidate_set(candidate_b, marker="run-b")
+    publication, _ = _publish_with_flaky_rename(
+        candidate_b,
+        package_root,
+        fail_on_rename_attempt=2,
+        fail_rollback=True,
+    )
+    assert publication.status == PublicationStatus.FAILED
+    assert publication.diagnostic_code == "canonical_output_publish_rollback_failed"
+
+
 def test_old_removed_artifact_does_not_remain_stale_after_replacement(tmp_path: Path) -> None:
     package_root = tmp_path / "pkg"
     candidate = tmp_path / "candidate"
