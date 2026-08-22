@@ -27,6 +27,7 @@ from intergrax.runtime.human.declarative_hitl_grant import (
 )
 from intergrax.runtime.human.escalation import EscalationRouter
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanApprovalResolutionError, HumanPauseCoordinator
 from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence, InMemoryHumanDecisionPersistence
@@ -46,6 +47,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 TASK_ID = mint_task_id()
 RUN_ID = mint_run_id()
 ATTEMPT_ID = mint_attempt_id()
+APPROVER = local_development_approver_evidence(tenant_id="t1")
 
 
 def _active_pause(
@@ -77,6 +79,7 @@ def _resolve(
     return HumanPauseCoordinator.resolve_human_response(
         task,
         verdict,
+        approver=APPROVER,
         pause_id=pause_id,
         human_request_id=human_request_id,
         **kwargs,
@@ -205,6 +208,7 @@ def _set_human_response(
     task.options.human.verdict = verdict.value
     task.options.human.pause_id = pause_id
     task.options.human.human_request_id = human_request_id
+    task.options.human.approver = APPROVER
     task.sync_metadata()
 
 
@@ -246,6 +250,7 @@ def test_approve_missing_pause_id_fails_closed() -> None:
         HumanPauseCoordinator.resolve_human_response(
             task,
             HumanResponseVerdict.APPROVE,
+            approver=APPROVER,
             human_request_id="hr-1",
         )
 
@@ -257,6 +262,7 @@ def test_approve_missing_human_request_id_fails_closed() -> None:
         HumanPauseCoordinator.resolve_human_response(
             task,
             HumanResponseVerdict.APPROVE,
+            approver=APPROVER,
             pause_id="pause-1",
         )
 
@@ -268,6 +274,7 @@ def test_reject_missing_pause_id_fails_closed() -> None:
         HumanPauseCoordinator.resolve_human_response(
             task,
             HumanResponseVerdict.REJECT,
+            approver=APPROVER,
             human_request_id="hr-1",
         )
 
@@ -279,6 +286,7 @@ def test_reject_missing_human_request_id_fails_closed() -> None:
         HumanPauseCoordinator.resolve_human_response(
             task,
             HumanResponseVerdict.REJECT,
+            approver=APPROVER,
             pause_id="pause-1",
         )
 
@@ -361,6 +369,7 @@ async def test_intake_runner_passes_explicit_pause_identity() -> None:
     task.options.human.verdict = "approve"
     task.options.human.pause_id = "pause-intake"
     task.options.human.human_request_id = "hr-intake"
+    task.options.human.approver = APPROVER
     task.options.human.response_text = "approve"
 
     runner = NexusIntakeRunner(

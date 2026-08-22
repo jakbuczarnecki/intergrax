@@ -32,7 +32,11 @@ from typing import Callable, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from intergrax.applications._shared.harness_auth import require_harness_api_key
+from intergrax.applications._shared.harness_auth import (
+    require_harness_api_key,
+    resolve_harness_authenticated_principal,
+)
+from intergrax.applications._shared.harness_principal import harness_principal_to_approver_evidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 
 from intergrax.debug.formatters import build_trace_payload
@@ -338,6 +342,7 @@ def create_debug_router(
 
     @router.post("/tasks/{task_id}/human-response", response_model=HumanResponseResult)
     async def submit_human_response(
+        request: Request,
         task_id: str,
         body: SubmitHumanResponseRequest,
         tenant: str = Query(default="default", description="Tenant id"),
@@ -350,6 +355,12 @@ def create_debug_router(
                     "Pass registry=AgentRegistry(...) to create_debug_app."
                 ),
             )
+        principal = resolve_harness_authenticated_principal(request)
+        approver = (
+            harness_principal_to_approver_evidence(principal)
+            if principal is not None
+            else None
+        )
         try:
             verdict = HumanResponseVerdict(body.response.strip().lower())
         except ValueError as exc:
@@ -364,7 +375,7 @@ def create_debug_router(
                 verdict=verdict,
                 response_text=body.response,
                 resume_token=body.resume_token,
-                user_id=body.user_id or "debug_operator",
+                approver=approver,
             )
         except ValueError as exc:
             message = str(exc)

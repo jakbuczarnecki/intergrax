@@ -10,6 +10,10 @@ from intergrax.runtime.human.persistence_contract import HumanDecisionPersistenc
 from intergrax.runtime.task.task import Task
 
 
+class HumanDecisionPersistenceError(ValueError):
+    """Raised when human decision evidence is incomplete for persistence."""
+
+
 def normalize_human_response(task: Task) -> None:
     response = task.options.human.response_text
     if response and task.options.human.verdict is None:
@@ -21,7 +25,17 @@ def clear_consumed_human_input(task: Task) -> None:
     task.options.human.verdict = None
     task.options.human.pause_id = None
     task.options.human.human_request_id = None
+    task.options.human.approver = None
     task.sync_metadata()
+
+
+def _approver_from_resolution(task: Task) -> object:
+    resolution = task.runtime.governance.hitl_resolution
+    if resolution is None:
+        raise HumanDecisionPersistenceError(
+            "cannot persist human decision without canonical approval resolution"
+        )
+    return resolution.approver
 
 
 def persist_human_decision(
@@ -33,13 +47,14 @@ def persist_human_decision(
 ) -> None:
     if human_store is None:
         return
+    approver = _approver_from_resolution(task)
     human_request = HumanPauseCoordinator.human_request_from_task(task)
     target_raw = task.runtime.governance.escalation_target
     target = EscalationTarget(str(target_raw)) if target_raw else None
     record = build_human_decision_record(
         task_id=task.task_id,
         tenant_id=task.tenant_id,
-        user_id=task.user_id,
+        approver=approver,  # type: ignore[arg-type]
         verdict=verdict,
         response_text=response_text or str(task.options.human.response_text or ""),
         human_request_id=human_request.request_id if human_request else "",
@@ -47,5 +62,6 @@ def persist_human_decision(
         escalation_target=target,
         agent_id=task.agent_id,
         run_id=task.task_id,
+        task_subject_user_id=task.user_id,
     )
     human_store.record(record)

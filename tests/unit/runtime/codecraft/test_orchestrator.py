@@ -19,6 +19,7 @@ from intergrax.runtime.codecraft.adaptive_trigger import evaluate_craft_trigger
 from intergrax.runtime.codecraft.ownership import codecraft_exec_hitl_notes
 from intergrax.runtime.codecraft.orchestrator import CodeCraftOrchestrator
 from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanResponseVerdict, build_human_decision_record
 from intergrax.runtime.human.persistence_contract import InMemoryHumanDecisionPersistence
 from intergrax.runtime.sandbox.session import SandboxSession
@@ -132,7 +133,7 @@ def test_supervised_mode_requires_hitl(craft_ctx: ToolWiringContext) -> None:
             build_human_decision_record(
                 task_id="task-1",
                 tenant_id="tenant-1",
-                user_id="operator",
+                approver=local_development_approver_evidence(tenant_id="tenant-1", actor_id="operator"),
                 verdict=HumanResponseVerdict.APPROVE,
                 response_text="ok",
                 run_id=str(run_id),

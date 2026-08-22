@@ -15,6 +15,7 @@ from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
 from intergrax.runtime.human.declarative_hitl_grant import DeclarativeHitlGrantCoordinator
 from intergrax.runtime.human.governed_continuation_grant import GovernedContinuationGrantCoordinator
+from intergrax.contracts.human_approver import human_approval_event_payload
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
@@ -70,10 +71,19 @@ class NexusIntakeRunner:
         verdict = HumanPauseCoordinator.verdict_from_task(task)
         response_pause_id = task.options.human.pause_id
         response_request_id = task.options.human.human_request_id
+        approver = task.options.human.approver
+        if verdict in {
+            HumanResponseVerdict.REJECT,
+            HumanResponseVerdict.ESCALATE,
+            HumanResponseVerdict.APPROVE,
+        }:
+            if approver is None:
+                raise RuntimeError("approver evidence required for human approval resolution")
         if verdict == HumanResponseVerdict.REJECT:
             HumanPauseCoordinator.resolve_human_response(
                 task,
                 HumanResponseVerdict.REJECT,
+                approver=approver,  # type: ignore[arg-type]
                 pause_id=response_pause_id,
                 human_request_id=response_request_id,
                 response_text=task.options.human.response_text,
@@ -89,6 +99,7 @@ class NexusIntakeRunner:
             HumanPauseCoordinator.resolve_human_response(
                 task,
                 HumanResponseVerdict.ESCALATE,
+                approver=approver,  # type: ignore[arg-type]
                 pause_id=response_pause_id,
                 human_request_id=response_request_id,
                 response_text=task.options.human.response_text,
@@ -108,10 +119,18 @@ class NexusIntakeRunner:
             HumanPauseCoordinator.resolve_human_response(
                 task,
                 HumanResponseVerdict.APPROVE,
+                approver=approver,  # type: ignore[arg-type]
                 pause_id=response_pause_id,
                 human_request_id=response_request_id,
                 run_id=run_id,
                 response_text=task.options.human.response_text,
+            )
+            resolution = task.runtime.governance.hitl_resolution
+            assert resolution is not None
+            self.hitl.persist_human_decision(
+                task,
+                HumanResponseVerdict.APPROVE,
+                response_text=task.options.human.response_text or "",
             )
             await self.publish(
                 runtime_event_from_task_state(
@@ -123,9 +142,14 @@ class NexusIntakeRunner:
                     update={
                         "event_type": RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
                         "phase": ExecutionPhase.HUMAN_APPROVAL,
-                        "payload": {
-                            "response": task.options.human.response_text or "approve",
-                        },
+                        "payload": human_approval_event_payload(
+                            task_id=task.task_id,
+                            pause_id=resolution.pause_id,
+                            human_request_id=resolution.human_request_id,
+                            verdict=HumanResponseVerdict.APPROVE,
+                            approver=resolution.approver,
+                            response_text=task.options.human.response_text,
+                        ),
                     }
                 )
             )

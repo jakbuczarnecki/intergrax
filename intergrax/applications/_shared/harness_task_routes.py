@@ -6,13 +6,22 @@ from __future__ import annotations
 
 from typing import Any, Callable, Optional
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from intergrax.applications._shared.async_task_dispatch import get_async_status, run_async
 from intergrax.applications._shared.async_task_index_protocol import AsyncTaskIndexProtocol
-from intergrax.applications._shared.harness_auth import require_harness_api_key
+from intergrax.applications._shared.harness_auth import (
+    require_harness_api_key,
+    resolve_harness_authenticated_principal,
+)
+from intergrax.applications._shared.harness_principal import (
+    harness_principal_to_approver_evidence,
+    harness_principal_to_request_identity,
+    reject_identity_assertion_conflicts,
+)
 from intergrax.applications._shared.task_control import (
+    HitlResumeValidationError,
     cancel_active_task,
     set_task_autonomy,
 )
@@ -113,12 +122,26 @@ def mount_harness_task_routes(
         )
 
     @router.post("/{task_id}/resume")
-    async def resume_task(task_id: str, body: HarnessResumeRequest) -> dict[str, Any]:
+    async def resume_task(
+        task_id: str,
+        body: HarnessResumeRequest,
+        request: Request,
+        principal=Depends(resolve_harness_authenticated_principal),
+    ) -> dict[str, Any]:
         if checkpoint_store is None:
             raise HTTPException(
                 status_code=status.HTTP_501_NOT_IMPLEMENTED,
                 detail="checkpoint_store_not_configured",
             )
+        if principal is not None:
+            reject_identity_assertion_conflicts(
+                canonical=harness_principal_to_request_identity(principal),
+                asserted_tenant_id=body.tenant_id,
+                asserted_user_id=None,
+            )
+            approver = harness_principal_to_approver_evidence(principal)
+        else:
+            approver = None
         checkpoint = checkpoint_store.get_by_token(
             task_id,
             body.tenant_id,
@@ -128,13 +151,20 @@ def mount_harness_task_routes(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="invalid_resume_token")
         from intergrax.applications._shared.task_control import resume_task_with_token
 
-        result = await resume_task_with_token(
-            task_runner,
-            task_id=task_id,
-            resume_token=body.resume_token,
-            operator_input=body.operator_input,
-            checkpoint=checkpoint,
-        )
+        try:
+            result = await resume_task_with_token(
+                task_runner,
+                task_id=task_id,
+                resume_token=body.resume_token,
+                operator_input=body.operator_input,
+                checkpoint=checkpoint,
+                approver=approver,
+            )
+        except HitlResumeValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(exc),
+            ) from exc
         return {
             "task_id": result.task_id,
             "state": result.state.value,

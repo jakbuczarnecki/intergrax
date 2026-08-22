@@ -9,11 +9,17 @@ from typing import Any
 
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
+from intergrax.contracts.human_approver import HumanApproverEvidence, local_development_approver_evidence
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.resume_planner import build_checkpoint_resume_task
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskResult
+from intergrax.runtime.task.task_contract import TaskPauseRecord
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+
+class HitlResumeValidationError(ValueError):
+    """Fail-closed validation for shared HITL resume surfaces."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +76,51 @@ async def set_task_autonomy(task_id: str, level: AutonomyLevel) -> TaskControlRe
     )
 
 
+def _pause_record_from_checkpoint(checkpoint: TaskCheckpoint) -> TaskPauseRecord | None:
+    snapshot = Task.model_validate(checkpoint.task_snapshot)
+    return snapshot.runtime.governance.pause_record
+
+
+def _materialize_hitl_resume_input(
+    task: Task,
+    *,
+    checkpoint: TaskCheckpoint,
+    operator_input: dict[str, Any] | None,
+    approver: HumanApproverEvidence | None,
+) -> None:
+    verdict = (operator_input or {}).get("verdict")
+    if not verdict:
+        return
+
+    pause_record = _pause_record_from_checkpoint(checkpoint)
+    if pause_record is None:
+        raise HitlResumeValidationError(
+            "checkpoint has no active pause_record for human approval resume"
+        )
+
+    forged_pause_id = (operator_input or {}).get("pause_id")
+    if forged_pause_id is not None and forged_pause_id != pause_record.pause_id:
+        raise HitlResumeValidationError(
+            "operator_input pause_id conflicts with checkpoint pause_record"
+        )
+
+    forged_request_id = (operator_input or {}).get("human_request_id")
+    if forged_request_id is not None and forged_request_id != pause_record.human_request_id:
+        raise HitlResumeValidationError(
+            "operator_input human_request_id conflicts with checkpoint pause_record"
+        )
+
+    task.options.human.pause_id = pause_record.pause_id
+    task.options.human.human_request_id = pause_record.human_request_id
+
+    if approver is not None:
+        task.options.human.approver = approver
+    else:
+        task.options.human.approver = local_development_approver_evidence(
+            tenant_id=task.tenant_id,
+        )
+
+
 async def resume_task_with_token(
     runner: UnifiedTaskRunner,
     *,
@@ -77,6 +128,7 @@ async def resume_task_with_token(
     resume_token: str,
     operator_input: dict[str, Any] | None = None,
     checkpoint: TaskCheckpoint,
+    approver: HumanApproverEvidence | None = None,
 ) -> TaskResult:
     task = build_checkpoint_resume_task(checkpoint)
     task.task_id = task_id
@@ -88,4 +140,10 @@ async def resume_task_with_token(
         response_text = operator_input.get("response_text")
         if response_text:
             task.options.human.response_text = str(response_text)
+    _materialize_hitl_resume_input(
+        task,
+        checkpoint=checkpoint,
+        operator_input=operator_input,
+        approver=approver,
+    )
     return await runner.run_task(task, resume_checkpoint=checkpoint)

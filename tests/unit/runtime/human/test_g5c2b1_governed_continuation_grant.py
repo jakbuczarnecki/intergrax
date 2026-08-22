@@ -36,6 +36,7 @@ from intergrax.runtime.human.governed_continuation_grant import (
     GovernedContinuationGrantCoordinator,
     GovernedContinuationGrantError,
 )
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanApprovalResolutionError, HumanPauseCoordinator
 from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
@@ -86,6 +87,7 @@ PAUSE_A = "pause-a"
 PAUSE_B = "pause-b"
 HR_A = "hr-a"
 HR_B = "hr-b"
+APPROVER = local_development_approver_evidence(tenant_id="t1")
 
 
 def _continuation_request(
@@ -156,6 +158,7 @@ def _approve_resolution(
     return HumanPauseCoordinator.resolve_human_response(
         task,
         HumanResponseVerdict.APPROVE,
+        approver=APPROVER,
         pause_id=pause_id,
         human_request_id=human_request_id,
         run_id=run_id,
@@ -296,6 +299,7 @@ def test_stale_pause_cannot_create_grant() -> None:
         HumanPauseCoordinator.resolve_human_response(
             task,
             HumanResponseVerdict.APPROVE,
+            approver=APPROVER,
             pause_id=PAUSE_B,
             human_request_id=pause.human_request_id,
             run_id=RUN_ID,
@@ -308,6 +312,7 @@ def test_stale_pause_cannot_create_grant() -> None:
         HumanPauseCoordinator.resolve_human_response(
             task,
             HumanResponseVerdict.APPROVE,
+            approver=APPROVER,
             pause_id=pause.pause_id,
             human_request_id=HR_B,
             run_id=RUN_ID,
@@ -327,6 +332,7 @@ def test_reject_does_not_create_grant() -> None:
     HumanPauseCoordinator.resolve_human_response(
         task,
         HumanResponseVerdict.REJECT,
+        approver=APPROVER,
         pause_id=pause.pause_id,
         human_request_id=pause.human_request_id,
     )
@@ -345,6 +351,7 @@ def test_escalate_does_not_create_grant() -> None:
     HumanPauseCoordinator.resolve_human_response(
         task,
         HumanResponseVerdict.ESCALATE,
+        approver=APPROVER,
         pause_id=pause.pause_id,
         human_request_id=pause.human_request_id,
     )

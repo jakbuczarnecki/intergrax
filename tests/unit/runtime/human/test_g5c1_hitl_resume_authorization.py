@@ -12,6 +12,7 @@ from intergrax.runtime.human.declarative_hitl_grant import (
     DeclarativeHitlGrantCoordinator,
     DeclarativeHitlGrantError,
 )
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.checkpoint_builder import (
@@ -65,6 +66,7 @@ def _resolution(
         pause_id=pause_id,
         human_request_id=human_request_id,
         verdict=verdict,
+        approver=local_development_approver_evidence(tenant_id="default"),
         resolved_at="2026-08-18T00:00:00+00:00",
         run_id=RUN_ID,
     )

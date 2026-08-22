@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.agent_decision import HumanRequest
+from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.declarative_hitl import (
@@ -38,6 +39,7 @@ class TaskHumanInput(BaseModel):
     verdict: Optional[str] = None
     pause_id: Optional[str] = None
     human_request_id: Optional[str] = None
+    approver: Optional[HumanApproverEvidence] = None
 
     @property
     def is_resumed(self) -> bool:
@@ -103,10 +105,11 @@ class HumanApprovalResolution(BaseModel):
     pause_id: str
     human_request_id: str
     verdict: HumanResponseVerdict
+    approver: HumanApproverEvidence
     resolved_at: str
     run_id: Optional[str] = None
     response_text: Optional[str] = None
-    schema_version: str = "human_approval_resolution.v1"
+    schema_version: str = "human_approval_resolution.v2"
 
 
 class TaskGovernanceState(BaseModel):

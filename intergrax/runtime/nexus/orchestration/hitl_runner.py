@@ -17,6 +17,7 @@ from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookCoordinator, NexusLifecycleHookError
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator, HumanApprovalHookError
 from intergrax.runtime.human.escalation import EscalationRouter
+from intergrax.contracts.human_approver import human_approval_event_payload
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
@@ -115,6 +116,22 @@ class NexusHitlRunner:
         trace_emitter: TaskTraceEmitter,
         lifecycle: TaskLifecycle,
     ) -> TaskResult:
+        resolution = task.runtime.governance.hitl_resolution
+        payload = (
+            human_approval_event_payload(
+                task_id=resolution.task_id,
+                pause_id=resolution.pause_id,
+                human_request_id=resolution.human_request_id,
+                verdict=HumanResponseVerdict.REJECT,
+                approver=resolution.approver,
+                response_text=task.options.human.response_text,
+            )
+            if resolution is not None
+            else {
+                "decision": HumanResponseVerdict.REJECT.value,
+                "response": task.options.human.response_text,
+            }
+        )
         await self.publish(
             runtime_event_from_task_state(
                 task,
@@ -124,10 +141,7 @@ class NexusHitlRunner:
                 update={
                     "event_type": RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
                     "phase": ExecutionPhase.HUMAN_APPROVAL,
-                    "payload": {
-                        "decision": HumanResponseVerdict.REJECT.value,
-                        "response": task.options.human.response_text,
-                    },
+                    "payload": payload,
                 }
             ),
             task=task,

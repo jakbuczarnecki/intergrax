@@ -22,6 +22,7 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
 )
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import HumanApprovalResolution
@@ -39,6 +40,7 @@ def _approve_resolution(
         pause_id=pause_id,
         human_request_id=human_request_id,
         verdict=HumanResponseVerdict.APPROVE,
+        approver=local_development_approver_evidence(tenant_id="default"),
         resolved_at="2026-08-18T00:00:00+00:00",
     )
 
