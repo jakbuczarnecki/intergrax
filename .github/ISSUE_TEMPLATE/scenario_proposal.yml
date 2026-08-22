@@ -1,0 +1,87 @@
+name: Scenario Proof proposal
+description: Propose a difficult real-world AI system problem for the Intergrax Proof Library
+title: "[Scenario proposal]: "
+labels: ["triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Propose a **real problem** that may become an Intergrax Scenario Proof.
+
+        This is **not** a generic feature request, proof execution feedback, product support ticket, or integration proposal.
+
+        You do **not** need to know Intergrax architecture, RAG, memory, critic, or governance internals — describe the problem; maintainers determine mechanism fit.
+
+        See the [Intergrax Proof Library](https://github.com/jakbuczarnecki/intergrax/blob/main/docs/project/proofs/PROOF_LIBRARY.md).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What real-world problem are you trying to solve?
+      placeholder: Describe the workflow, decision, or outcome the system must support.
+    validations:
+      required: true
+
+  - type: textarea
+    id: who
+    attributes:
+      label: Who has it
+      description: Who experiences this problem or owns the decision/workflow?
+      placeholder: Role, team, or organization type (no confidential customer names required).
+    validations:
+      required: true
+
+  - type: textarea
+    id: failure_consequences
+    attributes:
+      label: Failure consequences
+      description: What happens if the AI/system gets it wrong?
+    validations:
+      required: true
+
+  - type: textarea
+    id: why_difficult
+    attributes:
+      label: Why simple AI is insufficient
+      description: What makes this difficult for a basic LLM / RAG / workflow implementation?
+    validations:
+      required: true
+
+  - type: textarea
+    id: convincing_outcome
+    attributes:
+      label: Desired convincing outcome
+      description: What would a convincing solution or proof look like?
+    validations:
+      required: true
+
+  - type: textarea
+    id: adversarial_example
+    attributes:
+      label: Failure / adversarial example
+      description: Can you describe a failure, conflict, edge case, or adversarial condition the system should survive?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_data
+    attributes:
+      label: Reproduction / data (optional)
+      description: Can the problem be reproduced with public or synthetic data/fixtures?
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        **Do not include secrets, credentials, customer-confidential data, or proprietary information.**
+        Sanitize sensitive details before submitting.
+
+  - type: checkboxes
+    id: acknowledgement
+    attributes:
+      label: Submission acknowledgement
+      options:
+        - label: I understand that submitting a proposal does not guarantee implementation, and that Intergrax is source-available under evaluation/collaboration terms (see LICENSE/COLLABORATION).
+          required: true

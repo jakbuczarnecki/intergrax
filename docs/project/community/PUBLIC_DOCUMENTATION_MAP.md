@@ -29,6 +29,7 @@ flowchart TD
     S -->|Check workflow fit| U[Use Cases]
     S -->|Evaluate business or strategic fit| W[WHY_INTERGRAX]
     S -->|Check current evidence| R[PROOFS]
+    S -->|Explore difficult scenarios| PL[Proof Library]
     S -->|Evaluate one claim| E[Evaluation Guide]
     S -->|Build| B[Builder Quick Start]
     S -->|Review architecture| A[Architecture Overview]
@@ -59,11 +60,14 @@ with Try LKW as the repository’s primary product action.
 | Review as an architect or platform engineer | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) — then [Platform Map](../../../README.md#explore-the-intergrax-platform) for grouped domain exploration |
 | Assess fit as a CTO, product lead or technical buyer | [Use Cases](../overview/USE_CASES.md) |
 | Evaluate as an investor, business decision maker or strategic evaluator | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) — then [PROOFS](../proofs/PROOFS.md) for evidence |
+| Explore difficult real-world Scenario Proofs | [Proof Library](../proofs/PROOF_LIBRARY.md) |
+| Audit evidence and public claims | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
 | Explore Governed Execution | [Governed Execution](../architecture/GOVERNED_EXECUTION.md) |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) — see [Strategic directions](#strategic-directions) below |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
+| Explore Scenario Proofs (problem-first) | [Proof Library](../proofs/PROOF_LIBRARY.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
 | Compare Intergrax with modern agent/platform alternatives | [Alternatives and trade-offs](../overview/ALTERNATIVES_AND_TRADEOFFS.md) |
 | Run an evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
@@ -205,6 +209,7 @@ Use the [intent table](#start-by-what-you-want-to-do) first. This quick index he
 | [Token Optimization guide](../capabilities/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
 | [Agent Marketplace concept](../overview/AGENT_MARKETPLACE.md) | Future ecosystem direction — governed agent distribution concept and reference architecture (not a shipped product) |
 | [Intergrax Proofs](../proofs/PROOFS.md) | Current evidence status / public evidence dashboard — status legend and verification paths |
+| [Intergrax Proof Library](../proofs/PROOF_LIBRARY.md) | Problem-first Scenario Proof catalog — difficult real-world problems and executable scenarios |
 
 Maintainer contracts and claim controls are intentionally excluded
 from normal reader navigation and remain indexed

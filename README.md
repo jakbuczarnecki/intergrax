@@ -13,7 +13,7 @@ those mechanisms for every workflow.
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
 [![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44e.svg)](docs/project/proofs/PROOFS.md)
 
-**[See LKW](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)** · **[Run LKW locally](applications/local_workspace_application/docs/product/QUICKSTART.md)** · **[Inspect Governed Evidence Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md)** · **[Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)**
+**[Explore Proof Library](docs/project/proofs/PROOF_LIBRARY.md)** · **[See LKW](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)** · **[Run LKW locally](applications/local_workspace_application/docs/product/QUICKSTART.md)** · **[Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)**
 
 <a href="docs/project/assets/public/readme/fullsize/intergrax-ecosystem-hero.md">
 <picture>
@@ -48,7 +48,8 @@ those mechanisms for every workflow.
 | AI Engineer / Builder | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) | Build a runnable agent + application stack |
 | Architect / Principal Engineer | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) | Understand responsibilities, boundaries, and system design |
 | CTO / Engineering Leader | [Use Cases](docs/project/overview/USE_CASES.md) | Decide whether Intergrax fits a concrete workflow |
-| Technical Reviewer | [PROOFS](docs/project/proofs/PROOFS.md) | Inspect what is actually implemented / boundedly proven |
+| Scenario explorer | [Proof Library](docs/project/proofs/PROOF_LIBRARY.md) | Explore difficult real-world problems and executable Scenario Proofs |
+| Technical Reviewer | [PROOFS](docs/project/proofs/PROOFS.md) | Audit evidence and public claims — what is implemented / boundedly proven |
 | Investor / Strategic Evaluator | [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md) | Understand the platform thesis, LKW wedge, and open validation gates |
 | Design Partner / Integrator | [Partners](docs/project/community/PARTNERS.md) | Explore a bounded evaluation or pilot around a concrete workflow |
 
@@ -200,6 +201,18 @@ or all-provider certification.
 
 ---
 
+## Real problems. Executable evidence.
+
+Intergrax Scenario Proofs start with difficult AI system problems, not platform features.
+
+See how the system behaves under failures, conflicting evidence, unsafe actions, recovery, governance, and other real-world conditions.
+
+**[Explore the Proof Library →](docs/project/proofs/PROOF_LIBRARY.md)**
+
+Have a difficult AI problem? **[Propose a Scenario Proof →](https://github.com/jakbuczarnecki/intergrax/issues/new?template=scenario_proposal.yml)**
+
+---
+
 <a id="explore-the-intergrax-platform"></a>
 ## Explore the Intergrax Platform
 
@@ -251,9 +264,10 @@ Project-level mental model:
 
 | Route | Start here |
 | --- | --- |
+| **Explore difficult scenarios** | [Proof Library](docs/project/proofs/PROOF_LIBRARY.md) |
 | **Build** | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
 | **Understand architecture** | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
-| **Inspect evidence** | [PROOFS](docs/project/proofs/PROOFS.md) |
+| **Audit evidence and claims** | [PROOFS](docs/project/proofs/PROOFS.md) |
 | **Explore all documentation** | [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md) · [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
 
 ---

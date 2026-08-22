@@ -8,6 +8,12 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 **Evidence before promises.**
 
+> Looking for problem-driven executable scenarios?
+> **[Explore the Intergrax Proof Library](PROOF_LIBRARY.md).**
+>
+> **This page** is the evidence-and-claims dashboard.
+> The Proof Library is the problem-first scenario catalog.
+
 Intergrax separates **implemented mechanisms**, **bounded verification**, **partial product capability**, **planned work**, and **claims that are not currently supported**. This page is the public proof dashboard — no internal task IDs required.
 
 > [!NOTE]
