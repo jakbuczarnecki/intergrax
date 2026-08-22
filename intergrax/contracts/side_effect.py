@@ -70,6 +70,7 @@ class AgentRunCheckpoint(BaseModel):
     tenant_id: str
     agent_id: str
     step_index: int = Field(ge=0)
+    revision: int = Field(default=1, ge=1)
     state_root: dict[str, Any] = Field(default_factory=dict)
     side_effect_ledger: list[SideEffectRecord] = Field(default_factory=list)
     trace_step_count: int = Field(default=0, ge=0)

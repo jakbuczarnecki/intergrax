@@ -7,10 +7,12 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
 from uuid import uuid4
 
+from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_TASK_CHECKPOINTS_DB,
     ENV_TASK_CHECKPOINTS_DB,
@@ -18,6 +20,11 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
+from intergrax.runtime.long_running.scheduler_claim import (
+    ScheduledResumeCancellationError,
+    ScheduledResumeClaim,
+    SchedulerActionClaim,
+)
 from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
     ScheduledResumeStatus,
@@ -38,6 +45,10 @@ _PAUSED_TASK_STATES = (
     TaskState.WAITING_FOR_RESOURCES.value,
     TaskState.NEEDS_MORE_INFORMATION.value,
 )
+
+_SCHEDULER_LEDGER_STARTED = "started"
+_SCHEDULER_LEDGER_COMPLETED = "completed"
+_SCHEDULER_LEDGER_UNCERTAIN = "uncertain"
 
 
 def resolve_task_checkpoints_db_path(explicit: Path | None = None) -> Path:
@@ -111,10 +122,26 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                     run_at_utc TEXT NOT NULL,
                     status TEXT NOT NULL DEFAULT 'pending',
                     resume_metadata_json TEXT NOT NULL DEFAULT '{}',
-                    created_at_utc TEXT NOT NULL
+                    created_at_utc TEXT NOT NULL,
+                    owner_id TEXT,
+                    lease_expires_at_utc TEXT,
+                    fence INTEGER NOT NULL DEFAULT 0
                 );
                 """
             )
+            scheduled_columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(scheduled_resumes)").fetchall()
+            }
+            if "owner_id" not in scheduled_columns:
+                conn.execute("ALTER TABLE scheduled_resumes ADD COLUMN owner_id TEXT")
+            if "lease_expires_at_utc" not in scheduled_columns:
+                conn.execute(
+                    "ALTER TABLE scheduled_resumes ADD COLUMN lease_expires_at_utc TEXT",
+                )
+            if "fence" not in scheduled_columns:
+                conn.execute(
+                    "ALTER TABLE scheduled_resumes ADD COLUMN fence INTEGER NOT NULL DEFAULT 0",
+                )
             conn.execute(
                 """
                 CREATE INDEX IF NOT EXISTS idx_scheduled_resumes_due
@@ -126,10 +153,31 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 CREATE TABLE IF NOT EXISTS scheduler_ledger (
                     ledger_key TEXT PRIMARY KEY,
                     action TEXT NOT NULL,
-                    executed_at_utc TEXT NOT NULL
+                    executed_at_utc TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'completed',
+                    owner_id TEXT,
+                    lease_expires_at_utc TEXT,
+                    fence INTEGER NOT NULL DEFAULT 0
                 );
                 """
             )
+            ledger_columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(scheduler_ledger)").fetchall()
+            }
+            if "status" not in ledger_columns:
+                conn.execute(
+                    "ALTER TABLE scheduler_ledger ADD COLUMN status TEXT NOT NULL DEFAULT 'completed'",
+                )
+            if "owner_id" not in ledger_columns:
+                conn.execute("ALTER TABLE scheduler_ledger ADD COLUMN owner_id TEXT")
+            if "lease_expires_at_utc" not in ledger_columns:
+                conn.execute(
+                    "ALTER TABLE scheduler_ledger ADD COLUMN lease_expires_at_utc TEXT",
+                )
+            if "fence" not in ledger_columns:
+                conn.execute(
+                    "ALTER TABLE scheduler_ledger ADD COLUMN fence INTEGER NOT NULL DEFAULT 0",
+                )
 
     def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
         with self._connection() as conn:
@@ -244,6 +292,112 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             )
         return entry
 
+    def claim_due(
+        self,
+        *,
+        before_utc_iso: str,
+        owner_id: str,
+        lease_seconds: int,
+        limit: int = 100,
+    ) -> List[ScheduledResumeClaim]:
+        now = datetime.now(UTC)
+        lease_expires_at = now + timedelta(seconds=lease_seconds)
+        claims: List[ScheduledResumeClaim] = []
+        with self._connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                """
+                UPDATE scheduled_resumes
+                SET status = ?
+                WHERE status = ?
+                  AND lease_expires_at_utc IS NOT NULL
+                  AND lease_expires_at_utc < ?
+                """,
+                (
+                    ScheduledResumeStatus.UNCERTAIN.value,
+                    ScheduledResumeStatus.RUNNING.value,
+                    now.isoformat(),
+                ),
+            )
+            rows = conn.execute(
+                """
+                SELECT schedule_id FROM scheduled_resumes
+                WHERE status = ? AND run_at_utc <= ?
+                ORDER BY run_at_utc ASC
+                LIMIT ?
+                """,
+                (ScheduledResumeStatus.PENDING.value, before_utc_iso, limit),
+            ).fetchall()
+            for row in rows:
+                schedule_id = row["schedule_id"]
+                fence_row = conn.execute(
+                    "SELECT fence FROM scheduled_resumes WHERE schedule_id = ?",
+                    (schedule_id,),
+                ).fetchone()
+                current_fence = int(fence_row["fence"]) if fence_row else 0
+                new_fence = current_fence + 1
+                updated = conn.execute(
+                    """
+                    UPDATE scheduled_resumes
+                    SET status = ?, owner_id = ?, lease_expires_at_utc = ?, fence = ?
+                    WHERE schedule_id = ? AND status = ?
+                    """,
+                    (
+                        ScheduledResumeStatus.RUNNING.value,
+                        owner_id,
+                        lease_expires_at.isoformat(),
+                        new_fence,
+                        schedule_id,
+                        ScheduledResumeStatus.PENDING.value,
+                    ),
+                )
+                if updated.rowcount != 1:
+                    continue
+                full_row = conn.execute(
+                    "SELECT * FROM scheduled_resumes WHERE schedule_id = ?",
+                    (schedule_id,),
+                ).fetchone()
+                entry = self._row_to_scheduled_resume(full_row)
+                claims.append(
+                    ScheduledResumeClaim(
+                        schedule_id=schedule_id,
+                        owner_id=owner_id,
+                        lease_expires_at=lease_expires_at,
+                        fence=new_fence,
+                        entry=entry,
+                    ),
+                )
+            conn.commit()
+        return claims
+
+    def complete_claim(self, claim: ScheduledResumeClaim) -> None:
+        with self._connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            updated = conn.execute(
+                """
+                UPDATE scheduled_resumes
+                SET status = ?, owner_id = NULL, lease_expires_at_utc = NULL
+                WHERE schedule_id = ?
+                  AND status = ?
+                  AND owner_id = ?
+                  AND fence = ?
+                """,
+                (
+                    ScheduledResumeStatus.COMPLETED.value,
+                    claim.schedule_id,
+                    ScheduledResumeStatus.RUNNING.value,
+                    claim.owner_id,
+                    claim.fence,
+                ),
+            )
+            if updated.rowcount != 1:
+                conn.rollback()
+                raise StaleClaimError(
+                    f"Stale scheduled resume completion rejected for "
+                    f"schedule_id={claim.schedule_id} fence={claim.fence}.",
+                )
+            conn.commit()
+
     def list_due(
         self,
         *,
@@ -275,35 +429,187 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
 
     def cancel(self, schedule_id: str) -> None:
         with self._connection() as conn:
-            conn.execute(
-                """
-                UPDATE scheduled_resumes
-                SET status = ?
-                WHERE schedule_id = ?
-                """,
-                (ScheduledResumeStatus.CANCELLED.value, schedule_id),
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT status FROM scheduled_resumes WHERE schedule_id = ?",
+                (schedule_id,),
+            ).fetchone()
+            if row is None:
+                conn.rollback()
+                raise ScheduledResumeCancellationError(
+                    f"Scheduled resume not found: schedule_id={schedule_id}",
+                )
+            status = ScheduledResumeStatus(row["status"])
+            if status == ScheduledResumeStatus.PENDING:
+                conn.execute(
+                    """
+                    UPDATE scheduled_resumes
+                    SET status = ?
+                    WHERE schedule_id = ? AND status = ?
+                    """,
+                    (ScheduledResumeStatus.CANCELLED.value, schedule_id, status.value),
+                )
+                conn.commit()
+                return
+            conn.rollback()
+            raise ScheduledResumeCancellationError(
+                f"Cannot cancel schedule_id={schedule_id} with status={status.value}",
             )
 
     def has_action(self, ledger_key: str) -> bool:
         with self._connection() as conn:
             row = conn.execute(
-                "SELECT 1 FROM scheduler_ledger WHERE ledger_key = ? LIMIT 1",
+                "SELECT status FROM scheduler_ledger WHERE ledger_key = ? LIMIT 1",
                 (ledger_key,),
             ).fetchone()
-        return row is not None
+        if row is None:
+            return False
+        return row["status"] == _SCHEDULER_LEDGER_COMPLETED
+
+    def claim_action(
+        self,
+        ledger_key: str,
+        owner_id: str,
+        lease_seconds: int,
+        *,
+        action: str,
+    ) -> Optional[SchedulerActionClaim]:
+        now = datetime.now(UTC)
+        lease_expires_at = now + timedelta(seconds=lease_seconds)
+        with self._connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                """
+                UPDATE scheduler_ledger
+                SET status = ?
+                WHERE status = ?
+                  AND lease_expires_at_utc IS NOT NULL
+                  AND lease_expires_at_utc < ?
+                """,
+                (
+                    _SCHEDULER_LEDGER_UNCERTAIN,
+                    _SCHEDULER_LEDGER_STARTED,
+                    now.isoformat(),
+                ),
+            )
+            row = conn.execute(
+                "SELECT status, fence FROM scheduler_ledger WHERE ledger_key = ?",
+                (ledger_key,),
+            ).fetchone()
+            if row is None:
+                fence = 1
+                conn.execute(
+                    """
+                    INSERT INTO scheduler_ledger (
+                        ledger_key, action, executed_at_utc, status,
+                        owner_id, lease_expires_at_utc, fence
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        ledger_key,
+                        action,
+                        now.isoformat(),
+                        _SCHEDULER_LEDGER_STARTED,
+                        owner_id,
+                        lease_expires_at.isoformat(),
+                        fence,
+                    ),
+                )
+                conn.commit()
+                return SchedulerActionClaim(
+                    ledger_key=ledger_key,
+                    action=action,
+                    owner_id=owner_id,
+                    lease_expires_at=lease_expires_at,
+                    fence=fence,
+                )
+
+            status = row["status"]
+            if status == _SCHEDULER_LEDGER_COMPLETED:
+                conn.rollback()
+                return None
+            if status == _SCHEDULER_LEDGER_UNCERTAIN:
+                conn.commit()
+                return None
+            if status == _SCHEDULER_LEDGER_STARTED:
+                lease_row = conn.execute(
+                    "SELECT lease_expires_at_utc FROM scheduler_ledger WHERE ledger_key = ?",
+                    (ledger_key,),
+                ).fetchone()
+                lease_raw = lease_row["lease_expires_at_utc"]
+                if lease_raw is not None:
+                    lease_dt = datetime.fromisoformat(lease_raw)
+                    if lease_dt.tzinfo is None:
+                        lease_dt = lease_dt.replace(tzinfo=UTC)
+                    if lease_dt > now:
+                        conn.rollback()
+                        return None
+                conn.execute(
+                    """
+                    UPDATE scheduler_ledger
+                    SET status = ?
+                    WHERE ledger_key = ? AND status = ?
+                    """,
+                    (_SCHEDULER_LEDGER_UNCERTAIN, ledger_key, _SCHEDULER_LEDGER_STARTED),
+                )
+                conn.commit()
+                return None
+
+            conn.rollback()
+            return None
+
+    def complete_action(self, claim: SchedulerActionClaim) -> None:
+        now = datetime.now(UTC)
+        with self._connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            updated = conn.execute(
+                """
+                UPDATE scheduler_ledger
+                SET status = ?, executed_at_utc = ?,
+                    owner_id = NULL, lease_expires_at_utc = NULL
+                WHERE ledger_key = ?
+                  AND status = ?
+                  AND owner_id = ?
+                  AND fence = ?
+                """,
+                (
+                    _SCHEDULER_LEDGER_COMPLETED,
+                    now.isoformat(),
+                    claim.ledger_key,
+                    _SCHEDULER_LEDGER_STARTED,
+                    claim.owner_id,
+                    claim.fence,
+                ),
+            )
+            if updated.rowcount != 1:
+                conn.rollback()
+                raise StaleClaimError(
+                    f"Stale scheduler action completion rejected for "
+                    f"ledger_key={claim.ledger_key} fence={claim.fence}.",
+                )
+            conn.commit()
 
     def record_action(self, ledger_key: str, *, action: str) -> None:
+        now = datetime.now(UTC)
         with self._connection() as conn:
             conn.execute(
                 """
-                INSERT OR REPLACE INTO scheduler_ledger (ledger_key, action, executed_at_utc)
-                VALUES (?, ?, ?)
+                INSERT OR REPLACE INTO scheduler_ledger (
+                    ledger_key, action, executed_at_utc, status,
+                    owner_id, lease_expires_at_utc, fence
+                ) VALUES (?, ?, ?, ?, NULL, NULL, 0)
                 """,
-                (ledger_key, action, SystemTimeProvider.utc_now().isoformat()),
+                (ledger_key, action, now.isoformat(), _SCHEDULER_LEDGER_COMPLETED),
             )
 
     @staticmethod
     def _row_to_scheduled_resume(row: sqlite3.Row) -> ScheduledResume:
+        keys = row.keys()
+        owner_id = row["owner_id"] if "owner_id" in keys else None
+        lease_expires_at_utc = (
+            row["lease_expires_at_utc"] if "lease_expires_at_utc" in keys else None
+        )
+        fence = int(row["fence"]) if "fence" in keys else 0
         return ScheduledResume(
             schedule_id=row["schedule_id"],
             task_id=row["task_id"],
@@ -313,6 +619,9 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             status=ScheduledResumeStatus(row["status"]),
             resume_metadata=json.loads(row["resume_metadata_json"]),
             created_at_utc=row["created_at_utc"],
+            owner_id=owner_id,
+            lease_expires_at_utc=lease_expires_at_utc,
+            fence=fence,
         )
 
     @staticmethod
