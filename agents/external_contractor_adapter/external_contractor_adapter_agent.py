@@ -15,7 +15,9 @@ from intergrax.agents.authoring.patterns.types import (
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
-from intergrax.runtime.policy.meaningful_side_effect import MeaningfulSideEffectEvaluator
+from intergrax.runtime.policy.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationBoundary,
+)
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -68,11 +70,11 @@ class ExternalContractorAdapterAgent(ReflexAgent):
         self,
         *,
         external_work: ExternalWorkIntegration | None = None,
-        side_effect_policy: MeaningfulSideEffectEvaluator | None = None,
+        authorization_boundary: MeaningfulSideEffectAuthorizationBoundary | None = None,
     ) -> None:
         # Host / tests inject Protocol implementations — never constructed here.
         self._external_work = external_work
-        self._side_effect_policy = side_effect_policy
+        self._authorization_boundary = authorization_boundary
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         from intergrax.agents.defaults import harness_production_mode
@@ -120,7 +122,7 @@ class ExternalContractorAdapterAgent(ReflexAgent):
         return await run_domain_job(
             step_ctx,
             external_work=self._external_work,
-            side_effect_policy=self._side_effect_policy,
+            authorization_boundary=self._authorization_boundary,
         )
 
     def evaluate(

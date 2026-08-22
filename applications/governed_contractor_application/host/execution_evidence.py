@@ -142,7 +142,9 @@ def _provider_was_invoked(result: ExternalWorkAdapterResult) -> bool:
     if reason in {
         "policy_denied",
         "side_effect_identity_missing",
-        "side_effect_policy_missing",
+        "side_effect_authorization_boundary_missing",
+        "side_effect_tenant_missing",
+        "side_effect_workspace_missing",
         "side_effect_principal_missing",
         "external_work_integration_missing",
     }:

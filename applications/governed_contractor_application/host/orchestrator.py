@@ -23,6 +23,7 @@ from external_contractor_adapter.external_work_adapter import (
     META_CORRELATION_ID,
     META_IDEMPOTENCY_KEY,
     META_PROVIDER_ID,
+    META_WORKSPACE_REF,
     ExternalWorkAdapter,
 )
 from external_contractor_adapter.schemas.adapt_result import ExternalWorkAdapterResult
@@ -73,6 +74,14 @@ _ACTION_TO_OPERATION: Mapping[str, str] = {
 }
 
 META_PROVIDER_INVOCATION_ID = "provider_invocation_id"
+
+
+def _workspace_from_metadata(metadata: Mapping[str, Any]) -> str | None:
+    raw = metadata.get(META_WORKSPACE_REF)
+    if raw is None:
+        return None
+    normalized = str(raw).strip()
+    return normalized or None
 
 
 @dataclass(frozen=True, slots=True)
@@ -294,6 +303,7 @@ class GovernedExternalWorkOrchestrator:
             idempotency_key=idempotency_key,
             principal_id=principal_id,
             tenant_id=tenant_id,
+            workspace_id=_workspace_from_metadata(meta),
         )
         # Attach invocation id for GER / legacy compose paths.
         adapter_result = adapter_result.model_copy(
@@ -366,6 +376,7 @@ class GovernedExternalWorkOrchestrator:
             create_result.snapshot.correlation,
             principal_id=principal_id,
             tenant_id=tenant_id,
+            workspace_id=_workspace_from_metadata(meta),
             idempotency_key=idempotency_key,
         )
         adapter_result = adapter_result.model_copy(

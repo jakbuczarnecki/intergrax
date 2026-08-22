@@ -24,6 +24,7 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
     ACTION_CREATE_EXTERNAL_WORK,
 )
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
@@ -95,6 +96,7 @@ def _meta() -> dict[str, object]:
         ),
         "external_work.principal_id": "partner-demo-user",
         "external_work.tenant_id": "partner-demo-tenant",
+        "external_work.workspace_ref": "workspace-a",
     }
 
 
@@ -133,7 +135,13 @@ def test_partner_attested_create_and_accept_lifecycle() -> None:
         policy_bundle=bundle,
     )
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter, _ = allow_adapter(
+        fake,
+        policy=policy,
+        tenant_id="partner-demo-tenant",
+        workspace_id="workspace-a",
+        principal_id="partner-demo-user",
+    )
     attestor = build_deterministic_test_attestor(
         key_id="governed-contractor-test-host-1",
         clock=lambda: _T0,
@@ -203,6 +211,7 @@ def test_partner_attested_create_and_accept_lifecycle() -> None:
         idempotency_key=_ACCEPT_IDEMP,
         principal_id="partner-demo-user",
         tenant_id="partner-demo-tenant",
+        workspace_id="workspace-a",
     )
     assert accepted.used is True
     assert accepted.proof is not None
@@ -260,7 +269,13 @@ def test_deny_produces_no_receipt_and_no_provider_create() -> None:
         policy_bundle=bundle,
     )
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter, _ = allow_adapter(
+        fake,
+        policy=policy,
+        tenant_id="partner-demo-tenant",
+        workspace_id="workspace-a",
+        principal_id="partner-demo-user",
+    )
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     denied = adapter.create_and_map(
         adapter.build_create_request(
@@ -290,7 +305,13 @@ def test_attestation_failure_does_not_repeat_provider() -> None:
         policy_bundle=bundle,
     )
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter, _ = allow_adapter(
+        fake,
+        policy=policy,
+        tenant_id="partner-demo-tenant",
+        workspace_id="workspace-a",
+        principal_id="partner-demo-user",
+    )
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id=_TASK_ID,
@@ -325,7 +346,13 @@ def test_signer_exception_after_create_does_not_retry_provider() -> None:
         policy_bundle=bundle,
     )
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter, _ = allow_adapter(
+        fake,
+        policy=policy,
+        tenant_id="partner-demo-tenant",
+        workspace_id="workspace-a",
+        principal_id="partner-demo-user",
+    )
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id=_TASK_ID,
@@ -355,7 +382,13 @@ def test_attestation_failure_after_accept_does_not_repeat_accept() -> None:
         policy_bundle=bundle,
     )
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter, _ = allow_adapter(
+        fake,
+        policy=policy,
+        tenant_id="partner-demo-tenant",
+        workspace_id="workspace-a",
+        principal_id="partner-demo-user",
+    )
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id=_TASK_ID,
@@ -388,6 +421,7 @@ def test_attestation_failure_after_accept_does_not_repeat_accept() -> None:
         idempotency_key=_ACCEPT_IDEMP,
         principal_id="partner-demo-user",
         tenant_id="partner-demo-tenant",
+        workspace_id="workspace-a",
     )
     accept_calls = fake.accept_calls
     outcome = produce_attested_receipt_for_adapter_result(

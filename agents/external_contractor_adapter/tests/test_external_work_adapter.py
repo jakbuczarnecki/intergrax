@@ -22,14 +22,19 @@ from external_contractor_adapter.external_work_adapter import (
     META_QUOTE_ACCEPTANCE,
     META_SCOPE_DESCRIPTION,
     META_SCOPE_DIGEST,
+    META_WORKSPACE_REF,
     ExternalWorkAdapter,
     adapt_from_step_metadata,
 )
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
 from external_contractor_adapter.tests.fakes.deterministic_side_effect_policy import (
     DeterministicMeaningfulSideEffectPolicy,
+)
+from intergrax.runtime.policy.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationBoundary,
 )
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
@@ -63,6 +68,9 @@ def _meta(**overrides: object) -> dict[str, object]:
         META_SCOPE_DIGEST: _DIGEST,
         META_IDEMPOTENCY_KEY: "idem-gec3-1",
         META_BUDGET_LIMIT: MoneyAmount(amount=Decimal("40.00"), currency="USD"),
+        META_WORKSPACE_REF: "workspace-a",
+        "external_work.principal_id": "u1",
+        "external_work.tenant_id": "tenant-a",
     }
     payload.update(overrides)
     return payload
@@ -77,10 +85,8 @@ def _adapter(
     *,
     policy: DeterministicMeaningfulSideEffectPolicy | None = None,
 ) -> ExternalWorkAdapter:
-    return ExternalWorkAdapter(
-        fake or DeterministicExternalWorkFake(),
-        side_effect_policy=policy or _allow_policy(),
-    )
+    adapter, _ = allow_adapter(fake or DeterministicExternalWorkFake(), policy=policy)
+    return adapter
 
 
 def _acceptance(**overrides: object) -> QuoteAcceptanceEvidence:
@@ -111,15 +117,17 @@ def test_fake_conforms_to_protocol() -> None:
 def test_adapter_creation_and_dependency_injection() -> None:
     fake = DeterministicExternalWorkFake()
     policy = _allow_policy()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter, _ = allow_adapter(fake, policy=policy)
+    boundary = adapter.authorization_boundary
+    assert isinstance(boundary, MeaningfulSideEffectAuthorizationBoundary)
     agent = ExternalContractorAdapterAgent(
         external_work=fake,
-        side_effect_policy=policy,
+        authorization_boundary=boundary,
     )
     assert adapter.integration is fake
-    assert adapter.side_effect_policy is policy
+    assert adapter.authorization_boundary is boundary
     assert agent._external_work is fake
-    assert agent._side_effect_policy is policy
+    assert agent._authorization_boundary is boundary
 
 
 @pytest.mark.unit
@@ -237,6 +245,7 @@ def test_forward_quote_acceptance_does_not_decide() -> None:
         created.snapshot.correlation,
         acceptance,
         idempotency_key="idem-accept-1",
+        workspace_id="workspace-a",
     )
     assert forwarded.used is True
     assert forwarded.status == ExternalWorkStatus.ACCEPTED
@@ -288,7 +297,7 @@ def test_adapt_from_step_metadata_with_acceptance_forward() -> None:
                 META_ACCEPTANCE_IDEMPOTENCY_KEY: "idem-accept-meta",
             }
         ),
-        side_effect_policy=policy,
+        authorization_boundary=allow_adapter(DeterministicExternalWorkFake(), policy=policy)[0].authorization_boundary,
     )
     assert result.used is True
     assert result.status == ExternalWorkStatus.ACCEPTED
@@ -302,7 +311,7 @@ async def test_agent_run_with_injected_fake() -> None:
     policy = _allow_policy()
     agent = ExternalContractorAdapterAgent(
         external_work=fake,
-        side_effect_policy=policy,
+        authorization_boundary=allow_adapter(DeterministicExternalWorkFake(), policy=policy)[0].authorization_boundary,
     )
     result = await agent.run(
         AgentRunRequest(
@@ -313,7 +322,8 @@ async def test_agent_run_with_injected_fake() -> None:
                 **{
                     META_IDEMPOTENCY_KEY: "idem-agent-run",
                     "external_work.principal_id": "u1",
-                    "external_work.tenant_id": "t1",
+                    "external_work.tenant_id": "tenant-a",
+                    "external_work.workspace_ref": "workspace-a",
                 }
             ),
         )

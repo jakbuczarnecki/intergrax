@@ -7,7 +7,9 @@ from intergrax.applications.contracts.build_context import ApplicationBuildConte
 from intergrax.applications.contracts.factory import AgentFactory
 from intergrax.applications.contracts.manifest import AgentBinding
 from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
-from intergrax.runtime.policy.meaningful_side_effect import MeaningfulSideEffectEvaluator
+from intergrax.runtime.policy.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationBoundary,
+)
 from external_contractor_adapter.external_contractor_adapter_agent import (
     ExternalContractorAdapterAgent,
 )
@@ -28,20 +30,20 @@ def _external_work_from_context(ctx: ApplicationBuildContext) -> ExternalWorkInt
     return raw
 
 
-def _side_effect_policy_from_context(
+def _authorization_boundary_from_context(
     ctx: ApplicationBuildContext,
-) -> MeaningfulSideEffectEvaluator | None:
-    """Optional host injection of meaningful side-effect policy (GEC-5)."""
+) -> MeaningfulSideEffectAuthorizationBoundary | None:
+    """Optional host injection of canonical meaningful side-effect authorization."""
     settings = ctx.settings
     if settings is None:
         return None
-    raw = getattr(settings, "meaningful_side_effect_policy", None)
+    raw = getattr(settings, "meaningful_side_effect_authorization_boundary", None)
     if raw is None:
         return None
-    if not isinstance(raw, MeaningfulSideEffectEvaluator):
+    if not isinstance(raw, MeaningfulSideEffectAuthorizationBoundary):
         raise TypeError(
-            "settings.meaningful_side_effect_policy must implement "
-            "MeaningfulSideEffectEvaluator"
+            "settings.meaningful_side_effect_authorization_boundary must be a "
+            "MeaningfulSideEffectAuthorizationBoundary"
         )
     return raw
 
@@ -52,7 +54,7 @@ def _build_external_contractor_adapter(
 ) -> Agent:
     return ExternalContractorAdapterAgent(
         external_work=_external_work_from_context(ctx),
-        side_effect_policy=_side_effect_policy_from_context(ctx),
+        authorization_boundary=_authorization_boundary_from_context(ctx),
     )
 
 
