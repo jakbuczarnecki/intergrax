@@ -76,7 +76,7 @@ Every published Scenario Proof should let you inspect:
 
 Accepted Scenario Proofs appear here after passing canonical Proof Library acceptance gates.
 
-**Current status:** The library is being bootstrapped. The first flagship Scenario Proof is currently being designed under the canonical authoring process.
+**Current status:** The library is being bootstrapped. The first flagship Scenario Proof has passed design qualification and is awaiting implementation under the canonical authoring process.
 
 No accepted scenarios are published yet. When entries appear, each will follow this shape:
 

@@ -14,6 +14,10 @@ CANONICAL_SCENARIOS_ROOT = Path("platform_proofs") / "scenarios"
 SCENARIO_SLUG_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 FORBIDDEN_SLUG_SEGMENTS = frozenset({".", ".."})
 
+# Canonical lifecycle wording — see PLATFORM_PROOF_AUTHORING_GUIDE § Scenario README standard.
+LIFECYCLE_DESIGN_NOT_ACCEPTED = "DESIGN / NOT YET ACCEPTED"
+LIFECYCLE_ACCEPTED_FOR_IMPLEMENTATION = "ACCEPTED FOR IMPLEMENTATION"
+
 
 class ScenarioSlugError(ValueError):
     """Invalid or unsafe scenario slug."""
@@ -73,15 +77,48 @@ def scenario_package_root(repo_root: Path, slug: ScenarioSlug) -> Path:
     return package_root
 
 
+VISUAL_STORY_AUTHORING_HINT = (
+    "<!-- Add scenario-owned explanatory visual after Scenario Quality Gate.\n"
+    "     Use light/dark SVG per docs/project/technical/guides/DOCUMENTATION_DESIGN_SYSTEM.md.\n"
+    "     Do not use decorative imagery or fake execution results. -->"
+)
+
+
 def build_design_readme(title: str) -> str:
     return (
         f"# {title}\n\n"
-        "## Scenario identity\n\n"
-        f"- **Title:** {title}\n"
-        "- **Public question:** _(design-stage — to be qualified)_\n"
-        "- **Lifecycle status:** DESIGN / NOT YET ACCEPTED\n"
-        "- **Executable proof:** No executable proof, evidence, or report exists yet. "
-        "This package is a scenario design document awaiting human Scenario Quality Gate.\n\n"
+        "> **_(Public question — qualify before Scenario Quality Gate)_**\n\n"
+        "> _(One- or two-sentence public explanation — qualify.)_\n\n"
+        "> [!NOTE]\n"
+        f"> **Scenario status:** {LIFECYCLE_DESIGN_NOT_ACCEPTED} — "
+        "awaiting human Scenario Quality Gate; no executable proof, evidence, or report exists yet.\n\n"
+        "## At a glance\n\n"
+        "| Field | Value |\n"
+        "| --- | --- |\n"
+        "| **Problem** | _(qualify)_ |\n"
+        "| **Observed impact** | _(qualify)_ |\n"
+        "| **Trap** | _(qualify)_ |\n"
+        "| **Decision risk** | _(qualify)_ |\n"
+        "| **Scenario outcome** | RESOLVED or UNRESOLVED |\n"
+        f"| **Status** | {LIFECYCLE_DESIGN_NOT_ACCEPTED} |\n"
+        "| **Proof class** | SCENARIO |\n\n"
+        "## Visual proof story\n\n"
+        f"{VISUAL_STORY_AUTHORING_HINT}\n\n"
+        "_Visual placeholder — enrich after Scenario Quality Gate._\n\n"
+        "## The real problem\n\n"
+        "_Brief public summary — expand in § A. SCENARIO._\n\n"
+        "## The trap\n\n"
+        "_What the naive answer gets wrong — expand in § A. SCENARIO._\n\n"
+        "## What this proof attempts to guarantee\n\n"
+        "_Bounded claim summary — expand in § B. SOLUTION._\n\n"
+        "## Scenario outcomes\n\n"
+        "_RESOLVED and UNRESOLVED semantics — expand in § B. SOLUTION._\n\n"
+        "## PASS / FAIL (summary)\n\n"
+        "| PASS | FAIL |\n"
+        "| --- | --- |\n"
+        "| _(qualify)_ | _(qualify)_ |\n\n"
+        "_Full normative contract in § B. SOLUTION._\n\n"
+        "---\n\n"
         "## A. SCENARIO\n\n"
         "### Real problem\n\n"
         "_To be qualified._\n\n"
@@ -103,6 +140,14 @@ def build_design_readme(title: str) -> str:
         "_To be qualified._\n\n"
         "### Scenario Quality Gate\n\n"
         "_To be qualified._\n\n"
+        "### Conditional authoring prompts _(complete when relevant)_\n\n"
+        "**Hidden truth / evaluator leakage:** Does this scenario have hidden fixture truth "
+        "or expected behavior? If yes, how is it isolated from model-visible context?\n\n"
+        "**Evidence boundary:** What is legitimately observable by the system?\n\n"
+        "**Alternative hypotheses / failure alternatives:** What plausible alternatives must "
+        "the system distinguish?\n\n"
+        "**Independence:** If any verifier/reviewer/critic is called independent, what exactly "
+        "makes it independent?\n\n"
         "## B. SOLUTION\n\n"
         "### Desired behavior\n\n"
         "_To be qualified._\n\n"
@@ -127,12 +172,21 @@ def build_design_readme(title: str) -> str:
         "## D. GAP DECISION\n\n"
         "NOT YET PERFORMED\n\n"
         "## E. PROOF BUILD\n\n"
-        "NOT STARTED — blocked on scenario acceptance and capability-fit.\n"
+        "NOT STARTED — blocked on scenario acceptance and capability-fit.\n\n"
+        "## Latest verified run\n\n"
+        "> [!NOTE]\n"
+        "> **Not yet available.** Populated only after a real proof run and report acceptance.\n\n"
+        "## Report / evidence / source / run\n\n"
+        "> [!NOTE]\n"
+        "> **Not yet available.** Links appear here after implementation and execution.\n"
     )
 
 
 DESIGN_STAGE_REQUIRED_SECTIONS: tuple[str, ...] = (
-    "## Scenario identity",
+    "## At a glance",
+    "## Visual proof story",
+    "## The real problem",
+    "## The trap",
     "## A. SCENARIO",
     "### Real problem",
     "### Who has the problem",
@@ -144,6 +198,7 @@ DESIGN_STAGE_REQUIRED_SECTIONS: tuple[str, ...] = (
     "### Skeptic Challenge",
     "### Adversarial conditions",
     "### Scenario Quality Gate",
+    "### Conditional authoring prompts",
     "## B. SOLUTION",
     "### Desired behavior",
     "### Step-by-step story",
@@ -157,9 +212,11 @@ DESIGN_STAGE_REQUIRED_SECTIONS: tuple[str, ...] = (
     "## C. INTERGRAX FIT",
     "## D. GAP DECISION",
     "## E. PROOF BUILD",
-    "DESIGN / NOT YET ACCEPTED",
+    "## Latest verified run",
+    LIFECYCLE_DESIGN_NOT_ACCEPTED,
     "NOT YET PERFORMED",
     "NOT STARTED — blocked on scenario acceptance and capability-fit.",
+    VISUAL_STORY_AUTHORING_HINT.split("\n", maxsplit=1)[0],
 )
 
 DESIGN_STAGE_FORBIDDEN_ARTIFACT_NAMES: frozenset[str] = frozenset(

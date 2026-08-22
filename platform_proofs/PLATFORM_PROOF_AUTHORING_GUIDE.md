@@ -1053,30 +1053,146 @@ Canonical output must be safe to commit and link from public documentation. Neve
 
 ---
 
-## README contract for every SCENARIO
+## Scenario README public presentation standard
 
-Each Scenario package README must be **problem-first**. Required order:
+Every Scenario Proof README has **two layers** that must coexist:
+
+1. **Public / fast understanding** — a skeptical visitor grasps the proof in ~20–30 seconds.
+2. **Rigorous proof contract** — a technical reviewer can continue into semantics, falsification, PASS/FAIL, isolation, evidence rules, Intergrax fit, implementation, and run/report.
+
+The canonical **A/B/C/D/E** semantic model remains authoritative. The public visual grammar is a **presentation layer** over it, not a replacement. Do **not** trade rigor for marketing or duplicate the same information merely to create visual sections.
+
+### Public grammar (presentation order)
 
 ```text
-1. Real problem
-2. Who has this problem / why it matters
-3. Failure mode
-4. Claim under test
-5. What would falsify the claim
-6. Intergrax mechanisms exercised
-7. Real / fixture boundaries
-8. Adversarial cases
-9. How the proof works
-10. Quick start / configuration
-11. Validate
-12. Run
-13. View report / artifacts
-14. Cleanup
-15. Limitations
-16. What this does NOT prove
+HERO / IDENTITY
+↓
+AT A GLANCE
+↓
+VISUAL PROOF STORY
+↓
+THE REAL PROBLEM
+↓
+THE TRAP (why the obvious answer fails)
+↓
+WHAT THIS PROOF ATTEMPTS TO GUARANTEE
+↓
+SCENARIO OUTCOMES (RESOLVED / UNRESOLVED)
+↓
+PASS / FAIL (summary table)
+↓
+--- lifecycle contract sections ---
+↓
+A. SCENARIO
+B. SOLUTION
+C. INTERGRAX FIT
+D. GAP DECISION
+E. PROOF BUILD
+↓
+LATEST VERIFIED RUN        # post-implementation only
+↓
+REPORT / EVIDENCE / SOURCE / RUN
 ```
 
-Do **not** lead with platform-domain internals. A visitor should understand the problem before learning which Intergrax layers solve it.
+Public sections may precede A/B/C/D/E. Those headings remain machine, test, and human navigation anchors.
+
+### Lifecycle status wording
+
+Use precise lifecycle language — never bare `ACCEPTED` in a way that could be confused with proof PASS.
+
+| Status | Meaning |
+| --- | --- |
+| `DESIGN / NOT YET ACCEPTED` | Scaffold or design in progress; Scenario Quality Gate not passed |
+| `ACCEPTED FOR IMPLEMENTATION` | Scenario concept accepted; no executable proof, evidence, or report yet |
+| Post-implementation | Show factual execution state in **Latest verified run** (verdict, SHA, timestamps, invariants) |
+
+At **DESIGN** stage do **not** show PASS badges, executable status, or sample runtime numbers.
+
+### Mandatory across all Scenario Proofs
+
+- identity / public question;
+- lifecycle status (truthful);
+- real problem (public summary + § A detail);
+- consequence / risk;
+- WOW and Skeptic Challenge (§ A);
+- adversarial conditions;
+- claim;
+- PASS / FAIL (summary + normative detail in § B);
+- excluded claims / limitations;
+- A/B/C/D/E lifecycle sections;
+- **At a glance** table (filled during qualification);
+- at least one explanatory visual flow once the scenario is mature enough (after Scenario Quality Gate).
+
+### Conditional (only when relevant)
+
+Do **not** force irrelevant concepts on every scenario:
+
+- ground truth isolation;
+- verifier independence;
+- competing hypotheses;
+- temporal admissibility;
+- side-effect safety;
+- HITL;
+- recovery;
+- governance.
+
+Use **Conditional authoring prompts** in the scaffold when a scenario may need them.
+
+### At a glance contract
+
+Near the top, every mature Scenario README exposes:
+
+| Field | Purpose |
+| --- | --- |
+| Problem | Workflow or operational pain |
+| Observed impact | Measurable or observable harm |
+| Trap | Naive failure / correlation trap |
+| Decision risk | What goes wrong if diagnosis is wrong |
+| Scenario outcome | RESOLVED / UNRESOLVED semantics |
+| Status | Current lifecycle wording |
+| Proof class | SCENARIO |
+
+Scaffold creates placeholders; authors must fill during qualification.
+
+### Visual assets
+
+- Store scenario-owned assets under `platform_proofs/scenarios/<slug>/assets/`.
+- Prefer self-contained **light/dark SVG** pairs per [DOCUMENTATION_DESIGN_SYSTEM.md](../docs/project/technical/guides/DOCUMENTATION_DESIGN_SYSTEM.md).
+- Use `<picture>` with relative paths; wrap in `<a href="...-light.svg">` for full-size navigation on GitHub.
+- **Do not** auto-generate meaningless SVGs in the scaffold — use an authoring HTML comment placeholder until after the quality gate.
+- **Do not** create decorative artwork, fake dashboards, or screenshots of nonexistent execution.
+
+Target: one strong proof-story diagram; one supporting diagram when it materially improves understanding; clear tables and callouts.
+
+### Post-run sections
+
+**Latest verified run** — populated only after real execution and report acceptance:
+
+- verdict; proof version; Intergrax SHA; model/provider; run timestamp; RESOLVED/UNRESOLVED; key invariant results.
+- CTA links: View report · View evidence · View source · Run locally.
+
+At design stage: omit or show a clearly disabled **Not yet available** note. No fake badges or numbers.
+
+### README contract for executable SCENARIO packages
+
+After implementation, each README must also document phases relevant to execution (do not lead with platform internals):
+
+```text
+1. Real problem (already in public layer / § A)
+2. Claim / PASS / FAIL (§ B)
+3. Intergrax mechanisms exercised (§ C)
+4. Real / fixture boundaries (§ B when relevant)
+5. Quick start / configuration
+6. Validate
+7. Run
+8. View report / artifacts
+9. Cleanup
+10. Limitations / excluded claims
+11. Latest verified run
+12. Report / evidence / source / run links
+```
+
+A visitor should understand the problem before learning which Intergrax layers solve it.
 
 ---
 
@@ -1204,16 +1320,24 @@ Before implementation, create the canonical design-stage package with:
 uv run python scripts/proof/create_scenario_proof.py --slug <scenario_slug> --title "<title>"
 ```
 
-This produces `platform_proofs/scenarios/<scenario_slug>/README.md` only — no fake `proof.json`, runtime entrypoint, or evidence artifacts.
+This produces `platform_proofs/scenarios/<scenario_slug>/README.md` only — no fake `proof.json`, runtime entrypoint, evidence artifacts, or auto-generated SVGs.
 
 Workflow:
 
 ```text
-canonical scaffold
+canonical scaffold (R2 public README structure)
 → design-stage package
+→ qualify problem (fill At a glance, § A)
 → human Scenario Quality Gate
-→ implementation only after acceptance
+→ enrich public README to canonical visual standard (SVG + public grammar)
+→ capability-fit (§ C)
+→ implementation (§ E)
+→ real run
+→ report + evidence
+→ publication (Proof Library catalog entry)
 ```
+
+Complete the visual standard **before** implementation so the proof story is coherent. Post-run sections populate only after execution.
 
 Do not manually invent scenario directory shapes or skip the quality gate.
 
@@ -1221,7 +1345,7 @@ Do not manually invent scenario directory shapes or skip the quality gate.
 
 ## Current reference proof
 
-No executable Scenario or Conformance platform proof is designated as the canonical reference example yet. The first Scenario Proof (`ai_incident_investigation`) is in **design qualification** under `platform_proofs/scenarios/`.
+No executable Scenario or Conformance platform proof is designated as the canonical reference example yet. The first Scenario Proof (`ai_incident_investigation`) is **ACCEPTED FOR IMPLEMENTATION** — design qualification passed; implementation and executable evidence have not started. Public presentation reference: [`scenarios/ai_incident_investigation/README.md`](scenarios/ai_incident_investigation/README.md).
 
 See [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md).
 

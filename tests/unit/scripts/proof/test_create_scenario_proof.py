@@ -10,6 +10,8 @@ from scripts.proof.create_scenario_proof import (
     CANONICAL_SCENARIOS_ROOT,
     DESIGN_STAGE_FORBIDDEN_ARTIFACT_NAMES,
     DESIGN_STAGE_REQUIRED_SECTIONS,
+    LIFECYCLE_DESIGN_NOT_ACCEPTED,
+    VISUAL_STORY_AUTHORING_HINT,
     ScenarioDesignRequest,
     ScenarioPackageExistsError,
     ScenarioSlugError,
@@ -118,3 +120,38 @@ def test_scenario_one_slug_generated_by_scaffold(tmp_path: Path) -> None:
     readme = package.readme_path.read_text(encoding="utf-8")
     assert title in readme
     assert package.package_root.parent.name == "scenarios"
+
+
+def test_generated_readme_has_public_question_placeholder() -> None:
+    readme = build_design_readme("Placeholder Title")
+    assert "Public question" in readme
+    assert "_(Public question" in readme
+
+
+def test_generated_readme_has_at_a_glance_table() -> None:
+    readme = build_design_readme("Placeholder Title")
+    assert "## At a glance" in readme
+    assert "| **Problem** |" in readme
+    assert "| **Trap** |" in readme
+    assert LIFECYCLE_DESIGN_NOT_ACCEPTED in readme
+
+
+def test_generated_readme_has_visual_story_authoring_hint() -> None:
+    readme = build_design_readme("Placeholder Title")
+    assert VISUAL_STORY_AUTHORING_HINT in readme
+    assert "decorative imagery" in readme
+
+
+def test_generated_readme_has_conditional_authoring_prompts() -> None:
+    readme = build_design_readme("Placeholder Title")
+    assert "Hidden truth / evaluator leakage" in readme
+    assert "Evidence boundary" in readme
+    assert "Alternative hypotheses" in readme
+    assert "Independence" in readme
+
+
+def test_generated_readme_has_post_run_section_placeholders() -> None:
+    readme = build_design_readme("Placeholder Title")
+    assert "## Latest verified run" in readme
+    assert "## Report / evidence / source / run" in readme
+    assert "Not yet available" in readme
