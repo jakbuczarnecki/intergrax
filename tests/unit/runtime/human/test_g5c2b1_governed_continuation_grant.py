@@ -555,6 +555,10 @@ async def test_intake_runner_reject_clears_grant(
 
     runner, _published = _build_intake_runner_with_hitl()
     lifecycle = TaskLifecycle()
-    outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=AsyncMock())
+    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+    try:
+        outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=AsyncMock())
+    finally:
+        reset_active_execution_identity(token)
     assert outcome.early_result is not None
     assert task.runtime.governance.governed_continuation_grant is None

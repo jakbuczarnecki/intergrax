@@ -277,6 +277,7 @@ class NexusLoop:
             finalize_trace=self._finalize_persisting_trace,
             maybe_checkpoint=self._maybe_checkpoint_long_running,
             persist_human_decision=self._persist_human_decision,
+            execution_identity=self._execution_identity,
         )
         self._graph_runner = NexusGraphRunner(
             registry=self._registry,

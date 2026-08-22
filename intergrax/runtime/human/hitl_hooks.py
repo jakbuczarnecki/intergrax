@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Optional
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.execution_identity import require_active_execution_identity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
@@ -49,9 +50,11 @@ def human_approval_hook_context(
     if verdict is not None:
         runtime_state["human_verdict"] = verdict
 
+    run_id, _ = require_active_execution_identity()
+
     return HookContext(
         task_id=task.task_id,
-        run_id=task.task_id,
+        run_id=run_id,
         agent_id=agent_id or task.agent_id or (execution.agent_id if execution else None),
         phase=ExecutionPhase.HUMAN_APPROVAL,
         runtime_state=runtime_state,

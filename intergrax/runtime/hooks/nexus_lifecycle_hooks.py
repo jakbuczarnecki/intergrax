@@ -9,6 +9,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any, Optional
 
 from intergrax.contracts.event_severity import EventSeverity
+from intergrax.contracts.execution_identity import require_active_execution_identity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
@@ -32,9 +33,10 @@ def nexus_lifecycle_hook_context(
     phase: ExecutionPhase,
     extra: Optional[dict[str, Any]] = None,
 ) -> HookContext:
+    run_id, _ = require_active_execution_identity()
     return HookContext(
         task_id=task.task_id,
-        run_id=task.task_id,
+        run_id=run_id,
         agent_id=task.agent_id,
         phase=phase,
         runtime_state={
@@ -188,7 +190,7 @@ async def publish_nexus_lifecycle_hook_failure(
     event = build_platform_signal_event(
         kind=kind,
         task_id=task.task_id,
-        run_id=task.task_id,
+        run_id=require_active_execution_identity()[0],
         tenant_id=task.tenant_id,
         agent_id=task.agent_id,
         phase=phase,
