@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import inspect
 import re
 from pathlib import Path
 
 import pytest
 
-from scripts.proof.intergrax_platform_proof_evidence import proof_authored_report_safe_text
+from scripts.proof.intergrax_platform_proof_evidence import (
+    DomainExtensionEvidence,
+    ToolsSqlInvestigationExtension,
+    proof_authored_report_safe_text,
+)
 from scripts.proof.intergrax_platform_proof_html_renderer import (
     PLATFORM_PROOF_HTML_RENDERER_VERSION,
     PLATFORM_PROOF_REPORT_SCHEMA_VERSION,
@@ -33,6 +38,12 @@ _RAW_EVIDENCE_DUMP_RE = re.compile(r'"proof_identity"\s*:\s*\{')
 _CHAIN_OF_THOUGHT_RE = re.compile(
     r"chain[- ]of[- ]thought|private_reasoning|scratchpad",
     re.IGNORECASE,
+)
+_TOOLS_EXTENSION_LABELS = (
+    "Successful tool calls",
+    "Investigation proof steps",
+    "Follow-up valid basis",
+    "Stop reason",
 )
 
 
@@ -217,3 +228,49 @@ def test_preview_artifact_generation() -> None:
     preview_path = preview_dir / "report.html"
     write_platform_proof_report(build_pass_evidence(), output_path=preview_path)
     assert preview_path.is_file()
+
+
+def test_renderer_module_has_no_tools_extension_import() -> None:
+    import scripts.proof.intergrax_platform_proof_html_renderer as renderer_module
+
+    source = inspect.getsource(renderer_module)
+    assert "ToolsSqlInvestigationExtension" not in source
+    assert ".tools" not in source
+
+
+def test_evidence_without_domain_extension_omits_domain_section() -> None:
+    html = _render_pass()
+    assert "Report identity" in html
+    assert "Provenance" in html
+    assert 'id="domain-extension"' not in html
+
+
+def test_evidence_with_tools_domain_extension_renders_neutral_notice_only() -> None:
+    evidence = build_pass_evidence().model_copy(
+        update={
+            "domain_extension": DomainExtensionEvidence(
+                tools=ToolsSqlInvestigationExtension(
+                    successful_tool_calls=3,
+                    investigation_proof_step_count=5,
+                    stop_reason="max_calls",
+                    follow_up_has_valid_basis=True,
+                )
+            )
+        }
+    )
+    html = render_platform_proof_report(evidence)
+    for label in _TOOLS_EXTENSION_LABELS:
+        assert label not in html
+    assert "Specialized presentation is not installed" in html
+    assert "Report identity" in html
+    assert "Provenance" in html
+    assert "tools.tool-call-trace" not in html
+
+
+def test_common_evidence_html_unchanged_without_domain_extension() -> None:
+    evidence = build_pass_evidence()
+    first = render_platform_proof_report(evidence)
+    second = render_platform_proof_report(
+        evidence.model_copy(update={"domain_extension": DomainExtensionEvidence()})
+    )
+    assert first == second

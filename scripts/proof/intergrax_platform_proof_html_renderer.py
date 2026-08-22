@@ -3,7 +3,7 @@
 """Generic self-contained HTML renderer for Platform Proof evidence (PP-REPORT-3).
 
 ``PlatformProofEvidence`` → ``report.html`` projection. Presentation only — not
-independent truth. Domain-specific sections are reserved via ``_render_domain_extensions``.
+independent truth. Domain-specific presentation is delegated to PP-REPORT-4+.
 """
 
 from __future__ import annotations
@@ -43,7 +43,6 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     ReportSafeVisibility,
     ReproductionEvidence,
     ScenarioEvidence,
-    ToolsSqlInvestigationExtension,
     proof_authored_report_safe_text,
 )
 
@@ -827,37 +826,22 @@ def _render_provenance(provenance: ProvenanceEvidence, identity: ProofIdentityEv
     )
 
 
-def _render_domain_extension_scalar_summary(
-    extension: ToolsSqlInvestigationExtension,
-) -> str:
-    """Bounded generic summary — no raw SQL strings."""
-    items = [
-        ("Extension ID", extension.extension_id),
-        ("Successful tool calls", str(extension.successful_tool_calls)),
-        ("Investigation proof steps", str(extension.investigation_proof_step_count)),
-        ("Stop reason", extension.stop_reason or "—"),
-    ]
-    if extension.follow_up_has_valid_basis is not None:
-        items.append(
-            ("Follow-up valid basis", "yes" if extension.follow_up_has_valid_basis else "no")
-        )
-    rows = "".join(
-        f"<tr><th scope=\"row\">{_escape(label)}</th><td>{_escape(value)}</td></tr>"
-        for label, value in items
-    )
-    return (
-        "<h3>Domain-specific evidence</h3>"
-        "<table><tbody>"
-        f"{rows}"
-        "</tbody></table>"
+def _domain_extension_has_data(domain_extension: DomainExtensionEvidence) -> bool:
+    return any(
+        getattr(domain_extension, field_name) is not None
+        for field_name in DomainExtensionEvidence.model_fields
     )
 
 
 def _render_domain_extensions(domain_extension: DomainExtensionEvidence) -> str:
-    """Reserved hook for future domain section renderers (PP-REPORT-4+)."""
-    if domain_extension.tools is not None:
-        return _render_domain_extension_scalar_summary(domain_extension.tools)
-    return ""
+    """Domain-neutral boundary — specialized renderers attach in PP-REPORT-4+."""
+    if not _domain_extension_has_data(domain_extension):
+        return ""
+    return (
+        "<h3>Domain-specific evidence</h3>"
+        "<p class=\"muted\">Domain-specific evidence is present. "
+        "Specialized presentation is not installed.</p>"
+    )
 
 
 def _render_report_identity(evidence: PlatformProofEvidence) -> str:
