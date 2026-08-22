@@ -18,6 +18,7 @@ from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.runtime.long_running.scheduler import LongRunningScheduler
 from intergrax.runtime.long_running.scheduler_claim import ScheduledResumeCancellationError
 from intergrax.runtime.long_running.scheduled_resume import ScheduledResume, ScheduledResumeStatus
+from intergrax.runtime.long_running.scheduled_resume import ScheduledResumePersistence
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
@@ -371,6 +372,99 @@ async def test_paused_checkpoint_is_timeout_eligible() -> None:
     task = Task.model_validate(_paused_checkpoint().task_snapshot)
     assert HumanTimeoutCoordinator.is_expired(task)
     assert HumanTimeoutCoordinator.planned_timeout_action(task) is not None
+
+
+@pytest.mark.asyncio
+async def test_timeout_without_ledger_no_side_effects(tmp_path) -> None:
+    store = SQLiteTaskCheckpointStore(db_path=tmp_path / "no_ledger.db")
+    executor = _CountingResumeExecutor()
+    notifier = _CountingNotificationAdapter()
+    scheduler = LongRunningScheduler(
+        store,
+        executor,
+        schedule_store=None,
+        ledger=None,
+        notification_adapter=notifier,
+        owner_id="solo",
+    )
+    checkpoint = _paused_checkpoint()
+    store.save(checkpoint)
+    expired = datetime.now(timezone.utc)
+    processed = await scheduler.tick(now=expired)
+    assert processed == 0
+    assert executor.calls == 0
+    assert notifier.count == 0
+
+
+@pytest.mark.asyncio
+async def test_timeout_claim_precedes_notify_and_resume(tmp_path) -> None:
+    store = SQLiteTaskCheckpointStore(db_path=tmp_path / "claim_order.db")
+    executor = _CountingResumeExecutor()
+    notifier = _CountingNotificationAdapter()
+    call_order: list[str] = []
+    original_claim = store.claim_action
+
+    def tracking_claim(*args, **kwargs):
+        call_order.append("claim")
+        return original_claim(*args, **kwargs)
+
+    original_notify = notifier.notify
+
+    async def tracking_notify(message):
+        call_order.append("notify")
+        return await original_notify(message)
+
+    original_resume = executor.resume_task
+
+    async def tracking_resume(task, *, checkpoint):
+        call_order.append("resume")
+        return await original_resume(task, checkpoint=checkpoint)
+
+    executor.resume_task = tracking_resume  # type: ignore[method-assign]
+    notifier.notify = tracking_notify  # type: ignore[method-assign]
+
+    scheduler = LongRunningScheduler(
+        store,
+        executor,
+        schedule_store=None,
+        ledger=store,
+        notification_adapter=notifier,
+        owner_id="order-test",
+    )
+    checkpoint = _paused_checkpoint()
+    store.save(checkpoint)
+    with patch.object(store, "claim_action", side_effect=tracking_claim):
+        expired = datetime.now(timezone.utc)
+        assert await scheduler.tick(now=expired) == 1
+    assert call_order == ["claim", "notify", "resume"]
+
+
+def test_scheduled_resume_persistence_has_no_unfenced_mark_completed() -> None:
+    assert "mark_completed" not in ScheduledResumePersistence.__dict__
+
+
+@pytest.mark.asyncio
+async def test_active_running_claim_cannot_complete_without_claim(tmp_path) -> None:
+    store = SQLiteTaskCheckpointStore(db_path=tmp_path / "no_unfenced.db")
+    run_at = (datetime.now(timezone.utc) - timedelta(seconds=5)).isoformat()
+    entry = store.schedule(
+        ScheduledResume(
+            task_id="task-1",
+            tenant_id="t1",
+            resume_token="token-1",
+            run_at_utc=run_at,
+        ),
+    )
+    claim = store.claim_due(
+        before_utc_iso=datetime.now(timezone.utc).isoformat(),
+        owner_id="worker-a",
+        lease_seconds=300,
+    )[0]
+    assert claim.schedule_id == entry.schedule_id
+    assert not hasattr(store, "mark_completed")
+    stale = claim.model_copy(update={"owner_id": "worker-b"})
+    with pytest.raises(StaleClaimError):
+        store.complete_claim(stale)
 
 
 @pytest.mark.asyncio

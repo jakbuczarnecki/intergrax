@@ -78,12 +78,15 @@ def make_checkpoint_hook(
         return None
 
     initial_revision: int | None = None
-    if store is not None and resume_enabled:
+    if persistence.resume_enabled:
         existing = store.get_latest(run_id, tenant_id)
         if existing is not None:
             initial_revision = existing.revision
 
+    current_revision: int | None = initial_revision
+
     async def _hook(state_root: dict[str, Any], step_index: int) -> None:
+        nonlocal current_revision
         checkpoint = build_checkpoint(
             run_id=run_id,
             tenant_id=tenant_id,
@@ -95,7 +98,5 @@ def make_checkpoint_hook(
         )
         saved = store.save(checkpoint, expected_revision=current_revision)
         current_revision = saved.revision
-
-    current_revision: int | None = initial_revision
 
     return _hook

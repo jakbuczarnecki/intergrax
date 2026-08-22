@@ -72,9 +72,5 @@ class ScheduledResumePersistence:
         """Fence-validated completion for a claimed scheduled resume."""
         raise NotImplementedError
 
-    def mark_completed(self, schedule_id: str) -> None:
-        """Legacy completion without ownership fencing — prefer ``complete_claim``."""
-        raise NotImplementedError
-
     def cancel(self, schedule_id: str) -> None:
         raise NotImplementedError

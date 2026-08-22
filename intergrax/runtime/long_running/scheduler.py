@@ -187,16 +187,22 @@ class LongRunningScheduler:
             if action is None:
                 continue
 
-            action_claim: Optional[SchedulerActionClaim] = None
-            if self._ledger is not None:
-                action_claim = self._ledger.claim_action(
-                    ledger_key,
-                    self._owner_id,
-                    self._lease_seconds,
-                    action="human_timeout",
+            if self._ledger is None:
+                logger.warning(
+                    "Skipping expired human timeout for checkpoint %s: "
+                    "scheduler ledger is not configured",
+                    checkpoint.checkpoint_id,
                 )
-                if action_claim is None:
-                    continue
+                continue
+
+            action_claim = self._ledger.claim_action(
+                ledger_key,
+                self._owner_id,
+                self._lease_seconds,
+                action="human_timeout",
+            )
+            if action_claim is None:
+                continue
 
             verdict = timeout_action_to_verdict(action)
             resume_task = build_timeout_resume_task(

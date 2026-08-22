@@ -11,6 +11,11 @@ from intergrax.agents.persistence.checkpoint_store import (
     SQLiteAgentCheckpointStore,
     build_checkpoint,
 )
+from intergrax.agents.persistence.session_persistence import (
+    AgentSessionPersistence,
+    make_checkpoint_hook,
+)
+from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
 from intergrax.contracts.checkpoint_revision import (
     CheckpointRevisionConflictError,
     CheckpointStepRegressionError,
@@ -156,3 +161,121 @@ def test_stale_rejection_preserves_payload(store_factory: str, tmp_path) -> None
     assert latest is not None
     assert latest.revision == 2
     assert latest.state_root["side_effect_root"]["committed"] is True
+
+
+def _session_persistence(store: InMemoryAgentCheckpointStore, *, resume_enabled: bool = True):
+    return AgentSessionPersistence(store, SideEffectLedger(), resume_enabled)
+
+
+def _hook_kwargs(
+    store: InMemoryAgentCheckpointStore,
+    *,
+    resume_enabled: bool = True,
+    run_id: str = "run-hook",
+):
+    return dict(
+        persistence=_session_persistence(store, resume_enabled=resume_enabled),
+        run_id=run_id,
+        tenant_id="tenant-a",
+        agent_id="legal",
+        trace_step_count_fn=lambda: 1,
+    )
+
+
+@pytest.mark.asyncio
+async def test_new_session_hook_revisions_increment() -> None:
+    store = InMemoryAgentCheckpointStore()
+    hook = make_checkpoint_hook(**_hook_kwargs(store))
+    assert hook is not None
+    await hook({"acp.state.v1": {"_version": 0}}, 0)
+    await hook({"acp.state.v1": {"_version": 1}}, 1)
+    latest = store.get_latest("run-hook", "tenant-a")
+    assert latest is not None
+    assert latest.revision == 2
+    assert latest.step_index == 1
+
+
+@pytest.mark.asyncio
+async def test_resumed_session_hook_expected_revision() -> None:
+    store = InMemoryAgentCheckpointStore()
+    store.save(
+        build_checkpoint(
+            run_id="run-resume",
+            tenant_id="tenant-a",
+            agent_id="legal",
+            step_index=0,
+            state_root={"acp.state.v1": {"_version": 0}},
+            side_effect_ledger=[],
+            trace_step_count=1,
+        ),
+    )
+    for step in range(1, 4):
+        current = store.get_latest("run-resume", "tenant-a")
+        assert current is not None
+        store.save(
+            build_checkpoint(
+                run_id="run-resume",
+                tenant_id="tenant-a",
+                agent_id="legal",
+                step_index=step,
+                state_root={"acp.state.v1": {"_version": step}},
+                side_effect_ledger=[],
+                trace_step_count=step + 1,
+            ),
+            expected_revision=current.revision,
+        )
+    latest_before = store.get_latest("run-resume", "tenant-a")
+    assert latest_before is not None
+    assert latest_before.revision == 4
+
+    hook = make_checkpoint_hook(
+        **_hook_kwargs(store, run_id="run-resume"),
+    )
+    assert hook is not None
+    await hook({"acp.state.v1": {"_version": 4}}, 4)
+    latest = store.get_latest("run-resume", "tenant-a")
+    assert latest is not None
+    assert latest.revision == 5
+    assert latest.step_index == 4
+
+
+@pytest.mark.asyncio
+async def test_stale_session_hook_conflict() -> None:
+    store = InMemoryAgentCheckpointStore()
+    store.save(
+        build_checkpoint(
+            run_id="run-stale",
+            tenant_id="tenant-a",
+            agent_id="legal",
+            step_index=0,
+            state_root={"acp.state.v1": {"_version": 0}},
+            side_effect_ledger=[],
+            trace_step_count=1,
+        ),
+    )
+    for step in range(1, 4):
+        current = store.get_latest("run-stale", "tenant-a")
+        assert current is not None
+        store.save(
+            build_checkpoint(
+                run_id="run-stale",
+                tenant_id="tenant-a",
+                agent_id="legal",
+                step_index=step,
+                state_root={"acp.state.v1": {"_version": step}},
+                side_effect_ledger=[],
+                trace_step_count=step + 1,
+            ),
+            expected_revision=current.revision,
+        )
+
+    hook_a = make_checkpoint_hook(**_hook_kwargs(store, run_id="run-stale"))
+    hook_b = make_checkpoint_hook(**_hook_kwargs(store, run_id="run-stale"))
+    assert hook_a is not None and hook_b is not None
+    await hook_b({"acp.state.v1": {"_version": 4}}, 4)
+    with pytest.raises(CheckpointRevisionConflictError):
+        await hook_a({"acp.state.v1": {"_version": 5}}, 5)
+    latest = store.get_latest("run-stale", "tenant-a")
+    assert latest is not None
+    assert latest.revision == 5
+    assert latest.step_index == 4

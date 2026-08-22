@@ -416,17 +416,6 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             ).fetchall()
         return [self._row_to_scheduled_resume(row) for row in rows]
 
-    def mark_completed(self, schedule_id: str) -> None:
-        with self._connection() as conn:
-            conn.execute(
-                """
-                UPDATE scheduled_resumes
-                SET status = ?
-                WHERE schedule_id = ?
-                """,
-                (ScheduledResumeStatus.COMPLETED.value, schedule_id),
-            )
-
     def cancel(self, schedule_id: str) -> None:
         with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
