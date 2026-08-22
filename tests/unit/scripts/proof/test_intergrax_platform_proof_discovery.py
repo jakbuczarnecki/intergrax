@@ -57,10 +57,12 @@ def _minimal_descriptor_payload(
 ) -> dict[str, object]:
     return {
         "schema_version": PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION,
+        "library_class": "CONFORMANCE",
         "proof_id": proof_id,
         "title": f"{proof_id} title",
         "domain": "test_domain",
         "proof_kind": "example",
+        "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
         "profiles": ["quick"],
         "command": {

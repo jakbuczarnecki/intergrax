@@ -68,6 +68,21 @@ Platform proofs sit between integration tests and product proofs. They prove the
 
 ---
 
+## B2. Proof Library classes
+
+The Intergrax Proof Library distinguishes two public proof classes via `library_class` in `proof.json` (`intergrax.platform_proof_descriptor.v2`):
+
+| Class | Role | Entry framing |
+|-------|------|---------------|
+| **CONFORMANCE PROOF** | Executable evidence for a **specific platform mechanism** — CI, regression, development confidence, architectural assurance | Mechanism-first |
+| **SCENARIO PROOF** | Executable falsification of a **real problem / failure mode**; may exercise multiple mechanisms and domains | Problem-first |
+
+Both classes remain **executable falsification attempts** — not demos. **Platform proof ≠ product proof.** Product proofs stay under `applications/`.
+
+`domain` remains technical primary ownership / grouping metadata for the runner and `ProofManifestEntry`. Library metadata (`library_class`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not need to appear in runner-facing manifest entries unless execution requires it.
+
+---
+
 ## C. Source of truth
 
 For a platform proof, resolve conflicts in this order:
@@ -116,7 +131,7 @@ platform_proofs/<domain>/<proof_slug>/
 
 **Why static JSON (`proof.json`):** language-neutral, human-readable, machine-validated, deterministic, inspectable by CI, and free of Python import side effects during discovery. Discovery must **not** import proof modules or execute `run_proof.py` to read metadata.
 
-**Descriptor schema:** `intergrax.platform_proof_descriptor.v1` — implemented in `scripts/proof/intergrax_platform_proof_descriptor.py` and loaded by `scripts/proof/intergrax_platform_proof_descriptor_loader.py`.
+**Descriptor schema:** `intergrax.platform_proof_descriptor.v2` — implemented in `scripts/proof/intergrax_platform_proof_descriptor.py` and loaded by `scripts/proof/intergrax_platform_proof_descriptor_loader.py`. Only the current schema version is accepted; there is no legacy v1 fallback.
 
 **Command contract:** structured `argv` only (`shell=False`). No shell strings.
 

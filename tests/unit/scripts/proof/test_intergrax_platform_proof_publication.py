@@ -815,10 +815,12 @@ def test_standalone_tools_second_run_overwrites_same_filenames(
 def _descriptor_payload(*, proof_id: str, entrypoint: str, run_mode: str) -> dict[str, object]:
     return {
         "schema_version": PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION,
+        "library_class": "CONFORMANCE",
         "proof_id": proof_id,
         "title": proof_id,
         "domain": "tools",
         "proof_kind": "publish",
+        "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
         "profiles": ["quick"],
         "command": {"executable": "uv", "argv": ["run", "python", entrypoint]},

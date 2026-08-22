@@ -1,9 +1,16 @@
 {
-  "schema_version": "intergrax.platform_proof_descriptor.v1",
+  "schema_version": "intergrax.platform_proof_descriptor.v2",
+  "library_class": "CONFORMANCE",
   "proof_id": "TOOLS-ITERATIVE-SQL-INVESTIGATION",
   "title": "TOOLS iterative SQL investigation platform proof",
   "domain": "tools",
   "proof_kind": "iterative_sql_investigation",
+  "mechanisms_exercised": [
+    "tools.bounded_tool_loop",
+    "tools.tool_planning",
+    "tools.investigation_proof",
+    "platform_proof.sql.query"
+  ],
   "package_version": "1.0.0",
   "profiles": ["full", "live"],
   "command": {
