@@ -19,11 +19,14 @@ from intergrax.runtime.long_running.partial_results import (
     build_task_progress_view,
     partial_result_from_checkpoint,
 )
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+    TaskCheckpointReader,
+)
 from intergrax.runtime.long_running.store import (
     DEFAULT_TASK_CHECKPOINTS_DB,
     ENV_TASK_CHECKPOINTS_DB,
     SQLiteTaskCheckpointStore,
-    open_task_checkpoint_store,
     resolve_task_checkpoints_db_path,
 )
 
@@ -48,10 +51,11 @@ __all__ = [
     "create_webhook_notification_channel",
     "SQLiteTaskCheckpointStore",
     "TaskCheckpoint",
+    "TaskCheckpointPersistence",
+    "TaskCheckpointReader",
     "TaskResumeExecutor",
     "UnifiedTaskResumeExecutor",
     "build_task_progress_view",
-    "open_task_checkpoint_store",
     "partial_result_from_checkpoint",
     "resolve_notification_adapter",
     "resolve_task_checkpoints_db_path",

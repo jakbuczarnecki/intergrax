@@ -6,10 +6,12 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.runtime_checkpoint import (
     PLAN_SNAPSHOT_KEY,
     RUNTIME_CHECKPOINT_KEY,
@@ -18,6 +20,7 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
     attach_runtime_checkpoint_to_metadata,
     runtime_checkpoint_from_execution_structured,
 )
+from intergrax.utils.time_provider import SystemTimeProvider
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
     ExecutionNode,
@@ -26,6 +29,27 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import HumanApprovalResolution
+
+
+def build_task_checkpoint(
+    task: Task,
+    *,
+    progress_message: str = "",
+    resume_token: Optional[str] = None,
+    runtime: Optional[RuntimeCheckpoint] = None,
+) -> TaskCheckpoint:
+    token = resume_token or task.runtime.orchestration.resume_token or f"rt_{uuid4().hex[:20]}"
+    return TaskCheckpoint(
+        task_id=task.task_id,
+        tenant_id=task.tenant_id,
+        resume_token=token,
+        task_state=task.state,
+        task_snapshot=task.model_dump(mode="json"),
+        progress_message=progress_message,
+        notify_channel=task.options.long_running.notify_channel,
+        created_at_utc=SystemTimeProvider.utc_now().isoformat(),
+        runtime=runtime,
+    )
 
 
 def build_runtime_checkpoint(

@@ -10,7 +10,6 @@ import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
-from uuid import uuid4
 
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
@@ -29,15 +28,13 @@ from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
     ScheduledResumeStatus,
 )
-from intergrax.runtime.task.task import Task, TaskState
-from intergrax.utils.time_provider import SystemTimeProvider
+from intergrax.runtime.task.task import TaskState
 
 __all__ = [
     "DEFAULT_TASK_CHECKPOINTS_DB",
     "ENV_TASK_CHECKPOINTS_DB",
     "SQLiteTaskCheckpointStore",
     "resolve_task_checkpoints_db_path",
-    "open_task_checkpoint_store",
 ]
 
 _PAUSED_TASK_STATES = (
@@ -57,14 +54,6 @@ def resolve_task_checkpoints_db_path(explicit: Path | None = None) -> Path:
     )
 
     return _resolve(explicit)
-
-
-def open_task_checkpoint_store(db_path: Path | None = None) -> SQLiteTaskCheckpointStore:
-    from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_task_checkpoint_store
-
-    if db_path is not None:
-        return create_sqlite_task_checkpoint_store(db_path=db_path)  # type: ignore[return-value]
-    return create_sqlite_task_checkpoint_store()  # type: ignore[return-value]
 
 
 class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
@@ -617,27 +606,5 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             progress_message=row["progress_message"],
             notify_channel=row["notify_channel"],
             created_at_utc=row["created_at_utc"],
-            runtime=runtime,
-        )
-
-    @classmethod
-    def build_checkpoint(
-        cls,
-        task: Task,
-        *,
-        progress_message: str = "",
-        resume_token: Optional[str] = None,
-        runtime: Optional[RuntimeCheckpoint] = None,
-    ) -> TaskCheckpoint:
-        token = resume_token or task.runtime.orchestration.resume_token or f"rt_{uuid4().hex[:20]}"
-        return TaskCheckpoint(
-            task_id=task.task_id,
-            tenant_id=task.tenant_id,
-            resume_token=token,
-            task_state=task.state,
-            task_snapshot=task.model_dump(mode="json"),
-            progress_message=progress_message,
-            notify_channel=task.options.long_running.notify_channel,
-            created_at_utc=SystemTimeProvider.utc_now().isoformat(),
             runtime=runtime,
         )

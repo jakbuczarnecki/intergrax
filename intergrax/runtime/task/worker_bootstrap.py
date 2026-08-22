@@ -16,7 +16,7 @@ from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_event import RetryEvent
 from intergrax.queueing.worker.retry_policy import RetryPolicy
-from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import (
     NexusWorkerRuntime,
@@ -28,7 +28,7 @@ from intergrax.runtime.task.worker_payload import NEXUS_TASK_V2_LOGICAL_NAME
 def build_nexus_task_execution_registry(
     registry: AgentRegistry,
     *,
-    checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
+    checkpoint_store: Optional[TaskCheckpointPersistence] = None,
     lifecycle=None,
 ) -> TaskExecutionRegistry:
     """Register ``nexus.task.v2`` on a worker TaskExecutionRegistry."""
@@ -52,7 +52,7 @@ def create_nexus_celery_worker_app(
     retry_policy: Optional[RetryPolicy] = None,
     lock_ttl_seconds: Optional[int] = None,
     completed_ttl_seconds: Optional[int] = None,
-    checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
+    checkpoint_store: Optional[TaskCheckpointPersistence] = None,
     rate_limiter: Optional[DistributedRateLimiter] = None,
     rate_limit_config: Optional[Callable[[str], Tuple[int, float]]] = None,
     on_rate_limited: Optional[Callable[[RateLimitEvent], None]] = None,
