@@ -34,6 +34,7 @@ Follow this guide to add or advance a platform proof without reconstructing meth
 | **11** | Run the actual proof via canonical runner |
 | **12** | Record evidence (`SuiteReceipt`; SHA, profile, result, limitations) |
 | **12b** | For `evidence_required=true`, write `evidence.json` to runner-provided `INTERGRAX_PROOF_ARTIFACT_DIR` when executed via suite |
+| **12c** | After suite verification, canonical artifacts publish to `<package>/output/` (stable filenames; Git-trackable) |
 | **13** | Update [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md) coverage |
 | **14** | Update [PROOFS.md](../docs/project/proofs/PROOFS.md) **only** if accepted public evidence/claim changes |
 
@@ -54,6 +55,9 @@ Follow this guide to add or advance a platform proof without reconstructing meth
 - [ ] Evidence uses `SuiteReceipt` — not merged with domain `ProofReceipt`
 - [ ] For descriptor-backed proofs with `evidence_required=true`, PASS requires validated `evidence.json` (exit code alone is insufficient)
 - [ ] For descriptor-backed proofs, every required `expected_artifacts` entry must exist as a safe regular file under runner artifact directory (PP-SUITE-4)
+- [ ] Descriptor-backed proofs own canonical output at `platform_proofs/<domain>/<proof>/output/` (PP-PUBLISH-1)
+- [ ] Canonical output uses stable filenames (`evidence.json`, `proof-result.json`, `report.html` when declared) for permanent documentation links
+- [ ] `.artifacts/` remains transient suite state; canonical `output/` is commit-ready public proof evidence
 - [ ] Map coverage updated (`NO_PROOF` → `DESIGNED` → `EXECUTABLE` → `QUALIFIED`)
 - [ ] Product proofs not cited as platform domain evidence
 - [ ] Public dashboard updated only when public claim boundary changes
