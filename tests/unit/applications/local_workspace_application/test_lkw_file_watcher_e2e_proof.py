@@ -534,10 +534,11 @@ def test_warmup_before_kafka_and_file_ordering() -> None:
     source = _read(_PROOF_SCRIPT)
     main_start = source.index("def main(")
     main_body = source[main_start:]
-    warmup_idx = main_body.index("run_embedding_warmup")
+    bootstrap_idx = main_body.index("ensure_embedding_model_bootstrap_if_configured")
+    warmup_idx = main_body.index("run_persistence_embedding_warmup")
     kafka_before_idx = main_body.index("task_count_before_file = inspect_kafka")
     create_doc_idx = main_body.index("create_proof_document")
-    assert warmup_idx < kafka_before_idx < create_doc_idx
+    assert bootstrap_idx < warmup_idx < kafka_before_idx < create_doc_idx
 
 
 def test_timeout_defaults() -> None:
@@ -927,7 +928,8 @@ def test_main_flow_evidence_ordering() -> None:
     first_poll = main_body.index("_poll_search_until_indexed")
     second_poll = main_body.index("_poll_search_until_indexed", first_poll + 1)
     markers = [
-        ("warmup", main_body.index("run_embedding_warmup")),
+        ("bootstrap", main_body.index("ensure_embedding_model_bootstrap_if_configured")),
+        ("warmup", main_body.index("run_persistence_embedding_warmup")),
         (
             "kafka_before_file",
             main_body.index("task_count_before_file = inspect_kafka"),
@@ -966,6 +968,199 @@ def test_main_flow_evidence_ordering() -> None:
     positions = [index for _, index in markers]
     assert positions == sorted(positions)
     assert main_body.index("search_after_restart_failed") < main_body.index('"stop"')
+
+
+def test_ensure_embedding_model_bootstrap_ollama_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    proof = _load_proof_module()
+    calls: list[str] = []
+
+    def fake_ensure(**_kwargs: Any) -> str:
+        calls.append("bootstrap")
+        return "resolved-model"
+
+    monkeypatch.setattr(proof, "_ensure_ollama_embedding_model_if_configured", fake_ensure)
+    resolved = proof.ensure_embedding_model_bootstrap_if_configured(
+        base_compose=Path("base.yml"),
+        kafka_compose=Path("kafka.yml"),
+        watcher_compose=Path("watcher.yml"),
+        mongodb_compose=Path("mongodb.yml"),
+        cwd=Path("."),
+        timeout_seconds=30,
+    )
+    assert resolved == "resolved-model"
+    assert calls == ["bootstrap"]
+
+
+def test_ensure_embedding_model_bootstrap_non_ollama_skips(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    proof = _load_proof_module()
+    monkeypatch.setattr(
+        proof,
+        "_ensure_ollama_embedding_model_if_configured",
+        lambda **_kwargs: None,
+    )
+    resolved = proof.ensure_embedding_model_bootstrap_if_configured(
+        base_compose=Path("base.yml"),
+        kafka_compose=Path("kafka.yml"),
+        watcher_compose=Path("watcher.yml"),
+        mongodb_compose=Path("mongodb.yml"),
+        cwd=Path("."),
+        timeout_seconds=30,
+    )
+    assert resolved is None
+
+
+def test_ensure_embedding_model_bootstrap_failure_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    proof = _load_proof_module()
+
+    def fake_ensure(**_kwargs: Any) -> str:
+        raise proof.OllamaEmbeddingBootstrapError("embedding_model_pull_failed")
+
+    monkeypatch.setattr(proof, "_ensure_ollama_embedding_model_if_configured", fake_ensure)
+    with pytest.raises(proof.OllamaEmbeddingBootstrapError) as exc:
+        proof.ensure_embedding_model_bootstrap_if_configured(
+            base_compose=Path("base.yml"),
+            kafka_compose=Path("kafka.yml"),
+            watcher_compose=Path("watcher.yml"),
+            mongodb_compose=Path("mongodb.yml"),
+            cwd=Path("."),
+            timeout_seconds=30,
+        )
+    assert exc.value.reason == "embedding_model_pull_failed"
+
+
+def test_main_bootstrap_before_warmup_and_failure_skips_warmup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    proof = _load_proof_module()
+    events: list[str] = []
+    warmup = proof.WarmupResult(
+        completed=True,
+        attempt_count=1,
+        last_reason="retrieve_complete",
+        last_raw_tool_reason=None,
+    )
+
+    monkeypatch.setattr(proof, "wait_for_health", lambda *_a, **_k: True)
+    monkeypatch.setattr(proof, "watcher_container_running", lambda **_k: True)
+    monkeypatch.setattr(proof, "watcher_checkpoint_ready", lambda **_k: True)
+
+    def bootstrap_ok(**_kwargs: Any) -> str:
+        events.append("bootstrap")
+        return "resolved-model"
+
+    monkeypatch.setattr(
+        proof,
+        "ensure_embedding_model_bootstrap_if_configured",
+        bootstrap_ok,
+    )
+
+    def persistence_warmup(**_kwargs: Any) -> Any:
+        events.append("warmup")
+        return warmup
+
+    monkeypatch.setattr(proof, "run_persistence_embedding_warmup", persistence_warmup)
+    monkeypatch.setattr(
+        proof,
+        "inspect_kafka_topic_message_count",
+        lambda **_k: (_ for _ in ()).throw(RuntimeError("stop_after_warmup")),
+    )
+
+    exit_code = proof.main(
+        [
+            "--repo-root",
+            str(_PROJECT_ROOT),
+            "--proof-docs-dir",
+            str(_LKW_ROOT / ".proof_docs"),
+        ]
+    )
+    assert exit_code != 0
+    assert events == ["bootstrap", "warmup"]
+
+    events.clear()
+
+    def bootstrap_fail(**_kwargs: Any) -> None:
+        events.append("bootstrap")
+        raise proof.OllamaEmbeddingBootstrapError("embedding_model_pull_failed")
+
+    monkeypatch.setattr(
+        proof,
+        "ensure_embedding_model_bootstrap_if_configured",
+        bootstrap_fail,
+    )
+    monkeypatch.setattr(
+        proof,
+        "run_persistence_embedding_warmup",
+        lambda **_k: (_ for _ in ()).throw(AssertionError("warmup must not run")),
+    )
+    monkeypatch.setattr(
+        proof,
+        "run_embedding_warmup",
+        lambda **_k: (_ for _ in ()).throw(AssertionError("warmup must not run")),
+    )
+
+    exit_code = proof.main(
+        [
+            "--repo-root",
+            str(_PROJECT_ROOT),
+            "--proof-docs-dir",
+            str(_LKW_ROOT / ".proof_docs"),
+        ]
+    )
+    assert exit_code == 1
+    assert events == ["bootstrap"]
+
+
+def test_main_non_ollama_bootstrap_skips_to_warmup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    proof = _load_proof_module()
+    events: list[str] = []
+    warmup = proof.WarmupResult(
+        completed=True,
+        attempt_count=1,
+        last_reason="retrieve_complete",
+        last_raw_tool_reason=None,
+    )
+
+    monkeypatch.setattr(proof, "wait_for_health", lambda *_a, **_k: True)
+    monkeypatch.setattr(proof, "watcher_container_running", lambda **_k: True)
+    monkeypatch.setattr(proof, "watcher_checkpoint_ready", lambda **_k: True)
+
+    def bootstrap_skip(**_kwargs: Any) -> None:
+        events.append("bootstrap")
+
+    monkeypatch.setattr(
+        proof,
+        "ensure_embedding_model_bootstrap_if_configured",
+        bootstrap_skip,
+    )
+    monkeypatch.setattr(
+        proof,
+        "run_persistence_embedding_warmup",
+        lambda **_k: (events.append("warmup"), warmup)[1],
+    )
+    monkeypatch.setattr(
+        proof,
+        "inspect_kafka_topic_message_count",
+        lambda **_k: (_ for _ in ()).throw(RuntimeError("stop_after_warmup")),
+    )
+
+    exit_code = proof.main(
+        [
+            "--repo-root",
+            str(_PROJECT_ROOT),
+            "--proof-docs-dir",
+            str(_LKW_ROOT / ".proof_docs"),
+        ]
+    )
+    assert exit_code != 0
+    assert events == ["bootstrap", "warmup"]
 
 
 def test_destructive_compose_absent_from_python_proof() -> None:
