@@ -55,11 +55,20 @@ _MONGODB_STACK_EXTERNAL = "external"
 _MONGODB_STACK_CHOICES = (_MONGODB_STACK_MANAGED, _MONGODB_STACK_EXTERNAL)
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+from lkw_proof_compose_lifecycle import (  # noqa: E402
+    finalize_exit_code_with_teardown,
+    run_terminal_compose_teardown,
+    teardown_known_stack,
+)
 _APP_DIR = _SCRIPT_DIR.parent
 _REPO_ROOT = _APP_DIR.parent.parent
 _DOCKER_DIR = _APP_DIR / "docker"
 _BASE_COMPOSE = _DOCKER_DIR / "docker-compose.yml"
 _MONGODB_COMPOSE = _DOCKER_DIR / "docker-compose.mongodb.yml"
+_COMPOSE_PROJECT = "lkw-os-interaction-proof"
+_OS_INTERACTION_STACK_ID = _COMPOSE_PROJECT
 
 
 @dataclass(frozen=True, slots=True)
@@ -602,7 +611,7 @@ def parse_os_interaction_proof_junit(
 
 
 def _compose_args(compose_files: Sequence[Path]) -> list[str]:
-    args = ["docker", "compose"]
+    args = ["docker", "compose", "-p", _COMPOSE_PROJECT]
     for path in compose_files:
         args.extend(["-f", str(path)])
     return args
@@ -688,7 +697,11 @@ def _wait_for_http_reachable(url: str, *, timeout_seconds: int) -> None:
     raise RuntimeError("mongo_express_unreachable")
 
 
-def prepare_mongodb_stack(*, mongo_express_url: str) -> None:
+def prepare_mongodb_stack(
+    *,
+    mongo_express_url: str,
+    compose_ownership_state: list[bool] | None = None,
+) -> None:
     """Start MongoDB + Mongo Express for receipt recording (shared across OS launchers)."""
     if shutil.which("docker") is None:
         raise RuntimeError("docker_not_available")
@@ -700,6 +713,8 @@ def prepare_mongodb_stack(*, mongo_express_url: str) -> None:
     )
     if config.returncode != 0:
         raise RuntimeError("compose_overlay_invalid")
+    if compose_ownership_state is not None:
+        compose_ownership_state.append(True)
     up = _run_command(
         [
             *_compose_args(compose_files),
@@ -720,7 +735,12 @@ def prepare_mongodb_stack(*, mongo_express_url: str) -> None:
     ensure_mongodb_env()
 
 
-def prepare_mongodb(*, stack: str, mongo_express_url: str) -> None:
+def prepare_mongodb(
+    *,
+    stack: str,
+    mongo_express_url: str,
+    compose_ownership_state: list[bool] | None = None,
+) -> None:
     """Prepare MongoDB according to managed/external stack ownership."""
     normalized = stack.strip().lower()
     if normalized == _MONGODB_STACK_EXTERNAL:
@@ -728,7 +748,10 @@ def prepare_mongodb(*, stack: str, mongo_express_url: str) -> None:
         return
     if normalized != _MONGODB_STACK_MANAGED:
         raise RuntimeError("invalid_mongodb_stack")
-    prepare_mongodb_stack(mongo_express_url=mongo_express_url)
+    prepare_mongodb_stack(
+        mongo_express_url=mongo_express_url,
+        compose_ownership_state=compose_ownership_state,
+    )
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -885,6 +908,10 @@ def _run_accepted_live_test(
     return int(completed.returncode)
 
 
+def teardown_owned_compose_stack() -> None:
+    teardown_known_stack(_OS_INTERACTION_STACK_ID, cwd=_REPO_ROOT)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     try:
@@ -899,72 +926,101 @@ def main(argv: list[str] | None = None) -> int:
     run_id = args.run_id.strip() or f"{contract.run_id_prefix}-{uuid.uuid4().hex[:12]}"
     correlation_id = args.correlation_id.strip() or run_id
     mongo_express_url = args.mongo_express.strip() or _DEFAULT_MONGO_EXPRESS_URL
+    compose_ownership_entered = False
+    compose_ownership_state: list[bool] = []
+    functional_pass = False
+    exit_code = 1
 
     try:
-        prepare_mongodb(
-            stack=str(args.mongodb_stack),
-            mongo_express_url=mongo_express_url,
-        )
-    except (RuntimeError, OSError, subprocess.TimeoutExpired) as exc:
-        return _fail(
-            "mongodb_stack_prepare_failed",
-            stack_error=type(exc).__name__,
-            mongodb_stack=str(args.mongodb_stack),
-            stack_detail=str(exc),
-        )
+        try:
+            prepare_mongodb(
+                stack=str(args.mongodb_stack),
+                mongo_express_url=mongo_express_url,
+                compose_ownership_state=compose_ownership_state,
+            )
+        except (RuntimeError, OSError, subprocess.TimeoutExpired) as exc:
+            compose_ownership_entered = bool(compose_ownership_state)
+            exit_code = _fail(
+                "mongodb_stack_prepare_failed",
+                stack_error=type(exc).__name__,
+                mongodb_stack=str(args.mongodb_stack),
+                stack_detail=str(exc),
+            )
+            return exit_code
+        compose_ownership_entered = bool(compose_ownership_state)
 
-    with tempfile.TemporaryDirectory(prefix="lkw-os-interaction-proof-") as temp_dir:
-        temp_root = Path(temp_dir)
-        junit_path = temp_root / "os-interaction-proof-junit.xml"
-        basetemp = temp_root / "pytest-basetemp"
-        basetemp.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="lkw-os-interaction-proof-") as temp_dir:
+            temp_root = Path(temp_dir)
+            junit_path = temp_root / "os-interaction-proof-junit.xml"
+            basetemp = temp_root / "pytest-basetemp"
+            basetemp.mkdir(parents=True, exist_ok=True)
 
-        returncode = _run_accepted_live_test(
-            contract=contract,
-            junit_path=junit_path,
-            basetemp=basetemp,
-        )
-        if returncode != 0:
-            return _fail(
-                "os_interaction_live_test_failed",
-                pytest_returncode=returncode,
-                os_family=contract.os_family,
+            returncode = _run_accepted_live_test(
+                contract=contract,
+                junit_path=junit_path,
+                basetemp=basetemp,
+            )
+            if returncode != 0:
+                exit_code = _fail(
+                    "os_interaction_live_test_failed",
+                    pytest_returncode=returncode,
+                    os_family=contract.os_family,
+                )
+                return exit_code
+
+            try:
+                evidence = parse_os_interaction_proof_junit(junit_path, contract=contract)
+            except OSInteractionProofEvidenceError:
+                exit_code = _fail("os_interaction_evidence_invalid")
+                return exit_code
+
+            receipt = build_os_interaction_proof_receipt(
+                contract=contract,
+                run_id=run_id,
+                correlation_id=correlation_id,
+                evidence=evidence,
+                mongo_express_url=mongo_express_url,
             )
 
-        try:
-            evidence = parse_os_interaction_proof_junit(junit_path, contract=contract)
-        except OSInteractionProofEvidenceError:
-            return _fail("os_interaction_evidence_invalid")
+            try:
+                verified_receipt, _integration = record_os_interaction_proof_receipt(
+                    receipt
+                )
+            except (
+                ProofReceiptVerificationError,
+                OSError,
+                RuntimeError,
+                TypeError,
+                ValueError,
+            ) as exc:
+                exit_code = _fail_receipt_recording(exc)
+                return exit_code
 
-        receipt = build_os_interaction_proof_receipt(
-            contract=contract,
-            run_id=run_id,
-            correlation_id=correlation_id,
-            evidence=evidence,
-            mongo_express_url=mongo_express_url,
-        )
-
-        try:
-            verified_receipt, _integration = record_os_interaction_proof_receipt(
-                receipt
+            _print_pass_output(
+                contract=contract,
+                evidence=evidence,
+                verified_receipt=verified_receipt,
+                mongo_express_url=mongo_express_url,
+                correlation_id=correlation_id,
             )
-        except (
-            ProofReceiptVerificationError,
-            OSError,
-            RuntimeError,
-            TypeError,
-            ValueError,
-        ) as exc:
-            return _fail_receipt_recording(exc)
-
-        _print_pass_output(
-            contract=contract,
-            evidence=evidence,
-            verified_receipt=verified_receipt,
-            mongo_express_url=mongo_express_url,
-            correlation_id=correlation_id,
+            functional_pass = True
+            exit_code = 0
+    finally:
+        compose_ownership_entered = compose_ownership_entered or bool(compose_ownership_state)
+        teardown_outcome = run_terminal_compose_teardown(
+            compose_ownership_entered=compose_ownership_entered,
+            teardown_fn=teardown_owned_compose_stack,
         )
-        return 0
+        if functional_pass and teardown_outcome.result == "FAIL":
+            exit_code = _fail("proof_teardown_failed")
+        else:
+            exit_code = finalize_exit_code_with_teardown(
+                functional_pass=functional_pass,
+                functional_exit_code=exit_code,
+                teardown_outcome=teardown_outcome,
+            )
+
+    return exit_code
 
 
 if __name__ == "__main__":

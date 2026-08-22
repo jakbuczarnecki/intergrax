@@ -92,6 +92,8 @@ _DEFAULT_KAFKA_COMPOSE = _DEFAULT_DOCKER_DIR / "docker-compose.kafka.yml"
 _DEFAULT_WATCHER_COMPOSE = _DEFAULT_DOCKER_DIR / "file-watcher-e2e.compose.yml"
 _DEFAULT_MONGODB_COMPOSE = _DEFAULT_DOCKER_DIR / "docker-compose.mongodb.yml"
 
+_FILE_WATCHER_COMPOSE_PROJECT = "lkw-file-watcher-e2e-proof"
+
 _WARMUP_REQUEST_TIMEOUT_SECONDS = 120.0
 _WARMUP_RETRY_SLEEP_SECONDS = 2.0
 
@@ -363,10 +365,7 @@ def build_compose_command(
     watcher_compose: Path,
     mongodb_compose: Path,
 ) -> list[str]:
-    command = ["docker", "compose"]
-    compose_project = os.environ.get("COMPOSE_PROJECT_NAME", "").strip()
-    if compose_project:
-        command.extend(["-p", compose_project])
+    command = ["docker", "compose", "-p", _FILE_WATCHER_COMPOSE_PROJECT]
     command.extend(
         [
             "-f",

@@ -302,6 +302,57 @@ def known_intergrax_stack_definitions(docker_dir: Path) -> tuple[KnownIntergraxS
             ),
             display_label="LKW Trusted Ask Workspace Proof",
         ),
+        KnownIntergraxStackDefinition(
+            stack_id="lkw-os-interaction-proof",
+            compose_project="lkw-os-interaction-proof",
+            compose_file_paths=tuple(
+                str(docker_dir / name)
+                for name in (
+                    "docker-compose.yml",
+                    "docker-compose.mongodb.yml",
+                )
+            ),
+            display_label="LKW OS Interaction Proof",
+        ),
+        KnownIntergraxStackDefinition(
+            stack_id="lkw-background-task-proof",
+            compose_project="lkw-background-task-proof",
+            compose_file_paths=tuple(
+                str(docker_dir / name)
+                for name in (
+                    "docker-compose.yml",
+                    "docker-compose.kafka.yml",
+                    "docker-compose.mongodb.yml",
+                )
+            ),
+            display_label="LKW Background Task Proof",
+        ),
+        KnownIntergraxStackDefinition(
+            stack_id="lkw-hosting-proof",
+            compose_project="lkw-hosting-proof",
+            compose_file_paths=tuple(
+                str(docker_dir / name)
+                for name in (
+                    "docker-compose.yml",
+                    "docker-compose.mongodb.yml",
+                )
+            ),
+            display_label="LKW Application Hosting Proof",
+        ),
+        KnownIntergraxStackDefinition(
+            stack_id="lkw-file-watcher-e2e-proof",
+            compose_project="lkw-file-watcher-e2e-proof",
+            compose_file_paths=tuple(
+                str(docker_dir / name)
+                for name in (
+                    "docker-compose.yml",
+                    "docker-compose.kafka.yml",
+                    "file-watcher-e2e.compose.yml",
+                    "docker-compose.mongodb.yml",
+                )
+            ),
+            display_label="LKW File Watcher E2E Proof",
+        ),
     )
 
 
