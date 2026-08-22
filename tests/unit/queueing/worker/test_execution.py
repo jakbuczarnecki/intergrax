@@ -6,7 +6,9 @@ import pytest
 from pydantic import BaseModel
 
 from intergrax.contracts.idempotency_store import (
+    ClaimResult,
     IdempotencyStore,
+    InvocationClaim,
     InvocationStatus,
 )
 from intergrax.contracts.persistence_topology import PersistenceTopology
@@ -29,6 +31,35 @@ class DummyIdempotencyStore(IdempotencyStore):
 
     def __init__(self) -> None:
         self._store: dict[str, tuple[InvocationStatus, ToolExecutionResult]] = {}
+
+    def claim(
+        self,
+        tenant_id: str,
+        key: str,
+        owner_id: str,
+        lease_seconds: int,
+    ) -> ClaimResult:
+        del owner_id, lease_seconds
+        full_key = f"{tenant_id}:{key}"
+        if full_key in self._store:
+            status, result = self._store[full_key]
+            if status == InvocationStatus.COMPLETED:
+                from intergrax.contracts.idempotency_store import ClaimOutcome
+
+                return ClaimResult(outcome=ClaimOutcome.REPLAY_COMPLETED, completed_result=result)
+            raise RuntimeError("already exists")
+        raise NotImplementedError
+
+    def complete_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+        result: ToolExecutionResult,
+        completed_ttl_seconds: int | None = None,
+    ) -> None:
+        del claim, completed_ttl_seconds
+        self.record_completed(tenant_id, key, result)
 
     def record_started(
         self,

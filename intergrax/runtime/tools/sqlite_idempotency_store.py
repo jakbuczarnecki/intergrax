@@ -7,13 +7,20 @@ from __future__ import annotations
 import base64
 import pickle
 import sqlite3
+from datetime import UTC, datetime, timedelta
 from typing import Optional
+from uuid import uuid4
+
 from pydantic import BaseModel
 
 from intergrax.contracts.idempotency_store import (
+    ClaimOutcome,
+    ClaimResult,
     IdempotencyStore,
+    InvocationClaim,
     InvocationStatus,
 )
+from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.tools.execution_models import ToolExecutionResult
 
@@ -33,6 +40,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
         conn = sqlite3.connect(self._db_path)
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA synchronous=FULL;")
+        conn.row_factory = sqlite3.Row
         return conn
 
     def _init_schema(self) -> None:
@@ -44,62 +52,200 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     key TEXT NOT NULL,
                     status TEXT NOT NULL,
                     result_blob TEXT,
+                    owner_id TEXT,
+                    lease_expires_at TEXT,
+                    fence INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY (tenant_id, key)
                 )
                 """
             )
-
-            # --- Migration: ensure result_blob column exists ---
-            columns = conn.execute(
-                "PRAGMA table_info(idempotency_ledger)"
-            ).fetchall()
-
-            column_names = {row[1] for row in columns}
-
-            if "result_blob" not in column_names:
+            columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(idempotency_ledger)").fetchall()
+            }
+            if "result_blob" not in columns:
+                conn.execute("ALTER TABLE idempotency_ledger ADD COLUMN result_blob TEXT")
+            if "owner_id" not in columns:
+                conn.execute("ALTER TABLE idempotency_ledger ADD COLUMN owner_id TEXT")
+            if "lease_expires_at" not in columns:
+                conn.execute("ALTER TABLE idempotency_ledger ADD COLUMN lease_expires_at TEXT")
+            if "fence" not in columns:
                 conn.execute(
-                    "ALTER TABLE idempotency_ledger ADD COLUMN result_blob TEXT"
+                    "ALTER TABLE idempotency_ledger ADD COLUMN fence INTEGER NOT NULL DEFAULT 0",
                 )
+
+    def _row_to_claim(self, row: sqlite3.Row) -> InvocationClaim | None:
+        if row["owner_id"] is None or row["lease_expires_at"] is None:
+            return None
+        return InvocationClaim(
+            tenant_id=row["tenant_id"],
+            key=row["key"],
+            owner_id=row["owner_id"],
+            lease_expires_at=datetime.fromisoformat(row["lease_expires_at"]),
+            fence=int(row["fence"]),
+        )
 
     def get_status(
         self,
         tenant_id: str,
         key: str,
     ) -> Optional[InvocationStatus]:
-
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT status
+                SELECT status FROM idempotency_ledger
+                WHERE tenant_id = ? AND key = ?
+                """,
+                (tenant_id, key),
+            ).fetchone()
+        if row is None:
+            return None
+        return InvocationStatus(row["status"])
+
+    def claim(
+        self,
+        tenant_id: str,
+        key: str,
+        owner_id: str,
+        lease_seconds: int,
+    ) -> ClaimResult:
+        now = datetime.now(UTC)
+        lease_expires_at = now + timedelta(seconds=lease_seconds)
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                """
+                SELECT status, result_blob, owner_id, lease_expires_at, fence
                 FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ?
                 """,
                 (tenant_id, key),
             ).fetchone()
 
-        if row is None:
-            return None
+            if row is None:
+                claim = InvocationClaim(
+                    tenant_id=tenant_id,
+                    key=key,
+                    owner_id=owner_id,
+                    lease_expires_at=lease_expires_at,
+                    fence=1,
+                )
+                conn.execute(
+                    """
+                    INSERT INTO idempotency_ledger
+                        (tenant_id, key, status, owner_id, lease_expires_at, fence)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        tenant_id,
+                        key,
+                        InvocationStatus.STARTED.value,
+                        owner_id,
+                        lease_expires_at.isoformat(),
+                        claim.fence,
+                    ),
+                )
+                conn.commit()
+                return ClaimResult(outcome=ClaimOutcome.ACQUIRED, claim=claim)
 
-        return InvocationStatus(row[0])
+            status = InvocationStatus(row["status"])
+            if status == InvocationStatus.COMPLETED:
+                result_blob = row["result_blob"]
+                if result_blob is None:
+                    raise RuntimeError("Ledger inconsistency: COMPLETED without result_blob.")
+                completed = pickle.loads(base64.b64decode(result_blob.encode("ascii")))
+                conn.commit()
+                return ClaimResult(
+                    outcome=ClaimOutcome.REPLAY_COMPLETED,
+                    completed_result=completed,
+                )
+
+            if status == InvocationStatus.UNCERTAIN:
+                conn.commit()
+                return ClaimResult(outcome=ClaimOutcome.UNCERTAIN)
+
+            stored_claim = self._row_to_claim(row)
+            if stored_claim is None:
+                raise RuntimeError(f"Ledger inconsistency: STARTED without ownership for key={key}")
+
+            if stored_claim.lease_expires_at > now:
+                if stored_claim.owner_id == owner_id:
+                    conn.commit()
+                    return ClaimResult(outcome=ClaimOutcome.ACQUIRED, claim=stored_claim)
+                conn.commit()
+                return ClaimResult(outcome=ClaimOutcome.BLOCKED_ACTIVE)
+
+            conn.execute(
+                """
+                UPDATE idempotency_ledger
+                SET status = ?
+                WHERE tenant_id = ? AND key = ? AND fence = ?
+                """,
+                (
+                    InvocationStatus.UNCERTAIN.value,
+                    tenant_id,
+                    key,
+                    stored_claim.fence,
+                ),
+            )
+            conn.commit()
+            return ClaimResult(outcome=ClaimOutcome.UNCERTAIN)
+
+    def complete_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+        result: ToolExecutionResult[BaseModel],
+        completed_ttl_seconds: Optional[int] = None,
+    ) -> None:
+        del completed_ttl_seconds
+        blob = base64.b64encode(
+            pickle.dumps(result, protocol=pickle.HIGHEST_PROTOCOL),
+        ).decode("ascii")
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            updated = conn.execute(
+                """
+                UPDATE idempotency_ledger
+                SET status = ?, result_blob = ?
+                WHERE tenant_id = ? AND key = ?
+                  AND status = ?
+                  AND owner_id = ?
+                  AND fence = ?
+                """,
+                (
+                    InvocationStatus.COMPLETED.value,
+                    blob,
+                    tenant_id,
+                    key,
+                    InvocationStatus.STARTED.value,
+                    claim.owner_id,
+                    claim.fence,
+                ),
+            )
+            if updated.rowcount != 1:
+                conn.rollback()
+                raise StaleClaimError(
+                    f"Stale completion rejected for key={key} fence={claim.fence}.",
+                )
+            conn.commit()
 
     def record_started(
         self,
         tenant_id: str,
         key: str,
+        lease_seconds: Optional[int] = None,
     ) -> None:
-
-        try:
-            with self._connect() as conn:
-                conn.execute(
-                    """
-                    INSERT INTO idempotency_ledger (tenant_id, key, status)
-                    VALUES (?, ?, ?)
-                    """,
-                    (tenant_id, key, InvocationStatus.STARTED.value),
-                )
-        except sqlite3.IntegrityError:
+        lease = lease_seconds if lease_seconds is not None else 300
+        owner_id = f"legacy-{uuid4().hex}"
+        outcome = self.claim(tenant_id, key, owner_id, lease)
+        if outcome.outcome == ClaimOutcome.REPLAY_COMPLETED:
+            raise RuntimeError(f"Invocation already exists for key={key}")
+        if outcome.outcome == ClaimOutcome.BLOCKED_ACTIVE:
+            raise RuntimeError(f"Invocation already exists for key={key}")
+        if outcome.outcome == ClaimOutcome.UNCERTAIN:
             raise RuntimeError(
-                f"Invocation already exists for key={key}"
+                f"Invocation uncertain for key={key}; reconciliation required.",
             )
 
     def record_completed(
@@ -108,25 +254,28 @@ class SQLiteIdempotencyStore(IdempotencyStore):
         key: str,
         result: ToolExecutionResult[BaseModel],
     ) -> None:
-        blob = base64.b64encode(pickle.dumps(result, protocol=pickle.HIGHEST_PROTOCOL)).decode("ascii")
-
         with self._connect() as conn:
-            updated = conn.execute(
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
                 """
-                UPDATE idempotency_ledger
-                SET status = ?, result_blob = ?
+                SELECT owner_id, lease_expires_at, fence
+                FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ? AND status = ?
                 """,
-                (
-                    InvocationStatus.COMPLETED.value,
-                    blob,
-                    tenant_id,
-                    key,
-                    InvocationStatus.STARTED.value,
-                ),
-            )
-            if updated.rowcount != 1:
+                (tenant_id, key, InvocationStatus.STARTED.value),
+            ).fetchone()
+            if row is None:
+                conn.rollback()
                 raise RuntimeError("Invalid state transition to COMPLETED.")
+            claim = InvocationClaim(
+                tenant_id=tenant_id,
+                key=key,
+                owner_id=row["owner_id"],
+                lease_expires_at=datetime.fromisoformat(row["lease_expires_at"]),
+                fence=int(row["fence"]),
+            )
+            conn.commit()
+        self.complete_with_claim(tenant_id, key, claim, result)
 
     def get_completed_result(
         self,
@@ -146,10 +295,10 @@ class SQLiteIdempotencyStore(IdempotencyStore):
         if row is None:
             return None
 
-        status, result_blob = row
-        if status != InvocationStatus.COMPLETED.value:
+        if row["status"] != InvocationStatus.COMPLETED.value:
             return None
 
+        result_blob = row["result_blob"]
         if result_blob is None:
             raise RuntimeError("Ledger inconsistency: COMPLETED without result_blob.")
 
