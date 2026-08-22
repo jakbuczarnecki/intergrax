@@ -11,8 +11,10 @@ from intergrax.applications._shared.reliability_assembly_resolver import (
     assert_reliability_assembly_valid,
 )
 from intergrax.applications._shared.reliability_wiring import wire_application_reliability
-from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
-from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
+from intergrax.contracts.persistence_topology import (
+    PersistenceTopology,
+    resolve_idempotency_store_topology,
+)
 from intergrax.integrations.providers.relational_store.sqlite.paths import IDEMPOTENCY_DB_NAME
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
@@ -173,8 +175,10 @@ def test_lkw_product_wiring_uses_durable_idempotency_store_under_data_home(
         idempotency_db_path=Path(settings.idempotency_db_path),
     )
 
-    assert not isinstance(wiring.idempotency_store, InMemoryIdempotencyStore)
-    assert isinstance(wiring.idempotency_store, SQLiteIdempotencyStore)
+    assert wiring.idempotency_store is not None
+    assert resolve_idempotency_store_topology(wiring.idempotency_store) is (
+        PersistenceTopology.DURABLE_SINGLE_HOST
+    )
     assert_reliability_assembly_valid(wiring, env)
     assert settings.idempotency_db_path.endswith(f"data/sqlite/{IDEMPOTENCY_DB_NAME}")
     assert Path(settings.idempotency_db_path).exists()

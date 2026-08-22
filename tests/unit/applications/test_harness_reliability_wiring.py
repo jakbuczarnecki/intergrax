@@ -23,8 +23,12 @@ from intergrax.applications.contracts.environment_profile import (
     OrchestrationProfile,
     ReliabilityProfile,
 )
+from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.persistence_topology import (
+    PersistenceTopology,
+    resolve_idempotency_store_topology,
+)
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
-from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
@@ -49,7 +53,11 @@ def test_resolve_reliability_wiring_options_maps_profile_fields() -> None:
 def test_wire_application_reliability_uses_sqlite_when_path_provided(tmp_path) -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="rel.sqlite")
     wiring = wire_application_reliability(env, idempotency_db_path=tmp_path / "idempotency.db")
-    assert isinstance(wiring.idempotency_store, SQLiteIdempotencyStore)
+    assert wiring.idempotency_store is not None
+    assert isinstance(wiring.idempotency_store, IdempotencyStore)
+    assert resolve_idempotency_store_topology(wiring.idempotency_store) is (
+        PersistenceTopology.DURABLE_SINGLE_HOST
+    )
     assert wiring.circuit_breaker_config.failure_threshold == env.reliability_profile.circuit_breaker_failure_threshold
 
 
@@ -64,7 +72,10 @@ def test_wire_application_reliability_product_defaults_select_sqlite(tmp_path, m
     monkeypatch.setenv("INTERGRAX_SQLITE_DATA_DIR", str(tmp_path))
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="rel.product")
     wiring = wire_application_reliability(env)
-    assert isinstance(wiring.idempotency_store, SQLiteIdempotencyStore)
+    assert wiring.idempotency_store is not None
+    assert resolve_idempotency_store_topology(wiring.idempotency_store) is (
+        PersistenceTopology.DURABLE_SINGLE_HOST
+    )
     assert_reliability_assembly_valid(wiring, env)
 
 
@@ -73,7 +84,9 @@ def test_wire_application_reliability_sqlite_survives_reopen(tmp_path, monkeypat
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="rel.reopen")
     db_path = tmp_path / "intergrax_idempotency.db"
     first = wire_application_reliability(env, idempotency_db_path=db_path)
-    assert isinstance(first.idempotency_store, SQLiteIdempotencyStore)
+    assert resolve_idempotency_store_topology(first.idempotency_store) is (
+        PersistenceTopology.DURABLE_SINGLE_HOST
+    )
     first.idempotency_store.record_started("tenant-a", "key-1")
     second = wire_application_reliability(env, idempotency_db_path=db_path)
     assert second.idempotency_store is not None

@@ -378,14 +378,18 @@ def test_product_wiring_auto_selects_sqlite_without_explicit_path(tmp_path, monk
     monkeypatch.setenv("INTERGRAX_SQLITE_DATA_DIR", str(tmp_path))
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="pcm.product.auto")
     wiring = wire_application_reliability(env)
-    assert isinstance(wiring.idempotency_store, SQLiteIdempotencyStore)
+    assert wiring.idempotency_store is not None
+    assert resolve_idempotency_store_topology(wiring.idempotency_store) is (
+        PersistenceTopology.DURABLE_SINGLE_HOST
+    )
     assert_reliability_assembly_valid(wiring, env)
 
 
 def test_product_wiring_does_not_use_inmemory_without_explicit_path() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="pcm.product.no_mem")
     wiring = wire_application_reliability(env)
-    assert not isinstance(wiring.idempotency_store, InMemoryIdempotencyStore)
+    provided = resolve_idempotency_store_topology(wiring.idempotency_store)
+    assert provided is not PersistenceTopology.PROCESS_LOCAL
 
 
 def test_r1_6_single_host_product_inmemory_fails() -> None:

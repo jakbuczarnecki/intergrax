@@ -16,13 +16,8 @@ from intergrax.applications._shared.reliability_runtime_bridge import (
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.integrations._shared.circuit_breaker import IntegrationCircuitBreakerConfig
-from intergrax.integrations.providers.relational_store.sqlite.paths import (
-    resolve_idempotency_db_path,
-)
-from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
-from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
+from intergrax.runtime.tools.reference_idempotency_store import resolve_reference_idempotency_store
 from intergrax.applications._shared.autonomy_middleware import AutonomyGovernanceMiddleware
 from intergrax.applications._shared.application_security_wiring import _attach_middleware
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -41,30 +36,27 @@ class ApplicationReliabilityWiring:
 def wire_application_reliability(
     env: ApplicationEnvironmentProfile,
     *,
+    idempotency_store: IdempotencyStore | None = None,
     idempotency_db_path: Path | None = None,
 ) -> ApplicationReliabilityWiring:
     """Materialize idempotency store and circuit breaker config from environment profile."""
     options = resolve_reliability_wiring_options(env.reliability_profile)
-    idempotency_store: IdempotencyStore | None = None
+    resolved_idempotency_store: IdempotencyStore | None = None
     if options.idempotency_enabled:
-        required_topology = env.meta.required_persistence_topology
-        if idempotency_db_path is not None:
-            resolved_path = resolve_idempotency_db_path(idempotency_db_path)
-            resolved_path.parent.mkdir(parents=True, exist_ok=True)
-            idempotency_store = SQLiteIdempotencyStore(str(resolved_path))
-        elif required_topology is PersistenceTopology.DURABLE_SINGLE_HOST:
-            resolved_path = resolve_idempotency_db_path(None)
-            resolved_path.parent.mkdir(parents=True, exist_ok=True)
-            idempotency_store = SQLiteIdempotencyStore(str(resolved_path))
+        if idempotency_store is not None:
+            resolved_idempotency_store = idempotency_store
         else:
-            idempotency_store = InMemoryIdempotencyStore()
+            resolved_idempotency_store = resolve_reference_idempotency_store(
+                env.meta.required_persistence_topology,
+                db_path=idempotency_db_path,
+            )
 
     circuit_breaker_config = IntegrationCircuitBreakerConfig(
         failure_threshold=options.circuit_breaker_failure_threshold,
     )
     return ApplicationReliabilityWiring(
         options=options,
-        idempotency_store=idempotency_store,
+        idempotency_store=resolved_idempotency_store,
         circuit_breaker_config=circuit_breaker_config,
     )
 
