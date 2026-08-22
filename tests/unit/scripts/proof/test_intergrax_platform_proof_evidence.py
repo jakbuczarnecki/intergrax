@@ -267,10 +267,10 @@ def test_execution_step_preserves_operational_fields() -> None:
     )
     step = evidence.scenarios[0].steps[1]
     assert step.purpose.text == "inspect segment"
-    assert step.evidence_basis_ids == ("evidence-tc-1",)
+    assert step.evidence_basis_ids == ("evidence-a-tc-1",)
     assert PLATFORM_PROOF_SQL_QUERY_TOOL_ID in step.action.text
     assert step.observation is not None
-    assert step.evidence_created_ids == ("evidence-tc-2",)
+    assert step.evidence_created_ids == ("evidence-a-tc-2",)
 
 
 def test_tool_invocation_preserves_canonical_tool_id() -> None:

@@ -292,7 +292,7 @@ def test_tool_call_trace_and_operational_fields_visible() -> None:
     assert "Observation:" in html
     assert "compare regions" in html
     assert "inspect segment" in html
-    assert "evidence-tc-1" in html
+    assert "evidence-a-tc-1" in html
     assert PLATFORM_PROOF_SQL_QUERY_TOOL_ID in html
     assert "uses" in html
 
