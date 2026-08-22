@@ -245,11 +245,11 @@ def run_investigation_scenario(
                 allowed_tool_ids=(PLATFORM_PROOF_SQL_QUERY_TOOL_ID,),
                 max_iterations=MAX_TOOL_ITERATIONS,
             )
-    except (InvestigationProofValidationError, ValueError) as exc:
+    except InvestigationProofValidationError as exc:
         snapshot = build_execution_snapshot(
             traces=tuple(state.tool_traces),
             investigation_proof=None,
-            stop_reason=type(exc).__name__,
+            stop_reason="investigation_proof_validation_error",
             final_answer=str(exc),
         )
         return evaluate_scenario(scenario.scenario_id, snapshot), snapshot
