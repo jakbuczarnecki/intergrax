@@ -8,13 +8,21 @@ import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol, runtime_checkable
+from uuid import uuid4
 
 from intergrax.agents.persistence.idempotency_ledger_bridge import (
-    record_side_effect_commit,
+    SideEffectCommitPayload,
     resolve_external_ref_from_store,
 )
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
-from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.idempotency_store import (
+    ClaimOutcome,
+    ClaimResult,
+    IdempotencyStore,
+    InvocationClaim,
+    InvocationUncertaintyError,
+)
+from intergrax.tools.execution_models import ToolExecutionResult
 
 DeclarativeToolStatus = Literal[
     "success",
@@ -74,11 +82,58 @@ class DeclarativeExecutionResult:
         return sum(1 for item in self.results if item.replay_skipped)
 
 
+_DEFAULT_LEASE_SECONDS = 300
+
+
 def _ledger_external_ref(ledger: SideEffectLedger, idempotency_key: str) -> str | None:
     for record in ledger.records():
         if record.idempotency_key == idempotency_key:
             return record.external_ref
     return None
+
+
+def _replay_external_ref(
+    *,
+    claim_result: ClaimResult,
+    idempotency_store: IdempotencyStore,
+    tenant_id: str,
+    idempotency_key: str,
+) -> str | None:
+    cached = claim_result.completed_result
+    if cached is not None and cached.success and cached.output is not None:
+        output = cached.output
+        if isinstance(output, SideEffectCommitPayload):
+            return output.external_ref
+        external_ref = output.model_dump().get("external_ref")
+        return external_ref if isinstance(external_ref, str) else None
+    return resolve_external_ref_from_store(
+        idempotency_store=idempotency_store,
+        tenant_id=tenant_id,
+        idempotency_key=idempotency_key,
+    )
+
+
+def _complete_declarative_claim(
+    *,
+    idempotency_store: IdempotencyStore,
+    tenant_id: str,
+    idempotency_key: str,
+    claim: InvocationClaim,
+    invoke_result: DeclarativeToolInvokeResult,
+    tool_id: str,
+) -> None:
+    if invoke_result.status == "success":
+        payload = SideEffectCommitPayload(
+            tool_id=tool_id,
+            external_ref=invoke_result.external_ref,
+        )
+        result: ToolExecutionResult[SideEffectCommitPayload] = ToolExecutionResult.ok(payload)
+    else:
+        result = ToolExecutionResult.fail(
+            code=f"declarative.{invoke_result.status}",
+            message=invoke_result.error or invoke_result.status,
+        )
+    idempotency_store.complete_with_claim(tenant_id, idempotency_key, claim, result)
 
 
 async def execute_declarative_actions(
@@ -133,6 +188,53 @@ async def execute_declarative_actions(
             )
             continue
 
+        claim: InvocationClaim | None = None
+        if key and idempotency_store is not None:
+            claim_result = idempotency_store.claim(
+                tenant_id,
+                key,
+                f"declarative-attempt-{uuid4().hex}",
+                _DEFAULT_LEASE_SECONDS,
+            )
+            if claim_result.outcome == ClaimOutcome.REPLAY_COMPLETED:
+                external_ref = _replay_external_ref(
+                    claim_result=claim_result,
+                    idempotency_store=idempotency_store,
+                    tenant_id=tenant_id,
+                    idempotency_key=key,
+                )
+                result.results.append(
+                    DeclarativeActionExecution(
+                        tool_id=tool_id,
+                        status="replay_skipped",
+                        idempotency_key=key,
+                        external_ref=external_ref,
+                        replay_skipped=True,
+                    )
+                )
+                continue
+            if claim_result.outcome == ClaimOutcome.BLOCKED_ACTIVE:
+                result.results.append(
+                    DeclarativeActionExecution(
+                        tool_id=tool_id,
+                        status="failed",
+                        idempotency_key=key,
+                        error=(
+                            f"Invocation already claimed for key={key}. "
+                            "Blocking concurrent execution."
+                        ),
+                    )
+                )
+                continue
+            if claim_result.outcome == ClaimOutcome.UNCERTAIN:
+                raise InvocationUncertaintyError(
+                    f"Invocation outcome uncertain for key={key}. "
+                    "Reconciliation required before retry.",
+                )
+            claim = claim_result.claim
+            if claim is None:
+                raise RuntimeError("Ledger inconsistency: ACQUIRED without claim.")
+
         started = time.perf_counter()
         invoke_result = await invoker.invoke(
             tool_id=tool_id,
@@ -141,17 +243,19 @@ async def execute_declarative_actions(
         )
         duration_ms = invoke_result.duration_ms or int((time.perf_counter() - started) * 1000)
 
+        if key and idempotency_store is not None and claim is not None:
+            _complete_declarative_claim(
+                idempotency_store=idempotency_store,
+                tenant_id=tenant_id,
+                idempotency_key=key,
+                claim=claim,
+                invoke_result=invoke_result,
+                tool_id=tool_id,
+            )
+
         if invoke_result.status == "success":
             if ledger is not None and key:
                 ledger.commit(key, external_ref=invoke_result.external_ref)
-            if key:
-                record_side_effect_commit(
-                    idempotency_store=idempotency_store,
-                    tenant_id=tenant_id,
-                    idempotency_key=key,
-                    tool_id=tool_id,
-                    external_ref=invoke_result.external_ref,
-                )
             result.results.append(
                 DeclarativeActionExecution(
                     tool_id=tool_id,
