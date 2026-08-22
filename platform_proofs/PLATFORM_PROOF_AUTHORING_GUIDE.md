@@ -377,11 +377,11 @@ Every proof requiring configuration **SHOULD** provide a committed `.env.example
 
 Intergrax reads configuration from the **process environment**. The platform library does **not** load `.env` by itself — see [PLATFORM_CONFIGURATION.md](../docs/project/technical/guides/PLATFORM_CONFIGURATION.md).
 
-The Proof Library defines **one deterministic target** configuration contract for proof packages:
+The Proof Library defines **one deterministic** configuration contract for proof packages:
 
 ```text
 process environment
-> explicit <proof-package>/.env
+> nearest .env found by walking upward from the proof package directory
 > safe defaults
 ```
 
@@ -389,16 +389,23 @@ Where:
 
 - process environment has highest priority
 - `.env` must **never** overwrite an already-set process variable
-- `.env` location is exactly the proof package — no parent / root / home recursive discovery
+- only **one** `.env` file is loaded — the nearest file on the path from the proof package up to (and including) repository root
+- search never continues above repository root; `$HOME` and filesystem paths outside the repository are never scanned
 - `.env.example` is committed when configuration is required
 - `.env` is local / gitignored
 - secrets never enter CLI args, `proof.json`, evidence, report, logs, or unsafe observability
 
-**Do NOT** introduce magic recursive `.env` discovery. **Do NOT** silently scan `../.env`, `../../.env`, or `$HOME/.env`.
+Every configured Scenario Proof has `.env.example`. At runtime the canonical proof environment loader (`scripts/proof/intergrax_proof_environment.py`):
 
-> Proof implementations must use the canonical shared proof environment loader once available. Until its existence is verified, authors must **STOP** during capability-fit rather than inventing per-proof dotenv loading.
+1. starts at the proof package directory;
+2. searches upward for `.env`;
+3. stops at repository root;
+4. loads only the nearest `.env`;
+5. never overwrites process environment.
 
-Do **not** implement a proof-local dotenv / config loader. Do **not** claim a shared proof dotenv loader already exists in the repository.
+Repository-root `.env` can therefore act as shared configuration for every proof that does not provide a nearer `.env`.
+
+Proof implementations must call the shared loader — do **not** implement a proof-local dotenv / config loader.
 
 ---
 
