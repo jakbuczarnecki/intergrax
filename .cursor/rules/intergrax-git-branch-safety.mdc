@@ -1,0 +1,45 @@
+---
+description: Git branch safety — never detach HEAD or create branches without operator approval
+alwaysApply: true
+---
+
+# Intergrax — Git branch safety
+
+**Default branch:** `development`. Stay on the operator-named branch unless they explicitly request otherwise.
+
+## Forbidden without explicit operator approval
+
+- `git checkout <commit-sha>` or `git switch --detach <commit-sha>` (creates detached HEAD)
+- `git checkout -b <name>` / `git switch -c <name>` (creates a new branch)
+- Leaving the session on detached HEAD
+
+## Pinned SHA / verification prompts
+
+When the operator pins a revision (`Pinned SHA`, `Current HEAD`, audit revision):
+
+1. **Stay on the named branch** (usually `development`).
+2. **Verify containment** — do not checkout the pin:
+
+```bash
+git fetch origin development
+git merge-base --is-ancestor <PINNED_SHA> HEAD
+```
+
+3. **If check fails** → **STOP** and report; ask before any checkout.
+4. **Record** `git rev-parse HEAD` in the report; do not move HEAD to match the pin.
+
+## Session end
+
+Before finishing, confirm:
+
+```bash
+git branch --show-current   # must be a branch name, not empty
+git symbolic-ref HEAD       # must succeed
+```
+
+If detached → `git checkout development` (or operator branch) before ending.
+
+## Allowed
+
+- `git fetch`, `git status`, `git log`, `git rev-parse`, `git merge-base`
+- `git checkout development` / `git switch development` to restore branch state
