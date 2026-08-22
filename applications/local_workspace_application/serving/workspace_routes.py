@@ -274,7 +274,7 @@ from local_workspace_application.workspaces.web_url_ingestion import (
 from intergrax.fastapi_core.context import get_request_context
 from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult
-from intergrax.runtime.task.task_run_bridge import new_run_id
+from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
 from intergrax.runtime.vendor_knowledge.live.bootstrap import (
     build_vendor_knowledge_live_registration_registry,
 )
@@ -1786,9 +1786,9 @@ def mount_managed_workspace_routes(
         if workspace is None:
             raise _not_found()
 
-        run_id = new_run_id()
+        task_id, _ = mint_intake_execution_identity()
         task = Task(
-            task_id=run_id,
+            task_id=task_id,
             tenant_id=tenant_id,
             user_id="lkw.managed_workspace",
             message=body.query,
