@@ -1797,6 +1797,98 @@ def test_cleanup_failure_after_functional_pass_fails_overall(
     assert "core_proof_all_phases_passed=true" not in text
 
 
+def test_unexpected_teardown_runtime_error_after_coreprooferror_preserves_primary(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+
+    def _fail(_config: Any) -> Any:
+        raise core.CoreProofError("HTTPError", phase="elasticsearch")
+
+    def _teardown_fail() -> None:
+        raise RuntimeError("compose timeout leaked secret")
+
+    runners = _all_ok_runners(core)
+    runners["elasticsearch"] = _fail
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=runners,
+            teardown=_teardown_fail,
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert "failed_phase=elasticsearch" in text
+    assert "failure_reason=HTTPError" in text
+    assert "core_teardown_attempted=true" in text
+    assert "core_teardown_result=FAIL" in text
+    assert "core_teardown_error_type=RuntimeError" in text
+    assert "failure_reason=proof_teardown_failed" not in text
+    assert "core_proof_result=PASS" not in text
+    assert "compose timeout leaked secret" not in text
+
+
+def test_unexpected_teardown_runtime_error_after_unexpected_phase_preserves_primary(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+
+    def _boom(_config: Any) -> Any:
+        raise ValueError("phase detail must not leak")
+
+    def _teardown_fail() -> None:
+        raise RuntimeError("teardown detail must not leak")
+
+    runners = _all_ok_runners(core)
+    runners["persistence"] = _boom
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=runners,
+            teardown=_teardown_fail,
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert "failed_phase=persistence" in text
+    assert "failure_reason=ValueError" in text
+    assert "core_teardown_result=FAIL" in text
+    assert "core_teardown_error_type=RuntimeError" in text
+    assert "failure_reason=proof_teardown_failed" not in text
+    assert "teardown detail must not leak" not in text
+
+
+def test_unexpected_teardown_runtime_error_after_functional_pass_fails_overall(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+
+    def _teardown_fail() -> None:
+        raise RuntimeError("raw teardown message must not appear")
+
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=_all_ok_runners(core),
+            teardown=_teardown_fail,
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert "core_teardown_result=FAIL" in text
+    assert "core_teardown_error_type=RuntimeError" in text
+    assert "failure_reason=proof_teardown_failed" in text
+    assert "core_proof_result=PASS" not in text
+    assert "raw teardown message must not appear" not in text
+
+
 def test_teardown_compose_files_include_file_watcher_overlay(
     core: ModuleType,
 ) -> None:

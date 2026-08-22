@@ -2013,8 +2013,9 @@ def run_core_proof(
             try:
                 teardown_fn()
                 _print_kv("core_teardown_result", "PASS")
-            except CoreProofError:
+            except Exception as exc:  # noqa: BLE001 - terminal cleanup boundary
                 _print_kv("core_teardown_result", "FAIL")
+                _print_kv("core_teardown_error_type", type(exc).__name__)
                 teardown_ok = False
                 if functional_pass:
                     failure_phase = (
