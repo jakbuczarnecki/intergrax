@@ -152,10 +152,14 @@ class PlatformProofDescriptor(BaseModel):
             raise ValueError("mechanisms_exercised must be non-empty")
         if isinstance(value, str):
             raise ValueError("mechanisms_exercised must be a sequence")
+        if not isinstance(value, (list, tuple)):
+            raise ValueError("mechanisms_exercised must be a sequence")
         normalized: list[str] = []
         seen: set[str] = set()
         for item in value:
-            mechanism_id = str(item).strip()
+            if not isinstance(item, str):
+                raise ValueError("mechanisms_exercised must contain only strings")
+            mechanism_id = item.strip()
             if not mechanism_id:
                 raise ValueError("mechanisms_exercised must not contain empty values")
             if len(mechanism_id) > MECHANISM_ID_MAX_LENGTH:
@@ -195,7 +199,9 @@ class PlatformProofDescriptor(BaseModel):
     def _normalize_optional_scenario_text(cls, value: object) -> str | None:
         if value is None:
             return None
-        return str(value).strip()
+        if not isinstance(value, str):
+            raise ValueError("must be a string or null")
+        return value.strip()
 
     @model_validator(mode="after")
     def _validate_library_class_fields(self) -> PlatformProofDescriptor:

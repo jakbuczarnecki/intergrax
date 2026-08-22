@@ -237,6 +237,51 @@ def test_valid_unique_mechanisms_exercised_passes() -> None:
     assert descriptor.mechanisms_exercised == ("tools.alpha", "tools.beta")
 
 
+def test_mechanisms_exercised_whitespace_trimmed() -> None:
+    descriptor = PlatformProofDescriptor.model_validate(
+        _minimal_conformance_descriptor(
+            mechanisms_exercised=["  tools.alpha  ", "tools.beta"]
+        )
+    )
+    assert descriptor.mechanisms_exercised == ("tools.alpha", "tools.beta")
+
+
+@pytest.mark.parametrize(
+    ("invalid_value",),
+    [
+        ({"foo": "bar"},),
+        (123,),
+        (True,),
+        ("tools.sample_mechanism",),
+    ],
+)
+def test_invalid_mechanisms_exercised_container_rejected(
+    invalid_value: object,
+) -> None:
+    with pytest.raises(ValidationError, match="mechanisms_exercised"):
+        PlatformProofDescriptor.model_validate(
+            _minimal_conformance_descriptor(mechanisms_exercised=invalid_value)
+        )
+
+
+@pytest.mark.parametrize(
+    ("invalid_element",),
+    [
+        (123,),
+        (True,),
+    ],
+)
+def test_invalid_mechanisms_exercised_element_rejected(
+    invalid_element: object,
+) -> None:
+    with pytest.raises(ValidationError, match="only strings"):
+        PlatformProofDescriptor.model_validate(
+            _minimal_conformance_descriptor(
+                mechanisms_exercised=["tools.sample_mechanism", invalid_element]
+            )
+        )
+
+
 @pytest.mark.parametrize(
     ("missing_field",),
     [
@@ -264,6 +309,24 @@ def test_scenario_blank_required_field_rejected(field_name: str, value: str) -> 
     with pytest.raises(ValidationError, match=field_name):
         PlatformProofDescriptor.model_validate(
             _minimal_scenario_descriptor(**{field_name: value})
+        )
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    ["problem_category", "problem_summary", "failure_mode_summary"],
+)
+@pytest.mark.parametrize(
+    "invalid_value",
+    [123, True, ["list"], {"key": "value"}],
+)
+def test_scenario_problem_field_non_string_rejected(
+    field_name: str,
+    invalid_value: object,
+) -> None:
+    with pytest.raises(ValidationError, match="must be a string or null"):
+        PlatformProofDescriptor.model_validate(
+            _minimal_scenario_descriptor(**{field_name: invalid_value})
         )
 
 

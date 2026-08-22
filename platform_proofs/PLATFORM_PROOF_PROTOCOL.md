@@ -81,6 +81,8 @@ Both classes remain **executable falsification attempts** — not demos. **Platf
 
 `domain` remains technical primary ownership / grouping metadata for the runner and `ProofManifestEntry`. Library metadata (`library_class`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not need to appear in runner-facing manifest entries unless execution requires it.
 
+Every descriptor declares `library_class` and `mechanisms_exercised`. SCENARIO additionally requires `problem_category`, `problem_summary`, and `failure_mode_summary`. CONFORMANCE forbids those problem fields.
+
 ---
 
 ## C. Source of truth
