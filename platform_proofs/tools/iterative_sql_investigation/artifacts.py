@@ -15,6 +15,10 @@ from scripts.proof.intergrax_platform_proof_evidence_io import (
     write_evidence_json,
 )
 
+from platform_proofs.tools.iterative_sql_investigation.report_renderer import (
+    write_tools_sql_investigation_report,
+)
+
 from platform_proofs.tools.iterative_sql_investigation.dataset_identity import PROOF_ID
 from platform_proofs.tools.iterative_sql_investigation.proof_result import (
     ToolsSqlInvestigationProofResult,
@@ -78,3 +82,12 @@ def write_evidence(
 ) -> Path:
     """Persist generic Platform Proof evidence JSON under the run directory."""
     return write_evidence_json(evidence, proof_directory=run_directory)
+
+
+def write_report(
+    evidence: PlatformProofEvidence,
+    *,
+    run_directory: Path,
+) -> Path:
+    """Persist self-contained HTML report from the same typed evidence instance."""
+    return write_tools_sql_investigation_report(evidence, run_directory=run_directory)

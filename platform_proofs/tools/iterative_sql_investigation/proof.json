@@ -37,11 +37,11 @@
     {
       "kind": "REPORT_HTML",
       "relative_path": "report.html",
-      "required": false
+      "required": true
     }
   ],
   "evidence_schema": "intergrax.platform_proof_evidence.v1",
   "evidence_required": true,
-  "report_required": false,
+  "report_required": true,
   "tags": ["tools", "llm", "postgresql", "live-provider"]
 }

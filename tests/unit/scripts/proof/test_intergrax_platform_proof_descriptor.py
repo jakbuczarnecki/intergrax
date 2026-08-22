@@ -61,7 +61,7 @@ def test_tools_descriptor_parses(tools_descriptor_path: Path, repo_root: Path) -
     assert descriptor.domain == "tools"
     assert descriptor.package_version == "1.0.0"
     assert descriptor.evidence_schema == "intergrax.platform_proof_evidence.v1"
-    assert descriptor.report_required is False
+    assert descriptor.report_required is True
 
 
 def test_tools_descriptor_normalizes_to_static_manifest_entry(

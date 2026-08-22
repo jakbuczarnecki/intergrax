@@ -860,7 +860,8 @@ def test_tools_descriptor_expected_artifacts_contract(repo_root: Path) -> None:
         for artifact in descriptor.expected_artifacts
         if artifact.kind == ExpectedArtifactKind.REPORT_HTML
     )
-    assert report.required is False
+    assert report.required is True
+    assert descriptor.report_required is True
 
 
 def test_verification_order_is_descriptor_declaration(

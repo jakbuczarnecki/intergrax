@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import html
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
@@ -69,6 +70,15 @@ _REMOTE_IMAGE_RE = re.compile(
 
 class PlatformProofReportRenderError(Exception):
     """Raised when report-safe rendering cannot proceed safely."""
+
+
+@dataclass(frozen=True, slots=True)
+class RenderedReportSection:
+    """Trusted domain-owned HTML section inserted by specialized renderers (PP-REPORT-4+)."""
+
+    section_id: str
+    title: str
+    html: str
 
 
 def _escape(value: str) -> str:
@@ -868,7 +878,12 @@ def _render_report_identity(evidence: PlatformProofEvidence) -> str:
     )
 
 
-def render_platform_proof_report(evidence: PlatformProofEvidence) -> str:
+def render_platform_proof_report(
+    evidence: PlatformProofEvidence,
+    *,
+    domain_sections: tuple[RenderedReportSection, ...] = (),
+    extra_css: str = "",
+) -> str:
     """Render self-contained HTML for the given typed evidence."""
     sections: list[tuple[str, str, Callable[[], str]]] = [
         ("report-identity", "Report identity", lambda: _render_report_identity(evidence)),
@@ -898,6 +913,7 @@ def render_platform_proof_report(evidence: PlatformProofEvidence) -> str:
         ("provenance", "Provenance", lambda: _render_provenance(evidence.provenance, evidence.proof_identity)),
     ]
     body_parts: list[str] = []
+    domain_inserted = False
     for section_id, title, renderer in sections:
         body_parts.append(
             f'<section id="{section_id}" aria-labelledby="{section_id}-heading">'
@@ -905,19 +921,34 @@ def render_platform_proof_report(evidence: PlatformProofEvidence) -> str:
             f"{renderer()}"
             "</section>"
         )
-    domain_html = _render_domain_extensions(evidence.domain_extension)
-    if domain_html:
-        body_parts.append(
-            f'<section id="domain-extension" aria-labelledby="domain-extension-heading">'
-            f"{domain_html}</section>"
-        )
+        if section_id == "scenario-overview" and domain_sections:
+            for domain_section in domain_sections:
+                body_parts.append(
+                    f'<section id="{_escape(domain_section.section_id)}" '
+                    f'aria-labelledby="{_escape(domain_section.section_id)}-heading">'
+                    f'<h2 id="{_escape(domain_section.section_id)}-heading">'
+                    f"{_escape(domain_section.title)}</h2>"
+                    f"{domain_section.html}"
+                    "</section>"
+                )
+            domain_inserted = True
+    if not domain_inserted:
+        domain_html = _render_domain_extensions(evidence.domain_extension)
+        if domain_html:
+            body_parts.append(
+                f'<section id="domain-extension" aria-labelledby="domain-extension-heading">'
+                f"{domain_html}</section>"
+            )
+    style_block = _css()
+    if extra_css.strip():
+        style_block = f"{style_block}\n{extra_css.strip()}"
     document = (
         "<!DOCTYPE html>\n"
         '<html lang="en">\n<head>\n'
         '<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f"<title>Platform Proof Report — {_escape(evidence.proof_identity.proof_id)}</title>\n"
-        f"<style>\n{_css()}\n</style>\n"
+        f"<style>\n{style_block}\n</style>\n"
         "</head>\n<body>\n<main>\n"
         + "\n".join(body_parts)
         + "\n</main>\n</body>\n</html>\n"
@@ -946,3 +977,16 @@ def assert_no_external_report_dependencies(html_content: str) -> None:
         raise PlatformProofReportRenderError("remote CSS import detected")
     if _REMOTE_IMAGE_RE.search(html_content):
         raise PlatformProofReportRenderError("remote image reference detected")
+
+
+# Trusted domain extension primitives (PP-REPORT-4+).
+escape_report_html = _escape
+render_report_safe_text = _render_report_safe_text
+render_report_safe_payload = _render_report_safe_payload
+render_execution_status_badge = _status_badge
+render_step_status_badge = _step_status_badge
+
+
+def render_evidence_id_badge(evidence_id: str) -> str:
+    """Render a styled evidence identifier span."""
+    return f'<span class="evidence-id">{_escape(evidence_id)}</span>'
