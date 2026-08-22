@@ -23,7 +23,12 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.environment_profile.bundles import HostMeta
 from intergrax.applications.contracts.execution_mode import ExecutionMode
-from intergrax.contracts.idempotency_store import IdempotencyStore, InvocationStatus
+from intergrax.contracts.idempotency_store import (
+    ClaimResult,
+    IdempotencyStore,
+    InvocationClaim,
+    InvocationStatus,
+)
 from intergrax.contracts.persistence_topology import (
     DeploymentTopology,
     PersistenceTopology,
@@ -52,6 +57,27 @@ class _UndeclaredTopologyIdempotencyStore(IdempotencyStore):
 
     def get_status(self, tenant_id: str, key: str) -> Optional[InvocationStatus]:
         return None
+
+    def claim(
+        self,
+        tenant_id: str,
+        key: str,
+        owner_id: str,
+        lease_seconds: int,
+    ) -> ClaimResult:
+        del tenant_id, key, owner_id, lease_seconds
+        raise NotImplementedError
+
+    def complete_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+        result: ToolExecutionResult[BaseModel],
+        completed_ttl_seconds: Optional[int] = None,
+    ) -> None:
+        del tenant_id, key, claim, result, completed_ttl_seconds
+        raise NotImplementedError
 
     def record_started(
         self,
@@ -87,6 +113,27 @@ class _BrandNameOnlyIdempotencyStore(IdempotencyStore):
 
     def get_status(self, tenant_id: str, key: str) -> Optional[InvocationStatus]:
         return None
+
+    def claim(
+        self,
+        tenant_id: str,
+        key: str,
+        owner_id: str,
+        lease_seconds: int,
+    ) -> ClaimResult:
+        del tenant_id, key, owner_id, lease_seconds
+        raise NotImplementedError
+
+    def complete_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+        result: ToolExecutionResult[BaseModel],
+        completed_ttl_seconds: Optional[int] = None,
+    ) -> None:
+        del tenant_id, key, claim, result, completed_ttl_seconds
+        raise NotImplementedError
 
     def record_started(
         self,
@@ -325,6 +372,20 @@ def test_r1_5_single_host_product_sqlite_passes(tmp_path) -> None:
     wiring = wire_application_reliability(env, idempotency_db_path=tmp_path / "idempotency.db")
     result = validate_reliability_wiring(wiring, env)
     assert result.valid
+
+
+def test_product_wiring_auto_selects_sqlite_without_explicit_path(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("INTERGRAX_SQLITE_DATA_DIR", str(tmp_path))
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="pcm.product.auto")
+    wiring = wire_application_reliability(env)
+    assert isinstance(wiring.idempotency_store, SQLiteIdempotencyStore)
+    assert_reliability_assembly_valid(wiring, env)
+
+
+def test_product_wiring_does_not_use_inmemory_without_explicit_path() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="pcm.product.no_mem")
+    wiring = wire_application_reliability(env)
+    assert not isinstance(wiring.idempotency_store, InMemoryIdempotencyStore)
 
 
 def test_r1_6_single_host_product_inmemory_fails() -> None:

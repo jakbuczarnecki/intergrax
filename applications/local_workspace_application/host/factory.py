@@ -124,6 +124,7 @@ def create_local_workspace_backend_app(
         settings=resolved_settings,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
+        idempotency_db_path=Path(resolved_settings.idempotency_db_path),
         document_store=lkw_document_store,
         registry_projection=registry_projection,
     )

@@ -60,6 +60,26 @@ def test_wire_application_reliability_uses_in_memory_when_idempotency_disabled()
     assert wiring.idempotency_store is None
 
 
+def test_wire_application_reliability_product_defaults_select_sqlite(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("INTERGRAX_SQLITE_DATA_DIR", str(tmp_path))
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="rel.product")
+    wiring = wire_application_reliability(env)
+    assert isinstance(wiring.idempotency_store, SQLiteIdempotencyStore)
+    assert_reliability_assembly_valid(wiring, env)
+
+
+def test_wire_application_reliability_sqlite_survives_reopen(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("INTERGRAX_SQLITE_DATA_DIR", str(tmp_path))
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="rel.reopen")
+    db_path = tmp_path / "intergrax_idempotency.db"
+    first = wire_application_reliability(env, idempotency_db_path=db_path)
+    assert isinstance(first.idempotency_store, SQLiteIdempotencyStore)
+    first.idempotency_store.record_started("tenant-a", "key-1")
+    second = wire_application_reliability(env, idempotency_db_path=db_path)
+    assert second.idempotency_store is not None
+    assert second.idempotency_store.get_status("tenant-a", "key-1") is not None
+
+
 def test_assert_reliability_assembly_valid_lab_defaults() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="rel.valid")
     wiring = wire_application_reliability(env)

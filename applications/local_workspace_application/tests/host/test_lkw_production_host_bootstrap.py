@@ -4,8 +4,16 @@ from __future__ import annotations
 
 import pytest
 from fastapi import FastAPI
+from pathlib import Path
 
 from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
+from intergrax.applications._shared.reliability_assembly_resolver import (
+    assert_reliability_assembly_valid,
+)
+from intergrax.applications._shared.reliability_wiring import wire_application_reliability
+from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
+from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
+from intergrax.integrations.providers.relational_store.sqlite.paths import IDEMPOTENCY_DB_NAME
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
 )
@@ -150,3 +158,23 @@ def test_run_reference_production_uses_same_composition_stores(
         process_composition=composition,
         settings=settings,
     ).title == served_app[0].title
+
+
+def test_lkw_product_wiring_uses_durable_idempotency_store_under_data_home(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOCAL_WORKSPACE_DATA_HOME", str(tmp_path / "lkw-data"))
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    env = build_local_workspace_environment_profile(settings)
+    wiring = wire_application_reliability(
+        env,
+        idempotency_db_path=Path(settings.idempotency_db_path),
+    )
+
+    assert not isinstance(wiring.idempotency_store, InMemoryIdempotencyStore)
+    assert isinstance(wiring.idempotency_store, SQLiteIdempotencyStore)
+    assert_reliability_assembly_valid(wiring, env)
+    assert settings.idempotency_db_path.endswith(f"data/sqlite/{IDEMPOTENCY_DB_NAME}")
+    assert Path(settings.idempotency_db_path).exists()
