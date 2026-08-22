@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.contracts.llm_guardrail import GuardrailBackendOptions
 from intergrax.integrations.contracts.llm_guardrail import GuardrailContext, GuardrailScanResult, LlmGuardrailBackend
 from intergrax.integrations.providers.llm_guardrail._pattern_scanner import scan_patterns
 from intergrax.integrations.providers.llm_guardrail._vendor_opens import (
@@ -32,5 +31,5 @@ class LlmGuardAdapter(BaseGuardrailAdapter):
         return scan_patterns(text, mode="output", slug=self._slug)
 
 
-def create_llm_guard_backend(*, options: GuardrailBackendOptions | None = None) -> LlmGuardrailBackend:
-    return LlmGuardAdapter(slug="llm_guard", options=options)
+def create_llm_guard_backend() -> LlmGuardrailBackend:
+    return LlmGuardAdapter(slug="llm_guard")

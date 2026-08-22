@@ -18,14 +18,13 @@ class GuardrailRiskLevel(str, Enum):
 
 
 class GuardrailBackendOptions(BaseModel):
-    """Vendor-specific options resolved at Tier-3 wiring time."""
+    """Provider-neutral guardrail wiring metadata (chaining only).
+
+    Provider-specific configuration lives in ``IntegrationProfile.options[slug]``
+    and is validated by provider-owned option models at factory time.
+    """
 
     model_config = ConfigDict(extra="forbid")
-
-    secondary_slug: str | None = None
-    colang_config_path: str | None = None
-    bedrock_guardrail_policy_id: str | None = None
-    inference_slug: str | None = None
 
 
 class GuardrailContext(BaseModel):

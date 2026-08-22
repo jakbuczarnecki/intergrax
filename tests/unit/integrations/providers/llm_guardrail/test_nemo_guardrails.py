@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.integrations.contracts.llm_guardrail import GuardrailBackendOptions
 from intergrax.integrations.providers.llm_guardrail.bundles.nemo_guardrails import create_nemo_guardrails_backend
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -12,7 +11,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 def test_nemo_guardrails_uses_mocked_colang_scan(monkeypatch: pytest.MonkeyPatch) -> None:
     backend = create_nemo_guardrails_backend(
-        options=GuardrailBackendOptions(colang_config_path="/tmp/demo"),
+        provider_options={"config_path": "/tmp/demo"},
     )
 
     def _blocked(_text: str, *, mode: str, colang_path: str) -> dict[str, object]:

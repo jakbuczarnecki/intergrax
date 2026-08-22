@@ -4,11 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.contracts.llm_guardrail import (
-    GuardrailBackendOptions,
-    GuardrailContext,
-    GuardrailScanResult,
-)
+from intergrax.integrations.contracts.llm_guardrail import GuardrailContext, GuardrailScanResult
 
 
 class BaseGuardrailAdapter:
@@ -18,10 +14,8 @@ class BaseGuardrailAdapter:
         self,
         *,
         slug: str,
-        options: GuardrailBackendOptions | None = None,
     ) -> None:
         self._slug = slug
-        self._options = options or GuardrailBackendOptions()
 
     @property
     def slug(self) -> str:
