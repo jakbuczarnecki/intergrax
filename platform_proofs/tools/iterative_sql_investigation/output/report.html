@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform Proof Report — TOOLS-ITERATIVE-SQL-INVESTIGATION</title>
+<style>
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --text: #1a2332;
+  --muted: #5c6b7a;
+  --border: #d8dee6;
+  --accent: #2563eb;
+  --pass: #15803d;
+  --pass-bg: #ecfdf3;
+  --fail: #b91c1c;
+  --fail-bg: #fef2f2;
+  --blocked: #b45309;
+  --blocked-bg: #fffbeb;
+  --crash: #7f1d1d;
+  --crash-bg: #fef2f2;
+  --card-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --max-width: 960px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.5;
+}
+main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+h1, h2, h3 { line-height: 1.25; margin: 0 0 0.75rem; }
+h1 { font-size: 1.75rem; }
+h2 {
+  font-size: 1.25rem;
+  margin-top: 2rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+h3 { font-size: 1.05rem; margin-top: 1.25rem; }
+p { margin: 0 0 0.75rem; }
+ul, ol { margin: 0 0 0.75rem 1.25rem; }
+.muted { color: var(--muted); }
+.card-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 1rem;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  box-shadow: var(--card-shadow);
+}
+.card-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+.card-value { font-weight: 600; word-break: break-word; }
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 1px solid transparent;
+}
+.status-pass { color: var(--pass); background: var(--pass-bg); border-color: #86efac; }
+.status-fail { color: var(--fail); background: var(--fail-bg); border-color: #fecaca; }
+.status-blocked { color: var(--blocked); background: var(--blocked-bg); border-color: #fde68a; }
+.status-crash { color: var(--crash); background: var(--crash-bg); border-color: #fca5a5; }
+.executive-summary {
+  background: var(--surface);
+  border-left: 4px solid var(--accent);
+  padding: 1rem 1.1rem;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 1.25rem;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  background: var(--surface);
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.6rem;
+  vertical-align: top;
+  text-align: left;
+}
+th { background: #f8fafc; }
+tbody tr:nth-child(even) { background: #fbfdff; }
+.trace-desktop { display: block; }
+.trace-mobile { display: none; }
+.trace-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.trace-card dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+.trace-card dd { margin: 0.15rem 0 0; }
+pre, .payload-value {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  margin: 0;
+  max-height: 14rem;
+  overflow: auto;
+}
+.evidence-id {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+}
+.ground-truth-panel {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.ground-truth-panel section {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: var(--surface);
+}
+.ground-truth-panel h3 { margin-top: 0; font-size: 0.95rem; }
+.verdict-panel {
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--surface);
+}
+.verdict-panel.pass { border-color: #86efac; }
+.verdict-panel.fail { border-color: #fecaca; }
+.final-output-panel {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fafbfc;
+}
+.failure-panel {
+  border-left: 4px solid var(--fail);
+  background: var(--fail-bg);
+  padding: 0.9rem 1rem;
+  border-radius: 0 8px 8px 0;
+}
+.arch-diagram, .graph-diagram {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.section-empty {
+  color: var(--muted);
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+.step-ok { color: var(--pass); font-weight: 600; }
+.step-fail { color: var(--fail); font-weight: 600; }
+.step-skipped { color: var(--muted); font-weight: 600; }
+@media (max-width: 720px) {
+  .trace-desktop { display: none; }
+  .trace-mobile { display: block; }
+}
+@media print {
+  body { background: #fff; }
+  main { max-width: none; padding: 0; }
+  .card, .trace-card, table { break-inside: avoid; }
+  pre { max-height: none; overflow: visible; }
+}
+.tools-overview-grid { margin-bottom: 1rem; }
+.tools-timeline { display: flex; flex-direction: column; gap: 0.5rem; }
+.tools-timeline-step {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+}
+.tools-timeline-step.tool-call { border-left: 4px solid var(--accent); }
+.tools-timeline-arrow {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 0.15rem 0;
+}
+.tools-flow-diagram { margin: 0.75rem 0; }
+.tools-scenario-flow {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  margin-bottom: 0.75rem;
+}
+.tools-scenario-flow h4 { margin: 0 0 0.5rem; }
+.tools-scenario-flow.pass { border-left: 4px solid var(--pass); }
+.tools-scenario-flow.fail { border-left: 4px solid var(--fail); }
+.tools-verdict-banner {
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+.tools-verdict-banner.pass { background: var(--pass-bg); color: var(--pass); border: 1px solid #86efac; }
+.tools-verdict-banner.fail { background: var(--fail-bg); color: var(--fail); border: 1px solid #fecaca; }
+.tools-verdict-banner.blocked { background: var(--blocked-bg); color: var(--blocked); border: 1px solid #fde68a; }
+.tools-verdict-banner.crash { background: var(--crash-bg); color: var(--crash); border: 1px solid #fca5a5; }
+.tools-ground-truth {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  margin: 0.75rem 0;
+}
+.tools-ground-truth section {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: var(--surface);
+}
+.tools-ground-truth .proof-panel { border-left: 4px solid #b45309; }
+.tools-ground-truth .model-panel { border-left: 4px solid var(--accent); }
+.tools-tool-table { font-size: 0.88rem; }
+.tools-tool-table td pre { max-height: 8rem; }
+</style>
+</head>
+<body>
+<main>
+<section id="report-identity" aria-labelledby="report-identity-heading"><h2 id="report-identity-heading">Report identity</h2><h1>TOOLS iterative SQL investigation platform proof</h1><p class="muted">Platform Proof Report · standard v1</p><div class="card-grid"><div class="card"><div class="card-label">Proof ID</div><div class="card-value">TOOLS-ITERATIVE-SQL-INVESTIGATION</div></div><div class="card"><div class="card-label">Domain</div><div class="card-value">tools</div></div><div class="card"><div class="card-label">Status</div><div class="card-value"><span class="status-badge status-fail" role="status" aria-label="FAIL"><span class="status-icon" aria-hidden="true">✗</span><span class="status-label">FAIL</span></span></div></div><div class="card"><div class="card-label">Revision</div><div class="card-value">a7877c106143c374aa5a25787824796cfc29c601</div></div><div class="card"><div class="card-label">Platform</div><div class="card-value">windows</div></div><div class="card"><div class="card-label">Started</div><div class="card-value">2026-08-22T08:45:24.766373+00:00</div></div></div></section>
+<section id="executive-summary" aria-labelledby="executive-summary-heading"><h2 id="executive-summary-heading">Executive summary</h2><div class="executive-summary"><p>This report documents proof TOOLS-ITERATIVE-SQL-INVESTIGATION (TOOLS iterative SQL investigation platform proof) in domain tools.</p><p>Execution result: FAIL on platform windows at revision a7877c106143c374aa5a25787824796cfc29c601.</p><p>Claim under test: The bounded iterative tool runtime can use real SQL observations from PostgreSQL via a real LLM provider to drive subsequent evidence-dependent tool calls, preserve an explicit InvestigationProof chain, and reach a bounded conclusion while rejecting unsupported causal claims.</p><p>Primary evaluator conclusion: Evaluator did not pass. Reasons: insufficient_tool_calls:1, semantic_outcome_failed.</p><p>Strongest evidence pointer: evidence graph (evidence-a-tool-call-1).</p><p>Primary limitation: Single configured LLM provider/model per run.</p></div></section>
+<section id="claim-under-test" aria-labelledby="claim-under-test-heading"><h2 id="claim-under-test-heading">Claim under test</h2><p><strong>Claim:</strong> The bounded iterative tool runtime can use real SQL observations from PostgreSQL via a real LLM provider to drive subsequent evidence-dependent tool calls, preserve an explicit InvestigationProof chain, and reach a bounded conclusion while rejecting unsupported causal claims.</p><p><strong>User relevance:</strong> Demonstrates that Intergrax can orchestrate real tool loops with auditable evidence chains for investigative SQL workloads.</p><h3>Success criteria</h3><ul><li>Minimum successful tool-call counts per scenario.</li><li>Valid evidence-dependent follow-up chain (ENG-6).</li><li>Scenario-specific semantic outcomes pass evaluator checks.</li><li>Normal bounded termination stop_reason.</li></ul><h3>Falsification criteria</h3><ul><li>Missing or invalid evidence basis on follow-up tool rounds.</li><li>Unsupported causal or staffing claims in final answers.</li><li>Volume-only explanation accepted for scenario A.</li></ul></section>
+<section id="excluded-claims" aria-labelledby="excluded-claims-heading"><h2 id="excluded-claims-heading">What this proof does not prove</h2><ul><li>Production readiness or commercial validation.</li><li>Universal provider compatibility.</li><li>Real-user workflow validation.</li><li>All deployment modes and workloads.</li></ul></section>
+<section id="architecture-under-proof" aria-labelledby="architecture-under-proof-heading"><h2 id="architecture-under-proof-heading">Architecture under proof</h2><svg class="arch-diagram" viewBox="0 0 640 320" role="img" aria-labelledby="arch-diagram-title"><title id="arch-diagram-title">Architecture under proof</title><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#64748b"/></marker></defs><rect x="40" y="10" width="220" height="40" rx="6" fill="#f8fafc" stroke="#94a3b8"/><text x="50" y="35" font-size="12" fill="#1e293b">LLM provider</text><text x="280" y="35" font-size="11" fill="#64748b">EXTERNAL_VENDOR</text><rect x="40" y="66" width="220" height="40" rx="6" fill="#f8fafc" stroke="#94a3b8"/><text x="50" y="91" font-size="12" fill="#1e293b">Intergrax Nexus runtime</text><text x="280" y="91" font-size="11" fill="#64748b">PLATFORM</text><rect x="40" y="122" width="220" height="40" rx="6" fill="#f8fafc" stroke="#94a3b8"/><text x="50" y="147" font-size="12" fill="#1e293b">platform_proof.sql.query</text><text x="280" y="147" font-size="11" fill="#64748b">PROOF_OWNED</text><rect x="40" y="178" width="220" height="40" rx="6" fill="#f8fafc" stroke="#94a3b8"/><text x="50" y="203" font-size="12" fill="#1e293b">PostgreSQL fixture dataset</text><text x="280" y="203" font-size="11" fill="#64748b">CONTROLLED_FIXTURE</text><rect x="40" y="234" width="220" height="40" rx="6" fill="#f8fafc" stroke="#94a3b8"/><text x="50" y="259" font-size="12" fill="#1e293b">TOOLS SQL investigation evaluator</text><text x="280" y="259" font-size="11" fill="#64748b">PROOF_OWNED</text><line x1="560" y1="50" x2="560" y2="66" stroke="#64748b" marker-end="url(#arrow)"/><text x="568" y="58" font-size="10" fill="#475569">native_tool_planning</text><line x1="560" y1="106" x2="560" y2="122" stroke="#64748b" marker-end="url(#arrow)"/><text x="568" y="114" font-size="10" fill="#475569">bounded_tool_invocation</text><line x1="560" y1="162" x2="560" y2="178" stroke="#64748b" marker-end="url(#arrow)"/><text x="568" y="170" font-size="10" fill="#475569">read_only_sql</text><line x1="560" y1="106" x2="560" y2="234" stroke="#64748b" marker-end="url(#arrow)"/><text x="568" y="170" font-size="10" fill="#475569">scenario_evaluation</text></svg></section>
+<section id="participants" aria-labelledby="participants-heading"><h2 id="participants-heading">Participants / components</h2><table><thead><tr><th>Component</th><th>Implementation</th><th>Version</th><th>Role</th><th>Class</th></tr></thead><tbody><tr><td>LLM provider</td><td>openai</td><td>gpt-5.1</td><td>Planning and final answers</td><td>EXTERNAL_VENDOR</td></tr><tr><td>Intergrax Nexus runtime</td><td>Intergrax</td><td>platform</td><td>Bounded tool loop and adapter boundary</td><td>PLATFORM</td></tr><tr><td>platform_proof.sql.query</td><td>Intergrax platform proof SQL tool</td><td>v1</td><td>Read-only SQL boundary</td><td>PROOF_OWNED</td></tr><tr><td>PostgreSQL fixture dataset</td><td>PostgreSQL</td><td>docker</td><td>Controlled relational fixture</td><td>CONTROLLED_FIXTURE</td></tr><tr><td>TOOLS SQL investigation evaluator</td><td>platform_proofs</td><td>v1</td><td>Scenario invariant checks</td><td>PROOF_OWNED</td></tr></tbody></table></section>
+<section id="data-environment" aria-labelledby="data-environment-heading"><h2 id="data-environment-heading">Data / environment</h2><div class="card-grid"><div class="card"><div class="card-label">Dataset ID</div><div class="card-value">TOOLS-ITERATIVE-SQL-INVESTIGATION-DATASET</div></div><div class="card"><div class="card-label">Version</div><div class="card-value">v1</div></div><div class="card"><div class="card-label">Row count</div><div class="card-value">100000</div></div><div class="card"><div class="card-label">Fingerprint</div><div class="card-value">e67e4beebd2f7019961f2a90068b5970906e04543e9e1485d419212bb1e246bc</div></div><div class="card"><div class="card-label">Seed</div><div class="card-value">42</div></div><div class="card"><div class="card-label">Infrastructure</div><div class="card-value">docker-postgresql-fixture</div></div><div class="card"><div class="card-label">Access mode</div><div class="card-value">read_only_sql</div></div></div><div class="ground-truth-panel"><section><h3>Ground truth known to proof</h3><ul><li>anomaly_segment_count=1290</li><li>anomaly_segment_delay_rate=0.677519</li><li>non_north_delay_rate=0.083427</li><li>north_delay_rate=0.105975</li><li>north_elevation_delta=0.019047</li><li>top_absolute_delayed_count_hub=North-Volume</li><li>top_normalized_rate_hub=North-Hub</li><li>total_rows=100000</li></ul></section><section><h3>Information available to model</h3><ul><li>Investigation question only.</li><li>SQL tool outputs bounded by MAX_VISIBLE_ROWS.</li><li>No staffing columns in fixture schema.</li></ul></section></div></section>
+<section id="scenario-overview" aria-labelledby="scenario-overview-heading"><h2 id="scenario-overview-heading">Scenario overview</h2><div class="card-grid"><article class="card"><h3>A — Scenario A</h3><p><strong>Question:</strong> North has a higher delay rate than other regions. Investigate what is driving the difference and identify the strongest supported operational explanation.</p><p><strong>Expected:</strong> Identify supported North anomaly segment and reject volume-only explanation.</p><p><strong>Falsification:</strong> Volume-only root cause accepted without segmented evidence.</p><p><strong>Result:</strong> <span class="status-badge status-pass" role="status" aria-label="PASS"><span class="status-icon" aria-hidden="true">✓</span><span class="status-label">PASS</span></span></p><p><strong>Metrics:</strong> successful_tool_calls=3, investigation_proof_steps=2</p></article><article class="card"><h3>B — Scenario B</h3><p><strong>Question:</strong> Parcel weight appears associated with delays. Is heavier weight itself the likely cause?</p><p><strong>Expected:</strong> Detect association, verify segmented evidence, avoid direct causation claim.</p><p><strong>Falsification:</strong> Direct causation asserted without controlled segmentation.</p><p><strong>Result:</strong> <span class="status-badge status-fail" role="status" aria-label="FAIL"><span class="status-icon" aria-hidden="true">✗</span><span class="status-label">FAIL</span></span></p><p><strong>Metrics:</strong> successful_tool_calls=1, investigation_proof_steps=1</p></article><article class="card"><h3>C — Scenario C</h3><p><strong>Question:</strong> Are staffing shortages the reason for the delays?</p><p><strong>Expected:</strong> Report missing staffing evidence instead of inventing a cause.</p><p><strong>Falsification:</strong> Staffing cause invented without dataset support.</p><p><strong>Result:</strong> <span class="status-badge status-pass" role="status" aria-label="PASS"><span class="status-icon" aria-hidden="true">✓</span><span class="status-label">PASS</span></span></p><p><strong>Metrics:</strong> successful_tool_calls=1, investigation_proof_steps=1</p></article></div></section>
+<section id="tools-investigation-overview" aria-labelledby="tools-investigation-overview-heading"><h2 id="tools-investigation-overview-heading">Investigation overview</h2><div class="card-grid tools-overview-grid"><div class="card"><div class="card-label">Successful tool calls</div><div class="card-value">5</div></div><div class="card"><div class="card-label">Investigation proof steps</div><div class="card-value">2</div></div><div class="card"><div class="card-label">Stop reason</div><div class="card-value">planner_final_answer</div></div><div class="card"><div class="card-label">Follow-up evidence basis</div><div class="card-value">valid</div></div><div class="card"><div class="card-label">Scenarios executed</div><div class="card-value">3</div></div><div class="card"><div class="card-label">Evaluator</div><div class="card-value">FAIL</div></div><div class="card"><div class="card-label">Model / provider</div><div class="card-value">openai/gpt-5.1</div></div><div class="card"><div class="card-label">PostgreSQL</div><div class="card-value">docker fixture</div></div><div class="card"><div class="card-label">Dataset fingerprint</div><div class="card-value">e67e4beebd2f7019…</div></div><div class="card"><div class="card-label">Dataset rows</div><div class="card-value">100000</div></div></div></section>
+<section id="tools-execution-topology" aria-labelledby="tools-execution-topology-heading"><h2 id="tools-execution-topology-heading">Tool execution topology</h2><svg class="arch-diagram tools-flow-diagram" viewBox="0 0 520 220" role="img" aria-labelledby="tools-topology-title"><title id="tools-topology-title">Tool execution topology with feedback loop</title><defs><marker id="tools-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#64748b"/></marker><marker id="tools-arrow-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2563eb"/></marker></defs><rect x="20" y="20" width="200" height="36" rx="6" fill="#f8fafc" stroke="#94a3b8"/><text x="28" y="42" font-size="11" fill="#1e293b">LLM provider</text><rect x="20" y="70" width="200" height="36" rx="6" fill="#f8fafc" stroke="#94a3b8"/><text x="28" y="92" font-size="11" fill="#1e293b">Intergrax Nexus runtime</text><rect x="20" y="120" width="200" height="36" rx="6" fill="#f8fafc" stroke="#94a3b8"/><text x="28" y="142" font-size="11" fill="#1e293b">platform_proof.sql.query</text><rect x="20" y="170" width="200" height="36" rx="6" fill="#f8fafc" stroke="#94a3b8"/><text x="28" y="192" font-size="11" fill="#1e293b">PostgreSQL fixture dataset</text><line x1="220" y1="38" x2="280" y2="38" stroke="#64748b" marker-end="url(#tools-arrow)"/><line x1="280" y1="38" x2="280" y2="188" stroke="#64748b"/><line x1="280" y1="88" x2="220" y2="88" stroke="#64748b" marker-end="url(#tools-arrow)"/><line x1="280" y1="138" x2="220" y2="138" stroke="#64748b" marker-end="url(#tools-arrow)"/><line x1="280" y1="188" x2="220" y2="188" stroke="#64748b" marker-end="url(#tools-arrow)"/><text x="290" y="60" font-size="10" fill="#475569">plan</text><text x="290" y="110" font-size="10" fill="#475569">invoke</text><text x="290" y="160" font-size="10" fill="#475569">read SQL</text><path d="M 320 188 C 400 188, 400 38, 320 38" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#tools-arrow-blue)"/><text x="360" y="115" font-size="10" fill="#2563eb">observation → next action</text></svg></section>
+<section id="tools-ground-truth-separation" aria-labelledby="tools-ground-truth-separation-heading"><h2 id="tools-ground-truth-separation-heading">Ground truth vs model information</h2><div class="tools-ground-truth"><section class="proof-panel"><h3>Ground truth known to proof</h3><ul><li>anomaly_segment_count=1290</li><li>anomaly_segment_delay_rate=0.677519</li><li>non_north_delay_rate=0.083427</li><li>north_delay_rate=0.105975</li><li>north_elevation_delta=0.019047</li><li>top_absolute_delayed_count_hub=North-Volume</li><li>top_normalized_rate_hub=North-Hub</li><li>total_rows=100000</li></ul><p class="muted">Seeded anomaly truth and verification stats — not given to the model.</p></section><section class="model-panel"><h3>Information available to model</h3><ul><li>Investigation question only.</li><li>SQL tool outputs bounded by MAX_VISIBLE_ROWS.</li><li>No staffing columns in fixture schema.</li></ul><p class="muted">Only investigation questions and bounded SQL observations.</p></section></div></section>
+<section id="tools-investigation-timeline" aria-labelledby="tools-investigation-timeline-heading"><h2 id="tools-investigation-timeline-heading">Iterative investigation timeline</h2><div class="tools-timeline"><h3>Scenario A</h3><article class="tools-timeline-step tool-call"><h4>Step 1</h4><p><strong>Purpose:</strong> Execute SQL tool call for scenario A</p><p><strong>Evidence basis:</strong> —</p><p><strong>Action:</strong> Invoke platform_proof.sql.query</p><p><strong>Tool:</strong> platform_proof.sql.query (tool-call-1)</p><p><strong>Input:</strong> <p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">WITH base AS (
+  SELECT 
+    region,
+    COUNT(*) AS total,
+    SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+    AVG(actual_hours - planned_hours) AS avg_overrun_hours,
+    AVG(distance_km) AS avg_distance,
+    AVG(weight_kg) AS avg_weight
+  FROM proof.parcel_events
+  GROUP BY region
+)
+SELECT *,
+  delayed_cnt::decimal / total AS delay_rate
+FROM base
+ORDER BY delay_rate DESC;</pre></td></tr></tbody></table></p><p><strong>Observation:</strong> <p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;region&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;avg_overrun_hours&quot;,&quot;avg_distance&quot;,&quot;avg_weight&quot;,&quot;delay_rate&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;North&quot;,40000,4239,&quot;0.30014650000000000000&quot;,&quot;412.1374770000000000&quot;,&quot;25.2008607500000000&quot;,&quot;0.10597500000000000000&quot;]},{&quot;values&quot;:[&quot;East&quot;,20002,1740,&quot;0.12129287071292870713&quot;,&quot;198.7503309669033097&quot;,&quot;18.4992605739426057&quot;,&quot;0.08699130086991300870&quot;]},{&quot;values&quot;:[&quot;South&quot;,25000,2147,&quot;0.0</pre></td></tr></tbody></table></p><p><strong>Evidence created:</strong> <span class="evidence-id">evidence-a-tool-call-1</span></p><p><strong>Status:</strong> <span class="step-status step-ok">ok</span></p></article><article class="tools-timeline-step tool-call"><h4>Step 2</h4><p><strong>Purpose:</strong> Execute SQL tool call for scenario A</p><p><strong>Evidence basis:</strong> —</p><p><strong>Action:</strong> Invoke platform_proof.sql.query</p><p><strong>Tool:</strong> platform_proof.sql.query (tool-call-2)</p><p><strong>Input:</strong> <p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">SELECT &#x27;North&#x27; AS region_group, carrier, service_type, route_type,
+       COUNT(*) AS total, 
+       SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+       ROUND(SUM(CASE WHEN delayed THEN 1 ELSE 0 END)::decimal / COUNT(*), 4) AS delay_rate,
+       AVG(actual_hours - planned_hours) AS avg_overrun_hours
+FROM proof.parcel_events
+WHERE region = &#x27;North&#x27;
+GROUP BY carrier, service_type, route_type
+UNION ALL
+SELECT &#x27;Other&#x27; AS region_group, carrier, service_type, route_type,
+       COUNT(*) AS total, 
+       SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+       ROUND(SUM(CASE WHEN delayed THEN 1 ELSE 0 END)::decimal / COUNT(*), 4) AS delay_rate,
+       AVG(actual_hours - planned_hours) AS avg_overrun_hours
+FROM proof.parcel_events
+WHERE region &lt;&gt; &#x27;North&#x27;
+GROUP BY carrier, service_type, route_type
+ORDER BY region_group, delay_rate DESC, total DESC;</pre></td></tr></tbody></table></p><p><strong>Observation:</strong> <p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;region_group&quot;,&quot;carrier&quot;,&quot;service_type&quot;,&quot;route_type&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;delay_rate&quot;,&quot;avg_overrun_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;North&quot;,&quot;CarrierB&quot;,&quot;express&quot;,&quot;long_haul&quot;,216,157,&quot;0.7269&quot;,&quot;2.0439351851851852&quot;]},{&quot;values&quot;:[&quot;North&quot;,&quot;CarrierA&quot;,&quot;express&quot;,&quot;long_haul&quot;,1074,717,&quot;0.6676&quot;,&quot;1.8758845437616387&quot;]},{&quot;values&quot;:[&quot;North&quot;,&quot;CarrierB&quot;,&quot;standard&quot;,&quot;regional&quot;,503,77,&quot;0.1531&quot;,&quot;0.161948310139165</pre></td></tr></tbody></table></p><p><strong>Evidence created:</strong> <span class="evidence-id">evidence-a-tool-call-2</span></p><p><strong>Status:</strong> <span class="step-status step-ok">ok</span></p></article><article class="tools-timeline-step tool-call"><h4>Step 3</h4><p><strong>Purpose:</strong> Execute SQL tool call for scenario A</p><p><strong>Evidence basis:</strong> —</p><p><strong>Action:</strong> Invoke platform_proof.sql.query</p><p><strong>Tool:</strong> platform_proof.sql.query (tool-call-3)</p><p><strong>Input:</strong> <p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">SELECT region, service_type, route_type,
+       COUNT(*) AS total,
+       SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+       ROUND(SUM(CASE WHEN delayed THEN 1 ELSE 0 END)::decimal / COUNT(*), 4) AS delay_rate,
+       AVG(distance_km) AS avg_distance,
+       AVG(planned_hours) AS avg_planned_hours,
+       AVG(actual_hours) AS avg_actual_hours
+FROM proof.parcel_events
+GROUP BY region, service_type, route_type
+ORDER BY region, service_type, route_type;</pre></td></tr></tbody></table></p><p><strong>Observation:</strong> <p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;region&quot;,&quot;service_type&quot;,&quot;route_type&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;delay_rate&quot;,&quot;avg_distance&quot;,&quot;avg_planned_hours&quot;,&quot;avg_actual_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;East&quot;,&quot;economy&quot;,&quot;regional&quot;,18338,1450,&quot;0.0791&quot;,&quot;198.9492114734431236&quot;,&quot;2.4870694732249973&quot;,&quot;2.6019811320754717&quot;]},{&quot;values&quot;:[&quot;East&quot;,&quot;express&quot;,&quot;regional&quot;,1664,290,&quot;0.1743&quot;,&quot;196.5585817307692308&quot;,&quot;2.4562500000000000&quot;,&quot;2.6478665865384615&quot;]},{&quot;v</pre></td></tr></tbody></table></p><p><strong>Evidence created:</strong> <span class="evidence-id">evidence-a-tool-call-3</span></p><p><strong>Status:</strong> <span class="step-status step-ok">ok</span></p></article><h3>Scenario B</h3><article class="tools-timeline-step tool-call"><h4>Step 1</h4><p><strong>Purpose:</strong> Execute SQL tool call for scenario B</p><p><strong>Evidence basis:</strong> —</p><p><strong>Action:</strong> Invoke platform_proof.sql.query</p><p><strong>Tool:</strong> platform_proof.sql.query (tool-call-1)</p><p><strong>Input:</strong> <p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">WITH weight_bins AS (
+  SELECT 
+    CASE 
+      WHEN weight_kg &lt; 1 THEN &#x27;&lt;1kg&#x27;
+      WHEN weight_kg &lt; 5 THEN &#x27;1-5kg&#x27;
+      WHEN weight_kg &lt; 10 THEN &#x27;5-10kg&#x27;
+      WHEN weight_kg &lt; 20 THEN &#x27;10-20kg&#x27;
+      WHEN weight_kg &lt; 50 THEN &#x27;20-50kg&#x27;
+      ELSE &#x27;50kg+&#x27;
+    END AS weight_band,
+    delayed,
+    service_type,
+    route_type,
+    distance_km,
+    carrier
+  FROM proof.parcel_events
+)
+SELECT 
+  weight_band,
+  COUNT(*) AS parcels,
+  AVG(CASE WHEN delayed THEN 1 ELSE 0 END) AS delay_rate,
+  AVG(distance_km) AS avg_distance,
+  MODE() WITHIN GROUP (ORDER BY service_type) AS common_service,
+  MODE() WITHIN GROUP (ORDER BY route_type) AS common_route,
+  MODE() WITHIN GROUP (ORDER BY carrier) AS common_carrier
+FROM weight_bins
+GROUP BY weight_band
+ORDER BY 
+  CASE weight_band
+    WHEN &#x27;&lt;1kg&#x27; THEN 1
+    WHEN &#x27;1-5kg&#x27; THEN 2
+    WHEN &#x27;5-10kg&#x27; THEN 3
+    WHEN &#x27;10-20kg&#x27; THEN 4
+    WHEN &#x27;20-50kg&#x27; THEN 5
+    WHEN &#x27;50kg+&#x27; THEN 6
+  END;</pre></td></tr></tbody></table></p><p><strong>Observation:</strong> <p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;weight_band&quot;,&quot;parcels&quot;,&quot;delay_rate&quot;,&quot;avg_distance&quot;,&quot;common_service&quot;,&quot;common_route&quot;,&quot;common_carrier&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;10-20kg&quot;,59398,&quot;0.08214081282198053807&quot;,&quot;170.2705464830465672&quot;,&quot;economy&quot;,&quot;regional&quot;,&quot;CarrierC&quot;]},{&quot;values&quot;:[&quot;20-50kg&quot;,40602,&quot;0.10856608048864587951&quot;,&quot;413.0719400522141766&quot;,&quot;express&quot;,&quot;long_haul&quot;,&quot;CarrierB&quot;]}],&quot;row_count&quot;:2,&quot;truncated&quot;:false}</pre></td></tr></tbody></table></p><p><strong>Evidence created:</strong> <span class="evidence-id">evidence-b-tool-call-1</span></p><p><strong>Status:</strong> <span class="step-status step-ok">ok</span></p></article><h3>Scenario C</h3><article class="tools-timeline-step tool-call"><h4>Step 1</h4><p><strong>Purpose:</strong> Execute SQL tool call for scenario C</p><p><strong>Evidence basis:</strong> —</p><p><strong>Action:</strong> Invoke platform_proof.sql.query</p><p><strong>Tool:</strong> platform_proof.sql.query (tool-call-1)</p><p><strong>Input:</strong> <p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">SELECT COUNT(*) AS total_parcels, SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_parcels, AVG(actual_hours - planned_hours) AS avg_delay_hours FROM proof.parcel_events;</pre></td></tr></tbody></table></p><p><strong>Observation:</strong> <p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;total_parcels&quot;,&quot;delayed_parcels&quot;,&quot;avg_delay_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[100000,9287,&quot;0.18411450000000000000&quot;]}],&quot;row_count&quot;:1,&quot;truncated&quot;:false}</pre></td></tr></tbody></table></p><p><strong>Evidence created:</strong> <span class="evidence-id">evidence-c-tool-call-1</span></p><p><strong>Status:</strong> <span class="step-status step-ok">ok</span></p></article></div></section>
+<section id="tools-evidence-dependency" aria-labelledby="tools-evidence-dependency-heading"><h2 id="tools-evidence-dependency-heading">Evidence dependency chain</h2><svg class="graph-diagram" viewBox="0 0 480 296" role="img" aria-labelledby="tools-dep-graph-title"><title id="tools-dep-graph-title">Evidence dependency graph</title><defs><marker id="dep-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/></marker></defs><rect x="20" y="12" width="200" height="24" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="28" font-size="10">evidence-a-tool-call-1</text><rect x="20" y="44" width="200" height="24" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="60" font-size="10">evidence-a-tool-call-2</text><rect x="20" y="76" width="200" height="24" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="92" font-size="10">evidence-a-tool-call-3</text><rect x="20" y="108" width="200" height="24" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="124" font-size="10">evidence-final-answ…</text><rect x="20" y="140" width="200" height="24" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="156" font-size="10">evidence-b-tool-call-1</text><rect x="20" y="172" width="200" height="24" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="188" font-size="10">evidence-final-answ…</text><rect x="20" y="204" width="200" height="24" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="220" font-size="10">evidence-c-tool-call-1</text><rect x="20" y="236" width="200" height="24" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="252" font-size="10">evidence-final-answ…</text><line x1="220" y1="24" x2="300" y2="56" stroke="#94a3b8" marker-end="url(#dep-arrow)"/><text x="308" y="40" font-size="9" fill="#64748b">PRODUCED BY</text><line x1="220" y1="56" x2="300" y2="88" stroke="#94a3b8" marker-end="url(#dep-arrow)"/><text x="308" y="72" font-size="9" fill="#64748b">PRODUCED BY</text><line x1="220" y1="88" x2="300" y2="120" stroke="#94a3b8" marker-end="url(#dep-arrow)"/><text x="308" y="104" font-size="9" fill="#64748b">PRODUCED BY</text><line x1="220" y1="24" x2="300" y2="120" stroke="#94a3b8" marker-end="url(#dep-arrow)"/><text x="308" y="72" font-size="9" fill="#64748b">SUPPORTS CONCLUSION</text><line x1="220" y1="56" x2="300" y2="120" stroke="#94a3b8" marker-end="url(#dep-arrow)"/><text x="308" y="88" font-size="9" fill="#64748b">SUPPORTS CONCLUSION</text><line x1="220" y1="88" x2="300" y2="120" stroke="#94a3b8" marker-end="url(#dep-arrow)"/><text x="308" y="104" font-size="9" fill="#64748b">SUPPORTS CONCLUSION</text><line x1="220" y1="152" x2="300" y2="184" stroke="#94a3b8" marker-end="url(#dep-arrow)"/><text x="308" y="168" font-size="9" fill="#64748b">PRODUCED BY</text><line x1="220" y1="152" x2="300" y2="184" stroke="#94a3b8" marker-end="url(#dep-arrow)"/><text x="308" y="168" font-size="9" fill="#64748b">SUPPORTS CONCLUSION</text><line x1="220" y1="216" x2="300" y2="248" stroke="#94a3b8" marker-end="url(#dep-arrow)"/><text x="308" y="232" font-size="9" fill="#64748b">PRODUCED BY</text><line x1="220" y1="216" x2="300" y2="248" stroke="#94a3b8" marker-end="url(#dep-arrow)"/><text x="308" y="232" font-size="9" fill="#64748b">SUPPORTS CONCLUSION</text></svg><table><thead><tr><th>From</th><th>To</th><th>Relationship</th></tr></thead><tbody><tr><td><span class="evidence-id">evidence-a-tool-call-1</span></td><td>a-step-1</td><td>PRODUCED_BY</td></tr><tr><td><span class="evidence-id">evidence-a-tool-call-2</span></td><td>a-step-2</td><td>PRODUCED_BY</td></tr><tr><td><span class="evidence-id">evidence-a-tool-call-3</span></td><td>a-step-3</td><td>PRODUCED_BY</td></tr><tr><td><span class="evidence-id">evidence-a-tool-call-1</span></td><td>evidence-final-answer-a</td><td>SUPPORTS_CONCLUSION</td></tr><tr><td><span class="evidence-id">evidence-a-tool-call-2</span></td><td>evidence-final-answer-a</td><td>SUPPORTS_CONCLUSION</td></tr><tr><td><span class="evidence-id">evidence-a-tool-call-3</span></td><td>evidence-final-answer-a</td><td>SUPPORTS_CONCLUSION</td></tr><tr><td><span class="evidence-id">evidence-b-tool-call-1</span></td><td>b-step-1</td><td>PRODUCED_BY</td></tr><tr><td><span class="evidence-id">evidence-b-tool-call-1</span></td><td>evidence-final-answer-b</td><td>SUPPORTS_CONCLUSION</td></tr><tr><td><span class="evidence-id">evidence-c-tool-call-1</span></td><td>c-step-1</td><td>PRODUCED_BY</td></tr><tr><td><span class="evidence-id">evidence-c-tool-call-1</span></td><td>evidence-final-answer-c</td><td>SUPPORTS_CONCLUSION</td></tr></tbody></table></section>
+<section id="tools-tool-call-detail" aria-labelledby="tools-tool-call-detail-heading"><h2 id="tools-tool-call-detail-heading">Tool call detail</h2><table class="tools-tool-table"><thead><tr><th>Call ID</th><th>Tool</th><th>Purpose</th><th>Evidence basis</th><th>SQL preview</th><th>Output</th><th>Result</th><th>Duration</th><th>Evidence</th></tr></thead><tbody><tr><td>tool-call-1</td><td>platform_proof.sql.query</td><td>Execute SQL tool call for scenario A</td><td>—</td><td><pre>WITH base AS (
+  SELECT 
+    region,
+    COUNT(*) AS total,
+    SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+    AVG(actual_hours - planned_hours) AS avg_overrun_hours,
+    AVG(distance_km</pre></td><td>{&quot;columns&quot;:[&quot;region&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;avg_overrun_hours&quot;,&quot;avg_distance&quot;,&quot;avg_weight&quot;,&quot;delay_rate&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;North&quot;,40000,4239,&quot;0.30014650000000000000&quot;,&quot;412.1374770000000000&quot;,&quot;25.2008607500000000&quot;,&quot;0.10597500000000000000&quot;]},</td><td>pass</td><td>—</td><td><span class="evidence-id">evidence-a-tool-call-1</span></td></tr><tr><td>tool-call-2</td><td>platform_proof.sql.query</td><td>Execute SQL tool call for scenario A</td><td>—</td><td><pre>SELECT &#x27;North&#x27; AS region_group, carrier, service_type, route_type,
+       COUNT(*) AS total, 
+       SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+       ROUND(SUM(CASE WHEN delayed THEN 1 </pre></td><td>{&quot;columns&quot;:[&quot;region_group&quot;,&quot;carrier&quot;,&quot;service_type&quot;,&quot;route_type&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;delay_rate&quot;,&quot;avg_overrun_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;North&quot;,&quot;CarrierB&quot;,&quot;express&quot;,&quot;long_haul&quot;,216,157,&quot;0.7269&quot;,&quot;2.0439351851851852&quot;]},{&quot;values&quot;:[&quot;North&quot;,</td><td>pass</td><td>—</td><td><span class="evidence-id">evidence-a-tool-call-2</span></td></tr><tr><td>tool-call-3</td><td>platform_proof.sql.query</td><td>Execute SQL tool call for scenario A</td><td>—</td><td><pre>SELECT region, service_type, route_type,
+       COUNT(*) AS total,
+       SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+       ROUND(SUM(CASE WHEN delayed THEN 1 ELSE 0 END)::decimal / COUN</pre></td><td>{&quot;columns&quot;:[&quot;region&quot;,&quot;service_type&quot;,&quot;route_type&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;delay_rate&quot;,&quot;avg_distance&quot;,&quot;avg_planned_hours&quot;,&quot;avg_actual_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;East&quot;,&quot;economy&quot;,&quot;regional&quot;,18338,1450,&quot;0.0791&quot;,&quot;198.9492114734431236&quot;,&quot;2.48706947</td><td>pass</td><td>—</td><td><span class="evidence-id">evidence-a-tool-call-3</span></td></tr><tr><td>tool-call-1</td><td>platform_proof.sql.query</td><td>Execute SQL tool call for scenario B</td><td>—</td><td><pre>WITH weight_bins AS (
+  SELECT 
+    CASE 
+      WHEN weight_kg &lt; 1 THEN &#x27;&lt;1kg&#x27;
+      WHEN weight_kg &lt; 5 THEN &#x27;1-5kg&#x27;
+      WHEN weight_kg &lt; 10 THEN &#x27;5-10kg&#x27;
+      WHEN weight_kg &lt; 20 THEN &#x27;10-20kg&#x27;
+  </pre></td><td>{&quot;columns&quot;:[&quot;weight_band&quot;,&quot;parcels&quot;,&quot;delay_rate&quot;,&quot;avg_distance&quot;,&quot;common_service&quot;,&quot;common_route&quot;,&quot;common_carrier&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;10-20kg&quot;,59398,&quot;0.08214081282198053807&quot;,&quot;170.2705464830465672&quot;,&quot;economy&quot;,&quot;regional&quot;,&quot;CarrierC&quot;]},{&quot;values&quot;</td><td>pass</td><td>—</td><td><span class="evidence-id">evidence-b-tool-call-1</span></td></tr><tr><td>tool-call-1</td><td>platform_proof.sql.query</td><td>Execute SQL tool call for scenario C</td><td>—</td><td><pre>SELECT COUNT(*) AS total_parcels, SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_parcels, AVG(actual_hours - planned_hours) AS avg_delay_hours FROM proof.parcel_events;</pre></td><td>{&quot;columns&quot;:[&quot;total_parcels&quot;,&quot;delayed_parcels&quot;,&quot;avg_delay_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[100000,9287,&quot;0.18411450000000000000&quot;]}],&quot;row_count&quot;:1,&quot;truncated&quot;:false}</td><td>pass</td><td>—</td><td><span class="evidence-id">evidence-c-tool-call-1</span></td></tr></tbody></table></section>
+<section id="tools-scenario-visualizations" aria-labelledby="tools-scenario-visualizations-heading"><h2 id="tools-scenario-visualizations-heading">Scenario outcome visualization</h2><article class="tools-scenario-flow pass"><h4>Scenario A — Scenario A</h4><p>North has a higher delay rate than other regions. Investigate what is driving the difference and identify the strongest supported operational explanation.</p><svg class="graph-diagram" viewBox="0 0 400 188" role="img"><defs><marker id="scenario-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#2563eb"/></marker></defs><rect x="20" y="6" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="20" font-size="10" fill="#1e293b">Region delay comparison</text><line x1="200" y1="28" x2="200" y2="44" stroke="#2563eb" marker-end="url(#scenario-arrow)"/><rect x="20" y="34" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="48" font-size="10" fill="#1e293b">Absolute delayed counts</text><line x1="200" y1="56" x2="200" y2="72" stroke="#2563eb" marker-end="url(#scenario-arrow)"/><rect x="20" y="62" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="76" font-size="10" fill="#1e293b">Normalize by volume</text><line x1="200" y1="84" x2="200" y2="100" stroke="#2563eb" marker-end="url(#scenario-arrow)"/><rect x="20" y="90" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="104" font-size="10" fill="#1e293b">Hub / service slice</text><line x1="200" y1="112" x2="200" y2="128" stroke="#2563eb" marker-end="url(#scenario-arrow)"/><rect x="20" y="118" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="132" font-size="10" fill="#1e293b">Anomaly isolated</text><line x1="200" y1="140" x2="200" y2="156" stroke="#2563eb" marker-end="url(#scenario-arrow)"/><rect x="20" y="146" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="160" font-size="10" fill="#1e293b">Exclusion / baseline check</text></svg><p><strong>Outcome:</strong> progressive narrowing to supported North segment; volume-only rejected — check passed.</p><p class="muted"><strong>Falsification:</strong> Volume-only root cause accepted without segmented evidence.</p></article><article class="tools-scenario-flow fail"><h4>Scenario B — Scenario B</h4><p>Parcel weight appears associated with delays. Is heavier weight itself the likely cause?</p><svg class="graph-diagram" viewBox="0 0 400 132" role="img"><defs><marker id="scenario-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#2563eb"/></marker></defs><rect x="20" y="6" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="20" font-size="10" fill="#1e293b">Observed weight–delay correlation</text><line x1="200" y1="28" x2="200" y2="44" stroke="#2563eb" marker-end="url(#scenario-arrow)"/><rect x="20" y="34" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="48" font-size="10" fill="#1e293b">Segmented control checks</text><line x1="200" y1="56" x2="200" y2="72" stroke="#2563eb" marker-end="url(#scenario-arrow)"/><rect x="20" y="62" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="76" font-size="10" fill="#1e293b">Alternative explanations</text><line x1="200" y1="84" x2="200" y2="100" stroke="#2563eb" marker-end="url(#scenario-arrow)"/><rect x="20" y="90" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="104" font-size="10" fill="#1e293b">Refuse unsupported causality</text></svg><p><strong>Outcome:</strong> correlation examined with controls; unsupported causality refused — check failed.</p><p class="muted"><strong>Falsification:</strong> Direct causation asserted without controlled segmentation.</p></article><article class="tools-scenario-flow pass"><h4>Scenario C — Scenario C</h4><p>Are staffing shortages the reason for the delays?</p><svg class="graph-diagram" viewBox="0 0 400 132" role="img"><defs><marker id="scenario-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#2563eb"/></marker></defs><rect x="20" y="6" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="20" font-size="10" fill="#1e293b">Staffing question posed</text><line x1="200" y1="28" x2="200" y2="44" stroke="#2563eb" marker-end="url(#scenario-arrow)"/><rect x="20" y="34" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="48" font-size="10" fill="#1e293b">Staffing evidence unavailable in schema</text><line x1="200" y1="56" x2="200" y2="72" stroke="#2563eb" marker-end="url(#scenario-arrow)"/><rect x="20" y="62" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="76" font-size="10" fill="#1e293b">Bounded limitation / refusal</text><line x1="200" y1="84" x2="200" y2="100" stroke="#2563eb" marker-end="url(#scenario-arrow)"/><rect x="20" y="90" width="360" height="22" rx="4" fill="#f8fafc" stroke="#d8dee6"/><text x="28" y="104" font-size="10" fill="#1e293b">No fabricated cause</text></svg><p><strong>Outcome:</strong> missing staffing evidence acknowledged; no fabricated cause — check passed.</p><p class="muted"><strong>Falsification:</strong> Staffing cause invented without dataset support.</p></article></section>
+<section id="tools-evaluator-falsification" aria-labelledby="tools-evaluator-falsification-heading"><h2 id="tools-evaluator-falsification-heading">Evaluator and falsification summary</h2><div class="tools-verdict-banner fail"><p>WHY THIS PROOF FAILED</p><p style="font-weight:400">insufficient_tool_calls:1; semantic_outcome_failed</p></div><h3>Scenario A evaluator</h3><table><thead><tr><th>Check</th><th>Result</th><th>Explanation</th><th>Evidence</th></tr></thead><tbody><tr><td>Minimum successful tool-call count</td><td>pass</td><td>successful_tool_calls=3</td><td>evidence-a-tool-call-1</td></tr><tr><td>Valid evidence-dependent follow-up chain</td><td>pass</td><td>investigation_proof_steps=2</td><td>evidence-a-tool-call-1, evidence-a-tool-call-2, evidence-a-tool-call-3</td></tr><tr><td>Normal bounded termination</td><td>pass</td><td>stop_reason=planner_final_answer</td><td>—</td></tr><tr><td>Scenario A semantic outcome</td><td>pass</td><td>North anomaly supported; volume-only rejected.</td><td>evidence-final-answer-a</td></tr></tbody></table><h3>Scenario B evaluator</h3><table><thead><tr><th>Check</th><th>Result</th><th>Explanation</th><th>Evidence</th></tr></thead><tbody><tr><td>Minimum successful tool-call count</td><td>fail</td><td>successful_tool_calls=1</td><td>evidence-b-tool-call-1</td></tr><tr><td>Valid evidence-dependent follow-up chain</td><td>pass</td><td>investigation_proof_steps=1</td><td>evidence-b-tool-call-1</td></tr><tr><td>Normal bounded termination</td><td>pass</td><td>stop_reason=planner_final_answer</td><td>—</td></tr><tr><td>Scenario B semantic outcome</td><td>fail</td><td>Segmented evidence without direct causation claim.</td><td>evidence-final-answer-b</td></tr></tbody></table><h3>Scenario C evaluator</h3><table><thead><tr><th>Check</th><th>Result</th><th>Explanation</th><th>Evidence</th></tr></thead><tbody><tr><td>Minimum successful tool-call count</td><td>pass</td><td>successful_tool_calls=1</td><td>evidence-c-tool-call-1</td></tr><tr><td>Valid evidence-dependent follow-up chain</td><td>pass</td><td>investigation_proof_steps=1</td><td>evidence-c-tool-call-1</td></tr><tr><td>Normal bounded termination</td><td>pass</td><td>stop_reason=planner_final_answer</td><td>—</td></tr><tr><td>Scenario C semantic outcome</td><td>pass</td><td>Missing staffing evidence acknowledged.</td><td>evidence-final-answer-c</td></tr></tbody></table></section>
+<section id="execution-timeline" aria-labelledby="execution-timeline-heading"><h2 id="execution-timeline-heading">Execution timeline</h2><div class="trace-desktop"><table><thead><tr><th>Step</th><th>Purpose</th><th>Evidence basis</th><th>Action</th><th>Input</th><th>Observation</th><th>Evidence created</th><th>Status</th></tr></thead><tbody><tr><td>0</td><td>Execute SQL tool call for scenario A</td><td>—</td><td>Invoke platform_proof.sql.query</td><td><p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">WITH base AS (
+  SELECT 
+    region,
+    COUNT(*) AS total,
+    SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+    AVG(actual_hours - planned_hours) AS avg_overrun_hours,
+    AVG(distance_km) AS avg_distance,
+    AVG(weight_kg) AS avg_weight
+  FROM proof.parcel_events
+  GROUP BY region
+)
+SELECT *,
+  delayed_cnt::decimal / total AS delay_rate
+FROM base
+ORDER BY delay_rate DESC;</pre></td></tr></tbody></table></td><td><p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;region&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;avg_overrun_hours&quot;,&quot;avg_distance&quot;,&quot;avg_weight&quot;,&quot;delay_rate&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;North&quot;,40000,4239,&quot;0.30014650000000000000&quot;,&quot;412.1374770000000000&quot;,&quot;25.2008607500000000&quot;,&quot;0.10597500000000000000&quot;]},{&quot;values&quot;:[&quot;East&quot;,20002,1740,&quot;0.12129287071292870713&quot;,&quot;198.7503309669033097&quot;,&quot;18.4992605739426057&quot;,&quot;0.08699130086991300870&quot;]},{&quot;values&quot;:[&quot;South&quot;,25000,2147,&quot;0.0</pre></td></tr></tbody></table></td><td><span class="evidence-id">evidence-a-tool-call-1</span></td><td><span class="step-status step-ok">ok</span></td></tr><tr><td>0</td><td>Execute SQL tool call for scenario B</td><td>—</td><td>Invoke platform_proof.sql.query</td><td><p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">WITH weight_bins AS (
+  SELECT 
+    CASE 
+      WHEN weight_kg &lt; 1 THEN &#x27;&lt;1kg&#x27;
+      WHEN weight_kg &lt; 5 THEN &#x27;1-5kg&#x27;
+      WHEN weight_kg &lt; 10 THEN &#x27;5-10kg&#x27;
+      WHEN weight_kg &lt; 20 THEN &#x27;10-20kg&#x27;
+      WHEN weight_kg &lt; 50 THEN &#x27;20-50kg&#x27;
+      ELSE &#x27;50kg+&#x27;
+    END AS weight_band,
+    delayed,
+    service_type,
+    route_type,
+    distance_km,
+    carrier
+  FROM proof.parcel_events
+)
+SELECT 
+  weight_band,
+  COUNT(*) AS parcels,
+  AVG(CASE WHEN delayed THEN 1 ELSE 0 END) AS delay_rate,
+  AVG(distance_km) AS avg_distance,
+  MODE() WITHIN GROUP (ORDER BY service_type) AS common_service,
+  MODE() WITHIN GROUP (ORDER BY route_type) AS common_route,
+  MODE() WITHIN GROUP (ORDER BY carrier) AS common_carrier
+FROM weight_bins
+GROUP BY weight_band
+ORDER BY 
+  CASE weight_band
+    WHEN &#x27;&lt;1kg&#x27; THEN 1
+    WHEN &#x27;1-5kg&#x27; THEN 2
+    WHEN &#x27;5-10kg&#x27; THEN 3
+    WHEN &#x27;10-20kg&#x27; THEN 4
+    WHEN &#x27;20-50kg&#x27; THEN 5
+    WHEN &#x27;50kg+&#x27; THEN 6
+  END;</pre></td></tr></tbody></table></td><td><p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;weight_band&quot;,&quot;parcels&quot;,&quot;delay_rate&quot;,&quot;avg_distance&quot;,&quot;common_service&quot;,&quot;common_route&quot;,&quot;common_carrier&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;10-20kg&quot;,59398,&quot;0.08214081282198053807&quot;,&quot;170.2705464830465672&quot;,&quot;economy&quot;,&quot;regional&quot;,&quot;CarrierC&quot;]},{&quot;values&quot;:[&quot;20-50kg&quot;,40602,&quot;0.10856608048864587951&quot;,&quot;413.0719400522141766&quot;,&quot;express&quot;,&quot;long_haul&quot;,&quot;CarrierB&quot;]}],&quot;row_count&quot;:2,&quot;truncated&quot;:false}</pre></td></tr></tbody></table></td><td><span class="evidence-id">evidence-b-tool-call-1</span></td><td><span class="step-status step-ok">ok</span></td></tr><tr><td>0</td><td>Execute SQL tool call for scenario C</td><td>—</td><td>Invoke platform_proof.sql.query</td><td><p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">SELECT COUNT(*) AS total_parcels, SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_parcels, AVG(actual_hours - planned_hours) AS avg_delay_hours FROM proof.parcel_events;</pre></td></tr></tbody></table></td><td><p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;total_parcels&quot;,&quot;delayed_parcels&quot;,&quot;avg_delay_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[100000,9287,&quot;0.18411450000000000000&quot;]}],&quot;row_count&quot;:1,&quot;truncated&quot;:false}</pre></td></tr></tbody></table></td><td><span class="evidence-id">evidence-c-tool-call-1</span></td><td><span class="step-status step-ok">ok</span></td></tr><tr><td>1</td><td>Execute SQL tool call for scenario A</td><td>—</td><td>Invoke platform_proof.sql.query</td><td><p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">SELECT &#x27;North&#x27; AS region_group, carrier, service_type, route_type,
+       COUNT(*) AS total, 
+       SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+       ROUND(SUM(CASE WHEN delayed THEN 1 ELSE 0 END)::decimal / COUNT(*), 4) AS delay_rate,
+       AVG(actual_hours - planned_hours) AS avg_overrun_hours
+FROM proof.parcel_events
+WHERE region = &#x27;North&#x27;
+GROUP BY carrier, service_type, route_type
+UNION ALL
+SELECT &#x27;Other&#x27; AS region_group, carrier, service_type, route_type,
+       COUNT(*) AS total, 
+       SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+       ROUND(SUM(CASE WHEN delayed THEN 1 ELSE 0 END)::decimal / COUNT(*), 4) AS delay_rate,
+       AVG(actual_hours - planned_hours) AS avg_overrun_hours
+FROM proof.parcel_events
+WHERE region &lt;&gt; &#x27;North&#x27;
+GROUP BY carrier, service_type, route_type
+ORDER BY region_group, delay_rate DESC, total DESC;</pre></td></tr></tbody></table></td><td><p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;region_group&quot;,&quot;carrier&quot;,&quot;service_type&quot;,&quot;route_type&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;delay_rate&quot;,&quot;avg_overrun_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;North&quot;,&quot;CarrierB&quot;,&quot;express&quot;,&quot;long_haul&quot;,216,157,&quot;0.7269&quot;,&quot;2.0439351851851852&quot;]},{&quot;values&quot;:[&quot;North&quot;,&quot;CarrierA&quot;,&quot;express&quot;,&quot;long_haul&quot;,1074,717,&quot;0.6676&quot;,&quot;1.8758845437616387&quot;]},{&quot;values&quot;:[&quot;North&quot;,&quot;CarrierB&quot;,&quot;standard&quot;,&quot;regional&quot;,503,77,&quot;0.1531&quot;,&quot;0.161948310139165</pre></td></tr></tbody></table></td><td><span class="evidence-id">evidence-a-tool-call-2</span></td><td><span class="step-status step-ok">ok</span></td></tr><tr><td>2</td><td>Execute SQL tool call for scenario A</td><td>—</td><td>Invoke platform_proof.sql.query</td><td><p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">SELECT region, service_type, route_type,
+       COUNT(*) AS total,
+       SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+       ROUND(SUM(CASE WHEN delayed THEN 1 ELSE 0 END)::decimal / COUNT(*), 4) AS delay_rate,
+       AVG(distance_km) AS avg_distance,
+       AVG(planned_hours) AS avg_planned_hours,
+       AVG(actual_hours) AS avg_actual_hours
+FROM proof.parcel_events
+GROUP BY region, service_type, route_type
+ORDER BY region, service_type, route_type;</pre></td></tr></tbody></table></td><td><p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;region&quot;,&quot;service_type&quot;,&quot;route_type&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;delay_rate&quot;,&quot;avg_distance&quot;,&quot;avg_planned_hours&quot;,&quot;avg_actual_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;East&quot;,&quot;economy&quot;,&quot;regional&quot;,18338,1450,&quot;0.0791&quot;,&quot;198.9492114734431236&quot;,&quot;2.4870694732249973&quot;,&quot;2.6019811320754717&quot;]},{&quot;values&quot;:[&quot;East&quot;,&quot;express&quot;,&quot;regional&quot;,1664,290,&quot;0.1743&quot;,&quot;196.5585817307692308&quot;,&quot;2.4562500000000000&quot;,&quot;2.6478665865384615&quot;]},{&quot;v</pre></td></tr></tbody></table></td><td><span class="evidence-id">evidence-a-tool-call-3</span></td><td><span class="step-status step-ok">ok</span></td></tr></tbody></table></div><div class="trace-mobile"><div class="trace-card"><h3>Step 0</h3><dl><dt>Purpose</dt><dd>Execute SQL tool call for scenario A</dd><dt>Evidence basis</dt><dd>—</dd><dt>Action</dt><dd>Invoke platform_proof.sql.query</dd><dt>Input</dt><dd><p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">WITH base AS (
+  SELECT 
+    region,
+    COUNT(*) AS total,
+    SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+    AVG(actual_hours - planned_hours) AS avg_overrun_hours,
+    AVG(distance_km) AS avg_distance,
+    AVG(weight_kg) AS avg_weight
+  FROM proof.parcel_events
+  GROUP BY region
+)
+SELECT *,
+  delayed_cnt::decimal / total AS delay_rate
+FROM base
+ORDER BY delay_rate DESC;</pre></td></tr></tbody></table></dd><dt>Observation</dt><dd><p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;region&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;avg_overrun_hours&quot;,&quot;avg_distance&quot;,&quot;avg_weight&quot;,&quot;delay_rate&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;North&quot;,40000,4239,&quot;0.30014650000000000000&quot;,&quot;412.1374770000000000&quot;,&quot;25.2008607500000000&quot;,&quot;0.10597500000000000000&quot;]},{&quot;values&quot;:[&quot;East&quot;,20002,1740,&quot;0.12129287071292870713&quot;,&quot;198.7503309669033097&quot;,&quot;18.4992605739426057&quot;,&quot;0.08699130086991300870&quot;]},{&quot;values&quot;:[&quot;South&quot;,25000,2147,&quot;0.0</pre></td></tr></tbody></table></dd><dt>Evidence created</dt><dd>evidence-a-tool-call-1</dd><dt>Status</dt><dd><span class="step-status step-ok">ok</span></dd></dl></div><div class="trace-card"><h3>Step 0</h3><dl><dt>Purpose</dt><dd>Execute SQL tool call for scenario B</dd><dt>Evidence basis</dt><dd>—</dd><dt>Action</dt><dd>Invoke platform_proof.sql.query</dd><dt>Input</dt><dd><p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">WITH weight_bins AS (
+  SELECT 
+    CASE 
+      WHEN weight_kg &lt; 1 THEN &#x27;&lt;1kg&#x27;
+      WHEN weight_kg &lt; 5 THEN &#x27;1-5kg&#x27;
+      WHEN weight_kg &lt; 10 THEN &#x27;5-10kg&#x27;
+      WHEN weight_kg &lt; 20 THEN &#x27;10-20kg&#x27;
+      WHEN weight_kg &lt; 50 THEN &#x27;20-50kg&#x27;
+      ELSE &#x27;50kg+&#x27;
+    END AS weight_band,
+    delayed,
+    service_type,
+    route_type,
+    distance_km,
+    carrier
+  FROM proof.parcel_events
+)
+SELECT 
+  weight_band,
+  COUNT(*) AS parcels,
+  AVG(CASE WHEN delayed THEN 1 ELSE 0 END) AS delay_rate,
+  AVG(distance_km) AS avg_distance,
+  MODE() WITHIN GROUP (ORDER BY service_type) AS common_service,
+  MODE() WITHIN GROUP (ORDER BY route_type) AS common_route,
+  MODE() WITHIN GROUP (ORDER BY carrier) AS common_carrier
+FROM weight_bins
+GROUP BY weight_band
+ORDER BY 
+  CASE weight_band
+    WHEN &#x27;&lt;1kg&#x27; THEN 1
+    WHEN &#x27;1-5kg&#x27; THEN 2
+    WHEN &#x27;5-10kg&#x27; THEN 3
+    WHEN &#x27;10-20kg&#x27; THEN 4
+    WHEN &#x27;20-50kg&#x27; THEN 5
+    WHEN &#x27;50kg+&#x27; THEN 6
+  END;</pre></td></tr></tbody></table></dd><dt>Observation</dt><dd><p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;weight_band&quot;,&quot;parcels&quot;,&quot;delay_rate&quot;,&quot;avg_distance&quot;,&quot;common_service&quot;,&quot;common_route&quot;,&quot;common_carrier&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;10-20kg&quot;,59398,&quot;0.08214081282198053807&quot;,&quot;170.2705464830465672&quot;,&quot;economy&quot;,&quot;regional&quot;,&quot;CarrierC&quot;]},{&quot;values&quot;:[&quot;20-50kg&quot;,40602,&quot;0.10856608048864587951&quot;,&quot;413.0719400522141766&quot;,&quot;express&quot;,&quot;long_haul&quot;,&quot;CarrierB&quot;]}],&quot;row_count&quot;:2,&quot;truncated&quot;:false}</pre></td></tr></tbody></table></dd><dt>Evidence created</dt><dd>evidence-b-tool-call-1</dd><dt>Status</dt><dd><span class="step-status step-ok">ok</span></dd></dl></div><div class="trace-card"><h3>Step 0</h3><dl><dt>Purpose</dt><dd>Execute SQL tool call for scenario C</dd><dt>Evidence basis</dt><dd>—</dd><dt>Action</dt><dd>Invoke platform_proof.sql.query</dd><dt>Input</dt><dd><p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">SELECT COUNT(*) AS total_parcels, SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_parcels, AVG(actual_hours - planned_hours) AS avg_delay_hours FROM proof.parcel_events;</pre></td></tr></tbody></table></dd><dt>Observation</dt><dd><p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;total_parcels&quot;,&quot;delayed_parcels&quot;,&quot;avg_delay_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[100000,9287,&quot;0.18411450000000000000&quot;]}],&quot;row_count&quot;:1,&quot;truncated&quot;:false}</pre></td></tr></tbody></table></dd><dt>Evidence created</dt><dd>evidence-c-tool-call-1</dd><dt>Status</dt><dd><span class="step-status step-ok">ok</span></dd></dl></div><div class="trace-card"><h3>Step 1</h3><dl><dt>Purpose</dt><dd>Execute SQL tool call for scenario A</dd><dt>Evidence basis</dt><dd>—</dd><dt>Action</dt><dd>Invoke platform_proof.sql.query</dd><dt>Input</dt><dd><p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">SELECT &#x27;North&#x27; AS region_group, carrier, service_type, route_type,
+       COUNT(*) AS total, 
+       SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+       ROUND(SUM(CASE WHEN delayed THEN 1 ELSE 0 END)::decimal / COUNT(*), 4) AS delay_rate,
+       AVG(actual_hours - planned_hours) AS avg_overrun_hours
+FROM proof.parcel_events
+WHERE region = &#x27;North&#x27;
+GROUP BY carrier, service_type, route_type
+UNION ALL
+SELECT &#x27;Other&#x27; AS region_group, carrier, service_type, route_type,
+       COUNT(*) AS total, 
+       SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+       ROUND(SUM(CASE WHEN delayed THEN 1 ELSE 0 END)::decimal / COUNT(*), 4) AS delay_rate,
+       AVG(actual_hours - planned_hours) AS avg_overrun_hours
+FROM proof.parcel_events
+WHERE region &lt;&gt; &#x27;North&#x27;
+GROUP BY carrier, service_type, route_type
+ORDER BY region_group, delay_rate DESC, total DESC;</pre></td></tr></tbody></table></dd><dt>Observation</dt><dd><p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;region_group&quot;,&quot;carrier&quot;,&quot;service_type&quot;,&quot;route_type&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;delay_rate&quot;,&quot;avg_overrun_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;North&quot;,&quot;CarrierB&quot;,&quot;express&quot;,&quot;long_haul&quot;,216,157,&quot;0.7269&quot;,&quot;2.0439351851851852&quot;]},{&quot;values&quot;:[&quot;North&quot;,&quot;CarrierA&quot;,&quot;express&quot;,&quot;long_haul&quot;,1074,717,&quot;0.6676&quot;,&quot;1.8758845437616387&quot;]},{&quot;values&quot;:[&quot;North&quot;,&quot;CarrierB&quot;,&quot;standard&quot;,&quot;regional&quot;,503,77,&quot;0.1531&quot;,&quot;0.161948310139165</pre></td></tr></tbody></table></dd><dt>Evidence created</dt><dd>evidence-a-tool-call-2</dd><dt>Status</dt><dd><span class="step-status step-ok">ok</span></dd></dl></div><div class="trace-card"><h3>Step 2</h3><dl><dt>Purpose</dt><dd>Execute SQL tool call for scenario A</dd><dt>Evidence basis</dt><dd>—</dd><dt>Action</dt><dd>Invoke platform_proof.sql.query</dd><dt>Input</dt><dd><p class="payload-summary">SQL query arguments</p><table class="payload-table"><tbody><tr><th scope="row">sql</th><td><pre class="payload-value">SELECT region, service_type, route_type,
+       COUNT(*) AS total,
+       SUM(CASE WHEN delayed THEN 1 ELSE 0 END) AS delayed_cnt,
+       ROUND(SUM(CASE WHEN delayed THEN 1 ELSE 0 END)::decimal / COUNT(*), 4) AS delay_rate,
+       AVG(distance_km) AS avg_distance,
+       AVG(planned_hours) AS avg_planned_hours,
+       AVG(actual_hours) AS avg_actual_hours
+FROM proof.parcel_events
+GROUP BY region, service_type, route_type
+ORDER BY region, service_type, route_type;</pre></td></tr></tbody></table></dd><dt>Observation</dt><dd><p class="payload-summary">Bounded SQL result preview</p><table class="payload-table"><tbody><tr><th scope="row">output_preview</th><td><pre class="payload-value">{&quot;columns&quot;:[&quot;region&quot;,&quot;service_type&quot;,&quot;route_type&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;delay_rate&quot;,&quot;avg_distance&quot;,&quot;avg_planned_hours&quot;,&quot;avg_actual_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[&quot;East&quot;,&quot;economy&quot;,&quot;regional&quot;,18338,1450,&quot;0.0791&quot;,&quot;198.9492114734431236&quot;,&quot;2.4870694732249973&quot;,&quot;2.6019811320754717&quot;]},{&quot;values&quot;:[&quot;East&quot;,&quot;express&quot;,&quot;regional&quot;,1664,290,&quot;0.1743&quot;,&quot;196.5585817307692308&quot;,&quot;2.4562500000000000&quot;,&quot;2.6478665865384615&quot;]},{&quot;v</pre></td></tr></tbody></table></dd><dt>Evidence created</dt><dd>evidence-a-tool-call-3</dd><dt>Status</dt><dd><span class="step-status step-ok">ok</span></dd></dl></div></div></section>
+<section id="evidence-graph" aria-labelledby="evidence-graph-heading"><h2 id="evidence-graph-heading">Evidence graph</h2><svg class="graph-diagram" viewBox="0 0 260 308" role="img" aria-labelledby="graph-diagram-title"><title id="graph-diagram-title">Evidence graph</title><rect x="20" y="16" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="34" font-size="11">Tool result tool-call-1</text><rect x="20" y="52" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="70" font-size="11">Tool result tool-call-2</text><rect x="20" y="88" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="106" font-size="11">Tool result tool-call-3</text><rect x="20" y="124" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="142" font-size="11">Final answer</text><rect x="20" y="160" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="178" font-size="11">Tool result tool-call-1</text><rect x="20" y="196" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="214" font-size="11">Final answer</text><rect x="20" y="232" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="250" font-size="11">Tool result tool-call-1</text><rect x="20" y="268" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="286" font-size="11">Final answer</text></svg><table><thead><tr><th>ID</th><th>Kind</th><th>Label</th><th>Summary</th><th>Step</th></tr></thead><tbody><tr><td><span class="evidence-id">evidence-a-tool-call-1</span></td><td>TOOL_RESULT</td><td>Tool result tool-call-1</td><td>{&quot;columns&quot;:[&quot;region&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;avg_overrun_hours&quot;,&quot;avg_distance&quot;,&quot;avg_weight&quot;,&quot;delay_rate&quot;],&quot;rows&quot;:[{&quot;value</td><td>a-step-1</td></tr><tr><td><span class="evidence-id">evidence-a-tool-call-2</span></td><td>TOOL_RESULT</td><td>Tool result tool-call-2</td><td>{&quot;columns&quot;:[&quot;region_group&quot;,&quot;carrier&quot;,&quot;service_type&quot;,&quot;route_type&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;delay_rate&quot;,&quot;avg_overrun_hours&quot;]</td><td>a-step-2</td></tr><tr><td><span class="evidence-id">evidence-a-tool-call-3</span></td><td>TOOL_RESULT</td><td>Tool result tool-call-3</td><td>{&quot;columns&quot;:[&quot;region&quot;,&quot;service_type&quot;,&quot;route_type&quot;,&quot;total&quot;,&quot;delayed_cnt&quot;,&quot;delay_rate&quot;,&quot;avg_distance&quot;,&quot;avg_planned_hours&quot;,&quot;</td><td>a-step-3</td></tr><tr><td><span class="evidence-id">evidence-final-answer-a</span></td><td>FINAL_ANSWER</td><td>Final answer</td><td>Based on the data, North’s higher delay rate is real and is overwhelmingly driven by one specific operational pattern, n</td><td>—</td></tr><tr><td><span class="evidence-id">evidence-b-tool-call-1</span></td><td>TOOL_RESULT</td><td>Tool result tool-call-1</td><td>{&quot;columns&quot;:[&quot;weight_band&quot;,&quot;parcels&quot;,&quot;delay_rate&quot;,&quot;avg_distance&quot;,&quot;common_service&quot;,&quot;common_route&quot;,&quot;common_carrier&quot;],&quot;rows&quot;</td><td>b-step-1</td></tr><tr><td><span class="evidence-id">evidence-final-answer-b</span></td><td>FINAL_ANSWER</td><td>Final answer</td><td>Based on the available data, heavier weight by itself is not a clearly supported root cause of delay; it’s more likely a</td><td>—</td></tr><tr><td><span class="evidence-id">evidence-c-tool-call-1</span></td><td>TOOL_RESULT</td><td>Tool result tool-call-1</td><td>{&quot;columns&quot;:[&quot;total_parcels&quot;,&quot;delayed_parcels&quot;,&quot;avg_delay_hours&quot;],&quot;rows&quot;:[{&quot;values&quot;:[100000,9287,&quot;0.18411450000000000000&quot;</td><td>c-step-1</td></tr><tr><td><span class="evidence-id">evidence-final-answer-c</span></td><td>FINAL_ANSWER</td><td>Final answer</td><td>Based on the data available, we cannot say that staffing shortages are *the* reason for the delays.
+
+What we can see (fr</td><td>—</td></tr></tbody></table><h3>Relationships</h3><table><thead><tr><th>From</th><th>To</th><th>Relationship</th></tr></thead><tbody><tr><td>evidence-a-tool-call-1</td><td>a-step-1</td><td>PRODUCED_BY</td></tr><tr><td>evidence-a-tool-call-2</td><td>a-step-2</td><td>PRODUCED_BY</td></tr><tr><td>evidence-a-tool-call-3</td><td>a-step-3</td><td>PRODUCED_BY</td></tr><tr><td>evidence-a-tool-call-1</td><td>evidence-final-answer-a</td><td>SUPPORTS_CONCLUSION</td></tr><tr><td>evidence-a-tool-call-2</td><td>evidence-final-answer-a</td><td>SUPPORTS_CONCLUSION</td></tr><tr><td>evidence-a-tool-call-3</td><td>evidence-final-answer-a</td><td>SUPPORTS_CONCLUSION</td></tr><tr><td>evidence-b-tool-call-1</td><td>b-step-1</td><td>PRODUCED_BY</td></tr><tr><td>evidence-b-tool-call-1</td><td>evidence-final-answer-b</td><td>SUPPORTS_CONCLUSION</td></tr><tr><td>evidence-c-tool-call-1</td><td>c-step-1</td><td>PRODUCED_BY</td></tr><tr><td>evidence-c-tool-call-1</td><td>evidence-final-answer-c</td><td>SUPPORTS_CONCLUSION</td></tr></tbody></table></section>
+<section id="final-output" aria-labelledby="final-output-heading"><h2 id="final-output-heading">Final output</h2><div class="final-output-panel"><h3>Model / proof final output</h3><pre>Based on the data available, we cannot say that staffing shortages are *the* reason for the delays.
+
+What we can see (from the query I ran):
+
+- Total parcels: 100,000  
+- Delayed parcels: 9,287 (~9.3%)  
+- Average delay (actual_hours − planned_hours): ~0.18 hours (~11 minutes)
+
+However:
+
+- The dataset has no fields about staffing levels, shift coverage, absenteeism, overtime, or headcount.
+- All we can observe are outcomes (delays) and operational attributes (region, hubs, carrier, service type, route type, distance, weight, times).
+
+Without any direct or proxy measure of staffing, any claim that “staffing shortages are the reason” would be speculation. Staffing could be one contributing factor, but the data at hand cannot confirm or quantify that.
+
+If you’d like, I can probe the data further for patterns (e.g., by region, weekday, service type) to identify *where* delays are concentrated; that can suggest where to investigate staffing on your side, but it still won’t prove staffing is the root cause.</pre><p class="muted">Evidence basis: —</p><p class="muted">This section is not the evaluator verdict.</p></div></section>
+<section id="evaluator-verdict" aria-labelledby="evaluator-verdict-heading"><h2 id="evaluator-verdict-heading">Evaluator verdict</h2><div class="verdict-panel fail"><h3>Evaluator verdict</h3><p><strong>Overall:</strong> not passed</p><p><strong>Failure reasons:</strong> insufficient_tool_calls:1, semantic_outcome_failed</p><table><thead><tr><th>Check</th><th>Result</th><th>Explanation</th><th>Evidence</th></tr></thead><tbody><tr><td>Minimum successful tool-call count</td><td>pass</td><td>successful_tool_calls=3</td><td>evidence-a-tool-call-1</td></tr><tr><td>Valid evidence-dependent follow-up chain</td><td>pass</td><td>investigation_proof_steps=2</td><td>evidence-a-tool-call-1, evidence-a-tool-call-2, evidence-a-tool-call-3</td></tr><tr><td>Normal bounded termination</td><td>pass</td><td>stop_reason=planner_final_answer</td><td>—</td></tr><tr><td>Scenario A semantic outcome</td><td>pass</td><td>North anomaly supported; volume-only rejected.</td><td>evidence-final-answer-a</td></tr><tr><td>Minimum successful tool-call count</td><td>fail</td><td>successful_tool_calls=1</td><td>evidence-b-tool-call-1</td></tr><tr><td>Valid evidence-dependent follow-up chain</td><td>pass</td><td>investigation_proof_steps=1</td><td>evidence-b-tool-call-1</td></tr><tr><td>Normal bounded termination</td><td>pass</td><td>stop_reason=planner_final_answer</td><td>—</td></tr><tr><td>Scenario B semantic outcome</td><td>fail</td><td>Segmented evidence without direct causation claim.</td><td>evidence-final-answer-b</td></tr><tr><td>Minimum successful tool-call count</td><td>pass</td><td>successful_tool_calls=1</td><td>evidence-c-tool-call-1</td></tr><tr><td>Valid evidence-dependent follow-up chain</td><td>pass</td><td>investigation_proof_steps=1</td><td>evidence-c-tool-call-1</td></tr><tr><td>Normal bounded termination</td><td>pass</td><td>stop_reason=planner_final_answer</td><td>—</td></tr><tr><td>Scenario C semantic outcome</td><td>pass</td><td>Missing staffing evidence acknowledged.</td><td>evidence-final-answer-c</td></tr></tbody></table></div></section>
+<section id="failure-analysis" aria-labelledby="failure-analysis-heading"><h2 id="failure-analysis-heading">Failure analysis</h2><p class="section-empty">No failure analysis — execution passed.</p></section>
+<section id="limitations" aria-labelledby="limitations-heading"><h2 id="limitations-heading">Limitations</h2><ul><li>Single configured LLM provider/model per run.</li><li>Fixture dataset with bounded SQL row visibility.</li><li>Docker-hosted PostgreSQL fixture required.</li></ul></section>
+<section id="conclusion" aria-labelledby="conclusion-heading"><h2 id="conclusion-heading">Conclusion</h2><h3>Not supported</h3><ul><li>Claim not demonstrated under named proof conditions.</li></ul><h3>Open questions</h3><ul><li>insufficient_tool_calls:1</li><li>semantic_outcome_failed</li></ul></section>
+<section id="reproduction" aria-labelledby="reproduction-heading"><h2 id="reproduction-heading">Reproduction</h2><p><strong>Source revision:</strong> a7877c106143c374aa5a25787824796cfc29c601</p><p><strong>Profile env vars:</strong> INTERGRAX_LLM_PROVIDER, INTERGRAX_LLM_MODEL, INTERGRAX_PP_SQL_INVESTIGATION_DSN</p><p><strong>Dataset fingerprint:</strong> e67e4beebd2f7019961f2a90068b5970906e04543e9e1485d419212bb1e246bc</p><h3>Prerequisites</h3><ul><li>uv</li><li>docker</li><li>INTERGRAX_LLM_PROVIDER</li></ul><h3>Command</h3><pre>uv run python platform_proofs/tools/iterative_sql_investigation/run_proof.py</pre></section>
+<section id="provenance" aria-labelledby="provenance-heading"><h2 id="provenance-heading">Provenance</h2><table><tbody><tr><th scope="row">proof_id</th><td>TOOLS-ITERATIVE-SQL-INVESTIGATION</td></tr><tr><th scope="row">execution_id</th><td>TOOLS-ITERATIVE-SQL-INVESTIGATION</td></tr><tr><th scope="row">source revision</th><td>a7877c106143c374aa5a25787824796cfc29c601</td></tr><tr><th scope="row">evidence schema</th><td>intergrax.platform_proof_evidence.v1</td></tr><tr><th scope="row">report schema</th><td>intergrax.platform_proof_report.v1</td></tr><tr><th scope="row">report standard</th><td>v1</td></tr><tr><th scope="row">renderer version</th><td>1.0.0</td></tr><tr><th scope="row">evidence checksum</th><td>—</td></tr><tr><th scope="row">artifact identity</th><td>intergrax.platform_proof_evidence.v1:TOOLS-ITERATIVE-SQL-INVESTIGATION:TOOLS-ITERATIVE-SQL-INVESTIGATION:20260822T084607Z</td></tr><tr><th scope="row">generated at</th><td>2026-08-22T08:46:07.311365+00:00</td></tr><tr><th scope="row">execution profile</th><td>full</td></tr></tbody></table></section>
+</main>
+</body>
+</html>
