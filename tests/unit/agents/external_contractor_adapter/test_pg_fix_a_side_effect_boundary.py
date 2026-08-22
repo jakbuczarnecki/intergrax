@@ -36,7 +36,10 @@ from external_contractor_adapter.tests.fakes.external_work_authorization_boundar
     seed_external_work_authorization_boundary,
 )
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
-from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
+from intergrax.contracts.collaborative_work import (
+    CollaborativeWorkEnforcementRequest,
+    MembershipResolutionMode,
+)
 from intergrax.contracts.external_work import QuoteAcceptanceEvidence
 from intergrax.contracts.money import MoneyAmount
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
@@ -163,6 +166,8 @@ def test_a2_no_parallel_evaluator_in_production_adapter() -> None:
     tree = ast.parse(source, filename=str(_ADAPTER_PY))
     assert "MeaningfulSideEffectEvaluator" not in source
     assert "evaluate_meaningful_side_effect(" not in source
+    assert "WorkspaceMembership(" not in source
+    assert "MembershipStatus.ACTIVE" not in source
     for node in ast.walk(tree):
         if isinstance(node, ast.Attribute) and node.attr == "evaluate_meaningful_side_effect":
             pytest.fail("adapter must not call evaluate_meaningful_side_effect directly")
@@ -337,32 +342,42 @@ def test_a11_resource_scope_changes_authorization() -> None:
 
 
 def test_a12_same_action_different_authority() -> None:
+    call_log_allowed: list[str] = []
+    call_log_denied: list[str] = []
     runtime = DeterministicMeaningfulSideEffectPolicy(default=PolicyAction.ALLOW)
     boundary = seed_external_work_authorization_boundary(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         principal_id=_PRINCIPAL,
         runtime_policy_evaluator=runtime,
-        extra_principal_grants={"weak-principal": ("external_work.read",)},
     )
-    adapter = ExternalWorkAdapter(DeterministicExternalWorkFake(), authorization_boundary=boundary)
-    allowed = adapter.create_and_map(
-        adapter.build_create_request(task_id=_TASK, run_id=_RUN, metadata=_meta()),
+    adapter_allowed = ExternalWorkAdapter(
+        _RecordingIntegration(call_log=call_log_allowed),
+        authorization_boundary=boundary,
+    )
+    adapter_denied = ExternalWorkAdapter(
+        _RecordingIntegration(call_log=call_log_denied),
+        authorization_boundary=boundary,
+    )
+    allowed = adapter_allowed.create_and_map(
+        adapter_allowed.build_create_request(task_id=_TASK, run_id=_RUN, metadata=_meta()),
         principal_id=_PRINCIPAL,
         tenant_id=_TENANT,
     )
-    denied = adapter.create_and_map(
-        adapter.build_create_request(
-            task_id="task-weak",
-            run_id="run-weak",
-            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-weak"}),
+    denied = adapter_denied.create_and_map(
+        adapter_denied.build_create_request(
+            task_id="task-no-membership",
+            run_id="run-no-membership",
+            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-membership"}),
         ),
-        principal_id="weak-principal",
+        principal_id="principal-without-membership",
         tenant_id=_TENANT,
     )
     assert allowed.used is True
+    assert call_log_allowed.count("integration.create_work") == 1
     assert denied.used is False
     assert denied.reason == "side_effect_denied"
+    assert call_log_denied == []
 
 
 def test_a13_observational_get_quote_skips_authorization() -> None:
@@ -411,6 +426,8 @@ def test_a15_identity_dimensions_preserved_in_enforcement_request() -> None:
     assert req.tenant_id == _TENANT
     assert req.workspace_id == _WORKSPACE
     assert req.acting_principal_id == _PRINCIPAL
+    assert req.membership is None
+    assert req.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
 
 
 def test_a16_authorization_before_provider_ordering() -> None:

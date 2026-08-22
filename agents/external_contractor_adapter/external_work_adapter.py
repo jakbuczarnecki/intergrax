@@ -45,9 +45,7 @@ from intergrax.contracts.meaningful_side_effect import (
 )
 from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementRequest,
-    MembershipStatus,
-    WorkspaceMembership,
-    WorkspaceMembershipRole,
+    MembershipResolutionMode,
 )
 from intergrax.contracts.money import MoneyAmount
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
@@ -863,22 +861,13 @@ class ExternalWorkAdapter:
                 correlation=dict(correlation),
                 context=dict(context),
             )
-            membership_locator = WorkspaceMembership(
-                membership_id=f"membership-{resolved_principal}",
-                tenant_id=resolved_tenant,
-                workspace_id=resolved_workspace,
-                principal_id=resolved_principal,
-                role=WorkspaceMembershipRole.MEMBER,
-                status=MembershipStatus.ACTIVE,
-                revision=0,
-            )
             enforcement_request = CollaborativeWorkEnforcementRequest(
                 tenant_id=resolved_tenant,
                 workspace_id=resolved_workspace,
                 operation_id=action,
                 acting_principal_id=resolved_principal,
                 resource_scope=resource,
-                membership=membership_locator,
+                membership_resolution_mode=MembershipResolutionMode.CANONICAL_PRINCIPAL,
                 meaningful_side_effect_request=side_effect_request,
             )
             authorization = self._authorization_boundary.authorize(

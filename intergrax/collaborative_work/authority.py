@@ -31,6 +31,7 @@ from intergrax.contracts.collaborative_work import (
     EffectiveAuthorityDecision,
     EffectiveAuthorityDenialReason,
     EffectiveAuthorityRequest,
+    MembershipResolutionMode,
     MembershipStatus,
     PrincipalAuthorityGrant,
     WorkspaceMembership,
@@ -108,6 +109,9 @@ class CollaborativeWorkAuthorityResolver:
         self,
         request: EffectiveAuthorityRequest,
     ) -> EffectiveAuthorityDecision | None:
+        if request.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL:
+            return self._resolve_canonical_membership(request)
+
         if request.membership is None:
             return fail_closed_effective_authority_decision(
                 reason="workspace membership locator is required",
@@ -132,6 +136,30 @@ class CollaborativeWorkAuthorityResolver:
                 denial_reason=EffectiveAuthorityDenialReason.MISSING_MEMBERSHIP,
             )
 
+        return self._validate_authoritative_membership(request, authoritative)
+
+    def _resolve_canonical_membership(
+        self,
+        request: EffectiveAuthorityRequest,
+    ) -> EffectiveAuthorityDecision | None:
+        authoritative = self._membership_repository.get_for_principal(
+            tenant_id=request.tenant_id,
+            workspace_id=request.workspace_id,
+            principal_id=request.acting_principal_id,
+        )
+        if authoritative is None:
+            return fail_closed_effective_authority_decision(
+                reason="authoritative workspace membership not found",
+                denial_reason=EffectiveAuthorityDenialReason.MISSING_MEMBERSHIP,
+            )
+
+        return self._validate_authoritative_membership(request, authoritative)
+
+    def _validate_authoritative_membership(
+        self,
+        request: EffectiveAuthorityRequest,
+        authoritative: WorkspaceMembership,
+    ) -> EffectiveAuthorityDecision | None:
         if not self._membership_matches_request(request, authoritative):
             return fail_closed_effective_authority_decision(
                 reason="authoritative membership does not match request scope",
