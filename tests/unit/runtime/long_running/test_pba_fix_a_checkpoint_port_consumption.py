@@ -8,6 +8,7 @@ import ast
 import inspect
 from pathlib import Path
 from typing import Dict, List, Optional
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -28,7 +29,12 @@ from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
     TaskCheckpointReader,
 )
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.orchestration.long_running_bridge import (
+    maybe_checkpoint_long_running,
+    maybe_restore_long_running,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
 from intergrax.runtime.task.task import Task
@@ -39,6 +45,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _GENERIC_RUNTIME_FILES = (
     _REPO_ROOT / "intergrax/runtime/nexus/nexus_loop.py",
+    _REPO_ROOT / "intergrax/runtime/nexus/orchestration/long_running_bridge.py",
     _REPO_ROOT / "intergrax/runtime/long_running/coordinator.py",
     _REPO_ROOT / "intergrax/runtime/task/nexus_worker_execution.py",
     _REPO_ROOT / "intergrax/runtime/task/worker_bootstrap.py",
@@ -209,6 +216,94 @@ def test_a7_shared_nexus_factory_accepts_fake_port() -> None:
         checkpoint_store=fake,
     )
     assert loop._checkpoint_store is fake  # noqa: SLF001
+
+
+def test_r1_1_long_running_bridge_has_no_sqlite_checkpoint_import() -> None:
+    bridge_path = _REPO_ROOT / "intergrax/runtime/nexus/orchestration/long_running_bridge.py"
+    source = bridge_path.read_text(encoding="utf-8")
+    assert "SQLiteTaskCheckpointStore" not in source
+    assert "runtime.long_running.store" not in source
+    assert "TaskCheckpointReader" in source
+    assert "TaskCheckpointPersistence" in source
+
+
+async def test_r1_2_bridge_restore_with_fake_reader() -> None:
+    fake = _FakeCheckpointStore()
+    original = _long_running_task()
+    checkpoint = LongRunningCoordinator.persist_checkpoint(
+        original,
+        fake,
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        progress_message="awaiting human",
+    )
+    resume_task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        task_id=original.task_id,
+        message="ignored until restore",
+        options=TaskExecutionOptions(
+            long_running=TaskLongRunningOptions(
+                enabled=True,
+                resume_token=checkpoint.resume_token,
+            ),
+        ),
+    )
+    published: list[RuntimeEvent] = []
+
+    async def _publish(event: RuntimeEvent, *, task: Task | None = None) -> None:
+        _ = task
+        published.append(event)
+
+    run_id = mint_run_id()
+    stub_event = MagicMock()
+    stub_event.model_copy.return_value = stub_event
+    with patch(
+        "intergrax.runtime.nexus.orchestration.long_running_bridge.runtime_event_from_task_state",
+        return_value=stub_event,
+    ):
+        await maybe_restore_long_running(
+            resume_task,
+            checkpoint_store=fake,
+            publish=_publish,
+            notification_adapter=None,
+            run_id=run_id,
+        )
+    assert resume_task.message == "long-running work"
+    assert len(published) == 1
+    assert isinstance(fake, TaskCheckpointReader)
+
+
+async def test_r1_3_bridge_checkpoint_with_fake_persistence() -> None:
+    fake = _FakeCheckpointStore()
+    task = _long_running_task()
+    published: list[RuntimeEvent] = []
+
+    async def _publish(event: RuntimeEvent, *, task: Task | None = None) -> None:
+        _ = task
+        published.append(event)
+
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    stub_event = MagicMock()
+    stub_event.model_copy.return_value = stub_event
+    with patch(
+        "intergrax.runtime.nexus.orchestration.long_running_bridge.runtime_event_from_task_state",
+        return_value=stub_event,
+    ):
+        await maybe_checkpoint_long_running(
+            task,
+            checkpoint_store=fake,
+            publish=_publish,
+            notification_adapter=None,
+            progress_message="step complete",
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
+    assert len(fake.saved) == 1
+    assert fake.saved[0].progress_message == "step complete"
+    assert len(published) == 2
+    assert isinstance(fake, TaskCheckpointPersistence)
 
 
 def test_a8_generic_runtime_has_no_sqlite_checkpoint_import() -> None:
