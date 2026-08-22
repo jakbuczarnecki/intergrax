@@ -92,6 +92,15 @@ def _ledger_external_ref(ledger: SideEffectLedger, idempotency_key: str) -> str 
     return None
 
 
+def _replay_terminal_status(completed: ToolExecutionResult[Any]) -> DeclarativeToolStatus:
+    """Map a durable completed failure to declarative terminal status."""
+    if completed.success:
+        return "replay_skipped"
+    if completed.error is not None and completed.error.error_code == "declarative.denied":
+        return "denied"
+    return "failed"
+
+
 def _replay_external_ref(
     *,
     claim_result: ClaimResult,
@@ -197,21 +206,40 @@ async def execute_declarative_actions(
                 _DEFAULT_LEASE_SECONDS,
             )
             if claim_result.outcome == ClaimOutcome.REPLAY_COMPLETED:
-                external_ref = _replay_external_ref(
-                    claim_result=claim_result,
-                    idempotency_store=idempotency_store,
-                    tenant_id=tenant_id,
-                    idempotency_key=key,
-                )
-                result.results.append(
-                    DeclarativeActionExecution(
-                        tool_id=tool_id,
-                        status="replay_skipped",
+                completed = claim_result.completed_result
+                if completed is not None and completed.success:
+                    external_ref = _replay_external_ref(
+                        claim_result=claim_result,
+                        idempotency_store=idempotency_store,
+                        tenant_id=tenant_id,
                         idempotency_key=key,
-                        external_ref=external_ref,
-                        replay_skipped=True,
                     )
-                )
+                    result.results.append(
+                        DeclarativeActionExecution(
+                            tool_id=tool_id,
+                            status="replay_skipped",
+                            idempotency_key=key,
+                            external_ref=external_ref,
+                            replay_skipped=True,
+                        )
+                    )
+                else:
+                    error_message = None
+                    if completed is not None and completed.error is not None:
+                        error_message = completed.error.error_message
+                    terminal_status = (
+                        _replay_terminal_status(completed)
+                        if completed is not None
+                        else "failed"
+                    )
+                    result.results.append(
+                        DeclarativeActionExecution(
+                            tool_id=tool_id,
+                            status=terminal_status,
+                            idempotency_key=key,
+                            error=error_message,
+                        )
+                    )
                 continue
             if claim_result.outcome == ClaimOutcome.BLOCKED_ACTIVE:
                 result.results.append(

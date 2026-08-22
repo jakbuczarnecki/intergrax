@@ -7,7 +7,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
-from intergrax.contracts.idempotency_store import IdempotencyStore, InvocationStatus
+from intergrax.contracts.idempotency_store import IdempotencyStore
 
 
 class SideEffectCommitPayload(BaseModel):
@@ -29,7 +29,8 @@ def should_skip_side_effect_replay(
         return True
     if idempotency_store is None:
         return False
-    return idempotency_store.get_status(tenant_id, idempotency_key) == InvocationStatus.COMPLETED
+    completed = idempotency_store.get_completed_result(tenant_id, idempotency_key)
+    return completed is not None and completed.success
 
 
 def resolve_external_ref_from_store(
