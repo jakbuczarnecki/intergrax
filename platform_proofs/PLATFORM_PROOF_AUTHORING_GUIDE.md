@@ -53,6 +53,7 @@ Follow this guide to add or advance a platform proof without reconstructing meth
 - [ ] Execution uses `scripts/proof/` runner — no duplicate infrastructure
 - [ ] Evidence uses `SuiteReceipt` — not merged with domain `ProofReceipt`
 - [ ] For descriptor-backed proofs with `evidence_required=true`, PASS requires validated `evidence.json` (exit code alone is insufficient)
+- [ ] For descriptor-backed proofs, every required `expected_artifacts` entry must exist as a safe regular file under runner artifact directory (PP-SUITE-4)
 - [ ] Map coverage updated (`NO_PROOF` → `DESIGNED` → `EXECUTABLE` → `QUALIFIED`)
 - [ ] Product proofs not cited as platform domain evidence
 - [ ] Public dashboard updated only when public claim boundary changes

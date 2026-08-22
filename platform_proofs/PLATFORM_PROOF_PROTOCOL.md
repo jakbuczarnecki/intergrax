@@ -126,6 +126,8 @@ platform_proofs/<domain>/<proof_slug>/
 
 **Evidence and report:** descriptors may declare `evidence_schema`, `expected_artifacts`, and `report_required`. Machine evidence validation (PP-SUITE-3) and report verification (PP-SUITE-5) are follow-on tasks; `report_required=false` is allowed during renderer migration (PP-REPORT-3/4).
 
+**Artifact contract (PP-SUITE-4):** a descriptor-backed Platform Proof is successful only when (1) subprocess contract passes, (2) required machine evidence passes validation when declared, and (3) every required declared artifact in `expected_artifacts` satisfies the generic artifact contract. Optional artifacts may be absent; if present they must still be safe regular non-symlink files. Artifact paths resolve only under the runner-owned proof artifact directory.
+
 **Roadmap:** PP-SUITE-1 package contract · PP-SUITE-2 dynamic discovery · PP-SUITE-3 evidence validation · PP-SUITE-4 artifact verification · PP-REPORT-3 generic HTML renderer · PP-REPORT-4 TOOLS report integration · PP-SUITE-5 report contract verification · PP-SUITE-6 CI regression profiles.
 
 **Transition:** Phase 1 — `TOOLS-ITERATIVE-SQL-INVESTIGATION` ships `proof.json`. Phase 2 — dynamic discovery (current). Phase 3 — static manifest coexists for unmigrated proofs. Phase 4 — migrate remaining platform proofs. Phase 5 — remove static platform registrations when complete. Duplicate `proof_id` across static manifest and discovery fails unless entries are semantically equivalent migration twins (descriptor wins once).

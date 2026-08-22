@@ -27,6 +27,10 @@ from scripts.proof.intergrax_proof_contracts import (
     SuiteOverallStatus,
     SuiteReceipt,
 )
+from scripts.proof.intergrax_platform_proof_artifact_verifier import (
+    apply_artifact_verification,
+    verify_platform_proof_artifacts,
+)
 from scripts.proof.intergrax_platform_proof_evidence_verifier import (
     apply_evidence_verification,
     resolve_expected_evidence_path,
@@ -208,7 +212,7 @@ def execute_proof(
             exit_code=exit_code,
             diagnostic_summary=diagnostic,
         )
-        return _verify_evidence_if_required(
+        return _verify_post_execution(
             transport_result,
             execution_spec=execution_spec,
             proof_artifact_directory=proof_artifact_directory,
@@ -328,6 +332,28 @@ def write_receipt(receipt: SuiteReceipt, *, repo_root: Path) -> Path:
     return path
 
 
+def _verify_artifacts_if_declared(
+    transport_result: ProofRunResult,
+    *,
+    execution_spec: ProofExecutionSpec,
+    proof_artifact_directory: Path | None,
+) -> ProofRunResult:
+    if not execution_spec.expected_artifacts:
+        return transport_result
+    if proof_artifact_directory is None:
+        return transport_result.model_copy(
+            update={
+                "status": ProofStatus.FAIL,
+                "diagnostic_summary": "missing_proof_artifact_directory",
+            }
+        )
+    summary = verify_platform_proof_artifacts(
+        proof_artifact_directory=proof_artifact_directory,
+        spec=execution_spec,
+    )
+    return apply_artifact_verification(transport_result, summary)
+
+
 def _verify_evidence_if_required(
     transport_result: ProofRunResult,
     *,
@@ -356,6 +382,29 @@ def _verify_evidence_if_required(
         expected_source_revision=git_commit_sha,
     )
     return apply_evidence_verification(transport_result, verification)
+
+
+def _verify_post_execution(
+    transport_result: ProofRunResult,
+    *,
+    execution_spec: ProofExecutionSpec | None,
+    proof_artifact_directory: Path | None,
+    git_commit_sha: str,
+) -> ProofRunResult:
+    """Artifact verification (generic) then semantic evidence verification."""
+    result = transport_result
+    if execution_spec is not None:
+        result = _verify_artifacts_if_declared(
+            result,
+            execution_spec=execution_spec,
+            proof_artifact_directory=proof_artifact_directory,
+        )
+    return _verify_evidence_if_required(
+        result,
+        execution_spec=execution_spec,
+        proof_artifact_directory=proof_artifact_directory,
+        git_commit_sha=git_commit_sha,
+    )
 
 
 def run_suite(

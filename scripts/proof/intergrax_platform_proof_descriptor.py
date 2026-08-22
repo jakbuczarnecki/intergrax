@@ -166,6 +166,55 @@ class PlatformProofDescriptor(BaseModel):
                 raise ValueError("command argv must not contain shell operators")
         return self
 
+    @model_validator(mode="after")
+    def _validate_expected_artifacts(self) -> PlatformProofDescriptor:
+        evidence_json_count = 0
+        required_evidence_count = 0
+        required_report_count = 0
+        seen_paths: set[str] = set()
+
+        for artifact in self.expected_artifacts:
+            if artifact.relative_path in seen_paths:
+                raise ValueError(
+                    f"duplicate expected artifact relative_path: {artifact.relative_path}"
+                )
+            seen_paths.add(artifact.relative_path)
+
+            if artifact.kind == ExpectedArtifactKind.EVIDENCE_JSON:
+                evidence_json_count += 1
+                if artifact.required:
+                    required_evidence_count += 1
+            if (
+                artifact.kind == ExpectedArtifactKind.REPORT_HTML
+                and artifact.required
+            ):
+                required_report_count += 1
+
+        if evidence_json_count > 1:
+            raise ValueError("at most one EVIDENCE_JSON artifact may be declared")
+
+        if self.evidence_required:
+            if required_evidence_count != 1:
+                raise ValueError(
+                    "evidence_required=true requires exactly one required EVIDENCE_JSON"
+                )
+        elif required_evidence_count > 0:
+            raise ValueError(
+                "evidence_required=false contradicts required EVIDENCE_JSON declaration"
+            )
+
+        if self.report_required:
+            if required_report_count != 1:
+                raise ValueError(
+                    "report_required=true requires exactly one required REPORT_HTML"
+                )
+        elif required_report_count > 0:
+            raise ValueError(
+                "report_required=false contradicts required REPORT_HTML declaration"
+            )
+
+        return self
+
 
 def _is_windows_absolute(path: str) -> bool:
     return len(path) >= 2 and path[1] == ":"
