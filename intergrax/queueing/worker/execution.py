@@ -5,12 +5,19 @@
 from __future__ import annotations
 
 from typing import Optional
+from uuid import uuid4
 
 from pydantic import BaseModel
 
-from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.idempotency_store import (
+    ClaimOutcome,
+    IdempotencyStore,
+    InvocationUncertaintyError,
+)
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.tools.execution_models import ToolExecutionResult
+
+_DEFAULT_LEASE_SECONDS = 300
 
 
 class IdempotencyLockConflictError(RuntimeError):
@@ -46,10 +53,10 @@ def execute_logical_task(
     """
     Pure execution core for logical task dispatch.
 
-    Ledger-based idempotency:
-    - NONE -> STARTED is atomic (record_started)
-    - COMPLETED is stored with ToolExecutionResult payload
-    - COMPLETED result is replayed deterministically
+    Ledger-based idempotency uses typed claim/owner/lease/fence semantics:
+    - ``claim`` atomically acquires ownership or classifies existing state
+    - COMPLETED results replay deterministically
+    - UNCERTAIN outcomes require reconciliation (not safe blind retry)
 
     Does not depend on Celery.
     """
@@ -66,37 +73,44 @@ def execute_logical_task(
         )
 
     ledger_key = f"{logical_task_name}:{idempotency_key}"
+    owner_id = f"worker-attempt-{uuid4().hex}"
+    lease = lease_seconds if lease_seconds is not None else _DEFAULT_LEASE_SECONDS
 
-    # Replay if completed
-    completed = idempotency_store.get_completed_result(
+    claim_result = idempotency_store.claim(
         tenant_id=tenant_id,
         key=ledger_key,
+        owner_id=owner_id,
+        lease_seconds=lease,
     )
-    if completed is not None:
-        return completed
 
-    # Atomically mark STARTED (must reject concurrent NONE->STARTED)
-    try:
-        idempotency_store.record_started(
-            tenant_id=tenant_id,
-            key=ledger_key,
-            lease_seconds=lease_seconds,
-        )
-    except RuntimeError as exc:
-        # Another worker likely already recorded STARTED/COMPLETED.
-        # If it completed between our checks, replay now.
-        completed_after = idempotency_store.get_completed_result(
-            tenant_id=tenant_id,
-            key=ledger_key,
-        )
-        if completed_after is not None:
-            return completed_after
+    if claim_result.outcome == ClaimOutcome.REPLAY_COMPLETED:
+        cached = claim_result.completed_result
+        if cached is None:
+            cached = idempotency_store.get_completed_result(
+                tenant_id=tenant_id,
+                key=ledger_key,
+            )
+        if cached is None:
+            raise RuntimeError(
+                "Ledger inconsistency: COMPLETED without stored result.",
+            )
+        return cached
 
+    if claim_result.outcome == ClaimOutcome.BLOCKED_ACTIVE:
         raise IdempotencyLockConflictError(
-            f"Invocation is already in progress for key '{ledger_key}'."
-        ) from exc
+            f"Invocation is already in progress for key '{ledger_key}'.",
+        )
 
-    # Execute handler and persist COMPLETED
+    if claim_result.outcome == ClaimOutcome.UNCERTAIN:
+        raise InvocationUncertaintyError(
+            f"Invocation outcome uncertain for key '{ledger_key}'. "
+            "Reconciliation required before retry.",
+        )
+
+    claim = claim_result.claim
+    if claim is None:
+        raise RuntimeError("Ledger inconsistency: ACQUIRED without claim.")
+
     result: ToolExecutionResult[BaseModel] = handler(
         tenant_id=tenant_id,
         run_id=run_id,
@@ -104,9 +118,10 @@ def execute_logical_task(
         idempotency_key=idempotency_key,
     )
 
-    idempotency_store.record_completed(
+    idempotency_store.complete_with_claim(
         tenant_id=tenant_id,
         key=ledger_key,
+        claim=claim,
         result=result,
         completed_ttl_seconds=completed_ttl_seconds,
     )
