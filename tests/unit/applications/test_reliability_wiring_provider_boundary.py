@@ -88,6 +88,39 @@ def test_resolve_reference_shared_multi_host_returns_none_without_injection() ->
     assert store is None
 
 
+def test_resolve_reference_shared_multi_host_with_db_path_returns_none(tmp_path) -> None:
+    db_path = tmp_path / "must_not_create.db"
+    store = resolve_reference_idempotency_store(
+        PersistenceTopology.SHARED_MULTI_HOST,
+        db_path=db_path,
+    )
+    assert store is None
+    assert not db_path.exists()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_resolve_reference_durable_single_host_with_explicit_db_path(tmp_path) -> None:
+    db_path = tmp_path / "idempotency.db"
+    store = resolve_reference_idempotency_store(
+        PersistenceTopology.DURABLE_SINGLE_HOST,
+        db_path=db_path,
+    )
+    assert store is not None
+    assert resolve_idempotency_store_topology(store) is PersistenceTopology.DURABLE_SINGLE_HOST
+    assert db_path.exists()
+
+
+def test_resolve_reference_process_local_ignores_db_path(tmp_path) -> None:
+    db_path = tmp_path / "ignored.db"
+    store = resolve_reference_idempotency_store(
+        PersistenceTopology.PROCESS_LOCAL,
+        db_path=db_path,
+    )
+    assert store is not None
+    assert resolve_idempotency_store_topology(store) is PersistenceTopology.PROCESS_LOCAL
+    assert not db_path.exists()
+
+
 def test_wire_application_reliability_accepts_injected_shared_store() -> None:
     class _FakeRedis:
         def register_script(self, _script: str) -> object:

@@ -30,19 +30,16 @@ def resolve_reference_idempotency_store(
     DURABLE_SINGLE_HOST → durable single-host reference provider (SQLite).
     SHARED_MULTI_HOST → None; caller must inject a qualifying shared provider.
     """
-    if db_path is not None:
+    if required_topology is PersistenceTopology.PROCESS_LOCAL:
+        return InMemoryIdempotencyStore()
+
+    if required_topology is PersistenceTopology.DURABLE_SINGLE_HOST:
         resolved_path = resolve_idempotency_db_path(db_path)
         store = create_sqlite_idempotency_store(db_path=resolved_path)
         assert isinstance(store, IdempotencyStore)
         return store
 
-    if required_topology is PersistenceTopology.DURABLE_SINGLE_HOST:
-        resolved_path = resolve_idempotency_db_path(None)
-        store = create_sqlite_idempotency_store(db_path=resolved_path)
-        assert isinstance(store, IdempotencyStore)
-        return store
-
-    if required_topology is PersistenceTopology.PROCESS_LOCAL:
-        return InMemoryIdempotencyStore()
+    if required_topology is PersistenceTopology.SHARED_MULTI_HOST:
+        return None
 
     return None
