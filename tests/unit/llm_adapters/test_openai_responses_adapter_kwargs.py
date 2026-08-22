@@ -463,6 +463,45 @@ def test_generate_with_tools_sends_provider_safe_dotted_tool_name() -> None:
     assert _PLATFORM_PROOF_SQL_TOOL[0]["function"]["name"] == "platform_proof.sql.query"
 
 
+def test_generate_with_tools_maps_dotted_tool_name_in_input_history() -> None:
+    client = MagicMock()
+    client.responses.create.return_value = _mock_create_response(output_text="ok")
+    adapter = _capture_create_client(client)
+
+    prior_tool_call = {
+        "id": "call_1",
+        "type": "function",
+        "function": {
+            "name": "platform_proof.sql.query",
+            "arguments": '{"sql": "select 1"}',
+        },
+    }
+    adapter.generate_with_tools(
+        [
+            ChatMessage(role="user", content="investigate"),
+            ChatMessage(
+                role="assistant",
+                content="",
+                tool_calls=[prior_tool_call],
+            ),
+            ChatMessage(
+                role="tool",
+                content='{"columns":["?column?"],"rows":[[1]]}',
+                tool_call_id="call_1",
+                name="platform_proof.sql.query",
+            ),
+            ChatMessage(role="user", content="continue"),
+        ],
+        _PLATFORM_PROOF_SQL_TOOL,
+        run_id="r1",
+    )
+
+    input_items = client.responses.create.call_args.kwargs["input"]
+    function_calls = [item for item in input_items if item.get("type") == "function_call"]
+    assert len(function_calls) == 1
+    assert function_calls[0]["name"] == "platform_proof_sql_query"
+
+
 def test_stream_with_tools_uses_same_provider_name_mapping() -> None:
     client = MagicMock()
     stream_cm = MagicMock()

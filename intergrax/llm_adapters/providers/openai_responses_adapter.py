@@ -216,6 +216,27 @@ def _map_tool_choice_to_provider(
     return out
 
 
+def _apply_tool_name_mapping_to_responses_input(
+    input_items: Sequence[Dict[str, Any]],
+    name_mapping: _OpenAIToolNameMapping,
+) -> List[Dict[str, Any]]:
+    """Map canonical function_call names in Responses API input history."""
+    mapped: List[Dict[str, Any]] = []
+    for item in input_items:
+        if (
+            isinstance(item, dict)
+            and item.get("type") == "function_call"
+            and isinstance(item.get("name"), str)
+            and item["name"]
+        ):
+            out = dict(item)
+            out["name"] = name_mapping.to_provider(out["name"])
+            mapped.append(out)
+        else:
+            mapped.append(dict(item) if isinstance(item, dict) else item)
+    return mapped
+
+
 def _prepare_responses_tools_and_mapping(
     tools_schema: Sequence[Dict[str, Any]],
 ) -> tuple[List[Dict[str, Any]], _OpenAIToolNameMapping]:
@@ -583,9 +604,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 in_tok = 0
 
             mapped = self._map_messages_to_openai(messages)
-            input_items = self._messages_to_responses_input(mapped)
             responses_tools, tool_name_mapping = _prepare_responses_tools_and_mapping(
                 tools_schema
+            )
+            input_items = _apply_tool_name_mapping_to_responses_input(
+                self._messages_to_responses_input(mapped),
+                tool_name_mapping,
             )
             payload: Dict[str, Any] = dict(
                 model=self.model,
@@ -755,9 +779,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
         try:
             mapped = self._map_messages_to_openai(messages)
-            input_items = self._messages_to_responses_input(mapped)
             responses_tools, tool_name_mapping = _prepare_responses_tools_and_mapping(
                 tools_schema
+            )
+            input_items = _apply_tool_name_mapping_to_responses_input(
+                self._messages_to_responses_input(mapped),
+                tool_name_mapping,
             )
 
             payload: Dict[str, Any] = dict(
