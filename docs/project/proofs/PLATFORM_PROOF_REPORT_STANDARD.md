@@ -796,7 +796,7 @@ Evidence struct: `ToolsSqlInvestigationProofResult.blocked(...)` — report stil
 |------|-------------|
 | **PP-REPORT-1** | Report Standard v1 (this document) |
 | **PP-REPORT-2** | Typed evidence / report contract (`evidence.json` schema) |
-| **PP-REPORT-3** | Generic self-contained HTML renderer |
+| **PP-REPORT-3** | Generic self-contained HTML renderer (`scripts/proof/intergrax_platform_proof_html_renderer.py`) |
 | **PP-REPORT-4** | TOOLS proof integration |
 | **PP-REPORT-5** | Crash / failure report generation |
 | **PP-REPORT-6** | Generic proof runner integration + artifact layout |
@@ -804,6 +804,22 @@ Evidence struct: `ToolsSqlInvestigationProofResult.blocked(...)` — report stil
 | **PP-5** | Accepted / public evidence publication |
 
 **PP-REPORT-1 non-goals:** no HTML renderer, no PDF, no runtime semantic changes, no qualification changes, no frontend, no auto-publish.
+
+**Renderer pipeline (PP-REPORT-3):**
+
+```text
+PlatformProofEvidence (typed contract)
+  ↓
+render_platform_proof_report() / write_platform_proof_report()
+  ↓
+report.html (self-contained HTML, presentation only)
+```
+
+- Renderer module: `scripts/proof/intergrax_platform_proof_html_renderer.py`
+- API: `render_platform_proof_report(evidence) -> str`, `write_platform_proof_report(evidence, output_path=...) -> Path`
+- No per-proof HTML authoring; domain extensions hook via `_render_domain_extensions` (TOOLS-specific cards: PP-REPORT-4)
+- Renderer introduces no new timestamps; provenance uses evidence `generated_at`
+- `report.html` is **not** yet required by proof manifests (PP-REPORT-6)
 
 ---
 
