@@ -26,16 +26,7 @@ __all__ = [
     "ENV_EXPERIMENTS_DB",
     "SQLiteExperimentStore",
     "resolve_experiments_db_path",
-    "open_experiment_store",
 ]
-
-
-def open_experiment_store(db_path: Path | None = None) -> SQLiteExperimentStore:
-    from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_experiment_store
-
-    if db_path is not None:
-        return create_sqlite_experiment_store(db_path=db_path)  # type: ignore[return-value]
-    return create_sqlite_experiment_store()  # type: ignore[return-value]
 
 
 class SQLiteExperimentStore:

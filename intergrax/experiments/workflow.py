@@ -16,16 +16,14 @@ from typing import Dict, Optional
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.execution_identity import mint_run_id
-from intergrax.integrations.providers.relational_store.sqlite import (
-    create_sqlite_experiment_store,
-    create_sqlite_trace_store,
-)
+from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_trace_store
+from intergrax.experiments.composition import resolve_experiment_persistence
 from intergrax.experiments.models import (
     ExperimentDecision,
     ExperimentRecord,
     RegisterExperimentRequest,
 )
-from intergrax.experiments.store import SQLiteExperimentStore
+from intergrax.experiments.persistence_contract import ExperimentPersistence
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
@@ -97,6 +95,7 @@ class ExperimentSession:
     def __init__(
         self,
         *,
+        experiment_store: ExperimentPersistence | None = None,
         experiments_db: Path | None = None,
         trace_db: Path | None = None,
         tenant_id: str = "t1",
@@ -106,17 +105,16 @@ class ExperimentSession:
         self.tenant_id = tenant_id
         self.user_id = user_id
         self.auto_link_runs = auto_link_runs
-        self._experiment_store: SQLiteExperimentStore = (
-            create_sqlite_experiment_store(db_path=experiments_db)  # type: ignore[assignment]
-            if experiments_db is not None
-            else create_sqlite_experiment_store()  # type: ignore[assignment]
+        self._experiment_store = resolve_experiment_persistence(
+            experiment_store=experiment_store,
+            experiments_db=experiments_db,
         )
         self._trace_db = trace_db
         if trace_db is not None:
             trace_db.parent.mkdir(parents=True, exist_ok=True)
 
     @property
-    def experiment_store(self) -> SQLiteExperimentStore:
+    def experiment_store(self) -> ExperimentPersistence:
         return self._experiment_store
 
     @property

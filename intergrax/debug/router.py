@@ -73,11 +73,9 @@ from intergrax.experiments.models import (
     RegisterExperimentRequest,
     SetExperimentDecisionRequest,
 )
-from intergrax.experiments.store import (
-    SQLiteExperimentStore,
-    open_experiment_store,
-    resolve_experiments_db_path,
-)
+from intergrax.experiments.composition import resolve_experiment_persistence
+from intergrax.experiments.persistence_contract import ExperimentPersistence
+from intergrax.experiments.store import resolve_experiments_db_path
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointReader
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
@@ -108,13 +106,21 @@ def _trace_reader_factory(
 
 def _experiment_store_factory(
     experiments_db_path: Path | None,
-) -> Callable[[], SQLiteExperimentStore]:
+    implementation: ExperimentPersistence | None = None,
+) -> Callable[[], ExperimentPersistence]:
+    if implementation is not None:
+
+        def _open_injected() -> ExperimentPersistence:
+            return implementation
+
+        return _open_injected
+
     resolved = resolve_experiments_db_path(
         str(experiments_db_path) if experiments_db_path is not None else None
     )
 
-    def _open() -> SQLiteExperimentStore:
-        return open_experiment_store(resolved)
+    def _open() -> ExperimentPersistence:
+        return resolve_experiment_persistence(experiments_db=resolved)
 
     return _open
 
@@ -164,6 +170,7 @@ def create_debug_router(
     *,
     db_path: Path | None = None,
     experiments_db_path: Path | None = None,
+    experiment_store: ExperimentPersistence | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
     runtime_event_store: RuntimeEventPersistence | None = None,
@@ -179,7 +186,7 @@ def create_debug_router(
         dependencies=[Depends(require_harness_api_key)],
     )
     get_reader = _trace_reader_factory(db_path, trace_store)
-    get_experiments = _experiment_store_factory(experiments_db_path)
+    get_experiments = _experiment_store_factory(experiments_db_path, experiment_store)
     get_runtime_events = _runtime_event_store_factory(runtime_events_db_path, runtime_event_store)
     get_checkpoints = _checkpoint_store_factory(checkpoints_db_path, checkpoint_store)
     progress_service: TaskProgressService | None = None
@@ -399,7 +406,7 @@ def create_debug_router(
     def list_experiments(
         limit: int = Query(default=20, ge=1, le=200),
         decision: ExperimentDecision | None = Query(default=None),
-        store: SQLiteExperimentStore = Depends(get_experiments),
+        store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentListResponse:
         records = store.list_experiments(limit=limit, decision=decision)
         return ExperimentListResponse(
@@ -410,14 +417,14 @@ def create_debug_router(
     @router.post("/experiments", response_model=ExperimentRecord, status_code=201)
     def register_experiment(
         body: RegisterExperimentRequest,
-        store: SQLiteExperimentStore = Depends(get_experiments),
+        store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord:
         return store.register(body)
 
     @router.get("/experiments/{experiment_id}", response_model=ExperimentRecord)
     def show_experiment(
         experiment_id: str,
-        store: SQLiteExperimentStore = Depends(get_experiments),
+        store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord:
         try:
             return store.get(experiment_id)
@@ -428,7 +435,7 @@ def create_debug_router(
     def decide_experiment(
         experiment_id: str,
         body: SetExperimentDecisionRequest,
-        store: SQLiteExperimentStore = Depends(get_experiments),
+        store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord | ExperimentDeletedResponse:
         try:
             record = store.set_decision(
@@ -446,7 +453,7 @@ def create_debug_router(
     def link_experiment_run(
         experiment_id: str,
         run_id: str,
-        store: SQLiteExperimentStore = Depends(get_experiments),
+        store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord:
         try:
             return store.link_run(experiment_id, run_id)

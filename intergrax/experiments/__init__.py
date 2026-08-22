@@ -8,19 +8,23 @@ from intergrax.experiments.models import (
     ExperimentRecord,
     RegisterExperimentRequest,
 )
+from intergrax.experiments.persistence_contract import (
+    ExperimentPersistence,
+    ExperimentReader,
+)
 from intergrax.experiments.store import (
     ENV_EXPERIMENTS_DB,
     SQLiteExperimentStore,
-    open_experiment_store,
     resolve_experiments_db_path,
 )
 
 __all__ = [
     "ENV_EXPERIMENTS_DB",
     "ExperimentDecision",
+    "ExperimentPersistence",
+    "ExperimentReader",
     "ExperimentRecord",
     "RegisterExperimentRequest",
     "SQLiteExperimentStore",
-    "open_experiment_store",
     "resolve_experiments_db_path",
 ]
