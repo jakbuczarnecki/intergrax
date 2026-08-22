@@ -29,7 +29,7 @@ Follow this guide to add or advance a platform proof without reconstructing meth
 | **6** | Design **positive and negative** scenarios (protocol § I) |
 | **7** | Check existing `scripts/proof/` manifest and runner — reuse, do not duplicate |
 | **8** | Implement the **smallest** proof that exercises the claim |
-| **9** | Register proof in `scripts/proof/intergrax_proof_manifest.py` |
+| **9** | Add package `proof.json` (`intergrax.platform_proof_descriptor.v1`) and register in `scripts/proof/intergrax_proof_manifest.py` until PP-SUITE-2 discovery lands |
 | **10** | Run targeted deterministic validation (unit/integration gates) |
 | **11** | Run the actual proof via canonical runner |
 | **12** | Record evidence (`SuiteReceipt`; SHA, profile, result, limitations) |
@@ -48,6 +48,7 @@ Follow this guide to add or advance a platform proof without reconstructing meth
 - [ ] FAIL conditions explicit
 - [ ] Limitations and excluded claims documented
 - [ ] `proof_id` registered in canonical manifest only
+- [ ] Package includes static `proof.json` descriptor (see protocol § D2)
 - [ ] Execution uses `scripts/proof/` runner — no duplicate infrastructure
 - [ ] Evidence uses `SuiteReceipt` — not merged with domain `ProofReceipt`
 - [ ] Map coverage updated (`NO_PROOF` → `DESIGNED` → `EXECUTABLE` → `QUALIFIED`)
