@@ -228,7 +228,7 @@ intergrax.platform_proof_descriptor.v2
 | `problem_summary` | Short problem statement |
 | `failure_mode_summary` | Failure being tested |
 
-**No descriptor v1.** No loose metadata bags. No compatibility shims unless a proven active dependency requires it (document explicitly).
+**No descriptor v1.** No loose metadata bags. No compatibility shims. No aliases. No fallback. No legacy proof execution path.
 
 Discovery is automatic from `proof.json` under `platform_proofs/` — no central manifest registration for descriptor-backed proofs.
 
@@ -240,7 +240,11 @@ Every proof must support **two execution paths** using the **same underlying imp
 
 ### A. Standalone
 
-For a person exploring one proof. Canonical style from repository root:
+For a person exploring one proof.
+
+**Canonical invocation context:** repository root. Scenario README commands must be valid from repository root unless an exceptional proof explicitly documents otherwise and has architectural justification.
+
+Canonical style:
 
 ```bash
 uv run python platform_proofs/scenarios/<scenario_slug>/run_proof.py
@@ -288,14 +292,22 @@ CONFIGURE
 → CLEANUP
 ```
 
-For proofs with infrastructure, expected UX should be simple and explicit:
+For proofs with infrastructure, expected UX should be simple and explicit. All commands below assume **repository root** as the working directory. For containerized proof infrastructure, use an explicit Compose path — do not document ambiguous bare `docker compose up -d` as the canonical example.
 
 ```bash
-cp .env.example .env
-docker compose up -d
-uv run python .../run_proof.py --validate-only
-uv run python .../run_proof.py
-docker compose down -v
+cp platform_proofs/scenarios/<scenario_slug>/.env.example \
+  platform_proofs/scenarios/<scenario_slug>/.env
+docker compose \
+  -f platform_proofs/scenarios/<scenario_slug>/docker-compose.yml \
+  up -d
+uv run python \
+  platform_proofs/scenarios/<scenario_slug>/run_proof.py \
+  --validate-only
+uv run python \
+  platform_proofs/scenarios/<scenario_slug>/run_proof.py
+docker compose \
+  -f platform_proofs/scenarios/<scenario_slug>/docker-compose.yml \
+  down -v
 ```
 
 Do **not** require Docker for proofs that do not need it.
@@ -323,7 +335,7 @@ Failure must be **explicit and actionable**. Prefer:
 ```text
 BLOCKED_ENVIRONMENT
 PostgreSQL unavailable.
-Run: docker compose up -d
+Run: docker compose -f platform_proofs/scenarios/<scenario_slug>/docker-compose.yml up -d
 ```
 
 over raw connection stack traces as the primary UX.
@@ -353,29 +365,40 @@ Proof-specific infrastructure may use proof-local variables, e.g. `PROOF_POSTGRE
 
 ## `.env` contract
 
-Every proof requiring configuration **SHOULD** provide a committed `.env.example`:
+Every proof requiring configuration **SHOULD** provide a committed `.env.example` in the proof package:
 
 - contains **no secret values**
 - documents every proof-specific setting
 - safe / defaultable values receive defaults in documentation
 - required secrets remain blank
-- `.env` itself is **never** committed
+- `.env` itself is **never** committed (local / gitignored)
 
 ### Precedence
 
-Intergrax reads configuration from the **process environment**. The platform library does **not** load `.env` by itself — the proof entrypoint, Compose file, or operator shell must supply values (many hosts use `python-dotenv` in `run_proof.py`).
+Intergrax reads configuration from the **process environment**. The platform library does **not** load `.env` by itself — see [PLATFORM_CONFIGURATION.md](../docs/project/technical/guides/PLATFORM_CONFIGURATION.md).
 
-Unless platform canon says otherwise, document this model for proof-local settings:
+The Proof Library defines **one deterministic target** configuration contract for proof packages:
 
 ```text
 process environment
-> explicit proof-local .env values (when entrypoint loads them)
-> safe code defaults
+> explicit <proof-package>/.env
+> safe defaults
 ```
+
+Where:
+
+- process environment has highest priority
+- `.env` must **never** overwrite an already-set process variable
+- `.env` location is exactly the proof package — no parent / root / home recursive discovery
+- `.env.example` is committed when configuration is required
+- `.env` is local / gitignored
+- secrets never enter CLI args, `proof.json`, evidence, report, logs, or unsafe observability
 
 **Do NOT** introduce magic recursive `.env` discovery. **Do NOT** silently scan `../.env`, `../../.env`, or `$HOME/.env`.
 
-If the proof entrypoint does not load package-local `.env`, treat `.env.example` as a **template** and document explicitly how values are supplied (export, Compose `env_file`, etc.). This guide does not mandate implementing a new dotenv loader.
+> Proof implementations must use the canonical shared proof environment loader once available. Until its existence is verified, authors must **STOP** during capability-fit rather than inventing per-proof dotenv loading.
+
+Do **not** implement a proof-local dotenv / config loader. Do **not** claim a shared proof dotenv loader already exists in the repository.
 
 ---
 
@@ -737,7 +760,7 @@ Mandatory rules for proof sessions:
 - no second receipt
 - no expected-answer prompt leakage
 - no fake proof-local replacement for platform mechanism
-- no legacy compatibility unless a proven active dependency requires it
+- no descriptor v1, compatibility shims, aliases, fallback, or legacy proof execution path
 - no mass migrations for symmetry
 
 ---
@@ -755,6 +778,7 @@ A proof-author session **MUST STOP** and report instead of improvising when:
 - package cannot be made independently reproducible
 - scope begins requiring platform redesign not approved by user
 - concurrent edits conflict in scoped files
+- canonical proof-package configuration / environment loading required by the scenario is not available as reusable proof infrastructure — **STOP** and report the gap; do not implement a proof-local dotenv / config loader
 
 ---
 
