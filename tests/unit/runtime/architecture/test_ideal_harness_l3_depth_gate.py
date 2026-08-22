@@ -14,6 +14,7 @@ from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.data_classification import DataClassification
 from intergrax.contracts.delegation import DelegationSpec
+from intergrax.contracts.delegation_authority import DelegationAuthorityError
 from intergrax.contracts.subtask_contract import SubtaskContract
 from intergrax.contracts.task_envelope import TaskEnvelope, TaskRiskTier, TaskSlaClass
 from intergrax.runtime.architecture.data_classification_enforcement import (
@@ -110,7 +111,8 @@ def test_ideal_l3_actor_resolution_and_scope_narrowing() -> None:
         child_agent_id="echo",
         permission_scopes=("read", "admin"),
     )
-    assert narrow_delegation_scopes(parent, delegation) == ("read",)
+    with pytest.raises(DelegationAuthorityError):
+        narrow_delegation_scopes(parent, delegation)
 
 
 def test_ideal_l3_subtask_contract_safe_defaults() -> None:

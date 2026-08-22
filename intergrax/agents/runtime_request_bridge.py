@@ -17,6 +17,9 @@ from intergrax.contracts.agent_run import (
     RequestIdentity,
 )
 from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.contracts.request_identity_spine import (
+    assert_untrusted_metadata_identity_compatible,
+)
 from intergrax.llm.messages import final_user_message_content, model_input_messages_from_metadata
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 
@@ -27,14 +30,24 @@ def runtime_request_to_agent_run(
     contract: AgentContract,
 ) -> AgentRunRequest:
     """Map Nexus ``RuntimeRequest`` into typed ``AgentRunRequest``."""
-    tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
-    user_id = request.metadata.get("user_id") or request.user_id
-    user_id_str = str(user_id) if user_id else None
-    principal_raw = str(request.metadata.get("principal_type") or "user")
-    try:
-        principal_type = PrincipalType(principal_raw)
-    except ValueError:
-        principal_type = PrincipalType.USER
+    if request.canonical_identity is not None:
+        identity = request.canonical_identity
+        assert_untrusted_metadata_identity_compatible(identity, request.metadata)
+    else:
+        tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
+        user_id = request.metadata.get("user_id") or request.user_id
+        user_id_str = str(user_id) if user_id else None
+        principal_raw = str(request.metadata.get("principal_type") or "user")
+        try:
+            principal_type = PrincipalType(principal_raw)
+        except ValueError:
+            principal_type = PrincipalType.USER
+        identity = RequestIdentity(
+            tenant_id=tenant_id,
+            user_id=user_id_str,
+            principal_type=principal_type,
+            auth_subject=str(request.metadata.get("auth_subject") or "") or None,
+        )
 
     input_payload: str | dict[str, Any]
     model_messages = model_input_messages_from_metadata(request.metadata)
@@ -56,12 +69,7 @@ def runtime_request_to_agent_run(
 
     return AgentRunRequest(
         input=input_payload,
-        identity=RequestIdentity(
-            tenant_id=tenant_id,
-            user_id=user_id_str,
-            principal_type=principal_type,
-            auth_subject=str(request.metadata.get("auth_subject") or "") or None,
-        ),
+        identity=identity,
         session_id=str(request.session_id or "") or None,
         correlation_id=str(request.metadata.get("correlation_id") or request.run_id) or None,
         agent_id=contract.id,

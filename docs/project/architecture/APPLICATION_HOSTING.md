@@ -45,7 +45,7 @@ Without Application Hosting:
 
 ## Flagship architecture visual
 
-<a href="assets/application-hosting-lifecycle-light.svg">
+<a href="assets/fullsize/application-hosting-lifecycle.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/application-hosting-lifecycle-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/application-hosting-lifecycle-light.svg">

@@ -28,6 +28,19 @@ from intergrax.contracts.execution_identity import (
     peek_active_execution_identity,
     require_active_execution_identity,
 )
+from intergrax.contracts.delegation_authority import (
+    EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY,
+    EFFECTIVE_PERMISSION_SCOPES_METADATA_KEY,
+    REQUESTED_PERMISSION_SCOPES_METADATA_KEY,
+    DelegationAuthorityError,
+    EffectiveDelegationAuthority,
+    ParentExecutionAuthority,
+    mint_effective_delegation_authority,
+    resolve_parent_execution_authority_for_node,
+    resolve_root_parent_execution_authority,
+    validate_effective_delegation_metadata_assertions,
+    validate_execution_authority_metadata_assertions,
+)
 from intergrax.contracts.agent_handoff import AgentHandoff, resolve_handoff_from_execution
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -206,6 +219,23 @@ class GraphExecutor:
             )
             return [failed], [], graph, False
 
+        root_execution_authority = resolve_root_parent_execution_authority(
+            task.execution_authority
+        )
+        authority_assertion_error = validate_execution_authority_metadata_assertions(
+            task.metadata,
+            root_execution_authority,
+        )
+        if authority_assertion_error is not None:
+            failed = AgentExecutionResult(
+                agent_id="",
+                run_id=self._require_run_id(),
+                status=AgentExecutionStatus.FAILED,
+                summary="",
+                errors=[authority_assertion_error],
+            )
+            return [failed], [], graph, False
+
         for batch in batches:
             if CancellationCoordinator.is_requested(task.metadata):
                 CancellationCoordinator.mark_pending_graph_nodes_cancelled(graph)
@@ -224,6 +254,7 @@ class GraphExecutor:
                     on_node_start=on_node_start,
                     on_node_complete=on_node_complete,
                     critic_trace_emitter=critic_trace_emitter,
+                    root_execution_authority=root_execution_authority,
                 )
                 all_retries.extend(retries)
                 if cancelled:
@@ -261,6 +292,7 @@ class GraphExecutor:
                     on_node_start=on_node_start,
                     on_node_complete=on_node_complete,
                     critic_trace_emitter=critic_trace_emitter,
+                    root_execution_authority=root_execution_authority,
                 )
                 for execution, retries, failed, cancelled, handoff_extras in results:
                     all_retries.extend(retries)
@@ -292,6 +324,7 @@ class GraphExecutor:
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
         critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
+        root_execution_authority: ParentExecutionAuthority,
     ) -> list[
         tuple[
             AgentExecutionResult,
@@ -320,6 +353,7 @@ class GraphExecutor:
                             on_node_start=on_node_start,
                             on_node_complete=on_node_complete,
                             critic_trace_emitter=critic_trace_emitter,
+                            root_execution_authority=root_execution_authority,
                         )
                         for node in batch
                     ]
@@ -354,6 +388,7 @@ class GraphExecutor:
                             on_node_start=on_node_start,
                             on_node_complete=on_node_complete,
                             critic_trace_emitter=critic_trace_emitter,
+                            root_execution_authority=root_execution_authority,
                         )
                 return await self._execute_node(
                     graph,
@@ -366,6 +401,7 @@ class GraphExecutor:
                     on_node_start=on_node_start,
                     on_node_complete=on_node_complete,
                     critic_trace_emitter=critic_trace_emitter,
+                    root_execution_authority=root_execution_authority,
                 )
 
         return list(await asyncio.gather(*[_run_node(node) for node in batch]))
@@ -383,6 +419,7 @@ class GraphExecutor:
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
         critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
+        root_execution_authority: ParentExecutionAuthority,
     ) -> tuple[AgentExecutionResult, List[RetryRecord], bool, bool, List[HandoffExtra]]:
         if should_skip_graph_node(
             node,
@@ -428,7 +465,11 @@ class GraphExecutor:
         )
         self._graph_routing_step += 1
 
-        delegation_error = self._validate_delegation_constraints(graph, node)
+        delegation_error = self._validate_delegation_constraints(
+            graph,
+            node,
+            root_execution_authority=root_execution_authority,
+        )
         if delegation_error is not None:
             failed = AgentExecutionResult(
                 agent_id=node.agent_id or "",
@@ -602,12 +643,33 @@ class GraphExecutor:
                 request.metadata["critic_feedback"] = list(critic_feedback)
             if node.delegation is not None:
                 delegation = node.delegation
+                effective_authority = node.metadata.get(EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY)
                 request.metadata[TaskMemoryMetadataKey.DELEGATION_MEMORY_NAMESPACE] = (
                     delegation.resolved_memory_namespace(
                         task_id=task.task_id,
                         node_id=node.node_id,
                     )
                 )
+                if isinstance(effective_authority, EffectiveDelegationAuthority):
+                    request.effective_delegation_authority = effective_authority
+                    request.metadata[EFFECTIVE_PERMISSION_SCOPES_METADATA_KEY] = list(
+                        effective_authority.effective_permission_scopes
+                    )
+                    request.metadata[REQUESTED_PERMISSION_SCOPES_METADATA_KEY] = list(
+                        effective_authority.requested_permission_scopes
+                    )
+                    metadata_conflict = validate_effective_delegation_metadata_assertions(
+                        request.metadata,
+                        effective_authority,
+                    )
+                    if metadata_conflict is not None:
+                        return AgentExecutionResult(
+                            agent_id=current_agent.get_contract().id,
+                            run_id=active_run_id,
+                            status=AgentExecutionStatus.FAILED,
+                            summary="",
+                            errors=[metadata_conflict],
+                        )
                 request.metadata["run_id"] = f"{task.task_id}:{node.node_id}"
                 if delegation.parent_run_id:
                     request.metadata[TaskMemoryMetadataKey.PARENT_RUN_ID] = delegation.parent_run_id
@@ -668,6 +730,7 @@ class GraphExecutor:
                 execute_fn=execute_fn,
                 validate_fn=validate_fn,
                 prior_retries=retries,
+                root_execution_authority=root_execution_authority,
             )
         if CancellationCoordinator.is_requested(task.metadata):
             node.execution_result = execution
@@ -703,6 +766,7 @@ class GraphExecutor:
                 on_node_start=on_node_start,
                 on_node_complete=on_node_complete,
                 critic_trace_emitter=critic_trace_emitter,
+                root_execution_authority=root_execution_authority,
             )
         else:
             node.status = ExecutionNodeStatus.FAILED
@@ -734,6 +798,7 @@ class GraphExecutor:
         execute_fn: Callable[[Agent], Awaitable[AgentExecutionResult]],
         validate_fn: ValidateFn,
         prior_retries: List[RetryRecord],
+        root_execution_authority: ParentExecutionAuthority,
     ) -> tuple[AgentExecutionResult, ValidationResult, List[RetryRecord]]:
         from intergrax.runtime.critic.critic_wiring import validate_node_with_critic_detail
         from intergrax.runtime.critic.evaluator_loop_executor import (
@@ -797,6 +862,7 @@ class GraphExecutor:
                     on_node_start=on_node_start,
                     on_node_complete=on_node_complete,
                     critic_trace_emitter=critic_trace_emitter,
+                    root_execution_authority=root_execution_authority,
                 )
                 state = loop_executor.bump_iteration(state)
                 set_evaluator_loop_iteration(node, state.iteration)
@@ -850,6 +916,7 @@ class GraphExecutor:
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
         critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
+        root_execution_authority: ParentExecutionAuthority,
     ) -> List[HandoffExtra]:
         handoff = resolve_handoff_from_execution(execution)
         if handoff is None:
@@ -919,6 +986,7 @@ class GraphExecutor:
             on_node_start=on_node_start,
             on_node_complete=on_node_complete,
             critic_trace_emitter=critic_trace_emitter,
+            root_execution_authority=root_execution_authority,
         )
         for record in handoff_retries:
             await _notify_retry(on_retry, record)
@@ -955,6 +1023,22 @@ class GraphExecutor:
         if self._event_bus is None or node.delegation is None:
             return
         delegation = node.delegation
+        effective_authority = node.metadata.get(EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY)
+        if not isinstance(effective_authority, EffectiveDelegationAuthority):
+            return
+        payload: dict[str, object] = {
+            "parent_agent_id": parent_agent_id,
+            "child_agent_id": child_agent_id,
+            "node_id": node.node_id,
+            "rationale": delegation.objective,
+            "requested_permission_scopes": list(
+                effective_authority.requested_permission_scopes
+            ),
+            "effective_permission_scopes": list(
+                effective_authority.effective_permission_scopes
+            ),
+            "permission_scopes": list(effective_authority.effective_permission_scopes),
+        }
         await self._event_bus.publish(
             self._runtime_event_for_task(
                 task,
@@ -962,13 +1046,7 @@ class GraphExecutor:
                 agent_id=parent_agent_id,
                 event_type=RuntimeEventType.DELEGATION_GRANTED,
                 phase=ExecutionPhase.STEP_EXECUTION,
-                payload={
-                    "parent_agent_id": parent_agent_id,
-                    "child_agent_id": child_agent_id,
-                    "node_id": node.node_id,
-                    "rationale": delegation.objective,
-                    "permission_scopes": list(delegation.permission_scopes),
-                },
+                payload=payload,
             )
         )
 
@@ -1031,6 +1109,8 @@ class GraphExecutor:
         self,
         graph: ExecutionGraph,
         node: ExecutionNode,
+        *,
+        root_execution_authority: ParentExecutionAuthority | None = None,
     ) -> str | None:
         if node.delegation is None:
             return None
@@ -1046,4 +1126,17 @@ class GraphExecutor:
             return "delegation_budget_llm_calls_exhausted"
         if delegation.max_tool_calls is not None and delegation.max_tool_calls < 1:
             return "delegation_budget_tool_calls_exhausted"
+        parent_authority = resolve_parent_execution_authority_for_node(
+            graph,
+            node,
+            root_authority=root_execution_authority or ParentExecutionAuthority.unknown(),
+        )
+        try:
+            effective_authority = mint_effective_delegation_authority(
+                parent=parent_authority,
+                requested_permission_scopes=delegation.permission_scopes,
+            )
+        except DelegationAuthorityError as exc:
+            return str(exc)
+        node.metadata[EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY] = effective_authority
         return None

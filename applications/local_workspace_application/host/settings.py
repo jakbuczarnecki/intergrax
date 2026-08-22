@@ -14,6 +14,7 @@ from intergrax.applications.contracts.settings import (
 )
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
 from intergrax.fastapi_core.config import ApiEnvironment
+from intergrax.integrations.providers.relational_store.sqlite.paths import IDEMPOTENCY_DB_NAME
 from intergrax.runtime.observability.operator_wiring import (
     ElasticsearchExportOperatorConfig,
     ObservabilityExportOperatorConfig,
@@ -192,6 +193,10 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     @property
     def sqlite_data_dir(self) -> str:
         return _data_home_path(self.data_home, "data", "sqlite")
+
+    @property
+    def idempotency_db_path(self) -> str:
+        return _data_home_path(self.data_home, "data", "sqlite", IDEMPOTENCY_DB_NAME)
 
     @property
     def shadow_workspaces_dir(self) -> str:

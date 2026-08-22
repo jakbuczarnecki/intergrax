@@ -41,6 +41,10 @@ class DummyState:
     def tenant_id(self) -> str:
         return self._tenant_id
 
+    @property
+    def context(self):
+        return type("Ctx", (), {"config": type("Cfg", (), {"policy_bundle": None})()})()
+
     def trace_event(self, *args, **kwargs):
         pass
 

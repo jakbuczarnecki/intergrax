@@ -536,7 +536,7 @@ def test_evaluation_guide_positioning(evaluation_text: str) -> None:
     for phrase in (
         "source-available",
         "active r&d",
-        "primary product proof",
+        "active reference product",
         "backend product alpha",
         "partial",
         "real-user validation",

@@ -4,9 +4,13 @@
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 from intergrax.agents.persistence.compensation_enqueue import CompensationActionResult
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+
+_DEFAULT_LEASE_SECONDS = 300
 
 
 async def drain_pending_compensation_jobs(
@@ -15,23 +19,33 @@ async def drain_pending_compensation_jobs(
     tenant_id: str,
     invoker: DeclarativeToolInvoker,
     limit: int = 100,
+    owner_id: str | None = None,
+    lease_seconds: int = _DEFAULT_LEASE_SECONDS,
 ) -> list[CompensationActionResult]:
-    """Process pending compensation jobs for a tenant (worker entrypoint)."""
+    """Process compensation jobs atomically claimed for a tenant (worker entrypoint)."""
+    worker_owner = owner_id or f"comp-worker-{uuid4().hex}"
     results: list[CompensationActionResult] = []
-    for job in store.list_pending(tenant_id, limit=limit):
+    claims = store.claim_pending(
+        tenant_id,
+        worker_owner,
+        lease_seconds,
+        limit=limit,
+    )
+    for claim in claims:
+        job = claim.job
         invoke_result = await invoker.invoke(
             tool_id=job.request.compensation_tool_id,
             args=job.request.args,
             idempotency_key=job.request.idempotency_key,
         )
         if invoke_result.status == "success":
-            store.mark_completed(tenant_id, job.request.idempotency_key)
+            store.complete_claim(claim)
             results.append(
                 CompensationActionResult(request=job.request, status="compensated"),
             )
             continue
         error = invoke_result.error or invoke_result.status
-        store.mark_failed(tenant_id, job.request.idempotency_key, error)
+        store.fail_claim(claim, error, retryable=False)
         results.append(
             CompensationActionResult(
                 request=job.request,

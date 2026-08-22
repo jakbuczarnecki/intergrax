@@ -4,13 +4,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Mapping
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from intergrax.applications.contracts.application_host import ApplicationFeatures, ApplicationProfile
 from intergrax.applications.contracts.capability_alias import CapabilityGovernanceProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.persistence_topology import (
+    DeploymentTopology,
+    PersistenceTopology,
+    required_persistence_for_deployment,
+)
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.codecraft.profile import CodeCraftProfile
@@ -64,7 +69,46 @@ class HostMeta(BaseModel):
     spec_version: str = "1.0.0"
     application_profile: ApplicationProfile = ApplicationProfile.LAB
     execution_mode: ExecutionMode = ExecutionMode.BALANCED
+    deployment_topology: DeploymentTopology = DeploymentTopology.PROCESS_LOCAL
     features: ApplicationFeatures = Field(default_factory=ApplicationFeatures.lab_defaults)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_contradictory_persistence_requirement(cls, data: object) -> object:
+        if not isinstance(data, dict) or "required_persistence_topology" not in data:
+            return data
+        payload = dict(data)
+        declared = payload.pop("required_persistence_topology")
+        required = required_persistence_for_deployment(
+            payload.get("deployment_topology", DeploymentTopology.PROCESS_LOCAL),
+        )
+        declared_topology = (
+            declared
+            if isinstance(declared, PersistenceTopology)
+            else PersistenceTopology(declared)
+        )
+        if declared_topology != required:
+            raise ValueError(
+                "required_persistence_topology contradicts deployment_topology",
+            )
+        return payload
+
+    def model_copy(
+        self,
+        *,
+        update: Mapping[str, Any] | None = None,
+        deep: bool = False,
+    ) -> HostMeta:
+        if update is not None and "required_persistence_topology" in update:
+            payload = self.model_dump()
+            payload.update(dict(update))
+            return type(self).model_validate(payload)
+        return super().model_copy(update=update, deep=deep)
+
+    @property
+    def required_persistence_topology(self) -> PersistenceTopology:
+        """Persistence capability required by ``deployment_topology`` (derived)."""
+        return required_persistence_for_deployment(self.deployment_topology)
 
     @classmethod
     def lab(cls, *, profile_id: str = "lab.default") -> HostMeta:
@@ -72,15 +116,22 @@ class HostMeta(BaseModel):
             profile_id=profile_id,
             application_profile=ApplicationProfile.LAB,
             execution_mode=ExecutionMode.BALANCED,
+            deployment_topology=DeploymentTopology.PROCESS_LOCAL,
             features=ApplicationFeatures.lab_defaults(),
         )
 
     @classmethod
-    def product(cls, *, profile_id: str = "product.default") -> HostMeta:
+    def product(
+        cls,
+        *,
+        profile_id: str = "product.default",
+        deployment_topology: DeploymentTopology = DeploymentTopology.SINGLE_HOST,
+    ) -> HostMeta:
         return cls(
             profile_id=profile_id,
             application_profile=ApplicationProfile.PRODUCT,
             execution_mode=ExecutionMode.STRICT,
+            deployment_topology=deployment_topology,
             features=ApplicationFeatures.product_defaults(),
         )
 

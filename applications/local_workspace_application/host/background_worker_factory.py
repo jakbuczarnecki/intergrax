@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime, build_harness_host_runtime
 from intergrax.applications._shared.task_control_wiring import (
@@ -55,6 +56,7 @@ def build_local_workspace_background_worker_wiring(
         manifest,
         environment,
         settings=settings,
+        idempotency_db_path=Path(settings.idempotency_db_path),
         document_store=lkw_document_store,
     )
     task_enricher = build_reliability_task_enricher(

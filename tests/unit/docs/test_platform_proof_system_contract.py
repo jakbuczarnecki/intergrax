@@ -83,7 +83,7 @@ def test_tools_reference_proof_id_present(map_text: str, protocol_text: str) -> 
     assert _TOOLS_PROOF_ID in map_text
     assert _TOOLS_PROOF_ID in protocol_text
     tools_row = re.search(
-        rf"^\| `TOOLS` \|.*{_TOOLS_PROOF_ID}.*\| \*\*DESIGNED\*\* \|",
+        rf"^\| `TOOLS` \|.*{_TOOLS_PROOF_ID}.*\| \*\*EXECUTABLE\*\* \|",
         map_text,
         re.MULTILINE,
     )

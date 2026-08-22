@@ -50,7 +50,7 @@ Integrations address this through **`PlatformIntegrationContract`**, category-sp
 
 ## Flagship architecture visual
 
-<a href="assets/integration-boundary-light.svg">
+<a href="assets/fullsize/integration-boundary.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/integration-boundary-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/integration-boundary-light.svg">

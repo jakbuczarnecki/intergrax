@@ -29,10 +29,11 @@ Follow this guide to add or advance a platform proof without reconstructing meth
 | **6** | Design **positive and negative** scenarios (protocol § I) |
 | **7** | Check existing `scripts/proof/` manifest and runner — reuse, do not duplicate |
 | **8** | Implement the **smallest** proof that exercises the claim |
-| **9** | Register proof in `scripts/proof/intergrax_proof_manifest.py` |
+| **9** | Add package `proof.json` (`intergrax.platform_proof_descriptor.v1`) — descriptor-backed Platform Proofs are discovered automatically (no central manifest registration) |
 | **10** | Run targeted deterministic validation (unit/integration gates) |
 | **11** | Run the actual proof via canonical runner |
 | **12** | Record evidence (`SuiteReceipt`; SHA, profile, result, limitations) |
+| **12b** | For `evidence_required=true`, write `evidence.json` to runner-provided `INTERGRAX_PROOF_ARTIFACT_DIR` when executed via suite |
 | **13** | Update [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md) coverage |
 | **14** | Update [PROOFS.md](../docs/project/proofs/PROOFS.md) **only** if accepted public evidence/claim changes |
 
@@ -47,9 +48,12 @@ Follow this guide to add or advance a platform proof without reconstructing meth
 - [ ] PASS invariants are machine-checkable where possible
 - [ ] FAIL conditions explicit
 - [ ] Limitations and excluded claims documented
-- [ ] `proof_id` registered in canonical manifest only
+- [ ] `proof_id` unique across suite (descriptor-backed proofs self-register via `proof.json`)
+- [ ] Package includes static `proof.json` descriptor (see protocol § D2)
 - [ ] Execution uses `scripts/proof/` runner — no duplicate infrastructure
 - [ ] Evidence uses `SuiteReceipt` — not merged with domain `ProofReceipt`
+- [ ] For descriptor-backed proofs with `evidence_required=true`, PASS requires validated `evidence.json` (exit code alone is insufficient)
+- [ ] For descriptor-backed proofs, every required `expected_artifacts` entry must exist as a safe regular file under runner artifact directory (PP-SUITE-4)
 - [ ] Map coverage updated (`NO_PROOF` → `DESIGNED` → `EXECUTABLE` → `QUALIFIED`)
 - [ ] Product proofs not cited as platform domain evidence
 - [ ] Public dashboard updated only when public claim boundary changes
@@ -81,6 +85,7 @@ Coverage ≠ `ProofStatus` ≠ public claim status ≠ production maturity.
 | Claim broader than evidence | Public governance violation |
 | No negative scenario | Not falsification — demo only |
 | PASS based only on prose | Not machine-checkable |
+| PASS based only on child exit code when `evidence_required=true` | Suite verifies typed `evidence.json` via `PlatformProofEvidence` |
 | Chain-of-thought collection as evidence | Not platform invariant |
 | Reimplementing platform components inside proof | Proves clone, not platform |
 | Copying production product business logic | Product proof, not platform proof |

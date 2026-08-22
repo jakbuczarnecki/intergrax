@@ -10,6 +10,8 @@ from uuid import uuid4
 from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
@@ -68,6 +70,8 @@ class Task(BaseModel):
     options: TaskExecutionOptions = Field(default_factory=TaskExecutionOptions)
     runtime: TaskRuntimeState = Field(default_factory=TaskRuntimeState)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    canonical_identity: RequestIdentity | None = None
+    execution_authority: ParentExecutionAuthority | None = None
 
     _registry: Optional[Any] = PrivateAttr(default=None)
 
@@ -115,6 +119,7 @@ class Task(BaseModel):
             risk_tier=TaskRiskTier(risk_raw),
             constraints=dict(constraints) if isinstance(constraints, dict) else {},
             metadata=meta,
+            canonical_identity=self.canonical_identity,
         )
 
     @classmethod
@@ -133,7 +138,14 @@ class Task(BaseModel):
             session_id=envelope.session_id,
             agent_id=envelope.agent_id,
             metadata=metadata,
+            canonical_identity=envelope.canonical_identity,
         )
+
+    def with_trusted_execution_authority(
+        self, authority: ParentExecutionAuthority
+    ) -> Task:
+        """Assign host/runtime-minted authority after the public intake boundary."""
+        return self.model_copy(update={"execution_authority": authority})
 
     def to_runtime_request(self, *, run_id: RunId) -> "RuntimeRequest":
         from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -157,6 +169,8 @@ class Task(BaseModel):
             tenant_id=self.tenant_id,
             workspace_id=self.metadata.get("workspace_id"),
             metadata=metadata,
+            canonical_identity=self.canonical_identity,
+            execution_authority=self.execution_authority,
             hitl_resolution=governance.hitl_resolution,
             hitl_pause_record=governance.pause_record,
         )

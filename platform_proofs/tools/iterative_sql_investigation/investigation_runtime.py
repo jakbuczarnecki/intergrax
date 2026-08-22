@@ -33,6 +33,7 @@ from platform_proofs.tools.iterative_sql_investigation.evaluator import (
 from platform_proofs.tools.iterative_sql_investigation.model_context import build_investigation_messages
 from platform_proofs.tools.iterative_sql_investigation.proof_result import (
     ModelProviderIdentity,
+    ScenarioExecutionSnapshot,
     ScenarioRunResult,
 )
 from platform_proofs.tools.iterative_sql_investigation.runtime import ProofSqlRuntime
@@ -191,7 +192,7 @@ def run_investigation_scenario(
     scenario: InvestigationScenario,
     llm: LLMAdapter,
     proof_runtime: ProofSqlRuntime,
-) -> ScenarioRunResult:
+) -> tuple[ScenarioRunResult, ScenarioExecutionSnapshot]:
     state = build_proof_runtime_state(llm=llm)
     planner = build_canonical_tool_planner(llm=llm, proof_runtime=proof_runtime)
     planner.attach_routing_runtime_config(state.context.config)
@@ -210,4 +211,4 @@ def run_investigation_scenario(
         stop_reason=loop_result.stop_reason,
         final_answer=planner.last_final_answer,
     )
-    return evaluate_scenario(scenario.scenario_id, snapshot)
+    return evaluate_scenario(scenario.scenario_id, snapshot), snapshot

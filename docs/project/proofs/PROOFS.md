@@ -226,6 +226,12 @@ Maintainer status and wording rules: [Public Proof and Claims Model](../maintain
 
 ## Executable proof suite
 
+Every canonical Platform Proof execution is expected to produce a standardized,
+human-readable **Proof Report** (self-contained HTML) under
+[Platform Proof Report Standard v1](PLATFORM_PROOF_REPORT_STANDARD.md), derived
+from machine-readable proof evidence. Local generated reports do not change public
+claim status; this page links accepted or published evidence only.
+
 Public documentation references `proof_id` values only. Canonical membership,
 commands, profiles, and environment requirements live in
 `scripts/proof/intergrax_proof_manifest.py`.

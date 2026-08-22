@@ -102,6 +102,8 @@ def build_execution_snapshot(
         investigation_proof_steps=steps,
         follow_up_has_valid_basis=follow_up_ok,
         final_answer=final_answer.strip(),
+        tool_traces=tuple(traces),
+        investigation_proof=investigation_proof,
     )
 
 
@@ -126,16 +128,14 @@ def _north_anomaly_evidence_investigation(sql_texts: Sequence[str], output_texts
 
 
 def _final_answer_identifies_north_segment(final_answer: str) -> bool:
-    """Final conclusion attributes the anomaly to the North service/route segment."""
+    """Final conclusion names the supported North express long_haul operational segment."""
     answer = final_answer.lower()
     region, service, route = _segment_tokens()
     has_region = region in answer
     has_service_route = service in answer and (
         "long_haul" in answer or "long haul" in answer or route in answer
     )
-    segment_named = has_region and has_service_route
-    hub_named = ANOMALY_HUB.lower() in answer and region in answer
-    return segment_named or hub_named
+    return has_region and has_service_route
 
 
 def _final_answer_rejects_volume_only(final_answer: str) -> bool:
@@ -153,17 +153,22 @@ def _final_answer_rejects_volume_only(final_answer: str) -> bool:
     return True
 
 
-def _global_weight_delay_association(sql_corpus: str) -> bool:
-    return "weight" in sql_corpus and ("delay" in sql_corpus or "delayed" in sql_corpus)
+def _sql_establishes_global_weight_delay(sql: str) -> bool:
+    text = sql.lower()
+    return "weight" in text and ("delay" in text or "delayed" in text)
 
 
-def _confounder_control_segmentation(sql_corpus: str) -> bool:
+def _sql_performs_confounder_control(sql: str) -> bool:
     """Segmented/control analysis over confounder dimensions (service_type / route_type)."""
-    if not _global_weight_delay_association(sql_corpus):
-        return False
-    has_confounder_axis = "service_type" in sql_corpus or "route_type" in sql_corpus
-    has_segmentation = "group by" in sql_corpus or "segment" in sql_corpus
+    text = sql.lower()
+    has_confounder_axis = "service_type" in text or "route_type" in text
+    has_segmentation = "group by" in text or "segment" in text
     return has_confounder_axis and has_segmentation
+
+
+def _sql_establishes_global_weight_delay_only(sql: str) -> bool:
+    """Global weight/delay association without confounder segmentation in the same query."""
+    return _sql_establishes_global_weight_delay(sql) and not _sql_performs_confounder_control(sql)
 
 
 def validate_platform_invariants(
@@ -172,13 +177,24 @@ def validate_platform_invariants(
     scenario_id: ScenarioId,
 ) -> tuple[bool, tuple[str, ...]]:
     reasons: list[str] = []
-    min_tool_calls = 3 if scenario_id is ScenarioId.A else 1
+    if scenario_id is ScenarioId.A:
+        min_tool_calls = 3
+    elif scenario_id is ScenarioId.B:
+        min_tool_calls = 2
+    else:
+        min_tool_calls = 1
     if snapshot.successful_tool_calls < min_tool_calls:
         reasons.append(f"insufficient_tool_calls:{snapshot.successful_tool_calls}")
-    if snapshot.investigation_proof_steps < 1 and snapshot.successful_tool_calls >= 2:
-        reasons.append("missing_investigation_proof")
-    if snapshot.successful_tool_calls >= 3 and not snapshot.follow_up_has_valid_basis:
-        reasons.append("follow_up_missing_evidence_basis")
+    if scenario_id is ScenarioId.B and snapshot.successful_tool_calls >= 2:
+        if snapshot.investigation_proof_steps < 1:
+            reasons.append("missing_investigation_proof")
+        if not snapshot.follow_up_has_valid_basis:
+            reasons.append("follow_up_missing_evidence_basis")
+    elif scenario_id is ScenarioId.A:
+        if snapshot.investigation_proof_steps < 1 and snapshot.successful_tool_calls >= 2:
+            reasons.append("missing_investigation_proof")
+        if snapshot.successful_tool_calls >= 3 and not snapshot.follow_up_has_valid_basis:
+            reasons.append("follow_up_missing_evidence_basis")
     if snapshot.stop_reason not in _SUCCESSFUL_TERMINATION:
         reasons.append(f"incomplete_termination:{snapshot.stop_reason}")
     return not reasons, tuple(reasons)
@@ -196,15 +212,17 @@ def evaluate_scenario_a(snapshot: ScenarioExecutionSnapshot) -> ScenarioAOutcome
 
 
 def evaluate_scenario_b(snapshot: ScenarioExecutionSnapshot) -> ScenarioBOutcome:
-    sql_corpus = _combined_text(snapshot.sql_texts)
-    global_assoc = _global_weight_delay_association(sql_corpus)
-    segmented = _confounder_control_segmentation(sql_corpus)
+    sql_texts = snapshot.sql_texts
+    global_assoc = any(_sql_establishes_global_weight_delay(sql) for sql in sql_texts)
+    global_only_phase = any(_sql_establishes_global_weight_delay_only(sql) for sql in sql_texts)
+    control_phase = any(_sql_performs_confounder_control(sql) for sql in sql_texts)
+    segmented = global_only_phase and control_phase
     claims_causation = bool(_CAUSATION_CLAIMS.search(snapshot.final_answer))
     if re.search(r"\b(confound|correlation|within segment|controlled)\b", snapshot.final_answer, re.I):
         claims_causation = False
     return ScenarioBOutcome(
         detects_global_association=global_assoc,
-        verifies_segmented_evidence=global_assoc and segmented,
+        verifies_segmented_evidence=segmented,
         claims_direct_causation=claims_causation,
     )
 

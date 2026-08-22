@@ -58,7 +58,7 @@ Some teams use **Harness AI** to describe this category: an operating layer arou
 
 Modern agent frameworks and platforms increasingly bundle runtime facilities that teams once assembled separately. The comparison is not whether those facilities exist somewhere in the stack, but **which layer owns primary responsibility** for product semantics, enforcement boundaries, consequential effects, canonical history, recovery posture, and evidence — and how much integration burden remains with the adopting team.
 
-<a href="../assets/public/readme/intergrax-why-light.png">
+<a href="../assets/public/readme/fullsize/intergrax-why.md">
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -75,7 +75,7 @@ Modern agent frameworks and platforms increasingly bundle runtime facilities tha
 </picture>
 </a>
 
-[View full-size diagram](../assets/public/readme/intergrax-why-light.png)
+[View full-size diagram](../assets/public/readme/fullsize/intergrax-why.md)
 
 The diagram contrasts rebuilding foundations per product with reusing one governed foundation. It does not imply that every future product is already implemented.
 

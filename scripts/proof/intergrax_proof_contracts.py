@@ -148,6 +148,18 @@ class EnvRequirementResult(BaseModel):
     satisfied: bool
 
 
+class EvidenceVerificationStatus(StrEnum):
+    PASS = "PASS"
+    FAIL = "FAIL"
+    MISSING = "MISSING"
+    INVALID = "INVALID"
+
+
+class ArtifactVerificationStatus(StrEnum):
+    PASS = "PASS"
+    FAIL = "FAIL"
+
+
 class ProofRunResult(BaseModel):
     """Durable-safe per-proof result — no untrusted child process output."""
 
@@ -159,6 +171,10 @@ class ProofRunResult(BaseModel):
     exit_code: int | None = None
     diagnostic_summary: str = ""
     environment_requirements: tuple[EnvRequirementResult, ...] = ()
+    evidence_verification_status: EvidenceVerificationStatus | None = None
+    evidence_path: str | None = None
+    artifact_verification_status: ArtifactVerificationStatus | None = None
+    artifact_diagnostic: str = ""
 
 
 class SuiteReceipt(BaseModel):

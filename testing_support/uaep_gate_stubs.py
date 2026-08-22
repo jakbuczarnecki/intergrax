@@ -49,6 +49,7 @@ class UaepPipelineStubAgent(Agent):
         self._route_extra = dict(route_extra or {})
         self._track_request_metadata = track_request_metadata
         self.last_metadata: dict[str, Any] = {}
+        self.last_request: RuntimeRequest | None = None
 
     def get_contract(self) -> AgentContract:
         capabilities = list(dict.fromkeys([self._capability, *self._extra_capabilities]))
@@ -83,6 +84,7 @@ class UaepPipelineStubAgent(Agent):
         UaepPipelineStubAgent.run_log.append(self._agent_id)
         if self._track_request_metadata:
             self.last_metadata = dict(request.metadata)
+            self.last_request = request
         config = RuntimeConfig(
             llm_adapter=FakeLLMAdapter(
                 fixed_text=f"{self._prefix}{self._answer_separator}{request.message}"

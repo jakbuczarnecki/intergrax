@@ -9,6 +9,11 @@ from typing import Sequence
 
 from intergrax.applications._shared.reliability_wiring import ApplicationReliabilityWiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.contracts.persistence_topology import (
+    format_topology_mismatch_error,
+    resolve_idempotency_store_topology,
+    topology_satisfies,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +52,26 @@ def validate_reliability_wiring(
 
     if not reliability.idempotency_enabled and wiring.idempotency_store is not None:
         errors.append("idempotency_enabled=False requires no idempotency_store")
+
+    if reliability.idempotency_enabled:
+        required_topology = env.meta.required_persistence_topology
+        provided_topology = resolve_idempotency_store_topology(wiring.idempotency_store)
+        if provided_topology is None:
+            errors.append(
+                format_topology_mismatch_error(
+                    mechanism="idempotency",
+                    required=required_topology,
+                    provided=None,
+                ),
+            )
+        elif not topology_satisfies(required_topology, provided_topology):
+            errors.append(
+                format_topology_mismatch_error(
+                    mechanism="idempotency",
+                    required=required_topology,
+                    provided=provided_topology,
+                ),
+            )
 
     if (
         wiring.circuit_breaker_config.failure_threshold

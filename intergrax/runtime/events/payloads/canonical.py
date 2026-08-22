@@ -75,6 +75,8 @@ class DelegationGrantedPayloadV1(RuntimeEventPayload):
     child_agent_id: str
     node_id: str
     rationale: str = ""
+    requested_permission_scopes: tuple[str, ...] = ()
+    effective_permission_scopes: tuple[str, ...] = ()
     permission_scopes: tuple[str, ...] = ()
 
 

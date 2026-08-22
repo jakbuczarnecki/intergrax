@@ -13,6 +13,11 @@ from fastapi import Header, HTTPException, Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
+from intergrax.applications._shared.harness_principal import (
+    HarnessAuthenticatedPrincipal,
+    api_key_service_harness_principal,
+    identity_user_to_harness_principal,
+)
 from intergrax.integrations.contracts.identity_provider import (
     IdentityProviderBackend,
     IdentityUser,
@@ -27,6 +32,9 @@ class HarnessAuthState:
     identity_provider: IdentityProviderBackend | None = None
     require_api_key: bool = False
     resolved_api_key: str | None = None
+    tenant_required: bool = False
+    api_key_principal_tenant_id: str | None = None
+    api_key_principal_service_id: str = "harness-api-key"
 
 
 def _legacy_default_harness_api_key() -> str | None:
@@ -179,32 +187,63 @@ def _local_dev_auth_bypass_allowed(state: HarnessAuthState | None) -> bool:
     )
 
 
+def resolve_harness_authenticated_principal(
+    request: Request,
+    x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
+    authorization: Annotated[str | None, Header()] = None,
+) -> HarnessAuthenticatedPrincipal | None:
+    """
+    Authenticate the request and return the verified canonical principal.
+
+    Returns ``None`` only for explicitly configured local-dev bypass or when no
+    credential authority is configured (legacy unauthenticated surfaces).
+    """
+    state = _harness_auth_state_from_request(request)
+    if _harness_api_key_authenticates(
+        x_api_key=x_api_key,
+        authorization=authorization,
+        request=request,
+    ):
+        return api_key_service_harness_principal(
+            tenant_id=state.api_key_principal_tenant_id if state is not None else None,
+            service_id=(
+                state.api_key_principal_service_id
+                if state is not None
+                else "harness-api-key"
+            ),
+            tenant_required=state.tenant_required if state is not None else False,
+        )
+    identity_provider = _identity_provider_from_request(request)
+    if identity_provider is not None:
+        user = verify_harness_bearer_identity(
+            authorization=authorization,
+            identity_provider=identity_provider,
+        )
+        if user is not None:
+            return identity_user_to_harness_principal(
+                user,
+                tenant_required=state.tenant_required if state is not None else False,
+            )
+    if _local_dev_auth_bypass_allowed(state):
+        return None
+    if _expected_api_key_for_request(request) is None and identity_provider is None:
+        return None
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or missing harness credentials",
+    )
+
+
 def require_harness_auth(
     request: Request,
     x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
     authorization: Annotated[str | None, Header()] = None,
 ) -> None:
     """Enforce static API key and/or OIDC bearer token when configured."""
-    if _harness_api_key_authenticates(
+    resolve_harness_authenticated_principal(
+        request,
         x_api_key=x_api_key,
         authorization=authorization,
-        request=request,
-    ):
-        return
-    identity_provider = _identity_provider_from_request(request)
-    if identity_provider is not None and is_harness_identity_token_valid(
-        authorization=authorization,
-        identity_provider=identity_provider,
-    ):
-        return
-    state = _harness_auth_state_from_request(request)
-    if _local_dev_auth_bypass_allowed(state):
-        return
-    if _expected_api_key_for_request(request) is None and identity_provider is None:
-        return
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid or missing harness credentials",
     )
 
 

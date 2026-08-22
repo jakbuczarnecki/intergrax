@@ -3,12 +3,15 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
+from intergrax.contracts.lease_claim import LeaseOwnership
+from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
@@ -16,26 +19,66 @@ class InvocationStatus(str, Enum):
     """
     Persistent invocation state.
 
-    STARTED   — execution began but not completed.
+    STARTED   — active claim; external effect may be in flight.
     COMPLETED — execution finished and result is stored.
+    UNCERTAIN — lease expired without completion; outcome cannot be proven.
     """
 
     STARTED = "started"
     COMPLETED = "completed"
+    UNCERTAIN = "uncertain"
+
+
+class ClaimOutcome(str, Enum):
+    """Result of an atomic invocation claim attempt."""
+
+    ACQUIRED = "acquired"
+    REPLAY_COMPLETED = "replay_completed"
+    BLOCKED_ACTIVE = "blocked_active"
+    UNCERTAIN = "uncertain"
+
+
+class InvocationClaim(LeaseOwnership):
+    """Active or historical ownership record for one idempotency key."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str
+    key: str
+
+
+class ClaimResult(BaseModel):
+    """Outcome of ``claim`` including optional ownership or cached replay."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    outcome: ClaimOutcome
+    claim: InvocationClaim | None = None
+    completed_result: ToolExecutionResult[BaseModel] | None = None
+
+
+class InvocationUncertaintyError(RuntimeError):
+    """External side-effect outcome cannot be determined; reconciliation required."""
+
+
+class ActiveInvocationClaimError(RuntimeError):
+    """Another owner holds a valid active claim."""
 
 
 class IdempotencyStore(ABC):
     """
     Ledger-based idempotency port for tool invocations.
 
-    Guarantees:
-    - tenant isolation
-    - crash safety (STARTED vs COMPLETED)
-    - prevention of duplicate side-effects
-    - deterministic retry semantics
-
-    Exactly-once semantics for side-effect tools.
+    Domain port — exposes ``persistence_topology`` for host deployment qualification.
+    Provides duplicate suppression and execution-uncertainty tracking via atomic
+    claim/owner/lease/fence semantics (PCM-SIDE-EFFECT-COORDINATION-INTEGRITY).
     """
+
+    @property
+    @abstractmethod
+    def persistence_topology(self) -> PersistenceTopology:
+        """Declared deployment topology this implementation can satisfy."""
+        ...
 
     @abstractmethod
     def get_status(
@@ -43,8 +86,38 @@ class IdempotencyStore(ABC):
         tenant_id: str,
         key: str,
     ) -> Optional[InvocationStatus]:
+        """Returns current invocation status or None if not recorded."""
+        ...
+
+    @abstractmethod
+    def claim(
+        self,
+        tenant_id: str,
+        key: str,
+        owner_id: str,
+        lease_seconds: int,
+    ) -> ClaimResult:
         """
-        Returns current invocation status or None if not recorded.
+        Atomically acquire invocation ownership or classify existing state.
+
+        Only one active owner may succeed. Expired claims without completion
+        transition to UNCERTAIN — they must not be treated as safe retry.
+        """
+        ...
+
+    @abstractmethod
+    def complete_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+        result: ToolExecutionResult[BaseModel],
+        completed_ttl_seconds: Optional[int] = None,
+    ) -> None:
+        """
+        Transition STARTED -> COMPLETED when ``claim`` matches current ownership.
+
+        Raises ``StaleClaimError`` when fence or owner is superseded.
         """
         ...
 
@@ -56,10 +129,10 @@ class IdempotencyStore(ABC):
         lease_seconds: Optional[int] = None,
     ) -> None:
         """
-        Records STARTED state atomically.
+        Legacy STARTED transition without typed ownership.
 
-        If lease_seconds is provided, implementation must guarantee that
-        STARTED state expires after given number of seconds to allow takeover.
+        Prefer ``claim`` for side-effect coordination. Implementations should
+        remain atomic for NONE -> STARTED.
         """
 
     @abstractmethod
@@ -70,12 +143,7 @@ class IdempotencyStore(ABC):
         result: ToolExecutionResult[BaseModel],
         completed_ttl_seconds: Optional[int] = None,
     ) -> None:
-        """
-        Transitions STARTED -> COMPLETED atomically.
-
-        If completed_ttl_seconds is provided, implementation may expire
-        COMPLETED entry after given number of seconds.
-        """
+        """Legacy STARTED -> COMPLETED without fence validation."""
 
     @abstractmethod
     def get_completed_result(
@@ -83,7 +151,5 @@ class IdempotencyStore(ABC):
         tenant_id: str,
         key: str,
     ) -> Optional[ToolExecutionResult[BaseModel]]:
-        """
-        Returns previously completed execution result if exists.
-        """
+        """Returns previously completed execution result if exists."""
         ...

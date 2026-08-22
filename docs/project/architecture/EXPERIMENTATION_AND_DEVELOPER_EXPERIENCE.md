@@ -37,7 +37,7 @@ Intergrax DX is a **laboratory workflow** — not a production runtime, deployme
 
 ## Flagship architecture visual
 
-<a href="assets/experimentation-promotion-loop-light.svg">
+<a href="assets/fullsize/experimentation-promotion-loop.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/experimentation-promotion-loop-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/experimentation-promotion-loop-light.svg">

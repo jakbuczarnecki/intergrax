@@ -92,13 +92,45 @@ Every executable platform proof must have a stable **`proof_id`**.
 
 **Reference example:** `TOOLS-ITERATIVE-SQL-INVESTIGATION`
 
-Canonical executable identity and execution metadata remain owned by:
+Canonical executable identity is declared in two layers during migration:
+
+| Layer | Role |
+|-------|------|
+| **`proof.json`** (package-owned) | Static descriptor — discovery source (PP-SUITE-1) |
+| **`ProofManifestEntry`** (runner-facing) | Normalized manifest contract consumed by `scripts/proof/` |
+
+The central manifest in `scripts/proof/intergrax_proof_manifest.py` remains authoritative for legacy and product entries. Descriptor-backed Platform Proofs under `platform_proofs/` are discovered automatically from package `proof.json` files (PP-SUITE-2). Do **not** duplicate conflicting metadata in ad-hoc local config files — a descriptor/static migration twin with non-equivalent execution metadata fails manifest loading.
+
+---
+
+## D2. Platform Proof Package Contract (PP-SUITE-1)
+
+Platform proofs under `platform_proofs/` are **self-describing packages**:
 
 ```text
-scripts/proof/intergrax_proof_manifest.py
+platform_proofs/<domain>/<proof_slug>/
+    proof.json          # static descriptor (canonical filename)
+    run_proof.py        # executable entrypoint
+    ...                 # proof-owned implementation
 ```
 
-Do **not** duplicate manifest metadata in arbitrary local config files. Register proofs in the canonical manifest; document scenario content under `platform_proofs/`.
+**Why static JSON (`proof.json`):** language-neutral, human-readable, machine-validated, deterministic, inspectable by CI, and free of Python import side effects during discovery. Discovery must **not** import proof modules or execute `run_proof.py` to read metadata.
+
+**Descriptor schema:** `intergrax.platform_proof_descriptor.v1` — implemented in `scripts/proof/intergrax_platform_proof_descriptor.py` and loaded by `scripts/proof/intergrax_platform_proof_descriptor_loader.py`.
+
+**Command contract:** structured `argv` only (`shell=False`). No shell strings.
+
+**Path safety:** descriptor location defines package root; entrypoints must resolve inside the repository and package; `..` traversal and repo-escaping absolute paths are rejected.
+
+**Discovery (PP-SUITE-2):** recursively scan `platform_proofs/` for `proof.json`, validate, ensure unique `proof_id`, normalize to `ProofManifestEntry`, merge with static legacy entries, fail closed on any invalid package. Descriptor-backed entries replace semantically equivalent static migration twins exactly once; conflicting duplicates fail manifest loading. Static central registration remains only for not-yet-migrated legacy and product proofs.
+
+**Evidence and report:** descriptors may declare `evidence_schema`, `expected_artifacts`, and `report_required`. Machine evidence validation (PP-SUITE-3) and report verification (PP-SUITE-5) are follow-on tasks; `report_required=false` is allowed during renderer migration (PP-REPORT-3/4).
+
+**Artifact contract (PP-SUITE-4):** a descriptor-backed Platform Proof is successful only when (1) subprocess contract passes, (2) required machine evidence passes validation when declared, and (3) every required declared artifact in `expected_artifacts` satisfies the generic artifact contract. Optional artifacts may be absent; if present they must still be safe regular non-symlink files. Artifact paths resolve only under the runner-owned proof artifact directory.
+
+**Roadmap:** PP-SUITE-1 package contract · PP-SUITE-2 dynamic discovery · PP-SUITE-3 evidence validation · PP-SUITE-4 artifact verification · PP-REPORT-3 generic HTML renderer · PP-REPORT-4 TOOLS report integration · PP-SUITE-5 report contract verification · PP-SUITE-6 CI regression profiles.
+
+**Transition:** Phase 1 — `TOOLS-ITERATIVE-SQL-INVESTIGATION` ships `proof.json`. Phase 2 — dynamic discovery (current). Phase 3 — static manifest coexists for unmigrated proofs. Phase 4 — migrate remaining platform proofs. Phase 5 — remove static platform registrations when complete. Duplicate `proof_id` across static manifest and discovery fails unless entries are semantically equivalent migration twins (descriptor wins once).
 
 ---
 
@@ -232,6 +264,12 @@ Execution evidence must identify:
 Reuse **`SuiteReceipt`** from `scripts/proof/` — do not invent a competing suite receipt.
 
 Do **not** merge `SuiteReceipt` with runtime/domain `ProofReceipt`. Preserve the current explicit separation documented in `intergrax_proof_contracts.py`.
+
+Every Platform Proof execution must also produce a human-readable **Proof Report**
+(self-contained HTML) per
+[`PLATFORM_PROOF_REPORT_STANDARD.md`](../docs/project/proofs/PLATFORM_PROOF_REPORT_STANDARD.md)
+(PP-REPORT-1). The report presents typed proof evidence; it is not an independent
+source of truth.
 
 ---
 

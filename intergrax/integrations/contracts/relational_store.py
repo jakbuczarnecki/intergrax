@@ -13,6 +13,11 @@ class RelationalStore(Protocol):
     """
     Backend-agnostic SQL persistence facade.
 
+    Transport only — ``connect`` / ``execute`` / ``fetch_all`` / ``close`` do not
+    certify multi-host safety, CAS, claim/lease, exactly-once, or arbitrary domain
+    port transaction semantics. Domain stores (IdempotencyStore, CheckpointStore, …)
+    declare ``persistence_topology`` and own correctness guarantees.
+
     Implementations: sqlite, postgresql, mysql, …
     """
 

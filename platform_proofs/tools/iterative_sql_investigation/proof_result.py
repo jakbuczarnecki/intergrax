@@ -4,9 +4,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.tools.investigation_proof import InvestigationProof
+    from intergrax.runtime.nexus.engine.runtime_state import ToolCallTrace
 
 from platform_proofs.tools.iterative_sql_investigation.dataset_identity import (
     DatasetFingerprint,
@@ -116,3 +120,5 @@ class ScenarioExecutionSnapshot:
     investigation_proof_steps: int
     follow_up_has_valid_basis: bool
     final_answer: str
+    tool_traces: tuple[ToolCallTrace, ...] = ()
+    investigation_proof: InvestigationProof | None = None

@@ -59,7 +59,7 @@ Reliability keeps recovery **bounded**, **layered**, and **evidence-backed**.
 
 ## Flagship architecture visual
 
-<a href="assets/reliability-recovery-loop-light.svg">
+<a href="assets/fullsize/reliability-recovery-loop.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/reliability-recovery-loop-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/reliability-recovery-loop-light.svg">

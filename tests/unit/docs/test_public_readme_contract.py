@@ -33,16 +33,19 @@ _STRATEGIC_FULL_SIZE_LINKS = (
     (
         "## Explore the Intergrax Platform",
         "| Platform area | What it provides | Explore |",
+        "docs/project/assets/public/readme/fullsize/intergrax-platform-map.md",
         "docs/project/assets/public/readme/intergrax-platform-map-light.png",
     ),
     (
         "## Why this matters",
         "---",
+        "docs/project/assets/public/readme/fullsize/intergrax-why.md",
         "docs/project/assets/public/readme/intergrax-why-light.png",
     ),
     (
         "## AI execution should not be a black box",
         "A governed run can leave correlated runtime events",
+        "docs/project/assets/public/readme/fullsize/intergrax-governed-execution.md",
         "docs/project/assets/public/readme/intergrax-governed-execution-light.png",
     ),
 )
@@ -416,17 +419,17 @@ def _section_slice(readme_text: str, start_marker: str, end_marker: str) -> str:
     return readme_text[start:end]
 
 
-def _full_size_link_markdown(light_png_ref: str) -> str:
-    return f"[{_FULL_SIZE_LINK_LABEL}]({light_png_ref})"
+def _full_size_link_markdown(preview_ref: str) -> str:
+    return f"[{_FULL_SIZE_LINK_LABEL}]({preview_ref})"
 
 
-def _assert_full_size_link_after_picture(section: str, light_png_ref: str) -> None:
-    link = _full_size_link_markdown(light_png_ref)
-    assert link in section, f"Missing full-size link to {light_png_ref}"
+def _assert_full_size_link_after_picture(section: str, preview_ref: str) -> None:
+    link = _full_size_link_markdown(preview_ref)
+    assert link in section, f"Missing full-size link to {preview_ref}"
     picture_end = section.index("</picture>")
     link_idx = section.index(link)
     assert picture_end < link_idx, (
-        f"Full-size link must immediately follow <picture> block for {light_png_ref}"
+        f"Full-size link must immediately follow <picture> block for {preview_ref}"
     )
 
 
@@ -502,10 +505,11 @@ def test_why_visual_contract(readme_text: str) -> None:
 
 
 def test_strategic_diagram_full_size_links(readme_text: str) -> None:
-    """Detailed strategic diagrams expose a light-PNG full-size link within their section."""
-    for start_marker, end_marker, light_png_ref in _STRATEGIC_FULL_SIZE_LINKS:
+    """Detailed strategic diagrams expose a theme-aware full-size link within their section."""
+    for start_marker, end_marker, preview_ref, light_png_ref in _STRATEGIC_FULL_SIZE_LINKS:
         section = _section_slice(readme_text, start_marker, end_marker)
-        _assert_full_size_link_after_picture(section, light_png_ref)
+        _assert_full_size_link_after_picture(section, preview_ref)
+        assert (REPO_ROOT / preview_ref).is_file(), f"Missing full-size preview: {preview_ref}"
         assert (REPO_ROOT / light_png_ref).is_file(), f"Missing full-size PNG: {light_png_ref}"
 
     hero_section = readme_text[: readme_text.index("## Choose your path")]

@@ -7,6 +7,13 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+from pydantic import ValidationError
+
+from scripts.proof.intergrax_platform_proof_discovery import (
+    PlatformProofDiscoveryError,
+    discover_platform_proof_descriptors,
+    merge_static_and_discovered_entries,
+)
 from scripts.proof.intergrax_proof_contracts import (
     EnvRequirement,
     EnvRequirementKind,
@@ -522,7 +529,21 @@ def _validate_entry_paths(repo_root: Path, entry: ProofManifestEntry) -> None:
 
 def load_manifest(*, repo_root: Path | None = None) -> IntergraxProofManifest:
     root = repo_root or _REPO_ROOT
-    manifest = IntergraxProofManifest(entries=build_manifest_entries())
+    try:
+        discovered = discover_platform_proof_descriptors(repo_root=root)
+        merged_entries = merge_static_and_discovered_entries(
+            build_manifest_entries(),
+            discovered,
+            repo_root=root,
+        )
+    except PlatformProofDiscoveryError as exc:
+        raise ManifestLoadError(str(exc)) from exc
+
+    try:
+        manifest = IntergraxProofManifest(entries=merged_entries)
+    except ValidationError as exc:
+        raise ManifestLoadError(f"invalid manifest: {exc}") from exc
+
     for entry in manifest.entries:
         _validate_entry_paths(root, entry)
     return manifest

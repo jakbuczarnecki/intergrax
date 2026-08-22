@@ -8,7 +8,7 @@ from intergrax.agents.persistence.declarative_tool_executor import (
     execute_declarative_actions,
 )
 from intergrax.agents.persistence.idempotency_ledger_bridge import (
-    record_side_effect_commit,
+    SideEffectCommitPayload,
     resolve_external_ref_from_store,
     should_skip_side_effect_replay,
 )
@@ -18,6 +18,7 @@ from intergrax.contracts.agent_run_enums import SideEffectMode
 from intergrax.contracts.idempotency_store import InvocationStatus
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+from intergrax.tools.execution_models import ToolExecutionResult
 from intergrax.tools.tool_execution_profile import build_profile_map
 from pydantic import BaseModel
 
@@ -48,15 +49,25 @@ _MUTATING = ToolContract(
 )
 
 
+def _complete_side_effect(
+    store: InMemoryIdempotencyStore,
+    *,
+    external_ref: str,
+) -> None:
+    claim = store.claim(TENANT, IDEMPOTENCY_KEY, "setup-owner", lease_seconds=300)
+    assert claim.claim is not None
+    payload = SideEffectCommitPayload(tool_id=TOOL_ID, external_ref=external_ref)
+    store.complete_with_claim(
+        TENANT,
+        IDEMPOTENCY_KEY,
+        claim.claim,
+        ToolExecutionResult.ok(payload),
+    )
+
+
 def test_store_marks_cross_run_replay_skip_without_ledger() -> None:
     store = InMemoryIdempotencyStore()
-    record_side_effect_commit(
-        idempotency_store=store,
-        tenant_id=TENANT,
-        idempotency_key=IDEMPOTENCY_KEY,
-        tool_id=TOOL_ID,
-        external_ref="msg-99",
-    )
+    _complete_side_effect(store, external_ref="msg-99")
     assert should_skip_side_effect_replay(
         idempotency_key=IDEMPOTENCY_KEY,
         idempotency_store=store,
@@ -74,13 +85,7 @@ def test_store_marks_cross_run_replay_skip_without_ledger() -> None:
 
 def test_validate_requested_actions_skips_from_store_on_new_run() -> None:
     store = InMemoryIdempotencyStore()
-    record_side_effect_commit(
-        idempotency_store=store,
-        tenant_id=TENANT,
-        idempotency_key=IDEMPOTENCY_KEY,
-        tool_id=TOOL_ID,
-        external_ref="msg-store",
-    )
+    _complete_side_effect(store, external_ref="msg-store")
     profiles = build_profile_map([_MUTATING])
     normalized = validate_requested_actions(
         requested_actions=[{"tool_id": TOOL_ID, "idempotency_key": IDEMPOTENCY_KEY, "args": {}}],
