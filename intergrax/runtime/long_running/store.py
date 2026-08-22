@@ -106,12 +106,13 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 ON task_checkpoints (task_id, tenant_id, resume_token);
                 """
             )
-            try:
+            checkpoint_columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(task_checkpoints)").fetchall()
+            }
+            if "runtime_checkpoint_json" not in checkpoint_columns:
                 conn.execute(
-                    "ALTER TABLE task_checkpoints ADD COLUMN runtime_checkpoint_json TEXT"
+                    "ALTER TABLE task_checkpoints ADD COLUMN runtime_checkpoint_json TEXT",
                 )
-            except sqlite3.OperationalError:
-                pass
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS scheduled_resumes (
