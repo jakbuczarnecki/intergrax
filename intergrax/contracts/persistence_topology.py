@@ -14,16 +14,50 @@ if TYPE_CHECKING:
 
 class PersistenceTopology(str, Enum):
     """
-    Deployment topology classes for stateful runtime mechanisms.
+    Storage capability classes for stateful runtime mechanisms.
 
     PROCESS_LOCAL — state exists only inside one process; lost on restart.
     DURABLE_SINGLE_HOST — survives process restart on one host (e.g. local SQLite).
     SHARED_MULTI_HOST — multiple workers observe one authoritative shared state.
+
+    Orthogonal to ExecutionMode: STRICT does not imply SHARED_MULTI_HOST.
     """
 
     PROCESS_LOCAL = "process_local"
     DURABLE_SINGLE_HOST = "durable_single_host"
     SHARED_MULTI_HOST = "shared_multi_host"
+
+
+class DeploymentTopology(str, Enum):
+    """
+    Host/operator physical deployment classification.
+
+    PROCESS_LOCAL — single process; no durable host-local requirement.
+    SINGLE_HOST — one host; durable local storage may satisfy persistence.
+    MULTI_HOST — multiple hosts/workers; shared storage is required.
+
+    Orthogonal to ExecutionMode: STRICT does not imply MULTI_HOST.
+    """
+
+    PROCESS_LOCAL = "process_local"
+    SINGLE_HOST = "single_host"
+    MULTI_HOST = "multi_host"
+
+
+_DEPLOYMENT_TO_REQUIRED: dict[DeploymentTopology, PersistenceTopology] = {
+    DeploymentTopology.PROCESS_LOCAL: PersistenceTopology.PROCESS_LOCAL,
+    DeploymentTopology.SINGLE_HOST: PersistenceTopology.DURABLE_SINGLE_HOST,
+    DeploymentTopology.MULTI_HOST: PersistenceTopology.SHARED_MULTI_HOST,
+}
+
+
+def required_persistence_for_deployment(
+    deployment: DeploymentTopology | str,
+) -> PersistenceTopology:
+    """Derive the persistence capability required by a host deployment topology."""
+    if not isinstance(deployment, DeploymentTopology):
+        deployment = DeploymentTopology(deployment)
+    return _DEPLOYMENT_TO_REQUIRED[deployment]
 
 
 _TOPOLOGY_RANK: dict[PersistenceTopology, int] = {

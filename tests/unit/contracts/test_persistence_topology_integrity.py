@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, Mapping, Optional, Sequence
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from intergrax.applications._shared.reliability_assembly_resolver import (
     assert_reliability_assembly_valid,
@@ -21,10 +21,13 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ReliabilityProfile,
 )
+from intergrax.applications.contracts.environment_profile.bundles import HostMeta
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.idempotency_store import IdempotencyStore, InvocationStatus
 from intergrax.contracts.persistence_topology import (
+    DeploymentTopology,
     PersistenceTopology,
+    required_persistence_for_deployment,
     resolve_idempotency_store_topology,
 )
 from intergrax.distributed.providers.redis_idempotency_store import RedisIdempotencyStore
@@ -124,14 +127,40 @@ class _DummyRelationalStore:
         return None
 
 
+_REQUIRED_TO_DEPLOYMENT: dict[PersistenceTopology, DeploymentTopology] = {
+    PersistenceTopology.PROCESS_LOCAL: DeploymentTopology.PROCESS_LOCAL,
+    PersistenceTopology.DURABLE_SINGLE_HOST: DeploymentTopology.SINGLE_HOST,
+    PersistenceTopology.SHARED_MULTI_HOST: DeploymentTopology.MULTI_HOST,
+}
+
+
+def _env_with_deployment(
+    deployment: DeploymentTopology,
+    *,
+    profile_id: str = "pcm.topology",
+) -> ApplicationEnvironmentProfile:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
+    env.meta = env.meta.model_copy(update={"deployment_topology": deployment})
+    return env
+
+
 def _env_with_topology(
     topology: PersistenceTopology,
     *,
     profile_id: str = "pcm.topology",
 ) -> ApplicationEnvironmentProfile:
-    env = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
-    env.meta = env.meta.model_copy(update={"required_persistence_topology": topology})
-    return env
+    return _env_with_deployment(
+        _REQUIRED_TO_DEPLOYMENT[topology],
+        profile_id=profile_id,
+    )
+
+
+def _fake_redis_store() -> RedisIdempotencyStore:
+    class _FakeRedis:
+        def register_script(self, _script: str) -> object:
+            return object()
+
+    return RedisIdempotencyStore(_FakeRedis())
 
 
 def _wiring_with_store(store: IdempotencyStore | None) -> ApplicationReliabilityWiring:
@@ -155,11 +184,7 @@ def test_sqlite_store_classified_durable_single_host() -> None:
 
 
 def test_redis_store_classified_shared_multi_host() -> None:
-    class _FakeRedis:
-        def register_script(self, _script: str) -> object:
-            return object()
-
-    store = RedisIdempotencyStore(_FakeRedis())
+    store = _fake_redis_store()
     assert store.persistence_topology is PersistenceTopology.SHARED_MULTI_HOST
 
 
@@ -253,3 +278,100 @@ def test_topology_mismatch_error_evidence_without_secrets() -> None:
     assert "provided=process_local" in error
     assert "redis://" not in error
     assert "postgres" not in error.lower()
+
+
+def test_r1_1_multi_host_automatically_requires_shared() -> None:
+    meta = HostMeta.product(deployment_topology=DeploymentTopology.MULTI_HOST)
+    assert meta.deployment_topology is DeploymentTopology.MULTI_HOST
+    assert meta.required_persistence_topology is PersistenceTopology.SHARED_MULTI_HOST
+    assert (
+        required_persistence_for_deployment(DeploymentTopology.MULTI_HOST)
+        is PersistenceTopology.SHARED_MULTI_HOST
+    )
+
+
+def test_r1_2_multi_host_sqlite_fails_assembly(tmp_path) -> None:
+    env = _env_with_deployment(DeploymentTopology.MULTI_HOST, profile_id="pcm.r1.2")
+    assert env.reliability_profile.idempotency_enabled
+    assert env.meta.required_persistence_topology is PersistenceTopology.SHARED_MULTI_HOST
+    wiring = wire_application_reliability(env, idempotency_db_path=tmp_path / "idempotency.db")
+    result = validate_reliability_wiring(wiring, env)
+    assert not result.valid
+    assert any(
+        "required=shared_multi_host provided=durable_single_host" in error
+        for error in result.errors
+    )
+
+
+def test_r1_3_multi_host_inmemory_fails_assembly() -> None:
+    env = _env_with_deployment(DeploymentTopology.MULTI_HOST, profile_id="pcm.r1.3")
+    wiring = _wiring_with_store(InMemoryIdempotencyStore())
+    result = validate_reliability_wiring(wiring, env)
+    assert not result.valid
+    assert any("required=shared_multi_host provided=process_local" in error for error in result.errors)
+
+
+def test_r1_4_multi_host_redis_passes_topology_gate() -> None:
+    env = _env_with_deployment(DeploymentTopology.MULTI_HOST, profile_id="pcm.r1.4")
+    wiring = _wiring_with_store(_fake_redis_store())
+    result = validate_reliability_wiring(wiring, env)
+    assert result.valid
+
+
+def test_r1_5_single_host_product_sqlite_passes(tmp_path) -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="pcm.r1.5")
+    assert env.meta.deployment_topology is DeploymentTopology.SINGLE_HOST
+    assert env.meta.required_persistence_topology is PersistenceTopology.DURABLE_SINGLE_HOST
+    wiring = wire_application_reliability(env, idempotency_db_path=tmp_path / "idempotency.db")
+    result = validate_reliability_wiring(wiring, env)
+    assert result.valid
+
+
+def test_r1_6_single_host_product_inmemory_fails() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="pcm.r1.6")
+    wiring = _wiring_with_store(InMemoryIdempotencyStore())
+    result = validate_reliability_wiring(wiring, env)
+    assert not result.valid
+    assert any("required=durable_single_host provided=process_local" in error for error in result.errors)
+
+
+def test_r1_7_strict_single_host_does_not_require_shared() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="pcm.r1.7")
+    assert env.execution_mode is ExecutionMode.STRICT
+    assert env.meta.execution_mode is ExecutionMode.STRICT
+    assert env.meta.deployment_topology is DeploymentTopology.SINGLE_HOST
+    assert env.meta.required_persistence_topology is PersistenceTopology.DURABLE_SINGLE_HOST
+    assert env.meta.required_persistence_topology is not PersistenceTopology.SHARED_MULTI_HOST
+
+
+def test_r1_8_balanced_multi_host_still_requires_shared(tmp_path) -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="pcm.r1.8")
+    env.execution_mode = ExecutionMode.BALANCED
+    env.meta = env.meta.model_copy(
+        update={
+            "execution_mode": ExecutionMode.BALANCED,
+            "deployment_topology": DeploymentTopology.MULTI_HOST,
+        },
+    )
+    assert env.execution_mode is ExecutionMode.BALANCED
+    assert env.meta.required_persistence_topology is PersistenceTopology.SHARED_MULTI_HOST
+    wiring = wire_application_reliability(env, idempotency_db_path=tmp_path / "idempotency.db")
+    result = validate_reliability_wiring(wiring, env)
+    assert not result.valid
+    assert any(
+        "required=shared_multi_host provided=durable_single_host" in error
+        for error in result.errors
+    )
+
+
+def test_r1_9_contradictory_config_impossible() -> None:
+    with pytest.raises(ValidationError, match="required_persistence_topology contradicts deployment_topology"):
+        HostMeta(
+            deployment_topology=DeploymentTopology.MULTI_HOST,
+            required_persistence_topology=PersistenceTopology.DURABLE_SINGLE_HOST,
+        )
+    meta = HostMeta.product(deployment_topology=DeploymentTopology.MULTI_HOST)
+    with pytest.raises(ValidationError, match="required_persistence_topology contradicts deployment_topology"):
+        meta.model_copy(
+            update={"required_persistence_topology": PersistenceTopology.DURABLE_SINGLE_HOST},
+        )

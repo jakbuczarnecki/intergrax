@@ -33,6 +33,7 @@ FLAT_PROFILE_KEYS: frozenset[str] = frozenset(
         "spec_version",
         "application_profile",
         "execution_mode",
+        "deployment_topology",
         "features",
         "identity_profile",
         "security_profile",
@@ -110,6 +111,8 @@ def lift_flat_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
         meta["application_profile"] = data["application_profile"]
     if "execution_mode" in data:
         meta["execution_mode"] = data["execution_mode"]
+    if "deployment_topology" in data:
+        meta["deployment_topology"] = data["deployment_topology"]
     if "features" in data:
         meta["features"] = data["features"]
 
@@ -233,6 +236,7 @@ def flatten_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
             "spec_version": meta.get("spec_version", "1.0.0"),
             "application_profile": meta.get("application_profile"),
             "execution_mode": meta.get("execution_mode"),
+            "deployment_topology": meta.get("deployment_topology"),
             "features": meta.get("features"),
             "identity_profile": security.get("identity"),
             "security_profile": security.get("application_security"),
