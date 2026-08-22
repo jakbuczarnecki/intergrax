@@ -11,8 +11,13 @@ from intergrax.runtime.human.models import EscalationOutcome
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
     build_runtime_checkpoint,
+    build_task_checkpoint,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+    TaskCheckpointReader,
+)
 from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.runtime.long_running.notification import NotificationAdapter, resolve_notification_adapter
 from intergrax.runtime.notifications.templates.escalation import build_escalation_notification_message
@@ -20,7 +25,6 @@ from intergrax.runtime.notifications.templates.hitl import build_hitl_pause_noti
 from intergrax.runtime.notifications.templates.partial_result import (
     build_partial_result_notification_message,
 )
-from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
@@ -51,7 +55,7 @@ class LongRunningCoordinator:
     @staticmethod
     def restore_if_resuming(
         task: Task,
-        store: SQLiteTaskCheckpointStore,
+        store: TaskCheckpointReader,
     ) -> Optional[TaskCheckpoint]:
         if not LongRunningCoordinator.is_long_running(task):
             if not _wants_human_resume(task):
@@ -99,7 +103,7 @@ class LongRunningCoordinator:
     @staticmethod
     def persist_checkpoint(
         task: Task,
-        store: SQLiteTaskCheckpointStore,
+        store: TaskCheckpointPersistence,
         *,
         run_id: str,
         attempt_id: str,
@@ -117,7 +121,7 @@ class LongRunningCoordinator:
             last_execution=last_execution,
         )
         existing_token = task.runtime.orchestration.resume_token
-        checkpoint = SQLiteTaskCheckpointStore.build_checkpoint(
+        checkpoint = build_task_checkpoint(
             task,
             progress_message=progress_message,
             resume_token=existing_token,

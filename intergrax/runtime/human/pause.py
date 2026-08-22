@@ -17,6 +17,7 @@ from intergrax.contracts.declarative_hitl import DeclarativeHitlPendingApproval
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 from intergrax.runtime.human.response_parser import parse_human_response
 from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
+from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.interrupts.handler import GovernanceResolution
 from intergrax.runtime.task.task import Task
@@ -178,6 +179,7 @@ class HumanPauseCoordinator:
         task: Task,
         verdict: HumanResponseVerdict,
         *,
+        approver: HumanApproverEvidence,
         pause_id: str | None = None,
         human_request_id: str | None = None,
         run_id: str | None = None,
@@ -196,6 +198,9 @@ class HumanPauseCoordinator:
 
         if verdict is HumanResponseVerdict.UNKNOWN:
             raise HumanApprovalResolutionError("unsupported verdict")
+
+        if approver.tenant_id != task.tenant_id:
+            raise HumanApprovalResolutionError("approver tenant_id mismatch")
 
         if pause_id is None:
             raise HumanApprovalResolutionError("pause_id required")
@@ -221,6 +226,7 @@ class HumanPauseCoordinator:
             pause_id=active_pause_id,
             human_request_id=active_request_id,
             verdict=verdict,
+            approver=approver,
             resolved_at=datetime.now(timezone.utc).isoformat(),
             run_id=run_id,
             response_text=response_text or task.options.human.response_text,

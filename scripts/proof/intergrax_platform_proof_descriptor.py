@@ -21,7 +21,10 @@ from scripts.proof.intergrax_proof_contracts import (
     ProofSafetyClass,
 )
 
-PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION = "intergrax.platform_proof_descriptor.v1"
+PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION = (
+    "intergrax.platform_proof_descriptor.v2"
+)
+MECHANISM_ID_MAX_LENGTH = 64
 PROOF_DESCRIPTOR_FILENAME = "proof.json"
 CANONICAL_PLATFORM_PROOF_ROOT = "platform_proofs"
 
@@ -40,6 +43,11 @@ _SECRET_FIELD_NAMES = frozenset(
         "private_key",
     }
 )
+
+
+class ProofLibraryClass(StrEnum):
+    CONFORMANCE = "CONFORMANCE"
+    SCENARIO = "SCENARIO"
 
 
 class ExpectedArtifactKind(StrEnum):
@@ -70,17 +78,19 @@ class ExpectedProofArtifact(BaseModel):
 
 
 class PlatformProofDescriptor(BaseModel):
-    """Typed ``proof.json`` contract — ``intergrax.platform_proof_descriptor.v1``."""
+    """Typed ``proof.json`` contract — ``intergrax.platform_proof_descriptor.v2``."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["intergrax.platform_proof_descriptor.v1"] = (
+    schema_version: Literal["intergrax.platform_proof_descriptor.v2"] = (
         PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION
     )
+    library_class: ProofLibraryClass
     proof_id: str = Field(min_length=1)
     title: str = Field(min_length=1)
     domain: str = Field(min_length=1)
     proof_kind: str = Field(min_length=1)
+    mechanisms_exercised: tuple[str, ...]
     package_version: str = Field(min_length=1)
     profiles: tuple[ProofProfile, ...]
     command: ProofArgvCommand
@@ -90,6 +100,9 @@ class PlatformProofDescriptor(BaseModel):
     platform_requirements: tuple[str, ...] = ()
     environment_requirements: tuple[EnvRequirement, ...] = ()
     tags: tuple[str, ...] = ()
+    problem_category: str | None = None
+    problem_summary: str | None = None
+    failure_mode_summary: str | None = None
     description: str | None = None
     expected_artifacts: tuple[ExpectedProofArtifact, ...] = ()
     report_required: bool = False
@@ -132,6 +145,33 @@ class PlatformProofDescriptor(BaseModel):
             raise ValueError("platform_requirements must be a sequence")
         return tuple(str(item).strip() for item in value)
 
+    @field_validator("mechanisms_exercised", mode="before")
+    @classmethod
+    def _normalize_mechanisms_exercised(cls, value: object) -> tuple[str, ...]:
+        if value is None:
+            raise ValueError("mechanisms_exercised must be non-empty")
+        if isinstance(value, str):
+            raise ValueError("mechanisms_exercised must be a sequence")
+        if not isinstance(value, (list, tuple)):
+            raise ValueError("mechanisms_exercised must be a sequence")
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for item in value:
+            if not isinstance(item, str):
+                raise ValueError("mechanisms_exercised must contain only strings")
+            mechanism_id = item.strip()
+            if not mechanism_id:
+                raise ValueError("mechanisms_exercised must not contain empty values")
+            if len(mechanism_id) > MECHANISM_ID_MAX_LENGTH:
+                raise ValueError("mechanism id exceeds maximum length")
+            if mechanism_id in seen:
+                raise ValueError("mechanisms_exercised must not contain duplicates")
+            seen.add(mechanism_id)
+            normalized.append(mechanism_id)
+        if not normalized:
+            raise ValueError("mechanisms_exercised must be non-empty")
+        return tuple(normalized)
+
     @field_validator("tags", mode="before")
     @classmethod
     def _normalize_tags(cls, value: object) -> tuple[str, ...]:
@@ -148,6 +188,39 @@ class PlatformProofDescriptor(BaseModel):
                 raise ValueError("tag exceeds maximum length")
             normalized.append(tag)
         return tuple(normalized)
+
+    @field_validator(
+        "problem_category",
+        "problem_summary",
+        "failure_mode_summary",
+        mode="before",
+    )
+    @classmethod
+    def _normalize_optional_scenario_text(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("must be a string or null")
+        return value.strip()
+
+    @model_validator(mode="after")
+    def _validate_library_class_fields(self) -> PlatformProofDescriptor:
+        scenario_fields = (
+            ("problem_category", self.problem_category),
+            ("problem_summary", self.problem_summary),
+            ("failure_mode_summary", self.failure_mode_summary),
+        )
+        if self.library_class is ProofLibraryClass.SCENARIO:
+            for field_name, value in scenario_fields:
+                if value is None or not value:
+                    raise ValueError(f"{field_name} is required for SCENARIO proofs")
+        elif self.library_class is ProofLibraryClass.CONFORMANCE:
+            for field_name, value in scenario_fields:
+                if value is not None:
+                    raise ValueError(
+                        f"{field_name} is forbidden for CONFORMANCE proofs"
+                    )
+        return self
 
     @model_validator(mode="after")
     def _validate_profiles(self) -> PlatformProofDescriptor:

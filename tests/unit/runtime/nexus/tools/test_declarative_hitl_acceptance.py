@@ -16,6 +16,7 @@ from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.runtime.human.declarative_hitl_grant import DeclarativeHitlGrantCoordinator
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
@@ -116,6 +117,7 @@ def _approve_resolution(task: Task) -> None:
     HumanPauseCoordinator.resolve_human_response(
         task,
         HumanResponseVerdict.APPROVE,
+        approver=local_development_approver_evidence(tenant_id=task.tenant_id),
         pause_id="pause-1",
         human_request_id="hr-1",
     )

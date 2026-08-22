@@ -156,6 +156,28 @@ def test_all_phase_order(core: ModuleType) -> None:
     assert core.resolve_phases("all") == core.ALL_PHASE_ORDER
 
 
+def _noop_teardown() -> None:
+    return None
+
+
+def _all_ok_runners(core: ModuleType) -> dict[str, Callable[[Any], Any]]:
+    def _ok(name: str, receipt: str | None = None) -> Callable[[Any], Any]:
+        def _runner(_config: Any) -> Any:
+            return core.PhaseOutcome(name=name, ok=True, receipt_id=receipt)
+
+        return _runner
+
+    return {
+        "startup": _ok("startup"),
+        "sentry": _ok("sentry"),
+        "elasticsearch": _ok("elasticsearch"),
+        "persistence": _ok("persistence"),
+        "background-task": _ok("background-task", "bg-receipt"),
+        "application-hosting": _ok("application-hosting", "host-receipt"),
+        "file-watcher": _ok("file-watcher", "fw-receipt"),
+    }
+
+
 def test_stop_on_first_failure(
     core: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -166,6 +188,7 @@ def test_stop_on_first_failure(
     )
     monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
     called: list[str] = []
+    teardown_calls = {"n": 0}
 
     def _ok(name: str) -> Callable[[Any], Any]:
         def _runner(_config: Any) -> Any:
@@ -178,6 +201,9 @@ def test_stop_on_first_failure(
         called.append("elasticsearch")
         raise core.CoreProofError("elasticsearch_boom")
 
+    def _teardown() -> None:
+        teardown_calls["n"] += 1
+
     runners = {
         "startup": _ok("startup"),
         "sentry": _ok("sentry"),
@@ -189,12 +215,20 @@ def test_stop_on_first_failure(
     }
     buffer = io.StringIO()
     with redirect_stdout(buffer):
-        code = core.run_core_proof(_config(core), phase_runners=runners)
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=runners,
+            teardown=_teardown,
+        )
     text = buffer.getvalue()
     assert code == 1
     assert called == ["startup", "sentry", "elasticsearch"]
+    assert teardown_calls["n"] == 1
     assert "core_proof_result=FAIL" in text
     assert "failed_phase=elasticsearch" in text
+    assert "failure_reason=elasticsearch_boom" in text
+    assert "core_teardown_attempted=true" in text
+    assert "core_teardown_result=PASS" in text
     assert "core_proof_result=PASS" not in text
     assert "core_proof_all_phases_passed=true" not in text
 
@@ -207,6 +241,7 @@ def test_final_pass_contract(core: ModuleType, monkeypatch: pytest.MonkeyPatch) 
     )
     monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
     order: list[str] = []
+    teardown_calls = {"n": 0}
 
     def _ok(name: str, receipt: str | None = None) -> Callable[[Any], Any]:
         def _runner(_config: Any) -> Any:
@@ -214,6 +249,9 @@ def test_final_pass_contract(core: ModuleType, monkeypatch: pytest.MonkeyPatch) 
             return core.PhaseOutcome(name=name, ok=True, receipt_id=receipt)
 
         return _runner
+
+    def _teardown() -> None:
+        teardown_calls["n"] += 1
 
     runners = {
         "startup": _ok("startup"),
@@ -226,11 +264,18 @@ def test_final_pass_contract(core: ModuleType, monkeypatch: pytest.MonkeyPatch) 
     }
     buffer = io.StringIO()
     with redirect_stdout(buffer):
-        code = core.run_core_proof(_config(core), phase_runners=runners)
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=runners,
+            teardown=_teardown,
+        )
     text = buffer.getvalue()
     assert code == 0
+    assert teardown_calls["n"] == 1
     assert order == list(core.ALL_PHASE_ORDER)
     for field in (
+        "core_teardown_attempted=true",
+        "core_teardown_result=PASS",
         "core_proof_result=PASS",
         "core_proof_os_family=windows",
         "core_proof_wrapper_id=windows_bat",
@@ -252,8 +297,9 @@ def test_final_pass_contract(core: ModuleType, monkeypatch: pytest.MonkeyPatch) 
     ):
         assert field in text
     pass_index = text.index("core_proof_result=PASS")
+    teardown_index = text.index("core_teardown_result=PASS")
     last_phase_index = text.rindex("core_phase_result=PASS")
-    assert last_phase_index < pass_index
+    assert last_phase_index < teardown_index < pass_index
 
 
 def test_no_shell_implementation_boundary(core: ModuleType) -> None:
@@ -979,6 +1025,7 @@ def test_background_task_child_failure_emits_parent_kv(
         code = core.run_core_proof(
             _config(core, phase="background-task"),
             phase_runners={"background-task": core.phase_background_task},
+            teardown=_noop_teardown,
         )
     text = buffer.getvalue()
     assert code == 1
@@ -1554,6 +1601,7 @@ def test_startup_port_collision_emits_safe_failure_marker(
         code = core.run_core_proof(
             _config(core, phase="startup"),
             phase_runners=runners,
+            teardown=_noop_teardown,
         )
     text = buffer.getvalue()
     assert code == 1
@@ -1606,3 +1654,347 @@ def test_file_watcher_child_receives_compose_project_env(
     core.phase_file_watcher(_config(core, phase_timeout_seconds=5))
 
     assert captured["env"]["COMPOSE_PROJECT_NAME"] == core._COMPOSE_PROJECT
+
+
+def test_success_path_invokes_teardown_once_before_pass(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+    teardown_calls = {"n": 0}
+
+    def _teardown() -> None:
+        teardown_calls["n"] += 1
+
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=_all_ok_runners(core),
+            teardown=_teardown,
+        )
+    text = buffer.getvalue()
+    assert code == 0
+    assert teardown_calls["n"] == 1
+    assert text.index("core_teardown_result=PASS") < text.index("core_proof_result=PASS")
+
+
+def test_coreprooferror_path_invokes_teardown_preserves_failure(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+    teardown_calls = {"n": 0}
+
+    def _fail(_config: Any) -> Any:
+        raise core.CoreProofError("HTTPError", phase="elasticsearch")
+
+    def _teardown() -> None:
+        teardown_calls["n"] += 1
+
+    runners = _all_ok_runners(core)
+    runners["elasticsearch"] = _fail
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=runners,
+            teardown=_teardown,
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert teardown_calls["n"] == 1
+    assert "failed_phase=elasticsearch" in text
+    assert "failure_reason=HTTPError" in text
+    assert "core_teardown_attempted=true" in text
+    assert "failure_reason=proof_teardown_failed" not in text
+
+
+def test_unexpected_exception_path_invokes_teardown_preserves_exception_type(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+    teardown_calls = {"n": 0}
+
+    def _boom(_config: Any) -> Any:
+        raise RuntimeError("boom")
+
+    def _teardown() -> None:
+        teardown_calls["n"] += 1
+
+    runners = _all_ok_runners(core)
+    runners["persistence"] = _boom
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=runners,
+            teardown=_teardown,
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert teardown_calls["n"] == 1
+    assert "failed_phase=persistence" in text
+    assert "failure_reason=RuntimeError" in text
+
+
+def test_cleanup_failure_after_functional_failure_preserves_primary_failure(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+
+    def _fail(_config: Any) -> Any:
+        raise core.CoreProofError("HTTPError")
+
+    def _teardown_fail() -> None:
+        raise core.CoreProofError("compose_down_failed")
+
+    runners = _all_ok_runners(core)
+    runners["elasticsearch"] = _fail
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=runners,
+            teardown=_teardown_fail,
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert "failed_phase=elasticsearch" in text
+    assert "failure_reason=HTTPError" in text
+    assert "core_teardown_result=FAIL" in text
+    assert "failure_reason=proof_teardown_failed" not in text
+
+
+def test_cleanup_failure_after_functional_pass_fails_overall(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+
+    def _teardown_fail() -> None:
+        raise core.CoreProofError("compose_down_failed")
+
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=_all_ok_runners(core),
+            teardown=_teardown_fail,
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert "core_teardown_result=FAIL" in text
+    assert "failure_reason=proof_teardown_failed" in text
+    assert "core_proof_result=PASS" not in text
+    assert "core_proof_all_phases_passed=true" not in text
+
+
+def test_unexpected_teardown_runtime_error_after_coreprooferror_preserves_primary(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+
+    def _fail(_config: Any) -> Any:
+        raise core.CoreProofError("HTTPError", phase="elasticsearch")
+
+    def _teardown_fail() -> None:
+        raise RuntimeError("compose timeout leaked secret")
+
+    runners = _all_ok_runners(core)
+    runners["elasticsearch"] = _fail
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=runners,
+            teardown=_teardown_fail,
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert "failed_phase=elasticsearch" in text
+    assert "failure_reason=HTTPError" in text
+    assert "core_teardown_attempted=true" in text
+    assert "core_teardown_result=FAIL" in text
+    assert "core_teardown_error_type=RuntimeError" in text
+    assert "failure_reason=proof_teardown_failed" not in text
+    assert "core_proof_result=PASS" not in text
+    assert "compose timeout leaked secret" not in text
+
+
+def test_unexpected_teardown_runtime_error_after_unexpected_phase_preserves_primary(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+
+    def _boom(_config: Any) -> Any:
+        raise ValueError("phase detail must not leak")
+
+    def _teardown_fail() -> None:
+        raise RuntimeError("teardown detail must not leak")
+
+    runners = _all_ok_runners(core)
+    runners["persistence"] = _boom
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=runners,
+            teardown=_teardown_fail,
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert "failed_phase=persistence" in text
+    assert "failure_reason=ValueError" in text
+    assert "core_teardown_result=FAIL" in text
+    assert "core_teardown_error_type=RuntimeError" in text
+    assert "failure_reason=proof_teardown_failed" not in text
+    assert "teardown detail must not leak" not in text
+
+
+def test_unexpected_teardown_runtime_error_after_functional_pass_fails_overall(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+
+    def _teardown_fail() -> None:
+        raise RuntimeError("raw teardown message must not appear")
+
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core),
+            phase_runners=_all_ok_runners(core),
+            teardown=_teardown_fail,
+        )
+    text = buffer.getvalue()
+    assert code == 1
+    assert "core_teardown_result=FAIL" in text
+    assert "core_teardown_error_type=RuntimeError" in text
+    assert "failure_reason=proof_teardown_failed" in text
+    assert "core_proof_result=PASS" not in text
+    assert "raw teardown message must not appear" not in text
+
+
+def test_teardown_compose_files_include_file_watcher_overlay(
+    core: ModuleType,
+) -> None:
+    files = core.discover_proof_teardown_compose_files()
+    assert core._WATCHER_COMPOSE in files
+    assert files[: len(core.discover_compose_files())] == core.discover_compose_files()
+
+
+def test_teardown_uses_non_destructive_compose_down(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_compose_down(
+        compose_files: Any,
+        *,
+        cwd: Path,
+        volumes: bool = False,
+        remove_orphans: bool = True,
+    ) -> None:
+        captured["compose_files"] = list(compose_files)
+        captured["cwd"] = cwd
+        captured["volumes"] = volumes
+        captured["remove_orphans"] = remove_orphans
+
+    monkeypatch.setattr(core, "compose_down", fake_compose_down)
+    core.teardown_proof_compose_stack()
+    assert captured["volumes"] is False
+    assert captured["remove_orphans"] is True
+    assert core._WATCHER_COMPOSE in captured["compose_files"]
+
+
+def test_teardown_targets_proof_project_only(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[list[str]] = []
+
+    def fake_run_command(
+        args: Sequence[str],
+        **kwargs: Any,
+    ) -> Any:
+        captured.append(list(args))
+        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(core, "run_command", fake_run_command)
+    core.teardown_proof_compose_stack()
+    assert len(captured) == 1
+    command = captured[0]
+    assert command[3] == core._COMPOSE_PROJECT
+    assert core._PRODUCT_COMPOSE_PROJECT not in command
+    assert "down" in command
+    assert "-v" not in command
+    assert "--remove-orphans" in command
+
+
+def test_selected_startup_phase_invokes_teardown(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "validate_os_wrapper_pair", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "validate_environment", lambda *_a, **_k: None)
+    teardown_calls = {"n": 0}
+
+    def _startup(_config: Any) -> Any:
+        return core.PhaseOutcome(name="startup", ok=True)
+
+    def _teardown() -> None:
+        teardown_calls["n"] += 1
+
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(
+            _config(core, phase="startup"),
+            phase_runners={"startup": _startup},
+            teardown=_teardown,
+        )
+    text = buffer.getvalue()
+    assert code == 0
+    assert teardown_calls["n"] == 1
+    assert "core_teardown_attempted=true" in text
+    assert "core_proof_selected_phase=startup" in text
+
+
+def test_pre_validation_failure_skips_teardown(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    teardown_calls = {"n": 0}
+
+    def _teardown() -> None:
+        teardown_calls["n"] += 1
+
+    monkeypatch.setattr(
+        core,
+        "validate_os_wrapper_pair",
+        lambda *_a, **_k: (_ for _ in ()).throw(
+            core.CoreProofError("operating_system_mismatch")
+        ),
+    )
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = core.run_core_proof(_config(core), teardown=_teardown)
+    text = buffer.getvalue()
+    assert code == 1
+    assert teardown_calls["n"] == 0
+    assert "core_teardown_attempted=true" not in text
+    assert "failure_reason=operating_system_mismatch" in text

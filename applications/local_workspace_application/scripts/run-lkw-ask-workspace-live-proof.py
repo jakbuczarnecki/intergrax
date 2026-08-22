@@ -38,6 +38,11 @@ from lkw_host_port_preflight import (
     probe_host_port_available,
     resolve_compose_published_host_ports,
 )
+from lkw_proof_compose_lifecycle import (
+    finalize_exit_code_with_teardown,
+    run_terminal_compose_teardown,
+    teardown_known_stack,
+)
 from lkw_ollama_embedding_bootstrap import EMBEDDING_PROFILE_RESOLUTION_CODE
 from lkw_runtime_context_materialization import (
     RuntimeContextMaterializationError,
@@ -60,7 +65,8 @@ _MONGODB_COMPOSE = _DOCKER_DIR / "docker-compose.mongodb.yml"
 _TRUSTED_ASK_PROOF_COMPOSE = _DOCKER_DIR / "docker-compose.trusted-ask-proof.yml"
 _SAMPLE_DOCS_DIR = _APP_DIR / "sample_docs"
 _DEFAULT_BASE_URL = "http://127.0.0.1:8020"
-_COMPOSE_PROJECT = "lkw-trusted-ask-workspace-proof"
+_TRUSTED_ASK_STACK_ID = "lkw-trusted-ask-workspace-proof"
+_COMPOSE_PROJECT = _TRUSTED_ASK_STACK_ID
 _PRODUCT_COMPOSE_PROJECT = "intergrax_lkw"
 _CORE_PLATFORM_COMPOSE_PROJECT = "lkw-core-platform-proof"
 _COMPOSE_SERVICES = ("qdrant", "lkw-mongodb", "ollama", "local_workspace")
@@ -389,6 +395,10 @@ def _citations_equal(left: object, right: object) -> bool:
     )
 
 
+def teardown_owned_compose_stack() -> None:
+    teardown_known_stack(_TRUSTED_ASK_STACK_ID, cwd=_REPO_ROOT)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -420,6 +430,9 @@ def main() -> int:
     resync_after_restart = False
     reindex_after_restart = False
     failing_phase = "startup"
+    compose_ownership_entered = False
+    functional_pass = False
+    exit_code = 1
 
     try:
         _SAMPLE_DOCS_DIR.mkdir(parents=True, exist_ok=True)
@@ -440,6 +453,7 @@ def main() -> int:
             failing_phase = "runtime_context_materialization"
             materialize_runtime_context()
             failing_phase = "compose_up"
+            compose_ownership_entered = True
             start_canonical_stack()
             failing_phase = "ollama_model"
             ensure_ollama_model()
@@ -630,23 +644,40 @@ def main() -> int:
         _print_kv("old_run_citations_unchanged", "true")
         # Touch container path variable so reviewers see file was mounted.
         _ = container_doc_path
-        return 0
+        functional_pass = True
+        exit_code = 0
     except ProofFailure as exc:
         _print_kv("proof_result", "FAIL")
         _print_kv("failing_phase", exc.phase)
         _print_kv("reason", exc.reason[:500])
-        return 1
+        exit_code = 1
     except Exception as exc:
         _print_kv("proof_result", "FAIL")
         _print_kv("failing_phase", failing_phase)
         _print_kv("reason", f"{exc.__class__.__name__}: {exc}"[:500])
-        return 1
+        exit_code = 1
     finally:
         if host_doc_path.exists():
             try:
                 host_doc_path.unlink()
             except OSError:
                 pass
+        teardown_outcome = run_terminal_compose_teardown(
+            compose_ownership_entered=compose_ownership_entered,
+            teardown_fn=teardown_owned_compose_stack,
+        )
+        if functional_pass and teardown_outcome.result == "FAIL":
+            _print_kv("proof_result", "FAIL")
+            _print_kv("reason", "proof_teardown_failed")
+            exit_code = 1
+        else:
+            exit_code = finalize_exit_code_with_teardown(
+                functional_pass=functional_pass,
+                functional_exit_code=exit_code,
+                teardown_outcome=teardown_outcome,
+            )
+
+    return exit_code
 
 
 if __name__ == "__main__":

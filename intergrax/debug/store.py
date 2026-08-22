@@ -14,10 +14,10 @@ from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
     TaskCheckpointReader,
 )
-from intergrax.runtime.long_running.store import (
-    open_task_checkpoint_store,
-    resolve_task_checkpoints_db_path,
+from intergrax.integrations.providers.relational_store.sqlite import (
+    create_sqlite_task_checkpoint_store,
 )
+from intergrax.runtime.long_running.store import resolve_task_checkpoints_db_path
 from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
 from intergrax.runtime.task_memory.store import (
     resolve_task_memory_db_path,
@@ -88,7 +88,7 @@ def open_task_checkpoint_persistence(
         return implementation
     if db_path is None:
         return None
-    return open_task_checkpoint_store(db_path)
+    return create_sqlite_task_checkpoint_store(db_path=db_path)  # type: ignore[return-value]
 
 
 def open_default_task_checkpoint_persistence(
@@ -99,7 +99,7 @@ def open_default_task_checkpoint_persistence(
     if implementation is not None:
         return implementation
     path = db_path or resolve_task_checkpoints_db_path(None)
-    return open_task_checkpoint_store(path)
+    return create_sqlite_task_checkpoint_store(db_path=path)  # type: ignore[return-value]
 
 
 def open_task_memory_persistence(

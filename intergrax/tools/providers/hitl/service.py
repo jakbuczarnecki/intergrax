@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import (
     EscalationTarget,
     HumanDecisionRecord,
@@ -132,7 +133,10 @@ def hitl_submit_response(ctx: ToolWiringContext, params: HitlSubmitResponseInput
     record = build_human_decision_record(
         task_id=params.task_id.strip(),
         tenant_id=params.tenant_id.strip(),
-        user_id=params.user_id.strip(),
+        approver=local_development_approver_evidence(
+            tenant_id=params.tenant_id.strip(),
+            actor_id=params.user_id.strip() or "local_development_operator",
+        ),
         verdict=verdict,
         response_text=params.response_text,
         human_request_id=params.human_request_id.strip(),
@@ -141,6 +145,7 @@ def hitl_submit_response(ctx: ToolWiringContext, params: HitlSubmitResponseInput
         agent_id=params.agent_id.strip() or None,
         run_id=params.run_id.strip() or None,
         notes=params.notes,
+        task_subject_user_id=params.user_id.strip(),
     )
     stored = store.record(record)
     if not isinstance(stored, HumanDecisionRecord):

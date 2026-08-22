@@ -32,9 +32,16 @@ from scripts.proof.intergrax_platform_proof_artifact_verifier import (
     verify_platform_proof_artifacts,
 )
 from scripts.proof.intergrax_platform_proof_evidence_verifier import (
+    EvidenceVerificationResult,
     apply_evidence_verification,
     resolve_expected_evidence_path,
     verify_platform_proof_evidence,
+)
+from scripts.proof.intergrax_platform_proof_publication import (
+    apply_canonical_publication,
+)
+from scripts.proof.intergrax_platform_proof_artifact_verifier import (
+    ProofArtifactVerificationSummary,
 )
 from scripts.proof.intergrax_platform_proof_execution import (
     INTERGRAX_PROOF_ARTIFACT_DIR_ENV,
@@ -391,19 +398,54 @@ def _verify_post_execution(
     proof_artifact_directory: Path | None,
     git_commit_sha: str,
 ) -> ProofRunResult:
-    """Artifact verification (generic) then semantic evidence verification."""
+    """Artifact verification, evidence verification, then canonical publication."""
     result = transport_result
-    if execution_spec is not None:
-        result = _verify_artifacts_if_declared(
-            result,
-            execution_spec=execution_spec,
-            proof_artifact_directory=proof_artifact_directory,
-        )
-    return _verify_evidence_if_required(
+    artifact_summary: ProofArtifactVerificationSummary | None = None
+    if execution_spec is not None and execution_spec.expected_artifacts:
+        if proof_artifact_directory is None:
+            result = transport_result.model_copy(
+                update={
+                    "status": ProofStatus.FAIL,
+                    "diagnostic_summary": "missing_proof_artifact_directory",
+                }
+            )
+        else:
+            artifact_summary = verify_platform_proof_artifacts(
+                proof_artifact_directory=proof_artifact_directory,
+                spec=execution_spec,
+            )
+            result = apply_artifact_verification(result, artifact_summary)
+
+    evidence_verification: EvidenceVerificationResult | None = None
+    if execution_spec is not None and execution_spec.evidence_required:
+        if proof_artifact_directory is None:
+            result = result.model_copy(
+                update={
+                    "status": ProofStatus.FAIL,
+                    "diagnostic_summary": "missing_proof_artifact_directory",
+                }
+            )
+        else:
+            evidence_path = resolve_expected_evidence_path(
+                proof_artifact_directory,
+                execution_spec,
+            )
+            evidence_verification = verify_platform_proof_evidence(
+                evidence_path=evidence_path,
+                artifact_root=proof_artifact_directory,
+                spec=execution_spec,
+                subprocess_result=result,
+                expected_source_revision=git_commit_sha,
+            )
+            result = apply_evidence_verification(result, evidence_verification)
+
+    return apply_canonical_publication(
         result,
+        transport_result=transport_result,
         execution_spec=execution_spec,
-        proof_artifact_directory=proof_artifact_directory,
-        git_commit_sha=git_commit_sha,
+        candidate_directory=proof_artifact_directory,
+        artifact_summary=artifact_summary,
+        evidence_verification=evidence_verification,
     )
 
 

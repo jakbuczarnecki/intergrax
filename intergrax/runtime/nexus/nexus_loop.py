@@ -55,7 +55,7 @@ from intergrax.runtime.human.escalation import EscalationRouter
 from intergrax.runtime.human.models import HumanResponseVerdict, EscalationTarget
 from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.notification import NotificationAdapter
-from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
 from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
 from intergrax.runtime.nexus.orchestration.human_response import persist_human_decision
@@ -131,7 +131,7 @@ class NexusLoop:
         sandbox_manager: Optional[SandboxSessionManager] = None,
         human_decision_store: HumanDecisionPersistence | None = None,
         escalation_router: Optional[EscalationRouter] = None,
-        checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
+        checkpoint_store: Optional[TaskCheckpointPersistence] = None,
         agent_checkpoint_store: AgentCheckpointStore | None = None,
         compensation_queue_store: CompensationQueueStore | None = None,
         idempotency_store: IdempotencyStore | None = None,

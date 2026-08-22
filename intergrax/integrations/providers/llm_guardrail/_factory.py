@@ -4,9 +4,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from typing import Any
 
-from intergrax.integrations.contracts.llm_guardrail import GuardrailBackendOptions, LlmGuardrailBackend
+from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
 from intergrax.integrations.providers.llm_guardrail._adapters import (
     create_azure_content_safety_backend,
     create_bedrock_guardrails_backend,
@@ -33,23 +34,32 @@ _GUARD_FACTORIES: dict[str, Callable[..., LlmGuardrailBackend]] = {
     "bedrock_guardrails": create_bedrock_guardrails_backend,
 }
 
+_PROVIDER_OPTIONS_SLUGS = frozenset({"bedrock_guardrails", "nemo_guardrails", "llama_guard"})
+
 
 def create_guardrail_backend(
     slug: str,
     *,
-    options: GuardrailBackendOptions | None = None,
+    provider_options: Mapping[str, Any] | None = None,
 ) -> LlmGuardrailBackend:
     factory = _GUARD_FACTORIES.get(slug)
     if factory is None:
         return create_stub_guardrail(slug)
-    return factory(options=options)
+    if slug in _PROVIDER_OPTIONS_SLUGS:
+        return factory(provider_options=provider_options)
+    return factory()
 
 
 def create_chained_guardrail_backend(
     *slugs: str,
-    options: GuardrailBackendOptions | None = None,
+    provider_options_map: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> LlmGuardrailBackend:
-    backends = [create_guardrail_backend(slug, options=options) for slug in slugs if slug]
+    opts_map = provider_options_map or {}
+    backends = [
+        create_guardrail_backend(slug, provider_options=opts_map.get(slug))
+        for slug in slugs
+        if slug
+    ]
     if not backends:
         raise ValueError("create_chained_guardrail_backend requires at least one slug")
     if len(backends) == 1:

@@ -9,6 +9,7 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Optional, Protocol, runtime_checkable
+from uuid import uuid4
 
 from intergrax.contracts.agent_decision import AgentDecisionType
 from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
@@ -24,10 +25,13 @@ from intergrax.runtime.long_running.resume_planner import (
     build_timeout_resume_task,
     timeout_action_to_verdict,
 )
+from intergrax.runtime.long_running.scheduler_claim import (
+    ScheduledResumeClaim,
+    SchedulerActionClaim,
+)
 from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
     ScheduledResumePersistence,
-    ScheduledResumeStatus,
 )
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.utils.time_provider import SystemTimeProvider
@@ -36,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 ENV_SCHEDULER_POLL_SECONDS = "INTERGRAX_SCHEDULER_POLL_SECONDS"
 DEFAULT_SCHEDULER_POLL_SECONDS = 30.0
+DEFAULT_SCHEDULER_LEASE_SECONDS = 300.0
 TIMEOUT_LEDGER_PREFIX = "timeout:"
 
 
@@ -63,6 +68,8 @@ class LongRunningScheduler:
         ledger: Optional[SchedulerLedger] = None,
         notification_adapter: Optional[NotificationAdapter] = None,
         poll_interval_seconds: float = DEFAULT_SCHEDULER_POLL_SECONDS,
+        lease_seconds: float = DEFAULT_SCHEDULER_LEASE_SECONDS,
+        owner_id: Optional[str] = None,
     ) -> None:
         self._checkpoint_store = checkpoint_store
         self._resume_executor = resume_executor
@@ -70,12 +77,18 @@ class LongRunningScheduler:
         self._ledger = ledger
         self._notification_adapter = notification_adapter
         self._poll_interval_seconds = poll_interval_seconds
+        self._lease_seconds = int(lease_seconds)
+        self._owner_id = owner_id or f"scheduler-{uuid4().hex[:12]}"
         self._running = False
         self._loop_task: Optional[asyncio.Task] = None
 
     @property
     def poll_interval_seconds(self) -> float:
         return self._poll_interval_seconds
+
+    @property
+    def owner_id(self) -> str:
+        return self._owner_id
 
     async def start(self) -> None:
         if self._running:
@@ -134,21 +147,20 @@ class LongRunningScheduler:
             return 0
 
         processed = 0
-        due = self._schedule_store.list_due(before_utc_iso=now.isoformat())
-        for entry in due:
-            if entry.status != ScheduledResumeStatus.PENDING:
-                continue
-            ledger_key = f"schedule:{entry.schedule_id}"
-            if self._ledger is not None and self._ledger.has_action(ledger_key):
-                continue
-
+        claims = self._schedule_store.claim_due(
+            before_utc_iso=now.isoformat(),
+            owner_id=self._owner_id,
+            lease_seconds=self._lease_seconds,
+        )
+        for claim in claims:
+            entry = claim.entry
             checkpoint = self._checkpoint_store.get_by_token(
                 entry.task_id,
                 entry.tenant_id,
                 entry.resume_token,
             )
             if checkpoint is None:
-                self._schedule_store.mark_completed(entry.schedule_id)
+                self._schedule_store.complete_claim(claim)
                 continue
 
             task = build_scheduled_resume_task(checkpoint, entry)
@@ -157,10 +169,9 @@ class LongRunningScheduler:
                 checkpoint,
                 subject="Scheduled task resume",
                 body=f"Delayed resume triggered for task {entry.task_id}",
-                ledger_key=ledger_key,
                 ledger_action="scheduled_resume",
+                schedule_claim=claim,
             )
-            self._schedule_store.mark_completed(entry.schedule_id)
             processed += 1
         return processed
 
@@ -168,15 +179,29 @@ class LongRunningScheduler:
         processed = 0
         for checkpoint in self._checkpoint_store.list_paused():
             ledger_key = f"{TIMEOUT_LEDGER_PREFIX}{checkpoint.checkpoint_id}"
-            if self._ledger is not None and self._ledger.has_action(ledger_key):
-                continue
-
             task = Task.model_validate(checkpoint.task_snapshot)
             if not HumanTimeoutCoordinator.is_expired(task, now=now):
                 continue
 
             action = HumanTimeoutCoordinator.planned_timeout_action(task)
             if action is None:
+                continue
+
+            if self._ledger is None:
+                logger.warning(
+                    "Skipping expired human timeout for checkpoint %s: "
+                    "scheduler ledger is not configured",
+                    checkpoint.checkpoint_id,
+                )
+                continue
+
+            action_claim = self._ledger.claim_action(
+                ledger_key,
+                self._owner_id,
+                self._lease_seconds,
+                action="human_timeout",
+            )
+            if action_claim is None:
                 continue
 
             verdict = timeout_action_to_verdict(action)
@@ -193,8 +218,8 @@ class LongRunningScheduler:
                     f"Auto-resume after timeout with action={action.value} "
                     f"for task {checkpoint.task_id}"
                 ),
-                ledger_key=ledger_key,
                 ledger_action="human_timeout",
+                action_claim=action_claim,
             )
             processed += 1
         return processed
@@ -206,8 +231,9 @@ class LongRunningScheduler:
         *,
         subject: str,
         body: str,
-        ledger_key: str,
         ledger_action: str,
+        schedule_claim: Optional[ScheduledResumeClaim] = None,
+        action_claim: Optional[SchedulerActionClaim] = None,
     ) -> TaskResult:
         await LongRunningCoordinator.notify_progress(
             task,
@@ -221,8 +247,10 @@ class LongRunningScheduler:
             },
         )
         result = await self._resume_executor.resume_task(task, checkpoint=checkpoint)
-        if self._ledger is not None:
-            self._ledger.record_action(ledger_key, action=ledger_action)
+        if schedule_claim is not None and self._schedule_store is not None:
+            self._schedule_store.complete_claim(schedule_claim)
+        if action_claim is not None and self._ledger is not None:
+            self._ledger.complete_action(action_claim)
         return result
 
 

@@ -4,6 +4,7 @@ import pytest
 
 from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.runtime.human.escalation import EscalationRouter, parse_human_response
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import (
     EscalationTarget,
     HumanDecisionRecord,
@@ -20,6 +21,7 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration.human_response import persist_human_decision
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task_contract import TaskPauseRecord
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -65,7 +67,7 @@ def test_human_decision_store_records_and_lists(tmp_path):
     record = build_human_decision_record(
         task_id="task-1",
         tenant_id="t1",
-        user_id="u1",
+        approver=local_development_approver_evidence(tenant_id="t1", actor_id="u1"),
         verdict=HumanResponseVerdict.ESCALATE,
         response_text="escalate",
         escalation_level=1,
@@ -85,7 +87,21 @@ def test_persist_human_decision_uses_generic_persistence() -> None:
     store = InMemoryHumanDecisionPersistence()
     task_id = mint_task_id()
     task = Task(tenant_id="t1", user_id="u1", message="x", task_id=task_id)
-    HumanPauseCoordinator.record_human_response(task, "approve")
+    task.runtime.governance.paused = True
+    task.runtime.governance.pause_record = TaskPauseRecord(
+        pause_id="pause-1",
+        task_id=task_id,
+        human_request_id="hr-1",
+    )
+    approver = local_development_approver_evidence(tenant_id="t1")
+    HumanPauseCoordinator.resolve_human_response(
+        task,
+        HumanResponseVerdict.APPROVE,
+        approver=approver,
+        pause_id="pause-1",
+        human_request_id="hr-1",
+        response_text="approve",
+    )
 
     persist_human_decision(
         task,
@@ -99,6 +115,7 @@ def test_persist_human_decision_uses_generic_persistence() -> None:
     assert isinstance(listed[0], HumanDecisionRecord)
     assert listed[0].verdict is HumanResponseVerdict.APPROVE
     assert listed[0].response_text == "approve"
+    assert listed[0].approver.user_id == approver.user_id
 
 
 def test_nexus_loop_accepts_human_decision_persistence() -> None:

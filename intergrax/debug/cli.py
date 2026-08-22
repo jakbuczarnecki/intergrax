@@ -35,11 +35,11 @@ from intergrax.debug.formatters import (
     format_trace_timeline,
 )
 from intergrax.debug.store import ENV_TRACE_DB, open_trace_reader, resolve_trace_db_path
+from intergrax.experiments.composition import resolve_experiment_persistence
 from intergrax.experiments.formatters import format_experiment_list, format_experiment_show
 from intergrax.experiments.models import ExperimentDecision, RegisterExperimentRequest
 from intergrax.experiments.store import (
     ENV_EXPERIMENTS_DB,
-    open_experiment_store,
     resolve_experiments_db_path,
 )
 
@@ -74,7 +74,9 @@ def _cmd_tasks_trace(args: argparse.Namespace) -> int:
 
 
 def _open_experiments(args: argparse.Namespace):
-    return open_experiment_store(resolve_experiments_db_path(args.experiments_db))
+    return resolve_experiment_persistence(
+        experiments_db=resolve_experiments_db_path(args.experiments_db)
+    )
 
 
 def _cmd_experiments_register(args: argparse.Namespace) -> int:

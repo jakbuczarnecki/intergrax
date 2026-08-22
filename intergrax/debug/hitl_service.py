@@ -9,6 +9,7 @@ from typing import Optional
 
 from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
@@ -46,7 +47,7 @@ class DebugHitlResumeService:
         verdict: HumanResponseVerdict,
         response_text: str = "",
         resume_token: Optional[str] = None,
-        user_id: str = "debug_operator",
+        approver: HumanApproverEvidence | None = None,
     ) -> TaskResult:
         checkpoint = self._resolve_checkpoint(task_id, tenant_id, resume_token)
         if checkpoint is None:
@@ -60,6 +61,11 @@ class DebugHitlResumeService:
             )
 
         task = Task.model_validate(checkpoint.task_snapshot)
+        effective_approver = approver
+        if effective_approver is None:
+            from intergrax.contracts.human_approver import local_development_approver_evidence
+
+            effective_approver = local_development_approver_evidence(tenant_id=tenant_id)
         task.options = TaskExecutionOptions(
             long_running=TaskLongRunningOptions(
                 enabled=True,
@@ -72,6 +78,7 @@ class DebugHitlResumeService:
                 verdict=verdict.value,
                 pause_id=pause_record.pause_id,
                 human_request_id=pause_record.human_request_id,
+                approver=effective_approver,
             ),
         )
         task.metadata["resume_token"] = checkpoint.resume_token

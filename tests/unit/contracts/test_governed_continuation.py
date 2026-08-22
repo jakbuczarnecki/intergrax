@@ -26,6 +26,7 @@ from intergrax.contracts.governed_continuation import (
     continuation_reason_from_interrupt,
 )
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanDecisionRecord, HumanResponseVerdict
 
 _DIGEST = "sha256:" + ("ab" * 32)
@@ -127,7 +128,7 @@ def test_resume_composition_propagates_evidence_refs() -> None:
         decision_id="hdec_resume_1",
         task_id=request.task_id,
         tenant_id="tenant-a",
-        user_id="u1",
+        approver=local_development_approver_evidence(tenant_id="tenant-a", actor_id="u1"),
         verdict=HumanResponseVerdict.APPROVE,
         created_at_utc=_T0.isoformat(),
         run_id=request.run_id,

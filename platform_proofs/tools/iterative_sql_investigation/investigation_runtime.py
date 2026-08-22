@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from contextlib import contextmanager
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -19,6 +20,8 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.nexus.tools import tool_loop as bounded_tool_loop_module
+from intergrax.runtime.nexus.tools.investigation_proof import InvestigationProofValidationError
 from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
@@ -46,6 +49,41 @@ from platform_proofs.tools.iterative_sql_investigation.scenarios import (
 
 def _build_session_manager() -> SessionManager:
     return SessionManager(InMemorySessionStorage())
+
+
+@contextmanager
+def _proof_tool_evidence_observability():
+    """Expose completed tool call_id values in model-visible tool observations."""
+    original_append = bounded_tool_loop_module.append_native_tool_messages
+
+    def _append_with_evidence_call_id(
+        messages: list[ChatMessage],
+        *,
+        assistant_content: str,
+        tool_calls,
+        outcomes,
+    ) -> None:
+        before = len(messages)
+        original_append(
+            messages,
+            assistant_content=assistant_content,
+            tool_calls=tool_calls,
+            outcomes=outcomes,
+        )
+        for message in messages[before:]:
+            if message.role != "tool" or not message.tool_call_id:
+                continue
+            if message.content.startswith("evidence_call_id="):
+                continue
+            message.content = (
+                f"evidence_call_id={message.tool_call_id}\n{message.content}"
+            )
+
+    bounded_tool_loop_module.append_native_tool_messages = _append_with_evidence_call_id
+    try:
+        yield
+    finally:
+        bounded_tool_loop_module.append_native_tool_messages = original_append
 
 
 class RecordingToolPlanner:
@@ -197,14 +235,24 @@ def run_investigation_scenario(
     planner = build_canonical_tool_planner(llm=llm, proof_runtime=proof_runtime)
     planner.attach_routing_runtime_config(state.context.config)
     messages = build_investigation_messages(question=scenario.question)
-    loop_result = run_bounded_tool_loop(
-        state=state,
-        invoker=proof_runtime.invoker,
-        tool_planner=planner,
-        planner_input=messages,
-        allowed_tool_ids=(PLATFORM_PROOF_SQL_QUERY_TOOL_ID,),
-        max_iterations=MAX_TOOL_ITERATIONS,
-    )
+    try:
+        with _proof_tool_evidence_observability():
+            loop_result = run_bounded_tool_loop(
+                state=state,
+                invoker=proof_runtime.invoker,
+                tool_planner=planner,
+                planner_input=messages,
+                allowed_tool_ids=(PLATFORM_PROOF_SQL_QUERY_TOOL_ID,),
+                max_iterations=MAX_TOOL_ITERATIONS,
+            )
+    except InvestigationProofValidationError as exc:
+        snapshot = build_execution_snapshot(
+            traces=tuple(state.tool_traces),
+            investigation_proof=None,
+            stop_reason="investigation_proof_validation_error",
+            final_answer=str(exc),
+        )
+        return evaluate_scenario(scenario.scenario_id, snapshot), snapshot
     snapshot = build_execution_snapshot(
         traces=loop_result.tool_traces,
         investigation_proof=loop_result.investigation_proof,

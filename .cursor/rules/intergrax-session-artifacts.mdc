@@ -1,0 +1,51 @@
+---
+description: Session temp files and diagnostic logs must live under .tmp only
+alwaysApply: true
+---
+
+# Intergrax — session artifacts (no repo-root clutter)
+
+**Never** create temporary, diagnostic, proof-run, or helper output files in the repository root or in tracked source trees.
+
+## Required location
+
+All such files go under **`.tmp/`** (gitignored). Use an existing subtree or create a scoped subfolder:
+
+| Kind | Path |
+|------|------|
+| Platform / suite proof runs | `.tmp/proof/<suite-run-id>/` |
+| Tool-scoped proof output | `.tmp/proof/<proof-id>/<run-id>/` |
+| Agent session logs, repro captures, diag dumps | `.tmp/session/<topic-or-task-id>/` |
+| One-off previews / scratch | `.tmp/session/scratch/` |
+
+Examples (good):
+
+```text
+.tmp/session/WIN-DIAG-EMBEDDING-CLUSTER/ta-repro.log
+.tmp/session/lkw-hosting-proof/pytest.log
+.tmp/proof/lkw-trusted-ask-workspace-proof/run-2026-08-22.log
+```
+
+## Forbidden
+
+- Dotfiles or logs at repo root (e.g. `.win-*.log`, `.diag-*.log`, `tee` to `./proof.log`)
+- Redirecting proof/diag stdout into `applications/`, `agents/`, `intergrax/`, or `docs/`
+- Leaving session artifacts in `sample_docs/`, `scripts/`, or other product paths unless the task explicitly commits that artifact
+
+## Commands
+
+When capturing shell output, always target `.tmp/`:
+
+```powershell
+New-Item -ItemType Directory -Force -Path .tmp/session/<task-id>
+uv run ... 2>&1 | Tee-Object -FilePath .tmp/session/<task-id>/run.log
+```
+
+```bash
+mkdir -p .tmp/session/<task-id>
+uv run ... 2>&1 | tee .tmp/session/<task-id>/run.log
+```
+
+## Cleanup
+
+Prefer writing only under `.tmp/`. Do not delete `.tmp/` wholesale unless the operator asks; subfolders are session-scoped and gitignored.

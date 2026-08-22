@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from intergrax.contracts.execution_identity import validate_run_id
 from intergrax.fastapi_core.execution.models import ExecutionRequest
-from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task_run_bridge import (
@@ -71,7 +71,7 @@ class NexusWorkerRuntime:
         cls,
         registry: AgentRegistry,
         *,
-        checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
+        checkpoint_store: Optional[TaskCheckpointPersistence] = None,
         lifecycle: Optional[WorkerRunLifecycle] = None,
     ) -> NexusWorkerRuntime:
         loop = NexusLoop(registry, checkpoint_store=checkpoint_store)

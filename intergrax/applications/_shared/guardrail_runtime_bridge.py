@@ -5,9 +5,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.integrations.contracts.llm_guardrail import GuardrailBackendOptions, LlmGuardrailBackend
+from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
 from intergrax.integrations.providers.llm_guardrail._factory import (
     create_chained_guardrail_backend,
     create_guardrail_backend,
@@ -21,14 +22,15 @@ class GuardrailWiringOptions:
     backend_slug: str | None
 
 
-def guardrail_backend_options(env: ApplicationEnvironmentProfile) -> GuardrailBackendOptions:
-    profile = env.guardrail_profile
-    return GuardrailBackendOptions(
-        secondary_slug=profile.secondary_slug,
-        colang_config_path=profile.colang_config_path,
-        bedrock_guardrail_policy_id=profile.bedrock_guardrail_policy_id,
-        inference_slug=profile.inference_slug,
-    )
+def _provider_options_for_slug(
+    env: ApplicationEnvironmentProfile,
+    slug: str,
+) -> dict[str, Any]:
+    options = env.integration_profile.options or {}
+    slug_options = options.get(slug)
+    if isinstance(slug_options, dict):
+        return dict(slug_options)
+    return {}
 
 
 def resolve_guardrail_wiring_options(env: ApplicationEnvironmentProfile) -> GuardrailWiringOptions:
@@ -51,19 +53,24 @@ def _resolve_secondary_slug(
 
 
 def resolve_guardrail_backend(env: ApplicationEnvironmentProfile) -> LlmGuardrailBackend | None:
-    options = resolve_guardrail_wiring_options(env)
-    if not options.enabled or options.backend_slug is None:
+    wiring = resolve_guardrail_wiring_options(env)
+    if not wiring.enabled or wiring.backend_slug is None:
         return None
-    backend_options = guardrail_backend_options(env)
-    primary_slug = options.backend_slug
+    primary_slug = wiring.backend_slug
     secondary_slug = _resolve_secondary_slug(env, primary_slug)
     if secondary_slug:
         return create_chained_guardrail_backend(
             primary_slug,
             secondary_slug,
-            options=backend_options,
+            provider_options_map={
+                primary_slug: _provider_options_for_slug(env, primary_slug),
+                secondary_slug: _provider_options_for_slug(env, secondary_slug),
+            },
         )
-    return create_guardrail_backend(primary_slug, options=backend_options)
+    return create_guardrail_backend(
+        primary_slug,
+        provider_options=_provider_options_for_slug(env, primary_slug),
+    )
 
 
 def apply_guardrail_profiles_to_runtime_config(

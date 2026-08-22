@@ -3,8 +3,8 @@
 import pytest
 
 from intergrax.debug.cli import main
+from intergrax.experiments.composition import resolve_experiment_persistence
 from intergrax.experiments.models import ExperimentDecision
-from intergrax.experiments.store import SQLiteExperimentStore, open_experiment_store
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -58,7 +58,7 @@ def test_debug_cli_experiments_register_list_decide(tmp_path, capsys):
         == 0
     )
 
-    store = open_experiment_store(db_path)
+    store = resolve_experiment_persistence(experiments_db=db_path)
     record = store.get(experiment_id)
     assert record.decision == ExperimentDecision.KEEP
     assert record.run_ids == ["run-cli-1"]

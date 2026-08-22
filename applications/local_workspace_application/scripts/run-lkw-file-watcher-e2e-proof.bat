@@ -10,9 +10,13 @@ set "KAFKA_COMPOSE=%DOCKER_DIR%\docker-compose.kafka.yml"
 set "WATCHER_COMPOSE=%DOCKER_DIR%\file-watcher-e2e.compose.yml"
 set "MONGODB_COMPOSE=%DOCKER_DIR%\docker-compose.mongodb.yml"
 set "PROOF=%SCRIPT_DIR%run-lkw-file-watcher-e2e-proof.py"
+set "LIFECYCLE=%SCRIPT_DIR%lkw_proof_compose_lifecycle.py"
 set "PROOF_DOCS_DIR=%APP_DIR%\.proof_docs"
 set "WATCHER_STATE_DIR=%APP_DIR%\.file_watcher_e2e_state"
 set "COMPOSE_CONFIG=%TEMP%\intergrax_lkw_file_watcher_e2e_compose_%RANDOM%%RANDOM%.yml"
+set "LKW_COMPOSE_PROJECT=lkw-file-watcher-e2e-proof"
+set "LKW_COMPOSE_OWNERSHIP_ENTERED=false"
+set "EXIT_CODE=1"
 
 set "LKW_BASE_URL=%LOCAL_WORKSPACE_BACKEND_BASE_URL%"
 if "%LKW_BASE_URL%"=="" set "LKW_BASE_URL=http://127.0.0.1:8020"
@@ -81,6 +85,7 @@ echo LKW base URL: %LKW_BASE_URL%
 echo Kafka UI URL: %KAFKA_UI_URL%
 echo Mongo Express URL: %MONGO_EXPRESS_URL%
 echo MongoDB host port: %LKW_MONGODB_HOST_PORT%
+echo Compose project: %LKW_COMPOSE_PROJECT%
 echo.
 
 if not exist "%PROOF_DOCS_DIR%" (
@@ -111,14 +116,15 @@ echo watcher_state_reset=true
 
 echo.
 echo Validating Docker Compose merge...
-docker compose -f "%BASE_COMPOSE%" -f "%KAFKA_COMPOSE%" -f "%WATCHER_COMPOSE%" -f "%MONGODB_COMPOSE%" config > "%COMPOSE_CONFIG%"
+docker compose -p "%LKW_COMPOSE_PROJECT%" -f "%BASE_COMPOSE%" -f "%KAFKA_COMPOSE%" -f "%WATCHER_COMPOSE%" -f "%MONGODB_COMPOSE%" config > "%COMPOSE_CONFIG%"
 if errorlevel 1 goto proof_fail
 echo compose_overlay_valid=true
 del /f /q "%COMPOSE_CONFIG%" >nul 2>nul
 
 echo.
 echo Starting watcher E2E proof stack...
-docker compose -f "%BASE_COMPOSE%" -f "%KAFKA_COMPOSE%" -f "%WATCHER_COMPOSE%" -f "%MONGODB_COMPOSE%" up -d --build local_workspace lkw-background-worker lkw-file-watcher lkw-kafka lkw-kafka-topics lkw-kafka-ui lkw-redis qdrant ollama lkw-mongodb lkw-mongo-express
+set "LKW_COMPOSE_OWNERSHIP_ENTERED=true"
+docker compose -p "%LKW_COMPOSE_PROJECT%" -f "%BASE_COMPOSE%" -f "%KAFKA_COMPOSE%" -f "%WATCHER_COMPOSE%" -f "%MONGODB_COMPOSE%" up -d --build local_workspace lkw-background-worker lkw-file-watcher lkw-kafka lkw-kafka-topics lkw-kafka-ui lkw-redis qdrant ollama lkw-mongodb lkw-mongo-express
 if errorlevel 1 goto proof_fail
 
 echo Waiting for LKW health...
@@ -131,11 +137,11 @@ set "BASE_COMPOSE=%BASE_COMPOSE%"
 set "KAFKA_COMPOSE=%KAFKA_COMPOSE%"
 set "WATCHER_COMPOSE=%WATCHER_COMPOSE%"
 set "MONGODB_COMPOSE=%MONGODB_COMPOSE%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $deadline = (Get-Date).AddSeconds(240); do { $status = docker compose -f $env:BASE_COMPOSE -f $env:KAFKA_COMPOSE -f $env:WATCHER_COMPOSE -f $env:MONGODB_COMPOSE ps --format json lkw-file-watcher 2>$null | ConvertFrom-Json; $running = $false; if ($null -ne $status) { if ($status -is [System.Array]) { $status = $status[0] }; if ($status.State -eq 'running' -or ($status.Status -and $status.Status.ToLower().StartsWith('up'))) { $running = $true } }; if ($running -and $status.Health -eq 'healthy') { Write-Host 'watcher_container_running=true'; Write-Host 'watcher_checkpoint_ready=true'; exit 0 }; Start-Sleep -Seconds 2 } while ((Get-Date) -lt $deadline); throw 'Watcher baseline health check did not pass before timeout'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $deadline = (Get-Date).AddSeconds(240); do { $status = docker compose -p $env:LKW_COMPOSE_PROJECT -f $env:BASE_COMPOSE -f $env:KAFKA_COMPOSE -f $env:WATCHER_COMPOSE -f $env:MONGODB_COMPOSE ps --format json lkw-file-watcher 2>$null | ConvertFrom-Json; $running = $false; if ($null -ne $status) { if ($status -is [System.Array]) { $status = $status[0] }; if ($status.State -eq 'running' -or ($status.Status -and $status.Status.ToLower().StartsWith('up'))) { $running = $true } }; if ($running -and $status.Health -eq 'healthy') { Write-Host 'watcher_container_running=true'; Write-Host 'watcher_checkpoint_ready=true'; exit 0 }; Start-Sleep -Seconds 2 } while ((Get-Date) -lt $deadline); throw 'Watcher baseline health check did not pass before timeout'"
 if errorlevel 1 goto proof_fail
 
 echo Waiting for MongoDB health...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $deadline = (Get-Date).AddSeconds(180); do { $status = docker compose -f $env:BASE_COMPOSE -f $env:KAFKA_COMPOSE -f $env:WATCHER_COMPOSE -f $env:MONGODB_COMPOSE ps --format json lkw-mongodb 2>$null | ConvertFrom-Json; if ($null -ne $status) { if ($status -is [System.Array]) { $status = $status[0] }; if ($status.Health -eq 'healthy') { Write-Host 'mongodb_container_healthy=true'; exit 0 } }; Start-Sleep -Seconds 2 } while ((Get-Date) -lt $deadline); throw 'MongoDB health check did not pass before timeout'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $deadline = (Get-Date).AddSeconds(180); do { $status = docker compose -p $env:LKW_COMPOSE_PROJECT -f $env:BASE_COMPOSE -f $env:KAFKA_COMPOSE -f $env:WATCHER_COMPOSE -f $env:MONGODB_COMPOSE ps --format json lkw-mongodb 2>$null | ConvertFrom-Json; if ($null -ne $status) { if ($status -is [System.Array]) { $status = $status[0] }; if ($status.Health -eq 'healthy') { Write-Host 'mongodb_container_healthy=true'; exit 0 } }; Start-Sleep -Seconds 2 } while ((Get-Date) -lt $deadline); throw 'MongoDB health check did not pass before timeout'"
 if errorlevel 1 goto proof_fail
 
 echo Waiting for Mongo Express HTTP endpoint...
@@ -163,18 +169,29 @@ set "EXIT_CODE=%ERRORLEVEL%"
 if not "%EXIT_CODE%"=="0" goto proof_fail
 
 echo.
-echo LKW.7C2 proof complete. Stack left running for inspection.
+echo LKW.7C2 proof complete.
 echo Kafka UI URL:
 echo   %KAFKA_UI_URL%
 echo Mongo Express URL:
 echo   %MONGO_EXPRESS_URL%
 del /f /q "%COMPOSE_CONFIG%" >nul 2>nul
+call :finalize_proof
 popd >nul
-exit /b 0
+exit /b %EXIT_CODE%
 
 :proof_fail
 echo.
 echo proof_result=FAIL
 del /f /q "%COMPOSE_CONFIG%" >nul 2>nul
+call :finalize_proof
 popd >nul
-exit /b 1
+exit /b %EXIT_CODE%
+
+:finalize_proof
+if /I not "%LKW_COMPOSE_OWNERSHIP_ENTERED%"=="true" exit /b 0
+uv run --project applications/local_workspace_application python "%LIFECYCLE%" teardown --stack-id lkw-file-watcher-e2e-proof
+set "TEARDOWN_CODE=%ERRORLEVEL%"
+if "%EXIT_CODE%"=="0" (
+    if not "%TEARDOWN_CODE%"=="0" set "EXIT_CODE=1"
+)
+exit /b 0

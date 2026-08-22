@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.scheduler_claim import SchedulerActionClaim
 from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
     ScheduledResumePersistence,
@@ -50,12 +51,30 @@ class TaskCheckpointPersistence(TaskCheckpointReader, ScheduledResumePersistence
 
 
 class SchedulerLedger(ABC):
-    """Idempotency ledger for scheduler actions."""
+    """Atomic ownership ledger for scheduler actions (human timeout path)."""
 
     @abstractmethod
     def has_action(self, ledger_key: str) -> bool:
+        """Returns True when the action completed durably."""
         ...
 
     @abstractmethod
-    def record_action(self, ledger_key: str, *, action: str) -> None:
+    def claim_action(
+        self,
+        ledger_key: str,
+        owner_id: str,
+        lease_seconds: int,
+        *,
+        action: str,
+    ) -> Optional[SchedulerActionClaim]:
+        """
+        Atomically acquire ownership for one scheduler action.
+
+        Returns None when action is completed, actively owned, or uncertain.
+        """
+        ...
+
+    @abstractmethod
+    def complete_action(self, claim: SchedulerActionClaim) -> None:
+        """Fence-validated durable completion for a claimed scheduler action."""
         ...

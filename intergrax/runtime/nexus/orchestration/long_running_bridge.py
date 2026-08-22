@@ -13,7 +13,10 @@ from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventTyp
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.notification import NotificationAdapter
-from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+    TaskCheckpointReader,
+)
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.task.task import Task
@@ -28,7 +31,7 @@ class RuntimeEventPublisher(Protocol):
 async def maybe_restore_long_running(
     task: Task,
     *,
-    checkpoint_store: Optional[SQLiteTaskCheckpointStore],
+    checkpoint_store: TaskCheckpointReader | None,
     publish: RuntimeEventPublisher,
     notification_adapter: Optional[NotificationAdapter],
     run_id: str,
@@ -66,7 +69,7 @@ async def maybe_restore_long_running(
 async def maybe_checkpoint_long_running(
     task: Task,
     *,
-    checkpoint_store: Optional[SQLiteTaskCheckpointStore],
+    checkpoint_store: TaskCheckpointPersistence | None,
     publish: RuntimeEventPublisher,
     notification_adapter: Optional[NotificationAdapter],
     progress_message: str,

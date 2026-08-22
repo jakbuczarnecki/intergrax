@@ -86,6 +86,7 @@ _SECTION_HEADINGS_ORDER = (
     "## Why this matters",
     "## Local Knowledge Workspace (LKW)",
     "## Try LKW",
+    "## Real problems. Executable evidence.",
     "## Explore the Intergrax Platform",
     "## AI execution should not be a black box",
     "## Responsibility model",
@@ -105,6 +106,7 @@ _REQUIRED_PUBLIC_LINKS = (
     "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md",
     "docs/project/architecture/GOVERNED_EXECUTION.md",
     "docs/project/capabilities/token_optimization/README.md",
+    "docs/project/proofs/PROOF_LIBRARY.md",
     "PROOFS.md",
     "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
     "WHY_INTERGRAX.md",
@@ -201,14 +203,11 @@ def test_section_order(readme_text: str) -> None:
     )
 
 
-def test_top_cta_governed_evidence_proof(readme_text: str) -> None:
-    """Top CTA exposes the advanced governed evidence proof route."""
+def test_top_cta_proof_library(readme_text: str) -> None:
+    """Top CTA exposes the public Proof Library gateway."""
     top_block = readme_text[: readme_text.index("## Choose your path")]
-    assert "Inspect Governed Evidence Proof" in top_block
-    assert (
-        "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md"
-        in top_block
-    )
+    assert "Explore Proof Library" in top_block
+    assert "docs/project/proofs/PROOF_LIBRARY.md" in top_block
 
 
 def test_lkw_routes_governed_evidence_proof(readme_text: str) -> None:

@@ -444,10 +444,12 @@ def _descriptor_payload(
 ) -> dict[str, object]:
     return {
         "schema_version": PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION,
+        "library_class": "CONFORMANCE",
         "proof_id": proof_id,
         "title": proof_id,
         "domain": "test_evidence_verify",
         "proof_kind": "evidence_verify",
+        "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
         "profiles": ["quick"],
         "command": {

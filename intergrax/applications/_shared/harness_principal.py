@@ -17,11 +17,16 @@ from intergrax.contracts.request_identity_spine import (
     request_identity_to_actor_identity,
 )
 from intergrax.integrations.contracts.identity_provider import IdentityUser
+from intergrax.contracts.human_approver import (
+    HumanApproverAuthMode,
+    HumanApproverEvidence,
+)
 
 __all__ = [
     "HarnessAuthenticatedPrincipal",
     "api_key_service_harness_principal",
     "assert_untrusted_metadata_identity_compatible",
+    "harness_principal_to_approver_evidence",
     "harness_principal_to_request_identity",
     "identity_user_to_harness_principal",
     "reject_identity_assertion_conflicts",
@@ -98,6 +103,24 @@ def harness_principal_to_request_identity(
         user_id=principal.user_id,
         principal_type=principal.principal_type,
         auth_subject=principal.auth_subject,
+    )
+
+
+def harness_principal_to_approver_evidence(
+    principal: HarnessAuthenticatedPrincipal,
+) -> HumanApproverEvidence:
+    """Bridge verified harness principal to runtime-neutral approver evidence."""
+    auth_mode = (
+        HumanApproverAuthMode.IDENTITY_PROVIDER
+        if principal.auth_mode == "identity_provider"
+        else HumanApproverAuthMode.API_KEY
+    )
+    return HumanApproverEvidence(
+        tenant_id=principal.tenant_id,
+        user_id=principal.user_id,
+        principal_type=principal.principal_type,
+        auth_subject=principal.auth_subject,
+        auth_mode=auth_mode,
     )
 
 

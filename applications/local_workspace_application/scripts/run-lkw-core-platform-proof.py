@@ -401,6 +401,29 @@ def discover_compose_files() -> list[Path]:
     ]
 
 
+def discover_proof_teardown_compose_files() -> list[Path]:
+    """Complete Compose topology owned by the Core Platform proof project."""
+    compose_files = discover_compose_files()
+    if _WATCHER_COMPOSE not in compose_files:
+        return [*compose_files, _WATCHER_COMPOSE]
+    return compose_files
+
+
+def phase_uses_compose_lifecycle(phase: str, config: ProofConfig) -> bool:
+    if phase == "application-hosting":
+        return config.mongodb_stack.strip().lower() != "external"
+    return True
+
+
+def teardown_proof_compose_stack() -> None:
+    compose_down(
+        discover_proof_teardown_compose_files(),
+        cwd=_REPO_ROOT,
+        volumes=False,
+        remove_orphans=True,
+    )
+
+
 def compose_args(compose_files: Sequence[Path]) -> list[str]:
     args = ["docker", "compose", "-p", _COMPOSE_PROJECT]
     for path in compose_files:
@@ -1880,99 +1903,143 @@ def config_from_args(args: argparse.Namespace) -> ProofConfig:
     )
 
 
+def _emit_selected_phase_pass(config: ProofConfig, outcome: PhaseOutcome) -> None:
+    _print_kv("core_proof_result", "PASS")
+    _print_kv("core_proof_os_family", config.os_family.value)
+    _print_kv("core_proof_wrapper_id", config.wrapper_id.value)
+    _print_kv("core_proof_shared_python_runner", "true")
+    _print_kv("core_proof_all_phases_passed", "false")
+    _print_kv("core_proof_selected_phase", config.phase)
+    _print_kv("optional_os_interaction_proof_executed", "false")
+    _print_kv("mongodb_stack", config.mongodb_stack)
+    if config.phase == "application-hosting":
+        receipt_id = outcome.receipt_id or ""
+        run_id = outcome.details.get("run_id") or receipt_id
+        correlation_id = outcome.details.get("correlation_id") or run_id
+        _print_kv("proof_kind", "platform_application_hosting")
+        _print_kv("proof_receipt_id", receipt_id)
+        _print_kv("proof_id", receipt_id)
+        _print_kv("run_id", run_id)
+        _print_kv("correlation_id", correlation_id)
+        _print_kv(
+            "proof_receipt_recorded",
+            outcome.details.get("proof_receipt_recorded") or "true",
+        )
+        _print_kv(
+            "proof_receipt_verified",
+            outcome.details.get("proof_receipt_verified") or "true",
+        )
+        _print_kv(
+            "proof_receipt_query_verified",
+            outcome.details.get("proof_receipt_query_verified") or "true",
+        )
+        _print_kv("result", "PASS")
+
+
 def run_core_proof(
     config: ProofConfig,
     *,
     phase_runners: Mapping[str, Callable[[ProofConfig], PhaseOutcome]] | None = None,
+    teardown: Callable[[], None] | None = None,
 ) -> int:
     runners = dict(PHASE_RUNNERS if phase_runners is None else phase_runners)
-    try:
-        validate_os_wrapper_pair(config.os_family, config.wrapper_id)
-        validate_environment(config)
-        phases = resolve_phases(config.phase)
-    except CoreProofError as exc:
-        phase = exc.phase or "startup"
-        _emit_failure(
-            phase,
-            exc.reason,
-            child_exit_code=exc.child_exit_code,
-            child_details=exc.child_details,
-        )
-        return 1
-
+    teardown_fn = teardown_proof_compose_stack if teardown is None else teardown
+    compose_lifecycle_entered = False
+    functional_pass = False
+    teardown_ok = True
+    exit_code = 1
     outcomes: dict[str, PhaseOutcome] = {}
-    for phase in phases:
-        _emit_phase_running(phase)
-        runner = runners.get(phase)
-        if runner is None:
-            _emit_failure(phase, "phase_runner_missing")
-            return 1
+
+    try:
         try:
-            outcome = runner(config)
+            validate_os_wrapper_pair(config.os_family, config.wrapper_id)
+            validate_environment(config)
+            phases = resolve_phases(config.phase)
         except CoreProofError as exc:
+            phase = exc.phase or "startup"
             _emit_failure(
                 phase,
                 exc.reason,
                 child_exit_code=exc.child_exit_code,
                 child_details=exc.child_details,
             )
-            return 1
-        except Exception as exc:  # noqa: BLE001 - fail closed with safe type only
-            _emit_failure(phase, type(exc).__name__)
-            return 1
-        if not outcome.ok:
-            _emit_failure(phase, "phase_reported_failure")
-            return 1
-        _emit_phase_pass(phase)
-        outcomes[phase] = outcome
+        else:
+            for phase in phases:
+                if phase_uses_compose_lifecycle(phase, config):
+                    compose_lifecycle_entered = True
+                _emit_phase_running(phase)
+                runner = runners.get(phase)
+                if runner is None:
+                    _emit_failure(phase, "phase_runner_missing")
+                    break
+                try:
+                    outcome = runner(config)
+                except CoreProofError as exc:
+                    _emit_failure(
+                        phase,
+                        exc.reason,
+                        child_exit_code=exc.child_exit_code,
+                        child_details=exc.child_details,
+                    )
+                    break
+                except Exception as exc:  # noqa: BLE001 - fail closed with safe type only
+                    _emit_failure(phase, type(exc).__name__)
+                    break
+                if not outcome.ok:
+                    _emit_failure(phase, "phase_reported_failure")
+                    break
+                _emit_phase_pass(phase)
+                outcomes[phase] = outcome
+            else:
+                if config.phase != "all":
+                    functional_pass = True
+                    exit_code = 0
+                else:
+                    background_receipt = outcomes["background-task"].receipt_id
+                    hosting_receipt = outcomes["application-hosting"].receipt_id
+                    watcher_receipt = outcomes["file-watcher"].receipt_id
+                    if (
+                        not background_receipt
+                        or not hosting_receipt
+                        or not watcher_receipt
+                    ):
+                        _emit_failure("file-watcher", "receipt_ids_incomplete")
+                    else:
+                        functional_pass = True
+                        exit_code = 0
+    finally:
+        if compose_lifecycle_entered:
+            _print_kv("core_teardown_attempted", "true")
+            try:
+                teardown_fn()
+                _print_kv("core_teardown_result", "PASS")
+            except Exception as exc:  # noqa: BLE001 - terminal cleanup boundary
+                _print_kv("core_teardown_result", "FAIL")
+                _print_kv("core_teardown_error_type", type(exc).__name__)
+                teardown_ok = False
+                if functional_pass:
+                    failure_phase = (
+                        config.phase if config.phase != "all" else "file-watcher"
+                    )
+                    _emit_failure(failure_phase, "proof_teardown_failed")
+                    functional_pass = False
+                    exit_code = 1
 
-    if config.phase != "all":
-        outcome = outcomes[config.phase]
-        _print_kv("core_proof_result", "PASS")
-        _print_kv("core_proof_os_family", config.os_family.value)
-        _print_kv("core_proof_wrapper_id", config.wrapper_id.value)
-        _print_kv("core_proof_shared_python_runner", "true")
-        _print_kv("core_proof_all_phases_passed", "false")
-        _print_kv("core_proof_selected_phase", config.phase)
-        _print_kv("optional_os_interaction_proof_executed", "false")
-        _print_kv("mongodb_stack", config.mongodb_stack)
-        if config.phase == "application-hosting":
-            receipt_id = outcome.receipt_id or ""
-            run_id = outcome.details.get("run_id") or receipt_id
-            correlation_id = outcome.details.get("correlation_id") or run_id
-            _print_kv("proof_kind", "platform_application_hosting")
-            _print_kv("proof_receipt_id", receipt_id)
-            _print_kv("proof_id", receipt_id)
-            _print_kv("run_id", run_id)
-            _print_kv("correlation_id", correlation_id)
-            _print_kv(
-                "proof_receipt_recorded",
-                outcome.details.get("proof_receipt_recorded") or "true",
+    if functional_pass and teardown_ok:
+        if config.phase != "all":
+            _emit_selected_phase_pass(config, outcomes[config.phase])
+        else:
+            emit_final_pass(
+                config,
+                background_task_receipt_id=outcomes["background-task"].receipt_id or "",
+                application_hosting_receipt_id=(
+                    outcomes["application-hosting"].receipt_id or ""
+                ),
+                file_watcher_receipt_id=outcomes["file-watcher"].receipt_id or "",
             )
-            _print_kv(
-                "proof_receipt_verified",
-                outcome.details.get("proof_receipt_verified") or "true",
-            )
-            _print_kv(
-                "proof_receipt_query_verified",
-                outcome.details.get("proof_receipt_query_verified") or "true",
-            )
-            _print_kv("result", "PASS")
-        return 0
+        exit_code = 0
 
-    background_receipt = outcomes["background-task"].receipt_id
-    hosting_receipt = outcomes["application-hosting"].receipt_id
-    watcher_receipt = outcomes["file-watcher"].receipt_id
-    if not background_receipt or not hosting_receipt or not watcher_receipt:
-        _emit_failure("file-watcher", "receipt_ids_incomplete")
-        return 1
-    emit_final_pass(
-        config,
-        background_task_receipt_id=background_receipt,
-        application_hosting_receipt_id=hosting_receipt,
-        file_watcher_receipt_id=watcher_receipt,
-    )
-    return 0
+    return exit_code
 
 
 def main(argv: Sequence[str] | None = None) -> int:

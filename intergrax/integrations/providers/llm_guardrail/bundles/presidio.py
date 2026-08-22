@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.contracts.llm_guardrail import GuardrailBackendOptions
 from intergrax.integrations.contracts.llm_guardrail import GuardrailContext, GuardrailScanResult, LlmGuardrailBackend
 from intergrax.integrations.providers.llm_guardrail._pattern_scanner import scan_patterns
 from intergrax.integrations.providers.llm_guardrail._vendor_opens import presidio_scan_text
@@ -26,5 +25,5 @@ class PresidioAdapter(BaseGuardrailAdapter):
         return self.scan_input(text, context=context)
 
 
-def create_presidio_backend(*, options: GuardrailBackendOptions | None = None) -> LlmGuardrailBackend:
-    return PresidioAdapter(slug="presidio", options=options)
+def create_presidio_backend() -> LlmGuardrailBackend:
+    return PresidioAdapter(slug="presidio")

@@ -38,7 +38,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.long_running.notification import NotificationAdapter
-from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
@@ -58,7 +58,7 @@ def build_nexus_loop_from_environment(
     *,
     env: ApplicationEnvironmentProfile,
     trace_store: RunTraceWriter | None = None,
-    checkpoint_store: SQLiteTaskCheckpointStore | None = None,
+    checkpoint_store: TaskCheckpointPersistence | None = None,
     agent_checkpoint_store: AgentCheckpointStore | None = None,
     compensation_queue_store: CompensationQueueStore | None = None,
     idempotency_store: IdempotencyStore | None = None,

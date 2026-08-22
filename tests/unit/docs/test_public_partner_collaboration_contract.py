@@ -33,6 +33,7 @@ ISSUE_TEMPLATE_PATHS = tuple(
         "design_partner_interest.yml",
         "integration_proposal.yml",
         "proof_path_feedback.yml",
+        "scenario_proposal.yml",
     )
 )
 

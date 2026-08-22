@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import (
     EscalationTarget,
     HumanDecisionRecord,
@@ -39,7 +40,7 @@ def hitl_ctx(tmp_path: Path) -> ToolWiringContext:
     record = build_human_decision_record(
         task_id="task-1",
         tenant_id="tenant-1",
-        user_id="user-1",
+        approver=local_development_approver_evidence(tenant_id="tenant-1", actor_id="user-1"),
         verdict=HumanResponseVerdict.ESCALATE,
         response_text="needs review",
         escalation_target=EscalationTarget.HUMAN_OPERATOR,

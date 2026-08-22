@@ -20,6 +20,7 @@ from platform_proofs.tools.iterative_sql_investigation.artifacts import (
     resolve_runner_artifact_directory,
     write_evidence,
     write_proof_result,
+    write_report,
 )
 from platform_proofs.tools.iterative_sql_investigation.dataset_identity import (
     PROOF_ID,
@@ -189,6 +190,7 @@ def _persist_artifacts(
         )
     )
     write_evidence(evidence, run_directory=run_directory)
+    write_report(evidence, run_directory=run_directory)
     return run_directory
 
 

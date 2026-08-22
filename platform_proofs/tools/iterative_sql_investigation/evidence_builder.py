@@ -165,8 +165,8 @@ def _tool_call_id(trace: ToolCallTrace, index: int) -> str:
     return f"tool-call-{index + 1}"
 
 
-def _evidence_id_for_call(call_id: str) -> str:
-    return f"evidence-{call_id}"
+def _evidence_id_for_call(call_id: str, *, scenario_id: ScenarioId) -> str:
+    return f"evidence-{scenario_id.value.lower()}-{call_id}"
 
 
 def _scenario_lookup() -> dict[ScenarioId, InvestigationScenario]:
@@ -312,7 +312,7 @@ def _build_evaluator_checks(
     snapshot: ScenarioExecutionSnapshot,
 ) -> EvaluatorSummaryEvidence:
     trace_evidence_ids = tuple(
-        _evidence_id_for_call(_tool_call_id(trace, index))
+        _evidence_id_for_call(_tool_call_id(trace, index), scenario_id=scenario.scenario_id)
         for index, trace in enumerate(snapshot.tool_traces)
         if trace.success
     )
@@ -426,14 +426,15 @@ def _build_scenario_steps(
 
     for index, trace in enumerate(snapshot.tool_traces):
         call_id = _tool_call_id(trace, index)
-        evidence_id = _evidence_id_for_call(call_id)
+        evidence_id = _evidence_id_for_call(call_id, scenario_id=scenario_id)
         sql = ""
         if trace.arguments:
             raw_sql = trace.arguments.get("sql")
             if isinstance(raw_sql, str):
                 sql = raw_sql
         basis_ids = tuple(
-            _evidence_id_for_call(basis_id) for basis_id in basis_by_call.get(call_id, ())
+            _evidence_id_for_call(basis_id, scenario_id=scenario_id)
+            for basis_id in basis_by_call.get(call_id, ())
         )
         purpose = purpose_by_call.get(call_id) or (
             f"Execute SQL tool call for scenario {scenario_id.value}"
@@ -492,7 +493,7 @@ def _build_scenario_graph(
     node_ids: set[str] = set()
     for index, trace in enumerate(snapshot.tool_traces):
         call_id = _tool_call_id(trace, index)
-        evidence_id = _evidence_id_for_call(call_id)
+        evidence_id = _evidence_id_for_call(call_id, scenario_id=scenario_id)
         step_id = f"{scenario_id.value.lower()}-step-{index + 1}"
         nodes.append(
             EvidenceNode(
@@ -517,11 +518,11 @@ def _build_scenario_graph(
     if proof is not None:
         for proof_step in proof.steps:
             for call_id in proof_step.next_tool_call_ids:
-                target_id = _evidence_id_for_call(call_id)
+                target_id = _evidence_id_for_call(call_id, scenario_id=scenario_id)
                 if target_id not in node_ids:
                     continue
                 for basis_id in proof_step.basis_tool_call_ids:
-                    basis_evidence = _evidence_id_for_call(basis_id)
+                    basis_evidence = _evidence_id_for_call(basis_id, scenario_id=scenario_id)
                     if basis_evidence not in node_ids:
                         continue
                     edges.append(
@@ -589,7 +590,7 @@ def _build_scenario_evidence(
             content=explicit_runtime_report_safe_text(snapshot.final_answer),
             report_safe=True,
             evidence_basis_ids=tuple(
-                _evidence_id_for_call(_tool_call_id(trace, index))
+                _evidence_id_for_call(_tool_call_id(trace, index), scenario_id=scenario.scenario_id)
                 for index, trace in enumerate(snapshot.tool_traces)
                 if trace.success
             ),

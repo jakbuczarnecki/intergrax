@@ -15,6 +15,7 @@ from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.contracts.execution_identity import bind_active_execution_identity, mint_attempt_id, mint_run_id
 from intergrax.runtime.codecraft.ownership import codecraft_exec_hitl_notes
 from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanResponseVerdict, build_human_decision_record
 from intergrax.runtime.human.persistence_contract import InMemoryHumanDecisionPersistence
 from intergrax.runtime.sandbox.session import SandboxSession
@@ -110,7 +111,7 @@ def _approve(
         build_human_decision_record(
             task_id=task_id,
             tenant_id=tenant_id,
-            user_id="operator",
+            approver=local_development_approver_evidence(tenant_id=tenant_id, actor_id="operator"),
             verdict=HumanResponseVerdict.APPROVE,
             response_text="approved",
             run_id=run_id,
@@ -359,7 +360,7 @@ def test_rejected_decision_blocks_execution(tmp_path: Path) -> None:
             build_human_decision_record(
                 task_id=TASK_X,
                 tenant_id=TENANT_A,
-                user_id="operator",
+                approver=local_development_approver_evidence(tenant_id=TENANT_A, actor_id="operator"),
                 verdict=HumanResponseVerdict.REJECT,
                 response_text="no",
                 run_id=str(RUN_A),

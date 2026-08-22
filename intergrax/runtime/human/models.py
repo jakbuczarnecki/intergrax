@@ -11,7 +11,17 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.utils.time_provider import SystemTimeProvider
+
+__all__ = [
+    "EscalationOutcome",
+    "EscalationTarget",
+    "HumanApproverEvidence",
+    "HumanDecisionRecord",
+    "HumanResponseVerdict",
+    "build_human_decision_record",
+]
 
 
 class HumanResponseVerdict(str, Enum):
@@ -31,7 +41,7 @@ class HumanDecisionRecord(BaseModel):
     decision_id: str = Field(default_factory=lambda: f"hdec_{uuid4().hex[:16]}")
     task_id: str
     tenant_id: str
-    user_id: str = ""
+    approver: HumanApproverEvidence
     human_request_id: str = ""
     verdict: HumanResponseVerdict
     response_text: str = ""
@@ -41,6 +51,8 @@ class HumanDecisionRecord(BaseModel):
     run_id: Optional[str] = None
     notes: str = ""
     created_at_utc: str
+    # Legacy task-subject field — not approver attribution (IDT-FIX-C).
+    user_id: str = ""
 
 
 class EscalationOutcome(BaseModel):
@@ -54,7 +66,7 @@ def build_human_decision_record(
     *,
     task_id: str,
     tenant_id: str,
-    user_id: str,
+    approver: HumanApproverEvidence,
     verdict: HumanResponseVerdict,
     response_text: str,
     human_request_id: str = "",
@@ -63,12 +75,14 @@ def build_human_decision_record(
     agent_id: Optional[str] = None,
     run_id: Optional[str] = None,
     notes: str = "",
+    task_subject_user_id: str = "",
 ) -> HumanDecisionRecord:
     """Vendor-neutral factory for persisted human decision records."""
     return HumanDecisionRecord(
         task_id=task_id,
         tenant_id=tenant_id,
-        user_id=user_id,
+        approver=approver,
+        user_id=task_subject_user_id,
         human_request_id=human_request_id,
         verdict=verdict,
         response_text=response_text,

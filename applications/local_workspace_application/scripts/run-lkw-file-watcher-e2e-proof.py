@@ -22,6 +22,7 @@ import urllib.request
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from collections.abc import Sequence
 from typing import Any
 
 from intergrax.integrations.contracts.document_store import DocumentStore
@@ -83,6 +84,14 @@ _RESTART_SERVICES = (
 )
 
 _SCRIPT_PATH = Path(__file__).resolve()
+_SCRIPTS_DIR = _SCRIPT_PATH.parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.append(str(_SCRIPTS_DIR))
+from lkw_ollama_embedding_bootstrap import (  # noqa: E402
+    OllamaEmbeddingBootstrapError,
+    ensure_ollama_embedding_model_if_configured as _ensure_ollama_embedding_model_if_configured,
+)
+
 _DEFAULT_APP_DIR = _SCRIPT_PATH.parent.parent
 _DEFAULT_REPO_ROOT = _DEFAULT_APP_DIR.parent.parent
 _DEFAULT_DOCKER_DIR = _DEFAULT_APP_DIR / "docker"
@@ -92,8 +101,11 @@ _DEFAULT_KAFKA_COMPOSE = _DEFAULT_DOCKER_DIR / "docker-compose.kafka.yml"
 _DEFAULT_WATCHER_COMPOSE = _DEFAULT_DOCKER_DIR / "file-watcher-e2e.compose.yml"
 _DEFAULT_MONGODB_COMPOSE = _DEFAULT_DOCKER_DIR / "docker-compose.mongodb.yml"
 
+_FILE_WATCHER_COMPOSE_PROJECT = "lkw-file-watcher-e2e-proof"
+
 _WARMUP_REQUEST_TIMEOUT_SECONDS = 120.0
 _WARMUP_RETRY_SLEEP_SECONDS = 2.0
+_PYTHON_CHILD_IO_ENCODING = "utf-8"
 
 
 @dataclass(frozen=True)
@@ -363,10 +375,7 @@ def build_compose_command(
     watcher_compose: Path,
     mongodb_compose: Path,
 ) -> list[str]:
-    command = ["docker", "compose"]
-    compose_project = os.environ.get("COMPOSE_PROJECT_NAME", "").strip()
-    if compose_project:
-        command.extend(["-p", compose_project])
+    command = ["docker", "compose", "-p", _FILE_WATCHER_COMPOSE_PROJECT]
     command.extend(
         [
             "-f",
@@ -704,6 +713,73 @@ def _latest_persistence_proof_marker(proof_docs_dir: Path) -> str | None:
                 if marker:
                     return marker
     return None
+
+
+def bootstrap_run_command(
+    args: Sequence[str],
+    *,
+    cwd: Path | None = None,
+    timeout: int | None = None,
+    **kwargs: object,
+) -> subprocess.CompletedProcess[str]:
+    del kwargs
+    return subprocess.run(
+        list(args),
+        cwd=str(cwd) if cwd is not None else None,
+        shell=False,
+        check=False,
+        text=True,
+        capture_output=True,
+        encoding=_PYTHON_CHILD_IO_ENCODING,
+        errors="replace",
+        timeout=timeout,
+    )
+
+
+def ensure_embedding_model_bootstrap_if_configured(
+    *,
+    base_compose: Path,
+    kafka_compose: Path,
+    watcher_compose: Path,
+    mongodb_compose: Path,
+    cwd: Path,
+    timeout_seconds: int,
+) -> str | None:
+    """Provision the configured Ollama embedding model before warm-up."""
+
+    def compose_exec_args(*compose_command: str) -> list[str]:
+        return build_compose_command(
+            *compose_command,
+            base_compose=base_compose,
+            kafka_compose=kafka_compose,
+            watcher_compose=watcher_compose,
+            mongodb_compose=mongodb_compose,
+        )
+
+    try:
+        resolved_model = _ensure_ollama_embedding_model_if_configured(
+            compose_exec_args=compose_exec_args,
+            run_command=bootstrap_run_command,
+            cwd=cwd,
+            timeout_seconds=timeout_seconds,
+            run_command_kwargs={
+                "encoding": _PYTHON_CHILD_IO_ENCODING,
+                "errors": "replace",
+            },
+        )
+    except OllamaEmbeddingBootstrapError as exc:
+        print(f"embedding_model_bootstrap=FAIL")
+        print(f"embedding_bootstrap_reason={exc.reason}")
+        raise
+
+    if resolved_model is None:
+        print("embedding_provider_not_ollama=true")
+        print("embedding_model_bootstrap=SKIP")
+        return None
+
+    print(f"embedding_model_resolved={resolved_model}")
+    print("embedding_model_bootstrap=PASS")
+    return resolved_model
 
 
 def run_persistence_embedding_warmup(
@@ -1287,6 +1363,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     if not watcher_checkpoint_ready_before_file:
         return fail("watcher_checkpoint_not_ready")
+
+    repo_root = Path(args.repo_root)
+    bootstrap_timeout_seconds = int(min(600.0, timeout_seconds))
+    try:
+        ensure_embedding_model_bootstrap_if_configured(
+            base_compose=base_compose,
+            kafka_compose=kafka_compose,
+            watcher_compose=watcher_compose,
+            mongodb_compose=mongodb_compose,
+            cwd=repo_root,
+            timeout_seconds=bootstrap_timeout_seconds,
+        )
+    except OllamaEmbeddingBootstrapError as exc:
+        return fail(exc.reason)
 
     warmup = run_persistence_embedding_warmup(
         base_url=base_url,

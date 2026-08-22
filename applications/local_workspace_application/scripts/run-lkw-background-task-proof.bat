@@ -8,7 +8,11 @@ set "BASE_COMPOSE=%DOCKER_DIR%\docker-compose.yml"
 set "KAFKA_COMPOSE=%DOCKER_DIR%\docker-compose.kafka.yml"
 set "MONGODB_COMPOSE=%DOCKER_DIR%\docker-compose.mongodb.yml"
 set "PROOF=%SCRIPT_DIR%run-lkw-background-task-proof.py"
+set "LIFECYCLE=%SCRIPT_DIR%lkw_proof_compose_lifecycle.py"
 set "COMPOSE_CONFIG=%TEMP%\intergrax_lkw_background_task_compose_%RANDOM%%RANDOM%.yml"
+set "LKW_COMPOSE_PROJECT=lkw-background-task-proof"
+set "LKW_COMPOSE_OWNERSHIP_ENTERED=false"
+set "EXIT_CODE=1"
 
 set "LKW_BASE_URL=%LOCAL_WORKSPACE_BACKEND_BASE_URL%"
 if "%LKW_BASE_URL%"=="" set "LKW_BASE_URL=http://127.0.0.1:8020"
@@ -46,6 +50,7 @@ echo LKW base URL: %LKW_BASE_URL%
 echo Kafka UI URL: %KAFKA_UI_URL%
 echo Mongo Express URL: %MONGO_EXPRESS_URL%
 echo MongoDB host port: %LKW_MONGODB_HOST_PORT%
+echo Compose project: %LKW_COMPOSE_PROJECT%
 echo.
 
 set "PROOF_DOCS_DIR=%REPO_ROOT%\applications\local_workspace_application\.proof_docs"
@@ -53,18 +58,19 @@ if not exist "%PROOF_DOCS_DIR%" (
     mkdir "%PROOF_DOCS_DIR%"
     if errorlevel 1 (
         echo Failed to create proof docs directory: %PROOF_DOCS_DIR%
-        exit /b 1
+        goto proof_fail
     )
 )
 
 echo Step 1/4: validating Docker Compose overlays...
-docker compose -f "%BASE_COMPOSE%" -f "%KAFKA_COMPOSE%" -f "%MONGODB_COMPOSE%" config > "%COMPOSE_CONFIG%"
+docker compose -p "%LKW_COMPOSE_PROJECT%" -f "%BASE_COMPOSE%" -f "%KAFKA_COMPOSE%" -f "%MONGODB_COMPOSE%" config > "%COMPOSE_CONFIG%"
 if errorlevel 1 goto proof_fail
 echo compose_overlay_valid=true
 
 echo.
 echo Step 2/4: starting combined Kafka + MongoDB proof stack...
-docker compose -f "%BASE_COMPOSE%" -f "%KAFKA_COMPOSE%" -f "%MONGODB_COMPOSE%" up -d --build local_workspace lkw-background-worker lkw-kafka lkw-kafka-topics lkw-kafka-ui lkw-redis lkw-mongodb lkw-mongo-express
+set "LKW_COMPOSE_OWNERSHIP_ENTERED=true"
+docker compose -p "%LKW_COMPOSE_PROJECT%" -f "%BASE_COMPOSE%" -f "%KAFKA_COMPOSE%" -f "%MONGODB_COMPOSE%" up -d --build local_workspace lkw-background-worker lkw-kafka lkw-kafka-topics lkw-kafka-ui lkw-redis lkw-mongodb lkw-mongo-express
 if errorlevel 1 goto proof_fail
 
 echo Waiting for LKW health...
@@ -73,7 +79,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference =
 if errorlevel 1 goto proof_fail
 
 echo Waiting for MongoDB health...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $deadline = (Get-Date).AddSeconds(180); do { $status = docker compose -f $env:BASE_COMPOSE -f $env:KAFKA_COMPOSE -f $env:MONGODB_COMPOSE ps --format json lkw-mongodb 2>$null | ConvertFrom-Json; if ($status.Health -eq 'healthy') { Write-Host 'mongodb_container_healthy=true'; exit 0 }; Start-Sleep -Seconds 2 } while ((Get-Date) -lt $deadline); throw 'MongoDB health check did not pass before timeout'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $deadline = (Get-Date).AddSeconds(180); do { $status = docker compose -p $env:LKW_COMPOSE_PROJECT -f $env:BASE_COMPOSE -f $env:KAFKA_COMPOSE -f $env:MONGODB_COMPOSE ps --format json lkw-mongodb 2>$null | ConvertFrom-Json; if ($status.Health -eq 'healthy') { Write-Host 'mongodb_container_healthy=true'; exit 0 }; Start-Sleep -Seconds 2 } while ((Get-Date) -lt $deadline); throw 'MongoDB health check did not pass before timeout'"
 if errorlevel 1 goto proof_fail
 
 echo Waiting for Kafka UI...
@@ -96,7 +102,7 @@ set "INTERGRAX_MONGODB_URI=mongodb://%LKW_MONGODB_ROOT_USERNAME%:%LKW_MONGODB_RO
 set "INTERGRAX_MONGODB_DATABASE=%LKW_MONGODB_DATABASE%"
 set "INTERGRAX_MONGODB_COLLECTION=%LKW_MONGODB_COLLECTION%"
 
-uv run --project applications/local_workspace_application python "%PROOF%" --base-url "%LKW_BASE_URL%" --kafka-ui "%KAFKA_UI_URL%" --mongo-express "%MONGO_EXPRESS_URL%" %*
+uv run --project applications/local_workspace_application python "%PROOF%" --base-url "%LKW_BASE_URL%" --kafka-ui "%KAFKA_UI_URL%" --mongo-express "%MONGO_EXPRESS_URL%" --skip-docker %*
 set "EXIT_CODE=%ERRORLEVEL%"
 if errorlevel 1 goto proof_fail
 
@@ -115,12 +121,23 @@ echo MongoDB database/collection:
 echo   intergrax_proofs / proof_receipts
 echo.
 del /f /q "%COMPOSE_CONFIG%" >nul 2>nul
+call :finalize_proof
 popd >nul
-exit /b 0
+exit /b %EXIT_CODE%
 
 :proof_fail
 echo.
 echo proof_result=FAIL
 del /f /q "%COMPOSE_CONFIG%" >nul 2>nul
+call :finalize_proof
 popd >nul
-exit /b 1
+exit /b %EXIT_CODE%
+
+:finalize_proof
+if /I not "%LKW_COMPOSE_OWNERSHIP_ENTERED%"=="true" exit /b 0
+uv run --project applications/local_workspace_application python "%LIFECYCLE%" teardown --stack-id lkw-background-task-proof
+set "TEARDOWN_CODE=%ERRORLEVEL%"
+if "%EXIT_CODE%"=="0" (
+    if not "%TEARDOWN_CODE%"=="0" set "EXIT_CODE=1"
+)
+exit /b 0

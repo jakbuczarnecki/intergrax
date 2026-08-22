@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.contracts.llm_guardrail import GuardrailBackendOptions
 from intergrax.integrations.contracts.llm_guardrail import GuardrailContext, GuardrailScanResult, LlmGuardrailBackend
 from intergrax.integrations.providers.llm_guardrail._pattern_scanner import scan_patterns
 from intergrax.integrations.providers.llm_guardrail._vendor_opens import guardrails_ai_validate
@@ -29,5 +28,5 @@ class GuardrailsAiAdapter(BaseGuardrailAdapter):
         return scan_patterns(text, mode="output", slug=self._slug)
 
 
-def create_guardrails_ai_backend(*, options: GuardrailBackendOptions | None = None) -> LlmGuardrailBackend:
-    return GuardrailsAiAdapter(slug="guardrails_ai", options=options)
+def create_guardrails_ai_backend() -> LlmGuardrailBackend:
+    return GuardrailsAiAdapter(slug="guardrails_ai")

@@ -132,10 +132,12 @@ def _verify(
 def _minimal_descriptor_payload(**overrides: object) -> dict[str, object]:
     base: dict[str, object] = {
         "schema_version": PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION,
+        "library_class": "CONFORMANCE",
         "proof_id": "TOOLS-SAMPLE",
         "title": "sample",
         "domain": "tools",
         "proof_kind": "sample",
+        "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
         "profiles": ["full"],
         "command": {"executable": "python", "argv": ["-c", "print('ok')"]},
@@ -554,10 +556,12 @@ def _descriptor_payload(
 ) -> dict[str, object]:
     return {
         "schema_version": PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION,
+        "library_class": "CONFORMANCE",
         "proof_id": proof_id,
         "title": proof_id,
         "domain": "test_artifact_verify",
         "proof_kind": "artifact_verify",
+        "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
         "profiles": ["quick"],
         "command": {
@@ -860,7 +864,8 @@ def test_tools_descriptor_expected_artifacts_contract(repo_root: Path) -> None:
         for artifact in descriptor.expected_artifacts
         if artifact.kind == ExpectedArtifactKind.REPORT_HTML
     )
-    assert report.required is False
+    assert report.required is True
+    assert descriptor.report_required is True
 
 
 def test_verification_order_is_descriptor_declaration(

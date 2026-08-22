@@ -1,26 +1,33 @@
-# Intergrax Platform Proofs
+# Intergrax Proof Library
 
 **Status:** Canonical gateway  
 **Audience:** Maintainers, architects, proof authors
 
 ---
 
-## What are Platform Proofs?
+## What is the Proof Library?
 
-A **Platform Proof** is an executable falsification attempt against a bounded claim about a **reusable Intergrax platform mechanism** — not a product workflow demo and not a substitute for unit or integration tests.
+The **Intergrax Proof Library** (`platform_proofs/`) holds executable falsification attempts against bounded claims about **reusable Intergrax platform mechanisms** — not product workflow demos and not a substitute for unit or integration tests.
 
-Platform proofs live under `platform_proofs/`. They prove that a platform domain or cross-layer platform feature behaves as claimed across realistic boundaries. Products under `applications/` may **consume** platform mechanisms, but product execution is **not** independent proof of those mechanisms.
+The library has two public classes:
+
+| Class | Role | Entry framing |
+|-------|------|---------------|
+| **SCENARIO** | Executable falsification of a **real problem / failure mode**; may exercise multiple mechanisms and domains | Problem-first — primary public layer |
+| **CONFORMANCE** | Executable evidence for a **specific platform mechanism** — CI, regression, contract verification, architecture confidence | Mechanism-first — secondary in public library |
+
+Products under `applications/` may **consume** platform mechanisms, but product execution is **not** independent proof of those mechanisms.
 
 ```mermaid
 flowchart LR
-    A[Architecture<br/>claim boundary] --> B[Implementation]
+    A[Real problem / mechanism claim] --> B[Implementation]
     B --> C[Tests / integration evidence]
-    C --> D[Platform Proof<br/>platform_proofs/]
+    C --> D[Proof Library<br/>platform_proofs/]
     D --> E[Product consumption<br/>applications/]
     E --> F[Public evidence dashboard<br/>docs/project/proofs/]
 
     subgraph execution [Canonical execution]
-        S[scripts/proof/<br/>manifest · runner · SuiteReceipt]
+        S[scripts/proof/<br/>discovery · runner · SuiteReceipt]
     end
 
     D --> S
@@ -36,8 +43,8 @@ flowchart LR
 
 | Path | Owns |
 |------|------|
-| [`platform_proofs/`](.) | Reusable **platform mechanism** proofs — methodology, coverage map, proof design artifacts |
-| [`scripts/proof/`](../scripts/proof/) | Canonical **execution infrastructure** — manifest, profiles, runner, `SuiteReceipt` |
+| [`platform_proofs/`](.) | Proof Library — methodology, coverage map, proof packages |
+| [`scripts/proof/`](../scripts/proof/) | Canonical **execution infrastructure** — discovery, profiles, runner, `SuiteReceipt` |
 | [`docs/project/proofs/`](../docs/project/proofs/) | **Public** proof and evidence dashboard — what wording accepted evidence permits |
 | [`applications/`](../applications/) | **Products** and their **product proofs** — not platform domains |
 
@@ -49,9 +56,9 @@ flowchart LR
 
 | Document | Role |
 |----------|------|
-| [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) | How platform proofs are designed, classified, executed, and evidenced |
-| [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md) | Coverage map for 28 canonical domains + feature proofs |
-| [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) | Practical workflow for independent proof sessions |
+| [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) | **Canonical practical workflow** for independent Scenario and Conformance proof sessions |
+| [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) | How proofs are designed, classified, executed, and evidenced |
+| [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md) | Coverage map for canonical domains + feature proofs |
 
 **Related (outside this folder):**
 
@@ -61,13 +68,11 @@ flowchart LR
 
 ---
 
-## First designed reference proof
+## Reference proof
 
-**`TOOLS-ITERATIVE-SQL-INVESTIGATION`** — coverage **DESIGNED** (implementation follows PP-2).
+**`TOOLS-ITERATIVE-SQL-INVESTIGATION`** — existing **Conformance** proof at [`tools/iterative_sql_investigation/`](tools/iterative_sql_investigation/). Executable; being evolved under the Proof Library strategy.
 
-Bounded claim: the iterative tool runtime uses real SQL observations to drive subsequent evidence-dependent tool calls and reaches a bounded conclusion while preserving an explicit investigation chain.
-
-See [Platform Proof Map — TOOLS](PLATFORM_PROOF_MAP.md) and [tools reference placeholder](tools/README.md).
+See [Platform Proof Map — TOOLS](PLATFORM_PROOF_MAP.md) and [iterative SQL investigation README](tools/iterative_sql_investigation/README.md).
 
 ---
 

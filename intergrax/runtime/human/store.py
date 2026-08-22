@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
 from typing import List, Optional
@@ -13,6 +14,10 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_HUMAN_DECISIONS_DB,
     ENV_HUMAN_DECISIONS_DB,
     resolve_human_decisions_db_path,
+)
+from intergrax.contracts.human_approver import (
+    HumanApproverEvidence,
+    local_development_approver_evidence,
 )
 from intergrax.runtime.human.models import (
     EscalationTarget,
@@ -65,10 +70,19 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
                     agent_id TEXT,
                     run_id TEXT,
                     notes TEXT NOT NULL DEFAULT '',
-                    created_at_utc TEXT NOT NULL
+                    created_at_utc TEXT NOT NULL,
+                    approver_json TEXT
                 );
                 """
             )
+            columns = {
+                str(row[1])
+                for row in conn.execute("PRAGMA table_info(human_decisions)").fetchall()
+            }
+            if "approver_json" not in columns:
+                conn.execute(
+                    "ALTER TABLE human_decisions ADD COLUMN approver_json TEXT"
+                )
             conn.execute(
                 """
                 CREATE INDEX IF NOT EXISTS idx_human_decisions_task
@@ -83,8 +97,8 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
                 INSERT INTO human_decisions (
                     decision_id, task_id, tenant_id, user_id, human_request_id,
                     verdict, response_text, escalation_level, escalation_target,
-                    agent_id, run_id, notes, created_at_utc
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    agent_id, run_id, notes, created_at_utc, approver_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.decision_id,
@@ -100,6 +114,7 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
                     record.run_id,
                     record.notes,
                     record.created_at_utc,
+                    record.approver.model_dump_json(),
                 ),
             )
         return record
@@ -163,10 +178,19 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
     @staticmethod
     def _row_to_record(row: sqlite3.Row) -> HumanDecisionRecord:
         target = row["escalation_target"]
+        approver_raw = row["approver_json"] if "approver_json" in row.keys() else None
+        if approver_raw:
+            approver = HumanApproverEvidence.model_validate_json(approver_raw)
+        else:
+            approver = local_development_approver_evidence(
+                tenant_id=row["tenant_id"],
+                actor_id=row["user_id"] or "legacy_unknown_approver",
+            )
         return HumanDecisionRecord(
             decision_id=row["decision_id"],
             task_id=row["task_id"],
             tenant_id=row["tenant_id"],
+            approver=approver,
             user_id=row["user_id"],
             human_request_id=row["human_request_id"],
             verdict=HumanResponseVerdict(row["verdict"]),

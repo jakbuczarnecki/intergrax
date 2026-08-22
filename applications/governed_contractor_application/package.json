@@ -447,14 +447,11 @@
           "enabled": true
         },
         "guardrails": {
-          "bedrock_guardrail_policy_id": null,
-          "colang_config_path": null,
           "enabled": false,
-          "inference_slug": null,
+          "secondary_slug": null,
           "scan_input": true,
           "scan_output": true,
-          "scan_tool_calls": false,
-          "secondary_slug": null
+          "scan_tool_calls": false
         },
         "identity": {
           "api_key_env": "INTERGRAX_HARNESS_API_KEY",
