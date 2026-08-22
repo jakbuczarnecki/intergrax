@@ -54,14 +54,480 @@ Existing domain-oriented paths (e.g. `platform_proofs/tools/…`) may remain for
 
 ---
 
-## Mandatory scenario development lifecycle
+## Proof Library philosophy
 
-Every **Scenario Proof** session **MUST** follow this strict sequence:
+> **The Intergrax Proof Library is not a catalog of Intergrax features. It is a catalog of difficult real-world AI system problems that Intergrax can solve and falsifiably demonstrate.**
+
+> **Scenario selection precedes mechanism selection.**
+
+> **A missing platform capability does not automatically invalidate a strong scenario. If the capability is reusable and architecturally justified, implement it in Intergrax first and then resume the Scenario Proof.**
+
+> **One independent author session owns one Scenario Proof from qualification through accepted evidence.**
+
+Every Scenario Proof session is a **falsification attempt** against a real problem — not a feature demo, marketing slide, or architecture tour.
+
+---
+
+## One session owns one Scenario Proof
+
+**Normative rule:**
 
 ```text
-1. PROBLEM DEFINITION
-2. MECHANISM SELECTION
-3. CAPABILITY FIT / GAP ANALYSIS
+One independent Scenario Proof author session owns exactly one Scenario Proof
+from scenario qualification through accepted evidence/publication.
+```
+
+A session **may** inspect:
+
+- relevant architecture;
+- reusable platform components;
+- existing proofs;
+- tests and contracts;
+
+—but its implementation and publication **ownership** remains **one scenario**.
+
+A single session **MUST NOT**:
+
+- design multiple Scenario Proofs in parallel;
+- opportunistically modify unrelated Scenario Proofs;
+- broaden into general Proof Library redesign.
+
+Conformance proof work follows the same shared-development rules but is outside this one-session-one-scenario contract unless the operator explicitly scopes otherwise.
+
+---
+
+## Two-layer working model
+
+Every Scenario Proof session operates in two conceptual layers. **Do not collapse them.**
+
+### LAYER 1 — SCENARIO / PROBLEM
+
+Before discussing Intergrax implementation, determine whether the real-world scenario is strong enough to deserve entry in the Proof Library.
+
+Focus on:
+
+- real problem;
+- real user / operator / business pain;
+- failure consequences;
+- why the problem is difficult for AI systems;
+- adversarial conditions;
+- skeptical-engineer challenge;
+- public “wow” value.
+
+**Do not begin mechanism selection before the scenario itself is understood and accepted.**
+
+### LAYER 2 — SOLUTION / IMPLEMENTATION
+
+Only after scenario quality is accepted:
+
+1. design how the system should solve the problem;
+2. define desired behavior and guarantees;
+3. map required Intergrax mechanisms;
+4. perform capability-fit / gap analysis;
+5. implement reusable missing capability if justified;
+6. package / run / evaluate / report under the canonical Proof Library contract (see § Technical Proof Library lifecycle).
+
+---
+
+## Five-stage Scenario Proof session model
+
+Every Scenario Proof session **MUST** explicitly work through these stages **in order**. Do not skip stages. Do not implement before earlier stages are honest.
+
+```text
+STAGE 1 — Qualify and strengthen the scenario
+STAGE 2 — Design the scenario solution and proof semantics
+STAGE 3 — Map required Intergrax mechanisms
+STAGE 4 — Missing capability decision
+STAGE 5 — Apply canonical Proof Library engine
+```
+
+Conformance proofs follow the same engineering discipline in Stages 3–5 but may omit problem-first public framing where mechanism verification is the sole purpose.
+
+### Stage 1 — Qualify and strengthen the scenario
+
+Discuss the scenario in **plain problem language** before any implementation.
+
+**Required questions:**
+
+- What is the concrete real-world problem?
+- Who suffers from it?
+- What happens if the AI / system gets it wrong?
+- Why is this not a toy problem?
+- What makes it difficult?
+- What is the naive / simple solution likely to get wrong?
+- What adversarial situation exposes that weakness?
+- What makes the result interesting even to someone who does not know Intergrax?
+
+The session **must actively strengthen** weak scenario proposals rather than immediately implement them.
+
+#### Scenario Quality Gate
+
+A Scenario Proof should satisfy **most** of these:
+
+- real operational / business / engineering pain exists;
+- failure has meaningful consequences;
+- problem was not invented merely to exercise an Intergrax feature;
+- scenario contains uncertainty, conflict, failure, recovery, temporal complexity, governance, side-effect risk, adversarial input, or another meaningful systems challenge;
+- negative / adversarial falsification is possible;
+- outcome can be evaluated;
+- story is understandable without reading Intergrax internals;
+- result demonstrates more than basic LLM orchestration;
+- public demonstration has a credible “this is a system, not a chatbot” effect.
+
+**Weak scenario examples that require strengthening** (capabilities may appear inside a strong scenario, but are not strong scenarios by themselves):
+
+```text
+AI answers a question from RAG.
+AI uses memory.
+AI calls several tools.
+Two agents discuss an answer.
+AI summarizes documents.
+```
+
+#### Skeptic Challenge
+
+Every Scenario Proof **must** explicitly answer:
+
+> Could a skeptical Staff / Principal Engineer reasonably say:
+>
+> “I can build the same thing with an LLM + memory + RAG + a few LangGraph nodes in 10 minutes”?
+
+**If YES** — the scenario is currently too weak. **Do not** automatically discard the underlying real problem. First attempt to strengthen it by introducing the actual difficult guarantees naturally required by the real problem, such as:
+
+- conflicting evidence;
+- missing evidence;
+- stale evidence;
+- temporal reconstruction;
+- independently verified decisions;
+- bounded recovery;
+- durable state;
+- exactly-once / duplicate side-effect protection;
+- policy enforcement;
+- human approval;
+- adversarial input;
+- auditability;
+- evidence provenance;
+- multi-step evidence dependency;
+- interruption / resume;
+- disagreement requiring further evidence;
+- explicit unresolved outcome when certainty is impossible.
+
+Do **not** add complexity arbitrarily.
+
+**If NO** — document why the scenario requires guarantees beyond trivial orchestration.
+
+#### WOW criterion
+
+```text
+WOW does not mean “more agents” or “more infrastructure”.
+WOW means a difficult, credible guarantee is visibly achieved and evidenced.
+```
+
+Reject feature stuffing such as adding many agents, many databases, Kafka, RAG, Memory, Critic, HITL, or Governance **solely** to make a proof look impressive.
+
+The scenario should remain the **smallest credible system** that demonstrates the difficult guarantee.
+
+**Strong WOW example:**
+
+```text
+An external refund succeeds.
+The process crashes before local completion is recorded.
+Execution resumes.
+The system proves that a duplicate refund did not occur and preserves an auditable recovery history.
+```
+
+This can be more impressive than a seven-agent demo.
+
+#### Scenario rejection criteria
+
+Reject or redesign a scenario if, after strengthening attempts:
+
+- there is no meaningful real-world pain;
+- failure is inconsequential;
+- PASS is subjective prose only;
+- no credible falsification exists;
+- the model is directly given the expected answer / ground truth;
+- the proof is only a feature demo;
+- simple orchestration genuinely provides equivalent guarantees;
+- complexity exists only for visual impression;
+- the scenario cannot be reproduced honestly;
+- the claim would require overstating evidence.
+
+Also reject proofs whose primary motivation is:
+
+- “show that tool calling works”
+- “show that RAG works”
+- marketing demos
+- hello-world agents
+- arbitrary multi-hop requirements with no real failure risk
+
+### Stage 2 — Design the scenario solution and proof semantics
+
+Once the Scenario Quality Gate passes, design the solution in **plain language** before discussing APIs, classes, or package layout.
+
+**Required story structure:**
+
+```text
+WHAT HAPPENS
+→ WHAT THE SYSTEM RECEIVES
+→ WHAT IT MUST DETERMINE / ACHIEVE
+→ WHAT CAN GO WRONG
+→ WHAT THE SYSTEM DOES
+→ HOW IT REACTS TO FAILURE / CONFLICT
+→ WHAT FINAL RESULT IS ACCEPTABLE
+```
+
+Where useful, use:
+
+```text
+INPUT
+→ ACTION
+→ OBSERVATION
+→ DECISION
+→ CHALLENGE / FAILURE
+→ RECOVERY / VERIFICATION
+→ FINAL RESULT
+```
+
+Do not force phases that do not naturally apply to the scenario.
+
+#### Proof semantics
+
+Before mechanism selection, define:
+
+| Item | Required |
+|------|----------|
+| **Problem** | The real pain |
+| **Risk** | What harmful / incorrect system behavior is being tested |
+| **Desired outcome** | What correct system behavior looks like |
+| **Claim** | One bounded falsifiable claim |
+| **PASS** | Explicit conditions required for success — prefer machine-checkable invariants |
+| **FAIL** | Explicit conditions that invalidate the claim |
+| **Adversarial cases** | Concrete attempts to break the claim |
+| **Excluded claims** | What the scenario does not prove |
+| **Limitations** | Known boundaries |
+
+### Stage 3 — Map required Intergrax mechanisms
+
+Only after the problem and solution story are clear, determine technical realization.
+
+Create a mapping:
+
+```text
+REQUIRED GUARANTEE
+→ REQUIRED CAPABILITY
+→ EXISTING INTERGRAX COMPONENT
+→ STATUS
+```
+
+Statuses:
+
+- **AVAILABLE**
+- **AVAILABLE BUT NEEDS WIRING**
+- **MISSING**
+
+Examples of mechanisms — **only when naturally required**:
+
+- bounded execution
+- tool runtime
+- durable state
+- persistence
+- recovery
+- idempotency
+- side-effect coordination
+- Critic / verification
+- HITL
+- governance
+- policy enforcement
+- bitemporal knowledge
+- RAG
+- Memory
+- observability
+- Unified Run Journal
+- evidence identity / dependencies
+- multi-agent coordination
+- budget enforcement
+- security / adversarial input handling
+
+```text
+Problem chooses mechanisms.
+Mechanisms do not choose the problem.
+```
+
+**Do not** start from platform mechanisms and invent a scenario around them. Never add components solely to make the proof appear sophisticated.
+
+Verify reuse at current repository HEAD before claiming **AVAILABLE**.
+
+### Stage 4 — Missing capability decision
+
+A **MISSING** capability does **not** automatically invalidate a strong scenario.
+
+When a required capability is **MISSING**, determine:
+
+1. Is the requirement genuinely necessary for the real scenario?
+2. Is the missing capability reusable beyond this one proof?
+3. Does it belong naturally in Intergrax architecture?
+4. Can it be implemented cleanly as a typed reusable platform mechanism?
+5. Would implementing it materially strengthen Intergrax?
+
+**If YES to the above:**
+
+- **STOP** Scenario implementation temporarily;
+- define the architecture gap;
+- prepare / approve a bounded platform implementation task;
+- implement and independently verify the reusable capability;
+- return to the Scenario Proof.
+
+**If NO:**
+
+- do **not** create proof-local fake infrastructure;
+- redesign the scenario realization, narrow the claim, or reject the scenario if the guarantee cannot honestly be demonstrated.
+
+```text
+The Proof Library is also a discovery mechanism for meaningful platform gaps.
+```
+
+**Proof-local clones of missing platform capabilities are forbidden.**
+
+#### STOP ≠ abandon scenario
+
+**STOP** means:
+
+> do not improvise or create proof-local platform substitutes.
+
+It does **not** necessarily mean:
+
+> abandon the Scenario Proof.
+
+For strong scenarios, STOP may trigger:
+
+```text
+scenario
+→ architecture gap
+→ reusable platform enhancement
+→ verification
+→ resume scenario
+```
+
+This distinction is mandatory. Report the gap; do not silently weaken the scenario or fork a proof-local substitute.
+
+### Stage 5 — Apply canonical Proof Library engine
+
+Only after:
+
+- scenario accepted;
+- solution designed;
+- claim defined;
+- mechanisms mapped;
+- gaps resolved;
+
+proceed to the **technical pipeline** defined in § Technical Proof Library lifecycle and the sections that follow (package structure, descriptor, execution, evidence, report, acceptance).
+
+```text
+proof package
+→ proof.json
+→ .env.example
+→ optional proof-owned Compose / fixtures
+→ run_proof.py
+→ targeted tests
+→ real execution
+→ typed evidence
+→ proof-result.json
+→ report.html
+→ manual report / evidence audit
+→ Proof Library acceptance
+```
+
+Do not duplicate those technical contracts here — they remain canonical in their existing sections.
+
+---
+
+## Mandatory session conversation format
+
+Structure user-facing discussion in this order:
+
+### A. SCENARIO
+
+Discuss:
+
+- REAL PROBLEM
+- WHY IT MATTERS
+- FAILURE CONSEQUENCES
+- WOW FACTOR
+- SKEPTIC CHALLENGE
+- ADVERSARIAL CONDITIONS
+
+**No implementation yet.**
+
+### B. SOLUTION
+
+Discuss:
+
+- DESIRED BEHAVIOR
+- STEP-BY-STEP STORY
+- GUARANTEES
+- CLAIM
+- PASS
+- FAIL
+- ADVERSARIAL ATTACKS
+- EXCLUDED CLAIMS
+
+### C. INTERGRAX FIT
+
+Present a clear matrix:
+
+```text
+required guarantee
+→ Intergrax mechanism
+→ exact existing ownership / component
+→ AVAILABLE / AVAILABLE BUT NEEDS WIRING / MISSING
+```
+
+### D. GAP DECISION
+
+For every **MISSING** item:
+
+- is it necessary?
+- is it reusable?
+- should Intergrax implement it?
+- what architectural owner should own it?
+
+**Stop for approval** before implementation when a new reusable platform capability is required.
+
+### E. PROOF BUILD
+
+Only then proceed:
+
+- implementation;
+- tests;
+- real run;
+- evidence;
+- report;
+- publication.
+
+---
+
+## User-facing explanation requirement
+
+Explain each stage first in **plain user / problem language**. Technical detail comes afterward.
+
+A session **must always** make clear:
+
+- where it currently is in the scenario roadmap;
+- what is being decided now;
+- why that decision matters;
+- whether the scenario is becoming stronger or weaker;
+- whether the final public Proof Library objective is still preserved.
+
+Avoid unnecessary implementation jargon during scenario design (Stages 1–4).
+
+---
+
+## Technical Proof Library lifecycle
+
+After Stages 1–4 are complete, every Scenario Proof session **MUST** follow this strict technical sequence. Do not skip phases.
+
+```text
 4. PROOF DESIGN
 5. IMPLEMENTATION
 6. TARGETED TESTING
@@ -70,60 +536,6 @@ Every **Scenario Proof** session **MUST** follow this strict sequence:
 9. PUBLICATION / LIBRARY ACCEPTANCE
 10. CLOSE AND MOVE TO NEXT SCENARIO
 ```
-
-Do not skip phases. Do not implement before gap analysis is honest.
-
-### 1. Problem definition
-
-Before any implementation, define:
-
-| Item | Required |
-|------|----------|
-| Concrete real-world problem | Yes |
-| Who has it | Yes |
-| Why failure matters | Yes |
-| Naive / simple failure mode | Yes |
-| Adversarial conditions | Yes |
-| Claim under test | Yes — single, bounded, falsifiable |
-| Explicit PASS | Yes — machine-checkable where possible |
-| Explicit FAIL | Yes |
-| Excluded claims | Yes |
-| Limitations | Yes |
-
-**Reject** proofs whose primary motivation is:
-
-- “show that tool calling works”
-- “show that RAG works”
-- marketing demos
-- hello-world agents
-- arbitrary multi-hop requirements with no real failure risk
-
-### 2. Mechanism selection
-
-Select only mechanisms **naturally required** by the problem.
-
-```text
-Problem chooses mechanisms.
-Mechanisms do not choose the problem.
-```
-
-Never add components solely to make the proof appear sophisticated.
-
-### 3. Capability fit / gap analysis
-
-Before implementing:
-
-1. Map required guarantees to existing Intergrax mechanisms.
-2. Classify each as **AVAILABLE**, **AVAILABLE BUT NEEDS WIRING**, or **MISSING**.
-3. Verify reuse at current repository HEAD.
-4. If a required **reusable** mechanism is **MISSING**:
-   - **STOP** implementation;
-   - report the architecture gap;
-   - decide whether platform implementation is justified.
-
-**Proof-local clones of missing platform capabilities are forbidden.**
-
-### 4–10. Design through acceptance
 
 | Phase | Action |
 |-------|--------|
@@ -134,8 +546,6 @@ Before implementing:
 | **8. Evidence / report verification** | Typed evidence validates; report manually audited |
 | **9. Publication / library acceptance** | All acceptance gates pass (see § Public Library acceptance gate) |
 | **10. Close** | Update coverage map; move to next scenario |
-
-Conformance proofs follow the same engineering discipline but may omit problem-first public framing where mechanism verification is the sole purpose.
 
 ---
 
@@ -721,17 +1131,13 @@ The session **MUST** then:
 
 1. resolve current HEAD (`git fetch origin development`)
 2. read this guide
-3. inspect only architecture / components relevant to the scenario
-4. produce a user-facing roadmap
-5. define problem / risk / claim / failure conditions
-6. map mechanisms
-7. perform capability-fit / gap analysis
-8. **STOP** for architecture decision if reusable mechanism missing
-9. only after approval — implement
-10. test
-11. execute actual proof
-12. inspect evidence / report
-13. publish only after acceptance gates
+3. confirm **one session = one Scenario Proof** ownership
+4. work through Stages 1–4 using the mandatory conversation format (§ Mandatory session conversation format)
+5. inspect only architecture / components relevant to the scenario
+6. pass Scenario Quality Gate and Skeptic Challenge before implementation
+7. **STOP** for architecture decision if a reusable mechanism is **MISSING** (STOP ≠ abandon scenario)
+8. only after approval — Stage 5 / technical lifecycle (implement → test → execute → evidence → report)
+9. publish only after acceptance gates
 
 Do not assume decisions from another scenario unless encoded in canonical repo documentation. **Current repo wins.**
 
@@ -776,7 +1182,7 @@ Mandatory rules for proof sessions:
 
 A proof-author session **MUST STOP** and report instead of improvising when:
 
-- required reusable mechanism is missing
+- required reusable mechanism is **MISSING** (see § Stage 4 — Missing capability decision; STOP ≠ abandon scenario)
 - existing architecture ownership is ambiguous
 - proof would need to copy product logic
 - real boundary cannot be exercised
@@ -786,6 +1192,7 @@ A proof-author session **MUST STOP** and report instead of improvising when:
 - scope begins requiring platform redesign not approved by user
 - concurrent edits conflict in scoped files
 - canonical proof-package configuration / environment loading required by the scenario is not available as reusable proof infrastructure — **STOP** and report the gap; do not implement a proof-local dotenv / config loader
+- Scenario Quality Gate or Skeptic Challenge cannot be satisfied after honest strengthening attempts — reject or redesign; do not proceed to proof build
 
 ---
 
@@ -804,6 +1211,9 @@ See [tools/iterative_sql_investigation/README.md](tools/iterative_sql_investigat
 | Anti-pattern | Why it fails |
 |--------------|--------------|
 | Feature chosen before problem | Demo, not falsification |
+| Multiple scenarios in one session | Violates one-session ownership; fragments quality gates |
+| Feature stuffing for WOW | Complexity without credible guarantee |
+| LangGraph-equivalent scenario without strengthening | Fails Skeptic Challenge |
 | Fake replacing mechanism under proof | Cannot claim that boundary proved |
 | Product proof masquerading as platform proof | Violates ownership rule |
 | Proof buried only in `applications/` | Product-owned; not platform proof |
