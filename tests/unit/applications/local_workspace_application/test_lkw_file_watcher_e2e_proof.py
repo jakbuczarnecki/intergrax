@@ -51,8 +51,7 @@ _REQUIRED_PROOF_CONCEPTS = (
     "lkw-background-worker",
     "local_workspace",
     "qdrant",
-    "embedding_warmup",
-    "proof_phase",
+    "embedding_readiness",
 )
 
 _REQUIRED_PASS_FIELDS = (
@@ -227,6 +226,8 @@ def test_four_file_compose_command_includes_mongodb(
     assert command == [
         "docker",
         "compose",
+        "-p",
+        "lkw-file-watcher-e2e-proof",
         "-f",
         "base.yml",
         "-f",
@@ -249,7 +250,7 @@ def test_four_file_compose_command_includes_mongodb(
         "docker",
         "compose",
         "-p",
-        "lkw-core-platform-proof",
+        "lkw-file-watcher-e2e-proof",
         "-f",
     ]
     assert "--mongodb-compose" in _read(_PROOF_SCRIPT)
@@ -343,202 +344,95 @@ def test_search_diagnostic_parsing_success_and_rejection() -> None:
     )
 
 
-def test_warmup_request_shape() -> None:
+def test_embedding_readiness_probe_code_uses_production_pipeline() -> None:
     proof = _load_proof_module()
-    request = proof.build_warmup_search_request("LKW_FILE_WATCHER_E2E_PREWARM_ab12")
-    assert request["capability"] == "local.workspace.search"
-    assert request["tenant_id"] == "lkw-file-watcher-e2e"
-    assert request["workspace_id"] == "lkw-file-watcher-e2e"
-    assert request["user_id"] == "lkw.file_watcher"
-    metadata = request["metadata"]
-    assert isinstance(metadata, dict)
-    assert metadata["collection_id"] == "lkw-file-watcher-e2e"
-    assert metadata["top_k"] == 1
-    assert metadata["proof_phase"] == "embedding_warmup"
-    assert metadata["query"] == "LKW_FILE_WATCHER_E2E_PREWARM_ab12"
-    serialized = str(request)
-    assert "local.workspace.index" not in serialized
-    assert "source_paths" not in serialized
+    code = proof.build_embedding_readiness_probe_code(
+        probe_text="LKW_FILE_WATCHER_E2E_EMBEDDING_READINESS"
+    )
+    assert "create_default_embedding_pipeline" in code
+    assert "embedding_profile_from_env" in code
+    assert "embed_texts" in code
+    assert "local.workspace.search" not in code
+    assert "rag.retrieve" not in code
+    assert "qdrant" not in code.lower()
 
 
-def test_warmup_diagnostic_success_and_rejection() -> None:
+def test_parse_embedding_readiness_output_success_and_failure() -> None:
     proof = _load_proof_module()
-    reason = proof.SearchSummaryReason
-    complete = proof.SearchDiagnostics(
-        num_results=0,
-        evidence_count=0,
-        source_refs=(),
-        raw_tool_reason=None,
-        used=True,
-        reason=reason.RETRIEVE_COMPLETE,
+    success = proof.parse_embedding_readiness_output(
+        'noise\n{"provider": "ollama", "model": "nomic-embed-text", "dimension": 768, "ok": true}\n'
     )
-    assert proof.warmup_attempt_succeeded(complete) is True
+    assert success.ready is True
+    assert success.provider == "ollama"
+    assert success.model == "nomic-embed-text"
+    assert success.dimension == 768
+    assert success.failure_reason is None
 
-    terminal_only = proof.SearchDiagnostics(
-        num_results=0,
-        evidence_count=0,
-        source_refs=(),
-        raw_tool_reason="no_hits",
-        used=None,
-        reason=None,
-        terminal_status="succeeded",
+    invalid_vector = proof.parse_embedding_readiness_output(
+        '{"provider": "ollama", "model": "", "dimension": 0, "ok": false}'
     )
-    assert proof.warmup_attempt_succeeded(terminal_only) is False
+    assert invalid_vector.ready is False
+    assert invalid_vector.failure_reason == "embedding_readiness_invalid_vector"
 
-    used_false = proof.SearchDiagnostics(
-        num_results=0,
-        evidence_count=0,
-        source_refs=(),
-        raw_tool_reason="boom",
-        used=False,
-        reason=reason.RETRIEVE_FAILED,
-    )
-    assert proof.warmup_attempt_succeeded(used_false) is False
-
-    used_true_failed = proof.SearchDiagnostics(
-        num_results=0,
-        evidence_count=0,
-        source_refs=(),
-        raw_tool_reason="boom",
-        used=True,
-        reason=reason.RETRIEVE_FAILED,
-    )
-    assert proof.warmup_attempt_succeeded(used_true_failed) is False
-
-    used_true_query_missing = proof.SearchDiagnostics(
-        num_results=0,
-        evidence_count=0,
-        source_refs=(),
-        raw_tool_reason=None,
-        used=True,
-        reason=reason.QUERY_MISSING,
-    )
-    assert proof.warmup_attempt_succeeded(used_true_query_missing) is False
-
-    used_true_gateway_unavailable = proof.SearchDiagnostics(
-        num_results=0,
-        evidence_count=0,
-        source_refs=(),
-        raw_tool_reason=None,
-        used=True,
-        reason=reason.TOOL_GATEWAY_NOT_AVAILABLE,
-    )
-    assert proof.warmup_attempt_succeeded(used_true_gateway_unavailable) is False
-
-    used_true_missing_reason = proof.SearchDiagnostics(
-        num_results=0,
-        evidence_count=0,
-        source_refs=(),
-        raw_tool_reason=None,
-        used=True,
-        reason=None,
-    )
-    assert proof.warmup_attempt_succeeded(used_true_missing_reason) is False
-
-    missing_used = proof.SearchDiagnostics(
-        num_results=0,
-        evidence_count=0,
-        source_refs=(),
-        raw_tool_reason=None,
-        used=None,
-        reason=reason.RETRIEVE_COMPLETE,
-    )
-    assert proof.warmup_attempt_succeeded(missing_used) is False
-    assert proof.warmup_attempt_succeeded(None) is False
-
-    unknown_wire = {
-        "metadata": {
-            "lkw_evidence.v1": {
-                "diagnostics": {
-                    "lkw.search_summary.v1": {
-                        "num_results": 0,
-                        "evidence_count": 0,
-                        "source_refs": [],
-                        "used": True,
-                        "reason": "future_unknown_reason",
-                    }
-                }
-            }
-        }
-    }
-    unknown_diagnostics = proof.extract_search_diagnostics(unknown_wire)
-    assert unknown_diagnostics is not None
-    assert unknown_diagnostics.reason is None
-    assert proof.warmup_attempt_succeeded(unknown_diagnostics) is False
+    invalid_output = proof.parse_embedding_readiness_output("not-json")
+    assert invalid_output.ready is False
+    assert invalid_output.failure_reason == "embedding_readiness_invalid_output"
 
 
-def test_warmup_retry_success_and_failure() -> None:
+def test_embedding_readiness_does_not_call_retrieval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     proof = _load_proof_module()
-    cold = {
-        "metadata": {
-            "lkw_evidence.v1": {
-                "terminal_status": "failed",
-                "diagnostics": {
-                    "lkw.search_summary.v1": {
-                        "num_results": 0,
-                        "evidence_count": 0,
-                        "source_refs": [],
-                        "used": False,
-                        "reason": "retrieve_failed",
-                        "raw_tool_reason": "cold",
-                    }
-                },
-            }
-        }
-    }
-    warm = {
-        "metadata": {
-            "lkw_evidence.v1": {
-                "terminal_status": "succeeded",
-                "diagnostics": {
-                    "lkw.search_summary.v1": {
-                        "num_results": 0,
-                        "evidence_count": 0,
-                        "source_refs": [],
-                        "used": True,
-                        "reason": "retrieve_complete",
-                        "raw_tool_reason": "no_hits",
-                    }
-                },
-            }
-        }
-    }
-    with (
-        patch.object(proof, "request_json", side_effect=[cold, warm]),
-        patch.object(proof.time, "sleep"),
-        patch.object(proof.time, "monotonic", side_effect=[0.0, 1.0, 2.0, 3.0]),
-    ):
-        result = proof.run_embedding_warmup(
-            base_url="http://127.0.0.1:8020",
-            timeout_seconds=10.0,
-        )
-    assert result.completed is True
-    assert result.attempt_count == 2
-    assert result.last_reason == "retrieve_complete"
+    retrieval_calls: list[object] = []
 
-    with (
-        patch.object(proof, "request_json", side_effect=[cold, cold, cold]),
-        patch.object(proof.time, "sleep"),
-        patch.object(proof.time, "monotonic", side_effect=[0.0, 1.0, 2.0, 11.0]),
-    ):
-        failed = proof.run_embedding_warmup(
-            base_url="http://127.0.0.1:8020",
-            timeout_seconds=10.0,
-        )
-    assert failed.completed is False
-    assert failed.last_reason == "retrieve_failed"
-    assert "embedding_warmup_failed" in _read(_PROOF_SCRIPT)
+    def fake_request_json(*_args: Any, **_kwargs: Any) -> dict[str, object]:
+        retrieval_calls.append("request_json")
+        return {}
+
+    monkeypatch.setattr(proof, "request_json", fake_request_json)
+    monkeypatch.setattr(
+        proof,
+        "bootstrap_run_command",
+        lambda *_a, **_k: type(
+            "Completed",
+            (),
+            {"returncode": 0, "stdout": '{"provider":"ollama","model":"m","dimension":768,"ok":true}'},
+        )(),
+    )
+    result = proof.run_embedding_readiness(
+        base_compose=Path("base.yml"),
+        kafka_compose=Path("kafka.yml"),
+        watcher_compose=Path("watcher.yml"),
+        mongodb_compose=Path("mongodb.yml"),
+        cwd=Path("."),
+        timeout_seconds=30,
+    )
+    assert result.ready is True
+    assert retrieval_calls == []
 
 
-def test_warmup_before_kafka_and_file_ordering() -> None:
+def test_embedding_readiness_failure_contract() -> None:
+    proof = _load_proof_module()
+    assert "embedding_readiness_failed" in _read(_PROOF_SCRIPT)
+    assert "run_persistence_embedding_warmup" not in _read(_PROOF_SCRIPT)
+    assert "run_embedding_warmup" not in _read(_PROOF_SCRIPT)
+
+
+def test_readiness_before_kafka_and_file_ordering() -> None:
     source = _read(_PROOF_SCRIPT)
     main_start = source.index("def main(")
     main_body = source[main_start:]
     bootstrap_idx = main_body.index("ensure_embedding_model_bootstrap_if_configured")
-    warmup_idx = main_body.index("run_persistence_embedding_warmup")
+    readiness_idx = main_body.index("run_embedding_readiness")
     kafka_before_idx = main_body.index("task_count_before_file = inspect_kafka")
     create_doc_idx = main_body.index("create_proof_document")
-    assert bootstrap_idx < warmup_idx < kafka_before_idx < create_doc_idx
+    assert bootstrap_idx < readiness_idx < kafka_before_idx < create_doc_idx
+    assert "run_persistence_embedding_warmup" not in main_body
+    assert "run_embedding_warmup" not in main_body
+
+
+def test_warmup_before_kafka_and_file_ordering() -> None:
+    test_readiness_before_kafka_and_file_ordering()
 
 
 def test_timeout_defaults() -> None:
@@ -929,7 +823,7 @@ def test_main_flow_evidence_ordering() -> None:
     second_poll = main_body.index("_poll_search_until_indexed", first_poll + 1)
     markers = [
         ("bootstrap", main_body.index("ensure_embedding_model_bootstrap_if_configured")),
-        ("warmup", main_body.index("run_persistence_embedding_warmup")),
+        ("embedding_readiness", main_body.index("run_embedding_readiness")),
         (
             "kafka_before_file",
             main_body.index("task_count_before_file = inspect_kafka"),
@@ -1034,16 +928,17 @@ def test_ensure_embedding_model_bootstrap_failure_raises(
     assert exc.value.reason == "embedding_model_pull_failed"
 
 
-def test_main_bootstrap_before_warmup_and_failure_skips_warmup(
+def test_main_bootstrap_before_readiness_and_failure_skips_readiness(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     proof = _load_proof_module()
     events: list[str] = []
-    warmup = proof.WarmupResult(
-        completed=True,
-        attempt_count=1,
-        last_reason="retrieve_complete",
-        last_raw_tool_reason=None,
+    readiness = proof.EmbeddingReadinessResult(
+        ready=True,
+        provider="ollama",
+        model="resolved-model",
+        dimension=768,
+        failure_reason=None,
     )
 
     monkeypatch.setattr(proof, "wait_for_health", lambda *_a, **_k: True)
@@ -1060,15 +955,15 @@ def test_main_bootstrap_before_warmup_and_failure_skips_warmup(
         bootstrap_ok,
     )
 
-    def persistence_warmup(**_kwargs: Any) -> Any:
-        events.append("warmup")
-        return warmup
+    def readiness_ok(**_kwargs: Any) -> Any:
+        events.append("embedding_readiness")
+        return readiness
 
-    monkeypatch.setattr(proof, "run_persistence_embedding_warmup", persistence_warmup)
+    monkeypatch.setattr(proof, "run_embedding_readiness", readiness_ok)
     monkeypatch.setattr(
         proof,
         "inspect_kafka_topic_message_count",
-        lambda **_k: (_ for _ in ()).throw(RuntimeError("stop_after_warmup")),
+        lambda **_k: (_ for _ in ()).throw(RuntimeError("stop_after_readiness")),
     )
 
     exit_code = proof.main(
@@ -1080,7 +975,7 @@ def test_main_bootstrap_before_warmup_and_failure_skips_warmup(
         ]
     )
     assert exit_code != 0
-    assert events == ["bootstrap", "warmup"]
+    assert events == ["bootstrap", "embedding_readiness"]
 
     events.clear()
 
@@ -1095,13 +990,8 @@ def test_main_bootstrap_before_warmup_and_failure_skips_warmup(
     )
     monkeypatch.setattr(
         proof,
-        "run_persistence_embedding_warmup",
-        lambda **_k: (_ for _ in ()).throw(AssertionError("warmup must not run")),
-    )
-    monkeypatch.setattr(
-        proof,
-        "run_embedding_warmup",
-        lambda **_k: (_ for _ in ()).throw(AssertionError("warmup must not run")),
+        "run_embedding_readiness",
+        lambda **_k: (_ for _ in ()).throw(AssertionError("readiness must not run")),
     )
 
     exit_code = proof.main(
@@ -1116,16 +1006,65 @@ def test_main_bootstrap_before_warmup_and_failure_skips_warmup(
     assert events == ["bootstrap"]
 
 
-def test_main_non_ollama_bootstrap_skips_to_warmup(
+def test_main_embedding_readiness_failure_gates_kafka_and_file(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     proof = _load_proof_module()
     events: list[str] = []
-    warmup = proof.WarmupResult(
-        completed=True,
-        attempt_count=1,
-        last_reason="retrieve_complete",
-        last_raw_tool_reason=None,
+
+    monkeypatch.setattr(proof, "wait_for_health", lambda *_a, **_k: True)
+    monkeypatch.setattr(proof, "watcher_container_running", lambda **_k: True)
+    monkeypatch.setattr(proof, "watcher_checkpoint_ready", lambda **_k: True)
+    monkeypatch.setattr(
+        proof,
+        "ensure_embedding_model_bootstrap_if_configured",
+        lambda **_k: "resolved-model",
+    )
+    monkeypatch.setattr(
+        proof,
+        "run_embedding_readiness",
+        lambda **_k: proof.EmbeddingReadinessResult(
+            ready=False,
+            provider="ollama",
+            model="resolved-model",
+            dimension=None,
+            failure_reason="embedding_readiness_probe_failed",
+        ),
+    )
+    monkeypatch.setattr(
+        proof,
+        "inspect_kafka_topic_message_count",
+        lambda **_k: (_ for _ in ()).throw(AssertionError("kafka must not run")),
+    )
+    monkeypatch.setattr(
+        proof,
+        "create_proof_document",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("file must not run")),
+    )
+
+    exit_code = proof.main(
+        [
+            "--repo-root",
+            str(_PROJECT_ROOT),
+            "--proof-docs-dir",
+            str(_LKW_ROOT / ".proof_docs"),
+        ]
+    )
+    assert exit_code == 1
+    assert events == []
+
+
+def test_main_non_ollama_bootstrap_skips_to_readiness(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    proof = _load_proof_module()
+    events: list[str] = []
+    readiness = proof.EmbeddingReadinessResult(
+        ready=True,
+        provider="openai",
+        model="text-embedding-3-large",
+        dimension=3072,
+        failure_reason=None,
     )
 
     monkeypatch.setattr(proof, "wait_for_health", lambda *_a, **_k: True)
@@ -1142,13 +1081,13 @@ def test_main_non_ollama_bootstrap_skips_to_warmup(
     )
     monkeypatch.setattr(
         proof,
-        "run_persistence_embedding_warmup",
-        lambda **_k: (events.append("warmup"), warmup)[1],
+        "run_embedding_readiness",
+        lambda **_k: (events.append("embedding_readiness"), readiness)[1],
     )
     monkeypatch.setattr(
         proof,
         "inspect_kafka_topic_message_count",
-        lambda **_k: (_ for _ in ()).throw(RuntimeError("stop_after_warmup")),
+        lambda **_k: (_ for _ in ()).throw(RuntimeError("stop_after_readiness")),
     )
 
     exit_code = proof.main(
@@ -1160,7 +1099,19 @@ def test_main_non_ollama_bootstrap_skips_to_warmup(
         ]
     )
     assert exit_code != 0
-    assert events == ["bootstrap", "warmup"]
+    assert events == ["bootstrap", "embedding_readiness"]
+
+
+def test_main_bootstrap_before_warmup_and_failure_skips_warmup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    test_main_bootstrap_before_readiness_and_failure_skips_readiness(monkeypatch)
+
+
+def test_main_non_ollama_bootstrap_skips_to_warmup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    test_main_non_ollama_bootstrap_skips_to_readiness(monkeypatch)
 
 
 def test_destructive_compose_absent_from_python_proof() -> None:
