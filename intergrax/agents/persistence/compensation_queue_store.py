@@ -30,6 +30,7 @@ class CompensationJobStatus(StrEnum):
     COMPLETED = "completed"
     RETRYABLE = "retryable"
     FAILED = "failed"
+    UNCERTAIN = "uncertain"
 
 
 class CompensationJob(BaseModel):
@@ -77,6 +78,9 @@ class CompensationQueueStore(ABC):
     def list_pending(self, tenant_id: str, *, limit: int = 100) -> list[CompensationJob]: ...
 
     @abstractmethod
+    def list_uncertain(self, tenant_id: str, *, limit: int = 100) -> list[CompensationJob]: ...
+
+    @abstractmethod
     def claim_pending(
         self,
         tenant_id: str,
@@ -98,16 +102,18 @@ class CompensationQueueStore(ABC):
         retryable: bool = False,
     ) -> None: ...
 
-    @abstractmethod
-    def mark_completed(self, tenant_id: str, idempotency_key: str) -> None: ...
-
-    @abstractmethod
-    def mark_failed(self, tenant_id: str, idempotency_key: str, error: str) -> None: ...
-
 
 def _claimable_statuses(now: datetime) -> tuple[CompensationJobStatus, ...]:
     del now
     return (CompensationJobStatus.PENDING, CompensationJobStatus.RETRYABLE)
+
+
+def _is_expired_running(job: CompensationJob, now: datetime) -> bool:
+    return (
+        job.status == CompensationJobStatus.RUNNING
+        and job.lease_expires_at is not None
+        and job.lease_expires_at <= now
+    )
 
 
 def _job_to_claim(job: CompensationJob) -> CompensationClaim:
@@ -151,6 +157,26 @@ class InMemoryCompensationQueueStore(CompensationQueueStore):
             jobs.sort(key=lambda item: item.created_at)
             return jobs[:limit]
 
+    def list_uncertain(self, tenant_id: str, *, limit: int = 100) -> list[CompensationJob]:
+        with self._lock:
+            jobs = [
+                job
+                for job in self._jobs.values()
+                if job.tenant_id == tenant_id
+                and job.status == CompensationJobStatus.UNCERTAIN
+            ]
+            jobs.sort(key=lambda item: item.created_at)
+            return jobs[:limit]
+
+    def _quarantine_expired_running(self, *, tenant_id: str, now: datetime) -> None:
+        for job in list(self._jobs.values()):
+            if job.tenant_id != tenant_id or not _is_expired_running(job, now):
+                continue
+            key = (job.tenant_id, job.request.idempotency_key)
+            self._jobs[key] = job.model_copy(
+                update={"status": CompensationJobStatus.UNCERTAIN},
+            )
+
     def _try_claim_one(
         self,
         *,
@@ -180,20 +206,6 @@ class InMemoryCompensationQueueStore(CompensationQueueStore):
                 )
                 self._jobs[key] = updated
                 return _job_to_claim(updated)
-            if (
-                job.status == CompensationJobStatus.RUNNING
-                and job.lease_expires_at is not None
-                and job.lease_expires_at <= now
-            ):
-                updated = job.model_copy(
-                    update={
-                        "owner_id": owner_id,
-                        "lease_expires_at": lease_expires_at,
-                        "fence": job.fence + 1,
-                    },
-                )
-                self._jobs[key] = updated
-                return _job_to_claim(updated)
         return None
 
     def claim_pending(
@@ -208,6 +220,7 @@ class InMemoryCompensationQueueStore(CompensationQueueStore):
         lease_expires_at = now + timedelta(seconds=lease_seconds)
         claims: list[CompensationClaim] = []
         with self._lock:
+            self._quarantine_expired_running(tenant_id=tenant_id, now=now)
             while len(claims) < limit:
                 claim = self._try_claim_one(
                     tenant_id=tenant_id,
@@ -255,24 +268,6 @@ class InMemoryCompensationQueueStore(CompensationQueueStore):
             job = self._assert_claim_current(claim)
             self._jobs[(claim.tenant_id, claim.idempotency_key)] = job.model_copy(
                 update={"status": terminal, "error": error},
-            )
-
-    def mark_completed(self, tenant_id: str, idempotency_key: str) -> None:
-        with self._lock:
-            job = self._jobs.get((tenant_id, idempotency_key))
-            if job is None:
-                return
-            self._jobs[(tenant_id, idempotency_key)] = job.model_copy(
-                update={"status": CompensationJobStatus.COMPLETED},
-            )
-
-    def mark_failed(self, tenant_id: str, idempotency_key: str, error: str) -> None:
-        with self._lock:
-            job = self._jobs.get((tenant_id, idempotency_key))
-            if job is None:
-                return
-            self._jobs[(tenant_id, idempotency_key)] = job.model_copy(
-                update={"status": CompensationJobStatus.FAILED, "error": error},
             )
 
 
@@ -391,6 +386,45 @@ class SQLiteCompensationQueueStore(CompensationQueueStore):
             ).fetchall()
         return [self._load_row(row) for row in rows]
 
+    def list_uncertain(self, tenant_id: str, *, limit: int = 100) -> list[CompensationJob]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT payload, status, owner_id, lease_expires_at, fence
+                FROM compensation_jobs
+                WHERE tenant_id = ? AND status = ?
+                ORDER BY created_at ASC
+                LIMIT ?
+                """,
+                (tenant_id, CompensationJobStatus.UNCERTAIN.value, limit),
+            ).fetchall()
+        return [self._load_row(row) for row in rows]
+
+    def _quarantine_expired_running(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        tenant_id: str,
+        now: datetime,
+    ) -> None:
+        rows = conn.execute(
+            """
+            SELECT payload, status, owner_id, lease_expires_at, fence
+            FROM compensation_jobs
+            WHERE tenant_id = ?
+              AND status = ?
+              AND lease_expires_at IS NOT NULL
+              AND lease_expires_at <= ?
+            """,
+            (tenant_id, CompensationJobStatus.RUNNING.value, now.isoformat()),
+        ).fetchall()
+        for row in rows:
+            job = self._load_row(row)
+            self._persist_job(
+                conn,
+                job.model_copy(update={"status": CompensationJobStatus.UNCERTAIN}),
+            )
+
     def _persist_job(self, conn: sqlite3.Connection, job: CompensationJob) -> None:
         payload = job.model_dump(mode="json")
         conn.execute(
@@ -424,20 +458,14 @@ class SQLiteCompensationQueueStore(CompensationQueueStore):
         with self._connect() as conn:
             for _ in range(limit):
                 conn.execute("BEGIN IMMEDIATE")
+                self._quarantine_expired_running(conn, tenant_id=tenant_id, now=now)
                 row = conn.execute(
                     """
                     SELECT tenant_id, idempotency_key, payload, status,
                            owner_id, lease_expires_at, fence, created_at
                     FROM compensation_jobs
                     WHERE tenant_id = ?
-                      AND (
-                        status IN (?, ?)
-                        OR (
-                            status = ?
-                            AND lease_expires_at IS NOT NULL
-                            AND lease_expires_at <= ?
-                        )
-                      )
+                      AND status IN (?, ?)
                     ORDER BY created_at ASC
                     LIMIT 1
                     """,
@@ -445,8 +473,6 @@ class SQLiteCompensationQueueStore(CompensationQueueStore):
                         tenant_id,
                         CompensationJobStatus.PENDING.value,
                         CompensationJobStatus.RETRYABLE.value,
-                        CompensationJobStatus.RUNNING.value,
-                        now.isoformat(),
                     ),
                 ).fetchone()
                 if row is None:
@@ -551,25 +577,5 @@ class SQLiteCompensationQueueStore(CompensationQueueStore):
                     f"Stale compensation failure rejected fence={claim.fence}.",
                 )
             updated = job.model_copy(update={"status": terminal, "error": error})
-            self._persist_job(conn, updated)
-            conn.commit()
-
-    def mark_completed(self, tenant_id: str, idempotency_key: str) -> None:
-        job = self._load(tenant_id, idempotency_key)
-        if job is None:
-            return
-        updated = job.model_copy(update={"status": CompensationJobStatus.COMPLETED})
-        with self._connect() as conn:
-            self._persist_job(conn, updated)
-            conn.commit()
-
-    def mark_failed(self, tenant_id: str, idempotency_key: str, error: str) -> None:
-        job = self._load(tenant_id, idempotency_key)
-        if job is None:
-            return
-        updated = job.model_copy(
-            update={"status": CompensationJobStatus.FAILED, "error": error},
-        )
-        with self._connect() as conn:
             self._persist_job(conn, updated)
             conn.commit()
