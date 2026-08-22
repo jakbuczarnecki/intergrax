@@ -725,27 +725,6 @@ def test_runner_sets_artifact_directory_env(
     _cleanup_fake_packages(repo_root)
 
 
-def test_tools_standalone_artifact_directory_compat(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from platform_proofs.tools.iterative_sql_investigation.artifacts import (
-        allocate_run_directory,
-        resolve_runner_artifact_directory,
-    )
-
-    standalone = allocate_run_directory(
-        artifact_root=tmp_path / "standalone",
-        run_id="run-1",
-    )
-    assert standalone == (tmp_path / "standalone" / "run-1").resolve()
-
-    runner_dir = tmp_path / "runner-proof-dir"
-    monkeypatch.setenv(INTERGRAX_PROOF_ARTIFACT_DIR_ENV, str(runner_dir))
-    assert resolve_runner_artifact_directory() == runner_dir.resolve()
-    assert allocate_run_directory() == runner_dir.resolve()
-
-
 def test_resolve_expected_evidence_path_from_descriptor(tmp_path: Path) -> None:
     from scripts.proof.intergrax_platform_proof_descriptor import (
         ExpectedArtifactKind,

@@ -828,44 +828,20 @@ def test_blocked_before_execution_does_not_verify_artifacts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _isolate_fake_proof_discovery(repo_root, monkeypatch)
-    monkeypatch.delenv("INTERGRAX_LLM_PROVIDER", raising=False)
-    receipt, _ = run_suite(RunnerConfig(profile=ProofProfile.FULL, repo_root=repo_root))
-    tools = next(
+    monkeypatch.delenv("INTERGRAX_SLACK_APP_TOKEN", raising=False)
+    receipt, _ = run_suite(RunnerConfig(profile=ProofProfile.LIVE, repo_root=repo_root))
+    slack = next(
         (
             item
             for item in receipt.results
-            if item.proof_id == "TOOLS-ITERATIVE-SQL-INVESTIGATION"
+            if item.proof_id == "SLACK-CONVERSATION-LIVE"
         ),
         None,
     )
-    if tools is not None:
-        assert tools.status == ProofStatus.BLOCKED_ENVIRONMENT
-        assert tools.artifact_verification_status is None
+    if slack is not None:
+        assert slack.status == ProofStatus.BLOCKED_ENVIRONMENT
+        assert slack.artifact_verification_status is None
     _cleanup_fake_packages(repo_root)
-
-
-def test_tools_descriptor_expected_artifacts_contract(repo_root: Path) -> None:
-    from scripts.proof.intergrax_platform_proof_descriptor_loader import load_descriptor
-
-    descriptor_path = (
-        repo_root
-        / "platform_proofs"
-        / "tools"
-        / "iterative_sql_investigation"
-        / PROOF_DESCRIPTOR_FILENAME
-    )
-    descriptor = load_descriptor(descriptor_path, repo_root=repo_root)
-    kinds = {artifact.kind for artifact in descriptor.expected_artifacts}
-    assert ExpectedArtifactKind.EVIDENCE_JSON in kinds
-    assert ExpectedArtifactKind.DOMAIN_RESULT_JSON in kinds
-    assert ExpectedArtifactKind.REPORT_HTML in kinds
-    report = next(
-        artifact
-        for artifact in descriptor.expected_artifacts
-        if artifact.kind == ExpectedArtifactKind.REPORT_HTML
-    )
-    assert report.required is True
-    assert descriptor.report_required is True
 
 
 def test_verification_order_is_descriptor_declaration(

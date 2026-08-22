@@ -125,7 +125,7 @@ class PlatformProofDescriptor(BaseModel):
         if not PROOF_ID_PATTERN.fullmatch(value):
             raise ValueError(
                 "proof_id must be uppercase alphanumeric with hyphens "
-                "(e.g. TOOLS-ITERATIVE-SQL-INVESTIGATION)"
+                "(e.g. SCENARIO-AI-INCIDENT-INVESTIGATION)"
             )
         return value
 

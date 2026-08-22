@@ -39,8 +39,6 @@ _MAP_DOMAIN_ROW = re.compile(
     r"^\| `(?P<domain>[A-Z][A-Z0-9_]*)` \|",
     re.MULTILINE,
 )
-_TOOLS_PROOF_ID = "TOOLS-ITERATIVE-SQL-INVESTIGATION"
-
 
 @pytest.fixture
 def map_text() -> str:
@@ -79,15 +77,9 @@ def test_platform_proof_map_contains_all_28_domains_exactly_once(
     assert tuple(found_in_domain_table) == ALL_CANONICAL_DOMAINS
 
 
-def test_tools_reference_proof_id_present(map_text: str, protocol_text: str) -> None:
-    assert _TOOLS_PROOF_ID in map_text
-    assert _TOOLS_PROOF_ID in protocol_text
-    tools_row = re.search(
-        rf"^\| `TOOLS` \|.*{_TOOLS_PROOF_ID}.*\| \*\*EXECUTABLE\*\* \|",
-        map_text,
-        re.MULTILINE,
-    )
-    assert tools_row is not None
+def test_scenario_design_root_documented(map_text: str, readme_text: str) -> None:
+    assert "platform_proofs/scenarios/" in map_text or "scenarios/" in readme_text
+    assert "ai_incident_investigation" in readme_text
 
 
 def test_lkw_not_listed_as_platform_domain(map_text: str) -> None:

@@ -107,7 +107,7 @@ Every executable platform proof must have a stable **`proof_id`**.
 
 **Recommended naming:** `<DOMAIN>-<CAPABILITY>` — uppercase, hyphenated, consistent with existing manifest style.
 
-**Reference example:** `TOOLS-ITERATIVE-SQL-INVESTIGATION`
+**Reference example:** `SCENARIO-AI-INCIDENT-INVESTIGATION` (design-stage scenario under `platform_proofs/scenarios/`)
 
 Canonical executable identity is declared in two layers during migration:
 
@@ -147,7 +147,7 @@ platform_proofs/<domain>/<proof_slug>/
 
 **Roadmap:** PP-SUITE-1 package contract · PP-SUITE-2 dynamic discovery · PP-SUITE-3 evidence validation · PP-SUITE-4 artifact verification · PP-REPORT-3 generic HTML renderer · PP-REPORT-4 TOOLS report integration · PP-SUITE-5 report contract verification · PP-SUITE-6 CI regression profiles.
 
-**Transition:** Phase 1 — `TOOLS-ITERATIVE-SQL-INVESTIGATION` ships `proof.json`. Phase 2 — dynamic discovery (current). Phase 3 — static manifest coexists for unmigrated proofs. Phase 4 — migrate remaining platform proofs. Phase 5 — remove static platform registrations when complete. Duplicate `proof_id` across static manifest and discovery fails unless entries are semantically equivalent migration twins (descriptor wins once).
+**Transition:** Phase 1 — descriptor-backed packages ship `proof.json`. Phase 2 — dynamic discovery (current). Phase 3 — static manifest coexists for unmigrated proofs. Phase 4 — migrate remaining platform proofs. Phase 5 — remove static platform registrations when complete. Duplicate `proof_id` across static manifest and discovery fails unless entries are semantically equivalent migration twins (descriptor wins once).
 
 ---
 

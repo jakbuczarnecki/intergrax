@@ -50,7 +50,7 @@ Mechanism-level proof used for:
 
 Conformance proofs are **secondary** in the public Proof Library. They are mechanism-first; Scenario proofs are problem-first.
 
-Existing domain-oriented paths (e.g. `platform_proofs/tools/…`) may remain for Conformance proofs. Do not mandate mass folder migration for symmetry.
+Existing domain-oriented paths may remain for Conformance proofs under `platform_proofs/<domain>/…`. Scenario proofs use `platform_proofs/scenarios/<scenario_slug>/`. Do not mandate mass folder migration for symmetry.
 
 ---
 
@@ -598,7 +598,7 @@ platform_proofs/scenarios/<scenario_slug>/
 
 ### Conformance proofs
 
-Existing domain-oriented paths may remain (e.g. `platform_proofs/tools/<proof_slug>/`). The same component rules apply.
+Existing domain-oriented paths may remain (e.g. `platform_proofs/<domain>/<proof_slug>/`). Scenario proofs use `platform_proofs/scenarios/<scenario_slug>/`. The same component rules apply.
 
 ### Rules
 
@@ -660,7 +660,7 @@ Canonical style:
 uv run python platform_proofs/scenarios/<scenario_slug>/run_proof.py
 ```
 
-For existing Conformance paths, substitute the actual package path (e.g. `platform_proofs/tools/iterative_sql_investigation/run_proof.py`).
+For existing Conformance paths, substitute the actual package path (e.g. `platform_proofs/<domain>/<proof_slug>/run_proof.py`).
 
 Standalone execution must **not** require understanding proof-suite internals.
 
@@ -1196,13 +1196,34 @@ A proof-author session **MUST STOP** and report instead of improvising when:
 
 ---
 
+### Design-stage Scenario scaffold
+
+Before implementation, create the canonical design-stage package with:
+
+```bash
+uv run python scripts/proof/create_scenario_proof.py --slug <scenario_slug> --title "<title>"
+```
+
+This produces `platform_proofs/scenarios/<scenario_slug>/README.md` only — no fake `proof.json`, runtime entrypoint, or evidence artifacts.
+
+Workflow:
+
+```text
+canonical scaffold
+→ design-stage package
+→ human Scenario Quality Gate
+→ implementation only after acceptance
+```
+
+Do not manually invent scenario directory shapes or skip the quality gate.
+
+---
+
 ## Current reference proof
 
-**`TOOLS-ITERATIVE-SQL-INVESTIGATION`** (`platform_proofs/tools/iterative_sql_investigation/`) is an **existing executable Conformance proof** being evolved under the new Proof Library strategy. It exercises bounded iterative SQL investigation with real PostgreSQL, real model provider, and real tool runtime.
+No executable Scenario or Conformance platform proof is designated as the canonical reference example yet. The first Scenario Proof (`ai_incident_investigation`) is in **design qualification** under `platform_proofs/scenarios/`.
 
-It is **not** yet reframed as a public Scenario proof. Do not claim future Investigator / Critic / Observability scenarios already exist.
-
-See [tools/iterative_sql_investigation/README.md](tools/iterative_sql_investigation/README.md) and [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md).
+See [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md).
 
 ---
 
