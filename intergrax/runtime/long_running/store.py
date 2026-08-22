@@ -578,19 +578,6 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 )
             conn.commit()
 
-    def record_action(self, ledger_key: str, *, action: str) -> None:
-        now = datetime.now(UTC)
-        with self._connection() as conn:
-            conn.execute(
-                """
-                INSERT OR REPLACE INTO scheduler_ledger (
-                    ledger_key, action, executed_at_utc, status,
-                    owner_id, lease_expires_at_utc, fence
-                ) VALUES (?, ?, ?, ?, NULL, NULL, 0)
-                """,
-                (ledger_key, action, now.isoformat(), _SCHEDULER_LEDGER_COMPLETED),
-            )
-
     @staticmethod
     def _row_to_scheduled_resume(row: sqlite3.Row) -> ScheduledResume:
         keys = row.keys()

@@ -15,6 +15,7 @@ from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.notifications.models import NotificationMessage
+from intergrax.runtime.long_running.persistence_contract import SchedulerLedger
 from intergrax.runtime.long_running.scheduler import LongRunningScheduler
 from intergrax.runtime.long_running.scheduler_claim import ScheduledResumeCancellationError
 from intergrax.runtime.long_running.scheduled_resume import ScheduledResume, ScheduledResumeStatus
@@ -441,6 +442,42 @@ async def test_timeout_claim_precedes_notify_and_resume(tmp_path) -> None:
 
 def test_scheduled_resume_persistence_has_no_unfenced_mark_completed() -> None:
     assert "mark_completed" not in ScheduledResumePersistence.__dict__
+
+
+def test_scheduler_ledger_has_no_record_action_terminal_api() -> None:
+    assert "record_action" not in SchedulerLedger.__dict__
+
+
+@pytest.mark.asyncio
+async def test_active_ledger_claim_cannot_complete_without_claim(tmp_path) -> None:
+    store = SQLiteTaskCheckpointStore(db_path=tmp_path / "ledger_no_unfenced.db")
+    claim = store.claim_action(
+        "timeout:ckpt-unfenced",
+        "worker-a",
+        300,
+        action="human_timeout",
+    )
+    assert claim is not None
+    assert claim.owner_id == "worker-a"
+    assert claim.fence == 1
+    assert not hasattr(store, "record_action")
+    stale = claim.model_copy(update={"owner_id": "worker-b"})
+    with pytest.raises(StaleClaimError):
+        store.complete_action(stale)
+
+
+@pytest.mark.asyncio
+async def test_valid_ledger_claim_completes(tmp_path) -> None:
+    store = SQLiteTaskCheckpointStore(db_path=tmp_path / "ledger_complete.db")
+    claim = store.claim_action(
+        "timeout:ckpt-valid",
+        "worker-a",
+        300,
+        action="human_timeout",
+    )
+    assert claim is not None
+    store.complete_action(claim)
+    assert store.has_action("timeout:ckpt-valid")
 
 
 @pytest.mark.asyncio

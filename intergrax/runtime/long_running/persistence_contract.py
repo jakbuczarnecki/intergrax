@@ -78,8 +78,3 @@ class SchedulerLedger(ABC):
     def complete_action(self, claim: SchedulerActionClaim) -> None:
         """Fence-validated durable completion for a claimed scheduler action."""
         ...
-
-    @abstractmethod
-    def record_action(self, ledger_key: str, *, action: str) -> None:
-        """Legacy completion without ownership fencing — prefer ``claim_action``."""
-        ...
