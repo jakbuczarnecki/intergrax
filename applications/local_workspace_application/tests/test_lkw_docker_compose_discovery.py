@@ -262,12 +262,27 @@ def test_sentry_overlay_loads_generated_env_at_container_start() -> None:
     assert "path: ./sentry-proof/generated.env" not in overlay
 
 
-def test_sentry_proof_start_script_sources_generated_env_before_uvicorn() -> None:
+_CANONICAL_PRODUCTION_ENTRY = "python -m local_workspace_application.host.main"
+_DOCKERFILE = _DOCKER_DIR / "Dockerfile"
+
+
+def test_sentry_proof_start_script_sources_generated_env_before_production_entry() -> None:
     assert _SENTRY_PROOF_START_SCRIPT.is_file()
     script = _SENTRY_PROOF_START_SCRIPT.read_text(encoding="utf-8")
     assert "/proof/generated.env" in script
     assert "sentry-bootstrap must complete before local_workspace starts" in script
-    assert "exec uvicorn local_workspace_application.host.main:app" in script
+    assert "host.main:app" not in script
+    assert "exec uvicorn" not in script
+    assert f"exec {_CANONICAL_PRODUCTION_ENTRY}" in script
+    assert "LOCAL_WORKSPACE_REFERENCE_PRODUCTION=1" in script
+
+
+def test_sentry_and_normal_docker_converge_on_canonical_production_entry() -> None:
+    dockerfile = _DOCKERFILE.read_text(encoding="utf-8")
+    sentry_script = _SENTRY_PROOF_START_SCRIPT.read_text(encoding="utf-8")
+    assert 'CMD ["python", "-m", "local_workspace_application.host.main"]' in dockerfile
+    assert _CANONICAL_PRODUCTION_ENTRY in sentry_script
+    assert "host.main:app" not in sentry_script
 
 
 def test_sentry_proof_start_script_has_lf_line_endings_only() -> None:

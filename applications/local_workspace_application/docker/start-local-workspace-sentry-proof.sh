@@ -13,4 +13,6 @@ set -a
 . /proof/generated.env
 set +a
 
-exec uvicorn local_workspace_application.host.main:app --host 0.0.0.0 --port 8020
+export LOCAL_WORKSPACE_REFERENCE_PRODUCTION=1
+
+exec python -m local_workspace_application.host.main
