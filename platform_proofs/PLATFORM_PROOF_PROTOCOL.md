@@ -99,7 +99,7 @@ Canonical executable identity is declared in two layers during migration:
 | **`proof.json`** (package-owned) | Static descriptor — discovery source (PP-SUITE-1) |
 | **`ProofManifestEntry`** (runner-facing) | Normalized manifest contract consumed by `scripts/proof/` |
 
-The central manifest in `scripts/proof/intergrax_proof_manifest.py` remains authoritative until a proof is migrated to descriptor-backed discovery (PP-SUITE-2+). Do **not** duplicate conflicting metadata in ad-hoc local config files.
+The central manifest in `scripts/proof/intergrax_proof_manifest.py` remains authoritative for legacy and product entries. Descriptor-backed Platform Proofs under `platform_proofs/` are discovered automatically from package `proof.json` files (PP-SUITE-2). Do **not** duplicate conflicting metadata in ad-hoc local config files — a descriptor/static migration twin with non-equivalent execution metadata fails manifest loading.
 
 ---
 
@@ -122,13 +122,13 @@ platform_proofs/<domain>/<proof_slug>/
 
 **Path safety:** descriptor location defines package root; entrypoints must resolve inside the repository and package; `..` traversal and repo-escaping absolute paths are rejected.
 
-**Future discovery (PP-SUITE-2):** recursively scan `platform_proofs/` for `proof.json`, validate, ensure unique `proof_id`, normalize to `ProofManifestEntry`, fail closed on any invalid package. Until then, the static central manifest remains operational for legacy entries.
+**Discovery (PP-SUITE-2):** recursively scan `platform_proofs/` for `proof.json`, validate, ensure unique `proof_id`, normalize to `ProofManifestEntry`, merge with static legacy entries, fail closed on any invalid package. Descriptor-backed entries replace semantically equivalent static migration twins exactly once; conflicting duplicates fail manifest loading. Static central registration remains only for not-yet-migrated legacy and product proofs.
 
 **Evidence and report:** descriptors may declare `evidence_schema`, `expected_artifacts`, and `report_required`. Machine evidence validation (PP-SUITE-3) and report verification (PP-SUITE-5) are follow-on tasks; `report_required=false` is allowed during renderer migration (PP-REPORT-3/4).
 
 **Roadmap:** PP-SUITE-1 package contract · PP-SUITE-2 dynamic discovery · PP-SUITE-3 evidence validation · PP-SUITE-4 artifact verification · PP-REPORT-3 generic HTML renderer · PP-REPORT-4 TOOLS report integration · PP-SUITE-5 report contract verification · PP-SUITE-6 CI regression profiles.
 
-**Transition:** Phase 1 — `TOOLS-ITERATIVE-SQL-INVESTIGATION` ships `proof.json`. Phase 2 — dynamic discovery. Phase 3 — static manifest coexists for unmigrated proofs. Phase 4 — migrate remaining platform proofs. Phase 5 — remove static platform registrations when complete. Duplicate `proof_id` across static manifest and discovery must fail unless an explicit migration rule applies.
+**Transition:** Phase 1 — `TOOLS-ITERATIVE-SQL-INVESTIGATION` ships `proof.json`. Phase 2 — dynamic discovery (current). Phase 3 — static manifest coexists for unmigrated proofs. Phase 4 — migrate remaining platform proofs. Phase 5 — remove static platform registrations when complete. Duplicate `proof_id` across static manifest and discovery fails unless entries are semantically equivalent migration twins (descriptor wins once).
 
 ---
 
