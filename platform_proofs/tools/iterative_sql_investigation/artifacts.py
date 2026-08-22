@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
 from scripts.proof.intergrax_platform_proof_evidence import PlatformProofEvidence
+from scripts.proof.intergrax_platform_proof_execution import INTERGRAX_PROOF_ARTIFACT_DIR_ENV
 from scripts.proof.intergrax_platform_proof_evidence_io import (
     EVIDENCE_FILENAME,
     write_evidence_json,
@@ -29,12 +31,25 @@ def resolve_artifact_root(explicit: Path | None = None) -> Path:
     return (Path.cwd() / DEFAULT_ARTIFACT_ROOT).resolve()
 
 
+def resolve_runner_artifact_directory() -> Path | None:
+    """Return runner-provided proof artifact directory when suite execution set it."""
+    raw = os.environ.get(INTERGRAX_PROOF_ARTIFACT_DIR_ENV, "").strip()
+    if not raw:
+        return None
+    path = Path(raw).expanduser().resolve()
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def allocate_run_directory(
     *,
     artifact_root: Path | None = None,
     run_id: str | None = None,
 ) -> Path:
     """Create a run-scoped subdirectory for generated proof artifacts."""
+    runner_directory = resolve_runner_artifact_directory()
+    if runner_directory is not None:
+        return runner_directory
     root = resolve_artifact_root(artifact_root)
     resolved_run_id = run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     run_directory = root / resolved_run_id

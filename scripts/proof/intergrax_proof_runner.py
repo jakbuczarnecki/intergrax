@@ -27,10 +27,21 @@ from scripts.proof.intergrax_proof_contracts import (
     SuiteOverallStatus,
     SuiteReceipt,
 )
+from scripts.proof.intergrax_platform_proof_evidence_verifier import (
+    apply_evidence_verification,
+    resolve_expected_evidence_path,
+    verify_platform_proof_evidence,
+)
+from scripts.proof.intergrax_platform_proof_execution import (
+    INTERGRAX_PROOF_ARTIFACT_DIR_ENV,
+    ProofExecutionSpec,
+    load_manifest_bundle,
+    proof_run_artifact_directory,
+    suite_run_artifact_directory,
+)
 from scripts.proof.intergrax_proof_manifest import (
     ManifestLoadError,
     expanded_profiles,
-    load_manifest,
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -165,10 +176,17 @@ def execute_proof(
     entry: ProofManifestEntry,
     *,
     repo_root: Path,
+    execution_spec: ProofExecutionSpec | None = None,
+    proof_artifact_directory: Path | None = None,
+    git_commit_sha: str = "unknown",
     subprocess_runner: SubprocessRunner = subprocess.run,
 ) -> ProofRunResult:
     command = [entry.command.executable, *entry.command.argv]
     started = datetime.now(UTC)
+    env = os.environ.copy()
+    if proof_artifact_directory is not None:
+        proof_artifact_directory.mkdir(parents=True, exist_ok=True)
+        env[INTERGRAX_PROOF_ARTIFACT_DIR_ENV] = str(proof_artifact_directory.resolve())
     try:
         completed = subprocess_runner(
             command,
@@ -177,18 +195,24 @@ def execute_proof(
             text=False,
             timeout=entry.timeout_seconds,
             shell=False,
-            env=os.environ.copy(),
+            env=env,
         )
         duration = (datetime.now(UTC) - started).total_seconds()
         exit_code = completed.returncode
         status = ProofStatus.PASS if exit_code == 0 else ProofStatus.FAIL
         diagnostic = "child_exit_nonzero" if status == ProofStatus.FAIL else "child_exit_zero"
-        return ProofRunResult(
+        transport_result = ProofRunResult(
             proof_id=entry.proof_id,
             status=status,
             duration_seconds=duration,
             exit_code=exit_code,
             diagnostic_summary=diagnostic,
+        )
+        return _verify_evidence_if_required(
+            transport_result,
+            execution_spec=execution_spec,
+            proof_artifact_directory=proof_artifact_directory,
+            git_commit_sha=git_commit_sha,
         )
     except subprocess.TimeoutExpired:
         duration = (datetime.now(UTC) - started).total_seconds()
@@ -294,16 +318,44 @@ def render_console_summary(
 
 
 def write_receipt(receipt: SuiteReceipt, *, repo_root: Path) -> Path:
-    output_dir = repo_root / ".artifacts" / "proof"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    short_sha = receipt.git_commit_sha[:12]
-    timestamp = receipt.started_at.strftime("%Y%m%dT%H%M%SZ")
-    path = output_dir / f"{timestamp}-{receipt.profile.value}-{short_sha}.json"
+    run_directory = suite_run_artifact_directory(repo_root, receipt.suite_run_id)
+    run_directory.mkdir(parents=True, exist_ok=True)
+    path = run_directory / "suite-receipt.json"
     path.write_text(
         json.dumps(receipt.model_dump(mode="json"), indent=2, sort_keys=True),
         encoding="utf-8",
     )
     return path
+
+
+def _verify_evidence_if_required(
+    transport_result: ProofRunResult,
+    *,
+    execution_spec: ProofExecutionSpec | None,
+    proof_artifact_directory: Path | None,
+    git_commit_sha: str,
+) -> ProofRunResult:
+    if execution_spec is None or not execution_spec.evidence_required:
+        return transport_result
+    if proof_artifact_directory is None:
+        return transport_result.model_copy(
+            update={
+                "status": ProofStatus.FAIL,
+                "diagnostic_summary": "missing_proof_artifact_directory",
+            }
+        )
+    evidence_path = resolve_expected_evidence_path(
+        proof_artifact_directory,
+        execution_spec,
+    )
+    verification = verify_platform_proof_evidence(
+        evidence_path=evidence_path,
+        artifact_root=proof_artifact_directory,
+        spec=execution_spec,
+        subprocess_result=transport_result,
+        expected_source_revision=git_commit_sha,
+    )
+    return apply_evidence_verification(transport_result, verification)
 
 
 def run_suite(
@@ -317,7 +369,9 @@ def run_suite(
     git = read_git_metadata(config.repo_root)
 
     try:
-        manifest = load_manifest(repo_root=config.repo_root)
+        bundle = load_manifest_bundle(repo_root=config.repo_root)
+        manifest = bundle.manifest
+        execution_specs = bundle.execution_specs
     except ManifestLoadError:
         receipt = SuiteReceipt(
             suite_run_id=suite_run_id,
@@ -381,9 +435,17 @@ def run_suite(
             )
             continue
 
+        proof_artifact_dir = proof_run_artifact_directory(
+            config.repo_root,
+            suite_run_id,
+            entry.proof_id,
+        )
         child_result = execute_proof(
             entry,
             repo_root=config.repo_root,
+            execution_spec=execution_specs.get(entry.proof_id),
+            proof_artifact_directory=proof_artifact_dir,
+            git_commit_sha=git.commit_sha,
             subprocess_runner=subprocess_runner,
         )
         child_result = child_result.model_copy(

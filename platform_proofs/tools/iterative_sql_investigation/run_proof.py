@@ -17,6 +17,7 @@ from pathlib import Path
 
 from platform_proofs.tools.iterative_sql_investigation.artifacts import (
     allocate_run_directory,
+    resolve_runner_artifact_directory,
     write_evidence,
     write_proof_result,
 )
@@ -162,10 +163,14 @@ def _persist_artifacts(
     finished_at: datetime,
     scenario_snapshots: tuple[ScenarioExecutionSnapshot, ...] = (),
 ) -> Path:
-    run_directory = allocate_run_directory(
-        artifact_root=artifact_root,
-        run_id=artifact_run_id,
-    )
+    runner_directory = resolve_runner_artifact_directory()
+    if runner_directory is not None:
+        run_directory = runner_directory
+    else:
+        run_directory = allocate_run_directory(
+            artifact_root=artifact_root,
+            run_id=artifact_run_id,
+        )
     write_proof_result(result, run_directory=run_directory)
     source_revision, source_dirty = _read_git_metadata()
     execution_id = artifact_run_id or run_directory.name
