@@ -23,6 +23,56 @@ from intergrax.contracts.runtime_policy_context import (
 )
 
 
+def _meaningful_side_effect_action_rank(action: PolicyAction) -> int:
+    """Explicit strictness ordering — aligned with collaborative policy composition."""
+    if action is PolicyAction.DENY:
+        return 0
+    if action is PolicyAction.REQUIRE_HUMAN:
+        return 1
+    if action is PolicyAction.ESCALATE:
+        return 2
+    if action is PolicyAction.ALLOW:
+        return 3
+    return 0
+
+
+def _meaningful_side_effect_rule_specificity(rule: MeaningfulSideEffectPolicyRule) -> int:
+    """Lower is more specific (action match vs wildcard)."""
+    return 0 if rule.action is not None else 1
+
+
+def _normalize_meaningful_side_effect_rule_action(
+    rule: MeaningfulSideEffectPolicyRule,
+) -> PolicyAction:
+    if rule.decision is PolicyAction.MODIFY:
+        return PolicyAction.DENY
+    return rule.decision
+
+
+def _meaningful_side_effect_controlling_rule(
+    candidates: list[tuple[MeaningfulSideEffectPolicyRule, PolicyAction]],
+) -> tuple[MeaningfulSideEffectPolicyRule, PolicyAction]:
+    best_rank = min(_meaningful_side_effect_action_rank(action) for _, action in candidates)
+    rank_candidates = [
+        pair for pair in candidates if _meaningful_side_effect_action_rank(pair[1]) == best_rank
+    ]
+    best_specificity = min(
+        _meaningful_side_effect_rule_specificity(rule) for rule, _ in rank_candidates
+    )
+    specific_candidates = [
+        pair
+        for pair in rank_candidates
+        if _meaningful_side_effect_rule_specificity(pair[0]) == best_specificity
+    ]
+    return min(
+        specific_candidates,
+        key=lambda pair: (
+            1 if pair[0].decision is PolicyAction.MODIFY else 0,
+            pair[0].rule_id,
+        ),
+    )
+
+
 class RuntimePolicyEngine:
     """Rule-based policy evaluation for live task execution."""
 
@@ -63,34 +113,15 @@ class RuntimePolicyEngine:
                 audit_payload={"action": request.action},
             )
 
-        matched: PolicyDecision | None = None
+        applicable: list[tuple[MeaningfulSideEffectPolicyRule, PolicyAction]] = []
         for rule in self._meaningful_side_effect_rules:
             if rule.action is not None and rule.action != request.action:
                 continue
-            action = rule.decision
-            if action is PolicyAction.MODIFY:
-                # Side-effect gate does not support payload mutation via MODIFY.
-                return PolicyDecision(
-                    action=PolicyAction.DENY,
-                    reason="meaningful_side_effect_unsupported_decision",
-                    enforcement_level=EnforcementLevel.MANDATORY,
-                    policy_rule_id=rule.rule_id,
-                    audit_payload={"action": request.action},
-                )
-            matched = PolicyDecision(
-                action=action,
-                reason=rule.reason or f"meaningful_side_effect:{action.value}",
-                enforcement_level=EnforcementLevel.MANDATORY,
-                policy_rule_id=rule.rule_id,
-                audit_payload={
-                    "action": request.action,
-                    "kinds": [k.value for k in request.kinds],
-                    "external_target": request.external_target,
-                },
+            applicable.append(
+                (rule, _normalize_meaningful_side_effect_rule_action(rule)),
             )
-            break
 
-        if matched is None:
+        if not applicable:
             return PolicyDecision(
                 action=PolicyAction.DENY,
                 reason="meaningful_side_effect_indeterminate",
@@ -101,7 +132,32 @@ class RuntimePolicyEngine:
                     "kinds": [k.value for k in request.kinds],
                 },
             )
-        return matched
+
+        controlling_rule, controlling_action = _meaningful_side_effect_controlling_rule(
+            applicable,
+        )
+        matched_rule_ids = [rule.rule_id for rule, _ in applicable]
+        if (
+            controlling_action is PolicyAction.DENY
+            and controlling_rule.decision is PolicyAction.MODIFY
+        ):
+            reason = "meaningful_side_effect_unsupported_decision"
+        else:
+            reason = controlling_rule.reason or f"meaningful_side_effect:{controlling_action.value}"
+
+        return PolicyDecision(
+            action=controlling_action,
+            reason=reason,
+            enforcement_level=EnforcementLevel.MANDATORY,
+            policy_rule_id=controlling_rule.rule_id,
+            audit_payload={
+                "action": request.action,
+                "kinds": [k.value for k in request.kinds],
+                "external_target": request.external_target,
+                "matched_rule_ids": matched_rule_ids,
+                "resolution_reason": "conservative_precedence",
+            },
+        )
 
     def evaluate_decision(
         self,

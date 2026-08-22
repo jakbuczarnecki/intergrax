@@ -22,6 +22,7 @@ def _request(**overrides: object) -> MeaningfulSideEffectRequest:
     payload: dict[str, object] = {
         "action": "ACCEPT_QUOTE",
         "kinds": (MeaningfulSideEffectKind.COMMITMENT, MeaningfulSideEffectKind.MUTATION),
+        "side_effect_scope_id": "scope-gec5",
         "task_id": "task-1",
         "run_id": "run-1",
         "principal_id": "user-1",
@@ -218,7 +219,7 @@ def test_action_filtering() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_first_match_behavior() -> None:
+def test_same_specificity_deny_dominates_allow() -> None:
     engine = RuntimePolicyEngine(
         meaningful_side_effect_rules=(
             MeaningfulSideEffectPolicyRule(
