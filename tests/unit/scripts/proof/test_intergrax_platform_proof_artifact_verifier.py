@@ -97,7 +97,7 @@ def _artifacts_spec(
     return ProofExecutionSpec(
         manifest_entry=entry,
         evidence_required=evidence_required,
-        evidence_schema="intergrax.platform_proof_evidence.v2",
+        evidence_schema="intergrax.platform_proof_evidence.v3",
         expected_artifacts=artifacts,
     )
 
@@ -570,7 +570,7 @@ def _descriptor_payload(
         "timeout_seconds": 60,
         "safety_class": "LOCAL_READ_ONLY",
         "evidence_required": True,
-        "evidence_schema": "intergrax.platform_proof_evidence.v2",
+        "evidence_schema": "intergrax.platform_proof_evidence.v3",
         "expected_artifacts": [
             {
                 "kind": "EVIDENCE_JSON",

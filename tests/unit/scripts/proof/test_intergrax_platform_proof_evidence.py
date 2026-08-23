@@ -21,6 +21,9 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     ProofEvidenceExecutionStatus,
     ProofIdentityEvidence,
     ProvenanceEvidence,
+    ReportSafeEvidenceBackedClaim,
+    ReportSafeEvidenceChallenge,
+    ReportSafeEvidenceClaimSet,
     ReportSafeField,
     ReportSafePayload,
     ReportSafeTextSourceKind,
@@ -28,11 +31,27 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     ReproductionEvidence,
     ToolInvocationEvidence,
     explicit_runtime_report_safe_text,
+    project_evidence_backed_claim,
+    project_evidence_challenge,
+    project_evidence_claim_set,
     proof_authored_report_safe_text,
     redacted_report_safe_text,
     sanitized_runtime_report_safe_text,
     sanitize_untrusted_report_text,
     execution_status_from_proof_status,
+)
+from intergrax.contracts.evidence_claims import (
+    ChallengeDefectFamily,
+    ChallengeResolution,
+    ClaimResolution,
+    EvidenceBackedClaim,
+    EvidenceChallenge,
+    EvidenceClaimSet,
+    validate_claim_kind,
+    validate_defect_code,
+    validate_evidence_challenge_id,
+    validate_evidence_claim_id,
+    validate_evidence_reference_id,
 )
 from scripts.proof.intergrax_proof_contracts import ProofProfile, ProofStatus, SuiteReceipt
 
@@ -284,3 +303,233 @@ def test_proof_identity_domains_exercised_trimming_before_canonical_order() -> N
         execution_profile=ProofProfile.QUICK,
     )
     assert identity.domains_exercised == ("EXECUTION", "OBSERVABILITY", "TOOLS")
+
+
+def _claim_id(suffix: str = "0123456789abcdef0123456789abcdef") -> str:
+    return f"eclaim_{suffix}"
+
+
+def _challenge_id(suffix: str = "fedcba9876543210fedcba9876543210") -> str:
+    return f"echlg_{suffix}"
+
+
+def _manufacturing_claim_set() -> EvidenceClaimSet:
+    claim_id = validate_evidence_claim_id(_claim_id())
+    return EvidenceClaimSet(
+        claims=(
+            EvidenceBackedClaim(
+                claim_id=claim_id,
+                statement="Equipment degradation caused the incident.",
+                claim_kind=validate_claim_kind("manufacturing.root_cause"),
+                supporting_evidence_ids=[validate_evidence_reference_id("e1")],
+                contradicting_evidence_ids=[validate_evidence_reference_id("e2")],
+                resolution=ClaimResolution.REJECTED,
+            ),
+        ),
+        challenges=(
+            EvidenceChallenge(
+                challenge_id=validate_evidence_challenge_id(_challenge_id()),
+                claim_id=claim_id,
+                defect_family=ChallengeDefectFamily.UNSUPPORTED_INFERENCE,
+                defect_code=validate_defect_code("manufacturing.correlation_only"),
+                evidence_ids=[validate_evidence_reference_id("e3")],
+                description="Correlation is insufficient to establish causation.",
+                resolution=ChallengeResolution.SATISFIED,
+            ),
+        ),
+    )
+
+
+def _tprm_claim_set() -> EvidenceClaimSet:
+    claim_id = validate_evidence_claim_id(
+        "eclaim_abcdef0123456789abcdef0123456789"
+    )
+    return EvidenceClaimSet(
+        claims=(
+            EvidenceBackedClaim(
+                claim_id=claim_id,
+                statement="Vendor SOC 2 report covers required controls.",
+                claim_kind=validate_claim_kind("tprm.vendor_assurance"),
+                supporting_evidence_ids=[validate_evidence_reference_id("vendor-report")],
+                resolution=ClaimResolution.SUPPORTED,
+            ),
+        ),
+    )
+
+
+def test_projection_preserves_structural_fields_manufacturing() -> None:
+    canonical = _manufacturing_claim_set()
+    projected = project_evidence_claim_set(
+        canonical,
+        text_source=ReportSafeTextSourceKind.PROOF_AUTHORED,
+    )
+    source_claim = canonical.claims[0]
+    target_claim = projected.claims[0]
+    source_challenge = canonical.challenges[0]
+    target_challenge = projected.challenges[0]
+    assert target_claim.claim_id == source_claim.claim_id
+    assert target_claim.claim_kind == source_claim.claim_kind
+    assert target_claim.supporting_evidence_ids == source_claim.supporting_evidence_ids
+    assert target_claim.contradicting_evidence_ids == source_claim.contradicting_evidence_ids
+    assert target_claim.resolution == source_claim.resolution
+    assert target_claim.supersedes_claim_id == source_claim.supersedes_claim_id
+    assert target_challenge.challenge_id == source_challenge.challenge_id
+    assert target_challenge.claim_id == source_challenge.claim_id
+    assert target_challenge.defect_family == source_challenge.defect_family
+    assert target_challenge.defect_code == source_challenge.defect_code
+    assert target_challenge.evidence_ids == source_challenge.evidence_ids
+    assert target_challenge.resolution == source_challenge.resolution
+
+
+def test_projection_preserves_structural_fields_tprm() -> None:
+    canonical = _tprm_claim_set()
+    projected = project_evidence_claim_set(
+        canonical,
+        text_source=ReportSafeTextSourceKind.RUNTIME_SANITIZED,
+    )
+    assert projected.claims[0].claim_kind == canonical.claims[0].claim_kind
+    assert projected.claims[0].supporting_evidence_ids == canonical.claims[0].supporting_evidence_ids
+
+
+def test_runtime_claim_statement_cannot_bypass_report_safe_text() -> None:
+    claim = EvidenceBackedClaim(
+        claim_id=validate_evidence_claim_id(_claim_id()),
+        statement="Authorization: Bearer fake-secret-value",
+        claim_kind=validate_claim_kind("generic.claim"),
+    )
+    with pytest.raises(ValueError, match="raw runtime string"):
+        ReportSafeEvidenceBackedClaim(
+            claim_id=claim.claim_id,
+            statement=claim.statement,
+            claim_kind=claim.claim_kind,
+        )
+
+
+def test_runtime_claim_statement_redacts_known_secret_patterns() -> None:
+    claim = EvidenceBackedClaim(
+        claim_id=validate_evidence_claim_id(_claim_id()),
+        statement="Authorization: Bearer fake-secret-value",
+        claim_kind=validate_claim_kind("generic.claim"),
+    )
+    projected = project_evidence_backed_claim(
+        claim,
+        statement_source=ReportSafeTextSourceKind.RUNTIME_SANITIZED,
+    )
+    assert "fake-secret-value" not in projected.statement.text
+    assert projected.statement.redaction_applied is True
+
+
+def test_challenge_description_obey_runtime_report_safe_rule() -> None:
+    challenge = EvidenceChallenge(
+        challenge_id=validate_evidence_challenge_id(_challenge_id()),
+        claim_id=validate_evidence_claim_id(_claim_id()),
+        defect_family=ChallengeDefectFamily.MISSING_EVIDENCE,
+        description="OPENAI_API_KEY=fake-secret",
+    )
+    projected = project_evidence_challenge(
+        challenge,
+        description_source=ReportSafeTextSourceKind.RUNTIME_SANITIZED,
+    )
+    assert "fake-secret" not in projected.description.text
+    assert projected.description.redaction_applied is True
+
+
+def test_proof_authored_claim_text_unchanged() -> None:
+    claim = EvidenceBackedClaim(
+        claim_id=validate_evidence_claim_id(_claim_id()),
+        statement="Static proof-authored claim text.",
+        claim_kind=validate_claim_kind("generic.claim"),
+    )
+    projected = project_evidence_backed_claim(
+        claim,
+        statement_source=ReportSafeTextSourceKind.PROOF_AUTHORED,
+    )
+    assert projected.statement.text == claim.statement
+    assert projected.statement.redaction_applied is False
+
+
+def test_empty_evidence_claims_default_for_existing_proofs() -> None:
+    evidence = _minimal_platform_evidence()
+    assert evidence.evidence_claims.claims == ()
+    assert evidence.evidence_claims.challenges == ()
+
+
+def test_evidence_claims_reject_dangling_support_reference() -> None:
+    claim_set = project_evidence_claim_set(
+        _manufacturing_claim_set(),
+        text_source=ReportSafeTextSourceKind.PROOF_AUTHORED,
+    )
+    with pytest.raises(ValueError, match="claim_support_evidence_missing"):
+        _minimal_platform_evidence(evidence_claims=claim_set)
+
+
+def test_evidence_claims_json_round_trip() -> None:
+    claim_set = project_evidence_claim_set(
+        _manufacturing_claim_set(),
+        text_source=ReportSafeTextSourceKind.PROOF_AUTHORED,
+    )
+    evidence = _minimal_platform_evidence(
+        evidence_claims=claim_set,
+        evidence_graph=_evidence_graph_for_claim_set(claim_set),
+    )
+    payload = evidence.model_dump(mode="json")
+    restored = PlatformProofEvidence.model_validate(payload)
+    assert restored.evidence_claims == evidence.evidence_claims
+
+
+def _evidence_graph_for_claim_set(
+    claim_set: ReportSafeEvidenceClaimSet,
+) -> EvidenceGraphEvidence:
+    evidence_ids: set[str] = set()
+    for claim in claim_set.claims:
+        evidence_ids.update(str(item) for item in claim.supporting_evidence_ids)
+        evidence_ids.update(str(item) for item in claim.contradicting_evidence_ids)
+    for challenge in claim_set.challenges:
+        evidence_ids.update(str(item) for item in challenge.evidence_ids)
+    return EvidenceGraphEvidence(
+        nodes=tuple(
+            EvidenceNode(
+                evidence_id=evidence_id,
+                kind=EvidenceNodeKind.OTHER,
+                label=evidence_id,
+            )
+            for evidence_id in sorted(evidence_ids)
+        )
+    )
+
+
+def _minimal_platform_evidence(
+    *,
+    evidence_claims: ReportSafeEvidenceClaimSet | None = None,
+    evidence_graph: EvidenceGraphEvidence | None = None,
+) -> PlatformProofEvidence:
+    return PlatformProofEvidence(
+        proof_identity=ProofIdentityEvidence(
+            proof_id="P",
+            title="t",
+            domains_exercised=("test_domain",),
+            proof_version="v1",
+            source_revision="sha",
+            execution_profile=ProofProfile.QUICK,
+        ),
+        execution=ExecutionMetadataEvidence(
+            status=ProofEvidenceExecutionStatus.PASS,
+            started_at=datetime(2026, 1, 1, tzinfo=UTC),
+            finished_at=datetime(2026, 1, 1, 0, 1, tzinfo=UTC),
+            platform="linux",
+        ),
+        claim=ProofClaimEvidence(
+            claim="proof-level claim",
+            user_relevance="u",
+            success_criteria=("s",),
+            falsification_criteria=("f",),
+            excluded_claims=("e",),
+        ),
+        architecture=_minimal_architecture(),
+        participants=_minimal_architecture().participants,
+        environment=_minimal_environment(),
+        evidence_graph=evidence_graph or EvidenceGraphEvidence(),
+        evidence_claims=evidence_claims or ReportSafeEvidenceClaimSet(),
+        reproduction=_minimal_reproduction(),
+        provenance=_minimal_provenance(),
+    )

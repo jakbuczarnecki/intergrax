@@ -37,6 +37,9 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     ProofIdentityEvidence,
     ProofStepExecutionStatus,
     ProvenanceEvidence,
+    ReportSafeEvidenceBackedClaim,
+    ReportSafeEvidenceChallenge,
+    ReportSafeEvidenceClaimSet,
     ReportSafeField,
     ReportSafePayload,
     ReportSafeScalar,
@@ -442,6 +445,75 @@ def _render_excluded_claims(claim: ProofClaimEvidence) -> str:
     return "<ul>" + "".join(f"<li>{_escape(item)}</li>" for item in claim.excluded_claims) + "</ul>"
 
 
+def _render_evidence_id_list(evidence_ids: tuple[str, ...]) -> str:
+    if not evidence_ids:
+        return '<span class="muted">—</span>'
+    return " ".join(
+        f'<span class="evidence-id">{_escape(evidence_id)}</span>'
+        for evidence_id in evidence_ids
+    )
+
+
+def _render_material_challenge(challenge: ReportSafeEvidenceChallenge) -> str:
+    defect = challenge.defect_family.value
+    if challenge.defect_code is not None:
+        defect = f"{defect} ({challenge.defect_code})"
+    return (
+        '<div class="trace-card material-challenge">'
+        f"<p><strong>Challenge:</strong> {_escape(defect)}</p>"
+        f"<p>{_escape(_render_report_safe_text(challenge.description))}</p>"
+        f"<p><strong>Resolution:</strong> {_escape(challenge.resolution.value)}</p>"
+        f"<p><strong>Challenge evidence:</strong> "
+        f"{_render_evidence_id_list(tuple(str(item) for item in challenge.evidence_ids))}</p>"
+        "</div>"
+    )
+
+
+def _render_material_claim(
+    claim: ReportSafeEvidenceBackedClaim,
+    challenges: tuple[ReportSafeEvidenceChallenge, ...],
+) -> str:
+    supersede = ""
+    if claim.supersedes_claim_id is not None:
+        supersede = (
+            f"<p><strong>Supersedes:</strong> "
+            f'<span class="evidence-id">{_escape(str(claim.supersedes_claim_id))}</span></p>'
+        )
+    challenge_html = "".join(_render_material_challenge(challenge) for challenge in challenges)
+    return (
+        '<article class="card material-claim">'
+        "<h3>Claim</h3>"
+        f"<p><strong>Statement:</strong> {_escape(_render_report_safe_text(claim.statement))}</p>"
+        f"<p><strong>Kind:</strong> {_escape(str(claim.claim_kind))}</p>"
+        f"<p><strong>Status:</strong> {_escape(claim.resolution.value)}</p>"
+        f"<p><strong>Supporting evidence:</strong> "
+        f"{_render_evidence_id_list(tuple(str(item) for item in claim.supporting_evidence_ids))}</p>"
+        f"<p><strong>Contradicting evidence:</strong> "
+        f"{_render_evidence_id_list(tuple(str(item) for item in claim.contradicting_evidence_ids))}</p>"
+        f"{supersede}"
+        + (f"<h3>Challenges</h3>{challenge_html}" if challenge_html else "")
+        + "</article>"
+    )
+
+
+def _render_evidence_claims(evidence_claims: ReportSafeEvidenceClaimSet) -> str:
+    if not evidence_claims.claims:
+        return '<p class="section-empty">No material evidence-backed claims recorded.</p>'
+    challenges_by_claim: dict[str, tuple[ReportSafeEvidenceChallenge, ...]] = {}
+    for challenge in evidence_claims.challenges:
+        claim_key = str(challenge.claim_id)
+        challenges_by_claim.setdefault(claim_key, ())
+        challenges_by_claim[claim_key] = challenges_by_claim[claim_key] + (challenge,)
+    blocks = [
+        _render_material_claim(
+            claim,
+            challenges_by_claim.get(str(claim.claim_id), ()),
+        )
+        for claim in evidence_claims.claims
+    ]
+    return '<div class="card-grid">' + "".join(blocks) + "</div>"
+
+
 def _render_architecture_diagram(architecture: ArchitectureEvidence) -> str:
     participants = architecture.participants
     if not participants:
@@ -841,10 +913,8 @@ def _render_provenance(provenance: ProvenanceEvidence, identity: ProofIdentityEv
 
 
 def _domain_extension_has_data(domain_extension: DomainExtensionEvidence) -> bool:
-    return any(
-        getattr(domain_extension, field_name) is not None
-        for field_name in DomainExtensionEvidence.model_fields
-    )
+    values = domain_extension.model_dump()
+    return any(values[field_name] is not None for field_name in DomainExtensionEvidence.model_fields)
 
 
 def _render_domain_extensions(domain_extension: DomainExtensionEvidence) -> str:
@@ -904,6 +974,11 @@ def render_platform_proof_report(
         ("scenario-overview", "Scenario overview", lambda: _render_scenario_overview(evidence.scenarios)),
         ("execution-timeline", "Execution timeline", lambda: _render_execution_timeline(evidence)),
         ("evidence-graph", "Evidence graph", lambda: _render_evidence_graph(evidence.evidence_graph)),
+        (
+            "material-claims",
+            "Material claims",
+            lambda: _render_evidence_claims(evidence.evidence_claims),
+        ),
         ("final-output", "Final output", lambda: _render_final_output(evidence.final_output)),
         ("evaluator-verdict", "Evaluator verdict", lambda: _render_evaluator(evidence.evaluator)),
         (

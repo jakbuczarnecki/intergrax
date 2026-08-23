@@ -20,14 +20,34 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     EnvironmentEvidence,
     EvaluatorCheckEvidence,
     EvaluatorSummaryEvidence,
+    EvidenceGraphEvidence,
+    EvidenceNode,
+    EvidenceNodeKind,
     ExecutionMetadataEvidence,
     PlatformProofEvidence,
     ProofClaimEvidence,
     ProofEvidenceExecutionStatus,
     ProofIdentityEvidence,
     ProvenanceEvidence,
+    ReportSafeEvidenceBackedClaim,
+    ReportSafeEvidenceClaimSet,
     ReproductionEvidence,
     ScenarioEvidence,
+    proof_authored_report_safe_text,
+    project_evidence_claim_set,
+    ReportSafeTextSourceKind,
+)
+from intergrax.contracts.evidence_claims import (
+    ChallengeDefectFamily,
+    ChallengeResolution,
+    ClaimResolution,
+    EvidenceBackedClaim,
+    EvidenceChallenge,
+    EvidenceClaimSet,
+    validate_claim_kind,
+    validate_evidence_challenge_id,
+    validate_evidence_claim_id,
+    validate_evidence_reference_id,
 )
 from scripts.proof.intergrax_platform_proof_evidence_io import (
     EVIDENCE_FILENAME,
@@ -434,6 +454,35 @@ def test_suite_receipt_does_not_embed_full_evidence(tmp_path: Path) -> None:
     serialized = json.dumps(receipt.model_dump(mode="json"))
     assert "proof_identity" not in serialized
     assert evidence.claim.claim not in serialized
+
+
+def test_verifier_reports_claim_support_evidence_missing(tmp_path: Path) -> None:
+    claim_id = validate_evidence_claim_id("eclaim_0123456789abcdef0123456789abcdef")
+    claim_set = project_evidence_claim_set(
+        EvidenceClaimSet(
+            claims=(
+                EvidenceBackedClaim(
+                    claim_id=claim_id,
+                    statement="Material claim.",
+                    claim_kind=validate_claim_kind("generic.claim"),
+                    supporting_evidence_ids=[validate_evidence_reference_id("missing-e1")],
+                ),
+            ),
+        ),
+        text_source=ReportSafeTextSourceKind.PROOF_AUTHORED,
+    )
+    evidence = _minimal_evidence().model_copy(update={"evidence_claims": claim_set})
+    with pytest.raises(ValueError, match="claim_support_evidence_missing"):
+        PlatformProofEvidence.model_validate(evidence.model_dump(mode="json"))
+
+
+def test_verifier_schema_version_mismatch(tmp_path: Path) -> None:
+    artifact_dir, evidence_path = _write_evidence(tmp_path, _minimal_evidence())
+    payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+    payload["schema_version"] = "intergrax.platform_proof_evidence.v2"
+    evidence_path.write_text(json.dumps(payload), encoding="utf-8")
+    result = _verify(artifact_dir, evidence_path, _transport())
+    assert result.status == EvidenceVerificationStatus.INVALID
 
 
 def _descriptor_payload(
