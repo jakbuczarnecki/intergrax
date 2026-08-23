@@ -16,6 +16,7 @@ from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import
     build_platform_proof_evidence,
 )
 from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
+from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
 from platform_proofs.scenarios.ai_incident_investigation.scenario import (
     build_runtime_bundle,
     execute_resolved_skeleton,
@@ -37,17 +38,24 @@ def _source_revision(repo_root: Path) -> str:
 
 
 async def _run_skeleton() -> int:
-    bundle = build_runtime_bundle()
-    result = await execute_resolved_skeleton(bundle)
-    evaluation = evaluate_scenario_run(result, bundle.fixture)
-    if not evaluation.passed:
-        print("SCENARIO SKELETON EVALUATION FAILED:", evaluation.failures, file=sys.stderr)
+    resolved_bundle = build_runtime_bundle(variant=ScenarioVariant.RESOLVED)
+    resolved_result = await execute_resolved_skeleton(resolved_bundle)
+    resolved_evaluation = evaluate_scenario_run(resolved_result, resolved_bundle.fixture)
+    if not resolved_evaluation.passed:
+        print("SCENARIO FULL-1 EVALUATION FAILED:", resolved_evaluation.failures, file=sys.stderr)
+        return 1
+
+    unresolved_bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    unresolved_result = await execute_resolved_skeleton(unresolved_bundle)
+    unresolved_evaluation = evaluate_scenario_run(unresolved_result, unresolved_bundle.fixture)
+    if not unresolved_evaluation.passed:
+        print("SCENARIO FULL-2 EVALUATION FAILED:", unresolved_evaluation.failures, file=sys.stderr)
         return 1
 
     repo_root = Path(__file__).resolve().parents[3]
     source_revision = _source_revision(repo_root)
     evidence = build_platform_proof_evidence(
-        result,
+        resolved_result,
         source_revision=source_revision,
     )
 
@@ -61,8 +69,14 @@ async def _run_skeleton() -> int:
         (out_dir / "domain_result.json").write_text(
             json.dumps(
                 {
-                    "outcome": result.outcome,
-                    "checks": list(evaluation.checks),
+                    "resolved": {
+                        "outcome": resolved_result.outcome,
+                        "checks": list(resolved_evaluation.checks),
+                    },
+                    "unresolved": {
+                        "outcome": unresolved_result.outcome,
+                        "checks": list(unresolved_evaluation.checks),
+                    },
                 },
                 indent=2,
             ),
@@ -70,6 +84,7 @@ async def _run_skeleton() -> int:
         )
 
     print("SCENARIO-AI-INCIDENT-INVESTIGATION-FULL-1: PASS")
+    print("SCENARIO-AI-INCIDENT-INVESTIGATION-FULL-2: PASS")
     return 0
 
 

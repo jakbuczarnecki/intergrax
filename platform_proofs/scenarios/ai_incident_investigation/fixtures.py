@@ -17,6 +17,26 @@ class HypothesisId(StrEnum):
     H3 = "H3"
 
 
+class ScenarioVariant(StrEnum):
+    """Canonical scenario execution paths sharing one incident world."""
+
+    RESOLVED = "resolved"
+    UNRESOLVED = "unresolved"
+
+
+class TelemetryAvailability(StrEnum):
+    """Typed telemetry source response — observation present vs absent for window."""
+
+    AVAILABLE = "available"
+    UNAVAILABLE = "unavailable"
+
+
+class TelemetryUnavailabilityReason(StrEnum):
+    """Bounded reason when telemetry source has no admissible observation."""
+
+    NO_OBSERVATION_FOR_WINDOW = "no_observation_for_window"
+
+
 class TimeWindowLabel(StrEnum):
     """Typed temporal windows for scenario evidence (not a generic time-series engine)."""
 
@@ -104,16 +124,19 @@ class ComparisonObservation:
 class TelemetryObservation:
     station_id: str
     window: TimeWindow
-    signal_state: str
-    complex_assembly_throughput_pct: float
-    baseline_throughput_pct: float
-    admissible: bool
+    availability: TelemetryAvailability
+    signal_state: str | None = None
+    complex_assembly_throughput_pct: float | None = None
+    baseline_throughput_pct: float | None = None
+    admissible: bool = True
+    unavailability_reason: TelemetryUnavailabilityReason | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class IncidentFixture:
     """Scenario fixture with strict observable / hidden separation."""
 
+    variant: ScenarioVariant
     private_truth: _PrivateFixtureTruth
     workload_incident: WorkloadObservation
     workload_baseline: WorkloadObservation
@@ -175,6 +198,7 @@ def build_resolved_fixture() -> IncidentFixture:
         expected_hypothesis=HypothesisId.H3,
     )
     return IncidentFixture(
+        variant=ScenarioVariant.RESOLVED,
         private_truth=private_truth,
         workload_incident=WorkloadObservation(
             line_id=LINE_ID,
@@ -240,9 +264,35 @@ def build_resolved_fixture() -> IncidentFixture:
         telemetry=TelemetryObservation(
             station_id=STATION_ID,
             window=incident,
+            availability=TelemetryAvailability.AVAILABLE,
             signal_state="intermittent_degraded",
             complex_assembly_throughput_pct=62.0,
             baseline_throughput_pct=91.0,
+            admissible=True,
+        ),
+    )
+
+
+def build_unresolved_fixture() -> IncidentFixture:
+    """FULL-2 evidence world: same incident, decisive telemetry unavailable for window."""
+    resolved = build_resolved_fixture()
+    incident = _incident_window()
+    return IncidentFixture(
+        variant=ScenarioVariant.UNRESOLVED,
+        private_truth=resolved.private_truth,
+        workload_incident=resolved.workload_incident,
+        workload_baseline=resolved.workload_baseline,
+        throughput_incident=resolved.throughput_incident,
+        throughput_before=resolved.throughput_before,
+        throughput_baseline=resolved.throughput_baseline,
+        staffing_preliminary=resolved.staffing_preliminary,
+        staffing_attendance=resolved.staffing_attendance,
+        comparison=resolved.comparison,
+        telemetry=TelemetryObservation(
+            station_id=STATION_ID,
+            window=incident,
+            availability=TelemetryAvailability.UNAVAILABLE,
+            unavailability_reason=TelemetryUnavailabilityReason.NO_OBSERVATION_FOR_WINDOW,
             admissible=True,
         ),
     )

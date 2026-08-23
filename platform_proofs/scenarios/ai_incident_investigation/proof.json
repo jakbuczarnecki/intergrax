@@ -11,7 +11,7 @@
     "runtime.critic",
     "evidence.gap_1a"
   ],
-  "package_version": "full-1-resolved-0.2.0",
+  "package_version": "full-1-resolved-full-2-unresolved-0.3.0",
   "profiles": ["quick"],
   "command": {
     "executable": "uv",
@@ -46,5 +46,5 @@
       "required": false
     }
   ],
-  "tags": ["scenario_full_1", "platform_native", "resolved_evidence_world"]
+  "tags": ["scenario_full_1", "scenario_full_2", "platform_native", "resolved_evidence_world", "unresolved_evidence_world"]
 }

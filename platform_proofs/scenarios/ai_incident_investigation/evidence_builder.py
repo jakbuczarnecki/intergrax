@@ -38,7 +38,7 @@ from scripts.proof.intergrax_proof_contracts import ProofProfile
 from platform_proofs.scenarios.ai_incident_investigation.scenario import ScenarioExecutionResult
 
 PROOF_ID = "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON"
-PROOF_VERSION = "full-1-resolved-0.2.0"
+PROOF_VERSION = "full-1-resolved-full-2-unresolved-0.3.0"
 
 
 def build_platform_proof_evidence(
@@ -140,7 +140,7 @@ def build_platform_proof_evidence(
         ),
         claim=ProofClaimEvidence(
             claim="No material incident diagnosis without auditable evidence and falsification.",
-            user_relevance="FULL-1 proves RESOLVED path with H1/H2/H3 adversarial evidence.",
+            user_relevance="FULL-1/FULL-2 prove RESOLVED and UNRESOLVED paths with H1/H2/H3 adversarial evidence.",
             success_criteria=(
                 "ToolRuntime exercised",
                 "Critic challenge and revision bounded",
@@ -163,18 +163,18 @@ def build_platform_proof_evidence(
             content=explicit_runtime_report_safe_text(result.terminal_summary),
         ),
         limitations=(
-            "FULL-1 RESOLVED evidence world only — UNRESOLVED path pending FULL-2.",
+            "FULL-1 RESOLVED and FULL-2 UNRESOLVED evidence worlds implemented.",
             "Not accepted for public proof publication.",
         ),
         conclusion=ConclusionEvidence(
             supported_conclusions=(
-                "RESOLVED path with H1/H2/H3 adversarial evidence exercised",
+                "RESOLVED path with decisive telemetry and bounded H3 diagnosis",
+                "UNRESOLVED path when decisive telemetry is unavailable",
             ),
             unsupported_conclusions=(
-                "UNRESOLVED insufficient-evidence path",
                 "Public proof publication",
             ),
-            open_questions=("FULL-2 UNRESOLVED terminal scenario",),
+            open_questions=("Accepted public proof run",),
         ),
         reproduction=ReproductionEvidence(
             source_revision=source_revision,
