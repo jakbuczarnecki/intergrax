@@ -12,6 +12,7 @@ from intergrax.agent_distribution.admin_models import (
     ActivateRuntimeRevisionRequest,
     AgentPlatformAdminBlockedError,
     AgentPlatformAdminGovernanceBlockedError,
+    ControlPlaneTenantScopeDenial,
     AgentStatusView,
     BindAgentRequest,
     BindingListResult,
@@ -1225,7 +1226,7 @@ class AgentPlatformAdminService:
                 "AP-11_BLOCKED_BY_TENANT_AUTHORITY",
                 f"{operation} denied by tenant authority scope",
                 policy_action=PolicyAction.DENY.value,
-                authorization_evidence=self._synthetic_tenant_deny_evidence(
+                tenant_scope_denial=self._build_tenant_scope_denial(
                     principal=principal,
                     application_id=application_id,
                     application_environment_id=application_environment_id,
@@ -1418,50 +1419,31 @@ class AgentPlatformAdminService:
         )
 
     @staticmethod
-    def _synthetic_tenant_deny_evidence(
+    def _build_tenant_scope_denial(
         *,
         principal: RequestIdentity,
         application_id: str,
         application_environment_id: str,
-    ):
+    ) -> ControlPlaneTenantScopeDenial:
         from intergrax.agent_distribution.control_plane_governance import (
             AGENT_DISTRIBUTION_RESOURCE_TYPE,
             application_environment_resource_id,
             application_environment_resource_scope,
-            serving_revision_token,
-        )
-        from intergrax.contracts.control_plane_mutation import (
-            ControlPlaneMutationAuthorizationEvidence,
-            ControlPlaneMutationRisk,
         )
 
-        return ControlPlaneMutationAuthorizationEvidence(
-            request_digest="sha256:0000000000000000000000000000000000000000000000000000000000000000",
-            mutation_id="tenant-authority-deny",
-            mutation_type="agent_distribution.tenant_authority",
+        return ControlPlaneTenantScopeDenial(
             tenant_id=principal.tenant_id,
-            resource_scope=application_environment_resource_scope(
-                application_id=application_id,
-                application_environment_id=application_environment_id,
-            ),
             resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
             resource_id=application_environment_resource_id(
                 application_id=application_id,
                 application_environment_id=application_environment_id,
             ),
-            current_revision=serving_revision_token(
-                traffic_revision_id=None,
-                serving_pointer_revision=0,
+            resource_scope=application_environment_resource_scope(
+                application_id=application_id,
+                application_environment_id=application_environment_id,
             ),
-            target_revision=serving_revision_token(
-                traffic_revision_id=None,
-                serving_pointer_revision=0,
-            ),
-            risk_classification=ControlPlaneMutationRisk.HIGH,
             principal_type=principal.principal_type,
             principal_user_id=principal.user_id,
             principal_auth_subject=principal.auth_subject,
-            policy_action=PolicyAction.DENY,
-            policy_rule_id="agent_distribution.tenant_scope",
-            policy_decision_id="tenant-authority-deny",
+            reason="tenant_authority_mismatch",
         )

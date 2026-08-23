@@ -89,16 +89,7 @@ def _raise_admin_http(exc: Exception) -> None:
     if isinstance(exc, AgentPlatformAdminGovernanceBlockedError):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "blocker_code": exc.blocker_code,
-                "policy_action": exc.policy_action,
-                "authorization_evidence": exc.authorization_evidence.model_dump(mode="json"),
-                "authorization_scope": (
-                    exc.authorization_scope.model_dump(mode="json")
-                    if exc.authorization_scope is not None
-                    else None
-                ),
-            },
+            detail=exc.governance_http_detail(),
         ) from exc
     if isinstance(exc, AgentPlatformAdminBlockedError):
         raise HTTPException(

@@ -24,6 +24,7 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevisionState,
 )
 from intergrax.agent_distribution.trust import AgentInstallationTrustRecord
+from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import (
     ControlPlaneMutationAuthorizationEvidence,
     ControlPlaneMutationAuthorizationScope,
@@ -40,6 +41,29 @@ class AgentPlatformAdminBlockedError(Exception):
         self.blocker_code = blocker_code
 
 
+class ControlPlaneTenantScopeDenial(BaseModel):
+    """Pre-evaluation tenant authority rejection — no mutation request was evaluated."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str = _NON_EMPTY
+    resource_type: str = _NON_EMPTY
+    resource_id: str = _NON_EMPTY
+    resource_scope: str = _NON_EMPTY
+    principal_type: PrincipalType
+    principal_user_id: str | None = None
+    principal_auth_subject: str | None = None
+    reason: str = _NON_EMPTY
+
+    @field_validator("tenant_id", "resource_type", "resource_id", "resource_scope", "reason")
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
 class AgentPlatformAdminGovernanceBlockedError(AgentPlatformAdminBlockedError):
     """Control-plane mutation blocked by governance before domain commit."""
 
@@ -49,13 +73,34 @@ class AgentPlatformAdminGovernanceBlockedError(AgentPlatformAdminBlockedError):
         message: str,
         *,
         policy_action: str,
-        authorization_evidence: ControlPlaneMutationAuthorizationEvidence,
+        authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None,
         authorization_scope: ControlPlaneMutationAuthorizationScope | None = None,
+        tenant_scope_denial: ControlPlaneTenantScopeDenial | None = None,
     ) -> None:
         super().__init__(blocker_code, message)
         self.policy_action = policy_action
         self.authorization_evidence = authorization_evidence
         self.authorization_scope = authorization_scope
+        self.tenant_scope_denial = tenant_scope_denial
+
+    def governance_http_detail(self) -> dict[str, object]:
+        detail: dict[str, object] = {
+            "blocker_code": self.blocker_code,
+            "policy_action": self.policy_action,
+        }
+        if self.authorization_evidence is not None:
+            detail["authorization_evidence"] = self.authorization_evidence.model_dump(
+                mode="json"
+            )
+        if self.authorization_scope is not None:
+            detail["authorization_scope"] = self.authorization_scope.model_dump(
+                mode="json"
+            )
+        if self.tenant_scope_denial is not None:
+            detail["tenant_scope_denial"] = self.tenant_scope_denial.model_dump(
+                mode="json"
+            )
+        return detail
 
 
 class InstallAgentRequest(BaseModel):
