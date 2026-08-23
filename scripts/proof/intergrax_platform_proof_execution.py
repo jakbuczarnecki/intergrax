@@ -37,6 +37,7 @@ class ProofExecutionSpec:
     expected_artifacts: tuple[ExpectedProofArtifact, ...] = ()
     descriptor_path: Path | None = None
     package_root: Path | None = None
+    expected_domains_exercised: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,6 +58,7 @@ def _spec_from_descriptor(
         expected_artifacts=descriptor.expected_artifacts,
         descriptor_path=discovered.descriptor_path,
         package_root=discovered.descriptor_path.parent,
+        expected_domains_exercised=descriptor.domains_exercised,
     )
 
 

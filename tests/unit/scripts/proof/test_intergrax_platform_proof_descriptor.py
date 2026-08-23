@@ -215,7 +215,7 @@ def test_multiple_domains_exercised_accepted() -> None:
             domains_exercised=["tools", "runtime"]
         )
     )
-    assert descriptor.domains_exercised == ("tools", "runtime")
+    assert descriptor.domains_exercised == ("runtime", "tools")
 
 
 def test_single_domain_exercised_accepted() -> None:
@@ -223,14 +223,30 @@ def test_single_domain_exercised_accepted() -> None:
     assert descriptor.domains_exercised == (_TEST_DOMAIN,)
 
 
-def test_domains_exercised_order_preserved_without_priority_field() -> None:
-    descriptor = PlatformProofDescriptor.model_validate(
+def test_domains_exercised_canonical_lexicographic_order() -> None:
+    descriptor_a = PlatformProofDescriptor.model_validate(
         _minimal_conformance_descriptor(
-            domains_exercised=["runtime", "tools"]
+            domains_exercised=["TOOLS", "EXECUTION", "OBSERVABILITY"]
         )
     )
-    assert descriptor.domains_exercised == ("runtime", "tools")
+    descriptor_b = PlatformProofDescriptor.model_validate(
+        _minimal_conformance_descriptor(
+            domains_exercised=["OBSERVABILITY", "TOOLS", "EXECUTION"]
+        )
+    )
+    expected = ("EXECUTION", "OBSERVABILITY", "TOOLS")
+    assert descriptor_a.domains_exercised == expected
+    assert descriptor_b.domains_exercised == expected
     assert "primary_domain" not in PlatformProofDescriptor.model_fields
+
+
+def test_domains_exercised_trimming_before_canonical_order() -> None:
+    descriptor = PlatformProofDescriptor.model_validate(
+        _minimal_conformance_descriptor(
+            domains_exercised=["  TOOLS  ", "EXECUTION", " OBSERVABILITY "]
+        )
+    )
+    assert descriptor.domains_exercised == ("EXECUTION", "OBSERVABILITY", "TOOLS")
 
 
 def test_unknown_schema_version_rejected(tmp_path: Path) -> None:

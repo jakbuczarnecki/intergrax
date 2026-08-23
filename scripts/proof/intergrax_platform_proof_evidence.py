@@ -19,9 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from scripts.proof.intergrax_proof_contracts import ProofProfile, ProofStatus
 from scripts.proof.intergrax_platform_proof_descriptor import (
-    DOMAIN_ID_MAX_LENGTH,
-    UNSAFE_DOMAIN_CHARS,
-    _normalize_identifier_collection,
+    _normalize_domains_exercised,
 )
 
 PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION = "intergrax.platform_proof_evidence.v2"
@@ -267,14 +265,8 @@ class ProofIdentityEvidence(BaseModel):
 
     @field_validator("domains_exercised", mode="before")
     @classmethod
-    def _normalize_domains_exercised(cls, value: object) -> tuple[str, ...]:
-        return _normalize_identifier_collection(
-            value,
-            field_name="domains_exercised",
-            max_length=DOMAIN_ID_MAX_LENGTH,
-            unsafe_pattern=UNSAFE_DOMAIN_CHARS,
-            unsafe_message="domains_exercised contains unsafe path characters",
-        )
+    def _normalize_domains_exercised_field(cls, value: object) -> tuple[str, ...]:
+        return _normalize_domains_exercised(value)
 
 
 class ExecutionMetadataEvidence(BaseModel):

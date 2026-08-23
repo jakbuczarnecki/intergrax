@@ -90,11 +90,13 @@ def _spec(
     *,
     evidence_required: bool = True,
     evidence_schema: str = PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION,
+    expected_domains_exercised: tuple[str, ...] | None = None,
 ) -> ProofExecutionSpec:
     return ProofExecutionSpec(
         manifest_entry=entry,
         evidence_required=evidence_required,
         evidence_schema=evidence_schema,
+        expected_domains_exercised=expected_domains_exercised,
     )
 
 
@@ -137,6 +139,7 @@ def _minimal_evidence(
     source_revision: str = "abc123def456",
     evaluator: EvaluatorSummaryEvidence | None = None,
     scenarios: tuple[ScenarioEvidence, ...] = (),
+    domains_exercised: tuple[str, ...] | list[str] = ("test_evidence_verify",),
 ) -> PlatformProofEvidence:
     started = datetime(2026, 8, 22, 8, 0, 0, tzinfo=UTC)
     finished = datetime(2026, 8, 22, 8, 1, 0, tzinfo=UTC)
@@ -144,7 +147,7 @@ def _minimal_evidence(
         proof_identity=ProofIdentityEvidence(
             proof_id=proof_id,
             title="title",
-            domains_exercised=("test_evidence_verify",),
+            domains_exercised=domains_exercised,
             proof_version="1.0.0",
             source_revision=source_revision,
             execution_profile=ProofProfile.QUICK,
@@ -742,3 +745,93 @@ def test_resolve_expected_evidence_path_from_descriptor(tmp_path: Path) -> None:
     )
     artifact_dir = tmp_path / "artifacts"
     assert resolve_expected_evidence_path(artifact_dir, spec) == artifact_dir / "evidence.json"
+
+
+def test_domains_mismatch_invalid(tmp_path: Path) -> None:
+    artifact_dir, evidence_path = _write_evidence(
+        tmp_path,
+        _minimal_evidence(domains_exercised=["EXECUTION", "OBSERVABILITY", "TOOLS"]),
+    )
+    entry = _entry()
+    result = _verify(
+        artifact_dir,
+        evidence_path,
+        _transport(),
+        spec=_spec(
+            entry,
+            expected_domains_exercised=("EXECUTION", "TOOLS"),
+        ),
+    )
+    assert result.status == EvidenceVerificationStatus.INVALID
+    assert result.diagnostic_code == "proof_identity_domains_mismatch"
+
+
+def test_domains_reordered_equivalent_passes(tmp_path: Path) -> None:
+    artifact_dir, evidence_path = _write_evidence(
+        tmp_path,
+        _minimal_evidence(domains_exercised=["OBSERVABILITY", "TOOLS", "EXECUTION"]),
+    )
+    entry = _entry()
+    result = _verify(
+        artifact_dir,
+        evidence_path,
+        _transport(),
+        spec=_spec(
+            entry,
+            expected_domains_exercised=("EXECUTION", "OBSERVABILITY", "TOOLS"),
+        ),
+    )
+    assert result.status == EvidenceVerificationStatus.PASS
+
+
+def test_domains_evidence_missing_domain_invalid(tmp_path: Path) -> None:
+    artifact_dir, evidence_path = _write_evidence(
+        tmp_path,
+        _minimal_evidence(domains_exercised=["TOOLS"]),
+    )
+    entry = _entry()
+    result = _verify(
+        artifact_dir,
+        evidence_path,
+        _transport(),
+        spec=_spec(
+            entry,
+            expected_domains_exercised=("EXECUTION", "TOOLS"),
+        ),
+    )
+    assert result.status == EvidenceVerificationStatus.INVALID
+    assert result.diagnostic_code == "proof_identity_domains_mismatch"
+
+
+def test_domains_evidence_extra_domain_invalid(tmp_path: Path) -> None:
+    artifact_dir, evidence_path = _write_evidence(
+        tmp_path,
+        _minimal_evidence(domains_exercised=["TOOLS", "OBSERVABILITY"]),
+    )
+    entry = _entry()
+    result = _verify(
+        artifact_dir,
+        evidence_path,
+        _transport(),
+        spec=_spec(
+            entry,
+            expected_domains_exercised=("TOOLS",),
+        ),
+    )
+    assert result.status == EvidenceVerificationStatus.INVALID
+    assert result.diagnostic_code == "proof_identity_domains_mismatch"
+
+
+def test_no_expected_domains_skips_descriptor_domain_check(tmp_path: Path) -> None:
+    artifact_dir, evidence_path = _write_evidence(
+        tmp_path,
+        _minimal_evidence(domains_exercised=["OTHER", "DOMAIN"]),
+    )
+    entry = _entry()
+    result = _verify(
+        artifact_dir,
+        evidence_path,
+        _transport(),
+        spec=_spec(entry, expected_domains_exercised=None),
+    )
+    assert result.status == EvidenceVerificationStatus.PASS

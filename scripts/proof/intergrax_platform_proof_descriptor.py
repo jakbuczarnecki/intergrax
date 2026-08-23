@@ -133,13 +133,7 @@ class PlatformProofDescriptor(BaseModel):
     @field_validator("domains_exercised", mode="before")
     @classmethod
     def _normalize_domains_exercised(cls, value: object) -> tuple[str, ...]:
-        return _normalize_identifier_collection(
-            value,
-            field_name="domains_exercised",
-            max_length=DOMAIN_ID_MAX_LENGTH,
-            unsafe_pattern=UNSAFE_DOMAIN_CHARS,
-            unsafe_message="domains_exercised contains unsafe path characters",
-        )
+        return _normalize_domains_exercised(value)
 
     @field_validator("platform_requirements", mode="before")
     @classmethod
@@ -280,6 +274,18 @@ class PlatformProofDescriptor(BaseModel):
 
 def _is_windows_absolute(path: str) -> bool:
     return len(path) >= 2 and path[1] == ":"
+
+
+def _normalize_domains_exercised(value: object) -> tuple[str, ...]:
+    """Validate and lexicographically order domain identifiers (semantically neutral)."""
+    normalized = _normalize_identifier_collection(
+        value,
+        field_name="domains_exercised",
+        max_length=DOMAIN_ID_MAX_LENGTH,
+        unsafe_pattern=UNSAFE_DOMAIN_CHARS,
+        unsafe_message="domains_exercised contains unsafe path characters",
+    )
+    return tuple(sorted(normalized))
 
 
 def _normalize_identifier_collection(

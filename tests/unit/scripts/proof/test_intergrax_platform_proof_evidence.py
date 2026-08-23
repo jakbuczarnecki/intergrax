@@ -250,3 +250,37 @@ def _minimal_provenance() -> ProvenanceEvidence:
         execution_id="exec-1",
         artifact_identity="artifact-1",
     )
+
+
+def test_proof_identity_domains_exercised_canonical_lexicographic_order() -> None:
+    identity_a = ProofIdentityEvidence(
+        proof_id="P",
+        title="t",
+        domains_exercised=["TOOLS", "EXECUTION", "OBSERVABILITY"],
+        proof_version="v1",
+        source_revision="sha",
+        execution_profile=ProofProfile.QUICK,
+    )
+    identity_b = ProofIdentityEvidence(
+        proof_id="P",
+        title="t",
+        domains_exercised=["OBSERVABILITY", "TOOLS", "EXECUTION"],
+        proof_version="v1",
+        source_revision="sha",
+        execution_profile=ProofProfile.QUICK,
+    )
+    expected = ("EXECUTION", "OBSERVABILITY", "TOOLS")
+    assert identity_a.domains_exercised == expected
+    assert identity_b.domains_exercised == expected
+
+
+def test_proof_identity_domains_exercised_trimming_before_canonical_order() -> None:
+    identity = ProofIdentityEvidence(
+        proof_id="P",
+        title="t",
+        domains_exercised=["  TOOLS  ", "EXECUTION", " OBSERVABILITY "],
+        proof_version="v1",
+        source_revision="sha",
+        execution_profile=ProofProfile.QUICK,
+    )
+    assert identity.domains_exercised == ("EXECUTION", "OBSERVABILITY", "TOOLS")
