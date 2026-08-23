@@ -1,0 +1,50 @@
+{
+  "schema_version": "intergrax.platform_proof_descriptor.v3",
+  "library_class": "SCENARIO",
+  "proof_id": "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON",
+  "title": "AI Incident Investigation — platform-native skeleton",
+  "domains_exercised": ["EXECUTION", "TOOLS", "CRITIC", "EVIDENCE"],
+  "proof_kind": "scenario_skeleton",
+  "mechanisms_exercised": [
+    "runtime.graph_executor",
+    "runtime.tool_runtime",
+    "runtime.critic",
+    "evidence.gap_1a"
+  ],
+  "package_version": "skeleton-0.1.0",
+  "profiles": ["quick"],
+  "command": {
+    "executable": "uv",
+    "argv": [
+      "run",
+      "python",
+      "platform_proofs/scenarios/ai_incident_investigation/run_proof.py"
+    ]
+  },
+  "timeout_seconds": 180,
+  "safety_class": "LOCAL_READ_ONLY",
+  "public_evidence_eligible": false,
+  "problem_category": "operational_incident_investigation",
+  "problem_summary": "Reject correlation-only overload diagnosis; require telemetry-backed bounded revision.",
+  "failure_mode_summary": "Unsupported workload-throughput inference accepted without distinguishing follow-up evidence.",
+  "evidence_required": true,
+  "evidence_schema": "intergrax.platform_proof_evidence.v3",
+  "expected_artifacts": [
+    {
+      "kind": "EVIDENCE_JSON",
+      "relative_path": "evidence.json",
+      "required": true
+    },
+    {
+      "kind": "REPORT_HTML",
+      "relative_path": "report.html",
+      "required": false
+    },
+    {
+      "kind": "DOMAIN_RESULT_JSON",
+      "relative_path": "domain_result.json",
+      "required": false
+    }
+  ],
+  "tags": ["scenario_skeleton", "platform_native"]
+}

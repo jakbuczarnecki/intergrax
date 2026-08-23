@@ -24,6 +24,8 @@ from platform_proofs.scenarios.ai_incident_investigation.investigator_agent impo
     INITIAL_CLAIM_ID,
     REVISED_CLAIM_ID,
     TELEMETRY_EVIDENCE_ID,
+    THROUGHPUT_EVIDENCE_ID,
+    WORKLOAD_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.scenario import (
     EVALUATOR_LOOP_MAX_ITERATIONS,
@@ -92,8 +94,24 @@ def evaluate_scenario_run(
                 failures.append("challenge_not_satisfied_after_resolution")
             else:
                 checks.append("challenge_satisfied_after_revision")
+                if TELEMETRY_EVIDENCE_ID not in challenge.evidence_ids:
+                    failures.append("satisfied_challenge_missing_resolving_evidence")
+                else:
+                    checks.append("satisfied_challenge_includes_telemetry_evidence")
+                for evidence_id in (WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID):
+                    if evidence_id not in challenge.evidence_ids:
+                        failures.append("satisfied_challenge_missing_initial_evidence")
+                observable_ids = {
+                    str(node.get("evidence_id")) for node in result.evidence_nodes
+                }
+                if str(TELEMETRY_EVIDENCE_ID) not in observable_ids:
+                    failures.append("telemetry_evidence_not_in_graph")
+                else:
+                    checks.append("telemetry_evidence_observable_in_graph")
         elif challenge.resolution is not ChallengeResolution.OPEN:
             failures.append("unresolved_challenge_should_remain_open")
+        elif TELEMETRY_EVIDENCE_ID in challenge.evidence_ids:
+            failures.append("open_challenge_must_not_include_resolving_evidence")
 
     if result.evaluator_loop_iterations < 1:
         failures.append("bounded_recovery_missing")

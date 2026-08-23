@@ -46,6 +46,7 @@ from platform_proofs.scenarios.ai_incident_investigation.investigator_agent impo
     IncidentInvestigatorAgent,
     INVESTIGATOR_AGENT_ID,
     INVESTIGATOR_CAPABILITY,
+    TELEMETRY_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
     THROUGHPUT_EVIDENCE_ID,
 )
@@ -225,7 +226,8 @@ async def execute_resolved_skeleton(
             claim_set,
             failed_critic_verdict,
             claim_id=INITIAL_CLAIM_ID,
-            evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
+            initial_evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
+            resolving_evidence_ids=(TELEMETRY_EVIDENCE_ID,),
             resolved=critic_verdict_passed,
         )
 

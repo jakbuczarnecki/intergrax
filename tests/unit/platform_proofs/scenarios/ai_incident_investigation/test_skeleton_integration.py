@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -18,6 +19,13 @@ from intergrax.contracts.evidence_claims import (
     EvidenceClaimSet,
 )
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.runtime.critic.contracts import (
+    CriticAction,
+    CriticLayer,
+    CriticScope,
+    CriticVerdict,
+    LayerVerdict,
+)
 from intergrax.runtime.critic.critic_wiring import (
     CriticHookConfig,
     build_critic_graph_hooks,
@@ -29,22 +37,20 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     ReportSafeTextSourceKind,
     project_evidence_claim_set,
 )
-from scripts.proof.intergrax_platform_proof_evidence_io import write_evidence_json
-from scripts.proof.intergrax_platform_proof_evidence_verifier import (
-    EvidenceVerificationStatus,
-    verify_platform_proof_evidence,
+from scripts.proof.intergrax_platform_proof_evidence_io import EVIDENCE_FILENAME
+from scripts.proof.intergrax_platform_proof_execution import (
+    INTERGRAX_PROOF_ARTIFACT_DIR_ENV,
+    load_manifest_bundle,
 )
-from scripts.proof.intergrax_platform_proof_execution import ProofExecutionSpec
 from scripts.proof.intergrax_platform_proof_html_renderer import render_platform_proof_report
 from scripts.proof.intergrax_proof_contracts import (
-    ProofArgvCommand,
-    ProofManifestEntry,
-    ProofProfile,
-    ProofRunResult,
-    ProofSafetyClass,
+    EvidenceVerificationStatus as ContractEvidenceStatus,
     ProofStatus,
 )
+from scripts.proof.intergrax_proof_runner import execute_proof, read_git_metadata
 from platform_proofs.scenarios.ai_incident_investigation.critic_adapter import (
+    apply_challenge_lifecycle,
+    build_satisfied_challenge,
     map_critic_verdict_to_challenge,
 )
 from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import (
@@ -58,6 +64,8 @@ from platform_proofs.scenarios.ai_incident_investigation.investigator_agent impo
     INVESTIGATOR_CAPABILITY,
     REVISED_CLAIM_ID,
     TELEMETRY_EVIDENCE_ID,
+    THROUGHPUT_EVIDENCE_ID,
+    WORKLOAD_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.scenario import (
     EVALUATOR_LOOP_MAX_ITERATIONS,
@@ -87,21 +95,52 @@ from testing_support.builder import FakeLLMAdapter, build_in_memory_session_mana
 pytestmark = pytest.mark.unit
 
 
-def _skeleton_execution_spec() -> ProofExecutionSpec:
-    return ProofExecutionSpec(
-        manifest_entry=ProofManifestEntry(
-            proof_id=PROOF_ID,
-            title="AI Incident Investigation — platform-native skeleton",
-            profiles=frozenset({ProofProfile.QUICK}),
-            proof_kind="scenario_skeleton",
-            command=ProofArgvCommand(
-                executable="python",
-                argv=("platform_proofs/scenarios/ai_incident_investigation/run_proof.py",),
-            ),
-            safety_class=ProofSafetyClass.LOCAL_READ_ONLY,
-        ),
-        evidence_required=True,
+def _failed_critic_verdict() -> CriticVerdict:
+    return CriticVerdict(
+        scope=CriticScope.NODE_PARTIAL,
+        passed=False,
+        layers=[
+            LayerVerdict(
+                layer=CriticLayer.L0_DETERMINISTIC,
+                passed=False,
+                errors=[UNSUPPORTED_INFERENCE_ERROR],
+            )
+        ],
+        recommended_action=CriticAction.REVISE,
+        failure_reasons=[UNSUPPORTED_INFERENCE_ERROR],
     )
+
+
+def _empty_claim_set() -> dict[str, object]:
+    return {
+        "schema_version": "evidence_claim_set.v1",
+        "claims": [
+            {
+                "claim_id": str(INITIAL_CLAIM_ID),
+                "statement": "initial overload diagnosis",
+                "claim_kind": "incident.root_cause_diagnosis",
+                "supporting_evidence_ids": [
+                    str(WORKLOAD_EVIDENCE_ID),
+                    str(THROUGHPUT_EVIDENCE_ID),
+                ],
+                "resolution": "pending",
+            }
+        ],
+        "challenges": [],
+    }
+
+
+def _skeleton_manifest_entry(repo_root: Path):
+    bundle = load_manifest_bundle(repo_root=repo_root)
+    entry = next(
+        item for item in bundle.manifest.entries if item.proof_id == PROOF_ID
+    )
+    return entry, bundle.execution_specs[PROOF_ID]
+
+
+@pytest.fixture
+def repo_root() -> Path:
+    return Path(__file__).resolve().parents[5]
 
 
 @pytest.mark.asyncio
@@ -124,6 +163,9 @@ async def test_resolved_skeleton_executes_platform_path() -> None:
     assert TELEMETRY_EVIDENCE_ID in supported[-1].supporting_evidence_ids
     assert result.evidence_challenge is not None
     assert result.evidence_challenge.resolution is ChallengeResolution.SATISFIED
+    assert TELEMETRY_EVIDENCE_ID in result.evidence_challenge.evidence_ids
+    assert WORKLOAD_EVIDENCE_ID in result.evidence_challenge.evidence_ids
+    assert THROUGHPUT_EVIDENCE_ID in result.evidence_challenge.evidence_ids
 
     evaluation = evaluate_scenario_run(result, bundle.fixture)
     assert evaluation.passed
@@ -149,6 +191,61 @@ async def test_real_critic_provenance_maps_to_challenge_with_stable_id() -> None
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
     assert len(claim_set.challenges) == 1
     assert claim_set.challenges[0].challenge_id == result.evidence_challenge.challenge_id
+
+
+def test_apply_challenge_lifecycle_open_excludes_resolving_evidence() -> None:
+    failed_verdict = _failed_critic_verdict()
+    _, open_challenge = apply_challenge_lifecycle(
+        _empty_claim_set(),
+        failed_verdict,
+        claim_id=INITIAL_CLAIM_ID,
+        initial_evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
+        resolving_evidence_ids=(TELEMETRY_EVIDENCE_ID,),
+        resolved=False,
+    )
+    assert open_challenge is not None
+    assert TELEMETRY_EVIDENCE_ID not in open_challenge.evidence_ids
+    assert WORKLOAD_EVIDENCE_ID in open_challenge.evidence_ids
+    assert THROUGHPUT_EVIDENCE_ID in open_challenge.evidence_ids
+
+
+def test_apply_challenge_lifecycle_satisfied_includes_resolving_evidence() -> None:
+    failed_verdict = _failed_critic_verdict()
+    satisfied_set, satisfied_challenge = apply_challenge_lifecycle(
+        _empty_claim_set(),
+        failed_verdict,
+        claim_id=INITIAL_CLAIM_ID,
+        initial_evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
+        resolving_evidence_ids=(TELEMETRY_EVIDENCE_ID,),
+        resolved=True,
+    )
+    assert satisfied_challenge is not None
+    assert satisfied_challenge.resolution is ChallengeResolution.SATISFIED
+    assert TELEMETRY_EVIDENCE_ID in satisfied_challenge.evidence_ids
+    claim_set = EvidenceClaimSet.model_validate(satisfied_set)
+    assert len(claim_set.challenges) == 1
+
+
+def test_build_satisfied_challenge_preserves_open_challenge_id() -> None:
+    failed_verdict = _failed_critic_verdict()
+    open_challenge = map_critic_verdict_to_challenge(
+        failed_verdict,
+        claim_id=INITIAL_CLAIM_ID,
+        evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
+    )
+    assert open_challenge is not None
+    satisfied = build_satisfied_challenge(
+        open_challenge.challenge_id,
+        claim_id=INITIAL_CLAIM_ID,
+        evidence_ids=(
+            WORKLOAD_EVIDENCE_ID,
+            THROUGHPUT_EVIDENCE_ID,
+            TELEMETRY_EVIDENCE_ID,
+        ),
+        description="Follow-up telemetry gathered via platform tools",
+    )
+    assert satisfied.challenge_id == open_challenge.challenge_id
+    assert TELEMETRY_EVIDENCE_ID in satisfied.evidence_ids
 
 
 @pytest.mark.asyncio
@@ -364,6 +461,7 @@ async def test_platform_proof_evidence_verifier_and_renderer() -> None:
             ReportSafeTextSourceKind.RUNTIME_EXPLICIT,
             ReportSafeTextSourceKind.RUNTIME_SANITIZED,
         }
+        assert str(TELEMETRY_EVIDENCE_ID) in projected.challenges[0].evidence_ids
 
     PlatformProofEvidence.model_validate(evidence.model_dump(mode="json"))
     html = render_platform_proof_report(evidence)
@@ -373,63 +471,81 @@ async def test_platform_proof_evidence_verifier_and_renderer() -> None:
 
 
 @pytest.mark.asyncio
-async def test_canonical_verifier_passes_valid_artifact() -> None:
-    bundle = build_runtime_bundle()
-    result = await execute_resolved_skeleton(bundle)
-    evidence = build_platform_proof_evidence(result, source_revision="testsha")
+async def test_parent_runner_integration_valid_scenario_skeleton(
+    repo_root: Path,
+) -> None:
+    entry, spec = _skeleton_manifest_entry(repo_root)
+    assert entry.public_evidence_eligible is False
+    git = read_git_metadata(repo_root)
     with tempfile.TemporaryDirectory() as tmp:
         artifact_dir = Path(tmp)
-        evidence_path = write_evidence_json(evidence, proof_directory=artifact_dir)
-        transport = ProofRunResult(
-            proof_id=PROOF_ID,
-            status=ProofStatus.PASS,
-            exit_code=0,
-            duration_seconds=0.0,
+        result = execute_proof(
+            entry,
+            repo_root=repo_root,
+            execution_spec=spec,
+            proof_artifact_directory=artifact_dir,
+            git_commit_sha=git.commit_sha,
         )
-        verification = verify_platform_proof_evidence(
-            evidence_path=evidence_path,
-            artifact_root=artifact_dir,
-            spec=_skeleton_execution_spec(),
-            subprocess_result=transport,
-            expected_source_revision="testsha",
-        )
-        assert verification.status is EvidenceVerificationStatus.PASS, (
-            verification.diagnostic_code,
-            verification.diagnostic_summary,
-        )
+        assert result.exit_code == 0
+        assert result.status == ProofStatus.PASS
+        assert result.evidence_verification_status == ContractEvidenceStatus.PASS
+        assert (artifact_dir / EVIDENCE_FILENAME).is_file()
 
 
 @pytest.mark.asyncio
-async def test_canonical_verifier_rejects_tampered_evidence_reference() -> None:
-    bundle = build_runtime_bundle()
-    result = await execute_resolved_skeleton(bundle)
-    evidence = build_platform_proof_evidence(result, source_revision="testsha")
-    with tempfile.TemporaryDirectory() as tmp:
-        artifact_dir = Path(tmp)
-        evidence_path = write_evidence_json(evidence, proof_directory=artifact_dir)
+async def test_parent_runner_integration_tampered_evidence_fails(
+    repo_root: Path,
+) -> None:
+    entry, spec = _skeleton_manifest_entry(repo_root)
+    git = read_git_metadata(repo_root)
+
+    def _tamper_runner(command, **kwargs):
+        completed = subprocess.run(command, **kwargs)
+        artifact_dir = Path(kwargs["env"][INTERGRAX_PROOF_ARTIFACT_DIR_ENV])
+        evidence_path = artifact_dir / EVIDENCE_FILENAME
         tampered = json.loads(evidence_path.read_text(encoding="utf-8"))
         tampered["evidence_claims"]["claims"][0]["supporting_evidence_ids"] = [
             "evidence.tampered.missing"
         ]
         evidence_path.write_text(json.dumps(tampered), encoding="utf-8")
-        transport = ProofRunResult(
-            proof_id=PROOF_ID,
-            status=ProofStatus.PASS,
-            exit_code=0,
-            duration_seconds=0.0,
+        return completed
+
+    with tempfile.TemporaryDirectory() as tmp:
+        artifact_dir = Path(tmp)
+        result = execute_proof(
+            entry,
+            repo_root=repo_root,
+            execution_spec=spec,
+            proof_artifact_directory=artifact_dir,
+            git_commit_sha=git.commit_sha,
+            subprocess_runner=_tamper_runner,
         )
-        verification = verify_platform_proof_evidence(
-            evidence_path=evidence_path,
-            artifact_root=artifact_dir,
-            spec=_skeleton_execution_spec(),
-            subprocess_result=transport,
-            expected_source_revision="testsha",
-        )
-        assert verification.status is EvidenceVerificationStatus.INVALID
-        assert verification.diagnostic_code in {
-            "claim_support_evidence_missing",
-            "invalid_evidence",
-        }
+    assert result.status == ProofStatus.FAIL
+    assert result.evidence_verification_status == ContractEvidenceStatus.INVALID
+    assert result.diagnostic_summary in {
+        "claim_support_evidence_missing",
+        "invalid_evidence",
+        "evidence failed PlatformProofEvidence validation",
+    }
+
+
+def test_static_audit_child_run_proof_has_no_self_verification() -> None:
+    run_proof_path = (
+        Path(__file__).resolve().parents[5]
+        / "platform_proofs"
+        / "scenarios"
+        / "ai_incident_investigation"
+        / "run_proof.py"
+    )
+    source = run_proof_path.read_text(encoding="utf-8")
+    forbidden = (
+        "ProofRunResult(",
+        "verify_platform_proof_evidence(",
+        "_skeleton_execution_spec",
+        "_verify_written_evidence",
+    )
+    for token in forbidden:
+        assert token not in source
 
 
 @pytest.mark.asyncio
@@ -442,7 +558,12 @@ async def test_critic_hooks_wired_for_investigator() -> None:
 
 
 def test_static_bypass_audit_no_substitute_runtimes() -> None:
-    package = Path(__file__).resolve().parents[4] / "platform_proofs" / "scenarios" / "ai_incident_investigation"
+    package = (
+        Path(__file__).resolve().parents[5]
+        / "platform_proofs"
+        / "scenarios"
+        / "ai_incident_investigation"
+    )
     forbidden_names = (
         "RetryLoop",
         "VerifierRuntime",

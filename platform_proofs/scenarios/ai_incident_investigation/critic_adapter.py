@@ -111,7 +111,8 @@ def apply_challenge_lifecycle(
     failed_verdict: CriticVerdict,
     *,
     claim_id: EvidenceClaimId,
-    evidence_ids: tuple[EvidenceReferenceId, ...],
+    initial_evidence_ids: tuple[EvidenceReferenceId, ...],
+    resolving_evidence_ids: tuple[EvidenceReferenceId, ...] = (),
     resolved: bool,
     satisfied_description: str = "Follow-up telemetry gathered via platform tools",
 ) -> tuple[dict[str, Any], EvidenceChallenge | None]:
@@ -119,7 +120,7 @@ def apply_challenge_lifecycle(
     open_challenge = map_critic_verdict_to_challenge(
         failed_verdict,
         claim_id=claim_id,
-        evidence_ids=evidence_ids,
+        evidence_ids=initial_evidence_ids,
     )
     if open_challenge is None:
         return claim_set, None
@@ -132,10 +133,11 @@ def apply_challenge_lifecycle(
         )
         return updated.model_dump(mode="json"), open_challenge
 
+    satisfied_evidence_ids = initial_evidence_ids + resolving_evidence_ids
     satisfied = build_satisfied_challenge(
         open_challenge.challenge_id,
         claim_id=claim_id,
-        evidence_ids=evidence_ids,
+        evidence_ids=satisfied_evidence_ids,
         description=satisfied_description,
     )
     updated = EvidenceClaimSet(
