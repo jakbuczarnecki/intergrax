@@ -215,17 +215,22 @@ def test_rollback_failure_retains_authoritative_serving_pointer() -> None:
     assert serving.traffic_serving_revision_id == "rev-n1"
 
 
-def test_post_cutover_failure_triggers_rollback() -> None:
-    activation, revision_service, _ = _bootstrap_active_pair()
+def test_post_cutover_failure_marks_instance_failed() -> None:
+    activation, _, _ = _bootstrap_active_pair()
+    instance = activation._deployment_instance_store.get_instance(_APP, _ENV, "rev-n1")
+    assert instance is not None
     result = activation.mark_post_cutover_failure(
         application_id=_APP,
         application_environment_id=_ENV,
         runtime_revision_id="rev-n1",
         failure_evidence_ref="health:failed",
+        expected_record_revision=instance.record_revision,
     )
     assert result.value is not None
-    assert result.value.serving_record.traffic_serving_revision_id == "rev-n"
-    assert revision_service.get_active_revision(_APP, _ENV).runtime_revision_id == "rev-n"
+    assert result.value.instance_state.value == "failed"
+    serving = activation._serving_store.get_serving_record(_APP, _ENV)
+    assert serving is not None
+    assert serving.traffic_serving_revision_id == "rev-n1"
 
 
 def test_rollback_reuses_draining_instance_without_prepare() -> None:

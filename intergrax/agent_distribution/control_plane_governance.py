@@ -7,9 +7,10 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
 
 from intergrax.agent_distribution._digest import content_digest_for_model
+from intergrax.agent_distribution.deployment import DrainPolicy
 from intergrax.agent_distribution._immutable_json import (
     DistributionJsonValue,
     distribution_json_to_plain,
@@ -38,6 +39,10 @@ MUTATION_TYPE_ENABLE_BINDING = "agent_distribution.enable_binding"
 MUTATION_TYPE_DISABLE_BINDING = "agent_distribution.disable_binding"
 MUTATION_TYPE_BUILD_RUNTIME_REVISION = "agent_distribution.build_runtime_revision"
 MUTATION_TYPE_ADMIT_RUNTIME_REVISION = "agent_distribution.admit_runtime_revision"
+MUTATION_TYPE_COMPLETE_DRAIN = "agent_distribution.complete_drain"
+MUTATION_TYPE_MARK_POST_CUTOVER_FAILURE = (
+    "agent_distribution.mark_post_cutover_failure"
+)
 
 _INSTALL_ABSENT_TOKEN = "inst:__absent__"
 _BINDING_ABSENT_TOKEN = "binding:__absent__"
@@ -551,6 +556,141 @@ def build_runtime_revision_mutation_request(
         target_revision=build_runtime_revision_target_token(
             runtime_revision_id=runtime_revision_id,
             identity_digest=identity_digest,
+        ),
+        risk_classification=ControlPlaneMutationRisk.HIGH,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class PostCutoverRecoveryAuthority:
+    """Scoped recovery continuation derived from a governed activation attempt."""
+
+    application_id: str
+    application_environment_id: str
+    failed_runtime_revision_id: str
+    originating_activation_mutation_id: str
+    permitted_recovery_operation: Literal["rollback"]
+    target_rollback_revision_id: str
+
+
+def drain_policy_digest(policy: DrainPolicy) -> str:
+    """Deterministic digest for drain policy governance identity."""
+    payload = {
+        "timeout_seconds": policy.timeout_seconds,
+        "action_on_timeout": policy.action_on_timeout.value,
+    }
+    return request_digest_for_payload(payload)
+
+
+def deployment_instance_state_token(
+    *,
+    runtime_revision_id: str,
+    record_revision: int,
+    instance_state: str,
+) -> str:
+    return (
+        f"deployment_instance:{runtime_revision_id}"
+        f"|rev:{record_revision}|state:{instance_state}"
+    )
+
+
+def deployment_instance_draining_token(
+    *,
+    runtime_revision_id: str,
+    record_revision: int,
+    serving_unit_ref: str,
+    policy_digest: str,
+) -> str:
+    return (
+        f"deployment_instance:{runtime_revision_id}|rev:{record_revision}"
+        f"|state:draining|unit:{serving_unit_ref}|policy:{policy_digest}"
+    )
+
+
+def deployment_instance_drain_target_token(
+    *,
+    runtime_revision_id: str,
+    next_record_revision: int,
+    policy_digest: str,
+) -> str:
+    return (
+        f"deployment_instance:{runtime_revision_id}|rev:{next_record_revision}"
+        f"|outcome:drain_policy_complete|policy:{policy_digest}"
+    )
+
+
+def build_complete_drain_mutation_request(
+    *,
+    principal: RequestIdentity,
+    application_id: str,
+    application_environment_id: str,
+    mutation_id: str,
+    runtime_revision_id: str,
+    record_revision: int,
+    serving_unit_ref: str,
+    policy: DrainPolicy,
+) -> ControlPlaneMutationRequest:
+    policy_digest = drain_policy_digest(policy)
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_COMPLETE_DRAIN,
+        principal=principal,
+        resource_scope=application_environment_resource_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
+        resource_id=application_environment_resource_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        current_revision=deployment_instance_draining_token(
+            runtime_revision_id=runtime_revision_id,
+            record_revision=record_revision,
+            serving_unit_ref=serving_unit_ref,
+            policy_digest=policy_digest,
+        ),
+        target_revision=deployment_instance_drain_target_token(
+            runtime_revision_id=runtime_revision_id,
+            next_record_revision=record_revision + 1,
+            policy_digest=policy_digest,
+        ),
+        risk_classification=ControlPlaneMutationRisk.HIGH,
+    )
+
+
+def build_mark_post_cutover_failure_mutation_request(
+    *,
+    principal: RequestIdentity,
+    application_id: str,
+    application_environment_id: str,
+    mutation_id: str,
+    runtime_revision_id: str,
+    record_revision: int,
+    current_instance_state: str,
+) -> ControlPlaneMutationRequest:
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_MARK_POST_CUTOVER_FAILURE,
+        principal=principal,
+        resource_scope=application_environment_resource_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
+        resource_id=application_environment_resource_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        current_revision=deployment_instance_state_token(
+            runtime_revision_id=runtime_revision_id,
+            record_revision=record_revision,
+            instance_state=current_instance_state,
+        ),
+        target_revision=deployment_instance_state_token(
+            runtime_revision_id=runtime_revision_id,
+            record_revision=record_revision + 1,
+            instance_state="failed",
         ),
         risk_classification=ControlPlaneMutationRisk.HIGH,
     )

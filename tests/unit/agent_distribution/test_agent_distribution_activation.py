@@ -338,6 +338,7 @@ def test_draining_prior_completes_to_stopped() -> None:
     completed = harness.activation.complete_drain(
         application_environment_id=_ENV_PROD,
         runtime_revision_id="rev-1",
+        expected_record_revision=prior.record_revision,
         policy=DrainPolicy(timeout_seconds=30.0),
     )
     assert completed.value.instance.instance_state is DeploymentInstanceState.STOPPED
@@ -358,6 +359,7 @@ def test_drain_timeout_returns_typed_outcome() -> None:
         harness.activation.complete_drain(
             application_environment_id=_ENV_PROD,
             runtime_revision_id="rev-1",
+            expected_record_revision=prior.record_revision,
             policy=DrainPolicy(
                 timeout_seconds=1.0,
                 action_on_timeout=DrainActionOnTimeout.MARK_FAILED,
@@ -380,6 +382,7 @@ def test_drain_timeout_does_not_route_traffic_back_to_old_revision() -> None:
         harness.activation.complete_drain(
             application_environment_id=_ENV_PROD,
             runtime_revision_id="rev-1",
+            expected_record_revision=prior.record_revision,
             policy=DrainPolicy(timeout_seconds=1.0),
         )
     serving = harness.serving_store.get_serving_record(_APP, _ENV_PROD)

@@ -16,6 +16,7 @@ from intergrax.agent_distribution.binding import (
     AgentBindingPolicyOverrides,
 )
 from intergrax.agent_distribution.catalog import AgentCatalogEntry, CatalogEntryFilters
+from intergrax.agent_distribution.deployment import DeploymentInstanceState, DrainPolicy
 from intergrax.agent_distribution.dependency import RepositoryDependencyDeclaration
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.installation import InstallationState
@@ -318,6 +319,54 @@ class RollbackRuntimeRevisionRequest(BaseModel):
         return normalized
 
 
+class CompleteRevisionDrainRequest(BaseModel):
+    """Complete drain for one DRAINING deployment instance."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    mutation_id: str = _NON_EMPTY
+    runtime_revision_id: str = _NON_EMPTY
+    expected_record_revision: int = Field(ge=0)
+    policy: DrainPolicy
+
+    @field_validator("mutation_id", "runtime_revision_id")
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
+class HandlePostCutoverFailureRequest(BaseModel):
+    """Record post-cutover failure and optionally attempt governed recovery rollback."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    mutation_id: str = _NON_EMPTY
+    recovery_mutation_id: str | None = None
+    runtime_revision_id: str = _NON_EMPTY
+    failure_evidence_ref: str = _NON_EMPTY
+    originating_activation_mutation_id: str = _NON_EMPTY
+    attempt_rollback: bool = True
+
+    @field_validator(
+        "mutation_id",
+        "recovery_mutation_id",
+        "runtime_revision_id",
+        "failure_evidence_ref",
+        "originating_activation_mutation_id",
+    )
+    @classmethod
+    def _strip_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
 class CatalogListRequest(BaseModel):
     """Optional catalog listing filters."""
 
@@ -472,6 +521,30 @@ class RollbackResultView(BaseModel):
     revision_state: RuntimeRevisionState
     superseded_revision_id: str | None = None
     authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
+    audit_event_types: tuple[str, ...] = ()
+
+
+class DrainCompletionResultView(BaseModel):
+    """Drain completion evidence."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    runtime_revision_id: str
+    instance_state: DeploymentInstanceState
+    record_revision: int
+    authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
+    audit_event_types: tuple[str, ...] = ()
+
+
+class PostCutoverFailureResultView(BaseModel):
+    """Post-cutover failure handling evidence."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    runtime_revision_id: str
+    instance_state: DeploymentInstanceState | None = None
+    failure_mark_authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
+    rollback_result: RollbackResultView | None = None
     audit_event_types: tuple[str, ...] = ()
 
 

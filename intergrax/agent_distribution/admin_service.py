@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from intergrax.agent_distribution.activation import ActivationService
+from intergrax.agent_distribution.activation import ActivationService, RollbackResult
 from intergrax.agent_distribution.admin_models import (
     ActivationResultView,
     ActivationStatusView,
@@ -21,11 +21,15 @@ from intergrax.agent_distribution.admin_models import (
     BuildApplicationRevisionRequest,
     BuildRevisionResult,
     CatalogListResult,
+    CompleteRevisionDrainRequest,
+    DrainCompletionResultView,
     EffectiveRosterView,
+    HandlePostCutoverFailureRequest,
     InstallAgentRequest,
     InstallationListResult,
     InstallationMutationResult,
     InstallationView,
+    PostCutoverFailureResultView,
     RevisionHistoryView,
     RollbackResultView,
     RollbackRuntimeRevisionRequest,
@@ -45,22 +49,26 @@ from intergrax.agent_distribution.control_plane_governance import (
     binding_config_digest,
     build_activation_mutation_request,
     build_bind_agent_mutation_request,
+    build_complete_drain_mutation_request,
     build_disable_binding_mutation_request,
     build_enable_binding_mutation_request,
     build_input_digest,
     build_install_agent_mutation_request,
+    build_mark_post_cutover_failure_mutation_request,
     build_runtime_revision_identity_digest,
     build_runtime_revision_mutation_request,
     build_rollback_mutation_request,
     build_update_binding_config_mutation_request,
     installation_absent_token,
     installation_state_token,
+    PostCutoverRecoveryAuthority,
 )
 from intergrax.agent_distribution.catalog import CatalogEntryFilters, CatalogSourceProvider
 from intergrax.agent_distribution.dependency import DependencyResolverInput
 from intergrax.agent_distribution.dependency_specification import (
     build_candidate_dependency_specification,
 )
+from intergrax.agent_distribution.deployment import DeploymentInstanceState, DrainPolicy
 from intergrax.agent_distribution.effective_roster import (
     EffectiveRosterBuilder,
     InstalledAgentRequirementSetBuilder,
@@ -70,6 +78,8 @@ from intergrax.agent_distribution.errors import (
     BindingRevisionConflict,
     InstallationSlotConflict,
     RuntimeActivationConflict,
+    RuntimeActivationError,
+    RuntimeDrainError,
     RuntimeRevisionConflict,
     RuntimeRollbackError,
 )
@@ -1039,7 +1049,7 @@ class AgentPlatformAdminService:
         if serving.traffic_serving_revision_id is None:
             raise RuntimeRollbackError("no current serving revision to rollback from")
         target_revision_id = serving.prior_traffic_revision_id
-        authorization = self._authorize_rollback(
+        authorization, rolled = self._execute_governed_rollback(
             principal=principal,
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -1047,10 +1057,6 @@ class AgentPlatformAdminService:
             current_traffic_revision_id=serving.traffic_serving_revision_id,
             current_serving_pointer_revision=serving.serving_pointer_revision,
             target_runtime_revision_id=target_revision_id,
-        )
-        rolled = self._activation_service.rollback(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
             expected_current_traffic_revision_id=request.expected_current_traffic_revision_id,
             expected_serving_pointer_revision=request.expected_serving_pointer_revision,
         )
@@ -1067,6 +1073,178 @@ class AgentPlatformAdminService:
             superseded_revision_id=superseded_id,
             authorization_evidence=authorization.evidence,
             audit_event_types=_event_types(rolled),
+        )
+
+    def complete_revision_drain(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: CompleteRevisionDrainRequest,
+        principal: RequestIdentity,
+    ) -> DrainCompletionResultView:
+        self._require_environment_tenant_scope(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            operation="complete_revision_drain",
+        )
+        revision = self._revision_store.get_revision(request.runtime_revision_id)
+        if revision is None:
+            raise AgentDistributionNotFoundError("runtime revision was not found")
+        if (
+            revision.application_id != application_id
+            or revision.application_environment_id != application_environment_id
+        ):
+            raise RuntimeActivationError("runtime revision environment mismatch")
+        instance = self._deployment_instance_store.get_instance(
+            application_id,
+            application_environment_id,
+            request.runtime_revision_id,
+        )
+        if instance is None:
+            raise AgentDistributionNotFoundError("deployment instance was not found")
+        if instance.instance_state is not DeploymentInstanceState.DRAINING:
+            raise RuntimeDrainError("complete_revision_drain requires draining instance")
+        if instance.record_revision != request.expected_record_revision:
+            raise RuntimeActivationConflict("drain record revision mismatch")
+        if instance.serving_unit_ref is None:
+            raise RuntimeDrainError("draining instance lacks serving unit ref")
+
+        authorization = self._authorize_complete_drain(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=request.mutation_id,
+            runtime_revision_id=request.runtime_revision_id,
+            record_revision=instance.record_revision,
+            serving_unit_ref=instance.serving_unit_ref,
+            policy=request.policy,
+        )
+        completed = self._activation_service.complete_drain(
+            application_environment_id=application_environment_id,
+            runtime_revision_id=request.runtime_revision_id,
+            expected_record_revision=request.expected_record_revision,
+            policy=request.policy,
+        )
+        persisted = completed.value.instance
+        return DrainCompletionResultView(
+            runtime_revision_id=persisted.runtime_revision_id,
+            instance_state=persisted.instance_state,
+            record_revision=persisted.record_revision,
+            authorization_evidence=authorization.evidence,
+            audit_event_types=_event_types(completed),
+        )
+
+    def handle_post_cutover_failure(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: HandlePostCutoverFailureRequest,
+        principal: RequestIdentity,
+    ) -> PostCutoverFailureResultView:
+        self._require_environment_tenant_scope(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            operation="handle_post_cutover_failure",
+        )
+        serving = self._serving_store.get_serving_record(
+            application_id,
+            application_environment_id,
+        )
+        if serving is None or serving.traffic_serving_revision_id != request.runtime_revision_id:
+            raise RuntimeActivationError("post-cutover failure requires current serving revision")
+
+        instance = self._deployment_instance_store.get_instance(
+            application_id,
+            application_environment_id,
+            request.runtime_revision_id,
+        )
+        failure_mark_authorization: ControlPlaneMutationAuthorizationResult | None = None
+        instance_state: DeploymentInstanceState | None = None
+        audit_events: list[str] = []
+
+        if instance is not None:
+            failure_mark_authorization = self._authorize_mark_post_cutover_failure(
+                principal=principal,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                mutation_id=request.mutation_id,
+                runtime_revision_id=request.runtime_revision_id,
+                record_revision=instance.record_revision,
+                current_instance_state=instance.instance_state.value,
+            )
+            marked = self._activation_service.mark_post_cutover_failure(
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                runtime_revision_id=request.runtime_revision_id,
+                failure_evidence_ref=request.failure_evidence_ref,
+                expected_record_revision=instance.record_revision,
+            )
+            audit_events.extend(_event_types(marked))
+            if marked.value is not None:
+                instance_state = marked.value.instance_state
+
+        rollback_view: RollbackResultView | None = None
+        if request.attempt_rollback and serving.prior_traffic_revision_id is not None:
+            recovery_mutation_id = request.recovery_mutation_id
+            if recovery_mutation_id is None:
+                raise AgentPlatformAdminBlockedError(
+                    "AP-11_BLOCKED_BY_MISSING_RECOVERY_MUTATION_ID",
+                    "recovery rollback requires recovery_mutation_id",
+                )
+            recovery_authority = PostCutoverRecoveryAuthority(
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                failed_runtime_revision_id=request.runtime_revision_id,
+                originating_activation_mutation_id=request.originating_activation_mutation_id,
+                permitted_recovery_operation="rollback",
+                target_rollback_revision_id=serving.prior_traffic_revision_id,
+            )
+            try:
+                authorization, rolled = self._execute_governed_rollback(
+                    principal=principal,
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                    mutation_id=recovery_mutation_id,
+                    current_traffic_revision_id=serving.traffic_serving_revision_id,
+                    current_serving_pointer_revision=serving.serving_pointer_revision,
+                    target_runtime_revision_id=recovery_authority.target_rollback_revision_id,
+                    expected_current_traffic_revision_id=request.runtime_revision_id,
+                    expected_serving_pointer_revision=serving.serving_pointer_revision,
+                )
+            except (RuntimeRollbackError, RuntimeActivationConflict) as exc:
+                raise RuntimeRollbackError(
+                    "post-cutover rollback failed; serving pointer remains authoritative"
+                ) from exc
+            serving_after = rolled.value.serving_record
+            restored = rolled.value.restored_revision
+            superseded_id: str | None = None
+            if rolled.value.superseded_instance is not None:
+                superseded_id = rolled.value.superseded_instance.runtime_revision_id
+            rollback_view = RollbackResultView(
+                traffic_serving_revision_id=serving_after.traffic_serving_revision_id,
+                serving_pointer_revision=serving_after.serving_pointer_revision,
+                restored_revision_id=restored.runtime_revision_id,
+                revision_state=restored.revision_state,
+                superseded_revision_id=superseded_id,
+                authorization_evidence=authorization.evidence,
+                audit_event_types=_event_types(rolled),
+            )
+            audit_events.extend(rollback_view.audit_event_types)
+
+        return PostCutoverFailureResultView(
+            runtime_revision_id=request.runtime_revision_id,
+            instance_state=instance_state,
+            failure_mark_authorization_evidence=(
+                failure_mark_authorization.evidence
+                if failure_mark_authorization is not None
+                else None
+            ),
+            rollback_result=rollback_view,
+            audit_event_types=tuple(audit_events),
         )
 
     def _resolve_install_identity(self, request: InstallAgentRequest) -> AgentPackageIdentity:
@@ -1376,6 +1554,100 @@ class AgentPlatformAdminService:
             ),
             operation="rollback",
         )
+
+    def _authorize_complete_drain(
+        self,
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+        mutation_id: str,
+        runtime_revision_id: str,
+        record_revision: int,
+        serving_unit_ref: str,
+        policy: DrainPolicy,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        resolver = self._require_environment_tenant_resolver()
+        boundary = self._require_mutation_authorization_boundary()
+        request = build_complete_drain_mutation_request(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=mutation_id,
+            runtime_revision_id=runtime_revision_id,
+            record_revision=record_revision,
+            serving_unit_ref=serving_unit_ref,
+            policy=policy,
+        )
+        return self._enforce_authorization_result(
+            authorize_scoped_control_plane_mutation(
+                boundary=boundary,
+                tenant_resolver=resolver,
+                request=request,
+            ),
+            operation="complete_revision_drain",
+        )
+
+    def _authorize_mark_post_cutover_failure(
+        self,
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+        mutation_id: str,
+        runtime_revision_id: str,
+        record_revision: int,
+        current_instance_state: str,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        resolver = self._require_environment_tenant_resolver()
+        boundary = self._require_mutation_authorization_boundary()
+        request = build_mark_post_cutover_failure_mutation_request(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=mutation_id,
+            runtime_revision_id=runtime_revision_id,
+            record_revision=record_revision,
+            current_instance_state=current_instance_state,
+        )
+        return self._enforce_authorization_result(
+            authorize_scoped_control_plane_mutation(
+                boundary=boundary,
+                tenant_resolver=resolver,
+                request=request,
+            ),
+            operation="mark_post_cutover_failure",
+        )
+
+    def _execute_governed_rollback(
+        self,
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+        mutation_id: str,
+        current_traffic_revision_id: str,
+        current_serving_pointer_revision: int,
+        target_runtime_revision_id: str,
+        expected_current_traffic_revision_id: str,
+        expected_serving_pointer_revision: int,
+    ) -> tuple[ControlPlaneMutationAuthorizationResult, TransitionResult[RollbackResult]]:
+        authorization = self._authorize_rollback(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=mutation_id,
+            current_traffic_revision_id=current_traffic_revision_id,
+            current_serving_pointer_revision=current_serving_pointer_revision,
+            target_runtime_revision_id=target_runtime_revision_id,
+        )
+        rolled = self._activation_service.rollback(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            expected_current_traffic_revision_id=expected_current_traffic_revision_id,
+            expected_serving_pointer_revision=expected_serving_pointer_revision,
+        )
+        return authorization, rolled
 
     @staticmethod
     def _enforce_authorization_result(
