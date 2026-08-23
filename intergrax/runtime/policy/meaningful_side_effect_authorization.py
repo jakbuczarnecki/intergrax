@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Mapping, TypeVar
+from typing import TypeVar
 
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
 from intergrax.contracts.collaborative_work import (
@@ -32,16 +32,6 @@ from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle, TaskState
 
 T = TypeVar("T")
-
-GOVERNED_EXECUTION_TASK_METADATA_KEY = "runtime.governed_execution.task.v1"
-
-
-def resolve_governed_execution_task(metadata: Mapping[str, Any]) -> Task | None:
-    """Resolve the live Nexus ``Task`` handle when wired by graph execution."""
-    raw = metadata.get(GOVERNED_EXECUTION_TASK_METADATA_KEY)
-    if isinstance(raw, Task):
-        return raw
-    return None
 
 
 @dataclass(frozen=True, slots=True)

@@ -28,6 +28,9 @@ from intergrax.contracts.execution_identity import (
     peek_active_execution_identity,
     require_active_execution_identity,
 )
+from intergrax.runtime.governance.active_governed_execution_task import (
+    ActiveGovernedExecutionTask,
+)
 from intergrax.contracts.delegation_authority import (
     EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY,
     EFFECTIVE_PERMISSION_SCOPES_METADATA_KEY,
@@ -693,17 +696,17 @@ class GraphExecutor:
             engine_prompt_id = task.metadata.get("engine_planner_prompt_id")
             if isinstance(engine_prompt_id, str) and engine_prompt_id.strip():
                 request.metadata["engine_planner_prompt_id"] = engine_prompt_id.strip()
-            from intergrax.runtime.policy.meaningful_side_effect_authorization import (
-                GOVERNED_EXECUTION_TASK_METADATA_KEY,
-            )
-
-            request.metadata[GOVERNED_EXECUTION_TASK_METADATA_KEY] = task
-            return await AgentEngine.run_agent_with_result(
-                current_agent,
-                request,
-                uaep_executor=self._engine.uaep_executor,
-                registry=self._registry,
-            )
+            governed_task_binding = ActiveGovernedExecutionTask()
+            token = governed_task_binding.bind(task)
+            try:
+                return await AgentEngine.run_agent_with_result(
+                    current_agent,
+                    request,
+                    uaep_executor=self._engine.uaep_executor,
+                    registry=self._registry,
+                )
+            finally:
+                governed_task_binding.reset(token)
 
         execution, retries, validation = await self._retry_engine.execute_with_retry(
             node_task,
