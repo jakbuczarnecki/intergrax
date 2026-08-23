@@ -6,7 +6,7 @@
   <rect x="24" y="20" width="1052" height="780" rx="18" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
 
   <text x="550" y="58" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="24" font-weight="700" fill="#1a1a2e">Incident investigation proof story</text>
-  <text x="550" y="84" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#3d4f66">Evidence-gated diagnosis  not correlation theater</text>
+  <text x="550" y="84" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#3d4f66">Evidence-gated diagnosis — not correlation theater</text>
 
   <rect x="420" y="108" width="260" height="52" rx="10" fill="#fdecea" stroke="#c62828" stroke-width="2"/>
   <text x="550" y="140" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">Operational incident</text>
@@ -55,7 +55,7 @@
   <rect x="600" y="608" width="360" height="88" rx="12" fill="#f0f4f8" stroke="#5b6f82" stroke-width="2"/>
   <text x="780" y="642" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">UNRESOLVED</text>
   <text x="780" y="668" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">Insufficient distinguishing evidence</text>
-  <text x="780" y="688" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#5b6f82">honest refusal  no guessing</text>
+  <text x="780" y="688" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#5b6f82">honest refusal — no guessing</text>
 
-  <text x="550" y="758" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#5b6f82">Design-stage conceptual flow  not execution results.</text>
+  <text x="550" y="758" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#5b6f82">Design-stage conceptual flow — not execution results.</text>
 </svg>

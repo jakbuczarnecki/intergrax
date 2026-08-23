@@ -43,6 +43,7 @@ class ScenarioDesignRequest:
 class ScenarioDesignPackage:
     package_root: Path
     readme_path: Path
+    scenario_spec_path: Path
 
 
 def resolve_repo_root(explicit: Path | None = None) -> Path:
@@ -92,6 +93,10 @@ def build_design_readme(title: str) -> str:
         "> [!NOTE]\n"
         f"> **Scenario status:** {LIFECYCLE_DESIGN_NOT_ACCEPTED} — "
         "awaiting human Scenario Quality Gate; no executable proof, evidence, or report exists yet.\n\n"
+        "## Abstract\n\n"
+        "_Short problem-story abstract (4–8 sentences). Summarize what happened, who has the "
+        "problem, why it matters, what the naive answer gets wrong, and what the scenario "
+        "demonstrates. No platform internals or implementation detail._\n\n"
         "## At a glance\n\n"
         "| Field | Value |\n"
         "| --- | --- |\n"
@@ -105,19 +110,51 @@ def build_design_readme(title: str) -> str:
         "## Visual proof story\n\n"
         f"{VISUAL_STORY_AUTHORING_HINT}\n\n"
         "_Visual placeholder — enrich after Scenario Quality Gate._\n\n"
-        "## The real problem\n\n"
-        "_Brief public summary — expand in § A. SCENARIO._\n\n"
-        "## The trap\n\n"
-        "_What the naive answer gets wrong — expand in § A. SCENARIO._\n\n"
-        "## What this proof attempts to guarantee\n\n"
-        "_Bounded claim summary — expand in § B. SOLUTION._\n\n"
-        "## Scenario outcomes\n\n"
-        "_RESOLVED and UNRESOLVED semantics — expand in § B. SOLUTION._\n\n"
+        "## The problem\n\n"
+        "_Brief public summary — expand in [Scenario Specification § A](SCENARIO_SPEC.md#a-scenario)._\n\n"
+        "## The risk\n\n"
+        "_What goes wrong if the diagnosis is wrong — expand in § A._\n\n"
+        "## The naive failure / trap\n\n"
+        "_What the naive answer gets wrong — expand in § A._\n\n"
+        "## Adversarial challenge\n\n"
+        "_Public summary of adversarial conditions and skeptic challenge — "
+        "normative detail in [Scenario Specification § A](SCENARIO_SPEC.md#a-scenario)._\n\n"
+        "## What the proof claims\n\n"
+        "_Bounded claim summary — normative detail in "
+        "[Scenario Specification § B](SCENARIO_SPEC.md#b-solution)._\n\n"
         "## PASS / FAIL (summary)\n\n"
         "| PASS | FAIL |\n"
         "| --- | --- |\n"
         "| _(qualify)_ | _(qualify)_ |\n\n"
-        "_Full normative contract in § B. SOLUTION._\n\n"
+        "_Full normative PASS/FAIL contract in "
+        "[Scenario Specification § B](SCENARIO_SPEC.md#pass)._\n\n"
+        "## Outcomes\n\n"
+        "| Outcome | Meaning |\n"
+        "| --- | --- |\n"
+        "| **RESOLVED** | _(qualify)_ |\n"
+        "| **UNRESOLVED** | _(qualify)_ |\n\n"
+        "## Latest verified run\n\n"
+        "> [!NOTE]\n"
+        "> **Not yet available.** Populated only after a real proof run and report acceptance.\n\n"
+        "## Run / report / evidence / source\n\n"
+        "> [!NOTE]\n"
+        "> **Not yet available.** Links appear here after implementation and execution.\n\n"
+        "## Limitations\n\n"
+        "_Public summary — full limitations in "
+        "[Scenario Specification § B](SCENARIO_SPEC.md#limitations)._\n\n"
+        "## Go deeper\n\n"
+        "**[Read the full Scenario Specification](SCENARIO_SPEC.md)** — deep contract for "
+        "scenario design, solution semantics, Intergrax fit, gap decision, and proof build "
+        "(A/B/C/D/E).\n"
+    )
+
+
+def build_design_scenario_spec(title: str) -> str:
+    return (
+        "# Scenario Specification\n\n"
+        f"**Scenario:** {title}  \n"
+        f"**Status:** {LIFECYCLE_DESIGN_NOT_ACCEPTED} — awaiting human Scenario Quality Gate.\n\n"
+        "[← Back to public Scenario page](README.md)\n\n"
         "---\n\n"
         "## A. SCENARIO\n\n"
         "### Real problem\n\n"
@@ -148,6 +185,8 @@ def build_design_readme(title: str) -> str:
         "the system distinguish?\n\n"
         "**Independence:** If any verifier/reviewer/critic is called independent, what exactly "
         "makes it independent?\n\n"
+        "**Temporal semantics:** If time windows, staleness, or admissibility matter, define them.\n\n"
+        "**Side effects / recovery / HITL / governance:** Note only when relevant to the problem.\n\n"
         "## B. SOLUTION\n\n"
         "### Desired behavior\n\n"
         "_To be qualified._\n\n"
@@ -169,24 +208,45 @@ def build_design_readme(title: str) -> str:
         "_To be qualified._\n\n"
         "## C. INTERGRAX FIT\n\n"
         "NOT YET PERFORMED\n\n"
+        "INTERGRAX FIT is not a single-domain assignment. Expected future analysis:\n\n"
+        "```text\n"
+        "required guarantee\n"
+        "→ Intergrax mechanism\n"
+        "→ exact owner/component\n"
+        "→ participating domain(s)\n"
+        "→ AVAILABLE / AVAILABLE BUT NEEDS WIRING / MISSING\n"
+        "```\n\n"
+        "Do not prepopulate domains — participating domains are discovered during capability-fit.\n\n"
         "## D. GAP DECISION\n\n"
         "NOT YET PERFORMED\n\n"
         "## E. PROOF BUILD\n\n"
-        "NOT STARTED — blocked on scenario acceptance and capability-fit.\n\n"
-        "## Latest verified run\n\n"
-        "> [!NOTE]\n"
-        "> **Not yet available.** Populated only after a real proof run and report acceptance.\n\n"
-        "## Report / evidence / source / run\n\n"
-        "> [!NOTE]\n"
-        "> **Not yet available.** Links appear here after implementation and execution.\n"
+        "NOT STARTED — blocked on scenario acceptance and capability-fit.\n"
     )
 
 
-DESIGN_STAGE_REQUIRED_SECTIONS: tuple[str, ...] = (
+DESIGN_STAGE_README_REQUIRED_SECTIONS: tuple[str, ...] = (
+    "## Abstract",
     "## At a glance",
     "## Visual proof story",
-    "## The real problem",
-    "## The trap",
+    "## The problem",
+    "## The risk",
+    "## The naive failure / trap",
+    "## Adversarial challenge",
+    "## What the proof claims",
+    "## PASS / FAIL (summary)",
+    "## Outcomes",
+    "## Latest verified run",
+    "## Run / report / evidence / source",
+    "## Limitations",
+    "## Go deeper",
+    "[Read the full Scenario Specification](SCENARIO_SPEC.md)",
+    LIFECYCLE_DESIGN_NOT_ACCEPTED,
+    "Not yet available",
+    VISUAL_STORY_AUTHORING_HINT.split("\n", maxsplit=1)[0],
+)
+
+DESIGN_STAGE_SPEC_REQUIRED_SECTIONS: tuple[str, ...] = (
+    "[← Back to public Scenario page](README.md)",
     "## A. SCENARIO",
     "### Real problem",
     "### Who has the problem",
@@ -210,13 +270,23 @@ DESIGN_STAGE_REQUIRED_SECTIONS: tuple[str, ...] = (
     "### Excluded claims",
     "### Limitations",
     "## C. INTERGRAX FIT",
+    "INTERGRAX FIT is not a single-domain assignment",
     "## D. GAP DECISION",
     "## E. PROOF BUILD",
-    "## Latest verified run",
-    LIFECYCLE_DESIGN_NOT_ACCEPTED,
     "NOT YET PERFORMED",
     "NOT STARTED — blocked on scenario acceptance and capability-fit.",
-    VISUAL_STORY_AUTHORING_HINT.split("\n", maxsplit=1)[0],
+    "Hidden truth / evaluator leakage",
+    "Evidence boundary",
+    "Alternative hypotheses",
+    "Independence",
+)
+
+DESIGN_STAGE_README_FORBIDDEN_SECTIONS: tuple[str, ...] = (
+    "## A. SCENARIO",
+    "## B. SOLUTION",
+    "## C. INTERGRAX FIT",
+    "## D. GAP DECISION",
+    "## E. PROOF BUILD",
 )
 
 DESIGN_STAGE_FORBIDDEN_ARTIFACT_NAMES: frozenset[str] = frozenset(
@@ -247,8 +317,17 @@ def create_scenario_design_package(request: ScenarioDesignRequest) -> ScenarioDe
 
     package_root.mkdir(parents=False, exist_ok=False)
     readme_path = package_root / "README.md"
+    scenario_spec_path = package_root / "SCENARIO_SPEC.md"
     readme_path.write_text(build_design_readme(request.title), encoding="utf-8")
-    return ScenarioDesignPackage(package_root=package_root, readme_path=readme_path)
+    scenario_spec_path.write_text(
+        build_design_scenario_spec(request.title),
+        encoding="utf-8",
+    )
+    return ScenarioDesignPackage(
+        package_root=package_root,
+        readme_path=readme_path,
+        scenario_spec_path=scenario_spec_path,
+    )
 
 
 def _build_parser() -> argparse.ArgumentParser:

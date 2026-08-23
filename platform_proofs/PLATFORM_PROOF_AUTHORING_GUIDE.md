@@ -36,7 +36,7 @@ REAL PROBLEM
 → REPRODUCTION
 ```
 
-A Scenario Proof may exercise **multiple** Intergrax mechanisms and domains. The scenario must **never** be selected merely to demonstrate a feature.
+A Scenario Proof may exercise **multiple** Intergrax mechanisms and domains. The problem owns the Scenario; platform domains participate according to the guarantees required by that problem. Participating domains are discovered during Intergrax Fit — not chosen before the scenario exists. The scenario must **never** be selected merely to demonstrate a feature.
 
 ### CONFORMANCE
 
@@ -580,10 +580,23 @@ The **cloned Intergrax repository** is the supported execution boundary. Do **no
 
 ### Scenario proofs (canonical shape)
 
+**Design stage** (before implementation):
+
+```text
+platform_proofs/scenarios/<scenario_slug>/
+
+├── README.md              # public gateway (~3–5 min read)
+├── SCENARIO_SPEC.md       # deep canonical contract (A/B/C/D/E)
+└── assets/                # optional — after Scenario Quality Gate
+```
+
+**After implementation** (executable package adds runtime artifacts):
+
 ```text
 platform_proofs/scenarios/<scenario_slug>/
 
 ├── README.md
+├── SCENARIO_SPEC.md
 ├── proof.json
 ├── .env.example               # when configuration is required
 ├── run_proof.py
@@ -626,7 +639,7 @@ intergrax.platform_proof_descriptor.v2
 | Field | Role |
 |-------|------|
 | `library_class` | `SCENARIO` or `CONFORMANCE` |
-| `domain` | Technical ownership / runner grouping |
+| `domain` | Technical ownership / runner grouping (Conformance: primary domain; SCENARIO: legacy single-domain field — see § Descriptor v2 scenario note) |
 | `proof_kind` | Proof-specific kind slug |
 | `mechanisms_exercised` | Mechanisms the proof exercises |
 
@@ -641,6 +654,19 @@ intergrax.platform_proof_descriptor.v2
 **No descriptor v1.** No loose metadata bags. No compatibility shims. No aliases. No fallback. No legacy proof execution path.
 
 Discovery is automatic from `proof.json` under `platform_proofs/` — no central manifest registration for descriptor-backed proofs.
+
+### Descriptor v2 scenario note (documentation vs executable contract)
+
+Scenario **documentation and design** are **multi-domain by default**: the problem chooses required guarantees; guarantees choose mechanisms and participating domains during Intergrax Fit (§ C).
+
+The current executable descriptor (`intergrax.platform_proof_descriptor.v2`) still declares a single `domain: str` field. That is **known legacy architecture** for the Scenario model. **Do not modify descriptor v2 in scenario-documentation tasks.** A dedicated migration will introduce the formal multi-domain descriptor contract.
+
+Until that migration lands:
+
+- **do not** author `proof.json` for a Scenario if a single `domain` value would misrepresent participating domains;
+- **do not** use fake placeholder values (`MULTI_DOMAIN`, `CROSS_DOMAIN`, `SCENARIO`, etc.) to satisfy v2.
+
+Conformance proofs may continue to use `domain` as primary mechanism ownership. Scenario proofs remain problem-first and cross-domain when the problem requires it.
 
 ---
 
@@ -1053,48 +1079,94 @@ Canonical output must be safe to commit and link from public documentation. Neve
 
 ---
 
-## Scenario README public presentation standard
+## Scenario documentation model (README gateway + SCENARIO_SPEC)
 
-Every Scenario Proof README has **two layers** that must coexist:
+Every Scenario Proof uses a **two-file documentation model**:
 
-1. **Public / fast understanding** — a skeptical visitor grasps the proof in ~20–30 seconds.
-2. **Rigorous proof contract** — a technical reviewer can continue into semantics, falsification, PASS/FAIL, isolation, evidence rules, Intergrax fit, implementation, and run/report.
+| File | Role | Audience |
+| --- | --- | --- |
+| **`README.md`** | Public gateway (~3–5 min) | Skeptical visitor, product reader |
+| **`SCENARIO_SPEC.md`** | Deep canonical contract | Technical reviewer, implementer |
 
-The canonical **A/B/C/D/E** semantic model remains authoritative. The public visual grammar is a **presentation layer** over it, not a replacement. Do **not** trade rigor for marketing or duplicate the same information merely to create visual sections.
+> **The problem owns the Scenario. Platform domains participate according to the guarantees required by that problem.**
 
-### Public grammar (presentation order)
+Do **not** maintain identical detailed PASS/FAIL lists, adversarial conditions, ground-truth details, or verifier contracts in both files. README summarizes; SCENARIO_SPEC is normative.
+
+### README.md — public gateway
+
+Required presentation order:
 
 ```text
-HERO / IDENTITY
+HERO / IDENTITY (title, public question, lifecycle status)
+↓
+ABSTRACT
 ↓
 AT A GLANCE
 ↓
 VISUAL PROOF STORY
 ↓
-THE REAL PROBLEM
+THE PROBLEM
 ↓
-THE TRAP (why the obvious answer fails)
+THE RISK
 ↓
-WHAT THIS PROOF ATTEMPTS TO GUARANTEE
+THE NAIVE FAILURE / TRAP
 ↓
-SCENARIO OUTCOMES (RESOLVED / UNRESOLVED)
+ADVERSARIAL CHALLENGE (summary)
+↓
+WHAT THE PROOF CLAIMS
 ↓
 PASS / FAIL (summary table)
 ↓
---- lifecycle contract sections ---
+OUTCOMES (RESOLVED / UNRESOLVED)
 ↓
+LATEST VERIFIED RUN        # post-implementation only
+↓
+RUN / REPORT / EVIDENCE / SOURCE
+↓
+LIMITATIONS (summary)
+↓
+GO DEEPER → link to SCENARIO_SPEC.md
+```
+
+README must **not** contain the full A/B/C/D/E deep contract.
+
+### SCENARIO_SPEC.md — deep canon
+
+Canonical deep contract for scenario design and implementation:
+
+```text
 A. SCENARIO
 B. SOLUTION
 C. INTERGRAX FIT
 D. GAP DECISION
 E. PROOF BUILD
-↓
-LATEST VERIFIED RUN        # post-implementation only
-↓
-REPORT / EVIDENCE / SOURCE / RUN
 ```
 
-Public sections may precede A/B/C/D/E. Those headings remain machine, test, and human navigation anchors.
+§ C is **not** a single-domain assignment. Expected future analysis:
+
+```text
+required guarantee
+→ Intergrax mechanism
+→ exact owner/component
+→ participating domain(s)
+→ AVAILABLE / AVAILABLE BUT NEEDS WIRING / MISSING
+```
+
+Cross-links: README links to SCENARIO_SPEC.md; SCENARIO_SPEC links back to README.md (relative paths).
+
+### Abstract contract
+
+Every Scenario README must include **`## Abstract`** immediately after title/public question/status and before **At a glance**.
+
+Target: one short paragraph (~4–8 sentences). A reader who spends only a few seconds should understand:
+
+1. what happened;
+2. who has the problem;
+3. why it matters;
+4. what the naive AI answer is likely to get wrong;
+5. what the Scenario is trying to demonstrate.
+
+No platform internals, Intergrax component names, implementation detail, marketing slogans, or claims beyond current lifecycle state. Readable by a non-Intergrax reader. Summarizes — does not duplicate the full Problem section.
 
 ### Lifecycle status wording
 
@@ -1112,16 +1184,18 @@ At **DESIGN** stage do **not** show PASS badges, executable status, or sample ru
 
 - identity / public question;
 - lifecycle status (truthful);
-- real problem (public summary + § A detail);
+- **Abstract** (problem-story summary);
+- real problem (public summary + § A detail in SCENARIO_SPEC);
 - consequence / risk;
-- WOW and Skeptic Challenge (§ A);
-- adversarial conditions;
+- WOW and Skeptic Challenge (§ A in SCENARIO_SPEC);
+- adversarial conditions (summary in README; normative detail in SCENARIO_SPEC);
 - claim;
-- PASS / FAIL (summary + normative detail in § B);
-- excluded claims / limitations;
-- A/B/C/D/E lifecycle sections;
+- PASS / FAIL (summary in README; normative detail in § B);
+- excluded claims / limitations (summary in README; normative detail in SCENARIO_SPEC);
+- A/B/C/D/E lifecycle sections in **SCENARIO_SPEC.md**;
 - **At a glance** table (filled during qualification);
-- at least one explanatory visual flow once the scenario is mature enough (after Scenario Quality Gate).
+- at least one explanatory visual flow once the scenario is mature enough (after Scenario Quality Gate);
+- **Go deeper** link from README to SCENARIO_SPEC.md.
 
 ### Conditional (only when relevant)
 
@@ -1136,7 +1210,7 @@ Do **not** force irrelevant concepts on every scenario:
 - recovery;
 - governance.
 
-Use **Conditional authoring prompts** in the scaffold when a scenario may need them.
+Use **Conditional authoring prompts** in the SCENARIO_SPEC scaffold when a scenario may need them.
 
 ### At a glance contract
 
@@ -1175,21 +1249,21 @@ At design stage: omit or show a clearly disabled **Not yet available** note. No 
 
 ### README contract for executable SCENARIO packages
 
-After implementation, each README must also document phases relevant to execution (do not lead with platform internals):
+After implementation, each README must also document phases relevant to execution (do not lead with platform internals). Normative semantics remain in SCENARIO_SPEC.md.
 
 ```text
-1. Real problem (already in public layer / § A)
-2. Claim / PASS / FAIL (§ B)
-3. Intergrax mechanisms exercised (§ C)
-4. Real / fixture boundaries (§ B when relevant)
+1. Real problem (public layer + § A in SCENARIO_SPEC)
+2. Claim / PASS / FAIL (summary in README; § B in SCENARIO_SPEC)
+3. Intergrax mechanisms exercised (§ C in SCENARIO_SPEC)
+4. Real / fixture boundaries (§ B in SCENARIO_SPEC when relevant)
 5. Quick start / configuration
 6. Validate
 7. Run
 8. View report / artifacts
 9. Cleanup
-10. Limitations / excluded claims
+10. Limitations / excluded claims (summary + link to SCENARIO_SPEC)
 11. Latest verified run
-12. Report / evidence / source / run links
+12. Run / report / evidence / source links
 ```
 
 A visitor should understand the problem before learning which Intergrax layers solve it.
@@ -1320,24 +1394,33 @@ Before implementation, create the canonical design-stage package with:
 uv run python scripts/proof/create_scenario_proof.py --slug <scenario_slug> --title "<title>"
 ```
 
-This produces `platform_proofs/scenarios/<scenario_slug>/README.md` only — no fake `proof.json`, runtime entrypoint, evidence artifacts, or auto-generated SVGs.
+This produces:
+
+```text
+platform_proofs/scenarios/<scenario_slug>/
+├── README.md           # public gateway
+└── SCENARIO_SPEC.md    # deep canonical contract (A/B/C/D/E)
+```
+
+No fake `proof.json`, runtime entrypoint, evidence artifacts, or auto-generated SVGs.
 
 Workflow:
 
 ```text
-canonical scaffold (R2 public README structure)
+canonical scaffold (R3: README gateway + SCENARIO_SPEC deep canon)
 → design-stage package
-→ qualify problem (fill At a glance, § A)
+→ fill Abstract, At a glance, Scenario semantics
 → human Scenario Quality Gate
-→ enrich public README to canonical visual standard (SVG + public grammar)
-→ capability-fit (§ C)
+→ add explanatory visual(s) under assets/
+→ capability-fit across all required domains (§ C)
+→ gap decision (§ D)
 → implementation (§ E)
 → real run
 → report + evidence
 → publication (Proof Library catalog entry)
 ```
 
-Complete the visual standard **before** implementation so the proof story is coherent. Post-run sections populate only after execution.
+Complete the visual standard **before** implementation so the proof story is coherent. Post-run README sections populate only after execution.
 
 Do not manually invent scenario directory shapes or skip the quality gate.
 
@@ -1345,7 +1428,7 @@ Do not manually invent scenario directory shapes or skip the quality gate.
 
 ## Current reference proof
 
-No executable Scenario or Conformance platform proof is designated as the canonical reference example yet. The first Scenario Proof (`ai_incident_investigation`) is **ACCEPTED FOR IMPLEMENTATION** — design qualification passed; implementation and executable evidence have not started. Public presentation reference: [`scenarios/ai_incident_investigation/README.md`](scenarios/ai_incident_investigation/README.md).
+No executable Scenario or Conformance platform proof is designated as the canonical reference example yet. The first Scenario Proof (`ai_incident_investigation`) is **ACCEPTED FOR IMPLEMENTATION** — design qualification passed; implementation and executable evidence have not started. Public presentation reference: [`scenarios/ai_incident_investigation/README.md`](scenarios/ai_incident_investigation/README.md). Deep contract: [`scenarios/ai_incident_investigation/SCENARIO_SPEC.md`](scenarios/ai_incident_investigation/SCENARIO_SPEC.md).
 
 See [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md).
 

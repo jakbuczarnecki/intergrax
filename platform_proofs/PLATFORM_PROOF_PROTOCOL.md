@@ -81,6 +81,8 @@ Both classes remain **executable falsification attempts** — not demos. **Platf
 
 `domain` remains technical primary ownership / grouping metadata for the runner and `ProofManifestEntry`. Library metadata (`library_class`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not need to appear in runner-facing manifest entries unless execution requires it.
 
+**Scenario documentation vs descriptor:** Scenario design documentation is **problem-owned and multi-domain by default** — participating domains are discovered during Intergrax Fit, not assigned before the scenario exists. The current v2 descriptor still requires a single `domain: str` field for SCENARIO proofs; that is **legacy architecture** pending a dedicated multi-domain descriptor migration. Do not author `proof.json` for a Scenario when a single domain would misrepresent the problem, and do not use fake placeholder domain values. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Descriptor v2 scenario note.
+
 Every descriptor declares `library_class` and `mechanisms_exercised`. SCENARIO additionally requires `problem_category`, `problem_summary`, and `failure_mode_summary`. CONFORMANCE forbids those problem fields.
 
 ---
@@ -124,12 +126,25 @@ The central manifest in `scripts/proof/intergrax_proof_manifest.py` remains auth
 
 Platform proofs under `platform_proofs/` are **self-describing packages**:
 
+**Conformance proofs** (domain-oriented path):
+
 ```text
 platform_proofs/<domain>/<proof_slug>/
     proof.json          # static descriptor (canonical filename)
     run_proof.py        # executable entrypoint
     ...                 # proof-owned implementation
 ```
+
+**Scenario proofs** — design stage (no executable artifacts yet):
+
+```text
+platform_proofs/scenarios/<scenario_slug>/
+    README.md           # public gateway
+    SCENARIO_SPEC.md    # deep canonical contract (A/B/C/D/E)
+    assets/             # optional — after Scenario Quality Gate
+```
+
+After implementation, Scenario packages add `proof.json`, `run_proof.py`, and other runtime artifacts per [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md). Scenario proofs are **problem-first** and may exercise **multiple domains**; Conformance proofs remain **mechanism-first** and may naturally belong to one primary domain.
 
 **Why static JSON (`proof.json`):** language-neutral, human-readable, machine-validated, deterministic, inspectable by CI, and free of Python import side effects during discovery. Discovery must **not** import proof modules or execute `run_proof.py` to read metadata.
 

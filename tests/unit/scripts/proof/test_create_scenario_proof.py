@@ -9,19 +9,28 @@ import pytest
 from scripts.proof.create_scenario_proof import (
     CANONICAL_SCENARIOS_ROOT,
     DESIGN_STAGE_FORBIDDEN_ARTIFACT_NAMES,
-    DESIGN_STAGE_REQUIRED_SECTIONS,
+    DESIGN_STAGE_README_FORBIDDEN_SECTIONS,
+    DESIGN_STAGE_README_REQUIRED_SECTIONS,
+    DESIGN_STAGE_SPEC_REQUIRED_SECTIONS,
     LIFECYCLE_DESIGN_NOT_ACCEPTED,
     VISUAL_STORY_AUTHORING_HINT,
     ScenarioDesignRequest,
     ScenarioPackageExistsError,
     ScenarioSlugError,
     build_design_readme,
+    build_design_scenario_spec,
     create_scenario_design_package,
     scenario_package_root,
     validate_scenario_slug,
 )
 
 pytestmark = pytest.mark.unit
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
+SCENARIOS_ROOT = REPO_ROOT / CANONICAL_SCENARIOS_ROOT
+
+# Allowed C0 controls in Scenario SVG assets: TAB, LF, CR.
+_ALLOWED_SVG_CONTROL_CHARS = frozenset({0x09, 0x0A, 0x0D})
 
 
 def test_validate_slug_accepts_canonical_example() -> None:
@@ -61,10 +70,12 @@ def test_create_scenario_design_package_generates_canonical_path(tmp_path: Path)
     expected = tmp_path / CANONICAL_SCENARIOS_ROOT / "warehouse_sla_probe"
     assert package.package_root == expected
     assert package.readme_path == expected / "README.md"
+    assert package.scenario_spec_path == expected / "SCENARIO_SPEC.md"
     assert package.readme_path.is_file()
+    assert package.scenario_spec_path.is_file()
 
 
-def test_generated_readme_contains_required_sections(tmp_path: Path) -> None:
+def test_generated_readme_contains_required_gateway_sections(tmp_path: Path) -> None:
     package = create_scenario_design_package(
         ScenarioDesignRequest(
             slug=validate_scenario_slug("section_contract"),
@@ -73,8 +84,48 @@ def test_generated_readme_contains_required_sections(tmp_path: Path) -> None:
         ),
     )
     readme = package.readme_path.read_text(encoding="utf-8")
-    for section in DESIGN_STAGE_REQUIRED_SECTIONS:
+    for section in DESIGN_STAGE_README_REQUIRED_SECTIONS:
         assert section in readme
+
+
+def test_generated_scenario_spec_contains_required_deep_sections(tmp_path: Path) -> None:
+    package = create_scenario_design_package(
+        ScenarioDesignRequest(
+            slug=validate_scenario_slug("spec_contract"),
+            title="Spec Contract",
+            repo_root=tmp_path,
+        ),
+    )
+    spec = package.scenario_spec_path.read_text(encoding="utf-8")
+    for section in DESIGN_STAGE_SPEC_REQUIRED_SECTIONS:
+        assert section in spec
+
+
+def test_generated_readme_does_not_contain_deep_abcde_contract(tmp_path: Path) -> None:
+    package = create_scenario_design_package(
+        ScenarioDesignRequest(
+            slug=validate_scenario_slug("gateway_only"),
+            title="Gateway Only",
+            repo_root=tmp_path,
+        ),
+    )
+    readme = package.readme_path.read_text(encoding="utf-8")
+    for forbidden in DESIGN_STAGE_README_FORBIDDEN_SECTIONS:
+        assert forbidden not in readme
+
+
+def test_generated_readme_links_to_scenario_spec(tmp_path: Path) -> None:
+    package = create_scenario_design_package(
+        ScenarioDesignRequest(
+            slug=validate_scenario_slug("cross_link"),
+            title="Cross Link",
+            repo_root=tmp_path,
+        ),
+    )
+    readme = package.readme_path.read_text(encoding="utf-8")
+    spec = package.scenario_spec_path.read_text(encoding="utf-8")
+    assert "[Read the full Scenario Specification](SCENARIO_SPEC.md)" in readme
+    assert "[← Back to public Scenario page](README.md)" in spec
 
 
 def test_existing_target_is_never_overwritten(tmp_path: Path) -> None:
@@ -98,16 +149,23 @@ def test_design_package_creates_no_runtime_artifacts(tmp_path: Path) -> None:
         ),
     )
     created_names = {path.name for path in package.package_root.iterdir()}
-    assert created_names == {"README.md"}
+    assert created_names == {"README.md", "SCENARIO_SPEC.md"}
     for forbidden in DESIGN_STAGE_FORBIDDEN_ARTIFACT_NAMES:
         assert not (package.package_root / forbidden).exists()
     assert not (package.package_root / "fixtures").exists()
     assert not (package.package_root / "output").exists()
+    assert not (package.package_root / "assets").exists()
 
 
 def test_build_design_readme_is_deterministic() -> None:
     first = build_design_readme("Same Title")
     second = build_design_readme("Same Title")
+    assert first == second
+
+
+def test_build_design_scenario_spec_is_deterministic() -> None:
+    first = build_design_scenario_spec("Same Title")
+    second = build_design_scenario_spec("Same Title")
     assert first == second
 
 
@@ -128,6 +186,11 @@ def test_generated_readme_has_public_question_placeholder() -> None:
     assert "_(Public question" in readme
 
 
+def test_generated_readme_has_abstract_section() -> None:
+    readme = build_design_readme("Placeholder Title")
+    assert "## Abstract" in readme
+
+
 def test_generated_readme_has_at_a_glance_table() -> None:
     readme = build_design_readme("Placeholder Title")
     assert "## At a glance" in readme
@@ -142,16 +205,67 @@ def test_generated_readme_has_visual_story_authoring_hint() -> None:
     assert "decorative imagery" in readme
 
 
-def test_generated_readme_has_conditional_authoring_prompts() -> None:
-    readme = build_design_readme("Placeholder Title")
-    assert "Hidden truth / evaluator leakage" in readme
-    assert "Evidence boundary" in readme
-    assert "Alternative hypotheses" in readme
-    assert "Independence" in readme
+def test_generated_scenario_spec_has_conditional_authoring_prompts() -> None:
+    spec = build_design_scenario_spec("Placeholder Title")
+    assert "Hidden truth / evaluator leakage" in spec
+    assert "Evidence boundary" in spec
+    assert "Alternative hypotheses" in spec
+    assert "Independence" in spec
+
+
+def test_generated_scenario_spec_has_multi_domain_fit_prompt() -> None:
+    spec = build_design_scenario_spec("Placeholder Title")
+    assert "INTERGRAX FIT is not a single-domain assignment" in spec
+    assert "participating domain(s)" in spec
 
 
 def test_generated_readme_has_post_run_section_placeholders() -> None:
     readme = build_design_readme("Placeholder Title")
     assert "## Latest verified run" in readme
-    assert "## Report / evidence / source / run" in readme
+    assert "## Run / report / evidence / source" in readme
     assert "Not yet available" in readme
+
+
+def test_scenario_one_readme_has_mandatory_abstract() -> None:
+    readme_path = SCENARIOS_ROOT / "ai_incident_investigation" / "README.md"
+    readme = readme_path.read_text(encoding="utf-8")
+    abstract_pos = readme.index("## Abstract")
+    at_a_glance_pos = readme.index("## At a glance")
+    assert abstract_pos < at_a_glance_pos
+    abstract_block = readme[abstract_pos:at_a_glance_pos]
+    assert len(abstract_block.strip().split()) >= 40
+
+
+def test_scenario_one_spec_contains_abcde_contract() -> None:
+    spec_path = SCENARIOS_ROOT / "ai_incident_investigation" / "SCENARIO_SPEC.md"
+    spec = spec_path.read_text(encoding="utf-8")
+    for heading in (
+        "## A. SCENARIO",
+        "## B. SOLUTION",
+        "## C. INTERGRAX FIT",
+        "## D. GAP DECISION",
+        "## E. PROOF BUILD",
+    ):
+        assert heading in spec
+
+
+def test_scenario_one_readme_does_not_contain_abcde_headings() -> None:
+    readme_path = SCENARIOS_ROOT / "ai_incident_investigation" / "README.md"
+    readme = readme_path.read_text(encoding="utf-8")
+    for forbidden in DESIGN_STAGE_README_FORBIDDEN_SECTIONS:
+        assert forbidden not in readme
+
+
+@pytest.mark.parametrize("svg_path", sorted(SCENARIOS_ROOT.rglob("*.svg")))
+def test_scenario_svg_assets_have_no_forbidden_control_characters(svg_path: Path) -> None:
+    raw = svg_path.read_bytes()
+    text = raw.decode("utf-8")
+    forbidden = [
+        (index, ord(char))
+        for index, char in enumerate(text)
+        if ord(char) < 0x20 and ord(char) not in _ALLOWED_SVG_CONTROL_CHARS
+    ]
+    assert not forbidden, (
+        f"{svg_path.relative_to(REPO_ROOT)} contains forbidden control characters: "
+        f"{forbidden[:5]}"
+    )
