@@ -11,40 +11,44 @@
 
 ## A. SCENARIO
 
+### Synthetic scenario provenance
+
+This is a **fully fictional operational scenario**. The organization, facility, production lines, incident, operational events, numerical values, staffing records, equipment telemetry, datasets, and fixtures are **synthetic**. They are not derived from any employer, customer, production environment, confidential source, or proprietary system. No real enterprise system is reproduced.
+
 ### Real problem
 
-A regional logistics operator monitors parcel-handling SLA for warehouses and distribution lanes. During a Tuesday–Thursday window, SLA for parcels routed through the **North Central warehouse** degrades sharply: on-time delivery rate drops from roughly 94% to 78% while customer complaints about late heavy parcels spike.
+A fictional industrial manufacturer monitors production throughput and target attainment across multiple production lines at Plant A. During a Tuesday–Thursday window, target attainment on **Line 4** degrades sharply: production performance drops from roughly 94% to 78% while cycle-time degradation concentrates on heavier, more complex product assemblies.
 
-Operations leadership asks an AI investigation system to determine the most **defensible root-cause diagnosis** so staffing, routing, and capacity decisions can be made before the weekend peak. The investigation must use operational telemetry, staffing records, equipment signals, and shipment facts — the same fragmented sources a human incident lead would query — not a single curated dashboard.
+Operations leadership asks an AI investigation system to determine the most **defensible root-cause diagnosis** so staffing, line allocation, and capacity decisions can be made before an upcoming high-volume production window. The investigation must use operational telemetry, staffing records, equipment signals, and production workload records — the same fragmented sources a human incident lead would query — not a single curated dashboard.
 
 This is an **operational incident investigation**: wrong conclusions trigger real operational harm, not a SQL tutorial exercise.
 
 ### Who has the problem
 
-- **Regional logistics operations managers** responsible for SLA and customer commitments.
+- **Plant operations managers** responsible for production targets and schedule commitments.
 - **Incident leads / control-tower engineers** who must produce a diagnosis under time pressure.
-- **Capacity and routing planners** who act on the diagnosis (shift changes, lane reroutes, hub load redistribution).
+- **Capacity and production planners** who act on the diagnosis (shift changes, line reallocation, overtime scheduling).
 
 ### Why it matters
 
-SLA misses directly affect contractual penalties, customer trust, and weekend peak readiness. A confident but wrong root-cause story causes expensive, harmful, or distracting actions while the real fault persists.
+Target attainment misses directly affect committed production schedules, customer trust, and readiness for the upcoming high-volume production window. A confident but wrong root-cause story causes expensive, harmful, or distracting actions while the real fault persists.
 
 ### Failure consequences
 
 A wrong diagnosis can trigger:
 
-- unnecessary capacity expansion or overtime at the wrong facility;
-- incorrect traffic rerouting that overloads another hub;
+- unnecessary overtime or extra shifts at the wrong production line;
+- incorrect work rescheduling that overloads another line;
 - staffing actions based on a false “understaffed” narrative;
 - failure to repair the actual equipment or process fault;
-- delayed recovery through the weekend peak;
+- delayed recovery through the upcoming high-volume production window;
 - erosion of trust in AI-assisted operations if the system “sounds right” but is wrong.
 
 ### Why it is difficult
 
 The incident sits in a **noisy, multi-source operational environment**:
 
-- volume, delay, staffing, equipment, and lane facts do not align in one view;
+- workload, throughput, staffing, equipment, and line facts do not align in one view;
 - correlation is strong and causation is weak in the first pass;
 - staffing truth is split across systems that disagree;
 - some records are **stale** relative to the incident window;
@@ -57,16 +61,16 @@ An AI system that optimizes for fluent narrative will often pick the shortcut th
 
 Initial facts look like a textbook overload story:
 
-- shipment volume through North Central increased ~22% versus the prior week;
-- delay rate rose in the same period;
-- North Central shows disproportionate SLA misses versus other warehouses;
-- heavy parcels correlate with longer handling time in aggregate;
-- one staffing feed suggests reduced headcount on the heavy-parcel lane.
+- production workload / order volume on Line 4 increased ~22% versus the prior week;
+- throughput / target attainment fell in the same period;
+- Line 4 shows disproportionate performance misses versus other production lines;
+- heavier, more complex assemblies correlate with longer cycle times in aggregate;
+- one staffing feed suggests reduced headcount on the affected shift.
 
 A naive investigator (human or LLM) confidently concludes:
 
 ```text
-warehouse overload caused by volume growth
+production line overload caused by workload growth
 ```
 
 and recommends capacity and staffing responses. That story is **plausible, leadership-aligned, and wrong** given the full admissible evidence.
@@ -109,20 +113,20 @@ Equivalent guarantees can be engineered elsewhere; they are **not** obtained mer
 
 ### Adversarial conditions
 
-The scenario embeds these adversarial conditions **credibly** in the logistics incident:
+The scenario embeds these adversarial conditions **credibly** in the manufacturing incident:
 
 #### A. Plausible shortcut / correlation trap
 
 ```text
-volume ↑
-delay ↑
+workload ↑
+throughput / target attainment ↓
 ```
 
-in the same window makes “overload caused delays” an attractive false causal conclusion.
+in the same window makes “overload caused the performance drop” an attractive false causal conclusion.
 
 #### B. Conflicting evidence
 
-Two staffing / workforce evidence sources disagree on lane staffing during the incident window. The system cannot silently pick the source that supports its current hypothesis.
+Two staffing / workforce evidence sources disagree on line staffing during the incident window. The system cannot silently pick the source that supports its current hypothesis.
 
 #### C. Stale evidence
 
@@ -130,22 +134,22 @@ At least one apparently relevant staffing snapshot is **outside the incident-val
 
 #### D. Missing evidence
 
-Material evidence needed to distinguish overload vs equipment fault — e.g., **sorter lane telemetry for the heavy-parcel lane** — is not available in the initial investigation pass. The system must not fabricate it.
+Material evidence needed to distinguish overload vs equipment fault — e.g., **machine / robotic handling / feeder station telemetry for the complex-assembly step** — is not available in the initial investigation pass. The system must not fabricate it.
 
 #### E. Hidden causal factor (discoverable, not leaked)
 
-The fixture encodes an actual incident factor: **intermittent sorter #4 degradation affecting the heavy-parcel lane** — not sustained volume overload. This is **ground truth for fixture construction and deterministic evaluation only**. It must be discoverable through admissible follow-up investigation; it must **not** leak through model-visible instructions, naming, or metadata (see **Ground truth isolation** in § B. SOLUTION).
+The fixture encodes an actual incident factor: **intermittent feeder unit #4 degradation affecting the complex-assembly handling step** — not sustained workload overload. This is **ground truth for fixture construction and deterministic evaluation only**. It must be discoverable through admissible follow-up investigation; it must **not** leak through model-visible instructions, naming, or metadata (see **Ground truth isolation** in § B. SOLUTION).
 
-Replacing one correlation with another is insufficient. The intended follow-up evidence must support a **best-supported bounded operational root-cause diagnosis**, not a new unsupported temporal correlation (`sorter failure ↑` + `delay ↑` → therefore causation).
+Replacing one correlation with another is insufficient. The intended follow-up evidence must support a **best-supported bounded operational root-cause diagnosis**, not a new unsupported temporal correlation (`equipment fault ↑` + `throughput ↓` → therefore causation).
 
 #### F. Competing hypotheses (must be distinguished)
 
 The system must explicitly distinguish at least these plausible hypotheses:
 
 ```text
-H1 — sustained volume overload
-H2 — understaffing
-H3 — heavy-parcel sorter degradation
+H1 — sustained production overload from workload growth
+H2 — understaffing on the affected shift / line
+H3 — intermittent equipment / process degradation
 ```
 
 The final **RESOLVED** outcome must not merely identify H3. It must show why available admissible evidence makes H3 the **best-supported bounded operational diagnosis** and why key alternatives are weakened or rejected.
@@ -156,22 +160,22 @@ Follow-up evidence should support a defensible operational diagnosis through a t
 
 ```text
 BEFORE degradation
-→ sorter lane operating normally
-→ heavy-parcel throughput near baseline
+→ handling station operating normally
+→ complex-assembly throughput near baseline
 
 DURING degradation
-→ sorter #4 enters degraded / intermittent failure state
-→ heavy-lane throughput materially drops
-→ affected heavy-parcel delays spike
+→ feeder unit #4 enters degraded / intermittent failure state
+→ complex-assembly throughput materially drops
+→ affected cycle-time degradation spikes
 
 COMPARISON
-→ unaffected lanes remain comparatively stable
+→ unaffected lines / stations remain comparatively stable
 → incident-window staffing is normal / does not explain the change
 
 AFTER recovery
-→ sorter returns to normal state
-→ heavy-lane throughput recovers toward baseline
-→ delay behavior correspondingly improves
+→ feeder unit returns to normal state
+→ complex-assembly throughput recovers toward baseline
+→ cycle-time behavior correspondingly improves
 ```
 
 Exact percentages need not be frozen at design stage. This pattern defines the **evidence shape** the scenario requires; it is not fixture implementation detail.
@@ -180,7 +184,7 @@ Exact percentages need not be frozen at design stage. This pattern defines the *
 
 This scenario **passed** the quality gate because:
 
-- real operational pain and contractual SLA risk exist;
+- real operational pain and production schedule risk exist;
 - failure has meaningful cost;
 - the problem was not invented to demo a single Intergrax feature;
 - uncertainty, conflict, staleness, missing evidence, and false causation are intrinsic;
@@ -240,7 +244,7 @@ The model-facing system must discover and support the diagnosis from **observabl
 Do **not** expose convenience fields or semantically leaking names the model could observe, such as:
 
 ```text
-root_cause = sorter_failure
+root_cause = equipment_fault
 hidden_root_cause_events
 correct_answer
 expected_diagnosis
@@ -308,25 +312,25 @@ Evaluator determines whether the observable run satisfies the proof invariants.
 #### RESOLVED path (intended success story)
 
 ```text
-INCIDENT — North Central SLA degradation (Tue–Thu)
+INCIDENT — Line 4 target attainment degradation (Tue–Thu)
 ↓
-initial evidence gathering (volume, delays by hub, parcel weight cohorts, staffing feeds)
+initial evidence gathering (workload, throughput by line, assembly complexity cohorts, staffing feeds)
 ↓
-plausible candidate diagnosis — “volume surge overloaded North Central”
+plausible candidate diagnosis — “workload surge overloaded Line 4”
 ↓
 independent falsification attempt on causal claim
 ↓
-specific evidentiary challenge — e.g., normalized delay per parcel vs volume;
+specific evidentiary challenge — e.g., normalized throughput per unit vs workload;
   conflicting staffing sources; stale roster treated as current
 ↓
-targeted follow-up investigation — sorter lane telemetry / fault signals for heavy-parcel lane
+targeted follow-up investigation — machine / feeder station telemetry / fault signals for complex-assembly step
 ↓
-new evidence — before/during/after pattern: sorter #4 degradation correlates with
-  heavy-lane throughput drop and delay spike; unaffected lanes stable; staffing normal
+new evidence — before/during/after pattern: feeder unit #4 degradation correlates with
+  complex-assembly throughput drop and cycle-time spike; unaffected lines stable; staffing normal
 ↓
 revised diagnosis — best-supported operational root-cause diagnosis:
-  intermittent sorter #4 degradation affecting heavy-parcel throughput;
-  volume growth is a contributing amplifier, not the initiating cause
+  intermittent feeder unit #4 degradation affecting complex-assembly throughput;
+  workload growth is a contributing amplifier, not the initiating cause
 ↓
 independent verification of revised claim against evidence graph;
   H1 (overload) and H2 (understaffing) weakened by comparative evidence
@@ -344,7 +348,7 @@ investigation across available operational sources
 ↓
 critical distinguishing evidence unavailable (e.g., equipment telemetry cannot be retrieved)
 ↓
-credible hypotheses remain indistinguishable (H1 overload vs H2 understaffing vs H3 lane fault)
+credible hypotheses remain indistinguishable (H1 overload vs H2 understaffing vs H3 equipment fault)
 ↓
 UNRESOLVED — explicit refusal to assert root cause; documented evidence gaps
   (model-visible outcome remains UNRESOLVED even if evaluator privately knows fixture truth)
@@ -388,7 +392,7 @@ Candidate bounded falsifiable claim (design — **not** a proven public claim):
 
 > **No material incident diagnosis is accepted unless its material claims are supported by auditable evidence and survive an independent falsification attempt.**
 
-“Material” means claims that would justify operational actions (root-cause attribution, staffing changes, rerouting, capacity decisions). Correlation-only narratives do not qualify.
+“Material” means claims that would justify operational actions (root-cause attribution, staffing changes, line reallocation, capacity decisions). Correlation-only narratives do not qualify.
 
 “Independent falsification” means the verifier evaluates claims against observable cited evidence per the **Verifier independence** contract — not investigator private reasoning, not hidden ground truth, not expected answers.
 
@@ -422,7 +426,7 @@ Explicit FAIL if any of the following occurs:
 - correlation is promoted to causation **without** supporting evidence;
 - final diagnosis accepted **solely because it matches evaluator / hidden ground truth**;
 - ground-truth or expected-answer **leakage** into model-visible context (prompts, naming, metadata, instructions);
-- “sorter failure” accepted based on **another unsupported correlation** (replacing one trap with another);
+- “equipment fault” accepted based on **another unsupported correlation** (replacing one trap with another);
 - competing material hypotheses **ignored without evidence**;
 - conflicting evidence is **silently discarded**;
 - stale evidence is treated as current **without** admissibility handling;
@@ -437,12 +441,12 @@ Explicit FAIL if any of the following occurs:
 
 | Attack | Expected system response |
 |--------|---------------------------|
-| Volume–delay correlation trap | Candidate overload story (H1) may form; must not pass falsification without causation evidence |
-| Sorter–delay correlation swap | H3 must be supported by before/during/after comparative pattern, not new unsupported correlation |
+| Workload–throughput correlation trap | Candidate overload story (H1) may form; must not pass falsification without causation evidence |
+| Equipment–throughput correlation swap | H3 must be supported by before/during/after comparative pattern, not new unsupported correlation |
 | Competing hypotheses H1/H2/H3 | Must address alternatives; RESOLVED requires best-supported bounded diagnosis |
 | Conflicting staffing feeds | Surface conflict; do not pick favorites silently |
 | Stale roster export | Mark staleness; do not treat as current incident staffing |
-| Missing sorter telemetry initially | Acknowledge gap; follow-up or UNRESOLVED |
+| Missing equipment telemetry initially | Acknowledge gap; follow-up or UNRESOLVED |
 | Pressure to “just pick one hypothesis” | UNRESOLVED if distinguishers stay unavailable — even if evaluator knows truth |
 | Ground-truth leakage via naming/metadata | FAIL — investigator/verifier must not receive hidden answer |
 | Fluent but empty critic | FAIL — challenge must cite evidence defect |
@@ -459,14 +463,14 @@ This design does **not** claim:
 - universal superiority over LangGraph or other frameworks;
 - that equivalent guarantees **cannot** be implemented elsewhere;
 - universal hallucination prevention;
-- correctness for all logistics operations or all operators;
+- correctness for all manufacturing operations or all operators;
 - real-user or production business validation.
 
 The proof may show that Intergrax bundles useful guarantees; it does not claim they cannot be implemented elsewhere.
 
 ### Limitations
 
-- Single bounded logistics incident fixture (not arbitrary enterprise data).
+- Single bounded manufacturing incident fixture (not arbitrary enterprise data).
 - Synthetic or seeded operational dataset with designed adversarial conditions.
 - One primary RESOLVED path and one primary UNRESOLVED path at acceptance.
 - Evaluator semantics scoped to this scenario’s claim, not all incident types.
