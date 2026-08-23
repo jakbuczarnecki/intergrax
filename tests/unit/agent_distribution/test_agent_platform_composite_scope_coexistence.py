@@ -21,6 +21,7 @@ from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     _build_request,
     _install_request,
     build_admin_stack,
+    admin_test_principal,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -87,7 +88,9 @@ def _build_and_activate(
     stack.service.activate_revision(
         application_id=application_id,
         application_environment_id=_ENV,
+        principal=admin_test_principal(),
         request=ActivateRuntimeRevisionRequest(
+            mutation_id=f"mut-{revision_id}",
             runtime_revision_id=revision_id,
             artifact_locator=built.artifact_locator or "test://artifact",
             expected_artifact_digest=_ARTIFACT,
@@ -164,7 +167,9 @@ def test_app_a_and_app_b_prod_coexist_activate_and_rollback_isolation() -> None:
     stack.service.rollback_revision(
         application_id=_APP_A,
         application_environment_id=_ENV,
+        principal=admin_test_principal(),
         request=RollbackRuntimeRevisionRequest(
+            mutation_id="mut-rollback-a",
             expected_current_traffic_revision_id="rev-a-2",
             expected_serving_pointer_revision=2,
         ),

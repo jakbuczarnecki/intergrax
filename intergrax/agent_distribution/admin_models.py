@@ -24,6 +24,10 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevisionState,
 )
 from intergrax.agent_distribution.trust import AgentInstallationTrustRecord
+from intergrax.contracts.control_plane_mutation import (
+    ControlPlaneMutationAuthorizationEvidence,
+    ControlPlaneMutationAuthorizationScope,
+)
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -34,6 +38,24 @@ class AgentPlatformAdminBlockedError(Exception):
     def __init__(self, blocker_code: str, message: str) -> None:
         super().__init__(message)
         self.blocker_code = blocker_code
+
+
+class AgentPlatformAdminGovernanceBlockedError(AgentPlatformAdminBlockedError):
+    """Control-plane mutation blocked by governance before domain commit."""
+
+    def __init__(
+        self,
+        blocker_code: str,
+        message: str,
+        *,
+        policy_action: str,
+        authorization_evidence: ControlPlaneMutationAuthorizationEvidence,
+        authorization_scope: ControlPlaneMutationAuthorizationScope | None = None,
+    ) -> None:
+        super().__init__(blocker_code, message)
+        self.policy_action = policy_action
+        self.authorization_evidence = authorization_evidence
+        self.authorization_scope = authorization_scope
 
 
 class InstallAgentRequest(BaseModel):
@@ -178,6 +200,7 @@ class ActivateRuntimeRevisionRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    mutation_id: str = _NON_EMPTY
     runtime_revision_id: str = _NON_EMPTY
     artifact_locator: str = _NON_EMPTY
     expected_artifact_digest: str = _NON_EMPTY
@@ -185,6 +208,7 @@ class ActivateRuntimeRevisionRequest(BaseModel):
     expected_prior_traffic_revision_id: str | None = None
 
     @field_validator(
+        "mutation_id",
         "runtime_revision_id",
         "artifact_locator",
         "expected_artifact_digest",
@@ -205,11 +229,16 @@ class RollbackRuntimeRevisionRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    mutation_id: str = _NON_EMPTY
     expected_current_traffic_revision_id: str = _NON_EMPTY
     expected_serving_pointer_revision: int = Field(ge=0)
     target_runtime_revision_id: str | None = None
 
-    @field_validator("expected_current_traffic_revision_id", "target_runtime_revision_id")
+    @field_validator(
+        "mutation_id",
+        "expected_current_traffic_revision_id",
+        "target_runtime_revision_id",
+    )
     @classmethod
     def _strip_optional(cls, value: str | None) -> str | None:
         if value is None:
@@ -358,6 +387,7 @@ class ActivationResultView(BaseModel):
     activated_revision_id: str
     revision_state: RuntimeRevisionState
     prior_traffic_revision_id: str | None = None
+    authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
     audit_event_types: tuple[str, ...] = ()
 
 
@@ -371,6 +401,7 @@ class RollbackResultView(BaseModel):
     restored_revision_id: str
     revision_state: RuntimeRevisionState
     superseded_revision_id: str | None = None
+    authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
     audit_event_types: tuple[str, ...] = ()
 
 

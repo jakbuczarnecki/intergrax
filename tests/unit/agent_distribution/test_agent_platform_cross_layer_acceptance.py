@@ -56,6 +56,7 @@ from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     _install_bind,
     _install_request,
     build_admin_stack,
+    admin_test_principal,
 )
 from tests.unit.applications.test_registry_projection_ap10 import (
     _bundle_parts,
@@ -204,7 +205,9 @@ def test_cross_layer_identity_chain_through_admin_serving_state() -> None:
     activated = stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
+        principal=admin_test_principal(),
         request=ActivateRuntimeRevisionRequest(
+            mutation_id="mut-chain-1",
             runtime_revision_id="rev-chain-1",
             artifact_locator=built.artifact_locator or "test://artifact",
             expected_artifact_digest=built.materialization_artifact_digest or _ARTIFACT,
@@ -437,7 +440,9 @@ def test_real_projection_rollback_reuses_frozen_registry_n() -> None:
     stack.service.rollback_revision(
         application_id=_PROOF_APP,
         application_environment_id=_ENV,
+        principal=admin_test_principal(),
         request=RollbackRuntimeRevisionRequest(
+            mutation_id="mut-rollback-proof",
             expected_current_traffic_revision_id="rev-proof-n1",
             expected_serving_pointer_revision=2,
             target_runtime_revision_id="rev-proof-n",

@@ -227,6 +227,7 @@ def test_build_activate_rollback_routes() -> None:
     activated = client.post(
         f"{_PREFIX}/revisions/activate",
         json={
+            "mutation_id": "mut-activate-rev-17",
             "runtime_revision_id": "rev-17",
             "artifact_locator": body["artifact_locator"],
             "expected_artifact_digest": body["materialization_artifact_digest"],
@@ -240,6 +241,7 @@ def test_build_activate_rollback_routes() -> None:
     activated_two = client.post(
         f"{_PREFIX}/revisions/activate",
         json={
+            "mutation_id": "mut-activate-rev-18",
             "runtime_revision_id": "rev-18",
             "artifact_locator": second.json()["artifact_locator"],
             "expected_artifact_digest": second.json()["materialization_artifact_digest"],
@@ -251,6 +253,7 @@ def test_build_activate_rollback_routes() -> None:
     rolled = client.post(
         f"{_PREFIX}/revisions/rollback",
         json={
+            "mutation_id": "mut-rollback-rev-17",
             "expected_current_traffic_revision_id": "rev-18",
             "expected_serving_pointer_revision": 2,
             "target_runtime_revision_id": "rev-17",
@@ -441,6 +444,7 @@ def test_cross_app_scope_blocks_foreign_serving() -> None:
     activated = client.post(
         f"{_PREFIX}/revisions/activate",
         json={
+            "mutation_id": "mut-activate-rev-17",
             "runtime_revision_id": "rev-17",
             "artifact_locator": built.json()["artifact_locator"],
             "expected_artifact_digest": built.json()["materialization_artifact_digest"],
@@ -461,6 +465,7 @@ def test_cross_app_scope_blocks_foreign_activate() -> None:
     denied = client.post(
         f"{_PREFIX_B}/revisions/activate",
         json={
+            "mutation_id": "mut-activate-rev-17",
             "runtime_revision_id": "rev-17",
             "artifact_locator": built.json()["artifact_locator"],
             "expected_artifact_digest": built.json()["materialization_artifact_digest"],
@@ -478,6 +483,7 @@ def test_cross_app_scope_blocks_foreign_rollback() -> None:
     activated = client.post(
         f"{_PREFIX}/revisions/activate",
         json={
+            "mutation_id": "mut-activate-rev-17",
             "runtime_revision_id": "rev-17",
             "artifact_locator": first.json()["artifact_locator"],
             "expected_artifact_digest": first.json()["materialization_artifact_digest"],
@@ -490,6 +496,7 @@ def test_cross_app_scope_blocks_foreign_rollback() -> None:
     activated_two = client.post(
         f"{_PREFIX}/revisions/activate",
         json={
+            "mutation_id": "mut-activate-rev-18",
             "runtime_revision_id": "rev-18",
             "artifact_locator": second.json()["artifact_locator"],
             "expected_artifact_digest": second.json()["materialization_artifact_digest"],
@@ -501,6 +508,7 @@ def test_cross_app_scope_blocks_foreign_rollback() -> None:
     denied = client.post(
         f"{_PREFIX_B}/revisions/rollback",
         json={
+            "mutation_id": "mut-rollback-rev-17",
             "expected_current_traffic_revision_id": "rev-18",
             "expected_serving_pointer_revision": 2,
             "target_runtime_revision_id": "rev-17",

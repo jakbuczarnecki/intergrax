@@ -11,6 +11,7 @@ from intergrax.agent_distribution.admin_models import (
     ActivationStatusView,
     ActivateRuntimeRevisionRequest,
     AgentPlatformAdminBlockedError,
+    AgentPlatformAdminGovernanceBlockedError,
     AgentStatusView,
     BindAgentRequest,
     BindingListResult,
@@ -36,6 +37,11 @@ from intergrax.agent_distribution.admin_models import (
 from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadataProvider
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.binding_service import BindingService
+from intergrax.agent_distribution.control_plane_governance import (
+    ApplicationEnvironmentTenantResolver,
+    build_activation_mutation_request,
+    build_rollback_mutation_request,
+)
 from intergrax.agent_distribution.catalog import CatalogEntryFilters, CatalogSourceProvider
 from intergrax.agent_distribution.dependency import DependencyResolverInput
 from intergrax.agent_distribution.dependency_specification import (
@@ -83,6 +89,12 @@ from intergrax.agent_distribution.stores import (
     DeploymentInstanceStore,
     MaterializedRuntimeLockStore,
     RuntimeRevisionStore,
+)
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.control_plane_mutation import ControlPlaneMutationAuthorizationResult
+from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
 )
 
 
@@ -168,6 +180,8 @@ class AgentPlatformAdminService:
         catalog_provider: CatalogSourceProvider | None = None,
         dependency_resolver: DependencyResolver | None = None,
         manifest_defaults: tuple[ManifestDefaultAgentDeclaration, ...] = (),
+        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+        environment_tenant_resolver: ApplicationEnvironmentTenantResolver | None = None,
     ) -> None:
         self._installation_store = installation_store
         self._binding_store = binding_store
@@ -194,6 +208,8 @@ class AgentPlatformAdminService:
         self._metadata_provider = metadata_provider
         self._catalog_provider = catalog_provider
         self._manifest_defaults = manifest_defaults
+        self._mutation_authorization_boundary = mutation_authorization_boundary
+        self._environment_tenant_resolver = environment_tenant_resolver
 
     def list_catalog(
         self,
@@ -771,6 +787,7 @@ class AgentPlatformAdminService:
         application_id: str,
         application_environment_id: str,
         request: ActivateRuntimeRevisionRequest,
+        principal: RequestIdentity,
     ) -> ActivationResultView:
         self._require_revision_scope(
             runtime_revision_id=request.runtime_revision_id,
@@ -783,6 +800,23 @@ class AgentPlatformAdminService:
             runtime_revision_id=request.runtime_revision_id,
             artifact_locator=request.artifact_locator,
         )
+        serving = self._serving_store.get_serving_record(
+            application_id,
+            application_environment_id,
+        )
+        current_traffic_revision_id = (
+            serving.traffic_serving_revision_id if serving is not None else None
+        )
+        current_pointer_revision = serving.serving_pointer_revision if serving is not None else 0
+        authorization = self._authorize_activation(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=request.mutation_id,
+            current_traffic_revision_id=current_traffic_revision_id,
+            current_serving_pointer_revision=current_pointer_revision,
+            target_runtime_revision_id=request.runtime_revision_id,
+        )
         committed = self._activation_service.commit_activation(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -791,14 +825,15 @@ class AgentPlatformAdminService:
             expected_serving_pointer_revision=request.expected_serving_pointer_revision,
             expected_artifact_digest=request.expected_artifact_digest,
         )
-        serving = committed.value.serving_record
+        serving_after = committed.value.serving_record
         activated = committed.value.activated_revision
         return ActivationResultView(
-            traffic_serving_revision_id=serving.traffic_serving_revision_id,
-            serving_pointer_revision=serving.serving_pointer_revision,
+            traffic_serving_revision_id=serving_after.traffic_serving_revision_id,
+            serving_pointer_revision=serving_after.serving_pointer_revision,
             activated_revision_id=activated.runtime_revision_id,
             revision_state=activated.revision_state,
-            prior_traffic_revision_id=serving.prior_traffic_revision_id,
+            prior_traffic_revision_id=serving_after.prior_traffic_revision_id,
+            authorization_evidence=authorization.evidence,
             audit_event_types=_event_types(prepared, committed),
         )
 
@@ -808,6 +843,7 @@ class AgentPlatformAdminService:
         application_id: str,
         application_environment_id: str,
         request: RollbackRuntimeRevisionRequest,
+        principal: RequestIdentity,
     ) -> RollbackResultView:
         serving = self._serving_store.get_serving_record(
             application_id,
@@ -822,6 +858,18 @@ class AgentPlatformAdminService:
             raise RuntimeActivationConflict(
                 "rollback target does not match immutable prior traffic revision"
             )
+        if serving.traffic_serving_revision_id is None:
+            raise RuntimeRollbackError("no current serving revision to rollback from")
+        target_revision_id = serving.prior_traffic_revision_id
+        authorization = self._authorize_rollback(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=request.mutation_id,
+            current_traffic_revision_id=serving.traffic_serving_revision_id,
+            current_serving_pointer_revision=serving.serving_pointer_revision,
+            target_runtime_revision_id=target_revision_id,
+        )
         rolled = self._activation_service.rollback(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -839,6 +887,7 @@ class AgentPlatformAdminService:
             restored_revision_id=restored.runtime_revision_id,
             revision_state=restored.revision_state,
             superseded_revision_id=superseded_id,
+            authorization_evidence=authorization.evidence,
             audit_event_types=_event_types(rolled),
         )
 
@@ -958,3 +1007,184 @@ class AgentPlatformAdminService:
             return None
         pending.sort(key=lambda item: item.runtime_revision_id)
         return pending[-1]
+
+    def _require_mutation_authorization_boundary(
+        self,
+    ) -> ControlPlaneMutationAuthorizationBoundary:
+        boundary = self._mutation_authorization_boundary
+        if boundary is None:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_MUTATION_AUTHORIZATION_BOUNDARY",
+                "activation/rollback requires ControlPlaneMutationAuthorizationBoundary",
+            )
+        return boundary
+
+    def _validate_environment_tenant_authority(
+        self,
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+    ) -> None:
+        resolver = self._environment_tenant_resolver
+        if resolver is None:
+            return
+        environment_tenant = resolver.resolve_tenant_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        if environment_tenant != principal.tenant_id:
+            raise AgentPlatformAdminGovernanceBlockedError(
+                "AP-11_BLOCKED_BY_TENANT_AUTHORITY",
+                "principal tenant is outside application environment authority scope",
+                policy_action=PolicyAction.DENY.value,
+                authorization_evidence=self._synthetic_tenant_deny_evidence(
+                    principal=principal,
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                ),
+            )
+
+    def _authorize_activation(
+        self,
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+        mutation_id: str,
+        current_traffic_revision_id: str | None,
+        current_serving_pointer_revision: int,
+        target_runtime_revision_id: str,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        self._validate_environment_tenant_authority(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        boundary = self._require_mutation_authorization_boundary()
+        request = build_activation_mutation_request(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=mutation_id,
+            current_traffic_revision_id=current_traffic_revision_id,
+            current_serving_pointer_revision=current_serving_pointer_revision,
+            target_runtime_revision_id=target_runtime_revision_id,
+        )
+        return self._enforce_authorization_result(
+            boundary.authorize(request),
+            operation="activation",
+        )
+
+    def _authorize_rollback(
+        self,
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+        mutation_id: str,
+        current_traffic_revision_id: str,
+        current_serving_pointer_revision: int,
+        target_runtime_revision_id: str,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        self._validate_environment_tenant_authority(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        boundary = self._require_mutation_authorization_boundary()
+        request = build_rollback_mutation_request(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=mutation_id,
+            current_traffic_revision_id=current_traffic_revision_id,
+            current_serving_pointer_revision=current_serving_pointer_revision,
+            target_runtime_revision_id=target_runtime_revision_id,
+        )
+        return self._enforce_authorization_result(
+            boundary.authorize(request),
+            operation="rollback",
+        )
+
+    @staticmethod
+    def _enforce_authorization_result(
+        result: ControlPlaneMutationAuthorizationResult,
+        *,
+        operation: str,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        if result.permitted:
+            return result
+        action = result.decision.action
+        if action is PolicyAction.REQUIRE_HUMAN:
+            raise AgentPlatformAdminGovernanceBlockedError(
+                "AP-11_BLOCKED_BY_REQUIRE_HUMAN",
+                f"{operation} requires governed human approval",
+                policy_action=action.value,
+                authorization_evidence=result.evidence,
+                authorization_scope=result.authorization_scope,
+            )
+        if action is PolicyAction.ESCALATE:
+            raise AgentPlatformAdminGovernanceBlockedError(
+                "AP-11_BLOCKED_BY_ESCALATE",
+                f"{operation} requires escalation",
+                policy_action=action.value,
+                authorization_evidence=result.evidence,
+                authorization_scope=result.authorization_scope,
+            )
+        raise AgentPlatformAdminGovernanceBlockedError(
+            "AP-11_BLOCKED_BY_GOVERNANCE_DENY",
+            f"{operation} denied by control-plane governance",
+            policy_action=action.value,
+            authorization_evidence=result.evidence,
+            authorization_scope=result.authorization_scope,
+        )
+
+    @staticmethod
+    def _synthetic_tenant_deny_evidence(
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+    ):
+        from intergrax.agent_distribution.control_plane_governance import (
+            AGENT_DISTRIBUTION_RESOURCE_TYPE,
+            application_environment_resource_id,
+            application_environment_resource_scope,
+            serving_revision_token,
+        )
+        from intergrax.contracts.control_plane_mutation import (
+            ControlPlaneMutationAuthorizationEvidence,
+            ControlPlaneMutationRisk,
+        )
+
+        return ControlPlaneMutationAuthorizationEvidence(
+            request_digest="sha256:0000000000000000000000000000000000000000000000000000000000000000",
+            mutation_id="tenant-authority-deny",
+            mutation_type="agent_distribution.tenant_authority",
+            tenant_id=principal.tenant_id,
+            resource_scope=application_environment_resource_scope(
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+            ),
+            resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
+            resource_id=application_environment_resource_id(
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+            ),
+            current_revision=serving_revision_token(
+                traffic_revision_id=None,
+                serving_pointer_revision=0,
+            ),
+            target_revision=serving_revision_token(
+                traffic_revision_id=None,
+                serving_pointer_revision=0,
+            ),
+            risk_classification=ControlPlaneMutationRisk.HIGH,
+            principal_type=principal.principal_type,
+            principal_user_id=principal.user_id,
+            principal_auth_subject=principal.auth_subject,
+            policy_action=PolicyAction.DENY,
+            policy_rule_id="agent_distribution.tenant_scope",
+            policy_decision_id="tenant-authority-deny",
+        )
