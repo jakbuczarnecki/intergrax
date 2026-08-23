@@ -8,16 +8,26 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
-from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.evidence_claims import (
     ClaimResolution,
     EvidenceBackedClaim,
     EvidenceClaimSet,
-    validate_claim_kind,
-    validate_evidence_claim_id,
     validate_evidence_reference_id,
 )
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+    COMPARISON_EVIDENCE_ID,
+    DIAGNOSIS_KIND,
+    H2_CLAIM_ID,
+    INCIDENT_EVIDENCE_IDS,
+    INITIAL_CLAIM_ID,
+    REVISED_CLAIM_ID,
+    STAFFING_ATTENDANCE_EVIDENCE_ID,
+    STAFFING_PRELIMINARY_EVIDENCE_ID,
+    TELEMETRY_EVIDENCE_ID,
+    THROUGHPUT_EVIDENCE_ID,
+    WORKLOAD_EVIDENCE_ID,
+)
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -27,8 +37,20 @@ from unittest.mock import MagicMock
 
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
+from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import HypothesisId
+from intergrax.contracts.capability import CapabilityMatchResult
+from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
+    IncidentAssessment,
+    IncidentObservations,
+    derive_hypothesis_dispositions,
+    parse_comparison_payload,
+    parse_staffing_attendance_payload,
+    parse_staffing_schedule_payload,
+    parse_telemetry_payload,
+    parse_throughput_payload,
+    parse_workload_payload,
+)
 from platform_proofs.scenarios.ai_incident_investigation.tools import (
     default_comparison_input,
     default_line_window_input,
@@ -42,36 +64,96 @@ from platform_proofs.scenarios.ai_incident_investigation.tools import (
     TOOL_THROUGHPUT_READ,
     TOOL_WORKLOAD_READ,
 )
-from platform_proofs.scenarios.ai_incident_investigation.validation import DIAGNOSIS_CLAIM_KIND
+from platform_proofs.scenarios.ai_incident_investigation.fixtures import HypothesisId
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 INVESTIGATOR_AGENT_ID = "incident_investigator"
 INVESTIGATOR_CAPABILITY = "incident_investigation.investigate"
 
-INITIAL_CLAIM_ID = validate_evidence_claim_id("eclaim_a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1")
-H2_CLAIM_ID = validate_evidence_claim_id("eclaim_c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3")
-REVISED_CLAIM_ID = validate_evidence_claim_id("eclaim_b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2")
-WORKLOAD_EVIDENCE_ID = validate_evidence_reference_id("evidence.workload.line4.incident_window")
-THROUGHPUT_EVIDENCE_ID = validate_evidence_reference_id("evidence.throughput.line4.incident_window")
-STAFFING_PRELIMINARY_EVIDENCE_ID = validate_evidence_reference_id(
-    "evidence.staffing.schedule.line4.incident_window"
-)
-STAFFING_ATTENDANCE_EVIDENCE_ID = validate_evidence_reference_id(
-    "evidence.staffing.attendance.line4.incident_window"
-)
-COMPARISON_EVIDENCE_ID = validate_evidence_reference_id(
-    "evidence.comparison.line3.high_load_window"
-)
-TELEMETRY_EVIDENCE_ID = validate_evidence_reference_id(
-    "evidence.telemetry.complex_assembly_station.incident_window"
-)
-DIAGNOSIS_KIND = validate_claim_kind(DIAGNOSIS_CLAIM_KIND)
+
+def _build_claims_from_assessment(assessment: IncidentAssessment) -> EvidenceClaimSet:
+    h1 = assessment.h1
+    h2 = assessment.h2
+    h3 = assessment.h3
+
+    h1_statement = (
+        "Production workload on Line 4 increased during the incident window "
+        "while throughput declined — overload hypothesis H1."
+        if h1.disposition is not ClaimResolution.PENDING
+        else (
+            "Sustained production overload from workload growth caused Line 4 "
+            "target attainment degradation — hypothesis H1."
+        )
+    )
+    initial_claim = EvidenceBackedClaim(
+        claim_id=INITIAL_CLAIM_ID,
+        statement=h1_statement,
+        claim_kind=DIAGNOSIS_KIND,
+        supporting_evidence_ids=tuple(
+            validate_evidence_reference_id(eid) for eid in h1.supporting_evidence_ids
+        ),
+        contradicting_evidence_ids=tuple(
+            validate_evidence_reference_id(eid) for eid in h1.contradicting_evidence_ids
+        ),
+        resolution=h1.disposition,
+    )
+
+    h2_statement = (
+        "Understaffing on the affected shift is not supported as initiating cause: "
+        "preliminary roster export conflicts with confirmed attendance for the "
+        "incident window — hypothesis H2 rejected."
+        if h2.disposition is ClaimResolution.REJECTED
+        else (
+            "Understaffing on the affected shift is supported by confirmed attendance "
+            "below required headcount — hypothesis H2."
+            if h2.disposition is ClaimResolution.SUPPORTED
+            else "Understaffing hypothesis H2 pending further staffing evidence."
+        )
+    )
+    h2_claim = EvidenceBackedClaim(
+        claim_id=H2_CLAIM_ID,
+        statement=h2_statement,
+        claim_kind=DIAGNOSIS_KIND,
+        supporting_evidence_ids=tuple(
+            validate_evidence_reference_id(eid) for eid in h2.supporting_evidence_ids
+        ),
+        contradicting_evidence_ids=tuple(
+            validate_evidence_reference_id(eid) for eid in h2.contradicting_evidence_ids
+        ),
+        resolution=h2.disposition,
+    )
+
+    claims: list[EvidenceBackedClaim] = [initial_claim, h2_claim]
+
+    if h3.disposition is ClaimResolution.SUPPORTED:
+        revised_claim = EvidenceBackedClaim(
+            claim_id=REVISED_CLAIM_ID,
+            statement=(
+                "Intermittent station signal degradation on the complex-assembly step "
+                "is the best-supported initiating cause; comparison evidence shows "
+                "similar elevated workload elsewhere without comparable degradation; "
+                "workload growth plausibly amplified impact — bounded H3 diagnosis."
+            ),
+            claim_kind=DIAGNOSIS_KIND,
+            supporting_evidence_ids=tuple(
+                validate_evidence_reference_id(eid) for eid in h3.supporting_evidence_ids
+            ),
+            contradicting_evidence_ids=tuple(
+                validate_evidence_reference_id(eid) for eid in h3.contradicting_evidence_ids
+            ),
+            resolution=ClaimResolution.SUPPORTED,
+            supersedes_claim_id=INITIAL_CLAIM_ID,
+        )
+        claims.append(revised_claim)
+
+    return EvidenceClaimSet(claims=tuple(claims), challenges=())
 
 
 class IncidentInvestigatorAgent(Agent):
     def __init__(self, registry: ToolRegistry, station_id: str) -> None:
         self._registry = registry
         self._station_id = station_id
+        self._registry_executor = RegistryToolExecutor(registry)
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -135,7 +217,7 @@ class IncidentInvestigatorAgent(Agent):
         step: AgentStep,
         tool_id: str,
         tool_input: dict[str, str],
-    ) -> object:
+    ) -> dict[str, object]:
         await ToolRuntime.invoke(
             state=runtime_state,
             plan=ToolInvocationPlan(
@@ -148,7 +230,17 @@ class IncidentInvestigatorAgent(Agent):
         trace = runtime_state.tool_traces[-1]
         if not trace.success:
             raise RuntimeError(f"{tool_id} failed: {trace.error_message}")
-        return trace.output_preview
+        registered = self._registry.get(tool_id)
+        validated_input = registered.contract.input_schema.model_validate(tool_input)
+        output = self._registry_executor.execute(
+            ToolExecutionRequest(
+                run_id="scenario-incident-run",
+                step_id=step.step_id,
+                tool_id=tool_id,
+                input=validated_input,
+            )
+        )
+        return output.model_dump()
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         is_revision = bool((ctx.request.metadata or {}).get("critic_feedback"))
@@ -209,6 +301,12 @@ class IncidentInvestigatorAgent(Agent):
             },
         ]
 
+        observations = IncidentObservations(
+            workload=parse_workload_payload(workload_preview),
+            throughput=parse_throughput_payload(throughput_preview),
+            staffing_schedule=parse_staffing_schedule_payload(staffing_preview),
+        )
+
         if is_revision:
             comparison_preview = await self._invoke_tool(
                 runtime_state=runtime_state,
@@ -257,71 +355,21 @@ class IncidentInvestigatorAgent(Agent):
                 ]
             )
 
-            initial_claim = EvidenceBackedClaim(
-                claim_id=INITIAL_CLAIM_ID,
-                statement=(
-                    "Production workload on Line 4 increased during the incident window "
-                    "while throughput declined — overload hypothesis H1."
-                ),
-                claim_kind=DIAGNOSIS_KIND,
-                supporting_evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
-                resolution=ClaimResolution.SUPERSEDED,
+            observations = IncidentObservations(
+                workload=observations.workload,
+                throughput=observations.throughput,
+                staffing_schedule=observations.staffing_schedule,
+                staffing_attendance=parse_staffing_attendance_payload(attendance_preview),
+                comparison=parse_comparison_payload(comparison_preview),
+                telemetry=parse_telemetry_payload(telemetry_preview),
             )
-            h2_claim = EvidenceBackedClaim(
-                claim_id=H2_CLAIM_ID,
-                statement=(
-                    "Understaffing on the affected shift is not supported as initiating cause: "
-                    "preliminary roster export conflicts with confirmed attendance for the "
-                    "incident window — hypothesis H2 rejected."
-                ),
-                claim_kind=DIAGNOSIS_KIND,
-                supporting_evidence_ids=(
-                    STAFFING_PRELIMINARY_EVIDENCE_ID,
-                    STAFFING_ATTENDANCE_EVIDENCE_ID,
-                ),
-                resolution=ClaimResolution.REJECTED,
-            )
-            revised_claim = EvidenceBackedClaim(
-                claim_id=REVISED_CLAIM_ID,
-                statement=(
-                    "Intermittent station signal degradation on the complex-assembly step "
-                    "is the best-supported initiating cause; comparison evidence shows "
-                    "similar elevated workload elsewhere without comparable degradation; "
-                    "workload growth plausibly amplified impact — bounded H3 diagnosis."
-                ),
-                claim_kind=DIAGNOSIS_KIND,
-                supporting_evidence_ids=(
-                    WORKLOAD_EVIDENCE_ID,
-                    THROUGHPUT_EVIDENCE_ID,
-                    COMPARISON_EVIDENCE_ID,
-                    TELEMETRY_EVIDENCE_ID,
-                ),
-                resolution=ClaimResolution.SUPPORTED,
-                supersedes_claim_id=INITIAL_CLAIM_ID,
-            )
-            claim_set = EvidenceClaimSet(
-                claims=(initial_claim, h2_claim, revised_claim),
-                challenges=(),
-            )
-            active_hypothesis = HypothesisId.H3
-            summary = (
-                "revised: bounded equipment-process degradation diagnosis supported "
-                "by telemetry and comparison evidence"
-            )
-        else:
-            draft_claim = EvidenceBackedClaim(
-                claim_id=INITIAL_CLAIM_ID,
-                statement=(
-                    "Sustained production overload from workload growth caused Line 4 "
-                    "target attainment degradation — hypothesis H1."
-                ),
-                claim_kind=DIAGNOSIS_KIND,
-                supporting_evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
-                resolution=ClaimResolution.PENDING,
-            )
-            claim_set = EvidenceClaimSet(claims=(draft_claim,), challenges=())
-            active_hypothesis = HypothesisId.H1
-            summary = "draft: workload overload candidate diagnosis hypothesis H1"
+
+        assessment = derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS)
+        claim_set = _build_claims_from_assessment(assessment)
+        active_hypothesis = assessment.active_hypothesis
+        summary = assessment.summary
+        if is_revision and assessment.h3.disposition is ClaimResolution.SUPPORTED:
+            summary = f"revised: {summary}"
 
         domain_payload = {
             "claim_set": claim_set.model_dump(mode="json"),

@@ -4,26 +4,37 @@
 
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 
 from intergrax.contracts.evidence_claims import (
     ChallengeDefectFamily,
     ChallengeResolution,
     ClaimResolution,
+    EvidenceBackedClaim,
     EvidenceClaimSet,
 )
 from platform_proofs.scenarios.ai_incident_investigation.critic_adapter import (
     UNSUPPORTED_INFERENCE_DEFECT,
 )
+from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
+    comparison_weakens_overload,
+    derive_hypothesis_dispositions,
+    h1_initially_plausible,
+    observations_from_evidence_nodes,
+    staffing_record_admissible_for_incident,
+    telemetry_supports_degradation,
+)
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
     FORBIDDEN_LEAK_MARKERS,
     HypothesisId,
     IncidentFixture,
-    staffing_record_admissible_for_incident,
 )
-from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
     COMPARISON_EVIDENCE_ID,
+    DIAGNOSIS_KIND,
     H2_CLAIM_ID,
+    INCIDENT_EVIDENCE_IDS,
     INITIAL_CLAIM_ID,
     REVISED_CLAIM_ID,
     STAFFING_ATTENDANCE_EVIDENCE_ID,
@@ -38,6 +49,7 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario import (
 )
 from platform_proofs.scenarios.ai_incident_investigation.validation import (
     UNSUPPORTED_INFERENCE_ERROR,
+    validate_claim_set_against_observations,
 )
 
 
@@ -61,12 +73,16 @@ def _observable_evidence_ids(result: ScenarioExecutionResult) -> frozenset[str]:
     return frozenset(str(node.get("evidence_id")) for node in result.evidence_nodes)
 
 
-def _initial_h1_plausible(fixture: IncidentFixture) -> bool:
-    return (
-        fixture.workload_incident.order_volume_delta_pct > 15.0
-        and fixture.throughput_incident.target_attainment_pct
-        < fixture.throughput_incident.baseline_attainment_pct - 10.0
-    )
+def _runtime_observations(result: ScenarioExecutionResult):
+    return observations_from_evidence_nodes(result.evidence_nodes, INCIDENT_EVIDENCE_IDS)
+
+
+def _domain_payload_from_result(result: ScenarioExecutionResult) -> dict[str, object]:
+    return {
+        "claim_set": result.claim_set,
+        "evidence_nodes": list(result.evidence_nodes),
+        "active_hypothesis": "H3" if result.revision_pass else "H1",
+    }
 
 
 def evaluate_scenario_run(
@@ -77,6 +93,7 @@ def evaluate_scenario_run(
     failures: list[str] = []
 
     observable_ids = _observable_evidence_ids(result)
+    observations = _runtime_observations(result)
 
     if TELEMETRY_EVIDENCE_ID in observable_ids and not result.revision_pass:
         failures.append("telemetry_visible_before_revision")
@@ -93,8 +110,8 @@ def evaluate_scenario_run(
     else:
         checks.append("initial_observable_excludes_follow_up_evidence")
 
-    if not _initial_h1_plausible(fixture):
-        failures.append("h1_not_plausible_from_fixture")
+    if not h1_initially_plausible(observations.workload, observations.throughput):
+        failures.append("h1_not_plausible_from_runtime_evidence")
     else:
         checks.append("h1_initially_plausible")
 
@@ -180,21 +197,31 @@ def evaluate_scenario_run(
     else:
         checks.append("staffing_attendance_gathered")
 
-    if staffing_record_admissible_for_incident(fixture.staffing_preliminary):
+    if observations.staffing_schedule is None:
+        failures.append("staffing_preliminary_not_gathered")
+    elif staffing_record_admissible_for_incident(observations.staffing_schedule):
         failures.append("staffing_preliminary_should_be_stale_for_incident")
     else:
         checks.append("staffing_preliminary_stale_for_incident")
+
+    runtime_assessment = derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS)
 
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
     h2_claims = [c for c in claim_set.claims if c.claim_id == H2_CLAIM_ID]
     if not h2_claims:
         failures.append("h2_claim_missing")
-    elif h2_claims[0].resolution is not ClaimResolution.REJECTED:
+    elif h2_claims[0].resolution is not runtime_assessment.h2.disposition:
+        failures.append("h2_disposition_not_derived_from_evidence")
+    elif runtime_assessment.h2.disposition is not ClaimResolution.REJECTED:
         failures.append("h2_not_rejected")
     else:
         checks.append("h2_rejected_with_evidence")
-        if STAFFING_ATTENDANCE_EVIDENCE_ID not in h2_claims[0].supporting_evidence_ids:
-            failures.append("h2_rejection_missing_attendance_ref")
+        if runtime_assessment.h2.contradicting_evidence_ids:
+            if not any(
+                str(eid) in h2_claims[0].contradicting_evidence_ids
+                for eid in runtime_assessment.h2.contradicting_evidence_ids
+            ):
+                failures.append("h2_rejection_missing_attendance_ref")
 
     for claim in claim_set.claims:
         if claim.resolution is ClaimResolution.SUPPORTED:
@@ -204,6 +231,22 @@ def evaluate_scenario_run(
                     break
     else:
         checks.append("stale_staffing_not_final_support")
+
+    if observations.comparison is not None and not comparison_weakens_overload(
+        observations.workload,
+        observations.throughput,
+        observations.comparison,
+    ):
+        failures.append("comparison_does_not_weaken_h1_from_runtime")
+    else:
+        checks.append("comparison_weakens_h1_from_runtime")
+
+    if observations.telemetry is not None and not telemetry_supports_degradation(
+        observations.telemetry
+    ):
+        failures.append("telemetry_does_not_support_h3_from_runtime")
+    else:
+        checks.append("telemetry_supports_h3_from_runtime")
 
     diagnosis_claims = [c for c in claim_set.claims if c.resolution is ClaimResolution.SUPPORTED]
     if not diagnosis_claims:
@@ -215,6 +258,8 @@ def evaluate_scenario_run(
             failures.append("final_supported_claim_not_h3")
         else:
             checks.append("final_supported_claim_is_h3")
+        if runtime_assessment.h3.disposition is not ClaimResolution.SUPPORTED:
+            failures.append("h3_not_derived_from_runtime_evidence")
         if TELEMETRY_EVIDENCE_ID not in supported.supporting_evidence_ids:
             failures.append("supported_claim_missing_telemetry_ref")
         else:
@@ -232,6 +277,11 @@ def evaluate_scenario_run(
         ClaimResolution.REJECTED,
     }:
         failures.append("h1_not_weakened")
+    elif runtime_assessment.h1.disposition not in {
+        ClaimResolution.SUPERSEDED,
+        ClaimResolution.REJECTED,
+    }:
+        failures.append("h1_not_weakened_from_runtime")
     else:
         checks.append("h1_materially_weakened")
 
@@ -241,6 +291,19 @@ def evaluate_scenario_run(
                 failures.append(f"cited_evidence_not_in_graph:{evidence_id}")
     if not any(f.startswith("cited_evidence_not_in_graph:") for f in failures):
         checks.append("all_cited_evidence_in_graph")
+
+    critic_validation = validate_claim_set_against_observations(
+        claim_set,
+        {
+            "claim_set": result.claim_set,
+            "evidence_nodes": list(result.evidence_nodes),
+            "active_hypothesis": str(runtime_assessment.active_hypothesis),
+        },
+    )
+    if not critic_validation.valid:
+        failures.append("critic_content_validation_failed")
+    else:
+        checks.append("critic_content_validation_passed")
 
     if result.outcome != "RESOLVED":
         failures.append(f"unexpected_outcome:{result.outcome}")
@@ -273,42 +336,55 @@ def evaluate_scenario_run(
     )
 
 
-@dataclass(frozen=True, slots=True)
-class SkepticStrategyResult:
-    strategy: str
-    passed: bool
-    reason: str
+def evaluate_mutated_evidence_fails(
+    result: ScenarioExecutionResult,
+    *,
+    evidence_id: str,
+    payload_mutator: object,
+) -> bool:
+    """Return True when mutating runtime evidence payload causes evaluator/critic rejection."""
+    mutated_nodes = copy.deepcopy(list(result.evidence_nodes))
+    for node in mutated_nodes:
+        if str(node.get("evidence_id")) == evidence_id:
+            payload = node.get("payload")
+            if isinstance(payload, dict) and callable(payload_mutator):
+                payload_mutator(payload)
+            break
 
-
-def evaluate_correlation_only_strategy(fixture: IncidentFixture) -> SkepticStrategyResult:
-    """Accept H1 because workload↑ and throughput↓ — must fail."""
-    plausible = _initial_h1_plausible(fixture)
-    has_comparison = fixture.comparison.workload_delta_pct > 20.0
-    has_telemetry = fixture.telemetry.signal_state == "intermittent_degraded"
-    if plausible and not has_comparison and not has_telemetry:
-        return SkepticStrategyResult("correlation_only", True, "would incorrectly pass")
-    return SkepticStrategyResult(
-        "correlation_only",
-        False,
-        "correlation_only_insufficient_without_comparison_and_telemetry",
+    claim_set = EvidenceClaimSet.model_validate(result.claim_set)
+    validation = validate_claim_set_against_observations(
+        claim_set,
+        {
+            "claim_set": result.claim_set,
+            "evidence_nodes": mutated_nodes,
+            "active_hypothesis": "H3",
+        },
     )
+    if not validation.valid:
+        return True
+
+    observations = observations_from_evidence_nodes(tuple(mutated_nodes), INCIDENT_EVIDENCE_IDS)
+    assessment = derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS)
+    return assessment.h3.disposition is not ClaimResolution.SUPPORTED
 
 
-def evaluate_stale_staffing_strategy(fixture: IncidentFixture) -> SkepticStrategyResult:
-    """Treat preliminary staffing shortage as current — must fail."""
-    if staffing_record_admissible_for_incident(fixture.staffing_preliminary):
-        return SkepticStrategyResult("stale_staffing", True, "would incorrectly pass")
-    return SkepticStrategyResult(
-        "stale_staffing",
-        False,
-        "preliminary_roster_not_admissible_for_incident_window",
+def build_forged_h3_claim_set(result: ScenarioExecutionResult) -> EvidenceClaimSet:
+    """Construct a deliberately false H3 SUPPORTED claim using real telemetry evidence ID."""
+    claim_set = EvidenceClaimSet.model_validate(result.claim_set)
+    forged = EvidenceBackedClaim(
+        claim_id=REVISED_CLAIM_ID,
+        statement=(
+            "Forged H3 diagnosis — equipment degradation claimed without degraded telemetry content."
+        ),
+        claim_kind=DIAGNOSIS_KIND,
+        supporting_evidence_ids=(
+            WORKLOAD_EVIDENCE_ID,
+            THROUGHPUT_EVIDENCE_ID,
+            COMPARISON_EVIDENCE_ID,
+            TELEMETRY_EVIDENCE_ID,
+        ),
+        resolution=ClaimResolution.SUPPORTED,
+        supersedes_claim_id=INITIAL_CLAIM_ID,
     )
-
-
-def evaluate_h3_without_telemetry_strategy() -> SkepticStrategyResult:
-    """Select H3 without follow-up telemetry — must fail scenario acceptance."""
-    return SkepticStrategyResult(
-        "h3_without_telemetry",
-        False,
-        "telemetry_not_in_initial_observable_set",
-    )
+    other = [c for c in claim_set.claims if c.claim_id != REVISED_CLAIM_ID]
+    return EvidenceClaimSet(claims=(*other, forged), challenges=claim_set.challenges)

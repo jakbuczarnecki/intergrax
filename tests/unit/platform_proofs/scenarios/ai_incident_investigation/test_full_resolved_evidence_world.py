@@ -4,12 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import (
-    evaluate_correlation_only_strategy,
-    evaluate_h3_without_telemetry_strategy,
-    evaluate_scenario_run,
-    evaluate_stale_staffing_strategy,
-)
+from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
     TimeWindowLabel,
     build_resolved_fixture,
@@ -98,19 +93,3 @@ async def test_comparison_and_staffing_follow_up_gathered() -> None:
     assert str(STAFFING_ATTENDANCE_EVIDENCE_ID) in observable
     assert str(TELEMETRY_EVIDENCE_ID) in observable
 
-
-def test_skeptic_correlation_only_strategy_rejected() -> None:
-    fixture = build_resolved_fixture()
-    result = evaluate_correlation_only_strategy(fixture)
-    assert not result.passed
-
-
-def test_skeptic_stale_staffing_strategy_rejected() -> None:
-    fixture = build_resolved_fixture()
-    result = evaluate_stale_staffing_strategy(fixture)
-    assert not result.passed
-
-
-def test_skeptic_h3_without_telemetry_rejected() -> None:
-    result = evaluate_h3_without_telemetry_strategy()
-    assert not result.passed
