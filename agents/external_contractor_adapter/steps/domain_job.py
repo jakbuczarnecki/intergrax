@@ -5,7 +5,12 @@ from __future__ import annotations
 from intergrax.agents.authoring.runtime_tool_helpers import exec_ctx_from_step, request_metadata
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
-from intergrax.runtime.policy.meaningful_side_effect import MeaningfulSideEffectEvaluator
+from intergrax.runtime.governance.active_governed_execution_task import (
+    current_governed_execution_task,
+)
+from intergrax.runtime.policy.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationBoundary,
+)
 from external_contractor_adapter.external_work_adapter import adapt_from_step_metadata
 
 DOMAIN_STEP_ID = "external_contractor_adapter_step"
@@ -15,7 +20,7 @@ async def run_domain_job(
     step_ctx: AgentStepContext,
     *,
     external_work: ExternalWorkIntegration | None = None,
-    side_effect_policy: MeaningfulSideEffectEvaluator | None = None,
+    authorization_boundary: MeaningfulSideEffectAuthorizationBoundary | None = None,
 ) -> dict[str, object]:
     """Map Intergrax intent through ExternalWorkIntegration (GEC-3…GEC-5).
 
@@ -27,6 +32,7 @@ async def run_domain_job(
     meta = request_metadata(exec_ctx, step_ctx)
     # ACP merges AgentRunRequest.metadata into step_ctx.metadata.
     merged: dict[str, object] = {**dict(step_ctx.metadata or {}), **meta}
+    governed_task = current_governed_execution_task()
     task_id = (step_ctx.task_id or "").strip() or (step_ctx.run_id or "").strip() or "unknown-task"
     run_id = (step_ctx.run_id or "").strip() or None
     result = adapt_from_step_metadata(
@@ -35,7 +41,8 @@ async def run_domain_job(
         run_id=run_id,
         message=step_ctx.message or "",
         metadata=merged,
-        side_effect_policy=side_effect_policy,
+        authorization_boundary=authorization_boundary,
+        task=governed_task,
     )
     summary = result.to_domain_summary()
     answer = (

@@ -26,6 +26,7 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_CANCEL_EXTERNAL_WORK,
     ACTION_CREATE_EXTERNAL_WORK,
 )
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
@@ -71,6 +72,7 @@ def _meta(**overrides: object) -> dict[str, object]:
         ),
         "external_work.principal_id": "u1",
         "external_work.tenant_id": "tenant-a",
+        "external_work.workspace_ref": "workspace-a",
     }
     payload.update(overrides)
     return payload
@@ -101,9 +103,7 @@ def _allow() -> DeterministicMeaningfulSideEffectPolicy:
 @pytest.mark.unit
 @pytest.mark.gate
 def test_governed_create_produces_proof_profile() -> None:
-    adapter = ExternalWorkAdapter(
-        DeterministicExternalWorkFake(), side_effect_policy=_allow()
-    )
+    adapter = allow_adapter(DeterministicExternalWorkFake(), policy=_allow())[0]
     result = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-gec6",
@@ -137,9 +137,7 @@ def test_governed_create_produces_proof_profile() -> None:
 @pytest.mark.unit
 @pytest.mark.gate
 def test_accept_quote_proof_references_governance_evidence() -> None:
-    adapter = ExternalWorkAdapter(
-        DeterministicExternalWorkFake(), side_effect_policy=_allow()
-    )
+    adapter = allow_adapter(DeterministicExternalWorkFake(), policy=_allow())[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-gec6-acc",
@@ -157,6 +155,7 @@ def test_accept_quote_proof_references_governance_evidence() -> None:
         idempotency_key="idem-gec6-accept",
         principal_id="u1",
         tenant_id="tenant-a",
+        workspace_id="workspace-a",
     )
     assert accepted.used is True
     assert accepted.proof is not None
@@ -190,7 +189,7 @@ def test_gec5_policy_flow_unchanged_deny_before_provider() -> None:
             call_log.append("integration.create_work")
             return super().create_work(request)
 
-    adapter = ExternalWorkAdapter(_Rec(), side_effect_policy=policy)
+    adapter = allow_adapter(_Rec(), policy=policy)[0]
     result = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-deny",
@@ -236,7 +235,7 @@ def test_tier2_performs_no_persistence_signing_or_receipt_generation() -> None:
 @pytest.mark.gate
 def test_create_then_accept_in_one_call_composes_accept_proof() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=_allow())
+    adapter, _ = allow_adapter(fake, policy=_allow())
     # Pre-create to learn the deterministic quote id, then accept on a fresh
     # create+accept call using a matching acceptance for that new work's quote.
     # Simpler path: create once, accept via create_and_map with evidence.
@@ -281,7 +280,7 @@ def test_create_then_accept_in_one_call_composes_accept_proof() -> None:
 def test_cancel_under_allow_always_returns_non_null_proof() -> None:
     fake = DeterministicExternalWorkFake()
     policy = _allow()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter = allow_adapter(fake, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-gec6-cancel",
@@ -299,6 +298,7 @@ def test_cancel_under_allow_always_returns_non_null_proof() -> None:
         principal_id="u1",
         tenant_id="tenant-a",
         enrich=False,
+        workspace_id="workspace-a",
     )
     assert cancelled.used is True
     assert cancelled.error_code is None
@@ -317,7 +317,7 @@ def test_cancel_under_allow_always_returns_non_null_proof() -> None:
 def test_create_and_accept_proof_mandatory_no_missing_run_id_fallback() -> None:
     """Successful side effects always carry proof; missing run_id never maps success."""
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=_allow())
+    adapter, _ = allow_adapter(fake, policy=_allow())
     result = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-proof-must",
@@ -353,7 +353,7 @@ def test_create_and_accept_proof_mandatory_no_missing_run_id_fallback() -> None:
 def test_missing_proof_identity_fails_before_provider_accept_and_cancel() -> None:
     fake = DeterministicExternalWorkFake()
     policy = _allow()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter = allow_adapter(fake, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-pre-provider",
@@ -376,6 +376,7 @@ def test_missing_proof_identity_fails_before_provider_accept_and_cancel() -> Non
         idempotency_key="idem-accept-no-run",
         principal_id="u1",
         tenant_id="tenant-a",
+        workspace_id="workspace-a",
     )
     assert accept_denied.proof is None
     assert accept_denied.error_code is not None
@@ -387,6 +388,7 @@ def test_missing_proof_identity_fails_before_provider_accept_and_cancel() -> Non
         idempotency_key="idem-cancel-no-run",
         principal_id="u1",
         tenant_id="tenant-a",
+        workspace_id="workspace-a",
     )
     assert cancel_denied.proof is None
     assert cancel_denied.error_code is not None
@@ -399,8 +401,12 @@ def test_missing_proof_identity_fails_before_provider_accept_and_cancel() -> Non
 @pytest.mark.gate
 def test_policy_and_proof_share_validated_run_id_and_principal() -> None:
     policy = _allow()
-    adapter = ExternalWorkAdapter(
-        DeterministicExternalWorkFake(), side_effect_policy=policy
+    adapter, _ = allow_adapter(
+        DeterministicExternalWorkFake(),
+        policy=policy,
+        principal_id="principal-same",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
     )
     result = adapter.create_and_map(
         adapter.build_create_request(

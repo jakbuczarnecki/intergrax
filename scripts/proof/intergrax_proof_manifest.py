@@ -56,7 +56,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="RUNTIME-TOKEN-OPTIMIZATION-OFFLINE",
             title="Token optimization offline smoke proof",
-            domain="runtime",
             profiles=frozenset(
                 {ProofProfile.QUICK, ProofProfile.FULL, ProofProfile.LIVE}
             ),
@@ -73,34 +72,8 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
             public_evidence_eligible=True,
         ),
         ProofManifestEntry(
-            proof_id="TOOLS-ITERATIVE-SQL-INVESTIGATION",
-            title="TOOLS iterative SQL investigation platform proof",
-            domain="tools",
-            profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
-            proof_kind="iterative_sql_investigation",
-            command=_uv_repo_python(
-                "platform_proofs/tools/iterative_sql_investigation/run_proof.py",
-            ),
-            environment_requirements=(
-                EnvRequirement(kind=EnvRequirementKind.COMMAND_AVAILABLE, name="uv"),
-                EnvRequirement(kind=EnvRequirementKind.DOCKER_AVAILABLE, name="docker"),
-                EnvRequirement(
-                    kind=EnvRequirementKind.ENV_PRESENT,
-                    name="INTERGRAX_LLM_PROVIDER",
-                ),
-                EnvRequirement(
-                    kind=EnvRequirementKind.ENV_PRESENT,
-                    name="INTERGRAX_LLM_MODEL",
-                ),
-            ),
-            safety_class=ProofSafetyClass.LOCAL_MUTATING,
-            timeout_seconds=3600,
-            public_evidence_eligible=False,
-        ),
-        ProofManifestEntry(
             proof_id="LKW-MODEL-RUNTIME",
             title="LKW model runtime portability proof",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="model_runtime_portability",
             command=_uv_lkw_python("run-lkw-model-runtime-proof.py"),
@@ -116,7 +89,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-OS-INTERACTION-WINDOWS",
             title="LKW OS interaction proof (Windows)",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="os_interaction",
             command=_uv_lkw_python(
@@ -135,7 +107,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-OS-INTERACTION-LINUX",
             title="LKW OS interaction proof (Linux)",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="os_interaction",
             command=_uv_lkw_python(
@@ -154,7 +125,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-OS-INTERACTION-MACOS",
             title="LKW OS interaction proof (macOS)",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="os_interaction",
             command=_uv_lkw_python(
@@ -173,7 +143,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-CORE-PLATFORM-WINDOWS",
             title="LKW core platform proof (Windows)",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="core_platform",
             command=_uv_lkw_python(
@@ -194,7 +163,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-CORE-PLATFORM-LINUX",
             title="LKW core platform proof (Linux)",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="core_platform",
             command=_uv_lkw_python(
@@ -215,7 +183,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-CORE-PLATFORM-MACOS",
             title="LKW core platform proof (macOS)",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="core_platform",
             command=_uv_lkw_python(
@@ -236,7 +203,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-PRODUCT-QUICKSTART-WINDOWS",
             title="LKW product quickstart proof (Windows)",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="product_quickstart",
             command=_uv_lkw_python(
@@ -260,7 +226,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-PRODUCT-QUICKSTART-LINUX",
             title="LKW product quickstart proof (Linux)",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="product_quickstart",
             command=_uv_lkw_python(
@@ -284,7 +249,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-PRODUCT-QUICKSTART-MACOS",
             title="LKW product quickstart proof (macOS)",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="product_quickstart",
             command=_uv_lkw_python(
@@ -308,7 +272,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-BACKGROUND-TASK",
             title="LKW Kafka background task proof",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="platform_background_task",
             command=_uv_lkw_python("run-lkw-background-task-proof.py"),
@@ -322,7 +285,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-HOSTING",
             title="LKW application hosting proof",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="platform_application_hosting",
             command=_uv_lkw_python("run-lkw-hosting-proof.py"),
@@ -336,7 +298,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-FILE-WATCHER",
             title="LKW file watcher end-to-end proof",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="file_watcher_e2e",
             command=_uv_lkw_python("run-lkw-file-watcher-e2e-proof.py"),
@@ -350,7 +311,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="PLATFORM-WINDOWS-NATIVE-CERT",
             title="Windows native LKW runtime certification",
-            domain="platform",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="windows_native_runtime",
             command=_uv_lkw_python("run-lkw-windows-native-certification.py"),
@@ -364,7 +324,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="PLATFORM-LINUX-CONTAINER-CERT",
             title="Linux Docker container runtime certification",
-            domain="platform",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="linux_docker_runtime",
             command=_uv_lkw_python("run-lkw-linux-container-certification.py"),
@@ -377,7 +336,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="SLACK-CONVERSATION-LIVE",
             title="Slack conversation channel live proof",
-            domain="slack",
             profiles=frozenset({ProofProfile.LIVE}),
             proof_kind="slack_conversation_channel",
             command=_uv_repo_python(
@@ -400,7 +358,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="SLACK-ASK-PREFLIGHT",
             title="Slack Ask workflow configuration preflight",
-            domain="slack",
             profiles=frozenset({ProofProfile.LIVE}),
             proof_kind="slack_ask_configuration",
             command=_uv_lkw_python("run-lkw-slack-ask-configuration-preflight.py"),
@@ -425,7 +382,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="SLACK-ASK-WORKFLOW",
             title="Slack Ask workflow proof checklist",
-            domain="slack",
             profiles=frozenset({ProofProfile.LIVE}),
             proof_kind="slack_ask_workflow",
             command=_uv_lkw_python("run-lkw-slack-ask-workflow-proof.py"),
@@ -446,7 +402,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-MANAGED-WORKSPACE-LIVE",
             title="LKW managed workspace folder sync live proof",
-            domain="lkw",
             profiles=frozenset({ProofProfile.LIVE}),
             proof_kind="managed_workspace_folder_sync",
             command=_uv_lkw_python("run-lkw-managed-workspace-live-proof.py"),
@@ -460,7 +415,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-ASK-WORKSPACE-LIVE",
             title="LKW Ask workspace Qdrant durability live proof",
-            domain="lkw",
             profiles=frozenset({ProofProfile.LIVE}),
             proof_kind="ask_workspace_durability",
             command=_uv_lkw_python("run-lkw-ask-workspace-live-proof.py"),
@@ -474,7 +428,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-WEB-URL-INDEXED-ASK",
             title="LKW WEB_URL indexed Hybrid Ask proof",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="web_url_indexed_ask",
             command=_uv_lkw_python("run-lkw-web-url-indexed-ask-proof.py"),
@@ -491,7 +444,6 @@ def build_manifest_entries() -> tuple[ProofManifestEntry, ...]:
         ProofManifestEntry(
             proof_id="LKW-HYBRID-ASK-INDEXED",
             title="LKW indexed Hybrid Ask branch proof",
-            domain="lkw",
             profiles=frozenset({ProofProfile.FULL, ProofProfile.LIVE}),
             proof_kind="hybrid_ask_indexed",
             command=_uv_lkw_python("run-lkw-hybrid-ask-indexed-proof.py"),

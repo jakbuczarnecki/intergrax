@@ -25,9 +25,11 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
     ACTION_CREATE_EXTERNAL_WORK,
 )
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
 from external_contractor_adapter.tests.fakes.deterministic_side_effect_policy import (
     DeterministicMeaningfulSideEffectPolicy,
 )
@@ -74,6 +76,7 @@ def _meta(**overrides: object) -> dict[str, object]:
         "external_work.budget_limit": MoneyAmount(amount=Decimal("40.00"), currency="USD"),
         "external_work.principal_id": "u1",
         "external_work.tenant_id": "tenant-a",
+        "external_work.workspace_ref": "workspace-a",
     }
     payload.update(overrides)
     return payload
@@ -106,7 +109,7 @@ def test_quote_receipt_is_observational_no_accept_policy() -> None:
     policy = _allow()
     policy.call_log = call_log
     integration = _RecordingIntegration(call_log=call_log)
-    adapter = ExternalWorkAdapter(integration, side_effect_policy=policy)
+    adapter = allow_adapter(integration, policy=policy)[0]
     result = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-obs",
@@ -130,7 +133,7 @@ def test_quote_receipt_is_observational_no_accept_policy() -> None:
 def test_accept_quote_classified_as_meaningful_side_effect() -> None:
     policy = _allow()
     integration = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(integration, side_effect_policy=policy)
+    adapter = allow_adapter(integration, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-cls",
@@ -147,6 +150,7 @@ def test_accept_quote_classified_as_meaningful_side_effect() -> None:
         created.snapshot.correlation,
         _acceptance(quote_id=created.quote.quote_id),
         idempotency_key="idem-accept-cls",
+        workspace_id="workspace-a",
     )
     assert len(policy.calls) == 1
     req = policy.calls[0]
@@ -162,7 +166,7 @@ def test_policy_before_accept_ordering_allow_once() -> None:
     policy = _allow()
     policy.call_log = call_log
     integration = _RecordingIntegration(call_log=call_log)
-    adapter = ExternalWorkAdapter(integration, side_effect_policy=policy)
+    adapter = allow_adapter(integration, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-ord",
@@ -181,6 +185,7 @@ def test_policy_before_accept_ordering_allow_once() -> None:
         created.snapshot.correlation,
         _acceptance(quote_id=created.quote.quote_id),
         idempotency_key="idem-accept-ord",
+        workspace_id="workspace-a",
     )
     assert forwarded.used is True
     assert "policy.evaluate" in call_log
@@ -204,7 +209,7 @@ def test_deny_prevents_provider_accept_call() -> None:
     )
     policy.call_log = call_log
     integration = _RecordingIntegration(call_log=call_log)
-    adapter = ExternalWorkAdapter(integration, side_effect_policy=policy)
+    adapter = allow_adapter(integration, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-deny",
@@ -221,6 +226,7 @@ def test_deny_prevents_provider_accept_call() -> None:
         created.snapshot.correlation,
         _acceptance(quote_id=created.quote.quote_id),
         idempotency_key="idem-accept-deny",
+        workspace_id="workspace-a",
     )
     assert denied.used is False
     assert denied.reason == "side_effect_denied"
@@ -240,7 +246,7 @@ def test_require_human_surfaces_continuation_no_provider_call() -> None:
     )
     policy.call_log = call_log
     integration = _RecordingIntegration(call_log=call_log)
-    adapter = ExternalWorkAdapter(integration, side_effect_policy=policy)
+    adapter = allow_adapter(integration, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-gov",
@@ -257,6 +263,7 @@ def test_require_human_surfaces_continuation_no_provider_call() -> None:
         created.snapshot.correlation,
         _acceptance(quote_id=created.quote.quote_id),
         idempotency_key="idem-accept-gov",
+        workspace_id="workspace-a",
     )
     assert gated.used is False
     assert gated.reason == "side_effect_governance_required"
@@ -271,7 +278,7 @@ def test_require_human_surfaces_continuation_no_provider_call() -> None:
 @pytest.mark.gate
 def test_missing_policy_and_indeterminate_fail_closed() -> None:
     fake = DeterministicExternalWorkFake()
-    bare = ExternalWorkAdapter(fake, side_effect_policy=None)
+    bare = ExternalWorkAdapter(fake, authorization_boundary=None)
     denied = bare.create_and_map(
         bare.build_create_request(
             task_id="task-miss",
@@ -282,14 +289,14 @@ def test_missing_policy_and_indeterminate_fail_closed() -> None:
         tenant_id="tenant-a",
     )
     assert denied.used is False
-    assert denied.reason == "side_effect_policy_missing"
+    assert denied.reason == "side_effect_authorization_boundary_missing"
     assert fake.create_calls == 0
 
     # RuntimePolicyEngine default (no matching rule) is indeterminate → DENY.
     from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
     engine = RuntimePolicyEngine()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=engine)
+    adapter = allow_adapter(fake, policy=engine)[0]
     indeterminate = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-indet",
@@ -316,7 +323,7 @@ def test_evidence_presence_is_not_authorization() -> None:
     )
     policy.call_log = call_log
     integration = _RecordingIntegration(call_log=call_log)
-    adapter = ExternalWorkAdapter(integration, side_effect_policy=policy)
+    adapter = allow_adapter(integration, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-ev",
@@ -350,7 +357,7 @@ def test_execution_identity_forwarded_or_explicitly_missing() -> None:
     """Valid run_id is forwarded unchanged; missing is None — never \"\"."""
     policy = _allow()
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter = allow_adapter(fake, policy=policy)[0]
 
     created = adapter.create_and_map(
         adapter.build_create_request(
@@ -394,6 +401,7 @@ def test_execution_identity_forwarded_or_explicitly_missing() -> None:
         corr,
         _acceptance(quote_id=created.quote.quote_id),
         idempotency_key="idem-accept-missing-run",
+        workspace_id="workspace-a",
     )
     assert accept_denied.reason == "side_effect_identity_missing"
     assert policy.calls == []
@@ -402,6 +410,7 @@ def test_execution_identity_forwarded_or_explicitly_missing() -> None:
         idempotency_key="idem-cancel-missing-run",
         principal_id="u1",
         tenant_id="tenant-a",
+        workspace_id="workspace-a",
     )
     assert cancel_denied.reason == "side_effect_identity_missing"
     assert policy.calls == []
@@ -416,7 +425,7 @@ def test_execution_identity_forwarded_or_explicitly_missing() -> None:
 def test_preserves_identity_correlation_idempotency_and_payload() -> None:
     policy = _allow()
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter = allow_adapter(fake, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-preserve",
@@ -434,6 +443,7 @@ def test_preserves_identity_correlation_idempotency_and_payload() -> None:
         created.snapshot.correlation,
         acceptance,
         idempotency_key=key,
+        workspace_id="workspace-a",
     )
     assert forwarded.used is True
     assert forwarded.snapshot is not None
@@ -485,7 +495,7 @@ def test_adapt_from_step_metadata_wires_policy() -> None:
         run_id="run-step",
         message="scope",
         metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-step"}),
-        side_effect_policy=policy,
+        authorization_boundary=allow_adapter(DeterministicExternalWorkFake(), policy=policy)[0].authorization_boundary,
     )
     assert result.used is True
     assert result.reason == "continuation_blocked"

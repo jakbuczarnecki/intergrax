@@ -21,6 +21,7 @@ from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     _build_request,
     _install_request,
     build_admin_stack,
+    admin_test_principal,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -41,6 +42,7 @@ def _scope(application_id: str, environment_id: str) -> ApplicationEnvironmentId
 
 
 def _setup_application(stack, *, application_id: str, binding_id: str, slot_id: str) -> None:
+    principal = admin_test_principal()
     install = _install_request()
     install = install.model_copy(
         update={
@@ -52,8 +54,10 @@ def _setup_application(stack, *, application_id: str, binding_id: str, slot_id: 
         application_id=application_id,
         application_environment_id=_ENV,
         request=install,
+        principal=principal,
     )
     bind = BindAgentRequest(
+        mutation_id=f"mut-bind-{application_id}",
         application_binding_id=binding_id,
         logical_agent_id="researcher",
         installation_slot_id=slot_id,
@@ -62,12 +66,17 @@ def _setup_application(stack, *, application_id: str, binding_id: str, slot_id: 
         application_id=application_id,
         application_environment_id=_ENV,
         request=bind,
+        principal=principal,
     )
     stack.service.enable_binding(
         application_id=application_id,
         application_environment_id=_ENV,
         application_binding_id=binding_id,
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id=f"mut-enable-{application_id}",
+            expected_revision=0,
+        ),
+        principal=principal,
     )
 
 
@@ -87,7 +96,9 @@ def _build_and_activate(
     stack.service.activate_revision(
         application_id=application_id,
         application_environment_id=_ENV,
+        principal=admin_test_principal(),
         request=ActivateRuntimeRevisionRequest(
+            mutation_id=f"mut-{revision_id}",
             runtime_revision_id=revision_id,
             artifact_locator=built.artifact_locator or "test://artifact",
             expected_artifact_digest=_ARTIFACT,
@@ -164,7 +175,9 @@ def test_app_a_and_app_b_prod_coexist_activate_and_rollback_isolation() -> None:
     stack.service.rollback_revision(
         application_id=_APP_A,
         application_environment_id=_ENV,
+        principal=admin_test_principal(),
         request=RollbackRuntimeRevisionRequest(
+            mutation_id="mut-rollback-a",
             expected_current_traffic_revision_id="rev-a-2",
             expected_serving_pointer_revision=2,
         ),

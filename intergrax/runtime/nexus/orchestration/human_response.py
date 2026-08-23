@@ -38,12 +38,26 @@ def _approver_from_resolution(task: Task) -> object:
     return resolution.approver
 
 
+def _canonical_run_id_for_persistence(
+    task: Task,
+    *,
+    run_id: str | None = None,
+) -> str | None:
+    if run_id is not None:
+        return run_id
+    resolution = task.runtime.governance.hitl_resolution
+    if resolution is None:
+        return None
+    return resolution.run_id
+
+
 def persist_human_decision(
     task: Task,
     verdict: HumanResponseVerdict,
     *,
     human_store: HumanDecisionPersistence | None,
     response_text: str = "",
+    run_id: str | None = None,
 ) -> None:
     if human_store is None:
         return
@@ -51,6 +65,7 @@ def persist_human_decision(
     human_request = HumanPauseCoordinator.human_request_from_task(task)
     target_raw = task.runtime.governance.escalation_target
     target = EscalationTarget(str(target_raw)) if target_raw else None
+    canonical_run_id = _canonical_run_id_for_persistence(task, run_id=run_id)
     record = build_human_decision_record(
         task_id=task.task_id,
         tenant_id=task.tenant_id,
@@ -61,7 +76,7 @@ def persist_human_decision(
         escalation_level=HumanPauseCoordinator.escalation_level(task),
         escalation_target=target,
         agent_id=task.agent_id,
-        run_id=task.task_id,
+        run_id=canonical_run_id,
         task_subject_user_id=task.user_id,
     )
     human_store.record(record)

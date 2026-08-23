@@ -153,6 +153,8 @@ def _build_intake_runner_with_hitl(
             response_text=response_text,
         )
 
+    execution_identity = ActiveExecutionIdentity()
+
     hitl = NexusHitlRunner(
         publish=publish,
         human_hooks=human_hooks,
@@ -163,13 +165,14 @@ def _build_intake_runner_with_hitl(
         finalize_trace=finalize_trace,
         maybe_checkpoint=maybe_checkpoint,
         persist_human_decision=persist_decision,
+        execution_identity=execution_identity,
     )
     runner = NexusIntakeRunner(
         hitl=hitl,
         human_hooks=human_hooks,
         publish=publish,
         restore_long_running=AsyncMock(),
-        execution_identity=None,
+        execution_identity=execution_identity,
     )
     return runner, published
 
@@ -502,7 +505,11 @@ async def test_intake_runner_reject_preserves_evidence_before_cleanup(
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
 
-    outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
+    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+    try:
+        outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
+    finally:
+        reset_active_execution_identity(token)
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None
@@ -556,7 +563,11 @@ async def test_intake_runner_escalate_preserves_evidence_before_cleanup(
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
 
-    outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
+    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+    try:
+        outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
+    finally:
+        reset_active_execution_identity(token)
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None

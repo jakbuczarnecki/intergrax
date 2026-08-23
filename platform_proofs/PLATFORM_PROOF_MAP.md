@@ -29,7 +29,7 @@ Canonical domain topology: [intergrax_runtime_architecture.md](../docs/project/a
 | `REASONING_AND_COGNITION` | — | — | NO_PROOF | — | |
 | `AGENT_CONTRACTS_AND_ASSEMBLY` | — | — | NO_PROOF | — | |
 | `LLM_ADAPTERS` | — | — | NO_PROOF | — | `LKW-MODEL-RUNTIME` is product-scoped, not LLM-adapters domain proof |
-| `TOOLS` | Bounded iterative tool runtime uses real SQL observations to drive evidence-dependent follow-on calls and terminate with an explicit investigation chain under configured limits | `TOOLS-ITERATIVE-SQL-INVESTIGATION` | **EXECUTABLE** | Real LLM + real PostgreSQL + real Intergrax tool runtime | PP-3C executable proof under `platform_proofs/tools/iterative_sql_investigation/`; manifest-registered; not QUALIFIED until PP-4 |
+| `TOOLS` | Bounded iterative tool runtime uses real observations to drive evidence-dependent follow-on calls and terminate with an explicit investigation chain under configured limits | — | **NO_PROOF** | — | Legacy TOOLS-first conformance proof removed; scenario-first Proof Library bootstrap in progress |
 | `CODE_CRAFT` | — | — | NO_PROOF | — | |
 | `SKILLS` | — | — | NO_PROOF | — | |
 | `INTEGRATIONS` | — | — | NO_PROOF | — | |
@@ -50,50 +50,6 @@ Canonical domain topology: [intergrax_runtime_architecture.md](../docs/project/a
 | `AGENT_DISTRIBUTION` | — | — | NO_PROOF | — | |
 | `PLATFORM_PLUGINS` | — | — | NO_PROOF | — | |
 | `PROOF_RECEIPTS` | — | — | NO_PROOF | — | Receipt contracts exist; dedicated platform proof not yet designed |
-
----
-
-## TOOLS reference proof — design detail (`TOOLS-ITERATIVE-SQL-INVESTIGATION`)
-
-**Status:** EXECUTABLE (PP-3C). Registered in manifest. Not QUALIFIED until PP-4 accepted evidence.
-
-### Claim
-
-The bounded iterative tool runtime can use real SQL observations to drive subsequent evidence-dependent tool calls and reach a bounded conclusion while preserving explicit proof of the investigation chain.
-
-### Why it matters
-
-Proves reusable TOOLS investigation semantics (multi-hop tool selection, evidence dependencies, bounded termination) independent of any product workflow.
-
-### Architecture under proof
-
-- [`TOOLS.md`](../docs/project/architecture/TOOLS.md)
-- ToolPlanningService / bounded ReAct path
-- ENG-5 investigation policy
-- ENG-6 InvestigationProof
-
-### Real boundaries
-
-- Real PostgreSQL
-- Real model provider
-- Real tool invocation through Intergrax tool runtime
-- Real filesystem where scenario setup requires it
-
-### Planned scenarios (not implemented in PP-2)
-
-| ID | Scenario | Negative / falsification angle |
-|----|----------|--------------------------------|
-| **A** | Multi-hop anomaly investigation | Must fail if intermediate observations ignored |
-| **B** | Correlation ≠ causation | Must not conclude causation without supporting evidence |
-| **C** | Missing evidence → bounded limitation | Must terminate with explicit limitation, not fabricated answer |
-
-### Excluded claims
-
-- Product Quick Start or LKW business workflows
-- Universal provider/model certification
-- Production readiness or commercial validation
-
-Implementation and manifest registration follow after PP-2.
 
 ---
 

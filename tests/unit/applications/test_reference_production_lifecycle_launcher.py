@@ -21,6 +21,9 @@ from intergrax.applications._shared.registry_projection_input_bundle import (
     build_reference_activation_request,
     build_reference_registry_projection_input_bundle,
 )
+from intergrax.applications._shared.reference_production_governance_wiring import (
+    wire_governed_reference_production_launcher,
+)
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
 )
@@ -32,6 +35,45 @@ from research_application.host.wiring import build_research_environment_profile
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+def _governed_launcher(
+    composition,
+    *,
+    settings: ResearchBackendSettings | None = None,
+    application_id: str | None = None,
+    application_environment_id: str | None = None,
+) -> tuple[ReferenceProductionLifecycleLauncher, object]:
+    resolved_settings = settings or ResearchBackendSettings(use_nexus_loop=True)
+    manifest = RESEARCH_APPLICATION_MANIFEST
+    if application_id is not None:
+        manifest = manifest.model_copy(update={"app_id": application_id})
+    env = manifest.environment or build_research_environment_profile(resolved_settings)
+    if application_environment_id is not None:
+        env = env.model_copy(update={"profile_id": application_environment_id})
+    return wire_governed_reference_production_launcher(composition, env)
+
+
+def _deploy_and_activate(
+    composition,
+    projection_input,
+    activation_request,
+    *,
+    settings: ResearchBackendSettings | None = None,
+    application_id: str | None = None,
+    application_environment_id: str | None = None,
+):
+    launcher, governance = _governed_launcher(
+        composition,
+        settings=settings,
+        application_id=application_id,
+        application_environment_id=application_environment_id,
+    )
+    return launcher.deploy_and_activate(
+        projection_input,
+        activation_request,
+        principal=governance.principal,
+    )
 
 
 def _research_bundle(
@@ -88,8 +130,12 @@ def test_reference_lifecycle_research_e2e_without_seed_helper(
         settings,
         runtime_revision_id="rev-lifecycle-e2e",
     )
-    launcher = ReferenceProductionLifecycleLauncher(composition)
-    result = launcher.deploy_and_activate(projection_input, activation_request)
+    launcher, governance = _governed_launcher(composition, settings=settings)
+    result = launcher.deploy_and_activate(
+        projection_input,
+        activation_request,
+        principal=governance.principal,
+    )
 
     manifest = RESEARCH_APPLICATION_MANIFEST
     env = manifest.environment or build_research_environment_profile(settings)
@@ -153,8 +199,12 @@ def test_serving_pointer_without_projection_fails(monkeypatch: pytest.MonkeyPatc
         settings,
         runtime_revision_id="rev-missing-projection",
     )
-    launcher = ReferenceProductionLifecycleLauncher(composition)
-    launcher.deploy_and_activate(projection_input, activation_request)
+    launcher, governance = _governed_launcher(composition, settings=settings)
+    launcher.deploy_and_activate(
+        projection_input,
+        activation_request,
+        principal=governance.principal,
+    )
     stores = composition.agent_platform_runtime.stores
     stores.registry_projection_store.put(
         launcher.services.projection_coordinator.get_projection("rev-missing-projection")
@@ -178,10 +228,7 @@ def test_app_env_mismatch_fails(monkeypatch: pytest.MonkeyPatch) -> None:
         settings,
         runtime_revision_id="rev-env-mismatch",
     )
-    result = ReferenceProductionLifecycleLauncher(composition).deploy_and_activate(
-        projection_input,
-        activation_request,
-    )
+    result = _deploy_and_activate(composition, projection_input, activation_request, settings=settings)
     stores = composition.agent_platform_runtime.stores
     stores.serving_store.atomic_swap_serving_revision(
         application_id="legal",
@@ -208,10 +255,7 @@ def test_cross_composition_serve_fails(monkeypatch: pytest.MonkeyPatch) -> None:
         settings,
         runtime_revision_id="rev-cross-composition",
     )
-    ReferenceProductionLifecycleLauncher(composition_a).deploy_and_activate(
-        projection_input,
-        activation_request,
-    )
+    _deploy_and_activate(composition_a, projection_input, activation_request, settings=settings)
     with pytest.raises(HarnessHostRegistryAuthorityError, match="no active traffic-serving"):
         create_research_process_app(process_composition=composition_b)
 
@@ -219,7 +263,7 @@ def test_cross_composition_serve_fails(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_multi_app_same_composition(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = ResearchBackendSettings(use_nexus_loop=True)
     composition = create_reference_production_process_composition()
-    launcher = ReferenceProductionLifecycleLauncher(composition)
+    launcher, governance = _governed_launcher(composition, settings=settings)
     research_bundle = _research_bundle(settings, revision_id="rev-multi-a")
     legal_bundle = _research_bundle(
         settings,
@@ -230,10 +274,18 @@ def test_multi_app_same_composition(monkeypatch: pytest.MonkeyPatch) -> None:
     launcher.deploy_and_activate(
         research_bundle,
         build_reference_activation_request(research_bundle),
+        principal=governance.principal,
     )
-    launcher.deploy_and_activate(
+    legal_launcher, legal_governance = _governed_launcher(
+        composition,
+        settings=settings,
+        application_id="legal",
+        application_environment_id="prod",
+    )
+    legal_launcher.deploy_and_activate(
         legal_bundle,
         build_reference_activation_request(legal_bundle),
+        principal=legal_governance.principal,
     )
     stores = composition.agent_platform_runtime.stores
     research_manifest = RESEARCH_APPLICATION_MANIFEST

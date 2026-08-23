@@ -27,6 +27,9 @@ from intergrax.applications._shared.registry_projection_input_bundle import (
     build_reference_activation_request,
     build_reference_registry_projection_input_bundle,
 )
+from intergrax.applications._shared.reference_production_governance_wiring import (
+    wire_governed_reference_production_launcher,
+)
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
 )
@@ -97,9 +100,23 @@ def _activate_projection_via_ap_lifecycle(
     composition: ProductionProcessComposition,
     bundle,
 ) -> str:
-    launcher = ReferenceProductionLifecycleLauncher(composition)
+    revision = bundle.runtime_revision
+    settings = ResearchBackendSettings(use_nexus_loop=True)
+    manifest = RESEARCH_APPLICATION_MANIFEST
+    env = manifest.environment or build_research_environment_profile(settings)
+    if revision.application_id != manifest.app_id:
+        env = env.model_copy(update={"profile_id": revision.application_environment_id})
+    launcher, governance = wire_governed_reference_production_launcher(
+        composition,
+        env,
+        tenant_id=revision.application_environment_id,
+    )
     activation_request = build_reference_activation_request(bundle)
-    result = launcher.deploy_and_activate(bundle, activation_request)
+    result = launcher.deploy_and_activate(
+        bundle,
+        activation_request,
+        principal=governance.principal,
+    )
     return result.runtime_revision_id
 
 

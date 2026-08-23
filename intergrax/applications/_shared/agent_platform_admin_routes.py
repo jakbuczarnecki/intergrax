@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Request, status
 from pydantic import ValidationError
 
 from intergrax.agent_distribution.admin_models import (
@@ -12,6 +12,7 @@ from intergrax.agent_distribution.admin_models import (
     ActivationStatusView,
     ActivateRuntimeRevisionRequest,
     AgentPlatformAdminBlockedError,
+    AgentPlatformAdminGovernanceBlockedError,
     AgentStatusView,
     BindAgentRequest,
     BindingListResult,
@@ -51,7 +52,21 @@ from intergrax.agent_distribution.errors import (
     RuntimeRevisionLifecycleError,
     RuntimeRollbackError,
 )
-from intergrax.applications._shared.harness_auth import require_agent_platform_admin_auth
+from intergrax.applications._shared.harness_auth import (
+    _expected_api_key_for_request,
+    _harness_auth_state_from_request,
+    _identity_provider_from_request,
+    _local_dev_auth_bypass_allowed,
+    is_harness_api_key_valid,
+    resolve_harness_authenticated_principal,
+    verify_harness_bearer_identity,
+)
+from intergrax.applications._shared.harness_principal import harness_principal_to_request_identity
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.integrations.contracts.identity_provider import (
+    identity_user_has_agent_platform_admin_authority,
+)
 
 _CONFLICT_ERRORS = (
     BindingRevisionConflict,
@@ -71,6 +86,20 @@ _CONFLICT_ERRORS = (
 
 
 def _raise_admin_http(exc: Exception) -> None:
+    if isinstance(exc, AgentPlatformAdminGovernanceBlockedError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "blocker_code": exc.blocker_code,
+                "policy_action": exc.policy_action,
+                "authorization_evidence": exc.authorization_evidence.model_dump(mode="json"),
+                "authorization_scope": (
+                    exc.authorization_scope.model_dump(mode="json")
+                    if exc.authorization_scope is not None
+                    else None
+                ),
+            },
+        ) from exc
     if isinstance(exc, AgentPlatformAdminBlockedError):
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
@@ -104,6 +133,70 @@ def _raise_admin_http(exc: Exception) -> None:
     raise exc
 
 
+def _require_agent_platform_admin_auth(
+    request: Request,
+    x_api_key: str | None = Header(default=None, alias="X-Api-Key"),
+    authorization: str | None = Header(default=None),
+) -> None:
+    resolve_agent_platform_admin_request_identity(
+        request,
+        x_api_key=x_api_key,
+        authorization=authorization,
+    )
+
+
+def resolve_agent_platform_admin_request_identity(
+    request: Request,
+    x_api_key: str | None = Header(default=None, alias="X-Api-Key"),
+    authorization: str | None = Header(default=None),
+) -> RequestIdentity:
+    """Authenticate admin routes and return canonical RequestIdentity (AD17)."""
+    expected_api_key = _expected_api_key_for_request(request)
+    if expected_api_key is not None and is_harness_api_key_valid(
+        x_api_key=x_api_key,
+        authorization=authorization,
+        expected_api_key=expected_api_key,
+    ):
+        principal = resolve_harness_authenticated_principal(
+            request,
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
+        if principal is not None:
+            return harness_principal_to_request_identity(principal)
+    identity_provider = _identity_provider_from_request(request)
+    if identity_provider is not None:
+        user = verify_harness_bearer_identity(
+            authorization=authorization,
+            identity_provider=identity_provider,
+        )
+        if user is not None:
+            if not identity_user_has_agent_platform_admin_authority(user):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Agent platform admin authorization required",
+                )
+            principal = resolve_harness_authenticated_principal(
+                request,
+                x_api_key=x_api_key,
+                authorization=authorization,
+            )
+            if principal is not None:
+                return harness_principal_to_request_identity(principal)
+    state = _harness_auth_state_from_request(request)
+    if _local_dev_auth_bypass_allowed(state):
+        return RequestIdentity(
+            tenant_id="default",
+            user_id="local-dev-admin",
+            principal_type=PrincipalType.USER,
+            auth_subject="local-dev-admin",
+        )
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or missing agent platform admin credentials",
+    )
+
+
 def mount_agent_platform_admin_routes(
     app: FastAPI,
     *,
@@ -113,7 +206,7 @@ def mount_agent_platform_admin_routes(
     router = APIRouter(
         prefix=prefix,
         tags=["agent-platform-admin"],
-        dependencies=[Depends(require_agent_platform_admin_auth)],
+        dependencies=[Depends(_require_agent_platform_admin_auth)],
     )
     env_prefix = "/applications/{application_id}/environments/{environment_id}"
 
@@ -163,12 +256,14 @@ def mount_agent_platform_admin_routes(
         application_id: str,
         environment_id: str,
         body: InstallAgentRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> InstallationMutationResult:
         try:
             return admin_service.install_agent(
                 application_id=application_id,
                 application_environment_id=environment_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)
@@ -190,12 +285,14 @@ def mount_agent_platform_admin_routes(
         application_id: str,
         environment_id: str,
         body: BindAgentRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> BindingMutationResult:
         try:
             return admin_service.bind_agent(
                 application_id=application_id,
                 application_environment_id=environment_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)
@@ -210,6 +307,7 @@ def mount_agent_platform_admin_routes(
         environment_id: str,
         application_binding_id: str,
         body: UpdateAgentBindingRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> BindingMutationResult:
         try:
             return admin_service.update_binding_config(
@@ -217,6 +315,7 @@ def mount_agent_platform_admin_routes(
                 application_environment_id=environment_id,
                 application_binding_id=application_binding_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)
@@ -231,6 +330,7 @@ def mount_agent_platform_admin_routes(
         environment_id: str,
         application_binding_id: str,
         body: SetAgentEnablementRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> BindingMutationResult:
         try:
             return admin_service.enable_binding(
@@ -238,6 +338,7 @@ def mount_agent_platform_admin_routes(
                 application_environment_id=environment_id,
                 application_binding_id=application_binding_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)
@@ -252,6 +353,7 @@ def mount_agent_platform_admin_routes(
         environment_id: str,
         application_binding_id: str,
         body: SetAgentEnablementRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> BindingMutationResult:
         try:
             return admin_service.disable_binding(
@@ -259,6 +361,7 @@ def mount_agent_platform_admin_routes(
                 application_environment_id=environment_id,
                 application_binding_id=application_binding_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)
@@ -373,12 +476,14 @@ def mount_agent_platform_admin_routes(
         application_id: str,
         environment_id: str,
         body: ActivateRuntimeRevisionRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> ActivationResultView:
         try:
             return admin_service.activate_revision(
                 application_id=application_id,
                 application_environment_id=environment_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)
@@ -389,12 +494,14 @@ def mount_agent_platform_admin_routes(
         application_id: str,
         environment_id: str,
         body: RollbackRuntimeRevisionRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> RollbackResultView:
         try:
             return admin_service.rollback_revision(
                 application_id=application_id,
                 application_environment_id=environment_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)

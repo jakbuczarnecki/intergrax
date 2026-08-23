@@ -331,6 +331,7 @@ async def test_c13_event_evidence_contains_safe_approver() -> None:
         finalize_trace=AsyncMock(),
         maybe_checkpoint=AsyncMock(),
         persist_human_decision=MagicMock(),
+        execution_identity=ActiveExecutionIdentity(),
     )
     runner = NexusIntakeRunner(
         hitl=hitl,

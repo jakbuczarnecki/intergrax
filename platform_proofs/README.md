@@ -68,11 +68,17 @@ flowchart LR
 
 ---
 
-## Reference proof
+## Scenario proofs (design stage)
 
-**`TOOLS-ITERATIVE-SQL-INVESTIGATION`** — existing **Conformance** proof at [`tools/iterative_sql_investigation/`](tools/iterative_sql_investigation/). Executable; being evolved under the Proof Library strategy.
+Design-stage Scenario packages live under `platform_proofs/scenarios/<scenario_slug>/`. The first scenario in qualification is [`scenarios/ai_incident_investigation/README.md`](scenarios/ai_incident_investigation/README.md) — not yet accepted for public Proof Library catalog.
 
-See [Platform Proof Map — TOOLS](PLATFORM_PROOF_MAP.md) and [iterative SQL investigation README](tools/iterative_sql_investigation/README.md).
+Create new design-stage packages with:
+
+```bash
+uv run python scripts/proof/create_scenario_proof.py --slug <slug> --title "<title>"
+```
+
+See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) for the Scenario Quality Gate before implementation.
 
 ---
 

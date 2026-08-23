@@ -26,7 +26,16 @@ from intergrax.agent_distribution.admin_models import (
     UpdateAgentBindingRequest,
 )
 from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
+from intergrax.agent_distribution.control_plane_governance import (
+    StaticApplicationEnvironmentTenantResolver,
+)
 from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadata
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
 from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
@@ -87,6 +96,27 @@ _PACKAGE = AgentPackageIdentity(
     package_version="1.0.0",
     package_digest=_DIGEST,
 )
+_TEST_PRINCIPAL = RequestIdentity(
+    tenant_id="tenant-test",
+    user_id="admin-1",
+    principal_type=PrincipalType.USER,
+    auth_subject="admin-1",
+)
+
+
+@dataclass
+class _AllowEvaluator:
+    def evaluate(self, request: object) -> PolicyDecision:
+        del request
+        return PolicyDecision(action=PolicyAction.ALLOW, reason="test_allow")
+
+
+def admin_test_principal() -> RequestIdentity:
+    return _TEST_PRINCIPAL
+
+
+def allow_mutation_boundary() -> ControlPlaneMutationAuthorizationBoundary:
+    return ControlPlaneMutationAuthorizationBoundary(evaluator=_AllowEvaluator())
 
 
 class _MetadataProvider:
@@ -148,8 +178,9 @@ def _trust() -> AgentInstallationTrustRecord:
     )
 
 
-def _install_request() -> InstallAgentRequest:
+def _install_request(mutation_id: str = "mut-install") -> InstallAgentRequest:
     return InstallAgentRequest(
+        mutation_id=mutation_id,
         installation_id="inst-1",
         installation_slot_id="slot-search",
         package_identity=_PACKAGE,
@@ -159,8 +190,9 @@ def _install_request() -> InstallAgentRequest:
     )
 
 
-def _bind_request() -> BindAgentRequest:
+def _bind_request(mutation_id: str = "mut-bind") -> BindAgentRequest:
     return BindAgentRequest(
+        mutation_id=mutation_id,
         application_binding_id="bind-search",
         logical_agent_id="researcher",
         installation_slot_id="slot-search",
@@ -254,20 +286,55 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
         metadata_provider=metadata_provider,
         catalog_provider=catalog if with_catalog else None,
         dependency_resolver=make_identity_dependency_resolver(),
+        mutation_authorization_boundary=allow_mutation_boundary(),
+        environment_tenant_resolver=StaticApplicationEnvironmentTenantResolver("tenant-test"),
     )
     return AdminStack(service=service, state=state, catalog=catalog)
 
 
+def _activate_request(
+    *,
+    runtime_revision_id: str,
+    artifact_locator: str,
+    expected_artifact_digest: str,
+    expected_serving_pointer_revision: int = 0,
+    mutation_id: str = "mut-activate",
+) -> ActivateRuntimeRevisionRequest:
+    return ActivateRuntimeRevisionRequest(
+        mutation_id=mutation_id,
+        runtime_revision_id=runtime_revision_id,
+        artifact_locator=artifact_locator,
+        expected_artifact_digest=expected_artifact_digest,
+        expected_serving_pointer_revision=expected_serving_pointer_revision,
+    )
+
+
+def _rollback_request(
+    *,
+    expected_current_traffic_revision_id: str,
+    expected_serving_pointer_revision: int,
+    mutation_id: str = "mut-rollback",
+) -> RollbackRuntimeRevisionRequest:
+    return RollbackRuntimeRevisionRequest(
+        mutation_id=mutation_id,
+        expected_current_traffic_revision_id=expected_current_traffic_revision_id,
+        expected_serving_pointer_revision=expected_serving_pointer_revision,
+    )
+
+
 def _install_bind(stack: AdminStack) -> None:
+    principal = admin_test_principal()
     stack.service.install_agent(
         application_id=_APP,
         application_environment_id=_ENV,
         request=_install_request(),
+        principal=principal,
     )
     stack.service.bind_agent(
         application_id=_APP,
         application_environment_id=_ENV,
         request=_bind_request(),
+        principal=principal,
     )
 
 
@@ -295,7 +362,8 @@ def test_status_read_model_distinguishes_desired_vs_serving() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     assert enabled.binding.enablement is True
     status = stack.service.inspect_agent_status(
@@ -321,7 +389,8 @@ def test_enable_does_not_change_serving_revision() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     after = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
     assert after.traffic_serving_revision_id == before.traffic_serving_revision_id
@@ -335,7 +404,8 @@ def test_disable_does_not_change_serving_revision() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     built = stack.service.build_application_revision(
         application_id=_APP,
@@ -345,11 +415,11 @@ def test_disable_does_not_change_serving_revision() -> None:
     activated = stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
-        request=ActivateRuntimeRevisionRequest(
+        principal=admin_test_principal(),
+        request=_activate_request(
             runtime_revision_id=built.runtime_revision_id,
             artifact_locator=built.artifact_locator or "test://artifact",
             expected_artifact_digest=built.materialization_artifact_digest or _ARTIFACT,
-            expected_serving_pointer_revision=0,
         ),
     )
     serving_id = activated.traffic_serving_revision_id
@@ -357,7 +427,8 @@ def test_disable_does_not_change_serving_revision() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=1),
+        request=SetAgentEnablementRequest(mutation_id="mut-disable", expected_revision=1),
+        principal=admin_test_principal(),
     )
     serving = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
     assert serving.traffic_serving_revision_id == serving_id
@@ -377,7 +448,8 @@ def test_build_creates_candidate_but_does_not_activate() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     built = stack.service.build_application_revision(
         application_id=_APP,
@@ -414,7 +486,8 @@ def test_activate_delegates_ap9_and_changes_serving_revision() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     built = stack.service.build_application_revision(
         application_id=_APP,
@@ -424,11 +497,11 @@ def test_activate_delegates_ap9_and_changes_serving_revision() -> None:
     activated = stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
-        request=ActivateRuntimeRevisionRequest(
+        principal=admin_test_principal(),
+        request=_activate_request(
             runtime_revision_id="rev-18",
             artifact_locator=built.artifact_locator or "test://artifact",
             expected_artifact_digest=_ARTIFACT,
-            expected_serving_pointer_revision=0,
         ),
     )
     assert activated.traffic_serving_revision_id == "rev-18"
@@ -451,7 +524,8 @@ def test_rollback_delegates_immutable_ap9_rollback() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     first = stack.service.build_application_revision(
         application_id=_APP,
@@ -461,11 +535,11 @@ def test_rollback_delegates_immutable_ap9_rollback() -> None:
     stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
-        request=ActivateRuntimeRevisionRequest(
+        principal=admin_test_principal(),
+        request=_activate_request(
             runtime_revision_id="rev-17",
             artifact_locator=first.artifact_locator or "test://artifact",
             expected_artifact_digest=_ARTIFACT,
-            expected_serving_pointer_revision=0,
         ),
     )
     second = stack.service.build_application_revision(
@@ -476,7 +550,9 @@ def test_rollback_delegates_immutable_ap9_rollback() -> None:
     stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
+        principal=admin_test_principal(),
         request=ActivateRuntimeRevisionRequest(
+            mutation_id="mut-activate-rev-18",
             runtime_revision_id="rev-18",
             artifact_locator=second.artifact_locator or "test://artifact",
             expected_artifact_digest=_ARTIFACT,
@@ -487,7 +563,9 @@ def test_rollback_delegates_immutable_ap9_rollback() -> None:
     rolled = stack.service.rollback_revision(
         application_id=_APP,
         application_environment_id=_ENV,
+        principal=admin_test_principal(),
         request=RollbackRuntimeRevisionRequest(
+            mutation_id="mut-rollback-rev-17",
             expected_current_traffic_revision_id="rev-18",
             expected_serving_pointer_revision=2,
             target_runtime_revision_id="rev-17",
@@ -505,14 +583,16 @@ def test_stale_binding_conflict_propagated() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     with pytest.raises(BindingRevisionConflict):
         stack.service.enable_binding(
             application_id=_APP,
             application_environment_id=_ENV,
             application_binding_id="bind-search",
-            request=SetAgentEnablementRequest(expected_revision=0),
+            request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
         )
 
 
@@ -523,7 +603,8 @@ def test_stale_activation_conflict_propagated() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     first = stack.service.build_application_revision(
         application_id=_APP,
@@ -533,11 +614,11 @@ def test_stale_activation_conflict_propagated() -> None:
     stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
-        request=ActivateRuntimeRevisionRequest(
+        principal=admin_test_principal(),
+        request=_activate_request(
             runtime_revision_id="rev-17",
             artifact_locator=first.artifact_locator or "test://artifact",
             expected_artifact_digest=_ARTIFACT,
-            expected_serving_pointer_revision=0,
         ),
     )
     second = stack.service.build_application_revision(
@@ -548,7 +629,9 @@ def test_stale_activation_conflict_propagated() -> None:
     stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
+        principal=admin_test_principal(),
         request=ActivateRuntimeRevisionRequest(
+            mutation_id="mut-activate-rev-18",
             runtime_revision_id="rev-18",
             artifact_locator=second.artifact_locator or "test://artifact",
             expected_artifact_digest=_ARTIFACT,
@@ -560,7 +643,8 @@ def test_stale_activation_conflict_propagated() -> None:
         stack.service.rollback_revision(
             application_id=_APP,
             application_environment_id=_ENV,
-            request=RollbackRuntimeRevisionRequest(
+            principal=admin_test_principal(),
+            request=_rollback_request(
                 expected_current_traffic_revision_id="rev-missing",
                 expected_serving_pointer_revision=2,
             ),
@@ -611,7 +695,8 @@ def test_ap9_activation_service_still_commits_on_shared_stores() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     built = stack.service.build_application_revision(
         application_id=_APP,
@@ -621,11 +706,11 @@ def test_ap9_activation_service_still_commits_on_shared_stores() -> None:
     result = stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
-        request=ActivateRuntimeRevisionRequest(
+        principal=admin_test_principal(),
+        request=_activate_request(
             runtime_revision_id="rev-ap9",
             artifact_locator=built.artifact_locator or "test://artifact",
             expected_artifact_digest=_ARTIFACT,
-            expected_serving_pointer_revision=0,
         ),
     )
     assert result.traffic_serving_revision_id == "rev-ap9"
@@ -651,7 +736,8 @@ def test_cross_application_resource_isolation() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     built = stack.service.build_application_revision(
         application_id=_APP,
@@ -667,11 +753,11 @@ def test_cross_application_resource_isolation() -> None:
     activated = stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
-        request=ActivateRuntimeRevisionRequest(
+        principal=admin_test_principal(),
+        request=_activate_request(
             runtime_revision_id="rev-scope",
             artifact_locator=built.artifact_locator or "test://artifact",
             expected_artifact_digest=_ARTIFACT,
-            expected_serving_pointer_revision=0,
         ),
     )
     assert activated.traffic_serving_revision_id == "rev-scope"

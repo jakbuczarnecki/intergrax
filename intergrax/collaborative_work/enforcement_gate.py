@@ -175,6 +175,7 @@ class CollaborativeWorkEnforcementGate:
             delegator_principal_id=request.delegator_principal_id,
             resource_scope=request.resource_scope,
             membership=request.membership,
+            membership_resolution_mode=request.membership_resolution_mode,
             delegation=request.delegation,
         )
         authority_decision = self._authority_resolver.resolve(authority_request)

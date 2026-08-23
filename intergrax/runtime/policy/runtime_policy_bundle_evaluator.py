@@ -107,7 +107,7 @@ class RuntimePolicyBundleEvaluator:
             audit_payload={
                 "request_digest": req_digest,
                 "evaluated_at": evaluated_at.isoformat(),
-                "match_action": rule.match_action or request.action,
+                "match_action": rule.match_action,
             },
         )
         evaluated = EvaluatedPolicyDecision(
@@ -134,11 +134,6 @@ class RuntimePolicyBundleEvaluator:
         normalized = action.strip()
         for rule in self._bundle.rules:
             if rule.match_action and rule.match_action == normalized:
-                return rule
-        # Backward-compatible: rule_id suffix ``.{ACTION}``.
-        suffix = f".{normalized}"
-        for rule in self._bundle.rules:
-            if rule.rule_id.endswith(suffix):
                 return rule
         return None
 

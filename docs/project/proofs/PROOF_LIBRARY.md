@@ -10,25 +10,14 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 The Intergrax Proof Library is a problem-first catalog of **Scenario Proofs** — executable, falsifiable demonstrations that start from difficult real-world AI system problems, not from platform feature demos.
 
-Each accepted Scenario Proof is designed so you can inspect what was tested, how it was attacked, the evidence produced, the verdict, stated limitations, source, and a reproduction path. Scenarios are **not** marketing demos; they exist to make bounded claims inspectable under adversarial conditions.
-
-> [!NOTE]
-> The Proof Library is being **bootstrapped**. Accepted Scenario Proofs will appear in the catalog below only after passing canonical acceptance gates. No scenario is listed here until that bar is met.
-
----
+Intergrax is easier to understand by watching it handle hard problems than by reading capability lists. Each accepted Scenario Proof is designed so you can inspect what was tested, how it was attacked, the evidence produced, the verdict, stated limitations, source, and a reproduction path.
 
 > [!IMPORTANT]
-> **Challenge Intergrax with your problem.**
->
-> Have a difficult AI problem? Describe the real workflow, what can go wrong, and what a convincing result would require.
->
-> Bring the **problem**, not an Intergrax feature request. If the problem is suitable for the Proof Library, maintainers may turn it into an executable Scenario Proof.
->
-> **[Propose a scenario →](https://github.com/jakbuczarnecki/intergrax/issues/new?template=scenario_proposal.yml)**
+> **Scenario Proofs are not products.** They do not substitute for real-user validation, commercial validation, or production readiness. They make bounded claims inspectable under adversarial conditions — not marketing demos.
 
 ---
 
-## What is a Scenario Proof?
+## A. What is a Scenario Proof?
 
 A Scenario Proof follows a canonical path from real failure risk to inspectable evidence:
 
@@ -45,13 +34,112 @@ REAL PROBLEM
 → REPRODUCTION
 ```
 
-Scenario Proofs aim to demonstrate **difficult system guarantees** — governance under conflict, unsafe-action prevention, recovery, evidence admissibility, and similar real-world conditions — rather than basic LLM orchestration or happy-path demos.
+Scenario Proofs aim to demonstrate **difficult system guarantees** — governance under conflict, unsafe-action prevention, recovery, evidence admissibility, false confident diagnosis, and similar real-world conditions — rather than basic LLM orchestration or happy-path demos.
 
-For maintainer authoring workflow and technical infrastructure, see the internal [Platform Proof Library](../../../platform_proofs/README.md) gateway.
+<a href="../assets/public/readme/fullsize/intergrax-scenarios-overview.md">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/public/readme/intergrax-scenarios-overview-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/public/readme/intergrax-scenarios-overview-light.png"
+  >
+  <img
+    src="../assets/public/readme/intergrax-scenarios-overview-light.png"
+    alt="Scenario Proof path from real problem through adversarial test and execution to evidence, verdict, and reproduction."
+  >
+</picture>
+</a>
+
+[View full-size diagram](../assets/public/readme/fullsize/intergrax-scenarios-overview.md)
 
 ---
 
-## How to read a proof
+## B. What makes a scenario worth publishing?
+
+A scenario belongs in the library when it exposes a **meaningful failure risk** that simple AI is insufficient to handle safely:
+
+| Criterion | Why it matters |
+| --- | --- |
+| **Real workflow stakes** | Wrong answers or unsafe actions have operational consequences |
+| **Adversarial conditions** | Conflicting, stale, incomplete, or misleading evidence is part of the problem |
+| **Bounded claim** | Exactly what is — and is not — being demonstrated is explicit |
+| **Executable falsification** | A skeptical reviewer can run, inspect, and challenge the result |
+| **Honest outcomes** | PASS, FAIL, or bounded UNRESOLVED must be earned — not narrated |
+
+Maintainer authoring workflow and technical infrastructure live in the internal [Platform Proof Library](../../../platform_proofs/README.md) gateway.
+
+---
+
+## C. Scenario catalog
+
+The library operating model is ready. Accepted Scenario Proofs appear here only after passing canonical acceptance gates — with evidence, verdict, report, and reproduction routes.
+
+**Current status:** no accepted Scenario Proofs are published yet. The first flagship scenario is in development.
+
+| Scenario | Status | Public routes |
+| --- | --- | --- |
+| **AI Incident Investigation with Independent Verification** | **In development** — design accepted for implementation; no executable proof yet | [Scenario design](../../../platform_proofs/scenarios/ai_incident_investigation/README.md) |
+
+When a scenario is accepted, each entry will expose:
+
+```text
+Scenario title
+
+Problem:
+...
+
+Risk:
+...
+
+What is demonstrated:
+...
+
+Status: ACCEPTED
+
+[Read scenario] [View report] [Source] [Run locally]
+```
+
+Links appear only when artifacts exist — not for placeholder or in-design work.
+
+---
+
+## D. Featured scenario in development
+
+### AI Incident Investigation with Independent Verification
+
+> **Can an AI investigate an operational incident without turning correlation into a confident false diagnosis?**
+
+Initial operational signals make workload overload plausible. Evidence is conflicting, stale, and incomplete. Independent verification must challenge unsupported causality, gather targeted evidence to distinguish competing hypotheses, and produce a bounded **RESOLVED** or honest **UNRESOLVED** outcome.
+
+**Status:** in development — not accepted proof evidence. No report, evidence bundle, or reproduction path exists yet.
+
+<a href="../assets/public/readme/fullsize/scenario-ai-incident-investigation.md">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../assets/public/readme/scenario-ai-incident-investigation-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../assets/public/readme/scenario-ai-incident-investigation-light.png"
+  >
+  <img
+    src="../assets/public/readme/scenario-ai-incident-investigation-light.png"
+    alt="AI incident investigation scenario — operational signals, conflicting evidence, independent verification, and bounded RESOLVED or UNRESOLVED outcomes."
+  >
+</picture>
+</a>
+
+[View full-size diagram](../assets/public/readme/fullsize/scenario-ai-incident-investigation.md)
+
+**[Scenario design document](../../../platform_proofs/scenarios/ai_incident_investigation/README.md)**
+
+---
+
+## E. How to read a proof
 
 Every published Scenario Proof should let you inspect:
 
@@ -72,37 +160,36 @@ Every published Scenario Proof should let you inspect:
 
 ---
 
-## Scenario catalog
+## F. PASS / FAIL / UNRESOLVED semantics
 
-Accepted Scenario Proofs appear here after passing canonical Proof Library acceptance gates.
+| Verdict | Meaning |
+| --- | --- |
+| **PASS** | The bounded claim survived adversarial conditions with inspectable evidence |
+| **FAIL** | The system did not meet the stated claim under the scenario's conditions |
+| **UNRESOLVED** | Critical distinguishing evidence is unavailable or hypotheses remain indistinguishable — no confident guessing |
 
-**Current status:** The library is being bootstrapped. The first flagship Scenario Proof is currently being designed under the canonical authoring process.
-
-No accepted scenarios are published yet. When entries appear, each will follow this shape:
-
-```text
-Scenario title
-
-Problem:
-...
-
-Risk:
-...
-
-What is demonstrated:
-...
-
-Status:
-...
-
-[Read scenario] [View report] [Source] [Run locally]
-```
-
-Links will be added only when a scenario has passed acceptance — not for placeholder or in-design work.
+A scenario visual may show RESOLVED or UNRESOLVED branches as **possible bounded outcomes** — that describes scenario semantics, not a current achieved PASS.
 
 ---
 
-## Proof Library vs evidence dashboard
+## G. Challenge Intergrax
+
+Have a difficult AI system problem?
+
+Describe:
+
+- the workflow
+- what can go wrong
+- why simple AI is insufficient
+- what a convincing result would require
+
+Bring the **problem**, not an Intergrax feature request. If the problem is suitable for the Proof Library, maintainers may turn it into an executable Scenario Proof.
+
+**[Propose a scenario →](https://github.com/jakbuczarnecki/intergrax/issues/new?template=scenario_proposal.yml)**
+
+---
+
+## H. Proof Library vs evidence dashboard
 
 These are **separate** public surfaces with different jobs:
 
@@ -113,13 +200,17 @@ These are **separate** public surfaces with different jobs:
 
 An attractive scenario description **never** overrides evidence or claim status. For implementation status, bounded verification, partial capability, planned work, and claims that are not currently supported, use the **[Intergrax Proofs evidence dashboard](PROOFS.md)**.
 
+Scenario Proofs are also **not** product proofs. For the active reference product and its bounded product proof paths, see [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md).
+
 ---
 
-## Related routes
+## I. Related routes
 
 | Route | Purpose |
 | --- | --- |
+| [README](../../../README.md) | First contact — Scenarios, Products, Platform entry points |
 | [PROOFS.md](PROOFS.md) | Public evidence-and-claims dashboard |
 | [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) | Active reference product walkthrough |
 | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Runnable product evaluation path |
+| [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) | Platform architecture mental model |
 | [Platform Proof Library (maintainers)](../../../platform_proofs/README.md) | Technical proof infrastructure and authoring |

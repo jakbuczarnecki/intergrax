@@ -70,7 +70,7 @@ Platform proofs sit between integration tests and product proofs. They prove the
 
 ## B2. Proof Library classes
 
-The Intergrax Proof Library distinguishes two public proof classes via `library_class` in `proof.json` (`intergrax.platform_proof_descriptor.v2`):
+The Intergrax Proof Library distinguishes two public proof classes via `library_class` in `proof.json` (`intergrax.platform_proof_descriptor.v3`):
 
 | Class | Role | Entry framing |
 |-------|------|---------------|
@@ -79,9 +79,11 @@ The Intergrax Proof Library distinguishes two public proof classes via `library_
 
 Both classes remain **executable falsification attempts** — not demos. **Platform proof ≠ product proof.** Product proofs stay under `applications/`.
 
-`domain` remains technical primary ownership / grouping metadata for the runner and `ProofManifestEntry`. Library metadata (`library_class`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not need to appear in runner-facing manifest entries unless execution requires it.
+Every proof declares **`domains_exercised`** (non-empty; no owning or primary domain) and **`mechanisms_exercised`**. A proof does not belong to one domain — it exercises one or more domains. Library metadata (`library_class`, `domains_exercised`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not appear in runner-facing `ProofManifestEntry` unless execution genuinely requires it (currently: domain metadata is not execution authority).
 
-Every descriptor declares `library_class` and `mechanisms_exercised`. SCENARIO additionally requires `problem_category`, `problem_summary`, and `failure_mode_summary`. CONFORMANCE forbids those problem fields.
+**Scenario documentation:** Scenario design is **problem-owned and multi-domain by default** — participating domains are discovered during Intergrax Fit, then declared truthfully in `domains_exercised` when the proof package ships. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md).
+
+Every descriptor declares `library_class`, `domains_exercised`, and `mechanisms_exercised`. SCENARIO additionally requires `problem_category`, `problem_summary`, and `failure_mode_summary`. CONFORMANCE forbids those problem fields.
 
 ---
 
@@ -107,7 +109,7 @@ Every executable platform proof must have a stable **`proof_id`**.
 
 **Recommended naming:** `<DOMAIN>-<CAPABILITY>` — uppercase, hyphenated, consistent with existing manifest style.
 
-**Reference example:** `TOOLS-ITERATIVE-SQL-INVESTIGATION`
+**Reference example:** `SCENARIO-AI-INCIDENT-INVESTIGATION` (design-stage scenario under `platform_proofs/scenarios/`)
 
 Canonical executable identity is declared in two layers during migration:
 
@@ -124,6 +126,8 @@ The central manifest in `scripts/proof/intergrax_proof_manifest.py` remains auth
 
 Platform proofs under `platform_proofs/` are **self-describing packages**:
 
+**Conformance proofs** (domain-oriented path):
+
 ```text
 platform_proofs/<domain>/<proof_slug>/
     proof.json          # static descriptor (canonical filename)
@@ -131,9 +135,20 @@ platform_proofs/<domain>/<proof_slug>/
     ...                 # proof-owned implementation
 ```
 
+**Scenario proofs** — design stage (no executable artifacts yet):
+
+```text
+platform_proofs/scenarios/<scenario_slug>/
+    README.md           # public gateway
+    SCENARIO_SPEC.md    # deep canonical contract (A/B/C/D/E)
+    assets/             # optional — after Scenario Quality Gate
+```
+
+After implementation, Scenario packages add `proof.json`, `run_proof.py`, and other runtime artifacts per [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md). Scenario proofs are **problem-first** and may exercise **multiple domains**; Conformance proofs remain **mechanism-first** and declare every domain they actually exercise in `domains_exercised`.
+
 **Why static JSON (`proof.json`):** language-neutral, human-readable, machine-validated, deterministic, inspectable by CI, and free of Python import side effects during discovery. Discovery must **not** import proof modules or execute `run_proof.py` to read metadata.
 
-**Descriptor schema:** `intergrax.platform_proof_descriptor.v2` — implemented in `scripts/proof/intergrax_platform_proof_descriptor.py` and loaded by `scripts/proof/intergrax_platform_proof_descriptor_loader.py`. Only the current schema version is accepted; there is no legacy v1 fallback.
+**Descriptor schema:** `intergrax.platform_proof_descriptor.v3` — implemented in `scripts/proof/intergrax_platform_proof_descriptor.py` and loaded by `scripts/proof/intergrax_platform_proof_descriptor_loader.py`. Only the current schema version is accepted; v2 and v1 are rejected with no fallback.
 
 **Command contract:** structured `argv` only (`shell=False`). No shell strings.
 
@@ -147,7 +162,7 @@ platform_proofs/<domain>/<proof_slug>/
 
 **Roadmap:** PP-SUITE-1 package contract · PP-SUITE-2 dynamic discovery · PP-SUITE-3 evidence validation · PP-SUITE-4 artifact verification · PP-REPORT-3 generic HTML renderer · PP-REPORT-4 TOOLS report integration · PP-SUITE-5 report contract verification · PP-SUITE-6 CI regression profiles.
 
-**Transition:** Phase 1 — `TOOLS-ITERATIVE-SQL-INVESTIGATION` ships `proof.json`. Phase 2 — dynamic discovery (current). Phase 3 — static manifest coexists for unmigrated proofs. Phase 4 — migrate remaining platform proofs. Phase 5 — remove static platform registrations when complete. Duplicate `proof_id` across static manifest and discovery fails unless entries are semantically equivalent migration twins (descriptor wins once).
+**Transition:** Phase 1 — descriptor-backed packages ship `proof.json`. Phase 2 — dynamic discovery (current). Phase 3 — static manifest coexists for unmigrated proofs. Phase 4 — migrate remaining platform proofs. Phase 5 — remove static platform registrations when complete. Duplicate `proof_id` across static manifest and discovery fails unless entries are semantically equivalent migration twins (descriptor wins once).
 
 ---
 

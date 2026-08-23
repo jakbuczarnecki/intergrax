@@ -201,6 +201,20 @@ def verify_platform_proof_evidence(
             parsed_evidence=evidence,
         )
 
+    if spec.expected_domains_exercised is not None:
+        if (
+            evidence.proof_identity.domains_exercised
+            != spec.expected_domains_exercised
+        ):
+            return EvidenceVerificationResult(
+                status=EvidenceVerificationStatus.INVALID,
+                proof_id=proof_id,
+                evidence_path=resolved_path,
+                diagnostic_code="proof_identity_domains_mismatch",
+                diagnostic_summary="proof_identity.domains_exercised mismatch",
+                parsed_evidence=evidence,
+            )
+
     if evidence.provenance.proof_id != proof_id:
         return EvidenceVerificationResult(
             status=EvidenceVerificationStatus.INVALID,

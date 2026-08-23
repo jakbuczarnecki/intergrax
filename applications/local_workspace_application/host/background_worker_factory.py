@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime, build_harness_host_runtime
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     build_task_runner_with_enricher,
@@ -47,6 +48,7 @@ class LocalWorkspaceBackgroundWorkerWiring:
 def build_local_workspace_background_worker_wiring(
     *,
     manifest: ApplicationManifest,
+    registry_projection: MaterializedRegistryProjection,
     settings: LocalWorkspaceBackendSettings | None = None,
 ) -> LocalWorkspaceBackgroundWorkerWiring:
     settings = settings or LocalWorkspaceBackendSettings.from_env()
@@ -58,6 +60,7 @@ def build_local_workspace_background_worker_wiring(
         settings=settings,
         idempotency_db_path=Path(settings.idempotency_db_path),
         document_store=lkw_document_store,
+        registry_projection=registry_projection,
     )
     task_enricher = build_reliability_task_enricher(
         environment,

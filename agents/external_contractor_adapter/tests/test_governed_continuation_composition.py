@@ -20,6 +20,7 @@ from external_contractor_adapter.external_work_adapter import (
     ExternalWorkAdapter,
     adapt_from_step_metadata,
 )
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
@@ -61,6 +62,9 @@ def _meta(**overrides: object) -> dict[str, object]:
         META_SCOPE_DESCRIPTION: "review PR #42",
         META_SCOPE_DIGEST: _DIGEST,
         META_IDEMPOTENCY_KEY: "idem-gec4-1",
+        "external_work.workspace_ref": "workspace-a",
+        "external_work.principal_id": "u1",
+        "external_work.tenant_id": "tenant-a",
         "external_work.budget_limit": MoneyAmount(
             amount=Decimal("40.00"), currency="USD"
         ),
@@ -75,10 +79,8 @@ def _allow_policy() -> DeterministicMeaningfulSideEffectPolicy:
 
 
 def _adapter(fake: DeterministicExternalWorkFake | None = None) -> ExternalWorkAdapter:
-    return ExternalWorkAdapter(
-        fake or DeterministicExternalWorkFake(),
-        side_effect_policy=_allow_policy(),
-    )
+    adapter, _ = allow_adapter(fake or DeterministicExternalWorkFake(), policy=_allow_policy())
+    return adapter
 
 
 def _acceptance(**overrides: object) -> QuoteAcceptanceEvidence:
@@ -156,7 +158,7 @@ def test_continuation_preserves_distinct_task_and_run_identity() -> None:
 def test_missing_run_id_fails_closed_without_task_fallback() -> None:
     fake = DeterministicExternalWorkFake()
     policy = _allow_policy()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter = allow_adapter(fake, policy=policy)[0]
     # GEC-5: meaningful create requires real Nexus run_id (fail closed).
     denied_create = adapter.create_and_map(
         adapter.build_create_request(
@@ -199,7 +201,7 @@ def test_missing_run_id_fails_closed_without_task_fallback() -> None:
         run_id=None,
         message="scope",
         metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-run-step"}),
-        side_effect_policy=policy,
+        authorization_boundary=allow_adapter(DeterministicExternalWorkFake(), policy=policy)[0].authorization_boundary,
     )
     assert via_step.used is False
     assert via_step.continuation is None
@@ -247,9 +249,10 @@ def test_correlation_preserved_across_continuation_surface() -> None:
                 META_IDEMPOTENCY_KEY: "idem-corr",
                 "external_work.principal_id": "u1",
                 "external_work.tenant_id": "tenant-a",
+        "external_work.workspace_ref": "workspace-a",
             }
         ),
-        side_effect_policy=_allow_policy(),
+        authorization_boundary=allow_adapter(DeterministicExternalWorkFake(), policy=_allow_policy())[0].authorization_boundary,
     )
     assert result.used is True
     assert result.reason == "continuation_blocked"
@@ -291,6 +294,9 @@ def test_continuation_evidence_propagation_without_tier2_governance() -> None:
         reason=ContinuationReason.QUOTE,
         evidence=evidence,
         idempotency_key="idem-accept-gec4",
+        principal_id="u1",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
     )
     assert forwarded.used is True
     assert forwarded.status == ExternalWorkStatus.ACCEPTED
@@ -355,8 +361,8 @@ def test_no_transport_coupling_in_continuation_path() -> None:
 def test_adapt_metadata_resume_forwards_evidence() -> None:
     fake = DeterministicExternalWorkFake()
     policy = _allow_policy()
-    boot = ExternalWorkAdapter(fake, side_effect_policy=policy).create_and_map(
-        ExternalWorkAdapter(fake, side_effect_policy=policy).build_create_request(
+    boot = allow_adapter(fake, policy=policy)[0].create_and_map(
+        allow_adapter(fake, policy=policy)[0].build_create_request(
             task_id="task-resume",
             run_id="run-resume",
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-resume"}),
@@ -378,7 +384,7 @@ def test_adapt_metadata_resume_forwards_evidence() -> None:
                 META_ACCEPTANCE_IDEMPOTENCY_KEY: "idem-accept-resume",
             }
         ),
-        side_effect_policy=policy,
+        authorization_boundary=allow_adapter(DeterministicExternalWorkFake(), policy=policy)[0].authorization_boundary,
     )
     assert result.used is True
     assert result.status == ExternalWorkStatus.ACCEPTED

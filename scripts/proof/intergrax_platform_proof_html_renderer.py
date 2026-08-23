@@ -85,6 +85,10 @@ def _escape(value: str) -> str:
     return html.escape(value, quote=True)
 
 
+def _format_domains_exercised(domains: tuple[str, ...]) -> str:
+    return ", ".join(domains)
+
+
 def _render_report_safe_text(value: ReportSafeText) -> str:
     if value.visibility == ReportSafeVisibility.REDACTED:
         return "[REDACTED]"
@@ -402,8 +406,8 @@ def _render_executive_summary(evidence: PlatformProofEvidence) -> str:
     paragraphs = [
         (
             f"This report documents proof {_escape(evidence.proof_identity.proof_id)} "
-            f"({_escape(evidence.proof_identity.title)}) in domain "
-            f"{_escape(evidence.proof_identity.domain)}."
+            f"({_escape(evidence.proof_identity.title)}) exercising domains "
+            f"{_escape(_format_domains_exercised(evidence.proof_identity.domains_exercised))}."
         ),
         (
             f"Execution result: {_escape(status)} on platform "
@@ -860,8 +864,8 @@ def _render_report_identity(evidence: PlatformProofEvidence) -> str:
     cards = (
         f'<div class="card"><div class="card-label">Proof ID</div>'
         f'<div class="card-value">{_escape(identity.proof_id)}</div></div>'
-        f'<div class="card"><div class="card-label">Domain</div>'
-        f'<div class="card-value">{_escape(identity.domain)}</div></div>'
+        f'<div class="card"><div class="card-label">Domains exercised</div>'
+        f'<div class="card-value">{_escape(_format_domains_exercised(identity.domains_exercised))}</div></div>'
         f'<div class="card"><div class="card-label">Status</div>'
         f'<div class="card-value">{_status_badge(execution.status)}</div></div>'
         f'<div class="card"><div class="card-label">Revision</div>'

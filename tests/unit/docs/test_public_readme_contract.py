@@ -28,6 +28,24 @@ GOVERNED_EXECUTION_LIGHT_PATH = (
 GOVERNED_EXECUTION_DARK_PATH = (
     README_STRATEGIC_ASSETS_DIR / "intergrax-governed-execution-dark.png"
 )
+THREE_ENTRY_POINTS_LIGHT_PATH = (
+    README_STRATEGIC_ASSETS_DIR / "intergrax-three-entry-points-light.png"
+)
+THREE_ENTRY_POINTS_DARK_PATH = (
+    README_STRATEGIC_ASSETS_DIR / "intergrax-three-entry-points-dark.png"
+)
+SCENARIOS_OVERVIEW_LIGHT_PATH = (
+    README_STRATEGIC_ASSETS_DIR / "intergrax-scenarios-overview-light.png"
+)
+SCENARIOS_OVERVIEW_DARK_PATH = (
+    README_STRATEGIC_ASSETS_DIR / "intergrax-scenarios-overview-dark.png"
+)
+SCENARIO_INCIDENT_LIGHT_PATH = (
+    README_STRATEGIC_ASSETS_DIR / "scenario-ai-incident-investigation-light.png"
+)
+SCENARIO_INCIDENT_DARK_PATH = (
+    README_STRATEGIC_ASSETS_DIR / "scenario-ai-incident-investigation-dark.png"
+)
 _FULL_SIZE_LINK_LABEL = "View full-size diagram"
 _STRATEGIC_FULL_SIZE_LINKS = (
     (
@@ -48,12 +66,27 @@ _STRATEGIC_FULL_SIZE_LINKS = (
         "docs/project/assets/public/readme/fullsize/intergrax-governed-execution.md",
         "docs/project/assets/public/readme/intergrax-governed-execution-light.png",
     ),
+    (
+        "## Explore Intergrax",
+        "**[Explore Proof Library]",
+        "docs/project/assets/public/readme/fullsize/intergrax-three-entry-points.md",
+        "docs/project/assets/public/readme/intergrax-three-entry-points-light.png",
+    ),
+    (
+        "## Real problems. Executable evidence.",
+        "**[Explore Proof Library]",
+        "docs/project/assets/public/readme/fullsize/intergrax-scenarios-overview.md",
+        "docs/project/assets/public/readme/intergrax-scenarios-overview-light.png",
+    ),
 )
 _STRATEGIC_PNG_PAIRS = (
     (ECOSYSTEM_HERO_LIGHT_PATH, ECOSYSTEM_HERO_DARK_PATH),
     (PLATFORM_MAP_LIGHT_PATH, PLATFORM_MAP_DARK_PATH),
     (WHY_LIGHT_PATH, WHY_DARK_PATH),
     (GOVERNED_EXECUTION_LIGHT_PATH, GOVERNED_EXECUTION_DARK_PATH),
+    (THREE_ENTRY_POINTS_LIGHT_PATH, THREE_ENTRY_POINTS_DARK_PATH),
+    (SCENARIOS_OVERVIEW_LIGHT_PATH, SCENARIOS_OVERVIEW_DARK_PATH),
+    (SCENARIO_INCIDENT_LIGHT_PATH, SCENARIO_INCIDENT_DARK_PATH),
 )
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
@@ -63,7 +96,7 @@ _README_VISUAL_OWNERSHIP_ROOTS = (
     REPO_ROOT / "docs" / "project" / "assets" / "public" / "readme",
     REPO_ROOT / "applications" / "local_workspace_application" / "docs" / "assets",
 )
-_MIN_README_PICTURES = 5
+_MIN_README_PICTURES = 8
 LKW_LIGHT_PATH = (
     REPO_ROOT
     / "applications"
@@ -84,9 +117,10 @@ LKW_DARK_PATH = (
 _SECTION_HEADINGS_ORDER = (
     "## Choose your path",
     "## Why this matters",
+    "## Explore Intergrax",
+    "## Real problems. Executable evidence.",
     "## Local Knowledge Workspace (LKW)",
     "## Try LKW",
-    "## Real problems. Executable evidence.",
     "## Explore the Intergrax Platform",
     "## AI execution should not be a black box",
     "## Responsibility model",
@@ -125,6 +159,15 @@ _FORBIDDEN_SAVINGS_PHRASES = (
     "production-proven savings",
     "universal token reduction",
     "guaranteed token savings",
+)
+
+_STALE_INCIDENT_SCENARIO_LOGISTICS_MARKERS = (
+    "warehouse overload",
+    "warehouse",
+    "parcel",
+    "sorter",
+    "logistics operator",
+    "heavy parcel",
 )
 
 _FORBIDDEN_SAVINGS_PATTERN = re.compile(r"reduces token usage by\s*\d+\s*%", re.IGNORECASE)
@@ -191,16 +234,82 @@ def test_section_order(readme_text: str) -> None:
     positions = [readme_text.index(heading) for heading in _SECTION_HEADINGS_ORDER]
     assert positions == sorted(positions), "README section headings are out of required order"
     why_idx = readme_text.index("## Why this matters")
+    explore_idx = readme_text.index("## Explore Intergrax")
+    scenario_idx = readme_text.index("## Real problems. Executable evidence.")
     lkw_idx = readme_text.index("## Local Knowledge Workspace (LKW)")
-    explore_idx = readme_text.index("## Explore the Intergrax Platform")
-    assert why_idx < lkw_idx < explore_idx, (
-        "Required flow: Why this matters → LKW → Explore the Intergrax Platform"
+    platform_idx = readme_text.index("## Explore the Intergrax Platform")
+    assert why_idx < explore_idx < scenario_idx < lkw_idx < platform_idx, (
+        "Required flow: Why → Explore Intergrax → Scenario Proof Library → LKW → Platform"
     )
     ai_execution_idx = readme_text.index("## AI execution should not be a black box")
     responsibility_idx = readme_text.index("## Responsibility model")
     assert ai_execution_idx < responsibility_idx, (
         "Platform differentiation (AI execution) must precede Responsibility model"
     )
+
+
+def test_featured_incident_scenario_no_stale_logistics_framing(readme_text: str) -> None:
+    """Featured AI Incident Investigation prose must not regress to logistics fixture wording."""
+    featured_section = _section_slice(
+        readme_text,
+        "### Featured scenario in development",
+        "---",
+    )
+    normalized = re.sub(r"[*_`]", "", featured_section).lower()
+    for marker in _STALE_INCIDENT_SCENARIO_LOGISTICS_MARKERS:
+        assert marker not in normalized, (
+            f"Stale logistics framing in featured incident scenario: {marker!r}"
+        )
+    assert "workload overload" in normalized or "production signals" in normalized
+
+
+def test_scenario_public_positioning(readme_text: str) -> None:
+    """Scenario Proof Library is first-class: before LKW, distinct from products."""
+    scenario_idx = readme_text.index("## Real problems. Executable evidence.")
+    lkw_idx = readme_text.index("## Local Knowledge Workspace (LKW)")
+    assert scenario_idx < lkw_idx, "Scenario section must precede main LKW section"
+    scenario_section = _section_slice(
+        readme_text,
+        "## Real problems. Executable evidence.",
+        "## Local Knowledge Workspace (LKW)",
+    )
+    normalized = re.sub(r"[*_`]", "", scenario_section).lower()
+    assert "scenario proof library" in normalized
+    assert "not a marketing demo" in normalized or "not a marketing" in normalized
+    assert "featured scenario in development" in normalized
+    assert "in development" in normalized
+    assert "no executable proof" in normalized or "not a current pass" in normalized
+    assert "ai_incident_investigation" in scenario_section
+    explore_section = _section_slice(
+        readme_text,
+        "## Explore Intergrax",
+        "## Real problems. Executable evidence.",
+    )
+    explore_normalized = re.sub(r"[*_`]", "", explore_section).lower()
+    for path_label in ("scenario proofs", "products", "platform"):
+        assert path_label in explore_normalized, f"Missing three-entry path: {path_label}"
+    assert readme_text.count("## Real problems. Executable evidence.") == 1, (
+        "Duplicate scenario narrative sections are forbidden"
+    )
+
+
+def test_scenario_visual_contract(readme_text: str) -> None:
+    """Three new scenario entry-point visuals use theme-aware pairs and preview routes."""
+    for light_path, dark_path in (
+        (THREE_ENTRY_POINTS_LIGHT_PATH, THREE_ENTRY_POINTS_DARK_PATH),
+        (SCENARIOS_OVERVIEW_LIGHT_PATH, SCENARIOS_OVERVIEW_DARK_PATH),
+        (SCENARIO_INCIDENT_LIGHT_PATH, SCENARIO_INCIDENT_DARK_PATH),
+    ):
+        assert light_path.is_file(), f"Missing scenario visual: {light_path.name}"
+        assert dark_path.is_file(), f"Missing scenario visual: {dark_path.name}"
+        violations = _validate_light_dark_pair(light_path, dark_path)
+        assert not violations, f"{light_path.stem}: {violations}"
+    for preview_ref in (
+        "docs/project/assets/public/readme/fullsize/intergrax-three-entry-points.md",
+        "docs/project/assets/public/readme/fullsize/intergrax-scenarios-overview.md",
+        "docs/project/assets/public/readme/fullsize/scenario-ai-incident-investigation.md",
+    ):
+        assert (REPO_ROOT / preview_ref).is_file(), f"Missing fullsize preview: {preview_ref}"
 
 
 def test_top_cta_proof_library(readme_text: str) -> None:
@@ -433,12 +542,16 @@ def _assert_full_size_link_after_picture(section: str, preview_ref: str) -> None
 
 
 def test_product_visual_order(readme_text: str) -> None:
-    """Gateway visuals lead with ecosystem hero; LKW governed hero follows deeper product proof."""
+    """Gateway visuals lead with ecosystem hero; scenario visuals precede LKW product proof."""
     ecosystem_idx = readme_text.index(_ECOSYSTEM_HERO_LIGHT)
+    scenario_overview_idx = readme_text.index(
+        "docs/project/assets/public/readme/intergrax-scenarios-overview-light.png"
+    )
     lkw_idx = readme_text.index(_LKW_GOVERNED_HERO_LIGHT)
     why_light_idx = readme_text.index("docs/project/assets/public/readme/intergrax-why-light.png")
     explore_idx = readme_text.index("## Explore the Intergrax Platform")
-    assert ecosystem_idx < lkw_idx, "Ecosystem hero must appear before LKW governed hero"
+    assert ecosystem_idx < scenario_overview_idx, "Ecosystem hero must appear before scenario overview"
+    assert scenario_overview_idx < lkw_idx, "Scenario overview must appear before LKW governed hero"
     assert why_light_idx < explore_idx, "Why visual must appear before Explore the Intergrax Platform"
     ecosystem_picture_blocks = [
         block for block in _extract_picture_blocks(readme_text) if _ECOSYSTEM_HERO_LIGHT in block

@@ -12,7 +12,7 @@ via an injected policy boundary before provider-bound side effects.
 
 from __future__ import annotations
 
-from typing import Any, Mapping, NamedTuple
+from typing import Any, Callable, Mapping, NamedTuple, TypeVar
 
 from intergrax.contracts.external_work import (
     CommercialQuote,
@@ -43,13 +43,22 @@ from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
 )
+from intergrax.contracts.collaborative_work import (
+    CollaborativeWorkEnforcementRequest,
+    MembershipResolutionMode,
+)
 from intergrax.contracts.money import MoneyAmount
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.integrations.contracts.external_work import (
     ExternalWorkError,
     ExternalWorkIntegration,
 )
-from intergrax.runtime.policy.meaningful_side_effect import MeaningfulSideEffectEvaluator
+from intergrax.runtime.policy.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationBoundary,
+    MeaningfulSideEffectAuthorizationResult,
+)
+from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from external_contractor_adapter.schemas.adapt_result import ExternalWorkAdapterResult
 from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
@@ -107,13 +116,17 @@ _PROOF_INVARIANT_MESSAGE = (
 )
 
 
-class _AuthorizedSideEffect(NamedTuple):
-    """Validated identities + ALLOW decision shared by policy, provider, proof."""
+class _ExecutedSideEffect(NamedTuple):
+    """Provider result + pre-execute authorization decision for proof composition."""
 
+    value: Any
     decision: PolicyDecision
     task_id: str
     run_id: str
     principal_id: str
+
+
+T = TypeVar("T")
 
 # Documented classification for ExternalWorkIntegration methods (GEC-5).
 PROVIDER_METHOD_SIDE_EFFECT_CLASS: dict[str, str] = {
@@ -129,19 +142,19 @@ class ExternalWorkAdapter:
         self,
         integration: ExternalWorkIntegration,
         *,
-        side_effect_policy: MeaningfulSideEffectEvaluator | None = None,
+        authorization_boundary: MeaningfulSideEffectAuthorizationBoundary | None = None,
     ) -> None:
         self._integration = integration
-        # Host/tests inject; missing evaluator fails closed for meaningful actions.
-        self._side_effect_policy = side_effect_policy
+        # Host/tests inject; missing boundary fails closed for meaningful actions.
+        self._authorization_boundary = authorization_boundary
 
     @property
     def integration(self) -> ExternalWorkIntegration:
         return self._integration
 
     @property
-    def side_effect_policy(self) -> MeaningfulSideEffectEvaluator | None:
-        return self._side_effect_policy
+    def authorization_boundary(self) -> MeaningfulSideEffectAuthorizationBoundary | None:
+        return self._authorization_boundary
 
     def discover(self) -> ExternalWorkProviderDescriptor:
         return self._integration.discover()
@@ -204,6 +217,8 @@ class ExternalWorkAdapter:
         enrich: bool = True,
         principal_id: str | None = None,
         tenant_id: str | None = None,
+        task: Task | None = None,
+        lifecycle: TaskLifecycle | None = None,
     ) -> ExternalWorkAdapterResult:
         """Synchronous create/correlate + optional enrich; no poll/retry loops.
 
@@ -213,7 +228,7 @@ class ExternalWorkAdapter:
         """
         try:
             provider = self._integration.discover()
-            create_gate = self._evaluate_side_effect(
+            create_gate = self._run_meaningful_side_effect(
                 action=ACTION_CREATE_EXTERNAL_WORK,
                 kinds=(MeaningfulSideEffectKind.MUTATION,),
                 side_effect_scope_id=request.idempotency_key,
@@ -222,6 +237,7 @@ class ExternalWorkAdapter:
                 run_id=request.run_id,
                 principal_id=principal_id,
                 tenant_id=tenant_id,
+                workspace_id=request.workspace_ref,
                 resource=request.scope_digest,
                 external_target=request.provider_id,
                 correlation={
@@ -233,12 +249,14 @@ class ExternalWorkAdapter:
                 },
                 context={"requested_capability": request.requested_capability},
                 continuation_reason=ContinuationReason.PROCUREMENT,
+                execute=lambda: self._integration.create_work(request),
+                task=task,
+                lifecycle=lifecycle,
             )
             if isinstance(create_gate, ExternalWorkAdapterResult):
                 return create_gate.model_copy(update={"provider": provider})
             authorized = create_gate
-
-            snapshot = self._integration.create_work(request)
+            snapshot = authorized.value
             if acceptance is not None:
                 key = (acceptance_idempotency_key or "").strip()
                 if not key:
@@ -264,7 +282,10 @@ class ExternalWorkAdapter:
                     idempotency_key=key,
                     principal_id=accept_principal,
                     tenant_id=accept_tenant,
+                    workspace_id=request.workspace_ref,
                     enrich=enrich,
+                    task=task,
+                    lifecycle=lifecycle,
                 )
                 if forwarded.provider is None:
                     return forwarded.model_copy(update={"provider": provider})
@@ -329,7 +350,10 @@ class ExternalWorkAdapter:
         idempotency_key: str,
         principal_id: str | None = None,
         tenant_id: str | None = None,
+        workspace_id: str | None = None,
         enrich: bool = True,
+        task: Task | None = None,
+        lifecycle: TaskLifecycle | None = None,
     ) -> ExternalWorkAdapterResult:
         """Forward acceptance evidence after meaningful side-effect policy ALLOW.
 
@@ -344,7 +368,7 @@ class ExternalWorkAdapter:
                 (tenant_id or "").strip() or acceptance.actor.tenant_id
             )
             canonical_scope_digest = quote_acceptance_side_effect_scope_digest(acceptance)
-            gate = self._evaluate_side_effect(
+            gate = self._run_meaningful_side_effect(
                 action=ACTION_ACCEPT_QUOTE,
                 kinds=(
                     MeaningfulSideEffectKind.COMMITMENT,
@@ -356,6 +380,7 @@ class ExternalWorkAdapter:
                 run_id=correlation.run_id,
                 principal_id=resolved_principal,
                 tenant_id=resolved_tenant,
+                workspace_id=workspace_id,
                 resource=acceptance.scope_digest,
                 external_target=correlation.provider_id,
                 correlation={
@@ -376,17 +401,18 @@ class ExternalWorkAdapter:
                     "policy_decision_ref": acceptance.policy_decision_ref,
                 },
                 continuation_reason=ContinuationReason.QUOTE,
+                execute=lambda: self._integration.submit_quote_acceptance(
+                    correlation,
+                    acceptance,
+                    idempotency_key=idempotency_key,
+                ),
+                task=task,
+                lifecycle=lifecycle,
             )
             if isinstance(gate, ExternalWorkAdapterResult):
                 return gate.model_copy(update={"provider": provider})
             authorized = gate
-
-            # Forward unchanged idempotency key — policy must not mint a new one.
-            snapshot = self._integration.submit_quote_acceptance(
-                correlation,
-                acceptance,
-                idempotency_key=idempotency_key,
-            )
+            snapshot = authorized.value
             if not enrich:
                 mapped = ExternalWorkAdapterResult(
                     used=True,
@@ -429,12 +455,15 @@ class ExternalWorkAdapter:
         reason: str = "",
         principal_id: str | None = None,
         tenant_id: str | None = None,
+        workspace_id: str | None = None,
         enrich: bool = True,
+        task: Task | None = None,
+        lifecycle: TaskLifecycle | None = None,
     ) -> ExternalWorkAdapterResult:
         """Cancel correlated work after meaningful side-effect policy ALLOW."""
         try:
             provider = self._integration.discover()
-            gate = self._evaluate_side_effect(
+            gate = self._run_meaningful_side_effect(
                 action=ACTION_CANCEL_EXTERNAL_WORK,
                 kinds=(MeaningfulSideEffectKind.MUTATION,),
                 side_effect_scope_id=idempotency_key,
@@ -443,6 +472,7 @@ class ExternalWorkAdapter:
                 run_id=correlation.run_id,
                 principal_id=principal_id,
                 tenant_id=tenant_id,
+                workspace_id=workspace_id,
                 resource=correlation.external_task_id,
                 external_target=correlation.provider_id,
                 correlation={
@@ -455,16 +485,18 @@ class ExternalWorkAdapter:
                 },
                 context={"cancel_reason": reason},
                 continuation_reason=ContinuationReason.PROCUREMENT,
+                execute=lambda: self._integration.cancel_work(
+                    correlation,
+                    idempotency_key=idempotency_key,
+                    reason=reason,
+                ),
+                task=task,
+                lifecycle=lifecycle,
             )
             if isinstance(gate, ExternalWorkAdapterResult):
                 return gate.model_copy(update={"provider": provider})
             authorized = gate
-
-            snapshot = self._integration.cancel_work(
-                correlation,
-                idempotency_key=idempotency_key,
-                reason=reason,
-            )
+            snapshot = authorized.value
             if not enrich:
                 mapped = ExternalWorkAdapterResult(
                     used=True,
@@ -501,6 +533,7 @@ class ExternalWorkAdapter:
         idempotency_key: str,
         principal_id: str | None = None,
         tenant_id: str | None = None,
+        workspace_id: str | None = None,
     ) -> ExternalWorkAdapterResult:
         """Forward continuation evidence after side-effect policy ALLOW.
 
@@ -526,6 +559,7 @@ class ExternalWorkAdapter:
             idempotency_key=idempotency_key,
             principal_id=principal_id,
             tenant_id=tenant_id,
+            workspace_id=workspace_id,
         )
 
     def surface_continuation_blocker(
@@ -705,7 +739,7 @@ class ExternalWorkAdapter:
             },
         )
 
-    def _evaluate_side_effect(
+    def _run_meaningful_side_effect(
         self,
         *,
         action: str,
@@ -716,45 +750,42 @@ class ExternalWorkAdapter:
         run_id: str | None,
         principal_id: str | None,
         tenant_id: str | None,
+        workspace_id: str | None,
         resource: str | None,
         external_target: str | None,
         correlation: Mapping[str, Any],
         context: Mapping[str, Any],
         continuation_reason: ContinuationReason,
-    ) -> _AuthorizedSideEffect | ExternalWorkAdapterResult:
-        """Evaluate policy before a meaningful provider call.
-
-        On ALLOW, returns validated identities + decision for reuse by provider
-        correlation and mandatory proof composition. Otherwise returns a structured
-        deny / governance / fail-closed result with no provider call.
-
-        ``MeaningfulSideEffectRequest.run_id`` is mandatory and non-empty — missing
-        execution identity fails closed before request construction (never ``""``).
-        Proof-required fields are therefore guaranteed before the provider call.
-        """
-        if self._side_effect_policy is None:
+        execute: Callable[[], T],
+        task: Task | None = None,
+        lifecycle: TaskLifecycle | None = None,
+    ) -> _ExecutedSideEffect | ExternalWorkAdapterResult:
+        """Fresh authorize-and-execute at the last safe point before provider mutation."""
+        if self._authorization_boundary is None:
             return ExternalWorkAdapterResult(
                 used=False,
-                reason="side_effect_policy_missing",
+                reason="side_effect_authorization_boundary_missing",
                 error_code=ExternalWorkErrorCode.INVALID_REQUEST,
                 error_message=(
-                    "meaningful side effect requires an injected side-effect policy evaluator"
+                    "meaningful side effect requires an injected "
+                    "MeaningfulSideEffectAuthorizationBoundary"
                 ),
                 error_retryable=False,
                 policy_decision=PolicyDecision(
                     action=PolicyAction.DENY,
-                    reason="side_effect_policy_missing",
-                    policy_rule_id="adapter.side_effect_policy_missing",
+                    reason="side_effect_authorization_boundary_missing",
+                    policy_rule_id="adapter.side_effect_authorization_boundary_missing",
                 ),
                 metadata={"side_effect_action": action},
             )
 
         resolved_task = task_id.strip() if task_id else ""
-        # Preserve platform optional semantics: absence is None, not "".
         resolved_run = run_id.strip() if run_id is not None else None
         if resolved_run is not None:
             resolved_run = resolved_run or None
         resolved_principal = (principal_id or "").strip()
+        resolved_tenant = (tenant_id or "").strip()
+        resolved_workspace = (workspace_id or "").strip()
         if not resolved_task or resolved_run is None:
             return ExternalWorkAdapterResult(
                 used=False,
@@ -783,6 +814,34 @@ class ExternalWorkAdapter:
                 ),
                 metadata={"side_effect_action": action},
             )
+        if not resolved_tenant:
+            return ExternalWorkAdapterResult(
+                used=False,
+                reason="side_effect_tenant_missing",
+                error_code=ExternalWorkErrorCode.INVALID_REQUEST,
+                error_message="meaningful side effect requires tenant identity",
+                error_retryable=False,
+                policy_decision=PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="meaningful_side_effect_tenant_missing",
+                    policy_rule_id="adapter.side_effect_tenant",
+                ),
+                metadata={"side_effect_action": action},
+            )
+        if not resolved_workspace:
+            return ExternalWorkAdapterResult(
+                used=False,
+                reason="side_effect_workspace_missing",
+                error_code=ExternalWorkErrorCode.INVALID_REQUEST,
+                error_message="meaningful side effect requires workspace identity",
+                error_retryable=False,
+                policy_decision=PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="meaningful_side_effect_workspace_missing",
+                    policy_rule_id="adapter.side_effect_workspace",
+                ),
+                metadata={"side_effect_action": action},
+            )
 
         resolved_scope_id = side_effect_scope_id.strip()
         if not resolved_scope_id:
@@ -801,7 +860,7 @@ class ExternalWorkAdapter:
             )
 
         try:
-            request = MeaningfulSideEffectRequest(
+            side_effect_request = MeaningfulSideEffectRequest(
                 action=action,
                 kinds=kinds,
                 side_effect_scope_id=resolved_scope_id,
@@ -809,60 +868,140 @@ class ExternalWorkAdapter:
                 task_id=resolved_task,
                 run_id=resolved_run,
                 principal_id=resolved_principal,
-                tenant_id=tenant_id,
+                tenant_id=resolved_tenant,
                 resource=resource,
                 external_target=external_target,
                 correlation=dict(correlation),
                 context=dict(context),
             )
-            decision = self._side_effect_policy.evaluate_meaningful_side_effect(request)
-        except Exception as exc:  # noqa: BLE001 — fail closed on evaluator faults
+            enforcement_request = CollaborativeWorkEnforcementRequest(
+                tenant_id=resolved_tenant,
+                workspace_id=resolved_workspace,
+                operation_id=action,
+                acting_principal_id=resolved_principal,
+                resource_scope=resource,
+                membership_resolution_mode=MembershipResolutionMode.CANONICAL_PRINCIPAL,
+                meaningful_side_effect_request=side_effect_request,
+            )
+            authorized_snapshot: MeaningfulSideEffectAuthorizationResult | None = None
+
+            def _capture_authorization(
+                authorization: MeaningfulSideEffectAuthorizationResult,
+            ) -> None:
+                nonlocal authorized_snapshot
+                authorized_snapshot = authorization
+
+            boundary_result = self._authorization_boundary.authorize_and_execute(
+                enforcement_request,
+                execute,
+                task=task,
+                lifecycle=lifecycle,
+                source_agent_id="external_contractor_adapter",
+                on_authorization=_capture_authorization,
+            )
+        except Exception as exc:  # noqa: BLE001 — fail closed on authorization faults
             return ExternalWorkAdapterResult(
                 used=False,
-                reason="side_effect_policy_evaluation_failed",
+                reason="side_effect_authorization_failed",
                 error_code=ExternalWorkErrorCode.INVALID_REQUEST,
-                error_message=f"side-effect policy evaluation failed: {exc}",
+                error_message=f"side-effect authorization failed: {exc}",
                 error_retryable=False,
                 policy_decision=PolicyDecision(
                     action=PolicyAction.DENY,
-                    reason="side_effect_policy_evaluation_failed",
-                    policy_rule_id="adapter.side_effect_policy_fault",
+                    reason="side_effect_authorization_failed",
+                    policy_rule_id="adapter.side_effect_authorization_fault",
                 ),
                 metadata={"side_effect_action": action},
             )
 
-        if decision.action is PolicyAction.ALLOW:
-            return _AuthorizedSideEffect(
-                decision=decision,
-                task_id=resolved_task,
-                run_id=resolved_run,
-                principal_id=resolved_principal,
+        if isinstance(boundary_result, MeaningfulSideEffectAuthorizationResult):
+            return self._authorization_result_to_adapter(
+                boundary_result,
+                action=action,
+                continuation_reason=continuation_reason,
+                resolved_task=resolved_task,
+                resolved_run=resolved_run,
+                resolved_scope_id=resolved_scope_id,
+                side_effect_scope_digest=side_effect_scope_digest,
+                resource=resource,
+                correlation=correlation,
+                context=context,
             )
 
-        if decision.action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE):
-            blocker = GovernedContinuationRequest(
-                reason=continuation_reason,
-                task_id=resolved_task,
-                run_id=resolved_run,
-                source_agent_id="external_contractor_adapter",
-                prompt=(
-                    f"Meaningful side effect {action} requires governed continuation "
-                    f"before provider execution ({decision.reason})"
+        if authorized_snapshot is None:
+            return ExternalWorkAdapterResult(
+                used=False,
+                reason="side_effect_authorization_failed",
+                error_code=ExternalWorkErrorCode.INVALID_REQUEST,
+                error_message="side-effect authorization missing pre-execute snapshot",
+                error_retryable=False,
+                policy_decision=PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="side_effect_authorization_snapshot_missing",
+                    policy_rule_id="adapter.side_effect_authorization_fault",
                 ),
-                operation_id=action,
-                policy_rule_id=decision.policy_rule_id,
-                resource_scope=resource,
-                policy_action=decision.action,
-                side_effect_scope_id=resolved_scope_id,
-                side_effect_scope_digest=side_effect_scope_digest,
-                correlation=dict(correlation),
-                context={
-                    "side_effect_action": action,
-                    "policy_rule_id": decision.policy_rule_id,
-                    "policy_reason": decision.reason,
-                    **dict(context),
-                },
+                metadata={"side_effect_action": action},
             )
+
+        decision = authorized_snapshot.decision
+        runtime_decision = authorized_snapshot.enforcement_result.composition.runtime_policy
+        if isinstance(runtime_decision, PolicyDecision):
+            decision = runtime_decision
+        return _ExecutedSideEffect(
+            value=boundary_result,
+            decision=decision,
+            task_id=resolved_task,
+            run_id=resolved_run,
+            principal_id=resolved_principal,
+        )
+
+    def _authorization_result_to_adapter(
+        self,
+        authorization: MeaningfulSideEffectAuthorizationResult,
+        *,
+        action: str,
+        continuation_reason: ContinuationReason,
+        resolved_task: str,
+        resolved_run: str,
+        resolved_scope_id: str,
+        side_effect_scope_digest: str | None,
+        resource: str | None,
+        correlation: Mapping[str, Any],
+        context: Mapping[str, Any],
+    ) -> ExternalWorkAdapterResult:
+        decision = authorization.decision
+        runtime_decision = authorization.enforcement_result.composition.runtime_policy
+        if isinstance(runtime_decision, PolicyDecision):
+            decision = runtime_decision
+
+        if authorization.requires_governed_continuation:
+            blocker = authorization.governed_continuation_request
+            if blocker is not None:
+                blocker = blocker.model_copy(update={"reason": continuation_reason})
+            else:
+                blocker = GovernedContinuationRequest(
+                    reason=continuation_reason,
+                    task_id=resolved_task,
+                    run_id=resolved_run,
+                    source_agent_id="external_contractor_adapter",
+                    prompt=(
+                        f"Meaningful side effect {action} requires governed continuation "
+                        f"before provider execution ({decision.reason})"
+                    ),
+                    operation_id=action,
+                    policy_rule_id=decision.policy_rule_id,
+                    resource_scope=resource,
+                    policy_action=decision.action,
+                    side_effect_scope_id=resolved_scope_id,
+                    side_effect_scope_digest=side_effect_scope_digest,
+                    correlation=dict(correlation),
+                    context={
+                        "side_effect_action": action,
+                        "policy_rule_id": decision.policy_rule_id,
+                        "policy_reason": decision.reason,
+                        **dict(context),
+                    },
+                )
             return ExternalWorkAdapterResult(
                 used=False,
                 reason="side_effect_governance_required",
@@ -871,7 +1010,6 @@ class ExternalWorkAdapter:
                 metadata={"side_effect_action": action},
             )
 
-        # DENY, MODIFY (unsupported), and any other non-ALLOW → fail closed.
         return ExternalWorkAdapterResult(
             used=False,
             reason="side_effect_denied",
@@ -946,7 +1084,9 @@ def adapt_from_step_metadata(
     run_id: str | None,
     message: str,
     metadata: Mapping[str, Any],
-    side_effect_policy: MeaningfulSideEffectEvaluator | None = None,
+    authorization_boundary: MeaningfulSideEffectAuthorizationBoundary | None = None,
+    task: Task | None = None,
+    lifecycle: TaskLifecycle | None = None,
 ) -> ExternalWorkAdapterResult:
     """Entry used by the reflex domain step — injection required, no construction."""
     if integration is None:
@@ -956,7 +1096,7 @@ def adapt_from_step_metadata(
             metadata={"capability": _DEFAULT_CAPABILITY},
         )
 
-    adapter = ExternalWorkAdapter(integration, side_effect_policy=side_effect_policy)
+    adapter = ExternalWorkAdapter(integration, authorization_boundary=authorization_boundary)
     try:
         request = adapter.build_create_request(
             task_id=task_id,
@@ -988,6 +1128,8 @@ def adapt_from_step_metadata(
         enrich=enrich,
         principal_id=principal_id,
         tenant_id=tenant_id,
+        task=task,
+        lifecycle=lifecycle,
     )
     # When no continuation evidence was supplied, surface the blocker for Nexus.
     # Forward the real Nexus run_id from execution context — never invent one.

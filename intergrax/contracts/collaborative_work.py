@@ -86,6 +86,13 @@ class MembershipStatus(StrEnum):
     SUSPENDED = "suspended"
 
 
+class MembershipResolutionMode(StrEnum):
+    """How the authority resolver resolves workspace membership."""
+
+    LOCATOR = "locator"
+    CANONICAL_PRINCIPAL = "canonical_principal"
+
+
 class DelegationStatus(StrEnum):
     ACTIVE = "active"
     REVOKED = "revoked"
@@ -285,6 +292,7 @@ class EffectiveAuthorityRequest(BaseModel):
     delegator_principal_id: str | None = None
     resource_scope: str | None = None
     membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
     delegation: AuthorityDelegation | None = None
 
     @field_validator(
@@ -313,6 +321,14 @@ class EffectiveAuthorityRequest(BaseModel):
 
     @model_validator(mode="after")
     def _validate_embedded_evidence_consistency(self) -> EffectiveAuthorityRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator"
+            )
+
         if self.membership is not None:
             if self.membership.tenant_id != self.tenant_id:
                 raise ValueError("membership tenant_id must match request tenant_id")
@@ -613,6 +629,7 @@ class CollaborativeWorkEnforcementRequest(BaseModel):
     delegator_principal_id: str | None = None
     resource_scope: str | None = None
     membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
     delegation: AuthorityDelegation | None = None
     meaningful_side_effect_request: MeaningfulSideEffectRequest | None = None
 
@@ -635,6 +652,14 @@ class CollaborativeWorkEnforcementRequest(BaseModel):
 
     @model_validator(mode="after")
     def _validate_embedded_locators(self) -> CollaborativeWorkEnforcementRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator"
+            )
+
         if self.membership is not None:
             if self.membership.tenant_id != self.tenant_id:
                 raise ValueError("membership tenant_id must match request tenant_id")

@@ -115,6 +115,16 @@ if errorlevel 1 (
 echo watcher_state_reset=true
 
 echo.
+echo Materializing minimal runtime context for local_workspace_application...
+uv run python scripts/build/build_application_image.py --application local_workspace_application --context-dir applications/local_workspace_application/docker/runtime-context --materialize-only
+if errorlevel 1 (
+    echo proof_result=FAIL
+    echo failure_reason=runtime_context_materialization_failed
+    goto proof_fail
+)
+echo runtime_context_materialization=PASS
+
+echo.
 echo Validating Docker Compose merge...
 docker compose -p "%LKW_COMPOSE_PROJECT%" -f "%BASE_COMPOSE%" -f "%KAFKA_COMPOSE%" -f "%WATCHER_COMPOSE%" -f "%MONGODB_COMPOSE%" config > "%COMPOSE_CONFIG%"
 if errorlevel 1 goto proof_fail

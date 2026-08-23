@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
 from external_contractor_adapter.external_work_adapter import ExternalWorkAdapter
 from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
@@ -61,7 +62,13 @@ class _CapturingEvaluator:
 
 def _adapter(decision: PolicyDecision) -> tuple[ExternalWorkAdapter, _CapturingEvaluator]:
     evaluator = _CapturingEvaluator(decision)
-    adapter = ExternalWorkAdapter(MagicMock(), side_effect_policy=evaluator)
+    adapter, _ = allow_adapter(
+        MagicMock(),
+        policy=evaluator,
+        principal_id=_PRINCIPAL,
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+    )
     return adapter, evaluator
 
 
@@ -74,6 +81,7 @@ def _create_request(*, scope_digest: str) -> ExternalWorkCreateRequest:
         scope_description="review",
         scope_digest=scope_digest,
         idempotency_key=_IDEM_KEY,
+        workspace_ref="workspace-a",
     )
 
 
@@ -137,6 +145,7 @@ def test_create_binds_idempotency_key_and_scope_digest() -> None:
         run_id=request.run_id,
         principal_id=_PRINCIPAL,
         tenant_id="tenant-a",
+        workspace_id="workspace-a",
         resource=request.scope_digest,
         external_target=request.provider_id,
         correlation={},
@@ -164,7 +173,8 @@ def test_same_idempotency_key_different_scope_digest_are_distinct() -> None:
             task_id=request.task_id,
             run_id=request.run_id,
             principal_id=_PRINCIPAL,
-            tenant_id=None,
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
             resource=request.scope_digest,
             external_target=request.provider_id,
             correlation={},
@@ -188,6 +198,7 @@ def test_quote_acceptance_binds_canonical_scope_digest() -> None:
         idempotency_key=_IDEM_KEY,
         principal_id=_PRINCIPAL,
         enrich=False,
+        workspace_id="workspace-a",
     )
     assert evaluator.requests
     captured = evaluator.requests[0]
@@ -230,6 +241,7 @@ def test_quote_scope_digest_ignores_spoofed_dynamic_context() -> None:
         idempotency_key=_IDEM_KEY,
         principal_id=_PRINCIPAL,
         enrich=False,
+        workspace_id="workspace-a",
     )
     assert evaluator.requests[0].side_effect_scope_digest == expected
     assert expected != quote_acceptance_side_effect_scope_digest(
@@ -255,7 +267,8 @@ def test_quote_scopes_with_same_idempotency_key_remain_distinct() -> None:
             task_id=_TASK_ID,
             run_id=_RUN_ID,
             principal_id=_PRINCIPAL,
-            tenant_id=None,
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
             resource=acceptance.scope_digest,
             external_target="provider-1",
             correlation={},
@@ -279,7 +292,8 @@ def test_cancel_uses_idempotency_key_without_fabricated_digest() -> None:
         task_id=_TASK_ID,
         run_id=_RUN_ID,
         principal_id=_PRINCIPAL,
-        tenant_id=None,
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
         resource=_correlation().external_task_id,
         external_target="provider-1",
         correlation={},

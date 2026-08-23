@@ -270,6 +270,21 @@ An application is not an agent. It is the **product shell** — the “Cursor AI
 | **2** | Agents | Specialized capability modules | Applications / programs | `agents/<name>` |
 | **3** | Applications | Configured environments | IDE product, industry workspace | `applications/<name>` |
 
+### Evidence-backed claim contracts (GAP-1A)
+
+**Code:** `intergrax/contracts/evidence_claims.py`
+
+| Owner | Responsibility |
+|-------|----------------|
+| **Applications / domains** | Claim meaning, ``claim_kind`` vocabulary, optional ``defect_code`` values, acceptance criteria |
+| **Platform contracts** | Typed ``EvidenceBackedClaim``, ``EvidenceChallenge``, identity carriers, structural invariants |
+| **Critic** | May produce or evaluate challenges — does **not** own the contract |
+| **Observability** | Records execution evidence — does **not** define semantic claim truth |
+| **Attestation** | May seal exported claim artifacts — does **not** define claim semantics |
+| **Platform Proof Evidence** | Future projection consumer (GAP-1B) — adapts to this contract, not vice versa |
+
+Follow-up evidence requirements (typed information requests) are **deferred** to a later slice; challenges and claim resolution states are sufficient for GAP-1A.
+
 ## Dependency Direction (Strict)
 
 ```text

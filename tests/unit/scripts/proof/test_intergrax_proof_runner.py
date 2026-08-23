@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -43,7 +43,6 @@ def _entry(
     return ProofManifestEntry(
         proof_id=proof_id,
         title=proof_id,
-        domain="test",
         profiles=frozenset({ProofProfile.QUICK}),
         proof_kind="test",
         command=ProofArgvCommand(executable="python", argv=argv),
@@ -107,7 +106,6 @@ def test_missing_executable(tmp_path: Path) -> None:
     entry = ProofManifestEntry(
         proof_id="MISSING",
         title="missing",
-        domain="test",
         profiles=frozenset({ProofProfile.QUICK}),
         proof_kind="test",
         command=ProofArgvCommand(
@@ -142,7 +140,7 @@ def test_child_output_not_persisted_in_result(tmp_path: Path) -> None:
     assert "stderr_tail" not in serialized
 
 
-# Deliberately fake secret-shaped values — not real credentials; avoid live token formats
+# Deliberately fake secret-shaped values â€” not real credentials; avoid live token formats
 # so push protection does not block commits while still proving no child output is persisted.
 _SECRET_CANARY = "SECRET_CANARY_do_not_persist_this_value_7f3a9b"
 _FAKE_XAPP = "FAKE_SLACK_XAPP_TOKEN_NOT_REAL_7f3a9b"
@@ -328,7 +326,6 @@ def test_external_mutating_requires_opt_in() -> None:
     entry = ProofManifestEntry(
         proof_id="EXT-MUT",
         title="ext",
-        domain="slack",
         profiles=frozenset({ProofProfile.LIVE}),
         proof_kind="test",
         command=ProofArgvCommand(executable="python", argv=("-c", "print(1)")),

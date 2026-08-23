@@ -35,6 +35,7 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
     ACTION_CREATE_EXTERNAL_WORK,
 )
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
@@ -70,6 +71,7 @@ def _meta() -> dict[str, object]:
         ),
         "external_work.principal_id": "partner-demo-user",
         "external_work.tenant_id": "partner-demo-tenant",
+        "external_work.workspace_ref": "workspace-a",
     }
 
 
@@ -78,9 +80,12 @@ def _meta() -> dict[str, object]:
 def test_partner_validation_governed_execution_demo() -> None:
     """Observable create → continuation → accept → GovernedProofProfile."""
     policy = DeterministicMeaningfulSideEffectPolicy(default=PolicyAction.ALLOW)
-    adapter = ExternalWorkAdapter(
+    adapter, _ = allow_adapter(
         DeterministicExternalWorkFake(),
-        side_effect_policy=policy,
+        policy=policy,
+        tenant_id="partner-demo-tenant",
+        workspace_id="workspace-a",
+        principal_id="partner-demo-user",
     )
 
     created = adapter.create_and_map(
@@ -131,6 +136,7 @@ def test_partner_validation_governed_execution_demo() -> None:
         idempotency_key=_ACCEPT_IDEMP,
         principal_id="partner-demo-user",
         tenant_id="partner-demo-tenant",
+        workspace_id="workspace-a",
     )
     assert accepted.used is True
     assert accepted.proof is not None

@@ -162,7 +162,7 @@ Display separately where applicable:
 | Identifier | Value (v1) |
 |------------|------------|
 | **Report standard** | Platform Proof Report Standard **v1** |
-| **Evidence schema version** (target, PP-REPORT-2) | `intergrax.platform_proof_evidence.v1` |
+| **Evidence schema version** (target, PP-REPORT-2) | `intergrax.platform_proof_evidence.v2` |
 | **Report model schema version** (target, PP-REPORT-2) | `intergrax.platform_proof_report.v1` |
 | **Renderer version** (when implemented) | semver string recorded in provenance |
 
@@ -280,7 +280,7 @@ Show the **real execution path** with participant class on each node:
 
 Include an **inline diagram** (SVG recommended): architecture flow for the proof.
 
-**Reference example — TOOLS-ITERATIVE-SQL-INVESTIGATION:**
+**Reference example — SCENARIO-AI-INCIDENT-INVESTIGATION (design-stage):**
 
 ```text
 OpenAI model (EXTERNAL vendor, REAL)
@@ -687,7 +687,7 @@ Align with existing suite receipt directory `.artifacts/proof/` (`intergrax_proo
 | Artifact | Naming |
 |----------|--------|
 | Suite directory | `<suite-run-id>` UUID from `SuiteReceipt.suite_run_id` |
-| Per-proof directory | Uppercase manifest `proof_id` (e.g. `TOOLS-ITERATIVE-SQL-INVESTIGATION`) |
+| Per-proof directory | Uppercase manifest `proof_id` (e.g. `SCENARIO-AI-INCIDENT-INVESTIGATION`) |
 | Evidence | `evidence.json` |
 | Report | `report.html` |
 | PDF | `report.pdf` |
@@ -720,73 +720,12 @@ Promotion workflow remains governed by [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](../m
 
 ---
 
-## 16. Reference example — TOOLS-ITERATIVE-SQL-INVESTIGATION
+## 16. Reference example — SCENARIO-AI-INCIDENT-INVESTIGATION (design stage)
 
-**Proof ID:** `TOOLS-ITERATIVE-SQL-INVESTIGATION`  
-**Manifest:** `scripts/proof/intergrax_proof_manifest.py`  
-**Entrypoint:** `platform_proofs/tools/iterative_sql_investigation/run_proof.py`
+**Proof ID:** `SCENARIO-AI-INCIDENT-INVESTIGATION` (planned; not yet executable)
+**Design package:** `platform_proofs/scenarios/ai_incident_investigation/README.md`
 
-### 16.1 Claim (illustrative outline)
-
-> The bounded iterative tool runtime can use **real SQL observations** from **PostgreSQL** via a **real LLM provider** to drive subsequent **evidence-dependent** tool calls, preserve an explicit **InvestigationProof** chain, and reach a **bounded conclusion** while rejecting unsupported causal claims.
-
-### 16.2 Participants (illustrative)
-
-| Component | Vendor | Role | Status |
-|-----------|--------|------|--------|
-| LLM | OpenAI (env-configured) | Planning / answers | REAL |
-| LLM adapter | Intergrax | Provider boundary | PLATFORM |
-| Tool loop | Intergrax Nexus | Bounded iteration | PLATFORM |
-| SQL tool | `platform_proof.sql.query` | Read-only SELECT | PROOF-owned REAL |
-| PostgreSQL | Docker | Fixture dataset | REAL + CONTROLLED fixture |
-| Evaluator | Proof-local | Scenario invariants | PROOF-owned |
-
-### 16.3 Scenario sketch
-
-| ID | Intent | Falsification |
-|----|--------|---------------|
-| A | Find anomalous segment; reject volume-only explanation | Volume-only root cause accepted |
-| B | Detect association; verify segmented evidence; **no** direct causation claim | Direct causation asserted |
-| C | No staffing data — must report missing evidence | Staffing cause invented |
-
-Evidence sources today: `ToolsSqlInvestigationProofResult`, `ScenarioRunResult`, `ToolCallTrace`, `InvestigationProof`, `ScenarioExecutionSnapshot` — future **`evidence.json`** consolidates these for reporting (PP-REPORT-2).
-
-### 16.4 Execution timeline excerpt (PASS — scenario A)
-
-| STEP | PURPOSE | ACTION | STATUS |
-|------|---------|--------|--------|
-| 1 | Prepare deterministic dataset | Materialize + verify fingerprint | ok |
-| 2 | Verify DB | Row counts / anomaly hub stats | ok |
-| 3 | Construct adapter | Resolve `INTERGRAX_LLM_*` | ok |
-| 4 | Run bounded tool loop | SQL queries via real provider | ok |
-| 5 | Record InvestigationProof | ENG-6 basis chain | ok |
-| 6 | Evaluate scenario A | Pattern + invariant checks | ok |
-
-### 16.5 Evaluator verdict excerpt (PASS)
-
-- ✓ `successful_tool_calls` ≥ minimum  
-- ✓ `investigation_proof_passes_eng6_chain`  
-- ✓ North anomaly identified; volume-only explanation rejected  
-- ✓ `stop_reason` ∈ successful termination set  
-
-### 16.6 Failure example outline (FAIL — scenario B)
-
-| STEP | STATUS |
-|------|--------|
-| Dataset + DB verify | ok |
-| Tool calls return segmented evidence | ok |
-| Final answer asserts direct causation | **fail** |
-| Evaluator: `claims_direct_causation=true` | **FAIL** (`MODEL_BEHAVIOR_FAILURE`) |
-
-### 16.7 BLOCKED example outline
-
-| Condition | Report status |
-|-----------|---------------|
-| Missing `INTERGRAX_LLM_PROVIDER` | **BLOCKED** (`BLOCKED_CONFIGURATION`) |
-| Docker unavailable | **BLOCKED** (`BLOCKED_ENVIRONMENT`) |
-| Provider auth failure | **BLOCKED** or **CRASH** depending on termination path |
-
-Evidence struct: `ToolsSqlInvestigationProofResult.blocked(...)` — report still generated with §13 checklist.
+Executable reference report content will be defined when the scenario passes acceptance gates and ships `proof.json`, evidence, and `report.html`.
 
 ---
 

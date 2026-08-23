@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -12,10 +12,6 @@ from unittest.mock import patch
 
 import pytest
 
-from platform_proofs.tools.iterative_sql_investigation.artifacts import (
-    allocate_run_directory,
-    canonical_package_output_directory,
-)
 from scripts.proof.intergrax_platform_proof_artifact_verifier import (
     ArtifactVerificationResult,
     ArtifactVerificationStatus,
@@ -80,19 +76,18 @@ from scripts.proof.intergrax_proof_runner import (
 pytestmark = pytest.mark.unit
 
 _FAKE_PROOF_ID = "TEST-PUBLISH-PROOF"
-_FAKE_DOMAIN_ROOT = Path("platform_proofs") / "tools" / "fake"
+_FAKE_DOMAIN_ROOT = Path("platform_proofs") / "test_domain" / "fake_publish"
 
 
 def _entry(proof_id: str = _FAKE_PROOF_ID) -> ProofManifestEntry:
     return ProofManifestEntry(
         proof_id=proof_id,
         title=proof_id,
-        domain="tools",
         profiles=frozenset({ProofProfile.QUICK}),
         proof_kind="publish",
         command=ProofArgvCommand(
             executable="python",
-            argv=("platform_proofs/tools/fake/run_proof.py",),
+            argv=("platform_proofs/test_domain/fake_publish/run_proof.py",),
         ),
         safety_class=ProofSafetyClass.LOCAL_READ_ONLY,
     )
@@ -126,7 +121,7 @@ def _spec(
     return ProofExecutionSpec(
         manifest_entry=entry,
         evidence_required=True,
-        evidence_schema="intergrax.platform_proof_evidence.v1",
+        evidence_schema="intergrax.platform_proof_evidence.v2",
         expected_artifacts=_artifacts(),
         package_root=package_root,
     )
@@ -179,7 +174,7 @@ def _write_evidence(
         proof_identity=ProofIdentityEvidence(
             proof_id=_FAKE_PROOF_ID,
             title="title",
-            domain="tools",
+            domains_exercised=("test_domain",),
             proof_version="1.0.0",
             source_revision=revision,
             execution_profile=ProofProfile.QUICK,
@@ -786,39 +781,13 @@ def test_publication_failure_prevents_pass(tmp_path: Path) -> None:
     assert result.diagnostic_summary == "canonical_output_publish_failed"
 
 
-def test_standalone_tools_default_uses_package_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv(INTERGRAX_PROOF_ARTIFACT_DIR_ENV, raising=False)
-    monkeypatch.chdir(tmp_path)
-    run_directory = allocate_run_directory()
-    assert run_directory == canonical_package_output_directory()
-
-
-def test_standalone_tools_second_run_overwrites_same_filenames(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv(INTERGRAX_PROOF_ARTIFACT_DIR_ENV, raising=False)
-    canonical_output = tmp_path / "package" / "output"
-    monkeypatch.setattr(
-        "platform_proofs.tools.iterative_sql_investigation.artifacts.CANONICAL_PACKAGE_OUTPUT",
-        canonical_output,
-    )
-    first = allocate_run_directory()
-    first.joinpath("proof-result.json").write_text('{"marker":"first"}', encoding="utf-8")
-    second = allocate_run_directory()
-    assert first == second == canonical_output.resolve()
-    second.joinpath("proof-result.json").write_text('{"marker":"second"}', encoding="utf-8")
-    assert json.loads(second.joinpath("proof-result.json").read_text())["marker"] == "second"
-    assert len(list(second.iterdir())) == 1
-
-
 def _descriptor_payload(*, proof_id: str, entrypoint: str, run_mode: str) -> dict[str, object]:
     return {
         "schema_version": PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION,
         "library_class": "CONFORMANCE",
         "proof_id": proof_id,
         "title": proof_id,
-        "domain": "tools",
+        "domains_exercised": ["test_domain"],
         "proof_kind": "publish",
         "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
@@ -827,7 +796,7 @@ def _descriptor_payload(*, proof_id: str, entrypoint: str, run_mode: str) -> dic
         "timeout_seconds": 60,
         "safety_class": "LOCAL_READ_ONLY",
         "evidence_required": True,
-        "evidence_schema": "intergrax.platform_proof_evidence.v1",
+        "evidence_schema": "intergrax.platform_proof_evidence.v2",
         "report_required": True,
         "expected_artifacts": [
             {"kind": "EVIDENCE_JSON", "relative_path": "evidence.json", "required": True},
@@ -882,7 +851,7 @@ def _build_evidence(status: ProofEvidenceExecutionStatus, execution_id: str) -> 
         proof_identity=ProofIdentityEvidence(
             proof_id=PROOF_ID,
             title="title",
-            domain="tools",
+            domains_exercised=("test_domain",),
             proof_version="1.0.0",
             source_revision=revision,
             execution_profile=ProofProfile.QUICK,
@@ -970,7 +939,7 @@ if __name__ == "__main__":
 def _write_fake_proof_package(repo_root: Path, *, run_mode: str = "pass") -> Path:
     package = repo_root / _FAKE_DOMAIN_ROOT
     package.mkdir(parents=True, exist_ok=True)
-    entrypoint = "platform_proofs/tools/fake/run_proof.py"
+    entrypoint = "platform_proofs/test_domain/fake_publish/run_proof.py"
     (package / "run_proof.py").write_text(
         _fake_run_proof_source(run_mode=run_mode),
         encoding="utf-8",
@@ -1110,7 +1079,9 @@ def test_suite_fail_publication_replaces_pass_with_truthful_fail(
 
 
 def test_canonical_output_is_not_gitignored(repo_root: Path) -> None:
-    target = repo_root / "platform_proofs/tools/iterative_sql_investigation/output/report.html"
+    target = repo_root / _FAKE_DOMAIN_ROOT / "output" / "report.html"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("<html></html>", encoding="utf-8")
     completed = subprocess.run(
         ["git", "check-ignore", "-v", str(target)],
         cwd=repo_root,

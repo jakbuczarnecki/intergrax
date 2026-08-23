@@ -21,7 +21,11 @@ from external_contractor_adapter.external_work_adapter import (
     META_PROVIDER_ID,
     META_SCOPE_DESCRIPTION,
     META_SCOPE_DIGEST,
+    META_WORKSPACE_REF,
     ExternalWorkAdapter,
+)
+from applications.governed_contractor_application.host.collaborative_work_boundary import (
+    build_external_work_authorization_boundary,
 )
 from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
@@ -200,6 +204,7 @@ def _meta() -> dict[str, object]:
         META_SCOPE_DIGEST: _DIGEST,
         META_IDEMPOTENCY_KEY: "idem-offline-create",
         META_CORRELATION_ID: "corr-offline-demo",
+        META_WORKSPACE_REF: "workspace-a",
         "external_work.budget_limit": MoneyAmount(
             amount=Decimal("25.00"), currency="USD"
         ),
@@ -246,7 +251,13 @@ def run_offline_governed_contractor_demo(
     bundle = build_demo_policy_bundle()
     policy = RuntimePolicyBundleEvaluator(bundle, clock=lambda: _T0)
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    authorization_boundary = build_external_work_authorization_boundary(
+        policy,
+        tenant_id="offline-demo-tenant",
+        workspace_id="workspace-a",
+        principal_id="offline-demo-user",
+    )
+    adapter = ExternalWorkAdapter(fake, authorization_boundary=authorization_boundary)
     recovery_attestor = build_deterministic_test_attestor(
         key_id=DEMO_OFFLINE_KEY_ID,
         clock=lambda: _T0,

@@ -23,6 +23,7 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_CANCEL_EXTERNAL_WORK,
     ACTION_CREATE_EXTERNAL_WORK,
 )
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
@@ -84,6 +85,7 @@ def _meta(idem: str = "idem-pc") -> dict[str, object]:
         ),
         "external_work.principal_id": "pc-user",
         "external_work.tenant_id": "pc-tenant",
+        "external_work.workspace_ref": "workspace-pc",
     }
 
 
@@ -120,7 +122,13 @@ def _orch(
     bundle = bundle or build_demo_policy_bundle(issued_at=_T0)
     policy = RuntimePolicyBundleEvaluator(bundle, clock=lambda: _T0)
     fake = fake or DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    adapter, _ = allow_adapter(
+        fake,
+        policy=policy,
+        tenant_id="pc-tenant",
+        workspace_id="workspace-pc",
+        principal_id="pc-user",
+    )
     return (
         GovernedExternalWorkOrchestrator(
             adapter=adapter,

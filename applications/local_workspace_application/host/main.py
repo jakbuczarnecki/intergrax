@@ -16,8 +16,8 @@ from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
     create_reference_production_process_composition,
 )
-from intergrax.applications._shared.reference_production_lifecycle import (
-    ReferenceProductionLifecycleLauncher,
+from intergrax.applications._shared.reference_production_governance_wiring import (
+    wire_governed_reference_production_launcher,
 )
 from local_workspace_application.host.reference_lifecycle_input import (
     build_local_workspace_reference_lifecycle_input,
@@ -80,9 +80,13 @@ def run_reference_production() -> None:
 
     composition = create_reference_production_process_composition()
     projection_input, activation_request = build_local_workspace_reference_lifecycle_input()
-    ReferenceProductionLifecycleLauncher(composition).deploy_and_activate(
+    resolved_settings = LocalWorkspaceBackendSettings.from_env()
+    env = build_local_workspace_environment_profile(resolved_settings)
+    launcher, governance = wire_governed_reference_production_launcher(composition, env)
+    launcher.deploy_and_activate(
         projection_input,
         activation_request,
+        principal=governance.principal,
     )
     host = os.environ.get("LOCAL_WORKSPACE_BACKEND_HOST", "0.0.0.0")
     port = int(os.environ.get("LOCAL_WORKSPACE_BACKEND_PORT", "8020"))

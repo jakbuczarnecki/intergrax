@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -58,7 +58,6 @@ def _entry(proof_id: str = _FAKE_PROOF_ID) -> ProofManifestEntry:
     return ProofManifestEntry(
         proof_id=proof_id,
         title=proof_id,
-        domain="test_artifact_verify",
         profiles=frozenset({ProofProfile.QUICK}),
         proof_kind="artifact_verify",
         command=ProofArgvCommand(
@@ -98,7 +97,7 @@ def _artifacts_spec(
     return ProofExecutionSpec(
         manifest_entry=entry,
         evidence_required=evidence_required,
-        evidence_schema="intergrax.platform_proof_evidence.v1",
+        evidence_schema="intergrax.platform_proof_evidence.v2",
         expected_artifacts=artifacts,
     )
 
@@ -135,7 +134,7 @@ def _minimal_descriptor_payload(**overrides: object) -> dict[str, object]:
         "library_class": "CONFORMANCE",
         "proof_id": "TOOLS-SAMPLE",
         "title": "sample",
-        "domain": "tools",
+        "domains_exercised": ["tools"],
         "proof_kind": "sample",
         "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
@@ -559,7 +558,7 @@ def _descriptor_payload(
         "library_class": "CONFORMANCE",
         "proof_id": proof_id,
         "title": proof_id,
-        "domain": "test_artifact_verify",
+        "domains_exercised": ["test_artifact_verify"],
         "proof_kind": "artifact_verify",
         "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
@@ -571,7 +570,7 @@ def _descriptor_payload(
         "timeout_seconds": 60,
         "safety_class": "LOCAL_READ_ONLY",
         "evidence_required": True,
-        "evidence_schema": "intergrax.platform_proof_evidence.v1",
+        "evidence_schema": "intergrax.platform_proof_evidence.v2",
         "expected_artifacts": [
             {
                 "kind": "EVIDENCE_JSON",
@@ -637,7 +636,7 @@ def _build_evidence(status: ProofEvidenceExecutionStatus) -> PlatformProofEviden
         proof_identity=ProofIdentityEvidence(
             proof_id=PROOF_ID,
             title="title",
-            domain="test",
+            domains_exercised=("test_artifact_verify",),
             proof_version="1.0.0",
             source_revision=revision,
             execution_profile=ProofProfile.QUICK,
@@ -828,44 +827,20 @@ def test_blocked_before_execution_does_not_verify_artifacts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _isolate_fake_proof_discovery(repo_root, monkeypatch)
-    monkeypatch.delenv("INTERGRAX_LLM_PROVIDER", raising=False)
-    receipt, _ = run_suite(RunnerConfig(profile=ProofProfile.FULL, repo_root=repo_root))
-    tools = next(
+    monkeypatch.delenv("INTERGRAX_SLACK_APP_TOKEN", raising=False)
+    receipt, _ = run_suite(RunnerConfig(profile=ProofProfile.LIVE, repo_root=repo_root))
+    slack = next(
         (
             item
             for item in receipt.results
-            if item.proof_id == "TOOLS-ITERATIVE-SQL-INVESTIGATION"
+            if item.proof_id == "SLACK-CONVERSATION-LIVE"
         ),
         None,
     )
-    if tools is not None:
-        assert tools.status == ProofStatus.BLOCKED_ENVIRONMENT
-        assert tools.artifact_verification_status is None
+    if slack is not None:
+        assert slack.status == ProofStatus.BLOCKED_ENVIRONMENT
+        assert slack.artifact_verification_status is None
     _cleanup_fake_packages(repo_root)
-
-
-def test_tools_descriptor_expected_artifacts_contract(repo_root: Path) -> None:
-    from scripts.proof.intergrax_platform_proof_descriptor_loader import load_descriptor
-
-    descriptor_path = (
-        repo_root
-        / "platform_proofs"
-        / "tools"
-        / "iterative_sql_investigation"
-        / PROOF_DESCRIPTOR_FILENAME
-    )
-    descriptor = load_descriptor(descriptor_path, repo_root=repo_root)
-    kinds = {artifact.kind for artifact in descriptor.expected_artifacts}
-    assert ExpectedArtifactKind.EVIDENCE_JSON in kinds
-    assert ExpectedArtifactKind.DOMAIN_RESULT_JSON in kinds
-    assert ExpectedArtifactKind.REPORT_HTML in kinds
-    report = next(
-        artifact
-        for artifact in descriptor.expected_artifacts
-        if artifact.kind == ExpectedArtifactKind.REPORT_HTML
-    )
-    assert report.required is True
-    assert descriptor.report_required is True
 
 
 def test_verification_order_is_descriptor_declaration(

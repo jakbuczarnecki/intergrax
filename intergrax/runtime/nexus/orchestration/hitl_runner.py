@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
+from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.validation import ValidationResult
@@ -46,6 +47,12 @@ class NexusHitlRunner:
     finalize_trace: FinalizeFn
     maybe_checkpoint: CheckpointFn
     persist_human_decision: PersistHumanFn
+    execution_identity: ActiveExecutionIdentity | None = None
+
+    def _require_execution_identity(self) -> tuple[str, str]:
+        if self.execution_identity is None:
+            raise RuntimeError("active execution identity required for HITL provenance")
+        return self.execution_identity.require()
 
     async def run_lifecycle_hook(
         self,
@@ -117,6 +124,7 @@ class NexusHitlRunner:
         lifecycle: TaskLifecycle,
     ) -> TaskResult:
         resolution = task.runtime.governance.hitl_resolution
+        run_id, attempt_id = self._require_execution_identity()
         payload = (
             human_approval_event_payload(
                 task_id=resolution.task_id,
@@ -135,7 +143,8 @@ class NexusHitlRunner:
         await self.publish(
             runtime_event_from_task_state(
                 task,
-                run_id=task.task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
                 message="human rejection received",
             ).model_copy(
                 update={
@@ -175,10 +184,12 @@ class NexusHitlRunner:
         self.escalation_router.apply_to_task(task, outcome)
         self.persist_human_decision(task, HumanResponseVerdict.ESCALATE)
 
+        run_id, attempt_id = self._require_execution_identity()
         await self.publish(
             runtime_event_from_task_state(
                 task,
-                run_id=task.task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
                 message="human escalation requested",
             ).model_copy(
                 update={

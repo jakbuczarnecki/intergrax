@@ -63,7 +63,7 @@ class GovernedContractorBackendSettings(IntergraxApplicationSettingsBase):
     # Programmatic DI slots (not env-backed) — Execution Evidence / GEC wiring.
     # Set on a settings instance or build-context settings object before mount.
     external_work_integration: object | None = None
-    meaningful_side_effect_policy: object | None = None
+    meaningful_side_effect_authorization_boundary: object | None = None
     runtime_policy_bundle: object | None = None
     host_attestor: object | None = None
     attestation_required: bool = False

@@ -4,8 +4,8 @@
 """LKW.7C2 watcher-triggered persistent search E2E proof with ProofReceipt.
 
 Uses docker compose against the dedicated watcher overlay, Kafka task-topic
-inspection, local.workspace.search diagnostics, embedding warm-up, and
-platform ProofReceiptStore → MongoDB DocumentStore recording.
+inspection, pre-ingest embedding readiness, local.workspace.search
+diagnostics, and platform ProofReceiptStore → MongoDB DocumentStore recording.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ import urllib.request
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 
 from intergrax.integrations.contracts.document_store import DocumentStore
@@ -103,8 +103,8 @@ _DEFAULT_MONGODB_COMPOSE = _DEFAULT_DOCKER_DIR / "docker-compose.mongodb.yml"
 
 _FILE_WATCHER_COMPOSE_PROJECT = "lkw-file-watcher-e2e-proof"
 
-_WARMUP_REQUEST_TIMEOUT_SECONDS = 120.0
-_WARMUP_RETRY_SLEEP_SECONDS = 2.0
+_EMBEDDING_READINESS_PROBE_TEXT = "LKW_FILE_WATCHER_E2E_EMBEDDING_READINESS"
+_EMBEDDING_READINESS_RETRY_SLEEP_SECONDS = 2.0
 _PYTHON_CHILD_IO_ENCODING = "utf-8"
 
 
@@ -135,11 +135,12 @@ class SearchDiagnostics:
 
 
 @dataclass(frozen=True)
-class WarmupResult:
-    completed: bool
-    attempt_count: int
-    last_reason: str | None
-    last_raw_tool_reason: str | None
+class EmbeddingReadinessResult:
+    ready: bool
+    provider: str | None
+    model: str | None
+    dimension: int | None
+    failure_reason: str | None
 
 
 @dataclass(frozen=True)
@@ -605,25 +606,6 @@ def build_search_request(marker: str) -> dict[str, object]:
     }
 
 
-def build_warmup_search_request(query: str) -> dict[str, object]:
-    return {
-        "tenant_id": _TENANT_ID,
-        "workspace_id": _WORKSPACE_ID,
-        "user_id": _SEARCH_USER_ID,
-        "message": query,
-        "capability": "local.workspace.search",
-        "metadata": {
-            "tenant_id": _TENANT_ID,
-            "user_id": _SEARCH_USER_ID,
-            "workspace_id": _WORKSPACE_ID,
-            "collection_id": _COLLECTION_ID,
-            "query": query,
-            "top_k": 1,
-            "proof_phase": "embedding_warmup",
-        },
-    }
-
-
 def extract_search_diagnostics(response: dict[str, object]) -> SearchDiagnostics | None:
     metadata = response.get("metadata")
     if not isinstance(metadata, dict):
@@ -672,19 +654,6 @@ def extract_search_diagnostics(response: dict[str, object]) -> SearchDiagnostics
     )
 
 
-def warmup_attempt_succeeded(diagnostics: SearchDiagnostics | None) -> bool:
-    """Accept warm-up only when typed retrieve outcome proves success.
-
-    Requires ``used=true`` and ``reason=retrieve_complete``. Zero hits are
-    acceptable. ``terminal_status`` alone is never sufficient.
-    """
-    return (
-        diagnostics is not None
-        and diagnostics.used is True
-        and diagnostics.reason is SearchSummaryReason.RETRIEVE_COMPLETE
-    )
-
-
 def search_attempt_succeeded(
     diagnostics: SearchDiagnostics | None,
     *,
@@ -697,22 +666,67 @@ def search_attempt_succeeded(
     return expected_source_path in diagnostics.source_refs
 
 
-_PERSISTENCE_PROOF_SCOPE_ID = "lkw-persistence-proof"
-
-
-def _latest_persistence_proof_marker(proof_docs_dir: Path) -> str | None:
-    candidates = sorted(
-        proof_docs_dir.glob("lkw_persistence_proof_*.txt"),
-        key=lambda path: path.stat().st_mtime,
-        reverse=True,
+def build_embedding_readiness_probe_code(*, probe_text: str) -> str:
+    escaped_probe = probe_text.replace("\\", "\\\\").replace("'", "\\'")
+    return (
+        "import json; "
+        "from intergrax.rag.embedding.bootstrap.default_embedding_engine "
+        "import create_default_embedding_pipeline; "
+        "from intergrax.rag.embedding.registry.profile import embedding_profile_from_env; "
+        f"probe = '{escaped_probe}'; "
+        "profile = embedding_profile_from_env(); "
+        "pipeline = create_default_embedding_pipeline(); "
+        "vecs = pipeline.embed_texts([probe]); "
+        "dim = int(vecs.shape[1]) if getattr(vecs, 'ndim', 0) == 2 and vecs.shape[0] == 1 and vecs.shape[1] > 0 else -1; "
+        "ok = dim > 0; "
+        "print(json.dumps({'provider': profile.provider, 'model': profile.model or '', "
+        "'dimension': dim, 'ok': ok}))"
     )
-    for path in candidates:
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if line.startswith("Unique marker:"):
-                marker = line.split(":", 1)[1].strip()
-                if marker:
-                    return marker
-    return None
+
+
+def parse_embedding_readiness_output(stdout: str) -> EmbeddingReadinessResult:
+    for line in reversed([item.strip() for item in stdout.splitlines() if item.strip()]):
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict) or "ok" not in payload:
+            continue
+        provider_raw = payload.get("provider")
+        model_raw = payload.get("model")
+        dimension_raw = payload.get("dimension")
+        provider = str(provider_raw).strip() if provider_raw is not None else None
+        model = str(model_raw).strip() if model_raw is not None else None
+        dimension: int | None
+        if isinstance(dimension_raw, int):
+            dimension = dimension_raw
+        elif isinstance(dimension_raw, float) and dimension_raw.is_integer():
+            dimension = int(dimension_raw)
+        else:
+            dimension = None
+        ready = payload.get("ok") is True and dimension is not None and dimension > 0
+        if ready:
+            return EmbeddingReadinessResult(
+                ready=True,
+                provider=provider,
+                model=model,
+                dimension=dimension,
+                failure_reason=None,
+            )
+        return EmbeddingReadinessResult(
+            ready=False,
+            provider=provider,
+            model=model,
+            dimension=dimension,
+            failure_reason="embedding_readiness_invalid_vector",
+        )
+    return EmbeddingReadinessResult(
+        ready=False,
+        provider=None,
+        model=None,
+        dimension=None,
+        failure_reason="embedding_readiness_invalid_output",
+    )
 
 
 def bootstrap_run_command(
@@ -745,7 +759,7 @@ def ensure_embedding_model_bootstrap_if_configured(
     cwd: Path,
     timeout_seconds: int,
 ) -> str | None:
-    """Provision the configured Ollama embedding model before warm-up."""
+    """Provision the configured Ollama embedding model before embedding readiness."""
 
     def compose_exec_args(*compose_command: str) -> list[str]:
         return build_compose_command(
@@ -782,118 +796,99 @@ def ensure_embedding_model_bootstrap_if_configured(
     return resolved_model
 
 
-def run_persistence_embedding_warmup(
+def _attempt_embedding_readiness(
     *,
-    base_url: str,
-    proof_docs_dir: Path,
-    timeout_seconds: float,
-) -> WarmupResult:
-    """Warm retrieve/embed via the persistence proof collection when present."""
-    marker = _latest_persistence_proof_marker(proof_docs_dir)
-    if marker is None:
-        return WarmupResult(
-            completed=False,
-            attempt_count=0,
-            last_reason="persistence_marker_missing",
-            last_raw_tool_reason=None,
+    compose_exec_args: Callable[..., list[str]],
+    cwd: Path,
+    timeout_seconds: int,
+    probe_text: str,
+) -> EmbeddingReadinessResult:
+    try:
+        completed = bootstrap_run_command(
+            compose_exec_args(
+                "exec",
+                "-T",
+                "local_workspace",
+                "python",
+                "-c",
+                build_embedding_readiness_probe_code(probe_text=probe_text),
+            ),
+            cwd=cwd,
+            timeout=timeout_seconds,
+            encoding=_PYTHON_CHILD_IO_ENCODING,
+            errors="replace",
         )
-    deadline = time.monotonic() + timeout_seconds
-    run_url = f"{base_url.rstrip('/')}/v1/local_workspace/run"
-    attempt_count = 0
-    while time.monotonic() < deadline:
-        attempt_count += 1
-        try:
-            response = request_json(
-                run_url,
-                method="POST",
-                payload={
-                    "tenant_id": _PERSISTENCE_PROOF_SCOPE_ID,
-                    "workspace_id": _PERSISTENCE_PROOF_SCOPE_ID,
-                    "message": marker,
-                    "capability": "local.workspace.search",
-                    "metadata": {
-                        "tenant_id": _PERSISTENCE_PROOF_SCOPE_ID,
-                        "workspace_id": _PERSISTENCE_PROOF_SCOPE_ID,
-                        "collection_id": _PERSISTENCE_PROOF_SCOPE_ID,
-                        "query": marker,
-                        "top_k": 1,
-                        "proof_phase": "embedding_warmup",
-                    },
-                },
-                timeout=_WARMUP_REQUEST_TIMEOUT_SECONDS,
-            )
-            diagnostics = extract_search_diagnostics(response)
-            if warmup_attempt_succeeded(diagnostics):
-                reason = (
-                    diagnostics.reason.value
-                    if diagnostics is not None and diagnostics.reason is not None
-                    else SearchSummaryReason.RETRIEVE_COMPLETE.value
-                )
-                return WarmupResult(
-                    completed=True,
-                    attempt_count=attempt_count,
-                    last_reason=reason,
-                    last_raw_tool_reason=diagnostics.raw_tool_reason if diagnostics else None,
-                )
-        except (urllib.error.URLError, TimeoutError, ValueError, OSError):
-            pass
-        time.sleep(_WARMUP_RETRY_SLEEP_SECONDS)
-    return WarmupResult(
-        completed=False,
-        attempt_count=attempt_count,
-        last_reason="persistence_warmup_timeout",
-        last_raw_tool_reason=None,
-    )
+    except subprocess.TimeoutExpired:
+        return EmbeddingReadinessResult(
+            ready=False,
+            provider=None,
+            model=None,
+            dimension=None,
+            failure_reason="embedding_readiness_timeout",
+        )
+    if completed.returncode != 0:
+        stderr_tail = (completed.stderr or "").strip()[-200:]
+        if stderr_tail:
+            print(f"embedding_readiness_probe_stderr={stderr_tail}")
+        return EmbeddingReadinessResult(
+            ready=False,
+            provider=None,
+            model=None,
+            dimension=None,
+            failure_reason="embedding_readiness_probe_failed",
+        )
+    return parse_embedding_readiness_output(completed.stdout)
 
 
-def run_embedding_warmup(
+def run_embedding_readiness(
     *,
-    base_url: str,
-    timeout_seconds: float,
-) -> WarmupResult:
-    deadline = time.monotonic() + timeout_seconds
-    run_url = f"{base_url.rstrip('/')}/v1/local_workspace/run"
-    attempt_count = 0
-    last_reason: str | None = None
-    last_raw_tool_reason: str | None = None
-    while time.monotonic() < deadline:
-        attempt_count += 1
-        query = f"LKW_FILE_WATCHER_E2E_PREWARM_{secrets.token_hex(4)}"
-        request_body = build_warmup_search_request(query)
-        try:
-            response = request_json(
-                run_url,
-                method="POST",
-                payload=request_body,
-                timeout=_WARMUP_REQUEST_TIMEOUT_SECONDS,
-            )
-            diagnostics = extract_search_diagnostics(response)
-            if diagnostics is not None:
-                if diagnostics.reason is not None:
-                    last_reason = diagnostics.reason.value
-                elif diagnostics.terminal_status is not None:
-                    last_reason = f"terminal_{diagnostics.terminal_status}"
-                last_raw_tool_reason = diagnostics.raw_tool_reason
-            if warmup_attempt_succeeded(diagnostics):
-                if last_reason is None:
-                    last_reason = SearchSummaryReason.RETRIEVE_COMPLETE.value
-                return WarmupResult(
-                    completed=True,
-                    attempt_count=attempt_count,
-                    last_reason=last_reason,
-                    last_raw_tool_reason=last_raw_tool_reason,
-                )
-            if diagnostics is None:
-                last_reason = "missing_diagnostics"
-        except (urllib.error.URLError, TimeoutError, ValueError, OSError):
-            last_reason = "http_or_timeout"
-        time.sleep(_WARMUP_RETRY_SLEEP_SECONDS)
-    return WarmupResult(
-        completed=False,
-        attempt_count=attempt_count,
-        last_reason=last_reason,
-        last_raw_tool_reason=last_raw_tool_reason,
+    base_compose: Path,
+    kafka_compose: Path,
+    watcher_compose: Path,
+    mongodb_compose: Path,
+    cwd: Path,
+    timeout_seconds: int,
+    probe_text: str = _EMBEDDING_READINESS_PROBE_TEXT,
+) -> EmbeddingReadinessResult:
+    """Verify configured embedding provider without retrieval or Qdrant access."""
+
+    def compose_exec_args(*compose_command: str) -> list[str]:
+        return build_compose_command(
+            *compose_command,
+            base_compose=base_compose,
+            kafka_compose=kafka_compose,
+            watcher_compose=watcher_compose,
+            mongodb_compose=mongodb_compose,
+        )
+
+    attempt_timeout_seconds = max(30, min(timeout_seconds, 120))
+    deadline = time.monotonic() + float(timeout_seconds)
+    last_result = EmbeddingReadinessResult(
+        ready=False,
+        provider=None,
+        model=None,
+        dimension=None,
+        failure_reason="embedding_readiness_timeout",
     )
+    while time.monotonic() < deadline:
+        last_result = _attempt_embedding_readiness(
+            compose_exec_args=compose_exec_args,
+            cwd=cwd,
+            timeout_seconds=attempt_timeout_seconds,
+            probe_text=probe_text,
+        )
+        if last_result.ready:
+            return last_result
+        if last_result.failure_reason not in {
+            "embedding_readiness_probe_failed",
+            "embedding_readiness_timeout",
+        }:
+            return last_result
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(_EMBEDDING_READINESS_RETRY_SLEEP_SECONDS, remaining))
+    return last_result
 
 
 def build_restart_command(
@@ -1378,27 +1373,33 @@ def main(argv: list[str] | None = None) -> int:
     except OllamaEmbeddingBootstrapError as exc:
         return fail(exc.reason)
 
-    warmup = run_persistence_embedding_warmup(
-        base_url=base_url,
-        proof_docs_dir=proof_docs_dir,
-        timeout_seconds=warmup_timeout_seconds,
+    readiness_timeout_seconds = int(
+        min(float(bootstrap_timeout_seconds), warmup_timeout_seconds)
     )
-    if not warmup.completed:
-        warmup = run_embedding_warmup(
-            base_url=base_url,
-            timeout_seconds=warmup_timeout_seconds,
-        )
-    if not warmup.completed:
+    readiness = run_embedding_readiness(
+        base_compose=base_compose,
+        kafka_compose=kafka_compose,
+        watcher_compose=watcher_compose,
+        mongodb_compose=mongodb_compose,
+        cwd=repo_root,
+        timeout_seconds=readiness_timeout_seconds,
+    )
+    if readiness.provider:
+        print(f"embedding_provider={readiness.provider}")
+    if readiness.model:
+        print(f"embedding_model={readiness.model}")
+    if readiness.dimension is not None:
+        print(f"embedding_dimension={readiness.dimension}")
+    print(f"embedding_readiness={'PASS' if readiness.ready else 'FAIL'}")
+    if not readiness.ready:
         return fail(
-            "embedding_warmup_failed",
-            last_warmup_reason=warmup.last_reason,
-            last_warmup_raw_tool_reason=warmup.last_raw_tool_reason,
-            warmup_attempt_count=warmup.attempt_count,
+            "embedding_readiness_failed",
+            failure_reason=readiness.failure_reason or "embedding_readiness_failed",
             embedding_warmup_completed=False,
             reviewer_rerun_required=True,
         )
 
-    # Fresh proof workload deadline after successful warm-up.
+    # Fresh proof workload deadline after successful embedding readiness.
     deadline = time.monotonic() + timeout_seconds
 
     try:
@@ -1719,7 +1720,7 @@ def main(argv: list[str] | None = None) -> int:
         proof_filename=document.filename,
         container_source_path=document.container_source_path,
         watcher_checkpoint_ready=watcher_checkpoint_ready_before_file,
-        embedding_warmup_completed=warmup.completed,
+        embedding_warmup_completed=readiness.ready,
         task_count_before_file=task_count_before_file,
         task_count_after_file=task_count_after_file,
         search_results_before_restart=search_results_before_restart,

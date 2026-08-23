@@ -89,6 +89,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
         lifecycle: TaskLifecycle | None = None,
         source_agent_id: str = "platform.meaningful_side_effect",
         source_step_id: str | None = None,
+        on_authorization: Callable[[MeaningfulSideEffectAuthorizationResult], None] | None = None,
     ) -> T | MeaningfulSideEffectAuthorizationResult:
         """Fresh enforcement evaluation before ``execute``.
 
@@ -104,6 +105,8 @@ class MeaningfulSideEffectAuthorizationBoundary:
             source_agent_id=source_agent_id,
             source_step_id=source_step_id,
         )
+        if on_authorization is not None:
+            on_authorization(authorization)
         action = authorization.decision.action
         enforcement = authorization.enforcement_result
         side_effect = request.meaningful_side_effect_request

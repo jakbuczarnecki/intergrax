@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -40,7 +40,6 @@ def _entry(
     return ProofManifestEntry(
         proof_id=proof_id,
         title=proof_id,
-        domain="test",
         profiles=profiles,
         proof_kind="test",
         command=ProofArgvCommand(executable="python", argv=("-c", "print('ok')")),
@@ -51,7 +50,7 @@ def _entry(
 
 def test_manifest_loads(repo_root: Path) -> None:
     manifest = load_manifest(repo_root=repo_root)
-    assert manifest.schema_version == "intergrax.proof_manifest.v1"
+    assert manifest.schema_version == "intergrax.proof_manifest.v2"
     assert len(manifest.entries) >= 1
 
 
@@ -70,7 +69,6 @@ def test_missing_declared_executable_rejected(tmp_path: Path) -> None:
     entry = ProofManifestEntry(
         proof_id="MISSING",
         title="missing",
-        domain="test",
         profiles=frozenset({ProofProfile.QUICK}),
         proof_kind="test",
         command=ProofArgvCommand(

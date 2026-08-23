@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -26,6 +26,9 @@ from scripts.proof.intergrax_platform_proof_descriptor_loader import (
 )
 from scripts.proof.intergrax_proof_contracts import (
     ProofArgvCommand,
+    ProofManifestEntry,
+    ProofProfile,
+    ProofSafetyClass,
 )
 from scripts.proof.intergrax_proof_manifest import (
     ManifestLoadError,
@@ -33,15 +36,9 @@ from scripts.proof.intergrax_proof_manifest import (
     load_manifest,
 )
 
-_TOOLS_PROOF_ID = "TOOLS-ITERATIVE-SQL-INVESTIGATION"
-_TOOLS_DESCRIPTOR_REL = (
-    Path("platform_proofs")
-    / "tools"
-    / "iterative_sql_investigation"
-    / PROOF_DESCRIPTOR_FILENAME
-)
 _TEST_DOMAIN_ROOT = Path("platform_proofs") / "test_domain"
 _EXAMPLE_PROOF_ID = "TEST-DOMAIN-EXAMPLE-PROOF"
+_STATIC_TWIN_PROOF_ID = "TEST-DOMAIN-STATIC-TWIN"
 
 
 @pytest.fixture
@@ -60,7 +57,7 @@ def _minimal_descriptor_payload(
         "library_class": "CONFORMANCE",
         "proof_id": proof_id,
         "title": f"{proof_id} title",
-        "domain": "test_domain",
+        "domains_exercised": ["test_domain"],
         "proof_kind": "example",
         "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
@@ -111,81 +108,102 @@ def _empty_static_manifest(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def test_discovers_tools_descriptor_recursively(repo_root: Path) -> None:
+def test_clean_repo_has_no_descriptor_backed_proofs(repo_root: Path) -> None:
+    _remove_test_domain(repo_root)
     discovered = discover_platform_proof_descriptors(repo_root=repo_root)
-    tools = next(
-        item for item in discovered if item.manifest_entry.proof_id == _TOOLS_PROOF_ID
+    assert discovered == ()
+
+
+def test_example_descriptor_normalizes_correctly(repo_root: Path) -> None:
+    _remove_test_domain(repo_root)
+    try:
+        package = _write_example_package(repo_root)
+        descriptor_path = package / PROOF_DESCRIPTOR_FILENAME
+        discovered = discover_platform_proof_descriptors(repo_root=repo_root)
+        example = next(
+            item for item in discovered if item.manifest_entry.proof_id == _EXAMPLE_PROOF_ID
+        )
+        expected = descriptor_to_manifest_entry(descriptor_path, repo_root=repo_root)
+        assert example.manifest_entry == expected
+    finally:
+        _remove_test_domain(repo_root)
+
+
+def _static_twin_entry() -> ProofManifestEntry:
+    return ProofManifestEntry(
+        proof_id=_STATIC_TWIN_PROOF_ID,
+        title="static twin",
+        profiles=frozenset({ProofProfile.QUICK}),
+        proof_kind="example",
+        command=ProofArgvCommand(
+            executable="python",
+            argv=("platform_proofs/test_domain/static_twin/run_proof.py",),
+        ),
+        safety_class=ProofSafetyClass.LOCAL_READ_ONLY,
     )
-    assert tools.descriptor_path == repo_root / _TOOLS_DESCRIPTOR_REL
 
 
-def test_discovered_tools_normalizes_correctly(repo_root: Path) -> None:
-    discovered = discover_platform_proof_descriptors(repo_root=repo_root)
-    tools = next(
-        item for item in discovered if item.manifest_entry.proof_id == _TOOLS_PROOF_ID
+def _write_static_twin_package(tmp_path: Path) -> Path:
+    package = tmp_path / _TEST_DOMAIN_ROOT / "static_twin"
+    package.mkdir(parents=True, exist_ok=True)
+    (package / "run_proof.py").write_text("print('ok')\n", encoding="utf-8")
+    (package / PROOF_DESCRIPTOR_FILENAME).write_text(
+        json.dumps(
+            _minimal_descriptor_payload(
+                proof_id=_STATIC_TWIN_PROOF_ID,
+                entrypoint="platform_proofs/test_domain/static_twin/run_proof.py",
+            )
+        ),
+        encoding="utf-8",
     )
-    expected = descriptor_to_manifest_entry(
-        repo_root / _TOOLS_DESCRIPTOR_REL,
-        repo_root=repo_root,
-    )
-    assert tools.manifest_entry == expected
+    return package
 
 
-def test_merged_manifest_contains_tools_exactly_once(repo_root: Path) -> None:
-    manifest = load_manifest(repo_root=repo_root)
-    tools_entries = [
-        entry for entry in manifest.entries if entry.proof_id == _TOOLS_PROOF_ID
-    ]
-    assert len(tools_entries) == 1
-
-
-def test_equivalent_static_tools_twin_not_duplicated(repo_root: Path) -> None:
-    manifest = load_manifest(repo_root=repo_root)
-    static_tools = next(
-        entry
-        for entry in build_manifest_entries()
-        if entry.proof_id == _TOOLS_PROOF_ID
-    )
-    merged_tools = next(
-        entry for entry in manifest.entries if entry.proof_id == _TOOLS_PROOF_ID
-    )
-    discovered = discover_platform_proof_descriptors(repo_root=repo_root)
-    descriptor_tools = next(
+def test_equivalent_static_twin_not_duplicated(tmp_path: Path) -> None:
+    package = _write_static_twin_package(tmp_path)
+    descriptor_path = package / PROOF_DESCRIPTOR_FILENAME
+    static_entry = descriptor_to_manifest_entry(descriptor_path, repo_root=tmp_path)
+    discovered = discover_platform_proof_descriptors(repo_root=tmp_path)
+    descriptor_entry = next(
         item.manifest_entry
         for item in discovered
-        if item.manifest_entry.proof_id == _TOOLS_PROOF_ID
+        if item.manifest_entry.proof_id == _STATIC_TWIN_PROOF_ID
     )
-    assert entries_semantically_equivalent(static_tools, descriptor_tools)
-    assert merged_tools == descriptor_tools
-    assert len(manifest.entries) == len(build_manifest_entries())
+    merged = merge_static_and_discovered_entries(
+        (static_entry,),
+        discovered,
+        repo_root=tmp_path,
+    )
+    assert entries_semantically_equivalent(static_entry, descriptor_entry)
+    assert merged == (descriptor_entry,)
+    assert len(merged) == 1
 
 
-def test_static_twin_conflicting_timeout_fails_manifest(repo_root: Path) -> None:
-    discovered = discover_platform_proof_descriptors(repo_root=repo_root)
-    tools = next(item for item in discovered if item.manifest_entry.proof_id == _TOOLS_PROOF_ID)
+def test_static_twin_conflicting_timeout_fails_manifest(tmp_path: Path) -> None:
+    package = _write_static_twin_package(tmp_path)
+    discovered = discover_platform_proof_descriptors(repo_root=tmp_path)
+    twin = next(item for item in discovered if item.manifest_entry.proof_id == _STATIC_TWIN_PROOF_ID)
     conflicting = DiscoveredPlatformProof(
-        descriptor_path=tools.descriptor_path,
-        descriptor=tools.descriptor,
-        manifest_entry=tools.manifest_entry.model_copy(update={"timeout_seconds": 1}),
+        descriptor_path=package / PROOF_DESCRIPTOR_FILENAME,
+        descriptor=twin.descriptor,
+        manifest_entry=twin.manifest_entry.model_copy(update={"timeout_seconds": 1}),
     )
     with pytest.raises(PlatformProofDiscoveryError, match="conflicts with static manifest entry"):
         merge_static_and_discovered_entries(
-            build_manifest_entries(),
-            tuple(
-                conflicting if item.manifest_entry.proof_id == _TOOLS_PROOF_ID else item
-                for item in discovered
-            ),
-            repo_root=repo_root,
+            (_static_twin_entry(),),
+            (conflicting,),
+            repo_root=tmp_path,
         )
 
 
-def test_static_twin_conflicting_argv_fails_manifest(repo_root: Path) -> None:
-    discovered = discover_platform_proof_descriptors(repo_root=repo_root)
-    tools = next(item for item in discovered if item.manifest_entry.proof_id == _TOOLS_PROOF_ID)
+def test_static_twin_conflicting_argv_fails_manifest(tmp_path: Path) -> None:
+    package = _write_static_twin_package(tmp_path)
+    discovered = discover_platform_proof_descriptors(repo_root=tmp_path)
+    twin = next(item for item in discovered if item.manifest_entry.proof_id == _STATIC_TWIN_PROOF_ID)
     conflicting = DiscoveredPlatformProof(
-        descriptor_path=tools.descriptor_path,
-        descriptor=tools.descriptor,
-        manifest_entry=tools.manifest_entry.model_copy(
+        descriptor_path=package / PROOF_DESCRIPTOR_FILENAME,
+        descriptor=twin.descriptor,
+        manifest_entry=twin.manifest_entry.model_copy(
             update={
                 "command": ProofArgvCommand(
                     executable="python",
@@ -196,12 +214,9 @@ def test_static_twin_conflicting_argv_fails_manifest(repo_root: Path) -> None:
     )
     with pytest.raises(PlatformProofDiscoveryError, match="conflicts with static manifest entry"):
         merge_static_and_discovered_entries(
-            build_manifest_entries(),
-            tuple(
-                conflicting if item.manifest_entry.proof_id == _TOOLS_PROOF_ID else item
-                for item in discovered
-            ),
-            repo_root=repo_root,
+            (_static_twin_entry(),),
+            (conflicting,),
+            repo_root=tmp_path,
         )
 
 

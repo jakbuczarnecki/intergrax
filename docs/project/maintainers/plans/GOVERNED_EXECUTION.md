@@ -16,7 +16,7 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 
 ### PG-FIX-A — Canonical side-effect governance spine
 
-**Status:** ACCEPTED / PLANNED
+**Status:** IMPLEMENTED (not VERIFIED/CLOSED)
 
 **Findings:**
 

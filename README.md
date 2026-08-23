@@ -93,6 +93,99 @@ for the category, problem, and fit.
 
 ---
 
+## Explore Intergrax
+
+Three useful ways to evaluate Intergrax — each answers a different question. The visual maps **Scenario Proofs**, **Products**, and **Platform**.
+
+<a href="docs/project/assets/public/readme/fullsize/intergrax-three-entry-points.md">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-three-entry-points-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-three-entry-points-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-three-entry-points-light.png"
+    alt="Three public entry points — Scenario Proofs for difficult problems and executable evidence, Products for user workflows and reference applications, Platform for governed foundations and architecture."
+  >
+</picture>
+</a>
+
+[View full-size diagram](docs/project/assets/public/readme/fullsize/intergrax-three-entry-points.md)
+
+**[Explore Proof Library](docs/project/proofs/PROOF_LIBRARY.md)** · **[See LKW](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)** · **[Explore Platform](#explore-the-intergrax-platform)**
+
+---
+
+## Real problems. Executable evidence.
+
+**Scenario Proof Library**
+
+Intergrax is easier to understand by watching it handle difficult problems — not by reading feature lists.
+
+Scenario Proofs start where AI systems can fail: conflicting evidence, stale information, unsafe actions, crash after an external side effect, missing required evidence, or false confident diagnosis.
+
+Each accepted Scenario Proof is intended to expose: problem → failure risk → adversarial scenario → execution → evidence → verdict → reproduction.
+
+This is **not** a marketing demo, feature showcase, or product claim — executable falsification against a bounded real-world problem.
+
+<a href="docs/project/assets/public/readme/fullsize/intergrax-scenarios-overview.md">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/intergrax-scenarios-overview-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/intergrax-scenarios-overview-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/intergrax-scenarios-overview-light.png"
+    alt="Scenario Proof path from real problem through adversarial test and execution to evidence, verdict, and reproduction."
+  >
+</picture>
+</a>
+
+[View full-size diagram](docs/project/assets/public/readme/fullsize/intergrax-scenarios-overview.md)
+
+**[Explore Proof Library](docs/project/proofs/PROOF_LIBRARY.md)** · **[Propose a Scenario](https://github.com/jakbuczarnecki/intergrax/issues/new?template=scenario_proposal.yml)**
+
+### Featured scenario in development
+
+**AI Incident Investigation with Independent Verification**
+
+> Can an AI investigate an operational incident without turning correlation into a confident false diagnosis?
+
+Initial production signals make workload overload plausible — but evidence is conflicting, stale, and incomplete. Independent verification must challenge unsupported causality, gather targeted evidence to distinguish competing hypotheses, and produce a bounded **RESOLVED** or honest **UNRESOLVED** outcome.
+
+**Status:** in development — no executable proof, evidence, or report yet. The visual describes possible bounded outcomes, not a current PASS.
+
+<a href="docs/project/assets/public/readme/fullsize/scenario-ai-incident-investigation.md">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/assets/public/readme/scenario-ai-incident-investigation-dark.png"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/assets/public/readme/scenario-ai-incident-investigation-light.png"
+  >
+  <img
+    src="docs/project/assets/public/readme/scenario-ai-incident-investigation-light.png"
+    alt="AI incident investigation scenario — operational signals, conflicting evidence, independent verification, and bounded RESOLVED or UNRESOLVED outcomes."
+  >
+</picture>
+</a>
+
+[View full-size diagram](docs/project/assets/public/readme/fullsize/scenario-ai-incident-investigation.md)
+
+**[Scenario design document](platform_proofs/scenarios/ai_incident_investigation/README.md)** · **[Proof Library](docs/project/proofs/PROOF_LIBRARY.md)**
+
+---
+
 ## Local Knowledge Workspace (LKW)
 
 LKW is a governed AI knowledge workspace for approved organizational knowledge,
@@ -198,18 +291,6 @@ and watched-folder indexing — not production readiness, commercial validation,
 or all-provider certification.
 
 **Proof families:** Product evaluation (`LKW-PRODUCT-QUICKSTART-*`), Core platform (`LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`), Indexed Hybrid Ask (`LKW-HYBRID-ASK-INDEXED`), Trusted Ask (`LKW-ASK-WORKSPACE-LIVE`), Governed Evidence Decision Proof (`advanced_flagship_proof`).
-
----
-
-## Real problems. Executable evidence.
-
-Intergrax Scenario Proofs start with difficult AI system problems, not platform features.
-
-See how the system behaves under failures, conflicting evidence, unsafe actions, recovery, governance, and other real-world conditions.
-
-**[Explore the Proof Library →](docs/project/proofs/PROOF_LIBRARY.md)**
-
-Have a difficult AI problem? **[Propose a Scenario Proof →](https://github.com/jakbuczarnecki/intergrax/issues/new?template=scenario_proposal.yml)**
 
 ---
 

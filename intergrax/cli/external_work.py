@@ -332,6 +332,9 @@ def _retry_attestation(store: Path, execution_id: str, *, demo_key: bool) -> int
     from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
         RuntimePolicyBundleEvaluator,
     )
+    from applications.governed_contractor_application.host.collaborative_work_boundary import (
+        build_external_work_authorization_boundary,
+    )
 
     attestor = _resolve_retry_attestor(store=store, demo_key=demo_key)
     if attestor is None:
@@ -343,9 +346,15 @@ def _retry_attestation(store: Path, execution_id: str, *, demo_key: bool) -> int
     if persisted is not None:
         bundle = persisted
     policy = RuntimePolicyBundleEvaluator(bundle)
+    authorization_boundary = build_external_work_authorization_boundary(
+        policy,
+        tenant_id="offline-demo-tenant",
+        workspace_id="workspace-a",
+        principal_id="offline-demo-user",
+    )
     # RefuseProvider ensures retry cannot execute side effects even if miswired.
     orch = GovernedExternalWorkOrchestrator(
-        adapter=ExternalWorkAdapter(_RefuseProvider(), side_effect_policy=policy),  # type: ignore[arg-type]
+        adapter=ExternalWorkAdapter(_RefuseProvider(), authorization_boundary=authorization_boundary),  # type: ignore[arg-type]
         policy=policy,
         bundle=bundle,
         attestor=attestor,

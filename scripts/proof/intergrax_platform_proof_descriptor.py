@@ -22,8 +22,9 @@ from scripts.proof.intergrax_proof_contracts import (
 )
 
 PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION = (
-    "intergrax.platform_proof_descriptor.v2"
+    "intergrax.platform_proof_descriptor.v3"
 )
+DOMAIN_ID_MAX_LENGTH = 64
 MECHANISM_ID_MAX_LENGTH = 64
 PROOF_DESCRIPTOR_FILENAME = "proof.json"
 CANONICAL_PLATFORM_PROOF_ROOT = "platform_proofs"
@@ -78,17 +79,17 @@ class ExpectedProofArtifact(BaseModel):
 
 
 class PlatformProofDescriptor(BaseModel):
-    """Typed ``proof.json`` contract — ``intergrax.platform_proof_descriptor.v2``."""
+    """Typed ``proof.json`` contract — ``intergrax.platform_proof_descriptor.v3``."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["intergrax.platform_proof_descriptor.v2"] = (
+    schema_version: Literal["intergrax.platform_proof_descriptor.v3"] = (
         PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION
     )
     library_class: ProofLibraryClass
     proof_id: str = Field(min_length=1)
     title: str = Field(min_length=1)
-    domain: str = Field(min_length=1)
+    domains_exercised: tuple[str, ...]
     proof_kind: str = Field(min_length=1)
     mechanisms_exercised: tuple[str, ...]
     package_version: str = Field(min_length=1)
@@ -111,7 +112,7 @@ class PlatformProofDescriptor(BaseModel):
     evidence_required: bool = False
     external_provider: str | None = None
 
-    @field_validator("proof_id", "title", "domain", "proof_kind", "package_version")
+    @field_validator("proof_id", "title", "proof_kind", "package_version")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()
@@ -125,16 +126,14 @@ class PlatformProofDescriptor(BaseModel):
         if not PROOF_ID_PATTERN.fullmatch(value):
             raise ValueError(
                 "proof_id must be uppercase alphanumeric with hyphens "
-                "(e.g. TOOLS-ITERATIVE-SQL-INVESTIGATION)"
+                "(e.g. SCENARIO-AI-INCIDENT-INVESTIGATION)"
             )
         return value
 
-    @field_validator("domain")
+    @field_validator("domains_exercised", mode="before")
     @classmethod
-    def _validate_domain(cls, value: str) -> str:
-        if UNSAFE_DOMAIN_CHARS.search(value):
-            raise ValueError("domain contains unsafe path characters")
-        return value
+    def _normalize_domains_exercised(cls, value: object) -> tuple[str, ...]:
+        return _normalize_domains_exercised(value)
 
     @field_validator("platform_requirements", mode="before")
     @classmethod
@@ -148,29 +147,13 @@ class PlatformProofDescriptor(BaseModel):
     @field_validator("mechanisms_exercised", mode="before")
     @classmethod
     def _normalize_mechanisms_exercised(cls, value: object) -> tuple[str, ...]:
-        if value is None:
-            raise ValueError("mechanisms_exercised must be non-empty")
-        if isinstance(value, str):
-            raise ValueError("mechanisms_exercised must be a sequence")
-        if not isinstance(value, (list, tuple)):
-            raise ValueError("mechanisms_exercised must be a sequence")
-        normalized: list[str] = []
-        seen: set[str] = set()
-        for item in value:
-            if not isinstance(item, str):
-                raise ValueError("mechanisms_exercised must contain only strings")
-            mechanism_id = item.strip()
-            if not mechanism_id:
-                raise ValueError("mechanisms_exercised must not contain empty values")
-            if len(mechanism_id) > MECHANISM_ID_MAX_LENGTH:
-                raise ValueError("mechanism id exceeds maximum length")
-            if mechanism_id in seen:
-                raise ValueError("mechanisms_exercised must not contain duplicates")
-            seen.add(mechanism_id)
-            normalized.append(mechanism_id)
-        if not normalized:
-            raise ValueError("mechanisms_exercised must be non-empty")
-        return tuple(normalized)
+        return _normalize_identifier_collection(
+            value,
+            field_name="mechanisms_exercised",
+            max_length=MECHANISM_ID_MAX_LENGTH,
+            unsafe_pattern=None,
+            unsafe_message="mechanisms_exercised contains unsafe path characters",
+        )
 
     @field_validator("tags", mode="before")
     @classmethod
@@ -291,3 +274,50 @@ class PlatformProofDescriptor(BaseModel):
 
 def _is_windows_absolute(path: str) -> bool:
     return len(path) >= 2 and path[1] == ":"
+
+
+def _normalize_domains_exercised(value: object) -> tuple[str, ...]:
+    """Validate and lexicographically order domain identifiers (semantically neutral)."""
+    normalized = _normalize_identifier_collection(
+        value,
+        field_name="domains_exercised",
+        max_length=DOMAIN_ID_MAX_LENGTH,
+        unsafe_pattern=UNSAFE_DOMAIN_CHARS,
+        unsafe_message="domains_exercised contains unsafe path characters",
+    )
+    return tuple(sorted(normalized))
+
+
+def _normalize_identifier_collection(
+    value: object,
+    *,
+    field_name: str,
+    max_length: int,
+    unsafe_pattern: re.Pattern[str] | None,
+    unsafe_message: str,
+) -> tuple[str, ...]:
+    if value is None:
+        raise ValueError(f"{field_name} must be non-empty")
+    if isinstance(value, str):
+        raise ValueError(f"{field_name} must be a sequence")
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name} must be a sequence")
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for item in value:
+        if not isinstance(item, str):
+            raise ValueError(f"{field_name} must contain only strings")
+        identifier = item.strip()
+        if not identifier:
+            raise ValueError(f"{field_name} must not contain empty values")
+        if len(identifier) > max_length:
+            raise ValueError(f"{identifier} exceeds maximum length")
+        if unsafe_pattern is not None and unsafe_pattern.search(identifier):
+            raise ValueError(unsafe_message)
+        if identifier in seen:
+            raise ValueError(f"{field_name} must not contain duplicates")
+        seen.add(identifier)
+        normalized.append(identifier)
+    if not normalized:
+        raise ValueError(f"{field_name} must be non-empty")
+    return tuple(normalized)
