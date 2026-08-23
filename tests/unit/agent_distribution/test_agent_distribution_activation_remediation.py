@@ -389,15 +389,12 @@ def test_adr13_revision_token_parity_between_admin_and_reference() -> None:
         current_serving_pointer_revision=0,
         target_runtime_revision_id="rev-parity",
     )
-    for field in (
-        "resource_type",
-        "resource_id",
-        "resource_scope",
-        "current_revision",
-        "target_revision",
-        "mutation_type",
-    ):
-        assert getattr(admin_request, field) == getattr(reference_request, field)
+    assert admin_request.resource_type == reference_request.resource_type
+    assert admin_request.resource_id == reference_request.resource_id
+    assert admin_request.resource_scope == reference_request.resource_scope
+    assert admin_request.current_revision == reference_request.current_revision
+    assert admin_request.target_revision == reference_request.target_revision
+    assert admin_request.mutation_type == reference_request.mutation_type
 
 
 def test_adr14_cas_regression_after_allow() -> None:

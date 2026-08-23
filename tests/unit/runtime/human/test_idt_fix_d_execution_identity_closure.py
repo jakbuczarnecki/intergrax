@@ -206,7 +206,7 @@ async def test_d3_reject_resolution_and_event_run_id() -> None:
     events = [
         event
         for event in published
-        if getattr(event, "event_type", None) == RuntimeEventType.HUMAN_APPROVAL_RECEIVED
+        if event.event_type == RuntimeEventType.HUMAN_APPROVAL_RECEIVED
     ]
     assert len(events) == 1
     assert events[0].run_id == RUN_ID
@@ -239,7 +239,7 @@ async def test_d4_escalate_resolution_and_event_run_id() -> None:
     events = [
         event
         for event in published
-        if getattr(event, "event_type", None) == RuntimeEventType.INTERRUPT_ESCALATED
+        if event.event_type == RuntimeEventType.INTERRUPT_ESCALATED
     ]
     assert len(events) == 1
     assert events[0].run_id == RUN_ID
@@ -265,7 +265,7 @@ async def test_d5_human_approval_received_three_way_identity() -> None:
     events = [
         event
         for event in published
-        if getattr(event, "event_type", None) == RuntimeEventType.HUMAN_APPROVAL_RECEIVED
+        if event.event_type == RuntimeEventType.HUMAN_APPROVAL_RECEIVED
     ]
     assert len(events) == 1
     event = events[0]
