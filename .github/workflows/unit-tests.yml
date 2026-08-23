@@ -93,6 +93,7 @@ jobs:
           tests/unit/scaffold/test_scaffold_local_extension_qualification.py
           tests/unit/core/plugins/
           tests/unit/runtime/security/test_defense_plugin_admission.py
+          tests/unit/applications/test_security_plugin_adoption_wiring.py
           tests/unit/runtime/policy/rules/test_policy_plugin_loader_isolation.py
           tests/unit/applications/test_policy_wiring.py
           -q --tb=line

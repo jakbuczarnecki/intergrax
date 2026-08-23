@@ -59,6 +59,13 @@ PER_TEST_FORBIDDEN: tuple[tuple[str, re.Pattern[str]], ...] = (
     ),
 )
 
+# PLUGIN-SEC-ADOPTION-1R1: canonical Tier-3 security bootstrap ownership gate.
+TIER3_HOST_BOOTSTRAP_ALLOWLIST: frozenset[str] = frozenset(
+    {
+        "tests/unit/applications/test_security_plugin_adoption_wiring.py",
+    }
+)
+
 _FUNC_DEF = re.compile(r"^def (test_[a-zA-Z0-9_]+)\(", re.MULTILINE)
 
 
@@ -137,9 +144,11 @@ def main() -> int:
         block = _function_block(path.read_text(encoding="utf-8"), func_name)
         if not block:
             continue
+        rel = path.relative_to(repo_root).as_posix()
         hits = sorted({name for name, pat in PER_TEST_FORBIDDEN if pat.search(block)})
+        if rel in TIER3_HOST_BOOTSTRAP_ALLOWLIST:
+            hits = [hit for hit in hits if hit != "tier3_host_bootstrap"]
         if hits:
-            rel = path.relative_to(repo_root).as_posix()
             per_test_violations.append((f"{rel}::{func_name}", hits))
 
     if violations or per_test_violations:

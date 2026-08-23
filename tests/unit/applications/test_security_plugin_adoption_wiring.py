@@ -35,6 +35,7 @@ from intergrax.tools.registry.bootstrap import reset_default_tools_bootstrap
 from intergrax.tools.registry.catalog import clear_tool_catalog
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
+from testing_support.builder import FakeLLMAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -105,6 +106,15 @@ def _reset_plugin_state() -> None:
     reset_security_defense_registry_for_tests()
 
 
+@pytest.fixture(autouse=True)
+def _stub_environment_llm_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        environment_wiring_module,
+        "resolve_environment_llm_adapter",
+        lambda _env: FakeLLMAdapter(),
+    )
+
+
 def _install_eps(monkeypatch: pytest.MonkeyPatch, entries: list[_EntryPoint]) -> None:
     monkeypatch.setattr(importlib.metadata, "entry_points", lambda: _EntryPoints(entries))
 
@@ -141,7 +151,6 @@ def test_bootstrap_catalogs_does_not_invoke_security_bootstrap(
     assert calls == []
 
 
-@pytest.mark.no_ci
 def test_wire_application_environment_bootstraps_security_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -173,7 +182,6 @@ def test_wire_application_environment_bootstraps_security_once(
     assert get_security_defense_plugin("lab.alpha") is not None
 
 
-@pytest.mark.no_ci
 def test_wire_application_environment_security_evidence_matches_canonical_bootstrap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -198,7 +206,6 @@ def test_wire_application_environment_security_evidence_matches_canonical_bootst
     assert wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_SECURITY) is captured[0]
 
 
-@pytest.mark.no_ci
 def test_strict_wire_application_environment_fails_on_invalid_security_target(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -217,7 +224,6 @@ def test_strict_wire_application_environment_fails_on_invalid_security_target(
         wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
 
 
-@pytest.mark.no_ci
 def test_strict_wire_application_environment_fails_on_plugin_id_collision(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -236,7 +242,6 @@ def test_strict_wire_application_environment_fails_on_plugin_id_collision(
         wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
 
 
-@pytest.mark.no_ci
 def test_strict_wire_application_environment_allows_valid_security_plugin(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -253,7 +258,6 @@ def test_strict_wire_application_environment_allows_valid_security_plugin(
     assert get_security_defense_plugin("lab.alpha") is not None
 
 
-@pytest.mark.no_ci
 def test_wire_application_environment_discovery_disabled_security_evidence_empty(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
