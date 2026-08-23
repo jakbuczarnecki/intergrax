@@ -140,10 +140,11 @@ Start with the [LKW Product Tour](../../../applications/local_workspace_applicat
 
 LKW demonstrates governed answer admissibility over live organizational evidence
 through the **Governed Evidence Decision Proof** (`LIVE_ONLY`, four independent
-Docker-backed providers, policy-derived obligations, execution-time authority,
-temporal admissibility, typed failure semantics, LLM gating, persisted structural
-proof). This is **not** complete indexed + authorized live Hybrid Ask
-certification and **not** full Governed Execution domain certification.
+controlled live providers via real runtime/HTTP execution — not external SaaS
+validation; policy-derived obligations, execution-time authority, temporal
+admissibility, typed failure semantics, LLM gating, persisted structural proof).
+This is **not** complete indexed + authorized live Hybrid Ask certification and
+**not** full Governed Execution domain certification.
 
 [Open the Governed Evidence Decision Proof](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md)
 

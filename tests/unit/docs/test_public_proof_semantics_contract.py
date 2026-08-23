@@ -22,6 +22,13 @@ _GOVERNED_PROOF = (
     _REPO_ROOT
     / "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md"
 )
+_LKW_PRODUCT_TOUR = (
+    _REPO_ROOT
+    / "applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md"
+)
+_PUBLIC_DOCUMENTATION_MAP = (
+    _REPO_ROOT / "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md"
+)
 
 
 @pytest.fixture
@@ -80,6 +87,48 @@ def test_governed_flagship_proof_distinguishes_controlled_live_from_external_saa
         "controlled live provider" in lkw_not_established.lower()
         and "not external saas" in lkw_not_established.lower()
     )
+
+
+def test_public_lkw_projection_maintains_controlled_live_boundary(
+    governed_proof_text: str,
+    proofs_text: str,
+) -> None:
+    """Product Tour and Public Map must not widen flagship proof beyond controlled live."""
+    tour_text = _LKW_PRODUCT_TOUR.read_text(encoding="utf-8").lower()
+    map_text = _PUBLIC_DOCUMENTATION_MAP.read_text(encoding="utf-8").lower()
+
+    for phrase in (
+        "controlled live provider",
+        "not external saas",
+        "real runtime",
+        "docker-backed",
+    ):
+        assert phrase in governed_proof_text.lower(), f"canonical proof missing: {phrase}"
+
+    lkw_section = proofs_text.split("## LKW — Active reference product evidence", 1)[1].split(
+        "\n---\n", 1
+    )[0]
+    governed_row = re.search(
+        r"^\| \*\*Governed Evidence Decision Proof\*\* \|.*$",
+        lkw_section,
+        re.MULTILINE,
+    )
+    assert governed_row is not None
+    row = governed_row.group(0).lower()
+    assert "controlled live provider" in row
+    assert "not external saas" in row
+
+    assert "four independent live providers" not in tour_text
+    assert "four independent live providers" not in map_text
+
+    for projection_text, label in ((tour_text, "product tour"), (map_text, "public map")):
+        assert "controlled live provider" in projection_text, f"{label} missing controlled live"
+        assert "not external saas" in projection_text, f"{label} missing SaaS boundary"
+        assert "real runtime" in projection_text or "real http" in projection_text, (
+            f"{label} missing runtime/HTTP execution marker"
+        )
+
+    assert "complete external live-provider access" in tour_text
 
 
 def test_token_offline_proof_not_masquerading_as_vllm_claim(proofs_text: str) -> None:

@@ -120,7 +120,7 @@ flowchart TB
 
 The strongest advanced proof story is the [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md): governed answer admissibility over **live organizational evidence** (**LIVE_ONLY**).
 
-It demonstrates versioned policy-derived obligations, four independent live providers, execution-time authority, temporal admissibility, typed failure semantics, LLM suppression when inadmissible, and persisted structural proof over Docker-backed vendor truth.
+It demonstrates versioned policy-derived obligations, four independent controlled live providers reached via real HTTP/runtime paths (not external SaaS validation), execution-time authority, temporal admissibility, typed failure semantics, LLM suppression when inadmissible, and persisted structural proof over Docker-backed vendor truth.
 
 It is **LIVE_ONLY** — see [Current boundary](#current-boundary) for hybrid and validation limits.
 
@@ -135,7 +135,7 @@ It is **LIVE_ONLY** — see [Current boundary](#current-boundary) for hybrid and
     srcset="../assets/lkw-governed-evidence-gate-light.png"
   >
   <img
-    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four live organizational sources, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
+    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four independent controlled live sources via real HTTP/runtime (not external SaaS validation), execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
     src="../assets/lkw-governed-evidence-gate-light.png"
   >
 </picture>
@@ -165,7 +165,7 @@ LKW offers distinct public proof stories — choose by goal:
 
 **Product Quick Start** is the easiest runnable product evaluation: approved sample knowledge, managed upload, indexed Ask, source citation, and persisted Ask-run verification.
 
-**Governed Evidence Decision Proof** demonstrates versioned policy-derived obligations, four independent live providers, execution-time authority, temporal admissibility, typed failure semantics, LLM gating, and persisted structural proof over Docker-backed vendor truth (**LIVE_ONLY**).
+**Governed Evidence Decision Proof** demonstrates versioned policy-derived obligations, four independent controlled live providers reached via real HTTP/runtime paths (not external SaaS validation), execution-time authority, temporal admissibility, typed failure semantics, LLM gating, and persisted structural proof over Docker-backed vendor truth (**LIVE_ONLY**).
 
 See the [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) for the canonical technical narrative and [Current boundary](#current-boundary) for what remains outside that proof.
 
@@ -182,7 +182,7 @@ Advanced governed paths prove additional evidence-admissibility behavior; they d
 LKW today does **not** represent:
 
 - complete mixed indexed + authorized live Hybrid Ask;
-- complete live-provider access;
+- complete external live-provider access;
 - finished end-user UI;
 - finished SaaS;
 - production-readiness certification;
