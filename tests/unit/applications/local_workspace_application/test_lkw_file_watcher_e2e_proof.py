@@ -520,6 +520,9 @@ def test_restart_command_targets() -> None:
 def test_bat_runner_ordering_and_services() -> None:
     text = _read(_PROOF_BAT)
     reset_idx = text.lower().index("resetting dedicated watcher proof checkpoint state")
+    materialize_idx = text.lower().index(
+        "materializing minimal runtime context for local_workspace_application"
+    )
     validate_idx = text.lower().index("validating docker compose merge")
     start_idx = text.lower().index("starting watcher e2e proof stack")
     health_idx = text.lower().index("waiting for lkw health")
@@ -528,7 +531,7 @@ def test_bat_runner_ordering_and_services() -> None:
     mongo_express_idx = text.lower().index("waiting for mongo express")
     kafka_ui_idx = text.lower().index("waiting for kafka ui")
     invoke_idx = text.lower().index("invoking python watcher e2e proof workload")
-    assert reset_idx < validate_idx < start_idx < health_idx < watcher_ready_idx
+    assert reset_idx < materialize_idx < validate_idx < start_idx < health_idx < watcher_ready_idx
     assert watcher_ready_idx < mongo_idx < mongo_express_idx < kafka_ui_idx < invoke_idx
     assert "watcher_container_running=true" in text
     assert "watcher_checkpoint_ready=true" in text
@@ -562,6 +565,35 @@ def test_bat_runner_ordering_and_services() -> None:
     assert "down -v" not in text
     assert "volume rm" not in text
     assert "system prune" not in text
+
+
+def test_bat_runner_materializes_runtime_context_before_compose() -> None:
+    text = _read(_PROOF_BAT)
+    materialize_idx = text.index("build_application_image.py")
+    compose_config_idx = text.lower().index("validating docker compose merge")
+    compose_up_idx = text.lower().index("starting watcher e2e proof stack")
+    ownership_idx = text.index('set "LKW_COMPOSE_OWNERSHIP_ENTERED=true"')
+    assert materialize_idx < compose_config_idx < compose_up_idx < ownership_idx
+    assert "--application local_workspace_application" in text
+    assert (
+        "--context-dir applications/local_workspace_application/docker/runtime-context"
+        in text
+    )
+    assert "--materialize-only" in text
+    assert "runtime_context_materialization=PASS" in text
+    assert "runtime_context_materialization_failed" in text
+
+
+def test_bat_runner_materialization_failure_gates_compose() -> None:
+    text = _read(_PROOF_BAT)
+    failure_idx = text.index("failure_reason=runtime_context_materialization_failed")
+    ownership_idx = text.index('set "LKW_COMPOSE_OWNERSHIP_ENTERED=true"')
+    compose_up_idx = text.lower().index("up -d --build")
+    assert failure_idx < ownership_idx < compose_up_idx
+    materialize_block = text[failure_idx:ownership_idx]
+    assert "goto proof_fail" in materialize_block
+    assert "xcopy" not in text.lower()
+    assert "robocopy" not in text.lower()
 
 
 def test_pass_output_fields() -> None:
