@@ -7,13 +7,53 @@ from __future__ import annotations
 import logging
 import sys
 
+from intergrax.applications._shared.production_host_composition import (
+    bootstrap_production_registry_projection,
+)
+from intergrax.applications._shared.production_process_composition import (
+    ProductionProcessComposition,
+    create_reference_production_process_composition,
+)
+from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.reference_production_lifecycle import (
+    ReferenceProductionLifecycleLauncher,
+)
 from local_workspace_application.host.background_worker_factory import (
     build_local_workspace_background_worker_wiring,
 )
+from local_workspace_application.host.environment_profile import (
+    build_local_workspace_environment_profile,
+)
 from local_workspace_application.host.message_bus_wiring import local_workspace_message_bus_enabled
+from local_workspace_application.host.reference_lifecycle_input import (
+    build_local_workspace_reference_lifecycle_input,
+)
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 
 logger = logging.getLogger(__name__)
+
+
+def activate_local_workspace_reference_production_authority(
+    settings: LocalWorkspaceBackendSettings | None = None,
+) -> tuple[ProductionProcessComposition, MaterializedRegistryProjection]:
+    """Deploy/activate reference production lifecycle and resolve registry projection."""
+    resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
+    composition = create_reference_production_process_composition()
+    projection_input, activation_request = build_local_workspace_reference_lifecycle_input(
+        resolved_settings,
+    )
+    ReferenceProductionLifecycleLauncher(composition).deploy_and_activate(
+        projection_input,
+        activation_request,
+    )
+    env = build_local_workspace_environment_profile(resolved_settings)
+    registry_projection = bootstrap_production_registry_projection(
+        application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,
+        application_environment_id=env.profile_id,
+        stores=composition.agent_platform_runtime.stores,
+    )
+    return composition, registry_projection
 
 
 def main() -> int:
@@ -22,8 +62,14 @@ def main() -> int:
         logger.error("LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS must be true for the background worker")
         return 1
 
+    settings = LocalWorkspaceBackendSettings.from_env()
+    _, registry_projection = activate_local_workspace_reference_production_authority(
+        settings,
+    )
     wiring = build_local_workspace_background_worker_wiring(
         manifest=LOCAL_WORKSPACE_APPLICATION_MANIFEST,
+        registry_projection=registry_projection,
+        settings=settings,
     )
     logger.info("Starting LKW Kafka background worker for lkw.background_ingest.v1")
     wiring.worker.start()
