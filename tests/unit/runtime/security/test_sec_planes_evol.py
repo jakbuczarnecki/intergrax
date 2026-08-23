@@ -9,7 +9,8 @@ import time
 import pytest
 
 from intergrax.contracts.data_classification import DataClassification
-from intergrax.core.catalog_bootstrap import bootstrap_catalogs, reset_tier0_catalog_bootstrap_for_tests
+from intergrax.core.catalog_bootstrap import reset_tier0_catalog_bootstrap_for_tests
+from intergrax.core.security_bootstrap import bootstrap_security_providers
 from intergrax.integrations.registry.bootstrap import reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -90,9 +91,9 @@ def _clean_catalog() -> None:
 
 
 @pytest.mark.usefixtures("security_defense_fixture_installed")
-def test_catalog_bootstrap_discovers_security_defense_entry_point() -> None:
-    result = bootstrap_catalogs(register_shipped=False, discover_entry_points=True)
-    assert result.security_entry_point_plugins >= 1
+def test_security_bootstrap_discovers_security_defense_entry_point() -> None:
+    result = bootstrap_security_providers(discover_entry_points=True)
+    assert result.entry_point_plugins >= 1
     assert get_security_defense_plugin("fixture_ep.defense") is not None
 
 

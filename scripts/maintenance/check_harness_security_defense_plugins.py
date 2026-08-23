@@ -54,21 +54,13 @@ def main() -> int:
 
     register_default_integrations()
 
-    result = bootstrap_catalogs(discover_entry_points=False)
+    bootstrap_catalogs(discover_entry_points=False)
 
     if get_security_defense_plugin("harness.strict_injection") is None:
 
         print("harness.strict_injection plugin not resolvable")
 
         return 1
-
-    if result.security_entry_point_plugins < 0:
-
-        print("invalid security entry point count")
-
-        return 1
-
-
 
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="sec.defense.smoke")
 
