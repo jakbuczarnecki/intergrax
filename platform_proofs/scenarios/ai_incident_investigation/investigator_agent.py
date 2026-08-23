@@ -32,12 +32,12 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.tools.tool_runtime import ToolInvocationPlan, ToolRuntime
+from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
+from intergrax.runtime.nexus.tools.tool_runtime import ToolRuntime
 from unittest.mock import MagicMock
 
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
-from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
 from intergrax.contracts.capability import CapabilityMatchResult
 from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
@@ -153,7 +153,6 @@ class IncidentInvestigatorAgent(Agent):
     def __init__(self, registry: ToolRegistry, station_id: str) -> None:
         self._registry = registry
         self._station_id = station_id
-        self._registry_executor = RegistryToolExecutor(registry)
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -218,29 +217,24 @@ class IncidentInvestigatorAgent(Agent):
         tool_id: str,
         tool_input: dict[str, str],
     ) -> dict[str, object]:
-        await ToolRuntime.invoke(
+        response = await ToolRuntime.invoke_request(
             state=runtime_state,
-            plan=ToolInvocationPlan(
-                tool_ids=(tool_id,),
-                tool_inputs={tool_id: tool_input},
-            ),
-            trace_step=step.step_id,
-            allowed_tools=SCENARIO_TOOL_IDS,
-        )
-        trace = runtime_state.tool_traces[-1]
-        if not trace.success:
-            raise RuntimeError(f"{tool_id} failed: {trace.error_message}")
-        registered = self._registry.get(tool_id)
-        validated_input = registered.contract.input_schema.model_validate(tool_input)
-        output = self._registry_executor.execute(
-            ToolExecutionRequest(
-                run_id="scenario-incident-run",
+            request=ToolRequest(
+                tool_name=tool_id,
+                agent_id=INVESTIGATOR_AGENT_ID,
                 step_id=step.step_id,
-                tool_id=tool_id,
-                input=validated_input,
-            )
+                input=tool_input,
+            ),
+            allowed_tools=SCENARIO_TOOL_IDS,
+            trace_step=step.step_id,
         )
-        return output.model_dump()
+        if response.status is not ToolResponseStatus.SUCCESS:
+            raise RuntimeError(
+                f"{tool_id} failed: status={response.status.value} error={response.error}"
+            )
+        if response.output is None:
+            raise RuntimeError(f"{tool_id} succeeded but output is missing")
+        return response.output
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         is_revision = bool((ctx.request.metadata or {}).get("critic_feedback"))
@@ -256,7 +250,7 @@ class IncidentInvestigatorAgent(Agent):
         line_input = default_line_window_input()
         staffing_input = default_staffing_input()
 
-        workload_preview = await self._invoke_tool(
+        workload_output = await self._invoke_tool(
             runtime_state=runtime_state,
             step=step,
             tool_id=TOOL_WORKLOAD_READ,
@@ -264,7 +258,7 @@ class IncidentInvestigatorAgent(Agent):
         )
         tool_invocations += 1
 
-        throughput_preview = await self._invoke_tool(
+        throughput_output = await self._invoke_tool(
             runtime_state=runtime_state,
             step=step,
             tool_id=TOOL_THROUGHPUT_READ,
@@ -272,7 +266,7 @@ class IncidentInvestigatorAgent(Agent):
         )
         tool_invocations += 1
 
-        staffing_preview = await self._invoke_tool(
+        staffing_output = await self._invoke_tool(
             runtime_state=runtime_state,
             step=step,
             tool_id=TOOL_STAFFING_SCHEDULE_READ,
@@ -285,30 +279,30 @@ class IncidentInvestigatorAgent(Agent):
                 "evidence_id": str(WORKLOAD_EVIDENCE_ID),
                 "kind": "tool_result",
                 "label": "workload observation",
-                "payload": workload_preview,
+                "payload": workload_output,
             },
             {
                 "evidence_id": str(THROUGHPUT_EVIDENCE_ID),
                 "kind": "tool_result",
                 "label": "throughput observation",
-                "payload": throughput_preview,
+                "payload": throughput_output,
             },
             {
                 "evidence_id": str(STAFFING_PRELIMINARY_EVIDENCE_ID),
                 "kind": "tool_result",
                 "label": "staffing schedule observation",
-                "payload": staffing_preview,
+                "payload": staffing_output,
             },
         ]
 
         observations = IncidentObservations(
-            workload=parse_workload_payload(workload_preview),
-            throughput=parse_throughput_payload(throughput_preview),
-            staffing_schedule=parse_staffing_schedule_payload(staffing_preview),
+            workload=parse_workload_payload(workload_output),
+            throughput=parse_throughput_payload(throughput_output),
+            staffing_schedule=parse_staffing_schedule_payload(staffing_output),
         )
 
         if is_revision:
-            comparison_preview = await self._invoke_tool(
+            comparison_output = await self._invoke_tool(
                 runtime_state=runtime_state,
                 step=step,
                 tool_id=TOOL_COMPARISON_READ,
@@ -316,7 +310,7 @@ class IncidentInvestigatorAgent(Agent):
             )
             tool_invocations += 1
 
-            attendance_preview = await self._invoke_tool(
+            attendance_output = await self._invoke_tool(
                 runtime_state=runtime_state,
                 step=step,
                 tool_id=TOOL_STAFFING_ATTENDANCE_READ,
@@ -324,7 +318,7 @@ class IncidentInvestigatorAgent(Agent):
             )
             tool_invocations += 1
 
-            telemetry_preview = await self._invoke_tool(
+            telemetry_output = await self._invoke_tool(
                 runtime_state=runtime_state,
                 step=step,
                 tool_id=TOOL_TELEMETRY_READ,
@@ -338,19 +332,19 @@ class IncidentInvestigatorAgent(Agent):
                         "evidence_id": str(COMPARISON_EVIDENCE_ID),
                         "kind": "tool_result",
                         "label": "comparison line observation",
-                        "payload": comparison_preview,
+                        "payload": comparison_output,
                     },
                     {
                         "evidence_id": str(STAFFING_ATTENDANCE_EVIDENCE_ID),
                         "kind": "tool_result",
                         "label": "staffing attendance observation",
-                        "payload": attendance_preview,
+                        "payload": attendance_output,
                     },
                     {
                         "evidence_id": str(TELEMETRY_EVIDENCE_ID),
                         "kind": "tool_result",
                         "label": "station telemetry observation",
-                        "payload": telemetry_preview,
+                        "payload": telemetry_output,
                     },
                 ]
             )
@@ -359,9 +353,9 @@ class IncidentInvestigatorAgent(Agent):
                 workload=observations.workload,
                 throughput=observations.throughput,
                 staffing_schedule=observations.staffing_schedule,
-                staffing_attendance=parse_staffing_attendance_payload(attendance_preview),
-                comparison=parse_comparison_payload(comparison_preview),
-                telemetry=parse_telemetry_payload(telemetry_preview),
+                staffing_attendance=parse_staffing_attendance_payload(attendance_output),
+                comparison=parse_comparison_payload(comparison_output),
+                telemetry=parse_telemetry_payload(telemetry_output),
             )
 
         assessment = derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS)
