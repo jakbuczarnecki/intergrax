@@ -19,7 +19,7 @@ At a fictional industrial manufacturing plant, production target attainment on a
 | --- | --- |
 | **Problem** | Production target attainment degradation during a defined operating window |
 | **Observed impact** | Target attainment ~94% → ~78%; cycle-time degradation on complex assemblies |
-| **Trap** | Workload and throughput decline rise together — correlation presented as causation |
+| **Trap** | Workload rises while throughput declines — correlation presented as causation |
 | **Decision risk** | Wrong overtime, line reallocation, or capacity action before high-volume production window |
 | **Scenario outcome** | RESOLVED or UNRESOLVED |
 | **Status** | ACCEPTED FOR IMPLEMENTATION |

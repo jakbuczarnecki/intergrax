@@ -26,7 +26,7 @@ This is an **operational incident investigation**: wrong conclusions trigger rea
 ### Who has the problem
 
 - **Plant operations managers** responsible for production targets and schedule commitments.
-- **Incident leads / control-tower engineers** who must produce a diagnosis under time pressure.
+- **Incident leads / manufacturing operations engineers** who must produce a diagnosis under time pressure.
 - **Capacity and production planners** who act on the diagnosis (shift changes, line reallocation, overtime scheduling).
 
 ### Why it matters
