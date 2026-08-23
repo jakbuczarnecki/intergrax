@@ -185,6 +185,7 @@ class BuildApplicationRevisionRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    mutation_id: str = _NON_EMPTY
     runtime_revision_id: str = _NON_EMPTY
     application_release_id: str = _NON_EMPTY
     platform_version: str = _NON_EMPTY
@@ -199,6 +200,7 @@ class BuildApplicationRevisionRequest(BaseModel):
     agent_source_roots: tuple[tuple[str, str], ...] = ()
 
     @field_validator(
+        "mutation_id",
         "runtime_revision_id",
         "application_release_id",
         "platform_version",
@@ -396,6 +398,7 @@ class BuildRevisionResult(BaseModel):
     materialization_artifact_digest: str | None = None
     artifact_locator: str | None = None
     materialization_topology: MaterializationTopology | None = None
+    authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
     audit_event_types: tuple[str, ...] = ()
 
 

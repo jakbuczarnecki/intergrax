@@ -46,7 +46,10 @@ from intergrax.agent_distribution.control_plane_governance import (
     build_bind_agent_mutation_request,
     build_disable_binding_mutation_request,
     build_enable_binding_mutation_request,
+    build_input_digest,
     build_install_agent_mutation_request,
+    build_runtime_revision_identity_digest,
+    build_runtime_revision_mutation_request,
     build_rollback_mutation_request,
     build_update_binding_config_mutation_request,
     installation_absent_token,
@@ -763,6 +766,7 @@ class AgentPlatformAdminService:
         application_id: str,
         application_environment_id: str,
         request: BuildApplicationRevisionRequest,
+        principal: RequestIdentity,
     ) -> BuildRevisionResult:
         if self._materialization_service is None or self._graph_builder is None:
             raise AgentPlatformAdminBlockedError(
@@ -779,26 +783,14 @@ class AgentPlatformAdminService:
                 "AP-11_BLOCKED_BY_MISSING_DEPENDENCY_RESOLVER",
                 "build/apply requires an injected DependencyResolver",
             )
-        existing = self._revision_store.get_revision(request.runtime_revision_id)
-        if existing is not None:
-            if (
-                existing.application_id == application_id
-                and existing.application_environment_id == application_environment_id
-                and existing.revision_state
-                in {RuntimeRevisionState.VALIDATED, RuntimeRevisionState.CANDIDATE}
-            ):
-                return BuildRevisionResult(
-                    runtime_revision_id=existing.runtime_revision_id,
-                    revision_state=existing.revision_state,
-                    effective_roster_revision_id=existing.effective_roster_revision_id,
-                    materialized_runtime_lock_id=existing.materialized_runtime_lock_id,
-                    materialized_runtime_lock_digest=existing.materialized_runtime_lock_digest,
-                    runtime_graph_digest=existing.runtime_graph_digest,
-                    materialization_artifact_digest=existing.materialization_artifact_digest,
-                    materialization_topology=existing.materialization_topology,
-                )
-            raise RuntimeRevisionConflict("runtime_revision_id already used")
+        self._require_environment_tenant_scope(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            operation="build_application_revision",
+        )
 
+        existing = self._revision_store.get_revision(request.runtime_revision_id)
         roster = self._build_roster(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -816,22 +808,78 @@ class AgentPlatformAdminService:
             resolver_algorithm_version=request.resolver_algorithm_version,
         )
         lock = self._lock_service.produce_lock(resolver_input)
-        persisted_lock = self._lock_store.persist_lock(lock)
         metadata_refs = {
             package.distribution_package_id: package.agent_project_metadata_ref
             for package in requirement_set.agent_packages
         }
         graph = self._graph_builder.build(
-            lock=persisted_lock,
+            lock=lock,
             effective_roster=roster,
             repository_declaration=request.repository_declaration,
             agent_metadata_refs=metadata_refs,
         )
         graph = self._graph_validator.validate(
-            lock=persisted_lock,
+            lock=lock,
             effective_roster=roster,
             graph=graph,
         )
+        if roster.effective_roster_revision_id is None:
+            raise AgentDistributionNotFoundError("effective roster lacks revision identity")
+        build_input_digest_value = build_input_digest(
+            application_release_id=request.application_release_id,
+            platform_version=request.platform_version,
+            python_version=request.python_version,
+            source_context_root=request.source_context_root,
+            application_source_root=request.application_source_root,
+            agent_source_roots=request.agent_source_roots,
+            materialization_topology=request.materialization_topology.value,
+            repository_declaration=request.repository_declaration,
+            resolver_algorithm_id=request.resolver_algorithm_id,
+            resolver_algorithm_version=request.resolver_algorithm_version,
+        )
+        identity_digest = build_runtime_revision_identity_digest(
+            runtime_revision_id=request.runtime_revision_id,
+            application_release_id=request.application_release_id,
+            platform_version=request.platform_version,
+            effective_roster_revision_id=roster.effective_roster_revision_id,
+            lock_digest=lock.lock_digest,
+            graph_digest=graph.runtime_graph_digest,
+            materialization_topology=request.materialization_topology.value,
+            build_input_digest=build_input_digest_value,
+        )
+
+        if existing is not None:
+            if (
+                existing.application_id != application_id
+                or existing.application_environment_id != application_environment_id
+            ):
+                raise RuntimeRevisionConflict("runtime_revision_id already used")
+            if self._existing_revision_matches_proposed_build(
+                existing,
+                request=request,
+                effective_roster_revision_id=roster.effective_roster_revision_id,
+                lock_digest=lock.lock_digest,
+                graph_digest=graph.runtime_graph_digest,
+            ):
+                if existing.revision_state in {
+                    RuntimeRevisionState.VALIDATED,
+                    RuntimeRevisionState.CANDIDATE,
+                }:
+                    return self._build_revision_result_from_existing(existing)
+            raise RuntimeRevisionConflict(
+                "runtime_revision_id conflicts with requested build identity"
+            )
+
+        authorization = self._authorize_build(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=request.mutation_id,
+            runtime_revision_id=request.runtime_revision_id,
+            identity_digest=identity_digest,
+        )
+
+        persisted_lock = self._lock_store.persist_lock(lock)
         enabled_digests = tuple(
             sorted(
                 entry.package_digest
@@ -839,8 +887,6 @@ class AgentPlatformAdminService:
                 if entry.effective_enablement
             )
         )
-        if roster.effective_roster_revision_id is None:
-            raise AgentDistributionNotFoundError("effective roster lacks revision identity")
         candidate = RuntimeRevision(
             runtime_revision_id=request.runtime_revision_id,
             application_id=application_id,
@@ -906,6 +952,7 @@ class AgentPlatformAdminService:
             materialization_artifact_digest=marked.value.materialization_artifact_digest,
             artifact_locator=output.artifact_locator,
             materialization_topology=marked.value.materialization_topology,
+            authorization_evidence=authorization.evidence,
             audit_event_types=_event_types(persisted, marked),
         )
 
@@ -1229,6 +1276,66 @@ class AgentPlatformAdminService:
                 request=request,
             ),
             operation="activation",
+        )
+
+    def _authorize_build(
+        self,
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+        mutation_id: str,
+        runtime_revision_id: str,
+        identity_digest: str,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        resolver = self._require_environment_tenant_resolver()
+        boundary = self._require_mutation_authorization_boundary()
+        request = build_runtime_revision_mutation_request(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=mutation_id,
+            runtime_revision_id=runtime_revision_id,
+            identity_digest=identity_digest,
+        )
+        return self._enforce_authorization_result(
+            authorize_scoped_control_plane_mutation(
+                boundary=boundary,
+                tenant_resolver=resolver,
+                request=request,
+            ),
+            operation="build_application_revision",
+        )
+
+    @staticmethod
+    def _existing_revision_matches_proposed_build(
+        existing: RuntimeRevision,
+        *,
+        request: BuildApplicationRevisionRequest,
+        effective_roster_revision_id: str,
+        lock_digest: str,
+        graph_digest: str,
+    ) -> bool:
+        return (
+            existing.application_release_id == request.application_release_id
+            and existing.platform_version == request.platform_version
+            and existing.effective_roster_revision_id == effective_roster_revision_id
+            and existing.materialized_runtime_lock_digest == lock_digest
+            and existing.runtime_graph_digest == graph_digest
+            and existing.materialization_topology == request.materialization_topology
+        )
+
+    @staticmethod
+    def _build_revision_result_from_existing(existing: RuntimeRevision) -> BuildRevisionResult:
+        return BuildRevisionResult(
+            runtime_revision_id=existing.runtime_revision_id,
+            revision_state=existing.revision_state,
+            effective_roster_revision_id=existing.effective_roster_revision_id,
+            materialized_runtime_lock_id=existing.materialized_runtime_lock_id,
+            materialized_runtime_lock_digest=existing.materialized_runtime_lock_digest,
+            runtime_graph_digest=existing.runtime_graph_digest,
+            materialization_artifact_digest=existing.materialization_artifact_digest,
+            materialization_topology=existing.materialization_topology,
         )
 
     def _authorize_rollback(

@@ -92,6 +92,7 @@ def _build_and_activate(
         application_id=application_id,
         application_environment_id=_ENV,
         request=_build_request(revision_id),
+        principal=admin_test_principal(),
     )
     stack.service.activate_revision(
         application_id=application_id,

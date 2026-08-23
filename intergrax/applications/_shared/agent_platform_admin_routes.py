@@ -460,12 +460,14 @@ def mount_agent_platform_admin_routes(
         application_id: str,
         environment_id: str,
         body: BuildApplicationRevisionRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> BuildRevisionResult:
         try:
             return admin_service.build_application_revision(
                 application_id=application_id,
                 application_environment_id=environment_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)
