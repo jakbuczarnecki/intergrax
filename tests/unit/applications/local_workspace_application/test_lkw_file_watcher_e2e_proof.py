@@ -596,6 +596,63 @@ def test_bat_runner_materialization_failure_gates_compose() -> None:
     assert "robocopy" not in text.lower()
 
 
+def test_bat_runner_materialization_remains_sync_capable() -> None:
+    text = _read(_PROOF_BAT)
+    materialize_line = next(
+        line
+        for line in text.splitlines()
+        if "build_application_image.py" in line and "uv run" in line
+    )
+    assert "--materialize-only" in materialize_line
+    assert "--no-sync" not in materialize_line
+    assert materialize_line.strip().startswith(
+        "uv run python scripts/build/build_application_image.py"
+    )
+
+
+def test_bat_runner_workload_uses_no_sync() -> None:
+    text = _read(_PROOF_BAT)
+    assert 'set "PROOF=%SCRIPT_DIR%run-lkw-file-watcher-e2e-proof.py"' in text
+    workload_line = next(
+        line
+        for line in text.splitlines()
+        if 'python "%PROOF%"' in line and "uv run" in line
+    )
+    assert (
+        "uv run --no-sync --project applications/local_workspace_application"
+        in workload_line
+    )
+
+
+def test_bat_runner_teardown_uses_no_sync() -> None:
+    text = _read(_PROOF_BAT)
+    assert (
+        'set "LIFECYCLE=%SCRIPT_DIR%lkw_proof_compose_lifecycle.py"' in text
+    )
+    teardown_line = next(
+        line
+        for line in text.splitlines()
+        if 'python "%LIFECYCLE%"' in line and "teardown" in line
+    )
+    assert (
+        "uv run --no-sync --project applications/local_workspace_application"
+        in teardown_line
+    )
+
+
+def test_bat_runner_exactly_two_no_sync_boundaries() -> None:
+    text = _read(_PROOF_BAT)
+    no_sync_lines = [line for line in text.splitlines() if "--no-sync" in line]
+    assert len(no_sync_lines) == 2
+    assert all(
+        "uv run --no-sync --project applications/local_workspace_application"
+        in line
+        for line in no_sync_lines
+    )
+    materialize_block_end = text.index("runtime_context_materialization=PASS")
+    assert "--no-sync" not in text[:materialize_block_end]
+
+
 def test_pass_output_fields() -> None:
     proof = _load_proof_module()
     receipt = _fake_verified_receipt(proof)

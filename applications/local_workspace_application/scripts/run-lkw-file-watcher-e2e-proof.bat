@@ -174,7 +174,7 @@ set "INTERGRAX_MONGODB_URI=mongodb://%LKW_MONGODB_ROOT_USERNAME%:%LKW_MONGODB_RO
 set "INTERGRAX_MONGODB_DATABASE=%LKW_MONGODB_DATABASE%"
 set "INTERGRAX_MONGODB_COLLECTION=%LKW_MONGODB_COLLECTION%"
 
-uv run --project applications/local_workspace_application python "%PROOF%" --base-url "%LKW_BASE_URL%" --kafka-bootstrap "%KAFKA_BOOTSTRAP%" --topic "%TASK_TOPIC%" --repo-root "%CD%" --proof-docs-dir "%PROOF_DOCS_DIR%" --base-compose "%BASE_COMPOSE%" --kafka-compose "%KAFKA_COMPOSE%" --watcher-compose "%WATCHER_COMPOSE%" --mongodb-compose "%MONGODB_COMPOSE%" --mongo-express "%MONGO_EXPRESS_URL%" %*
+uv run --no-sync --project applications/local_workspace_application python "%PROOF%" --base-url "%LKW_BASE_URL%" --kafka-bootstrap "%KAFKA_BOOTSTRAP%" --topic "%TASK_TOPIC%" --repo-root "%CD%" --proof-docs-dir "%PROOF_DOCS_DIR%" --base-compose "%BASE_COMPOSE%" --kafka-compose "%KAFKA_COMPOSE%" --watcher-compose "%WATCHER_COMPOSE%" --mongodb-compose "%MONGODB_COMPOSE%" --mongo-express "%MONGO_EXPRESS_URL%" %*
 set "EXIT_CODE=%ERRORLEVEL%"
 if not "%EXIT_CODE%"=="0" goto proof_fail
 
@@ -199,7 +199,7 @@ exit /b %EXIT_CODE%
 
 :finalize_proof
 if /I not "%LKW_COMPOSE_OWNERSHIP_ENTERED%"=="true" exit /b 0
-uv run --project applications/local_workspace_application python "%LIFECYCLE%" teardown --stack-id lkw-file-watcher-e2e-proof
+uv run --no-sync --project applications/local_workspace_application python "%LIFECYCLE%" teardown --stack-id lkw-file-watcher-e2e-proof
 set "TEARDOWN_CODE=%ERRORLEVEL%"
 if "%EXIT_CODE%"=="0" (
     if not "%TEARDOWN_CODE%"=="0" set "EXIT_CODE=1"
